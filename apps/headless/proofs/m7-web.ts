@@ -11,8 +11,8 @@ import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import { brickDir, repoRoot } from '../../../tools/bricks.ts'
-import { RAA_REASON_PREFIX } from '../../web/src/render/raaStatus.ts'
+import { repoRoot } from '../../../tools/bricks.ts'
+import { raaStatus } from '../../web/src/render/raaStatus.ts'
 import { nodeFixtureResolver, readRepoText, repoPath } from '../src/files.ts'
 import { parseProofArgs, report, runProof } from '../src/proofkit.ts'
 import type { CheckResult, ProofCheck } from '../src/proofkit.ts'
@@ -119,24 +119,13 @@ async function checkInPageRound(): Promise<CheckResult> {
   }
 }
 
-interface RaaRecord { available: boolean; raaDir: string | null; reason: string; apiVersion: string | null }
+interface RaaRecord { available: boolean; reason: string; apiVersion: string | null }
 
-// Node mirror of raaStatus(): the browser resolves @raa/engine through aliases.json, falling back
-// to raaAbsent ('no raa repo') when the brick target is missing.
+// Node mirror of raaStatus(): Node has no navigator.gpu, so the record is "absent" here; a browser run
+// of the same page reports the WebGPU result.
 async function detectRaa(): Promise<RaaRecord> {
-  const aliases = JSON.parse(await readRepoText('apps/web/aliases.json')) as { find: string; brick: string; subpath: string }[]
-  const entry = aliases.find(a => a.brick === 'raa')
-  if (entry === undefined) refuse('proof', 'apps/web/aliases.json', "has no entry for brick 'raa'; add the @raa/engine alias")
-  let dir: string | null = null
-  try { dir = brickDir('raa') } catch { dir = null }
-  const target = dir === null ? null : join(dir, entry.subpath)
-  if (target === null || !existsSync(target)) {
-    return { available: false, raaDir: dir, reason: RAA_REASON_PREFIX + 'no raa repo', apiVersion: null }
-  }
-  const src = await readFile(target, 'utf8')
-  const m = /export\s+const\s+RAA_API_VERSION\b[^=]*=\s*(['"`])([^'"`]*)\1/.exec(src)
-  if (m !== null && m[2].startsWith('0')) return { available: true, raaDir: dir, reason: 'RAA API v0 available', apiVersion: m[2] }
-  return { available: false, raaDir: dir, reason: RAA_REASON_PREFIX + 'raa repo', apiVersion: null }
+  const live = await raaStatus()
+  return { available: live.available, reason: live.reason, apiVersion: live.apiVersion }
 }
 
 async function readRecord(rel: string): Promise<unknown> {
@@ -153,7 +142,7 @@ interface CapturesRecord {
 async function checkRaa(): Promise<CheckResult> {
   const live = await detectRaa()
   const rec = await readRecord(STATUS_FILE) as Partial<RaaRecord> | null
-  const keys = ['available', 'raaDir', 'reason', 'apiVersion'] as const
+  const keys = ['available', 'reason', 'apiVersion'] as const
   const diff = rec === null ? [`${STATUS_FILE} missing`] : keys.filter(k => rec[k] !== live[k]).map(k => `${k}: record=${JSON.stringify(rec[k])} live=${JSON.stringify(live[k])}`)
   if (diff.length > 0) {
     return {

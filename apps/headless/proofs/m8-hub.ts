@@ -9,9 +9,8 @@ import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import { brickDir } from '../../../tools/bricks.ts'
 import { InPageHubLoop } from '../../web/src/play/inpageHub.ts'
-import { RAA_REASON_PREFIX } from '../../web/src/render/raaStatus.ts'
+import { raaStatus } from '../../web/src/render/raaStatus.ts'
 import { loadCourseFile, nodeFixtureResolver, readRepoText, repoPath } from '../src/files.ts'
 import { startGameSaloon } from '../src/gamesaloon.ts'
 import { runHubLoop } from '../src/hubLoop.ts'
@@ -145,23 +144,13 @@ async function checkInPageLoop(): Promise<CheckResult> {
   }
 }
 
-interface RaaRecord { available: boolean; raaDir: string | null; reason: string; apiVersion: string | null }
+interface RaaRecord { available: boolean; reason: string; apiVersion: string | null }
 
-// Node mirror of raaStatus(), as in m7-web: @raa/engine through aliases.json, 'no raa repo' when the target is missing.
+// Node mirror of raaStatus(): Node has no navigator.gpu, so the record is "absent" here; a browser run
+// of the same page reports the WebGPU result.
 async function detectRaa(): Promise<RaaRecord> {
-  const aliases = JSON.parse(await readRepoText('apps/web/aliases.json')) as { find: string; brick: string; subpath: string }[]
-  const entry = aliases.find(a => a.brick === 'raa')
-  if (entry === undefined) refuse('proof', 'apps/web/aliases.json', "has no entry for brick 'raa'; add the @raa/engine alias")
-  let dir: string | null = null
-  try { dir = brickDir('raa') } catch { dir = null }
-  const target = dir === null ? null : join(dir, entry.subpath)
-  if (target === null || !existsSync(target)) {
-    return { available: false, raaDir: dir, reason: RAA_REASON_PREFIX + 'no raa repo', apiVersion: null }
-  }
-  const src = await readFile(target, 'utf8')
-  const m = /export\s+const\s+RAA_API_VERSION\b[^=]*=\s*(['"`])([^'"`]*)\1/.exec(src)
-  if (m !== null && m[2].startsWith('0')) return { available: true, raaDir: dir, reason: 'RAA API v0 available', apiVersion: m[2] }
-  return { available: false, raaDir: dir, reason: RAA_REASON_PREFIX + 'raa repo', apiVersion: null }
+  const live = await raaStatus()
+  return { available: live.available, reason: live.reason, apiVersion: live.apiVersion }
 }
 
 async function readRecord(rel: string): Promise<unknown> {
@@ -178,30 +167,28 @@ interface CapturesRecord {
 async function checkCaptures(): Promise<CheckResult> {
   const live = await detectRaa()
   const rec = await readRecord(STATUS_FILE) as Partial<RaaRecord> | null
-  // raaDir depends on the checkout location, so it is shown but not compared.
   const keys = ['available', 'reason', 'apiVersion'] as const
   const diff = rec === null ? [`${STATUS_FILE} missing`] : keys.filter(k => rec[k] !== live[k]).map(k => `${k}: record=${JSON.stringify(rec[k])} live=${JSON.stringify(live[k])}`)
-  const dirNote = `raaDir: record=${JSON.stringify(rec?.raaDir ?? null)} live=${JSON.stringify(live.raaDir)}`
   if (diff.length > 0) {
     return {
       value: 'stale record', threshold: `${STATUS_FILE} matches live detection`, pass: false,
-      notes: [...diff, dirNote, 'regenerate: node --experimental-strip-types apps/headless/proofs/m8-hub.ts --write-golden'],
+      notes: [...diff, 'regenerate: node --experimental-strip-types apps/headless/proofs/m8-hub.ts --write-golden'],
     }
   }
   if (!live.available) {
     console.log(RAA_ABSENT_LINE)
-    return { value: 'absent', threshold: 'n/a', pass: true, notes: [live.reason, dirNote] }
+    return { value: 'absent', threshold: 'n/a', pass: true, notes: [live.reason] }
   }
   const threshold = `${STATUS_FILE} matches live; renderer raa; non-empty 1920x1080 ${CAPTURE_NAMES.join(', ')}`
   const cap = await readRecord(CAPTURES_FILE) as CapturesRecord | null
-  if (cap === null) return { value: `${CAPTURES_FILE} missing`, threshold, pass: false, notes: [dirNote] }
+  if (cap === null) return { value: `${CAPTURES_FILE} missing`, threshold, pass: false, notes: [] }
   const good = (cap.captures ?? []).filter(c => c.nonEmpty === true && c.bytes > 0 && c.width === 1920 && c.height === 1080)
   const absent = CAPTURE_NAMES.filter(n => !good.some(c => c.name === n))
   return {
     value: `renderer=${cap.renderer} captures=${good.length}`,
     threshold,
     pass: cap.renderer === 'raa' && good.length >= 4 && absent.length === 0,
-    notes: [`adapter=${cap.adapter} software=${cap.software} pageRef=${cap.pageRef}`, dirNote, ...(absent.length > 0 ? [`missing: ${absent.join(', ')}`] : [])],
+    notes: [`adapter=${cap.adapter} software=${cap.software} pageRef=${cap.pageRef}`, ...(absent.length > 0 ? [`missing: ${absent.join(', ')}`] : [])],
   }
 }
 

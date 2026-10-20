@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { brickDir, checkBricks, repoRoot } from '../bricks.ts'
+import type { BrickName } from '../bricks.ts'
 import { RefusalError } from '../../packages/sim/src/refusal.ts'
 
 test('repoRoot is the royal-fiesta package root', () => {
@@ -39,7 +40,7 @@ test('a missing brick is refused with a useful message', () => {
   const empty = mkdtempSync(join(tmpdir(), 'rf-bricks-empty-'))
   try {
     process.env.RF_BRICKS_DIR = empty
-    assert.throws(() => brickDir('missing-brick' as 'raa'), (error: unknown) =>
+    assert.throws(() => brickDir('missing-brick' as BrickName), (error: unknown) =>
       error instanceof RefusalError && error.message.includes('missing-brick'),
     )
   } finally {

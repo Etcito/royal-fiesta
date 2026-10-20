@@ -6,11 +6,11 @@ import { refuse } from '../packages/sim/src/refusal.ts'
 
 // The GameSaloon rollback bricks (@gamesaloon/rollback, @gamesaloon/rollback-rapier) are installed
 // from their GitHub release tarballs like any dependency; nothing here locates them.
-// The bricks below are still located by directory: RAA has no release yet, and gamesaloon-public
-// is only needed by the optional local-server test.
-export type BrickName = 'gamesaloon-public' | 'raa' | 'raa-assets-tools'
+// RAA (@etcito/raa) is a release dependency of apps/web too. gamesaloon-public is the only brick
+// still located by directory, and only the optional local-server test needs it.
+export type BrickName = 'gamesaloon-public' | 'raa-assets-tools'
 
-const names: BrickName[] = ['gamesaloon-public', 'raa', 'raa-assets-tools']
+const names: BrickName[] = ['gamesaloon-public', 'raa-assets-tools']
 const pathHere = dirname(fileURLToPath(import.meta.url))
 
 export function repoRoot(): string {
@@ -32,7 +32,7 @@ export function repoRoot(): string {
 // the brick next to this repository (RF_BRICKS_DIR overrides the parent folder).
 export function brickDir(name: BrickName): string | null {
   const root = repoRoot()
-  const override = name === 'raa' ? process.env.RAA_DIR : name === 'gamesaloon-public' ? process.env.GAMESALOON_DIR : undefined
+  const override = name === 'gamesaloon-public' ? process.env.GAMESALOON_DIR : undefined
   const candidates = [
     ...(override ? [override] : []),
     ...(process.env.RF_BRICKS_DIR ? [join(process.env.RF_BRICKS_DIR, name)] : []),
@@ -43,7 +43,7 @@ export function brickDir(name: BrickName): string | null {
       if (existsSync(candidate) && lstatSync(candidate).isDirectory()) return realpathSync(candidate)
     } catch {}
   }
-  refuse('bricks', name, `brick is missing; set ${name === 'raa' ? 'RAA_DIR' : name === 'gamesaloon-public' ? 'GAMESALOON_DIR' : 'RF_BRICKS_DIR'} or clone it next to this repository`)
+  refuse('bricks', name, `brick is missing; set ${name === 'gamesaloon-public' ? 'GAMESALOON_DIR' : 'RF_BRICKS_DIR'} or clone it next to this repository`)
 }
 
 export interface BrickCheck { ok: boolean; lines: string[] }
@@ -84,7 +84,7 @@ export async function main(argv: string[]): Promise<number> {
     console.log(dir ?? 'not found')
     return dir === null ? 1 : 0
   }
-  console.error('usage: npm run bricks -- check | where <gamesaloon-public|raa|raa-assets-tools>')
+  console.error('usage: npm run bricks -- check | where <gamesaloon-public|raa-assets-tools>')
   return 1
 }
 

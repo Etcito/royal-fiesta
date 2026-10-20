@@ -23,7 +23,8 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^24"
+    "@etcito/raa-assets-tools": "https://github.com/Etcito/raa-assets-tools/releases/download/v0.1.0/raa-assets-tools-0.1.0.tgz",
+    "@types/node": "^24",
+    "typescript": "^5.9.3"
   }
 }

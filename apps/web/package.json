@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-deterministic-compat": "0.21.0",
+    "@etcito/raa": "https://github.com/Etcito/raa/releases/download/v0.1.0/etcito-raa-0.1.0.tgz",
     "@gamesaloon/rollback": "https://github.com/Etcito/gamesaloon-rollback/releases/download/v0.1.0/gamesaloon-rollback-0.1.0.tgz",
     "@gamesaloon/rollback-rapier": "https://github.com/Etcito/gamesaloon-rollback/releases/download/v0.1.0/gamesaloon-rollback-rapier-0.1.0.tgz",
     "@royal-fiesta/game": "*",

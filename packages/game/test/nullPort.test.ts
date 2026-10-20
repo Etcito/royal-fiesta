@@ -5,7 +5,7 @@ import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import type { CameraPose } from '@royal-fiesta/game/render/port'
 
 const asset: PrimsAsset = {
-  format: 'raa.prims', version: 0, id: 'a', name: 'a', nodes: [], materials: {}, anchors: {}, collision: null, budget: 1500
+  format: 'raa.prims', version: 0, id: 'a', name: 'a', nodes: [], materials: {}, anchors: {}, collision: { mode: 'derived', colliders: [] }, budget: { triangles: 1500, segments: 16 }
 }
 const cam: CameraPose = { eye: [0, 1, 2], target: [0, 0, 0], fovYDeg: 60, near: 0.1, far: 500 }
 const target = { canvas: null, width: 1920, height: 1080, viewports: [{ x: 0, y: 0, width: 960, height: 540 }] }

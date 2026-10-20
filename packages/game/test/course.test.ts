@@ -15,13 +15,14 @@ type Json = Record<string, any>
 function assetText(id: string, colliders: unknown[]): string {
   return JSON.stringify({
     format: 'raa.prims', version: 0, id, name: id,
-    nodes: [{ id: 'body', kind: 'box', params: { size: [2, 2, 2] }, material: null }],
-    materials: {}, collision: { colliders },
+    nodes: [{ id: 'body', kind: 'box', params: { size: [2, 2, 2] }, material: 'body', op: 'union', transform: { t: [0, 0, 0], r: [0, 0, 0, 1], s: [1, 1, 1] } }],
+    materials: { body: { color: [1, 1, 1], roughness: 0.5, metallic: 0, emissive: [0, 0, 0] } },
+    collision: { mode: 'override', colliders },
   })
 }
 
-const CUBE_TEXT = assetText('cube', [{ shape: 'cuboid', half: [1, 1, 1], t: [0, 1, 0] }])
-const BALL_TEXT = assetText('ball', [{ shape: 'ball', radius: 0.5, t: [1, 0, 0] }])
+const CUBE_TEXT = assetText('cube', [{ node: null, shape: 'cuboid', params: { halfExtents: [1, 1, 1] }, t: [0, 1, 0], r: [0, 0, 0, 1] }])
+const BALL_TEXT = assetText('ball', [{ node: null, shape: 'ball', params: { radius: 0.5 }, t: [1, 0, 0], r: [0, 0, 0, 1] }])
 
 // fixtureResolver reads fixtures/assets/<name>.prims.json; the map keeps the two assets in memory.
 function resolver(overrides: Record<string, string> = {}) {

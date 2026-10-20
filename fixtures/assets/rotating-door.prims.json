@@ -3,44 +3,35 @@
   "version": 0,
   "id": "rotating-door",
   "name": "Rotating Door",
-  "budget": 1500,
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
+  },
   "nodes": [
     {
-      "id": "panel-x",
+      "id": "panel_x",
       "kind": "box",
       "params": {
-        "size": [
-          6,
-          3,
-          0.3
-        ]
+        "size": [6, 3, 0.3]
       },
       "transform": {
-        "t": [
-          0,
-          1.5,
-          0
-        ]
+        "t": [0, 1.5, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "orange",
       "op": "union"
     },
     {
-      "id": "panel-z",
+      "id": "panel_z",
       "kind": "box",
       "params": {
-        "size": [
-          0.3,
-          3,
-          6
-        ]
+        "size": [0.3, 3, 6]
       },
       "transform": {
-        "t": [
-          0,
-          1.5,
-          0
-        ]
+        "t": [0, 1.5, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "orange",
       "op": "union"
@@ -49,15 +40,13 @@
       "id": "hub",
       "kind": "cylinder",
       "params": {
-        "radius": 0.4,
-        "height": 3.2
+        "height": 3.2,
+        "radius": 0.4
       },
       "transform": {
-        "t": [
-          0,
-          1.5,
-          0
-        ]
+        "t": [0, 1.5, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "purple",
       "op": "union"
@@ -65,54 +54,39 @@
   ],
   "materials": {
     "orange": {
-      "color": [
-        1,
-        0.55,
-        0.25
-      ],
+      "color": [1, 0.55, 0.25],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     },
     "purple": {
-      "color": [
-        0.7,
-        0.5,
-        1
-      ],
+      "color": [0.7, 0.5, 1],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     }
   },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "cuboid",
-        "half": [
-          3,
-          1.5,
-          0.15
-        ],
-        "t": [
-          0,
-          1.5,
-          0
-        ]
+        "params": {
+          "halfExtents": [3, 1.5, 0.15]
+        },
+        "t": [0, 1.5, 0],
+        "r": [0, 0, 0, 1]
       },
       {
+        "node": null,
         "shape": "cuboid",
-        "half": [
-          0.15,
-          1.5,
-          3
-        ],
-        "t": [
-          0,
-          1.5,
-          0
-        ]
+        "params": {
+          "halfExtents": [0.15, 1.5, 3]
+        },
+        "t": [0, 1.5, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

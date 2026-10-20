@@ -3,18 +3,22 @@
   "version": 0,
   "id": "seesaw-plank",
   "name": "See-saw Plank",
-  "budget": 1500,
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
+  },
   "nodes": [
     {
       "id": "plank",
       "kind": "roundBox",
       "params": {
-        "size": [
-          3,
-          0.4,
-          8
-        ],
+        "size": [3, 0.4, 8],
         "radius": 0.05
+      },
+      "transform": {
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "teal",
       "op": "union"
@@ -22,27 +26,25 @@
   ],
   "materials": {
     "teal": {
-      "color": [
-        0.3,
-        0.9,
-        0.85
-      ],
+      "color": [0.3, 0.9, 0.85],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     }
   },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "roundCuboid",
-        "half": [
-          1.45,
-          0.15,
-          3.95
-        ],
-        "border": 0.05
+        "params": {
+          "halfExtents": [1.45, 0.15, 3.95],
+          "borderRadius": 0.05
+        },
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

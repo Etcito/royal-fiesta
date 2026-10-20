@@ -9,8 +9,9 @@ import { RefusalError } from '@royal-fiesta/sim/refusal'
 
 const assetJson = (id: string) => JSON.stringify({
   format: 'raa.prims', version: 0, id, name: id,
-  nodes: [{ id: 'body', kind: 'box', params: { size: [2, 2, 2] }, material: null }],
-  materials: {}, collision: { colliders: [{ shape: 'cuboid', half: [1, 1, 1] }] },
+  nodes: [{ id: 'body', kind: 'box', params: { size: [2, 2, 2] }, material: 'body', op: 'union', transform: { t: [0, 0, 0], r: [0, 0, 0, 1], s: [1, 1, 1] } }],
+    materials: { body: { color: [1, 1, 1], roughness: 0.5, metallic: 0, emissive: [0, 0, 0] } },
+  collision: { mode: 'override', colliders: [{ node: null, shape: 'cuboid', params: { halfExtents: [1, 1, 1] }, t: [0, 0, 0], r: [0, 0, 0, 1] }] },
 })
 const bytes = (s: string) => new TextEncoder().encode(s)
 const sha = async (b: Uint8Array) => createHash('sha256').update(b).digest('hex')

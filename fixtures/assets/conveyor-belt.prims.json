@@ -3,154 +3,122 @@
   "version": 0,
   "id": "conveyor-belt",
   "name": "Conveyor Belt",
-  "budget": 1500,
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
+  },
   "nodes": [
     {
       "id": "belt",
       "kind": "box",
       "params": {
-        "size": [
-          4,
-          0.5,
-          12
-        ]
+        "size": [4, 0.5, 12]
+      },
+      "transform": {
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "purple",
       "op": "union"
     },
     {
-      "id": "stripe-0",
+      "id": "stripe_0",
       "kind": "box",
       "params": {
-        "size": [
-          3.6,
-          0.06,
-          0.6
-        ]
+        "size": [3.6, 0.06, 0.6]
       },
       "transform": {
-        "t": [
-          0,
-          0.27,
-          -4
-        ]
+        "t": [0, 0.27, -4],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "green",
       "op": "union"
     },
     {
-      "id": "stripe-1",
+      "id": "stripe_1",
       "kind": "box",
       "params": {
-        "size": [
-          3.6,
-          0.06,
-          0.6
-        ]
+        "size": [3.6, 0.06, 0.6]
       },
       "transform": {
-        "t": [
-          0,
-          0.27,
-          -2
-        ]
+        "t": [0, 0.27, -2],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "green",
       "op": "union"
     },
     {
-      "id": "stripe-2",
+      "id": "stripe_2",
       "kind": "box",
       "params": {
-        "size": [
-          3.6,
-          0.06,
-          0.6
-        ]
+        "size": [3.6, 0.06, 0.6]
       },
       "transform": {
-        "t": [
-          0,
-          0.27,
-          0
-        ]
+        "t": [0, 0.27, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "green",
       "op": "union"
     },
     {
-      "id": "stripe-3",
+      "id": "stripe_3",
       "kind": "box",
       "params": {
-        "size": [
-          3.6,
-          0.06,
-          0.6
-        ]
+        "size": [3.6, 0.06, 0.6]
       },
       "transform": {
-        "t": [
-          0,
-          0.27,
-          2
-        ]
+        "t": [0, 0.27, 2],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "green",
       "op": "union"
     },
     {
-      "id": "stripe-4",
+      "id": "stripe_4",
       "kind": "box",
       "params": {
-        "size": [
-          3.6,
-          0.06,
-          0.6
-        ]
+        "size": [3.6, 0.06, 0.6]
       },
       "transform": {
-        "t": [
-          0,
-          0.27,
-          4
-        ]
+        "t": [0, 0.27, 4],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "green",
       "op": "union"
     }
   ],
   "materials": {
-    "purple": {
-      "color": [
-        0.7,
-        0.5,
-        1
-      ],
-      "roughness": 0.6,
-      "metallic": 0,
-      "emissive": 0
-    },
     "green": {
-      "color": [
-        0.45,
-        0.85,
-        0.4
-      ],
+      "color": [0.45, 0.85, 0.4],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
+    },
+    "purple": {
+      "color": [0.7, 0.5, 1],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": [0, 0, 0]
     }
   },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "cuboid",
-        "half": [
-          2,
-          0.25,
-          6
-        ]
+        "params": {
+          "halfExtents": [2, 0.25, 6]
+        },
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

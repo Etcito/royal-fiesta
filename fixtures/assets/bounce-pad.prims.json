@@ -3,21 +3,22 @@
   "version": 0,
   "id": "bounce-pad",
   "name": "Bounce Pad",
-  "budget": 1500,
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
+  },
   "nodes": [
     {
       "id": "base",
       "kind": "cylinder",
       "params": {
-        "radius": 1.5,
-        "height": 0.3
+        "height": 0.3,
+        "radius": 1.5
       },
       "transform": {
-        "t": [
-          0,
-          0.15,
-          0
-        ]
+        "t": [0, 0.15, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "green",
       "op": "union"
@@ -26,18 +27,12 @@
       "id": "dome",
       "kind": "ellipsoid",
       "params": {
-        "radii": [
-          1,
-          0.25,
-          1
-        ]
+        "radii": [1, 0.25, 1]
       },
       "transform": {
-        "t": [
-          0,
-          0.3,
-          0
-        ]
+        "t": [0, 0.3, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "orange",
       "op": "union"
@@ -45,38 +40,31 @@
   ],
   "materials": {
     "green": {
-      "color": [
-        0.45,
-        0.85,
-        0.4
-      ],
+      "color": [0.45, 0.85, 0.4],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     },
     "orange": {
-      "color": [
-        1,
-        0.55,
-        0.25
-      ],
+      "color": [1, 0.55, 0.25],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     }
   },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "cylinder",
-        "halfHeight": 0.15,
-        "radius": 1.5,
-        "t": [
-          0,
-          0.15,
-          0
-        ]
+        "params": {
+          "halfHeight": 0.15,
+          "radius": 1.5
+        },
+        "t": [0, 0.15, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

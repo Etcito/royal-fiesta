@@ -3,18 +3,22 @@
   "version": 0,
   "id": "moving-platform",
   "name": "Moving Platform",
-  "budget": 1500,
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
+  },
   "nodes": [
     {
       "id": "top",
       "kind": "roundBox",
       "params": {
-        "size": [
-          4,
-          0.5,
-          4
-        ],
+        "size": [4, 0.5, 4],
         "radius": 0.1
+      },
+      "transform": {
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "teal",
       "op": "union"
@@ -22,26 +26,24 @@
   ],
   "materials": {
     "teal": {
-      "color": [
-        0.3,
-        0.9,
-        0.85
-      ],
+      "color": [0.3, 0.9, 0.85],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     }
   },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "cuboid",
-        "half": [
-          2,
-          0.25,
-          2
-        ]
+        "params": {
+          "halfExtents": [2, 0.25, 2]
+        },
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

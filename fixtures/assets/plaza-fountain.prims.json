@@ -3,32 +3,22 @@
   "version": 0,
   "id": "plaza-fountain",
   "name": "Plaza Fountain",
-  "budget": 1500,
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
+  },
   "nodes": [
     {
       "id": "basin",
       "kind": "cylinder",
       "params": {
-        "radius": 2,
-        "height": 0.6
+        "height": 0.6,
+        "radius": 2
       },
       "transform": {
-        "t": [
-          0,
-          0.3,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "s": [
-          1,
-          1,
-          1
-        ]
+        "t": [0, 0.3, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "cream",
       "op": "union"
@@ -37,26 +27,13 @@
       "id": "rim",
       "kind": "torus",
       "params": {
-        "major": 2,
-        "minor": 0.1
+        "majorRadius": 2,
+        "minorRadius": 0.1
       },
       "transform": {
-        "t": [
-          0,
-          0.6,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "s": [
-          1,
-          1,
-          1
-        ]
+        "t": [0, 0.6, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "pink",
       "op": "union"
@@ -65,26 +42,13 @@
       "id": "water",
       "kind": "cylinder",
       "params": {
-        "radius": 1.8,
-        "height": 0.05
+        "height": 0.05,
+        "radius": 1.8
       },
       "transform": {
-        "t": [
-          0,
-          0.625,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "s": [
-          1,
-          1,
-          1
-        ]
+        "t": [0, 0.625, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "water",
       "op": "union"
@@ -93,26 +57,13 @@
       "id": "column",
       "kind": "cylinder",
       "params": {
-        "radius": 0.35,
-        "height": 1.6
+        "height": 1.6,
+        "radius": 0.35
       },
       "transform": {
-        "t": [
-          0,
-          0.8,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "s": [
-          1,
-          1,
-          1
-        ]
+        "t": [0, 0.8, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "cream",
       "op": "union"
@@ -121,26 +72,14 @@
       "id": "bowl",
       "kind": "cone",
       "params": {
-        "radius": 0.8,
-        "height": 0.5
+        "height": 0.5,
+        "radiusBottom": 0.8,
+        "radiusTop": 0
       },
       "transform": {
-        "t": [
-          0,
-          1.85,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "s": [
-          1,
-          1,
-          1
-        ]
+        "t": [0, 1.85, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "yellow",
       "op": "union"
@@ -148,68 +87,53 @@
   ],
   "materials": {
     "cream": {
-      "color": [
-        1,
-        0.95,
-        0.8
-      ],
+      "color": [1, 0.95, 0.8],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
-    },
-    "water": {
-      "color": [
-        0.33,
-        0.73,
-        1
-      ],
-      "roughness": 0.2,
-      "metallic": 0,
-      "emissive": 0.25
+      "emissive": [0, 0, 0]
     },
     "pink": {
-      "color": [
-        1,
-        0.42,
-        0.62
-      ],
+      "color": [1, 0.42, 0.62],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
+    },
+    "water": {
+      "color": [0.33, 0.73, 1],
+      "roughness": 0.2,
+      "metallic": 0,
+      "emissive": [0.25, 0.25, 0.25]
     },
     "yellow": {
-      "color": [
-        1,
-        0.82,
-        0.25
-      ],
+      "color": [1, 0.82, 0.25],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     }
   },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "cylinder",
-        "halfHeight": 0.3,
-        "radius": 2,
-        "t": [
-          0,
-          0.3,
-          0
-        ]
+        "params": {
+          "halfHeight": 0.3,
+          "radius": 2
+        },
+        "t": [0, 0.3, 0],
+        "r": [0, 0, 0, 1]
       },
       {
+        "node": null,
         "shape": "cylinder",
-        "halfHeight": 0.8,
-        "radius": 0.35,
-        "t": [
-          0,
-          0.8,
-          0
-        ]
+        "params": {
+          "halfHeight": 0.8,
+          "radius": 0.35
+        },
+        "t": [0, 0.8, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

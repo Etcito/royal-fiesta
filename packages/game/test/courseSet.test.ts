@@ -9,8 +9,9 @@ import type { CourseEntry } from '../src/courseSet.ts'
 const FLOOR = 'fixtures/assets/floor-tile.prims.json'
 const FLOOR_TEXT = JSON.stringify({
   format: 'raa.prims', version: 0, id: 'floor-tile', name: 'floor-tile',
-  nodes: [{ id: 'body', kind: 'box', params: { size: [4, 0.5, 4] }, material: null }],
-  materials: {}, collision: { colliders: [{ shape: 'cuboid', half: [2, 0.25, 2] }] },
+  nodes: [{ id: 'body', kind: 'box', params: { size: [4, 0.5, 4] }, material: 'body', op: 'union', transform: { t: [0, 0, 0], r: [0, 0, 0, 1], s: [1, 1, 1] } }],
+  materials: { body: { color: [1, 1, 1], roughness: 0.5, metallic: 0, emissive: [0, 0, 0] } },
+  collision: { mode: 'override', colliders: [{ node: null, shape: 'cuboid', params: { halfExtents: [2, 0.25, 2] }, t: [0, 0, 0], r: [0, 0, 0, 1] }] },
 })
 
 // Same approach as course.test.ts: fixtureResolver over an in-memory file map.

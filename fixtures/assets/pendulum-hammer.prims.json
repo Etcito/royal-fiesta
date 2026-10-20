@@ -3,17 +3,21 @@
   "version": 0,
   "id": "pendulum-hammer",
   "name": "Pendulum Hammer",
-  "budget": 1500,
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
+  },
   "nodes": [
     {
       "id": "head",
       "kind": "box",
       "params": {
-        "size": [
-          2.4,
-          1.2,
-          1.2
-        ]
+        "size": [2.4, 1.2, 1.2]
+      },
+      "transform": {
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "orange",
       "op": "union"
@@ -22,18 +26,12 @@
       "id": "arm",
       "kind": "box",
       "params": {
-        "size": [
-          0.3,
-          5,
-          0.3
-        ]
+        "size": [0.3, 5, 0.3]
       },
       "transform": {
-        "t": [
-          0,
-          3.1,
-          0
-        ]
+        "t": [0, 3.1, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "purple",
       "op": "union"
@@ -41,49 +39,39 @@
   ],
   "materials": {
     "orange": {
-      "color": [
-        1,
-        0.55,
-        0.25
-      ],
+      "color": [1, 0.55, 0.25],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     },
     "purple": {
-      "color": [
-        0.7,
-        0.5,
-        1
-      ],
+      "color": [0.7, 0.5, 1],
       "roughness": 0.6,
       "metallic": 0,
-      "emissive": 0
+      "emissive": [0, 0, 0]
     }
   },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "cuboid",
-        "half": [
-          1.2,
-          0.6,
-          0.6
-        ]
+        "params": {
+          "halfExtents": [1.2, 0.6, 0.6]
+        },
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1]
       },
       {
+        "node": null,
         "shape": "cuboid",
-        "half": [
-          0.15,
-          2.5,
-          0.15
-        ],
-        "t": [
-          0,
-          3.1,
-          0
-        ]
+        "params": {
+          "halfExtents": [0.15, 2.5, 0.15]
+        },
+        "t": [0, 3.1, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

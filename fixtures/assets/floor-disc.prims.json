@@ -3,67 +3,54 @@
   "version": 0,
   "id": "floor-disc",
   "name": "Floor Disc",
-  "budget": 1500,
-  "materials": {
-    "pink": {
-      "color": [
-        1,
-        0.42,
-        0.62
-      ],
-      "roughness": 0.6,
-      "metallic": 0,
-      "emissive": 0
-    },
-    "white": {
-      "color": [
-        0.95,
-        0.95,
-        0.95
-      ],
-      "roughness": 0.6,
-      "metallic": 0,
-      "emissive": 0
-    }
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
   },
   "nodes": [
     {
       "id": "disc",
       "kind": "cylinder",
       "params": {
-        "radius": 6,
-        "height": 1
+        "height": 1,
+        "radius": 6
       },
       "transform": {
-        "t": [
-          0,
-          0,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "s": [
-          1,
-          1,
-          1
-        ]
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "pink",
-      "op": "union",
-      "children": []
+      "op": "union"
     }
   ],
+  "materials": {
+    "pink": {
+      "color": [1, 0.42, 0.62],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": [0, 0, 0]
+    },
+    "white": {
+      "color": [0.95, 0.95, 0.95],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": [0, 0, 0]
+    }
+  },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "cylinder",
-        "halfHeight": 0.5,
-        "radius": 6
+        "params": {
+          "halfHeight": 0.5,
+          "radius": 6
+        },
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

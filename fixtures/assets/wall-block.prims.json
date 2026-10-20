@@ -3,73 +3,52 @@
   "version": 0,
   "id": "wall-block",
   "name": "Wall Block",
-  "budget": 1500,
-  "materials": {
-    "yellow": {
-      "color": [
-        1,
-        0.82,
-        0.25
-      ],
-      "roughness": 0.6,
-      "metallic": 0,
-      "emissive": 0
-    },
-    "white": {
-      "color": [
-        0.95,
-        0.95,
-        0.95
-      ],
-      "roughness": 0.6,
-      "metallic": 0,
-      "emissive": 0
-    }
+  "budget": {
+    "triangles": 1500,
+    "segments": 16
   },
   "nodes": [
     {
       "id": "wall",
       "kind": "box",
       "params": {
-        "size": [
-          1,
-          2,
-          10
-        ]
+        "size": [1, 2, 10]
       },
       "transform": {
-        "t": [
-          0,
-          0,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "s": [
-          1,
-          1,
-          1
-        ]
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "s": [1, 1, 1]
       },
       "material": "yellow",
-      "op": "union",
-      "children": []
+      "op": "union"
     }
   ],
+  "materials": {
+    "white": {
+      "color": [0.95, 0.95, 0.95],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": [0, 0, 0]
+    },
+    "yellow": {
+      "color": [1, 0.82, 0.25],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": [0, 0, 0]
+    }
+  },
   "anchors": {},
   "collision": {
+    "mode": "override",
     "colliders": [
       {
+        "node": null,
         "shape": "cuboid",
-        "half": [
-          0.5,
-          1,
-          5
-        ]
+        "params": {
+          "halfExtents": [0.5, 1, 5]
+        },
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1]
       }
     ]
   }

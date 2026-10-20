@@ -264,7 +264,7 @@ Validation:
 - Scale:
   - `s` applies to the colliders.
   - Non-uniform `s` is allowed only when every collider is cuboid or roundCuboid. Otherwise `s` must be uniform, or the course is refused.
-- `colliders` (when not null) overrides the asset's collision list and uses the S3 collider JSON.
+- `colliders` (when not null) overrides the asset's collision list and uses the course collider JSON (flat shape fields, see S3 "Course colliders").
 - Caps: <= 96 obstacles and <= 8 colliders per obstacle. Obstacle ids are unique. Asset names match ^[a-z0-9-]{1,48}$.
 - Refused with a message:
   - an unknown kind;
@@ -281,25 +281,27 @@ Fields read:
 
 Validator caps: <= 64 nodes in total, depth <= 8, finite numbers.
 
-Param names (assumed until raa-assets-tools publishes its package; reconcile them in game/prims and note it in docs/brick-gaps.md):
+Param names: the published raa.prims v0 names (raa-assets-tools 0.1.0 schema, read by @etcito/raa 0.1.1):
 - sphere {radius}
 - box {size:[x,y,z]}
 - roundBox {size, radius}
 - capsule {radius, height} (height = cylinder part, Y axis)
 - cylinder {radius, height}
-- cone {radius, height}
-- torus {major, minor}
+- cone {height, radiusBottom, radiusTop} (apex up when radiusTop is 0)
+- torus {majorRadius, minorRadius}
 - ellipsoid {radii:[x,y,z]}
 
-`collision` = `{ "colliders": [ColliderJson] }`. ColliderJson is one of:
-- `{"shape":"cuboid","half":[x,y,z]}`
-- `{"shape":"roundCuboid","half":[...],"border":b}`
-- `{"shape":"ball","radius":r}`
-- `{"shape":"capsule","halfHeight":h,"radius":r}`
-- `{"shape":"cylinder","halfHeight":h,"radius":r}`
-- `{"shape":"cone","halfHeight":h,"radius":r}`
+`collision` = `{ "mode": "override" | "derived", "colliders": [ColliderJson] }`. ColliderJson is `{"node": null | nodeId, "shape", "params", "t", "r"}` with one of:
+- `{"shape":"cuboid","params":{"halfExtents":[x,y,z]}}`
+- `{"shape":"roundCuboid","params":{"halfExtents":[...],"borderRadius":b}}`
+- `{"shape":"ball","params":{"radius":r}}`
+- `{"shape":"capsule","params":{"halfHeight":h,"radius":r}}`
+- `{"shape":"cylinder","params":{"halfHeight":h,"radius":r}}`
+- `{"shape":"cone","params":{"halfHeight":h,"radius":r}}`
 
-Each may carry an optional local `"t":[x,y,z]` and `"r":[x,y,z,w]`. Y-axis shapes follow Rapier's conventions.
+Each has a local `"t":[x,y,z]` and `"r":[x,y,z,w]`. Y-axis shapes follow Rapier's conventions.
+
+Course colliders (a course's `obstacles[].colliders`, the sim's own form, not raa.prims): flat fields, `{"shape":"cuboid","half":[x,y,z]}`, `roundCuboid` with `half` and `border`, `ball`/`capsule`/`cylinder`/`cone` with `radius` and `halfHeight`, each with optional `t` and `r`.
 
 Derivation when `collision` is absent. Every `op: union` node, including descendants (transforms composed), maps as:
 - box -> cuboid(size/2 * s)
@@ -983,9 +985,9 @@ Files: `packages/game/src/prims.ts`, `packages/game/test/prims.test.ts`.
 ```ts
 export type PrimKind = 'sphere' | 'box' | 'roundBox' | 'capsule' | 'cylinder' | 'cone' | 'torus' | 'ellipsoid'
 export interface PrimTransform { t: [number, number, number]; r: [number, number, number, number]; s: [number, number, number] }
-export interface PrimNode { id: string; kind: PrimKind; params: Record<string, number | number[]>; transform: PrimTransform; material: string | null; op: 'union' | 'subtract' | 'intersect'; children: PrimNode[] }
-export interface PrimMaterial { color: [number, number, number]; roughness: number; metallic: number; emissive: number }
-export interface PrimsAsset { format: 'raa.prims'; version: 0; id: string; name: string; nodes: PrimNode[]; materials: Record<string, PrimMaterial>; anchors: Record<string, PrimTransform>; collision: { colliders: unknown[] } | null; budget: number }
+export interface PrimNode { id: string; kind: PrimKind; params: Record<string, number | number[]>; transform: PrimTransform; material: string; op: 'union' | 'subtract' | 'intersect'; children?: PrimNode[] }
+export interface PrimMaterial { color: [number, number, number]; roughness: number; metallic: number; emissive: [number, number, number] }
+export interface PrimsAsset { format: 'raa.prims'; version: 0; id: string; name: string; nodes: PrimNode[]; materials: Record<string, PrimMaterial>; anchors: Record<string, PrimAnchor>; collision: PrimCollision; budget: PrimBudget }
 export const PRIM_CAPS: { maxNodes: 64; maxDepth: 8; defaultBudget: 1500 }
 export function parsePrims(json: unknown, path: string): PrimsAsset
 export function parseColliderJson(j: unknown, path: string): ColliderSpec
@@ -1025,7 +1027,7 @@ export function storeResolver(manifestSha256: string, fetchBytes: (url: string) 
   - refuses unknown names;
   - fetches each object and verifies its sha256 and size, refusing a mismatch with both values;
   - parses the object with parsePrims.
-- The 12 fixtures are small raa.prims v0 files (<= 8 KiB each). Each has explicit `collision.colliders` of Rapier primitives and a bright flat palette.
+- The 15 fixtures are small raa.prims v0 files (<= 8 KiB each). Each has explicit `collision.colliders` of Rapier primitives and a bright flat palette.
 
 ## Module: course-loader
 Owner: M2. Consumes: assets, obstacles.

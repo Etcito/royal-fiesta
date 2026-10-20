@@ -18,7 +18,7 @@ import { WebRtcTransport } from '@royal-fiesta/game/net/webrtcTransport'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
-import type { RenderPort, Viewport } from '@royal-fiesta/game/render/port'
+import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
@@ -27,45 +27,19 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import { installNmcOps } from '../nmc/ops.ts'
 import { createRaaPort } from '../render/raaPort.ts'
 import { raaStatus } from '../render/raaStatus.ts'
+import { initPerClient, planCanvases } from './canvases.ts'
+import type { ClientCell } from './canvases.ts'
 import { mountHud } from './hud.ts'
+import { parseQuery } from './query.ts'
+import type { Query } from './query.ts'
 import { browserAssetResolver, browserCourses, preloadAssets } from './sources.ts'
 
-type Mode = 'inpage' | 'relay' | 'webrtc'
-interface Query { mode: Mode; clients: number; seed: number; profile: ProfileName; server: string | null; pilot: boolean; room: string | null }
 type Hud = ReturnType<typeof mountHud>
 
 // Same in-page network as the round captures, so the page shows what the captures show.
 const INPAGE_NET = { rttMs: 100, jitterMs: 10, loss: 0.02 }
 const NAMES = [1, 2, 3, 4, 5, 6, 7, 8].map(n => `Bean ${n}`)
 const STICK_DEADZONE = 0.15
-
-function intParam(q: URLSearchParams, key: string, def: number, min: number, max: number): number {
-  const raw = q.get(key)
-  if (raw === null) return def
-  const n = Number(raw)
-  if (!/^-?\d+$/.test(raw) || n < min || n > max) refuse('query', key, `'${raw}' is not an integer in ${min}..${max}; fix ?${key}=`)
-  return n
-}
-
-function parseQuery(search: string): Query {
-  const q = new URLSearchParams(search)
-  const mode = q.get('mode') ?? 'inpage'
-  if (mode !== 'inpage' && mode !== 'relay' && mode !== 'webrtc') refuse('query', 'mode', `'${mode}' is not inpage, relay, webrtc or ops; fix ?mode=`)
-  const clients = intParam(q, 'clients', 4, 1, 4)
-  const seed = intParam(q, 'seed', 1, 0, 0xffffffff)
-  const profile = q.get('profile') ?? 'sprint'
-  if (profile !== 'sprint' && profile !== 'standard') refuse('query', 'profile', `'${profile}' is not sprint or standard; fix ?profile=`)
-  const pilotRaw = q.get('pilot') ?? '0'
-  if (pilotRaw !== '0' && pilotRaw !== '1') refuse('query', 'pilot', `'${pilotRaw}' is not 0 or 1; fix ?pilot=`)
-  const server = q.get('server')
-  if (mode !== 'inpage') {
-    if (server === null) refuse('query', 'server', `is required for mode=${mode}; pass ?server=ws://host:port/...`)
-    if (!/^wss?:\/\/./.test(server)) refuse('query', 'server', `'${server}' is not a ws:// or wss:// URL; pass ?server=ws://host:port/...`)
-  }
-  const room = q.get('room')
-  if (room !== null && !/^[A-Za-z0-9-]{1,32}$/.test(room)) refuse('query', 'room', `'${room}' is not a room code; pass the code the room owner shows`)
-  return { mode, clients, seed, profile, server: mode === 'inpage' ? null : server, pilot: pilotRaw === '1', room }
-}
 
 function trackControls(): () => RawControls {
   const keys = new Set<string>()
@@ -117,22 +91,12 @@ function facingOf(view: SceneView): { x: number; z: number } {
   return len > 1e-6 ? { x: x / len, z: z / len } : { x: 0, z: 1 }
 }
 
-// note is the standing banner that network status messages fall back to.
-async function pickPort(hud: Hud): Promise<{ port: RenderPort; note: string }> {
-  if ((await raaStatus()).available) return { port: await createRaaPort(), note: '' }
+// note is the standing banner that network status messages fall back to. makePort builds one port per canvas.
+async function pickPort(hud: Hud): Promise<{ makePort: () => Promise<RenderPort>; note: string }> {
+  if ((await raaStatus()).available) return { makePort: () => createRaaPort(), note: '' }
   const note = 'RAA API v0 not available: null render port'
   hud.banner(note)
-  return { port: new NullRenderPort(), note }
-}
-
-// Several in-page clients share one port as a 2x2 grid, client k at column k%2 and row floor(k/2).
-function viewportsOf(width: number, height: number, count: number): Viewport[] {
-  if (count === 1) return [{ x: 0, y: 0, width, height }]
-  const w = Math.floor(width / 2)
-  const h = Math.floor(height / 2)
-  const out: Viewport[] = []
-  for (let k = 0; k < count; k++) out.push({ x: (k % 2) * w, y: Math.floor(k / 2) * h, width: w, height: h })
-  return out
+  return { makePort: async () => new NullRenderPort(), note }
 }
 
 function loop(frame: (dtS: number) => void): void {
@@ -146,22 +110,15 @@ function loop(frame: (dtS: number) => void): void {
   requestAnimationFrame(tick)
 }
 
-interface Ctx { note: string; q: Query; R: RapierModule; hud: Hud; port: RenderPort; canvas: HTMLCanvasElement; courses: ResolvedCourse[]; assets: (name: string) => PrimsAsset }
-
-async function initPort(ctx: Ctx, viewports: number): Promise<void> {
-  const width = Math.max(1, Math.floor(window.innerWidth))
-  const height = Math.max(1, Math.floor(window.innerHeight))
-  ctx.canvas.width = width
-  ctx.canvas.height = height
-  await ctx.port.init({ canvas: ctx.canvas, width, height, viewports: viewportsOf(width, height, viewports) })
-}
+// ports: one RenderPort per client canvas (each in-page client has its own canvas and RAA engine).
+interface Ctx { note: string; q: Query; R: RapierModule; hud: Hud; ports: RenderPort[]; courses: ResolvedCourse[]; assets: (name: string) => PrimsAsset }
 
 function runInPage(ctx: Ctx, controls: () => RawControls): void {
   const { q } = ctx
   // Client 0 is this page's player; the other in-page clients are always piloted.
   const pilots = Array.from({ length: q.clients }, (_, k) => k > 0 || q.pilot)
   const match = new InPageMatch({
-    R: ctx.R, clients: q.clients, seed: q.seed, profile: q.profile, courses: ctx.courses, ports: [ctx.port],
+    R: ctx.R, clients: q.clients, seed: q.seed, profile: q.profile, courses: ctx.courses, ports: ctx.ports,
     assets: ctx.assets, bean: ctx.assets('bean'), net: INPAGE_NET, pilots,
   })
   const state = emptyViewState()
@@ -178,7 +135,7 @@ function runInPage(ctx: Ctx, controls: () => RawControls): void {
 function runNet(ctx: Ctx, net: NetTransport, localPeer: number, humanPeers: number, seed: number, controls: () => RawControls, endFrame: () => void): void {
   const setup = netSetup(seed, humanPeers, ctx.q.profile, ctx.courses)
   const match: NetMatch = createNetMatch(ctx.R, { setup, localPeer, humanPeers }, net, { cpuMs: () => performance.now() })
-  const view = new SceneView({ port: ctx.port, viewport: 0, localPlayer: localPeer, assets: ctx.assets, bean: ctx.assets('bean') })
+  const view = new SceneView({ port: ctx.ports[0], viewport: 0, localPlayer: localPeer, assets: ctx.assets, bean: ctx.assets('bean') })
   const pilot = ctx.q.pilot ? new Pilot(localPeer, seed) : null
   const state = emptyViewState()
   loop(dt => {
@@ -193,7 +150,7 @@ function runNet(ctx: Ctx, net: NetTransport, localPeer: number, humanPeers: numb
     })
     endFrame()
     view.update(match.sim, match.session.smoother, alpha, dt)
-    ctx.port.render()
+    ctx.ports[0].render()
     ctx.hud.update(match.sim.phase(state), NAMES, localPeer)
   })
 }
@@ -252,22 +209,38 @@ function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
 
+// One canvas per client, appended to the #views grid in client order.
+function mountCanvas(root: HTMLElement, cell: ClientCell): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = cell.canvasWidth
+  canvas.height = cell.canvasHeight
+  canvas.dataset.client = String(cell.client)
+  root.appendChild(canvas)
+  return canvas
+}
+
 async function main(): Promise<void> {
   installNmcOps()
   const search = window.location.search
   if (new URLSearchParams(search).get('mode') === 'ops') return
-  const canvas = document.querySelector<HTMLCanvasElement>('#view')
+  const views = document.querySelector<HTMLElement>('#views')
   const hudRoot = document.querySelector<HTMLElement>('#hud')
-  if (canvas === null || hudRoot === null) throw new Error('client.html needs canvas#view and div#hud')
+  if (views === null || hudRoot === null) throw new Error('client.html needs main#views and div#hud')
   const hud = mountHud(hudRoot)
   try {
     const q = parseQuery(search)
-    const { port, note } = await pickPort(hud)
+    const { makePort, note } = await pickPort(hud)
     const R = await initRapier()
     const courses = await browserCourses(q.profile)
     const assets = await preloadAssets(courses, browserAssetResolver())
-    const ctx: Ctx = { note, q, R, hud, port, canvas, courses, assets }
-    await initPort(ctx, q.mode === 'inpage' ? q.clients : 1)
+    // One canvas per in-page client, each with its own port; networked modes draw one canvas.
+    const width = Math.max(1, Math.floor(window.innerWidth))
+    const height = Math.max(1, Math.floor(window.innerHeight))
+    const plan = planCanvases(width, height, q.mode === 'inpage' ? q.clients : 1)
+    views.style.gridTemplateColumns = `repeat(${plan.cols}, 1fr)`
+    views.style.gridTemplateRows = `repeat(${plan.rows}, 1fr)`
+    const mounted = await initPerClient(plan, cell => mountCanvas(views, cell), () => makePort())
+    const ctx: Ctx = { note, q, R, hud, ports: mounted.map(m => m.port), courses, assets }
     const controls = trackControls()
     if (q.mode === 'inpage') runInPage(ctx, controls)
     else if (q.mode === 'relay') await runRelay(ctx, q.server as string, controls)

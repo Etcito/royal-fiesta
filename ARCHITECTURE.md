@@ -2039,7 +2039,7 @@ export function installNmcOps(): void
 
 main.ts (the client.html entry) query parameters:
 - `mode=inpage|relay|webrtc|ops` (default inpage);
-- `clients` 1..4 (default 4);
+- `clients` 1..4 (default 1 in inpage: one client, one full-canvas view; 2 is side by side, 3 and 4 a 2x2 grid, each client with its own canvas and RAA engine, see client/canvases.ts; default 4 for relay/webrtc);
 - `seed` u32 (default 1);
 - `profile` sprint|standard (default sprint);
 - `server` ws(s):// URL (required for relay/webrtc);
@@ -2048,7 +2048,7 @@ main.ts (the client.html entry) query parameters:
 
 Behaviour:
 - Invalid parameters are refused with a message.
-- inpage runs InPageMatch at rtt 100/jitter 10/loss 0.02.
+- inpage runs InPageMatch at rtt 100/jitter 10/loss 0.02, one RenderPort and canvas per client (clients 1..4 of `#views`).
 - relay queues through RelayClient + RelayTransport.
 - webrtc creates or joins a rooms room and connects WebRtcTransport over browserRtcBackend.
 - `mode=ops` installs the ops only.
@@ -2068,7 +2068,7 @@ export async function createRaaPort(): Promise<RenderPort>
 ```
 
 - `raaStatus`: available iff `navigator.gpu` exists (RAA draws with WebGPU only). Otherwise reason = RAA_REASON_PREFIX + the missing piece.
-- `createRaaPort` implements RenderPort on `@etcito/raa` 0.1.0: `loadRaa()` then `createEngine(canvas)`. Each registered prims asset goes to `loadPrimsAsset(JSON)` once, by name. An instance without tint is `spawnAsset`; with a tint, each mesh gets one cached tint material. The port draws one full-canvas viewport (RAA has one camera and no scissor); more viewports refuse. Captures are `canvas.toBlob('image/png')`. When RAA is unavailable it refuses with RefusalError('render', 'raa', status.reason).
+- `createRaaPort` implements RenderPort on `@etcito/raa` 0.1.0: `loadRaa()` then `createEngine(canvas)`. Each registered prims asset goes to `loadPrimsAsset(JSON)` once, by name. An instance without tint is `spawnAsset`; with a tint, each mesh gets one cached tint material. The port draws one full-canvas viewport (RAA has one camera and no scissor); more viewports refuse. The client page never asks one port for more: `client/canvases.ts` gives each in-page client its own canvas with its own port. Captures are `canvas.toBlob('image/png')`. When RAA is unavailable it refuses with RefusalError('render', 'raa', status.reason).
 - No stub and no alias: a missing package is a build failure, not a runtime fallback.
 
 ## Module: m7-proof

@@ -39,12 +39,15 @@ Never use `--preserve-symlinks`: Node refuses to strip types under `node_modules
 
 The Royal Fiesta sound pack lives in `packages/game/src/audio/pack`. It registers its one-shot families, the crowd bed and the `fiesta` mix on `@etcito/haa` through the public API. `packages/game/src/audio/gameAudio.ts` plays `fiesta.jump`, `fiesta.dive`, `fiesta.grab`, `fiesta.eliminate` and `fiesta.wobble` from the match state, and keeps the crowd bed on while a round runs. `packages/game/src/audio/context.ts` is the only module that creates an AudioContext; a repo test enforces that.
 
+The browser plays it from a bake made at build time: `npm run audio:bake` (`tools/bake-audio.ts`, HAA's `bake` API) writes the MP3 strips, `manifest.json` and HAA's worklet into `apps/web/public/audio` (gitignored); `npm run web:build` runs it first. The online play page (`apps/web/src/play/sound.ts`) opens the engine on the first click or key press and feeds each match frame to `GameAudio`. The crowd bed is not a HAA bed (HAA's prebuilt worklet does not know it): it is the pack's `CrowdModel` in its own worklet (`apps/web/src/audio/fiestaWorklet.ts`), which `openBrowserAudio` (`packages/game/src/audio/context.ts`) loads. Nobody has heard the result yet: the checks are the bake, the manifest coverage, the bed rendering and the scripted-match tests.
+
 ## Commands
 
 | command | what it does |
 | --- | --- |
 | `npm test` | node:test suites under `tools/test`, `packages/*/test` and `apps/headless/test` |
 | `npm run typecheck` | one `tsc --noEmit` pass over the whole workspace |
+| `npm run audio:bake` | bake the Royal Fiesta sound pack to MP3 strips and `manifest.json` in `apps/web/public/audio` (also run by `web:build`) |
 | `npm run guard` | tracked-file guard: no binary or asset in git |
 | `npm run bricks -- check` | verify the installed GameSaloon packages; `where <name>` locates a local brick checkout (gamesaloon-public, raa-assets-tools) |
 | `npm run smoke` | end-to-end smoke run over the workspace |

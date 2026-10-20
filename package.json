@@ -11,7 +11,7 @@
     "apps/*"
   ],
   "scripts": {
-    "test": "node --experimental-strip-types --test \"tools/test/*.test.ts\" \"packages/*/test/*.test.ts\" \"apps/headless/test/*.test.ts\"",
+    "test": "node --experimental-strip-types --test \"tools/test/*.test.ts\" \"packages/*/test/*.test.ts\" \"apps/headless/test/*.test.ts\" \"apps/web/test/*.test.ts\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "npm run web:build",
     "guard": "node --experimental-strip-types tools/guard.ts",

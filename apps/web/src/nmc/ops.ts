@@ -1,4 +1,4 @@
-// GPU client ops (nomorechat gpu-client protocol): page client.html?mode=ops exposes window.nmcGpu.ops.
+// GPU client ops (GPU client protocol): page client.html?mode=ops exposes window.nmcGpu.ops.
 // Captures are only ever RAA renders: with RAA unavailable the ops refuse instead of using the null port.
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'

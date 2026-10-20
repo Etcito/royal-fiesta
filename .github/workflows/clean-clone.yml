@@ -1,6 +1,6 @@
 # Builds and tests the repository from a clean clone on Ubuntu: no sibling folders, no local
-# checkouts. The GameSaloon rollback packages and @etcito/haa are installed from their GitHub
-# releases by npm install (see README, "Build from a clean clone").
+# checkouts. The GameSaloon rollback packages, @etcito/haa and @etcito/raa are installed from their
+# GitHub releases by npm install (see README, "Build from a clean clone").
 name: clean-clone
 
 on:

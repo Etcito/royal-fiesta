@@ -1,6 +1,6 @@
 # Royal Fiesta
 
-A Fall Guys-style party game with a 3D lobby, built on the GameSaloon rollback packages, the HAA sound engine and GameSaloon (RAA renders when a local checkout is given). Open-source example game. MIT licence.
+A Fall Guys-style party game with a 3D lobby, built on the GameSaloon rollback packages, the HAA sound engine, the RAA WebGPU renderer and GameSaloon. Open-source example game. MIT licence.
 
 Assets are not stored in git: they live in the content-addressed asset store (https://assets.etcito.com).
 
@@ -16,12 +16,12 @@ The repository is an npm workspace:
 
 ## Build from a clean clone
 
-You need Node.js 22.18 or newer and git. No sibling folder is needed: the GameSaloon rollback packages and the HAA sound engine are installed from their GitHub releases.
+You need Node.js 22.18 or newer and git. No sibling folder is needed: the GameSaloon rollback packages, the HAA sound engine and the RAA renderer are installed from their GitHub releases.
 
 ```
 git clone https://github.com/Etcito/royal-fiesta.git
 cd royal-fiesta
-npm install            # the release tarballs of @gamesaloon/rollback, @gamesaloon/rollback-rapier and @etcito/haa
+npm install            # the release tarballs of @gamesaloon/rollback, @gamesaloon/rollback-rapier, @etcito/haa and @etcito/raa
 npm run typecheck
 npm test
 npm run web:build      # apps/web/dist/
@@ -31,9 +31,7 @@ With Kong instead of npm, run `kong rules` and then `kong use kong.rules` in the
 
 `npm run bricks -- check` verifies that the packages resolve and that the Rapier WASM starts.
 
-Two optional local checkouts are never required:
-- RAA has no release yet. The browser client draws with RAA only when `RAA_DIR` points at a checkout; otherwise it uses the null render port (`docs/brick-gaps.md`).
-- The GameSaloon server test runs only when `GAMESALOON_DIR` points at a checkout of gamesaloon-public; otherwise it is skipped.
+The browser client draws with RAA (WebGPU). A browser without `navigator.gpu` shows the null render port with a banner. One optional local checkout is never required: the GameSaloon server test runs only when `GAMESALOON_DIR` points at a checkout of gamesaloon-public; otherwise it is skipped.
 
 Never use `--preserve-symlinks`: Node refuses to strip types under `node_modules`.
 
@@ -48,7 +46,7 @@ The Royal Fiesta sound pack lives in `packages/game/src/audio/pack`. It register
 | `npm test` | node:test suites under `tools/test`, `packages/*/test` and `apps/headless/test` |
 | `npm run typecheck` | one `tsc --noEmit` pass over the whole workspace |
 | `npm run guard` | tracked-file guard: no binary or asset in git |
-| `npm run bricks -- check` | verify the installed GameSaloon packages; `where <name>` locates a local brick checkout |
+| `npm run bricks -- check` | verify the installed GameSaloon packages; `where <name>` locates a local brick checkout (gamesaloon-public, raa-assets-tools) |
 | `npm run smoke` | end-to-end smoke run over the workspace |
 | `npm run web:build` | Vite build of every `apps/web/*.html` page into `apps/web/dist/` |
 
@@ -78,7 +76,7 @@ Each milestone proof is a Node script run with `--experimental-strip-types`. Pro
 - `server`: `ws://host:port/...`, required for `relay` and `webrtc`.
 - `pilot`: `1` lets a bot drive the local bean, `0` (default) uses the keyboard.
 
-RAA API v0 was absent when this was recorded (`proofs/m7/raa-status.json`), so the null render port is used: no RAA port and no browser captures were produced, and there is no `proofs/m7/captures.json`.
+The `proofs/m7` and `proofs/m8` status records were taken in Node, which has no WebGPU, so RAA reads as absent there and no browser captures exist yet (`proofs/m7/raa-status.json`). A browser run of the same pages replaces the records.
 
 ## Play the hub
 

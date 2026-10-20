@@ -3,7 +3,7 @@ I have what I need. One file in the final code wasn't in the contract, `packages
 ```markdown
 # Royal Fiesta architecture
 
-Royal Fiesta is an open-source, networked, real-time 3D party game for the browser: Fall Guys-style rounds and eliminations, and a walkable 3D hub in the style of Fortnite. It also ships headless Node clients and proofs. The repository `royal-fiesta` holds the deterministic simulation, the shared game layer, the Node apps and the Vite web pages. It consumes the GameSaloon rollback packages and `@etcito/haa` as built release tarballs, installed like any dependency. RAA and gamesaloon-public have no release and are optional local checkouts (1.2).
+Royal Fiesta is an open-source, networked, real-time 3D party game for the browser: Fall Guys-style rounds and eliminations, and a walkable 3D hub in the style of Fortnite. It also ships headless Node clients and proofs. The repository `royal-fiesta` holds the deterministic simulation, the shared game layer, the Node apps and the Vite web pages. It consumes the GameSaloon rollback packages, `@etcito/haa` and `@etcito/raa` as built release tarballs, installed like any dependency. gamesaloon-public is an optional local checkout (1.2).
 
 ## 1. Conventions (every module follows these)
 
@@ -29,10 +29,10 @@ Royal Fiesta is an open-source, networked, real-time 3D party game for the brows
 - Released bricks are installed from GitHub release tarballs, pinned in `package.json` and `kong.rules`:
   - `@gamesaloon/rollback` = `https://github.com/Etcito/gamesaloon-rollback/releases/download/v0.1.0/gamesaloon-rollback-0.1.0.tgz`;
   - `@gamesaloon/rollback-rapier` = `.../gamesaloon-rollback-rapier-0.1.0.tgz`, with `@dimforge/rapier3d-deterministic-compat` 0.21.0 declared explicitly in every workspace that uses Rapier;
-  - `@etcito/haa` = `https://github.com/Etcito/haa/releases/download/v0.1.0/etcito-haa-0.1.0.tgz` (the generic sound engine; the Royal Fiesta pack is game content in `packages/game/src/audio/pack`).
+  - `@etcito/haa` = `https://github.com/Etcito/haa/releases/download/v0.1.0/etcito-haa-0.1.0.tgz` (the generic sound engine; the Royal Fiesta pack is game content in `packages/game/src/audio/pack`);
+  - `@etcito/raa` = `https://github.com/Etcito/raa/releases/download/v0.1.0/etcito-raa-0.1.0.tgz` (apps/web only: the WebGPU renderer with its WASM; the browser client imports it directly).
 - The release packages ship built JavaScript in `dist/` with declarations, so no brick needs `.ts` stripping under `node_modules`.
-- RAA (`@etcito/raa`) has no release and is not a dependency. `tools/bricks.ts` locates a local checkout by directory (`RAA_DIR`, or a folder named `raa` next to this repository). `apps/web/aliases.json` maps `@raa/engine` to it when present, and to a stub that refuses (`src/render/raaAbsent.ts`) when absent.
-- gamesaloon-public (the GameSaloon server) is located the same way (`GAMESALOON_DIR`) for the optional local-server test, which is skipped when it is absent.
+- gamesaloon-public (the GameSaloon server) is the only brick located by directory (`GAMESALOON_DIR`, `$RF_BRICKS_DIR/gamesaloon-public`, or a sibling folder) for the optional local-server test, which is skipped when it is absent.
 - `tools/bricks.ts` has two commands: `check` verifies that the released packages resolve and that the Rapier WASM initialises; `where <name>` prints a local brick directory.
 - Install from the repository root: `npm install`, or `kong rules` then `kong use kong.rules` (README, "Build from a clean clone").
 
@@ -74,7 +74,6 @@ Royal Fiesta is an open-source, networked, real-time 3D party game for the brows
   - tsconfig include lists;
   - `.gitignore` lines;
   - README sections;
-  - `apps/web/aliases.json`.
   Existing entries are never removed or changed.
 
 ### 1.5 Determinism (sim scope = packages/sim/src)
@@ -445,7 +444,7 @@ Comparison is exact (===), with no tolerance.
 | scene-view | M7 | game | packages/game/src/render/palette.ts, camera.ts, sceneView.ts |
 | client-core | M7 | game | packages/game/src/client/ |
 | web-client | M7 | web | client.html, src/client/, src/nmc/, public/nmc.gpu.json |
-| raa-port | M7 | web | src/render/, aliases.json |
+| raa-port | M7 | web | src/render/ |
 | m7-proof | M7 | headless | proofs/m7-web.ts, proofs/m7/ |
 | hub-protocol | M8 | game | packages/game/src/hub/protocol.ts |
 | hub-world | M8 | game | packages/game/src/hub/hubWorld.ts, remotes.ts, queuePad.ts |
@@ -534,7 +533,7 @@ Owner: M1. Consumes: workspace.
 Files: `tools/bricks.ts`, `tools/test/bricks.test.ts`.
 
 ```ts
-export type BrickName = 'gamesaloon-public' | 'raa' | 'raa-assets-tools'
+export type BrickName = 'gamesaloon-public' | 'raa-assets-tools'
 export function repoRoot(): string
 export function brickDir(name: BrickName): string | null
 export interface BrickCheck { ok: boolean; lines: string[] }
@@ -544,7 +543,7 @@ export async function main(argv: string[]): Promise<number>
 
 - `repoRoot` is the directory of the root package.json named `royal-fiesta`, found by walking up from import.meta.url.
 - `brickDir` lookup order:
-  1. `GAMESALOON_DIR` for gamesaloon-public, `RAA_DIR` for raa;
+  1. `GAMESALOON_DIR` for gamesaloon-public;
   2. `$RF_BRICKS_DIR/<name>`;
   3. `<parent of repoRoot>/<name>`.
   The first existing directory wins. It returns null when none exists; `brickDir` refuses there and names the variable to set.
@@ -819,9 +818,7 @@ vite.config.ts (default export defineConfig):
 - `server.fs.allow` = repoRoot();
 - `resolve.preserveSymlinks` false;
 - worker format es.
-- `resolve.alias` comes from the optional `apps/web/aliases.json`, `[ { "find", "brick": BrickName, "subpath", "fallback" } ]`.
-  - Each `find` maps to `brickDir(brick)/subpath` when that exists, else to `apps/web/<fallback>`.
-  - The chosen target is logged.
+- no `resolve.alias`: `@etcito/raa` and `@etcito/haa` resolve through their package exports.
 
 The boot page (index.html + src/boot.ts):
 - initRapier, then createFlatFloorWorld({players:8, seed:7}) for 600 ticks;
@@ -2060,21 +2057,19 @@ Behaviour:
 ## Module: raa-port
 Owner: M7. Consumes: render-port, bricks.
 
-Files: `apps/web/src/render/raaStatus.ts`, `apps/web/src/render/raaPort.ts`, `apps/web/src/render/raaAbsent.ts`, `apps/web/src/render/raaEngine.d.ts`, `apps/web/aliases.json`.
+Files: `apps/web/src/render/raaStatus.ts`, `apps/web/src/render/raaPort.ts`.
 
 ```ts
 export interface RaaStatus { available: boolean; reason: string; apiVersion: string | null }
 export async function raaStatus(): Promise<RaaStatus>
-export const RAA_REASON_PREFIX: string // 'RAA API v0 not found in '
+export const RAA_REASON_PREFIX: string // 'RAA not available: '
+export const RAA_API_VERSION: string // '0.1.0', the @etcito/raa public API v0
 export async function createRaaPort(): Promise<RenderPort>
 ```
 
-- aliases.json maps `@raa/engine` to brick `raa` at RAA's documented v0 web entry, with fallback `src/render/raaAbsent.ts`.
-- raaEngine.d.ts is an ambient `declare module '@raa/engine'`. It declares the v0 subset the port uses, plus `RAA_ABSENT?` and the v0 marker, because tsc has no path mapping for the Vite alias.
-- raaAbsent.ts exports the same symbols the port imports, plus `RAA_ABSENT = true` and `RAA_API_VERSION = null`.
-- `raaStatus`: available iff the alias resolved to RAA AND RAA exposes its v0 marker. Otherwise reason = RAA_REASON_PREFIX + <dir or 'no raa repo'>.
-- `createRaaPort` implements RenderPort on RAA v0: polygonised prims at load, per-instance material colour, viewports mapped to RAA cameras. When RAA is unavailable it refuses with RefusalError('render', 'raa', status.reason).
-- RAA v0 is currently absent: detection, refusal and the stub ship, and the gap is in docs/brick-gaps.md.
+- `raaStatus`: available iff `navigator.gpu` exists (RAA draws with WebGPU only). Otherwise reason = RAA_REASON_PREFIX + the missing piece.
+- `createRaaPort` implements RenderPort on `@etcito/raa` 0.1.0: `loadRaa()` then `createEngine(canvas)`. Each registered prims asset goes to `loadPrimsAsset(JSON)` once, by name. An instance without tint is `spawnAsset`; with a tint, each mesh gets one cached tint material. The port draws one full-canvas viewport (RAA has one camera and no scissor); more viewports refuse. Captures are `canvas.toBlob('image/png')`. When RAA is unavailable it refuses with RefusalError('render', 'raa', status.reason).
+- No stub and no alias: a missing package is a build failure, not a runtime fallback.
 
 ## Module: m7-proof
 Owner: M7. Consumes: web-client, client-core, node-files, proofkit.

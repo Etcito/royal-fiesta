@@ -22,6 +22,7 @@ import plazaJson from '../../../../fixtures/courses/hub-plaza.course.json?raw'
 import { mountHud } from '../client/hud.ts'
 import { browserAssetResolver, browserCourses, preloadAssets } from '../client/sources.ts'
 import { createRaaPort } from '../render/raaPort.ts'
+import { SoundDriver } from './sound.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import { HubView } from './hubView.ts'
 import { InPageHubLoop } from './inpageHub.ts'
@@ -204,6 +205,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: Retur
     },
   })
   void flow.start()
+  const sound = new SoundDriver()
   const hubView = new HubView(ctx.port, 0, ctx.assets, ctx.assets('bean'), ctx.plaza)
   const local: CharState = {
     pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 },
@@ -249,6 +251,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: Retur
       }
       hubView.setVisible(match === null)
     }
+    sound.frame(match?.sim ?? null)
     const state = flow.state
     if (match !== null && scene !== null) {
       scene.update(match.sim, match.session.smoother, 1, dt)

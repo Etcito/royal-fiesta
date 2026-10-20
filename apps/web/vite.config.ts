@@ -20,5 +20,6 @@ export default defineConfig({
   },
   server: { fs: { allow: [repoRoot()] } },
   resolve: { preserveSymlinks: false },
+  // The crowd AudioWorklet is imported as ?worker&url (play/sound.ts): an ES module bundle, same in dev and build.
   worker: { format: 'es' },
 })

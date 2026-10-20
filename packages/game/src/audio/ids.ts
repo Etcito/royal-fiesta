@@ -15,3 +15,6 @@ export const CROWD_BED_ID = 'crowd'
 
 /** The mix preset the game selects (a registered mix of the pack). */
 export const FIESTA_MIX_ID = 'fiesta'
+
+/** AudioWorklet processor name of the crowd bed (apps/web/src/audio/fiestaWorklet.ts registers it). */
+export const CROWD_PROCESSOR = 'fiesta-crowd'

@@ -2,6 +2,7 @@
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { NetTransport } from '@gamesaloon/rollback'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
+import { openBrowserAudio } from '@royal-fiesta/game/audio/context'
 import { InPageMatch } from '@royal-fiesta/game/client/inpageMatch'
 import { controlsToInput, emptyControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
@@ -33,6 +34,9 @@ import { mountHud } from './hud.ts'
 import { parseQuery } from './query.ts'
 import type { Query } from './query.ts'
 import { browserAssetResolver, browserCourses, preloadAssets } from './sources.ts'
+import { ClientSound } from './sound.ts'
+// Vite bundles the crowd worklet and returns its URL (dev and build alike).
+import fiestaWorkletUrl from '../audio/fiestaWorklet.ts?worker&url'
 
 type Hud = ReturnType<typeof mountHud>
 
@@ -111,7 +115,8 @@ function loop(frame: (dtS: number) => void): void {
 }
 
 // ports: one RenderPort per client canvas (each in-page client has its own canvas and RAA engine).
-interface Ctx { note: string; q: Query; R: RapierModule; hud: Hud; ports: RenderPort[]; courses: ResolvedCourse[]; assets: (name: string) => PrimsAsset }
+// sound: only client 0's match is heard (in-page clients 1..n are silent); networked modes hear their own match.
+interface Ctx { note: string; q: Query; R: RapierModule; hud: Hud; ports: RenderPort[]; courses: ResolvedCourse[]; assets: (name: string) => PrimsAsset; sound: ClientSound }
 
 function runInPage(ctx: Ctx, controls: () => RawControls): void {
   const { q } = ctx
@@ -127,6 +132,7 @@ function runInPage(ctx: Ctx, controls: () => RawControls): void {
     match.frame(dt, (client, out) => {
       if (client === 0) controlsToInput(c, facingOf(match.views[0]), out)
     })
+    ctx.sound.frame(match.matches[0].sim)
     ctx.hud.update(match.matches[0].sim.phase(state), NAMES, 0)
   })
 }
@@ -150,6 +156,7 @@ function runNet(ctx: Ctx, net: NetTransport, localPeer: number, humanPeers: numb
     })
     endFrame()
     view.update(match.sim, match.session.smoother, alpha, dt)
+    ctx.sound.frame(match.sim)
     ctx.ports[0].render()
     ctx.hud.update(match.sim.phase(state), NAMES, localPeer)
   })
@@ -227,6 +234,24 @@ async function main(): Promise<void> {
   const hudRoot = document.querySelector<HTMLElement>('#hud')
   if (views === null || hudRoot === null) throw new Error('client.html needs main#views and div#hud')
   const hud = mountHud(hudRoot)
+  // The sound opens on the first gesture (pointer or key); a failure only logs a warning.
+  const sound = new ClientSound({
+    manifestUrl: new URL('audio/manifest.json', document.baseURI).href,
+    open: manifestUrl => openBrowserAudio({
+      manifestUrl,
+      processorUrl: new URL('audio/haa-processors.js', document.baseURI).href,
+      crowdProcessorUrl: fiestaWorkletUrl,
+      maxListeners: 1,
+    }),
+    fetchJson: async url => {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`)
+      return res.json()
+    },
+    warn: message => console.warn(`[sound] ${message}`),
+  })
+  sound.arm(window)
+  sound.expose(window)
   try {
     const q = parseQuery(search)
     const { makePort, note } = await pickPort(hud)
@@ -240,7 +265,7 @@ async function main(): Promise<void> {
     views.style.gridTemplateColumns = `repeat(${plan.cols}, 1fr)`
     views.style.gridTemplateRows = `repeat(${plan.rows}, 1fr)`
     const mounted = await initPerClient(plan, cell => mountCanvas(views, cell), () => makePort())
-    const ctx: Ctx = { note, q, R, hud, ports: mounted.map(m => m.port), courses, assets }
+    const ctx: Ctx = { note, q, R, hud, ports: mounted.map(m => m.port), courses, assets, sound }
     const controls = trackControls()
     if (q.mode === 'inpage') runInPage(ctx, controls)
     else if (q.mode === 'relay') await runRelay(ctx, q.server as string, controls)

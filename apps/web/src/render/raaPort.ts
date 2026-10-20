@@ -10,7 +10,7 @@ const WHERE = 'raa'
 
 interface Live { root: number; instances: number[]; visible: boolean }
 
-// RenderPort on @etcito/raa 0.1.0: one engine on one canvas. RAA has one camera and no scissor, so
+// RenderPort on @etcito/raa 0.1.1: one engine on one canvas. RAA has one camera and no scissor, so
 // the port draws a single full-canvas viewport; several viewports refuse (docs/brick-gaps.md).
 export async function createRaaPort(): Promise<RenderPort> {
   const status = await raaStatus()

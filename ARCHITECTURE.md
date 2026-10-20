@@ -30,7 +30,7 @@ Royal Fiesta is an open-source, networked, real-time 3D party game for the brows
   - `@gamesaloon/rollback` = `https://github.com/Etcito/gamesaloon-rollback/releases/download/v0.1.0/gamesaloon-rollback-0.1.0.tgz`;
   - `@gamesaloon/rollback-rapier` = `.../gamesaloon-rollback-rapier-0.1.0.tgz`, with `@dimforge/rapier3d-deterministic-compat` 0.21.0 declared explicitly in every workspace that uses Rapier;
   - `@etcito/haa` = `https://github.com/Etcito/haa/releases/download/v0.1.0/etcito-haa-0.1.0.tgz` (the generic sound engine; the Royal Fiesta pack is game content in `packages/game/src/audio/pack`);
-  - `@etcito/raa` = `https://github.com/Etcito/raa/releases/download/v0.1.0/etcito-raa-0.1.0.tgz` (apps/web only: the WebGPU renderer with its WASM; the browser client imports it directly).
+  - `@etcito/raa` = `https://github.com/Etcito/raa/releases/download/v0.1.1/etcito-raa-0.1.1.tgz` (apps/web only: the WebGPU renderer with its WASM; the browser client imports it directly).
 - The release packages ship built JavaScript in `dist/` with declarations, so no brick needs `.ts` stripping under `node_modules`.
 - gamesaloon-public (the GameSaloon server) is the only brick located by directory (`GAMESALOON_DIR`, `$RF_BRICKS_DIR/gamesaloon-public`, or a sibling folder) for the optional local-server test, which is skipped when it is absent.
 - `tools/bricks.ts` has two commands: `check` verifies that the released packages resolve and that the Rapier WASM initialises; `where <name>` prints a local brick directory.
@@ -2068,7 +2068,7 @@ export async function createRaaPort(): Promise<RenderPort>
 ```
 
 - `raaStatus`: available iff `navigator.gpu` exists (RAA draws with WebGPU only). Otherwise reason = RAA_REASON_PREFIX + the missing piece.
-- `createRaaPort` implements RenderPort on `@etcito/raa` 0.1.0: `loadRaa()` then `createEngine(canvas)`. Each registered prims asset goes to `loadPrimsAsset(JSON)` once, by name. An instance without tint is `spawnAsset`; with a tint, each mesh gets one cached tint material. The port draws one full-canvas viewport (RAA has one camera and no scissor); more viewports refuse. The client page never asks one port for more: `client/canvases.ts` gives each in-page client its own canvas with its own port. Captures are `canvas.toBlob('image/png')`. When RAA is unavailable it refuses with RefusalError('render', 'raa', status.reason).
+- `createRaaPort` implements RenderPort on `@etcito/raa` 0.1.1: `loadRaa()` then `createEngine(canvas)`. Each registered prims asset goes to `loadPrimsAsset(JSON)` once, by name. An instance without tint is `spawnAsset`; with a tint, each mesh gets one cached tint material. The port draws one full-canvas viewport (RAA has one camera and no scissor); more viewports refuse. The client page never asks one port for more: `client/canvases.ts` gives each in-page client its own canvas with its own port. Captures are `canvas.toBlob('image/png')`. When RAA is unavailable it refuses with RefusalError('render', 'raa', status.reason).
 - No stub and no alias: a missing package is a build failure, not a runtime fallback.
 
 ## Module: m7-proof

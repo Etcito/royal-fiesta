@@ -18,7 +18,8 @@
     "bricks": "node --experimental-strip-types tools/bricks.ts",
     "smoke": "node --experimental-strip-types apps/headless/src/smoke.ts",
     "rf": "node --experimental-strip-types apps/headless/src/cli.ts",
-    "web:build": "npm run build -w @royal-fiesta/web",
+    "audio:bake": "node --experimental-strip-types tools/bake-audio.ts",
+    "web:build": "npm run audio:bake && npm run build -w @royal-fiesta/web",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {

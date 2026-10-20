@@ -1,0 +1,76 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "wall-block",
+  "name": "Wall Block",
+  "budget": 1500,
+  "materials": {
+    "yellow": {
+      "color": [
+        1,
+        0.82,
+        0.25
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    },
+    "white": {
+      "color": [
+        0.95,
+        0.95,
+        0.95
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    }
+  },
+  "nodes": [
+    {
+      "id": "wall",
+      "kind": "box",
+      "params": {
+        "size": [
+          1,
+          2,
+          10
+        ]
+      },
+      "transform": {
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "yellow",
+      "op": "union",
+      "children": []
+    }
+  ],
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cuboid",
+        "half": [
+          0.5,
+          1,
+          5
+        ]
+      }
+    ]
+  }
+}

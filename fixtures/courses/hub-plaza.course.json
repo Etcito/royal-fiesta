@@ -1,0 +1,86 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 0,
+  "id": "hub-plaza",
+  "name": "Fiesta Plaza",
+  "kind": "hub",
+  "profiles": [],
+  "assetsManifest": null,
+  "timeLimitS": 600,
+  "killPlaneY": -10,
+  "spawns": [
+    { "t": [-5, 0, -6], "yawDeg": 0 },
+    { "t": [5, 0, -6], "yawDeg": 0 },
+    { "t": [-6.5, 0, -6], "yawDeg": 0 },
+    { "t": [6.5, 0, -6], "yawDeg": 0 },
+    { "t": [-8, 0, -6], "yawDeg": 0 },
+    { "t": [8, 0, -6], "yawDeg": 0 },
+    { "t": [-9.5, 0, -6], "yawDeg": 0 },
+    { "t": [9.5, 0, -6], "yawDeg": 0 }
+  ],
+  "checkpoints": [],
+  "finish": null,
+  "path": [],
+  "regions": [
+    { "id": 0, "center": [0, 0, 0], "half": [15, 5, 15], "adjacent": [] }
+  ],
+  "queuePad": { "center": [0, 1, 9], "half": [1.4, 1, 1.4] },
+  "obstacles": [
+    {
+      "id": "floor", "asset": "floor-disc", "t": [0, -1.25, 0], "r": [0, 0, 0, 1], "s": [2.5, 2.5, 2.5],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "fountain", "asset": "plaza-fountain", "t": [0, 0, 0], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "queue-pad", "asset": "queue-pad", "t": [0, 0, 9], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-0", "asset": "wall-block", "t": [0, 0.4, 14.6], "r": [0, 0.7071067811865476, 0, 0.7071067811865476], "s": [0.5, 0.4, 1.1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-1", "asset": "wall-block", "t": [10.3238, 0.4, 10.3238], "r": [0, 0.9238795325112867, 0, 0.3826834323650898], "s": [0.5, 0.4, 1.1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-2", "asset": "wall-block", "t": [14.6, 0.4, 0], "r": [0, 0, 0, 1], "s": [0.5, 0.4, 1.1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-3", "asset": "wall-block", "t": [10.3238, 0.4, -10.3238], "r": [0, 0.3826834323650898, 0, 0.9238795325112867], "s": [0.5, 0.4, 1.1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-4", "asset": "wall-block", "t": [0, 0.4, -14.6], "r": [0, 0.7071067811865476, 0, 0.7071067811865476], "s": [0.5, 0.4, 1.1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-5", "asset": "wall-block", "t": [-10.3238, 0.4, -10.3238], "r": [0, 0.9238795325112867, 0, 0.3826834323650898], "s": [0.5, 0.4, 1.1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-6", "asset": "wall-block", "t": [-14.6, 0.4, 0], "r": [0, 0, 0, 1], "s": [0.5, 0.4, 1.1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-7", "asset": "wall-block", "t": [-10.3238, 0.4, 10.3238], "r": [0, 0.3826834323650898, 0, 0.9238795325112867], "s": [0.5, 0.4, 1.1],
+      "friction": 0, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "bounce-w", "asset": "bounce-pad", "t": [-11, 0, 3], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0, "motion": { "kind": "bouncePad", "speed": 12 }, "colliders": null
+    },
+    {
+      "id": "bounce-e", "asset": "bounce-pad", "t": [11, 0, 3], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0, "motion": { "kind": "bouncePad", "speed": 12 }, "colliders": null
+    },
+    {
+      "id": "platform-s", "asset": "moving-platform", "t": [0, 0.1, -12], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0, "motion": { "kind": "movingPlatform", "offset": [3, 0, 0], "periodS": 4, "phaseDeg": 0, "wave": "pingpong" }, "colliders": null
+    }
+  ]
+}

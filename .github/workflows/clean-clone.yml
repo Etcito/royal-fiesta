@@ -1,0 +1,39 @@
+# Builds and tests the repository from a clean clone on Ubuntu: no sibling folders, no local
+# checkouts. The GameSaloon rollback packages and @etcito/haa are installed from their GitHub
+# releases by npm install (see README, "Build from a clean clone").
+name: clean-clone
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-clone:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the repository into an empty workspace
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 1
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build the web pages
+        run: npm run build

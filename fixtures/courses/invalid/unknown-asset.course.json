@@ -1,0 +1,41 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 0,
+  "id": "unknown-asset",
+  "name": "Unknown Asset",
+  "kind": "race",
+  "profiles": ["standard", "sprint"],
+  "assetsManifest": null,
+  "timeLimitS": 120,
+  "killPlaneY": -12,
+  "spawns": [
+    { "t": [-7, 1, 0], "yawDeg": 0 },
+    { "t": [-5, 1, 0], "yawDeg": 0 },
+    { "t": [-3, 1, 0], "yawDeg": 0 },
+    { "t": [-1, 1, 0], "yawDeg": 0 },
+    { "t": [1, 1, 0], "yawDeg": 0 },
+    { "t": [3, 1, 0], "yawDeg": 0 },
+    { "t": [5, 1, 0], "yawDeg": 0 },
+    { "t": [7, 1, 0], "yawDeg": 0 }
+  ],
+  "checkpoints": [],
+  "finish": { "center": [0, 1, 40], "half": [5, 5, 1] },
+  "path": [
+    { "p": [0, 1, 0], "jump": false, "dive": false },
+    { "p": [0, 1, 40], "jump": false, "dive": false }
+  ],
+  "regions": [
+    { "id": 0, "center": [0, 2, 20], "half": [20, 10, 30], "adjacent": [] }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "floor", "asset": "no-such-asset", "t": [0, -0.5, 0], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "floor-backup", "asset": "floor-tile", "t": [0, -0.5, 20], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    }
+  ]
+}

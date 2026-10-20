@@ -1,0 +1,48 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "moving-platform",
+  "name": "Moving Platform",
+  "budget": 1500,
+  "nodes": [
+    {
+      "id": "top",
+      "kind": "roundBox",
+      "params": {
+        "size": [
+          4,
+          0.5,
+          4
+        ],
+        "radius": 0.1
+      },
+      "material": "teal",
+      "op": "union"
+    }
+  ],
+  "materials": {
+    "teal": {
+      "color": [
+        0.3,
+        0.9,
+        0.85
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    }
+  },
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cuboid",
+        "half": [
+          2,
+          0.25,
+          2
+        ]
+      }
+    ]
+  }
+}

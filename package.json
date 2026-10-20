@@ -1,0 +1,28 @@
+{
+  "name": "royal-fiesta",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "node --experimental-strip-types --test \"tools/test/*.test.ts\" \"packages/*/test/*.test.ts\" \"apps/headless/test/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "npm run web:build",
+    "guard": "node --experimental-strip-types tools/guard.ts",
+    "bricks": "node --experimental-strip-types tools/bricks.ts",
+    "smoke": "node --experimental-strip-types apps/headless/src/smoke.ts",
+    "rf": "node --experimental-strip-types apps/headless/src/cli.ts",
+    "web:build": "npm run build -w @royal-fiesta/web",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^24"
+  }
+}

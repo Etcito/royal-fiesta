@@ -1,0 +1,7 @@
+{
+  "available": false,
+  "raaDir": null,
+  "reason": "RAA API v0 not found: no RAA checkout was given (RAA_DIR unset)",
+  "apiVersion": null,
+  "checkedAt": "2026-10-18T05:55:22.861Z"
+}

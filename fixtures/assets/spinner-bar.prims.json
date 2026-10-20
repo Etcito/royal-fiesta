@@ -1,0 +1,121 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "spinner-bar",
+  "name": "Spinner Bar",
+  "budget": 1500,
+  "materials": {
+    "pink": {
+      "color": [
+        1,
+        0.42,
+        0.62
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    },
+    "yellow": {
+      "color": [
+        1,
+        0.82,
+        0.25
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    }
+  },
+  "nodes": [
+    {
+      "id": "hub",
+      "kind": "cylinder",
+      "params": {
+        "radius": 0.4,
+        "height": 1.2
+      },
+      "transform": {
+        "t": [
+          0,
+          0.6,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "yellow",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "bar",
+      "kind": "roundBox",
+      "params": {
+        "size": [
+          8,
+          0.5,
+          0.5
+        ],
+        "radius": 0.1
+      },
+      "transform": {
+        "t": [
+          0,
+          0.75,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "pink",
+      "op": "union",
+      "children": []
+    }
+  ],
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cylinder",
+        "halfHeight": 0.6,
+        "radius": 0.4,
+        "t": [
+          0,
+          0.6,
+          0
+        ]
+      },
+      {
+        "shape": "cuboid",
+        "half": [
+          4,
+          0.25,
+          0.25
+        ],
+        "t": [
+          0,
+          0.75,
+          0
+        ]
+      }
+    ]
+  }
+}

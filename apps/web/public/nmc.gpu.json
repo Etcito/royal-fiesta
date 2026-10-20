@@ -1,0 +1,57 @@
+{
+  "format": "nmc.gpu",
+  "version": 1,
+  "page": "client.html",
+  "query": "?mode=ops",
+  "global": "window.nmcGpu.ops",
+  "ops": {
+    "hubLoopCapture": {
+      "page": "play.html",
+      "query": "?mode=ops",
+      "description": "4-client piloted hub -> sprint match -> podium -> hub loop on one RAA port, in a 2x2 grid of 960x540 viewports, with PNG captures and flow events",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["clients", "width", "height", "captureAt"],
+        "properties": {
+          "clients": { "const": 4 },
+          "width": { "const": 1920 },
+          "height": { "const": 1080 },
+          "captureAt": { "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": { "enum": ["hub", "match", "podium", "back-in-hub"] }, "description": "Strictly ordered subset: hub (120 frames with 3 remotes each), match (600 frames after all enter), podium (60 frames after all enter), back-in-hub (120 frames after done)" }
+        }
+      },
+      "example": { "clients": 4, "width": 1920, "height": 1080, "captureAt": ["hub", "match", "podium", "back-in-hub"] },
+      "output": "{ captures: [{ name: 'hub-loop-<name>', width: 1920, height: 1080, mime: 'image/png', base64 }], adapter: { vendor, architecture, description, software }, renderer: 'raa', events }"
+    },
+    "roundCapture": {
+      "description": "4-client in-page sprint round on one RAA port (2x2 grid of 960x540), PNG captures with the HUD drawn on",
+      "input": {
+        "type": "object",
+        "required": ["clients", "profile", "width", "height", "captureAtS"],
+        "properties": {
+          "clients": { "const": 4 },
+          "profile": { "const": "sprint" },
+          "width": { "const": 1920 },
+          "height": { "const": 1080 },
+          "captureAtS": { "type": "array", "minItems": 1, "items": { "type": "number", "minimum": 0, "maximum": 600 }, "description": "sim seconds, strictly ascending" }
+        }
+      },
+      "example": { "clients": 4, "profile": "sprint", "width": 1920, "height": 1080, "captureAtS": [3, 12, 40] },
+      "output": "{ captures: [{ name: 'round-<t>s', width, height, mime: 'image/png', base64 }], adapter: { vendor, architecture, description, software }, renderer: 'raa' }"
+    },
+    "frameTiming": {
+      "description": "1 client rendering race-bean-dash (40 obstacles, 8 characters) at 1920x1080: port.render frameMs over requestAnimationFrame frames after 60 warm-up frames",
+      "input": {
+        "type": "object",
+        "required": ["frames", "width", "height"],
+        "properties": {
+          "frames": { "type": "integer", "minimum": 1, "maximum": 10000 },
+          "width": { "const": 1920 },
+          "height": { "const": 1080 }
+        }
+      },
+      "example": { "frames": 600, "width": 1920, "height": 1080 },
+      "output": "{ p50Ms, p95Ms (nearest rank), frames, adapter: { vendor, architecture, description, software } }"
+    }
+  }
+}

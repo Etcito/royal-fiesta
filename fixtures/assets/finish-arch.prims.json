@@ -1,0 +1,210 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "finish-arch",
+  "name": "Finish Arch",
+  "budget": 1500,
+  "materials": {
+    "pink": {
+      "color": [
+        1,
+        0.42,
+        0.62
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    },
+    "white": {
+      "color": [
+        0.95,
+        0.95,
+        0.95
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    },
+    "yellow": {
+      "color": [
+        1,
+        0.82,
+        0.25
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    }
+  },
+  "nodes": [
+    {
+      "id": "post-l",
+      "kind": "box",
+      "params": {
+        "size": [
+          0.8,
+          4,
+          0.8
+        ]
+      },
+      "transform": {
+        "t": [
+          -4,
+          2,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "white",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "post-r",
+      "kind": "box",
+      "params": {
+        "size": [
+          0.8,
+          4,
+          0.8
+        ]
+      },
+      "transform": {
+        "t": [
+          4,
+          2,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "white",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "beam",
+      "kind": "box",
+      "params": {
+        "size": [
+          8.8,
+          0.8,
+          0.8
+        ]
+      },
+      "transform": {
+        "t": [
+          0,
+          4.4,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "pink",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "ring",
+      "kind": "torus",
+      "params": {
+        "major": 1,
+        "minor": 0.2
+      },
+      "transform": {
+        "t": [
+          0,
+          5.6,
+          0
+        ],
+        "r": [
+          0.7071067811865476,
+          0,
+          0,
+          0.7071067811865476
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "yellow",
+      "op": "union",
+      "children": []
+    }
+  ],
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cuboid",
+        "half": [
+          0.4,
+          2,
+          0.4
+        ],
+        "t": [
+          -4,
+          2,
+          0
+        ]
+      },
+      {
+        "shape": "cuboid",
+        "half": [
+          0.4,
+          2,
+          0.4
+        ],
+        "t": [
+          4,
+          2,
+          0
+        ]
+      },
+      {
+        "shape": "cuboid",
+        "half": [
+          4.4,
+          0.4,
+          0.4
+        ],
+        "t": [
+          0,
+          4.4,
+          0
+        ]
+      }
+    ]
+  }
+}

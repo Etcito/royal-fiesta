@@ -1,0 +1,171 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "checkpoint-gate",
+  "name": "Checkpoint Gate",
+  "budget": 1500,
+  "materials": {
+    "sky": {
+      "color": [
+        0.33,
+        0.73,
+        1
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    },
+    "yellow": {
+      "color": [
+        1,
+        0.82,
+        0.25
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    }
+  },
+  "nodes": [
+    {
+      "id": "post-l",
+      "kind": "box",
+      "params": {
+        "size": [
+          0.5,
+          3,
+          0.5
+        ]
+      },
+      "transform": {
+        "t": [
+          -3,
+          1.5,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "sky",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "post-r",
+      "kind": "box",
+      "params": {
+        "size": [
+          0.5,
+          3,
+          0.5
+        ]
+      },
+      "transform": {
+        "t": [
+          3,
+          1.5,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "sky",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "beam",
+      "kind": "box",
+      "params": {
+        "size": [
+          6.5,
+          0.5,
+          0.5
+        ]
+      },
+      "transform": {
+        "t": [
+          0,
+          3,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "yellow",
+      "op": "union",
+      "children": []
+    }
+  ],
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cuboid",
+        "half": [
+          0.25,
+          1.5,
+          0.25
+        ],
+        "t": [
+          -3,
+          1.5,
+          0
+        ]
+      },
+      {
+        "shape": "cuboid",
+        "half": [
+          0.25,
+          1.5,
+          0.25
+        ],
+        "t": [
+          3,
+          1.5,
+          0
+        ]
+      },
+      {
+        "shape": "cuboid",
+        "half": [
+          3.25,
+          0.25,
+          0.25
+        ],
+        "t": [
+          0,
+          3,
+          0
+        ]
+      }
+    ]
+  }
+}

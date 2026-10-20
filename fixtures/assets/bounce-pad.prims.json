@@ -1,0 +1,83 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "bounce-pad",
+  "name": "Bounce Pad",
+  "budget": 1500,
+  "nodes": [
+    {
+      "id": "base",
+      "kind": "cylinder",
+      "params": {
+        "radius": 1.5,
+        "height": 0.3
+      },
+      "transform": {
+        "t": [
+          0,
+          0.15,
+          0
+        ]
+      },
+      "material": "green",
+      "op": "union"
+    },
+    {
+      "id": "dome",
+      "kind": "ellipsoid",
+      "params": {
+        "radii": [
+          1,
+          0.25,
+          1
+        ]
+      },
+      "transform": {
+        "t": [
+          0,
+          0.3,
+          0
+        ]
+      },
+      "material": "orange",
+      "op": "union"
+    }
+  ],
+  "materials": {
+    "green": {
+      "color": [
+        0.45,
+        0.85,
+        0.4
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    },
+    "orange": {
+      "color": [
+        1,
+        0.55,
+        0.25
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    }
+  },
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cylinder",
+        "halfHeight": 0.15,
+        "radius": 1.5,
+        "t": [
+          0,
+          0.15,
+          0
+        ]
+      }
+    ]
+  }
+}

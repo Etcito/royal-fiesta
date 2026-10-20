@@ -1,0 +1,227 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 0,
+  "id": "race-bean-dash",
+  "name": "Bean Dash",
+  "kind": "race",
+  "profiles": ["standard"],
+  "assetsManifest": null,
+  "timeLimitS": 90,
+  "killPlaneY": -12,
+  "spawns": [
+    { "t": [-3.5, 1, 1], "yawDeg": 0 },
+    { "t": [-2.5, 1, 1], "yawDeg": 0 },
+    { "t": [-1.5, 1, 1], "yawDeg": 0 },
+    { "t": [-0.5, 1, 1], "yawDeg": 0 },
+    { "t": [0.5, 1, 1], "yawDeg": 0 },
+    { "t": [1.5, 1, 1], "yawDeg": 0 },
+    { "t": [2.5, 1, 1], "yawDeg": 0 },
+    { "t": [3.5, 1, 1], "yawDeg": 0 }
+  ],
+  "checkpoints": [
+    { "center": [0, 1.5, 40], "half": [5, 2, 1], "respawn": { "t": [0, 1, 40], "yawDeg": 0 } },
+    { "center": [0, 1.5, 73], "half": [5, 2, 1], "respawn": { "t": [0, 1, 73], "yawDeg": 0 } },
+    { "center": [0, 1.5, 108], "half": [5, 2, 1], "respawn": { "t": [0, 1, 108], "yawDeg": 0 } }
+  ],
+  "finish": { "center": [0, 1.5, 120], "half": [4, 2, 1] },
+  "path": [
+    { "p": [0, 1, 2], "jump": false, "dive": false },
+    { "p": [0, 1, 12], "jump": false, "dive": false },
+    { "p": [0, 1, 18], "jump": false, "dive": false },
+    { "p": [0, 1, 21], "jump": true, "dive": false },
+    { "p": [0, 1, 25], "jump": false, "dive": false },
+    { "p": [1.5, 1, 30], "jump": false, "dive": false },
+    { "p": [-1.5, 1, 35], "jump": false, "dive": false },
+    { "p": [0, 1, 40], "jump": false, "dive": false },
+    { "p": [0, 1, 45], "jump": false, "dive": false },
+    { "p": [0, 1, 53], "jump": false, "dive": false },
+    { "p": [0, 1, 57], "jump": false, "dive": false },
+    { "p": [-2.5, 1, 62], "jump": false, "dive": false },
+    { "p": [2.5, 1, 67], "jump": false, "dive": false },
+    { "p": [0, 1, 73], "jump": false, "dive": false },
+    { "p": [0, 1, 75.5], "jump": true, "dive": false },
+    { "p": [0, 1, 79], "jump": false, "dive": false },
+    { "p": [0, 1, 83], "jump": true, "dive": false },
+    { "p": [0, 1, 86.5], "jump": false, "dive": false },
+    { "p": [0, 1, 90.25], "jump": true, "dive": false },
+    { "p": [3, 1, 93], "jump": false, "dive": false },
+    { "p": [3, 1, 98], "jump": false, "dive": false },
+    { "p": [2.5, 1, 101], "jump": true, "dive": false },
+    { "p": [0, 1, 108], "jump": false, "dive": false },
+    { "p": [-2, 1, 113], "jump": false, "dive": false },
+    { "p": [2, 1, 117], "jump": false, "dive": false },
+    { "p": [0, 1, 119], "jump": false, "dive": true },
+    { "p": [0, 1, 120.5], "jump": false, "dive": false }
+  ],
+  "regions": [
+    { "id": 0, "center": [0, 2, 9], "half": [6, 10, 11], "adjacent": [1] },
+    { "id": 1, "center": [0, 2, 31.25], "half": [6, 10, 11.25], "adjacent": [0, 2] },
+    { "id": 2, "center": [0, 2, 48.5], "half": [6, 10, 6], "adjacent": [1, 3] },
+    { "id": 3, "center": [0, 2, 64.5], "half": [6, 10, 10], "adjacent": [2, 4] },
+    { "id": 4, "center": [0, 2, 82.75], "half": [6, 10, 8.25], "adjacent": [3, 5] },
+    { "id": 5, "center": [0, 2, 106], "half": [6, 10, 15], "adjacent": [4] }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "floor-start", "asset": "floor-tile", "t": [0, -0.5, 9], "r": [0, 0, 0, 1], "s": [1, 1, 2.2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-back", "asset": "wall-block", "t": [0, 1, -2.5], "r": [0, 0.7071067811865476, 0, 0.7071067811865476], "s": [1, 1, 1.1],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-left-start", "asset": "wall-block", "t": [-5.5, 1, 9], "r": [0, 0, 0, 1], "s": [1, 1, 2.2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-right-start", "asset": "wall-block", "t": [5.5, 1, 9], "r": [0, 0, 0, 1], "s": [1, 1, 2.2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "spinner-1", "asset": "spinner-bar", "t": [0, 0, 7], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "spinner", "axis": [0, 1, 0], "speedDegS": 90, "phaseDeg": 0 }, "colliders": null
+    },
+    {
+      "id": "spinner-2", "asset": "spinner-bar", "t": [0, 0, 14.5], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "spinner", "axis": [0, 1, 0], "speedDegS": -110, "phaseDeg": 90 }, "colliders": null
+    },
+    {
+      "id": "pillar-1", "asset": "wall-block", "t": [-3, 1, 18], "r": [0, 0.7071067811865476, 0, 0.7071067811865476], "s": [1, 1, 0.25],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "pillar-2", "asset": "wall-block", "t": [3, 1, 18], "r": [0, 0.7071067811865476, 0, 0.7071067811865476], "s": [1, 1, 0.25],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "floor-hammers", "asset": "floor-tile", "t": [0, -0.5, 32.5], "r": [0, 0, 0, 1], "s": [1, 1, 2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-left-hammers", "asset": "wall-block", "t": [-5.5, 1, 32.5], "r": [0, 0, 0, 1], "s": [1, 1, 2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-right-hammers", "asset": "wall-block", "t": [5.5, 1, 32.5], "r": [0, 0, 0, 1], "s": [1, 1, 2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "pendulum-1", "asset": "pendulum-hammer", "t": [0, 1.2, 27], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "pendulum", "pivot": [0, 6.8, 27], "axis": [0, 0, 1], "ampDeg": 60, "periodS": 3, "phaseDeg": 0 }, "colliders": null
+    },
+    {
+      "id": "pendulum-2", "asset": "pendulum-hammer", "t": [0, 1.2, 32], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "pendulum", "pivot": [0, 6.8, 32], "axis": [0, 0, 1], "ampDeg": 60, "periodS": 2.5, "phaseDeg": 120 }, "colliders": null
+    },
+    {
+      "id": "pendulum-3", "asset": "pendulum-hammer", "t": [0, 1.2, 37], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "pendulum", "pivot": [0, 6.8, 37], "axis": [0, 0, 1], "ampDeg": 55, "periodS": 3, "phaseDeg": 240 }, "colliders": null
+    },
+    {
+      "id": "checkpoint-1", "asset": "checkpoint-gate", "t": [0, 0, 40], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "conveyor-1", "asset": "conveyor-belt", "t": [-2, -0.25, 48.5], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.8, "motion": { "kind": "conveyor", "velocity": [0, 0, -2] }, "colliders": null
+    },
+    {
+      "id": "conveyor-2", "asset": "conveyor-belt", "t": [2, -0.25, 48.5], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.8, "motion": { "kind": "conveyor", "velocity": [0, 0, -3] }, "colliders": null
+    },
+    {
+      "id": "wall-left-conveyors", "asset": "wall-block", "t": [-4.5, 1, 48.5], "r": [0, 0, 0, 1], "s": [1, 1, 1.2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-right-conveyors", "asset": "wall-block", "t": [4.5, 1, 48.5], "r": [0, 0, 0, 1], "s": [1, 1, 1.2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "door-1", "asset": "rotating-door", "t": [0, 0, 48.5], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "rotatingDoor", "axis": [0, 1, 0], "stepDeg": 90, "periodS": 2, "moveS": 0.5, "phaseS": 0 }, "colliders": null
+    },
+    {
+      "id": "floor-doors", "asset": "floor-tile", "t": [0, -0.5, 64.5], "r": [0, 0, 0, 1], "s": [1, 1, 2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-left-doors", "asset": "wall-block", "t": [-5.5, 1, 64.5], "r": [0, 0, 0, 1], "s": [1, 1, 2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-right-doors", "asset": "wall-block", "t": [5.5, 1, 64.5], "r": [0, 0, 0, 1], "s": [1, 1, 2],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "door-2", "asset": "rotating-door", "t": [0, 0, 58.5], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "rotatingDoor", "axis": [0, 1, 0], "stepDeg": 90, "periodS": 2, "moveS": 0.5, "phaseS": 0.5 }, "colliders": null
+    },
+    {
+      "id": "spinner-3", "asset": "spinner-bar", "t": [0, 0, 64.5], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "spinner", "axis": [0, 1, 0], "speedDegS": 120, "phaseDeg": 45 }, "colliders": null
+    },
+    {
+      "id": "door-3", "asset": "rotating-door", "t": [0, 0, 70], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "rotatingDoor", "axis": [0, 1, 0], "stepDeg": 90, "periodS": 2.5, "moveS": 0.5, "phaseS": 1 }, "colliders": null
+    },
+    {
+      "id": "checkpoint-2", "asset": "checkpoint-gate", "t": [0, 0, 73], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "platform-1", "asset": "moving-platform", "t": [0, -0.25, 79], "r": [0, 0, 0, 1], "s": [1.5, 1, 1.5],
+      "friction": 0.5, "motion": { "kind": "movingPlatform", "offset": [1.5, 0, 0], "periodS": 4, "phaseDeg": 0, "wave": "sine" }, "colliders": null
+    },
+    {
+      "id": "platform-2", "asset": "moving-platform", "t": [0, -0.25, 86.5], "r": [0, 0, 0, 1], "s": [1.5, 1, 1.5],
+      "friction": 0.5, "motion": { "kind": "movingPlatform", "offset": [1.5, 0, 0], "periodS": 4, "phaseDeg": 180, "wave": "sine" }, "colliders": null
+    },
+    {
+      "id": "floor-final", "asset": "floor-tile", "t": [0, -0.5, 106], "r": [0, 0, 0, 1], "s": [1, 1, 3],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-left-final", "asset": "wall-block", "t": [-5.5, 1, 106], "r": [0, 0, 0, 1], "s": [1, 1, 3],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "wall-right-final", "asset": "wall-block", "t": [5.5, 1, 106], "r": [0, 0, 0, 1], "s": [1, 1, 3],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "seesaw-1", "asset": "seesaw-plank", "t": [0, 1, 95.5], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "seesaw", "axis": [1, 0, 0], "maxDeg": 20, "spring": 800, "damping": 300, "inertia": 900 }, "colliders": null
+    },
+    {
+      "id": "pad-1", "asset": "bounce-pad", "t": [-2.5, 0, 101], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "bouncePad", "speed": 14 }, "colliders": null
+    },
+    {
+      "id": "pad-2", "asset": "bounce-pad", "t": [2.5, 0, 101], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "bouncePad", "speed": 14 }, "colliders": null
+    },
+    {
+      "id": "barrier-1", "asset": "wall-block", "t": [0, 0.6, 104], "r": [0, 0.7071067811865476, 0, 0.7071067811865476], "s": [1, 0.6, 1],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "checkpoint-3", "asset": "checkpoint-gate", "t": [0, 0, 108], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    },
+    {
+      "id": "spinner-4", "asset": "spinner-bar", "t": [0, 0, 113], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "spinner", "axis": [0, 1, 0], "speedDegS": -100, "phaseDeg": 0 }, "colliders": null
+    },
+    {
+      "id": "pendulum-4", "asset": "pendulum-hammer", "t": [0, 1.2, 117], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "pendulum", "pivot": [0, 6.8, 117], "axis": [0, 0, 1], "ampDeg": 65, "periodS": 2.5, "phaseDeg": 90 }, "colliders": null
+    },
+    {
+      "id": "finish-arch", "asset": "finish-arch", "t": [0, 0, 120], "r": [0, 0, 0, 1], "s": [1, 1, 1],
+      "friction": 0.5, "motion": { "kind": "static" }, "colliders": null
+    }
+  ]
+}

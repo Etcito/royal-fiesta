@@ -1,0 +1,178 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "queue-pad",
+  "name": "Queue Pad",
+  "budget": 1500,
+  "materials": {
+    "green": {
+      "color": [
+        0.45,
+        0.85,
+        0.4
+      ],
+      "roughness": 0.4,
+      "metallic": 0,
+      "emissive": 0.5
+    },
+    "yellow": {
+      "color": [
+        1,
+        0.82,
+        0.25
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0.3
+    },
+    "white": {
+      "color": [
+        0.95,
+        0.95,
+        0.95
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0.4
+    }
+  },
+  "nodes": [
+    {
+      "id": "pad",
+      "kind": "cylinder",
+      "params": {
+        "radius": 1.6,
+        "height": 0.1
+      },
+      "transform": {
+        "t": [
+          0,
+          0.05,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "green",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "rim",
+      "kind": "torus",
+      "params": {
+        "major": 1.6,
+        "minor": 0.06
+      },
+      "transform": {
+        "t": [
+          0,
+          0.1,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "yellow",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "arrow-left",
+      "kind": "box",
+      "params": {
+        "size": [
+          0.25,
+          0.04,
+          0.7
+        ]
+      },
+      "transform": {
+        "t": [
+          -0.6,
+          0.12,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "white",
+      "op": "union",
+      "children": []
+    },
+    {
+      "id": "arrow-right",
+      "kind": "box",
+      "params": {
+        "size": [
+          0.25,
+          0.04,
+          0.7
+        ]
+      },
+      "transform": {
+        "t": [
+          0.6,
+          0.12,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "s": [
+          1,
+          1,
+          1
+        ]
+      },
+      "material": "white",
+      "op": "union",
+      "children": []
+    }
+  ],
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cylinder",
+        "halfHeight": 0.05,
+        "radius": 1.6,
+        "t": [
+          0,
+          0.05,
+          0
+        ]
+      }
+    ]
+  }
+}

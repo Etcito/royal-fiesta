@@ -1,0 +1,90 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "pendulum-hammer",
+  "name": "Pendulum Hammer",
+  "budget": 1500,
+  "nodes": [
+    {
+      "id": "head",
+      "kind": "box",
+      "params": {
+        "size": [
+          2.4,
+          1.2,
+          1.2
+        ]
+      },
+      "material": "orange",
+      "op": "union"
+    },
+    {
+      "id": "arm",
+      "kind": "box",
+      "params": {
+        "size": [
+          0.3,
+          5,
+          0.3
+        ]
+      },
+      "transform": {
+        "t": [
+          0,
+          3.1,
+          0
+        ]
+      },
+      "material": "purple",
+      "op": "union"
+    }
+  ],
+  "materials": {
+    "orange": {
+      "color": [
+        1,
+        0.55,
+        0.25
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    },
+    "purple": {
+      "color": [
+        0.7,
+        0.5,
+        1
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    }
+  },
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cuboid",
+        "half": [
+          1.2,
+          0.6,
+          0.6
+        ]
+      },
+      {
+        "shape": "cuboid",
+        "half": [
+          0.15,
+          2.5,
+          0.15
+        ],
+        "t": [
+          0,
+          3.1,
+          0
+        ]
+      }
+    ]
+  }
+}

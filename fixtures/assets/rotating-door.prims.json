@@ -1,0 +1,119 @@
+{
+  "format": "raa.prims",
+  "version": 0,
+  "id": "rotating-door",
+  "name": "Rotating Door",
+  "budget": 1500,
+  "nodes": [
+    {
+      "id": "panel-x",
+      "kind": "box",
+      "params": {
+        "size": [
+          6,
+          3,
+          0.3
+        ]
+      },
+      "transform": {
+        "t": [
+          0,
+          1.5,
+          0
+        ]
+      },
+      "material": "orange",
+      "op": "union"
+    },
+    {
+      "id": "panel-z",
+      "kind": "box",
+      "params": {
+        "size": [
+          0.3,
+          3,
+          6
+        ]
+      },
+      "transform": {
+        "t": [
+          0,
+          1.5,
+          0
+        ]
+      },
+      "material": "orange",
+      "op": "union"
+    },
+    {
+      "id": "hub",
+      "kind": "cylinder",
+      "params": {
+        "radius": 0.4,
+        "height": 3.2
+      },
+      "transform": {
+        "t": [
+          0,
+          1.5,
+          0
+        ]
+      },
+      "material": "purple",
+      "op": "union"
+    }
+  ],
+  "materials": {
+    "orange": {
+      "color": [
+        1,
+        0.55,
+        0.25
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    },
+    "purple": {
+      "color": [
+        0.7,
+        0.5,
+        1
+      ],
+      "roughness": 0.6,
+      "metallic": 0,
+      "emissive": 0
+    }
+  },
+  "anchors": {},
+  "collision": {
+    "colliders": [
+      {
+        "shape": "cuboid",
+        "half": [
+          3,
+          1.5,
+          0.15
+        ],
+        "t": [
+          0,
+          1.5,
+          0
+        ]
+      },
+      {
+        "shape": "cuboid",
+        "half": [
+          0.15,
+          1.5,
+          3
+        ],
+        "t": [
+          0,
+          1.5,
+          0
+        ]
+      }
+    ]
+  }
+}

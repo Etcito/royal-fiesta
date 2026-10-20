@@ -1,0 +1,483 @@
+import assert from 'node:assert/strict'
+import { describe, it } from 'node:test'
+import { FIXED_DT, initRapier } from '@gamesaloon/rollback-rapier'
+import type { RapierModule } from '@gamesaloon/rollback-rapier'
+import { CHAR, CharMode } from '../src/character/constants.ts'
+import { approach2, turnFacing } from '../src/character/controller.ts'
+import { CharacterSystem } from '../src/character/system.ts'
+import type { CharState } from '../src/character/system.ts'
+import type { Motion, ObstacleSpec, ResolvedCourse } from '../src/course.ts'
+import { PI, datan2 } from '../src/detmath.ts'
+import { G, groups } from '../src/groups.ts'
+import { decodeInput, inputCode, neutralInput } from '../src/input.ts'
+import type { PlayerInput } from '../src/input.ts'
+import { ObstacleSystem } from '../src/obstacles/system.ts'
+import { v3, yawFacing } from '../src/vec.ts'
+import type { Vec3 } from '../src/vec.ts'
+import { FiestaWorld, GRAVITY_Y } from '../src/world.ts'
+import type { SimSystem } from '../src/world.ts'
+
+// Tests use CHAR.* symbolically: tuning the constants must not break them.
+
+const MAX_TURN = CHAR.turnRate * FIXED_DT
+
+function yawOf(f: { x: number; z: number }): number {
+  return datan2(f.x, f.z)
+}
+
+function dist2(ax: number, az: number, bx: number, bz: number): number {
+  const dx = bx - ax
+  const dz = bz - az
+  return Math.sqrt(dx * dx + dz * dz)
+}
+
+describe('controller', () => {
+  it('approach2 reaches the target in ceil(dist/maxDelta) calls and never overshoots', () => {
+    const maxDelta = CHAR.maxRun / 4
+    const target = { x: 0, z: CHAR.maxRun }
+    const start = { x: 0, z: 0 }
+    const calls = Math.ceil(dist2(start.x, start.z, target.x, target.z) / maxDelta)
+    const p = { x: start.x, z: start.z }
+    let previous = dist2(p.x, p.z, target.x, target.z)
+    for (let i = 0; i < calls; i++) {
+      approach2(p.x, p.z, target.x, target.z, maxDelta, p)
+      const remaining = dist2(p.x, p.z, target.x, target.z)
+      assert.ok(remaining <= previous, `call ${i}: distance to target grew`)
+      assert.ok(remaining <= previous - maxDelta + 1e-12, `call ${i}: step exceeded maxDelta`)
+      previous = remaining
+    }
+    assert.deepEqual(p, target, `after ${calls} calls`)
+  })
+
+  it('approach2 is a no-op at the target', () => {
+    const target = { x: CHAR.maxRun, z: -CHAR.maxRun }
+    approach2(target.x, target.z, target.x, target.z, CHAR.maxRun, target)
+    assert.deepEqual(target, { x: CHAR.maxRun, z: -CHAR.maxRun })
+  })
+
+  it('turnFacing turns by exactly maxAngle when the target is behind', () => {
+    const facing = yawFacing(0, { x: 0, z: 0 })
+    const behind = yawFacing(PI, { x: 0, z: 0 })
+    const out = turnFacing(facing.x, facing.z, behind.x, behind.z, MAX_TURN, { x: 0, z: 0 })
+    const turned = Math.abs(yawOf(out) - yawOf(facing))
+    assert.ok(Math.abs(turned - MAX_TURN) <= 1e-12, `turned ${turned}, wanted ${MAX_TURN}`)
+  })
+
+  it('turnFacing snaps when within maxAngle', () => {
+    const facing = yawFacing(0, { x: 0, z: 0 })
+    const aim = yawFacing(MAX_TURN / 2, { x: 0, z: 0 })
+    const out = turnFacing(facing.x, facing.z, aim.x, aim.z, MAX_TURN, { x: 0, z: 0 })
+    const inv = 1 / Math.sqrt(aim.x * aim.x + aim.z * aim.z)
+    assert.equal(out.x, aim.x * inv)
+    assert.equal(out.z, aim.z * inv)
+  })
+
+  it('turnFacing keeps the facing for a zero target', () => {
+    const facing = yawFacing(1, { x: 0, z: 0 })
+    const out = { x: 9, z: 9 }
+    turnFacing(facing.x, facing.z, 0, 0, MAX_TURN, out)
+    assert.equal(out.x, facing.x)
+    assert.equal(out.z, facing.z)
+    turnFacing(facing.x, facing.z, 1e-9, -1e-9, MAX_TURN, out)
+    assert.equal(out.x, facing.x)
+    assert.equal(out.z, facing.z)
+  })
+
+  it('turnFacing returns a unit vector', () => {
+    const cases: [number, number, number, number][] = [
+      [0, 1, 1, 0],
+      [0, 1, 0, -1],
+      [0, 1, 1, 1],
+      [1, 0, 0, -1],
+    ]
+    const out = { x: 0, z: 0 }
+    for (const [fx, fz, tx, tz] of cases) {
+      turnFacing(fx, fz, tx, tz, MAX_TURN, out)
+      const len = Math.sqrt(out.x * out.x + out.z * out.z)
+      assert.ok(Math.abs(len - 1) <= 1e-12, `length ${len} for (${fx},${fz})->(${tx},${tz})`)
+    }
+  })
+
+  it('out may alias the inputs', () => {
+    const p = { x: 0, z: 0 }
+    approach2(p.x, p.z, 0, CHAR.maxRun, CHAR.maxRun / 2, p)
+    assert.deepEqual(p, { x: 0, z: CHAR.maxRun / 2 })
+
+    const aim = yawFacing(MAX_TURN * 3, { x: 0, z: 0 })
+    const aliased = { x: 0, z: 1 }
+    const returned = turnFacing(aliased.x, aliased.z, aim.x, aim.z, MAX_TURN, aliased)
+    assert.equal(returned, aliased)
+    assert.deepEqual(returned, turnFacing(0, 1, aim.x, aim.z, MAX_TURN, { x: 0, z: 0 }))
+  })
+})
+
+const R: RapierModule = await initRapier()
+const GROUND_HALF = 20
+
+// One fixed cuboid whose top is y=0 and whose +Z edge is a ledge at z=GROUND_HALF.
+function groundSystem(): SimSystem<PlayerInput> {
+  return {
+    name: 'ground',
+    init(ctx) {
+      ctx.physics.createBody(ctx.R.RigidBodyDesc.fixed().setTranslation(0, -0.5, 0), [
+        ctx.R.ColliderDesc.cuboid(GROUND_HALF, 0.5, GROUND_HALF)
+          .setCollisionGroups(groups(G.STATIC, G.CHAR | G.DEBRIS | G.PROBE)),
+      ])
+    },
+    preStep() {},
+    postStep() {},
+    snapshot() {},
+    restore() {},
+  }
+}
+
+interface Rig { world: FiestaWorld<PlayerInput>; chars: CharacterSystem }
+
+function rig(players = 1, placeAt = v3(0, 0, 0)): Rig {
+  const chars = new CharacterSystem({ playerCount: players })
+  const world = new FiestaWorld<PlayerInput>(R, { playerCount: players, systems: [groundSystem(), chars] })
+  for (let p = 0; p < players; p++) {
+    chars.place(world.ctx, p, { t: v3(placeAt.x + p * 2, placeAt.y, placeAt.z), facing: { x: 0, z: 1 } })
+  }
+  return { world, chars }
+}
+
+function input(partial: Partial<PlayerInput>): PlayerInput {
+  return decodeInput(inputCode(partial), neutralInput())
+}
+
+const NEUTRAL = neutralInput()
+const FORWARD = input({ moveZ: 1 })
+const JUMP = input({ jump: true })
+const FORWARD_JUMP = input({ moveZ: 1, jump: true })
+const DIVE = input({ dive: true })
+const GRABBER = input({ moveZ: 1, grab: true })
+const STAND = CHAR.halfHeight + CHAR.radius
+
+function newState(): CharState {
+  return { pos: v3(0, 0, 0), vel: v3(0, 0, 0), facing: { x: 0, z: 0 }, mode: 0, grounded: false, groundObstacle: 0, knockbacks: 0, teleportTick: 0 }
+}
+
+function stepN(r: Rig, n: number, inp: PlayerInput): CharState {
+  for (let i = 0; i < n; i++) r.world.step([inp])
+  return r.chars.state(r.world.ctx, 0, newState())
+}
+
+function hspeed(s: CharState): number {
+  return Math.sqrt(s.vel.x * s.vel.x + s.vel.z * s.vel.z)
+}
+
+// Steps until the predicate holds on the state after a step; returns that step's index.
+function stepUntil(r: Rig, inp: (i: number) => PlayerInput, done: (s: CharState) => boolean, max = 600): number {
+  for (let i = 0; i < max; i++) {
+    r.world.step([inp(i)])
+    if (done(r.chars.state(r.world.ctx, 0, newState()))) return i
+  }
+  assert.fail(`condition not met within ${max} ticks`)
+}
+
+// Obstacle worlds: a ResolvedCourse built in code, loaded by a test-local system in init.
+const ID = { x: 0, y: 0, z: 0, w: 1 }
+
+function obstacle(id: string, t: Vec3, motion: Motion, half: Vec3): ObstacleSpec {
+  return { id, asset: id, t, r: ID, s: v3(1, 1, 1), friction: 0.5, motion, colliders: [{ shape: 'cuboid', half, t: v3(0, 0, 0), r: ID }] }
+}
+
+function course(obstacles: ObstacleSpec[]): ResolvedCourse {
+  return {
+    id: 'char-test', name: 'Character test', kind: 'race', profiles: ['standard'], timeLimitS: 60, killPlaneY: -10,
+    spawns: [], checkpoints: [], finish: null, path: [], regions: [], queuePad: null, contentHash: 0, obstacles,
+  }
+}
+
+const FLOOR = obstacle('floor', v3(0, -0.5, 0), { kind: 'static' }, v3(10, 0.5, 10))
+
+interface ObsRig extends Rig { obs: ObstacleSystem }
+
+function obsRig(obstacles: ObstacleSpec[], at: Vec3): ObsRig {
+  const obs = new ObstacleSystem([course(obstacles)])
+  const loader: SimSystem<PlayerInput> = {
+    name: 'loader',
+    init(ctx) { obs.load(ctx, 0) },
+    preStep() {},
+    postStep() {},
+    snapshot() {},
+    restore() {},
+  }
+  const chars = new CharacterSystem({ playerCount: 1 })
+  const world = new FiestaWorld<PlayerInput>(R, { playerCount: 1, systems: [obs, loader, chars] })
+  chars.place(world.ctx, 0, { t: at, facing: { x: 0, z: 1 } })
+  return { world, chars, obs }
+}
+
+// Player 0 grabs player 1, 0.8 m ahead and facing it.
+function grabRig(): Rig {
+  const r = rig(2)
+  r.chars.place(r.world.ctx, 0, { t: v3(0, 0, 0), facing: { x: 0, z: 1 } })
+  r.chars.place(r.world.ctx, 1, { t: v3(0, 0, 0.8), facing: { x: 0, z: -1 } })
+  return r
+}
+
+function state(r: Rig, p = 0): CharState {
+  return r.chars.state(r.world.ctx, p, newState())
+}
+
+describe('system', () => {
+  it('init parks every player at its slot with groups 0', () => {
+    const chars = new CharacterSystem({ playerCount: 3 })
+    const world = new FiestaWorld<PlayerInput>(R, { playerCount: 3, systems: [groundSystem(), chars] })
+    const pos = new Float64Array(9)
+    chars.readPositions(world.ctx, pos)
+    for (let p = 0; p < 3; p++) {
+      assert.equal(chars.isParked(p), true)
+      assert.deepEqual([pos[p * 3], pos[p * 3 + 1], pos[p * 3 + 2]],
+        [CHAR.parkOrigin.x + p * CHAR.parkStep, CHAR.parkOrigin.y, CHAR.parkOrigin.z])
+      assert.equal(chars.state(world.ctx, p, newState()).mode, CharMode.parked)
+    }
+    const ids = world.physics.ids()
+    for (let k = 1; k < ids.length; k++) {
+      const rb = world.physics.body(ids[k])
+      assert.equal(rb.collider(0).collisionGroups(), 0)
+      assert.equal(rb.gravityScale(), 0)
+    }
+    world.step([NEUTRAL, NEUTRAL, NEUTRAL])
+    // Mass properties are computed by the first step, in f32.
+    for (let k = 1; k < ids.length; k++) {
+      const m = world.physics.body(ids[k]).mass()
+      assert.ok(Math.abs(m - CHAR.mass) <= CHAR.mass * 1e-6, `mass ${m} (Rapier is f32)`)
+    }
+    const after = new Float64Array(9)
+    chars.readPositions(world.ctx, after)
+    assert.deepEqual(after, pos, 'parked players do not move')
+    world.free()
+  })
+
+  it('after place, the character is grounded within 60 ticks with mode ground', () => {
+    const r = rig()
+    assert.equal(r.chars.isParked(0), false)
+    stepUntil(r, () => NEUTRAL, (s) => s.grounded && s.mode === CharMode.ground, 60)
+    r.world.free()
+  })
+
+  it('full forward input reaches maxRun, and releasing it brakes to 0', () => {
+    const r = rig()
+    const run = stepN(r, 60, FORWARD)
+    assert.ok(Math.abs(hspeed(run) - CHAR.maxRun) <= 1e-6, `speed ${hspeed(run)}`)
+    assert.ok(run.facing.z > 1 - 1e-12)
+    const stop = stepN(r, 60, NEUTRAL)
+    assert.ok(hspeed(stop) <= 1e-6, `speed ${hspeed(stop)}`)
+    r.world.free()
+  })
+
+  it('a jump press rises, and lands again', () => {
+    const r = rig()
+    const rest = stepN(r, 30, NEUTRAL)
+    const up = stepN(r, 1, JUMP)
+    assert.equal(up.mode, CharMode.air)
+    assert.ok(up.vel.y > 0)
+    const top = stepN(r, 20, JUMP)
+    assert.ok(top.pos.y > rest.pos.y + 0.5, `apex ${top.pos.y}`)
+    stepUntil(r, () => NEUTRAL, (s) => s.grounded && s.mode === CharMode.ground, 120)
+    r.world.free()
+  })
+
+  // First tick (step index) whose probe sees no ground after running onto and off the ledge.
+  // Queries see a placed body only after one physics step, so the place tick reads air.
+  function ledgeTick(): number {
+    const r = rig(1, v3(0, 0, GROUND_HALF - CHAR.maxRun))
+    let landed = false
+    const k = stepUntil(r, () => FORWARD, (s) => (landed = landed || s.grounded) && !s.grounded)
+    r.world.free()
+    return k
+  }
+
+  it('coyote: a jump pressed coyoteTicks-1 ticks after walking off a ledge fires', () => {
+    const k = ledgeTick()
+    for (const [late, fires] of [[CHAR.coyoteTicks - 1, true], [CHAR.coyoteTicks, false]] as const) {
+      const r = rig(1, v3(0, 0, GROUND_HALF - CHAR.maxRun))
+      stepN(r, k + late, FORWARD)
+      const s = stepN(r, 1, FORWARD_JUMP)
+      assert.equal(s.vel.y > 0, fires, `press ${late} ticks after the ledge: vy ${s.vel.y}`)
+      r.world.free()
+    }
+  })
+
+  it('buffer: a press jumpBufferTicks-1 ticks before landing fires on landing', () => {
+    const settle = (r: Rig): void => { stepN(r, 30, NEUTRAL); stepN(r, 1, JUMP) }
+    const a = rig()
+    settle(a)
+    const land = stepUntil(a, () => NEUTRAL, (s) => s.grounded)
+    a.world.free()
+    const pressAt = land - (CHAR.jumpBufferTicks - 1)
+    const b = rig()
+    settle(b)
+    for (let i = 0; i < land; i++) b.world.step([i === pressAt ? JUMP : NEUTRAL])
+    const s = stepN(b, 1, NEUTRAL)
+    assert.ok(s.vel.y > 0, `vy ${s.vel.y}`)
+    b.world.free()
+  })
+
+  it('override applies for exactly one tick', () => {
+    const r = rig()
+    stepN(r, 60, FORWARD)
+    r.chars.override(0, inputCode({}))
+    const once = stepN(r, 1, FORWARD)
+    const braked = CHAR.maxRun - CHAR.groundBrake * FIXED_DT
+    assert.ok(Math.abs(once.vel.z - braked) <= 1e-6, `override tick vz ${once.vel.z}`)
+    const next = stepN(r, 1, FORWARD)
+    const resumed = Math.min(CHAR.maxRun, braked + CHAR.groundAccel * FIXED_DT)
+    assert.ok(Math.abs(next.vel.z - resumed) <= 1e-6, `next tick vz ${next.vel.z}`)
+    r.world.free()
+  })
+
+  it('freeze keeps vertical motion and zeroes horizontal motion', () => {
+    const r = rig(1, v3(0, 10, 0))
+    const flying = stepN(r, 10, FORWARD)
+    assert.ok(flying.vel.z > 0)
+    r.chars.freeze(0, true)
+    const frozen = stepN(r, 10, FORWARD_JUMP)
+    assert.equal(hspeed(frozen), 0)
+    assert.ok(frozen.vel.y < flying.vel.y && frozen.pos.y < flying.pos.y, 'still falling')
+    assert.equal(frozen.mode, CharMode.frozen)
+    r.world.free()
+  })
+
+  it('park then isParked', () => {
+    const r = rig()
+    stepN(r, 5, FORWARD)
+    r.chars.park(r.world.ctx, 0)
+    assert.equal(r.chars.isParked(0), true)
+    const s = r.chars.state(r.world.ctx, 0, newState())
+    assert.deepEqual(s.pos, CHAR.parkOrigin)
+    assert.equal(s.teleportTick, r.world.tick)
+    r.world.free()
+  })
+
+  it('snapshot round-trip: restore into a fresh world and step 100 ticks equal', () => {
+    const players = 3
+    const script = (t: number, p: number): PlayerInput =>
+      input({ moveX: ((t * 7 + p * 3) % 11) / 5 - 1, moveZ: ((t * 5 + p) % 13) / 6 - 1, jump: (t + p) % 23 < 2 })
+    const inputsAt = (t: number): PlayerInput[] => [0, 1, 2].map((p) => script(t, p))
+    const a = rig(players)
+    a.chars.freeze(2, true)
+    for (let t = 0; t < 100; t++) a.world.step(inputsAt(t))
+    const bytes = a.world.takeSnapshotBytes()
+    const fresh = new CharacterSystem({ playerCount: players })
+    const b = new FiestaWorld<PlayerInput>(R, { playerCount: players, systems: [groundSystem(), fresh] })
+    b.restoreSnapshotBytes(bytes)
+    assert.equal(b.stateHash(), a.world.stateHash())
+    for (let t = 100; t < 200; t++) {
+      a.world.step(inputsAt(t))
+      b.step(inputsAt(t))
+    }
+    assert.equal(b.stateHash(), a.world.stateHash())
+    a.world.free()
+    b.free()
+  })
+
+  it('dive: at least diveSpeed after the press, then diveRecover for diveRecoverTicks after landing', () => {
+    const r = rig()
+    stepN(r, 30, NEUTRAL)
+    assert.equal(stepN(r, 1, DIVE).mode, CharMode.dive)
+    const after = stepN(r, 1, NEUTRAL)
+    assert.ok(hspeed(after) >= CHAR.diveSpeed, `speed ${hspeed(after)}`)
+    stepUntil(r, () => NEUTRAL, (s) => s.mode !== CharMode.dive, 120)
+    const landed = state(r)
+    assert.equal(landed.mode, CharMode.diveRecover)
+    assert.equal(landed.grounded, true)
+    assert.equal(stepN(r, CHAR.diveRecoverTicks - 1, NEUTRAL).mode, CharMode.diveRecover)
+    assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.ground)
+    r.world.free()
+  })
+
+  it('the second dive press in the same airtime is ignored', () => {
+    const r = rig()
+    stepN(r, 30, NEUTRAL)
+    stepN(r, 1, JUMP)
+    stepN(r, 5, NEUTRAL)
+    assert.equal(stepN(r, 1, DIVE).mode, CharMode.dive)
+    // Falling, so a second dive would lift vy to 0.6*diveUp.
+    stepUntil(r, () => NEUTRAL, (s) => s.vel.y < 0, 60)
+    const before = state(r)
+    const second = stepN(r, 1, DIVE)
+    assert.equal(second.mode, CharMode.dive)
+    assert.ok(second.vel.y < before.vel.y, `vy ${before.vel.y} -> ${second.vel.y}`)
+    assert.equal(hspeed(second), hspeed(before))
+    r.world.free()
+  })
+
+  it('grab: the target running away is slowed to grabSlow*maxRun at most', () => {
+    const r = grabRig()
+    let grabbed = 0
+    for (let i = 0; i < 60; i++) {
+      r.world.step([GRABBER, FORWARD])
+      if (state(r, 0).mode !== CharMode.grabbing) continue
+      grabbed++
+      const target = state(r, 1)
+      assert.ok(hspeed(target) <= CHAR.grabSlow * CHAR.maxRun, `tick ${i}: target speed ${hspeed(target)}`)
+    }
+    assert.ok(grabbed >= 30, `grabbed for ${grabbed} ticks`)
+    r.world.free()
+  })
+
+  it('a bounce pad sends vy to its speed', () => {
+    const speed = 14
+    const r = obsRig([obstacle('pad', v3(0, -0.5, 0), { kind: 'bouncePad', speed }, v3(2, 0.5, 2))], v3(0, 0, 0))
+    stepUntil(r, () => NEUTRAL, (s) => s.vel.y > 0, 30)
+    const s = state(r)
+    // The step after the bounce has already applied one tick of gravity (Rapier is f32).
+    assert.ok(Math.abs(s.vel.y - (speed + GRAVITY_Y * FIXED_DT)) <= 1e-4, `vy ${s.vel.y}`)
+    assert.equal(s.mode, CharMode.air)
+    r.world.free()
+  })
+
+  it('a conveyor carries a neutral character at the belt speed', () => {
+    const belt = v3(0, 0, -3)
+    const r = obsRig([obstacle('belt', v3(0, -0.5, 0), { kind: 'conveyor', velocity: belt }, v3(5, 0.5, 10))], v3(0, 0, 5))
+    const s = stepN(r, 60, NEUTRAL)
+    assert.equal(s.groundObstacle, 0)
+    assert.ok(Math.abs(s.vel.x - belt.x) <= 1e-6 && Math.abs(s.vel.z - belt.z) <= 1e-6, `vel ${s.vel.x}, ${s.vel.z}`)
+    r.world.free()
+  })
+
+  it('a fast kinematic spinner bar hitting a standing character stuns it', () => {
+    // 3 deg/tick: the bar meets the character 2.5 m from the axis at about 7.9 m/s.
+    const spin = obstacle('spin', v3(0, STAND, 0), { kind: 'spinner', axis: v3(0, 1, 0), radPerTick: PI / 60, phase: 0 }, v3(4, 0.25, 0.25))
+    const r = obsRig([FLOOR, spin], v3(0, 0, 2.5))
+    stepUntil(r, () => NEUTRAL, (s) => s.knockbacks >= 1, 60)
+    const s = state(r)
+    assert.equal(s.mode, CharMode.stunned)
+    assert.ok(s.vel.y > 0, `vy ${s.vel.y}`)
+    assert.notEqual(stepN(r, CHAR.stunTicks, NEUTRAL).mode, CharMode.stunned)
+    r.world.free()
+  })
+
+  it('standing on a see-saw end tilts it', () => {
+    const motion: Motion = { kind: 'seesaw', axis: v3(1, 0, 0), maxAngle: 0.35, spring: 800, damping: 300, inertia: 900 }
+    const r = obsRig([obstacle('saw', v3(0, 0.5, 0), motion, v3(2, 0.2, 4))], v3(0, 0.7, 3))
+    stepN(r, 60, NEUTRAL)
+    assert.ok(r.obs.seesawAngle(0) > 0, `angle ${r.obs.seesawAngle(0)}`)
+    r.world.free()
+  })
+
+  // Restores the snapshot taken at tick `at` (player 0 in `mode`) into a fresh world, then steps both.
+  function roundTrip(make: () => Rig, script: (t: number) => PlayerInput[], at: number, mode: number): void {
+    const a = make()
+    for (let t = 0; t < at; t++) a.world.step(script(t))
+    assert.equal(state(a).mode, mode)
+    const b = make()
+    b.world.restoreSnapshotBytes(a.world.takeSnapshotBytes())
+    for (let t = at; t < at + 60; t++) {
+      a.world.step(script(t))
+      b.world.step(script(t))
+    }
+    assert.equal(b.world.stateHash(), a.world.stateHash())
+    a.world.free()
+    b.world.free()
+  }
+
+  it('snapshot round-trip during a dive and during a grab', () => {
+    roundTrip(() => rig(), (t) => [t === 30 ? DIVE : NEUTRAL], 35, CharMode.dive)
+    roundTrip(grabRig, () => [GRABBER, FORWARD], 10, CharMode.grabbing)
+  })
+})

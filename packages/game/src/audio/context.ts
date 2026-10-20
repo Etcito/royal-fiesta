@@ -5,7 +5,7 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import type { BedPort, SoundPort } from './gameAudio'
 import { CROWD_BED_ID, CROWD_PROCESSOR, FIESTA_MIX_ID } from './ids'
 import { CROWD_PARAMS } from './pack/crowdModel'
-import { registerRoyalFiesta } from './pack/index'
+import { registerRoyalFiesta, ROYAL_FIESTA_FAMILIES } from './pack/index'
 import type { Vec3 } from './events'
 
 export interface BrowserAudioOptions {
@@ -86,6 +86,7 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
     processorUrl: o.processorUrl,
     mix: FIESTA_MIX_ID,
     maxListeners: o.maxListeners ?? 1,
+    families: ROYAL_FIESTA_FAMILIES.map((family) => family.id),
   })
   await audio.ready()
   await ctx.audioWorklet.addModule(o.crowdProcessorUrl)

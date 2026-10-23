@@ -16,3 +16,19 @@ The 15 files in `fixtures/assets` are raa.prims v0 as published (raa-assets-tool
 The 11 obstacle recipes published in raa-assets-tools `runs/obstacles-v0` (objects in the asset store, hashes checked) were not adopted: their sizes differ from the sim colliders the courses use (for example the bean body is a 1.4 m capsule, the sim collider is 0.9 m, and the bouncy pad footprint is 2.2 m against a 3 m collider). Adopting them changes gameplay and needs a sim decision first.
 
 The RAA loader cannot run under node: `loadPrimsAsset` is an Engine method and `createEngine` needs WebGPU and a canvas. The browser is the only check of the loader.
+
+## MAMA
+
+MAMA meshes the SDF Modeler documents on the player's client. It is a private repository with no
+release tarball, so it is pinned by commit in `bricks.pins.json` and resolved at `.bricks/MAMA` (a
+sibling link or a clone made with a build-machine token; docs/bricks.md).
+
+- A public clone has no MAMA: `npm run bricks -- check` prints an INFO line, and typecheck, test,
+  build and smoke still pass, because MAMA is reached only through `virtual:rf-mama`, whose public
+  target is the typed stub `apps/web/src/mamaAbsent.ts`.
+- Without MAMA, only the SDF loading path refuses, at run time, with `MAMA not available: <reason>`.
+  Nothing falls back to another mesher or content source.
+- MAMA publishes no version: the resolved commit is the version (`__RF_MAMA__`, part of the client
+  mesh cache key). A sibling whose HEAD differs from the pin gives a WARN, never a failure.
+- A published MAMA release (a tarball like the other bricks) would remove the token, the clone and
+  the stub from the public build path.

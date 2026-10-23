@@ -1,15 +1,22 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { randomBytes } from 'node:crypto'
+import {
+  chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { delimiter, join } from 'node:path'
 import test, { afterEach } from 'node:test'
 import {
-  brickDir, checkBricks, githubToken, mamaSource, raaLocal, readPins, repoRoot,
+  brickDir, checkBricks, fetchMama, githubToken, mamaSource, raaLocal, readPins, repoRoot,
 } from '../bricks.ts'
 import type { BrickName } from '../bricks.ts'
 import { RefusalError } from '../../packages/sim/src/refusal.ts'
 
-const ENV_KEYS = ['RF_BRICKS_DIR', 'GAMESALOON_DIR', 'RF_RAA_LOCAL', 'MAMA_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN'] as const
+const ENV_KEYS = [
+  'RF_BRICKS_DIR', 'GAMESALOON_DIR', 'RF_RAA_LOCAL', 'MAMA_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN',
+  'PATH', 'RF_STUB_RECORD', 'RF_STUB_FAIL',
+] as const
 const saved = new Map<string, string | undefined>(ENV_KEYS.map((key) => [key, process.env[key]]))
 const temps: string[] = []
 
@@ -19,7 +26,8 @@ function temp(prefix = 'rf-bricks-'): string {
   return dir
 }
 
-// Every test starts from the env it found, so an override never leaks into the next one.
+// Every test starts from the env it found, so an override never leaks into the next one. The
+// fetchMama tests clone into a temp root, so removing the temps removes their .bricks/MAMA too.
 afterEach(() => {
   for (const key of ENV_KEYS) {
     const value = saved.get(key)
@@ -151,4 +159,139 @@ test('checkBricks stays ok without MAMA', async () => {
   assert.ok(result.lines.some((line) => line.includes('MAMA')), result.lines.join('\n'))
   assert.ok(result.lines.some((line) => line.includes('RF_RAA_LOCAL')), result.lines.join('\n'))
   assert.ok(!result.lines.some((line) => line.startsWith('FAIL ')), result.lines.join('\n'))
+})
+
+// A stub git and npm, first on PATH: each call appends its tool, argv, cwd and env (names and
+// values) to $RF_STUB_RECORD, then plays its part of the clone. `fetch` echoes the auth header and
+// the decoded credentials, as a verbose git could, so the redaction is exercised.
+const STUB = `#!/usr/bin/env node
+const fs = require('node:fs')
+const path = require('node:path')
+const tool = path.basename(process.argv[1])
+const argv = process.argv.slice(2)
+fs.appendFileSync(process.env.RF_STUB_RECORD, JSON.stringify({ tool, argv, cwd: process.cwd(), env: process.env }) + '\\n')
+if (tool === 'git' && argv[0] === 'init') fs.mkdirSync('.git', { recursive: true })
+if (tool === 'git' && argv[0] === 'fetch') {
+  const header = process.env.GIT_CONFIG_VALUE_0 || ''
+  console.log('stub: header ' + header)
+  console.error('stub: user ' + Buffer.from(header.slice(header.lastIndexOf(' ') + 1), 'base64').toString('utf8'))
+  if (process.env.RF_STUB_FAIL === '1') process.exit(128)
+  fs.writeFileSync('.git/FETCH_HEAD', argv[argv.length - 1] + '\\n')
+}
+if (tool === 'git' && argv[0] === 'checkout') fs.copyFileSync('.git/FETCH_HEAD', '.git/HEAD')
+`
+
+interface StubCall { tool: string; argv: string[]; cwd: string; env: Record<string, string> }
+
+// A temp repository root whose parent has no MAMA, an empty RF_BRICKS_DIR and no token variables,
+// so neither a real sibling nor a real token is picked up.
+function stubWorld(): { root: string; bricks: string; record: string } {
+  const base = temp()
+  const root = join(base, 'repo')
+  const bricks = join(base, 'bricks')
+  const bin = join(base, 'bin')
+  for (const dir of [root, bricks, bin]) mkdirSync(dir)
+  for (const tool of ['git', 'npm']) {
+    writeFileSync(join(bin, tool), STUB)
+    chmodSync(join(bin, tool), 0o755)
+  }
+  const record = join(base, 'record.jsonl')
+  process.env.PATH = `${bin}${delimiter}${process.env.PATH ?? ''}`
+  process.env.RF_BRICKS_DIR = bricks
+  process.env.RF_STUB_RECORD = record
+  delete process.env.RF_STUB_FAIL
+  for (const key of ['MAMA_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN']) delete process.env[key]
+  return { root, bricks, record }
+}
+
+function readRecord(record: string): StubCall[] {
+  if (!existsSync(record)) return []
+  return readFileSync(record, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as StubCall)
+}
+
+// Not a real token shape; built at run time so no secret-like literal is committed.
+function fakeToken(): { token: string; basic: string } {
+  const token = ['rf', 'fake', randomBytes(16).toString('hex')].join('-')
+  return { token, basic: Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64') }
+}
+
+test('fetchMama passes the token only as the base64 auth header in GIT_CONFIG_VALUE_0', async () => {
+  const world = stubWorld()
+  const { token, basic } = fakeToken()
+  process.env.MAMA_TOKEN = token
+  const pin = readPins().MAMA
+  const source = await fetchMama(world.root, () => {})
+  assert.equal(source.kind, 'cloned')
+  if (source.kind === 'cloned') {
+    assert.equal(source.commit, pin.commit)
+    assert.equal(source.dir, realpathSync(join(world.root, '.bricks', 'MAMA')))
+  }
+  const calls = readRecord(world.record)
+  assert.deepEqual(calls.map((call) => [call.tool, ...call.argv].join(' ')), [
+    'git init --quiet',
+    `git fetch --depth 1 https://github.com/${pin.repo}.git ${pin.commit}`,
+    'git checkout --quiet --detach FETCH_HEAD',
+    'npm ci --no-audit --no-fund',
+  ])
+  assert.ok(!readFileSync(world.record, 'utf8').includes(token), 'the raw token reached a child argv or env')
+  assert.ok(calls.every((call) => call.argv.every((arg) => !arg.includes(basic))), 'the encoded token reached an argv')
+  const holders = calls.flatMap((call) => Object.entries(call.env)
+    .filter(([, value]) => value.includes(basic))
+    .map(([name]) => `${call.tool} ${call.argv[0]}: ${name}`))
+  assert.deepEqual(holders, ['git fetch: GIT_CONFIG_VALUE_0'])
+  const fetchEnv = calls[1].env
+  assert.equal(fetchEnv.GIT_CONFIG_COUNT, '1')
+  assert.equal(fetchEnv.GIT_CONFIG_KEY_0, 'http.https://github.com/.extraheader')
+  assert.ok(fetchEnv.GIT_CONFIG_VALUE_0 === `AUTHORIZATION: basic ${basic}`, 'GIT_CONFIG_VALUE_0 is not the basic auth header')
+})
+
+test('fetchMama prints child output redacted', async () => {
+  const world = stubWorld()
+  const { token, basic } = fakeToken()
+  process.env.MAMA_TOKEN = token
+  const printed: string[] = []
+  await fetchMama(world.root, (line) => printed.push(line))
+  const text = printed.join('\n')
+  assert.ok(text.includes('stub: header AUTHORIZATION: basic <redacted>'), 'the child stdout was not printed redacted')
+  assert.ok(text.includes('stub: user x-access-token:<redacted>'), 'the child stderr was not printed redacted')
+  assert.ok(!text.includes(token) && !text.includes(basic), 'printed output carries the token')
+})
+
+test('fetchMama removes .bricks/MAMA when a step fails', async () => {
+  const world = stubWorld()
+  const { token, basic } = fakeToken()
+  process.env.MAMA_TOKEN = token
+  process.env.RF_STUB_FAIL = '1'
+  const printed: string[] = []
+  await assert.rejects(fetchMama(world.root, (line) => printed.push(line)), (error: unknown) =>
+    error instanceof RefusalError && error.message.startsWith('[bricks] MAMA: git fetch exited 128;'),
+  )
+  assert.equal(existsSync(join(world.root, '.bricks', 'MAMA')), false)
+  const text = printed.join('\n')
+  assert.ok(!text.includes(token) && !text.includes(basic), 'printed output carries the token')
+})
+
+test('fetchMama links a sibling and runs npm ci there when node_modules is missing', async () => {
+  const world = stubWorld()
+  const pin = readPins().MAMA.commit
+  const sibling = join(world.bricks, 'MAMA')
+  mkdirSync(join(sibling, '.git'), { recursive: true })
+  writeFileSync(join(sibling, '.git', 'HEAD'), `${pin}\n`)
+  process.env.MAMA_TOKEN = fakeToken().token
+  const source = await fetchMama(world.root, () => {})
+  assert.deepEqual(source, { kind: 'sibling', dir: realpathSync(sibling), commit: pin, matchesPin: true })
+  assert.ok(lstatSync(join(world.root, '.bricks', 'MAMA')).isSymbolicLink())
+  const calls = readRecord(world.record)
+  assert.deepEqual(calls.map((call) => [call.tool, ...call.argv].join(' ')), ['npm ci --no-audit --no-fund'])
+  assert.equal(realpathSync(calls[0].cwd), realpathSync(sibling))
+})
+
+test('fetchMama refuses without a sibling and without a token', async () => {
+  const world = stubWorld()
+  await assert.rejects(fetchMama(world.root, () => {}), (error: unknown) =>
+    error instanceof RefusalError
+    && error.message === '[bricks] MAMA: not found; clone Etcito/MAMA next to this repository or set MAMA_TOKEN on the build machine',
+  )
+  assert.equal(existsSync(join(world.root, '.bricks')), false)
+  assert.deepEqual(readRecord(world.record), [])
 })

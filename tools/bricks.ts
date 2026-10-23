@@ -1,11 +1,12 @@
 import { createRequire } from 'node:module'
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import {
   existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, unlinkSync,
 } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { pathToFileURL, fileURLToPath } from 'node:url'
-import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
+import { RefusalError, isRefusal, refuse } from '../packages/sim/src/refusal.ts'
+import { redact } from './guard.ts'
 
 // The GameSaloon rollback bricks (@gamesaloon/rollback, @gamesaloon/rollback-rapier) are installed
 // from their GitHub release tarballs like any dependency; nothing here locates them.
@@ -140,6 +141,22 @@ export type MamaSource =
 
 export const MAMA_ABSENT_PREFIX = 'MAMA not available: '
 
+// $RF_BRICKS_DIR/MAMA, then ../MAMA (brickDir's order), relative to the given repository root.
+function mamaSibling(root: string): string | null {
+  const candidates = [
+    ...(process.env.RF_BRICKS_DIR ? [join(process.env.RF_BRICKS_DIR, 'MAMA')] : []),
+    join(dirname(root), 'MAMA'),
+  ]
+  for (const candidate of candidates) {
+    // .bricks/MAMA itself is never its own sibling (RF_BRICKS_DIR=.bricks)
+    if (resolve(candidate) === join(root, '.bricks', 'MAMA')) continue
+    try {
+      if (existsSync(candidate) && statSync(candidate).isDirectory()) return realpathSync(candidate)
+    } catch {}
+  }
+  return null
+}
+
 // Offline resolution of MAMA: .bricks/MAMA first, then the documented siblings. Never clones.
 export function mamaSource(root: string = repoRoot()): MamaSource {
   const pins = readPins().MAMA
@@ -165,26 +182,19 @@ export function mamaSource(root: string = repoRoot()): MamaSource {
     const code = (error as NodeJS.ErrnoException).code
     if (code !== 'ENOENT') return { kind: 'absent', reason: `cannot inspect ${link} (${error instanceof Error ? error.message : String(error)})` }
   }
-  const candidates = [
-    ...(process.env.RF_BRICKS_DIR ? [join(process.env.RF_BRICKS_DIR, 'MAMA')] : []),
-    join(dirname(root), 'MAMA'),
-  ]
-  for (const candidate of candidates) {
-    try {
-      if (!existsSync(candidate) || !statSync(candidate).isDirectory()) continue
-    } catch {
-      continue
-    }
-    const dir = realpathSync(candidate)
-    const commit = readGitHead(dir)
-    return { kind: 'sibling', dir, commit, matchesPin: commit !== null && commit === pins.commit }
+  const sibling = mamaSibling(root)
+  if (sibling) {
+    const commit = readGitHead(sibling)
+    return { kind: 'sibling', dir: sibling, commit, matchesPin: commit !== null && commit === pins.commit }
   }
   return { kind: 'absent', reason: `no .bricks/MAMA, no $RF_BRICKS_DIR/MAMA or ../MAMA; clone ${pins.repo} next to this repository or run npm run bricks -- fetch mama` }
 }
 
+const TOKEN_KEYS = ['MAMA_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN'] as const
+
 // MAMA_TOKEN, else GH_TOKEN, else GITHUB_TOKEN. The value is never printed.
 export function githubToken(): string | null {
-  for (const key of ['MAMA_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN'] as const) {
+  for (const key of TOKEN_KEYS) {
     const value = process.env[key]?.trim()
     if (value) return value
   }
@@ -197,25 +207,51 @@ export function raaLocal(): { active: boolean; dir: string | null } {
   return { active: dir !== null, dir }
 }
 
-function redactText(text: string, secrets: readonly string[]): string {
-  let out = text
-  for (const secret of secrets) {
-    if (secret) out = out.split(secret).join('[redacted]')
-  }
-  return out
+// Children never see the token variables; only `git fetch` gets the auth header (extra).
+function childEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, ...extra }
+  for (const key of TOKEN_KEYS) delete env[key]
+  return env
 }
 
-function run(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv, secrets: readonly string[]): string {
-  const result = spawnSync(command, args, { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 600000 })
-  const output = redactText(`${result.stdout ?? ''}${result.stderr ?? ''}`, secrets).trim()
-  const tail = output ? `: ${output.split('\n').slice(-6).join('\n')}` : ''
-  if (result.error) {
-    refuse('bricks', 'MAMA', `${command} failed (${redactText(result.error.message, secrets)}); check the token and the pins commit${tail}`)
-  }
-  if (result.status !== 0) {
-    refuse('bricks', 'MAMA', `${command} ${args[0] ?? ''} exited ${result.status ?? 'on a signal'}; check the token and the pins commit${tail}`)
-  }
-  return output
+function printLine(line: string): void {
+  process.stderr.write(`${line}\n`)
+}
+
+// Runs one child from an argv array. Its stdout and stderr are printed line by line, each line
+// redacted first, so a secret never reaches the terminal or a transcript.
+function run(
+  command: string, args: readonly string[], cwd: string, env: NodeJS.ProcessEnv,
+  secrets: readonly string[], print: (line: string) => void,
+): Promise<void> {
+  const step = `${command} ${args[0] ?? ''}`.trim()
+  print(redact(`$ ${[command, ...args].join(' ')}`, secrets))
+  return new Promise((done, fail) => {
+    const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], timeout: 600000 })
+    const relay = (stream: NodeJS.ReadableStream): void => {
+      let pending = ''
+      stream.setEncoding('utf8')
+      stream.on('data', (chunk: string) => {
+        pending += chunk
+        const lines = pending.split('\n')
+        pending = lines.pop() ?? ''
+        for (const line of lines) print(redact(line, secrets))
+      })
+      stream.on('end', () => {
+        if (pending) print(redact(pending, secrets))
+        pending = ''
+      })
+    }
+    if (child.stdout) relay(child.stdout)
+    if (child.stderr) relay(child.stderr)
+    child.on('error', (error) => {
+      fail(new RefusalError('bricks', 'MAMA', `${step} failed (${redact(error.message, secrets)}); check that ${command} is installed`))
+    })
+    child.on('close', (code, signal) => {
+      if (code === 0) done()
+      else fail(new RefusalError('bricks', 'MAMA', `${step} exited ${code ?? signal ?? 'abnormally'}; see its output above, then check the token and the pin in ${PIN_FILE}`))
+    })
+  })
 }
 
 function removeLink(link: string): void {
@@ -227,44 +263,52 @@ function removeLink(link: string): void {
   }
 }
 
-// Links or clones MAMA below .bricks/MAMA and installs it when node_modules is missing.
-export async function fetchMama(): Promise<MamaSource> {
-  const root = repoRoot()
-  const pins = readPins()
+// S15: links a sibling at .bricks/MAMA, else clones the pinned commit there with the env token,
+// else refuses. A failed step removes .bricks/MAMA again, so a half clone is never resolved.
+export async function fetchMama(root: string = repoRoot(), print: (line: string) => void = printLine): Promise<MamaSource> {
+  const pin = readPins().MAMA
   const link = join(root, '.bricks', 'MAMA')
-  mkdirSync(dirname(link), { recursive: true })
-  const sibling = brickDir('MAMA')
+  const sibling = mamaSibling(root)
   if (sibling) {
     removeLink(link)
+    mkdirSync(dirname(link), { recursive: true })
     symlinkSync(relative(dirname(link), sibling), link, 'dir')
-    if (!existsSync(join(sibling, 'node_modules'))) run('npm', ['ci', '--no-audit', '--no-fund'], sibling, process.env, [])
-    return mamaSource()
+    try {
+      if (!existsSync(join(sibling, 'node_modules'))) await run('npm', ['ci', '--no-audit', '--no-fund'], sibling, childEnv(), [], print)
+    } catch (error) {
+      removeLink(link)
+      throw error
+    }
+    return mamaSource(root)
   }
   const token = githubToken()
   if (!token) refuse('bricks', 'MAMA', 'not found; clone Etcito/MAMA next to this repository or set MAMA_TOKEN on the build machine')
-  removeLink(link)
-  mkdirSync(link, { recursive: true })
-  const url = `https://github.com/${pins.MAMA.repo}.git`
-  const auth = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString('base64')}`
-  const env: NodeJS.ProcessEnv = {
-    ...process.env,
+  const basic = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64')
+  const secrets = [token, basic]
+  const gitEnv = childEnv({ GIT_TERMINAL_PROMPT: '0' })
+  const fetchEnv = childEnv({
+    GIT_TERMINAL_PROMPT: '0',
     GIT_CONFIG_COUNT: '1',
     GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
-    GIT_CONFIG_VALUE_0: auth,
-    GIT_TERMINAL_PROMPT: '0',
+    GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}`,
+  })
+  const url = `https://github.com/${pin.repo}.git`
+  removeLink(link)
+  mkdirSync(link, { recursive: true })
+  try {
+    await run('git', ['init', '--quiet'], link, gitEnv, secrets, print)
+    await run('git', ['fetch', '--depth', '1', url, pin.commit], link, fetchEnv, secrets, print)
+    await run('git', ['checkout', '--quiet', '--detach', 'FETCH_HEAD'], link, gitEnv, secrets, print)
+    await run('npm', ['ci', '--no-audit', '--no-fund'], link, childEnv(), secrets, print)
+    const source = mamaSource(root)
+    if (source.kind !== 'cloned' || source.commit !== pin.commit) {
+      refuse('bricks', 'MAMA', `the clone resolves to ${source.kind === 'absent' ? source.reason : `${source.kind} ${source.commit}`}, expected cloned ${pin.commit}; check the pin in ${PIN_FILE}`)
+    }
+    return source
+  } catch (error) {
+    removeLink(link)
+    throw error
   }
-  // The auth header is the only place the token reaches a child; the env vars are removed.
-  delete env.MAMA_TOKEN
-  delete env.GH_TOKEN
-  delete env.GITHUB_TOKEN
-  const secrets = [token, auth, auth.slice('AUTHORIZATION: basic '.length)]
-  run('git', ['init', '--quiet'], link, env, secrets)
-  run('git', ['fetch', '--depth', '1', url, pins.MAMA.commit], link, env, secrets)
-  run('git', ['checkout', '--quiet', '--detach', 'FETCH_HEAD'], link, env, secrets)
-  if (!existsSync(join(link, 'node_modules'))) run('npm', ['ci', '--no-audit', '--no-fund'], link, env, secrets)
-  const commit = readGitHead(link)
-  if (commit === null) refuse('bricks', 'MAMA', `cloned ${url} but its HEAD is unreadable; check the pin`)
-  return { kind: 'cloned', dir: realpathSync(link), commit }
 }
 
 export interface BrickCheck { ok: boolean; lines: string[] }
@@ -301,9 +345,9 @@ export async function checkBricks(): Promise<BrickCheck> {
     lines.push(`FAIL ${isRefusal(error) ? error.message : String(error)}`)
   }
   const raa = raaLocal()
-  lines.push(raa.active
-    ? `WARN RF_RAA_LOCAL=1: local RAA override active from ${raa.dir}`
-    : 'INFO RF_RAA_LOCAL is off; using the release @etcito/raa')
+  if (raa.active) lines.push(`WARN RF_RAA_LOCAL=1: local RAA override active from ${raa.dir}`)
+  else if (process.env.RF_RAA_LOCAL === '1') lines.push('INFO RF_RAA_LOCAL=1 but no raa brick ($RF_BRICKS_DIR/raa or ../raa); using the release @etcito/raa')
+  else lines.push('INFO RF_RAA_LOCAL is off; using the release @etcito/raa')
   return { ok: !lines.some((line) => line.startsWith('FAIL ')), lines }
 }
 
@@ -341,10 +385,13 @@ export async function main(argv: string[]): Promise<number> {
     if (command === 'fetch' && name === 'mama') {
       const source = await fetchMama()
       if (source.kind === 'absent') {
-        console.log(`MAMA absent: ${source.reason}`)
+        console.log(`${MAMA_ABSENT_PREFIX}${source.reason}`)
         return 1
       }
-      console.log(`MAMA ${source.kind}: ${source.dir} at ${source.commit}`)
+      console.log(`MAMA ${source.kind} ${source.commit ?? 'unknown'}`)
+      if (source.kind === 'sibling' && !source.matchesPin) {
+        console.log(`WARN [bricks] MAMA: the sibling differs from the pin ${readPins().MAMA.commit}; check out the pinned commit or update ${PIN_FILE}`)
+      }
       return 0
     }
   } catch (error) {

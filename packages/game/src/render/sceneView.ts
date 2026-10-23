@@ -4,12 +4,23 @@ import type { CorrectionSmoother } from '@gamesaloon/rollback'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
+import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import { pose } from '@royal-fiesta/sim/vec'
+import { NO_DRESSING } from '../content.ts'
+import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
 import { PALETTE } from './palette.ts'
 import type { CameraPose, RenderPort } from './port.ts'
 
-export interface SceneViewOptions { port: RenderPort; viewport: number; localPlayer: number; assets: (name: string) => PrimsAsset; bean: PrimsAsset }
+export interface SceneViewOptions {
+  port: RenderPort; viewport: number; localPlayer: number; assets: (name: string) => PrimsAsset; bean: PrimsAsset
+  // Replaces followCamera while the camera frames the local player (not the podium).
+  camera?: (focus: { x: number; y: number; z: number }, frameDtS: number) => CameraPose
+  // The content's character asset (GameContent.character()); the bean when absent.
+  character?: PrimsAsset
+  // Course decor and environment, swapped on every course change. Default NO_DRESSING.
+  dressing?: CourseDressing
+}
 
 const UNIT: readonly [number, number, number] = [1, 1, 1]
 // Pose layout in the obstacle buffers: t xyz then r xyzw.
@@ -19,6 +30,9 @@ export class SceneView {
   private readonly opts: SceneViewOptions
   private readonly port: RenderPort
   private readonly beanAsset: number
+  private readonly dressing: CourseDressing
+  // Course id whose dressing is entered, so leave() pairs with exactly one enter().
+  private dressed: string | null = null
   // registerAsset is idempotent, but the handle is cached so each name is registered once.
   private readonly handles = new Map<string, number>()
   private beans: number[] = []
@@ -47,7 +61,9 @@ export class SceneView {
   constructor(opts: SceneViewOptions) {
     this.opts = opts
     this.port = opts.port
-    this.beanAsset = this.asset('bean', opts.bean)
+    this.dressing = opts.dressing ?? NO_DRESSING
+    const character = opts.character ?? opts.bean
+    this.beanAsset = this.asset(character.id, character)
   }
 
   get camera(): CameraPose | null {
@@ -69,6 +85,7 @@ export class SceneView {
     let reset = false
     if (course !== this.course) {
       this.loadObstacles(sim, course)
+      this.dress(course)
       reset = true
     }
     const players = sim.setup.playerCount
@@ -109,6 +126,7 @@ export class SceneView {
     const local = this.opts.localPlayer
     let camPos: { x: number; y: number; z: number } | null = null
     let camFacing = { x: 0, z: 1 }
+    let onLocal = false
     for (let p = 0; p < players; p++) {
       sim.character(p, c)
       if (c.parked) {
@@ -126,10 +144,29 @@ export class SceneView {
       if (p === local) {
         camPos = { x: d[0], y: d[1], z: d[2] }
         camFacing = { x: fx, z: fz }
+        onLocal = true
       }
     }
+    // The podium freezes the winners and parks the rest, so the local player may have no camera:
+    // frame the podium itself or the capture is the void.
+    if (this.state.phase === Phase.podium && this.state.podium.length > 0) {
+      let px = 0
+      let py = 0
+      let pz = 0
+      for (let i = 0; i < this.state.podium.length; i++) {
+        const b = this.state.podium[i] * 3
+        px += this.chCur[b]
+        py += this.chCur[b + 1]
+        pz += this.chCur[b + 2]
+      }
+      const n = this.state.podium.length
+      camPos = { x: px / n, y: py / n, z: pz / n }
+      camFacing = { x: 0, z: 1 }
+      onLocal = false
+    }
     if (camPos !== null) {
-      this.cam = followCamera(this.cam, camPos, camFacing, frameDtS)
+      const hook = this.opts.camera
+      this.cam = hook !== undefined && onLocal ? hook(camPos, frameDtS) : followCamera(this.cam, camPos, camFacing, frameDtS)
       port.setCamera(this.opts.viewport, this.cam)
     }
   }
@@ -140,6 +177,7 @@ export class SceneView {
     this.beans = []
     this.beanShown = []
     this.obstacles = []
+    this.dress(null)
     this.course = null
     this.tick = -1
   }
@@ -164,6 +202,14 @@ export class SceneView {
     }
     this.obPrev = new Float64Array(n * OB)
     this.obCur = new Float64Array(n * OB)
+  }
+
+  private dress(course: ResolvedCourse | null): void {
+    if (this.dressed !== null) this.dressing.leave(this.port)
+    this.dressed = null
+    if (course === null) return
+    this.dressing.enter(this.port, course.id)
+    this.dressed = course.id
   }
 
   private createBeans(players: number): void {

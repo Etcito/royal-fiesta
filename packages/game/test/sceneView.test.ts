@@ -6,12 +6,15 @@ import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { neutralInput } from '@royal-fiesta/sim/input'
 import { createMatchSim } from '@royal-fiesta/sim/match/matchSim'
+import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
 import { fixtureResolver } from '../src/assets.ts'
+import type { CourseDressing } from '../src/content.ts'
 import { matchCourses } from '../src/courseSet.ts'
 import type { CourseEntry } from '../src/courseSet.ts'
 import { netSetup } from '../src/net/tuning.ts'
 import type { PrimsAsset } from '../src/prims.ts'
 import { NullRenderPort } from '../src/render/nullPort.ts'
+import type { CameraPose, RenderPort } from '../src/render/port.ts'
 import { SceneView } from '../src/render/sceneView.ts'
 
 const ROOT = new URL('../../../', import.meta.url)
@@ -77,6 +80,117 @@ test('SceneView keeps beans and obstacles on the port while the match runs', asy
   } finally {
     view.dispose()
     assert.equal(port.render().instances, 0)
+    sim.free()
+  }
+})
+
+test('SceneView uses the camera hook instead of the follow camera on the local player', async () => {
+  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  // NullRenderPort keeps no camera, so record the last one per viewport.
+  class RecordingPort extends NullRenderPort {
+    readonly lastCamera = new Map<number, CameraPose>()
+    override setCamera(viewport: number, cam: CameraPose): void {
+      super.setCamera(viewport, cam)
+      this.lastCamera.set(viewport, cam)
+    }
+  }
+  const port = new RecordingPort()
+  await port.init({ canvas: null, width: 960, height: 540, viewports: [{ x: 0, y: 0, width: 960, height: 540 }] })
+  const fixed: CameraPose = { eye: [1, 2, 3], target: [4, 5, 6], fovYDeg: 50, near: 0.2, far: 300 }
+  const seen: { x: number; y: number; z: number }[] = []
+  const view = new SceneView({
+    port, viewport: 0, localPlayer: 0, bean,
+    assets: name => assets.get(name)!,
+    camera: (focus, dt) => {
+      assert.equal(dt, 1 / 60)
+      seen.push({ x: focus.x, y: focus.y, z: focus.z })
+      return fixed
+    },
+  })
+  try {
+    const inputs = Array.from({ length: sim.setup.playerCount }, () => neutralInput())
+    const c: CharacterView = {
+      pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 },
+      mode: 0, status: 0, parked: false, teleportTick: -1,
+    }
+    let checked = 0
+    for (let i = 0; i < 120; i++) {
+      sim.step(inputs)
+      const before = seen.length
+      // alpha 1 and no smoother: the displayed position is the current tick's position.
+      view.update(sim, null, 1, 1 / 60)
+      sim.character(0, c)
+      if (c.parked) continue
+      assert.equal(seen.length, before + 1)
+      assert.deepEqual(seen[seen.length - 1], { x: c.pos.x, y: c.pos.y, z: c.pos.z })
+      checked++
+    }
+    assert.ok(checked > 0, 'the local player was shown')
+    assert.equal(view.camera, fixed)
+    assert.equal(port.lastCamera.get(0), fixed)
+  } finally {
+    view.dispose()
+    sim.free()
+  }
+})
+
+test('SceneView leaves the previous dressing and enters the new one on every course change', async () => {
+  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const port = new NullRenderPort()
+  await port.init({ canvas: null, width: 960, height: 540, viewports: [{ x: 0, y: 0, width: 960, height: 540 }] })
+  const log: string[] = []
+  const dressing: CourseDressing = {
+    enter(p: RenderPort, courseId: string): void {
+      assert.equal(p, port)
+      log.push(`enter:${courseId}`)
+    },
+    leave(p: RenderPort): void {
+      assert.equal(p, port)
+      log.push('leave')
+    },
+  }
+  const view = new SceneView({ port, viewport: 0, localPlayer: 0, bean, assets: name => assets.get(name)!, dressing })
+  try {
+    const inputs = Array.from({ length: sim.setup.playerCount }, () => neutralInput())
+    const ids: string[] = []
+    for (let i = 0; i < 3000 && ids.length < 2; i++) {
+      sim.step(inputs)
+      view.update(sim, null, 1, 1 / 60)
+      const c = sim.course()
+      if (c !== null && ids[ids.length - 1] !== c.id) ids.push(c.id)
+    }
+    assert.equal(ids.length, 2, 'two courses were played')
+    assert.notEqual(ids[0], ids[1])
+    assert.deepEqual(log, [`enter:${ids[0]}`, 'leave', `enter:${ids[1]}`])
+  } finally {
+    view.dispose()
+    sim.free()
+  }
+  assert.equal(log[log.length - 1], 'leave', 'dispose leaves the last dressing')
+})
+
+test('SceneView registers the custom character asset for the character instances', async () => {
+  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  // NullRenderPort counts registrations only, so record which asset each name got.
+  class RecordingPort extends NullRenderPort {
+    readonly registered = new Map<string, PrimsAsset>()
+    override registerAsset(name: string, asset: PrimsAsset): number {
+      this.registered.set(name, asset)
+      return super.registerAsset(name, asset)
+    }
+  }
+  const port = new RecordingPort()
+  await port.init({ canvas: null, width: 960, height: 540, viewports: [{ x: 0, y: 0, width: 960, height: 540 }] })
+  const character: PrimsAsset = { ...bean, id: 'penguin-test', name: 'Penguin test' }
+  const view = new SceneView({ port, viewport: 0, localPlayer: 0, bean, character, assets: name => assets.get(name)! })
+  try {
+    assert.equal(port.registered.get('penguin-test'), character)
+    assert.ok(!port.registered.has('bean'), 'the bean is not registered when a character is given')
+    sim.step(Array.from({ length: sim.setup.playerCount }, () => neutralInput()))
+    view.update(sim, null, 1, 1 / 60)
+    assert.equal(view.instanceCount, 8 + sim.obstacleCount())
+  } finally {
+    view.dispose()
     sim.free()
   }
 })

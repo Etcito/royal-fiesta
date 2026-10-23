@@ -13,6 +13,7 @@ pkg/
 *.bin
 out/
 .vite/
+.bricks/
 .nmc/
 kong.rules
 # baked by npm run audio:bake (tools/bake-audio.ts): MP3 strips, manifest.json, haa-processors.js

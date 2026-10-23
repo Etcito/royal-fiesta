@@ -96,7 +96,7 @@ Page for manual runs: `game.html?mode=ops`.
 {
   "width": 1280,
   "height": 720,
-  "content": "v1",
+  "content": "v0",
   "course": "race-sprint",
   "cases": [
     {

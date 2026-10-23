@@ -1,0 +1,119 @@
+{
+  "doc": "docs/wavedash.md",
+  "docSha256": "f76bb1870e4c1576beab0acc2c1909236b2188a6a5b821777d93126352657b25",
+  "bundle": "out/wavedash-build/upload",
+  "contentSha256": "559066cd318b843cb877618d1c4946116b39bbc4160fd7b402a6fe17907bf45c",
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "A game build is a folder of static files; upload accepts a folder or zip, and an uploaded build can contain up to 1 GB uncompressed.",
+      "source": "https://docs.wavedash.com/publishing/upload (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": null,
+      "status": "info",
+      "detail": "no automatic check"
+    },
+    {
+      "id": "R2",
+      "statement": "The default entry point is `index.html`; `wavedash.toml` may set `entrypoint` to an HTML (`.html`/`.htm`) or JavaScript (`.js`) file relative to `upload_dir`.",
+      "source": "https://docs.wavedash.com/cli/configuration (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": "entrypoint",
+      "status": "pass",
+      "detail": "wavedash.toml entrypoint game.html; out/wavedash-build/upload/game.html present"
+    },
+    {
+      "id": "R3",
+      "statement": "The host injects the `Wavedash` SDK global; every game must call `Wavedash.init()` once when ready to show, while installing `@wvdsh/sdk-js` is optional.",
+      "source": "https://docs.wavedash.com/getting-started/quickstart (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": null,
+      "status": "info",
+      "detail": "no automatic check"
+    },
+    {
+      "id": "R4",
+      "statement": "The uploaded-build limit is 1 GB uncompressed; the public upload documentation gives no per-file or file-count limit.",
+      "source": "https://docs.wavedash.com/publishing/upload (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": "bundle-size",
+      "status": "pass",
+      "detail": "7018940 bytes uncompressed in 26 files (limit 1073741824)"
+    },
+    {
+      "id": "R5",
+      "statement": "Developer Portal upload accepts a build folder or zip; CLI flow uses `wavedash build push` then `wavedash publish <BUILD_ID>`, and local SDK testing uses `wavedash dev`; verify the published game at its public game URL.",
+      "source": "https://docs.wavedash.com/getting-started/quickstart (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": null,
+      "status": "info",
+      "detail": "no automatic check"
+    },
+    {
+      "id": "R6",
+      "statement": "CLI configuration supports `game_id`, `upload_dir`, and optional `entrypoint` in root `wavedash.toml`; `upload_dir` is relative to the config file.",
+      "source": "https://docs.wavedash.com/cli/configuration (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": "wavedash-toml",
+      "status": "pass",
+      "detail": "wavedash.toml: upload_dir ./upload, no game_id (the push run sets it)"
+    },
+    {
+      "id": "R7",
+      "statement": "Wavedash runs games cross-origin isolated and requires external servers contacted by the game to send `Cross-Origin-Resource-Policy: cross-origin` and `Access-Control-Allow-Origin: *` on every response; the docs do not specify a `connect-src` CSP policy or enumerate allowed WebSocket/WebRTC destinations.",
+      "source": "https://docs.wavedash.com/platform/cross-origin-isolation (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": null,
+      "status": "info",
+      "detail": "no automatic check"
+    },
+    {
+      "id": "R8",
+      "statement": "Published Wavedash games can be embedded in an iframe; the documented embed code uses `https://wavedash.com/embed/games/<slug>` and an `allow` attribute including `autoplay`, `fullscreen`, `gamepad`, `cross-origin-isolated`, `pointer-lock`, and other listed permissions; the embedding page is instructed to keep that attribute.",
+      "source": "https://docs.wavedash.com/publishing/embed (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": null,
+      "status": "info",
+      "detail": "no automatic check"
+    },
+    {
+      "id": "R9",
+      "statement": "Wavedash serves the game origin from a subdomain of `builds.wavedashcdn.com`.",
+      "source": "https://docs.wavedash.com/platform/cross-origin-isolation (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": null,
+      "status": "info",
+      "detail": "no automatic check"
+    },
+    {
+      "id": "R10",
+      "statement": "The published-game embed example does not document the Wavedash frame's `sandbox` attribute, the frame's response CSP, or a `Permissions-Policy` response header.",
+      "source": "https://docs.wavedash.com/publishing/embed (retrieved 2026-10-18 via docs/wavedash.md)",
+      "unverified": null,
+      "check": null,
+      "status": "info",
+      "detail": "no automatic check"
+    }
+  ],
+  "builtins": [
+    {
+      "id": "B1",
+      "statement": "no secret in the bundle (nmc.gpu.json, store/, .env*, *.pem, *.key, leakScan patterns)",
+      "status": "pass",
+      "detail": "26 files, 16 text files scanned"
+    },
+    {
+      "id": "relay-url-not-committed",
+      "statement": "the bundle names no relay URL: the GameSaloon server comes from ?server= (ARCHITECTURE 1.6)",
+      "status": "pass",
+      "detail": "no ws/wss host in 16 text files"
+    },
+    {
+      "id": "build-manifest",
+      "statement": "rf-build.json follows docs/wavedash.md (format, version 1, commit, entry, mama kind and commit only)",
+      "status": "pass",
+      "detail": "{\"format\":\"royal-fiesta.build\",\"version\":1,\"entry\":\"game.html\",\"raa\":\"0.1.1\",\"mama\":\"sibling\"}"
+    }
+  ],
+  "pass": true
+}

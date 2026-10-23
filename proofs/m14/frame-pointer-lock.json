@@ -1,0 +1,23 @@
+{
+  "format": "royal-fiesta.m14-controls-frame",
+  "version": 0,
+  "published": false,
+  "variants": [],
+  "note": "the real Wavedash frame cannot be probed before a push to Wavedash; these variants reproduce its sandbox/allow attributes locally (loopback ports redacted from frame.url and error)",
+  "label": "local emulation, not Wavedash",
+  "wavedash": false,
+  "build": "game.html as index.html, commit 2bc132ca75d1043f85f448c71423f545b11a0b72",
+  "frame": {
+    "url": "http://localhost:<port>/index.html",
+    "headers": {
+      "cross-origin-embedder-policy": "require-corp",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "cross-origin",
+      "access-control-allow-origin": "*",
+      "cache-control": "no-store"
+    },
+    "csp": null
+  },
+  "status": "incomplete",
+  "error": "no iframe target for http://localhost:<port> appeared; this Chrome may run the frame in process, where CDP cannot evaluate in its main world"
+}

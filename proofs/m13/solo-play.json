@@ -1,0 +1,160 @@
+{
+  "format": "royal-fiesta.m13-solo-play",
+  "version": 0,
+  "date": "2026-10-19",
+  "published": false,
+  "source": "GPU client op localMatchCapture on local.html of apps/web/dist (vite build --configLoader runner with @raa/engine from out/raa-build at RAA_PIN 3074b3fc): one piloted human + 3 bots, store-backed renderAssets (raa-assets dialect) -> RaaRenderer, standard profile as solo play on game.html",
+  "limitation": "The framed Wavedash page (preview:wavedash embedder, COOP/COEP) cannot be opened in the GPU client page (no frames, no network beyond the page dir); the capture runs the same dist the package:wavedash bundle is made from, with the store mirror served from the page dir",
+  "pageRef": "exec-5637-6fb9a6b18f6955e4e0cd6f075d19c54945ee71864fb7f8f61e2ffc63379a046c",
+  "renderer": "raa",
+  "adapter": {
+    "vendor": "",
+    "architecture": "",
+    "description": "ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3090), OpenGL ES 3.1 Mesa 26.0.3-1ubuntu1)",
+    "software": false
+  },
+  "assetOrigins": {
+    "floor-tile": "fixtures",
+    "wall-block": "fixtures",
+    "spinner-bar": "store",
+    "pendulum-hammer": "store",
+    "checkpoint-gate": "store",
+    "conveyor-belt": "store",
+    "rotating-door": "store",
+    "moving-platform": "store",
+    "seesaw-plank": "store",
+    "bounce-pad": "store",
+    "finish-arch": "store",
+    "floor-disc": "fixtures",
+    "bean": "store"
+  },
+  "conveyorCapture": {
+    "file": "out/m13/solo-every5/m11-t010-playing.png",
+    "tick": 600,
+    "course": "race-bean-dash",
+    "what": "conveyor-1/-2 (rf.obstacle.conveyor-belt at z 48.5) rendered past checkpoint-1: dark deck, cyan arrow cones, orange rails, yellow roller; the human is at z 41.9 (Node replay of the same seed)"
+  },
+  "before": "solo play refused at RaaRenderer.registerAsset conveyor-belt (roundCuboid borderRadius > min halfExtents) before the first frame",
+  "machine": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "AMD Ryzen 9 3900XT 12-Core Processor",
+    "node": "v24.21.0"
+  },
+  "runs": [
+    {
+      "job": "487bf6d3ccdf4543bd7479612c37cc49",
+      "dir": "out/m13/solo-every5",
+      "input": {
+        "seed": 23,
+        "bots": 3,
+        "difficulty": "hard",
+        "profile": "standard",
+        "everyS": 5,
+        "width": 960,
+        "height": 540
+      },
+      "matchTicks": 3553,
+      "rounds": [
+        {
+          "course": "race-bean-dash",
+          "startTick": 0,
+          "endTick": 2039,
+          "qualified": [
+            0,
+            3
+          ]
+        },
+        {
+          "course": "survival-sprint",
+          "startTick": 2520,
+          "endTick": 2771,
+          "qualified": [
+            0
+          ]
+        }
+      ],
+      "winner": 0,
+      "podium": [
+        0,
+        3,
+        2
+      ],
+      "finalHash": "e445cbd2",
+      "rematchStarted": true,
+      "frameTiming": {
+        "frames": 3542,
+        "p50Ms": 0.5,
+        "p95Ms": 0.8999999910593033
+      },
+      "captures": [
+        "m11-t005-playing.png",
+        "m11-t010-playing.png",
+        "m11-t015-playing.png",
+        "m11-t020-playing.png",
+        "m11-t025-playing.png",
+        "m11-t030-playing.png",
+        "m11-t035-roundEnd.png",
+        "m11-t040-intermission.png",
+        "m11-t045-intro.png",
+        "m11-t050-podium.png",
+        "m11-t055-podium.png",
+        "m11-rematch.png"
+      ]
+    },
+    {
+      "job": "dbdf6baa0aa03ab20da35d3b84267de2",
+      "dir": "out/m13/solo",
+      "input": {
+        "seed": 23,
+        "bots": 3,
+        "difficulty": "hard",
+        "profile": "standard",
+        "everyS": 10.5,
+        "width": 960,
+        "height": 540
+      },
+      "matchTicks": 3553,
+      "rounds": [
+        {
+          "course": "race-bean-dash",
+          "startTick": 0,
+          "endTick": 2039,
+          "qualified": [
+            0,
+            3
+          ]
+        },
+        {
+          "course": "survival-sprint",
+          "startTick": 2520,
+          "endTick": 2771,
+          "qualified": [
+            0
+          ]
+        }
+      ],
+      "winner": 0,
+      "podium": [
+        0,
+        3,
+        2
+      ],
+      "finalHash": "e445cbd2",
+      "rematchStarted": true,
+      "frameTiming": {
+        "frames": 3548,
+        "p50Ms": 0.5999999940395355,
+        "p95Ms": 0.7999999970197678
+      },
+      "captures": [
+        "m11-t011-playing.png",
+        "m11-t021-playing.png",
+        "m11-t032-playing.png",
+        "m11-t042-intermission.png",
+        "m11-t053-podium.png",
+        "m11-rematch.png"
+      ]
+    }
+  ]
+}

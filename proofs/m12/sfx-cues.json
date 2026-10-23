@@ -1,0 +1,64 @@
+{
+  "renderer": "OfflineAudioContext",
+  "sampleRate": 48000,
+  "volume": 80,
+  "command": "node --experimental-strip-types apps/web/src/game/sfxRender.ts",
+  "cues": [
+    {
+      "cue": "click",
+      "file": "out/m12/sfx/click.wav",
+      "sha256": "011d41ae6fb8121e89f1e7dc767ec8bfea3e24d916d4a916441ce19e8d4f07cb",
+      "bytes": 11564,
+      "durationMs": 120,
+      "peak": 0.2
+    },
+    {
+      "cue": "back",
+      "file": "out/m12/sfx/back.wav",
+      "sha256": "7c131c3b117c1b4a6daab750e2955d766abf15414fc3dda2efeacadf46aee86c",
+      "bytes": 14446,
+      "durationMs": 150,
+      "peak": 0.1808
+    },
+    {
+      "cue": "countdown",
+      "file": "out/m12/sfx/countdown.wav",
+      "sha256": "e85f048f23aa1e51b08ac88aad531d7b9a4db208aa820d89f73b15101f143425",
+      "bytes": 12524,
+      "durationMs": 130,
+      "peak": 0.1972
+    },
+    {
+      "cue": "go",
+      "file": "out/m12/sfx/go.wav",
+      "sha256": "3245fcc3d254094d864657cf56c8cb45acc7aba0835699b0349ce7f82c74fb5b",
+      "bytes": 29804,
+      "durationMs": 310,
+      "peak": 0.198
+    },
+    {
+      "cue": "qualified",
+      "file": "out/m12/sfx/qualified.wav",
+      "sha256": "72e4443788e228ea77fce996d36c6c70ff1cbc37d6123bd80392e5917c85122d",
+      "bytes": 37484,
+      "durationMs": 390,
+      "peak": 0.1977
+    },
+    {
+      "cue": "eliminated",
+      "file": "out/m12/sfx/eliminated.wav",
+      "sha256": "a6f462022d1924031559978105fd1a9f4c4d597339b577ed0986e9155e12499a",
+      "bytes": 37484,
+      "durationMs": 390,
+      "peak": 0.1986
+    },
+    {
+      "cue": "podium",
+      "file": "out/m12/sfx/podium.wav",
+      "sha256": "156eb29e31f0ce3796cdfc467ff82f1864b5c485cdd5daf018d7a14efcb4bcc8",
+      "bytes": 37484,
+      "durationMs": 390,
+      "peak": 0.2001
+    }
+  ]
+}

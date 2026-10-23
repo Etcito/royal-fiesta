@@ -1,0 +1,108 @@
+{
+  "pageRef": "exec-4917-13061bf3fd19deb3754646d5c79e875ce3fad71f6ddf4f45f0365a2312f14903",
+  "renderer": "raa",
+  "adapter": {
+    "vendor": "",
+    "architecture": "",
+    "description": "ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3090), OpenGL ES 3.1 Mesa 26.0.3-1ubuntu1)",
+    "software": false
+  },
+  "screens": [
+    {
+      "screen": "title",
+      "capture": "title.png",
+      "how": "title: page load",
+      "sha256": "f17e5f998aa26839b58230c3ca25dcc66bcab10f115129323d92940ba59f049f",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "hub",
+      "capture": "hub.png",
+      "how": "error: Escape; title: Enter; hub: hold KeyW 60 frames",
+      "sha256": "619f59d98e2f76cdf7804ed8274db7598dbbb9e87da9ab4c30c9733250f5fea9",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "queue",
+      "capture": "queue.png",
+      "how": "hub: Enter",
+      "sha256": "a47d8e30f7e2f906198fc5642cff7a95225efe8e4f9bfa515f5c4c4dc5cc0caa",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "countdown",
+      "capture": "countdown.png",
+      "how": "queue: no input, waited",
+      "sha256": "d664ae21c69d5c143299ee9caea8cd339592d7853adaf2eb67afb44505c576ec",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "round",
+      "capture": "round.png",
+      "how": "countdown: no input, waited",
+      "sha256": "e7635830e411acb0d2d697ce435ec8ed5830e651d1ab1654186d4a833817541b",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "spectate",
+      "capture": "spectate.png",
+      "how": "result: no input, waited",
+      "sha256": "dcfbb4667a2829d1813c7c1c4a076647cc3702af44fb51c5df4e632346822fb9",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "result",
+      "capture": "result.png",
+      "how": "pause: Escape",
+      "sha256": "0948d31ef2ad8dff8cf9362058c66492fe73425877789230c60b0d004d46b81c",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "podium",
+      "capture": "podium.png",
+      "how": "spectate: no input, waited",
+      "sha256": "df4b91a8c5b6d36a8bc71639df21e6630914f14e3d8fd19a015a7bc647f5f40c",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "settings",
+      "capture": "settings.png",
+      "how": "title: ArrowDown x2, Enter; settings: ArrowRight",
+      "sha256": "8e49361c4ea015954fe2b43357235dcae056b7f6503fc198ebe277d3de72019a",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "pause",
+      "capture": "pause.png",
+      "how": "round: Escape",
+      "sha256": "479442c577b89e54f336966a941937f96c6320f8b6cad5aed3ab559064e32a92",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "error",
+      "capture": "error.png",
+      "how": "credits: Escape; title: click Play online",
+      "sha256": "07cd896af5edaf70ce1f73106b2adc881cee495d0a5081d809eb5021969d1a42",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "screen": "credits",
+      "capture": "credits.png",
+      "how": "settings: Escape; title: click Credits",
+      "sha256": "15f9f22f5a9e3a6b73422bd662df45355706a6a3b9449c7fd2c134e23e9e67e5",
+      "width": 1920,
+      "height": 1080
+    }
+  ]
+}

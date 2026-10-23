@@ -1,0 +1,31 @@
+{
+  "format": "royal-fiesta.m14-controls",
+  "version": 0,
+  "published": false,
+  "source": "local production build out/wavedash-build/upload on loopback with FRAME_HEADERS, $CHROME_PATH over --remote-debugging-pipe, CDP Input events only (loopback port redacted from url)",
+  "url": "http://127.0.0.1:<port>/index.html",
+  "build": "game.html as index.html, commit 2bc132ca75d1043f85f448c71423f545b11a0b72",
+  "pointerLocked": true,
+  "lockError": null,
+  "steps": [],
+  "captures": [
+    {
+      "file": "out/m14/before-turn.png",
+      "width": 1600,
+      "height": 900,
+      "bytes": 26180,
+      "seen": "seen: only the hub HUD (\"Hub - 5 beans here\", controls hints) on an empty dark-purple background; no 3D scene, no bean, so no camera or bean position is visible"
+    },
+    {
+      "file": "out/m14/move1.png",
+      "width": 1600,
+      "height": 900,
+      "bytes": 26180,
+      "seen": "seen: pixel-identical to before-turn.png (same 26180 bytes, same HUD on an empty background); no turn and no camera-relative move is visible because the yaw never changed and no KeyW step ran"
+    }
+  ],
+  "gamepad": "not faked: CDP cannot synthesise a gamepad; covered by packages/game/test/padMap.test.ts",
+  "status": "incomplete",
+  "error": "the yaw did not change over 3 mouse moves (pointerLocked true, lockError null)",
+  "missingCaptures": "after-turn and move2 (KeyW) and every KeyZ capture were not written: the probe stopped at the first turn"
+}

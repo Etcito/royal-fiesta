@@ -1,0 +1,144 @@
+{
+  "format": "royal-fiesta.raa-store-register",
+  "version": 0,
+  "date": "2026-10-19",
+  "source": "every STORE_ASSETS entry through renderAssets(storeAssetResolver(), raa-assets dialect) -> RaaRenderer.registerAsset (raaPrimsJson -> Engine.loadPrimsAsset), one RaaRenderer per asset, in the sandbox Chrome ($CHROME_PATH over --remote-debugging-pipe), page served on 127.0.0.1 with COOP same-origin + COEP require-corp",
+  "raa": {
+    "pin": "3074b3fc15643c12df10043fe617d5943f2d81ad",
+    "version": "0.1.0",
+    "build": "npm run raa:build (out/raa-build)"
+  },
+  "manifest": "e9f5556a27e86135ec388c73ea16487cc26ad2db7b8683bcc4531d76be402317",
+  "store": "apps/web/public/store (npm run store:fetch mirror), unchanged",
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "description": "SwiftShader Device (Subzero)"
+  },
+  "machine": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "AMD Ryzen 9 3900XT 12-Core Processor",
+    "node": "v24.21.0"
+  },
+  "translation": "roundCuboid halfExtents = half + border, borderRadius = border (RAA reads the outer box; lead Q22)",
+  "before": "conveyor-belt refused: roundCuboid borderRadius must be <= the smallest half extent (half [3.62, 0.02, 0.82] was sent as halfExtents)",
+  "registered": 10,
+  "refused": 0,
+  "rows": [
+    {
+      "name": "bean",
+      "entry": "rf.character.bean",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": []
+    },
+    {
+      "name": "bounce-pad",
+      "entry": "rf.obstacle.bouncy-pad",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": []
+    },
+    {
+      "name": "conveyor-belt",
+      "entry": "rf.obstacle.conveyor-belt",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": [
+        {
+          "half": [
+            3.62,
+            0.02,
+            0.82
+          ],
+          "border": 0.08,
+          "halfExtents": [
+            3.7,
+            0.1,
+            0.8999999999999999
+          ],
+          "borderRadius": 0.08
+        }
+      ]
+    },
+    {
+      "name": "moving-platform",
+      "entry": "rf.obstacle.gap-platform",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": [
+        {
+          "half": [
+            1.4,
+            0.2,
+            1.4
+          ],
+          "border": 0.1,
+          "halfExtents": [
+            1.5,
+            0.30000000000000004,
+            1.5
+          ],
+          "borderRadius": 0.1
+        },
+        {
+          "half": [
+            1.4,
+            0.2,
+            1.4
+          ],
+          "border": 0.1,
+          "halfExtents": [
+            1.5,
+            0.30000000000000004,
+            1.5
+          ],
+          "borderRadius": 0.1
+        }
+      ]
+    },
+    {
+      "name": "pendulum-hammer",
+      "entry": "rf.obstacle.pendulum-hammer",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": []
+    },
+    {
+      "name": "rotating-door",
+      "entry": "rf.obstacle.rotating-door",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": []
+    },
+    {
+      "name": "seesaw-plank",
+      "entry": "rf.obstacle.see-saw",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": []
+    },
+    {
+      "name": "spinner-bar",
+      "entry": "rf.obstacle.spinning-bar",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": []
+    },
+    {
+      "name": "finish-arch",
+      "entry": "rf.obstacle.start-finish-arch",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": []
+    },
+    {
+      "name": "checkpoint-gate",
+      "entry": "rf.obstacle.start-finish-arch",
+      "ok": true,
+      "error": null,
+      "roundCuboidToRaa": []
+    }
+  ]
+}

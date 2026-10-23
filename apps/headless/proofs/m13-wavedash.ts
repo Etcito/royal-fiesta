@@ -40,6 +40,12 @@ function object(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null
 }
 
+// nmc.gpu.json lists op names; an object keyed by op is still accepted.
+function opNames(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter((o): o is string => typeof o === 'string')
+  return Object.keys(object(raw) ?? {})
+}
+
 function writeRecord(name: string, record: unknown): string {
   mkdirSync(proofsDir, { recursive: true })
   const file = join(proofsDir, name)
@@ -104,8 +110,8 @@ async function localPairGpu(): Promise<CheckResult> {
   const threshold = `mode local; renderer raa; 2 clients; ${PAIR_MOMENTS.join(', ')} captured, non-empty`
   const built = await webBuild()
   if (built.code !== 0) return { value: `web-build=${built.code}`, threshold: 'web build succeeds', pass: false, notes: built.tail.trim().split('\n').slice(-10) }
-  const ops = object(object(JSON.parse(readFileSync(join(dist, 'nmc.gpu.json'), 'utf8')) as unknown)?.ops) ?? {}
-  if (!('gameCapture' in ops)) return { value: 'gameCapture undeclared', threshold: 'apps/web/dist/nmc.gpu.json declares gameCapture', pass: false }
+  const ops = opNames(object(JSON.parse(readFileSync(join(dist, 'nmc.gpu.json'), 'utf8')) as unknown)?.ops)
+  if (!ops.includes('gameCapture')) return { value: 'gameCapture undeclared', threshold: 'apps/web/dist/nmc.gpu.json declares gameCapture', pass: false }
   const pageRef = await publishDist(dist)
   const out = join(outDir('m13'), 'local-pair')
   const input = { content: 'v0', flow: 'match', clients: 2, width: 1920, height: 1080, captureAt: PAIR_MOMENTS }

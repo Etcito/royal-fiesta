@@ -41,6 +41,12 @@ function object(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null
 }
 
+// nmc.gpu.json lists op names; an object keyed by op is still accepted.
+function opNames(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter((o): o is string => typeof o === 'string')
+  return Object.keys(object(raw) ?? {})
+}
+
 function npmRun(args: string[]): Promise<{ code: number; tail: string }> {
   return new Promise(resolve => {
     const child = spawn('npm', args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] })
@@ -100,8 +106,8 @@ async function screensTour(): Promise<CheckResult> {
   if (built.code !== 0) return { value: `web-build=${built.code}`, threshold: 'web build succeeds', pass: false, notes: built.tail.trim().split('\n').slice(-10) }
   const missingFiles = ['game.html', 'nmc.gpu.json'].filter(f => !existsSync(join(dist, f)))
   if (missingFiles.length) return { value: 'missing build files', threshold: 'dist/game.html + dist/nmc.gpu.json', pass: false, notes: missingFiles }
-  const ops = object(object(JSON.parse(await readFile(join(dist, 'nmc.gpu.json'), 'utf8')) as unknown)?.ops) ?? {}
-  if (!('gameCapture' in ops)) return { value: 'gameCapture undeclared', threshold: 'nmc.gpu.json declares gameCapture', pass: false }
+  const ops = opNames(object(JSON.parse(await readFile(join(dist, 'nmc.gpu.json'), 'utf8')) as unknown)?.ops)
+  if (!ops.includes('gameCapture')) return { value: 'gameCapture undeclared', threshold: 'nmc.gpu.json declares gameCapture', pass: false }
   const pageRef = await publishDist(dist)
   const input = { content: 'v0', flow: 'tour', clients: 1, width: WIDTH, height: HEIGHT, captureAt: TOUR.map(t => t.moment) }
   const result = await renderOp('gameCapture', input, out, 'screens-tour', pageRef)

@@ -69,6 +69,12 @@ function object(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null
 }
 
+// nmc.gpu.json lists op names; an object keyed by op is still accepted.
+function opNames(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter((o): o is string => typeof o === 'string')
+  return Object.keys(object(raw) ?? {})
+}
+
 async function cameraRelativeMaths(): Promise<CheckResult> {
   const r = await run(['--experimental-strip-types', '--test', ...TESTS], TEST_KILL_MS)
   // Both the tap ('# pass N') and the spec ('ℹ pass N') reporters print the counts.
@@ -179,8 +185,8 @@ async function gpuCameraRelative(): Promise<CheckResult> {
   if (missing.length) {
     return { value: `no apps/web/dist/${missing.join(', ')}`, threshold, pass: false, notes: ['the production build is absent; fix: npm run build (this proof does not build)'] }
   }
-  const ops = object(object(JSON.parse(readFileSync(join(dist, 'nmc.gpu.json'), 'utf8')) as unknown)?.ops) ?? {}
-  if (!('controlsProbe' in ops)) return { value: 'controlsProbe undeclared', threshold, pass: false, notes: ['apps/web/dist/nmc.gpu.json does not declare controlsProbe; rebuild'] }
+  const ops = opNames(object(JSON.parse(readFileSync(join(dist, 'nmc.gpu.json'), 'utf8')) as unknown)?.ops)
+  if (!ops.includes('controlsProbe')) return { value: 'controlsProbe undeclared', threshold, pass: false, notes: ['apps/web/dist/nmc.gpu.json does not declare controlsProbe; rebuild'] }
   const pageRef = await publishDist(dist)
   const input = { width: 1280, height: 720, content: 'v0', course: PROBE_COURSE, cases: PROBE_CASES.map(c => ({ name: c.input, input: c.input, holdMs: 1000 })) }
   const result = await renderOp('controlsProbe', input, out, 'controls-probe', pageRef)

@@ -1,0 +1,305 @@
+// The game's navigation state machine: pure, headless, no DOM and no clock.
+// dispatch() returns the effects the app must run; invalid events return [].
+import type { LoadProgress } from '../content.ts'
+
+export const SCREENS = Object.freeze([
+  'title', 'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium',
+  'pause', 'settings', 'credits', 'error', 'loading',
+] as const)
+export type Screen = typeof SCREENS[number]
+
+// Screens the game itself moves between (with 'game' events).
+export const GAME_SCREENS = Object.freeze([
+  'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium',
+] as const)
+export type GameScreen = typeof GAME_SCREENS[number]
+
+export const ACTIONS = Object.freeze([
+  'play', 'playOnline', 'settings', 'credits', 'queue', 'toHub', 'resume', 'leave', 'retry',
+] as const)
+export type Action = typeof ACTIONS[number]
+
+export const Effect = Object.freeze({
+  startHub: 'startHub',
+  startOnline: 'startOnline',
+  enqueue: 'enqueue',
+  dequeue: 'dequeue',
+  pause: 'pause',
+  resume: 'resume',
+  leaveMatch: 'leaveMatch',
+  leaveGame: 'leaveGame',
+  // Run GameContent.load and report it with progress, then loaded or error.
+  load: 'load',
+} as const)
+export type Effect = typeof Effect[keyof typeof Effect]
+
+export type StartEffect = typeof Effect.startHub | typeof Effect.startOnline
+
+// Where a successful load lands: the title menu, or straight into the hub.
+export type LoadNext = 'title' | 'hub'
+
+export type NavEvent =
+  | { kind: 'action', action: Action }
+  | { kind: 'back' }
+  | { kind: 'game', screen: GameScreen }
+  | { kind: 'error', message: string }
+  | { kind: 'load', next: LoadNext }
+  | { kind: 'progress', progress: LoadProgress }
+  | { kind: 'loaded' }
+
+const BUTTONS: Readonly<Partial<Record<Screen, readonly Action[]>>> = Object.freeze({
+  title: ['play', 'playOnline', 'settings', 'credits'],
+  pause: ['resume', 'settings', 'leave'],
+  error: ['retry', 'leave'],
+  loading: [],
+  podium: ['toHub'],
+  hub: ['queue'],
+})
+
+// Game screens of a match, where back pauses the game.
+const PAUSABLE: readonly Screen[] = ['countdown', 'round', 'spectate', 'result']
+
+export function isGameScreen(s: Screen): s is GameScreen {
+  return (GAME_SCREENS as readonly Screen[]).includes(s)
+}
+
+export class Nav {
+  screen: Screen = 'title'
+  // The game screen pause returns to.
+  resumeTo: GameScreen = 'hub'
+  settingsFrom: 'title' | 'pause' = 'title'
+  // A hub or match session is running.
+  live = false
+  inMatch = false
+  error: string | null = null
+  lastStart: StartEffect | null = null
+  // The latest progress of the running load (null before its first report).
+  progress: LoadProgress | null = null
+  // The target of a running or failed load; null once content is loaded.
+  loadNext: LoadNext | null = null
+
+  clone(): Nav {
+    const n = new Nav()
+    n.screen = this.screen
+    n.resumeTo = this.resumeTo
+    n.settingsFrom = this.settingsFrom
+    n.live = this.live
+    n.inMatch = this.inMatch
+    n.error = this.error
+    n.lastStart = this.lastStart
+    n.progress = this.progress === null ? null : { ...this.progress }
+    n.loadNext = this.loadNext
+    return n
+  }
+
+  // A stable identity of the whole state, for exploration and tests.
+  key(): string {
+    return JSON.stringify([this.screen, this.resumeTo, this.settingsFrom, this.live,
+      this.inMatch, this.error, this.lastStart, this.progress, this.loadNext])
+  }
+
+  // False while a load runs or after it failed: nothing may start without content.
+  contentReady(): boolean {
+    return this.loadNext === null
+  }
+
+  actions(): readonly Action[] {
+    // A failed load offers no play button: retry reloads instead.
+    if (this.screen === 'title' && !this.contentReady()) return ['retry', 'settings', 'credits']
+    return BUTTONS[this.screen] ?? []
+  }
+
+  dispatch(ev: NavEvent): Effect[] {
+    if (ev.kind === 'error') {
+      const fx: Effect[] = this.live ? [Effect.leaveGame] : []
+      this.screen = 'error'
+      this.error = ev.message
+      this.live = false
+      this.inMatch = false
+      this.resumeTo = 'hub'
+      return fx
+    }
+    if (ev.kind === 'load') return this.load(ev.next)
+    if (ev.kind === 'progress') {
+      if (this.screen !== 'loading') return []
+      this.progress = { ...ev.progress }
+      return []
+    }
+    if (ev.kind === 'loaded') return this.loaded()
+    // Loading ends only in loaded or error: no back, action or game event skips it.
+    if (this.screen === 'loading') return []
+    if (ev.kind === 'game') return this.game(ev.screen)
+    if (ev.kind === 'back') return this.back()
+    if (!this.actions().includes(ev.action)) return []
+    return this.action(ev.action)
+  }
+
+  private game(to: GameScreen): Effect[] {
+    if (!this.live) return []
+    const inMatch = to !== 'hub' && to !== 'queue'
+    if (this.screen === 'pause' || this.screen === 'settings') {
+      // The game is paused, so this is rare: only remember where to return.
+      this.resumeTo = to
+      this.inMatch = inMatch
+      return []
+    }
+    if (!isGameScreen(this.screen) || this.screen === to) return []
+    this.screen = to
+    this.inMatch = inMatch
+    return []
+  }
+
+  private back(): Effect[] {
+    const s = this.screen
+    if (s === 'hub' || PAUSABLE.includes(s)) {
+      this.resumeTo = s as GameScreen
+      this.screen = 'pause'
+      return [Effect.pause]
+    }
+    switch (s) {
+      case 'queue':
+        this.screen = 'hub'
+        return [Effect.dequeue]
+      case 'podium':
+        return this.toHub()
+      case 'pause':
+        this.screen = this.resumeTo
+        return [Effect.resume]
+      case 'settings':
+        this.screen = this.settingsFrom
+        return []
+      case 'credits':
+      case 'error':
+        this.screen = 'title'
+        return []
+      default:
+        return []
+    }
+  }
+
+  private action(a: Action): Effect[] {
+    switch (a) {
+      case 'play':
+        return this.start(Effect.startHub)
+      case 'playOnline':
+        return this.start(Effect.startOnline)
+      case 'settings':
+        this.settingsFrom = this.screen === 'pause' ? 'pause' : 'title'
+        this.screen = 'settings'
+        return []
+      case 'credits':
+        this.screen = 'credits'
+        return []
+      case 'queue':
+        return [Effect.enqueue]
+      case 'toHub':
+        return this.toHub()
+      case 'resume':
+        return this.back()
+      case 'leave':
+        return this.leave()
+      case 'retry':
+        if (this.loadNext !== null) return this.load(this.loadNext)
+        return this.lastStart === null ? [] : this.start(this.lastStart)
+    }
+  }
+
+  // Loading starts from a menu with no game running (page boot, or retry).
+  private load(next: LoadNext): Effect[] {
+    if (this.live || (this.screen !== 'title' && this.screen !== 'error')) return []
+    this.screen = 'loading'
+    this.loadNext = next
+    this.progress = null
+    this.error = null
+    return [Effect.load]
+  }
+
+  private loaded(): Effect[] {
+    if (this.screen !== 'loading' || this.loadNext === null) return []
+    const next = this.loadNext
+    this.loadNext = null
+    this.progress = null
+    if (next === 'hub') return this.start(Effect.startHub)
+    this.screen = 'title'
+    return []
+  }
+
+  private start(fx: StartEffect): Effect[] {
+    this.lastStart = fx
+    this.error = null
+    if (fx === Effect.startHub) {
+      this.screen = 'hub'
+      this.live = true
+      this.inMatch = false
+      this.resumeTo = 'hub'
+    } else {
+      // The app later sends an error or leaves the page.
+      this.screen = 'title'
+    }
+    return [fx]
+  }
+
+  private toHub(): Effect[] {
+    this.screen = 'hub'
+    this.inMatch = false
+    this.resumeTo = 'hub'
+    return [Effect.leaveMatch]
+  }
+
+  private leave(): Effect[] {
+    if (this.screen === 'error') {
+      this.screen = 'title'
+      return []
+    }
+    if (this.inMatch) return [...this.toHub(), Effect.resume]
+    this.screen = 'title'
+    this.live = false
+    this.resumeTo = 'hub'
+    return [Effect.leaveGame]
+  }
+}
+
+// The fixed event list fed to every state when exploring the graph.
+export const PROBE_EVENTS: readonly NavEvent[] = Object.freeze([
+  ...ACTIONS.map((action): NavEvent => ({ kind: 'action', action })),
+  { kind: 'back' },
+  ...GAME_SCREENS.map((screen): NavEvent => ({ kind: 'game', screen })),
+  { kind: 'error', message: 'x' },
+  { kind: 'load', next: 'title' },
+  { kind: 'load', next: 'hub' },
+  { kind: 'progress', progress: { phase: 'assets', done: 1, total: 2, label: 'x' } },
+  { kind: 'loaded' },
+])
+
+// Every Nav state reachable from a fresh Nav, in BFS order.
+export function navStates(): Nav[] {
+  const start = new Nav()
+  const seen = new Set([start.key()])
+  const order = [start]
+  for (let i = 0; i < order.length; i++) {
+    for (const ev of PROBE_EVENTS) {
+      const n = order[i].clone()
+      n.dispatch(ev)
+      const k = n.key()
+      if (seen.has(k)) continue
+      seen.add(k)
+      order.push(n)
+    }
+  }
+  return order
+}
+
+// For each screen, the sorted distinct other screens one event away.
+export function navGraph(): Record<Screen, Screen[]> {
+  const edges = new Map<Screen, Set<Screen>>(SCREENS.map((s) => [s, new Set<Screen>()]))
+  for (const state of navStates()) {
+    for (const ev of PROBE_EVENTS) {
+      const n = state.clone()
+      n.dispatch(ev)
+      if (n.screen !== state.screen) edges.get(state.screen)!.add(n.screen)
+    }
+  }
+  const out = {} as Record<Screen, Screen[]>
+  for (const s of SCREENS) out[s] = [...edges.get(s)!].sort()
+  return out
+}

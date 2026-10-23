@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
 import { leakScan } from '../guard.ts'
+import { etcitoBuild } from '../etcitoBuild.ts'
 import { packWavedash, wavedashToml } from '../wavedash.ts'
 import { RefusalError } from '../../packages/sim/src/refusal.ts'
 
@@ -85,6 +86,29 @@ test('a dist without game.html is refused', async () => {
       e instanceof RefusalError && e.message.includes('game.html') && e.message.includes('the built game page is missing'))
     assert.equal(existsSync(join(dir, 'out')), false)
   } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('etcitoBuild with a missing from path returns 1 with a [bricks] message, and does no network', async (t) => {
+  const dir = tree({})
+  const errors: string[] = []
+  t.mock.method(console, 'error', (...args: unknown[]) => { errors.push(args.join(' ')) })
+  t.mock.method(console, 'log', () => {})
+  // With an empty PATH no git or npm can start, so nothing could reach the network.
+  const path = process.env.PATH
+  process.env.PATH = join(dir, 'empty-bin')
+  try {
+    const from = join(dir, 'missing-checkout')
+    const out = join(dir, 'out')
+    const code = await etcitoBuild({ from, out, record: join(dir, 'etcito-build.json') })
+    assert.equal(code, 1)
+    assert.equal(errors.length, 1)
+    assert.match(errors[0], /^\[bricks\] \S*missing-checkout: not found; pass --from a git URL/)
+    assert.equal(existsSync(out), false)
+    assert.equal(existsSync(join(dir, 'etcito-build.json')), false)
+  } finally {
+    process.env.PATH = path
     rmSync(dir, { recursive: true, force: true })
   }
 })

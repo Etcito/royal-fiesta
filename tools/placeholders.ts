@@ -17,6 +17,8 @@ import { PODIUM_ORIGIN, PODIUM_V0_LAYOUT } from '../packages/game/src/render/pod
 import type { ColliderSpec } from '../packages/sim/src/course.ts'
 import { PROFILES } from '../packages/sim/src/match/setup.ts'
 import { refuse } from '../packages/sim/src/refusal.ts'
+import { isAuthored, readAuthored } from './authored.ts'
+import type { Authored } from './authored.ts'
 import { repoRoot } from './bricks.ts'
 
 type V3 = [number, number, number]
@@ -275,8 +277,9 @@ async function readJson(root: string, rel: string): Promise<unknown> {
   return JSON.parse(await readFile(join(root, rel), 'utf8'))
 }
 
-export async function buildContent(): Promise<Map<string, string>> {
+export async function buildContent(authored?: Authored): Promise<Map<string, string>> {
   const root = repoRoot()
+  const registry = authored ?? readAuthored(root)
   const files: [string, string][] = []
   const primsByName = new Map<string, PrimsAsset>()
   for (const f of (await readdir(join(root, 'fixtures/assets'))).filter(f => f.endsWith('.prims.json')).sort()) {
@@ -300,7 +303,8 @@ export async function buildContent(): Promise<Map<string, string>> {
     files.push([`courses/${String(v1.id)}.course.json`, text(v1)])
   }
   files.push(['courses/podium.course.json', text(podiumCourse(v0))])
-  return new Map(files.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)))
+  // Authored files are hand-made; the podium course still reads every v0 fixture above.
+  return new Map(files.filter(([p]) => !isAuthored(registry, p)).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)))
 }
 
 async function listFiles(root: string, rel: string): Promise<string[]> {
@@ -314,10 +318,10 @@ async function listFiles(root: string, rel: string): Promise<string[]> {
   return out
 }
 
-// Files under assets/ or courses/ that buildContent no longer produces.
-async function staleFiles(root: string, content: Map<string, string>): Promise<string[]> {
+// Files under assets/ or courses/ that are neither generated nor authored.
+async function staleFiles(root: string, content: Map<string, string>, authored: Authored): Promise<string[]> {
   const all = (await Promise.all(OUTPUT_DIRS.map(d => listFiles(root, d)))).flat()
-  return all.filter(p => !content.has(p)).sort()
+  return all.filter(p => !content.has(p) && !isAuthored(authored, p)).sort()
 }
 
 async function main(argv: string[]): Promise<number> {
@@ -327,8 +331,9 @@ async function main(argv: string[]): Promise<number> {
     return 2
   }
   const root = repoRoot()
-  const content = await buildContent()
-  const stale = await staleFiles(root, content)
+  const authored = readAuthored(root)
+  const content = await buildContent(authored)
+  const stale = await staleFiles(root, content, authored)
   if (argv.includes('--check')) {
     const problems: string[] = []
     for (const [p, t] of content) {
@@ -336,9 +341,11 @@ async function main(argv: string[]): Promise<number> {
       if (!existsSync(file)) problems.push(`missing ${p}`)
       else if (await readFile(file, 'utf8') !== t) problems.push(`differs ${p}`)
     }
+    // Authored files are only checked for presence, never compared.
+    for (const p of authored.files) if (!existsSync(join(root, p))) problems.push(`missing ${p}`)
     for (const p of stale) problems.push(`stale ${p}`)
     if (problems.length === 0) {
-      console.log(`placeholders: ${content.size} files up to date`)
+      console.log(`placeholders: ${content.size} files up to date${authored.files.length > 0 ? ` (+${authored.files.length} authored)` : ''}`)
       return 0
     }
     for (const line of problems) console.error(line)

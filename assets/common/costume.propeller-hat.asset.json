@@ -1,0 +1,407 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.propeller-hat",
+  "name": "propeller_hat",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "quad"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "propeller_hat",
+    "root": [
+      "propeller_hat"
+    ],
+    "nodes": {
+      "propeller_hat": {
+        "id": "propeller_hat",
+        "name": "propeller_hat",
+        "kind": "group",
+        "children": [
+          "anchor_hat_head",
+          "hat_cap"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.propeller-hat",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "anchor_hat_head": {
+        "id": "anchor_hat_head",
+        "name": "head",
+        "kind": "anchor",
+        "transform": {
+          "position": [0, 0.8, 0]
+        },
+        "gameCollision": true
+      },
+      "hat_cap": {
+        "id": "hat_cap",
+        "name": "hat_cap",
+        "kind": "group",
+        "transform": {
+          "position": [0, 0.51, 0],
+          "rotation": [-12, 0, 0]
+        },
+        "children": [
+          "panel_front",
+          "panel_right",
+          "panel_back",
+          "panel_left",
+          "hat_rim",
+          "hat_button",
+          "prop_stem",
+          "prop_hub",
+          "prop_blade_1",
+          "prop_blade_2",
+          "prop_blade_3"
+        ],
+        "gameCollision": true
+      },
+      "panel_front": {
+        "id": "panel_front",
+        "name": "panel_front",
+        "kind": "group",
+        "children": [
+          "panel_front_dome",
+          "panel_front_cut"
+        ],
+        "gameCollision": true
+      },
+      "panel_front_dome": {
+        "id": "panel_front_dome",
+        "name": "panel_front_dome",
+        "kind": "sphere",
+        "material": "m8",
+        "params": {
+          "radius": 0.365
+        },
+        "gameCollision": false
+      },
+      "panel_front_cut": {
+        "id": "panel_front_cut",
+        "name": "panel_front_cut",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.3, 0.283],
+          "rotation": [0, 45, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.015,
+        "material": "m8",
+        "params": {
+          "size": [0.4, 0.3, 0.4]
+        },
+        "gameCollision": false
+      },
+      "panel_right": {
+        "id": "panel_right",
+        "name": "panel_right",
+        "kind": "group",
+        "children": [
+          "panel_right_dome",
+          "panel_right_cut"
+        ],
+        "gameCollision": true
+      },
+      "panel_right_dome": {
+        "id": "panel_right_dome",
+        "name": "panel_right_dome",
+        "kind": "sphere",
+        "material": "m9",
+        "params": {
+          "radius": 0.365
+        },
+        "gameCollision": false
+      },
+      "panel_right_cut": {
+        "id": "panel_right_cut",
+        "name": "panel_right_cut",
+        "kind": "box",
+        "transform": {
+          "position": [0.283, 0.3, 0],
+          "rotation": [0, 45, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.015,
+        "material": "m9",
+        "params": {
+          "size": [0.4, 0.3, 0.4]
+        },
+        "gameCollision": false
+      },
+      "panel_back": {
+        "id": "panel_back",
+        "name": "panel_back",
+        "kind": "group",
+        "children": [
+          "panel_back_dome",
+          "panel_back_cut"
+        ],
+        "gameCollision": true
+      },
+      "panel_back_dome": {
+        "id": "panel_back_dome",
+        "name": "panel_back_dome",
+        "kind": "sphere",
+        "material": "m10",
+        "params": {
+          "radius": 0.365
+        },
+        "gameCollision": false
+      },
+      "panel_back_cut": {
+        "id": "panel_back_cut",
+        "name": "panel_back_cut",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.3, -0.283],
+          "rotation": [0, 45, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.015,
+        "material": "m10",
+        "params": {
+          "size": [0.4, 0.3, 0.4]
+        },
+        "gameCollision": false
+      },
+      "panel_left": {
+        "id": "panel_left",
+        "name": "panel_left",
+        "kind": "group",
+        "children": [
+          "panel_left_dome",
+          "panel_left_cut"
+        ],
+        "gameCollision": true
+      },
+      "panel_left_dome": {
+        "id": "panel_left_dome",
+        "name": "panel_left_dome",
+        "kind": "sphere",
+        "material": "m11",
+        "params": {
+          "radius": 0.365
+        },
+        "gameCollision": false
+      },
+      "panel_left_cut": {
+        "id": "panel_left_cut",
+        "name": "panel_left_cut",
+        "kind": "box",
+        "transform": {
+          "position": [-0.283, 0.3, 0],
+          "rotation": [0, 45, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.015,
+        "material": "m11",
+        "params": {
+          "size": [0.4, 0.3, 0.4]
+        },
+        "gameCollision": false
+      },
+      "hat_rim": {
+        "id": "hat_rim",
+        "name": "hat_rim",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.15, 0]
+        },
+        "material": "m9",
+        "params": {
+          "majorRadius": 0.333,
+          "minorRadius": 0.022
+        },
+        "gameCollision": false
+      },
+      "hat_button": {
+        "id": "hat_button",
+        "name": "hat_button",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.37, 0]
+        },
+        "smooth": 0.012,
+        "colorBlend": "hard",
+        "material": "m8",
+        "params": {
+          "radii": [0.055, 0.032, 0.055]
+        },
+        "gameCollision": false
+      },
+      "prop_stem": {
+        "id": "prop_stem",
+        "name": "prop_stem",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 0.43, 0]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m9",
+        "params": {
+          "height": 0.1,
+          "radius": 0.018
+        },
+        "gameCollision": false
+      },
+      "prop_hub": {
+        "id": "prop_hub",
+        "name": "prop_hub",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.49, 0]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m9",
+        "params": {
+          "radii": [0.045, 0.03, 0.045]
+        },
+        "gameCollision": false
+      },
+      "prop_blade_1": {
+        "id": "prop_blade_1",
+        "name": "prop_blade_1",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.085, 0.49, 0.1472],
+          "rotation": [0, 30, 15]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m9",
+        "params": {
+          "radii": [0.055, 0.012, 0.15]
+        },
+        "gameCollision": false
+      },
+      "prop_blade_2": {
+        "id": "prop_blade_2",
+        "name": "prop_blade_2",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.085, 0.49, -0.1472],
+          "rotation": [0, 150, 15]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m9",
+        "params": {
+          "radii": [0.055, 0.012, 0.15]
+        },
+        "gameCollision": false
+      },
+      "prop_blade_3": {
+        "id": "prop_blade_3",
+        "name": "prop_blade_3",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.17, 0.49, 0],
+          "rotation": [0, 270, 15]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m9",
+        "params": {
+          "radii": [0.055, 0.012, 0.15]
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m8": {
+        "name": "costume-propeller-hat-red",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#e8452c",
+                "in.roughness": 0.85
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m9": {
+        "name": "costume-propeller-hat-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.85
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m10": {
+        "name": "costume-propeller-hat-green",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#5cc23a",
+                "in.roughness": 0.85
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m11": {
+        "name": "costume-propeller-hat-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.85
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "head": {
+      "t": [0, 0.8, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.580843, 0.077088, -0.662038],
+    "max": [0.580843, 1.082812, 0.537291]
+  },
+  "hash": "22e74cb2a7440eb172c51c42cb4f2e1d54197a11fbb5036881bb747bc85d6192"
+}

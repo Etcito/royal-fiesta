@@ -2,6 +2,7 @@
   "format": "royal-fiesta.authored",
   "version": 1,
   "files": [
+    "assets/common/costume.propeller-hat.asset.json",
     "assets/common/penguin.body.asset.json"
   ]
 }

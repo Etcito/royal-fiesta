@@ -1,0 +1,108 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "id": "decor-unknown-asset",
+  "name": "Invalid decor-unknown-asset",
+  "world": "candy",
+  "kind": "podium",
+  "profiles": [],
+  "timeLimitS": 60,
+  "killPlaneY": -12,
+  "spawns": [],
+  "checkpoints": [],
+  "finish": null,
+  "path": [],
+  "regions": [],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "block-1",
+      "asset": "candy.podium-block",
+      "t": [
+        0,
+        0.5,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    }
+  ],
+  "decor": [
+    {
+      "id": "d-1",
+      "asset": "candy.no-such-asset",
+      "t": [
+        3,
+        0,
+        1
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "environment": null,
+  "podium": {
+    "spots": [
+      {
+        "t": [
+          0,
+          1,
+          0
+        ],
+        "yawDeg": 180
+      },
+      {
+        "t": [
+          -2,
+          1,
+          0
+        ],
+        "yawDeg": 180
+      },
+      {
+        "t": [
+          2,
+          1,
+          0
+        ],
+        "yawDeg": 180
+      }
+    ],
+    "camera": {
+      "eye": [
+        0,
+        3,
+        -8
+      ],
+      "target": [
+        0,
+        1,
+        0
+      ],
+      "fovYDeg": 50
+    }
+  }
+}

@@ -313,3 +313,30 @@ test('courseV1.ts imports no MAMA, raa-sdfm or app code (rule 1.5)', () => {
   for (const s of specifiers) assert.doesNotMatch(s, /mama|raa-sdfm|apps\//i, s)
   assert.doesNotMatch(src, /import\(/)
 })
+
+test('every invalid v1 course fixture refuses with file#pointer and a fix', async () => {
+  const assets = resolverOf(await Promise.all([
+    gameAsset('candy.floor-tile', 'obstacle', [{ shape: 'cuboid', half: [1, 0.1, 1] }]),
+    gameAsset('candy.podium-block', 'prop', [{ shape: 'cuboid', half: [1, 1, 1] }]),
+  ]))
+  const pointers: Record<string, string> = {
+    'assets-manifest-v1.course.json': '#/assetsManifest',
+    'decor-unknown-asset.course.json': '#/decor/0/asset',
+    'podium-moving-obstacle.course.json': '#/obstacles/0/motion',
+    'podium-without-spots.course.json': '#/podium/spots',
+    'unknown-key.course.json': '#/extra',
+  }
+  const dir = 'fixtures/courses-v1/invalid/'
+  const files = readdirSync(new URL(dir, ROOT)).filter(f => f.endsWith('.json')).sort()
+  assert.deepEqual(files, Object.keys(pointers).sort())
+  for (const f of files) {
+    const where = dir + f
+    await assert.rejects(loadCourseV1(readJson(where), where, assets), (e: unknown) => {
+      assert.ok(isRefusal(e), `${f}: expected a RefusalError`)
+      assert.ok(e.message.startsWith(`[course] ${where}#/`), e.message)
+      assert.ok(e.message.includes('; '), e.message)
+      assert.ok(e.message.startsWith(`[course] ${where}${pointers[f]}`), `${f}: ${e.message}`)
+      return true
+    })
+  }
+})

@@ -1,0 +1,94 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "id": "podium-moving-obstacle",
+  "name": "Invalid podium-moving-obstacle",
+  "world": "candy",
+  "kind": "podium",
+  "profiles": [],
+  "timeLimitS": 60,
+  "killPlaneY": -12,
+  "spawns": [],
+  "checkpoints": [],
+  "finish": null,
+  "path": [],
+  "regions": [],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "block-1",
+      "asset": "candy.podium-block",
+      "t": [
+        0,
+        0.5,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "spinner",
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "speedDegS": 90,
+        "phaseDeg": 0
+      },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": {
+    "spots": [
+      {
+        "t": [
+          0,
+          1,
+          0
+        ],
+        "yawDeg": 180
+      },
+      {
+        "t": [
+          -2,
+          1,
+          0
+        ],
+        "yawDeg": 180
+      },
+      {
+        "t": [
+          2,
+          1,
+          0
+        ],
+        "yawDeg": 180
+      }
+    ],
+    "camera": {
+      "eye": [
+        0,
+        3,
+        -8
+      ],
+      "target": [
+        0,
+        1,
+        0
+      ],
+      "fovYDeg": 50
+    }
+  }
+}

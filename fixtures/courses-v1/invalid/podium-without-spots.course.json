@@ -1,0 +1,62 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "id": "podium-without-spots",
+  "name": "Invalid podium-without-spots",
+  "world": "candy",
+  "kind": "podium",
+  "profiles": [],
+  "timeLimitS": 60,
+  "killPlaneY": -12,
+  "spawns": [],
+  "checkpoints": [],
+  "finish": null,
+  "path": [],
+  "regions": [],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "block-1",
+      "asset": "candy.podium-block",
+      "t": [
+        0,
+        0.5,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": {
+    "spots": [],
+    "camera": {
+      "eye": [
+        0,
+        3,
+        -8
+      ],
+      "target": [
+        0,
+        1,
+        0
+      ],
+      "fovYDeg": 50
+    }
+  }
+}

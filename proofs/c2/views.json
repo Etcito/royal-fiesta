@@ -86,7 +86,7 @@
       "name": "penguin-fish-scarf",
       "assets": {
         "penguin.body": "80933fb67db5a8b80bd91b62fca43b2393dc7dcec5ad3af5652334c0c2d98a5d",
-        "costume.fish-scarf": "08e4b8f703093958a655af2e394b1743e01964201a2f8a6a8d1b95121954f6db"
+        "costume.fish-scarf": "19ca7b9249ac30f9661fd9790b208a2a4f15bf9d2958499e648c28be0c3280a5"
       },
       "views": [
         {
@@ -94,8 +94,8 @@
           "png": "out/c2/penguin-fish-scarf-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "11f5761921e1a111eb06c27a706aa0e57279ff408f49c97155dcef3183a1ec62",
-          "bytes": 470876,
+          "sha256": "1e2b293904e76a7e46380fba750bf1789935920b6702ac5aad18ab85110cf2b8",
+          "bytes": 472034,
           "nonEmpty": true
         },
         {
@@ -103,8 +103,8 @@
           "png": "out/c2/penguin-fish-scarf-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "287d399282191d20c03774b98761903ea57aa286abf45368c01bddef18811f01",
-          "bytes": 430399,
+          "sha256": "747313a4c70cc9ea74829247b11ad3c3f310a4b3bbd9e6dcd7feaaf2c7ecebd9",
+          "bytes": 427980,
           "nonEmpty": true
         },
         {
@@ -112,8 +112,8 @@
           "png": "out/c2/penguin-fish-scarf-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "8a2b88ad0df063448dfa1d34df85276e102a0b9c5c16f290b01296d4ae8e77e8",
-          "bytes": 434556,
+          "sha256": "4b02282365d1ec77d4d8b613d1f6f92552faeb2d58cffecc13fa7d3ee6ebada0",
+          "bytes": 429795,
           "nonEmpty": true
         }
       ]

@@ -71,6 +71,8 @@ export function relight(p: ViewPasses, eye: V3, target: V3): Relit {
   }
   const plush = new Uint8Array(n)
   for (let i = 0; i < n; i++) if (mat[i] >= 0 && PLUSH.test(p.legend[mat[i]].name)) plush[i] = 1
+  // The white belly shows the bump grain as grey streaks, so it gets a wider, stronger smoothing and a lighter mottle.
+  const belly = p.legend.findIndex((e) => e.name === 'penguin-belly')
   const f = unit([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]])
   const r = unit([-f[2], 0, f[0]])
   const u: V3 = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]]
@@ -92,10 +94,12 @@ export function relight(p: ViewPasses, eye: V3, target: V3): Relit {
       const fres = 1 - clamp01(dot(nn, v))
       if (plush[i]) {
         // Soft fur: average out the bump grain over the same material, then a gentle mottling of tufts.
+        const soft = mat[i] === belly
+        const rr = soft ? 2 * R : R
         const acc = [0, 0, 0]
         let cnt = 0
-        for (let dy = -R; dy <= R; dy++) {
-          for (let dx = -R; dx <= R; dx++) {
+        for (let dy = -rr; dy <= rr; dy++) {
+          for (let dx = -rr; dx <= rr; dx++) {
             const xx = x + dx
             const yy = y + dy
             if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue
@@ -104,8 +108,11 @@ export function relight(p: ViewPasses, eye: V3, target: V3): Relit {
             acc[0] += s[j * 4]; acc[1] += s[j * 4 + 1]; acc[2] += s[j * 4 + 2]; cnt++
           }
         }
-        const tuft = 0.9 + 0.13 * valueNoise(x, y, 9, 17) + 0.07 * valueNoise(x, y * 0.5, 3, 5)
-        c = [0, 1, 2].map((k) => (0.2 * c[k] + 0.8 * acc[k] / cnt / 255) * tuft) as V3
+        const tuft = soft
+          ? 0.97 + 0.07 * valueNoise(x, y, 12, 17) + 0.05 * valueNoise(x, y * 0.5, 3, 5)
+          : 0.9 + 0.13 * valueNoise(x, y, 9, 17) + 0.07 * valueNoise(x, y * 0.5, 3, 5)
+        const raw = soft ? 0.08 : 0.2
+        c = [0, 1, 2].map((k) => (raw * c[k] + (1 - raw) * acc[k] / cnt / 255) * tuft) as V3
       }
       // Velvet sheen: cloth brightens towards grazing angles.
       const sheen = mat[i] >= 0 ? SHEEN[p.legend[mat[i]].name] : undefined

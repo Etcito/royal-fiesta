@@ -3,6 +3,7 @@
   "version": 1,
   "reference": "royal-fiesta/ref-1.png",
   "minScore": 6,
+  "context": "This image is a character asset view: an isolated turnaround render on a plain neutral studio backdrop, as the project's view spec requires, not a gameplay screenshot. The scene, environment, sky and bloom of the reference are absent by design. Grade the character only, against the plush penguins in the reference: royal-blue plush body, white belly, orange beak and feet, pink sneakers, chunky toy-like proportions and the named costume.",
   "subjects": [
     {
       "name": "penguin",

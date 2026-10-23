@@ -21,7 +21,9 @@ function main(argv: string[]): number {
       failed++
       continue
     }
-    const r = spawnSync('python3', [judge, v.png, '--description', v.description, '--reference', input.reference, '--min-score', String(input.minScore)], { stdio: 'inherit' })
+    // The shared context says what a view is (1.14: a character on a neutral backdrop), so the judge grades the character, not a missing scene.
+    const description = input.context ? `${v.description}. ${input.context}` : v.description
+    const r = spawnSync('python3', [judge, v.png, '--description', description, '--reference', input.reference, '--min-score', String(input.minScore)], { stdio: 'inherit' })
     console.log(`[judge] ${v.png} exit=${r.status}`)
     if (r.status !== 0) failed++
   }

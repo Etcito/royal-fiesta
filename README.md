@@ -70,6 +70,7 @@ Each milestone proof is a Node script run with `--experimental-strip-types`. Pro
 | M6 transports | `node --experimental-strip-types apps/headless/proofs/m6-transports.ts` |
 | M7 web | `node --experimental-strip-types apps/headless/proofs/m7-web.ts` |
 | M8 hub | `node --experimental-strip-types apps/headless/proofs/m8-hub.ts` |
+| C1 content checks | `node --experimental-strip-types apps/headless/proofs/c1-content-checks.ts` |
 
 ## Web client (M7)
 

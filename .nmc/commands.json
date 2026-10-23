@@ -1,9 +1,62 @@
 [
-  {"name": "build", "command": "npm run build", "timeout_s": 900},
-  {"name": "m16-gpu-run", "command": "env NMC_GPU_WAIT_S=900 node --experimental-strip-types apps/headless/proofs/m16-course-v1.ts --gpu-run", "timeout_s": 1200, "after": ["build"]},
-  {"name": "m16-captures-check", "command": "node --experimental-strip-types apps/headless/proofs/m16-course-v1.ts --only captures", "timeout_s": 300, "after": ["m16-gpu-run"]},
-  {"name": "m16-full", "command": "node --experimental-strip-types apps/headless/proofs/m16-course-v1.ts", "timeout_s": 600, "after": ["m16-captures-check"]},
-  {"name": "guard", "command": "npm run guard", "timeout_s": 300, "after": ["m16-gpu-run"]},
-  {"name": "judge-hub", "command": "python3 $NMC_JUDGE_CLIENT out/m16/hub.png --description \"a rendered 3D game hub plaza (not blank, not an error page) built from simple stand-in shapes such as blocks, a fountain and a queue pad, with at least one simple character\" --min-score 6", "timeout_s": 300, "after": ["m16-gpu-run"]},
-  {"name": "judge-podium", "command": "python3 $NMC_JUDGE_CLIENT out/m16/podium.png --description \"a rendered 3D podium scene (not blank, not an error page) with three stepped podium blocks made of simple stand-in shapes and simple characters standing on them\" --min-score 6", "timeout_s": 300, "after": ["m16-gpu-run"]}
+  {
+    "name": "judge-penguin-front",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-front.png --description \"penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from the front\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-three-quarter",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-three-quarter.png --description \"penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from a three-quarter front-right angle\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-back",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-back.png --description \"penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from the back\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-propeller-hat-front",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-propeller-hat-front.png --description \"penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from the front\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-propeller-hat-three-quarter",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-propeller-hat-three-quarter.png --description \"penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from a three-quarter front-right angle\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-propeller-hat-back",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-propeller-hat-back.png --description \"penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from the back\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-fish-scarf-front",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-fish-scarf-front.png --description \"penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from the front\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-fish-scarf-three-quarter",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-fish-scarf-three-quarter.png --description \"penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from a three-quarter front-right angle\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-fish-scarf-back",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-fish-scarf-back.png --description \"penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from the back\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-pineapple-suit-front",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-pineapple-suit-front.png --description \"penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from the front\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-pineapple-suit-three-quarter",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-pineapple-suit-three-quarter.png --description \"penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from a three-quarter front-right angle\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  },
+  {
+    "name": "judge-penguin-pineapple-suit-back",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-pineapple-suit-back.png --description \"penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from the back\" --reference royal-fiesta/ref-1.png --min-score 6",
+    "timeout_s": 300
+  }
 ]

@@ -1,0 +1,158 @@
+{
+  "format": "royal-fiesta.views",
+  "version": 1,
+  "tool": "sdfm",
+  "camera": {
+    "fovYDeg": 30,
+    "yaws": {
+      "front": 0,
+      "three-quarter": 45,
+      "back": 180
+    }
+  },
+  "subjects": [
+    {
+      "name": "penguin",
+      "assets": {
+        "penguin.body": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5"
+      },
+      "views": [
+        {
+          "name": "front",
+          "png": "out/c2/penguin-front.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "e8f97847cec72251c73f489a54e06ea7e03b206fdfdbbd153567d01c56a26c59",
+          "bytes": 146039,
+          "nonEmpty": true
+        },
+        {
+          "name": "three-quarter",
+          "png": "out/c2/penguin-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "1ae9f8d2b3c40b4e1152fef6331a5fc98a8071ee7f9af796aba82a4aac21ce3f",
+          "bytes": 136886,
+          "nonEmpty": true
+        },
+        {
+          "name": "back",
+          "png": "out/c2/penguin-back.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "2a8ca9d5b434ee08f4f21c2e98d8db2638690a38eb9633df922a2ab7a9c9533f",
+          "bytes": 99697,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "penguin-propeller-hat",
+      "assets": {
+        "penguin.body": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5",
+        "costume.propeller-hat": "22e74cb2a7440eb172c51c42cb4f2e1d54197a11fbb5036881bb747bc85d6192"
+      },
+      "views": [
+        {
+          "name": "front",
+          "png": "out/c2/penguin-propeller-hat-front.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "d7d9a24ac4547aea91a459bd9699369ef51b4ecc0b93d8ebfa4d56ae6e3fecbe",
+          "bytes": 144840,
+          "nonEmpty": true
+        },
+        {
+          "name": "three-quarter",
+          "png": "out/c2/penguin-propeller-hat-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "1226463b3b5df89e4d04d7558e6169a0c7d1517687d3de6d683857678b26baf5",
+          "bytes": 140891,
+          "nonEmpty": true
+        },
+        {
+          "name": "back",
+          "png": "out/c2/penguin-propeller-hat-back.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "6ddd0ab54a838b0092b5ad4a3cdcc0c35f317d66ff7c335b97b45e7f46b2e7ec",
+          "bytes": 104740,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "penguin-fish-scarf",
+      "assets": {
+        "penguin.body": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5",
+        "costume.fish-scarf": "08e4b8f703093958a655af2e394b1743e01964201a2f8a6a8d1b95121954f6db"
+      },
+      "views": [
+        {
+          "name": "front",
+          "png": "out/c2/penguin-fish-scarf-front.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "11e49eebd91f20b72d328b67bcacc8b5585d98cd0c817bda1597251748e38492",
+          "bytes": 174954,
+          "nonEmpty": true
+        },
+        {
+          "name": "three-quarter",
+          "png": "out/c2/penguin-fish-scarf-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "0c939043b4eaad72f0b36f95076907d01518504c985e74ee6574673b2606214f",
+          "bytes": 169353,
+          "nonEmpty": true
+        },
+        {
+          "name": "back",
+          "png": "out/c2/penguin-fish-scarf-back.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "2f00e3d1895ab89f1469ab8758457d665ebbf6c5e4274bef8908183323962386",
+          "bytes": 112196,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "penguin-pineapple-suit",
+      "assets": {
+        "penguin.body": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5",
+        "costume.pineapple-suit": "5db2f29c22a440204ee477e1c3b4eaa5ef6d9e3d66cff1d887668dc86c92d931"
+      },
+      "views": [
+        {
+          "name": "front",
+          "png": "out/c2/penguin-pineapple-suit-front.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "6efb78c79dfa7822a8ef83b51410dcde0f36a827c760e12b06f1a55eedd48bec",
+          "bytes": 172840,
+          "nonEmpty": true
+        },
+        {
+          "name": "three-quarter",
+          "png": "out/c2/penguin-pineapple-suit-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "aa4fe0f40a325d764cd2716e6d38a710da439cb003687c162a23bb95b38a2b78",
+          "bytes": 165842,
+          "nonEmpty": true
+        },
+        {
+          "name": "back",
+          "png": "out/c2/penguin-pineapple-suit-back.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "1b3ed621526dee81f8e92744cd9fa8d61bf90798b6fbcd32fa062b4d83b73849",
+          "bytes": 135504,
+          "nonEmpty": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { isDeepStrictEqual } from 'node:util'
@@ -16,10 +17,13 @@ import type { MatchSetup } from '@royal-fiesta/sim/match/setup'
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
 import { loadAllCoursesV1, nodeGameAssets, v1Playlist } from '@royal-fiesta/headless/contentFiles'
 import { loadCourseFile, readRepoText, repoPath } from '@royal-fiesta/headless/files'
+import { secretsFromEnv } from '@royal-fiesta/headless/controlsGpu'
+import { publishDist, renderOp } from '@royal-fiesta/headless/gpuClient'
+import type { OpResult } from '@royal-fiesta/headless/gpuClient'
 import { cpuBudget, hex8, parseProofArgs, report, runProof, spawnCases } from '@royal-fiesta/headless/proofkit'
 import type { CheckResult, ProofCheck } from '@royal-fiesta/headless/proofkit'
 import { repoRoot } from '../../../tools/bricks.ts'
-import { leakScan } from '../../../tools/guard.ts'
+import { leakScan, redact } from '../../../tools/guard.ts'
 
 // M2 Course v1 on disk. QB1 here: v1 courses keep matches deterministic, and their sim colliders
 // come only from asset.collision or the course override (rule 1.5).
@@ -307,6 +311,114 @@ async function checkCaptures(): Promise<CheckResult> {
   return { value: String(notes.length), threshold, pass: notes.length === 0, notes }
 }
 
+// ---- GPU run (--gpu-run: writes the captures record) ---------------------------------------------------
+// Run by the programmatic GPU card after npm run build: publish apps/web/dist, run gameCapture with
+// proofs/m16/captures.input.json, write proofs/m16/captures.json from the op output only. PNGs stay in out/m16/.
+
+const GPU_FLAG = '--gpu-run'
+const GPU_AREA = 'm16-gpu'
+const GPU_OP = 'gameCapture'
+const CAPTURES_INPUT = 'proofs/m16/captures.input.json'
+const DIST_DIR = 'apps/web/dist'
+const PNG_DIR = 'out/m16'
+
+interface SizedCapture { name: string; width: number; height: number; sha256: string; bytes: number; nonEmpty: boolean }
+
+function field<T>(ok: (v: unknown) => boolean, o: Record<string, unknown>, k: string, where: string, expect: string): T {
+  if (!ok(o[k])) refuse(GPU_AREA, `${where}/${k}`, `${JSON.stringify(o[k])} is not ${expect}; pass the unmodified ${GPU_OP} output`)
+  return o[k] as T
+}
+const isStr = (v: unknown): boolean => typeof v === 'string'
+const isPosInt = (v: unknown): boolean => Number.isInteger(v) && (v as number) > 0
+
+// The op output is the result itself, or the single object within 3 levels holding `captures`.
+function opOutput(res: OpResult): { out: Record<string, unknown>; where: string } {
+  if (isObject(res.json) && 'captures' in res.json) return { out: res.json, where: `${res.file}#` }
+  const found: { out: Record<string, unknown>; where: string }[] = []
+  const walk = (v: unknown, path: string, depth: number): void => {
+    if (typeof v !== 'object' || v === null || depth > 3) return
+    if (depth > 0 && isObject(v) && 'captures' in v) found.push({ out: v, where: path })
+    for (const k of Object.keys(v)) walk((v as Record<string, unknown>)[k], `${path}/${k}`, depth + 1)
+  }
+  walk(res.json, `${res.file}#`, 0)
+  if (found.length !== 1) refuse(GPU_AREA, `${res.file}#`, `${found.length} objects with "captures" within 3 levels; pass the result of exactly one ${GPU_OP} run`)
+  return found[0]
+}
+
+// S10 + S17 record; every value is copied from the op output (pageRef is the published page_ref).
+function capturesRecord(res: OpResult, input: Record<string, unknown>, pageRef: string): Record<string, unknown> {
+  const { out, where } = opOutput(res)
+  if (out.renderer !== 'raa') refuse(GPU_AREA, `${where}/renderer`, `${JSON.stringify(out.renderer)} is not 'raa'; record only RAA renders`)
+  if (out.content !== input.content) refuse(GPU_AREA, `${where}/content`, `${JSON.stringify(out.content)} is not the input content; rerun with ${CAPTURES_INPUT}`)
+  const a = field<Record<string, unknown>>(isObject, out, 'adapter', where, 'an adapter object')
+  const aw = `${where}/adapter`
+  const adapter = {
+    vendor: field<string>(isStr, a, 'vendor', aw, 'a string'),
+    architecture: field<string>(isStr, a, 'architecture', aw, 'a string'),
+    description: field<string>(isStr, a, 'description', aw, 'a string'),
+    software: field<boolean>(v => typeof v === 'boolean', a, 'software', aw, 'a boolean'),
+  }
+  if (out.software !== adapter.software) refuse(GPU_AREA, `${where}/software`, 'differs from adapter.software; pass the unmodified op output')
+  const list = field<unknown[]>(v => Array.isArray(v) && v.length > 0, out, 'captures', where, 'a non-empty array')
+  const captures = list.map((c, i): SizedCapture => {
+    const cw = `${where}/captures/${i}`
+    if (!isObject(c)) return refuse(GPU_AREA, cw, `is not an object; pass the unmodified ${GPU_OP} output`)
+    return {
+      name: field<string>(v => typeof v === 'string' && /^[A-Za-z0-9._-]{1,80}$/.test(v), c, 'name', cw, 'a file-safe name'),
+      width: field<number>(isPosInt, c, 'width', cw, 'a positive integer'),
+      height: field<number>(isPosInt, c, 'height', cw, 'a positive integer'),
+      sha256: field<string>(v => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v), c, 'sha256', cw, 'a sha256 hex string'),
+      bytes: field<number>(v => Number.isInteger(v) && (v as number) >= 0, c, 'bytes', cw, 'a byte count'),
+      nonEmpty: field<boolean>(v => typeof v === 'boolean', c, 'nonEmpty', cw, 'a boolean'),
+    }
+  })
+  if (out.frameTiming !== null) refuse(GPU_AREA, `${where}/frameTiming`, 'is not null; gameCapture records no frame timing')
+  const courses = field<string[]>(v => Array.isArray(v) && v.every(isStr), out, 'courses', where, 'an array of course ids')
+  const events = field<unknown[]>(Array.isArray, out, 'events', where, 'an array').map((e, i) => {
+    const ew = `${where}/events/${i}`
+    if (!isObject(e)) return refuse(GPU_AREA, ew, 'is not an object; pass the unmodified op output')
+    return { t: field<number>(v => typeof v === 'number' && Number.isFinite(v), e, 't', ew, 'a finite number'), what: field<string>(isStr, e, 'what', ew, 'a string') }
+  })
+  const rep = field<Record<string, unknown>>(isObject, out, 'report', where, 'the content report object')
+  return { renderer: 'raa', adapter, software: adapter.software, pageRef, captures, frameTiming: null, content: out.content, courses, events, report: rep }
+}
+
+// The GPU client writes the op's files into the output directory; each capture must be there, byte for byte.
+function checkCapturePngs(captures: SizedCapture[]): void {
+  for (const c of captures) {
+    const file = `${PNG_DIR}/${c.name}.png`
+    if (!existsSync(file)) refuse(GPU_AREA, file, `is missing; the ${GPU_OP} result must come with its PNG files`)
+    const bytes = readFileSync(file)
+    const sha = createHash('sha256').update(bytes).digest('hex')
+    if (sha !== c.sha256 || bytes.length !== c.bytes) refuse(GPU_AREA, file, `is ${bytes.length} bytes sha256 ${sha}, the op reported ${c.bytes} bytes sha256 ${c.sha256}; rerun the op`)
+  }
+}
+
+async function runGpuCaptures(): Promise<number> {
+  try {
+    process.chdir(repoRoot())
+    if (!existsSync(`${DIST_DIR}/game.html`) || !existsSync(`${DIST_DIR}/nmc.gpu.json`)) refuse(GPU_AREA, DIST_DIR, 'has no game.html or nmc.gpu.json; run npm run build')
+    const input = JSON.parse(readFileSync(CAPTURES_INPUT, 'utf8')) as unknown
+    if (!isObject(input)) return refuse(GPU_AREA, `${CAPTURES_INPUT}#`, 'is not an object; use the gameCapture input of docs/gpu-ops.md')
+    const pageRef = await publishDist(DIST_DIR)
+    console.log(`[m16-gpu] published ${DIST_DIR}; running ${GPU_OP} with ${CAPTURES_INPUT}`)
+    const record = capturesRecord(await renderOp(GPU_OP, input, PNG_DIR, 'captures', pageRef), input, pageRef)
+    checkCapturePngs(record.captures as SizedCapture[])
+    const secrets = secretsFromEnv()
+    const deny = (process.env.RF_GUARD_DENY ?? '').split(',').map(s => s.trim()).filter(Boolean)
+    const text = redact(`${JSON.stringify(record, null, 2)}\n`, secrets)
+    const hits = leakScan(text, [...secrets, ...deny])
+    if (hits.length > 0) refuse(GPU_AREA, CAPTURES_FILE, `leakScan found ${hits.map(h => `${h.pattern} (${h.excerpt})`).join(', ')}; the record is not written`)
+    writeFileSync(CAPTURES_FILE, text)
+    console.log(`[report:m16-gpu] captures=${(record.captures as SizedCapture[]).length} software=${String(record.software)} out=${CAPTURES_FILE}`)
+    return 0
+  } catch (e) {
+    if (!isRefusal(e)) throw e
+    console.error(e.message)
+    return 1
+  }
+}
+
 const checks: ProofCheck[] = [
   { label: 'manifest', inQuick: true, run: checkManifest },
   { label: 'migration', inQuick: true, run: checkMigration },
@@ -318,4 +430,5 @@ const checks: ProofCheck[] = [
 const proofArgs = parseProofArgs(process.argv.slice(2))
 const caseAt = proofArgs.rest.indexOf(CASE_FLAG)
 if (!proofArgs.child && caseAt >= 0) await runMatchCase(proofArgs.rest[caseAt + 1] ?? 'match')
+else if (proofArgs.rest.includes(GPU_FLAG)) process.exitCode = await runGpuCaptures()
 else await runProof('m16-course-v1', import.meta.url, checks)

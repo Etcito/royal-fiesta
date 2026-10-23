@@ -1,8 +1,9 @@
 [
-  {"name": "install", "command": "npm ci", "timeout_s": 900},
-  {"name": "build", "command": "npm run build", "timeout_s": 900, "after": ["install"]},
-  {"name": "controls-gpu-run", "command": "node --experimental-strip-types apps/headless/src/controlsGpu.ts", "timeout_s": 900, "after": ["build"]},
-  {"name": "controls-gpu-check", "command": "node --experimental-strip-types apps/headless/proofs/m15-reunite-controls.ts --only controls-gpu", "timeout_s": 300, "after": ["controls-gpu-run"]},
-  {"name": "clean-clone", "command": "node --experimental-strip-types tools/cleanClone.ts --out proofs/m15/clean-clone.json", "timeout_s": 1800, "after": ["controls-gpu-check"]},
-  {"name": "clean-clone-check", "command": "node --experimental-strip-types apps/headless/proofs/m15-reunite-controls.ts --only clean-clone", "timeout_s": 300, "after": ["clean-clone"]}
+  {"name": "build", "command": "npm run build", "timeout_s": 900},
+  {"name": "m16-gpu-run", "command": "env NMC_GPU_WAIT_S=900 node --experimental-strip-types apps/headless/proofs/m16-course-v1.ts --gpu-run", "timeout_s": 1200, "after": ["build"]},
+  {"name": "m16-captures-check", "command": "node --experimental-strip-types apps/headless/proofs/m16-course-v1.ts --only captures", "timeout_s": 300, "after": ["m16-gpu-run"]},
+  {"name": "m16-full", "command": "node --experimental-strip-types apps/headless/proofs/m16-course-v1.ts", "timeout_s": 600, "after": ["m16-captures-check"]},
+  {"name": "guard", "command": "npm run guard", "timeout_s": 300, "after": ["m16-gpu-run"]},
+  {"name": "judge-hub", "command": "python3 $NMC_JUDGE_CLIENT out/m16/hub.png --description \"a rendered 3D game hub plaza (not blank, not an error page) built from simple stand-in shapes such as blocks, a fountain and a queue pad, with at least one simple character\" --min-score 6", "timeout_s": 300, "after": ["m16-gpu-run"]},
+  {"name": "judge-podium", "command": "python3 $NMC_JUDGE_CLIENT out/m16/podium.png --description \"a rendered 3D podium scene (not blank, not an error page) with three stepped podium blocks made of simple stand-in shapes and simple characters standing on them\" --min-score 6", "timeout_s": 300, "after": ["m16-gpu-run"]}
 ]

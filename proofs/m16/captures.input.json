@@ -1,0 +1,14 @@
+{
+  "content": "v1",
+  "flow": "tour",
+  "clients": 1,
+  "width": 1920,
+  "height": 1080,
+  "captureAt": [
+    "loading",
+    "hub",
+    "match-20s",
+    "podium",
+    "back-in-hub"
+  ]
+}

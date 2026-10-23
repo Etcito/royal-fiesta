@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
 import { canonicalJson } from '../src/course.ts'
@@ -107,4 +108,27 @@ test('a non-finite number in the document', async () => {
 test('an oversize document', async () => {
   await refused(patched(a => { a.document = { pad: 'x'.repeat(GAME_ASSET_CAPS.maxDocumentBytes) } }), '/document')
   assert.equal(GAME_ASSET_CAPS.maxDocumentBytes, 2097152)
+})
+
+test('every invalid fixture refuses with file#pointer and a fix', async () => {
+  const dir = 'fixtures/game-assets/invalid'
+  const expected: Record<string, string> = {
+    'bad-hash.asset.json': '/hash',
+    'bad-id.asset.json': '/id',
+    'script-string.asset.json': '/document',
+    'unknown-key.asset.json': '/extra',
+    'unknown-shape.asset.json': '/collision/0/shape',
+  }
+  const files = readdirSync(dir).filter(f => f.endsWith('.json')).sort()
+  assert.deepEqual(files, Object.keys(expected).sort())
+  for (const f of files) {
+    const path = `${dir}/${f}`
+    await assert.rejects(parseGameAsset(JSON.parse(readFileSync(path, 'utf8')), path), (e: unknown) => {
+      assert.ok(isRefusal(e), 'expected a RefusalError')
+      assert.ok(e.message.startsWith(`[asset] ${path}#/`), e.message)
+      assert.ok(e.message.startsWith(`[asset] ${path}#${expected[f]}`), e.message)
+      assert.ok(e.message.includes('; '), e.message)
+      return true
+    })
+  }
 })

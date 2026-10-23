@@ -1,0 +1,48 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.test-box",
+  "name": "Test box",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "nodes": [
+      {
+        "kind": "box",
+        "size": [
+          1,
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "half": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -0.5,
+      -0.5,
+      -0.5
+    ],
+    "max": [
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+}

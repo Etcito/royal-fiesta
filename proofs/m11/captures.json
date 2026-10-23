@@ -1,0 +1,95 @@
+{
+  "renderer": "raa",
+  "adapter": " |  | ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3090), OpenGL ES 3.1 Mesa 26.0.3-1ubuntu1)",
+  "software": false,
+  "pageRef": "exec-4821-c1066c77bb67a8c16677d5ffcaa0fa050d332e5a67d4f6bd65887583d6986065",
+  "captures": [
+    {
+      "name": "m11-t005-playing",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "973d1f6e832732c50e66964c5ae36b111c2b072eac0faca7284f4dffdbb1480c",
+      "bytes": 262608,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-t010-playing",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "bb9a25a28a13de34fb395364a3cc306b7d4a09377d61141af614e2e726bfd19d",
+      "bytes": 185065,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-t015-playing",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "10da48be4857e17eaa843a3713e908ebd2d5b382f25a540df9eb0bb7a49d2b67",
+      "bytes": 166584,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-t020-playing",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "9674c4118affec4f9d6b83689508928f5518395a045c6de1cb2e8246f590f065",
+      "bytes": 175479,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-t025-playing",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "092b22e07dabf1e1bced748d6d758ae39384c796934bf08701362ef43d63999e",
+      "bytes": 233536,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-t030-intro",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "f589acbc4ef6091e635047d93ac5751bd214d72a027eaea5e01eec46cfe3f01d",
+      "bytes": 198581,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-t035-playing",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "ea71f07f78f972fc7b812c6c02266a7e0aaba389e9d07a0cdc20d5578d8acc09",
+      "bytes": 150076,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-t040-playing",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "94b74737e4c82f0d03fa908edf45027db7bcb480ed0051045021020bbca9cc12",
+      "bytes": 240053,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-t045-podium",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "3a280eacdc0ca4cc2bcb2757108f61b3b58bfa7f190ba81b7bcd8db6e3f246b5",
+      "bytes": 199466,
+      "nonEmpty": true
+    },
+    {
+      "name": "m11-rematch",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "617a7ebd8a4ad8511dabad975eba898719f0778977541eb3f824998bf9a63839",
+      "bytes": 215095,
+      "nonEmpty": true
+    }
+  ],
+  "frameTiming": {
+    "width": 1920,
+    "height": 1080,
+    "frames": 2787,
+    "p50Ms": 0.5,
+    "p95Ms": 1.2000000029802322
+  }
+}

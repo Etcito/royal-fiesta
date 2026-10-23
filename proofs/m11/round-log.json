@@ -1,0 +1,108 @@
+{
+  "format": "royal-fiesta.matchlog",
+  "version": 0,
+  "seed": 11,
+  "profile": "sprint",
+  "playerCount": 8,
+  "humans": [
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "setupHash": "2a4af05b",
+  "rounds": [
+    {
+      "index": 0,
+      "kind": "race",
+      "final": false,
+      "course": "race-sprint",
+      "startTick": 0,
+      "endTick": 669,
+      "participants": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "target": 5,
+      "qualified": [
+        3,
+        5,
+        0,
+        1,
+        4
+      ],
+      "eliminated": [
+        2,
+        6,
+        7
+      ],
+      "reason": "target"
+    },
+    {
+      "index": 1,
+      "kind": "survival",
+      "final": false,
+      "course": "survival-sprint",
+      "startTick": 790,
+      "endTick": 1639,
+      "participants": [
+        0,
+        1,
+        3,
+        4,
+        5
+      ],
+      "target": 3,
+      "qualified": [
+        1,
+        4,
+        5
+      ],
+      "eliminated": [
+        3,
+        0
+      ],
+      "reason": "target"
+    },
+    {
+      "index": 2,
+      "kind": "survival",
+      "final": true,
+      "course": "survival-sprint",
+      "startTick": 1760,
+      "endTick": 2614,
+      "participants": [
+        1,
+        4,
+        5
+      ],
+      "target": 1,
+      "qualified": [
+        5
+      ],
+      "eliminated": [
+        4,
+        1
+      ],
+      "reason": "lastStanding"
+    }
+  ],
+  "winner": 5,
+  "podium": [
+    5,
+    1,
+    4
+  ],
+  "finalTick": 2796,
+  "finalHash": "636e7105"
+}

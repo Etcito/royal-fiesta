@@ -67,3 +67,17 @@ test('render stats follow create, hide and destroy', async () => {
   p.dispose()
   assert.equal(p.render().instances, 0)
 })
+
+test('setEnvironment keeps the last environment unchanged; null resets it', async () => {
+  const p = await ready()
+  assert.equal(p.lastEnvironment, null)
+  const env = { sky: 'candy-day', sun: { dir: [-0.4, -1, -0.3], color: [1, 1, 1], intensity: 3 } }
+  p.setEnvironment(env)
+  assert.equal(p.lastEnvironment, env)
+  p.setEnvironment(null)
+  assert.equal(p.lastEnvironment, null)
+  assert.throws(() => p.setEnvironment([] as unknown as Record<string, unknown>), /\[render\] NullRenderPort\.setEnvironment: environment is not an object/)
+  p.setEnvironment(env)
+  p.dispose()
+  assert.equal(p.lastEnvironment, null)
+})

@@ -16,6 +16,8 @@ export interface RenderPort {
   setVisible(instance: number, visible: boolean): void
   destroyInstance(instance: number): void
   setCamera(viewport: number, cam: CameraPose): void
+  // S13 course environment, passed to the renderer unchanged; null = renderer defaults.
+  setEnvironment(env: Readonly<Record<string, unknown>> | null): void
   render(): RenderStats
   capture(): Promise<Uint8Array | null>
   dispose(): void

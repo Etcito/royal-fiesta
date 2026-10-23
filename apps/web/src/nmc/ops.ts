@@ -135,6 +135,7 @@ class StatsPort implements RenderPort {
   setVisible(instance: number, visible: boolean): void { this.inner.setVisible(instance, visible) }
   destroyInstance(instance: number): void { this.inner.destroyInstance(instance) }
   setCamera(viewport: number, cam: CameraPose): void { this.inner.setCamera(viewport, cam) }
+  setEnvironment(env: Readonly<Record<string, unknown>> | null): void { this.inner.setEnvironment(env) }
   render(): RenderStats {
     this.last = this.inner.render()
     return this.last

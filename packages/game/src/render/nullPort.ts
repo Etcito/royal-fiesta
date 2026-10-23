@@ -17,6 +17,7 @@ function posInt(n: number): boolean {
 export class NullRenderPort implements RenderPort {
   readonly kind = 'null' as const
   readonly calls = { registerAsset: 0, createInstance: 0, setTransform: 0, render: 0 }
+  private env: Readonly<Record<string, unknown>> | null = null
   private target: RenderTarget | null = null
   private assets = new Map<string, number>()
   private assetCount = 0
@@ -87,6 +88,17 @@ export class NullRenderPort implements RenderPort {
     }
   }
 
+  setEnvironment(env: Readonly<Record<string, unknown>> | null): void {
+    if (env !== null && (typeof env !== 'object' || Array.isArray(env))) {
+      refuse(AREA, 'NullRenderPort.setEnvironment', 'environment is not an object; pass the course environment object or null')
+    }
+    this.env = env
+  }
+
+  get lastEnvironment(): Readonly<Record<string, unknown>> | null {
+    return this.env
+  }
+
   render(): RenderStats {
     const t0 = performance.now()
     this.calls.render++
@@ -106,6 +118,7 @@ export class NullRenderPort implements RenderPort {
 
   dispose(): void {
     this.target = null
+    this.env = null
     this.assets.clear()
     this.assetCount = 0
     this.live = []

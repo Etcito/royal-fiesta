@@ -14,7 +14,7 @@
     {
       "name": "penguin",
       "assets": {
-        "penguin.body": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5"
+        "penguin.body": "80933fb67db5a8b80bd91b62fca43b2393dc7dcec5ad3af5652334c0c2d98a5d"
       },
       "views": [
         {
@@ -22,8 +22,8 @@
           "png": "out/c2/penguin-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "e8f97847cec72251c73f489a54e06ea7e03b206fdfdbbd153567d01c56a26c59",
-          "bytes": 146039,
+          "sha256": "5ef0f652a281256974b83028d674408a7cd1a06466180bdd7e748861764de2d1",
+          "bytes": 382623,
           "nonEmpty": true
         },
         {
@@ -31,8 +31,8 @@
           "png": "out/c2/penguin-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "1ae9f8d2b3c40b4e1152fef6331a5fc98a8071ee7f9af796aba82a4aac21ce3f",
-          "bytes": 136886,
+          "sha256": "25b05d58b6afcd5154214df468471e21d528910f941064852ec6cfb2556780a2",
+          "bytes": 345259,
           "nonEmpty": true
         },
         {
@@ -40,8 +40,8 @@
           "png": "out/c2/penguin-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "2a8ca9d5b434ee08f4f21c2e98d8db2638690a38eb9633df922a2ab7a9c9533f",
-          "bytes": 99697,
+          "sha256": "89659bd080c1bf83f4383028581c0f5a54fadc366136d072494e8376854aed38",
+          "bytes": 302545,
           "nonEmpty": true
         }
       ]
@@ -49,7 +49,7 @@
     {
       "name": "penguin-propeller-hat",
       "assets": {
-        "penguin.body": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5",
+        "penguin.body": "80933fb67db5a8b80bd91b62fca43b2393dc7dcec5ad3af5652334c0c2d98a5d",
         "costume.propeller-hat": "22e74cb2a7440eb172c51c42cb4f2e1d54197a11fbb5036881bb747bc85d6192"
       },
       "views": [
@@ -58,8 +58,8 @@
           "png": "out/c2/penguin-propeller-hat-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "d7d9a24ac4547aea91a459bd9699369ef51b4ecc0b93d8ebfa4d56ae6e3fecbe",
-          "bytes": 144840,
+          "sha256": "fa10a3dd4fc3ca187a21778a1a7488efe6bdd0f22bcbca677b289ce6dc072e14",
+          "bytes": 335463,
           "nonEmpty": true
         },
         {
@@ -67,8 +67,8 @@
           "png": "out/c2/penguin-propeller-hat-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "1226463b3b5df89e4d04d7558e6169a0c7d1517687d3de6d683857678b26baf5",
-          "bytes": 140891,
+          "sha256": "e1bfa7f543e4dfd8cd7386ea35d8fe648bcb0facb22569e6f92c1e2f8119ba0b",
+          "bytes": 306569,
           "nonEmpty": true
         },
         {
@@ -76,8 +76,8 @@
           "png": "out/c2/penguin-propeller-hat-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "6ddd0ab54a838b0092b5ad4a3cdcc0c35f317d66ff7c335b97b45e7f46b2e7ec",
-          "bytes": 104740,
+          "sha256": "23c9883ed1848880deb131b480abc5425218affff1815f6ad2654c0f13e332a7",
+          "bytes": 255009,
           "nonEmpty": true
         }
       ]
@@ -85,7 +85,7 @@
     {
       "name": "penguin-fish-scarf",
       "assets": {
-        "penguin.body": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5",
+        "penguin.body": "80933fb67db5a8b80bd91b62fca43b2393dc7dcec5ad3af5652334c0c2d98a5d",
         "costume.fish-scarf": "08e4b8f703093958a655af2e394b1743e01964201a2f8a6a8d1b95121954f6db"
       },
       "views": [
@@ -94,8 +94,8 @@
           "png": "out/c2/penguin-fish-scarf-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "11e49eebd91f20b72d328b67bcacc8b5585d98cd0c817bda1597251748e38492",
-          "bytes": 174954,
+          "sha256": "1f9767be6a97c11e88657f8b19b3b0c1f884043486531cb24f58799717cd72c1",
+          "bytes": 394351,
           "nonEmpty": true
         },
         {
@@ -103,8 +103,8 @@
           "png": "out/c2/penguin-fish-scarf-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "0c939043b4eaad72f0b36f95076907d01518504c985e74ee6574673b2606214f",
-          "bytes": 169353,
+          "sha256": "054c117d51fef2b8d8f831a7c2176d5247792e8fb83415bf2bcfa6a9dd6b76a0",
+          "bytes": 360291,
           "nonEmpty": true
         },
         {
@@ -112,8 +112,8 @@
           "png": "out/c2/penguin-fish-scarf-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "2f00e3d1895ab89f1469ab8758457d665ebbf6c5e4274bef8908183323962386",
-          "bytes": 112196,
+          "sha256": "20e3b6fd5cef922d82a5ceee7faaf16926b8050872288b914f03aa2a724093bf",
+          "bytes": 307005,
           "nonEmpty": true
         }
       ]
@@ -121,7 +121,7 @@
     {
       "name": "penguin-pineapple-suit",
       "assets": {
-        "penguin.body": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5",
+        "penguin.body": "80933fb67db5a8b80bd91b62fca43b2393dc7dcec5ad3af5652334c0c2d98a5d",
         "costume.pineapple-suit": "5db2f29c22a440204ee477e1c3b4eaa5ef6d9e3d66cff1d887668dc86c92d931"
       },
       "views": [
@@ -130,8 +130,8 @@
           "png": "out/c2/penguin-pineapple-suit-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "6efb78c79dfa7822a8ef83b51410dcde0f36a827c760e12b06f1a55eedd48bec",
-          "bytes": 172840,
+          "sha256": "dae42437d679c43dd5bf7375b8a7c710f7a130926b0b16883b54477f7fad918b",
+          "bytes": 259211,
           "nonEmpty": true
         },
         {
@@ -139,8 +139,8 @@
           "png": "out/c2/penguin-pineapple-suit-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "aa4fe0f40a325d764cd2716e6d38a710da439cb003687c162a23bb95b38a2b78",
-          "bytes": 165842,
+          "sha256": "ab8848b050c6f3e1b56c2ec0441e2b2ccbf770ae6878c46f6fd27afedc78c13f",
+          "bytes": 245050,
           "nonEmpty": true
         },
         {
@@ -148,8 +148,8 @@
           "png": "out/c2/penguin-pineapple-suit-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "1b3ed621526dee81f8e92744cd9fa8d61bf90798b6fbcd32fa062b4d83b73849",
-          "bytes": 135504,
+          "sha256": "9ec8befd7b12a3486b765d431b7bb20ef8ee6ce71410b2038396de69c17bdb79",
+          "bytes": 221340,
           "nonEmpty": true
         }
       ]

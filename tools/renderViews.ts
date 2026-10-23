@@ -1,10 +1,12 @@
 // Renders the S21 views with SDF Modeler's Node renderer (1.14 camera) into <input.out>/<subject>-<view>.png.
 // The judge card runs it first: PNGs are never committed, so every fresh worktree renders its own.
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { crc32, deflateSync } from 'node:zlib'
+import { decodePng } from '../apps/headless/src/gpuRecord.ts'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
 import { repoRoot } from './bricks.ts'
 import { loadAssetFile, mountedBounds, type AuthoredAsset } from './contentProbe.ts'
@@ -33,6 +35,98 @@ export function viewCamera(bounds: { min: V3; max: V3 }, yawDeg: number): Camera
   return { position, target, fovYDeg: 30, ortho: false, orthoHeight: 0 }
 }
 
+export interface Rgba { width: number; height: number; data: Uint8Array }
+const BACK_TOP: V3 = [244, 246, 250]
+const BACK_BOTTOM: V3 = [208, 214, 224]
+
+// Pixel of a world point seen by the camera (y down), or null behind it.
+export function projectPoint(cam: Camera, p: V3, width: number, height: number): [number, number] | null {
+  const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+  const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+  const unit = (a: V3): V3 => { const l = Math.hypot(a[0], a[1], a[2]); return [a[0] / l, a[1] / l, a[2] / l] }
+  const f = unit(sub(cam.target, cam.position))
+  const r = unit([-f[2], 0, f[0]])
+  const u: V3 = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]]
+  const d = sub(p, cam.position)
+  const z = dot(d, f)
+  if (z <= 0) return null
+  const t = Math.tan(cam.fovYDeg * Math.PI / 360) * z
+  return [(dot(d, r) / (t * width / height) + 1) * width / 2, (1 - dot(d, u) / t) * height / 2]
+}
+
+// The renderer clears to one flat dark grey; the views sit on a light neutral studio gradient with a soft floor shadow
+// instead (1.14 neutral background). Edge pixels are re-blended from their estimated coverage so no dark fringe stays.
+export function stageOnBackdrop(img: Rgba, shadow: { cx: number; cy: number; rx: number; ry: number }): Rgba {
+  const { width: w, height: h, data } = img
+  const key = [data[0], data[1], data[2]]
+  const isKey = (i: number): boolean => Math.abs(data[i * 4] - key[0]) + Math.abs(data[i * 4 + 1] - key[1]) + Math.abs(data[i * 4 + 2] - key[2]) <= 3
+  const corners = [0, w - 1, (h - 1) * w, h * w - 1]
+  if (!corners.every(isKey)) return img
+  const out = new Uint8Array(data)
+  const back = (x: number, y: number): V3 => {
+    const t = y / (h - 1)
+    const dx = (x - shadow.cx) / shadow.rx
+    const dy = (y - shadow.cy) / shadow.ry
+    const s = 1 - 0.38 * Math.exp(-2.2 * (dx * dx + dy * dy))
+    return [0, 1, 2].map((c) => (BACK_TOP[c] + (BACK_BOTTOM[c] - BACK_TOP[c]) * t) * s) as V3
+  }
+  const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x
+      const b = back(x, y)
+      if (isKey(i)) {
+        for (let c = 0; c < 3; c++) out[i * 4 + c] = Math.round(b[c])
+        out[i * 4 + 3] = 255
+        continue
+      }
+      // Edge pixel: step away from the key neighbours to an inner pixel and take coverage along key -> inner colour.
+      let gx = 0
+      let gy = 0
+      for (const [ox, oy] of N4) {
+        const nx = x + ox
+        const ny = y + oy
+        if (nx >= 0 && ny >= 0 && nx < w && ny < h && isKey(ny * w + nx)) { gx -= ox; gy -= oy }
+      }
+      if (gx === 0 && gy === 0) continue
+      const qx = Math.min(w - 1, Math.max(0, x + 2 * Math.sign(gx)))
+      const qy = Math.min(h - 1, Math.max(0, y + 2 * Math.sign(gy)))
+      const q = qy * w + qx
+      if (isKey(q)) continue
+      let num = 0
+      let den = 0
+      for (let c = 0; c < 3; c++) {
+        const pk = data[i * 4 + c] - key[c]
+        const qk = data[q * 4 + c] - key[c]
+        num += pk * qk
+        den += qk * qk
+      }
+      const a = den > 0 ? Math.min(1, Math.max(0, num / den)) : 1
+      for (let c = 0; c < 3; c++) out[i * 4 + c] = Math.round(Math.min(255, Math.max(0, data[i * 4 + c] + (1 - a) * (b[c] - key[c]))))
+    }
+  }
+  return { width: w, height: h, data: out }
+}
+
+// RGBA8 PNG, filter 0 on every row.
+export function encodePng(img: Rgba): Uint8Array {
+  const raw = Buffer.alloc((img.width * 4 + 1) * img.height)
+  for (let y = 0; y < img.height; y++) Buffer.from(img.data.subarray(y * img.width * 4, (y + 1) * img.width * 4)).copy(raw, y * (img.width * 4 + 1) + 1)
+  const chunk = (type: string, body: Uint8Array): Buffer => {
+    const head = Buffer.alloc(8)
+    head.writeUInt32BE(body.length, 0)
+    head.write(type, 4, 'ascii')
+    const crc = Buffer.alloc(4)
+    crc.writeUInt32BE(crc32(Buffer.concat([head.subarray(4), body])), 0)
+    return Buffer.concat([head, body, crc])
+  }
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(img.width, 0)
+  ihdr.writeUInt32BE(img.height, 4)
+  ihdr.set([8, 6, 0, 0, 0], 8)
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', new Uint8Array(0))])
+}
+
 // The penguin document plus each costume's nodes, shifted by its mount offset (anchors carry identity rotation, 1.12).
 export function mergeDocuments(body: Obj, costumes: { document: Obj; offset: V3; rel: string }[]): Obj {
   const nodes: Obj = { ...(body.nodes as Obj) }
@@ -56,6 +150,19 @@ export function mergeDocuments(body: Obj, costumes: { document: Obj; offset: V3;
     }
   }
   return { ...body, nodes, materials, root }
+}
+
+// A soft ellipse on the floor under the penguin's feet, as wide as the penguin seen from that yaw.
+function floorShadow(cam: Camera, b: { min: V3; max: V3 }, yawDeg: number, width: number, height: number): { cx: number; cy: number; rx: number; ry: number } {
+  const cx = (b.min[0] + b.max[0]) / 2
+  const cz = (b.min[2] + b.max[2]) / 2
+  const r = Math.max(b.max[0] - b.min[0], b.max[2] - b.min[2]) / 2
+  const yaw = yawDeg * Math.PI / 180
+  const c = projectPoint(cam, [cx, b.min[1], cz], width, height)
+  const e = projectPoint(cam, [cx + r * Math.cos(yaw), b.min[1], cz - r * Math.sin(yaw)], width, height)
+  if (c === null || e === null) refuse(AREA, 'camera', 'the floor is behind the view camera; check the bounds of the subject')
+  const rx = Math.max(1, Math.hypot(e[0] - c[0], e[1] - c[1]))
+  return { cx: c[0], cy: c[1], rx, ry: rx * 0.22 }
 }
 
 function union(a: { min: V3; max: V3 }, b: { min: V3; max: V3 }): { min: V3; max: V3 } {
@@ -130,7 +237,11 @@ export async function main(argv: string[]): Promise<number> {
         const out = resolve(input.out, `${s.name}-${v}.png`)
         const t0 = Date.now()
         try {
-          const r = await sdfm.call('render', { camera: viewCamera(bounds, VIEW_YAWS[v]), width: input.width, height: input.height, out })
+          const camera = viewCamera(bounds, VIEW_YAWS[v])
+          const r = await sdfm.call('render', { camera, width: input.width, height: input.height, out })
+          const img = decodePng(new Uint8Array(readFileSync(out)), input.width, input.height, out)
+          if (img.channels !== 4) refuse(AREA, out, `${img.channels} channels, expected RGBA; check the SDF Modeler render output`)
+          writeFileSync(out, encodePng(stageOnBackdrop(img, floorShadow(camera, aabb(body.asset.bounds), VIEW_YAWS[v], input.width, input.height))))
           console.log(`[render] ${s.name}/${v} ${Date.now() - t0} ms: ${r.text.split(';')[0]}`)
         } catch (e) {
           console.error(`[render] ${s.name}/${v}: ${(e as Error).message}`)

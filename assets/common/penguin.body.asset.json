@@ -735,13 +735,34 @@
               "id": "out",
               "type": "material.output",
               "params": {
+                "distance": 0.004,
+                "height_mode": "bump",
                 "in.base_color": "#2f4fd0",
                 "in.roughness": 0.9
               },
               "position": [0, 0]
+            },
+            {
+              "id": "fur",
+              "type": "pattern.noise",
+              "params": {
+                "scale": 90
+              },
+              "position": [220, 0]
             }
           ],
-          "links": []
+          "links": [
+            {
+              "from": {
+                "node": "fur",
+                "port": "value"
+              },
+              "to": {
+                "node": "out",
+                "port": "height"
+              }
+            }
+          ]
         }
       },
       "m2": {
@@ -752,13 +773,34 @@
               "id": "out",
               "type": "material.output",
               "params": {
+                "distance": 0.004,
+                "height_mode": "bump",
                 "in.base_color": "#f7f7f2",
                 "in.roughness": 0.85
               },
               "position": [0, 0]
+            },
+            {
+              "id": "fur",
+              "type": "pattern.noise",
+              "params": {
+                "scale": 90
+              },
+              "position": [220, 0]
             }
           ],
-          "links": []
+          "links": [
+            {
+              "from": {
+                "node": "fur",
+                "port": "value"
+              },
+              "to": {
+                "node": "out",
+                "port": "height"
+              }
+            }
+          ]
         }
       },
       "m3": {
@@ -875,5 +917,5 @@
     "min": [-0.673767, -0.865, -0.558923],
     "max": [0.673767, 0.85, 0.49]
   },
-  "hash": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5"
+  "hash": "80933fb67db5a8b80bd91b62fca43b2393dc7dcec5ad3af5652334c0c2d98a5d"
 }

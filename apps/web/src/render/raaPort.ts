@@ -121,7 +121,7 @@ class RaaRenderPort implements RenderPort {
       const v = env[key]
       if (v === undefined || v === null) continue
       if (key === 'sun') light = sunLight(p, v)
-      else if (MISSING_ENV.includes(key)) refuse(AREA, p, `environment.${key} not in ${RAA_RELEASE}; brick gap`)
+      else if (MISSING_ENV.includes(key)) unsupported(p, key)
       else refuse(AREA, p, `environment.${key} is not an S13 environment key; use sky, sun, fog or post`)
     }
     engine.setLight(light ?? DEFAULT_LIGHT)
@@ -190,6 +190,10 @@ function raaPrims(asset: PrimsAsset): PrimsAsset {
   return { ...asset, collision: { ...asset.collision, colliders } }
 }
 
+function unsupported(p: string, field: string): never {
+  refuse(AREA, p, `'${field}' not supported by ${RAA_RELEASE}; brick gap, see docs/brick-gaps.md`)
+}
+
 function vec3(v: unknown): [number, number, number] | null {
   if (!Array.isArray(v) || v.length !== 3 || !v.every(Number.isFinite)) return null
   return [v[0], v[1], v[2]]
@@ -197,10 +201,10 @@ function vec3(v: unknown): [number, number, number] | null {
 
 // S13 sun {dir, color, intensity} -> the release's LightDesc. A named sun has no release API.
 function sunLight(p: string, sun: unknown): LightDesc {
-  if (typeof sun !== 'object' || sun === null || Array.isArray(sun)) refuse(AREA, p, `environment.sun as a name not in ${RAA_RELEASE}; brick gap`)
+  if (typeof sun !== 'object' || sun === null || Array.isArray(sun)) unsupported(p, 'sun (by name)')
   const s = sun as Record<string, unknown>
   for (const key of Object.keys(s)) {
-    if (key !== 'dir' && key !== 'color' && key !== 'intensity') refuse(AREA, p, `environment.sun.${key} not in ${RAA_RELEASE}; brick gap`)
+    if (key !== 'dir' && key !== 'color' && key !== 'intensity') unsupported(p, `sun.${key}`)
   }
   const direction = vec3(s.dir)
   if (direction === null || direction.every((c) => c === 0)) refuse(AREA, p, 'environment.sun.dir is not 3 finite numbers, not all 0; pass [x, y, z]')

@@ -1,0 +1,98 @@
+{
+  "format": "sdfm.game",
+  "version": 1,
+  "id": "royal-fiesta",
+  "name": "Royal Fiesta",
+  "folders": {
+    "assets": "assets",
+    "courses": "courses",
+    "ui": "ui"
+  },
+  "worlds": [
+    "candy",
+    "ice",
+    "jungle",
+    "neon",
+    "common"
+  ],
+  "courseFormat": "royal-fiesta.course",
+  "courseVersion": 1,
+  "markers": {
+    "spawn": {
+      "t": "vec3",
+      "yawDeg": "number"
+    },
+    "checkpoint": {
+      "center": "vec3",
+      "half": "vec3",
+      "respawn": {
+        "t": "vec3",
+        "yawDeg": "number"
+      }
+    },
+    "finish": {
+      "center": "vec3",
+      "half": "vec3"
+    },
+    "killPlane": {
+      "y": "number"
+    },
+    "queuePad": {
+      "center": "vec3",
+      "half": "vec3"
+    },
+    "podiumSpot": {
+      "t": "vec3",
+      "yawDeg": "number"
+    }
+  },
+  "motions": {
+    "static": {},
+    "spinner": {
+      "axis": "vec3",
+      "speedDegS": "number",
+      "phaseDeg": "number"
+    },
+    "pendulum": {
+      "pivot": "vec3",
+      "axis": "vec3",
+      "ampDeg": "number",
+      "periodS": "number",
+      "phaseDeg": "number"
+    },
+    "seesaw": {
+      "axis": "vec3",
+      "maxDeg": "number",
+      "spring": "number",
+      "damping": "number",
+      "inertia": "number"
+    },
+    "rotatingDoor": {
+      "axis": "vec3",
+      "stepDeg": "number",
+      "periodS": "number",
+      "moveS": "number",
+      "phaseS": "number"
+    },
+    "conveyor": {
+      "velocity": "vec3"
+    },
+    "bouncePad": {
+      "speed": "number"
+    },
+    "movingPlatform": {
+      "offset": "vec3",
+      "periodS": "number",
+      "phaseDeg": "number",
+      "wave": {
+        "enum": [
+          "sine",
+          "pingpong"
+        ]
+      }
+    }
+  },
+  "play": {
+    "dev": "http://localhost:5173/game.html?course={id}"
+  }
+}

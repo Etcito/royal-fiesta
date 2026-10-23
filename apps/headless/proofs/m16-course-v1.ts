@@ -22,6 +22,7 @@ import { publishDist, renderOp } from '@royal-fiesta/headless/gpuClient'
 import type { OpResult } from '@royal-fiesta/headless/gpuClient'
 import { cpuBudget, hex8, parseProofArgs, report, runProof, spawnCases } from '@royal-fiesta/headless/proofkit'
 import type { CheckResult, ProofCheck } from '@royal-fiesta/headless/proofkit'
+import { isAuthored, readAuthored } from '../../../tools/authored.ts'
 import { repoRoot } from '../../../tools/bricks.ts'
 import { leakScan, redact } from '../../../tools/guard.ts'
 
@@ -122,15 +123,24 @@ async function checkMigration(): Promise<CheckResult> {
     .filter(e => e.isFile() && e.name.endsWith(COURSE_SUFFIX))
     .map(e => e.name)
     .sort()
+  // An authored v1 course replaces its generated placeholder (1.11): placeholders.ts no longer writes it,
+  // so there is nothing to migrate against it.
+  const registry = readAuthored(repoRoot())
+  let authored = 0
   for (const name of names) {
+    const id = name.slice(0, -COURSE_SUFFIX.length)
+    if (isAuthored(registry, `courses/${id}${COURSE_SUFFIX}`)) {
+      authored++
+      continue
+    }
     const rel = `${V0_DIR}/${name}`
-    const problem = await migrationProblem(rel, name.slice(0, -COURSE_SUFFIX.length))
+    const problem = await migrationProblem(rel, id)
     if (problem !== null) notes.push(`${rel}: ${problem}`)
   }
   if (names.length === 0) notes.push(`${V0_DIR} has no v0 course`)
   const placeholders = await runNodeScript('tools/placeholders.ts', ['--check'])
   if (placeholders.code !== 0) notes.push(`tools/placeholders.ts --check exit ${placeholders.code}: ${placeholders.tail}`)
-  report('migration', { courses: names.length, placeholdersExit: placeholders.code })
+  report('migration', { courses: names.length, authored, placeholdersExit: placeholders.code })
   return { value: String(notes.length), threshold: '0 problems', pass: notes.length === 0, notes }
 }
 

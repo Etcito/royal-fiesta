@@ -2,12 +2,13 @@ import { initRapier } from '@gamesaloon/rollback-rapier'
 import { loadCourse } from '@royal-fiesta/game/course'
 import type { FlowEvent } from '@royal-fiesta/game/hub/flow'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
-import type { Viewport } from '@royal-fiesta/game/render/port'
+import type { RenderPort, RenderStats, Viewport } from '@royal-fiesta/game/render/port'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import plazaJson from '../../../../fixtures/courses/hub-plaza.course.json?raw'
+import { initPerClient, planCanvases } from '../client/canvases.ts'
 import { browserAssetResolver, browserCourses, preloadAssets } from '../client/sources.ts'
 import { installNmcOps } from '../nmc/ops.ts'
-import type { AdapterInfo, CaptureOut } from '../nmc/ops.ts'
+import type { AdapterInfo, CaptureOut, OpEnvelope } from '../nmc/ops.ts'
 import { createRaaPort } from '../render/raaPort.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import { InPageHubLoop } from './inpageHub.ts'
@@ -56,12 +57,12 @@ function validate(input: unknown): Moment[] {
 // The M7 helper is private, so keep the same adapter detection here.
 interface GpuAdapterInfoLike { vendor?: string; architecture?: string; description?: string; isFallbackAdapter?: boolean }
 interface GpuAdapterLike { info?: GpuAdapterInfoLike; isFallbackAdapter?: boolean }
-interface GpuLike { requestAdapter(): Promise<GpuAdapterLike | null> }
+interface GpuLike { requestAdapter(opts?: { powerPreference?: string; featureLevel?: string }): Promise<GpuAdapterLike | null> }
 
 async function adapterInfo(): Promise<AdapterInfo> {
   const gpu = (navigator as Navigator & { gpu?: GpuLike }).gpu
   if (!gpu) refuse('gpu', 'navigator.gpu', 'WebGPU is not exposed by this browser; run the op in the GPU client browser')
-  const adapter = await gpu.requestAdapter()
+  const adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' })
   if (adapter === null) refuse('gpu', 'navigator.gpu.requestAdapter', 'no WebGPU adapter; run the op in the GPU client browser')
   const info = adapter.info ?? {}
   const vendor = info.vendor ?? ''
@@ -78,11 +79,30 @@ async function prelude() {
   return { R: await initRapier(), adapter: await adapterInfo() }
 }
 
-function makeCanvas(): HTMLCanvasElement {
+// The hub loop draws only at capture moments: the op renders each real port just before reading it back.
+const ZERO_STATS: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
+function gated(port: RenderPort): RenderPort {
+  return {
+    kind: port.kind,
+    init: target => port.init(target),
+    registerAsset: (name, asset) => port.registerAsset(name, asset),
+    createInstance: (asset, tint) => port.createInstance(asset, tint),
+    setTransform: (instance, t, r, s) => port.setTransform(instance, t, r, s),
+    setVisible: (instance, visible) => port.setVisible(instance, visible),
+    destroyInstance: instance => port.destroyInstance(instance),
+    setCamera: (viewport, cam) => port.setCamera(viewport, cam),
+    setEnvironment: env => port.setEnvironment(env),
+    render: () => ZERO_STATS,
+    capture: () => port.capture(),
+    dispose: () => port.dispose(),
+  }
+}
+
+function makeCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
-  canvas.width = WIDTH
-  canvas.height = HEIGHT
-  canvas.style.cssText = `width: ${WIDTH}px; height: ${HEIGHT}px; display: block;`
+  canvas.width = width
+  canvas.height = height
+  canvas.style.cssText = `width: ${width}px; height: ${height}px; display: block;`
   document.body.appendChild(canvas)
   return canvas
 }
@@ -93,31 +113,57 @@ function base64Of(bytes: Uint8Array): string {
   return btoa(s)
 }
 
-async function hubLoopCapture(raw: unknown): Promise<HubLoopOutput> {
+// One PNG per client canvas, tiled into the 1920x1080 grid: client k at column k%2, row floor(k/2).
+async function composite(pngs: Uint8Array[], tiles: Viewport[]): Promise<string> {
+  const canvas = document.createElement('canvas')
+  canvas.width = WIDTH
+  canvas.height = HEIGHT
+  const ctx = canvas.getContext('2d')
+  if (ctx === null) refuse('ops', 'hubLoopCapture', 'no 2D canvas context to tile the client captures; run the op in a browser with canvas 2D')
+  for (let k = 0; k < tiles.length; k++) {
+    const image = await createImageBitmap(new Blob([pngs[k] as Uint8Array<ArrayBuffer>], { type: 'image/png' }))
+    ctx.drawImage(image, tiles[k].x, tiles[k].y, tiles[k].width, tiles[k].height)
+    image.close()
+  }
+  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
+  if (blob === null) refuse('ops', 'hubLoopCapture', 'canvas.toBlob returned null; the tiled capture could not be encoded')
+  return base64Of(new Uint8Array(await blob.arrayBuffer()))
+}
+
+async function hubLoopCapture(raw: unknown): Promise<OpEnvelope<HubLoopOutput>> {
   const captureAt = validate(raw)
   const { R, adapter } = await prelude()
   const courses = await browserCourses('sprint')
   const resolver = browserAssetResolver()
   const plaza = await loadCourse(JSON.parse(plazaJson), 'fixtures/courses/hub-plaza.course.json', resolver)
   const assets = await preloadAssets([...courses, plaza], resolver)
-  const port = await createRaaPort()
-  if (port.kind !== 'raa') refuse('render', 'raa', 'hubLoopCapture requires an RAA port; never capture with the null port')
-  const canvas = makeCanvas()
-  const viewports: Viewport[] = []
-  for (let k = 0; k < 4; k++) viewports.push({ x: (k % 2) * 960, y: Math.floor(k / 2) * 540, width: 960, height: 540 })
+  // One canvas and one RAA port per client (RAA draws one full-canvas viewport), as on the client page.
+  const plan = planCanvases(WIDTH, HEIGHT, 4)
+  const tiles: Viewport[] = plan.cells.map(c => ({ x: c.col * c.canvasWidth, y: c.row * c.canvasHeight, width: c.canvasWidth, height: c.canvasHeight }))
+  const canvases: HTMLCanvasElement[] = []
+  const ports: RenderPort[] = []
   let loop: InPageHubLoop | null = null
   let frame = 0
   const now = () => frame * DT * 1000
   const originalNow = Object.getOwnPropertyDescriptor(performance, 'now')
   let clockInstalled = false
   try {
-    await port.init({ canvas, width: WIDTH, height: HEIGHT, viewports })
+    await initPerClient(plan, cell => {
+      const canvas = makeCanvas(cell.canvasWidth, cell.canvasHeight)
+      canvases.push(canvas)
+      return canvas
+    }, async () => {
+      const port = await createRaaPort()
+      ports.push(port)
+      if (port.kind !== 'raa') refuse('render', 'raa', 'hubLoopCapture requires an RAA port; never capture with the null port')
+      return port
+    })
     // LoopbackRelay rate-limits on performance.now, so it must share deps.now's virtual clock.
     Object.defineProperty(performance, 'now', { configurable: true, writable: true, value: now })
     clockInstalled = true
     loop = new InPageHubLoop(R, 4, new LoopbackRelay({ seed: 8 }), {
       R, courses, plaza, partySize: 4, now, pilot: true,
-    }, [port], { assets, bean: assets('bean') })
+    }, ports.map(gated), { assets, bean: assets('bean') })
     const captures: CaptureOut[] = []
     let hubFrames = 0
     let matchStart: number | null = null
@@ -143,10 +189,15 @@ async function hubLoopCapture(raw: unknown): Promise<HubLoopOutput> {
       if (doneStart !== null && frame - doneStart === 120) reached.add('back-in-hub')
       const name = captureAt[captures.length]
       if (reached.has(name)) {
-        const png = await port.capture()
-        if (png === null || png.length === 0) refuse('render', 'raa', `capture at ${name} returned no PNG bytes; the RAA port must read the canvas back`)
-        captures.push({ name: `hub-loop-${name}`, width: WIDTH, height: HEIGHT, mime: 'image/png', base64: base64Of(png) })
-        if (captures.length === captureAt.length) return { captures, adapter, renderer: 'raa', events: loop.events }
+        const pngs: Uint8Array[] = []
+        for (let k = 0; k < ports.length; k++) {
+          ports[k].render()
+          const png = await ports[k].capture()
+          if (png === null || png.length === 0) refuse('render', 'raa', `client ${k} capture at ${name} returned no PNG bytes; the RAA port must read the canvas back`)
+          pngs.push(png)
+        }
+        captures.push({ name: `hub-loop-${name}`, width: WIDTH, height: HEIGHT, mime: 'image/png', base64: await composite(pngs, tiles) })
+        if (captures.length === captureAt.length) return { json: { captures, adapter, renderer: 'raa', events: loop.events }, files: [] }
       }
       if (frame % 60 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
     }
@@ -155,8 +206,10 @@ async function hubLoopCapture(raw: unknown): Promise<HubLoopOutput> {
     try {
       loop?.dispose()
     } finally {
-      try { port.dispose() } finally {
-        canvas.remove()
+      try {
+        for (const port of ports) port.dispose()
+      } finally {
+        for (const canvas of canvases) canvas.remove()
         if (clockInstalled) {
           if (originalNow) Object.defineProperty(performance, 'now', originalNow)
           else Reflect.deleteProperty(performance, 'now')
@@ -166,8 +219,19 @@ async function hubLoopCapture(raw: unknown): Promise<HubLoopOutput> {
   }
 }
 
+// The GPU client exposes the RTX only at WebGPU's compatibility feature level, and RAA's browser backend never
+// asks for it, so inject it into every requestAdapter call (the page's own and RAA's) or both get SwiftShader.
+function preferCompatibilityAdapter(): void {
+  const gpu = (navigator as Navigator & { gpu?: GpuLike }).gpu
+  if (!gpu || typeof gpu.requestAdapter !== 'function') return
+  const orig = gpu.requestAdapter.bind(gpu)
+  gpu.requestAdapter = (opts?: { powerPreference?: string; featureLevel?: string }) =>
+    orig({ ...(opts ?? {}), featureLevel: opts?.featureLevel ?? 'compatibility' })
+}
+
 export function installPlayOps(): void {
+  preferCompatibilityAdapter()
   installNmcOps()
-  const gpu = window.nmcGpu as NonNullable<Window['nmcGpu']> & { ops: { hubLoopCapture(input: unknown): Promise<HubLoopOutput> } }
+  const gpu = window.nmcGpu as NonNullable<Window['nmcGpu']> & { ops: { hubLoopCapture(input: unknown): Promise<OpEnvelope<HubLoopOutput>> } }
   gpu.ops.hubLoopCapture = hubLoopCapture
 }

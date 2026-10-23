@@ -2,7 +2,9 @@
 // LoopbackRelay; ?mode=ops only installs the GPU client ops.
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
-import { emptyControls } from '@royal-fiesta/game/client/inputMap'
+import { basisFromFacing } from '@royal-fiesta/game/client/cameraBasis'
+import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
+import { controlsToInput, emptyControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import { loadCourse } from '@royal-fiesta/game/course'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
@@ -12,15 +14,21 @@ import type { NetMatch } from '@royal-fiesta/game/net/netMatch'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
-import type { CameraPose, RenderPort, Viewport } from '@royal-fiesta/game/render/port'
+import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
+import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
+import { neutralInput } from '@royal-fiesta/sim/input'
+import type { PlayerInput } from '@royal-fiesta/sim/input'
 import type { CharacterView, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import plazaJson from '../../../../fixtures/courses/hub-plaza.course.json?raw'
+import { initPerClient, planCanvases } from '../client/canvases.ts'
+import type { ClientCell } from '../client/canvases.ts'
 import { mountHud } from '../client/hud.ts'
 import { browserAssetResolver, browserCourses, preloadAssets } from '../client/sources.ts'
+import { GameInput } from '../input/input.ts'
 import { createRaaPort } from '../render/raaPort.ts'
 import { SoundDriver } from './sound.ts'
 import { raaStatus } from '../render/raaStatus.ts'
@@ -32,10 +40,11 @@ type Hud = ReturnType<typeof mountHud>
 type Query =
   | { mode: 'online'; server: string; hub: string | 'new'; name: string; colour: number; party: 2 | 3 | 4 }
   | { mode: 'inpage'; clients: number }
-interface Ctx { note: string; R: RapierModule; hud: Hud; port: RenderPort; courses: ResolvedCourse[]; plaza: ResolvedCourse; assets: (name: string) => PrimsAsset }
+// ports: one RenderPort per client canvas (each in-page client has its own canvas and RAA engine).
+interface Ctx { note: string; R: RapierModule; hud: Hud; ports: RenderPort[]; courses: ResolvedCourse[]; plaza: ResolvedCourse; assets: (name: string) => PrimsAsset }
 
-const STICK_DEADZONE = 0.15
-const EMOTE_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4']
+// Look sensitivity setting 1..10; docs/controls.md default.
+const LOOK_SENSITIVITY = 5
 
 function intParam(q: URLSearchParams, key: string, def: number, min: number, max: number): number {
   const raw = q.get(key)
@@ -62,109 +71,25 @@ function parseQuery(search: string): Query {
   return { mode: 'online', server, hub, name, colour, party }
 }
 
-function trackControls(): { controls: () => RawControls; takeEmote: () => number } {
-  const keys = new Set<string>()
-  const prevent = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
-  let emote = 0
-  window.addEventListener('keydown', e => {
-    keys.add(e.code)
-    if (prevent.has(e.code)) e.preventDefault()
-    // Keydown edges only: a held key does not repeat the emote.
-    const id = EMOTE_KEYS.indexOf(e.code)
-    if (id >= 0 && !e.repeat) emote = id + 1
-  })
-  window.addEventListener('keyup', e => keys.delete(e.code))
-  window.addEventListener('blur', () => keys.clear())
-  const c = emptyControls()
-  const controls = () => {
-    c.forward = keys.has('KeyW') || keys.has('ArrowUp')
-    c.back = keys.has('KeyS') || keys.has('ArrowDown')
-    c.left = keys.has('KeyA') || keys.has('ArrowLeft')
-    c.right = keys.has('KeyD') || keys.has('ArrowRight')
-    c.jump = keys.has('Space')
-    c.dive = keys.has('ShiftLeft') || keys.has('ShiftRight')
-    c.grab = keys.has('KeyE')
-    c.stickX = 0
-    c.stickY = 0
-    const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : []
-    for (const pad of pads) {
-      if (!pad) continue
-      const x = pad.axes[0] ?? 0
-      const y = pad.axes[1] ?? 0
-      // Gamepad up is -axis1; RawControls up is +stickY.
-      if (Math.abs(x) > STICK_DEADZONE || Math.abs(y) > STICK_DEADZONE) {
-        c.stickX = x
-        c.stickY = -y
-      }
-      const b = (i: number) => pad.buttons[i]?.pressed === true
-      c.jump ||= b(0)
-      c.dive ||= b(1)
-      c.grab ||= b(2)
-      break
-    }
-    return c
-  }
-  const takeEmote = () => {
-    const id = emote
-    emote = 0
-    return id
-  }
-  return { controls, takeEmote }
-}
-
-function unit(x: number, z: number): { x: number; z: number } {
-  const len = Math.sqrt(x * x + z * z)
-  return len > 1e-6 ? { x: x / len, z: z / len } : { x: 0, z: 1 }
-}
-
-// Camera facing on XZ (target - eye); +Z until the camera exists.
-function facingOf(cam: CameraPose | null): { x: number; z: number } {
-  return cam === null ? { x: 0, z: 1 } : unit(cam.target[0] - cam.eye[0], cam.target[2] - cam.eye[2])
-}
-
-// PlayFlow rotates controls by the character's facing; re-express the camera-relative move as a stick in that frame
-// so the bean moves where the camera looks.
-function cameraRelative(c: RawControls, cam: { x: number; z: number }, char: { x: number; z: number }, out: RawControls): RawControls {
-  let x = (c.right ? 1 : 0) - (c.left ? 1 : 0)
-  let y = (c.forward ? 1 : 0) - (c.back ? 1 : 0)
-  if (Math.abs(c.stickX) + Math.abs(c.stickY) > STICK_DEADZONE) {
-    x = c.stickX
-    y = c.stickY
-  }
-  const len = Math.sqrt(x * x + y * y)
-  if (len > 1) {
-    x /= len
-    y /= len
-  }
-  // World move: right = (f.z, -f.x), as in controlsToInput.
-  const mx = cam.z * x + cam.x * y
-  const mz = -cam.x * x + cam.z * y
-  const f = unit(char.x, char.z)
+// PlayFlow applies controlsToInput with the character facing, so the camera-relative world move w is
+// re-expressed as a stick in that frame: stickX = w · right, stickY = w · forward of basisFromFacing(charFacing).
+function inCharacterFrame(w: PlayerInput, charFacing: Planar, out: RawControls): RawControls {
+  const b = basisFromFacing(charFacing)
   out.left = out.right = out.forward = out.back = false
-  out.stickX = f.z * mx - f.x * mz
-  out.stickY = f.x * mx + f.z * mz
-  out.jump = c.jump
-  out.dive = c.dive
-  out.grab = c.grab
+  out.stickX = w.moveX * b.right.x + w.moveZ * b.right.z
+  out.stickY = w.moveX * b.forward.x + w.moveZ * b.forward.z
+  out.jump = w.jump
+  out.dive = w.dive
+  out.grab = w.grab
   return out
 }
 
-// note is the standing banner line that status lines are joined with.
-async function pickPort(hud: Hud): Promise<{ port: RenderPort; note: string }> {
-  if ((await raaStatus()).available) return { port: await createRaaPort(), note: '' }
+// note is the standing banner line that status lines are joined with. makePort builds one port per canvas.
+async function pickPort(hud: Hud): Promise<{ makePort: () => Promise<RenderPort>; note: string }> {
+  if ((await raaStatus()).available) return { makePort: () => createRaaPort(), note: '' }
   const note = 'RAA API v0 not available: null render port'
   hud.banner(note)
-  return { port: new NullRenderPort(), note }
-}
-
-// In-page clients share one port as a 2x2 grid, client k at column k%2 and row floor(k/2).
-function viewportsOf(width: number, height: number, count: number): Viewport[] {
-  if (count === 1) return [{ x: 0, y: 0, width, height }]
-  const w = Math.floor(width / 2)
-  const h = Math.floor(height / 2)
-  const out: Viewport[] = []
-  for (let k = 0; k < count; k++) out.push({ x: (k % 2) * w, y: Math.floor(k / 2) * h, width: w, height: h })
-  return out
+  return { makePort: async () => new NullRenderPort(), note }
 }
 
 function loop(frame: (dtS: number) => void): void {
@@ -191,8 +116,10 @@ function queueLine(state: FlowState, party: number): string {
   return 'Hub failed'
 }
 
-// One online client: this page's bean in the hub, then its match, then back.
-function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: ReturnType<typeof trackControls>): void {
+// One online client: this page's bean in the hub, then its match, then back. Moves and look go through
+// GameInput; the orbit camera frames the bean and gives controlsToInput its camera facing.
+function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameInput): void {
+  const port = ctx.ports[0]
   let seat = 0
   let failure = ''
   const flow = new PlayFlow({
@@ -206,7 +133,8 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: Retur
   })
   void flow.start()
   const sound = new SoundDriver()
-  const hubView = new HubView(ctx.port, 0, ctx.assets, ctx.assets('bean'), ctx.plaza)
+  const orbit = new OrbitCamera()
+  const hubView = new HubView(port, 0, ctx.assets, ctx.assets('bean'), ctx.plaza, { orbit })
   const local: CharState = {
     pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 },
     mode: 0, grounded: false, groundObstacle: -1, knockbacks: 0, teleportTick: 0,
@@ -216,6 +144,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: Retur
     mode: 0, status: 0, parked: false, teleportTick: 0,
   }
   const view = emptyViewState()
+  const world = neutralInput()
   const moved = emptyControls()
   let names: string[] = []
   let scene: SceneView | null = null
@@ -228,28 +157,33 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: Retur
   }
   loop(dt => {
     const now = performance.now()
+    const look = input.takeLook()
+    orbit.mouse(look.dx, look.dy, LOOK_SENSITIVITY, false)
+    orbit.stick(look.rx, look.ry, dt, LOOK_SENSITIVITY, false)
+    let emote = 0
+    for (const ev of input.takeEvents()) if (ev.k === 'emote') emote = ev.id
     const before = flow.state
-    let charFacing = { x: 0, z: 1 }
-    let camFacing = { x: 0, z: 1 }
-    if (flow.match !== null) {
-      charFacing = flow.match.sim.character(seat, matchChar).facing
-      camFacing = facingOf(scene?.camera ?? null)
-    } else if (before === 'hub' || before === 'queued') {
-      charFacing = flow.hub.state(local).facing
-      camFacing = facingOf(hubView.camera)
-    }
-    flow.frame(dt, cameraRelative(input.controls(), camFacing, charFacing, moved), input.takeEmote())
+    let charFacing: Planar = { x: 0, z: 1 }
+    if (flow.match !== null) charFacing = flow.match.sim.character(seat, matchChar).facing
+    else if (before === 'hub' || before === 'queued') charFacing = flow.hub.state(local).facing
+    controlsToInput(input.controls(), orbit.ground(), world)
+    flow.frame(dt, inCharacterFrame(world, charFacing, moved), emote)
     const match = flow.match
     if (match !== viewed) {
       scene?.dispose()
       scene = null
       viewed = match
+      // Each match, and the hub after it, starts looking along +Z.
+      orbit.reset(0)
+      // Hide the hub before the match view's first update (its dressing leaves before the course's enters).
+      hubView.setVisible(match === null)
       if (match !== null) {
-        scene = new SceneView({ port: ctx.port, viewport: 0, localPlayer: seat, assets: ctx.assets, bean: ctx.assets('bean') })
+        scene = new SceneView({
+          port, viewport: 0, localPlayer: seat, assets: ctx.assets, bean: ctx.assets('bean'), camera: focus => orbit.pose(focus),
+        })
         names = Array.from({ length: 8 }, (_, p) => (p === seat ? q.name : `Bean ${p + 1}`))
         show([])
       }
-      hubView.setVisible(match === null)
     }
     sound.frame(match?.sim ?? null)
     const state = flow.state
@@ -267,17 +201,17 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: Retur
       if (state === 'failed' && failure.length > 0) lines.push(failure)
       show(lines)
     }
-    ctx.port.render()
+    port.render()
   })
 }
 
-// N piloted clients in one page over a LoopbackRelay, in a 2x2 grid of one shared port.
+// N piloted clients in one page over a LoopbackRelay, one canvas and port per client in a 2x2 grid.
 // Real-time dt with deps.now = performance.now, so the relay's rate limits see the same clock.
 function runInPage(ctx: Ctx, clients: number): void {
   const now = () => performance.now()
   const hub = new InPageHubLoop(ctx.R, clients, new LoopbackRelay(), {
     R: ctx.R, courses: ctx.courses, plaza: ctx.plaza, partySize: clients as 2 | 3 | 4, now, pilot: true,
-  }, [ctx.port], { assets: ctx.assets, bean: ctx.assets('bean') })
+  }, ctx.ports, { assets: ctx.assets, bean: ctx.assets('bean') })
   let shown = ''
   loop(dt => {
     hub.frame(dt)
@@ -304,17 +238,27 @@ function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
 
+// One canvas per client, appended to the #views grid in client order.
+function mountCanvas(root: HTMLElement, cell: ClientCell): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = cell.canvasWidth
+  canvas.height = cell.canvasHeight
+  canvas.dataset.client = String(cell.client)
+  root.appendChild(canvas)
+  return canvas
+}
+
 async function main(): Promise<void> {
   installPlayOps()
   const search = window.location.search
   if (new URLSearchParams(search).get('mode') === 'ops') return
-  const canvas = document.querySelector<HTMLCanvasElement>('#view')
+  const views = document.querySelector<HTMLElement>('#views')
   const hudRoot = document.querySelector<HTMLElement>('#hud')
-  if (canvas === null || hudRoot === null) throw new Error('play.html needs canvas#view and div#hud')
+  if (views === null || hudRoot === null) throw new Error('play.html needs main#views and div#hud')
   const hud = mountHud(hudRoot)
   try {
     const q = parseQuery(search)
-    const { port, note } = await pickPort(hud)
+    const { makePort, note } = await pickPort(hud)
     const R = await initRapier()
     const courses = await browserCourses('sprint')
     const resolver = browserAssetResolver()
@@ -322,12 +266,17 @@ async function main(): Promise<void> {
     const assets = await preloadAssets([...courses, plaza], resolver)
     const width = Math.max(1, Math.floor(window.innerWidth))
     const height = Math.max(1, Math.floor(window.innerHeight))
-    canvas.width = width
-    canvas.height = height
-    await port.init({ canvas, width, height, viewports: viewportsOf(width, height, q.mode === 'inpage' ? q.clients : 1) })
-    const ctx: Ctx = { note, R, hud, port, courses, plaza, assets }
+    const plan = planCanvases(width, height, q.mode === 'inpage' ? q.clients : 1)
+    views.style.gridTemplateColumns = `repeat(${plan.cols}, 1fr)`
+    views.style.gridTemplateRows = `repeat(${plan.rows}, 1fr)`
+    const mounted = await initPerClient(plan, cell => mountCanvas(views, cell), () => makePort())
+    const ctx: Ctx = { note, R, hud, ports: mounted.map(m => m.port), courses, plaza, assets }
     if (q.mode === 'inpage') runInPage(ctx, q.clients)
-    else runOnline(ctx, q, trackControls())
+    else {
+      // Clicking the canvas locks the pointer for the mouse look.
+      const canvas = mounted[0].canvas as HTMLCanvasElement
+      runOnline(ctx, q, new GameInput(window, canvas, () => canvas))
+    }
   } catch (e) {
     hud.banner(messageOf(e))
     console.error(e)

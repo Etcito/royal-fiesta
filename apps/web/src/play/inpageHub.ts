@@ -3,6 +3,7 @@
 // LoopbackRelay rate-limits on globalThis.performance.now(), so in Node and in the GPU op the caller must point
 // performance.now at the same clock it passes as deps.now, or the relay and the flows disagree on time.
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
+import type { CourseDressing } from '@royal-fiesta/game/content'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import type { FlowDeps, FlowEvent } from '@royal-fiesta/game/hub/flow'
 import type { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
@@ -16,7 +17,9 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import { HubView } from './hubView.ts'
 
 export type HubLoopDeps = Omit<FlowDeps, 'relayUrl' | 'ws' | 'hubCode' | 'name' | 'colour' | 'log'>
-export interface HubLoopArt { assets: (name: string) => PrimsAsset; bean: PrimsAsset }
+// character: the content's character asset (the bean when absent). dressing: course and hub decor, entered on
+// each client's port, so pass it with one port per client.
+export interface HubLoopArt { assets: (name: string) => PrimsAsset; bean: PrimsAsset; character?: PrimsAsset; dressing?: CourseDressing }
 
 // PlayFlow runs the session frame itself and does not expose its alpha, so the match view draws the current tick.
 const MATCH_ALPHA = 1
@@ -131,21 +134,26 @@ export class InPageHubLoop {
         this.logs[k] = new ConfirmedHashLog()
         this.sceneViews[k] = new SceneView({
           port: this.portOf[k], viewport: this.viewportOf[k], localPlayer: this.seats[k], assets: this.art.assets, bean: this.art.bean,
+          character: this.art.character, dressing: this.art.dressing,
         })
       }
     }
     const scene = this.sceneViews[k]
+    const live = flow.state !== 'connecting' && flow.state !== 'failed'
+    let hub = this.hubViews[k]
+    if (hub === null && live) {
+      hub = this.hubViews[k] = new HubView(this.portOf[k], this.viewportOf[k], this.art.assets, this.art.bean, this.deps.plaza, {
+        character: this.art.character, dressing: this.art.dressing,
+      })
+    }
+    // Hidden while the match view is live in the same viewport; only flip on a change. The flip comes before the
+    // match view's first update, so the hub dressing is left before the course dressing is entered.
+    if (hub !== null && this.hubShown[k] !== (scene === null)) hub.setVisible(this.hubShown[k] = scene === null)
     if (match !== null && scene !== null) {
       this.logs[k].record(match.session)
       scene.update(match.sim, match.session.smoother, MATCH_ALPHA, dtS)
     }
-    if (flow.state === 'connecting' || flow.state === 'failed') return
-    let hub = this.hubViews[k]
-    if (hub === null) {
-      hub = this.hubViews[k] = new HubView(this.portOf[k], this.viewportOf[k], this.art.assets, this.art.bean, this.deps.plaza)
-    }
-    // Hidden while the match view is live in the same viewport; only flip on a change.
-    if (this.hubShown[k] !== (scene === null)) hub.setVisible(this.hubShown[k] = scene === null)
+    if (!live || hub === null) return
     if (scene === null) hub.update(flow.hub.state(this.local), k, flow.remotes(now), flow.hub.tick, dtS)
   }
 }

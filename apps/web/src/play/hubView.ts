@@ -1,8 +1,12 @@
-// Binds the hub to a RenderPort: plaza obstacles, the local bean, pooled remote beans with emote poses, follow camera.
+// Binds the hub to a RenderPort: plaza obstacles, the local bean, pooled remote beans with emote poses, and the
+// camera (the orbit camera on the player page, followCamera on proof pages).
 // DOM-free (the Node proof runs it with NullRenderPort). View side only: emote offsets touch the drawn transform only.
+import { NO_DRESSING } from '@royal-fiesta/game/content'
+import type { CourseDressing } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { RemoteView } from '@royal-fiesta/game/hub/remotes'
 import { followCamera } from '@royal-fiesta/game/render/camera'
+import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, QuatT, RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
 import type { CharState } from '@royal-fiesta/sim/character/system'
@@ -21,11 +25,24 @@ const LAUGH = 4
 
 interface Slot { inst: number; colour: number }
 
+export interface HubViewOptions {
+  // The player page's orbit camera frames the local bean; without it, followCamera (proof pages).
+  orbit?: OrbitCamera
+  // The content's character asset (GameContent.character()); the bean when absent.
+  character?: PrimsAsset
+  // Hub decor and environment: entered while the hub is shown, left when it is hidden or disposed. Default NO_DRESSING.
+  dressing?: CourseDressing
+}
+
 export class HubView {
   private readonly port: RenderPort
   private readonly viewport: number
   private readonly plaza: ResolvedCourse
   private readonly beanAsset: number
+  private readonly orbit: OrbitCamera | null
+  private readonly dressing: CourseDressing
+  // True between dressing.enter and dressing.leave, so each leave pairs with exactly one enter.
+  private dressed = false
   // registerAsset is idempotent, but the handle is cached so each name is registered once.
   private readonly handles = new Map<string, number>()
   // Last visibility sent per instance, so setVisible is called only on a change.
@@ -39,16 +56,20 @@ export class HubView {
   private clock = 0
   private readonly pose = pose()
 
-  constructor(port: RenderPort, viewport: number, assets: (n: string) => PrimsAsset, bean: PrimsAsset, plaza: ResolvedCourse) {
+  constructor(port: RenderPort, viewport: number, assets: (n: string) => PrimsAsset, bean: PrimsAsset, plaza: ResolvedCourse, opts: HubViewOptions = {}) {
     this.port = port
     this.viewport = viewport
     this.plaza = plaza
-    this.beanAsset = this.asset('bean', bean)
+    this.orbit = opts.orbit ?? null
+    this.dressing = opts.dressing ?? NO_DRESSING
+    const character = opts.character ?? bean
+    this.beanAsset = this.asset(character.id, character)
     for (let i = 0; i < plaza.obstacles.length; i++) {
       const spec = plaza.obstacles[i]
       this.obstacles.push(this.create(this.asset(spec.asset, assets(spec.asset)), null, true))
     }
     for (let k = 0; k < POOL; k++) this.slots.push({ inst: this.create(this.beanAsset, PALETTE[k], false), colour: k })
+    this.dress(true)
   }
 
   get camera(): CameraPose | null {
@@ -93,18 +114,21 @@ export class HubView {
       this.draw(slot.inst, r.pos, r.yaw, r.emote)
     }
 
-    this.cam = followCamera(this.cam, local.pos, local.facing, dtS)
+    this.cam = this.orbit !== null ? this.orbit.pose(local.pos) : followCamera(this.cam, local.pos, local.facing, dtS)
     port.setCamera(this.viewport, this.cam)
   }
 
   // Hides every HubView instance while a match is shown in the same port; true restores them.
+  // Hide before the match view's first update, so the hub dressing is left before the course's is entered.
   setVisible(visible: boolean): void {
     if (visible === this.visible) return
     this.visible = visible
     for (const [inst, on] of this.shown) this.port.setVisible(inst, visible && on)
+    this.dress(visible)
   }
 
   dispose(): void {
+    this.dress(false)
     for (const inst of [...this.shown.keys()]) this.destroy(inst)
     this.obstacles = []
     this.slots = []
@@ -135,6 +159,14 @@ export class HubView {
     const sr = Math.sin(hr)
     const r: QuatT = [sy * sr, sy * cr, cy * sr, cy * cr]
     this.port.setTransform(inst, [pos.x, y, pos.z], r, s)
+  }
+
+  // Hub entry enters the plaza dressing; hub exit leaves it.
+  private dress(on: boolean): void {
+    if (on === this.dressed) return
+    if (on) this.dressing.enter(this.port, this.plaza.id)
+    else this.dressing.leave(this.port)
+    this.dressed = on
   }
 
   private asset(name: string, a: PrimsAsset): number {

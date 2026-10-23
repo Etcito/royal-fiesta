@@ -23,11 +23,19 @@ test('controlsToInput: forward follows the camera facing on XZ', () => {
   const out = controlsToInput(c, { x: 1, z: 0 }, neutralInput())
   assert.ok(Math.abs(out.moveX - 1) < 1e-12, `moveX ${out.moveX}`)
   assert.ok(Math.abs(out.moveZ) < 1e-12, `moveZ ${out.moveZ}`)
-  // Looking along +Z, right is +X.
+  // Right-handed view (ARCHITECTURE 1.6): looking along +Z, screen-right is -X.
   const r = emptyControls()
   r.right = true
   const o2 = controlsToInput(r, { x: 0, z: 1 }, neutralInput())
-  assert.ok(Math.abs(o2.moveX - 1) < 1e-12 && Math.abs(o2.moveZ) < 1e-12)
+  assert.ok(Math.abs(o2.moveX + 1) < 1e-12 && Math.abs(o2.moveZ) < 1e-12, `moveX ${o2.moveX} moveZ ${o2.moveZ}`)
+})
+
+test('controlsToInput: looking along +X, D moves toward +Z', () => {
+  const c = emptyControls()
+  c.right = true
+  const out = controlsToInput(c, { x: 1, z: 0 }, neutralInput())
+  assert.ok(Math.abs(out.moveX) < 1e-12, `moveX ${out.moveX}`)
+  assert.ok(Math.abs(out.moveZ - 1) < 1e-12, `moveZ ${out.moveZ}`)
 })
 
 test('controlsToInput: the stick length is clamped to 1', () => {

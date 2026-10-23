@@ -4,6 +4,7 @@ import { NetSim } from '@gamesaloon/rollback'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
+import type { CourseDressing } from '../content.ts'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { compareHashLogs, ConfirmedHashLog } from '../net/metrics.ts'
 import { createNetMatch } from '../net/netMatch.ts'
@@ -18,6 +19,8 @@ export interface InPageOptions {
   R: RapierModule; clients: number; seed: number; profile: ProfileName; courses: readonly ResolvedCourse[]
   ports: RenderPort[]; assets: (name: string) => PrimsAsset; bean: PrimsAsset
   net: { rttMs: number; jitterMs: number; loss: number }; pilots: boolean[]
+  // Forwarded to each SceneView (decor and environment per course).
+  dressing?: CourseDressing
 }
 
 export class InPageMatch {
@@ -45,6 +48,7 @@ export class InPageMatch {
         this.logs.push(new ConfirmedHashLog())
         this.views.push(new SceneView({
           port: shared ? o.ports[0] : o.ports[k], viewport: shared ? k : 0, localPlayer: k, assets: o.assets, bean: o.bean,
+          dressing: o.dressing,
         }))
       }
     } catch (e) {

@@ -5,6 +5,7 @@ import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { fixtureResolver } from '../src/assets.ts'
+import { basisFromFacing } from '../src/client/cameraBasis.ts'
 import { emptyControls } from '../src/client/inputMap.ts'
 import type { RawControls } from '../src/client/inputMap.ts'
 import { loadCourse } from '../src/course.ts'
@@ -246,7 +247,7 @@ for (const n of [2, 3, 4] as const) {
   test(`full loop, ${n} clients: hub -> queue -> match -> podium -> hub within the hub budget`, () => fullLoop(n))
 }
 
-// World-space stick toward (tx, tz), undoing controlsToInput's rotation by the facing.
+// World-space stick toward (tx, tz): the inverse of controlsToInput's basis (stick = w . right, w . forward).
 function steer(c: Client, tx: number, tz: number): RawControls {
   const st = c.flow.hub.state({
     pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 },
@@ -259,10 +260,9 @@ function steer(c: Client, tx: number, tz: number): RawControls {
   if (d < 0.2) return out
   const wx = dx / d
   const wz = dz / d
-  const fx = st.facing.x
-  const fz = st.facing.z
-  out.stickX = fz * wx - fx * wz
-  out.stickY = fx * wx + fz * wz
+  const b = basisFromFacing(st.facing)
+  out.stickX = wx * b.right.x + wz * b.right.z
+  out.stickY = wx * b.forward.x + wz * b.forward.z
   return out
 }
 

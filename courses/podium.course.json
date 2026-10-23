@@ -1,0 +1,137 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "candy",
+  "id": "podium",
+  "name": "Podium",
+  "kind": "podium",
+  "profiles": [],
+  "timeLimitS": 10,
+  "killPlaneY": -15,
+  "spawns": [],
+  "checkpoints": [],
+  "finish": null,
+  "path": [],
+  "regions": [],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "block-1",
+      "asset": "candy.podium-block",
+      "t": [
+        0,
+        0.75,
+        -1000
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1.5,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "block-2",
+      "asset": "candy.podium-block",
+      "t": [
+        -2.2,
+        0.5,
+        -1000
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "block-3",
+      "asset": "candy.podium-block",
+      "t": [
+        2.2,
+        0.3,
+        -1000
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        0.6,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": {
+    "spots": [
+      {
+        "t": [
+          0,
+          1.5,
+          -1000
+        ],
+        "yawDeg": 0
+      },
+      {
+        "t": [
+          -2.2,
+          1,
+          -1000
+        ],
+        "yawDeg": 0
+      },
+      {
+        "t": [
+          2.2,
+          0.6,
+          -1000
+        ],
+        "yawDeg": 0
+      }
+    ],
+    "camera": {
+      "eye": [
+        0,
+        3,
+        -993
+      ],
+      "target": [
+        0,
+        1,
+        -1000
+      ],
+      "fovYDeg": 60
+    }
+  }
+}

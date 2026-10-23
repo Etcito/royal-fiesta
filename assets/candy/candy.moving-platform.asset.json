@@ -1,0 +1,255 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.moving-platform",
+  "name": "Moving Platform",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Moving Platform",
+    "root": [
+      "candy_moving_platform"
+    ],
+    "nodes": {
+      "candy_moving_platform": {
+        "id": "candy_moving_platform",
+        "name": "Moving Platform",
+        "kind": "group",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#b0b0b0",
+        "material": null,
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "children": [
+          "top"
+        ],
+        "modifiers": [],
+        "asset": "candy.moving-platform",
+        "mesher": {
+          "output": "lowpoly"
+        }
+      },
+      "top": {
+        "id": "top",
+        "name": "top",
+        "kind": "roundBox",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#4de6d9",
+        "material": "teal",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            4,
+            0.5,
+            4
+          ],
+          "radius": 0.1
+        }
+      }
+    },
+    "materials": {
+      "teal": {
+        "name": "teal",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#4de6d9",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    },
+    "shapes": {},
+    "views": {},
+    "settings": {
+      "mesh": {
+        "detail": null,
+        "maxDepth": 9,
+        "adaptivity": 0.02,
+        "sharpAngleDeg": 30
+      },
+      "lowpoly": {
+        "targetTriangles": 2000,
+        "keepWeight": 10,
+        "featureAngleDeg": 35
+      },
+      "uv": {
+        "texelsPerMeter": null,
+        "padding": 8
+      },
+      "bake": {
+        "resolution": 1024,
+        "maps": [
+          "normal",
+          "baseColor",
+          "orm"
+        ],
+        "cageDistance": null,
+        "samples": 1
+      },
+      "export": {
+        "geometry": "lowpoly",
+        "skin": false,
+        "lods": [
+          1
+        ],
+        "quad": {
+          "targetFaces": 1000,
+          "subdivide": 0,
+          "method": "auto",
+          "features": "auto",
+          "featureAngleDeg": 35,
+          "adaptive": true,
+          "alignCurvature": true,
+          "seed": 1,
+          "detail": true,
+          "maxFacesRatio": 3
+        },
+        "poly": {
+          "segments": 16,
+          "additive": "keep"
+        }
+      },
+      "paramesh": {
+        "fieldResolution": 96,
+        "precision": "f16",
+        "subdivisions": 16,
+        "transitionLoops": 2
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "half": [
+        2,
+        0.25,
+        2
+      ],
+      "t": [
+        0,
+        0,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -2,
+      -0.25,
+      -2
+    ],
+    "max": [
+      2,
+      0.25,
+      2
+    ]
+  },
+  "hash": "ddd7bbd0db2004d15a8c36ef82f4bd4d9b9e100c6b72e7cdcec79ead56623ca3"
+}

@@ -1,0 +1,735 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "candy",
+  "id": "survival-hammer-ring",
+  "name": "Hammer Ring",
+  "kind": "survival",
+  "profiles": [
+    "standard"
+  ],
+  "timeLimitS": 90,
+  "killPlaneY": -10,
+  "spawns": [
+    {
+      "t": [
+        4.59,
+        1,
+        11.09
+      ],
+      "yawDeg": -157.5
+    },
+    {
+      "t": [
+        11.09,
+        1,
+        4.59
+      ],
+      "yawDeg": -112.5
+    },
+    {
+      "t": [
+        11.09,
+        1,
+        -4.59
+      ],
+      "yawDeg": -67.5
+    },
+    {
+      "t": [
+        4.59,
+        1,
+        -11.09
+      ],
+      "yawDeg": -22.5
+    },
+    {
+      "t": [
+        -4.59,
+        1,
+        -11.09
+      ],
+      "yawDeg": 22.5
+    },
+    {
+      "t": [
+        -11.09,
+        1,
+        -4.59
+      ],
+      "yawDeg": 67.5
+    },
+    {
+      "t": [
+        -11.09,
+        1,
+        4.59
+      ],
+      "yawDeg": 112.5
+    },
+    {
+      "t": [
+        -4.59,
+        1,
+        11.09
+      ],
+      "yawDeg": 157.5
+    }
+  ],
+  "checkpoints": [],
+  "finish": null,
+  "path": [
+    {
+      "p": [
+        4.59,
+        1,
+        11.09
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        11.09,
+        1,
+        4.59
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        11.09,
+        1,
+        -4.59
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        4.59,
+        1,
+        -11.09
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        -4.59,
+        1,
+        -11.09
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        -11.09,
+        1,
+        -4.59
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        -11.09,
+        1,
+        4.59
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        -4.59,
+        1,
+        11.09
+      ],
+      "jump": false,
+      "dive": false
+    }
+  ],
+  "regions": [
+    {
+      "id": 0,
+      "center": [
+        7.5,
+        2,
+        7.5
+      ],
+      "half": [
+        7.5,
+        10,
+        7.5
+      ],
+      "adjacent": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": 1,
+      "center": [
+        7.5,
+        2,
+        -7.5
+      ],
+      "half": [
+        7.5,
+        10,
+        7.5
+      ],
+      "adjacent": [
+        0,
+        2
+      ]
+    },
+    {
+      "id": 2,
+      "center": [
+        -7.5,
+        2,
+        -7.5
+      ],
+      "half": [
+        7.5,
+        10,
+        7.5
+      ],
+      "adjacent": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": 3,
+      "center": [
+        -7.5,
+        2,
+        7.5
+      ],
+      "half": [
+        7.5,
+        10,
+        7.5
+      ],
+      "adjacent": [
+        0,
+        2
+      ]
+    }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "ring-0",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        -0.5,
+        12
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1.15,
+        1,
+        0.6
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ring-1",
+      "asset": "candy.floor-tile",
+      "t": [
+        8.4853,
+        -0.5,
+        8.4853
+      ],
+      "r": [
+        0,
+        0.3826834323650898,
+        0,
+        0.9238795325112867
+      ],
+      "s": [
+        1.15,
+        1,
+        0.6
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ring-2",
+      "asset": "candy.floor-tile",
+      "t": [
+        12,
+        -0.5,
+        0
+      ],
+      "r": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
+      "s": [
+        1.15,
+        1,
+        0.6
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ring-3",
+      "asset": "candy.floor-tile",
+      "t": [
+        8.4853,
+        -0.5,
+        -8.4853
+      ],
+      "r": [
+        0,
+        0.9238795325112867,
+        0,
+        0.38268343236508984
+      ],
+      "s": [
+        1.15,
+        1,
+        0.6
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ring-4",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        -0.5,
+        -12
+      ],
+      "r": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "s": [
+        1.15,
+        1,
+        0.6
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ring-5",
+      "asset": "candy.floor-tile",
+      "t": [
+        -8.4853,
+        -0.5,
+        -8.4853
+      ],
+      "r": [
+        0,
+        0.9238795325112867,
+        0,
+        -0.3826834323650897
+      ],
+      "s": [
+        1.15,
+        1,
+        0.6
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ring-6",
+      "asset": "candy.floor-tile",
+      "t": [
+        -12,
+        -0.5,
+        0
+      ],
+      "r": [
+        0,
+        0.7071067811865476,
+        0,
+        -0.7071067811865475
+      ],
+      "s": [
+        1.15,
+        1,
+        0.6
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ring-7",
+      "asset": "candy.floor-tile",
+      "t": [
+        -8.4853,
+        -0.5,
+        8.4853
+      ],
+      "r": [
+        0,
+        0.3826834323650899,
+        0,
+        -0.9238795325112867
+      ],
+      "s": [
+        1.15,
+        1,
+        0.6
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "hammer-0",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        0,
+        1.2,
+        12
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          0,
+          6.8,
+          12
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "ampDeg": 60,
+        "periodS": 3,
+        "phaseDeg": 0
+      },
+      "colliders": null
+    },
+    {
+      "id": "hammer-1",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        8.4853,
+        1.2,
+        8.4853
+      ],
+      "r": [
+        0,
+        0.3826834323650898,
+        0,
+        0.9238795325112867
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          8.4853,
+          6.8,
+          8.4853
+        ],
+        "axis": [
+          0.7071067811865475,
+          0,
+          -0.7071067811865475
+        ],
+        "ampDeg": 60,
+        "periodS": 3.4,
+        "phaseDeg": 135
+      },
+      "colliders": null
+    },
+    {
+      "id": "hammer-2",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        12,
+        1.2,
+        0
+      ],
+      "r": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          12,
+          6.8,
+          0
+        ],
+        "axis": [
+          0,
+          0,
+          -1
+        ],
+        "ampDeg": 60,
+        "periodS": 3,
+        "phaseDeg": 270
+      },
+      "colliders": null
+    },
+    {
+      "id": "hammer-3",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        8.4853,
+        1.2,
+        -8.4853
+      ],
+      "r": [
+        0,
+        0.9238795325112867,
+        0,
+        0.38268343236508984
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          8.4853,
+          6.8,
+          -8.4853
+        ],
+        "axis": [
+          -0.7071067811865475,
+          0,
+          -0.7071067811865475
+        ],
+        "ampDeg": 60,
+        "periodS": 3.4,
+        "phaseDeg": 45
+      },
+      "colliders": null
+    },
+    {
+      "id": "hammer-4",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        0,
+        1.2,
+        -12
+      ],
+      "r": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          0,
+          6.8,
+          -12
+        ],
+        "axis": [
+          -1,
+          0,
+          0
+        ],
+        "ampDeg": 60,
+        "periodS": 3,
+        "phaseDeg": 180
+      },
+      "colliders": null
+    },
+    {
+      "id": "hammer-5",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        -8.4853,
+        1.2,
+        -8.4853
+      ],
+      "r": [
+        0,
+        0.9238795325112867,
+        0,
+        -0.3826834323650897
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          -8.4853,
+          6.8,
+          -8.4853
+        ],
+        "axis": [
+          -0.7071067811865475,
+          0,
+          0.7071067811865475
+        ],
+        "ampDeg": 60,
+        "periodS": 3.4,
+        "phaseDeg": 315
+      },
+      "colliders": null
+    },
+    {
+      "id": "hammer-6",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        -12,
+        1.2,
+        0
+      ],
+      "r": [
+        0,
+        0.7071067811865476,
+        0,
+        -0.7071067811865475
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          -12,
+          6.8,
+          0
+        ],
+        "axis": [
+          0,
+          0,
+          1
+        ],
+        "ampDeg": 60,
+        "periodS": 3,
+        "phaseDeg": 90
+      },
+      "colliders": null
+    },
+    {
+      "id": "hammer-7",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        -8.4853,
+        1.2,
+        8.4853
+      ],
+      "r": [
+        0,
+        0.3826834323650899,
+        0,
+        -0.9238795325112867
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          -8.4853,
+          6.8,
+          8.4853
+        ],
+        "axis": [
+          0.7071067811865475,
+          0,
+          0.7071067811865475
+        ],
+        "ampDeg": 60,
+        "periodS": 3.4,
+        "phaseDeg": 225
+      },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": null
+}

@@ -1,0 +1,575 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.conveyor-belt",
+  "name": "Conveyor Belt",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Conveyor Belt",
+    "root": [
+      "candy_conveyor_belt"
+    ],
+    "nodes": {
+      "candy_conveyor_belt": {
+        "id": "candy_conveyor_belt",
+        "name": "Conveyor Belt",
+        "kind": "group",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#b0b0b0",
+        "material": null,
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "children": [
+          "belt",
+          "stripe_0",
+          "stripe_1",
+          "stripe_2",
+          "stripe_3",
+          "stripe_4"
+        ],
+        "modifiers": [],
+        "asset": "candy.conveyor-belt",
+        "mesher": {
+          "output": "lowpoly"
+        }
+      },
+      "belt": {
+        "id": "belt",
+        "name": "belt",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#b380ff",
+        "material": "purple",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            4,
+            0.5,
+            12
+          ]
+        }
+      },
+      "stripe_0": {
+        "id": "stripe_0",
+        "name": "stripe_0",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.27,
+            -4
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#73d966",
+        "material": "green",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            3.6,
+            0.06,
+            0.6
+          ]
+        }
+      },
+      "stripe_1": {
+        "id": "stripe_1",
+        "name": "stripe_1",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.27,
+            -2
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#73d966",
+        "material": "green",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            3.6,
+            0.06,
+            0.6
+          ]
+        }
+      },
+      "stripe_2": {
+        "id": "stripe_2",
+        "name": "stripe_2",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.27,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#73d966",
+        "material": "green",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            3.6,
+            0.06,
+            0.6
+          ]
+        }
+      },
+      "stripe_3": {
+        "id": "stripe_3",
+        "name": "stripe_3",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.27,
+            2
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#73d966",
+        "material": "green",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            3.6,
+            0.06,
+            0.6
+          ]
+        }
+      },
+      "stripe_4": {
+        "id": "stripe_4",
+        "name": "stripe_4",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.27,
+            4
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#73d966",
+        "material": "green",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            3.6,
+            0.06,
+            0.6
+          ]
+        }
+      }
+    },
+    "materials": {
+      "green": {
+        "name": "green",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#73d966",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "purple": {
+        "name": "purple",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#b380ff",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    },
+    "shapes": {},
+    "views": {},
+    "settings": {
+      "mesh": {
+        "detail": null,
+        "maxDepth": 9,
+        "adaptivity": 0.02,
+        "sharpAngleDeg": 30
+      },
+      "lowpoly": {
+        "targetTriangles": 2000,
+        "keepWeight": 10,
+        "featureAngleDeg": 35
+      },
+      "uv": {
+        "texelsPerMeter": null,
+        "padding": 8
+      },
+      "bake": {
+        "resolution": 1024,
+        "maps": [
+          "normal",
+          "baseColor",
+          "orm"
+        ],
+        "cageDistance": null,
+        "samples": 1
+      },
+      "export": {
+        "geometry": "lowpoly",
+        "skin": false,
+        "lods": [
+          1
+        ],
+        "quad": {
+          "targetFaces": 1000,
+          "subdivide": 0,
+          "method": "auto",
+          "features": "auto",
+          "featureAngleDeg": 35,
+          "adaptive": true,
+          "alignCurvature": true,
+          "seed": 1,
+          "detail": true,
+          "maxFacesRatio": 3
+        },
+        "poly": {
+          "segments": 16,
+          "additive": "keep"
+        }
+      },
+      "paramesh": {
+        "fieldResolution": 96,
+        "precision": "f16",
+        "subdivisions": 16,
+        "transitionLoops": 2
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "half": [
+        2,
+        0.25,
+        6
+      ],
+      "t": [
+        0,
+        0,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -2,
+      -0.25,
+      -6
+    ],
+    "max": [
+      2,
+      0.3,
+      6
+    ]
+  },
+  "hash": "0d33c50d7b8c27c6e45c4a973219d0fd65c7b703a5972cf2ec22f734aec2d2ef"
+}

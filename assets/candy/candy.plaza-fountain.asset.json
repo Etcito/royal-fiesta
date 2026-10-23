@@ -1,0 +1,546 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.plaza-fountain",
+  "name": "Plaza Fountain",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Plaza Fountain",
+    "root": [
+      "candy_plaza_fountain"
+    ],
+    "nodes": {
+      "candy_plaza_fountain": {
+        "id": "candy_plaza_fountain",
+        "name": "Plaza Fountain",
+        "kind": "group",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#b0b0b0",
+        "material": null,
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "children": [
+          "basin",
+          "rim",
+          "water",
+          "column",
+          "bowl"
+        ],
+        "modifiers": [],
+        "asset": "candy.plaza-fountain",
+        "mesher": {
+          "output": "lowpoly"
+        }
+      },
+      "basin": {
+        "id": "basin",
+        "name": "basin",
+        "kind": "cylinder",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.3,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#fff2cc",
+        "material": "cream",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "height": 0.6,
+          "radius": 2
+        }
+      },
+      "rim": {
+        "id": "rim",
+        "name": "rim",
+        "kind": "torus",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.6,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#ff6b9e",
+        "material": "pink",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "majorRadius": 2,
+          "minorRadius": 0.1
+        }
+      },
+      "water": {
+        "id": "water",
+        "name": "water",
+        "kind": "cylinder",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.625,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#54baff",
+        "material": "water",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "height": 0.05,
+          "radius": 1.8
+        }
+      },
+      "column": {
+        "id": "column",
+        "name": "column",
+        "kind": "cylinder",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0.8,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#fff2cc",
+        "material": "cream",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "height": 1.6,
+          "radius": 0.35
+        }
+      },
+      "bowl": {
+        "id": "bowl",
+        "name": "bowl",
+        "kind": "cone",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            1.85,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#ffd140",
+        "material": "yellow",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "height": 0.5,
+          "radiusBottom": 0.8,
+          "radiusTop": 0
+        }
+      }
+    },
+    "materials": {
+      "cream": {
+        "name": "cream",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#fff2cc",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "pink": {
+        "name": "pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff6b9e",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "water": {
+        "name": "water",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#54baff",
+                "in.emissive": "#898989",
+                "in.roughness": 0.2
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "yellow": {
+        "name": "yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffd140",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    },
+    "shapes": {},
+    "views": {},
+    "settings": {
+      "mesh": {
+        "detail": null,
+        "maxDepth": 9,
+        "adaptivity": 0.02,
+        "sharpAngleDeg": 30
+      },
+      "lowpoly": {
+        "targetTriangles": 2000,
+        "keepWeight": 10,
+        "featureAngleDeg": 35
+      },
+      "uv": {
+        "texelsPerMeter": null,
+        "padding": 8
+      },
+      "bake": {
+        "resolution": 1024,
+        "maps": [
+          "normal",
+          "baseColor",
+          "orm"
+        ],
+        "cageDistance": null,
+        "samples": 1
+      },
+      "export": {
+        "geometry": "lowpoly",
+        "skin": false,
+        "lods": [
+          1
+        ],
+        "quad": {
+          "targetFaces": 1000,
+          "subdivide": 0,
+          "method": "auto",
+          "features": "auto",
+          "featureAngleDeg": 35,
+          "adaptive": true,
+          "alignCurvature": true,
+          "seed": 1,
+          "detail": true,
+          "maxFacesRatio": 3
+        },
+        "poly": {
+          "segments": 16,
+          "additive": "keep"
+        }
+      },
+      "paramesh": {
+        "fieldResolution": 96,
+        "precision": "f16",
+        "subdivisions": 16,
+        "transitionLoops": 2
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cylinder",
+      "halfHeight": 0.3,
+      "radius": 2,
+      "t": [
+        0,
+        0.3,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cylinder",
+      "halfHeight": 0.8,
+      "radius": 0.35,
+      "t": [
+        0,
+        0.8,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -2.1,
+      0,
+      -2.1
+    ],
+    "max": [
+      2.1,
+      2.1,
+      2.1
+    ]
+  },
+  "hash": "c15f0cd37d00db100c060de3e2bd0f61dd30ee1b17feee745a9b8114d6d6df8f"
+}

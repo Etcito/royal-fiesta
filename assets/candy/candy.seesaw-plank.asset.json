@@ -1,0 +1,256 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.seesaw-plank",
+  "name": "See-saw Plank",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "See-saw Plank",
+    "root": [
+      "candy_seesaw_plank"
+    ],
+    "nodes": {
+      "candy_seesaw_plank": {
+        "id": "candy_seesaw_plank",
+        "name": "See-saw Plank",
+        "kind": "group",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#b0b0b0",
+        "material": null,
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "children": [
+          "plank"
+        ],
+        "modifiers": [],
+        "asset": "candy.seesaw-plank",
+        "mesher": {
+          "output": "lowpoly"
+        }
+      },
+      "plank": {
+        "id": "plank",
+        "name": "plank",
+        "kind": "roundBox",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#4de6d9",
+        "material": "teal",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            3,
+            0.4,
+            8
+          ],
+          "radius": 0.05
+        }
+      }
+    },
+    "materials": {
+      "teal": {
+        "name": "teal",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#4de6d9",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    },
+    "shapes": {},
+    "views": {},
+    "settings": {
+      "mesh": {
+        "detail": null,
+        "maxDepth": 9,
+        "adaptivity": 0.02,
+        "sharpAngleDeg": 30
+      },
+      "lowpoly": {
+        "targetTriangles": 2000,
+        "keepWeight": 10,
+        "featureAngleDeg": 35
+      },
+      "uv": {
+        "texelsPerMeter": null,
+        "padding": 8
+      },
+      "bake": {
+        "resolution": 1024,
+        "maps": [
+          "normal",
+          "baseColor",
+          "orm"
+        ],
+        "cageDistance": null,
+        "samples": 1
+      },
+      "export": {
+        "geometry": "lowpoly",
+        "skin": false,
+        "lods": [
+          1
+        ],
+        "quad": {
+          "targetFaces": 1000,
+          "subdivide": 0,
+          "method": "auto",
+          "features": "auto",
+          "featureAngleDeg": 35,
+          "adaptive": true,
+          "alignCurvature": true,
+          "seed": 1,
+          "detail": true,
+          "maxFacesRatio": 3
+        },
+        "poly": {
+          "segments": 16,
+          "additive": "keep"
+        }
+      },
+      "paramesh": {
+        "fieldResolution": 96,
+        "precision": "f16",
+        "subdivisions": 16,
+        "transitionLoops": 2
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "roundCuboid",
+      "half": [
+        1.45,
+        0.15,
+        3.95
+      ],
+      "border": 0.05,
+      "t": [
+        0,
+        0,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -1.5,
+      -0.2,
+      -4
+    ],
+    "max": [
+      1.5,
+      0.2,
+      4
+    ]
+  },
+  "hash": "3e860b8bba510a01889c1a5ea2a027c681b11009a8f97b5b0157db4748238b4c"
+}

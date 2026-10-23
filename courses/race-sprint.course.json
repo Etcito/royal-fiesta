@@ -1,0 +1,796 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "candy",
+  "id": "race-sprint",
+  "name": "Sprint Dash",
+  "kind": "race",
+  "profiles": [
+    "standard",
+    "sprint"
+  ],
+  "timeLimitS": 30,
+  "killPlaneY": -12,
+  "spawns": [
+    {
+      "t": [
+        -3.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -2.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -1.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -0.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        0.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        1.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        2.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        3.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    }
+  ],
+  "checkpoints": [
+    {
+      "center": [
+        0,
+        1.5,
+        28
+      ],
+      "half": [
+        5,
+        2,
+        1
+      ],
+      "respawn": {
+        "t": [
+          0,
+          1,
+          28
+        ],
+        "yawDeg": 0
+      }
+    },
+    {
+      "center": [
+        0,
+        1.5,
+        41
+      ],
+      "half": [
+        5,
+        2,
+        1
+      ],
+      "respawn": {
+        "t": [
+          0,
+          1,
+          41
+        ],
+        "yawDeg": 0
+      }
+    }
+  ],
+  "finish": {
+    "center": [
+      0,
+      1.5,
+      52
+    ],
+    "half": [
+      4,
+      2,
+      1
+    ]
+  },
+  "path": [
+    {
+      "p": [
+        0,
+        1,
+        2
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        -2,
+        1,
+        8
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        2,
+        1,
+        16
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        19.3
+      ],
+      "jump": true,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        24.5
+      ],
+      "jump": true,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        28
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        32
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        -1.5,
+        1,
+        38
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        41
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        44
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        2.5,
+        1,
+        48
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        51
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        0,
+        1,
+        53
+      ],
+      "jump": false,
+      "dive": false
+    }
+  ],
+  "regions": [
+    {
+      "id": 0,
+      "center": [
+        0,
+        2,
+        9
+      ],
+      "half": [
+        6,
+        10,
+        11
+      ],
+      "adjacent": [
+        1
+      ]
+    },
+    {
+      "id": 1,
+      "center": [
+        0,
+        2,
+        23
+      ],
+      "half": [
+        6,
+        10,
+        3
+      ],
+      "adjacent": [
+        0,
+        2
+      ]
+    },
+    {
+      "id": 2,
+      "center": [
+        0,
+        2,
+        33
+      ],
+      "half": [
+        6,
+        10,
+        7
+      ],
+      "adjacent": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": 3,
+      "center": [
+        0,
+        2,
+        47
+      ],
+      "half": [
+        6,
+        10,
+        7
+      ],
+      "adjacent": [
+        2
+      ]
+    }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "floor-start",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        -0.5,
+        9
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        2.2
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "floor-end",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        -0.5,
+        40
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        2.8
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "wall-back",
+      "asset": "candy.wall-block",
+      "t": [
+        0,
+        1,
+        -2.5
+      ],
+      "r": [
+        0,
+        0.7071067811865476,
+        0,
+        0.7071067811865476
+      ],
+      "s": [
+        1,
+        1,
+        1.1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "wall-left-1",
+      "asset": "candy.wall-block",
+      "t": [
+        -5.5,
+        1,
+        9
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        2.2
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "wall-right-1",
+      "asset": "candy.wall-block",
+      "t": [
+        5.5,
+        1,
+        9
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        2.2
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "wall-left-2",
+      "asset": "candy.wall-block",
+      "t": [
+        -5.5,
+        1,
+        40
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        2.8
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "wall-right-2",
+      "asset": "candy.wall-block",
+      "t": [
+        5.5,
+        1,
+        40
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        2.8
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "spinner-1",
+      "asset": "candy.spinner-bar",
+      "t": [
+        0,
+        0,
+        8
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "spinner",
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "speedDegS": 90,
+        "phaseDeg": 0
+      },
+      "colliders": null
+    },
+    {
+      "id": "spinner-2",
+      "asset": "candy.spinner-bar",
+      "t": [
+        0,
+        0,
+        16
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "spinner",
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "speedDegS": -110,
+        "phaseDeg": 90
+      },
+      "colliders": null
+    },
+    {
+      "id": "platform-gap",
+      "asset": "candy.moving-platform",
+      "t": [
+        0,
+        -0.25,
+        23
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1.5,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "movingPlatform",
+        "offset": [
+          2,
+          0,
+          0
+        ],
+        "periodS": 4,
+        "phaseDeg": 0,
+        "wave": "sine"
+      },
+      "colliders": null
+    },
+    {
+      "id": "checkpoint-1",
+      "asset": "candy.checkpoint-gate",
+      "t": [
+        0,
+        0,
+        28
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "pendulum-1",
+      "asset": "candy.pendulum-hammer",
+      "t": [
+        0,
+        1.2,
+        32
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "pendulum",
+        "pivot": [
+          0,
+          6.8,
+          32
+        ],
+        "axis": [
+          0,
+          0,
+          1
+        ],
+        "ampDeg": 60,
+        "periodS": 3,
+        "phaseDeg": 0
+      },
+      "colliders": null
+    },
+    {
+      "id": "door-1",
+      "asset": "candy.rotating-door",
+      "t": [
+        0,
+        0,
+        37
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "rotatingDoor",
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "stepDeg": 90,
+        "periodS": 2,
+        "moveS": 0.5,
+        "phaseS": 0
+      },
+      "colliders": null
+    },
+    {
+      "id": "barrier-1",
+      "asset": "candy.wall-block",
+      "t": [
+        -3.5,
+        1,
+        45
+      ],
+      "r": [
+        0,
+        0.7071067811865476,
+        0,
+        0.7071067811865476
+      ],
+      "s": [
+        1,
+        1,
+        0.25
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "barrier-2",
+      "asset": "candy.wall-block",
+      "t": [
+        3.5,
+        1,
+        45
+      ],
+      "r": [
+        0,
+        0.7071067811865476,
+        0,
+        0.7071067811865476
+      ],
+      "s": [
+        1,
+        1,
+        0.25
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "barrier-3",
+      "asset": "candy.wall-block",
+      "t": [
+        -1,
+        1,
+        48
+      ],
+      "r": [
+        0,
+        0.7071067811865476,
+        0,
+        0.7071067811865476
+      ],
+      "s": [
+        1,
+        1,
+        0.25
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "finish-arch",
+      "asset": "candy.finish-arch",
+      "t": [
+        0,
+        0,
+        52
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1,
+        1,
+        1
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": null
+}

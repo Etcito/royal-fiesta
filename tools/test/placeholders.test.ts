@@ -1,0 +1,74 @@
+import assert from 'node:assert/strict'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import test from 'node:test'
+import { loadCourseV1, V0_ASSET_MAP } from '../../packages/game/src/courseV1.ts'
+import type { GameAssetResolver } from '../../packages/game/src/courseV1.ts'
+import { parseGameAsset } from '../../packages/game/src/gameAsset.ts'
+import type { GameAsset, GameAssetSource } from '../../packages/game/src/gameAsset.ts'
+import { collidersOf, parsePrims } from '../../packages/game/src/prims.ts'
+import { repoRoot } from '../bricks.ts'
+import { buildContent } from '../placeholders.ts'
+
+const root = repoRoot()
+const readJson = (rel: string): unknown => JSON.parse(readFileSync(join(root, rel), 'utf8'))
+const filesIn = (dir: string, suffix: string): string[] =>
+  readdirSync(join(root, dir), { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? filesIn(`${dir}/${e.name}`, suffix) : e.name.endsWith(suffix) ? [`${dir}/${e.name}`] : [])
+
+async function loadAssets(): Promise<Map<string, { asset: GameAsset; source: GameAssetSource; world: string; path: string }>> {
+  const out = new Map<string, { asset: GameAsset; source: GameAssetSource; world: string; path: string }>()
+  for (const path of filesIn('assets', '.asset.json').sort()) {
+    const json = readJson(path)
+    const asset = await parseGameAsset(json, path)
+    out.set(asset.id, { asset, source: { path, json }, world: path.split('/')[1], path })
+  }
+  return out
+}
+
+test('buildContent equals the files on disk', async () => {
+  const built = await buildContent()
+  const disk = [...filesIn('assets', '.json'), ...filesIn('courses', '.json')].sort()
+  assert.deepEqual([...built.keys()].sort(), disk)
+  for (const [path, text] of built) assert.equal(readFileSync(join(root, path), 'utf8'), text, path)
+})
+
+test('assets parse, match their stem and world, and keep the prims collision', async () => {
+  const assets = await loadAssets()
+  assert.equal(assets.size, 16)
+  for (const [id, a] of assets) {
+    assert.equal(a.path.split('/').pop(), `${id}.asset.json`)
+    assert.equal(a.world, a.asset.world)
+  }
+  for (const [name, id] of Object.entries(V0_ASSET_MAP)) {
+    const rel = `fixtures/assets/${name}.prims.json`
+    const prims = parsePrims(readJson(rel), rel)
+    assert.deepEqual(assets.get(id)?.asset.collision, collidersOf(prims, rel), id)
+  }
+  assert.equal(assets.get('penguin.body')?.world, 'common')
+  assert.deepEqual(assets.get('candy.podium-block')?.asset.collision.length, 1)
+})
+
+test('courses load through an in-memory asset source', async () => {
+  const assets = await loadAssets()
+  const resolver: GameAssetResolver = {
+    async resolve(id) {
+      const a = assets.get(id)
+      if (!a) throw new Error(`no asset ${id}`)
+      return { asset: a.asset, source: a.source }
+    },
+  }
+  const paths = filesIn('courses', '.course.json')
+  assert.equal(paths.length, 9)
+  const loaded = new Map<string, Awaited<ReturnType<typeof loadCourseV1>>>()
+  for (const path of paths) {
+    const c = await loadCourseV1(readJson(path), path, resolver)
+    assert.equal(`courses/${c.id}.course.json`, path)
+    loaded.set(c.id, c)
+  }
+  assert.equal(loaded.get('hub-plaza')?.kind, 'hub')
+  const podium = loaded.get('podium')
+  assert.equal(podium?.kind, 'podium')
+  assert.equal(podium?.sim, null)
+  assert.equal(podium?.podium?.spots.length, 3)
+})

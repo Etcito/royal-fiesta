@@ -1,0 +1,504 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.finish-arch",
+  "name": "Finish Arch",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Finish Arch",
+    "root": [
+      "candy_finish_arch"
+    ],
+    "nodes": {
+      "candy_finish_arch": {
+        "id": "candy_finish_arch",
+        "name": "Finish Arch",
+        "kind": "group",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#b0b0b0",
+        "material": null,
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "children": [
+          "post_l",
+          "post_r",
+          "beam",
+          "ring"
+        ],
+        "modifiers": [],
+        "asset": "candy.finish-arch",
+        "mesher": {
+          "output": "lowpoly"
+        }
+      },
+      "post_l": {
+        "id": "post_l",
+        "name": "post_l",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            -4,
+            2,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#f2f2f2",
+        "material": "white",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            0.8,
+            4,
+            0.8
+          ]
+        }
+      },
+      "post_r": {
+        "id": "post_r",
+        "name": "post_r",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            4,
+            2,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#f2f2f2",
+        "material": "white",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            0.8,
+            4,
+            0.8
+          ]
+        }
+      },
+      "beam": {
+        "id": "beam",
+        "name": "beam",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            4.4,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#ff6b9e",
+        "material": "pink",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            8.8,
+            0.8,
+            0.8
+          ]
+        }
+      },
+      "ring": {
+        "id": "ring",
+        "name": "ring",
+        "kind": "torus",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            5.6,
+            0
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#ffd140",
+        "material": "yellow",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "majorRadius": 1,
+          "minorRadius": 0.2
+        }
+      }
+    },
+    "materials": {
+      "pink": {
+        "name": "pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff6b9e",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "white": {
+        "name": "white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f2f2f2",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "yellow": {
+        "name": "yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffd140",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    },
+    "shapes": {},
+    "views": {},
+    "settings": {
+      "mesh": {
+        "detail": null,
+        "maxDepth": 9,
+        "adaptivity": 0.02,
+        "sharpAngleDeg": 30
+      },
+      "lowpoly": {
+        "targetTriangles": 2000,
+        "keepWeight": 10,
+        "featureAngleDeg": 35
+      },
+      "uv": {
+        "texelsPerMeter": null,
+        "padding": 8
+      },
+      "bake": {
+        "resolution": 1024,
+        "maps": [
+          "normal",
+          "baseColor",
+          "orm"
+        ],
+        "cageDistance": null,
+        "samples": 1
+      },
+      "export": {
+        "geometry": "lowpoly",
+        "skin": false,
+        "lods": [
+          1
+        ],
+        "quad": {
+          "targetFaces": 1000,
+          "subdivide": 0,
+          "method": "auto",
+          "features": "auto",
+          "featureAngleDeg": 35,
+          "adaptive": true,
+          "alignCurvature": true,
+          "seed": 1,
+          "detail": true,
+          "maxFacesRatio": 3
+        },
+        "poly": {
+          "segments": 16,
+          "additive": "keep"
+        }
+      },
+      "paramesh": {
+        "fieldResolution": 96,
+        "precision": "f16",
+        "subdivisions": 16,
+        "transitionLoops": 2
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "half": [
+        0.4,
+        2,
+        0.4
+      ],
+      "t": [
+        -4,
+        2,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cuboid",
+      "half": [
+        0.4,
+        2,
+        0.4
+      ],
+      "t": [
+        4,
+        2,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cuboid",
+      "half": [
+        4.4,
+        0.4,
+        0.4
+      ],
+      "t": [
+        0,
+        4.4,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -4.4,
+      0,
+      -0.4
+    ],
+    "max": [
+      4.4,
+      6.800000866,
+      0.4
+    ]
+  },
+  "hash": "cf8b08cbf93dfbff1adb6dab4b6aaf03a8c4545a5ed11e23f7b6df933a9a8a7b"
+}

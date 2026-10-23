@@ -1,0 +1,430 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.checkpoint-gate",
+  "name": "Checkpoint Gate",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Checkpoint Gate",
+    "root": [
+      "candy_checkpoint_gate"
+    ],
+    "nodes": {
+      "candy_checkpoint_gate": {
+        "id": "candy_checkpoint_gate",
+        "name": "Checkpoint Gate",
+        "kind": "group",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#b0b0b0",
+        "material": null,
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "children": [
+          "post_l",
+          "post_r",
+          "beam"
+        ],
+        "modifiers": [],
+        "asset": "candy.checkpoint-gate",
+        "mesher": {
+          "output": "lowpoly"
+        }
+      },
+      "post_l": {
+        "id": "post_l",
+        "name": "post_l",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            -3,
+            1.5,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#54baff",
+        "material": "sky",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            0.5,
+            3,
+            0.5
+          ]
+        }
+      },
+      "post_r": {
+        "id": "post_r",
+        "name": "post_r",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            3,
+            1.5,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#54baff",
+        "material": "sky",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            0.5,
+            3,
+            0.5
+          ]
+        }
+      },
+      "beam": {
+        "id": "beam",
+        "name": "beam",
+        "kind": "box",
+        "visible": true,
+        "locked": false,
+        "transform": {
+          "position": [
+            0,
+            3,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "pivot": [
+          0,
+          0,
+          0
+        ],
+        "pose": {
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "op": "union",
+        "smooth": 0,
+        "colorBlend": "smooth",
+        "round": 0,
+        "roundStyle": "round",
+        "shell": 0,
+        "noise": null,
+        "color": "#ffd140",
+        "material": "yellow",
+        "tags": [],
+        "rigid": false,
+        "lattice": null,
+        "params": {
+          "size": [
+            6.5,
+            0.5,
+            0.5
+          ]
+        }
+      }
+    },
+    "materials": {
+      "sky": {
+        "name": "sky",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#54baff",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "yellow": {
+        "name": "yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffd140",
+                "in.roughness": 0.6
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    },
+    "shapes": {},
+    "views": {},
+    "settings": {
+      "mesh": {
+        "detail": null,
+        "maxDepth": 9,
+        "adaptivity": 0.02,
+        "sharpAngleDeg": 30
+      },
+      "lowpoly": {
+        "targetTriangles": 2000,
+        "keepWeight": 10,
+        "featureAngleDeg": 35
+      },
+      "uv": {
+        "texelsPerMeter": null,
+        "padding": 8
+      },
+      "bake": {
+        "resolution": 1024,
+        "maps": [
+          "normal",
+          "baseColor",
+          "orm"
+        ],
+        "cageDistance": null,
+        "samples": 1
+      },
+      "export": {
+        "geometry": "lowpoly",
+        "skin": false,
+        "lods": [
+          1
+        ],
+        "quad": {
+          "targetFaces": 1000,
+          "subdivide": 0,
+          "method": "auto",
+          "features": "auto",
+          "featureAngleDeg": 35,
+          "adaptive": true,
+          "alignCurvature": true,
+          "seed": 1,
+          "detail": true,
+          "maxFacesRatio": 3
+        },
+        "poly": {
+          "segments": 16,
+          "additive": "keep"
+        }
+      },
+      "paramesh": {
+        "fieldResolution": 96,
+        "precision": "f16",
+        "subdivisions": 16,
+        "transitionLoops": 2
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "half": [
+        0.25,
+        1.5,
+        0.25
+      ],
+      "t": [
+        -3,
+        1.5,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cuboid",
+      "half": [
+        0.25,
+        1.5,
+        0.25
+      ],
+      "t": [
+        3,
+        1.5,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cuboid",
+      "half": [
+        3.25,
+        0.25,
+        0.25
+      ],
+      "t": [
+        0,
+        3,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -3.25,
+      0,
+      -0.25
+    ],
+    "max": [
+      3.25,
+      3.25,
+      0.25
+    ]
+  },
+  "hash": "6817b287ab351e4bf4a9863608dc80806e28f30fe82a43657ff58d0ccaa1ff6b"
+}

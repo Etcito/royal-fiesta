@@ -1,0 +1,8 @@
+[
+  {"name": "install", "command": "npm ci", "timeout_s": 900},
+  {"name": "build", "command": "npm run build", "timeout_s": 900, "after": ["install"]},
+  {"name": "controls-gpu-run", "command": "node --experimental-strip-types apps/headless/src/controlsGpu.ts", "timeout_s": 900, "after": ["build"]},
+  {"name": "controls-gpu-check", "command": "node --experimental-strip-types apps/headless/proofs/m15-reunite-controls.ts --only controls-gpu", "timeout_s": 300, "after": ["controls-gpu-run"]},
+  {"name": "clean-clone", "command": "node --experimental-strip-types tools/cleanClone.ts --out proofs/m15/clean-clone.json", "timeout_s": 1800, "after": ["controls-gpu-check"]},
+  {"name": "clean-clone-check", "command": "node --experimental-strip-types apps/headless/proofs/m15-reunite-controls.ts --only clean-clone", "timeout_s": 300, "after": ["clean-clone"]}
+]

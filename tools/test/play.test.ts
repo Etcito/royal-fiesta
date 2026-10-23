@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import type { Server } from 'node:net'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import test, { afterEach } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { play } from '../play.ts'
 
 const ENV_KEYS = ['RF_PLAY_SKIP_BUILD', 'RF_PLAY_DIST'] as const
@@ -98,4 +100,15 @@ test('play refuses a busy port', async () => {
   } finally {
     await closeServer(busy)
   }
+})
+
+// Only the argument check runs: the clone itself needs network.
+test('cleanClone CLI without --out exits 1 with the usage line', () => {
+  const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
+  const result = spawnSync(process.execPath, ['--experimental-strip-types', join('tools', 'cleanClone.ts')], {
+    cwd: root, encoding: 'utf8', timeout: 30000,
+  })
+  assert.equal(result.status, 1)
+  assert.equal(result.stdout, '')
+  assert.ok(result.stderr.split('\n').includes('usage: node --experimental-strip-types tools/cleanClone.ts --out <file>'), result.stderr)
 })

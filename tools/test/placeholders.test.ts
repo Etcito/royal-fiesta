@@ -7,6 +7,7 @@ import type { GameAssetResolver } from '../../packages/game/src/courseV1.ts'
 import { parseGameAsset } from '../../packages/game/src/gameAsset.ts'
 import type { GameAsset, GameAssetSource } from '../../packages/game/src/gameAsset.ts'
 import { collidersOf, parsePrims } from '../../packages/game/src/prims.ts'
+import { readAuthored } from '../authored.ts'
 import { repoRoot } from '../bricks.ts'
 import { buildContent } from '../placeholders.ts'
 
@@ -27,15 +28,24 @@ async function loadAssets(): Promise<Map<string, { asset: GameAsset; source: Gam
 }
 
 test('buildContent equals the files on disk', async () => {
-  const built = await buildContent()
+  const authored = readAuthored(root)
+  const built = await buildContent(authored)
   const disk = [...filesIn('assets', '.json'), ...filesIn('courses', '.json')].sort()
-  assert.deepEqual([...built.keys()].sort(), disk)
+  const builtKeys = [...built.keys()]
+  assert.deepEqual([...builtKeys, ...authored.files].sort(), disk)
+  for (const f of authored.files) {
+    assert.ok(!built.has(f), `${f} is both built and authored`)
+    assert.ok(disk.includes(f), `authored file missing on disk: ${f}`)
+  }
   for (const [path, text] of built) assert.equal(readFileSync(join(root, path), 'utf8'), text, path)
 })
 
 test('assets parse, match their stem and world, and keep the prims collision', async () => {
   const assets = await loadAssets()
-  assert.equal(assets.size, 16)
+  const generated = [...new Set([...Object.values(V0_ASSET_MAP), 'penguin.body', 'candy.podium-block'])]
+  assert.equal(generated.length, 16)
+  assert.ok(assets.size >= 16)
+  for (const id of generated) assert.ok(assets.has(id), `missing asset ${id}`)
   for (const [id, a] of assets) {
     assert.equal(a.path.split('/').pop(), `${id}.asset.json`)
     assert.equal(a.world, a.asset.world)
@@ -59,7 +69,9 @@ test('courses load through an in-memory asset source', async () => {
     },
   }
   const paths = filesIn('courses', '.course.json')
-  assert.equal(paths.length, 9)
+  assert.ok(paths.length >= 9)
+  for (const id of ['hub-plaza', 'obstacle-gallery', 'podium', 'race-bean-dash', 'race-hammer-hill', 'race-sprint',
+    'survival-hammer-ring', 'survival-spin-zone', 'survival-sprint']) assert.ok(paths.includes(`courses/${id}.course.json`), id)
   const loaded = new Map<string, Awaited<ReturnType<typeof loadCourseV1>>>()
   for (const path of paths) {
     const c = await loadCourseV1(readJson(path), path, resolver)

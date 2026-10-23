@@ -1,0 +1,399 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.pineapple-suit",
+  "name": "pineapple_suit",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "quad"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "pineapple_suit",
+    "root": [
+      "pineapple_suit"
+    ],
+    "nodes": {
+      "pineapple_suit": {
+        "id": "pineapple_suit",
+        "name": "pineapple_suit",
+        "kind": "group",
+        "children": [
+          "anchor_suit",
+          "shell",
+          "shell_hem",
+          "lattice_cw",
+          "lattice_ccw",
+          "strap",
+          "crown"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.pineapple-suit",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "anchor_suit": {
+        "id": "anchor_suit",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": true
+      },
+      "shell": {
+        "id": "shell",
+        "name": "shell",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, -0.2, 0]
+        },
+        "material": "m8",
+        "params": {
+          "radii": [0.5, 0.52, 0.48]
+        },
+        "gameCollision": false
+      },
+      "shell_hem": {
+        "id": "shell_hem",
+        "name": "shell_hem",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, -0.5, 0.01]
+        },
+        "smooth": 0.08,
+        "material": "m8",
+        "params": {
+          "radii": [0.44, 0.2, 0.43]
+        },
+        "gameCollision": false
+      },
+      "lattice_cw": {
+        "id": "lattice_cw",
+        "name": "lattice_cw",
+        "kind": "group",
+        "transform": {
+          "position": [0, -0.2, 0]
+        },
+        "deformers": [
+          {
+            "id": "spiral",
+            "kind": "twist",
+            "params": {
+              "axis": "y",
+              "angle": 120,
+              "start": -0.52,
+              "end": 0.52,
+              "center": [0, 0, 0]
+            }
+          }
+        ],
+        "children": [
+          "lattice_cw_ring"
+        ],
+        "modifiers": [
+          {
+            "id": "around",
+            "kind": "radialArray",
+            "params": {
+              "angleDeg": 360,
+              "axis": "y",
+              "center": [0, 0, 0],
+              "count": 6
+            }
+          }
+        ],
+        "gameCollision": true
+      },
+      "lattice_cw_ring": {
+        "id": "lattice_cw_ring",
+        "name": "lattice_cw_ring",
+        "kind": "torus",
+        "transform": {
+          "rotation": [90, 0, 0]
+        },
+        "material": "m9",
+        "params": {
+          "majorRadius": 0.49,
+          "minorRadius": 0.018
+        },
+        "gameCollision": false
+      },
+      "lattice_ccw": {
+        "id": "lattice_ccw",
+        "name": "lattice_ccw",
+        "kind": "group",
+        "transform": {
+          "position": [0, -0.2, 0]
+        },
+        "deformers": [
+          {
+            "id": "spiral",
+            "kind": "twist",
+            "params": {
+              "axis": "y",
+              "angle": -120,
+              "start": -0.52,
+              "end": 0.52,
+              "center": [0, 0, 0]
+            }
+          }
+        ],
+        "children": [
+          "lattice_ccw_ring"
+        ],
+        "modifiers": [
+          {
+            "id": "around",
+            "kind": "radialArray",
+            "params": {
+              "angleDeg": 360,
+              "axis": "y",
+              "center": [0, 0, 0],
+              "count": 6
+            }
+          }
+        ],
+        "gameCollision": true
+      },
+      "lattice_ccw_ring": {
+        "id": "lattice_ccw_ring",
+        "name": "lattice_ccw_ring",
+        "kind": "torus",
+        "transform": {
+          "rotation": [90, 0, 0]
+        },
+        "material": "m9",
+        "params": {
+          "majorRadius": 0.49,
+          "minorRadius": 0.018
+        },
+        "gameCollision": false
+      },
+      "strap": {
+        "id": "strap",
+        "name": "strap",
+        "kind": "torus",
+        "transform": {
+          "position": [0, -0.2, 0],
+          "rotation": [0, 0, 50],
+          "scale": [1, 1.8, 1]
+        },
+        "material": "m11",
+        "params": {
+          "majorRadius": 0.5,
+          "minorRadius": 0.03
+        },
+        "gameCollision": false
+      },
+      "crown": {
+        "id": "crown",
+        "name": "crown",
+        "kind": "group",
+        "children": [
+          "crown_base",
+          "leaf_mid",
+          "leaves_outer",
+          "leaves_inner"
+        ],
+        "gameCollision": true
+      },
+      "crown_base": {
+        "id": "crown_base",
+        "name": "crown_base",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.84, 0]
+        },
+        "material": "m10",
+        "params": {
+          "radii": [0.09, 0.05, 0.09]
+        },
+        "gameCollision": false
+      },
+      "leaf_mid": {
+        "id": "leaf_mid",
+        "name": "leaf_mid",
+        "kind": "cone",
+        "transform": {
+          "position": [0, 1.02, 0],
+          "scale": [1, 1, 0.4]
+        },
+        "material": "m10",
+        "params": {
+          "height": 0.38,
+          "radiusBottom": 0.07,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "leaves_outer": {
+        "id": "leaves_outer",
+        "name": "leaves_outer",
+        "kind": "group",
+        "children": [
+          "leaf_outer"
+        ],
+        "modifiers": [
+          {
+            "id": "around",
+            "kind": "radialArray",
+            "params": {
+              "angleDeg": 360,
+              "axis": "y",
+              "center": [0, 0, 0],
+              "count": 5
+            }
+          }
+        ],
+        "gameCollision": true
+      },
+      "leaf_outer": {
+        "id": "leaf_outer",
+        "name": "leaf_outer",
+        "kind": "cone",
+        "transform": {
+          "position": [0, 0.95, 0.1],
+          "rotation": [40, 0, 0],
+          "scale": [1, 1, 0.4]
+        },
+        "material": "m10",
+        "params": {
+          "height": 0.3,
+          "radiusBottom": 0.085,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "leaves_inner": {
+        "id": "leaves_inner",
+        "name": "leaves_inner",
+        "kind": "group",
+        "transform": {
+          "rotation": [0, 36, 0]
+        },
+        "children": [
+          "leaf_inner"
+        ],
+        "modifiers": [
+          {
+            "id": "around",
+            "kind": "radialArray",
+            "params": {
+              "angleDeg": 360,
+              "axis": "y",
+              "center": [0, 0, 0],
+              "count": 5
+            }
+          }
+        ],
+        "gameCollision": true
+      },
+      "leaf_inner": {
+        "id": "leaf_inner",
+        "name": "leaf_inner",
+        "kind": "cone",
+        "transform": {
+          "position": [0, 0.99, 0.05],
+          "rotation": [20, 0, 0],
+          "scale": [1, 1, 0.4]
+        },
+        "material": "m10",
+        "params": {
+          "height": 0.33,
+          "radiusBottom": 0.075,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m8": {
+        "name": "costume-pineapple-suit-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.9
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m9": {
+        "name": "costume-pineapple-suit-orange",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff8a3d",
+                "in.roughness": 0.85
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m10": {
+        "name": "costume-pineapple-suit-green",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#5cc23a",
+                "in.roughness": 0.85
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m11": {
+        "name": "costume-pineapple-suit-brown",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#6b3e1f",
+                "in.roughness": 0.9
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.677947, -0.78, -0.677947],
+    "max": [0.677947, 1.21, 0.677947]
+  },
+  "hash": "5db2f29c22a440204ee477e1c3b4eaa5ef6d9e3d66cff1d887668dc86c92d931"
+}

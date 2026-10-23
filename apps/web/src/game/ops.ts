@@ -1059,11 +1059,21 @@ async function gameCapture(raw: unknown): Promise<OpResult<GameCaptureOutput>> {
 
 type GameOps = { controlsProbe(input: unknown): Promise<OpResult<ControlsOutput>>; gameCapture(input: unknown): Promise<OpResult<GameCaptureOutput>> }
 
-// window.nmcGpu.ops.controlsProbe / gameCapture, next to the client page's ops.
-export function installGameOps(): void {
-  preferCompatibilityAdapter()
+// window.nmcGpu.ops.controlsProbe / gameCapture, next to the client page's ops. Registering has no side
+// effect: the first op call prefers the compatibility adapter and runs teardown (the page's App) first.
+export function installGameOps(teardown: () => void = () => {}): void {
   installNmcOps()
   const gpu = window.nmcGpu as NonNullable<Window['nmcGpu']> & { ops: GameOps }
-  gpu.ops.controlsProbe = controlsProbe
-  gpu.ops.gameCapture = gameCapture
+  let prepared = false
+  const prepare = (): void => {
+    if (prepared) return
+    prepared = true
+    preferCompatibilityAdapter()
+    teardown()
+  }
+  const { roundCapture, frameTiming } = gpu.ops
+  gpu.ops.roundCapture = input => (prepare(), roundCapture(input))
+  gpu.ops.frameTiming = input => (prepare(), frameTiming(input))
+  gpu.ops.controlsProbe = input => (prepare(), controlsProbe(input))
+  gpu.ops.gameCapture = input => (prepare(), gameCapture(input))
 }

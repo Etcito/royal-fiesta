@@ -154,15 +154,18 @@ function matchScreen(v: MatchViewState, localStatus: number, podium: boolean): G
   return 'result'
 }
 
-function loop(frame: (dtS: number) => void): void {
+// Returns the stop: an op tears the App down before building its own views.
+function loop(frame: (dtS: number) => void): () => void {
   let last = performance.now()
+  let id = 0
   const tick = (now: number) => {
     const dt = Math.min(0.1, Math.max(0, now - last) / 1000)
     last = now
     frame(dt)
-    requestAnimationFrame(tick)
+    id = requestAnimationFrame(tick)
   }
-  requestAnimationFrame(tick)
+  id = requestAnimationFrame(tick)
+  return () => cancelAnimationFrame(id)
 }
 
 // One canvas per client, appended to the #views grid in client order.
@@ -717,6 +720,8 @@ class App {
   private loading: ReturnType<typeof mountLoading> | null = null
   private loadingShown = ''
   private emote = 0
+  private stopLoop: (() => void) | null = null
+  private disposed = false
   private readonly views: HTMLElement
   private readonly hudRoot: HTMLElement
   private readonly screens: HTMLElement
@@ -752,7 +757,7 @@ class App {
       // The load parses again and shows the refusal.
     }
     this.run(this.nav.dispatch({ kind: 'load', next }))
-    loop(dt => {
+    this.stopLoop = loop(dt => {
       try {
         this.frame(dt)
       } catch (e) {
@@ -766,7 +771,26 @@ class App {
     this.run(this.nav.dispatch({ kind: 'error', message }))
   }
 
+  // Before an op builds its own views: frame loop, mode, RAA ports, input and sound released, page emptied.
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.stopLoop?.()
+    this.stopLoop = null
+    this.stopMode()
+    this.input.dispose()
+    void this.sound.close()
+    this.loading?.close()
+    this.loading = null
+    for (const port of this.loaded?.ports ?? []) port.dispose()
+    this.loaded = null
+    this.views.replaceChildren()
+    this.hudRoot.replaceChildren()
+    this.screens.replaceChildren()
+  }
+
   private run(effects: readonly Effect[]): void {
+    if (this.disposed) return
     for (const fx of effects) {
       if (fx === Effect.load) void this.load()
       else if (fx === Effect.startHub) this.startMode()
@@ -791,6 +815,12 @@ class App {
       await content.load('sprint', progress => this.run(this.nav.dispatch({ kind: 'progress', progress })))
       const course = q.course === null ? null : content.course(q.course)
       const { ports, canvases } = await this.mountPorts(content, q.clients)
+      if (this.disposed) {
+        // An op took the page during the load: its ports are not ours to keep.
+        for (const port of ports) port.dispose()
+        this.views.replaceChildren()
+        return
+      }
       this.loaded = { R, content, ports, canvases, course }
       this.run(this.nav.dispatch({ kind: 'loaded' }))
     } catch (e) {
@@ -984,7 +1014,7 @@ class App {
   }
 }
 
-function start(): void {
+function start(): App {
   const views = document.querySelector<HTMLElement>('#views')
   const hudRoot = document.querySelector<HTMLElement>('#hud')
   const screens = document.querySelector<HTMLElement>('#screens')
@@ -993,13 +1023,16 @@ function start(): void {
   window.addEventListener('error', e => app.fail(messageOf(e.error ?? e.message)))
   window.addEventListener('unhandledrejection', e => app.fail(messageOf(e.reason)))
   app.start()
+  return app
 }
 
-// ?mode=ops only installs the GPU client ops (controlsProbe, gameCapture); the ops build their own views.
+// The GPU runner loads the page without a query, so every load registers the ops (no side effect until
+// one is called); ?mode=ops registers them alone, with no App. The first op call tears the App down.
 const opsMode = new URLSearchParams(window.location.search).get('mode') === 'ops'
+let app: App | null = null
 try {
-  if (opsMode) installGameOps()
-  else start()
+  installGameOps(() => app?.dispose())
+  if (!opsMode) app = start()
 } catch (e) {
   // Nothing mounted: write the message into the page rather than only the console.
   document.body.textContent = `Royal Fiesta could not start: ${messageOf(e)}`

@@ -135,6 +135,11 @@ async function checkWebBuild(): Promise<CheckResult> {
   }
   const missing = DIST_PAGES.filter(f => !existsSync(join(dist, f)))
   const notes = missing.map(f => `apps/web/dist/${f} is missing: run npm run build`)
+  // The GPU client serves dist under a sub-path: a root-absolute script URL never loads and no op is defined.
+  if (!missing.includes('game.html') && /(?:src|href)="\//.test(await readFile(join(dist, 'game.html'), 'utf8'))) {
+    missing.push('relative-urls')
+    notes.push(`apps/web/dist/game.html loads assets from /: set base './' in apps/web/vite.config.ts, then run npm run build`)
+  }
   if (!missing.includes('nmc.gpu.json')) {
     let ops: string[] = []
     try {

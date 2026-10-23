@@ -59,6 +59,8 @@ if (raa.active && raa.dir !== null) {
 
 export default defineConfig({
   root: webDir,
+  // The GPU client serves dist from a sub-path: absolute /assets URLs never load there.
+  base: './',
   build: {
     outDir: 'dist',
     emptyOutDir: true,

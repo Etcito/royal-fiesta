@@ -1,0 +1,145 @@
+{
+  "renderer": "raa",
+  "adapter": {
+    "vendor": "nvidia",
+    "architecture": "ampere",
+    "description": "",
+    "software": false
+  },
+  "software": false,
+  "pageRef": "exec-6348-d1ab92ea6bf62849cd1c43a209e7db6a39f60eac0e6d5c2f5073c3e692241a67",
+  "captures": [
+    {
+      "name": "loading",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "98235df3847116afa1457201021a7dec47d3b50b3a437205931364b700205dbb",
+      "bytes": 67350,
+      "nonEmpty": true
+    },
+    {
+      "name": "hub",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "385264d5f1497eaff076419bbdafa9a6b58433376c6c45765e66245c174bebf2",
+      "bytes": 126763,
+      "nonEmpty": true
+    },
+    {
+      "name": "match-20s",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "295b7c9c26e6bb58c6591b394479659d972b9f8b5994d2a707d5cfd2a68671dc",
+      "bytes": 106419,
+      "nonEmpty": true
+    },
+    {
+      "name": "podium",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "d26f902c0ea8b0216e3d05c2222b35b23c6d42a88645ec2bc895e7ef8c3deccd",
+      "bytes": 70196,
+      "nonEmpty": true
+    },
+    {
+      "name": "back-in-hub",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "385264d5f1497eaff076419bbdafa9a6b58433376c6c45765e66245c174bebf2",
+      "bytes": 126763,
+      "nonEmpty": true
+    }
+  ],
+  "frameTiming": null,
+  "content": "v1",
+  "courses": [
+    "race-sprint",
+    "survival-sprint"
+  ],
+  "events": [
+    {
+      "t": 0.001,
+      "what": "load started (content v1)"
+    },
+    {
+      "t": 0.051,
+      "what": "load courses 1/9"
+    },
+    {
+      "t": 0.314,
+      "what": "load assets 15/15"
+    },
+    {
+      "t": 0.323,
+      "what": "load done 16/16"
+    },
+    {
+      "t": 0.323,
+      "what": "load done"
+    },
+    {
+      "t": 0.434,
+      "what": "captured loading"
+    },
+    {
+      "t": 0.601,
+      "what": "stage hub"
+    },
+    {
+      "t": 0.934,
+      "what": "captured hub"
+    },
+    {
+      "t": 0.937,
+      "what": "match started (8 bots, sprint)"
+    },
+    {
+      "t": 0.948,
+      "what": "stage match"
+    },
+    {
+      "t": 1.441,
+      "what": "captured match-20s"
+    },
+    {
+      "t": 1.677,
+      "what": "podium 7, 0, 2 at match tick 2666"
+    },
+    {
+      "t": 1.678,
+      "what": "stage podium"
+    },
+    {
+      "t": 1.744,
+      "what": "captured podium"
+    },
+    {
+      "t": 1.75,
+      "what": "back in the hub"
+    },
+    {
+      "t": 1.75,
+      "what": "stage transit"
+    },
+    {
+      "t": 1.751,
+      "what": "stage back-in-hub"
+    },
+    {
+      "t": 1.821,
+      "what": "captured back-in-hub"
+    }
+  ],
+  "report": {
+    "content": "v1",
+    "courses": 2,
+    "courseIds": [
+      "race-sprint",
+      "survival-sprint"
+    ],
+    "assets": 16,
+    "standIns": 16,
+    "podium": "podium",
+    "hub": "hub-plaza"
+  }
+}

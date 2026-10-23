@@ -20,6 +20,7 @@
     "rf": "node --experimental-strip-types apps/headless/src/cli.ts",
     "audio:bake": "node --experimental-strip-types tools/bake-audio.ts",
     "web:build": "npm run audio:bake && npm run build -w @royal-fiesta/web",
+    "play": "node --experimental-strip-types tools/play.ts",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {

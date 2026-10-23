@@ -25,7 +25,10 @@ npm install            # the release tarballs of @gamesaloon/rollback, @gamesalo
 npm run typecheck
 npm test
 npm run web:build      # apps/web/dist/
+npm run play           # audio:bake, build, then serves http://localhost:5173/game.html
 ```
+
+`npm run play` serves apps/web/dist on 127.0.0.1:5173 and refuses to start when that port is in use (`-- --port N` picks another). `npm run play -- --check` boots the server, checks that game.html, play.html and a built asset answer 200, then exits; it does not need MAMA.
 
 With Kong instead of npm, run `kong rules` and then `kong use kong.rules` in the repository root. `kong.rules` records each release URL and its integrity hash.
 

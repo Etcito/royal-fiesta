@@ -61,9 +61,54 @@ texture, audio clip or Wasm module never belongs in `fixtures/`.
   `.wasm`, `.zip`, `.mp3`, `.mp4`, `.fbx`, `.ttf`, `.woff2` and `.pdf`;
 - a NUL byte in the first 8000 bytes;
 - bytes that are not valid UTF-8;
-- more than 256 KiB (262144 bytes), with `package-lock.json` exempt;
-- `.prims.json`, `.course.json` or `.manifest.json` outside `fixtures/`;
-- a non-JSON file under `fixtures/`, or one over 64 KiB.
+- more than 256 KiB (262144 bytes), with `package-lock.json` exempt; files
+  under `assets/` may reach 2,200,000 bytes;
+- data files outside their folders (rule `asset-outside-fixtures`):
+  `.prims.json` and `.manifest.json` only under `fixtures/`; `.course.json`
+  under `fixtures/` or `courses/`; `.asset.json` under `fixtures/` or directly in
+  `assets/<world>/` (world `candy`, `ice`, `jungle`, `neon` or `common`);
+  `.ui.json` under `ui/`;
+- a non-JSON file under `fixtures/`, or one over 64 KiB;
+- a public leak in any UTF-8 file (rule `public-leak`, see below).
+
+## Public leaks
+
+The repository is public. The `public-leak` rule runs `leakScan` on every file
+that decodes as UTF-8 and reports:
+
+- absolute home or root paths: a home directory under `/home` or `/Users`, the
+  root user's home, or a Windows profile folder (`<drive>:\Users`);
+- private-network IPv4 addresses (10/8, 172.16/12, 192.168/16); loopback and
+  the any-address are allowed;
+- internal host names: a dotted name ending in `.internal`, `.corp`, `.lan`,
+  `.local` or `.intranet`, at a host position (line start, after a space, `//`,
+  `@` or a quote), so code such as `f(this.local)` does not hit;
+- token shapes: GitHub tokens (`ghp_`, `gho_`, `ghs_`, `ghu_`, `github_pat_`
+  followed by 20 or more token characters), private-key blocks (`BEGIN …
+  PRIVATE KEY`), AWS access keys (`AKIA`/`ASIA` plus 16 characters) and Slack
+  tokens (`xoxb-`, `xoxp-` and similar);
+- every comma-separated substring of the environment variable `RF_GUARD_DENY`.
+
+The violation line names the pattern and the line number and shows a short
+excerpt in which the match is replaced by `<pattern>`; the matched text is never
+printed. `tools/guard.ts` and `tools/test/guard.test.ts` are exempt because they
+spell out the patterns (the tests build their token-shaped strings at run time).
+
+`RF_GUARD_DENY` holds what only your machine knows, for example your user name,
+machine name or a private server address. Set it in your shell profile or CI
+secrets, never in a committed file: the list itself would be the leak. It is
+read each time the guard runs and is never printed.
+
+Proof records and transcripts (`proofs/mN/*.json`, command tails, logs) go
+through `redact(text, secrets)` first, which replaces every known secret (tokens,
+server URLs, temporary paths) with `<redacted>`. They are then checked with
+`leakScan` before they are written or committed; a hit is a defect to fix in the
+producer, never something to hide by editing the record.
+
+A hit in a tracked file is either a real leak (remove it, and rotate the secret
+if it was a credential) or a false positive (tighten the pattern in
+`tools/guard.ts` and add the case to its tests). Never weaken a pattern only to
+pass a file that really leaks.
 
 ## The pre-commit hook
 
@@ -102,6 +147,7 @@ On a violation:
   the asset to the store. Never force-add it and never edit the limits to make
   a violation pass.
 - **fixture-not-json**: fixtures are JSON only; convert or move the file.
+- **public-leak**: see "Public leaks" above.
 
 Removing a file that is already tracked only takes effect after the deletion is
 committed. Assets accidentally committed earlier must be removed from history,

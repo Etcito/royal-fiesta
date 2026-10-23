@@ -74,6 +74,12 @@ function ensureRaaRelease(): void {
   console.log(`[raa] @etcito/raa ${String(version)} release${local}`)
 }
 
+// nmc.gpu.json lists op names; an object keyed by op is still accepted.
+function opNames(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter((o): o is string => typeof o === 'string')
+  return Object.keys(object(raw) ?? {})
+}
+
 function adapterLabel(out: Record<string, unknown>, where: string): { label: string; software: boolean } {
   const a = object(out.adapter)
   if (a === null || typeof a.software !== 'boolean') return refuse('m11-proof', `${where}/adapter`, 'is not an adapter object; pass the unmodified op output')
@@ -87,8 +93,8 @@ async function frameP95(): Promise<CheckResult> {
   const missing = [pageFile, gpuConfig].filter(p => !existsSync(p))
   if (missing.length) return { value: 'missing build files', threshold: 'dist/game.html + dist/nmc.gpu.json', pass: false, notes: missing }
   const config = object(JSON.parse(await readFile(gpuConfig, 'utf8')) as unknown)
-  const ops = object(config?.ops) ?? {}
-  const undeclared = ['frameTiming', 'gameCapture'].filter(op => !(op in ops))
+  const ops = opNames(config?.ops)
+  const undeclared = ['frameTiming', 'gameCapture'].filter(op => !ops.includes(op))
   if (undeclared.length) return { value: `undeclared=${undeclared.join(',')}`, threshold: 'nmc.gpu.json declares frameTiming and gameCapture', pass: false }
   const pageRef = await publishDist(dist)
   await mkdir(out, { recursive: true })

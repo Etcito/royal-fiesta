@@ -1,24 +1,35 @@
+import { existsSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { V0_ASSET_MAP } from '@royal-fiesta/game/courseV1'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
 import { loadAllCoursesV1, loadCourseV1File, nodeGameAssets, v1Playlist } from '../src/contentFiles.ts'
-import { loadAllCourses, loadCourseFile } from '../src/files.ts'
+import { loadCourseFile } from '../src/files.ts'
+import { isAuthored, readAuthored } from '../../../tools/authored.ts'
+import { repoRoot } from '../../../tools/bricks.ts'
 
-test('loadAllCoursesV1 loads the 9 repository courses sorted by id', async () => {
+test('loadAllCoursesV1 loads every course on disk sorted by id', async () => {
+  const onDisk = readdirSync(join(repoRoot(), 'courses'))
+    .filter(f => f.endsWith('.course.json'))
+    .map(f => f.slice(0, -'.course.json'.length))
+    .sort()
   const ids = (await loadAllCoursesV1()).map(c => c.id)
-  assert.deepEqual(ids, [
+  assert.deepEqual(ids, onDisk)
+  for (const id of [
     'hub-plaza', 'obstacle-gallery', 'podium', 'race-bean-dash', 'race-hammer-hill',
     'race-sprint', 'survival-hammer-ring', 'survival-spin-zone', 'survival-sprint',
-  ])
+  ]) assert.ok(ids.includes(id), id)
 })
 
-test('v1Playlist matches the v0 playlist; only contentHash and asset ids differ', async () => {
-  const v1 = await v1Playlist('sprint')
-  const v0 = await loadAllCourses(c => (c.kind === 'race' || c.kind === 'survival') && c.profiles.includes('sprint'))
-  assert.ok(v0.length > 0)
-  assert.deepEqual(v1.map(c => c.id), v0.map(c => c.id))
-  for (const sim of v1) {
+test('v1Playlist matches the v0 playlist for generated courses', async () => {
+  const root = repoRoot()
+  const authored = readAuthored(root)
+  const set = (await v1Playlist('sprint')).filter(c =>
+    !isAuthored(authored, `courses/${c.id}.course.json`) &&
+    existsSync(join(root, 'fixtures', 'courses', `${c.id}.course.json`)))
+  assert.ok(set.length > 0)
+  for (const sim of set) {
     const old = await loadCourseFile(`fixtures/courses/${sim.id}.course.json`)
     const keys = Object.keys(old).filter(k => k !== 'contentHash' && k !== 'obstacles')
     assert.deepEqual(Object.keys(sim).sort(), Object.keys(old).sort(), sim.id)

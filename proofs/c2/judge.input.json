@@ -1,0 +1,76 @@
+{
+  "format": "royal-fiesta.judge-input",
+  "version": 1,
+  "reference": "royal-fiesta/ref-1.png",
+  "minScore": 6,
+  "subjects": [
+    {
+      "name": "penguin",
+      "views": [
+        {
+          "png": "out/c2/penguin-front.png",
+          "description": "penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from the front"
+        },
+        {
+          "png": "out/c2/penguin-three-quarter.png",
+          "description": "penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from a three-quarter front-right angle"
+        },
+        {
+          "png": "out/c2/penguin-back.png",
+          "description": "penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from the back"
+        }
+      ]
+    },
+    {
+      "name": "penguin-propeller-hat",
+      "views": [
+        {
+          "png": "out/c2/penguin-propeller-hat-front.png",
+          "description": "penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from the front"
+        },
+        {
+          "png": "out/c2/penguin-propeller-hat-three-quarter.png",
+          "description": "penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from a three-quarter front-right angle"
+        },
+        {
+          "png": "out/c2/penguin-propeller-hat-back.png",
+          "description": "penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from the back"
+        }
+      ]
+    },
+    {
+      "name": "penguin-fish-scarf",
+      "views": [
+        {
+          "png": "out/c2/penguin-fish-scarf-front.png",
+          "description": "penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from the front"
+        },
+        {
+          "png": "out/c2/penguin-fish-scarf-three-quarter.png",
+          "description": "penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from a three-quarter front-right angle"
+        },
+        {
+          "png": "out/c2/penguin-fish-scarf-back.png",
+          "description": "penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from the back"
+        }
+      ]
+    },
+    {
+      "name": "penguin-pineapple-suit",
+      "views": [
+        {
+          "png": "out/c2/penguin-pineapple-suit-front.png",
+          "description": "penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from the front"
+        },
+        {
+          "png": "out/c2/penguin-pineapple-suit-three-quarter.png",
+          "description": "penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from a three-quarter front-right angle"
+        },
+        {
+          "png": "out/c2/penguin-pineapple-suit-back.png",
+          "description": "penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from the back"
+        }
+      ]
+    }
+  ]
+}

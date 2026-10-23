@@ -1,62 +1,22 @@
 [
   {
-    "name": "judge-penguin-front",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-front.png --description \"penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from the front\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
+    "name": "judge-penguin",
+    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c2/judge.input.json penguin",
+    "timeout_s": 1200
   },
   {
-    "name": "judge-penguin-three-quarter",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-three-quarter.png --description \"penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from a three-quarter front-right angle\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
+    "name": "judge-penguin-propeller-hat",
+    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c2/judge.input.json penguin-propeller-hat",
+    "timeout_s": 1200
   },
   {
-    "name": "judge-penguin-back",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-back.png --description \"penguin, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing no costume, seen from the back\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
+    "name": "judge-penguin-fish-scarf",
+    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c2/judge.input.json penguin-fish-scarf",
+    "timeout_s": 1200
   },
   {
-    "name": "judge-penguin-propeller-hat-front",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-propeller-hat-front.png --description \"penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from the front\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
-  },
-  {
-    "name": "judge-penguin-propeller-hat-three-quarter",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-propeller-hat-three-quarter.png --description \"penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from a three-quarter front-right angle\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
-  },
-  {
-    "name": "judge-penguin-propeller-hat-back",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-propeller-hat-back.png --description \"penguin-propeller-hat, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a four-panel red, yellow, green and blue cap with a yellow propeller on its head, seen from the back\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
-  },
-  {
-    "name": "judge-penguin-fish-scarf-front",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-fish-scarf-front.png --description \"penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from the front\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
-  },
-  {
-    "name": "judge-penguin-fish-scarf-three-quarter",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-fish-scarf-three-quarter.png --description \"penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from a three-quarter front-right angle\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
-  },
-  {
-    "name": "judge-penguin-fish-scarf-back",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-fish-scarf-back.png --description \"penguin-fish-scarf, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a pale aqua scarf wrapped around its neck with two trailing ends and small coloured fish on it, seen from the back\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
-  },
-  {
-    "name": "judge-penguin-pineapple-suit-front",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-pineapple-suit-front.png --description \"penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from the front\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
-  },
-  {
-    "name": "judge-penguin-pineapple-suit-three-quarter",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-pineapple-suit-three-quarter.png --description \"penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from a three-quarter front-right angle\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
-  },
-  {
-    "name": "judge-penguin-pineapple-suit-back",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/c2/penguin-pineapple-suit-back.png --description \"penguin-pineapple-suit, a plush royal-blue penguin with white belly, orange beak and feet and pink sneakers, wearing a yellow pineapple suit with a raised diamond lattice, a green leaf crown above its head and a brown strap, seen from the back\" --reference royal-fiesta/ref-1.png --min-score 6",
-    "timeout_s": 300
+    "name": "judge-penguin-pineapple-suit",
+    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c2/judge.input.json penguin-pineapple-suit",
+    "timeout_s": 1200
   }
 ]

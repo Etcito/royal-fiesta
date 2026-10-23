@@ -22,8 +22,8 @@
           "png": "out/c2/penguin-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "5ef0f652a281256974b83028d674408a7cd1a06466180bdd7e748861764de2d1",
-          "bytes": 382623,
+          "sha256": "a1822ed0af584aa2936099f0cd39f3f561085679fd593bb11e4cf89d40d999e3",
+          "bytes": 472408,
           "nonEmpty": true
         },
         {
@@ -31,8 +31,8 @@
           "png": "out/c2/penguin-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "25b05d58b6afcd5154214df468471e21d528910f941064852ec6cfb2556780a2",
-          "bytes": 345259,
+          "sha256": "8b86a6a90199cc5d143304a743d830b15fd15fc5cfd80bc6a873c9f366231ce6",
+          "bytes": 416796,
           "nonEmpty": true
         },
         {
@@ -40,8 +40,8 @@
           "png": "out/c2/penguin-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "89659bd080c1bf83f4383028581c0f5a54fadc366136d072494e8376854aed38",
-          "bytes": 302545,
+          "sha256": "e225a3fa6cf73bf431902078f5e6cf3beddeed40977052de569e546293d3d135",
+          "bytes": 427932,
           "nonEmpty": true
         }
       ]
@@ -58,8 +58,8 @@
           "png": "out/c2/penguin-propeller-hat-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "fa10a3dd4fc3ca187a21778a1a7488efe6bdd0f22bcbca677b289ce6dc072e14",
-          "bytes": 335463,
+          "sha256": "b79a0c8a874f4790480a79be366b7681f9f8de468e5a9ba268f0a6ad2bac6db6",
+          "bytes": 417746,
           "nonEmpty": true
         },
         {
@@ -67,8 +67,8 @@
           "png": "out/c2/penguin-propeller-hat-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "e1bfa7f543e4dfd8cd7386ea35d8fe648bcb0facb22569e6f92c1e2f8119ba0b",
-          "bytes": 306569,
+          "sha256": "cc602990636dbdc16ec3feadb7a7051899afc51439d19fc0f91ed4dcb8f39c86",
+          "bytes": 375510,
           "nonEmpty": true
         },
         {
@@ -76,8 +76,8 @@
           "png": "out/c2/penguin-propeller-hat-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "23c9883ed1848880deb131b480abc5425218affff1815f6ad2654c0f13e332a7",
-          "bytes": 255009,
+          "sha256": "09eccbaf7b062b676a21598274a3cbc6b032a2fdd04eb45aeea477c85ea377f4",
+          "bytes": 373610,
           "nonEmpty": true
         }
       ]
@@ -94,8 +94,8 @@
           "png": "out/c2/penguin-fish-scarf-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "1f9767be6a97c11e88657f8b19b3b0c1f884043486531cb24f58799717cd72c1",
-          "bytes": 394351,
+          "sha256": "6d1b6bac3f0b6b09b2c6d7f8c77de914b2ee3bc3de07b1355e0debead02be776",
+          "bytes": 490892,
           "nonEmpty": true
         },
         {
@@ -103,8 +103,8 @@
           "png": "out/c2/penguin-fish-scarf-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "054c117d51fef2b8d8f831a7c2176d5247792e8fb83415bf2bcfa6a9dd6b76a0",
-          "bytes": 360291,
+          "sha256": "0bf5e8f111699acfb82a4fc62426ec3d74182b877eae61ddc02eec9e4f7fc741",
+          "bytes": 442145,
           "nonEmpty": true
         },
         {
@@ -112,8 +112,8 @@
           "png": "out/c2/penguin-fish-scarf-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "20e3b6fd5cef922d82a5ceee7faaf16926b8050872288b914f03aa2a724093bf",
-          "bytes": 307005,
+          "sha256": "8a2b88ad0df063448dfa1d34df85276e102a0b9c5c16f290b01296d4ae8e77e8",
+          "bytes": 434556,
           "nonEmpty": true
         }
       ]
@@ -130,8 +130,8 @@
           "png": "out/c2/penguin-pineapple-suit-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "dae42437d679c43dd5bf7375b8a7c710f7a130926b0b16883b54477f7fad918b",
-          "bytes": 259211,
+          "sha256": "f98d67bdb4b75c6968ecfb089167adbc9cf2164a20a1978de27c7754c921d64d",
+          "bytes": 370455,
           "nonEmpty": true
         },
         {
@@ -139,8 +139,8 @@
           "png": "out/c2/penguin-pineapple-suit-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "ab8848b050c6f3e1b56c2ec0441e2b2ccbf770ae6878c46f6fd27afedc78c13f",
-          "bytes": 245050,
+          "sha256": "1c91205a4d314784989fdb37ca07f8dbe86e86428bb3dc591e5706bbfb64d9bd",
+          "bytes": 345503,
           "nonEmpty": true
         },
         {
@@ -148,8 +148,8 @@
           "png": "out/c2/penguin-pineapple-suit-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "9ec8befd7b12a3486b765d431b7bb20ef8ee6ce71410b2038396de69c17bdb79",
-          "bytes": 221340,
+          "sha256": "a713b7862c41b124c6d3143cddf2f48b622a73f1a0d86e20754c8b4c23d1f343",
+          "bytes": 328306,
           "nonEmpty": true
         }
       ]

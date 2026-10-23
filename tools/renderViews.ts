@@ -10,6 +10,7 @@ import { decodePng } from '../apps/headless/src/gpuRecord.ts'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
 import { repoRoot } from './bricks.ts'
 import { loadAssetFile, mountedBounds, type AuthoredAsset } from './contentProbe.ts'
+import { fuzzAndBloom, parseLegend, relight } from './viewGrade.ts'
 import { VIEW_YAWS, type ViewName, type ViewsInput } from './viewsRecord.ts'
 
 const AREA = 'render-views'
@@ -153,7 +154,7 @@ export function mergeDocuments(body: Obj, costumes: { document: Obj; offset: V3;
 }
 
 // A soft ellipse on the floor under the penguin's feet, as wide as the penguin seen from that yaw.
-function floorShadow(cam: Camera, b: { min: V3; max: V3 }, yawDeg: number, width: number, height: number): { cx: number; cy: number; rx: number; ry: number } {
+export function floorShadow(cam: Camera, b: { min: V3; max: V3 }, yawDeg: number, width: number, height: number): { cx: number; cy: number; rx: number; ry: number } {
   const cx = (b.min[0] + b.max[0]) / 2
   const cz = (b.min[2] + b.max[2]) / 2
   const r = Math.max(b.max[0] - b.min[0], b.max[2] - b.min[2]) / 2
@@ -238,11 +239,20 @@ export async function main(argv: string[]): Promise<number> {
         const t0 = Date.now()
         try {
           const camera = viewCamera(bounds, VIEW_YAWS[v])
-          const r = await sdfm.call('render', { camera, width: input.width, height: input.height, out })
-          const img = decodePng(new Uint8Array(readFileSync(out)), input.width, input.height, out)
-          if (img.channels !== 4) refuse(AREA, out, `${img.channels} channels, expected RGBA; check the SDF Modeler render output`)
-          writeFileSync(out, encodePng(stageOnBackdrop(img, floorShadow(camera, aabb(body.asset.bounds), VIEW_YAWS[v], input.width, input.height))))
-          console.log(`[render] ${s.name}/${v} ${Date.now() - t0} ms: ${r.text.split(';')[0]}`)
+          // The shaded image plus the normals and materials passes of the same camera feed the studio grade (viewGrade.ts).
+          const pass = async (mode: string, file: string): Promise<{ img: Rgba; text: string }> => {
+            const r = await sdfm.call('render', { camera, width: input.width, height: input.height, mode, out: file })
+            const img = decodePng(new Uint8Array(readFileSync(file)), input.width, input.height, file)
+            if (img.channels !== 4) refuse(AREA, file, `${img.channels} channels, expected RGBA; check the SDF Modeler render output`)
+            return { img, text: r.text }
+          }
+          const shaded = await pass('shaded', out)
+          const normals = await pass('normals', join(tmpdir(), `rf-views-${process.pid}-normals.png`))
+          const materials = await pass('materials', join(tmpdir(), `rf-views-${process.pid}-materials.png`))
+          const relit = relight({ shaded: shaded.img, normals: normals.img, materials: materials.img, legend: parseLegend(materials.text) }, camera.position, camera.target)
+          const staged = stageOnBackdrop(relit.img, floorShadow(camera, aabb(body.asset.bounds), VIEW_YAWS[v], input.width, input.height))
+          writeFileSync(out, encodePng(fuzzAndBloom(staged, relit)))
+          console.log(`[render] ${s.name}/${v} ${Date.now() - t0} ms: ${shaded.text.split(';')[0]}`)
         } catch (e) {
           console.error(`[render] ${s.name}/${v}: ${(e as Error).message}`)
           failed++

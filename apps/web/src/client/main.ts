@@ -3,6 +3,8 @@ import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { NetTransport } from '@gamesaloon/rollback'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { openBrowserAudio } from '@royal-fiesta/game/audio/context'
+import { cameraBasis } from '@royal-fiesta/game/client/cameraBasis'
+import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
 import { InPageMatch } from '@royal-fiesta/game/client/inpageMatch'
 import { controlsToInput, emptyControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
@@ -45,6 +47,7 @@ const INPAGE_NET = { rttMs: 100, jitterMs: 10, loss: 0.02 }
 const NAMES = [1, 2, 3, 4, 5, 6, 7, 8].map(n => `Bean ${n}`)
 const STICK_DEADZONE = 0.15
 
+// Raw keys and the first pad's left stick only; the world direction comes from controlsToInput (cameraBasis).
 function trackControls(): () => RawControls {
   const keys = new Set<string>()
   const prevent = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
@@ -85,14 +88,10 @@ function trackControls(): () => RawControls {
   }
 }
 
-// Camera facing on XZ (target - eye); +Z until the camera exists.
-function facingOf(view: SceneView): { x: number; z: number } {
+// Camera forward on XZ from the shared basis (ARCHITECTURE 1.6); +Z until the camera exists.
+function facingOf(view: SceneView): Planar {
   const cam = view.camera
-  if (cam === null) return { x: 0, z: 1 }
-  const x = cam.target[0] - cam.eye[0]
-  const z = cam.target[2] - cam.eye[2]
-  const len = Math.sqrt(x * x + z * z)
-  return len > 1e-6 ? { x: x / len, z: z / len } : { x: 0, z: 1 }
+  return cam === null ? { x: 0, z: 1 } : cameraBasis(cam.eye, cam.target).forward
 }
 
 // note is the standing banner that network status messages fall back to. makePort builds one port per canvas.

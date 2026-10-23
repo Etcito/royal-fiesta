@@ -9,6 +9,8 @@ import type { MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { browserAssetResolver, browserCourses, preloadAssets } from '../client/sources.ts'
 import { hudLines } from '../client/hud.ts'
+import { initPerClient, planCanvases } from '../client/canvases.ts'
+import type { CanvasPlan } from '../client/canvases.ts'
 import { createRaaPort } from '../render/raaPort.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 
@@ -17,11 +19,13 @@ export interface RoundCaptureInput { clients: number; profile: string; width: nu
 export interface CaptureOut { name: string; width: number; height: number; mime: 'image/png'; base64: string }
 export interface RoundCaptureOutput { captures: CaptureOut[]; adapter: AdapterInfo; renderer: 'raa' }
 export interface FrameTimingInput { frames: number; width: number; height: number }
+// GPU client protocol: an op answers {json, files}; a plain object is not a result.
+export interface OpEnvelope<T> { json: T; files: [] }
 export interface FrameTimingOutput { p50Ms: number; p95Ms: number; frames: number; adapter: AdapterInfo }
 
 declare global {
   interface Window {
-    nmcGpu?: { ops: { roundCapture(input: unknown): Promise<RoundCaptureOutput>; frameTiming(input: unknown): Promise<FrameTimingOutput> } }
+    nmcGpu?: { ops: { roundCapture(input: unknown): Promise<OpEnvelope<RoundCaptureOutput>>; frameTiming(input: unknown): Promise<OpEnvelope<FrameTimingOutput>> } }
   }
 }
 
@@ -46,12 +50,12 @@ function rapierOnce(): Promise<RapierModule> {
 // Minimal WebGPU shapes: the repo lib list has no @webgpu/types.
 interface GpuAdapterInfoLike { vendor?: string; architecture?: string; description?: string; isFallbackAdapter?: boolean }
 interface GpuAdapterLike { info?: GpuAdapterInfoLike; isFallbackAdapter?: boolean }
-interface GpuLike { requestAdapter(): Promise<GpuAdapterLike | null> }
+interface GpuLike { requestAdapter(opts?: { powerPreference?: string }): Promise<GpuAdapterLike | null> }
 
 async function adapterInfo(): Promise<AdapterInfo> {
   const gpu = (navigator as Navigator & { gpu?: GpuLike }).gpu
   if (!gpu) refuse('gpu', 'navigator.gpu', 'WebGPU is not exposed by this browser; run the op in the GPU client browser')
-  const adapter = await gpu.requestAdapter()
+  const adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' })
   if (adapter === null) refuse('gpu', 'navigator.gpu.requestAdapter', 'no WebGPU adapter; run the op in the GPU client browser')
   const info = adapter.info ?? {}
   const vendor = info.vendor ?? ''
@@ -157,20 +161,18 @@ function emptyViewState(): MatchViewState {
   }
 }
 
+// A timer, not requestAnimationFrame: rAF fires rarely in the GPU client browser.
 function nextFrame(): Promise<number> {
-  return new Promise(resolve => requestAnimationFrame(resolve))
+  return new Promise(resolve => setTimeout(() => resolve(performance.now()), 0))
 }
 
 function yieldTask(): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, 0))
 }
 
-function viewportsOf(clients: number): Viewport[] {
-  const w = WIDTH / 2
-  const h = HEIGHT / 2
-  const out: Viewport[] = []
-  for (let k = 0; k < clients; k++) out.push({ x: (k % 2) * w, y: Math.floor(k / 2) * h, width: w, height: h })
-  return out
+// Where each client's canvas lands in the composited capture: client k at column k%2, row floor(k/2).
+function tilesOf(plan: CanvasPlan): Viewport[] {
+  return plan.cells.map(c => ({ x: c.col * c.canvasWidth, y: c.row * c.canvasHeight, width: c.canvasWidth, height: c.canvasHeight }))
 }
 
 // The RAA canvas capture has no DOM, so the HUD text is drawn here from the same hudLines.
@@ -198,36 +200,49 @@ function drawHud(ctx: CanvasRenderingContext2D, vp: Viewport, lines: string[]): 
   ctx.restore()
 }
 
-async function composite(png: Uint8Array, match: InPageMatch, viewports: Viewport[]): Promise<string> {
-  const image = await createImageBitmap(new Blob([png as Uint8Array<ArrayBuffer>], { type: 'image/png' }))
+// One PNG per client canvas, tiled into the 1920x1080 grid with each client's HUD on top.
+async function composite(pngs: Uint8Array[], match: InPageMatch, tiles: Viewport[]): Promise<string> {
   const canvas = document.createElement('canvas')
   canvas.width = WIDTH
   canvas.height = HEIGHT
   const ctx = canvas.getContext('2d')
   if (ctx === null) refuse('ops', 'roundCapture', 'no 2D canvas context for the HUD overlay; run the op in a browser with canvas 2D')
-  ctx.drawImage(image, 0, 0, WIDTH, HEIGHT)
-  image.close()
+  for (let k = 0; k < tiles.length; k++) {
+    const image = await createImageBitmap(new Blob([pngs[k] as Uint8Array<ArrayBuffer>], { type: 'image/png' }))
+    ctx.drawImage(image, tiles[k].x, tiles[k].y, tiles[k].width, tiles[k].height)
+    image.close()
+  }
   const state = emptyViewState()
-  for (let k = 0; k < viewports.length; k++) drawHud(ctx, viewports[k], hudLines(match.matches[k].sim.phase(state), [], k))
+  for (let k = 0; k < tiles.length; k++) drawHud(ctx, tiles[k], hudLines(match.matches[k].sim.phase(state), [], k))
   const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
   if (blob === null) refuse('ops', 'roundCapture', 'canvas.toBlob returned null; the composited capture could not be encoded')
   return base64Of(new Uint8Array(await blob.arrayBuffer()))
 }
 
-async function roundCapture(raw: unknown): Promise<RoundCaptureOutput> {
+async function roundCapture(raw: unknown): Promise<OpEnvelope<RoundCaptureOutput>> {
   const input = validateRoundCapture(raw)
   const { R, adapter } = await prelude()
   const courses = await browserCourses('sprint')
   const resolver = browserAssetResolver()
   const assets = await preloadAssets(courses, resolver)
-  const viewports = viewportsOf(input.clients)
-  const canvas = makeCanvas(WIDTH, HEIGHT)
-  const port = await createRaaPort()
+  // One canvas and one RAA port per client (RAA draws one full-canvas viewport), as on the client page.
+  const plan = planCanvases(WIDTH, HEIGHT, input.clients)
+  const tiles = tilesOf(plan)
+  const canvases: HTMLCanvasElement[] = []
+  const ports: RenderPort[] = []
   let match: InPageMatch | null = null
   try {
-    await port.init({ canvas, width: WIDTH, height: HEIGHT, viewports })
+    await initPerClient(plan, cell => {
+      const canvas = makeCanvas(cell.canvasWidth, cell.canvasHeight)
+      canvases.push(canvas)
+      return canvas
+    }, async () => {
+      const port = await createRaaPort()
+      ports.push(port)
+      return port
+    })
     match = new InPageMatch({
-      R, clients: input.clients, seed: SEED, profile: 'sprint', courses, ports: [port], assets, bean: assets('bean'),
+      R, clients: input.clients, seed: SEED, profile: 'sprint', courses, ports, assets, bean: assets('bean'),
       net: { rttMs: 100, jitterMs: 10, loss: 0.02 }, pilots: [true, true, true, true],
     })
     const captures: CaptureOut[] = []
@@ -240,15 +255,19 @@ async function roundCapture(raw: unknown): Promise<RoundCaptureOutput> {
         // Yield now and then so the GPU browser stays responsive during long runs.
         if (frames % 60 === 0) await yieldTask()
       }
-      const png = await port.capture()
-      if (png === null || png.length === 0) refuse('render', 'raa', `capture at ${t} s returned no PNG bytes; the RAA port must read the canvas back`)
-      captures.push({ name: `round-${t}s`, width: WIDTH, height: HEIGHT, mime: 'image/png', base64: await composite(png, match, viewports) })
+      const pngs: Uint8Array[] = []
+      for (let k = 0; k < ports.length; k++) {
+        const png = await ports[k].capture()
+        if (png === null || png.length === 0) refuse('render', 'raa', `client ${k} capture at ${t} s returned no PNG bytes; the RAA port must read the canvas back`)
+        pngs.push(png)
+      }
+      captures.push({ name: `round-${t}s`, width: WIDTH, height: HEIGHT, mime: 'image/png', base64: await composite(pngs, match, tiles) })
     }
-    return { captures, adapter, renderer: 'raa' }
+    return { json: { captures, adapter, renderer: 'raa' }, files: [] }
   } finally {
     match?.dispose()
-    port.dispose()
-    canvas.remove()
+    for (const port of ports) port.dispose()
+    for (const canvas of canvases) canvas.remove()
   }
 }
 
@@ -256,7 +275,7 @@ function nearestRank(sorted: number[], p: number): number {
   return sorted[Math.max(0, Math.ceil(p * sorted.length) - 1)]
 }
 
-async function frameTiming(raw: unknown): Promise<FrameTimingOutput> {
+async function frameTiming(raw: unknown): Promise<OpEnvelope<FrameTimingOutput>> {
   const input = validateFrameTiming(raw)
   const { R, adapter } = await prelude()
   // Only race-bean-dash in the race pool, so round 1 is the 40-obstacle standard course; survival keeps the setup valid.
@@ -294,7 +313,7 @@ async function frameTiming(raw: unknown): Promise<FrameTimingOutput> {
       samples.push(ms)
     }
     samples.sort((a, b) => a - b)
-    return { p50Ms: nearestRank(samples, 0.5), p95Ms: nearestRank(samples, 0.95), frames: samples.length, adapter }
+    return { json: { p50Ms: nearestRank(samples, 0.5), p95Ms: nearestRank(samples, 0.95), frames: samples.length, adapter }, files: [] }
   } finally {
     match?.dispose()
     port.dispose()

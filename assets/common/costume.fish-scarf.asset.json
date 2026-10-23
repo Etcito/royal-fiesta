@@ -1,0 +1,603 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.fish-scarf",
+  "name": "fish_scarf",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "quad"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "fish_scarf",
+    "root": [
+      "fish_scarf"
+    ],
+    "nodes": {
+      "fish_scarf": {
+        "id": "fish_scarf",
+        "name": "fish_scarf",
+        "kind": "group",
+        "children": [
+          "neck",
+          "scarf_band",
+          "scarf_end_long",
+          "scarf_end_short",
+          "fish_front",
+          "fish_side",
+          "fish_left",
+          "fish_back"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.fish-scarf",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "neck": {
+        "id": "neck",
+        "name": "neck",
+        "kind": "anchor",
+        "transform": {
+          "position": [0, 0.3, 0]
+        },
+        "gameCollision": true
+      },
+      "scarf_band": {
+        "id": "scarf_band",
+        "name": "scarf_band",
+        "kind": "group",
+        "children": [
+          "band_low",
+          "band_high",
+          "scarf_knot"
+        ],
+        "gameCollision": true
+      },
+      "band_low": {
+        "id": "band_low",
+        "name": "band_low",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.235, 0.01]
+        },
+        "material": "m8",
+        "params": {
+          "majorRadius": 0.28,
+          "minorRadius": 0.062
+        },
+        "gameCollision": false
+      },
+      "band_high": {
+        "id": "band_high",
+        "name": "band_high",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.305, 0]
+        },
+        "smooth": 0.02,
+        "material": "m8",
+        "params": {
+          "majorRadius": 0.258,
+          "minorRadius": 0.058
+        },
+        "gameCollision": false
+      },
+      "scarf_knot": {
+        "id": "scarf_knot",
+        "name": "scarf_knot",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.2, 0.25, 0.29]
+        },
+        "smooth": 0.02,
+        "material": "m8",
+        "params": {
+          "radii": [0.085, 0.07, 0.065]
+        },
+        "gameCollision": false
+      },
+      "scarf_end_long": {
+        "id": "scarf_end_long",
+        "name": "scarf_end_long",
+        "kind": "group",
+        "transform": {
+          "position": [0.17, 0.03, 0.375],
+          "rotation": [-12, 0, -4]
+        },
+        "children": [
+          "scarf_end_long_strip",
+          "scarf_end_long_stripe",
+          "scarf_end_long_fringe_l",
+          "scarf_end_long_fringe_m",
+          "scarf_end_long_fringe_r",
+          "fish_end"
+        ],
+        "gameCollision": true
+      },
+      "scarf_end_long_strip": {
+        "id": "scarf_end_long_strip",
+        "name": "scarf_end_long_strip",
+        "kind": "roundBox",
+        "material": "m8",
+        "params": {
+          "radius": 0.02,
+          "size": [0.13, 0.42, 0.05]
+        },
+        "gameCollision": false
+      },
+      "scarf_end_long_stripe": {
+        "id": "scarf_end_long_stripe",
+        "name": "scarf_end_long_stripe",
+        "kind": "roundBox",
+        "transform": {
+          "position": [0, -0.14, 0]
+        },
+        "smooth": 0.005,
+        "colorBlend": "hard",
+        "material": "m9",
+        "params": {
+          "radius": 0.015,
+          "size": [0.136, 0.035, 0.056]
+        },
+        "gameCollision": false
+      },
+      "scarf_end_long_fringe_l": {
+        "id": "scarf_end_long_fringe_l",
+        "name": "scarf_end_long_fringe_l",
+        "kind": "capsule",
+        "transform": {
+          "position": [-0.043333, -0.23, 0]
+        },
+        "smooth": 0.008,
+        "material": "m8",
+        "params": {
+          "height": 0.07,
+          "radius": 0.013
+        },
+        "gameCollision": false
+      },
+      "scarf_end_long_fringe_m": {
+        "id": "scarf_end_long_fringe_m",
+        "name": "scarf_end_long_fringe_m",
+        "kind": "capsule",
+        "transform": {
+          "position": [0, -0.23, 0]
+        },
+        "smooth": 0.008,
+        "material": "m8",
+        "params": {
+          "height": 0.07,
+          "radius": 0.013
+        },
+        "gameCollision": false
+      },
+      "scarf_end_long_fringe_r": {
+        "id": "scarf_end_long_fringe_r",
+        "name": "scarf_end_long_fringe_r",
+        "kind": "capsule",
+        "transform": {
+          "position": [0.043333, -0.23, 0]
+        },
+        "smooth": 0.008,
+        "material": "m8",
+        "params": {
+          "height": 0.07,
+          "radius": 0.013
+        },
+        "gameCollision": false
+      },
+      "fish_end": {
+        "id": "fish_end",
+        "name": "fish_end",
+        "kind": "group",
+        "transform": {
+          "position": [0, 0.02, 0.03],
+          "rotation": [0, 0, -90]
+        },
+        "children": [
+          "fish_end_body",
+          "fish_end_tail"
+        ],
+        "gameCollision": true
+      },
+      "fish_end_body": {
+        "id": "fish_end_body",
+        "name": "fish_end_body",
+        "kind": "ellipsoid",
+        "material": "m11",
+        "params": {
+          "radii": [0.072, 0.044, 0.026]
+        },
+        "gameCollision": false
+      },
+      "fish_end_tail": {
+        "id": "fish_end_tail",
+        "name": "fish_end_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.094, 0, 0],
+          "rotation": [0, 0, -90],
+          "scale": [1, 1, 0.4]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m11",
+        "params": {
+          "height": 0.06,
+          "radiusBottom": 0.047,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "scarf_end_short": {
+        "id": "scarf_end_short",
+        "name": "scarf_end_short",
+        "kind": "group",
+        "transform": {
+          "position": [0.285, 0.07, 0.315],
+          "rotation": [-8, 30, 12]
+        },
+        "children": [
+          "scarf_end_short_strip",
+          "scarf_end_short_stripe",
+          "scarf_end_short_fringe_l",
+          "scarf_end_short_fringe_m",
+          "scarf_end_short_fringe_r"
+        ],
+        "gameCollision": true
+      },
+      "scarf_end_short_strip": {
+        "id": "scarf_end_short_strip",
+        "name": "scarf_end_short_strip",
+        "kind": "roundBox",
+        "material": "m8",
+        "params": {
+          "radius": 0.02,
+          "size": [0.12, 0.32, 0.05]
+        },
+        "gameCollision": false
+      },
+      "scarf_end_short_stripe": {
+        "id": "scarf_end_short_stripe",
+        "name": "scarf_end_short_stripe",
+        "kind": "roundBox",
+        "transform": {
+          "position": [0, -0.09, 0]
+        },
+        "smooth": 0.005,
+        "colorBlend": "hard",
+        "material": "m9",
+        "params": {
+          "radius": 0.015,
+          "size": [0.126, 0.035, 0.056]
+        },
+        "gameCollision": false
+      },
+      "scarf_end_short_fringe_l": {
+        "id": "scarf_end_short_fringe_l",
+        "name": "scarf_end_short_fringe_l",
+        "kind": "capsule",
+        "transform": {
+          "position": [-0.04, -0.18, 0]
+        },
+        "smooth": 0.008,
+        "material": "m8",
+        "params": {
+          "height": 0.07,
+          "radius": 0.013
+        },
+        "gameCollision": false
+      },
+      "scarf_end_short_fringe_m": {
+        "id": "scarf_end_short_fringe_m",
+        "name": "scarf_end_short_fringe_m",
+        "kind": "capsule",
+        "transform": {
+          "position": [0, -0.18, 0]
+        },
+        "smooth": 0.008,
+        "material": "m8",
+        "params": {
+          "height": 0.07,
+          "radius": 0.013
+        },
+        "gameCollision": false
+      },
+      "scarf_end_short_fringe_r": {
+        "id": "scarf_end_short_fringe_r",
+        "name": "scarf_end_short_fringe_r",
+        "kind": "capsule",
+        "transform": {
+          "position": [0.04, -0.18, 0]
+        },
+        "smooth": 0.008,
+        "material": "m8",
+        "params": {
+          "height": 0.07,
+          "radius": 0.013
+        },
+        "gameCollision": false
+      },
+      "fish_front": {
+        "id": "fish_front",
+        "name": "fish_front",
+        "kind": "group",
+        "transform": {
+          "position": [-0.1921, 0.27, 0.2744],
+          "rotation": [0, -35, 0]
+        },
+        "children": [
+          "fish_front_body",
+          "fish_front_tail"
+        ],
+        "gameCollision": true
+      },
+      "fish_front_body": {
+        "id": "fish_front_body",
+        "name": "fish_front_body",
+        "kind": "ellipsoid",
+        "material": "m10",
+        "params": {
+          "radii": [0.072, 0.044, 0.026]
+        },
+        "gameCollision": false
+      },
+      "fish_front_tail": {
+        "id": "fish_front_tail",
+        "name": "fish_front_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.094, 0, 0],
+          "rotation": [0, 0, -90],
+          "scale": [1, 1, 0.4]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m10",
+        "params": {
+          "height": 0.06,
+          "radiusBottom": 0.047,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "fish_side": {
+        "id": "fish_side",
+        "name": "fish_side",
+        "kind": "group",
+        "transform": {
+          "position": [0.3337, 0.27, -0.0292],
+          "rotation": [0, 95, 0]
+        },
+        "children": [
+          "fish_side_body",
+          "fish_side_tail"
+        ],
+        "gameCollision": true
+      },
+      "fish_side_body": {
+        "id": "fish_side_body",
+        "name": "fish_side_body",
+        "kind": "ellipsoid",
+        "material": "m12",
+        "params": {
+          "radii": [0.072, 0.044, 0.026]
+        },
+        "gameCollision": false
+      },
+      "fish_side_tail": {
+        "id": "fish_side_tail",
+        "name": "fish_side_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.094, 0, 0],
+          "rotation": [0, 0, -90],
+          "scale": [1, 1, 0.4]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m12",
+        "params": {
+          "height": 0.06,
+          "radiusBottom": 0.047,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "fish_left": {
+        "id": "fish_left",
+        "name": "fish_left",
+        "kind": "group",
+        "transform": {
+          "position": [-0.3299, 0.27, -0.0582],
+          "rotation": [0, -100, 0]
+        },
+        "children": [
+          "fish_left_body",
+          "fish_left_tail"
+        ],
+        "gameCollision": true
+      },
+      "fish_left_body": {
+        "id": "fish_left_body",
+        "name": "fish_left_body",
+        "kind": "ellipsoid",
+        "material": "m11",
+        "params": {
+          "radii": [0.072, 0.044, 0.026]
+        },
+        "gameCollision": false
+      },
+      "fish_left_tail": {
+        "id": "fish_left_tail",
+        "name": "fish_left_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.094, 0, 0],
+          "rotation": [0, 0, -90],
+          "scale": [1, 1, 0.4]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m11",
+        "params": {
+          "height": 0.06,
+          "radiusBottom": 0.047,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "fish_back": {
+        "id": "fish_back",
+        "name": "fish_back",
+        "kind": "group",
+        "transform": {
+          "position": [0.0867, 0.27, -0.3236],
+          "rotation": [0, 165, 0]
+        },
+        "children": [
+          "fish_back_body",
+          "fish_back_tail"
+        ],
+        "gameCollision": true
+      },
+      "fish_back_body": {
+        "id": "fish_back_body",
+        "name": "fish_back_body",
+        "kind": "ellipsoid",
+        "material": "m12",
+        "params": {
+          "radii": [0.072, 0.044, 0.026]
+        },
+        "gameCollision": false
+      },
+      "fish_back_tail": {
+        "id": "fish_back_tail",
+        "name": "fish_back_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.094, 0, 0],
+          "rotation": [0, 0, -90],
+          "scale": [1, 1, 0.4]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m12",
+        "params": {
+          "height": 0.06,
+          "radiusBottom": 0.047,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m8": {
+        "name": "costume-fish-scarf-aqua",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#cff3ee",
+                "in.roughness": 0.95
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m9": {
+        "name": "costume-fish-scarf-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.9
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m10": {
+        "name": "costume-fish-scarf-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.8
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m11": {
+        "name": "costume-fish-scarf-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.8
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m12": {
+        "name": "costume-fish-scarf-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.8
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "neck": {
+      "t": [0, 0.3, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.368008, -0.243124, -0.367349],
+    "max": [0.383109, 0.383, 0.451495]
+  },
+  "hash": "08e4b8f703093958a655af2e394b1743e01964201a2f8a6a8d1b95121954f6db"
+}

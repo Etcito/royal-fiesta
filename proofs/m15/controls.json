@@ -1,0 +1,194 @@
+{
+  "renderer": "raa",
+  "adapter": " |  | ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce RTX 3090), OpenGL ES 3.1 Mesa 26.0.3-1ubuntu1)",
+  "software": false,
+  "pageRef": "exec-6285-fe4a4a06d207493bf36dece08dadf154046e073524aed8065f9dd9b69ecef048",
+  "content": "v0",
+  "course": "race-sprint",
+  "cases": [
+    {
+      "name": "key-d",
+      "input": "KeyD",
+      "subject": "character",
+      "device": "keyboard",
+      "beforeX": 640,
+      "afterX": 725.910898281653,
+      "centreX": 640,
+      "captures": [
+        {
+          "name": "key-d-before",
+          "sha256": "f2ea64ffb37299663bbe59d339b3cf4bc3938cbb2a92a5adcdc013f766c02720",
+          "bytes": 56125,
+          "nonEmpty": true
+        },
+        {
+          "name": "key-d-after",
+          "sha256": "d8bf3249e799f035caa2ca28338d08aa3bb443224ab182dcd6bf89561fae1dcf",
+          "bytes": 54758,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "arrow-right",
+      "input": "ArrowRight",
+      "subject": "character",
+      "device": "keyboard",
+      "beforeX": 640,
+      "afterX": 725.910898281653,
+      "centreX": 640,
+      "captures": [
+        {
+          "name": "arrow-right-before",
+          "sha256": "f2ea64ffb37299663bbe59d339b3cf4bc3938cbb2a92a5adcdc013f766c02720",
+          "bytes": 56125,
+          "nonEmpty": true
+        },
+        {
+          "name": "arrow-right-after",
+          "sha256": "d8bf3249e799f035caa2ca28338d08aa3bb443224ab182dcd6bf89561fae1dcf",
+          "bytes": 54758,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "stick-right",
+      "input": "stickRight",
+      "subject": "character",
+      "device": "synthetic-pad",
+      "beforeX": 640,
+      "afterX": 725.910898281653,
+      "centreX": 640,
+      "captures": [
+        {
+          "name": "stick-right-before",
+          "sha256": "f2ea64ffb37299663bbe59d339b3cf4bc3938cbb2a92a5adcdc013f766c02720",
+          "bytes": 56125,
+          "nonEmpty": true
+        },
+        {
+          "name": "stick-right-after",
+          "sha256": "d8bf3249e799f035caa2ca28338d08aa3bb443224ab182dcd6bf89561fae1dcf",
+          "bytes": 54758,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "key-a",
+      "input": "KeyA",
+      "subject": "character",
+      "device": "keyboard",
+      "beforeX": 640,
+      "afterX": 364.080079346847,
+      "centreX": 640,
+      "captures": [
+        {
+          "name": "key-a-before",
+          "sha256": "f2ea64ffb37299663bbe59d339b3cf4bc3938cbb2a92a5adcdc013f766c02720",
+          "bytes": 56125,
+          "nonEmpty": true
+        },
+        {
+          "name": "key-a-after",
+          "sha256": "608cddb8927e1a10c61349f2a45efe746f797489246222211d362076b420f85d",
+          "bytes": 54618,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "arrow-left",
+      "input": "ArrowLeft",
+      "subject": "character",
+      "device": "keyboard",
+      "beforeX": 640,
+      "afterX": 364.080079346847,
+      "centreX": 640,
+      "captures": [
+        {
+          "name": "arrow-left-before",
+          "sha256": "f2ea64ffb37299663bbe59d339b3cf4bc3938cbb2a92a5adcdc013f766c02720",
+          "bytes": 56125,
+          "nonEmpty": true
+        },
+        {
+          "name": "arrow-left-after",
+          "sha256": "608cddb8927e1a10c61349f2a45efe746f797489246222211d362076b420f85d",
+          "bytes": 54618,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "stick-left",
+      "input": "stickLeft",
+      "subject": "character",
+      "device": "synthetic-pad",
+      "beforeX": 640,
+      "afterX": 364.080079346847,
+      "centreX": 640,
+      "captures": [
+        {
+          "name": "stick-left-before",
+          "sha256": "f2ea64ffb37299663bbe59d339b3cf4bc3938cbb2a92a5adcdc013f766c02720",
+          "bytes": 56125,
+          "nonEmpty": true
+        },
+        {
+          "name": "stick-left-after",
+          "sha256": "608cddb8927e1a10c61349f2a45efe746f797489246222211d362076b420f85d",
+          "bytes": 54618,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "mouse-right",
+      "input": "mouseRight",
+      "subject": "view",
+      "device": "pointer-lock-events",
+      "beforeX": 640,
+      "afterX": 520.4448553133097,
+      "centreX": 640,
+      "captures": [
+        {
+          "name": "mouse-right-before",
+          "sha256": "c796004b4c74a5680ea6271bb7b64340f2a3a107c8d1158664dd3a791e2e63ec",
+          "bytes": 57853,
+          "nonEmpty": true
+        },
+        {
+          "name": "mouse-right-after",
+          "sha256": "3583d4bd870df286475d02b1c933d92d212456bb5b07230c5b778c712e686bc3",
+          "bytes": 70166,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "right-stick-right",
+      "input": "rightStickRight",
+      "subject": "view",
+      "device": "synthetic-pad",
+      "beforeX": 640,
+      "afterX": 491.28156197517194,
+      "centreX": 640,
+      "captures": [
+        {
+          "name": "right-stick-right-before",
+          "sha256": "c796004b4c74a5680ea6271bb7b64340f2a3a107c8d1158664dd3a791e2e63ec",
+          "bytes": 57853,
+          "nonEmpty": true
+        },
+        {
+          "name": "right-stick-right-after",
+          "sha256": "ad318e4ab177b8f38c623ef8d6509533b810e988a8ec821d7d756c19fa5ac4ed",
+          "bytes": 69235,
+          "nonEmpty": true
+        }
+      ]
+    }
+  ]
+}

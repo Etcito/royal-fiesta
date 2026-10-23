@@ -1,0 +1,72 @@
+{
+  "commit": "c8072eb539e07782df423f8a0a02a962c54946e0",
+  "steps": [
+    {
+      "cmd": "git clone --no-local <repo> <clone>",
+      "exit": 0,
+      "tail": [
+        "Cloning into '<clone>'..."
+      ]
+    },
+    {
+      "cmd": "npm ci",
+      "exit": 0,
+      "tail": [
+        "",
+        "> prepare",
+        "> git config core.hooksPath .githooks || true",
+        "",
+        "",
+        "added 32 packages in 1s"
+      ]
+    },
+    {
+      "cmd": "npm run play -- --check",
+      "exit": 0,
+      "tail": [
+        "fiesta.jump 8 variants 3.43 s 55296 B",
+        "fiesta.squash 8 variants 2.81 s 45696 B",
+        "fiesta.wobble 8 variants 5.39 s 86784 B",
+        "total 9 families 72 variants 79.58 s 1277952 B",
+        "baked 9 families into <clone>/apps/web/public/audio in 6.7 s",
+        "",
+        "> @royal-fiesta/web@0.0.0 build",
+        "> vite build",
+        "",
+        "vite v8.3.4 building client environment for production...",
+        "transforming...",
+        "✓ 199 modules transformed.",
+        "rendering chunks...",
+        "computing gzip size...",
+        "dist/index.html                            0.54 kB │ gzip:     0.32 kB",
+        "dist/client.html                           0.84 kB │ gzip:     0.46 kB",
+        "dist/game.html                             0.88 kB │ gzip:     0.46 kB",
+        "dist/play.html                             0.92 kB │ gzip:     0.47 kB",
+        "dist/assets/fiestaWorklet-CvwXm_CH.js     75.34 kB",
+        "dist/assets/raa_js_bg-BLYIA8Ov.wasm      476.46 kB │ gzip:   191.27 kB",
+        "dist/assets/index-Cl_27hHx.js              1.90 kB │ gzip:     1.07 kB",
+        "dist/assets/nullPort-CnMoFrQA.js           2.66 kB │ gzip:     1.14 kB",
+        "dist/assets/play-DbsPUR8O.js              11.49 kB │ gzip:     5.06 kB",
+        "dist/assets/client-D_ErGrIM.js            21.40 kB │ gzip:     8.30 kB",
+        "dist/assets/sound-BXCpqQdi.js             33.05 kB │ gzip:    12.14 kB",
+        "dist/assets/game-DZyJ3Bfe.js              62.00 kB │ gzip:    21.35 kB",
+        "dist/assets/fiestaWorklet-WOuE9WbU.js    464.84 kB │ gzip:   121.99 kB",
+        "dist/assets/world-ZPTWtBGO.js          4,372.56 kB │ gzip: 1,679.73 kB",
+        "",
+        "✓ built in 379ms",
+        "[plugin builtin:vite-reporter] ",
+        "(!) Some chunks are larger than 500 kB after minification. Consider:",
+        "- Using dynamic import() to code-split the application",
+        "- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting",
+        "- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.",
+        "play: http://localhost:5173/game.html",
+        "play: GET /game.html 200",
+        "play: GET /play.html 200",
+        "play: GET /assets/client-D_ErGrIM.js 200",
+        "play: check PASS"
+      ]
+    }
+  ],
+  "playUrl": "http://localhost:5173/game.html",
+  "httpStatus": 200
+}

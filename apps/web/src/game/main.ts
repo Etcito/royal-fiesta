@@ -43,6 +43,7 @@ import type { UiEvent } from '../input/input.ts'
 import { HubView } from '../play/hubView.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
 import { SoundDriver } from '../play/sound.ts'
+import { installGameOps } from './ops.ts'
 
 interface Query {
   course: string | null
@@ -994,8 +995,11 @@ function start(): void {
   app.start()
 }
 
+// ?mode=ops only installs the GPU client ops (controlsProbe, gameCapture); the ops build their own views.
+const opsMode = new URLSearchParams(window.location.search).get('mode') === 'ops'
 try {
-  start()
+  if (opsMode) installGameOps()
+  else start()
 } catch (e) {
   // Nothing mounted: write the message into the page rather than only the console.
   document.body.textContent = `Royal Fiesta could not start: ${messageOf(e)}`

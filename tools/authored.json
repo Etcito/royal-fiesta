@@ -1,5 +1,7 @@
 {
   "format": "royal-fiesta.authored",
   "version": 1,
-  "files": []
+  "files": [
+    "assets/common/penguin.body.asset.json"
+  ]
 }

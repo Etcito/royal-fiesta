@@ -139,6 +139,27 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 
 function utf8(s: string): Uint8Array { return new TextEncoder().encode(s) }
 
+// SDF Modeler's serializeDocument text (its asset_save_game hash form): 2-space JSON in
+// insertion key order, number-only arrays on one line as `[a, b, c]`, one trailing newline.
+function sdfmText(value: unknown): string {
+  const write = (v: unknown, pad: string): string => {
+    if (Array.isArray(v)) {
+      if (v.length === 0) return '[]'
+      if (v.every((x) => typeof x === 'number')) return `[${v.map((x) => JSON.stringify(x)).join(', ')}]`
+      const inner = pad + '  '
+      return `[\n${v.map((x) => inner + write(x, inner)).join(',\n')}\n${pad}]`
+    }
+    if (v !== null && typeof v === 'object') {
+      const ks = Object.keys(v).filter((k) => (v as Record<string, unknown>)[k] !== undefined)
+      if (ks.length === 0) return '{}'
+      const inner = pad + '  '
+      return `{\n${ks.map((k) => `${inner}${JSON.stringify(k)}: ${write((v as Record<string, unknown>)[k], inner)}`).join(',\n')}\n${pad}}`
+    }
+    return JSON.stringify(v)
+  }
+  return write(value, '') + '\n'
+}
+
 export async function parseGameAsset(json: unknown, path: string): Promise<GameAsset> {
   const o = obj(json, path, '')
   keys(o, TOP_KEYS, [], path, '')
@@ -195,7 +216,12 @@ export async function parseGameAsset(json: unknown, path: string): Promise<GameA
   // Hash last: everything else is cheap and names a more precise pointer.
   const hash = str(o.hash, path, '/hash')
   const actual = await sha256Hex(utf8(canonical))
-  if (hash !== actual) fail(path, '/hash', `hash ${hash} does not match sha256 of canonicalJson(document) ${actual}; set "hash": "${actual}"`)
+  if (hash !== actual) {
+    const text = await sha256Hex(utf8(sdfmText(document)))
+    if (hash !== text) {
+      fail(path, '/hash', `hash ${hash} does not match sha256 of canonicalJson(document) ${actual} nor of the SDF Modeler document text ${text}; re-save the asset with SDF Modeler or set "hash": "${actual}"`)
+    }
+  }
 
   return {
     format: 'sdfm.game-asset', version: 1, game: 'royal-fiesta',

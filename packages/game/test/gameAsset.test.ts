@@ -85,6 +85,42 @@ test('bad hash names both values', async () => {
   await refused(a, '/hash', [wrong, right])
 })
 
+test('a hash of the SDF Modeler document text is accepted', async () => {
+  const a = valid()
+  a.document = { format: 'sdfm', version: 2, nodes: [{ kind: 'box', t: [0, 1.5, -2], tags: [] }], meta: { tags: ['a', 1] } }
+  // Written by hand in SDF Modeler's serializeDocument layout.
+  const text = [
+    '{',
+    '  "format": "sdfm",',
+    '  "version": 2,',
+    '  "nodes": [',
+    '    {',
+    '      "kind": "box",',
+    '      "t": [0, 1.5, -2],',
+    '      "tags": []',
+    '    }',
+    '  ],',
+    '  "meta": {',
+    '    "tags": [',
+    '      "a",',
+    '      1',
+    '    ]',
+    '  }',
+    '}',
+    '',
+  ].join('\n')
+  a.hash = createHash('sha256').update(text, 'utf8').digest('hex')
+  const parsed = await parseGameAsset(a, FILE)
+  assert.equal(parsed.hash, a.hash)
+})
+
+test('a hash matching neither form is refused with both digests', async () => {
+  const a = valid()
+  const right = a.hash
+  a.hash = 'f'.repeat(64)
+  await refused(a, '/hash', ['f'.repeat(64), right, 'SDF Modeler document text'])
+})
+
 test('unknown collider shape keeps the pointer suffix under area asset', async () => {
   await refused(patched(a => { a.collision = [{ shape: 'trimesh', vertices: [] }] }), '/collision/0/shape')
 })

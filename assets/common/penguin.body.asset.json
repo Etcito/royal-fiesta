@@ -3,447 +3,800 @@
   "version": 1,
   "game": "royal-fiesta",
   "id": "penguin.body",
-  "name": "bean",
+  "name": "penguin",
   "category": "character",
   "world": "common",
   "mesher": {
-    "output": "lowpoly"
+    "output": "quad"
   },
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "bean",
+    "name": "penguin",
     "root": [
-      "penguin_body"
+      "penguin"
     ],
     "nodes": {
-      "penguin_body": {
-        "id": "penguin_body",
-        "name": "bean",
+      "penguin": {
+        "id": "penguin",
+        "name": "penguin",
         "kind": "group",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#b0b0b0",
-        "material": null,
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
         "children": [
+          "collider",
           "body",
-          "eye_l",
-          "eye_r",
-          "pupil_l",
-          "pupil_r",
-          "mouth"
+          "head",
+          "flipper_r",
+          "flipper_l",
+          "foot_r",
+          "foot_l",
+          "anchor_body",
+          "anchor_neck",
+          "anchor_head"
         ],
-        "modifiers": [],
-        "asset": "penguin.body",
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "penguin.body",
+          "category": "character",
+          "world": "common"
+        },
         "mesher": {
-          "output": "lowpoly"
-        }
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "collider": {
+        "id": "collider",
+        "name": "collider",
+        "kind": "capsule",
+        "visible": false,
+        "params": {
+          "height": 1.7,
+          "radius": 0.4
+        },
+        "gameCollision": true
       },
       "body": {
         "id": "body",
         "name": "body",
-        "kind": "capsule",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "torso",
+          "hips",
+          "belly",
+          "belly_low",
+          "tail"
         ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
+        "mesher": {
+          "output": "quad"
         },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#f2f2f2",
-        "material": "body",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
-        "params": {
-          "height": 0.9,
-          "radius": 0.4
-        }
+        "gameCollision": true
       },
-      "eye_l": {
-        "id": "eye_l",
-        "name": "eye_l",
-        "kind": "sphere",
-        "visible": true,
-        "locked": false,
+      "torso": {
+        "id": "torso",
+        "name": "torso",
+        "kind": "ellipsoid",
         "transform": {
-          "position": [
-            -0.15,
-            0.25,
-            0.3
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0, -0.2, 0]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#ffffff",
-        "material": "eye",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "material": "m1",
         "params": {
-          "radius": 0.11
-        }
+          "radii": [0.43, 0.48, 0.4]
+        },
+        "gameCollision": false
       },
-      "eye_r": {
-        "id": "eye_r",
-        "name": "eye_r",
-        "kind": "sphere",
-        "visible": true,
-        "locked": false,
+      "hips": {
+        "id": "hips",
+        "name": "hips",
+        "kind": "ellipsoid",
         "transform": {
-          "position": [
-            0.15,
-            0.25,
-            0.3
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0, -0.42, -0.02]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#ffffff",
-        "material": "eye",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "smooth": 0.12,
+        "material": "m1",
         "params": {
-          "radius": 0.11
-        }
+          "radii": [0.4, 0.26, 0.37]
+        },
+        "gameCollision": false
       },
-      "pupil_l": {
-        "id": "pupil_l",
-        "name": "pupil_l",
-        "kind": "sphere",
-        "visible": true,
-        "locked": false,
+      "belly": {
+        "id": "belly",
+        "name": "belly",
+        "kind": "ellipsoid",
         "transform": {
-          "position": [
-            -0.15,
-            0.25,
-            0.4
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0, -0.26, 0.27]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#140f1a",
-        "material": "pupil",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "smooth": 0.08,
+        "colorBlend": "hard",
+        "material": "m2",
         "params": {
-          "radius": 0.055
-        }
+          "radii": [0.31, 0.38, 0.14]
+        },
+        "gameCollision": false
+      },
+      "belly_low": {
+        "id": "belly_low",
+        "name": "belly_low",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, -0.52, 0.12]
+        },
+        "smooth": 0.08,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radii": [0.3, 0.16, 0.26]
+        },
+        "gameCollision": false
+      },
+      "tail": {
+        "id": "tail",
+        "name": "tail",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, -0.56, -0.37],
+          "rotation": [-30, 0, 0]
+        },
+        "smooth": 0.06,
+        "material": "m1",
+        "params": {
+          "radii": [0.13, 0.05, 0.12]
+        },
+        "gameCollision": false
+      },
+      "head": {
+        "id": "head",
+        "name": "head",
+        "kind": "group",
+        "pivot": [0, 0.38, 0],
+        "rigid": true,
+        "children": [
+          "skull",
+          "cheek_mass",
+          "eye_white_r",
+          "pupil_r",
+          "glint_r",
+          "eye_white_l",
+          "pupil_l",
+          "glint_l",
+          "beak",
+          "beak_low"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "skull": {
+        "id": "skull",
+        "name": "skull",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 0.51, 0]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.34
+        },
+        "gameCollision": false
+      },
+      "cheek_mass": {
+        "id": "cheek_mass",
+        "name": "cheek_mass",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.43, 0.03]
+        },
+        "smooth": 0.1,
+        "material": "m1",
+        "params": {
+          "radii": [0.36, 0.22, 0.32]
+        },
+        "gameCollision": false
+      },
+      "eye_white_r": {
+        "id": "eye_white_r",
+        "name": "eye_white_r",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.115, 0.56, 0.3]
+        },
+        "smooth": 0.01,
+        "material": "m2",
+        "params": {
+          "radii": [0.075, 0.09, 0.05]
+        },
+        "gameCollision": false
       },
       "pupil_r": {
         "id": "pupil_r",
         "name": "pupil_r",
         "kind": "sphere",
-        "visible": true,
-        "locked": false,
         "transform": {
-          "position": [
-            0.15,
-            0.25,
-            0.4
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0.1173, 0.555, 0.335]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#140f1a",
-        "material": "pupil",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "material": "m7",
         "params": {
-          "radius": 0.055
-        }
+          "radius": 0.05
+        },
+        "gameCollision": false
       },
-      "mouth": {
-        "id": "mouth",
-        "name": "mouth",
-        "kind": "ellipsoid",
-        "visible": true,
-        "locked": false,
+      "glint_r": {
+        "id": "glint_r",
+        "name": "glint_r",
+        "kind": "sphere",
         "transform": {
-          "position": [
-            0,
-            0,
-            0.385
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0.1023, 0.58, 0.378]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#140f1a",
-        "material": "pupil",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "material": "m5",
         "params": {
-          "radii": [
-            0.12,
-            0.035,
-            0.04
-          ]
-        }
+          "radius": 0.014
+        },
+        "gameCollision": false
+      },
+      "eye_white_l": {
+        "id": "eye_white_l",
+        "name": "eye_white_l",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.115, 0.56, 0.3]
+        },
+        "smooth": 0.01,
+        "material": "m2",
+        "params": {
+          "radii": [0.075, 0.09, 0.05]
+        },
+        "gameCollision": false
+      },
+      "pupil_l": {
+        "id": "pupil_l",
+        "name": "pupil_l",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.1173, 0.555, 0.335]
+        },
+        "material": "m7",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "glint_l": {
+        "id": "glint_l",
+        "name": "glint_l",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.1323, 0.58, 0.378]
+        },
+        "material": "m5",
+        "params": {
+          "radius": 0.014
+        },
+        "gameCollision": false
+      },
+      "beak": {
+        "id": "beak",
+        "name": "beak",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.455, 0.37],
+          "rotation": [-8, 0, 0]
+        },
+        "smooth": 0.015,
+        "material": "m3",
+        "params": {
+          "radii": [0.085, 0.045, 0.085]
+        },
+        "gameCollision": false
+      },
+      "beak_low": {
+        "id": "beak_low",
+        "name": "beak_low",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.425, 0.355]
+        },
+        "smooth": 0.015,
+        "material": "m3",
+        "params": {
+          "radii": [0.06, 0.03, 0.06]
+        },
+        "gameCollision": false
+      },
+      "flipper_r": {
+        "id": "flipper_r",
+        "name": "flipper-r",
+        "kind": "group",
+        "pivot": [0.4, 0.15, 0],
+        "rigid": true,
+        "children": [
+          "flipper_r_blade",
+          "flipper_r_root"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "flipper_r_blade": {
+        "id": "flipper_r_blade",
+        "name": "flipper_r_blade",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.5, -0.06, 0],
+          "rotation": [0, 0, 24]
+        },
+        "material": "m1",
+        "params": {
+          "radii": [0.07, 0.27, 0.15]
+        },
+        "gameCollision": false
+      },
+      "flipper_r_root": {
+        "id": "flipper_r_root",
+        "name": "flipper_r_root",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.41, 0.12, 0],
+          "rotation": [0, 0, 24]
+        },
+        "smooth": 0.06,
+        "material": "m1",
+        "params": {
+          "radii": [0.07, 0.1, 0.13]
+        },
+        "gameCollision": false
+      },
+      "flipper_l": {
+        "id": "flipper_l",
+        "name": "flipper-l",
+        "kind": "group",
+        "pivot": [-0.4, 0.15, 0],
+        "rigid": true,
+        "children": [
+          "flipper_l_blade",
+          "flipper_l_root"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "flipper_l_blade": {
+        "id": "flipper_l_blade",
+        "name": "flipper_l_blade",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.5, -0.06, 0],
+          "rotation": [0, 0, -24]
+        },
+        "material": "m1",
+        "params": {
+          "radii": [0.07, 0.27, 0.15]
+        },
+        "gameCollision": false
+      },
+      "flipper_l_root": {
+        "id": "flipper_l_root",
+        "name": "flipper_l_root",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.41, 0.12, 0],
+          "rotation": [0, 0, -24]
+        },
+        "smooth": 0.06,
+        "material": "m1",
+        "params": {
+          "radii": [0.07, 0.1, 0.13]
+        },
+        "gameCollision": false
+      },
+      "foot_r": {
+        "id": "foot_r",
+        "name": "foot-r",
+        "kind": "group",
+        "pivot": [0.18, -0.7, 0.05],
+        "rigid": true,
+        "children": [
+          "foot_r_ankle",
+          "shoe_r_upper",
+          "shoe_r_collar",
+          "shoe_r_sole",
+          "shoe_r_toe",
+          "shoe_r_stripe",
+          "shoe_r_lace_a",
+          "shoe_r_lace_b",
+          "shoe_r_heel"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "foot_r_ankle": {
+        "id": "foot_r_ankle",
+        "name": "foot_r_ankle",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.18, -0.64, 0.03]
+        },
+        "material": "m3",
+        "params": {
+          "radii": [0.09, 0.08, 0.1]
+        },
+        "gameCollision": false
+      },
+      "shoe_r_upper": {
+        "id": "shoe_r_upper",
+        "name": "shoe_r_upper",
+        "kind": "roundBox",
+        "transform": {
+          "position": [0.18, -0.75, 0.1]
+        },
+        "smooth": 0.03,
+        "material": "m4",
+        "params": {
+          "radius": 0.07,
+          "size": [0.22, 0.16, 0.36]
+        },
+        "gameCollision": false
+      },
+      "shoe_r_collar": {
+        "id": "shoe_r_collar",
+        "name": "shoe_r_collar",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.18, -0.68, 0.02]
+        },
+        "smooth": 0.02,
+        "material": "m4",
+        "params": {
+          "radii": [0.1, 0.04, 0.1]
+        },
+        "gameCollision": false
+      },
+      "shoe_r_sole": {
+        "id": "shoe_r_sole",
+        "name": "shoe_r_sole",
+        "kind": "roundBox",
+        "transform": {
+          "position": [0.18, -0.825, 0.1]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m5",
+        "params": {
+          "radius": 0.022,
+          "size": [0.24, 0.05, 0.38]
+        },
+        "gameCollision": false
+      },
+      "shoe_r_toe": {
+        "id": "shoe_r_toe",
+        "name": "shoe_r_toe",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.18, -0.785, 0.24]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m5",
+        "params": {
+          "radii": [0.105, 0.065, 0.07]
+        },
+        "gameCollision": false
+      },
+      "shoe_r_stripe": {
+        "id": "shoe_r_stripe",
+        "name": "shoe_r_stripe",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.18, -0.76, 0.07]
+        },
+        "smooth": 0.005,
+        "colorBlend": "hard",
+        "material": "m6",
+        "params": {
+          "radii": [0.116, 0.024, 0.13]
+        },
+        "gameCollision": false
+      },
+      "shoe_r_lace_a": {
+        "id": "shoe_r_lace_a",
+        "name": "shoe_r_lace_a",
+        "kind": "capsule",
+        "transform": {
+          "position": [0.18, -0.675, 0.13],
+          "rotation": [0, 0, 90]
+        },
+        "material": "m6",
+        "params": {
+          "height": 0.13,
+          "radius": 0.014
+        },
+        "gameCollision": false
+      },
+      "shoe_r_lace_b": {
+        "id": "shoe_r_lace_b",
+        "name": "shoe_r_lace_b",
+        "kind": "capsule",
+        "transform": {
+          "position": [0.18, -0.69, 0.19],
+          "rotation": [0, 0, 90]
+        },
+        "material": "m6",
+        "params": {
+          "height": 0.12,
+          "radius": 0.014
+        },
+        "gameCollision": false
+      },
+      "shoe_r_heel": {
+        "id": "shoe_r_heel",
+        "name": "shoe_r_heel",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.18, -0.74, -0.075]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m5",
+        "params": {
+          "radii": [0.065, 0.055, 0.03]
+        },
+        "gameCollision": false
+      },
+      "foot_l": {
+        "id": "foot_l",
+        "name": "foot-l",
+        "kind": "group",
+        "pivot": [-0.18, -0.7, 0.05],
+        "rigid": true,
+        "children": [
+          "foot_l_ankle",
+          "shoe_l_upper",
+          "shoe_l_collar",
+          "shoe_l_sole",
+          "shoe_l_toe",
+          "shoe_l_stripe",
+          "shoe_l_lace_a",
+          "shoe_l_lace_b",
+          "shoe_l_heel"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": true
+      },
+      "foot_l_ankle": {
+        "id": "foot_l_ankle",
+        "name": "foot_l_ankle",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.18, -0.64, 0.03]
+        },
+        "material": "m3",
+        "params": {
+          "radii": [0.09, 0.08, 0.1]
+        },
+        "gameCollision": false
+      },
+      "shoe_l_upper": {
+        "id": "shoe_l_upper",
+        "name": "shoe_l_upper",
+        "kind": "roundBox",
+        "transform": {
+          "position": [-0.18, -0.75, 0.1]
+        },
+        "smooth": 0.03,
+        "material": "m4",
+        "params": {
+          "radius": 0.07,
+          "size": [0.22, 0.16, 0.36]
+        },
+        "gameCollision": false
+      },
+      "shoe_l_collar": {
+        "id": "shoe_l_collar",
+        "name": "shoe_l_collar",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.18, -0.68, 0.02]
+        },
+        "smooth": 0.02,
+        "material": "m4",
+        "params": {
+          "radii": [0.1, 0.04, 0.1]
+        },
+        "gameCollision": false
+      },
+      "shoe_l_sole": {
+        "id": "shoe_l_sole",
+        "name": "shoe_l_sole",
+        "kind": "roundBox",
+        "transform": {
+          "position": [-0.18, -0.825, 0.1]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m5",
+        "params": {
+          "radius": 0.022,
+          "size": [0.24, 0.05, 0.38]
+        },
+        "gameCollision": false
+      },
+      "shoe_l_toe": {
+        "id": "shoe_l_toe",
+        "name": "shoe_l_toe",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.18, -0.785, 0.24]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m5",
+        "params": {
+          "radii": [0.105, 0.065, 0.07]
+        },
+        "gameCollision": false
+      },
+      "shoe_l_stripe": {
+        "id": "shoe_l_stripe",
+        "name": "shoe_l_stripe",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.18, -0.76, 0.07]
+        },
+        "smooth": 0.005,
+        "colorBlend": "hard",
+        "material": "m6",
+        "params": {
+          "radii": [0.116, 0.024, 0.13]
+        },
+        "gameCollision": false
+      },
+      "shoe_l_lace_a": {
+        "id": "shoe_l_lace_a",
+        "name": "shoe_l_lace_a",
+        "kind": "capsule",
+        "transform": {
+          "position": [-0.18, -0.675, 0.13],
+          "rotation": [0, 0, 90]
+        },
+        "material": "m6",
+        "params": {
+          "height": 0.13,
+          "radius": 0.014
+        },
+        "gameCollision": false
+      },
+      "shoe_l_lace_b": {
+        "id": "shoe_l_lace_b",
+        "name": "shoe_l_lace_b",
+        "kind": "capsule",
+        "transform": {
+          "position": [-0.18, -0.69, 0.19],
+          "rotation": [0, 0, 90]
+        },
+        "material": "m6",
+        "params": {
+          "height": 0.12,
+          "radius": 0.014
+        },
+        "gameCollision": false
+      },
+      "shoe_l_heel": {
+        "id": "shoe_l_heel",
+        "name": "shoe_l_heel",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.18, -0.74, -0.075]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m5",
+        "params": {
+          "radii": [0.065, 0.055, 0.03]
+        },
+        "gameCollision": false
+      },
+      "anchor_body": {
+        "id": "anchor_body",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": true
+      },
+      "anchor_neck": {
+        "id": "anchor_neck",
+        "name": "neck",
+        "kind": "anchor",
+        "transform": {
+          "position": [0, 0.3, 0]
+        },
+        "gameCollision": true
+      },
+      "anchor_head": {
+        "id": "anchor_head",
+        "name": "head",
+        "kind": "anchor",
+        "transform": {
+          "position": [0, 0.8, 0]
+        },
+        "gameCollision": true
       }
     },
     "materials": {
-      "body": {
-        "name": "body",
+      "m1": {
+        "name": "penguin-plush",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#f2f2f2",
-                "in.roughness": 0.35
-              }
+                "in.base_color": "#2f4fd0",
+                "in.roughness": 0.9
+              },
+              "position": [0, 0]
             }
           ],
           "links": []
         }
       },
-      "eye": {
-        "name": "eye",
+      "m2": {
+        "name": "penguin-belly",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f7f7f2",
+                "in.roughness": 0.85
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m3": {
+        "name": "penguin-orange",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f5a623",
+                "in.roughness": 0.7
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m4": {
+        "name": "penguin-sneaker-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.55
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m5": {
+        "name": "penguin-sneaker-white",
         "graph": {
           "nodes": [
             {
@@ -451,119 +804,76 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffffff",
-                "in.roughness": 0.3
-              }
+                "in.roughness": 0.6
+              },
+              "position": [0, 0]
             }
           ],
           "links": []
         }
       },
-      "pupil": {
-        "name": "pupil",
+      "m6": {
+        "name": "penguin-sneaker-blue",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#140f1a",
-                "in.roughness": 0.4
-              }
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.55
+              },
+              "position": [0, 0]
             }
           ],
           "links": []
         }
-      }
-    },
-    "shapes": {},
-    "views": {},
-    "settings": {
-      "mesh": {
-        "detail": null,
-        "maxDepth": 9,
-        "adaptivity": 0.02,
-        "sharpAngleDeg": 30
       },
-      "lowpoly": {
-        "targetTriangles": 2000,
-        "keepWeight": 10,
-        "featureAngleDeg": 35
-      },
-      "uv": {
-        "texelsPerMeter": null,
-        "padding": 8
-      },
-      "bake": {
-        "resolution": 1024,
-        "maps": [
-          "normal",
-          "baseColor",
-          "orm"
-        ],
-        "cageDistance": null,
-        "samples": 1
-      },
-      "export": {
-        "geometry": "lowpoly",
-        "skin": false,
-        "lods": [
-          1
-        ],
-        "quad": {
-          "targetFaces": 1000,
-          "subdivide": 0,
-          "method": "auto",
-          "features": "auto",
-          "featureAngleDeg": 35,
-          "adaptive": true,
-          "alignCurvature": true,
-          "seed": 1,
-          "detail": true,
-          "maxFacesRatio": 3
-        },
-        "poly": {
-          "segments": 16,
-          "additive": "keep"
+      "m7": {
+        "name": "penguin-eye",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#101018",
+                "in.roughness": 0.25
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
         }
-      },
-      "paramesh": {
-        "fieldResolution": 96,
-        "precision": "f16",
-        "subdivisions": 16,
-        "transitionLoops": 2
       }
     }
   },
   "collision": [
     {
       "shape": "capsule",
-      "halfHeight": 0.45,
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
       "radius": 0.4,
-      "t": [
-        0,
-        0,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "halfHeight": 0.45
     }
   ],
-  "anchors": {},
-  "bounds": {
-    "min": [
-      -0.4,
-      -0.45,
-      -0.4
-    ],
-    "max": [
-      0.4,
-      0.45,
-      0.455
-    ]
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    },
+    "neck": {
+      "t": [0, 0.3, 0],
+      "r": [0, 0, 0, 1]
+    },
+    "head": {
+      "t": [0, 0.8, 0],
+      "r": [0, 0, 0, 1]
+    }
   },
-  "hash": "7fc98d4f0979888992ad837502df7843bfe813a45e1de50a31508d1c9669e17f"
+  "bounds": {
+    "min": [-0.673767, -0.865, -0.558923],
+    "max": [0.673767, 0.85, 0.49]
+  },
+  "hash": "e0418751b822d44daed250ea30e7613f12ff3ee6367819b58d458adacd9338a5"
 }

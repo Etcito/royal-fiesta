@@ -23,7 +23,7 @@
       "views": [
         {
           "png": "out/c3/candy-floor-tile-three-quarter.png",
-          "description": "candy.floor-tile, a square floor tile of ref-1's floating platforms: a thick glossy candy slab with a light-blue walkable top cushion, a chunky rounded yellow inflatable rim around the top edge, a pink side band printed with a bold white zigzag all around, and a rounded yellow bottom rim, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). The walkable top is a gently domed cushion set inside the fat rounded inflatable bolster rim, like an inflatable mat, and under that rim the side band shows its bold white zigzag between the top and bottom rims"
+          "description": "candy.floor-tile, a square floor tile of ref-1's floating platforms: a thick glossy candy slab with a light-blue walkable top quilted into four puffy domed cushions (2 x 2, with soft creased seams between them), a chunky rounded yellow inflatable bolster rim around the top edge, a pink side band printed with a bold white zigzag all around, and a rounded yellow bottom rim, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). The quilted cushions sit inside the fat rounded inflatable bolster rim, like ref-1's padded inflatable floor mats, and under that rim the side band shows its bold white zigzag between the top and bottom rims"
         },
         {
           "png": "out/c3/candy-floor-disc-three-quarter.png",

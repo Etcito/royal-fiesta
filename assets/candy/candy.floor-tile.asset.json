@@ -55,12 +55,12 @@
         "name": "rim-low",
         "kind": "box",
         "transform": {
-          "position": [0, -0.82, 0]
+          "position": [0, -0.8, 0]
         },
-        "round": 0.18,
+        "round": 0.2,
         "material": "candy-yellow",
         "params": {
-          "size": [10.1, 0.36, 10.1]
+          "size": [10.4, 0.4, 10.4]
         },
         "gameCollision": false
       },
@@ -74,7 +74,7 @@
         "round": 0.2,
         "material": "candy-pink",
         "params": {
-          "size": [9.9, 1.1, 9.9]
+          "size": [10.2, 1.1, 10.2]
         },
         "gameCollision": false
       },
@@ -96,12 +96,12 @@
         "name": "rim-ring",
         "kind": "box",
         "transform": {
-          "position": [0, 0.42, 0]
+          "position": [0, 0.45, 0]
         },
-        "round": 0.35,
+        "round": 0.4,
         "material": "candy-yellow",
         "params": {
-          "size": [10.3, 0.7, 10.3]
+          "size": [10.4, 0.8, 10.4]
         },
         "gameCollision": false
       },
@@ -110,13 +110,13 @@
         "name": "rim-hole",
         "kind": "box",
         "transform": {
-          "position": [0, 0.5, 0]
+          "position": [0, 0.49, 0]
         },
         "op": "subtract",
         "smooth": 0.1,
         "material": "candy-yellow",
         "params": {
-          "size": [8.7, 0.76, 8.7]
+          "size": [8.4, 0.78, 8.4]
         },
         "gameCollision": false
       },
@@ -128,6 +128,24 @@
           "pad_body",
           "pad_dome"
         ],
+        "modifiers": [
+          {
+            "id": "mirror_1",
+            "kind": "mirror",
+            "params": {
+              "axis": "x",
+              "offset": 0
+            }
+          },
+          {
+            "id": "mirror_2",
+            "kind": "mirror",
+            "params": {
+              "axis": "z",
+              "offset": 0
+            }
+          }
+        ],
         "mesher": {
           "output": "quad"
         },
@@ -138,12 +156,12 @@
         "name": "pad-body",
         "kind": "box",
         "transform": {
-          "position": [0, 0.24, 0]
+          "position": [2.2, 0.18, 2.2]
         },
-        "round": 0.38,
+        "round": 0.32,
         "material": "candy-blue",
         "params": {
-          "size": [8.9, 0.76, 8.9]
+          "size": [4.4, 0.6, 4.4]
         },
         "gameCollision": false
       },
@@ -152,12 +170,12 @@
         "name": "pad-dome",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.46, 0]
+          "position": [2.2, 0.02, 2.2]
         },
-        "smooth": 0.12,
+        "smooth": 0.3,
         "material": "candy-blue",
         "params": {
-          "radii": [4.4, 0.4, 4.4]
+          "radii": [2.3, 0.62, 2.3]
         },
         "gameCollision": false
       },
@@ -202,7 +220,7 @@
         "name": "v-z",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, 4.95]
+          "position": [-4.2, 0, 5.1]
         },
         "children": [
           "s_z_up",
@@ -281,7 +299,7 @@
         "name": "v-x",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, 4.95]
+          "position": [-4.2, 0, 5.1]
         },
         "children": [
           "s_x_up",
@@ -341,7 +359,7 @@
         "round": 0.27,
         "material": "candy-white",
         "params": {
-          "size": [10.04, 1.4, 10.04]
+          "size": [10.34, 1.4, 10.34]
         },
         "gameCollision": false
       }
@@ -388,7 +406,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#3fa9f5",
-                "in.roughness": 0.12
+                "in.roughness": 0.22
               }
             }
           ],
@@ -423,8 +441,8 @@
   ],
   "anchors": {},
   "bounds": {
-    "min": [-5.15, -1, -5.15],
-    "max": [5.15, 0.98, 5.15]
+    "min": [-5.25, -1, -5.25],
+    "max": [5.25, 0.98, 5.25]
   },
-  "hash": "03f91a7815dd084c3b000aa37b07d5ef0f57c6c82d016e42f028771459965f46"
+  "hash": "7064c0f1cdefe8e5c930bd66018f586381ab5e384657dca932f8175c70f3f8ca"
 }

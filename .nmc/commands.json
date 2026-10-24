@@ -1,16 +1,8 @@
 [
   {
-    "name": "preview-logo-crown",
-    "command": "node --experimental-strip-types tools/uiPreview.ts logo.crown normal",
-    "timeout_s": 600
-  },
-  {
-    "name": "judge-logo-crown",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/logo.crown.normal.png --description \"Royal Fiesta game logo: glossy gold inflatable crown with gem balls above the words ROYAL FIESTA in chunky rounded letters on a pink inflatable band, SDF Modeler preview on a sky background\" --reference /refs/ref-1.png --min-score 6 --aspect design",
-    "timeout_s": 300,
-    "after": [
-      "preview-logo-crown"
-    ]
+    "name": "preview-judge-logo-crown",
+    "command": "node -e \"const {spawnSync:s}=require('node:child_process');for(const a of process.argv.slice(1)){const [b,...r]=JSON.parse(a);const p=s(b==='node'?process.execPath:b,r,{stdio:'inherit'});if(p.status!==0)process.exit(1)}\" \"[\\\"node\\\", \\\"--experimental-strip-types\\\", \\\"tools/uiPreview.ts\\\", \\\"logo.crown\\\", \\\"normal\\\"]\" \"[\\\"python3\\\", \\\"$NMC_JUDGE_CLIENT\\\", \\\"out/ui-preview/logo.crown.normal.png\\\", \\\"--description\\\", \\\"Royal Fiesta game logo: glossy gold inflatable crown with gem balls above the words ROYAL FIESTA in chunky rounded letters on a pink inflatable band, SDF Modeler preview on a sky background\\\", \\\"--reference\\\", \\\"/refs/ref-1.png\\\", \\\"--min-score\\\", \\\"6\\\", \\\"--aspect\\\", \\\"design\\\"]\"",
+    "timeout_s": 900
   },
   {
     "name": "preview-button-secondary",
@@ -69,5 +61,10 @@
     "after": [
       "preview-button-primary"
     ]
+  },
+  {
+    "name": "preview-judge-bars",
+    "command": "node -e \"const {spawnSync:s}=require('node:child_process');const j=process.argv[1];const d={'bar.track':process.argv[2],'bar.progress':process.argv[3]};let bad=0;for(const id in d){const p=s(process.execPath,['--experimental-strip-types','tools/uiPreview.ts',id,'normal'],{stdio:'inherit'});if(p.status!==0){bad=1;continue}const r=s('python3',[j,'out/ui-preview/'+id+'.normal.png','--description',d[id],'--min-score','6'],{stdio:'inherit'});console.log('[bars] '+id+' judge exit '+r.status);if(r.status!==0)bad=1}process.exit(bad)\" \"$NMC_JUDGE_CLIENT\" \"A game UI progress-bar track seen alone on a sky-blue background, in the glossy inflatable toy style of the reference (bright plastic, Fall Guys-like): a long horizontal pill-shaped inflatable tube in pale lilac with a puffy white-highlighted rim, rounded caps and a recessed groove inside it with a soft darker inner shadow along the top of the groove. It is empty: no fill and no text.\" \"A game UI progress-bar fill seen alone on a sky-blue background, in the glossy inflatable toy style of the reference (bright plastic, Fall Guys-like): a long horizontal pill-shaped glossy inflatable tube that blends from hot pink at the top to orange at the bottom, with a bright white highlight streak along the top, a darker magenta rim and rounded caps. No text.\"",
+    "timeout_s": 1200
   }
 ]

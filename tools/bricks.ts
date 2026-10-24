@@ -56,16 +56,23 @@ export interface BrickPin { repo: string; commit: string }
 const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/
 
-// The one pin table (S15). Only MAMA is pinned; everything else is a release dependency.
-export function readPins(file?: string): { MAMA: BrickPin } {
+const PIN_NAMES = ['MAMA', 'UAA'] as const
+type PinName = (typeof PIN_NAMES)[number]
+const PIN_EXAMPLES: Record<PinName, string> = {
+  MAMA: '{"repo":"Etcito/MAMA","commit":"<40 hex>"}',
+  UAA: '{"repo":"Etcito/uaa","commit":"<40 hex>"}',
+}
+
+// The one pin table (S15). MAMA and uaa are pinned; everything else is a release dependency.
+export function readPins(file?: string): { MAMA: BrickPin; UAA: BrickPin } {
   const path = file ?? join(repoRoot(), PIN_FILE)
   const label = basename(path)
-  const pointer = (field?: string): string => `${label}#/MAMA${field ? `/${field}` : ''}`
+  const pointer = (name: PinName, field?: string): string => `${label}#/${name}${field ? `/${field}` : ''}`
   let text: string
   try {
     text = readFileSync(path, 'utf8')
   } catch {
-    refuse('bricks', label, 'missing; add bricks.pins.json with {"MAMA":{"repo":"Etcito/MAMA","commit":"<40 hex>"}}')
+    refuse('bricks', label, `missing; add ${PIN_FILE} with ${PIN_NAMES.map((name) => `"${name}":${PIN_EXAMPLES[name]}`).join(',')}`)
   }
   let document: unknown
   try {
@@ -74,27 +81,33 @@ export function readPins(file?: string): { MAMA: BrickPin } {
     refuse('bricks', label, `not valid JSON (${error instanceof Error ? error.message : String(error)}); fix the pins file`)
   }
   if (!document || typeof document !== 'object' || Array.isArray(document)) {
-    refuse('bricks', label, 'must be an object with only the MAMA key; fix the pins file')
+    refuse('bricks', label, `must be an object with the ${PIN_NAMES.join(' and ')} keys; fix the pins file`)
   }
   const record = document as Record<string, unknown>
   for (const key of Object.keys(record)) {
-    if (key !== 'MAMA') refuse('bricks', `${label}#/${key}`, 'unknown brick; the only pin is MAMA; remove it')
+    if (!PIN_NAMES.includes(key as PinName)) {
+      refuse('bricks', `${label}#/${key}`, `unknown brick; the pins are ${PIN_NAMES.join(' and ')}; remove it`)
+    }
   }
-  const mama = record.MAMA
-  if (!mama || typeof mama !== 'object' || Array.isArray(mama)) {
-    refuse('bricks', pointer(), 'missing or not an object; add {"repo":"Etcito/MAMA","commit":"<40 hex>"}')
+  const pins = {} as Record<PinName, BrickPin>
+  for (const name of PIN_NAMES) {
+    const entry = record[name]
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      refuse('bricks', pointer(name), `missing or not an object; add ${PIN_EXAMPLES[name]}`)
+    }
+    const pin = entry as Record<string, unknown>
+    for (const key of Object.keys(pin)) {
+      if (key !== 'repo' && key !== 'commit') refuse('bricks', pointer(name, key), 'unknown field; keep only repo and commit')
+    }
+    if (typeof pin.repo !== 'string' || !REPO_PATTERN.test(pin.repo)) {
+      refuse('bricks', pointer(name, 'repo'), `expected owner/name, got ${JSON.stringify(pin.repo)}; fix the ${name} pin in ${label}`)
+    }
+    if (typeof pin.commit !== 'string' || !COMMIT_PATTERN.test(pin.commit)) {
+      refuse('bricks', pointer(name, 'commit'), `expected 40 lowercase hex, got ${JSON.stringify(pin.commit)}; fix the ${name} pin in ${label}`)
+    }
+    pins[name] = { repo: pin.repo, commit: pin.commit }
   }
-  const pin = mama as Record<string, unknown>
-  for (const key of Object.keys(pin)) {
-    if (key !== 'repo' && key !== 'commit') refuse('bricks', pointer(key), 'unknown field; keep only repo and commit')
-  }
-  if (typeof pin.repo !== 'string' || !REPO_PATTERN.test(pin.repo)) {
-    refuse('bricks', pointer('repo'), `expected owner/name, got ${JSON.stringify(pin.repo)}; fix the pin in ${label}`)
-  }
-  if (typeof pin.commit !== 'string' || !COMMIT_PATTERN.test(pin.commit)) {
-    refuse('bricks', pointer('commit'), `expected 40 lowercase hex, got ${JSON.stringify(pin.commit)}; fix the pin in ${label}`)
-  }
-  return { MAMA: { repo: pin.repo, commit: pin.commit } }
+  return { MAMA: pins.MAMA, UAA: pins.UAA }
 }
 
 // Reads HEAD from the git files (a checkout or a `gitdir:` worktree file) without spawning git.
@@ -190,6 +203,56 @@ export function mamaSource(root: string = repoRoot()): MamaSource {
   return { kind: 'absent', reason: `no .bricks/MAMA, no $RF_BRICKS_DIR/MAMA or ../MAMA; clone ${pins.repo} next to this repository or run npm run bricks -- fetch mama` }
 }
 
+export type UaaSource =
+  | { kind: 'sibling'; dir: string; commit: string | null; matchesPin: boolean }
+  | { kind: 'cloned'; dir: string; commit: string }
+  | { kind: 'absent'; reason: string }
+
+export const UAA_ABSENT_PREFIX = 'UAA not available: '
+
+// uaa is imported as file:../uaa, so its working directory is the sibling itself. A .bricks/UAA
+// clone would not resolve the package export.
+function uaaSibling(root: string): string | null {
+  const candidate = join(dirname(root), 'uaa')
+  try {
+    if (existsSync(candidate) && statSync(candidate).isDirectory()) return realpathSync(candidate)
+  } catch {}
+  return null
+}
+
+// Offline resolution of uaa: .bricks/UAA first, then the ../uaa sibling. Never clones.
+export function uaaSource(root: string = repoRoot()): UaaSource {
+  const pins = readPins().UAA
+  const link = join(root, '.bricks', 'UAA')
+  try {
+    const stats = lstatSync(link)
+    if (stats.isSymbolicLink()) {
+      let dir: string
+      try {
+        dir = realpathSync(link)
+      } catch {
+        return { kind: 'absent', reason: `${link} is a broken symlink; run npm run bricks -- fetch uaa` }
+      }
+      const commit = readGitHead(dir)
+      return { kind: 'sibling', dir, commit, matchesPin: commit !== null && commit === pins.commit }
+    }
+    if (stats.isDirectory()) {
+      const commit = readGitHead(link)
+      if (commit === null) return { kind: 'absent', reason: `${link} is a directory without a readable git HEAD; remove it and run npm run bricks -- fetch uaa` }
+      return { kind: 'cloned', dir: realpathSync(link), commit }
+    }
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code
+    if (code !== 'ENOENT') return { kind: 'absent', reason: `cannot inspect ${link} (${error instanceof Error ? error.message : String(error)})` }
+  }
+  const sibling = uaaSibling(root)
+  if (sibling) {
+    const commit = readGitHead(sibling)
+    return { kind: 'sibling', dir: sibling, commit, matchesPin: commit !== null && commit === pins.commit }
+  }
+  return { kind: 'absent', reason: `no .bricks/UAA or ../uaa; clone ${pins.repo} next to this repository or run npm run bricks -- fetch uaa` }
+}
+
 const TOKEN_KEYS = ['MAMA_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN'] as const
 
 // MAMA_TOKEN, else GH_TOKEN, else GITHUB_TOKEN. The value is never printed.
@@ -218,13 +281,16 @@ function printLine(line: string): void {
   process.stderr.write(`${line}\n`)
 }
 
+interface RunHints { brick?: string; exitHint?: string; spawnHint?: string }
+
 // Runs one child from an argv array. Its stdout and stderr are printed line by line, each line
 // redacted first, so a secret never reaches the terminal or a transcript.
 function run(
   command: string, args: readonly string[], cwd: string, env: NodeJS.ProcessEnv,
-  secrets: readonly string[], print: (line: string) => void,
+  secrets: readonly string[], print: (line: string) => void, hints: RunHints = {},
 ): Promise<void> {
-  const step = `${command} ${args[0] ?? ''}`.trim()
+  const label = `${command} ${args[0] ?? ''}`.trim()
+  const brick = hints.brick ?? 'MAMA'
   print(redact(`$ ${[command, ...args].join(' ')}`, secrets))
   return new Promise((done, fail) => {
     const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], timeout: 600000 })
@@ -245,11 +311,11 @@ function run(
     if (child.stdout) relay(child.stdout)
     if (child.stderr) relay(child.stderr)
     child.on('error', (error) => {
-      fail(new RefusalError('bricks', 'MAMA', `${step} failed (${redact(error.message, secrets)}); check that ${command} is installed`))
+      fail(new RefusalError('bricks', brick, `${label} failed (${redact(error.message, secrets)}); ${hints.spawnHint ?? `check that ${command} is installed`}`))
     })
     child.on('close', (code, signal) => {
       if (code === 0) done()
-      else fail(new RefusalError('bricks', 'MAMA', `${step} exited ${code ?? signal ?? 'abnormally'}; see its output above, then check the token and the pin in ${PIN_FILE}`))
+      else fail(new RefusalError('bricks', brick, `${label} exited ${code ?? signal ?? 'abnormally'}; ${hints.exitHint ?? `see its output above, then check the token and the pin in ${PIN_FILE}`}`))
     })
   })
 }
@@ -307,6 +373,97 @@ export async function fetchMama(root: string = repoRoot(), print: (line: string)
     return source
   } catch (error) {
     removeLink(link)
+    throw error
+  }
+}
+
+// The package exports of file:../uaa are dist/uaa.js and dist/webgpu.js, so a checkout without a
+// build cannot be imported. npm ci comes with the build because dist is built from a clean tree.
+async function ensureUaaBuilt(dir: string, print: (line: string) => void): Promise<void> {
+  const dist = join(dir, 'dist')
+  if (existsSync(dist)) return
+  await run('npm', ['ci', '--no-audit', '--no-fund'], dir, childEnv(), [], print, {
+    brick: 'UAA',
+    exitHint: `see its output above, then run npm ci in ${dir} by hand and fix the error`,
+  })
+  await run('npm', ['run', 'build'], dir, childEnv(), [], print, {
+    brick: 'UAA',
+    exitHint: `see its output above, then run npm run build in ${dir} by hand and fix the error`,
+  })
+  if (!existsSync(dist)) {
+    refuse('bricks', 'UAA', `npm run build left ${dist} missing; check the build in ${dir} and the exports of its package.json`)
+  }
+}
+
+// A uaa checkout at the pin is linked as .bricks/UAA. A missing checkout is cloned into ../uaa
+// itself, because the game imports it as file:../uaa. Either way a missing dist is built.
+export async function fetchUaa(root: string = repoRoot(), print: (line: string) => void = printLine): Promise<UaaSource> {
+  const pin = readPins().UAA
+  const link = join(root, '.bricks', 'UAA')
+  const target = join(dirname(root), 'uaa')
+  const sibling = uaaSibling(root)
+  if (sibling) {
+    const commit = readGitHead(sibling)
+    if (commit === null) {
+      refuse('bricks', 'UAA', `${sibling} has no readable git HEAD; check out ${pin.repo} at ${pin.commit} there or remove it and run npm run bricks -- fetch uaa`)
+    }
+    if (commit !== pin.commit) {
+      refuse('bricks', 'UAA', `the sibling ${sibling} is at ${commit}, expected the pin ${pin.commit}; check out the pinned commit or update ${PIN_FILE}`)
+    }
+    removeLink(link)
+    mkdirSync(dirname(link), { recursive: true })
+    symlinkSync(relative(dirname(link), sibling), link, 'dir')
+    try {
+      await ensureUaaBuilt(sibling, print)
+    } catch (error) {
+      removeLink(link)
+      throw error
+    }
+    const source = uaaSource(root)
+    if (source.kind === 'absent') refuse('bricks', 'UAA', `${source.reason}; the link to ${sibling} did not resolve`)
+    return source
+  }
+  try {
+    if (!lstatSync(target).isDirectory()) {
+      refuse('bricks', 'UAA', `${target} is not a directory; remove it or move it aside and run npm run bricks -- fetch uaa`)
+    }
+  } catch (error) {
+    if (isRefusal(error)) throw error
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      refuse('bricks', 'UAA', `cannot inspect ${target} (${error instanceof Error ? error.message : String(error)}); remove it or move it aside and run npm run bricks -- fetch uaa`)
+    }
+  }
+  const token = githubToken()
+  if (!token) {
+    refuse('bricks', 'UAA', `not found; clone ${pin.repo} next to this repository or set MAMA_TOKEN, GH_TOKEN or GITHUB_TOKEN on the build machine`)
+  }
+  const basic = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64')
+  const secrets = [token, basic]
+  const gitEnv = childEnv({ GIT_TERMINAL_PROMPT: '0' })
+  const fetchEnv = childEnv({
+    GIT_TERMINAL_PROMPT: '0',
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+    GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}`,
+  })
+  const url = `https://github.com/${pin.repo}.git`
+  removeLink(link)
+  mkdirSync(target, { recursive: true })
+  try {
+    await run('git', ['init', '--quiet'], target, gitEnv, secrets, print, { brick: 'UAA' })
+    await run('git', ['fetch', '--depth', '1', url, pin.commit], target, fetchEnv, secrets, print, {
+      brick: 'UAA',
+      exitHint: `see its output above, then check the token and the pin in ${PIN_FILE}`,
+    })
+    await run('git', ['checkout', '--quiet', '--detach', 'FETCH_HEAD'], target, gitEnv, secrets, print, { brick: 'UAA' })
+    await ensureUaaBuilt(target, print)
+    mkdirSync(dirname(link), { recursive: true })
+    removeLink(link)
+    symlinkSync(relative(dirname(link), target), link, 'dir')
+    return { kind: 'cloned', dir: realpathSync(target), commit: pin.commit }
+  } catch (error) {
+    removeLink(link)
+    rmSync(target, { recursive: true, force: true })
     throw error
   }
 }
@@ -394,6 +551,15 @@ export async function main(argv: string[]): Promise<number> {
       }
       return 0
     }
+    if (command === 'fetch' && name === 'uaa') {
+      const source = await fetchUaa()
+      if (source.kind === 'absent') {
+        console.log(`${UAA_ABSENT_PREFIX}${source.reason}`)
+        return 1
+      }
+      console.log(`UAA ${source.kind} ${source.commit ?? 'unknown'}`)
+      return 0
+    }
   } catch (error) {
     if (isRefusal(error)) {
       console.error(error.message)
@@ -401,7 +567,7 @@ export async function main(argv: string[]): Promise<number> {
     }
     throw error
   }
-  console.error(`usage: npm run bricks -- check | where <${names.join('|')}> | fetch mama | pins`)
+  console.error(`usage: npm run bricks -- check | where <${names.join('|')}> | fetch mama | fetch uaa | pins`)
   return 1
 }
 

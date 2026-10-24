@@ -8,7 +8,8 @@ import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import test, { afterEach } from 'node:test'
 import {
-  brickDir, checkBricks, fetchMama, githubToken, mamaSource, raaLocal, readPins, repoRoot,
+  brickDir, checkBricks, fetchMama, fetchUaa, githubToken, mamaSource, raaLocal, readPins, repoRoot,
+  uaaSource,
 } from '../bricks.ts'
 import type { BrickName } from '../bricks.ts'
 import { RefusalError } from '../../packages/sim/src/refusal.ts'
@@ -67,7 +68,10 @@ test('readPins accepts the committed file and refuses a bad commit with its poin
   assert.match(pins.MAMA.commit, /^[0-9a-f]{40}$/)
   const dir = temp()
   const file = join(dir, 'bricks.pins.json')
-  writeFileSync(file, JSON.stringify({ MAMA: { repo: 'Etcito/MAMA', commit: 'ABC' } }))
+  writeFileSync(file, JSON.stringify({
+    MAMA: { repo: 'Etcito/MAMA', commit: 'ABC' },
+    UAA: { repo: 'Etcito/uaa', commit: 'ABC' },
+  }))
   assert.throws(() => readPins(file), (error: unknown) =>
     error instanceof RefusalError
     && error.message.startsWith('[bricks] bricks.pins.json#/MAMA/commit:')
@@ -75,10 +79,28 @@ test('readPins accepts the committed file and refuses a bad commit with its poin
   )
 })
 
+test('readPins parses the UAA pin next to MAMA', () => {
+  const pins = readPins()
+  assert.equal(pins.UAA.repo, 'Etcito/uaa')
+  assert.match(pins.UAA.commit, /^[0-9a-f]{40}$/)
+  const dir = temp()
+  const file = join(dir, 'bricks.pins.json')
+  writeFileSync(file, JSON.stringify({
+    MAMA: pins.MAMA,
+    UAA: { repo: 'Etcito/uaa', commit: 'abc' },
+  }))
+  assert.throws(() => readPins(file), (error: unknown) =>
+    error instanceof RefusalError
+    && error.message.startsWith('[bricks] bricks.pins.json#/UAA/commit:')
+    && error.message.includes('40 lowercase hex'),
+  )
+})
+
 test('readPins refuses an unknown brick key', () => {
   const dir = temp()
   const file = join(dir, 'bricks.pins.json')
-  writeFileSync(file, JSON.stringify({ MAMA: { repo: 'Etcito/MAMA', commit: readPins().MAMA.commit }, RAA: {} }))
+  const { MAMA, UAA } = readPins()
+  writeFileSync(file, JSON.stringify({ MAMA, UAA, RAA: {} }))
   assert.throws(() => readPins(file), (error: unknown) =>
     error instanceof RefusalError && error.message.includes('bricks.pins.json#/RAA'),
   )
@@ -179,6 +201,7 @@ if (tool === 'git' && argv[0] === 'fetch') {
   fs.writeFileSync('.git/FETCH_HEAD', argv[argv.length - 1] + '\\n')
 }
 if (tool === 'git' && argv[0] === 'checkout') fs.copyFileSync('.git/FETCH_HEAD', '.git/HEAD')
+if (tool === 'npm' && argv[0] === 'run') fs.mkdirSync('dist', { recursive: true })
 `
 
 interface StubCall { tool: string; argv: string[]; cwd: string; env: Record<string, string> }
@@ -294,4 +317,134 @@ test('fetchMama refuses without a sibling and without a token', async () => {
   )
   assert.equal(existsSync(join(world.root, '.bricks')), false)
   assert.deepEqual(readRecord(world.record), [])
+})
+
+// ../uaa relative to a temp repository root: the directory the game imports as file:../uaa.
+function uaaSibling(root: string): string {
+  return join(root, '..', 'uaa')
+}
+
+function pinUaaSibling(root: string, commit: string): string {
+  const sibling = uaaSibling(root)
+  mkdirSync(join(sibling, '.git'), { recursive: true })
+  writeFileSync(join(sibling, '.git', 'HEAD'), `${commit}\n`)
+  return sibling
+}
+
+test('uaaSource finds the ../uaa sibling and is absent without one', () => {
+  const base = temp()
+  const root = join(base, 'repo')
+  mkdirSync(root, { recursive: true })
+  const pinned = readPins().UAA.commit
+  const sibling = pinUaaSibling(root, pinned)
+  const found = uaaSource(root)
+  assert.equal(found.kind, 'sibling')
+  if (found.kind === 'sibling') {
+    assert.equal(found.dir, realpathSync(sibling))
+    assert.equal(found.commit, pinned)
+    assert.equal(found.matchesPin, true)
+  }
+  const other = temp()
+  const emptyRoot = join(other, 'repo')
+  mkdirSync(emptyRoot, { recursive: true })
+  const absent = uaaSource(emptyRoot)
+  assert.equal(absent.kind, 'absent')
+  if (absent.kind === 'absent') assert.match(absent.reason, /fetch uaa/)
+})
+
+test('fetchUaa links a sibling at the pin and skips the build when dist exists', async () => {
+  const world = stubWorld()
+  const pin = readPins().UAA.commit
+  const sibling = pinUaaSibling(world.root, pin)
+  mkdirSync(join(sibling, 'dist'))
+  const source = await fetchUaa(world.root, () => {})
+  assert.equal(source.kind, 'sibling')
+  if (source.kind === 'sibling') {
+    assert.equal(source.dir, realpathSync(sibling))
+    assert.equal(source.commit, pin)
+    assert.equal(source.matchesPin, true)
+  }
+  assert.ok(lstatSync(join(world.root, '.bricks', 'UAA')).isSymbolicLink())
+  assert.deepEqual(readRecord(world.record), [])
+})
+
+test('fetchUaa runs npm ci and npm run build in ../uaa when dist is missing', async () => {
+  const world = stubWorld()
+  const sibling = pinUaaSibling(world.root, readPins().UAA.commit)
+  const source = await fetchUaa(world.root, () => {})
+  assert.equal(source.kind, 'sibling')
+  const calls = readRecord(world.record)
+  assert.deepEqual(calls.map((call) => [call.tool, ...call.argv].join(' ')), [
+    'npm ci --no-audit --no-fund',
+    'npm run build',
+  ])
+  assert.ok(calls.every((call) => realpathSync(call.cwd) === realpathSync(sibling)))
+  assert.ok(existsSync(join(sibling, 'dist')))
+})
+
+test('fetchUaa clones the pin into ../uaa, builds it and never prints the token', async () => {
+  const world = stubWorld()
+  const { token, basic } = fakeToken()
+  process.env.MAMA_TOKEN = token
+  const pin = readPins().UAA
+  const printed: string[] = []
+  const source = await fetchUaa(world.root, (line) => printed.push(line))
+  assert.equal(source.kind, 'cloned')
+  const target = uaaSibling(world.root)
+  if (source.kind === 'cloned') {
+    assert.equal(source.commit, pin.commit)
+    assert.equal(source.dir, realpathSync(target))
+  }
+  assert.ok(lstatSync(join(world.root, '.bricks', 'UAA')).isSymbolicLink())
+  const calls = readRecord(world.record)
+  assert.deepEqual(calls.map((call) => [call.tool, ...call.argv].join(' ')), [
+    'git init --quiet',
+    `git fetch --depth 1 https://github.com/${pin.repo}.git ${pin.commit}`,
+    'git checkout --quiet --detach FETCH_HEAD',
+    'npm ci --no-audit --no-fund',
+    'npm run build',
+  ])
+  assert.ok(existsSync(join(target, 'dist')))
+  assert.ok(!readFileSync(world.record, 'utf8').includes(token), 'the raw token reached a child argv or env')
+  assert.ok(calls.every((call) => call.argv.every((arg) => !arg.includes(basic))), 'the encoded token reached an argv')
+  const holders = calls.flatMap((call) => Object.entries(call.env)
+    .filter(([, value]) => value.includes(basic))
+    .map(([name]) => `${call.tool} ${call.argv[0]}: ${name}`))
+  assert.deepEqual(holders, ['git fetch: GIT_CONFIG_VALUE_0'])
+  const text = printed.join('\n')
+  assert.ok(!text.includes(token) && !text.includes(basic), 'printed output carries the token')
+})
+
+test('fetchUaa refuses a sibling at another commit and names the fix', async () => {
+  const world = stubWorld()
+  pinUaaSibling(world.root, '0'.repeat(40))
+  await assert.rejects(fetchUaa(world.root, () => {}), (error: unknown) =>
+    error instanceof RefusalError
+    && error.message.startsWith('[bricks] UAA:')
+    && error.message.includes('expected the pin')
+    && error.message.includes('bricks.pins.json'),
+  )
+  assert.equal(existsSync(join(world.root, '.bricks', 'UAA')), false)
+  assert.deepEqual(readRecord(world.record), [])
+})
+
+test('fetchUaa refuses without a sibling and without a token', async () => {
+  const world = stubWorld()
+  await assert.rejects(fetchUaa(world.root, () => {}), (error: unknown) =>
+    error instanceof RefusalError
+    && error.message === '[bricks] UAA: not found; clone Etcito/uaa next to this repository or set MAMA_TOKEN, GH_TOKEN or GITHUB_TOKEN on the build machine',
+  )
+  assert.equal(existsSync(join(world.root, '.bricks')), false)
+  assert.deepEqual(readRecord(world.record), [])
+})
+
+test('fetchUaa removes ../uaa when a clone step fails', async () => {
+  const world = stubWorld()
+  process.env.MAMA_TOKEN = fakeToken().token
+  process.env.RF_STUB_FAIL = '1'
+  await assert.rejects(fetchUaa(world.root, () => {}), (error: unknown) =>
+    error instanceof RefusalError && error.message.startsWith('[bricks] UAA: git fetch exited 128;'),
+  )
+  assert.equal(existsSync(uaaSibling(world.root)), false)
+  assert.equal(existsSync(join(world.root, '.bricks', 'UAA')), false)
 })

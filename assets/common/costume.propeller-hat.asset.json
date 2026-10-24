@@ -54,10 +54,18 @@
           "rotation": [-12, 0, 0]
         },
         "children": [
-          "panel_front",
-          "panel_right",
-          "panel_back",
-          "panel_left",
+          "gore_1",
+          "gore_2",
+          "gore_3",
+          "gore_4",
+          "gore_5",
+          "gore_6",
+          "gore_7",
+          "gore_8",
+          "gore_9",
+          "gore_10",
+          "gore_11",
+          "gore_12",
           "hat_rim",
           "hat_button",
           "prop_stem",
@@ -68,147 +76,635 @@
         ],
         "gameCollision": true
       },
-      "panel_front": {
-        "id": "panel_front",
-        "name": "panel_front",
+      "gore_1": {
+        "id": "gore_1",
+        "name": "gore_1",
         "kind": "group",
         "children": [
-          "panel_front_dome",
-          "panel_front_cut"
+          "gore_1_dome",
+          "gore_1_a",
+          "gore_1_b"
         ],
         "gameCollision": true
       },
-      "panel_front_dome": {
-        "id": "panel_front_dome",
-        "name": "panel_front_dome",
-        "kind": "sphere",
+      "gore_1_dome": {
+        "id": "gore_1_dome",
+        "name": "gore_1_dome",
+        "kind": "ellipsoid",
         "material": "m8",
         "params": {
-          "radius": 0.365
+          "radii": [0.365, 0.45, 0.365]
         },
         "gameCollision": false
       },
-      "panel_front_cut": {
-        "id": "panel_front_cut",
-        "name": "panel_front_cut",
+      "gore_1_a": {
+        "id": "gore_1_a",
+        "name": "gore_1_a",
         "kind": "box",
         "transform": {
-          "position": [0, 0.3, 0.283],
-          "rotation": [0, 45, 0]
+          "position": [0.105, 0.325, 0.18]
         },
         "op": "intersect",
-        "smooth": 0.015,
+        "smooth": 0.012,
         "material": "m8",
         "params": {
-          "size": [0.4, 0.3, 0.4]
+          "size": [0.21, 0.35, 0.4]
         },
         "gameCollision": false
       },
-      "panel_right": {
-        "id": "panel_right",
-        "name": "panel_right",
+      "gore_1_b": {
+        "id": "gore_1_b",
+        "name": "gore_1_b",
+        "kind": "box",
+        "transform": {
+          "position": [-0.0009, 0.325, 0.2084],
+          "rotation": [0, 30, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m8",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_2": {
+        "id": "gore_2",
+        "name": "gore_2",
         "kind": "group",
         "children": [
-          "panel_right_dome",
-          "panel_right_cut"
+          "gore_2_dome",
+          "gore_2_a",
+          "gore_2_b"
         ],
         "gameCollision": true
       },
-      "panel_right_dome": {
-        "id": "panel_right_dome",
-        "name": "panel_right_dome",
-        "kind": "sphere",
+      "gore_2_dome": {
+        "id": "gore_2_dome",
+        "name": "gore_2_dome",
+        "kind": "ellipsoid",
         "material": "m9",
         "params": {
-          "radius": 0.365
+          "radii": [0.365, 0.45, 0.365]
         },
         "gameCollision": false
       },
-      "panel_right_cut": {
-        "id": "panel_right_cut",
-        "name": "panel_right_cut",
+      "gore_2_a": {
+        "id": "gore_2_a",
+        "name": "gore_2_a",
         "kind": "box",
         "transform": {
-          "position": [0.283, 0.3, 0],
-          "rotation": [0, 45, 0]
+          "position": [0.1809, 0.325, 0.1034],
+          "rotation": [0, 30, 0]
         },
         "op": "intersect",
-        "smooth": 0.015,
+        "smooth": 0.012,
         "material": "m9",
         "params": {
-          "size": [0.4, 0.3, 0.4]
+          "size": [0.21, 0.35, 0.4]
         },
         "gameCollision": false
       },
-      "panel_back": {
-        "id": "panel_back",
-        "name": "panel_back",
+      "gore_2_b": {
+        "id": "gore_2_b",
+        "name": "gore_2_b",
+        "kind": "box",
+        "transform": {
+          "position": [0.1034, 0.325, 0.1809],
+          "rotation": [0, 60, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m9",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_3": {
+        "id": "gore_3",
+        "name": "gore_3",
         "kind": "group",
         "children": [
-          "panel_back_dome",
-          "panel_back_cut"
+          "gore_3_dome",
+          "gore_3_a",
+          "gore_3_b"
         ],
         "gameCollision": true
       },
-      "panel_back_dome": {
-        "id": "panel_back_dome",
-        "name": "panel_back_dome",
-        "kind": "sphere",
+      "gore_3_dome": {
+        "id": "gore_3_dome",
+        "name": "gore_3_dome",
+        "kind": "ellipsoid",
         "material": "m10",
         "params": {
-          "radius": 0.365
+          "radii": [0.365, 0.45, 0.365]
         },
         "gameCollision": false
       },
-      "panel_back_cut": {
-        "id": "panel_back_cut",
-        "name": "panel_back_cut",
+      "gore_3_a": {
+        "id": "gore_3_a",
+        "name": "gore_3_a",
         "kind": "box",
         "transform": {
-          "position": [0, 0.3, -0.283],
-          "rotation": [0, 45, 0]
+          "position": [0.2084, 0.325, -0.0009],
+          "rotation": [0, 60, 0]
         },
         "op": "intersect",
-        "smooth": 0.015,
+        "smooth": 0.012,
         "material": "m10",
         "params": {
-          "size": [0.4, 0.3, 0.4]
+          "size": [0.21, 0.35, 0.4]
         },
         "gameCollision": false
       },
-      "panel_left": {
-        "id": "panel_left",
-        "name": "panel_left",
+      "gore_3_b": {
+        "id": "gore_3_b",
+        "name": "gore_3_b",
+        "kind": "box",
+        "transform": {
+          "position": [0.18, 0.325, 0.105],
+          "rotation": [0, 90, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m10",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_4": {
+        "id": "gore_4",
+        "name": "gore_4",
         "kind": "group",
         "children": [
-          "panel_left_dome",
-          "panel_left_cut"
+          "gore_4_dome",
+          "gore_4_a",
+          "gore_4_b"
         ],
         "gameCollision": true
       },
-      "panel_left_dome": {
-        "id": "panel_left_dome",
-        "name": "panel_left_dome",
-        "kind": "sphere",
+      "gore_4_dome": {
+        "id": "gore_4_dome",
+        "name": "gore_4_dome",
+        "kind": "ellipsoid",
         "material": "m11",
         "params": {
-          "radius": 0.365
+          "radii": [0.365, 0.45, 0.365]
         },
         "gameCollision": false
       },
-      "panel_left_cut": {
-        "id": "panel_left_cut",
-        "name": "panel_left_cut",
+      "gore_4_a": {
+        "id": "gore_4_a",
+        "name": "gore_4_a",
         "kind": "box",
         "transform": {
-          "position": [-0.283, 0.3, 0],
-          "rotation": [0, 45, 0]
+          "position": [0.18, 0.325, -0.105],
+          "rotation": [0, 90, 0]
         },
         "op": "intersect",
-        "smooth": 0.015,
+        "smooth": 0.012,
         "material": "m11",
         "params": {
-          "size": [0.4, 0.3, 0.4]
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_4_b": {
+        "id": "gore_4_b",
+        "name": "gore_4_b",
+        "kind": "box",
+        "transform": {
+          "position": [0.2084, 0.325, 0.0009],
+          "rotation": [0, 120, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m11",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_5": {
+        "id": "gore_5",
+        "name": "gore_5",
+        "kind": "group",
+        "children": [
+          "gore_5_dome",
+          "gore_5_a",
+          "gore_5_b"
+        ],
+        "gameCollision": true
+      },
+      "gore_5_dome": {
+        "id": "gore_5_dome",
+        "name": "gore_5_dome",
+        "kind": "ellipsoid",
+        "material": "m8",
+        "params": {
+          "radii": [0.365, 0.45, 0.365]
+        },
+        "gameCollision": false
+      },
+      "gore_5_a": {
+        "id": "gore_5_a",
+        "name": "gore_5_a",
+        "kind": "box",
+        "transform": {
+          "position": [0.1034, 0.325, -0.1809],
+          "rotation": [0, 120, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m8",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_5_b": {
+        "id": "gore_5_b",
+        "name": "gore_5_b",
+        "kind": "box",
+        "transform": {
+          "position": [0.1809, 0.325, -0.1034],
+          "rotation": [0, 150, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m8",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_6": {
+        "id": "gore_6",
+        "name": "gore_6",
+        "kind": "group",
+        "children": [
+          "gore_6_dome",
+          "gore_6_a",
+          "gore_6_b"
+        ],
+        "gameCollision": true
+      },
+      "gore_6_dome": {
+        "id": "gore_6_dome",
+        "name": "gore_6_dome",
+        "kind": "ellipsoid",
+        "material": "m9",
+        "params": {
+          "radii": [0.365, 0.45, 0.365]
+        },
+        "gameCollision": false
+      },
+      "gore_6_a": {
+        "id": "gore_6_a",
+        "name": "gore_6_a",
+        "kind": "box",
+        "transform": {
+          "position": [-0.0009, 0.325, -0.2084],
+          "rotation": [0, 150, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m9",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_6_b": {
+        "id": "gore_6_b",
+        "name": "gore_6_b",
+        "kind": "box",
+        "transform": {
+          "position": [0.105, 0.325, -0.18]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m9",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_7": {
+        "id": "gore_7",
+        "name": "gore_7",
+        "kind": "group",
+        "children": [
+          "gore_7_dome",
+          "gore_7_a",
+          "gore_7_b"
+        ],
+        "gameCollision": true
+      },
+      "gore_7_dome": {
+        "id": "gore_7_dome",
+        "name": "gore_7_dome",
+        "kind": "ellipsoid",
+        "material": "m10",
+        "params": {
+          "radii": [0.365, 0.45, 0.365]
+        },
+        "gameCollision": false
+      },
+      "gore_7_a": {
+        "id": "gore_7_a",
+        "name": "gore_7_a",
+        "kind": "box",
+        "transform": {
+          "position": [-0.105, 0.325, -0.18]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m10",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_7_b": {
+        "id": "gore_7_b",
+        "name": "gore_7_b",
+        "kind": "box",
+        "transform": {
+          "position": [0.0009, 0.325, -0.2084],
+          "rotation": [0, 30, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m10",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_8": {
+        "id": "gore_8",
+        "name": "gore_8",
+        "kind": "group",
+        "children": [
+          "gore_8_dome",
+          "gore_8_a",
+          "gore_8_b"
+        ],
+        "gameCollision": true
+      },
+      "gore_8_dome": {
+        "id": "gore_8_dome",
+        "name": "gore_8_dome",
+        "kind": "ellipsoid",
+        "material": "m11",
+        "params": {
+          "radii": [0.365, 0.45, 0.365]
+        },
+        "gameCollision": false
+      },
+      "gore_8_a": {
+        "id": "gore_8_a",
+        "name": "gore_8_a",
+        "kind": "box",
+        "transform": {
+          "position": [-0.1809, 0.325, -0.1034],
+          "rotation": [0, 30, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m11",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_8_b": {
+        "id": "gore_8_b",
+        "name": "gore_8_b",
+        "kind": "box",
+        "transform": {
+          "position": [-0.1034, 0.325, -0.1809],
+          "rotation": [0, 60, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m11",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_9": {
+        "id": "gore_9",
+        "name": "gore_9",
+        "kind": "group",
+        "children": [
+          "gore_9_dome",
+          "gore_9_a",
+          "gore_9_b"
+        ],
+        "gameCollision": true
+      },
+      "gore_9_dome": {
+        "id": "gore_9_dome",
+        "name": "gore_9_dome",
+        "kind": "ellipsoid",
+        "material": "m8",
+        "params": {
+          "radii": [0.365, 0.45, 0.365]
+        },
+        "gameCollision": false
+      },
+      "gore_9_a": {
+        "id": "gore_9_a",
+        "name": "gore_9_a",
+        "kind": "box",
+        "transform": {
+          "position": [-0.2084, 0.325, 0.0009],
+          "rotation": [0, 60, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m8",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_9_b": {
+        "id": "gore_9_b",
+        "name": "gore_9_b",
+        "kind": "box",
+        "transform": {
+          "position": [-0.18, 0.325, -0.105],
+          "rotation": [0, 90, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m8",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_10": {
+        "id": "gore_10",
+        "name": "gore_10",
+        "kind": "group",
+        "children": [
+          "gore_10_dome",
+          "gore_10_a",
+          "gore_10_b"
+        ],
+        "gameCollision": true
+      },
+      "gore_10_dome": {
+        "id": "gore_10_dome",
+        "name": "gore_10_dome",
+        "kind": "ellipsoid",
+        "material": "m9",
+        "params": {
+          "radii": [0.365, 0.45, 0.365]
+        },
+        "gameCollision": false
+      },
+      "gore_10_a": {
+        "id": "gore_10_a",
+        "name": "gore_10_a",
+        "kind": "box",
+        "transform": {
+          "position": [-0.18, 0.325, 0.105],
+          "rotation": [0, 90, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m9",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_10_b": {
+        "id": "gore_10_b",
+        "name": "gore_10_b",
+        "kind": "box",
+        "transform": {
+          "position": [-0.2084, 0.325, -0.0009],
+          "rotation": [0, 120, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m9",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_11": {
+        "id": "gore_11",
+        "name": "gore_11",
+        "kind": "group",
+        "children": [
+          "gore_11_dome",
+          "gore_11_a",
+          "gore_11_b"
+        ],
+        "gameCollision": true
+      },
+      "gore_11_dome": {
+        "id": "gore_11_dome",
+        "name": "gore_11_dome",
+        "kind": "ellipsoid",
+        "material": "m10",
+        "params": {
+          "radii": [0.365, 0.45, 0.365]
+        },
+        "gameCollision": false
+      },
+      "gore_11_a": {
+        "id": "gore_11_a",
+        "name": "gore_11_a",
+        "kind": "box",
+        "transform": {
+          "position": [-0.1034, 0.325, 0.1809],
+          "rotation": [0, 120, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m10",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_11_b": {
+        "id": "gore_11_b",
+        "name": "gore_11_b",
+        "kind": "box",
+        "transform": {
+          "position": [-0.1809, 0.325, 0.1034],
+          "rotation": [0, 150, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m10",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_12": {
+        "id": "gore_12",
+        "name": "gore_12",
+        "kind": "group",
+        "children": [
+          "gore_12_dome",
+          "gore_12_a",
+          "gore_12_b"
+        ],
+        "gameCollision": true
+      },
+      "gore_12_dome": {
+        "id": "gore_12_dome",
+        "name": "gore_12_dome",
+        "kind": "ellipsoid",
+        "material": "m11",
+        "params": {
+          "radii": [0.365, 0.45, 0.365]
+        },
+        "gameCollision": false
+      },
+      "gore_12_a": {
+        "id": "gore_12_a",
+        "name": "gore_12_a",
+        "kind": "box",
+        "transform": {
+          "position": [0.0009, 0.325, 0.2084],
+          "rotation": [0, 150, 0]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m11",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
+        },
+        "gameCollision": false
+      },
+      "gore_12_b": {
+        "id": "gore_12_b",
+        "name": "gore_12_b",
+        "kind": "box",
+        "transform": {
+          "position": [-0.105, 0.325, 0.18]
+        },
+        "op": "intersect",
+        "smooth": 0.012,
+        "material": "m11",
+        "params": {
+          "size": [0.21, 0.35, 0.4]
         },
         "gameCollision": false
       },
@@ -219,10 +715,10 @@
         "transform": {
           "position": [0, 0.15, 0]
         },
-        "material": "m9",
+        "material": "m12",
         "params": {
-          "majorRadius": 0.333,
-          "minorRadius": 0.022
+          "majorRadius": 0.345,
+          "minorRadius": 0.02
         },
         "gameCollision": false
       },
@@ -231,7 +727,7 @@
         "name": "hat_button",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.37, 0]
+          "position": [0, 0.455, 0]
         },
         "smooth": 0.012,
         "colorBlend": "hard",
@@ -246,7 +742,7 @@
         "name": "prop_stem",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.43, 0]
+          "position": [0, 0.515, 0]
         },
         "smooth": 0.01,
         "colorBlend": "hard",
@@ -262,7 +758,7 @@
         "name": "prop_hub",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.49, 0]
+          "position": [0, 0.575, 0]
         },
         "smooth": 0.01,
         "colorBlend": "hard",
@@ -277,7 +773,7 @@
         "name": "prop_blade_1",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0.085, 0.49, 0.1472],
+          "position": [0.085, 0.575, 0.1472],
           "rotation": [0, 30, 15]
         },
         "smooth": 0.015,
@@ -293,7 +789,7 @@
         "name": "prop_blade_2",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0.085, 0.49, -0.1472],
+          "position": [0.085, 0.575, -0.1472],
           "rotation": [0, 150, 15]
         },
         "smooth": 0.015,
@@ -309,7 +805,7 @@
         "name": "prop_blade_3",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.17, 0.49, 0],
+          "position": [-0.17, 0.575, 0],
           "rotation": [0, 270, 15]
         },
         "smooth": 0.015,
@@ -389,6 +885,23 @@
           ],
           "links": []
         }
+      },
+      "m12": {
+        "name": "costume-propeller-hat-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.85
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
       }
     }
   },
@@ -400,8 +913,8 @@
     }
   },
   "bounds": {
-    "min": [-0.580843, 0.077088, -0.662038],
-    "max": [0.580843, 1.082812, 0.537291]
+    "min": [-0.446105, -0.006054, -0.540575],
+    "max": [0.446105, 1.16511, 0.450584]
   },
-  "hash": "22e74cb2a7440eb172c51c42cb4f2e1d54197a11fbb5036881bb747bc85d6192"
+  "hash": "417d823feb1dee1cfce78dbb718f968ca3bdd015e37b6f648866cde07b224187"
 }

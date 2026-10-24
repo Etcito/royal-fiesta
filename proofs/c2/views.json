@@ -50,7 +50,7 @@
       "name": "penguin-propeller-hat",
       "assets": {
         "penguin.body": "80933fb67db5a8b80bd91b62fca43b2393dc7dcec5ad3af5652334c0c2d98a5d",
-        "costume.propeller-hat": "22e74cb2a7440eb172c51c42cb4f2e1d54197a11fbb5036881bb747bc85d6192"
+        "costume.propeller-hat": "417d823feb1dee1cfce78dbb718f968ca3bdd015e37b6f648866cde07b224187"
       },
       "views": [
         {
@@ -58,8 +58,8 @@
           "png": "out/c2/penguin-propeller-hat-front.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "bcc0424065396baaf64390cf665be77c89b0483480b6fc4b7d2c1bad73e54b91",
-          "bytes": 398510,
+          "sha256": "1e921006fdebad498aa37ff9851e586056dd25e88ddb6425609b4a3fe747e481",
+          "bytes": 407271,
           "nonEmpty": true
         },
         {
@@ -67,8 +67,8 @@
           "png": "out/c2/penguin-propeller-hat-three-quarter.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "564c7f306e275e27cd54f64c59b0d0eaac88a44566a62ec5985376fd32fe98ed",
-          "bytes": 365698,
+          "sha256": "cc090af87cc5a55810b262fb9ab4aa53ad1de6df0a59e03f2aa51ef399bdb8c2",
+          "bytes": 373294,
           "nonEmpty": true
         },
         {
@@ -76,8 +76,8 @@
           "png": "out/c2/penguin-propeller-hat-back.png",
           "width": 1024,
           "height": 1024,
-          "sha256": "09eccbaf7b062b676a21598274a3cbc6b032a2fdd04eb45aeea477c85ea377f4",
-          "bytes": 373610,
+          "sha256": "c1fcb6e26edf6f0d9c7de02c02bc98610d2096864d54e0024a17ae9d679d49c5",
+          "bytes": 387987,
           "nonEmpty": true
         }
       ]

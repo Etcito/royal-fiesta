@@ -24,6 +24,7 @@
         "children": [
           "collider",
           "rim",
+          "bolster",
           "dome",
           "ring",
           "cap",
@@ -59,12 +60,12 @@
         "name": "rim",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.25, 0]
+          "position": [0, 0.22, 0]
         },
         "round": 0.12,
         "material": "candy-blue",
         "params": {
-          "height": 0.5,
+          "height": 0.44,
           "radius": 1.5
         },
         "children": [
@@ -198,6 +199,20 @@
         },
         "gameCollision": false
       },
+      "bolster": {
+        "id": "bolster",
+        "name": "bolster",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.44, 0]
+        },
+        "material": "candy-blue",
+        "params": {
+          "majorRadius": 1.3,
+          "minorRadius": 0.2
+        },
+        "gameCollision": false
+      },
       "dome": {
         "id": "dome",
         "name": "dome",
@@ -207,7 +222,7 @@
         },
         "material": "candy-pink",
         "params": {
-          "radii": [1.32, 0.3, 1.32]
+          "radii": [1.16, 0.28, 1.16]
         },
         "gameCollision": false
       },
@@ -220,8 +235,8 @@
         },
         "material": "candy-yellow",
         "params": {
-          "majorRadius": 1,
-          "minorRadius": 0.075
+          "majorRadius": 0.8,
+          "minorRadius": 0.055
         },
         "gameCollision": false
       },
@@ -230,13 +245,13 @@
         "name": "cap",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.69, 0]
+          "position": [0, 0.7, 0]
         },
         "round": 0.03,
         "material": "candy-yellow",
         "params": {
           "height": 0.06,
-          "radius": 0.7
+          "radius": 0.45
         },
         "gameCollision": false
       },
@@ -257,12 +272,12 @@
         "name": "star-0",
         "kind": "box",
         "transform": {
-          "position": [0, 0.735, 0]
+          "position": [0, 0.745, 0]
         },
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [1.2, 0.04, 0.22]
+          "size": [0.78, 0.04, 0.15]
         },
         "gameCollision": false
       },
@@ -271,13 +286,13 @@
         "name": "star-1",
         "kind": "box",
         "transform": {
-          "position": [0, 0.735, 0],
+          "position": [0, 0.745, 0],
           "rotation": [0, 60, 0]
         },
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [1.2, 0.04, 0.22]
+          "size": [0.78, 0.04, 0.15]
         },
         "gameCollision": false
       },
@@ -286,13 +301,13 @@
         "name": "star-2",
         "kind": "box",
         "transform": {
-          "position": [0, 0.735, 0],
+          "position": [0, 0.745, 0],
           "rotation": [0, 120, 0]
         },
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [1.2, 0.04, 0.22]
+          "size": [0.78, 0.04, 0.15]
         },
         "gameCollision": false
       }
@@ -376,7 +391,7 @@
   "anchors": {},
   "bounds": {
     "min": [-1.56635, 0, -1.56635],
-    "max": [1.56635, 0.755, 1.56635]
+    "max": [1.56635, 0.765, 1.56635]
   },
-  "hash": "27a63940e53efa4f98b0ff53d56e71a8c4af016b8e17cdaaeea44c6b6cb91218"
+  "hash": "ea017e730724db840f6fde8fcfc9b024cb8e345036e6161c8b3e9df90bf871d0"
 }

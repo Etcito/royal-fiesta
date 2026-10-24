@@ -28,7 +28,9 @@
           "belt",
           "cap_front",
           "cap_back",
-          "chevrons"
+          "chevrons",
+          "bolster_r",
+          "bolster_l"
         ],
         "asset": {
           "game": "royal-fiesta",
@@ -55,10 +57,10 @@
         "id": "rim",
         "name": "rim",
         "kind": "box",
-        "round": 0.13,
+        "round": 0.25,
         "material": "candy-pink",
         "params": {
-          "size": [4, 0.5, 12]
+          "size": [4, 0.6, 12]
         },
         "gameCollision": false
       },
@@ -67,12 +69,12 @@
         "name": "lip",
         "kind": "box",
         "transform": {
-          "position": [0, 0.17, 0]
+          "position": [0, 0.2, 0]
         },
-        "round": 0.06,
+        "round": 0.14,
         "material": "candy-yellow",
         "params": {
-          "size": [3.5, 0.24, 11.5]
+          "size": [3.7, 0.3, 11.6]
         },
         "gameCollision": false
       },
@@ -81,12 +83,12 @@
         "name": "belt",
         "kind": "box",
         "transform": {
-          "position": [0, 0.2, 0]
+          "position": [0, 0.3, 0]
         },
         "round": 0.1,
         "material": "candy-pink",
         "params": {
-          "size": [2.9, 0.2, 11]
+          "size": [3.1, 0.2, 11]
         },
         "gameCollision": false
       },
@@ -95,14 +97,14 @@
         "name": "cap-front",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0, 5.95],
+          "position": [0, 0.05, 6],
           "rotation": [0, 0, 90]
         },
-        "round": 0.1,
+        "round": 0.16,
         "material": "candy-blue",
         "params": {
-          "height": 3.4,
-          "radius": 0.3
+          "height": 3.6,
+          "radius": 0.36
         },
         "gameCollision": false
       },
@@ -111,14 +113,14 @@
         "name": "cap-back",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0, -5.95],
+          "position": [0, 0.05, -6],
           "rotation": [0, 0, 90]
         },
-        "round": 0.1,
+        "round": 0.16,
         "material": "candy-blue",
         "params": {
-          "height": 3.4,
-          "radius": 0.3
+          "height": 3.6,
+          "radius": 0.36
         },
         "gameCollision": false
       },
@@ -128,166 +130,246 @@
         "kind": "group",
         "colorBlend": "hard",
         "children": [
-          "chev_0r",
-          "chev_0l",
-          "chev_1r",
-          "chev_1l",
-          "chev_2r",
-          "chev_2l",
-          "chev_3r",
-          "chev_3l",
-          "chev_4r",
-          "chev_4l"
+          "chevron_0",
+          "chevron_1",
+          "chevron_2",
+          "chevron_3",
+          "chevron_4"
         ],
         "gameCollision": false
       },
-      "chev_0r": {
-        "id": "chev_0r",
-        "name": "chev-0r",
-        "kind": "box",
-        "transform": {
-          "position": [0.601041, 0.33, -4.011041],
-          "rotation": [0, 45, 0]
-        },
-        "round": 0.03,
+      "chevron_0": {
+        "id": "chevron_0",
+        "name": "chevron 0",
+        "kind": "sweep",
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.1, 0.5]
+          "frame": "up",
+          "height": 0.05,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-1.05, 0.41, -4.5]
+              },
+              {
+                "p": [0, 0.41, -3.55]
+              },
+              {
+                "p": [1.05, 0.41, -4.5]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.17
+              },
+              {
+                "t": 1,
+                "r": 0.17
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
         },
         "gameCollision": false
       },
-      "chev_0l": {
-        "id": "chev_0l",
-        "name": "chev-0l",
-        "kind": "box",
-        "transform": {
-          "position": [-0.601041, 0.33, -4.011041],
-          "rotation": [0, -45, 0]
-        },
-        "round": 0.03,
+      "chevron_1": {
+        "id": "chevron_1",
+        "name": "chevron 1",
+        "kind": "sweep",
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.1, 0.5]
+          "frame": "up",
+          "height": 0.05,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-1.05, 0.41, -2.5]
+              },
+              {
+                "p": [0, 0.41, -1.55]
+              },
+              {
+                "p": [1.05, 0.41, -2.5]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.17
+              },
+              {
+                "t": 1,
+                "r": 0.17
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
         },
         "gameCollision": false
       },
-      "chev_1r": {
-        "id": "chev_1r",
-        "name": "chev-1r",
-        "kind": "box",
-        "transform": {
-          "position": [0.601041, 0.33, -2.011041],
-          "rotation": [0, 45, 0]
-        },
-        "round": 0.03,
+      "chevron_2": {
+        "id": "chevron_2",
+        "name": "chevron 2",
+        "kind": "sweep",
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.1, 0.5]
+          "frame": "up",
+          "height": 0.05,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-1.05, 0.41, -0.5]
+              },
+              {
+                "p": [0, 0.41, 0.45]
+              },
+              {
+                "p": [1.05, 0.41, -0.5]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.17
+              },
+              {
+                "t": 1,
+                "r": 0.17
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
         },
         "gameCollision": false
       },
-      "chev_1l": {
-        "id": "chev_1l",
-        "name": "chev-1l",
-        "kind": "box",
-        "transform": {
-          "position": [-0.601041, 0.33, -2.011041],
-          "rotation": [0, -45, 0]
-        },
-        "round": 0.03,
+      "chevron_3": {
+        "id": "chevron_3",
+        "name": "chevron 3",
+        "kind": "sweep",
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.1, 0.5]
+          "frame": "up",
+          "height": 0.05,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-1.05, 0.41, 1.5]
+              },
+              {
+                "p": [0, 0.41, 2.45]
+              },
+              {
+                "p": [1.05, 0.41, 1.5]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.17
+              },
+              {
+                "t": 1,
+                "r": 0.17
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
         },
         "gameCollision": false
       },
-      "chev_2r": {
-        "id": "chev_2r",
-        "name": "chev-2r",
-        "kind": "box",
-        "transform": {
-          "position": [0.601041, 0.33, -0.011041],
-          "rotation": [0, 45, 0]
-        },
-        "round": 0.03,
+      "chevron_4": {
+        "id": "chevron_4",
+        "name": "chevron 4",
+        "kind": "sweep",
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.1, 0.5]
+          "frame": "up",
+          "height": 0.05,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-1.05, 0.41, 3.5]
+              },
+              {
+                "p": [0, 0.41, 4.45]
+              },
+              {
+                "p": [1.05, 0.41, 3.5]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.17
+              },
+              {
+                "t": 1,
+                "r": 0.17
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
         },
         "gameCollision": false
       },
-      "chev_2l": {
-        "id": "chev_2l",
-        "name": "chev-2l",
-        "kind": "box",
+      "bolster_r": {
+        "id": "bolster_r",
+        "name": "bolster r",
+        "kind": "capsule",
         "transform": {
-          "position": [-0.601041, 0.33, -0.011041],
-          "rotation": [0, -45, 0]
+          "position": [1.72, 0.32, 0],
+          "rotation": [90, 0, 0]
         },
-        "round": 0.03,
-        "material": "candy-white",
+        "material": "candy-yellow",
         "params": {
-          "size": [1.7, 0.1, 0.5]
+          "height": 11.1,
+          "radius": 0.2
         },
         "gameCollision": false
       },
-      "chev_3r": {
-        "id": "chev_3r",
-        "name": "chev-3r",
-        "kind": "box",
+      "bolster_l": {
+        "id": "bolster_l",
+        "name": "bolster l",
+        "kind": "capsule",
         "transform": {
-          "position": [0.601041, 0.33, 1.988959],
-          "rotation": [0, 45, 0]
+          "position": [-1.72, 0.32, 0],
+          "rotation": [90, 0, 0]
         },
-        "round": 0.03,
-        "material": "candy-white",
+        "material": "candy-yellow",
         "params": {
-          "size": [1.7, 0.1, 0.5]
-        },
-        "gameCollision": false
-      },
-      "chev_3l": {
-        "id": "chev_3l",
-        "name": "chev-3l",
-        "kind": "box",
-        "transform": {
-          "position": [-0.601041, 0.33, 1.988959],
-          "rotation": [0, -45, 0]
-        },
-        "round": 0.03,
-        "material": "candy-white",
-        "params": {
-          "size": [1.7, 0.1, 0.5]
-        },
-        "gameCollision": false
-      },
-      "chev_4r": {
-        "id": "chev_4r",
-        "name": "chev-4r",
-        "kind": "box",
-        "transform": {
-          "position": [0.601041, 0.33, 3.988959],
-          "rotation": [0, 45, 0]
-        },
-        "round": 0.03,
-        "material": "candy-white",
-        "params": {
-          "size": [1.7, 0.1, 0.5]
-        },
-        "gameCollision": false
-      },
-      "chev_4l": {
-        "id": "chev_4l",
-        "name": "chev-4l",
-        "kind": "box",
-        "transform": {
-          "position": [-0.601041, 0.33, 3.988959],
-          "rotation": [0, -45, 0]
-        },
-        "round": 0.03,
-        "material": "candy-white",
-        "params": {
-          "size": [1.7, 0.1, 0.5]
+          "height": 11.1,
+          "radius": 0.2
         },
         "gameCollision": false
       }
@@ -369,8 +451,8 @@
   ],
   "anchors": {},
   "bounds": {
-    "min": [-2, -0.3, -6.25],
-    "max": [2, 0.38, 6.25]
+    "min": [-2, -0.31, -6.36],
+    "max": [2, 0.6226, 6.36]
   },
-  "hash": "7bd105aa00e524c2c70a7f52c1eca3dd2cf314f5781f8fd52a5915a29a708bad"
+  "hash": "70722a5d6637c0d9fb753ff02d288f46c156900a469ddfff509a20a14a630baf"
 }

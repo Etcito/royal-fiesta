@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
 import { decodePng } from '../../apps/headless/src/gpuRecord.ts'
-import { encodePng, materialRoughness, mergeDocuments, projectPoint, stageOnBackdrop, viewCamera } from '../renderViews.ts'
+import { encodePng, materialBase, materialRoughness, mergeDocuments, projectPoint, stageOnBackdrop, viewCamera } from '../renderViews.ts'
 
 test('viewCamera frames the bounds as 1.14 says', () => {
   const b = { min: [-1, 0, -1] as [number, number, number], max: [1, 2, 1] as [number, number, number] }
@@ -72,4 +72,15 @@ test('materialRoughness reads the roughness of every material output by material
   }
   assert.deepEqual(materialRoughness(doc), { 'candy-pink': 0.12 })
   assert.deepEqual(materialRoughness({}), {})
+})
+
+test('materialBase reads the base colour of every material output by material name as 0..1', () => {
+  const doc = {
+    materials: {
+      m1: { name: 'candy-pink', graph: { nodes: [{ id: 'out', type: 'material.output', params: { 'in.base_color': '#ff0000' } }] } },
+      m2: { name: 'candy-white', graph: { nodes: [{ id: 'out', type: 'material.output', params: { 'in.base_color': { link: 'tex' } } }] } },
+    },
+  }
+  assert.deepEqual(materialBase(doc), { 'candy-pink': [1, 0, 0] })
+  assert.deepEqual(materialBase({}), {})
 })

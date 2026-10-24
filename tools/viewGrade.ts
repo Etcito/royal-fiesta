@@ -6,7 +6,8 @@ import type { Rgba } from './renderViews.ts'
 type V3 = [number, number, number]
 export interface LegendEntry { rgb: V3; name: string }
 // roughness: material name -> the asset's own `in.roughness`, which sets how glossy a candy material reads.
-export interface ViewPasses { shaded: Rgba; normals: Rgba; materials: Rgba; legend: LegendEntry[]; roughness?: Record<string, number> }
+// base: material name -> the asset's own `in.base_color` (sRGB 0..1), whose hue a candy material keeps after shading.
+export interface ViewPasses { shaded: Rgba; normals: Rgba; materials: Rgba; legend: LegendEntry[]; roughness?: Record<string, number>; base?: Record<string, V3> }
 export interface Relit { img: Rgba; subject: Uint8Array; plush: Uint8Array; screenNormal: Float32Array }
 
 // Materials that are fur on the penguin (1.12): the plush body and the belly.
@@ -20,6 +21,24 @@ const SHEEN: Record<string, { rgb: V3; k: number }> = {
 // Candy kit materials get ref-1's glossy vinyl: a hot key highlight, a broad softbox sheen from behind and a clear-coat edge.
 const CANDY = /^candy-/
 export function candyGloss(roughness: number): number { return clamp01((0.5 - roughness) / 0.38) }
+
+// HSV hue in [0, 1) of a saturated colour, or null for a near-grey one (candy white keeps its own tint).
+export function hueOf(c: V3): number | null {
+  const mx = Math.max(c[0], c[1], c[2])
+  const d = mx - Math.min(c[0], c[1], c[2])
+  if (mx <= 0 || d / mx < 0.35) return null
+  const h = mx === c[0] ? (c[1] - c[2]) / d : mx === c[1] ? 2 + (c[2] - c[0]) / d : 4 + (c[0] - c[1]) / d
+  return ((h / 6) % 1 + 1) % 1
+}
+
+// The same value and saturation on another hue.
+export function withHue(c: V3, hue: number): V3 {
+  const mx = Math.max(c[0], c[1], c[2])
+  const mn = Math.min(c[0], c[1], c[2])
+  const h = hue * 6
+  const f = (k: number): number => { const t = (k + h) % 6; return mx - (mx - mn) * Math.max(0, Math.min(t, 4 - t, 1)) }
+  return [f(5), f(3), f(1)]
+}
 
 // "#0 #e63840 penguin-plush (m1); #1 ..." from the text of a 'materials' render.
 export function parseLegend(text: string): LegendEntry[] {
@@ -93,6 +112,9 @@ export function relight(p: ViewPasses, eye: V3, target: V3): Relit {
   // Candy white (cloud puffs, stripes) sits near 1 before the grade, so it gets a longer shoulder that keeps its form.
   const white = p.legend.findIndex((e) => e.name === 'candy-white')
   const gloss = p.legend.map((e) => CANDY.test(e.name) && p.roughness?.[e.name] !== undefined ? candyGloss(p.roughness[e.name]) : 0)
+  // The ACES tonemap and the blue sky ambient turn sunlit candy pink magenta and candy blue cyan: candy pixels are put
+  // back on their material's base hue, keeping their shading (value and saturation).
+  const hues = p.legend.map((e) => CANDY.test(e.name) && p.base?.[e.name] !== undefined ? hueOf(p.base[e.name]) : null)
   const screenNormal = new Float32Array(n * 2)
   const out = new Uint8Array(s)
   // Graded colour and white highlight per pixel; the highlights are softened before they are composited.
@@ -153,6 +175,8 @@ export function relight(p: ViewPasses, eye: V3, target: V3): Relit {
         const [k0, kw] = mat[i] === white && white >= 0 ? [0.62, 0.42] : [0.8, 0.2]
         graded[i * 3 + k] = t < k0 ? t : k0 + kw * (1 - Math.exp(-(t - k0) / kw))
       }
+      const hue = mat[i] >= 0 ? hues[mat[i]] : null
+      if (hue !== null) graded.set(withHue([graded[i * 3], graded[i * 3 + 1], graded[i * 3 + 2]], hue), i * 3)
     }
   }
   // The normals pass is 8-bit, so a narrow lobe bands; a small blur turns the steps into a smooth glossy patch.

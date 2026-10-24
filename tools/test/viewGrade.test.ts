@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { candyGloss, fuzzAndBloom, hash01, parseLegend, relight, type ViewPasses } from '../viewGrade.ts'
+import { candyGloss, fuzzAndBloom, hash01, hueOf, parseLegend, relight, withHue, type ViewPasses } from '../viewGrade.ts'
 
 const KEY = [46, 48, 54]
 const PLUSH = [230, 56, 64]
@@ -77,4 +77,24 @@ test('candy gloss follows roughness and puts a white highlight only on glossy ca
     return r.img.data[(6 * 16 + 6) * 4]
   }
   assert.ok(candy(0.1) > candy(0.9) + 20, 'a glossy candy surface facing the softbox is lit white')
+})
+
+test('hueOf and withHue read and set the hue but keep the value and saturation', () => {
+  assert.equal(hueOf([1, 0, 0]), 0)
+  assert.ok(Math.abs((hueOf([0, 0, 1]) ?? 0) - 2 / 3) < 1e-9)
+  assert.equal(hueOf([0.5, 0.5, 0.48]), null, 'a near-grey colour has no hue to keep')
+  const c = withHue([0.98, 0.24, 0.84], hueOf([240 / 255, 40 / 255, 127 / 255]) ?? 0)
+  assert.ok(Math.abs(Math.max(...c) - 0.98) < 1e-9 && Math.abs(Math.min(...c) - 0.24) < 1e-9)
+  assert.ok(Math.abs((hueOf(c) ?? 0) - (hueOf([240 / 255, 40 / 255, 127 / 255]) ?? 0)) < 1e-9)
+})
+
+test('relight keeps a candy material on its base hue instead of the magenta the sky pushes it to', () => {
+  const p = passes()
+  // A magenta shaded pixel (what ACES and the blue sky make of candy pink).
+  p.shaded = { ...p.shaded, data: p.shaded.data.map((c, i) => ((Math.floor(i / 4) % 16) >= 10 && i % 4 < 3 ? [249, 60, 215][i % 4] : c)) }
+  p.legend = parseLegend('#0 #e63840 candy-blue (m1); #1 #8cd94d candy-pink (m4)')
+  p.base = { 'candy-pink': [240 / 255, 40 / 255, 127 / 255] }
+  const r = relight(p, [0, 0, 5], [0, 0, 0])
+  const px = r.img.data.subarray((6 * 16 + 11) * 4, (6 * 16 + 11) * 4 + 3)
+  assert.ok(px[0] > px[2] * 1.4, 'the candy pink pixel is pink, not magenta')
 })

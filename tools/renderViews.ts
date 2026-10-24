@@ -216,6 +216,18 @@ export function materialRoughness(doc: Obj): Record<string, number> {
   return out
 }
 
+// Material name -> the `in.base_color` of its material.output node as sRGB 0..1, for the candy hue of the studio grade.
+export function materialBase(doc: Obj): Record<string, V3> {
+  const out: Record<string, V3> = {}
+  for (const m of Object.values((doc.materials ?? {}) as Record<string, { name?: string; graph?: { nodes?: { type?: string; params?: Obj }[] } }>)) {
+    const c = m.graph?.nodes?.find((n) => n.type === 'material.output')?.params?.['in.base_color']
+    if (typeof m.name !== 'string' || typeof c !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(c)) continue
+    const v = parseInt(c.slice(1), 16)
+    out[m.name] = [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]
+  }
+  return out
+}
+
 const WORLDS = ['candy', 'ice', 'jungle', 'neon', 'common']
 type XYZ = { x: number; y: number; z: number }
 const aabb = (b: { min: XYZ; max: XYZ }): { min: V3; max: V3 } => ({ min: [b.min.x, b.min.y, b.min.z], max: [b.max.x, b.max.y, b.max.z] })
@@ -249,6 +261,7 @@ export async function main(argv: string[]): Promise<number> {
       })
       const doc = mergeDocuments(body.json.document as Obj, parts)
       const roughness = materialRoughness(doc)
+      const base = materialBase(doc)
       const sdfm = await createSdfm({ doc })
       for (const v of s.views as ViewName[]) {
         const out = resolve(input.out, `${s.name}-${v}.png`)
@@ -265,7 +278,7 @@ export async function main(argv: string[]): Promise<number> {
           const shaded = await pass('shaded', out)
           const normals = await pass('normals', join(tmpdir(), `rf-views-${process.pid}-normals.png`))
           const materials = await pass('materials', join(tmpdir(), `rf-views-${process.pid}-materials.png`))
-          const relit = relight({ shaded: shaded.img, normals: normals.img, materials: materials.img, legend: parseLegend(materials.text), roughness }, camera.position, camera.target)
+          const relit = relight({ shaded: shaded.img, normals: normals.img, materials: materials.img, legend: parseLegend(materials.text), roughness, base }, camera.position, camera.target)
           const staged = stageOnBackdrop(relit.img, floorShadow(camera, aabb(body.asset.bounds), VIEW_YAWS[v], input.width, input.height))
           writeFileSync(out, encodePng(fuzzAndBloom(staged, relit)))
           console.log(`[render] ${s.name}/${v} ${Date.now() - t0} ms: ${shaded.text.split(';')[0]}`)

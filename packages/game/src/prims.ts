@@ -262,6 +262,10 @@ const COLLIDER_FIELDS: Record<string, readonly string[]> = {
   cone: ['halfHeight', 'radius'],
 }
 
+// SDF Modeler's asset_save_game spelling, same meaning (Rapier inner half) as in parsePublishedCollider.
+const COLLIDER_ALIASES: Record<string, string> = { halfExtents: 'half', borderRadius: 'border' }
+const ONE_SPELLING = 'use one spelling: half/border or halfExtents/borderRadius'
+
 function positive(v: unknown, ptr: string, what: string): number {
   if (!isFiniteNum(v) || v <= 0) fail(ptr, `${what} must be a finite number > 0; give a positive JSON number`)
   return v
@@ -277,12 +281,19 @@ export function parseColliderJson(j: unknown, path: string): ColliderSpec {
   }
   const fields = COLLIDER_FIELDS[shape]
   const keys = Object.keys(j)
+  // canonical field -> the key the file used for it
+  const used: Record<string, string> = {}
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i]
-    if (k !== 'shape' && k !== 't' && k !== 'r' && !fields.includes(k)) {
+    if (k === 'shape' || k === 't' || k === 'r') continue
+    const c = Object.hasOwn(COLLIDER_ALIASES, k) ? COLLIDER_ALIASES[k] : k
+    if (!fields.includes(c)) {
       fail(`${path}/${esc(k)}`, `unknown field for ${shape}; allowed fields are shape, ${fields.join(', ')}, t, r`)
     }
+    if (Object.hasOwn(used, c)) fail(`${path}/${esc(k)}`, `both ${used[c]} and ${k} given; ${ONE_SPELLING}`)
+    used[c] = k
   }
+  const key = (c: string): string => Object.hasOwn(used, c) ? used[c] : c
   const tv = j.t === undefined ? [0, 0, 0] : finiteTuple(j.t, 3, `${path}/t`, 'collider t')
   const rv = j.r === undefined ? [0, 0, 0, 1] : finiteTuple(j.r, 4, `${path}/r`, 'collider r')
   const norm = Math.sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2] + rv[3] * rv[3])
@@ -290,13 +301,14 @@ export function parseColliderJson(j: unknown, path: string): ColliderSpec {
   const t: Vec3 = { x: tv[0], y: tv[1], z: tv[2] }
   const r: Quat = { x: rv[0], y: rv[1], z: rv[2], w: rv[3] }
   const half = (): Vec3 => {
-    const h = finiteTuple(j.half, 3, `${path}/half`, 'half extents')
-    for (let i = 0; i < 3; i++) positive(h[i], `${path}/half/${i}`, 'half extent')
+    const k = key('half')
+    const h = finiteTuple(j[k], 3, `${path}/${k}`, 'half extents')
+    for (let i = 0; i < 3; i++) positive(h[i], `${path}/${k}/${i}`, 'half extent')
     return { x: h[0], y: h[1], z: h[2] }
   }
   switch (shape) {
     case 'cuboid': return { shape, half: half(), t, r }
-    case 'roundCuboid': return { shape, half: half(), border: positive(j.border, `${path}/border`, 'border'), t, r }
+    case 'roundCuboid': return { shape, half: half(), border: positive(j[key('border')], `${path}/${key('border')}`, 'border'), t, r }
     case 'ball': return { shape, radius: positive(j.radius, `${path}/radius`, 'radius'), t, r }
     default: {
       const s = shape as 'capsule' | 'cylinder' | 'cone'

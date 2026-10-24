@@ -201,6 +201,27 @@ test('parseColliderJson (course colliders) refusals', () => {
   refused(() => parseColliderJson({ shape: 'ball', radius: 1, radious: 2 }, p), `${p}/radious`)
 })
 
+test('parseColliderJson reads the SDF Modeler spelling halfExtents/borderRadius as half/border', () => {
+  const p = `${FILE}#/collision/0`
+  assert.deepEqual(parseColliderJson({ shape: 'cuboid', t: [0, 1, 0], r: [0, 0, 0, 1], halfExtents: [1, 2, 3] }, p),
+    parseColliderJson({ shape: 'cuboid', half: [1, 2, 3], t: [0, 1, 0], r: [0, 0, 0, 1] }, p))
+  assert.deepEqual(parseColliderJson({ shape: 'roundCuboid', halfExtents: [1, 2, 3], borderRadius: 0.1 }, p),
+    parseColliderJson({ shape: 'roundCuboid', half: [1, 2, 3], border: 0.1 }, p))
+})
+
+test('parseColliderJson refuses mixed spellings and names the spelling used', () => {
+  const p = `${FILE}#/collision/0`
+  assert.throws(() => parseColliderJson({ shape: 'cuboid', half: [1, 1, 1], halfExtents: [1, 1, 1] }, p), (e: unknown) => {
+    assert.ok(isRefusal(e))
+    assert.equal(e.path, `${p}/halfExtents`)
+    assert.ok(e.message.includes('use one spelling: half/border or halfExtents/borderRadius'))
+    return true
+  })
+  refused(() => parseColliderJson({ shape: 'roundCuboid', halfExtents: [1, 1, 1], borderRadius: 0.1, border: 0.1 }, p), `${p}/border`)
+  refused(() => parseColliderJson({ shape: 'cuboid', halfExtents: [1, -1, 1] }, p), `${p}/halfExtents/1`)
+  refused(() => parseColliderJson({ shape: 'roundCuboid', halfExtents: [1, 1, 1], borderRadius: 0 }, p), `${p}/borderRadius`)
+})
+
 test('assetHash is fnv1a32 of the UTF-8 bytes', () => {
   assert.equal(assetHash('abc'), fnv1a32(new Uint8Array([0x61, 0x62, 0x63])) >>> 0)
   assert.equal(assetHash('é'), fnv1a32(new Uint8Array([0xc3, 0xa9])) >>> 0)

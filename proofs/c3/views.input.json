@@ -1,0 +1,27 @@
+{
+  "format": "royal-fiesta.views-input",
+  "version": 1,
+  "out": "out/c3",
+  "width": 1024,
+  "height": 1024,
+  "subjects": [
+    {
+      "name": "candy-pendulum-hammer",
+      "assets": [
+        "candy.pendulum-hammer"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-spinner-bar",
+      "assets": [
+        "candy.spinner-bar"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    }
+  ]
+}

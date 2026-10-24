@@ -2,6 +2,8 @@
   "format": "royal-fiesta.authored",
   "version": 1,
   "files": [
+    "assets/candy/candy.pendulum-hammer.asset.json",
+    "assets/candy/candy.spinner-bar.asset.json",
     "assets/common/costume.fish-scarf.asset.json",
     "assets/common/costume.pineapple-suit.asset.json",
     "assets/common/costume.propeller-hat.asset.json",

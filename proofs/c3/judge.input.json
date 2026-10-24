@@ -1,0 +1,22 @@
+{
+  "format": "royal-fiesta.judge-input",
+  "version": 1,
+  "reference": "royal-fiesta/ref-1.png",
+  "minScore": 6,
+  "context": "This image is an isolated SDF Modeler kit-asset view: one candy-world obstacle rendered alone on a plain neutral studio backdrop, as the project's view spec requires, not a gameplay screenshot. The course, characters, environment, sky and bloom of the reference are absent by design. Grade the piece only, against the matching piece of the reference: glossy inflatable pink/yellow/blue look, white zigzags or candy stripes, chunky rounded rims and toy-like proportions.",
+  "subjects": [
+    {
+      "name": "c3-hammer-spinner",
+      "views": [
+        {
+          "png": "out/c3/candy-pendulum-hammer-three-quarter.png",
+          "description": "candy.pendulum-hammer, the inflatable hammer of ref-1: a fat glossy pink drum-shaped head lying along X with chunky rounded yellow rims and blue end faces, a white zigzag band printed around its middle, on a blue inflatable arm with yellow collars rising to a yellow pivot hub on a pink axle, in ref-1's glossy pink/yellow/blue inflatable style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        },
+        {
+          "png": "out/c3/candy-spinner-bar-three-quarter.png",
+          "description": "candy.spinner-bar, the rotating spinner bar of ref-1: a long glossy pink inflatable tube with white helical candy stripes, rounded yellow end caps and yellow collars, on a pink hub cap over a yellow post and a wide blue base with a yellow rim, in ref-1's glossy pink/yellow/white inflatable style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        }
+      ]
+    }
+  ]
+}

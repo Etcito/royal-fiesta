@@ -5,8 +5,8 @@
     "timeout_s": 3000
   },
   {
-    "name": "judge-c3-door-seesaw-wall",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-door-seesaw-wall",
+    "name": "judge-c3-hub-props",
+    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-hub-props",
     "timeout_s": 1200,
     "after": [
       "render-views"

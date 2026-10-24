@@ -3,253 +3,334 @@
   "version": 1,
   "game": "royal-fiesta",
   "id": "candy.podium-block",
-  "name": "Podium Block",
+  "name": "candy-podium-block",
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "quad"
   },
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "Podium Block",
+    "name": "candy-podium-block",
     "root": [
       "candy_podium_block"
     ],
     "nodes": {
       "candy_podium_block": {
         "id": "candy_podium_block",
-        "name": "Podium Block",
+        "name": "candy-podium-block",
         "kind": "group",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#b0b0b0",
-        "material": null,
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
         "children": [
-          "block"
+          "collider_block",
+          "core",
+          "rim_low",
+          "rim_top",
+          "cushion",
+          "zigzag_z",
+          "zigzag_x"
         ],
-        "modifiers": [],
-        "asset": "candy.podium-block",
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.podium-block",
+          "category": "obstacle",
+          "world": "candy"
+        },
         "mesher": {
-          "output": "lowpoly"
-        }
+          "output": "quad"
+        },
+        "gameCollision": false
       },
-      "block": {
-        "id": "block",
-        "name": "block",
-        "kind": "roundBox",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#f2f2f2",
-        "material": "white",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+      "collider_block": {
+        "id": "collider_block",
+        "name": "collider-block",
+        "kind": "box",
+        "visible": false,
         "params": {
-          "size": [
-            2,
-            1,
-            2
-          ],
-          "radius": 0.1
-        }
+          "size": [2, 1, 2]
+        },
+        "gameCollision": true
+      },
+      "core": {
+        "id": "core",
+        "name": "core",
+        "kind": "box",
+        "transform": {
+          "position": [0, -0.02, 0]
+        },
+        "round": 0.18,
+        "material": "candy-pink",
+        "params": {
+          "size": [1.96, 0.66, 1.96]
+        },
+        "gameCollision": false
+      },
+      "rim_low": {
+        "id": "rim_low",
+        "name": "rim-low",
+        "kind": "box",
+        "transform": {
+          "position": [0, -0.38, 0]
+        },
+        "smooth": 0.04,
+        "round": 0.12,
+        "material": "candy-yellow",
+        "params": {
+          "size": [2.12, 0.24, 2.12]
+        },
+        "gameCollision": false
+      },
+      "rim_top": {
+        "id": "rim_top",
+        "name": "rim-top",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.33, 0]
+        },
+        "smooth": 0.04,
+        "round": 0.11,
+        "material": "candy-yellow",
+        "params": {
+          "size": [2.12, 0.22, 2.12]
+        },
+        "gameCollision": false
+      },
+      "cushion": {
+        "id": "cushion",
+        "name": "cushion",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.45, 0]
+        },
+        "smooth": 0.03,
+        "round": 0.1,
+        "material": "candy-blue",
+        "params": {
+          "size": [1.8, 0.2, 1.8]
+        },
+        "gameCollision": false
+      },
+      "zigzag_z": {
+        "id": "zigzag_z",
+        "name": "zigzag-z",
+        "kind": "extrude",
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "depth": 2.03,
+          "profile": {
+            "points": [
+              {
+                "p": [-0.82, -0.07]
+              },
+              {
+                "p": [-0.615, -0.23]
+              },
+              {
+                "p": [-0.41, -0.07]
+              },
+              {
+                "p": [-0.205, -0.23]
+              },
+              {
+                "p": [0, -0.07]
+              },
+              {
+                "p": [0.205, -0.23]
+              },
+              {
+                "p": [0.41, -0.07]
+              },
+              {
+                "p": [0.615, -0.23]
+              },
+              {
+                "p": [0.82, -0.07]
+              },
+              {
+                "p": [0.82, 0.06]
+              },
+              {
+                "p": [0.615, -0.1]
+              },
+              {
+                "p": [0.41, 0.06]
+              },
+              {
+                "p": [0.205, -0.1]
+              },
+              {
+                "p": [0, 0.06]
+              },
+              {
+                "p": [-0.205, -0.1]
+              },
+              {
+                "p": [-0.41, 0.06]
+              },
+              {
+                "p": [-0.615, -0.1]
+              },
+              {
+                "p": [-0.82, 0.06]
+              }
+            ]
+          }
+        },
+        "gameCollision": false
+      },
+      "zigzag_x": {
+        "id": "zigzag_x",
+        "name": "zigzag-x",
+        "kind": "extrude",
+        "transform": {
+          "rotation": [0, 90, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "depth": 2.03,
+          "profile": {
+            "points": [
+              {
+                "p": [-0.82, -0.07]
+              },
+              {
+                "p": [-0.615, -0.23]
+              },
+              {
+                "p": [-0.41, -0.07]
+              },
+              {
+                "p": [-0.205, -0.23]
+              },
+              {
+                "p": [0, -0.07]
+              },
+              {
+                "p": [0.205, -0.23]
+              },
+              {
+                "p": [0.41, -0.07]
+              },
+              {
+                "p": [0.615, -0.23]
+              },
+              {
+                "p": [0.82, -0.07]
+              },
+              {
+                "p": [0.82, 0.06]
+              },
+              {
+                "p": [0.615, -0.1]
+              },
+              {
+                "p": [0.41, 0.06]
+              },
+              {
+                "p": [0.205, -0.1]
+              },
+              {
+                "p": [0, 0.06]
+              },
+              {
+                "p": [-0.205, -0.1]
+              },
+              {
+                "p": [-0.41, 0.06]
+              },
+              {
+                "p": [-0.615, -0.1]
+              },
+              {
+                "p": [-0.82, 0.06]
+              }
+            ]
+          }
+        },
+        "gameCollision": false
       }
     },
     "materials": {
-      "white": {
-        "name": "white",
+      "candy-pink": {
+        "name": "candy-pink",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#f2f2f2",
-                "in.roughness": 0.6
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.3
               }
             }
           ],
           "links": []
         }
       }
-    },
-    "shapes": {},
-    "views": {},
-    "settings": {
-      "mesh": {
-        "detail": null,
-        "maxDepth": 9,
-        "adaptivity": 0.02,
-        "sharpAngleDeg": 30
-      },
-      "lowpoly": {
-        "targetTriangles": 2000,
-        "keepWeight": 10,
-        "featureAngleDeg": 35
-      },
-      "uv": {
-        "texelsPerMeter": null,
-        "padding": 8
-      },
-      "bake": {
-        "resolution": 1024,
-        "maps": [
-          "normal",
-          "baseColor",
-          "orm"
-        ],
-        "cageDistance": null,
-        "samples": 1
-      },
-      "export": {
-        "geometry": "lowpoly",
-        "skin": false,
-        "lods": [
-          1
-        ],
-        "quad": {
-          "targetFaces": 1000,
-          "subdivide": 0,
-          "method": "auto",
-          "features": "auto",
-          "featureAngleDeg": 35,
-          "adaptive": true,
-          "alignCurvature": true,
-          "seed": 1,
-          "detail": true,
-          "maxFacesRatio": 3
-        },
-        "poly": {
-          "segments": 16,
-          "additive": "keep"
-        }
-      },
-      "paramesh": {
-        "fieldResolution": 96,
-        "precision": "f16",
-        "subdivisions": 16,
-        "transitionLoops": 2
-      }
     }
   },
   "collision": [
     {
       "shape": "cuboid",
-      "half": [
-        1,
-        0.5,
-        1
-      ],
-      "t": [
-        0,
-        0,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [1, 0.5, 1]
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [
-      -1,
-      -0.5,
-      -1
-    ],
-    "max": [
-      1,
-      0.5,
-      1
-    ]
+    "min": [-1.1, -0.54, -1.1],
+    "max": [1.1, 0.58, 1.1]
   },
-  "hash": "9388286edda58210a4b88c30c706187bd5cb24786bd4a18623dfaa94fdc584ce"
+  "hash": "7eddd3ca507037b70d17a0eaff50aaec4bbd538cb5ed8d274a9e8cb7e478b7a4"
 }

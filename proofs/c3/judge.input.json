@@ -77,6 +77,23 @@
           "description": "candy.wall-block, a padded wall like ref-1's inflatable walls: a long puffy wall made of five rounded inflatable cushions alternating blue and pink, sitting on a rounded yellow base under a rounded yellow top rail, with a white zigzag trim running along both faces, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). Only the near (+Z) face and the +X end are visible in this view, so the zigzag trim is judged on the visible face only; the zigzag is white, slightly shaded in the lower light"
         }
       ]
+    },
+    {
+      "name": "c3-hub-props",
+      "views": [
+        {
+          "png": "out/c3/candy-queue-pad-three-quarter.png",
+          "description": "candy.queue-pad, a round hub queue pad like ref-1's round candy pads: a low glossy pink cushion top sitting in a chunky rounded yellow inflatable rim with a white zigzag band around its side, four white arrow chevrons on the pink top pointing to a white ring with a blue centre dot, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        },
+        {
+          "png": "out/c3/candy-plaza-fountain-three-quarter.png",
+          "description": "candy.plaza-fountain, a plaza fountain in ref-1's inflatable candy look: a round pink basin on a yellow foot with a chunky rounded yellow rim and a white zigzag band around its side, filled with a glossy bright green slime surface, and a central tiered pink column with a yellow dish holding blue water, a smaller pink dish with blue water, and a yellow ball with a small blue water drop on top, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        },
+        {
+          "png": "out/c3/candy-podium-block-three-quarter.png",
+          "description": "candy.podium-block, a podium block like ref-1's padded inflatable blocks: a square padded pink block with chunky rounded yellow rims at its top and bottom edges, a puffy blue cushion on top, and a bold white zigzag trim running around all four sides, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        }
+      ]
     }
   ]
 }

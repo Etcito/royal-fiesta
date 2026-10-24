@@ -112,6 +112,33 @@
       "views": [
         "three-quarter"
       ]
+    },
+    {
+      "name": "candy-queue-pad",
+      "assets": [
+        "candy.queue-pad"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-plaza-fountain",
+      "assets": [
+        "candy.plaza-fountain"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-podium-block",
+      "assets": [
+        "candy.podium-block"
+      ],
+      "views": [
+        "three-quarter"
+      ]
     }
   ]
 }

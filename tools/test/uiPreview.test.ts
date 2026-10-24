@@ -80,21 +80,25 @@ test('output names are out/ui-preview/<id>.<state>.png', () => {
   assert.equal(previewFile('/repo', 'button.inflatable', 'pressed'), resolve('/repo', 'out/ui-preview/button.inflatable.pressed.png'))
 })
 
-test('sdfmDir finds the read-only <card>-ro-sdfm peer and prefers SDFM_DIR', () => {
+test('sdfmDir finds the read-only <card>-ro-sdfm peer and prefers SDFM_DIR and RF_BRICKS_DIR', () => {
   const saved = { SDFM_DIR: process.env.SDFM_DIR, RF_BRICKS_DIR: process.env.RF_BRICKS_DIR }
   delete process.env.SDFM_DIR
   delete process.env.RF_BRICKS_DIR
+  const checkout = (dir: string): string => {
+    mkdirSync(join(dir, 'bin'), { recursive: true })
+    writeFileSync(join(dir, 'bin', 'sdfm.mjs'), '')
+    return dir
+  }
   try {
     const base = mkdtempSync(join(tmpdir(), 'rf-ui-preview-'))
     const repo = join(base, 'game')
-    const peer = join(base, '5012-ro-sdfm')
     mkdirSync(repo, { recursive: true })
-    mkdirSync(join(peer, 'bin'), { recursive: true })
-    writeFileSync(join(peer, 'bin', 'sdfm.mjs'), '')
+    const peer = checkout(join(base, '5012-ro-sdfm'))
     assert.equal(sdfmDir(repo), peer)
-    const pinned = join(base, 'pinned')
-    mkdirSync(join(pinned, 'bin'), { recursive: true })
-    writeFileSync(join(pinned, 'bin', 'sdfm.mjs'), '')
+    const bricks = checkout(join(base, 'bricks', 'sdfm'))
+    process.env.RF_BRICKS_DIR = join(base, 'bricks')
+    assert.equal(sdfmDir(repo), bricks)
+    const pinned = checkout(join(base, 'pinned'))
     process.env.SDFM_DIR = pinned
     assert.equal(sdfmDir(repo), pinned)
   } finally {

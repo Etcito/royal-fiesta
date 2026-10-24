@@ -2,7 +2,7 @@
 // SDF Modeler is driven in process (like tools/renderViews.ts), so its ui_asset_preview runs in Node and returns
 // the PNG bytes; the transparent render is alpha-composited onto ref-1's sky blue for the owner's review.
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -24,6 +24,8 @@ const SDFM_DEPS = ['MAMA', 'NodeGraph', 'TS_PieMenue']
 // What the sdfm Node build needs; the rest of the checkout (fixtures, bench, out) is never read.
 const SDFM_COPY = ['src', 'scripts', 'bin', 'package.json', 'tsconfig.node.json']
 const SDFM_LINK = ['node_modules', 'vendor']
+const BUILD_TIMEOUT_MS = 30 * 60_000
+const LOCK_STALE_MS = 10 * 60_000
 
 export interface PreviewArgs {
   id: string
@@ -259,18 +261,46 @@ export function sdfmDir(root: string): string {
   return hit
 }
 
+const sleep = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms))
+
 // The sibling checkout is read-only, so its Node side is compiled in a temp copy keyed by its commit.
 // A checkout without node_modules (the read-only peer) gets `npm ci` in the temp copy, which links
-// the file: siblings; the checkout itself is never written.
+// the file: siblings; the checkout itself is never written. Builds share the copy, so a lock keeps
+// parallel previews from installing and compiling over each other.
 async function sdfmApi(src: string): Promise<{ createSdfm(): Promise<Sdfm> }> {
   let head = 'local'
   try { head = execFileSync('git', ['-C', src, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() } catch {}
   const dir = join(tmpdir(), `rf-ui-preview-sdfm-${head.slice(0, 12)}`)
   const build = join(dir, 'sdfm')
   const api = join(build, 'build-node/node/api.js')
-  if (!existsSync(api)) {
+  if (!existsSync(join(dir, 'build.done'))) await buildSdfm(src, dir, build, head)
+  return import(pathToFileURL(api).href) as Promise<{ createSdfm(): Promise<Sdfm> }>
+}
+
+async function buildSdfm(src: string, dir: string, build: string, head: string): Promise<void> {
+  const done = join(dir, 'build.done')
+  const lock = join(dir, 'build.lock')
+  const deadline = Date.now() + BUILD_TIMEOUT_MS
+  mkdirSync(dir, { recursive: true })
+  for (;;) {
+    try {
+      mkdirSync(lock)
+      break
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e
+      try {
+        if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS) {
+          rmSync(lock, { recursive: true, force: true })
+          continue
+        }
+      } catch {}
+      if (Date.now() > deadline) throw new Error(`SDF Modeler build lock ${lock} is stuck; remove it and retry`)
+      await sleep(500)
+    }
+  }
+  try {
+    if (existsSync(done)) return
     rmSync(build, { recursive: true, force: true })
-    mkdirSync(build, { recursive: true })
     for (const p of SDFM_COPY) cpSync(join(src, p), join(build, p), { recursive: true })
     if (existsSync(join(src, 'node_modules'))) {
       for (const p of SDFM_LINK) if (!existsSync(join(build, p)) && existsSync(join(src, p))) symlinkSync(join(src, p), join(build, p))
@@ -283,13 +313,15 @@ async function sdfmApi(src: string): Promise<{ createSdfm(): Promise<Sdfm> }> {
       cpSync(join(src, 'package-lock.json'), join(build, 'package-lock.json'))
       cpSync(join(src, 'vendor'), join(build, 'vendor'), { recursive: true })
       console.log(`[uiPreview] installing SDF Modeler ${head.slice(0, 12)} dependencies in ${dir}`)
-      execFileSync('npm', ['ci', '--no-audit', '--no-fund'], { cwd: build, stdio: 'inherit' })
+      execFileSync('npm', ['ci', '--no-audit', '--no-fund', '--ignore-scripts'], { cwd: build, stdio: 'inherit' })
     }
     console.log(`[uiPreview] compiling SDF Modeler ${head.slice(0, 12)} in ${build}`)
     const proof = await import(pathToFileURL(join(build, 'scripts/lib/proof.mjs')).href) as { compileNode(): void }
     proof.compileNode()
+    writeFileSync(done, head)
+  } finally {
+    rmSync(lock, { recursive: true, force: true })
   }
-  return import(pathToFileURL(api).href) as Promise<{ createSdfm(): Promise<Sdfm> }>
 }
 
 /** One empty SDF Modeler session per run; an empty NMC_GPU_URL makes it render in Node. */

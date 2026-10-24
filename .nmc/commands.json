@@ -48,7 +48,7 @@
   },
   {
     "name": "judge-button-primary-normal",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.primary.normal.png --description \"A game UI primary button shown alone on a sky-blue background, styled like the inflatable pool floats of a candy-coloured party game: a fat glossy inflatable pill in hot pink with a darker pink rim, a soft inner shadow, a bright white specular streak on the top-left and a puffy welded seam running around inside the edge. No text on it (the game adds the label).\" --min-score 6",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.primary.normal.png --description \"A game UI primary button shown alone on a sky-blue background, styled like the inflatable pool floats of a candy-coloured party game: a fat glossy inflatable pill in hot pink with a darker pink rim, a soft inner shadow, a bright white specular streak on the top-left and a puffy welded seam running around inside the edge. No text on it (the game adds the label).\" --reference /refs/ref-1.png --min-score 6 --aspect design",
     "timeout_s": 300,
     "after": [
       "preview-button-primary"
@@ -56,7 +56,7 @@
   },
   {
     "name": "judge-button-primary-focus",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.primary.focus.png --description \"The focused state of a game UI button on a sky-blue background: a fat glossy inflatable hot-pink pill with a darker pink rim, a white specular streak top-left and a puffy seam, surrounded by a bright yellow glow ring. No text on it.\" --min-score 6",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.primary.focus.png --description \"The focused state of a game UI button on a sky-blue background: a fat glossy inflatable hot-pink pill with a darker pink rim, a white specular streak top-left and a puffy seam, surrounded by a bright yellow glow ring. No text on it.\" --reference /refs/ref-1.png --min-score 6 --aspect design",
     "timeout_s": 300,
     "after": [
       "preview-button-primary"

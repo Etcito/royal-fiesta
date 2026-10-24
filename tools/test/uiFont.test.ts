@@ -197,11 +197,12 @@ test('fetchFont refuses a sha256 or byte-length mismatch and writes nothing', as
   }
 })
 
-test('upload refuses without ASSET_STORE_SSH and ASSET_STORE_KEY', async () => {
+test('upload refuses without ASSET_STORE_SSH and ASSET_STORE_KEY when the store lacks the object', async () => {
   const root = tempRoot()
   try {
+    const get: FetchLike = async () => response(new Uint8Array(0), 404)
     for (const env of [{}, { ASSET_STORE_SSH: ENV.ASSET_STORE_SSH }, { ASSET_STORE_KEY: ENV.ASSET_STORE_KEY }]) {
-      await assert.rejects(uploadFont(root, font(), { env }), (error: unknown) => {
+      await assert.rejects(uploadFont(root, font(), { env, get }), (error: unknown) => {
         assert.ok(error instanceof UploadEnvError)
         assert.equal(error.message, 'uiFont: upload needs ASSET_STORE_SSH and ASSET_STORE_KEY')
         return true
@@ -258,8 +259,29 @@ test('upload skips publishing when the store already has the object', async () =
       publish: async () => { throw new Error('publish must be skipped') },
       log: line => lines.push(line),
     })
-    assert.ok(lines.some(line => line.includes('already in the store')))
-    assert.ok(lines.some(line => line.startsWith('PASS font verify')))
+    assert.ok(lines.some(line => line.includes('already published')))
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('upload exits 0 on an object already in the store without credentials or a local font', async () => {
+  const root = tempRoot()
+  try {
+    const calls: string[] = []
+    const lines: string[] = []
+    await uploadFont(root, font(), {
+      env: {},
+      get: async url => {
+        assert.equal(url, objectUrl(SHA))
+        return response(BODY)
+      },
+      stage: async () => { calls.push('stage'); return { sha256: SHA, size: BODY.length, key: `objects/${SHA.slice(0, 2)}/${SHA}` } },
+      publish: async () => { calls.push('publish') },
+      log: line => lines.push(line),
+    })
+    assert.deepEqual(calls, [])
+    assert.ok(lines.some(line => line.includes('already published')))
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

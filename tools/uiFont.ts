@@ -412,6 +412,11 @@ export async function uploadFont(root: string, entry: FontEntry, options: Upload
   const env = options.env ?? process.env
   const log = (line: string): void => write(redact(line, env))
   const get = options.get ?? publicFetch
+  const key = `objects/${entry.sha256.slice(0, 2)}/${entry.sha256}`
+  if (await storeHas(entry, get)) {
+    log(`PASS font upload ${fileName(entry)} already published ${key}`)
+    return
+  }
   const ssh = env.ASSET_STORE_SSH
   const keyFile = env.ASSET_STORE_KEY
   if (ssh === undefined || ssh === '' || keyFile === undefined || keyFile === '') throw new UploadEnvError()
@@ -428,28 +433,23 @@ export async function uploadFont(root: string, entry: FontEntry, options: Upload
   }
   const stage = options.stage ?? ((path: string) => runRaaPut(root, path))
   const stored = await stage(file)
-  const key = `objects/${entry.sha256.slice(0, 2)}/${entry.sha256}`
   if (stored.sha256 !== entry.sha256 || stored.size !== entry.bytes || stored.key !== key) {
     refuse(AREA, `${FONT_DIR}/${fileName(entry)}`, `raa-assets put staged ${stored.sha256} (${stored.size} bytes) at ${stored.key}, not ${entry.sha256} (${entry.bytes} bytes) at ${key}; check the local font and the CLI store`)
   }
-  if (await storeHas(entry, get)) {
-    log(`PASS font upload ${fileName(entry)} already in the store ${key}`)
-  } else {
-    const target = parseStoreTarget(ssh)
-    const stagedFile = join(root, FONT_STORE, stored.key)
-    let staged: Uint8Array
-    try {
-      staged = new Uint8Array(readFileSync(stagedFile))
-    } catch {
-      refuse(AREA, `${FONT_STORE}/${stored.key}`, 'the staged font is missing; run upload again')
-    }
-    if (sha256Hex(staged) !== stored.sha256 || staged.length !== stored.size) {
-      refuse(AREA, `${FONT_STORE}/${stored.key}`, 'the staged font does not match its sha256 and size; run upload again')
-    }
-    const publish = options.publish ?? publishObject
-    await publish({ ssh: target.target, keyFile, root: target.root, sha256: stored.sha256, bytes: staged, pid: process.pid })
-    log(`PASS font upload ${fileName(entry)} published ${stored.sha256} ${stored.size} bytes ${stored.key}`)
+  const target = parseStoreTarget(ssh)
+  const stagedFile = join(root, FONT_STORE, stored.key)
+  let staged: Uint8Array
+  try {
+    staged = new Uint8Array(readFileSync(stagedFile))
+  } catch {
+    refuse(AREA, `${FONT_STORE}/${stored.key}`, 'the staged font is missing; run upload again')
   }
+  if (sha256Hex(staged) !== stored.sha256 || staged.length !== stored.size) {
+    refuse(AREA, `${FONT_STORE}/${stored.key}`, 'the staged font does not match its sha256 and size; run upload again')
+  }
+  const publish = options.publish ?? publishObject
+  await publish({ ssh: target.target, keyFile, root: target.root, sha256: stored.sha256, bytes: staged, pid: process.pid })
+  log(`PASS font upload ${fileName(entry)} published ${stored.sha256} ${stored.size} bytes ${stored.key}`)
   await verifyFont(entry, get, log)
   const fonts = readFonts(root)
   const index = fonts.fonts.findIndex(font => font.family === entry.family && font.weight === entry.weight)

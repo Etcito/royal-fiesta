@@ -1,44 +1,26 @@
 [
   {
-    "name": "web-build",
-    "command": "npm run web:build",
-    "timeout_s": 900,
+    "name": "font-fetch",
+    "command": "node --experimental-strip-types tools/uiFont.ts fetch",
+    "timeout_s": 300,
     "cwd": "."
   },
   {
-    "name": "publish",
-    "command": "node \"$NMC_GPU_CLIENT\" publish apps/web/dist/",
+    "name": "font-upload",
+    "command": "node --experimental-strip-types tools/uiFont.ts upload",
     "timeout_s": 600,
     "cwd": ".",
     "after": [
-      "web-build"
+      "font-fetch"
     ]
   },
   {
-    "name": "render-tour",
-    "command": "env NMC_GPU_WAIT_S=1500 node --experimental-strip-types tools/uiTourRecord.ts --render proofs/ui/tour.input.json out/ui",
-    "timeout_s": 1800,
+    "name": "font-verify",
+    "command": "node --experimental-strip-types tools/uiFont.ts verify",
+    "timeout_s": 300,
     "cwd": ".",
     "after": [
-      "publish"
-    ]
-  },
-  {
-    "name": "tour-record",
-    "command": "node --experimental-strip-types tools/uiTourRecord.ts out/ui",
-    "timeout_s": 120,
-    "cwd": ".",
-    "after": [
-      "render-tour"
-    ]
-  },
-  {
-    "name": "proof-evidence",
-    "command": "node scripts/proof/ui-screens.mjs --only evidence",
-    "timeout_s": 120,
-    "cwd": ".",
-    "after": [
-      "tour-record"
+      "font-upload"
     ]
   }
 ]

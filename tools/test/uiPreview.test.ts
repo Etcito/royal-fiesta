@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
-import { resolve } from 'node:path'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import test from 'node:test'
 import {
   SKY_BLUE,
@@ -12,6 +14,7 @@ import {
   previewInput,
   previewPath,
   resolveStates,
+  sdfmDir,
   statesOf,
 } from '../uiPreview.ts'
 
@@ -75,6 +78,31 @@ test('output names are out/ui-preview/<id>.<state>.png', () => {
   assert.equal(SKY_BLUE, '#8fd3ff')
   assert.equal(previewPath('button.inflatable', 'pressed'), 'out/ui-preview/button.inflatable.pressed.png')
   assert.equal(previewFile('/repo', 'button.inflatable', 'pressed'), resolve('/repo', 'out/ui-preview/button.inflatable.pressed.png'))
+})
+
+test('sdfmDir finds the read-only <card>-ro-sdfm peer and prefers SDFM_DIR', () => {
+  const saved = { SDFM_DIR: process.env.SDFM_DIR, RF_BRICKS_DIR: process.env.RF_BRICKS_DIR }
+  delete process.env.SDFM_DIR
+  delete process.env.RF_BRICKS_DIR
+  try {
+    const base = mkdtempSync(join(tmpdir(), 'rf-ui-preview-'))
+    const repo = join(base, 'game')
+    const peer = join(base, '5012-ro-sdfm')
+    mkdirSync(repo, { recursive: true })
+    mkdirSync(join(peer, 'bin'), { recursive: true })
+    writeFileSync(join(peer, 'bin', 'sdfm.mjs'), '')
+    assert.equal(sdfmDir(repo), peer)
+    const pinned = join(base, 'pinned')
+    mkdirSync(join(pinned, 'bin'), { recursive: true })
+    writeFileSync(join(pinned, 'bin', 'sdfm.mjs'), '')
+    process.env.SDFM_DIR = pinned
+    assert.equal(sdfmDir(repo), pinned)
+  } finally {
+    for (const key of ['SDFM_DIR', 'RF_BRICKS_DIR'] as const) {
+      if (saved[key] === undefined) delete process.env[key]
+      else process.env[key] = saved[key]
+    }
+  }
 })
 
 test('the RGBA8 PNG codec round-trips one pixel', () => {

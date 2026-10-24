@@ -6,7 +6,7 @@
   },
   {
     "name": "judge-logo-crown",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/logo.crown.normal.png --description \"Royal Fiesta game logo on a sky-blue background, part of a bright inflatable fiesta scene like ref-1: a glossy gold inflatable crown with plump rounded points, pink and blue gem balls on the tips and on the crown rim, a thick soft plum outline and white highlight streaks, with the words ROYAL FIESTA in chunky rounded white letters across a pink inflatable band with ribbon tails, and small white sparkles\" --min-score 6",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/logo.crown.normal.png --description \"Royal Fiesta game logo: glossy gold inflatable crown with gem balls above the words ROYAL FIESTA in chunky rounded letters on a pink inflatable band, SDF Modeler preview on a sky background\" --reference /refs/ref-1.png --min-score 6 --aspect design",
     "timeout_s": 300,
     "after": [
       "preview-logo-crown"

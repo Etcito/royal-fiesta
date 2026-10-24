@@ -2,7 +2,7 @@
 // SDF Modeler is driven in process (like tools/renderViews.ts), so its ui_asset_preview runs in Node and returns
 // the PNG bytes; the transparent render is alpha-composited onto ref-1's sky blue for the owner's review.
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -17,7 +17,10 @@ const SKY_BLUE_RGB: readonly [number, number, number] = [0x8f, 0xd3, 0xff]
 export const SCALE = 4
 export const OUT_DIR = 'out/ui-preview'
 const UI_ID_RE = /^[a-z][a-z0-9]*(\.[a-z0-9-]+)+$/
-const SDFM_NAME = 'SDF_Modeler_MCP'
+const SDFM_NAMES = ['sdfm', 'SDF_Modeler_MCP']
+// The nomorechat read-only peer is named <card>-ro-sdfm; its dependencies are built from the pinned siblings.
+const SDFM_PEER_RE = /^.+-ro-sdfm$/
+const SDFM_DEPS = ['MAMA', 'NodeGraph', 'TS_PieMenue']
 // What the sdfm Node build needs; the rest of the checkout (fixtures, bench, out) is never read.
 const SDFM_COPY = ['src', 'scripts', 'bin', 'package.json', 'tsconfig.node.json']
 const SDFM_LINK = ['node_modules', 'vendor']
@@ -237,31 +240,53 @@ export function compositeOnSkyBlue(img: RgbaImage): RgbaImage {
   return { width: img.width, height: img.height, data: out }
 }
 
-// SDFM_DIR, then $RF_BRICKS_DIR/SDF_Modeler_MCP, then a sibling named sdfm or SDF_Modeler_MCP.
+// SDFM_DIR, then $RF_BRICKS_DIR, then a sibling named sdfm or SDF_Modeler_MCP, then the read-only peer.
 export function sdfmDir(root: string): string {
+  const parent = dirname(root)
+  const peers: string[] = []
+  try {
+    for (const name of readdirSync(parent)) if (SDFM_PEER_RE.test(name)) peers.push(join(parent, name))
+  } catch {}
+  const bricks = process.env.RF_BRICKS_DIR
   const tries = [
     ...(process.env.SDFM_DIR ? [process.env.SDFM_DIR] : []),
-    ...(process.env.RF_BRICKS_DIR ? [join(process.env.RF_BRICKS_DIR, SDFM_NAME)] : []),
-    join(dirname(root), 'sdfm'),
-    join(dirname(root), SDFM_NAME),
+    ...(bricks ? SDFM_NAMES.map((name) => join(bricks, name)) : []),
+    ...SDFM_NAMES.map((name) => join(parent, name)),
+    ...peers.sort(),
   ]
-  const hit = tries.find((dir) => existsSync(join(dir, 'bin', 'sdfm.mjs')))
+  const hit = [...new Set(tries)].find((dir) => existsSync(join(dir, 'bin', 'sdfm.mjs')))
   if (hit === undefined) throw new Error(`no SDF Modeler checkout (tried ${tries.join(', ')}); set SDFM_DIR to a checkout with node_modules`)
   return hit
 }
 
 // The sibling checkout is read-only, so its Node side is compiled in a temp copy keyed by its commit.
+// A checkout without node_modules (the read-only peer) gets `npm ci` in the temp copy, which links
+// the file: siblings; the checkout itself is never written.
 async function sdfmApi(src: string): Promise<{ createSdfm(): Promise<Sdfm> }> {
   let head = 'local'
   try { head = execFileSync('git', ['-C', src, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() } catch {}
   const dir = join(tmpdir(), `rf-ui-preview-sdfm-${head.slice(0, 12)}`)
-  const api = join(dir, 'build-node/node/api.js')
+  const build = join(dir, 'sdfm')
+  const api = join(build, 'build-node/node/api.js')
   if (!existsSync(api)) {
-    mkdirSync(dir, { recursive: true })
-    for (const p of SDFM_COPY) cpSync(join(src, p), join(dir, p), { recursive: true })
-    for (const p of SDFM_LINK) if (!existsSync(join(dir, p)) && existsSync(join(src, p))) symlinkSync(join(src, p), join(dir, p))
-    console.log(`[uiPreview] compiling SDF Modeler ${head.slice(0, 12)} in ${dir}`)
-    const proof = await import(pathToFileURL(join(dir, 'scripts/lib/proof.mjs')).href) as { compileNode(): void }
+    rmSync(build, { recursive: true, force: true })
+    mkdirSync(build, { recursive: true })
+    for (const p of SDFM_COPY) cpSync(join(src, p), join(build, p), { recursive: true })
+    if (existsSync(join(src, 'node_modules'))) {
+      for (const p of SDFM_LINK) if (!existsSync(join(build, p)) && existsSync(join(src, p))) symlinkSync(join(src, p), join(build, p))
+    } else {
+      for (const name of SDFM_DEPS) {
+        const sibling = join(dirname(src), name)
+        if (!existsSync(sibling)) throw new Error(`SDF Modeler checkout ${src} has no node_modules and no ${name} sibling at ${sibling}`)
+        if (!existsSync(join(dir, name))) symlinkSync(sibling, join(dir, name))
+      }
+      cpSync(join(src, 'package-lock.json'), join(build, 'package-lock.json'))
+      cpSync(join(src, 'vendor'), join(build, 'vendor'), { recursive: true })
+      console.log(`[uiPreview] installing SDF Modeler ${head.slice(0, 12)} dependencies in ${dir}`)
+      execFileSync('npm', ['ci', '--no-audit', '--no-fund'], { cwd: build, stdio: 'inherit' })
+    }
+    console.log(`[uiPreview] compiling SDF Modeler ${head.slice(0, 12)} in ${build}`)
+    const proof = await import(pathToFileURL(join(build, 'scripts/lib/proof.mjs')).href) as { compileNode(): void }
     proof.compileNode()
   }
   return import(pathToFileURL(api).href) as Promise<{ createSdfm(): Promise<Sdfm> }>

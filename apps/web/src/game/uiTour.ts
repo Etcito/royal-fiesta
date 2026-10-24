@@ -22,11 +22,11 @@ export type BootGame = (onScreen: (e: UaaScreenChange) => void) => Promise<TourG
 export interface TourDeps { boot: BootGame; adapter: () => Promise<AdapterInfo> }
 
 type TourKey = 'Enter' | 'Escape' | 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
-// One real input as the player gives it, with the DOM events it dispatched in order.
-// x and y: the click point in canvas#ui CSS px (host.widgetRect's space).
+// One real input as the player gives it, with the DOM events it dispatched in order and the screen it was
+// given on. x and y: the click point in canvas#ui CSS px (host.widgetRect's space).
 export type TourInput =
-  | { kind: 'key'; key: TourKey; events: string[] }
-  | { kind: 'click'; target: string; x: number; y: number; events: string[] }
+  | { kind: 'key'; key: TourKey; on: string; events: string[] }
+  | { kind: 'click'; target: string; x: number; y: number; on: string; events: string[] }
 export interface TourCapture { screen: string; file: string; inputs: TourInput[]; width: number; height: number; sha256: string; bytes: number }
 export interface TourTransition { t: number; from: string | null; to: string }
 export interface UiTourOutput {
@@ -111,17 +111,19 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 }
 
 // A key press on window, as GameInput reads it (KeyboardEvent.code).
-function press(key: TourKey): TourInput {
+function press(g: TourGame, key: TourKey): TourInput {
+  const on = g.host.currentScreen()
   const init: KeyboardEventInit = { code: key, key, bubbles: true, cancelable: true }
   window.dispatchEvent(new KeyboardEvent('keydown', init))
   window.dispatchEvent(new KeyboardEvent('keyup', init))
-  return { kind: 'key', key, events: ['keydown', 'keyup'] }
+  return { kind: 'key', key, on, events: ['keydown', 'keyup'] }
 }
 
 // A left click at the centre of the widget's rect, on canvas#ui; the events bubble to #screens (GameInput).
 function click(g: TourGame, target: string): TourInput {
   const r = g.host.widgetRect(target)
   if (r === null) refuse('ops', `uiTour.click.${target}`, `widget '${target}' is hidden or not on screen '${g.host.currentScreen()}'; fix the tour leg or the ui doc`)
+  const on = g.host.currentScreen()
   const x = r.x + r.w / 2
   const y = r.y + r.h / 2
   const box = g.ui.getBoundingClientRect()
@@ -138,7 +140,7 @@ function click(g: TourGame, target: string): TourInput {
   fire(new PointerEvent('pointerup', { ...pointer, button: 0, buttons: 0 }))
   fire(new MouseEvent('mouseup', { ...at, button: 0, buttons: 0 }))
   fire(new MouseEvent('click', { ...at, button: 0, buttons: 0, detail: 1 }))
-  return { kind: 'click', target, x, y, events }
+  return { kind: 'click', target, x, y, on, events }
 }
 
 // The RAA views under canvas#ui, at canvas#ui's backing size, over the page background, as a PNG. Called in
@@ -195,6 +197,9 @@ class Tour {
   private readonly t0 = performance.now()
   // The real inputs since the previous capture.
   private inputs: TourInput[] = []
+  // The inputs that reached the previous capture. A screen the game moves to by itself (the match screens
+  // after the Enter that queued) was reached by them, so its capture records them again.
+  private reachedBy: TourInput[] = []
 
   onScreen(e: UaaScreenChange): void {
     const now = performance.now()
@@ -207,7 +212,7 @@ class Tour {
   async leg(g: TourGame, leg: Leg): Promise<void> {
     const seen = this.transitions.length
     if (leg.acts.length > 0) this.actedS = this.gameS
-    for (const act of leg.acts) this.inputs.push('key' in act ? press(act.key) : click(g, act.click))
+    for (const act of leg.acts) this.inputs.push('key' in act ? press(g, act.key) : click(g, act.click))
     const deadline = performance.now() + leg.timeoutS * 1000
     let entered = -1
     let index = -1
@@ -238,7 +243,10 @@ class Tour {
     const bytes = new Uint8Array(await blob.arrayBuffer())
     const file = `${screen}.png`
     this.files.push({ name: file, blob })
-    this.captures.push({ screen, file, inputs: this.inputs, width: shot.width, height: shot.height, sha256: await sha256Hex(bytes), bytes: bytes.length })
+    const inputs = this.inputs.length > 0 ? this.inputs : this.reachedBy
+    if (inputs.length === 0) refuse('ops', `uiTour.${screen}`, 'no real input reached this capture; give the leg or an earlier one its keys or clicks')
+    this.captures.push({ screen, file, inputs, width: shot.width, height: shot.height, sha256: await sha256Hex(bytes), bytes: bytes.length })
+    this.reachedBy = inputs
     this.inputs = []
   }
 

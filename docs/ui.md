@@ -49,7 +49,7 @@ uaa's validator checks every asset (`validateUiAsset`, with typed issues). Asset
 
 ## Evidence (uiTour)
 
-Captures are produced by a `uiTour` run on the GPU client, not in the sandbox. The tour drives the game with real clicks and keys, and records for each screen the inputs and the screen id the host reported. The loading screen is only entered on page load or by Retry after a failed load, so the tour's App refuses its boot load and the tour reaches `loading` by clicking Retry on the error screen; that retry is the real load. The PNGs go to `out/ui/<screen>.png`, which is untracked. The committed record is `proofs/ui/screens.json`: one entry per screen (12 screens plus the round HUD) with its inputs, capture path, sha256 and size.
+Captures are produced by a `uiTour` run on the GPU client, not in the sandbox. The tour drives the game with real clicks and keys, and records for each screen the inputs and the screen id the host reported. Each input names the screen it was given on. A screen the game moves to by itself (countdown, round, result, spectate and podium follow the Enter that queued) records the inputs that reached the screen before it. The loading screen is only entered on page load or by Retry after a failed load, so the tour's App refuses its boot load and the tour reaches `loading` by clicking Retry on the error screen; that retry is the real load. The PNGs go to `out/ui/<screen>.png`, which is untracked. The committed record is `proofs/ui/screens.json`: one entry per screen (12 screens plus the round HUD) with its inputs, capture path, sha256 and size.
 
 Status: the `uiTour` script is not on this branch yet, so these captures do not exist yet. The proof reports the evidence as failing until they do.
 

@@ -1,15 +1,44 @@
 [
   {
-    "name": "preview-panel-card",
-    "command": "node --experimental-strip-types tools/uiPreview.ts panel.card",
-    "timeout_s": 900
+    "name": "web-build",
+    "command": "npm run web:build",
+    "timeout_s": 900,
+    "cwd": "."
   },
   {
-    "name": "judge-panel-card-normal",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/panel.card.normal.png --description \"A single large rounded menu panel shown alone on a sky-blue background in the glossy inflatable candy-toy style of ref-1: a thick puffy saturated golden-yellow rim tube with a raised molded seam and bright glossy highlights along the top and corner curves, a soft warm drop shadow, and a cream-white puffed cushion in the middle left empty so text and buttons stay readable. There is no text on the panel.\" --reference /refs/ref-1.png --min-score 6 --aspect design",
-    "timeout_s": 300,
+    "name": "publish",
+    "command": "node \"$NMC_GPU_CLIENT\" publish apps/web/dist/",
+    "timeout_s": 600,
+    "cwd": ".",
     "after": [
-      "preview-panel-card"
+      "web-build"
+    ]
+  },
+  {
+    "name": "render-tour",
+    "command": "env NMC_GPU_WAIT_S=1500 node --experimental-strip-types tools/uiTourRecord.ts --render proofs/ui/tour.input.json out/ui",
+    "timeout_s": 1800,
+    "cwd": ".",
+    "after": [
+      "publish"
+    ]
+  },
+  {
+    "name": "tour-record",
+    "command": "node --experimental-strip-types tools/uiTourRecord.ts out/ui",
+    "timeout_s": 120,
+    "cwd": ".",
+    "after": [
+      "render-tour"
+    ]
+  },
+  {
+    "name": "proof-evidence",
+    "command": "node scripts/proof/ui-screens.mjs --only evidence",
+    "timeout_s": 120,
+    "cwd": ".",
+    "after": [
+      "tour-record"
     ]
   }
 ]

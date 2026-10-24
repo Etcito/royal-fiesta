@@ -23,8 +23,8 @@
         "kind": "group",
         "children": [
           "collider",
-          "base",
           "rim_low",
+          "base",
           "rim_top",
           "pad",
           "target",
@@ -52,66 +52,89 @@
         },
         "gameCollision": true
       },
+      "rim_low": {
+        "id": "rim_low",
+        "name": "rim-low",
+        "kind": "torus",
+        "transform": {
+          "position": [0, -0.76, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "majorRadius": 5.82,
+          "minorRadius": 0.24
+        },
+        "gameCollision": false
+      },
       "base": {
         "id": "base",
         "name": "base",
         "kind": "cylinder",
         "transform": {
-          "position": [0, -0.405, 0]
+          "position": [0, -0.25, 0]
         },
         "round": 0.2,
         "material": "candy-blue",
         "params": {
-          "height": 0.91,
-          "radius": 5.9
-        },
-        "gameCollision": false
-      },
-      "rim_low": {
-        "id": "rim_low",
-        "name": "rim-low",
-        "kind": "cylinder",
-        "transform": {
-          "position": [0, -0.795, 0]
-        },
-        "smooth": 0.05,
-        "round": 0.15,
-        "material": "candy-yellow",
-        "params": {
-          "height": 0.27,
-          "radius": 6.05
+          "height": 1.1,
+          "radius": 5.95
         },
         "gameCollision": false
       },
       "rim_top": {
         "id": "rim_top",
         "name": "rim-top",
-        "kind": "cylinder",
+        "kind": "torus",
         "transform": {
-          "position": [0, 0.16, 0]
+          "position": [0, 0.46, 0]
         },
         "smooth": 0.06,
-        "round": 0.3,
         "material": "candy-yellow",
         "params": {
-          "height": 0.6,
-          "radius": 6.15
+          "majorRadius": 5.76,
+          "minorRadius": 0.38
         },
         "gameCollision": false
       },
       "pad": {
         "id": "pad",
         "name": "pad",
+        "kind": "group",
+        "children": [
+          "pad_body",
+          "pad_dome"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": false
+      },
+      "pad_body": {
+        "id": "pad_body",
+        "name": "pad-body",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.32, 0]
+          "position": [0, 0.3, 0]
         },
-        "smooth": 0.04,
-        "round": 0.16,
+        "round": 0.3,
         "material": "candy-pink",
         "params": {
-          "height": 0.36,
-          "radius": 5.55
+          "height": 1.3,
+          "radius": 5.5
+        },
+        "gameCollision": false
+      },
+      "pad_dome": {
+        "id": "pad_dome",
+        "name": "pad-dome",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.12, 0]
+        },
+        "op": "intersect",
+        "material": "candy-pink",
+        "params": {
+          "radii": [6.1, 0.8, 6.1]
         },
         "gameCollision": false
       },
@@ -121,7 +144,6 @@
         "kind": "group",
         "children": [
           "ring",
-          "ring_cut",
           "dot"
         ],
         "mesher": {
@@ -132,43 +154,98 @@
       "ring": {
         "id": "ring",
         "name": "ring",
-        "kind": "cylinder",
+        "kind": "group",
+        "children": [
+          "ring_shell",
+          "ring_out",
+          "ring_in"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": false
+      },
+      "ring_shell": {
+        "id": "ring_shell",
+        "name": "ring-shell",
+        "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.48, 0]
+          "position": [0, 0.12, 0]
         },
         "material": "candy-white",
         "params": {
-          "height": 0.05,
+          "radii": [6.14, 0.84, 6.14]
+        },
+        "gameCollision": false
+      },
+      "ring_out": {
+        "id": "ring_out",
+        "name": "ring-out",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 0.65, 0]
+        },
+        "op": "intersect",
+        "material": "candy-white",
+        "params": {
+          "height": 0.6,
           "radius": 4
         },
         "gameCollision": false
       },
-      "ring_cut": {
-        "id": "ring_cut",
-        "name": "ring-cut",
+      "ring_in": {
+        "id": "ring_in",
+        "name": "ring-in",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.48, 0]
+          "position": [0, 0.65, 0]
         },
         "op": "subtract",
-        "material": "candy-pink",
+        "material": "candy-white",
         "params": {
-          "height": 0.2,
-          "radius": 3.1
+          "height": 0.66,
+          "radius": 3
         },
         "gameCollision": false
       },
       "dot": {
         "id": "dot",
         "name": "dot",
-        "kind": "cylinder",
+        "kind": "group",
+        "children": [
+          "dot_shell",
+          "dot_cyl"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": false
+      },
+      "dot_shell": {
+        "id": "dot_shell",
+        "name": "dot-shell",
+        "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.48, 0]
+          "position": [0, 0.12, 0]
         },
         "material": "candy-white",
         "params": {
-          "height": 0.05,
-          "radius": 1.5
+          "radii": [6.14, 0.84, 6.14]
+        },
+        "gameCollision": false
+      },
+      "dot_cyl": {
+        "id": "dot_cyl",
+        "name": "dot-cyl",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 0.65, 0]
+        },
+        "op": "intersect",
+        "material": "candy-white",
+        "params": {
+          "height": 0.6,
+          "radius": 1.4
         },
         "gameCollision": false
       },
@@ -200,7 +277,7 @@
               "angleDeg": 360,
               "axis": "y",
               "center": [0, 0, 0],
-              "count": 31
+              "count": 22
             }
           }
         ],
@@ -214,7 +291,7 @@
         "name": "v-ring",
         "kind": "group",
         "transform": {
-          "position": [0, 0, 5.9]
+          "position": [0, 0, 5.95]
         },
         "children": [
           "s_ring_up",
@@ -230,12 +307,12 @@
         "name": "s-ring-up",
         "kind": "box",
         "transform": {
-          "position": [-0.298958, -0.38, 0],
-          "rotation": [0, 0, 38.75709]
+          "position": [-0.424829, -0.22, 0],
+          "rotation": [0, 0, 21.809361]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.966749, 0.3, 0.3]
+          "size": [1.17516, 0.26, 0.3]
         },
         "gameCollision": false
       },
@@ -244,12 +321,12 @@
         "name": "s-ring-down",
         "kind": "box",
         "transform": {
-          "position": [0.298958, -0.38, 0],
-          "rotation": [0, 0, -38.75709]
+          "position": [0.424829, -0.22, 0],
+          "rotation": [0, 0, -21.809361]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.966749, 0.3, 0.3]
+          "size": [1.17516, 0.26, 0.3]
         },
         "gameCollision": false
       },
@@ -258,13 +335,13 @@
         "name": "zz-clip",
         "kind": "cylinder",
         "transform": {
-          "position": [0, -0.37, 0]
+          "position": [0, -0.22, 0]
         },
         "op": "intersect",
         "material": "candy-white",
         "params": {
-          "height": 0.58,
-          "radius": 6.04
+          "height": 1,
+          "radius": 6.02
         },
         "gameCollision": false
       }
@@ -347,8 +424,8 @@
   ],
   "anchors": {},
   "bounds": {
-    "min": [-6.21, -0.98, -6.21],
-    "max": [6.21, 0.58, 6.21]
+    "min": [-6.2, -1, -6.2],
+    "max": [6.2, 0.98, 6.2]
   },
-  "hash": "cab1ea1b343df912c803225c94c7ad9d11da5347061c985f8aa4e59cd26d99f5"
+  "hash": "32400454fea1a11ee1ac0e53777916e0bb73ad1f4dc6309eb6b01f22133368bf"
 }

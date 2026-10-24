@@ -23,8 +23,8 @@
         "kind": "group",
         "children": [
           "collider",
-          "base",
           "rim_low",
+          "base",
           "rim_top",
           "pad",
           "zigzag"
@@ -50,62 +50,114 @@
         },
         "gameCollision": true
       },
-      "base": {
-        "id": "base",
-        "name": "base",
-        "kind": "box",
-        "transform": {
-          "position": [0, -0.405, 0]
-        },
-        "round": 0.2,
-        "material": "candy-pink",
-        "params": {
-          "size": [9.8, 0.91, 9.8]
-        },
-        "gameCollision": false
-      },
       "rim_low": {
         "id": "rim_low",
         "name": "rim-low",
         "kind": "box",
         "transform": {
-          "position": [0, -0.795, 0]
+          "position": [0, -0.82, 0]
         },
-        "smooth": 0.05,
-        "round": 0.15,
+        "round": 0.18,
         "material": "candy-yellow",
         "params": {
-          "size": [10.1, 0.27, 10.1]
+          "size": [10.1, 0.36, 10.1]
+        },
+        "gameCollision": false
+      },
+      "base": {
+        "id": "base",
+        "name": "base",
+        "kind": "box",
+        "transform": {
+          "position": [0, -0.3, 0]
+        },
+        "round": 0.2,
+        "material": "candy-pink",
+        "params": {
+          "size": [9.9, 1.1, 9.9]
         },
         "gameCollision": false
       },
       "rim_top": {
         "id": "rim_top",
         "name": "rim-top",
+        "kind": "group",
+        "children": [
+          "rim_ring",
+          "rim_hole"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": false
+      },
+      "rim_ring": {
+        "id": "rim_ring",
+        "name": "rim-ring",
         "kind": "box",
         "transform": {
-          "position": [0, 0.16, 0]
+          "position": [0, 0.42, 0]
         },
-        "smooth": 0.06,
-        "round": 0.3,
+        "round": 0.35,
         "material": "candy-yellow",
         "params": {
-          "size": [10.2, 0.6, 10.2]
+          "size": [10.3, 0.7, 10.3]
+        },
+        "gameCollision": false
+      },
+      "rim_hole": {
+        "id": "rim_hole",
+        "name": "rim-hole",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.5, 0]
+        },
+        "op": "subtract",
+        "smooth": 0.1,
+        "material": "candy-yellow",
+        "params": {
+          "size": [8.7, 0.76, 8.7]
         },
         "gameCollision": false
       },
       "pad": {
         "id": "pad",
         "name": "pad",
+        "kind": "group",
+        "children": [
+          "pad_body",
+          "pad_dome"
+        ],
+        "mesher": {
+          "output": "quad"
+        },
+        "gameCollision": false
+      },
+      "pad_body": {
+        "id": "pad_body",
+        "name": "pad-body",
         "kind": "box",
         "transform": {
-          "position": [0, 0.32, 0]
+          "position": [0, 0.24, 0]
         },
-        "smooth": 0.04,
-        "round": 0.16,
+        "round": 0.38,
         "material": "candy-blue",
         "params": {
-          "size": [9.3, 0.36, 9.3]
+          "size": [8.9, 0.76, 8.9]
+        },
+        "gameCollision": false
+      },
+      "pad_dome": {
+        "id": "pad_dome",
+        "name": "pad-dome",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.46, 0]
+        },
+        "smooth": 0.12,
+        "material": "candy-blue",
+        "params": {
+          "radii": [4.4, 0.4, 4.4]
         },
         "gameCollision": false
       },
@@ -150,7 +202,7 @@
         "name": "v-z",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, 4.9]
+          "position": [-4.2, 0, 4.95]
         },
         "children": [
           "s_z_up",
@@ -161,8 +213,8 @@
             "id": "linearArray_1",
             "kind": "linearArray",
             "params": {
-              "count": 8,
-              "offset": [1.2, 0, 0]
+              "count": 7,
+              "offset": [1.4, 0, 0]
             }
           }
         ],
@@ -176,12 +228,12 @@
         "name": "s-z-up",
         "kind": "box",
         "transform": {
-          "position": [-0.3, -0.38, 0],
-          "rotation": [0, 0, 38.659808]
+          "position": [-0.35, -0.28, 0],
+          "rotation": [0, 0, 28.495639]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.968375, 0.3, 0.3]
+          "size": [1.056492, 0.26, 0.3]
         },
         "gameCollision": false
       },
@@ -190,12 +242,12 @@
         "name": "s-z-down",
         "kind": "box",
         "transform": {
-          "position": [0.3, -0.38, 0],
-          "rotation": [0, 0, -38.659808]
+          "position": [0.35, -0.28, 0],
+          "rotation": [0, 0, -28.495639]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.968375, 0.3, 0.3]
+          "size": [1.056492, 0.26, 0.3]
         },
         "gameCollision": false
       },
@@ -229,7 +281,7 @@
         "name": "v-x",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, 4.9]
+          "position": [-4.2, 0, 4.95]
         },
         "children": [
           "s_x_up",
@@ -240,8 +292,8 @@
             "id": "linearArray_1",
             "kind": "linearArray",
             "params": {
-              "count": 8,
-              "offset": [1.2, 0, 0]
+              "count": 7,
+              "offset": [1.4, 0, 0]
             }
           }
         ],
@@ -255,12 +307,12 @@
         "name": "s-x-up",
         "kind": "box",
         "transform": {
-          "position": [-0.3, -0.38, 0],
-          "rotation": [0, 0, 38.659808]
+          "position": [-0.35, -0.28, 0],
+          "rotation": [0, 0, 28.495639]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.968375, 0.3, 0.3]
+          "size": [1.056492, 0.26, 0.3]
         },
         "gameCollision": false
       },
@@ -269,12 +321,12 @@
         "name": "s-x-down",
         "kind": "box",
         "transform": {
-          "position": [0.3, -0.38, 0],
-          "rotation": [0, 0, -38.659808]
+          "position": [0.35, -0.28, 0],
+          "rotation": [0, 0, -28.495639]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.968375, 0.3, 0.3]
+          "size": [1.056492, 0.26, 0.3]
         },
         "gameCollision": false
       },
@@ -283,12 +335,13 @@
         "name": "zz-clip",
         "kind": "box",
         "transform": {
-          "position": [0, -0.37, 0]
+          "position": [0, -0.28, 0]
         },
         "op": "intersect",
+        "round": 0.27,
         "material": "candy-white",
         "params": {
-          "size": [10.08, 0.62, 10.08]
+          "size": [10.04, 1.4, 10.04]
         },
         "gameCollision": false
       }
@@ -370,8 +423,8 @@
   ],
   "anchors": {},
   "bounds": {
-    "min": [-5.16, -0.98, -5.16],
-    "max": [5.16, 0.54, 5.16]
+    "min": [-5.15, -1, -5.15],
+    "max": [5.15, 0.98, 5.15]
   },
-  "hash": "8dd5d17ab110790288c6ad604c54bfaebaaf15887f5e95ce8a9f2bb4253aa865"
+  "hash": "03f91a7815dd084c3b000aa37b07d5ef0f57c6c82d016e42f028771459965f46"
 }

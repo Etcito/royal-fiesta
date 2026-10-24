@@ -84,13 +84,13 @@
         "name": "rim-top",
         "kind": "box",
         "transform": {
-          "position": [0, 0.04, 0]
+          "position": [0, 0.03, 0]
         },
         "smooth": 0.04,
-        "round": 0.16,
+        "round": 0.2,
         "material": "candy-pink",
         "params": {
-          "size": [4.12, 0.34, 4.12]
+          "size": [4.12, 0.4, 4.12]
         },
         "gameCollision": false
       },
@@ -181,7 +181,7 @@
         },
         "material": "candy-white",
         "params": {
-          "size": [0.530366, 0.12, 0.12]
+          "size": [0.530366, 0.2, 0.2]
         },
         "gameCollision": false
       },
@@ -195,7 +195,7 @@
         },
         "material": "candy-white",
         "params": {
-          "size": [0.530366, 0.12, 0.12]
+          "size": [0.530366, 0.2, 0.2]
         },
         "gameCollision": false
       },
@@ -260,7 +260,7 @@
         },
         "material": "candy-white",
         "params": {
-          "size": [0.530366, 0.12, 0.12]
+          "size": [0.530366, 0.2, 0.2]
         },
         "gameCollision": false
       },
@@ -274,7 +274,7 @@
         },
         "material": "candy-white",
         "params": {
-          "size": [0.530366, 0.12, 0.12]
+          "size": [0.530366, 0.2, 0.2]
         },
         "gameCollision": false
       },
@@ -288,7 +288,7 @@
         "op": "intersect",
         "material": "candy-white",
         "params": {
-          "size": [3.95, 0.35, 3.95]
+          "size": [3.99, 0.35, 3.99]
         },
         "gameCollision": false
       }
@@ -303,7 +303,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#f0287f",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -319,7 +319,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffc93c",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -335,7 +335,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#3fa9f5",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -351,7 +351,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffffff",
-                "in.roughness": 0.3
+                "in.roughness": 0.18
               }
             }
           ],
@@ -373,5 +373,5 @@
     "min": [-2.1, -0.69, -2.1],
     "max": [2.1, 0.28, 2.1]
   },
-  "hash": "598e5c39b586387fc74db00bb1c3399e89c97c72a55634b3be50d31800163dff"
+  "hash": "00341759965eb3d8623d6a5a9258796a1b2135a6f5d2d8f3f07f5c0da46cd774"
 }

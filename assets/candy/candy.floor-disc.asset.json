@@ -88,13 +88,13 @@
         "name": "rim-top",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.17, 0]
+          "position": [0, 0.16, 0]
         },
         "smooth": 0.06,
-        "round": 0.24,
+        "round": 0.3,
         "material": "candy-yellow",
         "params": {
-          "height": 0.5,
+          "height": 0.6,
           "radius": 6.15
         },
         "gameCollision": false
@@ -235,7 +235,7 @@
         },
         "material": "candy-white",
         "params": {
-          "size": [0.966749, 0.2, 0.16]
+          "size": [0.966749, 0.3, 0.3]
         },
         "gameCollision": false
       },
@@ -249,7 +249,7 @@
         },
         "material": "candy-white",
         "params": {
-          "size": [0.966749, 0.2, 0.16]
+          "size": [0.966749, 0.3, 0.3]
         },
         "gameCollision": false
       },
@@ -264,7 +264,7 @@
         "material": "candy-white",
         "params": {
           "height": 0.58,
-          "radius": 5.97
+          "radius": 6.04
         },
         "gameCollision": false
       }
@@ -279,7 +279,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#f0287f",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -295,7 +295,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffc93c",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -311,7 +311,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#3fa9f5",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -327,7 +327,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffffff",
-                "in.roughness": 0.3
+                "in.roughness": 0.18
               }
             }
           ],
@@ -350,5 +350,5 @@
     "min": [-6.21, -0.98, -6.21],
     "max": [6.21, 0.58, 6.21]
   },
-  "hash": "d0458e78c05fcaa04343669528bd392ceefba201524d7b4d994c55e477826ff3"
+  "hash": "cab1ea1b343df912c803225c94c7ad9d11da5347061c985f8aa4e59cd26d99f5"
 }

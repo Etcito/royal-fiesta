@@ -1,15 +1,15 @@
 [
   {
-    "name": "preview-button-primary",
-    "command": "node --experimental-strip-types tools/uiPreview.ts button.primary",
+    "name": "preview-panel-card",
+    "command": "node --experimental-strip-types tools/uiPreview.ts panel.card",
     "timeout_s": 900
   },
   {
-    "name": "judge-button-primary-normal",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.primary.normal.png --description \"A game UI primary button shown alone on a sky-blue background, styled like the inflatable pool floats of a candy-coloured party game: a fat glossy inflatable pill in hot pink with a darker pink rim, a soft inner shadow, a bright white specular streak on the top-left and a puffy welded seam running around inside the edge. No text on it (the game adds the label).\" --reference /refs/ref-1.png --min-score 6 --aspect design",
+    "name": "judge-panel-card-normal",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/panel.card.normal.png --description \"A single large rounded menu panel shown alone on a sky-blue background in the glossy inflatable candy-toy style of ref-1: a thick puffy saturated golden-yellow rim tube with a raised molded seam and bright glossy highlights along the top and corner curves, a soft warm drop shadow, and a cream-white puffed cushion in the middle left empty so text and buttons stay readable. There is no text on the panel.\" --reference /refs/ref-1.png --min-score 6 --aspect design",
     "timeout_s": 300,
     "after": [
-      "preview-button-primary"
+      "preview-panel-card"
     ]
   }
 ]

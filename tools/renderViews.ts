@@ -32,7 +32,10 @@ export function viewCamera(bounds: { min: V3; max: V3 }, yawDeg: number): Camera
   const ext = [max[0] - min[0], max[1] - min[1], max[2] - min[2]]
   const dist = 1.1 * Math.hypot(ext[0], ext[1], ext[2]) / (2 * Math.tan(15 * Math.PI / 180))
   const yaw = yawDeg * Math.PI / 180
-  const position: V3 = [target[0] + dist * Math.sin(yaw), target[1] + 0.25 * ext[1], target[2] + dist * Math.cos(yaw)]
+  // A flat slab seen with the 0.25 x height rise is edge-on and its top vanishes: flat pieces look down 30 degrees.
+  const flat = ext[1] < 0.3 * Math.max(ext[0], ext[2])
+  const rise = flat ? dist * Math.tan(30 * Math.PI / 180) : 0.25 * ext[1]
+  const position: V3 = [target[0] + dist * Math.sin(yaw), target[1] + rise, target[2] + dist * Math.cos(yaw)]
   return { position, target, fovYDeg: 30, ortho: false, orthoHeight: 0 }
 }
 

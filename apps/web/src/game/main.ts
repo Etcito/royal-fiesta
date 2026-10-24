@@ -169,8 +169,9 @@ function matchScreen(v: MatchViewState, localStatus: number, podium: boolean): G
 type FrameLoop = (frame: (dtS: number) => void) => () => void
 
 // Where the App keeps its settings and what calls its frames: the page's localStorage and rAF loop, or
-// the uiTour op's in-memory store and its own frame steps.
-interface AppEnv { store: SettingsStore; loop: FrameLoop }
+// the uiTour op's in-memory store and its own frame steps. beforeLoad runs as each load starts; a throw fails
+// that load as any load failure does (the uiTour op refuses the boot load so it can reach 'loading' with Retry).
+interface AppEnv { store: SettingsStore; loop: FrameLoop; beforeLoad?: () => Promise<void> }
 
 // The page's FrameLoop, on requestAnimationFrame. An op tears the App down before building its own views.
 function loop(frame: (dtS: number) => void): () => void {
@@ -807,6 +808,7 @@ class App {
     const loading = mountLoading(null, { progress: (fraction, label) => this.host.setLoading(fraction, label) })
     this.host.setLoading(0, 'Starting...')
     try {
+      await this.env.beforeLoad?.()
       const q = parseQuery(this.search)
       this.query = q
       const content = pickContent(new URLSearchParams(this.search))
@@ -1066,6 +1068,8 @@ async function start(
 
 // The uiTour op's App: the page's App on a new canvas#ui (the torn-down App emptied #screens), its settings
 // in memory (the GPU page's opaque origin has no storage) and its frames stepped by the op instead of rAF.
+// Its boot load is refused before it starts, so the tour reaches 'loading' with a real click on the error
+// screen's Retry (docs/screens.md: page load or Retry after a failed load); that retry is the real load.
 async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourGame> {
   const { views, screens } = pageRoots()
   const ui = document.createElement('canvas')
@@ -1073,11 +1077,15 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourG
   screens.replaceChildren(ui)
   const saved = new Map<string, string>()
   let frame: ((dtS: number) => void) | null = null
+  let loads = 0
   const env: AppEnv = {
     store: { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) },
     loop: f => {
       frame = f
       return () => { frame = null }
+    },
+    beforeLoad: async () => {
+      if (loads++ === 0) throw new Error('uiTour: the boot load is refused so the tour reaches loading with Retry')
     },
   }
   const booted = await start(ui, env, () => false, onScreen)

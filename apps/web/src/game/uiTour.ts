@@ -43,13 +43,15 @@ interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; hol
 // LocalMode's QUEUE_S (main.ts): the offline queue's game time before the match starts.
 const QUEUE_S = 3
 
-// docs/screens.md 'Reached by': the load lands on title; menus by their buttons; Escape goes back; Play goes to
+// docs/screens.md 'Reached by': the boot load is refused (bootGame), so Retry on the error screen enters
+// 'loading' with a real click; that load lands on title; menus by their buttons; Escape goes back; Play goes to
 // the hub, Escape pauses it, Enter queues. The queue is captured within its QUEUE_S window, then checked:
 // Escape cancels it back to the hub, where no match starts; Enter queues again and the match starts only after
 // QUEUE_S. The offline sprint match then runs by itself to its podium (round 0 is a race the idle player cannot
 // qualify in, so round 1 is spectated).
 const TOUR: readonly Leg[] = [
-  { acts: [], to: 'loading', capture: true, timeoutS: 20 },
+  { acts: [], to: 'error', capture: false, timeoutS: 20 },
+  { acts: [{ click: 'act-retry' }], to: 'loading', capture: true, timeoutS: 10 },
   { acts: [], to: 'title', capture: false, timeoutS: 120 },
   { acts: [{ click: 'act-settings' }], to: 'settings', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: true, timeoutS: 10 },

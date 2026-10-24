@@ -3,573 +3,704 @@
   "version": 1,
   "game": "royal-fiesta",
   "id": "candy.conveyor-belt",
-  "name": "Conveyor Belt",
+  "name": "candy-conveyor-belt",
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "quad"
   },
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "Conveyor Belt",
+    "name": "candy-conveyor-belt",
     "root": [
       "candy_conveyor_belt"
     ],
     "nodes": {
       "candy_conveyor_belt": {
         "id": "candy_conveyor_belt",
-        "name": "Conveyor Belt",
+        "name": "candy-conveyor-belt",
         "kind": "group",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#b0b0b0",
-        "material": null,
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
         "children": [
+          "collider",
+          "rim",
+          "lip",
           "belt",
-          "stripe_0",
-          "stripe_1",
-          "stripe_2",
-          "stripe_3",
-          "stripe_4"
+          "cap_front",
+          "cap_back",
+          "chevrons",
+          "side_chevrons"
         ],
-        "modifiers": [],
-        "asset": "candy.conveyor-belt",
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
         "mesher": {
-          "output": "lowpoly"
-        }
+          "output": "quad"
+        },
+        "gameCollision": false
+      },
+      "collider": {
+        "id": "collider",
+        "name": "collider",
+        "kind": "box",
+        "visible": false,
+        "params": {
+          "size": [4, 0.5, 12]
+        },
+        "gameCollision": true
+      },
+      "rim": {
+        "id": "rim",
+        "name": "rim",
+        "kind": "box",
+        "round": 0.08,
+        "material": "candy-pink",
+        "params": {
+          "size": [4, 0.5, 12]
+        },
+        "gameCollision": false
+      },
+      "lip": {
+        "id": "lip",
+        "name": "lip",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.17, 0]
+        },
+        "round": 0.06,
+        "material": "candy-yellow",
+        "params": {
+          "size": [3.5, 0.24, 11.5]
+        },
+        "gameCollision": false
       },
       "belt": {
         "id": "belt",
         "name": "belt",
         "kind": "box",
-        "visible": true,
-        "locked": false,
         "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0, 0.2, 0]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#b380ff",
-        "material": "purple",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "round": 0.08,
+        "material": "candy-pink",
         "params": {
-          "size": [
-            4,
-            0.5,
-            12
-          ]
-        }
+          "size": [2.9, 0.2, 11]
+        },
+        "gameCollision": false
       },
-      "stripe_0": {
-        "id": "stripe_0",
-        "name": "stripe_0",
-        "kind": "box",
-        "visible": true,
-        "locked": false,
+      "cap_front": {
+        "id": "cap_front",
+        "name": "cap-front",
+        "kind": "cylinder",
         "transform": {
-          "position": [
-            0,
-            0.27,
-            -4
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0, 0, 5.95],
+          "rotation": [0, 0, 90]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#73d966",
-        "material": "green",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "round": 0.1,
+        "material": "candy-blue",
         "params": {
-          "size": [
-            3.6,
-            0.06,
-            0.6
-          ]
-        }
+          "height": 3.4,
+          "radius": 0.28
+        },
+        "gameCollision": false
       },
-      "stripe_1": {
-        "id": "stripe_1",
-        "name": "stripe_1",
-        "kind": "box",
-        "visible": true,
-        "locked": false,
+      "cap_back": {
+        "id": "cap_back",
+        "name": "cap-back",
+        "kind": "cylinder",
         "transform": {
-          "position": [
-            0,
-            0.27,
-            -2
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0, 0, -5.95],
+          "rotation": [0, 0, 90]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#73d966",
-        "material": "green",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "round": 0.1,
+        "material": "candy-blue",
         "params": {
-          "size": [
-            3.6,
-            0.06,
-            0.6
-          ]
-        }
+          "height": 3.4,
+          "radius": 0.28
+        },
+        "gameCollision": false
       },
-      "stripe_2": {
-        "id": "stripe_2",
-        "name": "stripe_2",
-        "kind": "box",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0.27,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
+      "chevrons": {
+        "id": "chevrons",
+        "name": "chevrons",
+        "kind": "group",
+        "colorBlend": "hard",
+        "children": [
+          "chev_0r",
+          "chev_0l",
+          "chev_1r",
+          "chev_1l",
+          "chev_2r",
+          "chev_2l",
+          "chev_3r",
+          "chev_3l",
+          "chev_4r",
+          "chev_4l"
         ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#73d966",
-        "material": "green",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
-        "params": {
-          "size": [
-            3.6,
-            0.06,
-            0.6
-          ]
-        }
+        "gameCollision": false
       },
-      "stripe_3": {
-        "id": "stripe_3",
-        "name": "stripe_3",
+      "chev_0r": {
+        "id": "chev_0r",
+        "name": "chev-0r",
         "kind": "box",
-        "visible": true,
-        "locked": false,
         "transform": {
-          "position": [
-            0,
-            0.27,
-            2
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0.601041, 0.31, -4.011041],
+          "rotation": [0, 45, 0]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#73d966",
-        "material": "green",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "round": 0.015,
+        "material": "candy-white",
         "params": {
-          "size": [
-            3.6,
-            0.06,
-            0.6
-          ]
-        }
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
       },
-      "stripe_4": {
-        "id": "stripe_4",
-        "name": "stripe_4",
+      "chev_0l": {
+        "id": "chev_0l",
+        "name": "chev-0l",
         "kind": "box",
-        "visible": true,
-        "locked": false,
         "transform": {
-          "position": [
-            0,
-            0.27,
-            4
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [-0.601041, 0.31, -4.011041],
+          "rotation": [0, -45, 0]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#73d966",
-        "material": "green",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "round": 0.015,
+        "material": "candy-white",
         "params": {
-          "size": [
-            3.6,
-            0.06,
-            0.6
-          ]
-        }
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "chev_1r": {
+        "id": "chev_1r",
+        "name": "chev-1r",
+        "kind": "box",
+        "transform": {
+          "position": [0.601041, 0.31, -2.011041],
+          "rotation": [0, 45, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "chev_1l": {
+        "id": "chev_1l",
+        "name": "chev-1l",
+        "kind": "box",
+        "transform": {
+          "position": [-0.601041, 0.31, -2.011041],
+          "rotation": [0, -45, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "chev_2r": {
+        "id": "chev_2r",
+        "name": "chev-2r",
+        "kind": "box",
+        "transform": {
+          "position": [0.601041, 0.31, -0.011041],
+          "rotation": [0, 45, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "chev_2l": {
+        "id": "chev_2l",
+        "name": "chev-2l",
+        "kind": "box",
+        "transform": {
+          "position": [-0.601041, 0.31, -0.011041],
+          "rotation": [0, -45, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "chev_3r": {
+        "id": "chev_3r",
+        "name": "chev-3r",
+        "kind": "box",
+        "transform": {
+          "position": [0.601041, 0.31, 1.988959],
+          "rotation": [0, 45, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "chev_3l": {
+        "id": "chev_3l",
+        "name": "chev-3l",
+        "kind": "box",
+        "transform": {
+          "position": [-0.601041, 0.31, 1.988959],
+          "rotation": [0, -45, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "chev_4r": {
+        "id": "chev_4r",
+        "name": "chev-4r",
+        "kind": "box",
+        "transform": {
+          "position": [0.601041, 0.31, 3.988959],
+          "rotation": [0, 45, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "chev_4l": {
+        "id": "chev_4l",
+        "name": "chev-4l",
+        "kind": "box",
+        "transform": {
+          "position": [-0.601041, 0.31, 3.988959],
+          "rotation": [0, -45, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "size": [1.7, 0.04, 0.4]
+        },
+        "gameCollision": false
+      },
+      "side_chevrons": {
+        "id": "side_chevrons",
+        "name": "side-chevrons",
+        "kind": "group",
+        "colorBlend": "hard",
+        "children": [
+          "side_r0u",
+          "side_r0d",
+          "side_r2u",
+          "side_r2d",
+          "side_r4u",
+          "side_r4d",
+          "side_r6u",
+          "side_r6d",
+          "side_r8u",
+          "side_r8d",
+          "side_l0u",
+          "side_l0d",
+          "side_l2u",
+          "side_l2d",
+          "side_l4u",
+          "side_l4d",
+          "side_l6u",
+          "side_l6d",
+          "side_l8u",
+          "side_l8d"
+        ],
+        "gameCollision": false
+      },
+      "side_r0u": {
+        "id": "side_r0u",
+        "name": "side-r0u",
+        "kind": "box",
+        "transform": {
+          "position": [2, 0.1, -4],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r0d": {
+        "id": "side_r0d",
+        "name": "side-r0d",
+        "kind": "box",
+        "transform": {
+          "position": [2, -0.1, -4],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r2u": {
+        "id": "side_r2u",
+        "name": "side-r2u",
+        "kind": "box",
+        "transform": {
+          "position": [2, 0.1, -2],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r2d": {
+        "id": "side_r2d",
+        "name": "side-r2d",
+        "kind": "box",
+        "transform": {
+          "position": [2, -0.1, -2],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r4u": {
+        "id": "side_r4u",
+        "name": "side-r4u",
+        "kind": "box",
+        "transform": {
+          "position": [2, 0.1, 0],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r4d": {
+        "id": "side_r4d",
+        "name": "side-r4d",
+        "kind": "box",
+        "transform": {
+          "position": [2, -0.1, 0],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r6u": {
+        "id": "side_r6u",
+        "name": "side-r6u",
+        "kind": "box",
+        "transform": {
+          "position": [2, 0.1, 2],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r6d": {
+        "id": "side_r6d",
+        "name": "side-r6d",
+        "kind": "box",
+        "transform": {
+          "position": [2, -0.1, 2],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r8u": {
+        "id": "side_r8u",
+        "name": "side-r8u",
+        "kind": "box",
+        "transform": {
+          "position": [2, 0.1, 4],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_r8d": {
+        "id": "side_r8d",
+        "name": "side-r8d",
+        "kind": "box",
+        "transform": {
+          "position": [2, -0.1, 4],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l0u": {
+        "id": "side_l0u",
+        "name": "side-l0u",
+        "kind": "box",
+        "transform": {
+          "position": [-2, 0.1, -4],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l0d": {
+        "id": "side_l0d",
+        "name": "side-l0d",
+        "kind": "box",
+        "transform": {
+          "position": [-2, -0.1, -4],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l2u": {
+        "id": "side_l2u",
+        "name": "side-l2u",
+        "kind": "box",
+        "transform": {
+          "position": [-2, 0.1, -2],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l2d": {
+        "id": "side_l2d",
+        "name": "side-l2d",
+        "kind": "box",
+        "transform": {
+          "position": [-2, -0.1, -2],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l4u": {
+        "id": "side_l4u",
+        "name": "side-l4u",
+        "kind": "box",
+        "transform": {
+          "position": [-2, 0.1, 0],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l4d": {
+        "id": "side_l4d",
+        "name": "side-l4d",
+        "kind": "box",
+        "transform": {
+          "position": [-2, -0.1, 0],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l6u": {
+        "id": "side_l6u",
+        "name": "side-l6u",
+        "kind": "box",
+        "transform": {
+          "position": [-2, 0.1, 2],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l6d": {
+        "id": "side_l6d",
+        "name": "side-l6d",
+        "kind": "box",
+        "transform": {
+          "position": [-2, -0.1, 2],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l8u": {
+        "id": "side_l8u",
+        "name": "side-l8u",
+        "kind": "box",
+        "transform": {
+          "position": [-2, 0.1, 4],
+          "rotation": [45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
+      },
+      "side_l8d": {
+        "id": "side_l8d",
+        "name": "side-l8d",
+        "kind": "box",
+        "transform": {
+          "position": [-2, -0.1, 4],
+          "rotation": [-45, 0, 0]
+        },
+        "round": 0.01,
+        "material": "candy-white",
+        "params": {
+          "size": [0.05, 0.12, 0.3]
+        },
+        "gameCollision": false
       }
     },
     "materials": {
-      "green": {
-        "name": "green",
+      "candy-pink": {
+        "name": "candy-pink",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#73d966",
-                "in.roughness": 0.6
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.22
               }
             }
           ],
           "links": []
         }
       },
-      "purple": {
-        "name": "purple",
+      "candy-yellow": {
+        "name": "candy-yellow",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#b380ff",
-                "in.roughness": 0.6
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.22
               }
             }
           ],
           "links": []
         }
-      }
-    },
-    "shapes": {},
-    "views": {},
-    "settings": {
-      "mesh": {
-        "detail": null,
-        "maxDepth": 9,
-        "adaptivity": 0.02,
-        "sharpAngleDeg": 30
       },
-      "lowpoly": {
-        "targetTriangles": 2000,
-        "keepWeight": 10,
-        "featureAngleDeg": 35
-      },
-      "uv": {
-        "texelsPerMeter": null,
-        "padding": 8
-      },
-      "bake": {
-        "resolution": 1024,
-        "maps": [
-          "normal",
-          "baseColor",
-          "orm"
-        ],
-        "cageDistance": null,
-        "samples": 1
-      },
-      "export": {
-        "geometry": "lowpoly",
-        "skin": false,
-        "lods": [
-          1
-        ],
-        "quad": {
-          "targetFaces": 1000,
-          "subdivide": 0,
-          "method": "auto",
-          "features": "auto",
-          "featureAngleDeg": 35,
-          "adaptive": true,
-          "alignCurvature": true,
-          "seed": 1,
-          "detail": true,
-          "maxFacesRatio": 3
-        },
-        "poly": {
-          "segments": 16,
-          "additive": "keep"
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
         }
       },
-      "paramesh": {
-        "fieldResolution": 96,
-        "precision": "f16",
-        "subdivisions": 16,
-        "transitionLoops": 2
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.3
+              }
+            }
+          ],
+          "links": []
+        }
       }
     }
   },
   "collision": [
     {
       "shape": "cuboid",
-      "half": [
-        2,
-        0.25,
-        6
-      ],
-      "t": [
-        0,
-        0,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [2, 0.25, 6]
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [
-      -2,
-      -0.25,
-      -6
-    ],
-    "max": [
-      2,
-      0.3,
-      6
-    ]
+    "min": [-2.025, -0.28, -6.23],
+    "max": [2.025, 0.33, 6.23]
   },
-  "hash": "0d33c50d7b8c27c6e45c4a973219d0fd65c7b703a5972cf2ec22f734aec2d2ef"
+  "hash": "41fb63455b1540167ca1632d730c0e60bab166c42e34ea28469a05f9b9d240f5"
 }

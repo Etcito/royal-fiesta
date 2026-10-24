@@ -49,6 +49,24 @@
       "views": [
         "three-quarter"
       ]
+    },
+    {
+      "name": "candy-bounce-pad",
+      "assets": [
+        "candy.bounce-pad"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-conveyor-belt",
+      "assets": [
+        "candy.conveyor-belt"
+      ],
+      "views": [
+        "three-quarter"
+      ]
     }
   ]
 }

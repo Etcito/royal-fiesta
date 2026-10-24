@@ -2,9 +2,9 @@
 
 Ported from the V0 M13 build-alone (the bundle's `scripts/fresh-clone-build.sh`), on release dependencies: no
 kong step, no RAA build, no vendored rollback copy and no private build tool. It proves that a clean checkout
-builds the Wavedash bundle with only npm, the MAMA pin and a token from the environment (QB13).
+builds the Wavedash bundle with only npm, the MAMA and uaa pins and a token from the environment (QB13).
 
-It needs network (`npm ci`, the MAMA clone), so it runs only from a programmatic card. Milestone 4 runs it; the
+It needs network (the uaa and MAMA clones, `npm ci`), so it runs only from a programmatic card. Milestone 4 runs it; the
 milestone that adds it does not.
 
 ## Usage
@@ -26,34 +26,38 @@ passed, and 1 otherwise.
 
 ## Steps
 
-All steps run in a temporary folder. The clone sits in a folder of its own, so its `../MAMA` never exists.
+All steps run in a temporary folder. The clone sits in a folder of its own, so its `../MAMA` never exists and
+the uaa clone is the fresh `<work>/uaa` sibling it fetches.
 
 1. A clean checkout:
    - for a path: `git clone --quiet --no-local <from> <clone>`. It takes the committed HEAD: uncommitted changes
      are not built, so commit first;
    - for a URL: `git clone --quiet --depth 1 <from> <clone>`. No token is used, because royal-fiesta is public.
-2. `npm ci`.
-3. `npm run bricks -- fetch mama` (docs/bricks.md):
+2. `npm run bricks -- fetch uaa` (docs/bricks.md): it makes the `uaa` sibling of the clone (`<work>/uaa`)
+   the pinned commit of `bricks.pins.json`, with the env token when it has to clone, and builds its `dist`
+   when it is missing. The step runs before `npm ci`, because the root `@etcito/uaa` is `file:../uaa`.
+3. `npm ci`.
+4. `npm run bricks -- fetch mama` (docs/bricks.md):
    - with `$RF_BRICKS_DIR/MAMA`, it links that sibling;
    - otherwise it clones the pinned commit of `bricks.pins.json` from GitHub with the env token.
-4. `npm run build`: audio bake, then the Vite build into `apps/web/dist`.
-5. `npm run wavedash -- --skip-build`: packWavedash in the clone. It writes `out/wavedash-build/` there
+5. `npm run build`: audio bake, then the Vite build into `apps/web/dist`.
+6. `npm run wavedash -- --skip-build`: packWavedash in the clone. It writes `out/wavedash-build/` there
    (docs/wavedash.md: layout and `rf-build.json`, whose `mama` names the source and commit).
 
 The first step that fails stops the build. Its output names the failing step:
 `[bricks] <step>: exited <code>; see the output above`. Each step has a timeout: 10 min for the clone and the
-pack, 30 min for the others.
+pack, 30 min for the uaa fetch, `npm ci`, the MAMA fetch and the build.
 
 After the last step:
 - the clone's `out/wavedash-build/upload/` and `wavedash.toml` replace those in `--out`. Nothing else in
   `--out` is touched;
-- the temporary folder is removed. The MAMA clone is removed with it.
+- the temporary folder is removed. The uaa and MAMA clones are removed with it.
 
 ## Environment
 
 | Variable | Use |
 |---|---|
-| `MAMA_TOKEN`, else `GH_TOKEN`, else `GITHUB_TOKEN` | The token for the MAMA clone. Only the bricks step sees it, and tools/bricks.ts passes it to git through `GIT_CONFIG_*` env only. Every other step runs without these variables. |
+| `MAMA_TOKEN`, else `GH_TOKEN`, else `GITHUB_TOKEN` | The token for the uaa and MAMA clones. Only the two bricks steps see it, and tools/bricks.ts passes it to git through `GIT_CONFIG_*` env only. Every other step runs without these variables. |
 | `RF_BRICKS_DIR` | Kept, for the sibling route (`$RF_BRICKS_DIR/MAMA`). A record needs a GitHub clone, so leave it unset for a record run. |
 | `RF_RAA_LOCAL`, `GAMESALOON_DIR`, `RF_WAVEDASH_DIST`, `RF_PLAY_SKIP_BUILD`, `RF_PLAY_DIST` | Removed for every step. The build uses release dependencies only, with no test seam. |
 
@@ -93,7 +97,7 @@ The log never contains the token. A step prints `$ <cmd>` first and `== <cmd> ex
 }
 ```
 
-- `steps` holds one entry per step that ran, in order (clone, ci, bricks, build, pack). `cmd` and `tail` are
+- `steps` holds one entry per step that ran, in order (clone, uaa, ci, bricks, build, pack). `cmd` and `tail` are
   cleaned as in "Log", and `tail` has at most 40 lines.
 - `bundleFiles` is the sorted list of files under `upload/`, with forward slashes, as packWavedash returns it.
 - The record is written only when:

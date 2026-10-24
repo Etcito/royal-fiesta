@@ -25,6 +25,9 @@
     "etcito:build": "node --experimental-strip-types tools/etcitoBuild.ts",
     "prepare": "git config core.hooksPath .githooks || true"
   },
+  "dependencies": {
+    "@etcito/uaa": "file:../uaa"
+  },
   "devDependencies": {
     "@etcito/raa-assets-tools": "https://github.com/Etcito/raa-assets-tools/releases/download/v0.1.0/raa-assets-tools-0.1.0.tgz",
     "@types/node": "^24",

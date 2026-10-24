@@ -338,6 +338,31 @@
             "offsetMin": [-400, 150],
             "offsetMax": [400, 200]
           }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "Starting...",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-320, 150],
+            "offsetMax": [320, 200]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-400, 210],
+            "offsetMax": [400, 256]
+          }
         }
       ]
     },
@@ -361,13 +386,13 @@
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
             "offsetMin": [-320, -380],
-            "offsetMax": [320, 380]
+            "offsetMax": [320, 490]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
             "offsetMin": [-440, -300],
-            "offsetMax": [440, 300]
+            "offsetMax": [440, 320]
           },
           "anim": {
             "enter": {
@@ -476,6 +501,37 @@
             "anchorMax": [0.5, 0.5],
             "offsetMin": [20, 85],
             "offsetMax": [400, 185]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "back",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back"
+          },
+          "action": "back",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 360],
+            "offsetMax": [200, 460]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 210],
+            "offsetMax": [200, 296]
           },
           "anim": {
             "focus": {
@@ -2371,6 +2427,697 @@
               "kind": "pop",
               "duration": 150
             }
+          }
+        }
+      ]
+    },
+    {
+      "id": "hub",
+      "enter": {
+        "kind": "fade",
+        "duration": 200
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "info",
+          "type": "panel",
+          "asset": "panel.hud",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [16, 16],
+            "offsetMax": [456, 316]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [16, 16],
+            "offsetMax": [496, 316]
+          },
+          "anim": {
+            "enter": {
+              "kind": "slide",
+              "duration": 250,
+              "from": "left"
+            }
+          },
+          "children": [
+            {
+              "id": "title",
+              "type": "label",
+              "text": "Hub",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 44,
+              "color": "#ffd23f",
+              "align": "left",
+              "outline": {
+                "width": 6,
+                "color": "#c2187a"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 8],
+                "offsetMax": [-20, 64]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 8],
+                "offsetMax": [-20, 64]
+              }
+            },
+            {
+              "id": "line-0",
+              "type": "label",
+              "text": "Bots in the plaza 7",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 28,
+              "color": "#ffffff",
+              "align": "left",
+              "outline": {
+                "width": 4,
+                "color": "#7a1f8c"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 72],
+                "offsetMax": [-20, 120]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 72],
+                "offsetMax": [-20, 120]
+              }
+            },
+            {
+              "id": "line-1",
+              "type": "label",
+              "text": "Stand on the green pad",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 28,
+              "color": "#ffffff",
+              "align": "left",
+              "outline": {
+                "width": 4,
+                "color": "#7a1f8c"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 128],
+                "offsetMax": [-20, 176]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 128],
+                "offsetMax": [-20, 176]
+              }
+            },
+            {
+              "id": "line-2",
+              "type": "label",
+              "text": "Emotes 1-4",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 28,
+              "color": "#ffffff",
+              "align": "left",
+              "outline": {
+                "width": 4,
+                "color": "#7a1f8c"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 184],
+                "offsetMax": [-20, 232]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 184],
+                "offsetMax": [-20, 232]
+              }
+            },
+            {
+              "id": "line-3",
+              "type": "label",
+              "text": "Online: offline",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 28,
+              "color": "#ffffff",
+              "align": "left",
+              "outline": {
+                "width": 4,
+                "color": "#7a1f8c"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 240],
+                "offsetMax": [-20, 288]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 240],
+                "offsetMax": [-20, 288]
+              }
+            }
+          ]
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "WASD/ZQSD move - mouse or right stick: camera - 1-4 emote - Enter or green pad: play - Esc menu",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-340, -72],
+            "offsetMax": [340, -20]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-600, -64],
+            "offsetMax": [600, -16]
+          }
+        }
+      ]
+    },
+    {
+      "id": "countdown",
+      "enter": {
+        "kind": "fade",
+        "duration": 200
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Get ready",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-340, -300],
+            "offsetMax": [340, -200]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-420, -270],
+            "offsetMax": [420, -180]
+          }
+        },
+        {
+          "id": "countdown-number",
+          "type": "badge",
+          "asset": "badge.round",
+          "text": {
+            "count": "3"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-160, -160],
+            "offsetMax": [160, 160]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-150, -150],
+            "offsetMax": [150, 150]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "round",
+      "enter": {
+        "kind": "fade",
+        "duration": 200
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "hud",
+          "type": "group",
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-350, 16],
+            "offsetMax": [350, 196]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-560, 16],
+            "offsetMax": [560, 96]
+          },
+          "anim": {
+            "enter": {
+              "kind": "slide",
+              "duration": 250,
+              "from": "top"
+            }
+          },
+          "children": [
+            {
+              "id": "hud-kind-pill",
+              "type": "panel",
+              "asset": "panel.hud",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [0, 0],
+                "offsetMax": [0, 64]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 0],
+                "offsetMax": [300, 80]
+              },
+              "children": [
+                {
+                  "id": "hud-kind",
+                  "type": "label",
+                  "text": "Race",
+                  "font": { "family": "Fredoka", "weight": 700 },
+                  "size": 36,
+                  "color": "#ffd23f",
+                  "align": "center",
+                  "outline": {
+                    "width": 5,
+                    "color": "#c2187a"
+                  },
+                  "rect": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [1, 1],
+                    "offsetMin": [16, 4],
+                    "offsetMax": [-16, -4]
+                  },
+                  "landscape": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [1, 1],
+                    "offsetMin": [16, 8],
+                    "offsetMax": [-16, -8]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "hud-timer",
+              "type": "panel",
+              "asset": "panel.hud",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 76],
+                "offsetMax": [340, 180]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [312, 0],
+                "offsetMax": [712, 80]
+              },
+              "children": [
+                {
+                  "id": "hud-timer-icon",
+                  "type": "icon",
+                  "asset": "icon.timer",
+                  "rect": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [12, 12],
+                    "offsetMax": [60, 60]
+                  },
+                  "landscape": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [12, 16],
+                    "offsetMax": [60, 64]
+                  }
+                },
+                {
+                  "id": "hud-timer-label",
+                  "type": "label",
+                  "text": "1:30",
+                  "font": { "family": "Fredoka", "weight": 700 },
+                  "size": 40,
+                  "color": "#ffffff",
+                  "align": "left",
+                  "outline": {
+                    "width": 4,
+                    "color": "#7a1f8c"
+                  },
+                  "rect": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [68, 10],
+                    "offsetMax": [328, 60]
+                  },
+                  "landscape": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [68, 8],
+                    "offsetMax": [196, 72]
+                  }
+                },
+                {
+                  "id": "hud-time-bar",
+                  "type": "progress",
+                  "track": "bar.track",
+                  "fill": "bar.progress",
+                  "value": 1,
+                  "rect": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [12, 68],
+                    "offsetMax": [328, 96]
+                  },
+                  "landscape": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [204, 26],
+                    "offsetMax": [388, 54]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "hud-qualified",
+              "type": "panel",
+              "asset": "panel.hud",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [352, 76],
+                "offsetMax": [524, 180]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [724, 0],
+                "offsetMax": [916, 80]
+              },
+              "children": [
+                {
+                  "id": "hud-qualified-icon",
+                  "type": "icon",
+                  "asset": "icon.qualified",
+                  "rect": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [12, 24],
+                    "offsetMax": [68, 80]
+                  },
+                  "landscape": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [12, 12],
+                    "offsetMax": [68, 68]
+                  }
+                },
+                {
+                  "id": "hud-qualified-count",
+                  "type": "badge",
+                  "asset": "badge.round",
+                  "text": {
+                    "count": "0"
+                  },
+                  "rect": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [80, 12],
+                    "offsetMax": [160, 92]
+                  },
+                  "landscape": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [96, 4],
+                    "offsetMax": [168, 76]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "hud-alive",
+              "type": "panel",
+              "asset": "panel.hud",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [528, 76],
+                "offsetMax": [700, 180]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [928, 0],
+                "offsetMax": [1120, 80]
+              },
+              "children": [
+                {
+                  "id": "hud-alive-icon",
+                  "type": "icon",
+                  "asset": "icon.alive",
+                  "rect": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [12, 24],
+                    "offsetMax": [68, 80]
+                  },
+                  "landscape": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [12, 12],
+                    "offsetMax": [68, 68]
+                  }
+                },
+                {
+                  "id": "hud-alive-count",
+                  "type": "badge",
+                  "asset": "badge.round",
+                  "text": {
+                    "count": "8"
+                  },
+                  "rect": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [80, 12],
+                    "offsetMax": [160, 92]
+                  },
+                  "landscape": {
+                    "anchorMin": [0, 0],
+                    "anchorMax": [0, 0],
+                    "offsetMin": [96, 4],
+                    "offsetMax": [168, 76]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Esc pause",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-340, -72],
+            "offsetMax": [340, -20]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-600, -64],
+            "offsetMax": [600, -16]
+          }
+        }
+      ]
+    },
+    {
+      "id": "spectate",
+      "enter": {
+        "kind": "fade",
+        "duration": 200
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "banner",
+          "type": "panel",
+          "asset": "panel.hud",
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-340, 24],
+            "offsetMax": [340, 244]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420, 16],
+            "offsetMax": [420, 216]
+          },
+          "anim": {
+            "enter": {
+              "kind": "slide",
+              "duration": 250,
+              "from": "top"
+            }
+          },
+          "children": [
+            {
+              "id": "title",
+              "type": "label",
+              "text": "Spectating",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 64,
+              "color": "#ffd23f",
+              "align": "center",
+              "outline": {
+                "width": 6,
+                "color": "#c2187a"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 12],
+                "offsetMax": [-20, 96]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 8],
+                "offsetMax": [-20, 88]
+              }
+            },
+            {
+              "id": "line-0",
+              "type": "label",
+              "text": "Eliminated",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 32,
+              "color": "#ffffff",
+              "align": "center",
+              "outline": {
+                "width": 4,
+                "color": "#7a1f8c"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 104],
+                "offsetMax": [-20, 152]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 96],
+                "offsetMax": [-20, 140]
+              }
+            },
+            {
+              "id": "line-1",
+              "type": "label",
+              "text": "Watching Bean 3",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 32,
+              "color": "#ffffff",
+              "align": "center",
+              "outline": {
+                "width": 4,
+                "color": "#7a1f8c"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 160],
+                "offsetMax": [-20, 208]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [1, 0],
+                "offsetMin": [20, 148],
+                "offsetMax": [-20, 192]
+              }
+            }
+          ]
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Esc pause",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-340, -72],
+            "offsetMax": [340, -20]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-600, -64],
+            "offsetMax": [600, -16]
           }
         }
       ]

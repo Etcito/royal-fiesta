@@ -144,3 +144,12 @@ test('an absolute path or the GPU token is never written', () => {
     delete process.env.NMC_GPU_TOKEN
   }
 })
+
+test('an adapter whose description Chrome masks (empty string) is recorded', () => {
+  const { raw, pngs } = tour()
+  const masked = structuredClone(raw) as { adapter: { description: string } }
+  masked.adapter.description = ''
+  const record = buildScreensRecord(masked, pngs) as { adapter: { vendor: string; description: string } }
+  assert.equal(record.adapter.vendor, 'nvidia')
+  assert.equal(record.adapter.description, '')
+})

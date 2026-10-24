@@ -61,8 +61,11 @@ function adapterFacts(out: Obj): AdapterFacts {
     if (typeof v !== 'string' || v.length === 0) fail(`adapter/${k}`, `${JSON.stringify(v)} is not a non-empty string; pass the unmodified uiTour result.json`)
     return v
   }
+  // Chrome masks GPUAdapterInfo.description (an empty string) unless unsafe flags are set; vendor and
+  // architecture still identify the adapter, so the description only has to be a string.
+  if (typeof a.description !== 'string') fail('adapter/description', `${JSON.stringify(a.description)} is not a string; pass the unmodified uiTour result.json`)
   if (typeof a.software !== 'boolean') fail('adapter/software', `${JSON.stringify(a.software)} is not a boolean; pass the unmodified uiTour result.json`)
-  return { vendor: text('vendor'), architecture: text('architecture'), description: text('description'), software: a.software }
+  return { vendor: text('vendor'), architecture: text('architecture'), description: a.description, software: a.software }
 }
 
 function parseInputs(raw: unknown, screen: string): TourInput[] {

@@ -22,6 +22,33 @@
       "views": [
         "three-quarter"
       ]
+    },
+    {
+      "name": "candy-floor-tile",
+      "assets": [
+        "candy.floor-tile"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-floor-disc",
+      "assets": [
+        "candy.floor-disc"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-moving-platform",
+      "assets": [
+        "candy.moving-platform"
+      ],
+      "views": [
+        "three-quarter"
+      ]
     }
   ]
 }

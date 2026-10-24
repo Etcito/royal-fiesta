@@ -17,6 +17,23 @@
           "description": "candy.spinner-bar, the rotating spinner bar of ref-1: a long glossy pink inflatable tube with white helical candy stripes, rounded yellow end caps and yellow collars, on a pink hub cap over a yellow post and a wide blue base with a yellow rim, in ref-1's glossy pink/yellow/white inflatable style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
         }
       ]
+    },
+    {
+      "name": "c3-platforms",
+      "views": [
+        {
+          "png": "out/c3/candy-floor-tile-three-quarter.png",
+          "description": "candy.floor-tile, a square floor tile of ref-1's floating platforms: a thick glossy candy slab with a flat light-blue walkable top pad, a chunky rounded yellow inflatable rim around the top edge, a pink side band printed with a bold white zigzag all around, and a rounded yellow bottom rim, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        },
+        {
+          "png": "out/c3/candy-floor-disc-three-quarter.png",
+          "description": "candy.floor-disc, a round floor disc of ref-1's floating platforms: a thick glossy candy disc with a flat pink walkable top carrying a white ring and centre dot target, a chunky rounded yellow inflatable rim around the top edge, a blue side band printed with a bold white zigzag all around, and a rounded yellow bottom rim, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        },
+        {
+          "png": "out/c3/candy-moving-platform-three-quarter.png",
+          "description": "candy.moving-platform, a small square floating platform of ref-1: a thick glossy candy slab with a flat yellow walkable top pad, a chunky rounded pink inflatable rim around the top edge, a blue side band printed with a bold white zigzag all around, and a rounded pink bottom rim, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        }
+      ]
     }
   ]
 }

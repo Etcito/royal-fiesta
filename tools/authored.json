@@ -2,6 +2,9 @@
   "format": "royal-fiesta.authored",
   "version": 1,
   "files": [
+    "assets/candy/candy.floor-disc.asset.json",
+    "assets/candy/candy.floor-tile.asset.json",
+    "assets/candy/candy.moving-platform.asset.json",
     "assets/candy/candy.pendulum-hammer.asset.json",
     "assets/candy/candy.spinner-bar.asset.json",
     "assets/common/costume.fish-scarf.asset.json",

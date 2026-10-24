@@ -26,7 +26,7 @@ import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
 import { Effect, Nav } from '@royal-fiesta/game/screens/nav'
 import type { GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
 import { SETTINGS_ROWS, adjust, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
-import type { KeyAction, Settings } from '@royal-fiesta/game/screens/settings'
+import type { KeyAction, Settings, SettingsStore } from '@royal-fiesta/game/screens/settings'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { neutralInput } from '@royal-fiesta/sim/input'
@@ -50,9 +50,10 @@ import { SoundDriver } from '../play/sound.ts'
 import { widgetsOf } from '../ui/screenMap.ts'
 import type { ScreensDoc, WidgetProps } from '../ui/screenMap.ts'
 import { createUaaHost } from '../ui/uaaHost.ts'
-import type { UaaCommand, UaaHost } from '../ui/uaaHost.ts'
+import type { UaaCommand, UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
 import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
 import { installGameOps } from './ops.ts'
+import type { TourGame } from './uiTour.ts'
 
 interface Query {
   course: string | null
@@ -73,6 +74,8 @@ const STEP_S = 1 / 60
 const PLAYERS = 8
 // The podium screen returns to the hub by itself after this, or earlier with its button.
 const PODIUM_HOLD_S = 6
+// The offline queue: seconds of unpaused game time before the match against bots starts.
+const QUEUE_S = 3
 
 function intParam(q: URLSearchParams, key: string, def: number, min: number, max: number): number {
   const raw = q.get(key)
@@ -162,7 +165,14 @@ function matchScreen(v: MatchViewState, localStatus: number, podium: boolean): G
   return 'result'
 }
 
-// Returns the stop: an op tears the App down before building its own views.
+// Calls frame once per page frame and returns the stop.
+type FrameLoop = (frame: (dtS: number) => void) => () => void
+
+// Where the App keeps its settings and what calls its frames: the page's localStorage and rAF loop, or
+// the uiTour op's in-memory store and its own frame steps.
+interface AppEnv { store: SettingsStore; loop: FrameLoop }
+
+// The page's FrameLoop, on requestAnimationFrame. An op tears the App down before building its own views.
 function loop(frame: (dtS: number) => void): () => void {
   let last = performance.now()
   let id = 0
@@ -305,6 +315,8 @@ class LocalMode implements Mode {
   private pad = new QueuePad()
   private hubAcc = 0
   private match: LocalMatch | null = null
+  // The offline queue, s: its unpaused game time so far.
+  private queued: { s: number } | null = null
   private readonly names: string[]
   private readonly local = emptyChar()
   private readonly cv = emptyCharView()
@@ -333,7 +345,18 @@ class LocalMode implements Mode {
     return this.match?.sim ?? null
   }
 
+  // ?course= goes straight into its round; otherwise the queue finds the bots for QUEUE_S first.
   enqueue(): void {
+    if (this.match !== null || this.queued !== null) return
+    if (this.c.loaded.course !== null) this.startMatch()
+    else this.queued = { s: 0 }
+  }
+
+  dequeue(): void {
+    this.queued = null
+  }
+
+  private startMatch(): void {
     if (this.match !== null) return
     const { R, content, course } = this.c.loaded
     const seed = Date.now() >>> 0
@@ -345,8 +368,6 @@ class LocalMode implements Mode {
     this.hubView.setVisible(false)
     this.presenter.begin(0)
   }
-
-  dequeue(): void {}
 
   leaveMatch(): void {
     const m = this.match
@@ -375,6 +396,10 @@ class LocalMode implements Mode {
 
   lines(): string[] {
     const m = this.match
+    if (m === null && this.queued !== null) {
+      const found = Math.min(8, 1 + Math.floor(7 * this.queued.s / QUEUE_S))
+      return [`${this.c.q.name} - local hub`, `Players found ${found}/8`]
+    }
     if (m === null) {
       const course = this.c.loaded.course
       const what = course === null ? 'a match against bots' : course.name
@@ -390,6 +415,7 @@ class LocalMode implements Mode {
     this.presenter.dispose()
     this.match?.sim.free()
     this.match = null
+    this.queued = null
     this.hubView.dispose()
     this.hub.free()
   }
@@ -402,14 +428,22 @@ class LocalMode implements Mode {
       while (this.hubAcc >= STEP_S) {
         this.hubAcc -= STEP_S
         this.hub.step(f.world)
-        if (this.pad.update(this.hub.onQueuePad()) === 'armed') {
+        const pad = this.pad.update(this.hub.onQueuePad())
+        if (pad === 'armed') {
           this.enqueue()
-          return this.frameMatch(this.match!, f)
-        }
+          // ?course=: enqueue started the match at once.
+          if (this.match !== null) return this.frameMatch(this.match, f)
+        } else if (pad === 'cancel' && this.queued !== null) this.dequeue()
       }
+      if (this.queued !== null) this.queued.s += f.dt
+    }
+    if (this.queued !== null && this.queued.s >= QUEUE_S) {
+      this.queued = null
+      this.startMatch()
+      return this.frameMatch(this.match!, f)
     }
     this.hubView.update(this.hub.state(this.local), this.c.q.colour, [], this.hub.tick, f.dt, this.hub.emote(now))
-    return 'hub'
+    return this.queued !== null ? 'queue' : 'hub'
   }
 
   // A single ?course= race ends with its round; every other match runs to its own podium.
@@ -688,17 +722,19 @@ class App {
   private readonly screens: HTMLElement
   private readonly search: string
   private readonly host: UaaHost
+  private readonly env: AppEnv
   private readonly input: GameInput
   private readonly sound = new SoundDriver()
   private readonly orbit = new OrbitCamera()
   private readonly world = neutralInput()
 
-  constructor(views: HTMLElement, screens: HTMLElement, host: UaaHost, search: string) {
+  constructor(views: HTMLElement, screens: HTMLElement, host: UaaHost, search: string, env: AppEnv) {
     this.views = views
     this.screens = screens
     this.host = host
     this.search = search
-    const saved = loadSettings(window.localStorage)
+    this.env = env
+    const saved = loadSettings(env.store)
     this.settings = saved.settings
     this.settingsError = saved.error
     // Clicking the (single) game canvas locks the pointer for the mouse look.
@@ -714,7 +750,7 @@ class App {
       // The load parses again and shows the refusal.
     }
     this.run(this.nav.dispatch({ kind: 'load', next }))
-    this.stopLoop = loop(dt => {
+    this.stopLoop = this.env.loop(dt => {
       try {
         this.frame(dt)
       } catch (e) {
@@ -986,7 +1022,7 @@ class App {
     this.settings = next
     this.settingsError = null
     try {
-      saveSettings(window.localStorage, next)
+      saveSettings(this.env.store, next)
     } catch (e) {
       this.settingsError = refusal('settings', 'localStorage', `not saved (${messageOf(e)}); allow site storage to keep settings`)
     }
@@ -998,28 +1034,55 @@ function bootMessage(e: unknown): string {
   return e instanceof UaaError ? `${e.code}: ${e.message}` : messageOf(e)
 }
 
-// Boot waits for the uaa host: there is no DOM menu, so a GPU, asset or font failure fails the boot.
-// taken: an op took the page while the host was being created; the App then never starts.
-async function start(taken: () => boolean): Promise<App | null> {
+function pageRoots(): { views: HTMLElement; screens: HTMLElement } {
   const views = document.querySelector<HTMLElement>('#views')
   const screens = document.querySelector<HTMLElement>('#screens')
-  const canvas = document.querySelector<HTMLCanvasElement>('#screens > canvas#ui')
-  if (views === null || screens === null || canvas === null) throw new Error('game.html needs main#views and div#screens holding canvas#ui')
+  if (views === null || screens === null) throw new Error('game.html needs main#views and div#screens holding canvas#ui')
+  return { views, screens }
+}
+
+// Boot waits for the uaa host: there is no DOM menu, so a GPU, asset or font failure fails the boot.
+// taken: an op took the page while the host was being created; the App then never starts.
+async function start(
+  canvas: HTMLCanvasElement, env: AppEnv, taken: () => boolean, onScreen?: (e: UaaScreenChange) => void,
+): Promise<{ app: App; host: UaaHost } | null> {
+  const { views, screens } = pageRoots()
   let created: App | null = null
   const host = await createUaaHost({
     canvas, width: Math.max(1, screens.clientWidth), height: Math.max(1, screens.clientHeight), dpr: window.devicePixelRatio || 1,
-    onCommand: c => created?.command(c),
+    onCommand: c => created?.command(c), onScreen,
   })
   if (taken()) {
     host.destroy()
     return null
   }
-  const booted = new App(views, screens, host, window.location.search)
+  const booted = new App(views, screens, host, window.location.search, env)
   created = booted
   window.addEventListener('error', e => booted.fail(messageOf(e.error ?? e.message)))
   window.addEventListener('unhandledrejection', e => booted.fail(messageOf(e.reason)))
   booted.start()
-  return booted
+  return { app: booted, host }
+}
+
+// The uiTour op's App: the page's App on a new canvas#ui (the torn-down App emptied #screens), its settings
+// in memory (the GPU page's opaque origin has no storage) and its frames stepped by the op instead of rAF.
+async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourGame> {
+  const { views, screens } = pageRoots()
+  const ui = document.createElement('canvas')
+  ui.id = 'ui'
+  screens.replaceChildren(ui)
+  const saved = new Map<string, string>()
+  let frame: ((dtS: number) => void) | null = null
+  const env: AppEnv = {
+    store: { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) },
+    loop: f => {
+      frame = f
+      return () => { frame = null }
+    },
+  }
+  const booted = await start(ui, env, () => false, onScreen)
+  if (booted === null) throw new Error('uiTour: the App did not start')
+  return { host: booted.host, ui, views, step: dt => frame?.(dt), dispose: () => booted.app.dispose() }
 }
 
 // Nothing mounted: write the message into the page rather than only the console.
@@ -1030,16 +1093,22 @@ function bootFailed(e: unknown): void {
 }
 
 // The GPU runner loads the page without a query, so every load registers the ops (no side effect until
-// one is called); ?mode=ops registers them alone, with no App. The first op call tears the App down.
-const opsMode = new URLSearchParams(window.location.search).get('mode') === 'ops'
+// one is called); ?mode=ops registers them alone, with no App, and so does the runner's opaque origin
+// (no storage: the App could not keep its settings, and its failed boot would empty the page an op needs).
+// The first op call tears the App down.
+const opsMode = new URLSearchParams(window.location.search).get('mode') === 'ops' || window.origin === 'null'
 let app: App | null = null
 let opTookPage = false
 try {
   installGameOps(() => {
     opTookPage = true
     app?.dispose()
-  })
-  if (!opsMode) start(() => opTookPage).then(a => { app = a }, bootFailed)
+  }, startForOp)
+  if (!opsMode) {
+    const canvas = document.querySelector<HTMLCanvasElement>('#screens > canvas#ui')
+    if (canvas === null) throw new Error('game.html needs main#views and div#screens holding canvas#ui')
+    start(canvas, { store: window.localStorage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
+  }
 } catch (e) {
   bootFailed(e)
 }

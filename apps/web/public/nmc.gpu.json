@@ -4,6 +4,7 @@
     "controlsProbe",
     "gameCapture",
     "roundCapture",
-    "frameTiming"
+    "frameTiming",
+    "uiTour"
   ]
 }

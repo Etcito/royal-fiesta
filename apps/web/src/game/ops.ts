@@ -40,6 +40,8 @@ import type { AdapterInfo } from '../nmc/ops.ts'
 import { HubView } from '../play/hubView.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
 import { raaStatus } from '../render/raaStatus.ts'
+import { uiTour } from './uiTour.ts'
+import type { BootGame, UiTourOutput } from './uiTour.ts'
 
 export interface ControlCase { name: string; input: 'KeyD' | 'ArrowRight' | 'stickRight' | 'KeyA' | 'ArrowLeft' | 'stickLeft' | 'mouseRight' | 'rightStickRight'; holdMs: number }
 export interface ControlsProbeInput { width: 1280; height: 720; content: ContentId; course: string; cases: ControlCase[] }
@@ -1057,23 +1059,34 @@ async function gameCapture(raw: unknown): Promise<OpResult<GameCaptureOutput>> {
   }
 }
 
-type GameOps = { controlsProbe(input: unknown): Promise<OpResult<ControlsOutput>>; gameCapture(input: unknown): Promise<OpResult<GameCaptureOutput>> }
+type GameOps = {
+  controlsProbe(input: unknown): Promise<OpResult<ControlsOutput>>
+  gameCapture(input: unknown): Promise<OpResult<GameCaptureOutput>>
+  uiTour(input: unknown): Promise<OpResult<UiTourOutput>>
+}
 
-// window.nmcGpu.ops.controlsProbe / gameCapture, next to the client page's ops. Registering has no side
-// effect: the first op call prefers the compatibility adapter and runs teardown (the page's App) first.
-export function installGameOps(teardown: () => void = () => {}): void {
+// window.nmcGpu.ops.controlsProbe / gameCapture / uiTour, next to the client page's ops. Registering has no
+// side effect: the first op call runs teardown (the page's App) first; every op but uiTour (the real App,
+// on the core adapter) also prefers the compatibility adapter. bootGame starts the App for uiTour.
+export function installGameOps(teardown: () => void, bootGame: BootGame): void {
   installNmcOps()
   const gpu = window.nmcGpu as NonNullable<Window['nmcGpu']> & { ops: GameOps }
+  let taken = false
+  const take = (): void => {
+    if (taken) return
+    taken = true
+    teardown()
+  }
   let prepared = false
   const prepare = (): void => {
-    if (prepared) return
+    if (!prepared) preferCompatibilityAdapter()
     prepared = true
-    preferCompatibilityAdapter()
-    teardown()
+    take()
   }
   const { roundCapture, frameTiming } = gpu.ops
   gpu.ops.roundCapture = input => (prepare(), roundCapture(input))
   gpu.ops.frameTiming = input => (prepare(), frameTiming(input))
   gpu.ops.controlsProbe = input => (prepare(), controlsProbe(input))
   gpu.ops.gameCapture = input => (prepare(), gameCapture(input))
+  gpu.ops.uiTour = input => (take(), uiTour(input, { boot: bootGame, adapter: adapterInfo }))
 }

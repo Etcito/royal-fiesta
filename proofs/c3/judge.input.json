@@ -83,7 +83,7 @@
       "views": [
         {
           "png": "out/c3/candy-queue-pad-three-quarter.png",
-          "description": "candy.queue-pad, a round hub queue pad like ref-1's round candy pads: a low glossy pink cushion top sitting in a chunky rounded yellow inflatable rim with a white zigzag band around its side, four white arrow chevrons on the pink top pointing to a white ring with a blue centre dot, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+          "description": "candy.queue-pad, a round hub queue pad like ref-1's round candy pads: a low glossy pink cushion top sitting in a chunky rounded yellow inflatable rim with a white zigzag edge around its side, four white L-shaped corner brackets on the pink top framing a white ring with a blue centre dot (a queue-pad target marking, not arrows), in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
         },
         {
           "png": "out/c3/candy-plaza-fountain-three-quarter.png",

@@ -1,0 +1,412 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.tower",
+  "name": "candy-tower",
+  "category": "scenery",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "candy-tower",
+    "root": [
+      "candy_tower"
+    ],
+    "nodes": {
+      "candy_tower": {
+        "id": "candy_tower",
+        "name": "candy-tower",
+        "kind": "group",
+        "children": [
+          "plinth",
+          "plinth_step",
+          "shaft",
+          "band_1",
+          "band_2",
+          "collar",
+          "drum",
+          "drum_rim",
+          "roof",
+          "finial_ring",
+          "finial",
+          "window_1",
+          "window_2",
+          "window_3",
+          "window_4",
+          "crenel_1",
+          "crenel_2",
+          "crenel_3",
+          "crenel_4",
+          "crenel_5",
+          "crenel_6"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.tower",
+          "category": "scenery",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "lowpoly"
+        }
+      },
+      "plinth": {
+        "id": "plinth",
+        "name": "plinth",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 0.5, 0]
+        },
+        "round": 0.25,
+        "material": "m_yellow",
+        "params": {
+          "height": 1,
+          "radius": 2.3
+        }
+      },
+      "plinth_step": {
+        "id": "plinth_step",
+        "name": "plinth-step",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 1.2, 0]
+        },
+        "round": 0.15,
+        "material": "m_purple",
+        "params": {
+          "height": 0.5,
+          "radius": 2
+        }
+      },
+      "shaft": {
+        "id": "shaft",
+        "name": "shaft",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 5.9, 0]
+        },
+        "round": 0.1,
+        "material": "m_purple",
+        "params": {
+          "height": 9,
+          "radius": 1.75,
+          "taper": 0.9
+        }
+      },
+      "band_1": {
+        "id": "band_1",
+        "name": "band-1",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 3.6, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "majorRadius": 1.72,
+          "minorRadius": 0.22
+        }
+      },
+      "band_2": {
+        "id": "band_2",
+        "name": "band-2",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 6.6, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "majorRadius": 1.66,
+          "minorRadius": 0.22
+        }
+      },
+      "collar": {
+        "id": "collar",
+        "name": "collar",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 10.4, 0]
+        },
+        "round": 0.3,
+        "material": "m_yellow",
+        "params": {
+          "height": 0.8,
+          "radius": 2.15
+        }
+      },
+      "drum": {
+        "id": "drum",
+        "name": "drum",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 11.5, 0]
+        },
+        "round": 0.1,
+        "material": "m_purple",
+        "params": {
+          "height": 1.5,
+          "radius": 1.85,
+          "taper": 0.95
+        }
+      },
+      "drum_rim": {
+        "id": "drum_rim",
+        "name": "drum-rim",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 12.25, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "majorRadius": 1.8,
+          "minorRadius": 0.2
+        }
+      },
+      "roof": {
+        "id": "roof",
+        "name": "roof",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 12.3, 0]
+        },
+        "material": "m_pink",
+        "params": {
+          "radii": [1.75, 1.3, 1.75]
+        }
+      },
+      "finial_ring": {
+        "id": "finial_ring",
+        "name": "finial-ring",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 13.5, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "majorRadius": 0.32,
+          "minorRadius": 0.1
+        }
+      },
+      "finial": {
+        "id": "finial",
+        "name": "finial",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 13.68, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radius": 0.32
+        }
+      },
+      "window_1": {
+        "id": "window_1",
+        "name": "window-1",
+        "kind": "box",
+        "transform": {
+          "position": [1.1172, 8.4, 1.1172],
+          "rotation": [0, 45, 0]
+        },
+        "round": 0.25,
+        "material": "m_blue",
+        "params": {
+          "size": [0.7, 1.4, 0.3]
+        }
+      },
+      "window_2": {
+        "id": "window_2",
+        "name": "window-2",
+        "kind": "box",
+        "transform": {
+          "position": [1.1172, 8.4, -1.1172],
+          "rotation": [0, 135, 0]
+        },
+        "round": 0.25,
+        "material": "m_blue",
+        "params": {
+          "size": [0.7, 1.4, 0.3]
+        }
+      },
+      "window_3": {
+        "id": "window_3",
+        "name": "window-3",
+        "kind": "box",
+        "transform": {
+          "position": [-1.1172, 8.4, -1.1172],
+          "rotation": [0, 225, 0]
+        },
+        "round": 0.25,
+        "material": "m_blue",
+        "params": {
+          "size": [0.7, 1.4, 0.3]
+        }
+      },
+      "window_4": {
+        "id": "window_4",
+        "name": "window-4",
+        "kind": "box",
+        "transform": {
+          "position": [-1.1172, 8.4, 1.1172],
+          "rotation": [0, 315, 0]
+        },
+        "round": 0.25,
+        "material": "m_blue",
+        "params": {
+          "size": [0.7, 1.4, 0.3]
+        }
+      },
+      "crenel_1": {
+        "id": "crenel_1",
+        "name": "crenel-1",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 10.85, 2]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radius": 0.3
+        }
+      },
+      "crenel_2": {
+        "id": "crenel_2",
+        "name": "crenel-2",
+        "kind": "sphere",
+        "transform": {
+          "position": [1.7321, 10.85, 1]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radius": 0.3
+        }
+      },
+      "crenel_3": {
+        "id": "crenel_3",
+        "name": "crenel-3",
+        "kind": "sphere",
+        "transform": {
+          "position": [1.7321, 10.85, -1]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radius": 0.3
+        }
+      },
+      "crenel_4": {
+        "id": "crenel_4",
+        "name": "crenel-4",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 10.85, -2]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radius": 0.3
+        }
+      },
+      "crenel_5": {
+        "id": "crenel_5",
+        "name": "crenel-5",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.7321, 10.85, -1]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radius": 0.3
+        }
+      },
+      "crenel_6": {
+        "id": "crenel_6",
+        "name": "crenel-6",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.7321, 10.85, 1]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radius": 0.3
+        }
+      }
+    },
+    "materials": {
+      "m_yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.35
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m_purple": {
+        "name": "candy-purple",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#9b7fe0",
+                "in.roughness": 0.45
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m_pink": {
+        "name": "candy-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.35
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m_blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.3
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {},
+  "bounds": {
+    "min": [-2.3, 0, -2.3],
+    "max": [2.3, 14, 2.3]
+  },
+  "hash": "7110b2367875d29a38355cd374f9e4d98696baa92a248b0ae67a56ab646d90aa"
+}

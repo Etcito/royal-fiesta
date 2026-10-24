@@ -6,51 +6,6 @@
   "height": 1024,
   "subjects": [
     {
-      "name": "candy-pendulum-hammer",
-      "assets": [
-        "candy.pendulum-hammer"
-      ],
-      "views": [
-        "three-quarter"
-      ]
-    },
-    {
-      "name": "candy-spinner-bar",
-      "assets": [
-        "candy.spinner-bar"
-      ],
-      "views": [
-        "three-quarter"
-      ]
-    },
-    {
-      "name": "candy-floor-tile",
-      "assets": [
-        "candy.floor-tile"
-      ],
-      "views": [
-        "three-quarter"
-      ]
-    },
-    {
-      "name": "candy-floor-disc",
-      "assets": [
-        "candy.floor-disc"
-      ],
-      "views": [
-        "three-quarter"
-      ]
-    },
-    {
-      "name": "candy-moving-platform",
-      "assets": [
-        "candy.moving-platform"
-      ],
-      "views": [
-        "three-quarter"
-      ]
-    },
-    {
       "name": "candy-bounce-pad",
       "assets": [
         "candy.bounce-pad"
@@ -69,15 +24,6 @@
       ]
     },
     {
-      "name": "candy-finish-arch",
-      "assets": [
-        "candy.finish-arch"
-      ],
-      "views": [
-        "three-quarter"
-      ]
-    },
-    {
       "name": "candy-checkpoint-gate",
       "assets": [
         "candy.checkpoint-gate"
@@ -87,27 +33,18 @@
       ]
     },
     {
-      "name": "candy-rotating-door",
+      "name": "candy-floor-disc",
       "assets": [
-        "candy.rotating-door"
+        "candy.floor-disc"
       ],
       "views": [
         "three-quarter"
       ]
     },
     {
-      "name": "candy-seesaw-plank",
+      "name": "candy-finish-arch",
       "assets": [
-        "candy.seesaw-plank"
-      ],
-      "views": [
-        "three-quarter"
-      ]
-    },
-    {
-      "name": "candy-wall-block",
-      "assets": [
-        "candy.wall-block"
+        "candy.finish-arch"
       ],
       "views": [
         "three-quarter"
@@ -123,9 +60,45 @@
       ]
     },
     {
+      "name": "candy-pendulum-hammer",
+      "assets": [
+        "candy.pendulum-hammer"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
       "name": "candy-plaza-fountain",
       "assets": [
         "candy.plaza-fountain"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-floor-tile",
+      "assets": [
+        "candy.floor-tile"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-moving-platform",
+      "assets": [
+        "candy.moving-platform"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-rotating-door",
+      "assets": [
+        "candy.rotating-door"
       ],
       "views": [
         "three-quarter"
@@ -141,9 +114,63 @@
       ]
     },
     {
+      "name": "candy-seesaw-plank",
+      "assets": [
+        "candy.seesaw-plank"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-spinner-bar",
+      "assets": [
+        "candy.spinner-bar"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-wall-block",
+      "assets": [
+        "candy.wall-block"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
       "name": "candy-slime-pool",
       "assets": [
         "candy.slime-pool"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-banner",
+      "assets": [
+        "candy.banner"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-hot-air-balloon",
+      "assets": [
+        "candy.hot-air-balloon"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-tower",
+      "assets": [
+        "candy.tower"
       ],
       "views": [
         "three-quarter"

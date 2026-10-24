@@ -1,0 +1,356 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.hot-air-balloon",
+  "name": "candy-hot-air-balloon",
+  "category": "scenery",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "candy-hot-air-balloon",
+    "root": [
+      "candy_hot_air_balloon"
+    ],
+    "nodes": {
+      "candy_hot_air_balloon": {
+        "id": "candy_hot_air_balloon",
+        "name": "candy-hot-air-balloon",
+        "kind": "group",
+        "children": [
+          "envelope",
+          "gore_1",
+          "gore_2",
+          "gore_3",
+          "gore_4",
+          "gore_5",
+          "gore_6",
+          "skirt",
+          "crown_cap",
+          "mouth",
+          "rope_1",
+          "rope_2",
+          "rope_3",
+          "rope_4",
+          "basket",
+          "basket_rim"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.hot-air-balloon",
+          "category": "scenery",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "lowpoly"
+        }
+      },
+      "envelope": {
+        "id": "envelope",
+        "name": "envelope",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 4, 0]
+        },
+        "material": "m_pink",
+        "params": {
+          "radii": [2, 2, 2]
+        }
+      },
+      "gore_1": {
+        "id": "gore_1",
+        "name": "gore-1",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 4, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radii": [2.1, 2, 1]
+        }
+      },
+      "gore_2": {
+        "id": "gore_2",
+        "name": "gore-2",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 4, 0],
+          "rotation": [0, 30, 0]
+        },
+        "material": "m_blue",
+        "params": {
+          "radii": [2.1, 2, 1]
+        }
+      },
+      "gore_3": {
+        "id": "gore_3",
+        "name": "gore-3",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 4, 0],
+          "rotation": [0, 60, 0]
+        },
+        "material": "m_white",
+        "params": {
+          "radii": [2.1, 2, 1]
+        }
+      },
+      "gore_4": {
+        "id": "gore_4",
+        "name": "gore-4",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 4, 0],
+          "rotation": [0, 90, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radii": [2.1, 2, 1]
+        }
+      },
+      "gore_5": {
+        "id": "gore_5",
+        "name": "gore-5",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 4, 0],
+          "rotation": [0, 120, 0]
+        },
+        "material": "m_blue",
+        "params": {
+          "radii": [2.1, 2, 1]
+        }
+      },
+      "gore_6": {
+        "id": "gore_6",
+        "name": "gore-6",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 4, 0],
+          "rotation": [0, 150, 0]
+        },
+        "material": "m_white",
+        "params": {
+          "radii": [2.1, 2, 1]
+        }
+      },
+      "skirt": {
+        "id": "skirt",
+        "name": "skirt",
+        "kind": "cone",
+        "transform": {
+          "position": [0, 2.4, 0]
+        },
+        "smooth": 0.7,
+        "colorBlend": "hard",
+        "material": "m_pink",
+        "params": {
+          "height": 2,
+          "radiusBottom": 0.4,
+          "radiusTop": 1.5
+        }
+      },
+      "crown_cap": {
+        "id": "crown_cap",
+        "name": "crown-cap",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 5.92, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radii": [0.55, 0.16, 0.55]
+        }
+      },
+      "mouth": {
+        "id": "mouth",
+        "name": "mouth",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 1.45, 0]
+        },
+        "material": "m_yellow",
+        "params": {
+          "majorRadius": 0.42,
+          "minorRadius": 0.08
+        }
+      },
+      "rope_1": {
+        "id": "rope_1",
+        "name": "rope-1",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0.3, 1.03, 0.3]
+        },
+        "material": "m_white",
+        "params": {
+          "height": 0.9,
+          "radius": 0.025
+        }
+      },
+      "rope_2": {
+        "id": "rope_2",
+        "name": "rope-2",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0.3, 1.03, -0.3]
+        },
+        "material": "m_white",
+        "params": {
+          "height": 0.9,
+          "radius": 0.025
+        }
+      },
+      "rope_3": {
+        "id": "rope_3",
+        "name": "rope-3",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-0.3, 1.03, 0.3]
+        },
+        "material": "m_white",
+        "params": {
+          "height": 0.9,
+          "radius": 0.025
+        }
+      },
+      "rope_4": {
+        "id": "rope_4",
+        "name": "rope-4",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-0.3, 1.03, -0.3]
+        },
+        "material": "m_white",
+        "params": {
+          "height": 0.9,
+          "radius": 0.025
+        }
+      },
+      "basket": {
+        "id": "basket",
+        "name": "basket",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.29, 0]
+        },
+        "round": 0.08,
+        "material": "m_orange",
+        "params": {
+          "size": [0.8, 0.58, 0.8]
+        }
+      },
+      "basket_rim": {
+        "id": "basket_rim",
+        "name": "basket-rim",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.58, 0]
+        },
+        "round": 0.05,
+        "material": "m_pink",
+        "params": {
+          "size": [0.9, 0.12, 0.9]
+        }
+      }
+    },
+    "materials": {
+      "m_pink": {
+        "name": "candy-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.35
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m_yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.35
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m_blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.35
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m_white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.4
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m_orange": {
+        "name": "candy-orange",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff8a3d",
+                "in.roughness": 0.6
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {},
+  "bounds": {
+    "min": [-2.318653, 0, -2.318653],
+    "max": [2.318653, 6.08, 2.318653]
+  },
+  "hash": "fbae00af69fa17e1ef51b6dc89fd2a74a9b2d931b30b53b0a8b54513766e7cbf"
+}

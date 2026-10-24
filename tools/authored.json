@@ -2,6 +2,7 @@
   "format": "royal-fiesta.authored",
   "version": 1,
   "files": [
+    "assets/candy/candy.banner.asset.json",
     "assets/candy/candy.bounce-pad.asset.json",
     "assets/candy/candy.checkpoint-gate.asset.json",
     "assets/candy/candy.cloud.asset.json",
@@ -9,6 +10,7 @@
     "assets/candy/candy.finish-arch.asset.json",
     "assets/candy/candy.floor-disc.asset.json",
     "assets/candy/candy.floor-tile.asset.json",
+    "assets/candy/candy.hot-air-balloon.asset.json",
     "assets/candy/candy.moving-platform.asset.json",
     "assets/candy/candy.pendulum-hammer.asset.json",
     "assets/candy/candy.plaza-fountain.asset.json",
@@ -18,6 +20,7 @@
     "assets/candy/candy.seesaw-plank.asset.json",
     "assets/candy/candy.slime-pool.asset.json",
     "assets/candy/candy.spinner-bar.asset.json",
+    "assets/candy/candy.tower.asset.json",
     "assets/candy/candy.wall-block.asset.json",
     "assets/common/costume.fish-scarf.asset.json",
     "assets/common/costume.pineapple-suit.asset.json",

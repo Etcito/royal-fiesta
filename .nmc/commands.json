@@ -1,43 +1,15 @@
 [
   {
-    "name": "preview-judge-logo-crown",
-    "command": "node -e \"const {spawnSync:s}=require('node:child_process');for(const a of process.argv.slice(1)){const [b,...r]=JSON.parse(a);const p=s(b==='node'?process.execPath:b,r,{stdio:'inherit'});if(p.status!==0)process.exit(1)}\" \"[\\\"node\\\", \\\"--experimental-strip-types\\\", \\\"tools/uiPreview.ts\\\", \\\"logo.crown\\\", \\\"normal\\\"]\" \"[\\\"python3\\\", \\\"$NMC_JUDGE_CLIENT\\\", \\\"out/ui-preview/logo.crown.normal.png\\\", \\\"--description\\\", \\\"Royal Fiesta game logo: glossy gold inflatable crown with gem balls above the words ROYAL FIESTA in chunky rounded letters on a pink inflatable band, SDF Modeler preview on a sky background\\\", \\\"--reference\\\", \\\"/refs/ref-1.png\\\", \\\"--min-score\\\", \\\"6\\\", \\\"--aspect\\\", \\\"design\\\"]\"",
-    "timeout_s": 900
-  },
-  {
-    "name": "preview-judge-button-secondary",
-    "command": "node -e \"const {spawnSync:s}=require('node:child_process');for(const a of process.argv.slice(1)){const [b,...r]=JSON.parse(a);const p=s(b==='node'?process.execPath:b,r,{stdio:'inherit'});if(p.status!==0)process.exit(1)}\" \"[\\\"node\\\", \\\"--experimental-strip-types\\\", \\\"tools/uiPreview.ts\\\", \\\"button.secondary\\\"]\" \"[\\\"python3\\\", \\\"$NMC_JUDGE_CLIENT\\\", \\\"out/ui-preview/button.secondary.normal.png\\\", \\\"--description\\\", \\\"A game UI secondary button seen alone on a sky-blue background, in the inflatable glossy toy style of the reference (bright plastic, Fall Guys-like): a wide sky-blue pill shaped like an inflated cushion, with a white glossy streak across the top and a deeper blue rim. There is no text on it.\\\", \\\"--reference\\\", \\\"/refs/ref-1.png\\\", \\\"--min-score\\\", \\\"6\\\", \\\"--aspect\\\", \\\"design\\\"]\" \"[\\\"python3\\\", \\\"$NMC_JUDGE_CLIENT\\\", \\\"out/ui-preview/button.secondary.focus.png\\\", \\\"--description\\\", \\\"A game UI secondary button seen alone on a sky-blue background, in the inflatable glossy toy style of the reference (bright plastic, Fall Guys-like): a wide sky-blue pill shaped like an inflated cushion, with a white glossy streak across the top and a deeper blue rim. There is no text on it. It has a bright yellow glowing ring around it, showing keyboard focus.\\\", \\\"--reference\\\", \\\"/refs/ref-1.png\\\", \\\"--min-score\\\", \\\"6\\\", \\\"--aspect\\\", \\\"design\\\"]\" \"[\\\"python3\\\", \\\"$NMC_JUDGE_CLIENT\\\", \\\"out/ui-preview/button.secondary.pressed.png\\\", \\\"--description\\\", \\\"A game UI secondary button seen alone on a sky-blue background, in the inflatable glossy toy style of the reference (bright plastic, Fall Guys-like): a wide sky-blue pill shaped like an inflated cushion, with a white glossy streak across the top and a deeper blue rim. There is no text on it. It is pressed: slightly squashed and flatter than normal.\\\", \\\"--reference\\\", \\\"/refs/ref-1.png\\\", \\\"--min-score\\\", \\\"6\\\", \\\"--aspect\\\", \\\"design\\\"]\" \"[\\\"python3\\\", \\\"$NMC_JUDGE_CLIENT\\\", \\\"out/ui-preview/button.secondary.disabled.png\\\", \\\"--description\\\", \\\"A game UI secondary button seen alone on a sky-blue background, in an inflatable glossy toy style: a wide pill shaped like an inflated cushion, greyed out in pale grey-blue to show it is disabled, still with a faint white glossy streak and a darker grey-blue rim. There is no text on it.\\\", \\\"--reference\\\", \\\"/refs/ref-1.png\\\", \\\"--min-score\\\", \\\"6\\\", \\\"--aspect\\\", \\\"design\\\"]\"",
-    "timeout_s": 1200
-  },
-  {
-    "name": "preview-button-primary",
-    "command": "node --experimental-strip-types tools/uiPreview.ts button.primary",
+    "name": "preview-badge-round",
+    "command": "node --experimental-strip-types tools/uiPreview.ts badge.round normal",
     "timeout_s": 600
   },
   {
-    "name": "judge-button-primary-normal",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.primary.normal.png --description \"A game UI primary button shown alone on a sky-blue background, styled like the inflatable pool floats of a candy-coloured party game: a fat glossy inflatable pill in hot pink with a darker pink rim, a soft inner shadow, a bright white specular streak on the top-left and a puffy welded seam running around inside the edge. No text on it (the game adds the label).\" --reference /refs/ref-1.png --min-score 6 --aspect design",
+    "name": "judge-badge-round",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/badge.round.normal.png --description \"A game HUD badge seen alone on a sky-blue background, in the glossy inflatable toy style of ref-1 (bright plastic beach-ball look): a small perfectly round sunny-yellow ball with a thick bright orange rim, a soft molded inflated edge, and a bright white specular highlight with a second thin glint near the top left. There is no text on it, because the game draws its rounded dark-purple count on top.\" --reference /refs/ref-1.png --min-score 6 --aspect design",
     "timeout_s": 300,
     "after": [
-      "preview-button-primary"
+      "preview-badge-round"
     ]
-  },
-  {
-    "name": "judge-button-primary-focus",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.primary.focus.png --description \"The focused state of a game UI button on a sky-blue background: a fat glossy inflatable hot-pink pill with a darker pink rim, a white specular streak top-left and a puffy seam, surrounded by a bright yellow glow ring. No text on it.\" --reference /refs/ref-1.png --min-score 6 --aspect design",
-    "timeout_s": 300,
-    "after": [
-      "preview-button-primary"
-    ]
-  },
-  {
-    "name": "preview-judge-bars",
-    "command": "node -e \"const {spawnSync:s}=require('node:child_process');const j=process.argv[1];const d={'bar.track':process.argv[2],'bar.progress':process.argv[3]};let bad=0;for(const id in d){const p=s(process.execPath,['--experimental-strip-types','tools/uiPreview.ts',id,'normal'],{stdio:'inherit'});if(p.status!==0){bad=1;continue}const r=s('python3',[j,'out/ui-preview/'+id+'.normal.png','--description',d[id],'--min-score','6'],{stdio:'inherit'});console.log('[bars] '+id+' judge exit '+r.status);if(r.status!==0)bad=1}process.exit(bad)\" \"$NMC_JUDGE_CLIENT\" \"A game UI progress-bar track seen alone on a sky-blue background, in the glossy inflatable toy style of the reference (bright plastic, Fall Guys-like): a long horizontal pill-shaped inflatable tube in pale lilac with a puffy white-highlighted rim, rounded caps and a recessed groove inside it with a soft darker inner shadow along the top of the groove. It is empty: no fill and no text.\" \"A game UI progress-bar fill seen alone on a sky-blue background, in the glossy inflatable toy style of the reference (bright plastic, Fall Guys-like): a long horizontal pill-shaped glossy inflatable tube that blends from hot pink at the top to orange at the bottom, with a bright white highlight streak along the top, a darker magenta rim and rounded caps. No text.\"",
-    "timeout_s": 1200
-  },
-  {
-    "name": "preview-judge-badge-round",
-    "command": "node -e \"const {spawnSync:s}=require('node:child_process');for(const a of process.argv.slice(1)){const [b,...r]=JSON.parse(a);const p=s(b==='node'?process.execPath:b,r,{stdio:'inherit'});if(p.status!==0)process.exit(1)}\" \"[\\\"node\\\", \\\"--experimental-strip-types\\\", \\\"tools/uiPreview.ts\\\", \\\"badge.round\\\", \\\"normal\\\"]\" \"[\\\"python3\\\", \\\"$NMC_JUDGE_CLIENT\\\", \\\"out/ui-preview/badge.round.normal.png\\\", \\\"--description\\\", \\\"A game HUD badge seen alone on a sky-blue background, in the glossy inflatable toy style of ref-1 (bright plastic beach-ball look): a small perfectly round sunny-yellow ball with a thick bright orange rim, a soft molded inflated edge, and a bright white specular highlight with a second thin glint near the top left. There is no text on it, because the game draws its rounded dark-purple count on top.\\\", \\\"--reference\\\", \\\"/refs/ref-1.png\\\", \\\"--min-score\\\", \\\"6\\\", \\\"--aspect\\\", \\\"design\\\"]\"",
-    "timeout_s": 1200
   }
 ]

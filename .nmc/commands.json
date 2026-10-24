@@ -5,8 +5,8 @@
     "timeout_s": 3000
   },
   {
-    "name": "judge-c3-pool-cloud",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-pool-cloud",
+    "name": "c3-banner-balloon-tower",
+    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-banner-balloon-tower",
     "timeout_s": 1200,
     "after": [
       "render-views"

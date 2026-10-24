@@ -38,11 +38,13 @@
           "flag",
           "flag_hem",
           "flag_band",
-          "zigzag",
           "crown",
           "jewel_l",
           "jewel_c",
-          "jewel_r"
+          "jewel_r",
+          "bar_knob_l",
+          "flag_yellow",
+          "flag_orange"
         ],
         "asset": {
           "game": "royal-fiesta",
@@ -195,7 +197,7 @@
         },
         "material": "m_yellow",
         "params": {
-          "radius": 0.2
+          "radius": 0.17
         }
       },
       "crossbar": {
@@ -203,13 +205,13 @@
         "name": "crossbar",
         "kind": "cylinder",
         "transform": {
-          "position": [0.75, 3.5, 0],
+          "position": [0, 3.58, 0.05],
           "rotation": [0, 0, 90]
         },
         "material": "m_yellow",
         "params": {
-          "height": 1.5,
-          "radius": 0.05
+          "height": 1.56,
+          "radius": 0.065
         }
       },
       "bar_knob": {
@@ -217,11 +219,11 @@
         "name": "bar-knob",
         "kind": "sphere",
         "transform": {
-          "position": [1.5, 3.5, 0]
+          "position": [0.8, 3.58, 0.05]
         },
         "material": "m_yellow",
         "params": {
-          "radius": 0.09
+          "radius": 0.12
         }
       },
       "flag": {
@@ -229,12 +231,12 @@
         "name": "flag",
         "kind": "box",
         "transform": {
-          "position": [0.78, 2.53, 0]
+          "position": [0, 2.37, 0.12]
         },
-        "round": 0.02,
+        "round": 0.025,
         "material": "m_blue",
         "params": {
-          "size": [1.24, 1.75, 0.06]
+          "size": [1.24, 2.12, 0.06]
         }
       },
       "flag_hem": {
@@ -242,74 +244,25 @@
         "name": "flag-hem",
         "kind": "box",
         "transform": {
-          "position": [0.78, 3.4, 0]
+          "position": [0, 3.44, 0.12]
         },
         "round": 0.04,
         "material": "m_pink",
         "params": {
-          "size": [1.3, 0.16, 0.1]
+          "size": [1.32, 0.16, 0.11]
         }
       },
       "flag_band": {
         "id": "flag_band",
-        "name": "flag-band",
+        "name": "flag-hem-bottom",
         "kind": "box",
         "transform": {
-          "position": [0.78, 1.72, 0]
+          "position": [0, 1.31, 0.12]
         },
-        "round": 0.03,
+        "round": 0.04,
         "material": "m_pink",
         "params": {
-          "size": [1.26, 0.14, 0.08]
-        }
-      },
-      "zigzag": {
-        "id": "zigzag",
-        "name": "zigzag",
-        "kind": "extrude",
-        "transform": {
-          "position": [0.78, 1.6, 0]
-        },
-        "material": "m_white",
-        "params": {
-          "depth": 0.07,
-          "profile": {
-            "points": [
-              {
-                "p": [-0.62, 0.08]
-              },
-              {
-                "p": [-0.62, -0.22]
-              },
-              {
-                "p": [-0.465, -0.02]
-              },
-              {
-                "p": [-0.31, -0.22]
-              },
-              {
-                "p": [-0.155, -0.02]
-              },
-              {
-                "p": [0, -0.22]
-              },
-              {
-                "p": [0.155, -0.02]
-              },
-              {
-                "p": [0.31, -0.22]
-              },
-              {
-                "p": [0.465, -0.02]
-              },
-              {
-                "p": [0.62, -0.22]
-              },
-              {
-                "p": [0.62, 0.08]
-              }
-            ]
-          }
+          "size": [1.3, 0.12, 0.1]
         }
       },
       "crown": {
@@ -317,7 +270,7 @@
         "name": "crown",
         "kind": "extrude",
         "transform": {
-          "position": [0.78, 2.55, 0]
+          "position": [0, 2.9, 0.12]
         },
         "round": 0.015,
         "material": "m_yellow",
@@ -355,7 +308,7 @@
         "name": "jewel-l",
         "kind": "sphere",
         "transform": {
-          "position": [0.42, 2.76, 0]
+          "position": [-0.36, 3.11, 0.12]
         },
         "material": "m_yellow",
         "params": {
@@ -367,7 +320,7 @@
         "name": "jewel-c",
         "kind": "sphere",
         "transform": {
-          "position": [0.78, 2.82, 0]
+          "position": [0, 3.17, 0.12]
         },
         "material": "m_yellow",
         "params": {
@@ -379,12 +332,80 @@
         "name": "jewel-r",
         "kind": "sphere",
         "transform": {
-          "position": [1.14, 2.76, 0]
+          "position": [0.36, 3.11, 0.12]
         },
         "material": "m_yellow",
         "params": {
           "radius": 0.06
         }
+      },
+      "bar_knob_l": {
+        "id": "bar_knob_l",
+        "name": "bar-knob-l",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.8, 3.58, 0.05]
+        },
+        "material": "m_yellow",
+        "params": {
+          "radius": 0.12
+        },
+        "gameCollision": false
+      },
+      "flag_yellow": {
+        "id": "flag_yellow",
+        "name": "flag-yellow",
+        "kind": "extrude",
+        "transform": {
+          "position": [0, 1.7, 0.12]
+        },
+        "material": "m_yellow",
+        "params": {
+          "depth": 0.075,
+          "profile": {
+            "points": [
+              {
+                "p": [-0.62, -0.39]
+              },
+              {
+                "p": [0.62, -0.39]
+              },
+              {
+                "p": [0.62, 0.02]
+              },
+              {
+                "p": [-0.62, 0.42]
+              }
+            ]
+          }
+        },
+        "gameCollision": false
+      },
+      "flag_orange": {
+        "id": "flag_orange",
+        "name": "flag-orange",
+        "kind": "extrude",
+        "transform": {
+          "position": [0, 1.7, 0.12]
+        },
+        "material": "m1",
+        "params": {
+          "depth": 0.085,
+          "profile": {
+            "points": [
+              {
+                "p": [-0.62, -0.39]
+              },
+              {
+                "p": [0.05, -0.39]
+              },
+              {
+                "p": [-0.62, 0]
+              }
+            ]
+          }
+        },
+        "gameCollision": false
       }
     },
     "materials": {
@@ -455,14 +476,31 @@
           ],
           "links": []
         }
+      },
+      "m1": {
+        "name": "candy-orange",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff8a3d",
+                "in.roughness": 0.3
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
       }
     }
   },
   "collision": [],
   "anchors": {},
   "bounds": {
-    "min": [-0.34, 0, -0.34],
-    "max": [1.59, 4, 0.34]
+    "min": [-0.92, 0, -0.34],
+    "max": [0.92, 3.97, 0.34]
   },
-  "hash": "0afcce05f82441fc3d21af547834344aff7cd0ae385b3f769407ef0dc1bd530d"
+  "hash": "726a9013073e5c412c0b97b4b691453d3affa017366a5923b5b7d9c0a790d7df"
 }

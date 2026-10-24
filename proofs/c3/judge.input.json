@@ -14,7 +14,7 @@
         },
         {
           "png": "out/c3/candy-spinner-bar-three-quarter.png",
-          "description": "candy.spinner-bar, the rotating spinner bar of ref-1: a long glossy pink inflatable tube with white helical candy stripes, rounded yellow end caps and yellow collars, on a pink hub cap over a yellow post and a wide blue base with a yellow rim, in ref-1's glossy pink/yellow/white inflatable style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+          "description": "candy.spinner-bar, the rotating spinner bar of ref-1: a long fat glossy pink inflatable tube with white helical candy stripes, chunky rounded yellow end caps and yellow collars, on a rounded pink hub cap over a yellow post and a blue base with a yellow rim, in ref-1's glossy pink/yellow/white inflatable style. Camera: the project's front three-quarter view (camera on +X+Z at yaw 45 degrees); the view spec raises the eye by only a quarter of the piece's height, so this long, low bar is seen almost at eye level: its near (+X) end is larger in perspective, and the base shows as a band under the hub rather than from above"
         }
       ]
     },

@@ -67,6 +67,24 @@
       "views": [
         "three-quarter"
       ]
+    },
+    {
+      "name": "candy-finish-arch",
+      "assets": [
+        "candy.finish-arch"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-checkpoint-gate",
+      "assets": [
+        "candy.checkpoint-gate"
+      ],
+      "views": [
+        "three-quarter"
+      ]
     }
   ]
 }

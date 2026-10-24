@@ -3,428 +3,529 @@
   "version": 1,
   "game": "royal-fiesta",
   "id": "candy.checkpoint-gate",
-  "name": "Checkpoint Gate",
+  "name": "candy-checkpoint-gate",
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "quad"
   },
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "Checkpoint Gate",
+    "name": "candy-checkpoint-gate",
     "root": [
       "candy_checkpoint_gate"
     ],
     "nodes": {
       "candy_checkpoint_gate": {
         "id": "candy_checkpoint_gate",
-        "name": "Checkpoint Gate",
+        "name": "candy-checkpoint-gate",
         "kind": "group",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#b0b0b0",
-        "material": null,
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
         "children": [
-          "post_l",
-          "post_r",
-          "beam"
+          "collider_post_l",
+          "collider_post_r",
+          "collider_beam",
+          "post_l_base",
+          "post_l_core",
+          "post_l_band",
+          "post_l_rim0",
+          "post_l_rim1",
+          "post_l_rim2",
+          "post_r_base",
+          "post_r_core",
+          "post_r_band",
+          "post_r_rim0",
+          "post_r_rim1",
+          "post_r_rim2",
+          "beam",
+          "beam_band",
+          "beam_zigzag",
+          "pennant_pole",
+          "pennant_top",
+          "pennant_flag"
         ],
-        "modifiers": [],
-        "asset": "candy.checkpoint-gate",
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.checkpoint-gate",
+          "category": "obstacle",
+          "world": "candy"
+        },
         "mesher": {
-          "output": "lowpoly"
-        }
+          "output": "quad"
+        },
+        "gameCollision": false
       },
-      "post_l": {
-        "id": "post_l",
-        "name": "post_l",
+      "collider_post_l": {
+        "id": "collider_post_l",
+        "name": "collider_post_l",
         "kind": "box",
-        "visible": true,
-        "locked": false,
+        "visible": false,
         "transform": {
-          "position": [
-            -3,
-            1.5,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [-3, 1.5, 0]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#54baff",
-        "material": "sky",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
         "params": {
-          "size": [
-            0.5,
-            3,
-            0.5
-          ]
-        }
+          "size": [0.5, 3, 0.5]
+        },
+        "gameCollision": true
       },
-      "post_r": {
-        "id": "post_r",
-        "name": "post_r",
+      "collider_post_r": {
+        "id": "collider_post_r",
+        "name": "collider_post_r",
         "kind": "box",
-        "visible": true,
-        "locked": false,
+        "visible": false,
         "transform": {
-          "position": [
-            3,
-            1.5,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [3, 1.5, 0]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#54baff",
-        "material": "sky",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
         "params": {
-          "size": [
-            0.5,
-            3,
-            0.5
-          ]
-        }
+          "size": [0.5, 3, 0.5]
+        },
+        "gameCollision": true
+      },
+      "collider_beam": {
+        "id": "collider_beam",
+        "name": "collider_beam",
+        "kind": "box",
+        "visible": false,
+        "transform": {
+          "position": [0, 3, 0]
+        },
+        "params": {
+          "size": [6.5, 0.5, 0.5]
+        },
+        "gameCollision": true
+      },
+      "post_l_base": {
+        "id": "post_l_base",
+        "name": "post_l_base",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-3, 0.15, 0]
+        },
+        "round": 0.084,
+        "material": "candy-yellow",
+        "params": {
+          "height": 0.3,
+          "radius": 0.56
+        },
+        "gameCollision": false
+      },
+      "post_l_core": {
+        "id": "post_l_core",
+        "name": "post_l_core",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-3, 1.45, 0]
+        },
+        "round": 0.07,
+        "material": "candy-pink",
+        "params": {
+          "height": 2.7,
+          "radius": 0.38
+        },
+        "gameCollision": false
+      },
+      "post_l_band": {
+        "id": "post_l_band",
+        "name": "post_l_band",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-3, 1.45, 0]
+        },
+        "round": 0.07,
+        "material": "candy-blue",
+        "params": {
+          "height": 0.8,
+          "radius": 0.415
+        },
+        "gameCollision": false
+      },
+      "post_l_rim0": {
+        "id": "post_l_rim0",
+        "name": "post_l_rim0",
+        "kind": "torus",
+        "transform": {
+          "position": [-3, 1.05, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "majorRadius": 0.4,
+          "minorRadius": 0.09
+        },
+        "gameCollision": false
+      },
+      "post_l_rim1": {
+        "id": "post_l_rim1",
+        "name": "post_l_rim1",
+        "kind": "torus",
+        "transform": {
+          "position": [-3, 1.85, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "majorRadius": 0.4,
+          "minorRadius": 0.09
+        },
+        "gameCollision": false
+      },
+      "post_l_rim2": {
+        "id": "post_l_rim2",
+        "name": "post_l_rim2",
+        "kind": "torus",
+        "transform": {
+          "position": [-3, 2.7125, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "majorRadius": 0.4,
+          "minorRadius": 0.09
+        },
+        "gameCollision": false
+      },
+      "post_r_base": {
+        "id": "post_r_base",
+        "name": "post_r_base",
+        "kind": "cylinder",
+        "transform": {
+          "position": [3, 0.15, 0]
+        },
+        "round": 0.084,
+        "material": "candy-yellow",
+        "params": {
+          "height": 0.3,
+          "radius": 0.56
+        },
+        "gameCollision": false
+      },
+      "post_r_core": {
+        "id": "post_r_core",
+        "name": "post_r_core",
+        "kind": "cylinder",
+        "transform": {
+          "position": [3, 1.45, 0]
+        },
+        "round": 0.07,
+        "material": "candy-blue",
+        "params": {
+          "height": 2.7,
+          "radius": 0.38
+        },
+        "gameCollision": false
+      },
+      "post_r_band": {
+        "id": "post_r_band",
+        "name": "post_r_band",
+        "kind": "cylinder",
+        "transform": {
+          "position": [3, 1.45, 0]
+        },
+        "round": 0.07,
+        "material": "candy-pink",
+        "params": {
+          "height": 0.8,
+          "radius": 0.415
+        },
+        "gameCollision": false
+      },
+      "post_r_rim0": {
+        "id": "post_r_rim0",
+        "name": "post_r_rim0",
+        "kind": "torus",
+        "transform": {
+          "position": [3, 1.05, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "majorRadius": 0.4,
+          "minorRadius": 0.09
+        },
+        "gameCollision": false
+      },
+      "post_r_rim1": {
+        "id": "post_r_rim1",
+        "name": "post_r_rim1",
+        "kind": "torus",
+        "transform": {
+          "position": [3, 1.85, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "majorRadius": 0.4,
+          "minorRadius": 0.09
+        },
+        "gameCollision": false
+      },
+      "post_r_rim2": {
+        "id": "post_r_rim2",
+        "name": "post_r_rim2",
+        "kind": "torus",
+        "transform": {
+          "position": [3, 2.7125, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "majorRadius": 0.4,
+          "minorRadius": 0.09
+        },
+        "gameCollision": false
       },
       "beam": {
         "id": "beam",
         "name": "beam",
         "kind": "box",
-        "visible": true,
-        "locked": false,
         "transform": {
-          "position": [
-            0,
-            3,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
+          "position": [0, 3, 0]
         },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#ffd140",
-        "material": "yellow",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "round": 0.25,
+        "material": "candy-yellow",
         "params": {
-          "size": [
-            6.5,
-            0.5,
-            0.5
-          ]
-        }
+          "size": [7, 0.7, 0.7]
+        },
+        "gameCollision": false
+      },
+      "beam_band": {
+        "id": "beam_band",
+        "name": "beam_band",
+        "kind": "box",
+        "transform": {
+          "position": [0, 3, 0]
+        },
+        "round": 0.05,
+        "material": "candy-pink",
+        "params": {
+          "size": [6.4, 0.44, 0.76]
+        },
+        "gameCollision": false
+      },
+      "beam_zigzag": {
+        "id": "beam_zigzag",
+        "name": "beam_zigzag",
+        "kind": "extrude",
+        "transform": {
+          "position": [0, 3, 0]
+        },
+        "round": 0.015,
+        "material": "candy-white",
+        "params": {
+          "depth": 0.82,
+          "profile": {
+            "points": [
+              {
+                "p": [-3, 0.04]
+              },
+              {
+                "p": [-2.4, -0.18]
+              },
+              {
+                "p": [-1.8, 0.04]
+              },
+              {
+                "p": [-1.2, -0.18]
+              },
+              {
+                "p": [-0.6, 0.04]
+              },
+              {
+                "p": [0, -0.18]
+              },
+              {
+                "p": [0.6, 0.04]
+              },
+              {
+                "p": [1.2, -0.18]
+              },
+              {
+                "p": [1.8, 0.04]
+              },
+              {
+                "p": [2.4, -0.18]
+              },
+              {
+                "p": [3, 0.04]
+              },
+              {
+                "p": [3, 0.18]
+              },
+              {
+                "p": [2.4, -0.04]
+              },
+              {
+                "p": [1.8, 0.18]
+              },
+              {
+                "p": [1.2, -0.04]
+              },
+              {
+                "p": [0.6, 0.18]
+              },
+              {
+                "p": [0, -0.04]
+              },
+              {
+                "p": [-0.6, 0.18]
+              },
+              {
+                "p": [-1.2, -0.04]
+              },
+              {
+                "p": [-1.8, 0.18]
+              },
+              {
+                "p": [-2.4, -0.04]
+              },
+              {
+                "p": [-3, 0.18]
+              }
+            ]
+          }
+        },
+        "gameCollision": false
+      },
+      "pennant_pole": {
+        "id": "pennant_pole",
+        "name": "pennant_pole",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, 3.55, 0]
+        },
+        "material": "candy-white",
+        "params": {
+          "height": 0.6,
+          "radius": 0.045
+        },
+        "gameCollision": false
+      },
+      "pennant_top": {
+        "id": "pennant_top",
+        "name": "pennant_top",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 3.87, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "radius": 0.07
+        },
+        "gameCollision": false
+      },
+      "pennant_flag": {
+        "id": "pennant_flag",
+        "name": "pennant_flag",
+        "kind": "extrude",
+        "transform": {
+          "position": [0.04, 3.5, 0]
+        },
+        "round": 0.01,
+        "material": "candy-pink",
+        "params": {
+          "depth": 0.06,
+          "profile": {
+            "points": [
+              {
+                "p": [0, 0]
+              },
+              {
+                "p": [0.6, 0.17]
+              },
+              {
+                "p": [0, 0.34]
+              }
+            ]
+          }
+        },
+        "gameCollision": false
       }
     },
     "materials": {
-      "sky": {
-        "name": "sky",
+      "candy-pink": {
+        "name": "candy-pink",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#54baff",
-                "in.roughness": 0.6
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.22
               }
             }
           ],
           "links": []
         }
       },
-      "yellow": {
-        "name": "yellow",
+      "candy-yellow": {
+        "name": "candy-yellow",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#ffd140",
-                "in.roughness": 0.6
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.22
               }
             }
           ],
           "links": []
         }
-      }
-    },
-    "shapes": {},
-    "views": {},
-    "settings": {
-      "mesh": {
-        "detail": null,
-        "maxDepth": 9,
-        "adaptivity": 0.02,
-        "sharpAngleDeg": 30
       },
-      "lowpoly": {
-        "targetTriangles": 2000,
-        "keepWeight": 10,
-        "featureAngleDeg": 35
-      },
-      "uv": {
-        "texelsPerMeter": null,
-        "padding": 8
-      },
-      "bake": {
-        "resolution": 1024,
-        "maps": [
-          "normal",
-          "baseColor",
-          "orm"
-        ],
-        "cageDistance": null,
-        "samples": 1
-      },
-      "export": {
-        "geometry": "lowpoly",
-        "skin": false,
-        "lods": [
-          1
-        ],
-        "quad": {
-          "targetFaces": 1000,
-          "subdivide": 0,
-          "method": "auto",
-          "features": "auto",
-          "featureAngleDeg": 35,
-          "adaptive": true,
-          "alignCurvature": true,
-          "seed": 1,
-          "detail": true,
-          "maxFacesRatio": 3
-        },
-        "poly": {
-          "segments": 16,
-          "additive": "keep"
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
         }
       },
-      "paramesh": {
-        "fieldResolution": 96,
-        "precision": "f16",
-        "subdivisions": 16,
-        "transitionLoops": 2
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.3
+              }
+            }
+          ],
+          "links": []
+        }
       }
     }
   },
   "collision": [
     {
       "shape": "cuboid",
-      "half": [
-        0.25,
-        1.5,
-        0.25
-      ],
-      "t": [
-        -3,
-        1.5,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [-3, 1.5, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.25, 1.5, 0.25]
     },
     {
       "shape": "cuboid",
-      "half": [
-        0.25,
-        1.5,
-        0.25
-      ],
-      "t": [
-        3,
-        1.5,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [3, 1.5, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.25, 1.5, 0.25]
     },
     {
       "shape": "cuboid",
-      "half": [
-        3.25,
-        0.25,
-        0.25
-      ],
-      "t": [
-        0,
-        3,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 3, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [3.25, 0.25, 0.25]
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [
-      -3.25,
-      0,
-      -0.25
-    ],
-    "max": [
-      3.25,
-      3.25,
-      0.25
-    ]
+    "min": [-3.56, 0, -0.56],
+    "max": [3.56, 3.94, 0.56]
   },
-  "hash": "6817b287ab351e4bf4a9863608dc80806e28f30fe82a43657ff58d0ccaa1ff6b"
+  "hash": "f3c6a77edc1a0684d3954b5bf054d8b42186af912d0a071fd86315b817716bbe"
 }

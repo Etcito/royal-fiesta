@@ -47,6 +47,19 @@
           "description": "candy.conveyor-belt, a candy conveyor belt in ref-1's style: a long, low glossy pink inflatable slab with rounded edges, a yellow lip and pink belt top with white chevron stripes pointing along +Z (toward the left end, which has a rounded blue roller cap), white chevrons repeated along its pink side, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
         }
       ]
+    },
+    {
+      "name": "c3-arches",
+      "views": [
+        {
+          "png": "out/c3/candy-finish-arch-three-quarter.png",
+          "description": "candy.finish-arch, the crown arch at the finish of ref-1: a big glossy inflatable arch with two chunky round posts (one pink with a blue band, one blue with a pink band) ringed by rounded yellow rims and standing on yellow bases, a chunky rounded yellow beam across the top with a pink band printed with a bold white zigzag, and a yellow crown on top whose points carry pink and blue jewel balls, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        },
+        {
+          "png": "out/c3/candy-checkpoint-gate-three-quarter.png",
+          "description": "candy.checkpoint-gate, a smaller checkpoint arch of the same candy family as ref-1's crown arch: two chunky round inflatable posts (one pink with a blue band, one blue with a pink band) ringed by rounded yellow rims on yellow bases, a rounded yellow beam across the top with a pink band printed with a bold white zigzag, and a small pink pennant flag on a short white pole at the centre of the beam, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        }
+      ]
     }
   ]
 }

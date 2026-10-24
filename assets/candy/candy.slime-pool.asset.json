@@ -1,0 +1,666 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.slime-pool",
+  "name": "candy-slime-pool",
+  "category": "scenery",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "candy-slime-pool",
+    "root": [
+      "candy_slime_pool"
+    ],
+    "nodes": {
+      "candy_slime_pool": {
+        "id": "candy_slime_pool",
+        "name": "candy-slime-pool",
+        "kind": "group",
+        "children": [
+          "slime_bed",
+          "wave_1",
+          "wave_2",
+          "wave_3",
+          "wave_4",
+          "wave_5",
+          "wave_6",
+          "wave_7",
+          "wave_8",
+          "rim_n",
+          "rim_s",
+          "rim_e",
+          "rim_w",
+          "bubble_1",
+          "bubble_2",
+          "bubble_3",
+          "bubble_4",
+          "bubble_5",
+          "bubble_6",
+          "bubble_7",
+          "bubble_8",
+          "bubble_9",
+          "bubble_10",
+          "bubble_11",
+          "bubble_12",
+          "bubble_13",
+          "bubble_14",
+          "bubble_15",
+          "bubble_16",
+          "glint_1",
+          "glint_2",
+          "glint_3",
+          "glint_4",
+          "glint_5",
+          "glint_6"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.slime-pool",
+          "category": "scenery",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": true
+      },
+      "slime_bed": {
+        "id": "slime_bed",
+        "name": "slime-bed",
+        "kind": "box",
+        "transform": {
+          "position": [0, -0.24, 0]
+        },
+        "round": 0.12,
+        "material": "m1",
+        "params": {
+          "size": [11.4, 0.36, 11.4]
+        },
+        "gameCollision": false
+      },
+      "wave_1": {
+        "id": "wave_1",
+        "name": "wave-1",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-3.2, -0.08, -2.6],
+          "rotation": [0, 20, 0]
+        },
+        "smooth": 0.2,
+        "material": "m1",
+        "params": {
+          "radii": [1.5, 0.16, 1]
+        },
+        "gameCollision": false
+      },
+      "wave_2": {
+        "id": "wave_2",
+        "name": "wave-2",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [2.4, -0.08, -3.4],
+          "rotation": [0, -30, 0]
+        },
+        "smooth": 0.2,
+        "material": "m1",
+        "params": {
+          "radii": [1.3, 0.16, 1.1]
+        },
+        "gameCollision": false
+      },
+      "wave_3": {
+        "id": "wave_3",
+        "name": "wave-3",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-1, -0.08, 1.2],
+          "rotation": [0, 45, 0]
+        },
+        "smooth": 0.2,
+        "material": "m1",
+        "params": {
+          "radii": [1.8, 0.16, 1.2]
+        },
+        "gameCollision": false
+      },
+      "wave_4": {
+        "id": "wave_4",
+        "name": "wave-4",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [3.3, -0.08, 2.2],
+          "rotation": [0, 10, 0]
+        },
+        "smooth": 0.2,
+        "material": "m1",
+        "params": {
+          "radii": [1.4, 0.16, 0.9]
+        },
+        "gameCollision": false
+      },
+      "wave_5": {
+        "id": "wave_5",
+        "name": "wave-5",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-3.6, -0.08, 3.4],
+          "rotation": [0, -15, 0]
+        },
+        "smooth": 0.2,
+        "material": "m1",
+        "params": {
+          "radii": [1.2, 0.16, 1]
+        },
+        "gameCollision": false
+      },
+      "wave_6": {
+        "id": "wave_6",
+        "name": "wave-6",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.6, -0.08, -0.8],
+          "rotation": [0, 70, 0]
+        },
+        "smooth": 0.2,
+        "material": "m1",
+        "params": {
+          "radii": [1.1, 0.16, 0.8]
+        },
+        "gameCollision": false
+      },
+      "wave_7": {
+        "id": "wave_7",
+        "name": "wave-7",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [1.2, -0.08, 4]
+        },
+        "smooth": 0.2,
+        "material": "m1",
+        "params": {
+          "radii": [1.3, 0.16, 0.9]
+        },
+        "gameCollision": false
+      },
+      "wave_8": {
+        "id": "wave_8",
+        "name": "wave-8",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-4, -0.08, -0.2],
+          "rotation": [0, 30, 0]
+        },
+        "smooth": 0.2,
+        "material": "m1",
+        "params": {
+          "radii": [1, 0.16, 1.3]
+        },
+        "gameCollision": false
+      },
+      "rim_n": {
+        "id": "rim_n",
+        "name": "rim-n",
+        "kind": "box",
+        "transform": {
+          "position": [0, -0.165, 5.53356]
+        },
+        "smooth": 0.08,
+        "colorBlend": "hard",
+        "round": 0.26,
+        "material": "m2",
+        "params": {
+          "size": [12, 0.57, 0.9]
+        },
+        "gameCollision": false
+      },
+      "rim_s": {
+        "id": "rim_s",
+        "name": "rim-s",
+        "kind": "box",
+        "transform": {
+          "position": [0, -0.165, -5.53356]
+        },
+        "smooth": 0.08,
+        "colorBlend": "hard",
+        "round": 0.26,
+        "material": "m2",
+        "params": {
+          "size": [12, 0.57, 0.9]
+        },
+        "gameCollision": false
+      },
+      "rim_e": {
+        "id": "rim_e",
+        "name": "rim-e",
+        "kind": "box",
+        "transform": {
+          "position": [5.53356, -0.165, 0]
+        },
+        "smooth": 0.08,
+        "colorBlend": "hard",
+        "round": 0.26,
+        "material": "m2",
+        "params": {
+          "size": [0.9, 0.57, 12]
+        },
+        "gameCollision": false
+      },
+      "rim_w": {
+        "id": "rim_w",
+        "name": "rim-w",
+        "kind": "box",
+        "transform": {
+          "position": [-5.53356, -0.165, 0]
+        },
+        "smooth": 0.08,
+        "colorBlend": "hard",
+        "round": 0.26,
+        "material": "m2",
+        "params": {
+          "size": [0.9, 0.57, 12]
+        },
+        "gameCollision": false
+      },
+      "bubble_1": {
+        "id": "bubble_1",
+        "name": "bubble-1",
+        "kind": "sphere",
+        "transform": {
+          "position": [-2, -0.17, -1.6]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.28
+        },
+        "gameCollision": false
+      },
+      "bubble_2": {
+        "id": "bubble_2",
+        "name": "bubble-2",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.5, -0.05, -1.2]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.16
+        },
+        "gameCollision": false
+      },
+      "bubble_3": {
+        "id": "bubble_3",
+        "name": "bubble-3",
+        "kind": "sphere",
+        "transform": {
+          "position": [2.8, -0.19, 0.9]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.3
+        },
+        "gameCollision": false
+      },
+      "bubble_4": {
+        "id": "bubble_4",
+        "name": "bubble-4",
+        "kind": "sphere",
+        "transform": {
+          "position": [3.2, -0.04, 0.5]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.15
+        },
+        "gameCollision": false
+      },
+      "bubble_5": {
+        "id": "bubble_5",
+        "name": "bubble-5",
+        "kind": "sphere",
+        "transform": {
+          "position": [-3.5, -0.11, 2]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.22
+        },
+        "gameCollision": false
+      },
+      "bubble_6": {
+        "id": "bubble_6",
+        "name": "bubble-6",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.4, -0.15, 3]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.26
+        },
+        "gameCollision": false
+      },
+      "bubble_7": {
+        "id": "bubble_7",
+        "name": "bubble-7",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.9, -0.02, 3.3]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.13
+        },
+        "gameCollision": false
+      },
+      "bubble_8": {
+        "id": "bubble_8",
+        "name": "bubble-8",
+        "kind": "sphere",
+        "transform": {
+          "position": [4.2, -0.09, -2]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.2
+        },
+        "gameCollision": false
+      },
+      "bubble_9": {
+        "id": "bubble_9",
+        "name": "bubble-9",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.6, -0.13, -3.9]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.24
+        },
+        "gameCollision": false
+      },
+      "bubble_10": {
+        "id": "bubble_10",
+        "name": "bubble-10",
+        "kind": "sphere",
+        "transform": {
+          "position": [-4.3, -0.05, -3.6]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.16
+        },
+        "gameCollision": false
+      },
+      "bubble_11": {
+        "id": "bubble_11",
+        "name": "bubble-11",
+        "kind": "sphere",
+        "transform": {
+          "position": [1.9, -0.03, -1.8]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.14
+        },
+        "gameCollision": false
+      },
+      "bubble_12": {
+        "id": "bubble_12",
+        "name": "bubble-12",
+        "kind": "sphere",
+        "transform": {
+          "position": [-2.6, -0.07, 4.4]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.18
+        },
+        "gameCollision": false
+      },
+      "bubble_13": {
+        "id": "bubble_13",
+        "name": "bubble-13",
+        "kind": "sphere",
+        "transform": {
+          "position": [4.4, -0.13, 4.3]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.24
+        },
+        "gameCollision": false
+      },
+      "bubble_14": {
+        "id": "bubble_14",
+        "name": "bubble-14",
+        "kind": "sphere",
+        "transform": {
+          "position": [3.8, -0.01, 3.9]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.12
+        },
+        "gameCollision": false
+      },
+      "bubble_15": {
+        "id": "bubble_15",
+        "name": "bubble-15",
+        "kind": "sphere",
+        "transform": {
+          "position": [-4.5, -0.09, 0.9]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.2
+        },
+        "gameCollision": false
+      },
+      "bubble_16": {
+        "id": "bubble_16",
+        "name": "bubble-16",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.1, -0.07, -2.2]
+        },
+        "smooth": 0.04,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.18
+        },
+        "gameCollision": false
+      },
+      "glint_1": {
+        "id": "glint_1",
+        "name": "glint-1",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-3.3, 0.07, -2.8],
+          "rotation": [0, 25, 0]
+        },
+        "smooth": 0.03,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radii": [0.6, 0.04, 0.2]
+        },
+        "gameCollision": false
+      },
+      "glint_2": {
+        "id": "glint_2",
+        "name": "glint-2",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-1.2, 0.07, 1.1],
+          "rotation": [0, 50, 0]
+        },
+        "smooth": 0.03,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radii": [0.8, 0.04, 0.2]
+        },
+        "gameCollision": false
+      },
+      "glint_3": {
+        "id": "glint_3",
+        "name": "glint-3",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [3.4, 0.07, 2.3],
+          "rotation": [0, 5, 0]
+        },
+        "smooth": 0.03,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radii": [0.5, 0.04, 0.2]
+        },
+        "gameCollision": false
+      },
+      "glint_4": {
+        "id": "glint_4",
+        "name": "glint-4",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [2.5, 0.07, -3.5],
+          "rotation": [0, -35, 0]
+        },
+        "smooth": 0.03,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radii": [0.55, 0.04, 0.2]
+        },
+        "gameCollision": false
+      },
+      "glint_5": {
+        "id": "glint_5",
+        "name": "glint-5",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [1.3, 0.07, 4.1]
+        },
+        "smooth": 0.03,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radii": [0.45, 0.04, 0.2]
+        },
+        "gameCollision": false
+      },
+      "glint_6": {
+        "id": "glint_6",
+        "name": "glint-6",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-3.7, 0.07, 3.5],
+          "rotation": [0, -20, 0]
+        },
+        "smooth": 0.03,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radii": [0.45, 0.04, 0.2]
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "candy-slime",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#7cff3a",
+                "in.roughness": 0.08
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m2": {
+        "name": "candy-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.2
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m3": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.1
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {},
+  "bounds": {
+    "min": [-6.08, -0.53, -6.08],
+    "max": [6.08, 0.28, 6.08]
+  },
+  "hash": "d1425576c3cf0224410380abae069d55a97266f5d18641382eb4899ab8469f41"
+}

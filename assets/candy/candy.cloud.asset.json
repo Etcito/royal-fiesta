@@ -1,0 +1,301 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.cloud",
+  "name": "candy-cloud",
+  "category": "scenery",
+  "world": "candy",
+  "mesher": {
+    "output": "lowpoly"
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "candy-cloud",
+    "root": [
+      "candy_cloud"
+    ],
+    "nodes": {
+      "candy_cloud": {
+        "id": "candy_cloud",
+        "name": "candy-cloud",
+        "kind": "group",
+        "children": [
+          "puff_1",
+          "puff_2",
+          "puff_3",
+          "puff_4",
+          "puff_5",
+          "puff_6",
+          "puff_7",
+          "puff_8",
+          "puff_9",
+          "puff_10",
+          "puff_11",
+          "puff_12",
+          "puff_13",
+          "puff_14",
+          "puff_15",
+          "base"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.cloud",
+          "category": "scenery",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": true
+      },
+      "puff_1": {
+        "id": "puff_1",
+        "name": "puff-1",
+        "kind": "sphere",
+        "material": "m1",
+        "params": {
+          "radius": 1.55
+        },
+        "gameCollision": false
+      },
+      "puff_2": {
+        "id": "puff_2",
+        "name": "puff-2",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.75, -0.35, 0.2]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 1.3
+        },
+        "gameCollision": false
+      },
+      "puff_3": {
+        "id": "puff_3",
+        "name": "puff-3",
+        "kind": "sphere",
+        "transform": {
+          "position": [1.85, -0.3, -0.1]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 1.35
+        },
+        "gameCollision": false
+      },
+      "puff_4": {
+        "id": "puff_4",
+        "name": "puff-4",
+        "kind": "sphere",
+        "transform": {
+          "position": [-3.1, -0.75, 0.1]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 0.85
+        },
+        "gameCollision": false
+      },
+      "puff_5": {
+        "id": "puff_5",
+        "name": "puff-5",
+        "kind": "sphere",
+        "transform": {
+          "position": [3.2, -0.7, 0.25]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 0.8
+        },
+        "gameCollision": false
+      },
+      "puff_6": {
+        "id": "puff_6",
+        "name": "puff-6",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.7, 0.9, 0.25]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 1.05
+        },
+        "gameCollision": false
+      },
+      "puff_7": {
+        "id": "puff_7",
+        "name": "puff-7",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.95, 0.65, -0.2]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 1
+        },
+        "gameCollision": false
+      },
+      "puff_8": {
+        "id": "puff_8",
+        "name": "puff-8",
+        "kind": "sphere",
+        "transform": {
+          "position": [2.15, 0.6, 0.4]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 0.75
+        },
+        "gameCollision": false
+      },
+      "puff_9": {
+        "id": "puff_9",
+        "name": "puff-9",
+        "kind": "sphere",
+        "transform": {
+          "position": [-2.4, 0.35, -0.35]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 0.75
+        },
+        "gameCollision": false
+      },
+      "puff_10": {
+        "id": "puff_10",
+        "name": "puff-10",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.1, -0.55, 1.2]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 1
+        },
+        "gameCollision": false
+      },
+      "puff_11": {
+        "id": "puff_11",
+        "name": "puff-11",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.4, -0.55, -1.1]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 1
+        },
+        "gameCollision": false
+      },
+      "puff_12": {
+        "id": "puff_12",
+        "name": "puff-12",
+        "kind": "sphere",
+        "transform": {
+          "position": [1.6, -0.75, 1]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 0.75
+        },
+        "gameCollision": false
+      },
+      "puff_13": {
+        "id": "puff_13",
+        "name": "puff-13",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.5, -0.75, -0.85]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 0.75
+        },
+        "gameCollision": false
+      },
+      "puff_14": {
+        "id": "puff_14",
+        "name": "puff-14",
+        "kind": "sphere",
+        "transform": {
+          "position": [1.5, 1.25, -0.3]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 0.6
+        },
+        "gameCollision": false
+      },
+      "puff_15": {
+        "id": "puff_15",
+        "name": "puff-15",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.2, 1.55, 0.4]
+        },
+        "smooth": 0.25,
+        "material": "m1",
+        "params": {
+          "radius": 0.55
+        },
+        "gameCollision": false
+      },
+      "base": {
+        "id": "base",
+        "name": "base",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, -0.75, 0.05]
+        },
+        "smooth": 0.3,
+        "material": "m1",
+        "params": {
+          "radii": [3.4, 0.6, 1.5]
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.55
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {},
+  "bounds": {
+    "min": [-4.2, -1.9, -2.35],
+    "max": [4.25, 2.35, 2.45]
+  },
+  "hash": "7b2f2f014bd5225afd8f73580ac119e4ce88274edee4f630552f7c4e25fe2508"
+}

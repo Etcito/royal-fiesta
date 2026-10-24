@@ -139,6 +139,24 @@
       "views": [
         "three-quarter"
       ]
+    },
+    {
+      "name": "candy-slime-pool",
+      "assets": [
+        "candy.slime-pool"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-cloud",
+      "assets": [
+        "candy.cloud"
+      ],
+      "views": [
+        "three-quarter"
+      ]
     }
   ]
 }

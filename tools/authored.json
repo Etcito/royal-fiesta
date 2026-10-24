@@ -4,6 +4,7 @@
   "files": [
     "assets/candy/candy.bounce-pad.asset.json",
     "assets/candy/candy.checkpoint-gate.asset.json",
+    "assets/candy/candy.cloud.asset.json",
     "assets/candy/candy.conveyor-belt.asset.json",
     "assets/candy/candy.finish-arch.asset.json",
     "assets/candy/candy.floor-disc.asset.json",
@@ -15,6 +16,7 @@
     "assets/candy/candy.queue-pad.asset.json",
     "assets/candy/candy.rotating-door.asset.json",
     "assets/candy/candy.seesaw-plank.asset.json",
+    "assets/candy/candy.slime-pool.asset.json",
     "assets/candy/candy.spinner-bar.asset.json",
     "assets/candy/candy.wall-block.asset.json",
     "assets/common/costume.fish-scarf.asset.json",

@@ -23,10 +23,11 @@ The UI font is Fredoka 700, licensed under OFL-1.1, pinned to the fontsource rel
 The `.woff2` file is never committed. `tools/uiFont.ts` handles it:
 
 - `fetch` downloads the file from the pinned source into `out/fonts`, and checks it against the registry.
+- `bundle` runs `fetch`, then copies the verified file to `apps/web/public/fonts/<sha256>.woff2` (gitignored). `npm run web:build` runs it as `npm run ui:fonts`. The GPU page has no network, so the uaa host loads each font from `fonts/<sha256>.woff2` next to the page, never from the store URL.
 - `upload` publishes it to the asset store through the `raa-assets` CLI from `@etcito/raa-assets-tools`. The credentials come only from the environment: `ASSET_STORE_SSH` and `ASSET_STORE_KEY`. They are never printed.
 - `verify` fetches the registered URL and checks the sha256 and byte length.
 
-Run it as `node --experimental-strip-types tools/uiFont.ts fetch|upload|verify [family]`.
+Run it as `node --experimental-strip-types tools/uiFont.ts fetch|bundle|upload|verify [family]`.
 
 ## Screen document and widget ids
 

@@ -14,13 +14,16 @@ export { ASSET_STORE_BASE }
 export const FONTS_PATH = 'ui/fonts.json'
 export const FONT_DIR = 'out/fonts'
 export const FONT_STORE = 'out/font-store'
+// The page copy (gitignored, like the baked audio): the GPU page has no network, so the build ships the
+// verified bytes in dist and the uaa host loads fonts/<sha256>.woff2 relative to the page.
+export const BUNDLE_DIR = 'apps/web/public/fonts'
 const AREA = 'ui-font'
 const SHA256 = /^[0-9a-f]{64}$/
 const FAMILY = /^[A-Za-z0-9][A-Za-z0-9 .-]{0,63}$/
 const LICENSE = /^[A-Za-z0-9][A-Za-z0-9.+-]{0,31}$/
 const FONT_KEYS = ['family', 'weight', 'url', 'sha256', 'bytes', 'license', 'source'] as const
 const FONTSOURCE = /^https:\/\/cdn\.jsdelivr\.net\/fontsource\/fonts\/([a-z0-9-]+)@(\d+\.\d+\.\d+)\/([a-z0-9@._-]+\.woff2)$/
-const USAGE = 'usage: node --experimental-strip-types tools/uiFont.ts fetch|upload|verify [family]'
+const USAGE = 'usage: node --experimental-strip-types tools/uiFont.ts fetch|bundle|upload|verify [family]'
 
 export interface FontEntry {
   family: string
@@ -244,6 +247,23 @@ export async function fetchFont(root: string, entry: FontEntry, get: FetchLike =
   writeFileSync(temp, bytes)
   renameSync(temp, file)
   write(`PASS font fetch ${fileName(entry)} ${actual} ${bytes.length} bytes`)
+  return file
+}
+
+export function bundledName(entry: FontEntry): string {
+  if (!SHA256.test(entry.sha256)) refuse(AREA, `font:${entry.family}`, `sha256 '${entry.sha256}' is not 64 lowercase hex; use the object hash`)
+  return `${entry.sha256}.woff2`
+}
+
+// fetch, then copy the verified bytes to BUNDLE_DIR for the web build.
+export async function bundleFont(root: string, entry: FontEntry, get: FetchLike = publicFetch, log: (line: string) => void = console.log): Promise<string> {
+  const source = new Uint8Array(readFileSync(await fetchFont(root, entry, get, log)))
+  const file = join(root, BUNDLE_DIR, bundledName(entry))
+  mkdirSync(dirname(file), { recursive: true })
+  const temp = `${file}.tmp-${process.pid}`
+  writeFileSync(temp, source)
+  renameSync(temp, file)
+  log(redact(`PASS font bundle ${fileName(entry)} -> ${BUNDLE_DIR}/${bundledName(entry)}`))
   return file
 }
 
@@ -474,7 +494,7 @@ export async function verifyFont(entry: FontEntry, get: FetchLike = publicFetch,
   write(`PASS font verify ${fileName(entry)} ${actual} ${bytes.length} bytes`)
 }
 
-const COMMANDS = ['fetch', 'upload', 'verify'] as const
+const COMMANDS = ['fetch', 'bundle', 'upload', 'verify'] as const
 type Command = typeof COMMANDS[number]
 
 function isCommand(value: string | undefined): value is Command {
@@ -492,6 +512,7 @@ export async function main(argv: string[], root: string = repoRoot()): Promise<n
     if (fonts.length === 0) refuse(AREA, FONTS_PATH, `no font family '${family}'; list the families with node --experimental-strip-types tools/uiFont.ts`)
     for (const entry of fonts) {
       if (command === 'fetch') await fetchFont(root, entry)
+      else if (command === 'bundle') await bundleFont(root, entry)
       else if (command === 'upload') await uploadFont(root, entry)
       else await verifyFont(entry)
     }

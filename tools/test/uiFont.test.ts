@@ -6,9 +6,12 @@ import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
 import { repoRoot } from '../bricks.ts'
 import {
+  BUNDLE_DIR,
   FONTS_PATH,
   FONT_STORE,
   UploadEnvError,
+  bundleFont,
+  bundledName,
   fetchFont,
   fileName,
   fontPath,
@@ -179,6 +182,23 @@ test('fetchFont writes verified bytes and reuses a verified local file', async (
     const again = await fetchFont(root, entry, offline, line => lines.push(line))
     assert.equal(again, file)
     assert.ok(lines.some(line => line.endsWith('(cached)')))
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('bundleFont stages the verified bytes as <sha256>.woff2 for the web build', async () => {
+  const root = tempRoot()
+  try {
+    const entry = font()
+    const lines: string[] = []
+    const file = await bundleFont(root, entry, async () => response(BODY), line => lines.push(line))
+    assert.equal(file, join(root, BUNDLE_DIR, `${SHA}.woff2`))
+    assert.equal(bundledName(entry), `${SHA}.woff2`)
+    assert.deepEqual(new Uint8Array(readFileSync(file)), BODY)
+    assert.ok(lines.some(line => line.startsWith('PASS font bundle')))
+    const wrong = font({ sha256: 'f'.repeat(64), url: objectUrl('f'.repeat(64)) })
+    await assert.rejects(bundleFont(root, wrong, async () => response(BODY)), (error: unknown) => isRefusal(error) && /sha256 mismatch/.test(error.reason))
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

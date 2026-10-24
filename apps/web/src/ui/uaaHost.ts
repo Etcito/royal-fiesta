@@ -97,8 +97,10 @@ export function loadAssets(texts: Record<string, string>): Map<string, UiAsset> 
   return assets
 }
 
-// ui/fonts.json {fonts: [{family, weight, url, ...}]} -> the uaa registry entries.
-export function fontEntries(text: string): FontEntry[] {
+// ui/fonts.json {fonts: [{family, weight, sha256, ...}]} -> the uaa registry entries. The page loads the
+// build's verified copy, fonts/<sha256>.woff2 next to it (npm run ui:fonts): the GPU page has no network,
+// so the store URL in ui/fonts.json is the provenance, not the fetch target.
+export function fontEntries(text: string, baseUri: string): FontEntry[] {
   let json: unknown
   try {
     json = JSON.parse(text)
@@ -108,11 +110,11 @@ export function fontEntries(text: string): FontEntry[] {
   const fonts = (json as { fonts?: unknown } | null)?.fonts
   if (!Array.isArray(fonts) || fonts.length === 0) throw new UaaError('FONT_LOAD', 'fonts', 'ui/fonts.json: needs a non-empty fonts array')
   return fonts.map((f: unknown, i): FontEntry => {
-    const { family, weight, url } = (f ?? {}) as Record<string, unknown>
-    if (typeof family !== 'string' || typeof weight !== 'number' || typeof url !== 'string') {
-      throw new UaaError('FONT_LOAD', `fonts[${i}]`, 'ui/fonts.json: a font needs family (string), weight (number) and url (string)')
+    const { family, weight, sha256 } = (f ?? {}) as Record<string, unknown>
+    if (typeof family !== 'string' || typeof weight !== 'number' || typeof sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(sha256)) {
+      throw new UaaError('FONT_LOAD', `fonts[${i}]`, 'ui/fonts.json: a font needs family (string), weight (number) and sha256 (64 lowercase hex)')
     }
-    return { family, weight, url }
+    return { family, weight, url: new URL(`fonts/${sha256}.woff2`, baseUri).href }
   })
 }
 
@@ -163,7 +165,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
       if (e instanceof SyntaxError) throw new UaaError('UI_DOC_SCHEMA', '', `ui/screens.ui-doc.json: ${e.message}`)
       throw inFile('ui/screens.ui-doc.json', e)
     }
-    const fonts = createFontRegistry(fontEntries(uiFontsText()))
+    const fonts = createFontRegistry(fontEntries(uiFontsText(), document.baseURI))
     await fonts.loadAll()
     const viewport: Viewport = { width: o.width, height: o.height, pixelRatio: o.dpr, safeArea: o.safeArea ?? NO_INSETS }
     ui = createUi({ doc, assets, fonts, renderer, viewport, nowMs: performance.now() })

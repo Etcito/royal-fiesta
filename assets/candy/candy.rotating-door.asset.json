@@ -285,7 +285,7 @@
         "material": "candy-yellow",
         "params": {
           "height": 3.3,
-          "radius": 0.5
+          "radius": 0.55
         },
         "gameCollision": false
       },
@@ -294,12 +294,12 @@
         "name": "hub_ring_lo",
         "kind": "torus",
         "transform": {
-          "position": [0, 0.6, 0]
+          "position": [0, 0.7, 0]
         },
         "material": "candy-pink",
         "params": {
-          "majorRadius": 0.52,
-          "minorRadius": 0.1
+          "majorRadius": 0.62,
+          "minorRadius": 0.2
         },
         "gameCollision": false
       },
@@ -308,12 +308,12 @@
         "name": "hub_ring_hi",
         "kind": "torus",
         "transform": {
-          "position": [0, 2.7, 0]
+          "position": [0, 2.6, 0]
         },
         "material": "candy-blue",
         "params": {
-          "majorRadius": 0.52,
-          "minorRadius": 0.1
+          "majorRadius": 0.62,
+          "minorRadius": 0.2
         },
         "gameCollision": false
       },
@@ -356,7 +356,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#f0287f",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -372,7 +372,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffc93c",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -388,7 +388,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#3fa9f5",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -404,7 +404,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffffff",
-                "in.roughness": 0.3
+                "in.roughness": 0.12
               }
             }
           ],
@@ -432,5 +432,5 @@
     "min": [-3, 0, -3],
     "max": [3, 3.68, 3]
   },
-  "hash": "ab4d40050f7ca04df82180f84189a7915f2680c92d107ac8c5008b9448750ddf"
+  "hash": "ea35412d1a5ffc6a97a562ee1892dabd793b0c5c3a9dcbd011db0595702171fb"
 }

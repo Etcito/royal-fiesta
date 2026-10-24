@@ -206,36 +206,42 @@
         "round": 0.08,
         "material": "candy-blue",
         "params": {
-          "height": 2.2,
-          "radius": 0.3
+          "height": 3.7,
+          "radius": 0.36
         },
         "gameCollision": false
       },
       "fulcrum_cap_r": {
         "id": "fulcrum_cap_r",
         "name": "fulcrum_cap_r",
-        "kind": "sphere",
+        "kind": "cylinder",
         "transform": {
-          "position": [1.12, -0.32, 0]
+          "position": [1.9, -0.32, 0],
+          "rotation": [0, 0, 90]
         },
         "material": "candy-yellow",
         "params": {
-          "radius": 0.2
+          "height": 0.14,
+          "radius": 0.34
         },
-        "gameCollision": false
+        "gameCollision": false,
+        "round": 0.04
       },
       "fulcrum_cap_l": {
         "id": "fulcrum_cap_l",
         "name": "fulcrum_cap_l",
-        "kind": "sphere",
+        "kind": "cylinder",
         "transform": {
-          "position": [-1.12, -0.32, 0]
+          "position": [-1.9, -0.32, 0],
+          "rotation": [0, 0, 90]
         },
         "material": "candy-yellow",
         "params": {
-          "radius": 0.2
+          "height": 0.14,
+          "radius": 0.34
         },
-        "gameCollision": false
+        "gameCollision": false,
+        "round": 0.04
       }
     },
     "materials": {
@@ -248,7 +254,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#f0287f",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -264,7 +270,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffc93c",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -280,7 +286,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#3fa9f5",
-                "in.roughness": 0.22
+                "in.roughness": 0.12
               }
             }
           ],
@@ -296,7 +302,7 @@
               "type": "material.output",
               "params": {
                 "in.base_color": "#ffffff",
-                "in.roughness": 0.3
+                "in.roughness": 0.12
               }
             }
           ],
@@ -316,8 +322,8 @@
   ],
   "anchors": {},
   "bounds": {
-    "min": [-1.6, -0.62, -4.06],
-    "max": [1.6, 0.33, 4.06]
+    "min": [-1.98, -0.68, -4.06],
+    "max": [1.98, 0.33, 4.06]
   },
-  "hash": "e8f975daad5862ee0b4a27c92430c2d88c887fe05f93d0d996801eda31bf0847"
+  "hash": "97ff984841989feb90188538d55b9f5070b437761eb24389176b766b3fd76aa6"
 }

@@ -1,0 +1,355 @@
+{
+  "format": "royal-fiesta.views",
+  "version": 1,
+  "tool": "sdfm",
+  "camera": {
+    "fovYDeg": 30,
+    "yaws": {
+      "front": 0,
+      "three-quarter": 45,
+      "back": 180
+    }
+  },
+  "subjects": [
+    {
+      "name": "candy-bounce-pad",
+      "assets": {
+        "candy.bounce-pad": "ea017e730724db840f6fde8fcfc9b024cb8e345036e6161c8b3e9df90bf871d0"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-bounce-pad-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "df643a65b7e114f1e9df4923f337b5a9f9d965a0e8d2966d9fda52fec3ecd578",
+          "bytes": 251002,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-conveyor-belt",
+      "assets": {
+        "candy.conveyor-belt": "5197c4054347a9199953a72aa4906c90beec50e4c3c372bde08b6e5a88fbaca9"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-conveyor-belt-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "94013274fa37fee58227597a45e34d1cdf4341f22f9950b71652ed852f48ddec",
+          "bytes": 214376,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-checkpoint-gate",
+      "assets": {
+        "candy.checkpoint-gate": "f3c6a77edc1a0684d3954b5bf054d8b42186af912d0a071fd86315b817716bbe"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-checkpoint-gate-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "cf19e2bf51e433ec74d76aeee36abfc918c858face5e62864fb9a09551aa7cb2",
+          "bytes": 192716,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-floor-disc",
+      "assets": {
+        "candy.floor-disc": "32400454fea1a11ee1ac0e53777916e0bb73ad1f4dc6309eb6b01f22133368bf"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-floor-disc-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "7ae4aa8c17761e7f4373778818d32cd7ff7a86a12d5f72d20cecca4caaaa91ab",
+          "bytes": 225307,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-finish-arch",
+      "assets": {
+        "candy.finish-arch": "67dab9f737b5ca9569100d79856a4f7c8f5bbbe969bf3f3905756ef5a53453d5"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-finish-arch-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "dadffff83f739b0a5a1afc5a0f19529f6602bb15ad4d434ee2e85eea7c63daa4",
+          "bytes": 230066,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-queue-pad",
+      "assets": {
+        "candy.queue-pad": "7d85d73bd66b353f4c798464585e47b1f543f837e021c1ca3f46311aca5981ce"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-queue-pad-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "8d4b3ef13c6e716bf646fc5bc84609a10714b24a73b39cd6739b755f1d839575",
+          "bytes": 179771,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-pendulum-hammer",
+      "assets": {
+        "candy.pendulum-hammer": "931c69c90503ac8092a4a5e84860246fb69fa432db905bbd571e776d1c00ca3a"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-pendulum-hammer-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "9cb5b412955706ae9d37ef7b6e8a7248f1f6e6e3e4e030b1f5ea0e484aae1601",
+          "bytes": 184370,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-plaza-fountain",
+      "assets": {
+        "candy.plaza-fountain": "18a24dbf1686491d28981ccbc2f6949456aaca8576ee1fca4e5b9a9a04c25f79"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-plaza-fountain-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "73551ab332bbfe4a707213ae326246fa9f93126fb388161d5e864896af4fbb0f",
+          "bytes": 217434,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-floor-tile",
+      "assets": {
+        "candy.floor-tile": "7064c0f1cdefe8e5c930bd66018f586381ab5e384657dca932f8175c70f3f8ca"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-floor-tile-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "81609c9164c051aab7a73979436b304ddfc8104c3dc52d55f30486719b956da0",
+          "bytes": 255289,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-moving-platform",
+      "assets": {
+        "candy.moving-platform": "2302ead10c4a6de8216c8a59b1e249ba7bb4cb3d4805f27d5791c36dc4b9b3ed"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-moving-platform-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "4a8fd59e8ce7e67164544c39c8ef22629384b7d6f8e0abca98f36c6f6e8c7702",
+          "bytes": 277303,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-rotating-door",
+      "assets": {
+        "candy.rotating-door": "ea35412d1a5ffc6a97a562ee1892dabd793b0c5c3a9dcbd011db0595702171fb"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-rotating-door-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "27b7b96721099bbced9bde9d4faddc25241e162f1b9e8f75c9977ef5033414f2",
+          "bytes": 137987,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-podium-block",
+      "assets": {
+        "candy.podium-block": "7eddd3ca507037b70d17a0eaff50aaec4bbd538cb5ed8d274a9e8cb7e478b7a4"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-podium-block-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "210ad5a8474e329a569720aaeac37df68c1bac22dab35768de927834fa397a56",
+          "bytes": 246579,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-seesaw-plank",
+      "assets": {
+        "candy.seesaw-plank": "97ff984841989feb90188538d55b9f5070b437761eb24389176b766b3fd76aa6"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-seesaw-plank-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "2b309fc2fb4d928487a144197f85da1eb0f993fa53aead3b7aaa0457a62bafd7",
+          "bytes": 149601,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-spinner-bar",
+      "assets": {
+        "candy.spinner-bar": "2ac6ee030d0449047c403f1ac1a4161c7d454d4b553513517fc8aac97d3b93c7"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-spinner-bar-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "91d5421f3e47f4fb403062e4c68c5bd658e433610457ee7272dcde475c701ef7",
+          "bytes": 198579,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-wall-block",
+      "assets": {
+        "candy.wall-block": "f6cfa257a9dc3546664dcec7ab39577b0fe9ce562b4b00b9cc5daba41e432bff"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-wall-block-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "4755c60d3f6a461251859c8af01d0f144ad510a71deb6c32d829d9266cb96e07",
+          "bytes": 172349,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-slime-pool",
+      "assets": {
+        "candy.slime-pool": "d5ce8ab68f28ecaffca6e6346b571b2593a5c09428d5546457cc8c83d2e68d2e"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-slime-pool-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "f58d29bfc6ab2a4971e5448fc57911dfd712227e5290e1519e7f202e7d737c92",
+          "bytes": 422527,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-banner",
+      "assets": {
+        "candy.banner": "726a9013073e5c412c0b97b4b691453d3affa017366a5923b5b7d9c0a790d7df"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-banner-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "1a6a192180699c09a87ace8176fa40ec588ae40120202128d6ea6496c238c7af",
+          "bytes": 118757,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-hot-air-balloon",
+      "assets": {
+        "candy.hot-air-balloon": "fbae00af69fa17e1ef51b6dc89fd2a74a9b2d931b30b53b0a8b54513766e7cbf"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-hot-air-balloon-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "757fbadf3c22c1c40b92b6cc08828a011b383648cbca407bd4d3a13451768363",
+          "bytes": 300496,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-tower",
+      "assets": {
+        "candy.tower": "7110b2367875d29a38355cd374f9e4d98696baa92a248b0ae67a56ab646d90aa"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-tower-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "6fb83e083d66192825a660044a9cdf53e1f720f3a39e69f60dd7b73f86fc1a2e",
+          "bytes": 231843,
+          "nonEmpty": true
+        }
+      ]
+    },
+    {
+      "name": "candy-cloud",
+      "assets": {
+        "candy.cloud": "86b0e087c587f7fbd5d5657b2658d8dd02bd2f94896e758cb115a5ecf732d004"
+      },
+      "views": [
+        {
+          "name": "three-quarter",
+          "png": "out/c3/candy-cloud-three-quarter.png",
+          "width": 1024,
+          "height": 1024,
+          "sha256": "47aa8b59122315e8b2e7171483bec4bc1311c84ffce1f75e3b7f3d190bf329c3",
+          "bytes": 179273,
+          "nonEmpty": true
+        }
+      ]
+    }
+  ]
+}

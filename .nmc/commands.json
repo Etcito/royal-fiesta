@@ -8,6 +8,45 @@
     "name": "judge-logo-crown",
     "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/logo.crown.normal.png --description \"Royal Fiesta game logo on a sky-blue background, part of a bright inflatable fiesta scene like ref-1: a glossy gold inflatable crown with plump rounded points, pink and blue gem balls on the tips and on the crown rim, a thick soft plum outline and white highlight streaks, with the words ROYAL FIESTA in chunky rounded white letters across a pink inflatable band with ribbon tails, and small white sparkles\" --min-score 6",
     "timeout_s": 300,
-    "after": ["preview-logo-crown"]
+    "after": [
+      "preview-logo-crown"
+    ]
+  },
+  {
+    "name": "preview-button-secondary",
+    "command": "node --experimental-strip-types tools/uiPreview.ts button.secondary",
+    "timeout_s": 600
+  },
+  {
+    "name": "judge-button-secondary-normal",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.secondary.normal.png --description \"A game UI secondary button seen alone on a sky-blue background, in the inflatable glossy toy style of the reference (bright plastic, Fall Guys-like): a wide sky-blue pill shaped like an inflated cushion, with a white glossy streak across the top and a deeper blue rim. There is no text on it.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "preview-button-secondary"
+    ]
+  },
+  {
+    "name": "judge-button-secondary-focus",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.secondary.focus.png --description \"A game UI secondary button seen alone on a sky-blue background, in the inflatable glossy toy style of the reference (bright plastic, Fall Guys-like): a wide sky-blue pill shaped like an inflated cushion, with a white glossy streak across the top and a deeper blue rim. There is no text on it. It has a bright yellow glowing ring around it, showing keyboard focus.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "preview-button-secondary"
+    ]
+  },
+  {
+    "name": "judge-button-secondary-pressed",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.secondary.pressed.png --description \"A game UI secondary button seen alone on a sky-blue background, in the inflatable glossy toy style of the reference (bright plastic, Fall Guys-like): a wide sky-blue pill shaped like an inflated cushion, with a white glossy streak across the top and a deeper blue rim. There is no text on it. It is pressed: slightly squashed and flatter than normal.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "preview-button-secondary"
+    ]
+  },
+  {
+    "name": "judge-button-secondary-disabled",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.secondary.disabled.png --description \"A game UI secondary button seen alone on a sky-blue background, in an inflatable glossy toy style: a wide pill shaped like an inflated cushion, greyed out in pale grey-blue to show it is disabled, still with a faint white glossy streak and a darker grey-blue rim. There is no text on it.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "preview-button-secondary"
+    ]
   }
 ]

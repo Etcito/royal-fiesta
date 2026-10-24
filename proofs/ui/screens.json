@@ -1,0 +1,349 @@
+{
+  "format": "royal-fiesta.ui-screens",
+  "version": 1,
+  "renderer": "raa",
+  "adapter": {
+    "vendor": "nvidia",
+    "architecture": "ampere",
+    "description": "",
+    "software": false
+  },
+  "screens": [
+    {
+      "screen": "title",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "settings",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        }
+      ],
+      "capture": "out/ui/title.png",
+      "sha256": "dd3e036158febfbdc5856c5d254cdc40569e7734cd303a7fde5db5b0f157bae8",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "hub",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "error",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        },
+        {
+          "kind": "click",
+          "target": "act-play",
+          "x": 368.64,
+          "y": 166,
+          "on": "title",
+          "events": [
+            "pointermove",
+            "pointerdown",
+            "mousedown",
+            "pointerup",
+            "mouseup",
+            "click"
+          ]
+        }
+      ],
+      "capture": "out/ui/hub.png",
+      "sha256": "4a9685a422ef7f07d9f67ab11d7a815d85305766a308ed8dafe3b9e2c630bd45",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "queue",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "pause",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        },
+        {
+          "kind": "key",
+          "key": "Enter",
+          "on": "hub",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        }
+      ],
+      "capture": "out/ui/queue.png",
+      "sha256": "2558b9a0def2558155795cd366dea7efa5bcf771bcc36a02d88d3a91bc5b0bd1",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "countdown",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "queue",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        },
+        {
+          "kind": "key",
+          "key": "Enter",
+          "on": "hub",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        }
+      ],
+      "capture": "out/ui/countdown.png",
+      "sha256": "34b24b43266eb2f8d00b3467b0b0317e86b3339edaf76a7461b9d122e32771cd",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "round",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "queue",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        },
+        {
+          "kind": "key",
+          "key": "Enter",
+          "on": "hub",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        }
+      ],
+      "capture": "out/ui/round.png",
+      "sha256": "6dfe60d3a3de82c6c93c26859c92fad617e74231e273382d469e32a121d8caf2",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "spectate",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "queue",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        },
+        {
+          "kind": "key",
+          "key": "Enter",
+          "on": "hub",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        }
+      ],
+      "capture": "out/ui/spectate.png",
+      "sha256": "b2b9b51950f83fb222ece8766d6e4f57189647650bedd1bcda837fea2a5e6e1c",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "result",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "queue",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        },
+        {
+          "kind": "key",
+          "key": "Enter",
+          "on": "hub",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        }
+      ],
+      "capture": "out/ui/result.png",
+      "sha256": "0f8133ec7c6a43a827736689d37d3ea672fefc7e5216a9c2ee00b996a2ffd291",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "podium",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "queue",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        },
+        {
+          "kind": "key",
+          "key": "Enter",
+          "on": "hub",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        }
+      ],
+      "capture": "out/ui/podium.png",
+      "sha256": "b2a64a7e2b660328b72089d5e526c05f912758609a1a3c5cc8e4d1efc3c71eb2",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "pause",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "hub",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        }
+      ],
+      "capture": "out/ui/pause.png",
+      "sha256": "3565a76964615f16f8e3e1ecff6bcf41753954a04065afe2ed5ac1819c914daf",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "settings",
+      "inputs": [
+        {
+          "kind": "click",
+          "target": "act-settings",
+          "x": 368.64,
+          "y": 280,
+          "on": "title",
+          "events": [
+            "pointermove",
+            "pointerdown",
+            "mousedown",
+            "pointerup",
+            "mouseup",
+            "click"
+          ]
+        }
+      ],
+      "capture": "out/ui/settings.png",
+      "sha256": "bb80e4aae2d9aeef55671ed54edcc424f6e04562409272ed15fb64513ee0c6e0",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "credits",
+      "inputs": [
+        {
+          "kind": "click",
+          "target": "act-credits",
+          "x": 368.64,
+          "y": 336,
+          "on": "title",
+          "events": [
+            "pointermove",
+            "pointerdown",
+            "mousedown",
+            "pointerup",
+            "mouseup",
+            "click"
+          ]
+        }
+      ],
+      "capture": "out/ui/credits.png",
+      "sha256": "1a17f998047786ead6f2e91768dc73ae7c2df4e3b80dc4cc29e9eb0c8404e2ff",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "error",
+      "inputs": [
+        {
+          "kind": "key",
+          "key": "Escape",
+          "on": "credits",
+          "events": [
+            "keydown",
+            "keyup"
+          ]
+        },
+        {
+          "kind": "click",
+          "target": "act-play-online",
+          "x": 368.64,
+          "y": 224,
+          "on": "title",
+          "events": [
+            "pointermove",
+            "pointerdown",
+            "mousedown",
+            "pointerup",
+            "mouseup",
+            "click"
+          ]
+        }
+      ],
+      "capture": "out/ui/error.png",
+      "sha256": "3cb44d448736dbd9793d3fcaa161066fdfc5db40211338635323d405341edb50",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "screen": "loading",
+      "inputs": [
+        {
+          "kind": "click",
+          "target": "act-retry",
+          "x": 172,
+          "y": 310,
+          "on": "error",
+          "events": [
+            "pointermove",
+            "pointerdown",
+            "mousedown",
+            "pointerup",
+            "mouseup",
+            "click"
+          ]
+        }
+      ],
+      "capture": "out/ui/loading.png",
+      "sha256": "d94f49ee64b43a10c7ddcd745607ead6bc0bc87339b0f6a8fb38c0f0ca6639f9",
+      "width": 512,
+      "height": 512
+    }
+  ]
+}

@@ -62,7 +62,7 @@
         "transform": {
           "position": [0, 0.25, 0]
         },
-        "round": 0.1,
+        "round": 0.12,
         "material": "candy-blue",
         "params": {
           "height": 0.5,
@@ -79,7 +79,7 @@
         },
         "material": "candy-pink",
         "params": {
-          "radii": [1.27, 0.2, 1.27]
+          "radii": [1.32, 0.3, 1.32]
         },
         "gameCollision": false
       },
@@ -88,12 +88,12 @@
         "name": "ring",
         "kind": "torus",
         "transform": {
-          "position": [0, 0.55, 0]
+          "position": [0, 0.62, 0]
         },
         "material": "candy-yellow",
         "params": {
-          "majorRadius": 0.98,
-          "minorRadius": 0.07
+          "majorRadius": 1,
+          "minorRadius": 0.075
         },
         "gameCollision": false
       },
@@ -102,13 +102,13 @@
         "name": "cap",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.62, 0]
+          "position": [0, 0.69, 0]
         },
-        "round": 0.04,
+        "round": 0.03,
         "material": "candy-yellow",
         "params": {
           "height": 0.06,
-          "radius": 0.72
+          "radius": 0.7
         },
         "gameCollision": false
       },
@@ -129,12 +129,12 @@
         "name": "star-0",
         "kind": "box",
         "transform": {
-          "position": [0, 0.675, 0]
+          "position": [0, 0.735, 0]
         },
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [1.2, 0.04, 0.2]
+          "size": [1.2, 0.04, 0.22]
         },
         "gameCollision": false
       },
@@ -143,13 +143,13 @@
         "name": "star-1",
         "kind": "box",
         "transform": {
-          "position": [0, 0.675, 0],
+          "position": [0, 0.735, 0],
           "rotation": [0, 60, 0]
         },
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [1.2, 0.04, 0.2]
+          "size": [1.2, 0.04, 0.22]
         },
         "gameCollision": false
       },
@@ -158,13 +158,13 @@
         "name": "star-2",
         "kind": "box",
         "transform": {
-          "position": [0, 0.675, 0],
+          "position": [0, 0.735, 0],
           "rotation": [0, 120, 0]
         },
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [1.2, 0.04, 0.2]
+          "size": [1.2, 0.04, 0.22]
         },
         "gameCollision": false
       },
@@ -204,7 +204,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -219,7 +219,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -234,7 +234,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -249,7 +249,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -264,7 +264,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -279,7 +279,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -294,7 +294,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -309,7 +309,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -324,7 +324,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -339,7 +339,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -354,7 +354,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -369,7 +369,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -384,7 +384,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -399,7 +399,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -414,7 +414,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       },
@@ -429,7 +429,7 @@
         "round": 0.02,
         "material": "candy-white",
         "params": {
-          "size": [0.672325, 0.1, 0.07]
+          "size": [0.7, 0.17, 0.09]
         },
         "gameCollision": false
       }
@@ -513,7 +513,7 @@
   "anchors": {},
   "bounds": {
     "min": [-1.562404, 0, -1.562404],
-    "max": [1.562404, 0.695, 1.562404]
+    "max": [1.562404, 0.76, 1.562404]
   },
-  "hash": "04968dc8a79e31dc075dc1d3bc758e380a2353b93e83ecfb77f560ded09c77fa"
+  "hash": "563a0ce02efa6bcfbe206c4d80ddf5b0c3ffd2b2b744ab2e690e94c703498199"
 }

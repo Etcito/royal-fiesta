@@ -56,7 +56,7 @@
         "id": "rim",
         "name": "rim",
         "kind": "box",
-        "round": 0.08,
+        "round": 0.13,
         "material": "candy-pink",
         "params": {
           "size": [4, 0.5, 12]
@@ -84,7 +84,7 @@
         "transform": {
           "position": [0, 0.2, 0]
         },
-        "round": 0.08,
+        "round": 0.1,
         "material": "candy-pink",
         "params": {
           "size": [2.9, 0.2, 11]
@@ -103,7 +103,7 @@
         "material": "candy-blue",
         "params": {
           "height": 3.4,
-          "radius": 0.28
+          "radius": 0.3
         },
         "gameCollision": false
       },
@@ -119,7 +119,7 @@
         "material": "candy-blue",
         "params": {
           "height": 3.4,
-          "radius": 0.28
+          "radius": 0.3
         },
         "gameCollision": false
       },
@@ -147,13 +147,13 @@
         "name": "chev-0r",
         "kind": "box",
         "transform": {
-          "position": [0.601041, 0.31, -4.011041],
+          "position": [0.601041, 0.33, -4.011041],
           "rotation": [0, 45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -162,13 +162,13 @@
         "name": "chev-0l",
         "kind": "box",
         "transform": {
-          "position": [-0.601041, 0.31, -4.011041],
+          "position": [-0.601041, 0.33, -4.011041],
           "rotation": [0, -45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -177,13 +177,13 @@
         "name": "chev-1r",
         "kind": "box",
         "transform": {
-          "position": [0.601041, 0.31, -2.011041],
+          "position": [0.601041, 0.33, -2.011041],
           "rotation": [0, 45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -192,13 +192,13 @@
         "name": "chev-1l",
         "kind": "box",
         "transform": {
-          "position": [-0.601041, 0.31, -2.011041],
+          "position": [-0.601041, 0.33, -2.011041],
           "rotation": [0, -45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -207,13 +207,13 @@
         "name": "chev-2r",
         "kind": "box",
         "transform": {
-          "position": [0.601041, 0.31, -0.011041],
+          "position": [0.601041, 0.33, -0.011041],
           "rotation": [0, 45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -222,13 +222,13 @@
         "name": "chev-2l",
         "kind": "box",
         "transform": {
-          "position": [-0.601041, 0.31, -0.011041],
+          "position": [-0.601041, 0.33, -0.011041],
           "rotation": [0, -45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -237,13 +237,13 @@
         "name": "chev-3r",
         "kind": "box",
         "transform": {
-          "position": [0.601041, 0.31, 1.988959],
+          "position": [0.601041, 0.33, 1.988959],
           "rotation": [0, 45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -252,13 +252,13 @@
         "name": "chev-3l",
         "kind": "box",
         "transform": {
-          "position": [-0.601041, 0.31, 1.988959],
+          "position": [-0.601041, 0.33, 1.988959],
           "rotation": [0, -45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -267,13 +267,13 @@
         "name": "chev-4r",
         "kind": "box",
         "transform": {
-          "position": [0.601041, 0.31, 3.988959],
+          "position": [0.601041, 0.33, 3.988959],
           "rotation": [0, 45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -282,13 +282,13 @@
         "name": "chev-4l",
         "kind": "box",
         "transform": {
-          "position": [-0.601041, 0.31, 3.988959],
+          "position": [-0.601041, 0.33, 3.988959],
           "rotation": [0, -45, 0]
         },
-        "round": 0.015,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [1.7, 0.04, 0.4]
+          "size": [1.7, 0.1, 0.5]
         },
         "gameCollision": false
       },
@@ -326,13 +326,13 @@
         "name": "side-r0u",
         "kind": "box",
         "transform": {
-          "position": [2, 0.1, -4],
+          "position": [2.05, 0.1, -4],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -341,13 +341,13 @@
         "name": "side-r0d",
         "kind": "box",
         "transform": {
-          "position": [2, -0.1, -4],
+          "position": [2.05, -0.1, -4],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -356,13 +356,13 @@
         "name": "side-r2u",
         "kind": "box",
         "transform": {
-          "position": [2, 0.1, -2],
+          "position": [2.05, 0.1, -2],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -371,13 +371,13 @@
         "name": "side-r2d",
         "kind": "box",
         "transform": {
-          "position": [2, -0.1, -2],
+          "position": [2.05, -0.1, -2],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -386,13 +386,13 @@
         "name": "side-r4u",
         "kind": "box",
         "transform": {
-          "position": [2, 0.1, 0],
+          "position": [2.05, 0.1, 0],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -401,13 +401,13 @@
         "name": "side-r4d",
         "kind": "box",
         "transform": {
-          "position": [2, -0.1, 0],
+          "position": [2.05, -0.1, 0],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -416,13 +416,13 @@
         "name": "side-r6u",
         "kind": "box",
         "transform": {
-          "position": [2, 0.1, 2],
+          "position": [2.05, 0.1, 2],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -431,13 +431,13 @@
         "name": "side-r6d",
         "kind": "box",
         "transform": {
-          "position": [2, -0.1, 2],
+          "position": [2.05, -0.1, 2],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -446,13 +446,13 @@
         "name": "side-r8u",
         "kind": "box",
         "transform": {
-          "position": [2, 0.1, 4],
+          "position": [2.05, 0.1, 4],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -461,13 +461,13 @@
         "name": "side-r8d",
         "kind": "box",
         "transform": {
-          "position": [2, -0.1, 4],
+          "position": [2.05, -0.1, 4],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -476,13 +476,13 @@
         "name": "side-l0u",
         "kind": "box",
         "transform": {
-          "position": [-2, 0.1, -4],
+          "position": [-2.05, 0.1, -4],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -491,13 +491,13 @@
         "name": "side-l0d",
         "kind": "box",
         "transform": {
-          "position": [-2, -0.1, -4],
+          "position": [-2.05, -0.1, -4],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -506,13 +506,13 @@
         "name": "side-l2u",
         "kind": "box",
         "transform": {
-          "position": [-2, 0.1, -2],
+          "position": [-2.05, 0.1, -2],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -521,13 +521,13 @@
         "name": "side-l2d",
         "kind": "box",
         "transform": {
-          "position": [-2, -0.1, -2],
+          "position": [-2.05, -0.1, -2],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -536,13 +536,13 @@
         "name": "side-l4u",
         "kind": "box",
         "transform": {
-          "position": [-2, 0.1, 0],
+          "position": [-2.05, 0.1, 0],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -551,13 +551,13 @@
         "name": "side-l4d",
         "kind": "box",
         "transform": {
-          "position": [-2, -0.1, 0],
+          "position": [-2.05, -0.1, 0],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -566,13 +566,13 @@
         "name": "side-l6u",
         "kind": "box",
         "transform": {
-          "position": [-2, 0.1, 2],
+          "position": [-2.05, 0.1, 2],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -581,13 +581,13 @@
         "name": "side-l6d",
         "kind": "box",
         "transform": {
-          "position": [-2, -0.1, 2],
+          "position": [-2.05, -0.1, 2],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -596,13 +596,13 @@
         "name": "side-l8u",
         "kind": "box",
         "transform": {
-          "position": [-2, 0.1, 4],
+          "position": [-2.05, 0.1, 4],
           "rotation": [45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       },
@@ -611,13 +611,13 @@
         "name": "side-l8d",
         "kind": "box",
         "transform": {
-          "position": [-2, -0.1, 4],
+          "position": [-2.05, -0.1, 4],
           "rotation": [-45, 0, 0]
         },
-        "round": 0.01,
+        "round": 0.03,
         "material": "candy-white",
         "params": {
-          "size": [0.05, 0.12, 0.3]
+          "size": [0.14, 0.13, 0.44]
         },
         "gameCollision": false
       }
@@ -699,8 +699,8 @@
   ],
   "anchors": {},
   "bounds": {
-    "min": [-2.025, -0.28, -6.23],
-    "max": [2.025, 0.33, 6.23]
+    "min": [-2.14, -0.3, -6.26],
+    "max": [2.14, 0.4, 6.26]
   },
-  "hash": "41fb63455b1540167ca1632d730c0e60bab166c42e34ea28469a05f9b9d240f5"
+  "hash": "507b6de59abb0dfe96b5e4f606269b36f1c608560e41714d3d9ab2aea3610752"
 }

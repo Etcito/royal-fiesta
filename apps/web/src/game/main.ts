@@ -1,6 +1,9 @@
 // game.html entry, the player page (ARCHITECTURE 1.3): screens -> loading -> hub -> match -> podium -> hub.
 // The hub and its matches run in-page with bots, or on the relay when ?server= is given; ?clients=2..4 runs
 // that many piloted clients over a LoopbackRelay. Content comes from pickContent, input only from GameInput.
+// Every screen and the round HUD are drawn by uaa on canvas#ui, above the RAA views.
+/// <reference types="vite/client" />
+import { UaaError } from '@etcito/uaa'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { basisFromFacing } from '@royal-fiesta/game/client/cameraBasis'
@@ -18,8 +21,8 @@ import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
-import { menuModel, moveFocus } from '@royal-fiesta/game/screens/menuModel'
-import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
+import { menuModel } from '@royal-fiesta/game/screens/menuModel'
+import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
 import { Effect, Nav } from '@royal-fiesta/game/screens/nav'
 import type { GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
 import { SETTINGS_ROWS, adjust, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
@@ -35,7 +38,8 @@ import type { MatchSetup } from '@royal-fiesta/sim/match/setup'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { planCanvases } from '../client/canvases.ts'
 import type { ClientCell } from '../client/canvases.ts'
-import { mountHud } from '../client/hud.ts'
+import { hudValues } from '../client/hud.ts'
+import type { HudValues } from '../client/hud.ts'
 import { mountLoading } from '../content/loading.ts'
 import { pickContent } from '../content/source.ts'
 import { GameInput } from '../input/input.ts'
@@ -43,6 +47,11 @@ import type { UiEvent } from '../input/input.ts'
 import { HubView } from '../play/hubView.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
 import { SoundDriver } from '../play/sound.ts'
+import { widgetsOf } from '../ui/screenMap.ts'
+import type { ScreensDoc, WidgetProps } from '../ui/screenMap.ts'
+import { createUaaHost } from '../ui/uaaHost.ts'
+import type { UaaCommand, UaaHost } from '../ui/uaaHost.ts'
+import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
 import { installGameOps } from './ops.ts'
 
 interface Query {
@@ -55,7 +64,6 @@ interface Query {
   clients: number
 }
 
-type Hud = ReturnType<typeof mountHud>
 type Look = { dx: number; dy: number; rx: number; ry: number }
 
 // Content, physics and one port per client canvas, all ready before any mode starts.
@@ -176,88 +184,6 @@ function mountCanvas(root: HTMLElement, cell: ClientCell): HTMLCanvasElement {
   canvas.dataset.client = String(cell.client)
   root.appendChild(canvas)
   return canvas
-}
-
-const FONT = 'font-family: "Baloo 2", "Fredoka", "Arial Rounded MT Bold", system-ui, sans-serif; color: #fff;'
-
-function el(tag: string, css: string, parent: HTMLElement): HTMLElement {
-  const e = document.createElement(tag)
-  e.style.cssText = css
-  parent.appendChild(e)
-  return e
-}
-
-// The DOM menu: draws a MenuModel with one focused button. It reads no events itself: the app feeds it
-// GameInput's UI events, and a click is mapped back to a button by hit-testing the page.
-class MenuView {
-  focus = 0
-  private readonly root: HTMLElement
-  private readonly panel: HTMLElement
-  private readonly info: HTMLElement
-  private readonly hint: HTMLElement
-  private buttons: HTMLElement[] = []
-  private shown = ''
-
-  constructor(root: HTMLElement) {
-    this.root = root
-    this.panel = el('div', 'position: absolute; left: 50%; transform: translateX(-50%); display: none; z-index: 20;' +
-      ' flex-direction: column; align-items: center; gap: 12px; padding: 28px 40px; border-radius: 24px; box-sizing: border-box;' +
-      ' max-width: 92vw; max-height: 92vh; overflow: auto; background: rgba(27, 15, 46, 0.9); pointer-events: auto;' + FONT, root)
-    this.info = el('div', 'position: absolute; top: 16px; left: 16px; z-index: 15; font-size: 20px; font-weight: 700;' +
-      ' white-space: pre-line; text-shadow: 0 2px 0 #2a1240;' + FONT, root)
-    this.hint = el('div', 'position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 15;' +
-      ' font-size: 16px; opacity: 0.85; white-space: nowrap; text-shadow: 0 2px 0 #2a1240;' + FONT, root)
-  }
-
-  get count(): number {
-    return this.buttons.length
-  }
-
-  // low: the panel sits at the bottom so the view behind it (podium, round, a loading refusal) stays visible.
-  render(model: MenuModel, low: boolean, linesOn: boolean): void {
-    this.focus = model.buttons.length === 0 ? -1 : Math.min(Math.max(0, this.focus), model.buttons.length - 1)
-    const key = JSON.stringify([model, low, linesOn, this.focus])
-    if (key === this.shown) return
-    this.shown = key
-    this.hint.textContent = model.hint
-    if (model.overlay) {
-      this.panel.style.display = 'none'
-      this.info.textContent = model.lines.join('\n')
-      this.buttons = []
-      return
-    }
-    this.info.textContent = ''
-    const p = this.panel
-    p.replaceChildren()
-    p.style.display = 'flex'
-    p.style.top = low ? '' : '50%'
-    p.style.bottom = low ? '48px' : ''
-    p.style.transform = low ? 'translateX(-50%)' : 'translate(-50%, -50%)'
-    p.dataset.screen = model.screen
-    el('div', 'font-size: 44px; font-weight: 900; color: #ff6b9e;', p).textContent = model.title
-    if (linesOn) for (const line of model.lines) el('div', 'font-size: 20px; text-align: center; overflow-wrap: anywhere;', p).textContent = line
-    this.buttons = model.buttons.map((b, i) => {
-      const e = el('div', 'min-width: 320px; padding: 10px 24px; border-radius: 18px; text-align: center; cursor: pointer;' +
-        ` font-size: 24px; font-weight: 800; border: 3px solid #2a1240; background: ${i === this.focus ? '#ff4f8b' : '#8a4dff'};`, p)
-      e.dataset.button = String(i)
-      e.textContent = b.label
-      return e
-    })
-  }
-
-  // GameInput click coordinates are overlay backing pixels; -1 when no button is under them.
-  buttonAt(x: number, y: number): number {
-    const r = this.root.getBoundingClientRect()
-    const dpr = window.devicePixelRatio || 1
-    const hit = document.elementFromPoint(r.left + x / dpr, r.top + y / dpr)
-    const button = hit instanceof HTMLElement ? hit.closest<HTMLElement>('[data-button]') : null
-    if (button === null || !this.panel.contains(button)) return -1
-    return Number(button.dataset.button)
-  }
-
-  move(dir: number): void {
-    this.focus = moveFocus(this.focus, dir, this.buttons.length)
-  }
 }
 
 // What the app hands a running mode each page frame. world is the camera-relative move (controlsToInput
@@ -694,8 +620,41 @@ class InPageMode implements Mode {
 // Screens where the game has the controls and the mouse looks; the rest are menus over it.
 const PLAYING: readonly Screen[] = ['hub', 'countdown', 'round', 'spectate']
 const HUD_SCREENS: readonly Screen[] = ['countdown', 'round', 'spectate']
-// Menus drawn low so the view behind them stays visible.
-const LOW: readonly Screen[] = ['queue', 'result', 'podium']
+
+// The uaa document (uaaHost loads the same file): each screen has a fixed number of line-<i> slots.
+const UI_DOC = JSON.parse(uiDocText) as ScreensDoc
+const LINE_SLOT = /^line-\d+$/
+
+function lineSlots(screen: Screen): number {
+  return widgetsOf(UI_DOC, screen).filter(w => LINE_SLOT.test(w.id)).length
+}
+
+// Empty lines are dropped; lines past the last slot join it (a screen without slots shows none).
+function fitLines(lines: readonly string[], slots: number): string[] {
+  const shown = lines.filter(line => line.length > 0)
+  if (shown.length <= slots || slots === 0) return shown.slice(0, slots)
+  return [...shown.slice(0, slots - 1), shown.slice(slots - 1).join(' - ')]
+}
+
+// The numbers of a HUD value ('Qualified 1 / 3' -> '1/3', 'Alive 5' -> '5').
+function counts(text: string): string {
+  return (text.match(/\d+/g) ?? []).join('/')
+}
+
+// hud.ts values -> the 'round' screen's hud-* widgets and the countdown badge.
+function hudWidgets(h: HudValues, v: MatchViewState): Record<string, WidgetProps> {
+  return {
+    'hud-kind': { text: h.kind },
+    'hud-timer': { visible: h.timeLeft !== null },
+    'hud-timer-label': { text: (h.timeLeft ?? '').replace(/^\D+/, '') },
+    'hud-time-bar': { value: h.timeFraction ?? 0 },
+    'hud-qualified': { visible: h.qualified !== null },
+    'hud-qualified-count': { text: { count: counts(h.qualified ?? '') } },
+    'hud-alive': { visible: h.alive !== null },
+    'hud-alive-count': { text: { count: counts(h.alive ?? '') } },
+    'countdown-number': { text: { count: String(Math.max(1, Math.ceil(v.phaseTicksLeft / 60))) } },
+  }
+}
 
 // A refusal string for a check the page makes itself (refuse throws, so catch its message).
 function refusal(area: string, where: string, what: string): string {
@@ -706,44 +665,42 @@ function refusal(area: string, where: string, what: string): string {
   }
 }
 
-// The page: Nav drives every screen; its effects start and stop modes and the load.
+// The page: Nav drives every screen; its effects start and stop modes and the load. The uaa host draws
+// the screen nav is on and reports its button presses back as menu commands.
 class App {
   readonly nav = new Nav()
   private settings: Settings
   private settingsError: string | null
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
-  private model: MenuModel | null = null
   private mode: Mode | null = null
   private loaded: Loaded | null = null
   private query: Query | null = null
-  private loading: ReturnType<typeof mountLoading> | null = null
-  private loadingShown = ''
   private emote = 0
   private stopLoop: (() => void) | null = null
   private disposed = false
+  // The HUD time bar's full length: the most round ticks left seen in the current round.
+  private hudRound = -2
+  private hudRoundTicks = 0
+  private size = ''
+  private pointer: { x: number; y: number } | null = null
   private readonly views: HTMLElement
-  private readonly hudRoot: HTMLElement
   private readonly screens: HTMLElement
   private readonly search: string
-  private readonly menu: MenuView
-  private readonly hud: Hud
+  private readonly host: UaaHost
   private readonly input: GameInput
   private readonly sound = new SoundDriver()
   private readonly orbit = new OrbitCamera()
   private readonly world = neutralInput()
 
-  constructor(views: HTMLElement, hudRoot: HTMLElement, screens: HTMLElement, search: string) {
+  constructor(views: HTMLElement, screens: HTMLElement, host: UaaHost, search: string) {
     this.views = views
-    this.hudRoot = hudRoot
     this.screens = screens
+    this.host = host
     this.search = search
     const saved = loadSettings(window.localStorage)
     this.settings = saved.settings
     this.settingsError = saved.error
-    this.hud = mountHud(hudRoot)
-    hudRoot.style.display = 'none'
-    this.menu = new MenuView(screens)
     // Clicking the (single) game canvas locks the pointer for the mouse look.
     this.input = new GameInput(window, screens, () => (this.loaded?.canvases.length === 1 ? this.loaded.canvases[0] : null))
   }
@@ -771,7 +728,15 @@ class App {
     this.run(this.nav.dispatch({ kind: 'error', message }))
   }
 
-  // Before an op builds its own views: frame loop, mode, RAA ports, input and sound released, page emptied.
+  // A uaa button or back press. One that comes from a screen nav has already left (two inputs in one
+  // batch) is dropped, as is any while a key is being rebound.
+  command(c: UaaCommand): void {
+    if (this.disposed || this.rebinding !== null || c.screen !== this.nav.screen) return
+    if (c.cmd.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
+    else this.activate(c.cmd)
+  }
+
+  // Before an op builds its own views: frame loop, mode, RAA ports, uaa host, input and sound released, page emptied.
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
@@ -780,12 +745,10 @@ class App {
     this.stopMode()
     this.input.dispose()
     void this.sound.close()
-    this.loading?.close()
-    this.loading = null
     for (const port of this.loaded?.ports ?? []) port.dispose()
     this.loaded = null
+    this.host.destroy()
     this.views.replaceChildren()
-    this.hudRoot.replaceChildren()
     this.screens.replaceChildren()
   }
 
@@ -804,15 +767,18 @@ class App {
   }
 
   private async load(): Promise<void> {
-    this.loading?.close()
-    this.loading = mountLoading(this.screens)
-    this.loadingShown = ''
+    // The 'loading' screen's bar and label; a refusal goes to the error screen.
+    const loading = mountLoading(null, { progress: (fraction, label) => this.host.setLoading(fraction, label) })
+    this.host.setLoading(0, 'Starting...')
     try {
       const q = parseQuery(this.search)
       this.query = q
       const content = pickContent(new URLSearchParams(this.search))
       const R = await initRapier()
-      await content.load('sprint', progress => this.run(this.nav.dispatch({ kind: 'progress', progress })))
+      await content.load('sprint', progress => {
+        loading.update(progress)
+        this.run(this.nav.dispatch({ kind: 'progress', progress }))
+      })
       const course = q.course === null ? null : content.course(q.course)
       const { ports, canvases } = await this.mountPorts(content, q.clients)
       if (this.disposed) {
@@ -885,6 +851,7 @@ class App {
   private frame(dt: number): void {
     const nav = this.nav
     for (const ev of this.input.takeEvents()) this.onEvent(ev)
+    this.hover()
     if (this.pendingRebind !== null) {
       // Armed after the batch, so the Enter that chose the row is not taken as the new key.
       this.rebinding = this.pendingRebind
@@ -921,36 +888,48 @@ class App {
     this.draw()
   }
 
+  // Presents nav's screen through the uaa host, with the round HUD on the HUD screens, then renders it.
   private draw(): void {
     const nav = this.nav
     const mode = this.mode
     const hud = mode === null || !HUD_SCREENS.includes(nav.screen) ? null : mode.hud()
-    this.hudRoot.style.display = hud === null ? 'none' : ''
-    if (hud !== null) this.hud.update(hud.view, hud.names, hud.seat)
-    const info = mode !== null && (nav.screen === 'hub' || !PLAYING.includes(nav.screen)) ? mode.lines() : []
+    const values = hud === null ? null : hudValues(hud.view, hud.names, hud.seat, this.roundTicks(hud.view))
+    if (hud === null) this.hudRound = -2
+    let info = mode !== null && (nav.screen === 'hub' || !PLAYING.includes(nav.screen)) ? mode.lines() : []
+    // The spectate banner has no HUD pills: its lines carry the round and the qualified count.
+    if (nav.screen === 'spectate' && values !== null) info = [values.kind, values.qualified ?? '']
     const error = nav.screen === 'settings' ? this.settingsError : nav.error
-    this.model = menuModel(nav.screen, nav.actions(), { settings: this.settings, rebinding: this.rebinding, error, info })
-    const loadFailed = nav.screen === 'error' && nav.loadNext !== null
-    this.menu.render(this.model, loadFailed || LOW.includes(nav.screen), !loadFailed)
-    this.drawLoading(loadFailed)
+    const model = menuModel(nav.screen, nav.actions(), { settings: this.settings, rebinding: this.rebinding, error, info })
+    // Overlays leave the pointer to the views (pointer lock on the game canvas); menus take clicks.
+    this.screens.style.pointerEvents = model.overlay ? 'none' : 'auto'
+    this.resize()
+    this.host.present({ ...model, lines: fitLines(model.lines, lineSlots(model.screen)) })
+    if (hud !== null && values !== null) this.host.setHud(hudWidgets(values, hud.view))
+    this.host.frame(performance.now())
   }
 
-  // The loading view shows the load's progress, then its refusal until the player retries or leaves.
-  private drawLoading(loadFailed: boolean): void {
-    const nav = this.nav
-    if (this.loading === null) return
-    if (nav.screen !== 'loading' && !loadFailed) {
-      this.loading.close()
-      this.loading = null
-      return
+  private roundTicks(v: MatchViewState): number {
+    if (v.roundIndex !== this.hudRound) {
+      this.hudRound = v.roundIndex
+      this.hudRoundTicks = 0
     }
-    const key = JSON.stringify([nav.screen, nav.progress, nav.error])
-    if (key === this.loadingShown) return
-    this.loadingShown = key
-    if (loadFailed) this.loading.fail(nav.error ?? 'the load failed')
-    else if (nav.progress !== null) this.loading.update(nav.progress)
+    this.hudRoundTicks = Math.max(this.hudRoundTicks, v.roundTicksLeft)
+    return this.hudRoundTicks
   }
 
+  // canvas#ui follows #screens (the whole page) and the device pixel ratio.
+  private resize(): void {
+    const w = Math.max(1, this.screens.clientWidth)
+    const h = Math.max(1, this.screens.clientHeight)
+    const dpr = window.devicePixelRatio || 1
+    const key = `${w}x${h}@${dpr}`
+    if (key === this.size) return
+    this.size = key
+    this.host.resize(w, h, dpr)
+  }
+
+  // Keys go to uaa as nav, activate and back, clicks as pointer presses (GameInput's overlay backing px
+  // are canvas#ui backing px); uaa answers through command(). A rebind takes the next key itself.
   private onEvent(ev: UiEvent): void {
     if (this.rebinding !== null) {
       // The Esc that cancels arrives as back, then as its key; neither binds.
@@ -966,27 +945,34 @@ class App {
       }
       return
     }
-    if (ev.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
+    const host = this.host
+    if (ev.k === 'back') host.input({ kind: 'back' })
     else if (ev.k === 'emote') this.emote = ev.id
-    else if (ev.k === 'focus') this.menu.move(ev.dir)
-    else if (ev.k === 'adjust') this.adjustFocused(ev.dir)
+    else if (ev.k === 'focus') host.input({ kind: 'nav', dir: ev.dir < 0 ? 'up' : 'down' })
+    else if (ev.k === 'adjust') host.input({ kind: 'nav', dir: ev.dir < 0 ? 'left' : 'right' })
     else if (ev.k === 'select') {
       // The hub has no buttons: Enter queues, as the hint says.
       if (this.nav.screen === 'hub') this.run(this.nav.dispatch({ kind: 'action', action: 'queue' }))
-      else this.activate(this.menu.focus)
-    } else if (ev.k === 'click') {
-      const index = this.menu.buttonAt(ev.x, ev.y)
-      if (index >= 0) {
-        this.menu.focus = index
-        this.activate(index)
+      else {
+        host.input({ kind: 'activate', phase: 'down' })
+        host.input({ kind: 'activate', phase: 'up' })
       }
+    } else if (ev.k === 'click') {
+      host.input({ kind: 'pointer', phase: 'move', x: ev.x, y: ev.y })
+      host.input({ kind: 'pointer', phase: 'down', x: ev.x, y: ev.y })
+      host.input({ kind: 'pointer', phase: 'up', x: ev.x, y: ev.y })
     }
   }
 
-  private activate(index: number): void {
-    const button = this.model?.buttons[index]
-    if (button === undefined) return
-    const cmd = button.cmd
+  // Hover feedback: the pointer moves over the menus (GameInput only tracks it while #screens takes the pointer).
+  private hover(): void {
+    const p = this.input.pointer
+    if (p === null || (this.pointer !== null && p.x === this.pointer.x && p.y === this.pointer.y)) return
+    this.pointer = { x: p.x, y: p.y }
+    this.host.input({ kind: 'pointer', phase: 'move', x: p.x, y: p.y })
+  }
+
+  private activate(cmd: MenuCmd): void {
     if (cmd.k === 'action') this.run(this.nav.dispatch({ kind: 'action', action: cmd.action }))
     else if (cmd.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
     else {
@@ -994,13 +980,6 @@ class App {
       if (row.kind === 'key') this.pendingRebind = row.action
       else this.apply(adjust(this.settings, row, 1))
     }
-  }
-
-  private adjustFocused(dir: number): void {
-    const cmd = this.model?.buttons[this.menu.focus]?.cmd
-    if (cmd === undefined || cmd.k !== 'row') return
-    const row = SETTINGS_ROWS[cmd.row]
-    if (row.kind !== 'key' && row.kind !== 'reset') this.apply(adjust(this.settings, row, dir))
   }
 
   private apply(next: Settings): void {
@@ -1014,27 +993,53 @@ class App {
   }
 }
 
-function start(): App {
+// The uaa message names its code (GPU_UNAVAILABLE, FONT_LOAD, ...).
+function bootMessage(e: unknown): string {
+  return e instanceof UaaError ? `${e.code}: ${e.message}` : messageOf(e)
+}
+
+// Boot waits for the uaa host: there is no DOM menu, so a GPU, asset or font failure fails the boot.
+// taken: an op took the page while the host was being created; the App then never starts.
+async function start(taken: () => boolean): Promise<App | null> {
   const views = document.querySelector<HTMLElement>('#views')
-  const hudRoot = document.querySelector<HTMLElement>('#hud')
   const screens = document.querySelector<HTMLElement>('#screens')
-  if (views === null || hudRoot === null || screens === null) throw new Error('game.html needs main#views, div#hud and div#screens')
-  const app = new App(views, hudRoot, screens, window.location.search)
-  window.addEventListener('error', e => app.fail(messageOf(e.error ?? e.message)))
-  window.addEventListener('unhandledrejection', e => app.fail(messageOf(e.reason)))
-  app.start()
-  return app
+  const canvas = document.querySelector<HTMLCanvasElement>('#screens > canvas#ui')
+  if (views === null || screens === null || canvas === null) throw new Error('game.html needs main#views and div#screens holding canvas#ui')
+  let created: App | null = null
+  const host = await createUaaHost({
+    canvas, width: Math.max(1, screens.clientWidth), height: Math.max(1, screens.clientHeight), dpr: window.devicePixelRatio || 1,
+    onCommand: c => created?.command(c),
+  })
+  if (taken()) {
+    host.destroy()
+    return null
+  }
+  const booted = new App(views, screens, host, window.location.search)
+  created = booted
+  window.addEventListener('error', e => booted.fail(messageOf(e.error ?? e.message)))
+  window.addEventListener('unhandledrejection', e => booted.fail(messageOf(e.reason)))
+  booted.start()
+  return booted
+}
+
+// Nothing mounted: write the message into the page rather than only the console.
+function bootFailed(e: unknown): void {
+  console.error(e)
+  document.body.textContent = `Royal Fiesta could not start: ${bootMessage(e)}`
+  document.body.style.cssText = 'color: #fff; font: bold 18px system-ui, sans-serif; padding: 32px'
 }
 
 // The GPU runner loads the page without a query, so every load registers the ops (no side effect until
 // one is called); ?mode=ops registers them alone, with no App. The first op call tears the App down.
 const opsMode = new URLSearchParams(window.location.search).get('mode') === 'ops'
 let app: App | null = null
+let opTookPage = false
 try {
-  installGameOps(() => app?.dispose())
-  if (!opsMode) app = start()
+  installGameOps(() => {
+    opTookPage = true
+    app?.dispose()
+  })
+  if (!opsMode) start(() => opTookPage).then(a => { app = a }, bootFailed)
 } catch (e) {
-  // Nothing mounted: write the message into the page rather than only the console.
-  document.body.textContent = `Royal Fiesta could not start: ${messageOf(e)}`
-  document.body.style.cssText = 'color: #fff; font: bold 18px system-ui, sans-serif; padding: 32px'
+  bootFailed(e)
 }

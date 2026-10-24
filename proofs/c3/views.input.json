@@ -85,6 +85,33 @@
       "views": [
         "three-quarter"
       ]
+    },
+    {
+      "name": "candy-rotating-door",
+      "assets": [
+        "candy.rotating-door"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-seesaw-plank",
+      "assets": [
+        "candy.seesaw-plank"
+      ],
+      "views": [
+        "three-quarter"
+      ]
+    },
+    {
+      "name": "candy-wall-block",
+      "assets": [
+        "candy.wall-block"
+      ],
+      "views": [
+        "three-quarter"
+      ]
     }
   ]
 }

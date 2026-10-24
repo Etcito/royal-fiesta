@@ -3,254 +3,321 @@
   "version": 1,
   "game": "royal-fiesta",
   "id": "candy.seesaw-plank",
-  "name": "See-saw Plank",
+  "name": "candy-seesaw-plank",
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "quad"
   },
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "See-saw Plank",
+    "name": "candy-seesaw-plank",
     "root": [
       "candy_seesaw_plank"
     ],
     "nodes": {
       "candy_seesaw_plank": {
         "id": "candy_seesaw_plank",
-        "name": "See-saw Plank",
+        "name": "candy-seesaw-plank",
         "kind": "group",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#b0b0b0",
-        "material": null,
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
         "children": [
-          "plank"
+          "collider_plank",
+          "plank",
+          "rim_r",
+          "rim_l",
+          "rim_f",
+          "rim_b",
+          "zigzag",
+          "fulcrum",
+          "fulcrum_cap_r",
+          "fulcrum_cap_l"
         ],
-        "modifiers": [],
-        "asset": "candy.seesaw-plank",
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.seesaw-plank",
+          "category": "obstacle",
+          "world": "candy"
+        },
         "mesher": {
-          "output": "lowpoly"
-        }
+          "output": "quad"
+        },
+        "gameCollision": false
+      },
+      "collider_plank": {
+        "id": "collider_plank",
+        "name": "collider_plank",
+        "kind": "roundBox",
+        "visible": false,
+        "params": {
+          "radius": 0.05,
+          "size": [3, 0.4, 8]
+        },
+        "gameCollision": true
       },
       "plank": {
         "id": "plank",
         "name": "plank",
-        "kind": "roundBox",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#4de6d9",
-        "material": "teal",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "kind": "box",
+        "round": 0.18,
+        "material": "candy-yellow",
         "params": {
-          "size": [
-            3,
-            0.4,
-            8
-          ],
-          "radius": 0.05
-        }
+          "size": [2.7, 0.42, 7.6]
+        },
+        "gameCollision": false
+      },
+      "rim_r": {
+        "id": "rim_r",
+        "name": "rim_r",
+        "kind": "box",
+        "transform": {
+          "position": [1.32, 0.03, 0]
+        },
+        "round": 0.28,
+        "material": "candy-pink",
+        "params": {
+          "size": [0.56, 0.6, 8.1]
+        },
+        "gameCollision": false
+      },
+      "rim_l": {
+        "id": "rim_l",
+        "name": "rim_l",
+        "kind": "box",
+        "transform": {
+          "position": [-1.32, 0.03, 0]
+        },
+        "round": 0.28,
+        "material": "candy-pink",
+        "params": {
+          "size": [0.56, 0.6, 8.1]
+        },
+        "gameCollision": false
+      },
+      "rim_f": {
+        "id": "rim_f",
+        "name": "rim_f",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.03, 3.78]
+        },
+        "round": 0.28,
+        "material": "candy-pink",
+        "params": {
+          "size": [3.2, 0.6, 0.56]
+        },
+        "gameCollision": false
+      },
+      "rim_b": {
+        "id": "rim_b",
+        "name": "rim_b",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.03, -3.78]
+        },
+        "round": 0.28,
+        "material": "candy-pink",
+        "params": {
+          "size": [3.2, 0.6, 0.56]
+        },
+        "gameCollision": false
+      },
+      "zigzag": {
+        "id": "zigzag",
+        "name": "zigzag",
+        "kind": "extrude",
+        "transform": {
+          "position": [0, 0.2, 0],
+          "rotation": [-90, 0, -90]
+        },
+        "round": 0.02,
+        "material": "candy-white",
+        "params": {
+          "depth": 0.1,
+          "profile": {
+            "points": [
+              {
+                "p": [-3.2, 0.26]
+              },
+              {
+                "p": [-2.4, -0.74]
+              },
+              {
+                "p": [-1.6, 0.26]
+              },
+              {
+                "p": [-0.8, -0.74]
+              },
+              {
+                "p": [0, 0.26]
+              },
+              {
+                "p": [0.8, -0.74]
+              },
+              {
+                "p": [1.6, 0.26]
+              },
+              {
+                "p": [2.4, -0.74]
+              },
+              {
+                "p": [3.2, 0.26]
+              },
+              {
+                "p": [3.2, 0.74]
+              },
+              {
+                "p": [2.4, -0.26]
+              },
+              {
+                "p": [1.6, 0.74]
+              },
+              {
+                "p": [0.8, -0.26]
+              },
+              {
+                "p": [0, 0.74]
+              },
+              {
+                "p": [-0.8, -0.26]
+              },
+              {
+                "p": [-1.6, 0.74]
+              },
+              {
+                "p": [-2.4, -0.26]
+              },
+              {
+                "p": [-3.2, 0.74]
+              }
+            ]
+          }
+        },
+        "gameCollision": false
+      },
+      "fulcrum": {
+        "id": "fulcrum",
+        "name": "fulcrum",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0, -0.32, 0],
+          "rotation": [0, 0, 90]
+        },
+        "round": 0.08,
+        "material": "candy-blue",
+        "params": {
+          "height": 2.2,
+          "radius": 0.3
+        },
+        "gameCollision": false
+      },
+      "fulcrum_cap_r": {
+        "id": "fulcrum_cap_r",
+        "name": "fulcrum_cap_r",
+        "kind": "sphere",
+        "transform": {
+          "position": [1.12, -0.32, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "radius": 0.2
+        },
+        "gameCollision": false
+      },
+      "fulcrum_cap_l": {
+        "id": "fulcrum_cap_l",
+        "name": "fulcrum_cap_l",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.12, -0.32, 0]
+        },
+        "material": "candy-yellow",
+        "params": {
+          "radius": 0.2
+        },
+        "gameCollision": false
       }
     },
     "materials": {
-      "teal": {
-        "name": "teal",
+      "candy-pink": {
+        "name": "candy-pink",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#4de6d9",
-                "in.roughness": 0.6
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.3
               }
             }
           ],
           "links": []
         }
       }
-    },
-    "shapes": {},
-    "views": {},
-    "settings": {
-      "mesh": {
-        "detail": null,
-        "maxDepth": 9,
-        "adaptivity": 0.02,
-        "sharpAngleDeg": 30
-      },
-      "lowpoly": {
-        "targetTriangles": 2000,
-        "keepWeight": 10,
-        "featureAngleDeg": 35
-      },
-      "uv": {
-        "texelsPerMeter": null,
-        "padding": 8
-      },
-      "bake": {
-        "resolution": 1024,
-        "maps": [
-          "normal",
-          "baseColor",
-          "orm"
-        ],
-        "cageDistance": null,
-        "samples": 1
-      },
-      "export": {
-        "geometry": "lowpoly",
-        "skin": false,
-        "lods": [
-          1
-        ],
-        "quad": {
-          "targetFaces": 1000,
-          "subdivide": 0,
-          "method": "auto",
-          "features": "auto",
-          "featureAngleDeg": 35,
-          "adaptive": true,
-          "alignCurvature": true,
-          "seed": 1,
-          "detail": true,
-          "maxFacesRatio": 3
-        },
-        "poly": {
-          "segments": 16,
-          "additive": "keep"
-        }
-      },
-      "paramesh": {
-        "fieldResolution": 96,
-        "precision": "f16",
-        "subdivisions": 16,
-        "transitionLoops": 2
-      }
     }
   },
   "collision": [
     {
       "shape": "roundCuboid",
-      "half": [
-        1.45,
-        0.15,
-        3.95
-      ],
-      "border": 0.05,
-      "t": [
-        0,
-        0,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [1.45, 0.15, 3.95],
+      "borderRadius": 0.05
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [
-      -1.5,
-      -0.2,
-      -4
-    ],
-    "max": [
-      1.5,
-      0.2,
-      4
-    ]
+    "min": [-1.6, -0.62, -4.06],
+    "max": [1.6, 0.33, 4.06]
   },
-  "hash": "3e860b8bba510a01889c1a5ea2a027c681b11009a8f97b5b0157db4748238b4c"
+  "hash": "e8f975daad5862ee0b4a27c92430c2d88c887fe05f93d0d996801eda31bf0847"
 }

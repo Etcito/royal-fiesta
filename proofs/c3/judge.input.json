@@ -60,6 +60,23 @@
           "description": "candy.checkpoint-gate, a smaller checkpoint arch of the same candy family as ref-1's crown arch: two chunky round inflatable posts (one pink with a blue band, one blue with a pink band) ringed by rounded yellow rims on yellow bases, a rounded yellow beam across the top with a pink band printed with a bold white zigzag, and a small pink pennant flag on a short white pole at the centre of the beam, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
         }
       ]
+    },
+    {
+      "name": "c3-door-seesaw-wall",
+      "views": [
+        {
+          "png": "out/c3/candy-rotating-door-three-quarter.png",
+          "description": "candy.rotating-door, a rotating door obstacle like ref-1's inflatable obstacles: two crossed glossy inflatable panels, one pink and one blue, each framed by chunky rounded yellow inflatable edges and printed with a bold white zigzag, turning on a central yellow hub with pink and blue rings and a pink ball on top, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        },
+        {
+          "png": "out/c3/candy-seesaw-plank-three-quarter.png",
+          "description": "candy.seesaw-plank, a see-saw plank like ref-1's inflatable platforms: a long rounded glossy yellow plank framed by puffy pink inflatable rims on all four sides, with a bold white zigzag running along its top and a blue round fulcrum with yellow end caps under its middle, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        },
+        {
+          "png": "out/c3/candy-wall-block-three-quarter.png",
+          "description": "candy.wall-block, a padded wall like ref-1's inflatable walls: a long puffy wall made of five rounded inflatable cushions alternating blue and pink, sitting on a rounded yellow base under a rounded yellow top rail, with a white zigzag trim running along both faces, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+        }
+      ]
     }
   ]
 }

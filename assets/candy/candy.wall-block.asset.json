@@ -3,252 +3,331 @@
   "version": 1,
   "game": "royal-fiesta",
   "id": "candy.wall-block",
-  "name": "Wall Block",
+  "name": "candy-wall-block",
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "quad"
   },
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "Wall Block",
+    "name": "candy-wall-block",
     "root": [
       "candy_wall_block"
     ],
     "nodes": {
       "candy_wall_block": {
         "id": "candy_wall_block",
-        "name": "Wall Block",
+        "name": "candy-wall-block",
         "kind": "group",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#b0b0b0",
-        "material": null,
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
         "children": [
-          "wall"
+          "collider_wall",
+          "base",
+          "cushion_0",
+          "cushion_1",
+          "cushion_2",
+          "cushion_3",
+          "cushion_4",
+          "top_rail",
+          "zigzag"
         ],
-        "modifiers": [],
-        "asset": "candy.wall-block",
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.wall-block",
+          "category": "obstacle",
+          "world": "candy"
+        },
         "mesher": {
-          "output": "lowpoly"
-        }
+          "output": "quad"
+        },
+        "gameCollision": false
       },
-      "wall": {
-        "id": "wall",
-        "name": "wall",
+      "collider_wall": {
+        "id": "collider_wall",
+        "name": "collider_wall",
         "kind": "box",
-        "visible": true,
-        "locked": false,
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "pivot": [
-          0,
-          0,
-          0
-        ],
-        "pose": {
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ]
-        },
-        "op": "union",
-        "smooth": 0,
-        "colorBlend": "smooth",
-        "round": 0,
-        "roundStyle": "round",
-        "shell": 0,
-        "noise": null,
-        "color": "#ffd140",
-        "material": "yellow",
-        "tags": [],
-        "rigid": false,
-        "lattice": null,
+        "visible": false,
         "params": {
-          "size": [
-            1,
-            2,
-            10
-          ]
-        }
+          "size": [1, 2, 10]
+        },
+        "gameCollision": true
+      },
+      "base": {
+        "id": "base",
+        "name": "base",
+        "kind": "box",
+        "transform": {
+          "position": [0, -0.8, 0]
+        },
+        "round": 0.2,
+        "material": "candy-yellow",
+        "params": {
+          "size": [1.25, 0.4, 10.1]
+        },
+        "gameCollision": false
+      },
+      "cushion_0": {
+        "id": "cushion_0",
+        "name": "cushion_0",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.05, -4]
+        },
+        "round": 0.42,
+        "material": "candy-blue",
+        "params": {
+          "size": [1.15, 1.6, 2.02]
+        },
+        "gameCollision": false
+      },
+      "cushion_1": {
+        "id": "cushion_1",
+        "name": "cushion_1",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.05, -2]
+        },
+        "round": 0.42,
+        "material": "candy-pink",
+        "params": {
+          "size": [1.15, 1.6, 2.02]
+        },
+        "gameCollision": false
+      },
+      "cushion_2": {
+        "id": "cushion_2",
+        "name": "cushion_2",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.05, 0]
+        },
+        "round": 0.42,
+        "material": "candy-blue",
+        "params": {
+          "size": [1.15, 1.6, 2.02]
+        },
+        "gameCollision": false
+      },
+      "cushion_3": {
+        "id": "cushion_3",
+        "name": "cushion_3",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.05, 2]
+        },
+        "round": 0.42,
+        "material": "candy-pink",
+        "params": {
+          "size": [1.15, 1.6, 2.02]
+        },
+        "gameCollision": false
+      },
+      "cushion_4": {
+        "id": "cushion_4",
+        "name": "cushion_4",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.05, 4]
+        },
+        "round": 0.42,
+        "material": "candy-blue",
+        "params": {
+          "size": [1.15, 1.6, 2.02]
+        },
+        "gameCollision": false
+      },
+      "top_rail": {
+        "id": "top_rail",
+        "name": "top_rail",
+        "kind": "box",
+        "transform": {
+          "position": [0, 0.84, 0]
+        },
+        "round": 0.17,
+        "material": "candy-yellow",
+        "params": {
+          "size": [1.25, 0.34, 10.1]
+        },
+        "gameCollision": false
+      },
+      "zigzag": {
+        "id": "zigzag",
+        "name": "zigzag",
+        "kind": "extrude",
+        "transform": {
+          "position": [0, 0.05, 0],
+          "rotation": [0, 90, 0]
+        },
+        "round": 0.02,
+        "material": "candy-white",
+        "params": {
+          "depth": 1.2,
+          "profile": {
+            "points": [
+              {
+                "p": [-4.9, 0.13]
+              },
+              {
+                "p": [-4.0833, -0.43]
+              },
+              {
+                "p": [-3.2667, 0.13]
+              },
+              {
+                "p": [-2.45, -0.43]
+              },
+              {
+                "p": [-1.6333, 0.13]
+              },
+              {
+                "p": [-0.8167, -0.43]
+              },
+              {
+                "p": [0, 0.13]
+              },
+              {
+                "p": [0.8167, -0.43]
+              },
+              {
+                "p": [1.6333, 0.13]
+              },
+              {
+                "p": [2.45, -0.43]
+              },
+              {
+                "p": [3.2667, 0.13]
+              },
+              {
+                "p": [4.0833, -0.43]
+              },
+              {
+                "p": [4.9, 0.13]
+              },
+              {
+                "p": [4.9, 0.43]
+              },
+              {
+                "p": [4.0833, -0.13]
+              },
+              {
+                "p": [3.2667, 0.43]
+              },
+              {
+                "p": [2.45, -0.13]
+              },
+              {
+                "p": [1.6333, 0.43]
+              },
+              {
+                "p": [0.8167, -0.13]
+              },
+              {
+                "p": [0, 0.43]
+              },
+              {
+                "p": [-0.8167, -0.13]
+              },
+              {
+                "p": [-1.6333, 0.43]
+              },
+              {
+                "p": [-2.45, -0.13]
+              },
+              {
+                "p": [-3.2667, 0.43]
+              },
+              {
+                "p": [-4.0833, -0.13]
+              },
+              {
+                "p": [-4.9, 0.43]
+              }
+            ]
+          }
+        },
+        "gameCollision": false
       }
     },
     "materials": {
-      "yellow": {
-        "name": "yellow",
+      "candy-pink": {
+        "name": "candy-pink",
         "graph": {
           "nodes": [
             {
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#ffd140",
-                "in.roughness": 0.6
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.3
               }
             }
           ],
           "links": []
         }
       }
-    },
-    "shapes": {},
-    "views": {},
-    "settings": {
-      "mesh": {
-        "detail": null,
-        "maxDepth": 9,
-        "adaptivity": 0.02,
-        "sharpAngleDeg": 30
-      },
-      "lowpoly": {
-        "targetTriangles": 2000,
-        "keepWeight": 10,
-        "featureAngleDeg": 35
-      },
-      "uv": {
-        "texelsPerMeter": null,
-        "padding": 8
-      },
-      "bake": {
-        "resolution": 1024,
-        "maps": [
-          "normal",
-          "baseColor",
-          "orm"
-        ],
-        "cageDistance": null,
-        "samples": 1
-      },
-      "export": {
-        "geometry": "lowpoly",
-        "skin": false,
-        "lods": [
-          1
-        ],
-        "quad": {
-          "targetFaces": 1000,
-          "subdivide": 0,
-          "method": "auto",
-          "features": "auto",
-          "featureAngleDeg": 35,
-          "adaptive": true,
-          "alignCurvature": true,
-          "seed": 1,
-          "detail": true,
-          "maxFacesRatio": 3
-        },
-        "poly": {
-          "segments": 16,
-          "additive": "keep"
-        }
-      },
-      "paramesh": {
-        "fieldResolution": 96,
-        "precision": "f16",
-        "subdivisions": 16,
-        "transitionLoops": 2
-      }
     }
   },
   "collision": [
     {
       "shape": "cuboid",
-      "half": [
-        0.5,
-        1,
-        5
-      ],
-      "t": [
-        0,
-        0,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.5, 1, 5]
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [
-      -0.5,
-      -1,
-      -5
-    ],
-    "max": [
-      0.5,
-      1,
-      5
-    ]
+    "min": [-0.625, -1, -5.05],
+    "max": [0.625, 1.01, 5.05]
   },
-  "hash": "98eb01e8fb1399bd315a3a98b38e4b73f6816b50e944a845f61f9c71b1618cf9"
+  "hash": "f6cfa257a9dc3546664dcec7ab39577b0fe9ce562b4b00b9cc5daba41e432bff"
 }

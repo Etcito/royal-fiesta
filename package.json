@@ -13,6 +13,7 @@
   "scripts": {
     "test": "node --experimental-strip-types --test \"tools/test/*.test.ts\" \"packages/*/test/*.test.ts\" \"apps/headless/test/*.test.ts\" \"apps/web/test/*.test.ts\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:mama": "tsc --noEmit -p tsconfig.mama.json",
     "build": "npm run web:build",
     "guard": "node --experimental-strip-types tools/guard.ts",
     "bricks": "node --experimental-strip-types tools/bricks.ts",

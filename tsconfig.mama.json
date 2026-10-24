@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@etcito/mama/*": ["./.bricks/MAMA/src/*"]
+    },
+    "erasableSyntaxOnly": false,
+    "verbatimModuleSyntax": false
+  },
+  "include": [
+    "apps/web/src/sdf/mama",
+    "apps/headless/src/mama",
+    "apps/web/src/types-mama.d.ts",
+    "apps/web/src/types-assets.d.ts"
+  ]
+}

@@ -102,3 +102,7 @@ Keys: WASD/arrows move, Space jump, Shift dive, E grab, 1-4 emote. Walk onto the
 ## Assets
 
 Assets are never stored in git. They live in the content-addressed asset store (https://assets.etcito.com); the repository keeps only small JSON fixtures. The policy, the store layout and the write-access rules are in [docs/private-assets.md](docs/private-assets.md).
+
+## UI
+
+The menus and the round HUD are drawn by uaa on a WebGPU canvas from `ui/*.ui.json` and `ui/screens.ui-doc.json`. How the assets are authored, previewed and wired, the Fredoka font, and the proof command are in [docs/ui.md](docs/ui.md).

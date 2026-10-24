@@ -142,7 +142,7 @@ function listFiles(dir: string, rel = ''): string[] {
   return out
 }
 
-const STEP_TIMEOUT_S = { clone: 600, ci: 1800, bricks: 1800, build: 1800, pack: 600 } as const
+const STEP_TIMEOUT_S = { clone: 600, uaa: 1800, ci: 1800, bricks: 1800, build: 1800, pack: 600 } as const
 
 // A path `from` must exist before anything runs, so a typo never reaches git or the network.
 function sourceOf(from: string): { arg: string; path: string | null } {
@@ -198,6 +198,7 @@ export async function etcitoBuild(opts: { from: string; out: string; record?: st
       ? ['clone', '--quiet', '--depth', '1', source.arg, clone]
       : ['clone', '--quiet', '--no-local', source.arg, clone]
     const ok = await step('git', cloneArgs, work, STEP_TIMEOUT_S.clone)
+      && await step('npm', ['run', 'bricks', '--', 'fetch', 'uaa'], clone, STEP_TIMEOUT_S.uaa, true)
       && await step('npm', ['ci'], clone, STEP_TIMEOUT_S.ci)
       && await step('npm', ['run', 'bricks', '--', 'fetch', 'mama'], clone, STEP_TIMEOUT_S.bricks, true)
       && await step('npm', ['run', 'build'], clone, STEP_TIMEOUT_S.build)

@@ -19,11 +19,15 @@
     "smoke": "node --experimental-strip-types apps/headless/src/smoke.ts",
     "rf": "node --experimental-strip-types apps/headless/src/cli.ts",
     "audio:bake": "node --experimental-strip-types tools/bake-audio.ts",
-    "web:build": "npm run audio:bake && npm run build -w @royal-fiesta/web",
+    "ui:fonts": "node --experimental-strip-types tools/uiFont.ts bundle",
+    "web:build": "npm run audio:bake && npm run ui:fonts && npm run build -w @royal-fiesta/web",
     "play": "node --experimental-strip-types tools/play.ts",
     "wavedash": "node --experimental-strip-types tools/wavedash.ts",
     "etcito:build": "node --experimental-strip-types tools/etcitoBuild.ts",
     "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "dependencies": {
+    "@etcito/uaa": "file:../uaa"
   },
   "devDependencies": {
     "@etcito/raa-assets-tools": "https://github.com/Etcito/raa-assets-tools/releases/download/v0.1.0/raa-assets-tools-0.1.0.tgz",

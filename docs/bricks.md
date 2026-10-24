@@ -30,28 +30,37 @@ the feature it brings).
 
 ## bricks.pins.json
 
-MAMA is private and has no tarball, so it is pinned by commit instead. `bricks.pins.json` is the one
-pin table (S15):
+MAMA and uaa are private and have no tarballs, so they are pinned by commit instead.
+`bricks.pins.json` is the one pin table (S15):
+
+| Brick | Repository | Consumed as |
+| --- | --- | --- |
+| MAMA | `Etcito/MAMA` | `.bricks/MAMA` (Vite alias; see below) |
+| uaa | `Etcito/uaa` | the `file:../uaa` package dependency |
 
 ```json
-{ "MAMA": { "repo": "Etcito/MAMA", "commit": "<40 lowercase hex>" } }
+{
+  "MAMA": { "repo": "Etcito/MAMA", "commit": "<40 lowercase hex>" },
+  "UAA": { "repo": "Etcito/uaa", "commit": "<40 lowercase hex>" }
+}
 ```
 
-`readPins` (and `npm run bricks -- pins`) accepts only the `MAMA` key, a `repo` of the form
+`readPins` (and `npm run bricks -- pins`) accepts the `MAMA` and `UAA` keys, a `repo` of the form
 `owner/name` and a `commit` of 40 lowercase hex. Anything else is refused with its pointer, e.g.
-`[bricks] bricks.pins.json#/MAMA/commit: expected 40 lowercase hex, got "abc"; fix the pin in bricks.pins.json`.
+`[bricks] bricks.pins.json#/UAA/commit: expected 40 lowercase hex, got "abc"; fix the UAA pin in bricks.pins.json`.
 
-To update the pin:
+To update a pin:
 
-1. take the commit from a real source, never by hand: `git -C ../MAMA rev-parse HEAD` in a sibling
-   checkout of the wanted revision, or the GitHub page of that commit;
+1. take the commit from a real source, never by hand: `git -C ../MAMA rev-parse HEAD` or
+   `git -C ../uaa rev-parse HEAD` in a sibling checkout of the wanted revision, or the GitHub page
+   of that commit;
 2. write it into `bricks.pins.json` (2-space JSON, trailing newline);
-3. run `npm run bricks -- pins`, then `npm run bricks -- fetch mama` and `npm run bricks -- check`
-   (the MAMA line is PASS, not WARN);
+3. run `npm run bricks -- pins`, then `npm run bricks -- fetch mama` (or `fetch uaa`) and
+   `npm run bricks -- check` (the MAMA line is PASS, not WARN);
 4. commit the pins file alone, or with the change that needs it. The commit message says why the
    pin moves.
 
-Any milestone that needs a newer MAMA may update the pin.
+Any milestone that needs a newer MAMA or uaa may update its pin.
 
 ## Resolving .bricks/MAMA
 
@@ -85,12 +94,37 @@ When MAMA is resolved, Vite aliases `@etcito/mama/*` to `.bricks/MAMA/src/*` and
 still pass, and only the SDF loading path refuses at run time with `MAMA not available: <reason>`.
 There is no fallback to another content source. The gap is recorded in `docs/brick-gaps.md#mama`.
 
+## Resolving ../uaa
+
+The game imports uaa as `file:../uaa`, so the checkout must be the sibling itself; a `.bricks/UAA`
+clone would not resolve the package exports (`dist/uaa.js`, `dist/webgpu.js`). `uaaSource()` is
+offline and synchronous:
+
+1. `.bricks/UAA` exists: a symlink is a sibling, a directory is a clone (HEAD read from its git
+   files);
+2. else the `../uaa` sibling;
+3. else absent, with a reason.
+
+`npm run bricks -- fetch uaa` (`fetchUaa`) makes the sibling and `.bricks/UAA`:
+
+1. `../uaa` exists at the pinned commit: it (re)links `.bricks/UAA` to it. A sibling at another
+   commit is refused (`expected the pin <commit>`); check out the pin or update `bricks.pins.json`;
+2. else, with a token: in `../uaa` it runs `git init`, `git fetch --depth 1
+   https://github.com/<repo>.git <commit>`, `git checkout FETCH_HEAD`, then links `.bricks/UAA`.
+   If any step fails, `../uaa` is removed again, so a half clone is never used;
+3. else it refuses:
+   `[bricks] UAA: not found; clone Etcito/uaa next to this repository or set MAMA_TOKEN, GH_TOKEN or GITHUB_TOKEN on the build machine`.
+
+When `../uaa/dist` is missing, fetch runs `npm ci` and `npm run build` in `../uaa` (for a sibling
+and for a fresh clone), so the `file:../uaa` exports resolve. Every failed step is a refusal that
+names the step and the fix.
+
 ## Token variables
 
-The clone of the private repository needs a GitHub token with read access to `Etcito/MAMA`.
-`githubToken()` takes it from `MAMA_TOKEN`, else `GH_TOKEN`, else `GITHUB_TOKEN`.
+The clone of either private repository needs a GitHub token with read access to `Etcito/MAMA` and
+`Etcito/uaa`. `githubToken()` takes it from `MAMA_TOKEN`, else `GH_TOKEN`, else `GITHUB_TOKEN`.
 
-- Set it on the build machine only: the shell of the machine that runs `fetch mama`, or a CI secret.
+- Set it on the build machine only: the shell of the machine that runs `fetch mama` or `fetch uaa`, or a CI secret.
   It is never committed (no `.env` file, script, record or doc carries it) and never printed.
 - It reaches git only through the environment of `git fetch`: `GIT_CONFIG_COUNT=1`,
   `GIT_CONFIG_KEY_0=http.https://github.com/.extraheader` and
@@ -128,6 +162,7 @@ RF_RAA_LOCAL=1 npm run build
 npm run bricks -- check                # GameSaloon packages, Rapier, the MAMA line, the RF_RAA_LOCAL line
 npm run bricks -- where <gamesaloon-public|raa-assets-tools|raa|MAMA>
 npm run bricks -- fetch mama           # link or clone .bricks/MAMA, print its kind and commit
+npm run bricks -- fetch uaa            # link or clone ../uaa at the pin, build it, print its kind and commit
 npm run bricks -- pins                 # print the validated bricks.pins.json
 ```
 
@@ -152,4 +187,4 @@ above. Per `docs/v0-port.md`:
 | `repoRoot` from tools/bricks.ts (m11, m14, controlsProbe, previewWavedash, storeCache) | take | unchanged on main |
 | `brickDir('raa')` in the m7-web and m8-hub proofs | keep-base (m7-proof, m8-proof) | main reads `@etcito/raa`; `brickDir('raa')` serves only the local override and returns null when absent |
 | `brickDir('gamesaloon-rollback')` | no target | not a brick name: the rollback packages are releases |
-| `linkBricks` | no target | the only link is `.bricks/MAMA`, made by `fetch mama` |
+| `linkBricks` | no target | the only links are `.bricks/MAMA` (`fetch mama`) and `.bricks/UAA` (`fetch uaa`) |

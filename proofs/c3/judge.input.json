@@ -113,15 +113,15 @@
       "views": [
         {
           "png": "out/c3/candy-banner-three-quarter.png",
-          "description": "candy.banner, a crown banner like the pennants lining the track in ref-1: a 4 m pole with white and pink candy stripes on a round pink base, topped by a glossy yellow ball, with a yellow crossbar holding a hanging blue flag that carries a yellow crown, pink hems and a white zigzag lower edge, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
+          "description": "candy.banner, a crown banner like the pennants lining the track in ref-1: a 4 m pole with white and pink candy stripes on a round pink base, topped by a glossy yellow ball, with a yellow crossbar holding a hanging blue flag that carries a yellow crown, pink hems and a white zigzag-cut lower edge (a flat cut-out fringe, not a glossy inflatable), in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky"
         },
         {
           "png": "out/c3/candy-hot-air-balloon-three-quarter.png",
-          "description": "candy.hot-air-balloon, a hot-air balloon like the one floating in ref-1's sky: a round, slightly teardrop envelope with vertical pink, yellow, blue and white stripes meeting at a yellow top cap, with a small orange basket with a pink rim hanging below on thin ropes, about 6 m tall, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
+          "description": "candy.hot-air-balloon, a hot-air balloon like the one floating in ref-1's sky: a round, slightly teardrop envelope with vertical pink, yellow, blue and white stripes meeting at a yellow top cap, with a small orange basket with a pink rim hanging below on thin ropes, about 6 m tall, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky"
         },
         {
           "png": "out/c3/candy-tower-three-quarter.png",
-          "description": "candy.tower, a background castle tower like the purple towers behind the track in ref-1: a tall 14 m purple cylindrical tower on a chunky yellow plinth, ringed by thick yellow trim bands, a chunky yellow collar with yellow ball studs, small blue windows, and a rounded glossy pink dome roof with a yellow ball finial, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
+          "description": "candy.tower, a background castle tower like the purple towers behind the track in ref-1: a tall 14 m purple cylindrical tower on a chunky yellow plinth, ringed by thick yellow trim bands, a chunky yellow collar with yellow ball studs, small blue windows, and a rounded glossy pink dome roof with a yellow ball finial, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky"
         }
       ]
     }

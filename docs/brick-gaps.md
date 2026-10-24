@@ -37,3 +37,11 @@ sibling link or a clone made with a build-machine token; docs/bricks.md).
   mesh cache key). A sibling whose HEAD differs from the pin gives a WARN, never a failure.
 - A published MAMA release (a tarball like the other bricks) would remove the token, the clone and
   the stub from the public build path.
+
+## ui font upload
+
+`@etcito/raa-assets-tools` 0.1.0 has no remote put: `raa-assets put` only writes a local store
+(`--store <dir>`). `tools/uiFont.ts upload` therefore stages the WOFF2 with
+`raa-assets put --store out/font-store`, then publishes the staged object to
+https://assets.etcito.com over SSH (scp-form `ASSET_STORE_SSH`, private key path in
+`ASSET_STORE_KEY`), and verifies the object URL. A remote put in the CLI would remove the SSH step.

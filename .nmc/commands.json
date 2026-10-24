@@ -1,37 +1,19 @@
 [
   {
-    "name": "render-views",
-    "command": "node --experimental-strip-types tools/renderViews.ts proofs/c2/views.input.json",
-    "timeout_s": 1200
+    "name": "font-fetch",
+    "command": "node --experimental-strip-types tools/uiFont.ts fetch",
+    "timeout_s": 300
   },
   {
-    "name": "views-record",
-    "command": "node --experimental-strip-types tools/viewsRecord.ts proofs/c2/views.input.json",
+    "name": "font-upload",
+    "command": "node --experimental-strip-types tools/uiFont.ts upload",
     "timeout_s": 300,
-    "after": ["render-views"]
+    "after": ["font-fetch"]
   },
   {
-    "name": "judge-penguin",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c2/judge.input.json penguin",
-    "timeout_s": 1200,
-    "after": ["render-views"]
-  },
-  {
-    "name": "judge-penguin-propeller-hat",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c2/judge.input.json penguin-propeller-hat",
-    "timeout_s": 1200,
-    "after": ["render-views"]
-  },
-  {
-    "name": "judge-penguin-fish-scarf",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c2/judge.input.json penguin-fish-scarf",
-    "timeout_s": 1200,
-    "after": ["render-views"]
-  },
-  {
-    "name": "judge-penguin-pineapple-suit",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c2/judge.input.json penguin-pineapple-suit",
-    "timeout_s": 1200,
-    "after": ["render-views"]
+    "name": "font-verify",
+    "command": "node --experimental-strip-types tools/uiFont.ts verify",
+    "timeout_s": 120,
+    "after": ["font-upload"]
   }
 ]

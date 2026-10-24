@@ -1,0 +1,13 @@
+{
+  "fonts": [
+    {
+      "family": "Fredoka",
+      "weight": 700,
+      "url": "https://assets.etcito.com/objects/ee/ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16",
+      "sha256": "ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16",
+      "bytes": 15900,
+      "license": "OFL-1.1",
+      "source": "https://cdn.jsdelivr.net/fontsource/fonts/fredoka@5.3.0/latin-700-normal.woff2"
+    }
+  ]
+}

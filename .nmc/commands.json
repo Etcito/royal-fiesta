@@ -1,26 +1,36 @@
 [
   {
-    "name": "font-fetch",
-    "command": "node --experimental-strip-types tools/uiFont.ts fetch",
-    "timeout_s": 300,
+    "name": "uaa-built",
+    "command": "node -e \"const fs=require('fs');for(const f of ['../uaa/dist/uaa.js','../uaa/dist/webgpu.js','../uaa/dist/types/index.d.ts'])fs.statSync(f);console.log('uaa sibling is prebuilt (read-only bind): dist present')\"",
+    "timeout_s": 60,
     "cwd": "."
   },
   {
-    "name": "font-upload",
-    "command": "node --experimental-strip-types tools/uiFont.ts upload",
-    "timeout_s": 600,
+    "name": "web-build",
+    "command": "npm run web:build",
+    "timeout_s": 900,
     "cwd": ".",
-    "after": [
-      "font-fetch"
-    ]
+    "after": ["uaa-built"]
   },
   {
-    "name": "font-verify",
-    "command": "node --experimental-strip-types tools/uiFont.ts verify",
-    "timeout_s": 300,
+    "name": "tour-render",
+    "command": "env NMC_GPU_WAIT_S=1500 node --experimental-strip-types tools/uiTourRecord.ts --render proofs/ui/tour.input.json out/ui",
+    "timeout_s": 1800,
     "cwd": ".",
-    "after": [
-      "font-upload"
-    ]
+    "after": ["web-build"]
+  },
+  {
+    "name": "tour-record",
+    "command": "node --experimental-strip-types tools/uiTourRecord.ts out/ui",
+    "timeout_s": 120,
+    "cwd": ".",
+    "after": ["tour-render"]
+  },
+  {
+    "name": "proof-evidence",
+    "command": "node scripts/proof/ui-screens.mjs --only evidence",
+    "timeout_s": 120,
+    "cwd": ".",
+    "after": ["tour-record"]
   }
 ]

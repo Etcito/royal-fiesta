@@ -1,15 +1,15 @@
 [
   {
-    "name": "preview-badge-round",
-    "command": "node --experimental-strip-types tools/uiPreview.ts badge.round normal",
-    "timeout_s": 600
+    "name": "preview-button-primary",
+    "command": "node --experimental-strip-types tools/uiPreview.ts button.primary",
+    "timeout_s": 900
   },
   {
-    "name": "judge-badge-round",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/badge.round.normal.png --description \"A game HUD badge seen alone on a sky-blue background, in the glossy inflatable toy style of ref-1 (bright plastic beach-ball look): a small perfectly round sunny-yellow ball with a thick bright orange rim, a soft molded inflated edge, and a bright white specular highlight with a second thin glint near the top left. There is no text on it, because the game draws its rounded dark-purple count on top.\" --reference /refs/ref-1.png --min-score 6 --aspect design",
+    "name": "judge-button-primary-normal",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/button.primary.normal.png --description \"A game UI primary button shown alone on a sky-blue background, styled like the inflatable pool floats of a candy-coloured party game: a fat glossy inflatable pill in hot pink with a darker pink rim, a soft inner shadow, a bright white specular streak on the top-left and a puffy welded seam running around inside the edge. No text on it (the game adds the label).\" --reference /refs/ref-1.png --min-score 6 --aspect design",
     "timeout_s": 300,
     "after": [
-      "preview-badge-round"
+      "preview-button-primary"
     ]
   }
 ]

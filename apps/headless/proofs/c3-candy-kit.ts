@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
+import { parseColliderJson } from '@royal-fiesta/game/prims'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
 import { report, runProof } from '@royal-fiesta/headless/proofkit'
 import type { CheckResult, ProofCheck } from '@royal-fiesta/headless/proofkit'
@@ -135,6 +136,11 @@ async function checkAssets(): Promise<CheckResult> {
 
 // ---- collision-kept ------------------------------------------------------------------------------------
 
+function parseColliders(raw: unknown, path: string): unknown[] {
+  if (!Array.isArray(raw)) throw new Error(`${path}: collision must be an array`)
+  return raw.map((c, i) => parseColliderJson(c, `${path}/${i}`))
+}
+
 async function checkCollisionKept(): Promise<CheckResult> {
   const notes: string[] = []
   const ref = await generatedReference(notes)
@@ -146,8 +152,15 @@ async function checkCollisionKept(): Promise<CheckResult> {
     const want = ref.get(f.rel)
     const a = await tryLoad(f.rel, notes)
     if (a === null || want === undefined) continue
-    if (isDeepStrictEqual(a.json.collision, want.collision)) kept++
-    else notes.push(`${f.rel}: collision ${JSON.stringify(a.json.collision)} differs from the generated ${JSON.stringify(want.collision)}; keep it unchanged`)
+    // Parsed specs, so SDF Modeler's halfExtents/borderRadius spelling equals half/border.
+    try {
+      const have = parseColliders(a.json.collision, `${f.rel}#/collision`)
+      const exp = parseColliders(want.collision, `${f.rel}#/collision (generated)`)
+      if (isDeepStrictEqual(have, exp)) kept++
+      else notes.push(`${f.rel}: collision ${JSON.stringify(have)} differs from the generated ${JSON.stringify(exp)}; keep it unchanged`)
+    } catch (e) {
+      notes.push(`${f.rel}: ${messageOf(e)}`)
+    }
   }
   let fits = 0
   let solid = 0

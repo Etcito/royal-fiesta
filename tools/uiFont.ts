@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { gunzipSync } from 'node:zlib'
+import { brotliDecompressSync, gunzipSync } from 'node:zlib'
 import { isRefusal, refuse, RefusalError } from '../packages/sim/src/refusal.ts'
 import { ASSET_STORE_BASE, objectUrl as storeObjectUrl } from '../packages/game/src/assets.ts'
 import { repoRoot } from './bricks.ts'
@@ -15,7 +15,9 @@ export const FONTS_PATH = 'ui/fonts.json'
 export const FONT_DIR = 'out/fonts'
 export const FONT_STORE = 'out/font-store'
 // The page copy (gitignored, like the baked audio): the GPU page has no network, so the build ships the
-// verified bytes in dist and the uaa host loads fonts/<sha256>.woff2 relative to the page.
+// verified font in dist and the uaa host loads fonts/<sha256>.ttf relative to the page. The GPU client's
+// Chrome has no DecompressionStream('brotli') and uaa ships no JS Brotli, so the build decodes the WOFF2
+// here (uaa's own decoder, Node's Brotli) and the page gets plain sfnt bytes.
 export const BUNDLE_DIR = 'apps/web/public/fonts'
 const AREA = 'ui-font'
 const SHA256 = /^[0-9a-f]{64}$/
@@ -252,18 +254,38 @@ export async function fetchFont(root: string, entry: FontEntry, get: FetchLike =
 
 export function bundledName(entry: FontEntry): string {
   if (!SHA256.test(entry.sha256)) refuse(AREA, `font:${entry.family}`, `sha256 '${entry.sha256}' is not 64 lowercase hex; use the object hash`)
-  return `${entry.sha256}.woff2`
+  return `${entry.sha256}.ttf`
 }
 
-// fetch, then copy the verified bytes to BUNDLE_DIR for the web build.
-export async function bundleFont(root: string, entry: FontEntry, get: FetchLike = publicFetch, log: (line: string) => void = console.log): Promise<string> {
+export type DecodeFont = (woff2: Uint8Array) => Promise<Uint8Array>
+
+// WOFF2 -> sfnt with uaa's decoder; the import stays lazy so the other commands do not load uaa.
+export const woff2ToSfnt: DecodeFont = async woff2 => {
+  const { decodeWoff2 } = await import('@etcito/uaa')
+  return new Uint8Array(await decodeWoff2(woff2, async stream => new Uint8Array(brotliDecompressSync(stream))))
+}
+
+// fetch, then decode the verified WOFF2 to BUNDLE_DIR for the web build.
+export async function bundleFont(
+  root: string,
+  entry: FontEntry,
+  get: FetchLike = publicFetch,
+  log: (line: string) => void = console.log,
+  decode: DecodeFont = woff2ToSfnt,
+): Promise<string> {
   const source = new Uint8Array(readFileSync(await fetchFont(root, entry, get, log)))
+  let sfnt: Uint8Array
+  try {
+    sfnt = await decode(source)
+  } catch (error) {
+    refuse(AREA, `font:${fileName(entry)}`, `cannot decode the WOFF2 (${error instanceof Error ? error.message : String(error)}); check the source before updating the registry`)
+  }
   const file = join(root, BUNDLE_DIR, bundledName(entry))
   mkdirSync(dirname(file), { recursive: true })
   const temp = `${file}.tmp-${process.pid}`
-  writeFileSync(temp, source)
+  writeFileSync(temp, sfnt)
   renameSync(temp, file)
-  log(redact(`PASS font bundle ${fileName(entry)} -> ${BUNDLE_DIR}/${bundledName(entry)}`))
+  log(redact(`PASS font bundle ${fileName(entry)} -> ${BUNDLE_DIR}/${bundledName(entry)} (${sfnt.length} bytes sfnt)`))
   return file
 }
 

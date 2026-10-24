@@ -98,7 +98,8 @@ export function loadAssets(texts: Record<string, string>): Map<string, UiAsset> 
 }
 
 // ui/fonts.json {fonts: [{family, weight, sha256, ...}]} -> the uaa registry entries. The page loads the
-// build's verified copy, fonts/<sha256>.woff2 next to it (npm run ui:fonts): the GPU page has no network,
+// build's decoded copy, fonts/<sha256>.ttf next to it (npm run ui:fonts decodes the WOFF2 because the GPU
+// client's Chrome has no Brotli DecompressionStream): the GPU page has no network,
 // so the store URL in ui/fonts.json is the provenance, not the fetch target.
 export function fontEntries(text: string, baseUri: string): FontEntry[] {
   let json: unknown
@@ -114,7 +115,7 @@ export function fontEntries(text: string, baseUri: string): FontEntry[] {
     if (typeof family !== 'string' || typeof weight !== 'number' || typeof sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(sha256)) {
       throw new UaaError('FONT_LOAD', `fonts[${i}]`, 'ui/fonts.json: a font needs family (string), weight (number) and sha256 (64 lowercase hex)')
     }
-    return { family, weight, url: new URL(`fonts/${sha256}.woff2`, baseUri).href }
+    return { family, weight, url: new URL(`fonts/${sha256}.ttf`, baseUri).href }
   })
 }
 

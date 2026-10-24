@@ -23,7 +23,7 @@ The UI font is Fredoka 700, licensed under OFL-1.1, pinned to the fontsource rel
 The `.woff2` file is never committed. `tools/uiFont.ts` handles it:
 
 - `fetch` downloads the file from the pinned source into `out/fonts`, and checks it against the registry.
-- `bundle` runs `fetch`, then copies the verified file to `apps/web/public/fonts/<sha256>.woff2` (gitignored). `npm run web:build` runs it as `npm run ui:fonts`. The GPU page has no network, so the uaa host loads each font from `fonts/<sha256>.woff2` next to the page, never from the store URL.
+- `bundle` runs `fetch`, then decodes the verified WOFF2 (uaa's `decodeWoff2` with Node's Brotli) to `apps/web/public/fonts/<sha256>.ttf` (gitignored). `npm run web:build` runs it as `npm run ui:fonts`. The GPU page has no network, so the uaa host loads each font from `fonts/<sha256>.ttf` next to the page, never from the store URL. The page gets plain sfnt bytes because the GPU client's Chrome has no `DecompressionStream('brotli')` and uaa ships no JavaScript Brotli.
 - `upload` publishes it to the asset store through the `raa-assets` CLI from `@etcito/raa-assets-tools`. The credentials come only from the environment: `ASSET_STORE_SSH` and `ASSET_STORE_KEY`. They are never printed.
 - `verify` fetches the registered URL and checks the sha256 and byte length.
 

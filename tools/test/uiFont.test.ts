@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
+import { brotliCompressSync } from 'node:zlib'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
 import { repoRoot } from '../bricks.ts'
 import {
@@ -25,6 +26,7 @@ import {
   sha256Hex,
   uploadFont,
   verifyFont,
+  woff2ToSfnt,
   writeFonts,
   type FetchLike,
   type FontEntry,
@@ -187,21 +189,56 @@ test('fetchFont writes verified bytes and reuses a verified local file', async (
   }
 })
 
-test('bundleFont stages the verified bytes as <sha256>.woff2 for the web build', async () => {
+const SFNT = new TextEncoder().encode('decoded-sfnt-bytes')
+
+test('bundleFont decodes the verified WOFF2 to <sha256>.ttf for the web build', async () => {
   const root = tempRoot()
   try {
     const entry = font()
     const lines: string[] = []
-    const file = await bundleFont(root, entry, async () => response(BODY), line => lines.push(line))
-    assert.equal(file, join(root, BUNDLE_DIR, `${SHA}.woff2`))
-    assert.equal(bundledName(entry), `${SHA}.woff2`)
-    assert.deepEqual(new Uint8Array(readFileSync(file)), BODY)
+    const seen: Uint8Array[] = []
+    const decode = async (woff2: Uint8Array) => (seen.push(woff2), SFNT)
+    const file = await bundleFont(root, entry, async () => response(BODY), line => lines.push(line), decode)
+    assert.equal(file, join(root, BUNDLE_DIR, `${SHA}.ttf`))
+    assert.equal(bundledName(entry), `${SHA}.ttf`)
+    assert.deepEqual(seen, [BODY])
+    assert.deepEqual(new Uint8Array(readFileSync(file)), SFNT)
     assert.ok(lines.some(line => line.startsWith('PASS font bundle')))
     const wrong = font({ sha256: 'f'.repeat(64), url: objectUrl('f'.repeat(64)) })
-    await assert.rejects(bundleFont(root, wrong, async () => response(BODY)), (error: unknown) => isRefusal(error) && /sha256 mismatch/.test(error.reason))
+    await assert.rejects(bundleFont(root, wrong, async () => response(BODY), () => {}, decode), (error: unknown) => isRefusal(error) && /sha256 mismatch/.test(error.reason))
+    await assert.rejects(bundleFont(root, entry, async () => response(BODY), () => {}), (error: unknown) => isRefusal(error) && /cannot decode the WOFF2/.test(error.reason))
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
+})
+
+// A one-table WOFF2 (a null-transformed 'head'), enough for uaa's decoder to rebuild an sfnt.
+function tinyWoff2(): Uint8Array {
+  const head = new Uint8Array(54)
+  head.set([0, 1, 0, 0], 0)
+  const packed = new Uint8Array(brotliCompressSync(head))
+  const dir = [1, 54]
+  const size = 48 + dir.length + packed.length
+  const out = new Uint8Array(size)
+  const view = new DataView(out.buffer)
+  view.setUint32(0, 0x774f4632)
+  view.setUint32(4, 0x00010000)
+  view.setUint32(8, size)
+  view.setUint16(12, 1)
+  view.setUint32(16, 12 + 16 + 56)
+  view.setUint32(20, packed.length)
+  out.set(dir, 48)
+  out.set(packed, 48 + dir.length)
+  return out
+}
+
+test('woff2ToSfnt decodes a WOFF2 with Node Brotli into TrueType sfnt bytes', async () => {
+  const sfnt = await woff2ToSfnt(tinyWoff2())
+  const view = new DataView(sfnt.buffer, sfnt.byteOffset, sfnt.byteLength)
+  assert.equal(view.getUint32(0), 0x00010000)
+  assert.equal(view.getUint16(4), 1)
+  assert.equal(new TextDecoder().decode(sfnt.subarray(12, 16)), 'head')
+  await assert.rejects(woff2ToSfnt(BODY), /signature/)
 })
 
 test('fetchFont refuses a sha256 or byte-length mismatch and writes nothing', async () => {

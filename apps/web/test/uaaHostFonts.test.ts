@@ -7,13 +7,13 @@ import { fontEntries } from '../src/ui/uaaHost.ts'
 
 const PAGE = 'https://gpu.example.test/pages/rev/game.html'
 
-test('fontEntries maps every ui/fonts.json font to fonts/<sha256>.woff2 beside the page', () => {
+test('fontEntries maps every ui/fonts.json font to fonts/<sha256>.ttf beside the page', () => {
   const text = readFileSync(new URL('../../../ui/fonts.json', import.meta.url), 'utf8')
   const fonts = (JSON.parse(text) as { fonts: { family: string; weight: number; sha256: string }[] }).fonts
   assert.deepEqual(fontEntries(text, PAGE), fonts.map(f => ({
     family: f.family,
     weight: f.weight,
-    url: `https://gpu.example.test/pages/rev/fonts/${f.sha256}.woff2`,
+    url: `https://gpu.example.test/pages/rev/fonts/${f.sha256}.ttf`,
   })))
 })
 

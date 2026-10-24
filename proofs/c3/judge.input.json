@@ -40,11 +40,11 @@
       "views": [
         {
           "png": "out/c3/candy-bounce-pad-three-quarter.png",
-          "description": "candy.bounce-pad, the bounce pad of ref-1: a squat glossy inflatable drum with a chunky rounded blue rim printed with a bold white zigzag band all around, topped by a springy glossy pink dome with a yellow ring and a yellow centre disc carrying a white six-point star mark, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+          "description": "candy.bounce-pad, the bounce pad of ref-1: a squat glossy inflatable drum with a chunky rounded blue rim wrapped by a white piped zigzag trim all around, topped by a springy glossy pink dome with a yellow ring and a yellow centre disc carrying a white six-point star mark, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
         },
         {
           "png": "out/c3/candy-conveyor-belt-three-quarter.png",
-          "description": "candy.conveyor-belt, a candy conveyor belt in ref-1's style: a long, low glossy pink inflatable slab with rounded edges, a yellow lip and pink belt top with white chevron stripes pointing along +Z (toward the left end, which has a rounded blue roller cap), white chevrons repeated along its pink side, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly); in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
+          "description": "candy.conveyor-belt, a candy conveyor belt in ref-1's style: a long, low glossy pink inflatable slab with rounded edges, a yellow lip and pink belt top with white chevron stripes pointing along +Z (toward the left end, which has a rounded blue roller cap), in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly); in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         }
       ]
     },

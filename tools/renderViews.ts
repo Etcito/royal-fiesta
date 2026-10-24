@@ -205,6 +205,17 @@ async function sdfmApi(src: string): Promise<{ createSdfm(o: { doc: Obj }): Prom
   return import(pathToFileURL(api).href)
 }
 
+// Material name -> the `in.roughness` of its material.output node, for the gloss of the studio grade.
+export function materialRoughness(doc: Obj): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const m of Object.values((doc.materials ?? {}) as Record<string, { name?: string; graph?: { nodes?: { type?: string; params?: Obj }[] } }>)) {
+    const o = m.graph?.nodes?.find((n) => n.type === 'material.output')
+    const r = o?.params?.['in.roughness']
+    if (typeof m.name === 'string' && typeof r === 'number') out[m.name] = r
+  }
+  return out
+}
+
 const WORLDS = ['candy', 'ice', 'jungle', 'neon', 'common']
 type XYZ = { x: number; y: number; z: number }
 const aabb = (b: { min: XYZ; max: XYZ }): { min: V3; max: V3 } => ({ min: [b.min.x, b.min.y, b.min.z], max: [b.max.x, b.max.y, b.max.z] })
@@ -236,7 +247,9 @@ export async function main(argv: string[]): Promise<number> {
         const cb = aabb(c.asset.bounds)
         return { document: c.json.document as Obj, offset: [m.min[0] - cb.min[0], m.min[1] - cb.min[1], m.min[2] - cb.min[2]] as V3, rel: c.rel }
       })
-      const sdfm = await createSdfm({ doc: mergeDocuments(body.json.document as Obj, parts) })
+      const doc = mergeDocuments(body.json.document as Obj, parts)
+      const roughness = materialRoughness(doc)
+      const sdfm = await createSdfm({ doc })
       for (const v of s.views as ViewName[]) {
         const out = resolve(input.out, `${s.name}-${v}.png`)
         const t0 = Date.now()
@@ -252,7 +265,7 @@ export async function main(argv: string[]): Promise<number> {
           const shaded = await pass('shaded', out)
           const normals = await pass('normals', join(tmpdir(), `rf-views-${process.pid}-normals.png`))
           const materials = await pass('materials', join(tmpdir(), `rf-views-${process.pid}-materials.png`))
-          const relit = relight({ shaded: shaded.img, normals: normals.img, materials: materials.img, legend: parseLegend(materials.text) }, camera.position, camera.target)
+          const relit = relight({ shaded: shaded.img, normals: normals.img, materials: materials.img, legend: parseLegend(materials.text), roughness }, camera.position, camera.target)
           const staged = stageOnBackdrop(relit.img, floorShadow(camera, aabb(body.asset.bounds), VIEW_YAWS[v], input.width, input.height))
           writeFileSync(out, encodePng(fuzzAndBloom(staged, relit)))
           console.log(`[render] ${s.name}/${v} ${Date.now() - t0} ms: ${shaded.text.split(';')[0]}`)

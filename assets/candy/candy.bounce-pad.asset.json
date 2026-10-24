@@ -27,8 +27,7 @@
           "dome",
           "ring",
           "cap",
-          "star",
-          "zigzag"
+          "star"
         ],
         "asset": {
           "game": "royal-fiesta",
@@ -67,6 +66,135 @@
         "params": {
           "height": 0.5,
           "radius": 1.5
+        },
+        "children": [
+          "ridge"
+        ],
+        "gameCollision": false
+      },
+      "ridge": {
+        "id": "ridge",
+        "name": "zigzag trim",
+        "kind": "sweep",
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "candy-white",
+        "tags": [
+          "ridge"
+        ],
+        "params": {
+          "height": 0.03,
+          "heightMode": "proportional",
+          "onSurface": true,
+          "path": {
+            "type": "bezier",
+            "closed": false,
+            "points": [
+              {
+                "p": [1.5, -0.07, 0],
+                "out": [1.496403, -0.021739, 0.199174]
+              },
+              {
+                "p": [1.38582, 0.07, 0.57403],
+                "in": [1.458708, 0.021734, 0.388639],
+                "out": [1.306269, 0.021733, 0.756657]
+              },
+              {
+                "p": [1.06066, -0.07, 1.06066],
+                "in": [1.198953, -0.021746, 0.917281],
+                "out": [0.917281, -0.021746, 1.198953]
+              },
+              {
+                "p": [0.57403, 0.07, 1.38582],
+                "in": [0.756657, 0.021733, 1.306269],
+                "out": [0.388639, 0.021734, 1.458708]
+              },
+              {
+                "p": [0, -0.07, 1.5],
+                "in": [0.199174, -0.021739, 1.496403],
+                "out": [-0.199174, -0.021738, 1.496403]
+              },
+              {
+                "p": [-0.57403, 0.07, 1.38582],
+                "in": [-0.388637, 0.021744, 1.458709],
+                "out": [-0.75666, 0.021745, 1.306268]
+              },
+              {
+                "p": [-1.06066, -0.07, 1.06066],
+                "in": [-0.917283, -0.021731, 1.198951],
+                "out": [-1.198951, -0.021731, 0.917283]
+              },
+              {
+                "p": [-1.38582, 0.07, 0.57403],
+                "in": [-1.306268, 0.021745, 0.75666],
+                "out": [-1.458709, 0.021744, 0.388637]
+              },
+              {
+                "p": [-1.5, -0.07, 0],
+                "in": [-1.496403, -0.021738, 0.199174],
+                "out": [-1.496403, -0.021739, -0.199174]
+              },
+              {
+                "p": [-1.38582, 0.07, -0.57403],
+                "in": [-1.458708, 0.021734, -0.388639],
+                "out": [-1.306269, 0.021733, -0.756657]
+              },
+              {
+                "p": [-1.06066, -0.07, -1.06066],
+                "in": [-1.198953, -0.021746, -0.917281],
+                "out": [-0.917281, -0.021746, -1.198953]
+              },
+              {
+                "p": [-0.57403, 0.07, -1.38582],
+                "in": [-0.756657, 0.021733, -1.306269],
+                "out": [-0.388639, 0.021734, -1.458708]
+              },
+              {
+                "p": [0, -0.07, -1.5],
+                "in": [-0.199174, -0.021739, -1.496403],
+                "out": [0.199174, -0.021738, -1.496403]
+              },
+              {
+                "p": [0.57403, 0.07, -1.38582],
+                "in": [0.388637, 0.021744, -1.458709],
+                "out": [0.75666, 0.021745, -1.306268]
+              },
+              {
+                "p": [1.06066, -0.07, -1.06066],
+                "in": [0.917283, -0.021731, -1.198951],
+                "out": [1.198951, -0.021731, -0.917283]
+              },
+              {
+                "p": [1.38582, 0.07, -0.57403],
+                "in": [1.306268, 0.021745, -0.75666],
+                "out": [1.458709, 0.021744, -0.388637]
+              },
+              {
+                "p": [1.5, -0.07, 0],
+                "in": [1.496403, -0.021738, -0.199174]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.045,
+                "out": [0.333333, 0.045]
+              },
+              {
+                "t": 1,
+                "r": 0.045,
+                "in": [0.666667, 0.045]
+              }
+            ]
+          },
+          "twist": {
+            "type": "twist",
+            "points": [0, -2.610532, -5.1047, -2.617175, -0.128408, -2.617175, -5.104699, -2.610532, -0.11569, -2.60117, -5.086684, -2.594574, -0.102921, -2.594574, -5.086684, -2.601169, -0.11569, -2.610532, -5.1047, -2.617175, -0.128408, -2.617175, -5.104699, -2.610532, -0.11569, -2.60117, -5.086684, -2.594574, -0.102921, -2.594574, -5.086684, -2.601169, -0.000002]
+          },
+          "up": [1, 0, 0]
         },
         "gameCollision": false
       },
@@ -167,271 +295,6 @@
           "size": [1.2, 0.04, 0.22]
         },
         "gameCollision": false
-      },
-      "zigzag": {
-        "id": "zigzag",
-        "name": "zigzag",
-        "kind": "group",
-        "colorBlend": "hard",
-        "children": [
-          "zig_0",
-          "zig_1",
-          "zig_2",
-          "zig_3",
-          "zig_4",
-          "zig_5",
-          "zig_6",
-          "zig_7",
-          "zig_8",
-          "zig_9",
-          "zig_10",
-          "zig_11",
-          "zig_12",
-          "zig_13",
-          "zig_14",
-          "zig_15"
-        ],
-        "gameCollision": false
-      },
-      "zig_0": {
-        "id": "zig_0",
-        "name": "zig-0",
-        "kind": "box",
-        "transform": {
-          "position": [1.462525, 0.25, 0.290914],
-          "rotation": [0, -101.25, 17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_1": {
-        "id": "zig_1",
-        "name": "zig-1",
-        "kind": "box",
-        "transform": {
-          "position": [1.239869, 0.25, 0.828454],
-          "rotation": [0, -123.75, -17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_2": {
-        "id": "zig_2",
-        "name": "zig-2",
-        "kind": "box",
-        "transform": {
-          "position": [0.828454, 0.25, 1.239869],
-          "rotation": [0, -146.25, 17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_3": {
-        "id": "zig_3",
-        "name": "zig-3",
-        "kind": "box",
-        "transform": {
-          "position": [0.290914, 0.25, 1.462525],
-          "rotation": [0, -168.75, -17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_4": {
-        "id": "zig_4",
-        "name": "zig-4",
-        "kind": "box",
-        "transform": {
-          "position": [-0.290914, 0.25, 1.462525],
-          "rotation": [0, 168.75, 17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_5": {
-        "id": "zig_5",
-        "name": "zig-5",
-        "kind": "box",
-        "transform": {
-          "position": [-0.828454, 0.25, 1.239869],
-          "rotation": [0, 146.25, -17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_6": {
-        "id": "zig_6",
-        "name": "zig-6",
-        "kind": "box",
-        "transform": {
-          "position": [-1.239869, 0.25, 0.828454],
-          "rotation": [0, 123.75, 17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_7": {
-        "id": "zig_7",
-        "name": "zig-7",
-        "kind": "box",
-        "transform": {
-          "position": [-1.462525, 0.25, 0.290914],
-          "rotation": [0, 101.25, -17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_8": {
-        "id": "zig_8",
-        "name": "zig-8",
-        "kind": "box",
-        "transform": {
-          "position": [-1.462525, 0.25, -0.290914],
-          "rotation": [0, 78.75, 17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_9": {
-        "id": "zig_9",
-        "name": "zig-9",
-        "kind": "box",
-        "transform": {
-          "position": [-1.239869, 0.25, -0.828454],
-          "rotation": [0, 56.25, -17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_10": {
-        "id": "zig_10",
-        "name": "zig-10",
-        "kind": "box",
-        "transform": {
-          "position": [-0.828454, 0.25, -1.239869],
-          "rotation": [0, 33.75, 17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_11": {
-        "id": "zig_11",
-        "name": "zig-11",
-        "kind": "box",
-        "transform": {
-          "position": [-0.290914, 0.25, -1.462525],
-          "rotation": [0, 11.25, -17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_12": {
-        "id": "zig_12",
-        "name": "zig-12",
-        "kind": "box",
-        "transform": {
-          "position": [0.290914, 0.25, -1.462525],
-          "rotation": [0, -11.25, 17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_13": {
-        "id": "zig_13",
-        "name": "zig-13",
-        "kind": "box",
-        "transform": {
-          "position": [0.828454, 0.25, -1.239869],
-          "rotation": [0, -33.75, -17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_14": {
-        "id": "zig_14",
-        "name": "zig-14",
-        "kind": "box",
-        "transform": {
-          "position": [1.239869, 0.25, -0.828454],
-          "rotation": [0, -56.25, 17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
-      },
-      "zig_15": {
-        "id": "zig_15",
-        "name": "zig-15",
-        "kind": "box",
-        "transform": {
-          "position": [1.462525, 0.25, -0.290914],
-          "rotation": [0, -78.75, -17.095273]
-        },
-        "round": 0.02,
-        "material": "candy-white",
-        "params": {
-          "size": [0.7, 0.17, 0.09]
-        },
-        "gameCollision": false
       }
     },
     "materials": {
@@ -512,8 +375,8 @@
   ],
   "anchors": {},
   "bounds": {
-    "min": [-1.562404, 0, -1.562404],
-    "max": [1.562404, 0.76, 1.562404]
+    "min": [-1.56635, 0, -1.56635],
+    "max": [1.56635, 0.755, 1.56635]
   },
-  "hash": "563a0ce02efa6bcfbe206c4d80ddf5b0c3ffd2b2b744ab2e690e94c703498199"
+  "hash": "27a63940e53efa4f98b0ff53d56e71a8c4af016b8e17cdaaeea44c6b6cb91218"
 }

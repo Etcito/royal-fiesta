@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { fuzzAndBloom, hash01, parseLegend, relight, type ViewPasses } from '../viewGrade.ts'
+import { candyGloss, fuzzAndBloom, hash01, parseLegend, relight, type ViewPasses } from '../viewGrade.ts'
 
 const KEY = [46, 48, 54]
 const PLUSH = [230, 56, 64]
@@ -62,4 +62,19 @@ test('fuzzAndBloom grows fur only out of plush edges and leaves far background a
   for (let y = 4; y < 12; y++) if (at(3, y)[2] - at(3, y)[0] > 10) fuzzed++
   assert.ok(fuzzed > 0, 'some fibres reach past the left plush edge')
   assert.equal(fuzzAndBloom(staged, r).data.join(), out.data.join(), 'the grade is deterministic')
+})
+
+test('candy gloss follows roughness and puts a white highlight only on glossy candy', () => {
+  assert.equal(candyGloss(0.6), 0)
+  assert.ok(candyGloss(0.12) > 0.9 && candyGloss(0.3) < candyGloss(0.12))
+  const candy = (roughness: number): number => {
+    const p = passes()
+    // Normals tilted toward the overhead softbox, seen from above: the glossy material catches it.
+    p.normals = { ...p.normals, data: p.normals.data.map((c, i) => (i % 4 === 1 ? 255 : i % 4 === 2 ? 128 : c)) }
+    p.legend = parseLegend('#0 #e63840 candy-blue (m1); #1 #8cd94d candy-pink (m4)')
+    p.roughness = { 'candy-blue': roughness, 'candy-pink': roughness }
+    const r = relight(p, [0, 5, 0.3], [0, 0, 0])
+    return r.img.data[(6 * 16 + 6) * 4]
+  }
+  assert.ok(candy(0.1) > candy(0.9) + 20, 'a glossy candy surface facing the softbox is lit white')
 })

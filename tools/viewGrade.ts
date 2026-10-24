@@ -5,7 +5,8 @@ import type { Rgba } from './renderViews.ts'
 
 type V3 = [number, number, number]
 export interface LegendEntry { rgb: V3; name: string }
-export interface ViewPasses { shaded: Rgba; normals: Rgba; materials: Rgba; legend: LegendEntry[] }
+// roughness: material name -> the asset's own `in.roughness`, which sets how glossy a candy material reads.
+export interface ViewPasses { shaded: Rgba; normals: Rgba; materials: Rgba; legend: LegendEntry[]; roughness?: Record<string, number> }
 export interface Relit { img: Rgba; subject: Uint8Array; plush: Uint8Array; screenNormal: Float32Array }
 
 // Materials that are fur on the penguin (1.12): the plush body and the belly.
@@ -16,6 +17,9 @@ const SHEEN: Record<string, { rgb: V3; k: number }> = {
   'costume-fish-scarf-aqua': { rgb: [1, 1, 1], k: 0.3 },
   'costume-fish-scarf-white': { rgb: [1, 1, 1], k: 0.2 },
 }
+// Candy kit materials get ref-1's glossy vinyl: a hot key highlight, a broad softbox sheen from behind and a clear-coat edge.
+const CANDY = /^candy-/
+export function candyGloss(roughness: number): number { return clamp01((0.5 - roughness) / 0.38) }
 
 // "#0 #e63840 penguin-plush (m1); #1 ..." from the text of a 'materials' render.
 export function parseLegend(text: string): LegendEntry[] {
@@ -30,6 +34,7 @@ export function parseLegend(text: string): LegendEntry[] {
 const unit = (a: V3): V3 => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l] }
 const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v))
+const smooth = (a: number, b: number, x: number): number => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
 // Integer hash in [0, 1): fibre lengths and fur mottling, the same for every run.
 export function hash01(x: number, y: number): number {
   let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263)
@@ -80,8 +85,19 @@ export function relight(p: ViewPasses, eye: V3, target: V3): Relit {
   // Lights in camera space, so every yaw gets the same studio: warm key upper left, cool rim from behind and above.
   const keyL = unit([-0.5 * r[0] + 0.7 * u[0] + 0.5 * v[0], -0.5 * r[1] + 0.7 * u[1] + 0.5 * v[1], -0.5 * r[2] + 0.7 * u[2] + 0.5 * v[2]])
   const rimL = unit([0.4 * r[0] + 0.6 * u[0] - 0.7 * v[0], 0.4 * r[1] + 0.6 * u[1] - 0.7 * v[1], 0.4 * r[2] + 0.6 * u[2] - 0.7 * v[2]])
+  // A big softbox overhead, placed so its mirror half-vector leans 3 degrees towards the camera: a domed walkable top
+  // shows a defined glossy patch and every rounded rim a streak along its crest, while a flat face stays unlit.
+  const vh = unit([v[0], 0, v[2]])
+  const boxH = unit([0.052 * vh[0], 0.9986, 0.052 * vh[2]])
+  const keyH = unit([keyL[0] + v[0], keyL[1] + v[1], keyL[2] + v[2]])
+  // Candy white (cloud puffs, stripes) sits near 1 before the grade, so it gets a longer shoulder that keeps its form.
+  const white = p.legend.findIndex((e) => e.name === 'candy-white')
+  const gloss = p.legend.map((e) => CANDY.test(e.name) && p.roughness?.[e.name] !== undefined ? candyGloss(p.roughness[e.name]) : 0)
   const screenNormal = new Float32Array(n * 2)
   const out = new Uint8Array(s)
+  // Graded colour and white highlight per pixel; the highlights are softened before they are composited.
+  const graded = new Float32Array(n * 3)
+  const spec = new Float32Array(n)
   const R = 3
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -129,10 +145,44 @@ export function relight(p: ViewPasses, eye: V3, target: V3): Relit {
       c = [c[0] + kd * 1 + rim * 0.95, c[1] + kd * 0.95 + rim * 0.97, c[2] + kd * 0.85 + rim]
       // Candy grade: a little more saturation and contrast, with a soft shoulder so the white belly keeps its form.
       const l = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+      const g = mat[i] >= 0 ? gloss[mat[i]] : 0
+      // White highlights go on after the grade (screen blend), so they stay white instead of being saturated.
+      if (g > 0) spec[i] = g * (0.7 * Math.pow(clamp01(dot(nn, keyH)), 140) + 0.32 * smooth(0.989, 0.9996, dot(nn, boxH)) + 0.2 * Math.pow(fres, 3))
       for (let k = 0; k < 3; k++) {
         const t = Math.max(0, 0.45 + (l + (c[k] - l) * (plush[i] ? 0.95 : 1.12) - 0.45) * 1.08)
-        out[i * 4 + k] = Math.round(255 * (t < 0.8 ? t : 0.8 + 0.2 * (1 - Math.exp(-(t - 0.8) / 0.2))))
+        const [k0, kw] = mat[i] === white && white >= 0 ? [0.62, 0.42] : [0.8, 0.2]
+        graded[i * 3 + k] = t < k0 ? t : k0 + kw * (1 - Math.exp(-(t - k0) / kw))
       }
+    }
+  }
+  // The normals pass is 8-bit, so a narrow lobe bands; a small blur turns the steps into a smooth glossy patch.
+  for (let pass = 0; pass < 2; pass++) { boxBlur(spec, w, h, 2, true); boxBlur(spec, w, h, 2, false) }
+  for (let i = 0; i < n; i++) {
+    if (!subject[i]) continue
+    const sp = clamp01(spec[i])
+    for (let k = 0; k < 3; k++) out[i * 4 + k] = Math.round(255 * (graded[i * 3 + k] + (1 - graded[i * 3 + k]) * sp))
+  }
+  // The renderer does not anti-alias material borders (white rings and zigzags step in a sawtooth), so pixels within
+  // 2 px of a candy border get a 5x5 mean.
+  const src = new Uint8Array(out)
+  const E = 2
+  for (let y = E; y < h - E; y++) {
+    for (let x = E; x < w - E; x++) {
+      const i = y * w + x
+      if (!subject[i] || mat[i] < 0 || gloss[mat[i]] === 0) continue
+      let border = false
+      for (let d = 1; d <= E && !border; d++) border = mat[i - d] !== mat[i] || mat[i + d] !== mat[i] || mat[i - d * w] !== mat[i] || mat[i + d * w] !== mat[i]
+      if (!border) continue
+      const acc = [0, 0, 0]
+      let cnt = 0
+      for (let dy = -E; dy <= E; dy++) {
+        for (let dx = -E; dx <= E; dx++) {
+          const j = i + dy * w + dx
+          if (!subject[j]) continue
+          acc[0] += src[j * 4]; acc[1] += src[j * 4 + 1]; acc[2] += src[j * 4 + 2]; cnt++
+        }
+      }
+      for (let k = 0; k < 3; k++) out[i * 4 + k] = Math.round(acc[k] / cnt)
     }
   }
   return { img: { width: w, height: h, data: out }, subject, plush, screenNormal }

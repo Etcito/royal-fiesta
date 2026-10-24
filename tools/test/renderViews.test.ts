@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
 import { decodePng } from '../../apps/headless/src/gpuRecord.ts'
-import { encodePng, mergeDocuments, projectPoint, stageOnBackdrop, viewCamera } from '../renderViews.ts'
+import { encodePng, materialRoughness, mergeDocuments, projectPoint, stageOnBackdrop, viewCamera } from '../renderViews.ts'
 
 test('viewCamera frames the bounds as 1.14 says', () => {
   const b = { min: [-1, 0, -1] as [number, number, number], max: [1, 2, 1] as [number, number, number] }
@@ -61,4 +61,15 @@ test('stageOnBackdrop leaves an image without a flat clear colour unchanged', ()
   const data = new Uint8Array(4 * 4 * 4).map((_, i) => i)
   const img = { width: 4, height: 4, data }
   assert.equal(stageOnBackdrop(img, { cx: 2, cy: 3, rx: 1, ry: 1 }), img)
+})
+
+test('materialRoughness reads the roughness of every material output by material name', () => {
+  const doc = {
+    materials: {
+      m1: { name: 'candy-pink', graph: { nodes: [{ id: 'out', type: 'material.output', params: { 'in.base_color': '#f0287f', 'in.roughness': 0.12 } }] } },
+      m2: { name: 'candy-white', graph: { nodes: [{ id: 'out', type: 'material.output', params: { 'in.base_color': '#ffffff' } }] } },
+    },
+  }
+  assert.deepEqual(materialRoughness(doc), { 'candy-pink': 0.12 })
+  assert.deepEqual(materialRoughness({}), {})
 })

@@ -14,7 +14,7 @@
         },
         {
           "png": "out/c3/candy-spinner-bar-three-quarter.png",
-          "description": "candy.spinner-bar, the rotating spinner bar of ref-1: a long fat glossy pink inflatable tube with white helical candy stripes, chunky rounded yellow end caps and yellow collars, on a rounded pink hub cap over a yellow post and a blue base with a yellow rim, in ref-1's glossy pink/yellow/white inflatable style. Camera: the project's front three-quarter view (camera on +X+Z at yaw 45 degrees); the view spec raises the eye by only a quarter of the piece's height, so this long, low bar is seen almost at eye level: its near (+X) end is larger in perspective, and the base shows as a band under the hub rather than from above"
+          "description": "candy.spinner-bar, the rotating spinner bar of ref-1: a long fat glossy pink inflatable tube with white helical candy stripes, chunky rounded yellow end caps and yellow collars, on a rounded pink hub cap over a yellow post and a blue base with a yellow rim, in ref-1's glossy pink/yellow/white inflatable style. Camera: the project's front three-quarter view (camera on +X+Z at yaw 45 degrees); the view spec raises the eye by only a quarter of the piece's height, so this long, low bar is seen almost at eye level: its near (+X) end is larger in perspective, and the base shows as a band under the hub rather than from above; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         }
       ]
     },
@@ -44,7 +44,7 @@
         },
         {
           "png": "out/c3/candy-conveyor-belt-three-quarter.png",
-          "description": "candy.conveyor-belt, a candy conveyor belt in ref-1's style: a long, low glossy pink inflatable slab with rounded edges, a yellow lip and pink belt top with white chevron stripes pointing along +Z (toward the left end, which has a rounded blue roller cap), white chevrons repeated along its pink side, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly)"
+          "description": "candy.conveyor-belt, a candy conveyor belt in ref-1's style: a long, low glossy pink inflatable slab with rounded edges, a yellow lip and pink belt top with white chevron stripes pointing along +Z (toward the left end, which has a rounded blue roller cap), white chevrons repeated along its pink side, in ref-1's glossy inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly); in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         }
       ]
     },
@@ -66,7 +66,7 @@
       "views": [
         {
           "png": "out/c3/candy-rotating-door-three-quarter.png",
-          "description": "candy.rotating-door, a rotating door obstacle like ref-1's inflatable obstacles: two crossed glossy inflatable panels, one pink and one blue, each framed by chunky rounded yellow inflatable edges and printed with a bold white zigzag, turning on a central yellow hub with pink and blue rings and a pink ball on top, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). The two panels cross at the central hub at right angles (the hub is at their meeting point); from the 45 degree view the two panels project as two wings of an X-like arrangement around the hub, so they can look nearly side by side, and the white zigzags read slightly pale on the shaded panel; judge the parts, colours and glossy inflatable finish"
+          "description": "candy.rotating-door, a rotating door obstacle like ref-1's inflatable obstacles: two crossed glossy inflatable panels, one pink and one blue, each framed by chunky rounded yellow inflatable edges and printed with a bold white zigzag, turning on a central yellow hub with pink and blue rings and a pink ball on top, in ref-1's glossy pink/yellow/blue inflatable candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). The two panels cross at the central hub at right angles (the hub is at their meeting point); from the 45 degree view the two panels project as two wings of an X-like arrangement around the hub, so they can look nearly side by side, and the white zigzags read slightly pale on the shaded panel; judge the parts, colours and glossy inflatable finish; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         },
         {
           "png": "out/c3/candy-seesaw-plank-three-quarter.png",
@@ -100,11 +100,11 @@
       "views": [
         {
           "png": "out/c3/candy-slime-pool-three-quarter.png",
-          "description": "candy.slime-pool, a glossy green slime surface like the bright green slime below the track in ref-1: a wide flat square pool of glossy lime-green slime with gentle low waves, scattered round white bubbles and small white glossy highlight streaks on its surface, framed by a low chunky rounded pink inflatable rim on all four sides, in ref-1's glossy candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). The pool is a large thin slab (12 x 12 m, under 0.6 m thick), so it appears as a flat diamond-shaped surface in this view; this is correct"
+          "description": "candy.slime-pool, a glossy green slime surface like the bright green slime below the track in ref-1: a wide flat square pool of glossy lime-green slime with gentle low waves, scattered round white bubbles and small white glossy highlight streaks on its surface, framed by a low chunky rounded pink inflatable rim on all four sides, in ref-1's glossy candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). The pool is a large thin slab (12 x 12 m, under 0.6 m thick), so it appears as a flat diamond-shaped surface in this view; this is correct; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         },
         {
           "png": "out/c3/candy-cloud-three-quarter.png",
-          "description": "candy.cloud, a puffy white cloud like the soft cumulus clouds in ref-1's sky: a wide cartoon cloud made of many merged round white puffs, larger puffs piled on top of a flatter base, about twice as wide as it is tall, with a soft matte white finish, in ref-1's toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop without the sky, so only its puffy white silhouette and soft shading are judged"
+          "description": "candy.cloud, a puffy white cloud like the soft cumulus clouds in ref-1's sky: a wide cartoon cloud made of many merged round white puffs, larger puffs piled on top of a flatter base, about twice as wide as it is tall, with a soft matte white finish, in ref-1's toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop without the sky, so only its puffy white silhouette and soft shading are judged; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         }
       ]
     },
@@ -113,15 +113,15 @@
       "views": [
         {
           "png": "out/c3/candy-banner-three-quarter.png",
-          "description": "candy.banner, a crown banner like the pennants lining the track in ref-1: a 4 m pole with white and pink candy stripes on a round pink base, topped by a glossy yellow ball, with a yellow crossbar holding a hanging blue flag that carries a yellow crown, pink hems and a white zigzag lower edge, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky"
+          "description": "candy.banner, a crown banner like the pennants lining the track in ref-1: a 4 m pole with white and pink candy stripes on a round pink base, topped by a glossy yellow ball, with a yellow crossbar holding a hanging blue flag that carries a yellow crown, pink hems and a white zigzag lower edge, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         },
         {
           "png": "out/c3/candy-hot-air-balloon-three-quarter.png",
-          "description": "candy.hot-air-balloon, a hot-air balloon like the one floating in ref-1's sky: a round, slightly teardrop envelope with vertical pink, yellow, blue and white stripes meeting at a yellow top cap, with a small orange basket with a pink rim hanging below on thin ropes, about 6 m tall, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky"
+          "description": "candy.hot-air-balloon, a hot-air balloon like the one floating in ref-1's sky: a round, slightly teardrop envelope with vertical pink, yellow, blue and white stripes meeting at a yellow top cap, with a small orange basket with a pink rim hanging below on thin ropes, about 6 m tall, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         },
         {
           "png": "out/c3/candy-tower-three-quarter.png",
-          "description": "candy.tower, a background castle tower like the purple towers behind the track in ref-1: a tall 14 m purple cylindrical tower on a chunky yellow plinth, ringed by thick yellow trim bands, a chunky yellow collar with yellow ball studs, small blue windows, and a rounded glossy pink dome roof with a yellow ball finial, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky"
+          "description": "candy.tower, a background castle tower like the purple towers behind the track in ref-1: a tall 14 m purple cylindrical tower on a chunky yellow plinth, ringed by thick yellow trim bands, a chunky yellow collar with yellow ball studs, small blue windows, and a rounded glossy pink dome roof with a yellow ball finial, in ref-1's glossy toy-like candy style, seen from a front three-quarter angle (camera on +X+Z, looking down slightly). It is shown alone on the studio backdrop, without the course or sky; in ref-1's glossy inflatable pink/yellow/blue style with white zigzags and chunky rounded rims"
         }
       ]
     }

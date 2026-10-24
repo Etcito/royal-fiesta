@@ -1,19 +1,13 @@
 [
   {
-    "name": "font-fetch",
-    "command": "node --experimental-strip-types tools/uiFont.ts fetch",
-    "timeout_s": 300
+    "name": "preview-logo-crown",
+    "command": "node --experimental-strip-types tools/uiPreview.ts logo.crown normal",
+    "timeout_s": 600
   },
   {
-    "name": "font-upload",
-    "command": "node --experimental-strip-types tools/uiFont.ts upload",
+    "name": "judge-logo-crown",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/ui-preview/logo.crown.normal.png --description \"Royal Fiesta game logo on a sky-blue background, part of a bright inflatable fiesta scene like ref-1: a glossy gold inflatable crown with plump rounded points, pink and blue gem balls on the tips and on the crown rim, a thick soft plum outline and white highlight streaks, with the words ROYAL FIESTA in chunky rounded white letters across a pink inflatable band with ribbon tails, and small white sparkles\" --min-score 6",
     "timeout_s": 300,
-    "after": ["font-fetch"]
-  },
-  {
-    "name": "font-verify",
-    "command": "node --experimental-strip-types tools/uiFont.ts verify",
-    "timeout_s": 120,
-    "after": ["font-upload"]
+    "after": ["preview-logo-crown"]
   }
 ]

@@ -5,72 +5,8 @@
     "timeout_s": 3000
   },
   {
-    "name": "views-record",
-    "command": "node --experimental-strip-types tools/viewsRecord.ts proofs/c3/views.input.json",
-    "timeout_s": 300,
-    "after": [
-      "render-views"
-    ]
-  },
-  {
-    "name": "c3-hammer-spinner",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-hammer-spinner",
-    "timeout_s": 1200,
-    "after": [
-      "render-views"
-    ]
-  },
-  {
-    "name": "c3-platforms",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-platforms",
-    "timeout_s": 1200,
-    "after": [
-      "render-views"
-    ]
-  },
-  {
-    "name": "c3-pad-belt",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-pad-belt",
-    "timeout_s": 1200,
-    "after": [
-      "render-views"
-    ]
-  },
-  {
-    "name": "c3-arches",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-arches",
-    "timeout_s": 1200,
-    "after": [
-      "render-views"
-    ]
-  },
-  {
-    "name": "c3-door-seesaw-wall",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-door-seesaw-wall",
-    "timeout_s": 1200,
-    "after": [
-      "render-views"
-    ]
-  },
-  {
-    "name": "c3-hub-props",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-hub-props",
-    "timeout_s": 1200,
-    "after": [
-      "render-views"
-    ]
-  },
-  {
-    "name": "c3-pool-cloud",
+    "name": "judge-c3-pool-cloud",
     "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-pool-cloud",
-    "timeout_s": 1200,
-    "after": [
-      "render-views"
-    ]
-  },
-  {
-    "name": "c3-banner-balloon-tower",
-    "command": "node --experimental-strip-types tools/judgeViews.ts \"$NMC_JUDGE_CLIENT\" proofs/c3/judge.input.json c3-banner-balloon-tower",
     "timeout_s": 1200,
     "after": [
       "render-views"

@@ -71,6 +71,7 @@ Each milestone proof is a Node script run with `--experimental-strip-types`. Pro
 | M7 web | `node --experimental-strip-types apps/headless/proofs/m7-web.ts` |
 | M8 hub | `node --experimental-strip-types apps/headless/proofs/m8-hub.ts` |
 | C1 content checks | `node --experimental-strip-types apps/headless/proofs/c1-content-checks.ts` |
+| C4 candy courses | `node --experimental-strip-types apps/headless/proofs/c4-candy-courses.ts` — 4 dressed courses, sims kept, race/survival play in sprint |
 
 ## Web client (M7)
 

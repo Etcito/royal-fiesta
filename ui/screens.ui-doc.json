@@ -1,0 +1,1408 @@
+{
+  "format": "uaa.ui-doc",
+  "version": 1,
+  "id": "royal-fiesta",
+  "design": {
+    "portrait": [720, 1280],
+    "landscape": [1280, 720]
+  },
+  "assets": [
+    "logo.crown",
+    "button.primary",
+    "button.secondary",
+    "panel.card",
+    "badge.round",
+    "bar.progress",
+    "bar.track",
+    "icon.back",
+    "icon.settings",
+    "icon.timer",
+    "icon.alive",
+    "icon.qualified",
+    "icon.medal",
+    "panel.hud"
+  ],
+  "start": "title",
+  "screens": [
+    {
+      "id": "title",
+      "initialFocus": "act-play",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "logo",
+          "type": "icon",
+          "asset": "logo.crown",
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-200, 60],
+            "offsetMax": [200, 360]
+          },
+          "landscape": {
+            "anchorMin": [0.3, 0.5],
+            "anchorMax": [0.3, 0.5],
+            "offsetMin": [-240, -260],
+            "offsetMax": [240, 100]
+          },
+          "anim": {
+            "enter": {
+              "kind": "bounce",
+              "duration": 400
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Royal Fiesta",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-320, 370],
+            "offsetMax": [320, 450]
+          },
+          "landscape": {
+            "anchorMin": [0.3, 0.5],
+            "anchorMax": [0.3, 0.5],
+            "offsetMin": [-320, 110],
+            "offsetMax": [320, 190]
+          }
+        },
+        {
+          "id": "menu",
+          "type": "group",
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-220, 520],
+            "offsetMax": [220, 1080]
+          },
+          "landscape": {
+            "anchorMin": [0.72, 0.5],
+            "anchorMax": [0.72, 0.5],
+            "offsetMin": [-220, -280],
+            "offsetMax": [220, 280]
+          },
+          "anim": {
+            "enter": {
+              "kind": "slide",
+              "from": "right",
+              "duration": 350
+            }
+          },
+          "children": [
+            {
+              "id": "act-play",
+              "type": "button",
+              "asset": "button.primary",
+              "text": {
+                "label": "Play"
+              },
+              "action": "play",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 0],
+                "offsetMax": [440, 110]
+              },
+              "anim": {
+                "focus": {
+                  "kind": "bounce",
+                  "duration": 200
+                },
+                "press": {
+                  "kind": "pop",
+                  "duration": 150
+                }
+              }
+            },
+            {
+              "id": "act-retry",
+              "type": "button",
+              "asset": "button.primary",
+              "text": {
+                "label": "Retry"
+              },
+              "action": "retry",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 0],
+                "offsetMax": [440, 110]
+              },
+              "anim": {
+                "focus": {
+                  "kind": "bounce",
+                  "duration": 200
+                },
+                "press": {
+                  "kind": "pop",
+                  "duration": 150
+                }
+              }
+            },
+            {
+              "id": "act-play-online",
+              "type": "button",
+              "asset": "button.secondary",
+              "text": {
+                "label": "Play online"
+              },
+              "action": "playOnline",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 150],
+                "offsetMax": [440, 250]
+              },
+              "anim": {
+                "focus": {
+                  "kind": "bounce",
+                  "duration": 200
+                },
+                "press": {
+                  "kind": "pop",
+                  "duration": 150
+                }
+              }
+            },
+            {
+              "id": "act-settings",
+              "type": "button",
+              "asset": "button.secondary",
+              "text": {
+                "label": "Settings"
+              },
+              "action": "settings",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 290],
+                "offsetMax": [440, 390]
+              },
+              "anim": {
+                "focus": {
+                  "kind": "bounce",
+                  "duration": 200
+                },
+                "press": {
+                  "kind": "pop",
+                  "duration": 150
+                }
+              }
+            },
+            {
+              "id": "act-credits",
+              "type": "button",
+              "asset": "button.secondary",
+              "text": {
+                "label": "Credits"
+              },
+              "action": "credits",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 430],
+                "offsetMax": [440, 530]
+              },
+              "anim": {
+                "focus": {
+                  "kind": "bounce",
+                  "duration": 200
+                },
+                "press": {
+                  "kind": "pop",
+                  "duration": 150
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loading",
+      "enter": {
+        "kind": "fade",
+        "duration": 200
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 200
+      },
+      "widgets": [
+        {
+          "id": "logo",
+          "type": "icon",
+          "asset": "logo.crown",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, -460],
+            "offsetMax": [200, -160]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-160, -300],
+            "offsetMax": [160, -60]
+          },
+          "anim": {
+            "enter": {
+              "kind": "bounce",
+              "duration": 400
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Loading",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-320, -130],
+            "offsetMax": [320, -50]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-320, -40],
+            "offsetMax": [320, 40]
+          }
+        },
+        {
+          "id": "loading-bar",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-280, -10],
+            "offsetMax": [280, 50]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-320, 70],
+            "offsetMax": [320, 130]
+          }
+        },
+        {
+          "id": "loading-label",
+          "type": "label",
+          "text": "Starting...",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 32,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-320, 80],
+            "offsetMax": [320, 130]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-400, 150],
+            "offsetMax": [400, 200]
+          }
+        }
+      ]
+    },
+    {
+      "id": "error",
+      "initialFocus": "act-retry",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-320, -380],
+            "offsetMax": [320, 380]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-440, -300],
+            "offsetMax": [440, 300]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Disconnected / error",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -340],
+            "offsetMax": [300, -260]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-420, -270],
+            "offsetMax": [420, -190]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "Unknown error",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 32,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-280, -220],
+            "offsetMax": [280, 40]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-400, -170],
+            "offsetMax": [400, 30]
+          }
+        },
+        {
+          "id": "act-retry",
+          "type": "button",
+          "asset": "button.primary",
+          "text": {
+            "label": "Retry"
+          },
+          "action": "retry",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-220, 90],
+            "offsetMax": [220, 200]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-400, 80],
+            "offsetMax": [-20, 190]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "act-leave",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back to title"
+          },
+          "action": "leave",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-220, 230],
+            "offsetMax": [220, 330]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, 85],
+            "offsetMax": [400, 185]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "credits",
+      "initialFocus": "back",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-330, -600],
+            "offsetMax": [330, 600]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-520, -340],
+            "offsetMax": [520, 340]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Credits",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -570],
+            "offsetMax": [300, -490]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-480, -320],
+            "offsetMax": [480, -250]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "Royal Fiesta, MIT license",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -460],
+            "offsetMax": [300, -410]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-490, -230],
+            "offsetMax": [-10, -185]
+          }
+        },
+        {
+          "id": "line-1",
+          "type": "label",
+          "text": "Built on GameSaloon (relay)",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -390],
+            "offsetMax": [300, -340]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-490, -160],
+            "offsetMax": [-10, -115]
+          }
+        },
+        {
+          "id": "line-2",
+          "type": "label",
+          "text": "gamesaloon-rollback (rollback netcode)",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -320],
+            "offsetMax": [300, -270]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-490, -90],
+            "offsetMax": [-10, -45]
+          }
+        },
+        {
+          "id": "line-3",
+          "type": "label",
+          "text": "Rapier (physics, deterministic build)",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -250],
+            "offsetMax": [300, -200]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-490, -20],
+            "offsetMax": [-10, 25]
+          }
+        },
+        {
+          "id": "line-4",
+          "type": "label",
+          "text": "RAA (renderer)",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -180],
+            "offsetMax": [300, -130]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-490, 50],
+            "offsetMax": [-10, 95]
+          }
+        },
+        {
+          "id": "line-5",
+          "type": "label",
+          "text": "Made by the Royal Fiesta contributors",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -110],
+            "offsetMax": [300, -60]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-490, 120],
+            "offsetMax": [-10, 165]
+          }
+        },
+        {
+          "id": "line-6",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -40],
+            "offsetMax": [300, 10]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [10, -230],
+            "offsetMax": [490, -185]
+          }
+        },
+        {
+          "id": "line-7",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, 30],
+            "offsetMax": [300, 80]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [10, -160],
+            "offsetMax": [490, -115]
+          }
+        },
+        {
+          "id": "line-8",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, 100],
+            "offsetMax": [300, 150]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [10, -90],
+            "offsetMax": [490, -45]
+          }
+        },
+        {
+          "id": "line-9",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, 170],
+            "offsetMax": [300, 220]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [10, -20],
+            "offsetMax": [490, 25]
+          }
+        },
+        {
+          "id": "line-10",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, 240],
+            "offsetMax": [300, 290]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [10, 50],
+            "offsetMax": [490, 95]
+          }
+        },
+        {
+          "id": "line-11",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, 310],
+            "offsetMax": [300, 360]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [10, 120],
+            "offsetMax": [490, 165]
+          }
+        },
+        {
+          "id": "back",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back"
+          },
+          "action": "back",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 440],
+            "offsetMax": [200, 540]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 210],
+            "offsetMax": [200, 300]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "initialFocus": "row-0",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-340, -620],
+            "offsetMax": [340, 620]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-600, -350],
+            "offsetMax": [600, 350]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Settings",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -600],
+            "offsetMax": [300, -520]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-480, -340],
+            "offsetMax": [480, -270]
+          }
+        },
+        {
+          "id": "row-0",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Volume 80%"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, -500],
+            "offsetMax": [260, -436]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-560, -260],
+            "offsetMax": [-20, -200]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-1",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Quality high"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, -424],
+            "offsetMax": [260, -360]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-560, -188],
+            "offsetMax": [-20, -128]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-2",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Mouse sensitivity 5"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, -348],
+            "offsetMax": [260, -284]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-560, -116],
+            "offsetMax": [-20, -56]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-3",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Stick sensitivity 5"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, -272],
+            "offsetMax": [260, -208]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-560, -44],
+            "offsetMax": [-20, 16]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-4",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Invert Y off"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, -196],
+            "offsetMax": [260, -132]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-560, 28],
+            "offsetMax": [-20, 88]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-5",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Forward: KeyW"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, -120],
+            "offsetMax": [260, -56]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-560, 100],
+            "offsetMax": [-20, 160]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-6",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back: KeyS"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, -44],
+            "offsetMax": [260, 20]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-560, 172],
+            "offsetMax": [-20, 232]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-7",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Left: KeyA"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, 32],
+            "offsetMax": [260, 96]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, -260],
+            "offsetMax": [560, -200]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-8",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Right: KeyD"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, 108],
+            "offsetMax": [260, 172]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, -188],
+            "offsetMax": [560, -128]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-9",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Jump: Space"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, 184],
+            "offsetMax": [260, 248]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, -116],
+            "offsetMax": [560, -56]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-10",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Dive: ShiftLeft"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, 260],
+            "offsetMax": [260, 324]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, -44],
+            "offsetMax": [560, 16]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-11",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Grab: KeyE"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, 336],
+            "offsetMax": [260, 400]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, 28],
+            "offsetMax": [560, 88]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-12",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Reset to defaults"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-260, 412],
+            "offsetMax": [260, 476]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, 100],
+            "offsetMax": [560, 160]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 26,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, 482],
+            "offsetMax": [300, 530]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, 196],
+            "offsetMax": [560, 236]
+          }
+        },
+        {
+          "id": "back",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back"
+          },
+          "action": "back",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-180, 540],
+            "offsetMax": [180, 610]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, 250],
+            "offsetMax": [300, 330]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

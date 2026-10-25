@@ -50,7 +50,10 @@ function localRaaAliases(dir: string): Alias[] {
 }
 
 const alias: Alias[] = []
-if (mama.kind !== 'absent') alias.push({ find: '@etcito/mama', replacement: join(repoRoot(), '.bricks', 'MAMA', 'src') })
+if (mama.kind !== 'absent') {
+  alias.push({ find: '@etcito/mama', replacement: join(mama.dir, 'src') })
+  alias.push({ find: 'manifold-3d', replacement: join(mama.dir, 'node_modules', 'manifold-3d') })
+}
 const raa = raaLocal()
 if (raa.active && raa.dir !== null) {
   console.warn(`[vite] RF_RAA_LOCAL=1: local RAA override active from ${raa.dir}`)

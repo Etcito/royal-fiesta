@@ -4,6 +4,7 @@
 // render path can hand it to RAA without remeshing. The MAMA calls are the ones that package makes.
 import { RefusalError, isRefusal } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset, MeshRequest } from '../mamaApi.ts'
+import type { SdfmCompiledMaterial } from '@etcito/raa-sdfm'
 import { readSdfm } from '@etcito/mama/sdfm.ts'
 import type { BuiltMaterial } from '@etcito/mama/sdfm.ts'
 import { meshAssets } from '@etcito/mama/core/game/mesh-assets.ts'
@@ -34,15 +35,6 @@ interface PayloadPart {
 }
 
 interface PayloadGroup { group: string; parts: PayloadPart[] }
-
-interface PayloadMaterial {
-  name: string
-  key: string
-  body: string
-  helpers: { id: string; wgsl: string }[]
-  constants: number[]
-  fields: string[]
-}
 
 interface BuiltPayload { groups: PayloadGroup[]; materials: BuiltMaterial[] }
 
@@ -89,7 +81,7 @@ function resolveHelpers(ids: readonly string[], material: string): { id: string;
   return out
 }
 
-async function toPayloadMaterial(built: BuiltMaterial): Promise<PayloadMaterial> {
+async function toPayloadMaterial(built: BuiltMaterial): Promise<SdfmCompiledMaterial> {
   if (built.graph === null) {
     const why = built.error === null ? 'no compiled graph' : `${built.error.code}: ${built.error.message}`
     throw new RefusalError('sdf', built.id, `material '${built.id}' was not built by MAMA (${why}); fix the material graph in SDF Modeler`)
@@ -180,7 +172,7 @@ export async function meshRequest(req: MeshRequest): Promise<MeshedAsset> {
     throw new RefusalError('sdf', req.assetId, 'the document has no group with a game asset; save the asset from SDF Modeler or mark its group as a game asset')
   }
   const { data, parts, triangles } = toPayload(results)
-  const materials: PayloadMaterial[] = []
+  const materials: SdfmCompiledMaterial[] = []
   for (const material of data.materials) materials.push(await toPayloadMaterial(material))
   return {
     assetId: req.assetId,
@@ -193,17 +185,17 @@ export async function meshRequest(req: MeshRequest): Promise<MeshedAsset> {
   }
 }
 
-// Dedicated worker scope: no DOM and no Node process. Node imports this module without side effects.
+// Check the dedicated-worker constructor so shared/service workers never install this protocol.
 interface MeshScope {
   onmessage: ((event: { data: unknown }) => void) | null
   postMessage(message: unknown, transfer?: Transferable[]): void
 }
 
 function workerScope(): MeshScope | null {
-  const g = globalThis as unknown as Partial<MeshScope> & { document?: unknown; process?: unknown }
-  if (typeof g.postMessage !== 'function') return null
-  if (typeof g.document !== 'undefined') return null
-  if (typeof g.process !== 'undefined') return null
+  const g = globalThis as unknown as Partial<MeshScope> & {
+    DedicatedWorkerGlobalScope?: { new (...args: never[]): MeshScope }
+  }
+  if (typeof g.DedicatedWorkerGlobalScope !== 'function' || !(g instanceof g.DedicatedWorkerGlobalScope)) return null
   return g as MeshScope
 }
 

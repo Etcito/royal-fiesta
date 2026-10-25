@@ -299,6 +299,44 @@ change in MAMA, for example splitting a vertex across an ambiguous face. The
 quad mesher stays the mesher, and the m17 thresholds and the 300 s group timeout
 are unchanged.
 
+### zero-length normals from the meshers (operator fix 1063)
+
+Card 5304's GPU job failed in RAA with `mesh.invalid_normal: normals[4198] has zero length`.
+A Node pass over all 24 assets (each through `meshGameAsset`, the worker the browser runs),
+checking every sub-mesh against RAA's mesh rules, found one bad asset:
+
+| Asset | Group mesher | Sub-mesh | What MAMA produced |
+| --- | --- | --- | --- |
+| `candy.floor-tile` | `poly` (`polyFromCsg`) | `candy-white`, 1,362 vertices, 632 triangles | 38 zero-length normals, 16 collapsed (zero-area) triangles |
+
+The other 23 assets and the other three floor-tile sub-meshes had no zero normals, collapsed
+triangles, non-finite values, bad indices or unused vertices. Of the 38 vertices, 32 sit on
+ordinary triangles on the zigzag's cut face (x = 5.17). There the poly output's SDF-gradient
+normal vanishes. The other 6 are used only by the collapsed triangles. On that face the poly
+output also has coplanar faces with opposite normals, and 226 of the sub-mesh's vertex normals
+point against their triangles' winding. That is how the mesher builds this face. This fix does
+not change it.
+
+MAMA main fixed the poly output at the source after the 15501c6 pin (`1788603`, `src/core/poly/output.ts`:
+a zero normal takes its triangles' area-weighted normal). The pin is moved to that commit.
+royal-fiesta also repairs meshes in its own MAMA-to-RAA conversion
+(`apps/web/src/sdf/mama/worker.ts` through `apps/web/src/sdf/meshValidity.ts`), so a mesher on
+any MAMA revision cannot hand RAA a bad mesh. A sub-mesh that breaks a rule loses its
+degenerate triangles. Each zero or non-finite normal is rebuilt from the triangles around that
+vertex, and vertices no triangle uses are removed. Valid MAMA normals are kept as they are. A
+normal whose triangles cancel out has nothing to rebuild from, and anything still invalid after
+the repair, are mesher refusals naming the asset, group, part and material. No fixed normal is
+ever written, and RAA's validation is unchanged.
+
+The m17 `mesh-node` check now runs the same rules (`meshIssues`: finite positions, normals
+and uvs; indices in range; unit non-zero normals; no degenerate triangle; no unused vertex) on
+every mesh of every asset. It also checks that every asset a course places is in the meshed set,
+and it lists every bad mesh in one pass. `m17-sdf-match` now runs after `m17-mesh-node`. Note:
+Node meshing loads the sibling's built `dist/` while the web build bundles its `src/`. The
+sibling's `dist/` was built at 00:59 on 2026-10-25, from an earlier commit than its `src/`.
+Until `npm run build` is re-run in the sibling, the Node check meshes older MAMA code than the
+browser does.
+
 ## ui font upload
 
 `@etcito/raa-assets-tools` 0.1.0 has no remote put: `raa-assets put` only writes a local store

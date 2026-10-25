@@ -20,6 +20,8 @@ import { publishDist, renderOp } from '@royal-fiesta/headless/gpuClient'
 import type { OpResult } from '@royal-fiesta/headless/gpuClient'
 import { secretsFromEnv } from '@royal-fiesta/headless/controlsGpu'
 import { leakScan, redact } from '../../../tools/guard.ts'
+import { meshIssues } from '../../web/src/sdf/meshValidity.ts'
+import type { MeshArrays } from '../../web/src/sdf/meshValidity.ts'
 
 // M3 SDF runtime. QB1: a headless v1 sprint match hashes the same with MAMA present and with the facade
 // stubbed. QB11: every assets/*/ asset meshes through MAMA's declared mesher in Node. QB7: a refusal
@@ -157,7 +159,26 @@ async function checkMama(): Promise<CheckResult> {
 // ---- mesh-node -----------------------------------------------------------------------------------------
 
 interface MeshNodeModule {
-  meshGameAsset(asset: GameAsset, options?: { timeoutMs?: number }): Promise<{ parts: number; triangles: number }>
+  meshGameAsset(asset: GameAsset, options?: { timeoutMs?: number }): Promise<{
+    parts: number
+    triangles: number
+    data: { groups: { group: string; parts: { name: string; meshes: (MeshArrays & { material: string | null })[] }[] }[] }
+  }>
+}
+
+// RAA's upload rules on every mesh the worker hands over (the same payload the browser uploads), so a
+// bad mesh is named here, with all the others, before a GPU job meets the first one.
+function invalidMeshes(id: string, result: Awaited<ReturnType<MeshNodeModule['meshGameAsset']>>): string[] {
+  const notes: string[] = []
+  for (const group of result.data.groups) {
+    for (const part of group.parts) {
+      for (const mesh of part.meshes) {
+        const issues = meshIssues(mesh)
+        if (issues.length > 0) notes.push(`${id}#${group.group}/${part.name}/${mesh.material ?? 'no material'}: ${issues.join('; ')}`)
+      }
+    }
+  }
+  return notes
 }
 
 const ASSET_SUFFIX = '.asset.json'
@@ -190,18 +211,28 @@ async function checkMeshNode(): Promise<CheckResult> {
     try {
       const asset = await parseGameAsset(JSON.parse(await readRepoText(path)) as unknown, path)
       const result = await meshNode.meshGameAsset(asset, { timeoutMs: MESH_TIMEOUT_MS })
-      if (result.parts >= 1 && result.triangles > 0) meshed++
+      const invalid = invalidMeshes(id, result)
+      if (invalid.length > 0) notes.push(...invalid)
+      else if (result.parts >= 1 && result.triangles > 0) meshed++
       else notes.push(`${id}: parts=${result.parts} triangles=${result.triangles}; every mesh needs parts >= 1 and triangles > 0`)
     } catch (e) {
       // A mesh refusal carries '<asset id>#<group id>' and MAMA's own reason, or 'timed out after <n> s'.
       notes.push(`${id}: ${messageOf(e)}`)
     }
   }
-  report('mesh-node', { assets: files.length, meshed, timeoutMs: MESH_TIMEOUT_MS })
+  // Every asset a course places must be one of the files meshed and checked above.
+  const ids = new Set(files.map(path => path.slice(path.lastIndexOf('/') + 1, -ASSET_SUFFIX.length)))
+  let missing = 0
+  for (const course of await loadAllCoursesV1()) {
+    for (const assetId of course.assetIds) {
+      if (!ids.has(assetId)) { missing++; notes.push(`course ${course.id}: asset '${assetId}' has no assets/*/${assetId}${ASSET_SUFFIX}; add it or remove it from the course`) }
+    }
+  }
+  report('mesh-node', { assets: files.length, meshed, missingCourseAssets: missing, timeoutMs: MESH_TIMEOUT_MS })
   return {
     value: `${meshed}/${files.length}`,
-    threshold: `${files.length}/${files.length}`,
-    pass: files.length > 0 && meshed === files.length,
+    threshold: `${files.length}/${files.length}, every course asset among them, every mesh valid for RAA`,
+    pass: files.length > 0 && meshed === files.length && missing === 0,
     notes,
   }
 }

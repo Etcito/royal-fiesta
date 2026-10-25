@@ -4,6 +4,7 @@
 // render path can hand it to RAA without remeshing. The MAMA calls are the ones that package makes.
 import { RefusalError, isRefusal } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset, MeshRequest } from '../mamaApi.ts'
+import { meshIssues, repairMesh } from '../meshValidity.ts'
 import type { SdfmCompiledMaterial } from '@etcito/raa-sdfm'
 import { readSdfm } from '@etcito/mama/sdfm.ts'
 import type { BuiltMaterial } from '@etcito/mama/sdfm.ts'
@@ -101,18 +102,43 @@ async function toPayloadMaterial(built: BuiltMaterial): Promise<SdfmCompiledMate
   return { name: built.id, key, body, helpers, constants, fields }
 }
 
+function groupName(doc: SdfDocument, group: string): string {
+  const node = doc.nodes[group]
+  return node !== undefined && node.name !== '' ? node.name : group
+}
+
 // First refused group in result order wins: no other mesher is ever tried.
 function throwFirstRefusal(results: readonly AssetMeshResult[], doc: SdfDocument, assetId: string): void {
   for (const result of results) {
     if (result.error === null) continue
-    const node = doc.nodes[result.group]
-    const name = node !== undefined && node.name !== '' ? node.name : result.group
+    const name = groupName(doc, result.group)
     const reason = result.error.fix !== '' ? `${result.error.message}; ${result.error.fix}` : result.error.message
     throw new RefusalError('mesher', `${assetId}#group:${name}`, reason)
   }
 }
 
-function toPayload(results: readonly AssetMeshResult[]): { data: BuiltPayload; parts: number; triangles: number } {
+// MAMA's meshers can leave collapsed triangles and zero-length normals (the poly output's SDF-gradient
+// normal is zero on some cut faces, docs/brick-gaps.md). RAA refuses a zero normal, so a sub-mesh that
+// breaks its rules loses its degenerate triangles, gets those normals rebuilt from the triangles around
+// the vertex and drops unused vertices; anything still invalid after that is a mesher refusal.
+function toPayloadMesh(sub: AssetMeshResult['parts'][number]['subMeshes'][number], where: string): PayloadMesh | null {
+  const mesh = { positions: sub.positions, normals: sub.normals, uvs: sub.uvs ?? null, indices: sub.indices }
+  if (meshIssues(mesh).length === 0) return { material: sub.material, ...mesh }
+  let repaired: ReturnType<typeof repairMesh>
+  try {
+    repaired = repairMesh(mesh, where)
+  } catch (e) {
+    throw new RefusalError('mesher', where, e instanceof Error ? e.message : String(e))
+  }
+  if (repaired === null) return null
+  const issues = meshIssues(repaired.mesh)
+  if (issues.length > 0) {
+    throw new RefusalError('mesher', where, `the mesh breaks RAA's mesh rules (${issues.join('; ')}); re-save the asset in SDF Modeler`)
+  }
+  return { material: sub.material, ...repaired.mesh }
+}
+
+function toPayload(results: readonly AssetMeshResult[], doc: SdfDocument, assetId: string): { data: BuiltPayload; parts: number; triangles: number } {
   const groups: PayloadGroup[] = []
   const materials = new Map<string, BuiltMaterial>()
   let parts = 0
@@ -121,16 +147,14 @@ function toPayload(results: readonly AssetMeshResult[]): { data: BuiltPayload; p
     const payloadParts: PayloadPart[] = []
     for (const part of result.parts) {
       parts += 1
-      const meshes: PayloadMesh[] = part.subMeshes.map((sub) => {
-        triangles += sub.indices.length / 3
-        return {
-          material: sub.material,
-          positions: sub.positions,
-          normals: sub.normals,
-          uvs: sub.uvs ?? null,
-          indices: sub.indices,
-        }
-      })
+      const meshes: PayloadMesh[] = []
+      for (const sub of part.subMeshes) {
+        const where = `${assetId}#group:${groupName(doc, result.group)}/${part.name}/${sub.material ?? 'no material'}`
+        const mesh = toPayloadMesh(sub, where)
+        if (mesh === null) continue
+        triangles += mesh.indices.length / 3
+        meshes.push(mesh)
+      }
       payloadParts.push({ partId: part.partId, name: part.name, frame: part.frame, meshes })
     }
     groups.push({ group: result.group, parts: payloadParts })
@@ -178,7 +202,7 @@ export async function meshRequest(req: MeshRequest): Promise<MeshedAsset> {
   if (results.length === 0) {
     throw new RefusalError('sdf', req.assetId, 'the document has no group with a game asset; save the asset from SDF Modeler or mark its group as a game asset')
   }
-  const { data, parts, triangles } = toPayload(results)
+  const { data, parts, triangles } = toPayload(results, doc, req.assetId)
   const materials: SdfmCompiledMaterial[] = []
   for (const material of data.materials) materials.push(await toPayloadMaterial(material))
   return {

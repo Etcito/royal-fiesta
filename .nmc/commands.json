@@ -68,7 +68,8 @@
     "cwd": ".",
     "after": [
       "m17-bricks-check",
-      "m17-tests"
+      "m17-tests",
+      "m17-mesh-node"
     ]
   }
 ]

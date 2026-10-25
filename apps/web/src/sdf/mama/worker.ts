@@ -49,7 +49,7 @@ function ensureMesherOnce(): Promise<void> {
 async function initMesher(): Promise<void> {
   // In a page/worker Vite bundles the wasm of the MAMA checkout; in Node manifold-3d finds its own.
   if ((globalThis as { process?: unknown }).process === undefined) {
-    const wasm = (await import('../../../../../.bricks/MAMA/node_modules/manifold-3d/manifold.wasm?url')) as { default: string }
+    const wasm = (await import('manifold-3d/manifold.wasm?url')) as { default: string }
     setMesherWasm(wasm.default)
   }
   await ensureMesher()

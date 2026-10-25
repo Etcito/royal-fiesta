@@ -17,38 +17,12 @@
       "candy_finish_arch"
     ],
     "nodes": {
-      "candy_finish_arch": {
-        "id": "candy_finish_arch",
-        "name": "candy-finish-arch",
+      "w_post_l_base": {
+        "id": "w_post_l_base",
+        "name": "post_l_base",
         "kind": "group",
         "children": [
-          "collider_post_l",
-          "collider_post_r",
-          "collider_beam",
-          "post_l_base",
-          "post_l_core",
-          "post_l_band",
-          "post_l_rim0",
-          "post_l_rim1",
-          "post_l_rim2",
-          "post_r_base",
-          "post_r_core",
-          "post_r_band",
-          "post_r_rim0",
-          "post_r_rim1",
-          "post_r_rim2",
-          "beam",
-          "beam_band",
-          "beam_zigzag",
-          "crown",
-          "crown_tip0",
-          "crown_tip1",
-          "crown_tip2",
-          "crown_tip3",
-          "crown_tip4",
-          "crown_jewel0",
-          "crown_jewel1",
-          "crown_jewel2"
+          "post_l_base"
         ],
         "asset": {
           "game": "royal-fiesta",
@@ -57,72 +31,8 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "dc"
-        },
-        "gameCollision": false
-      },
-      "collider_post_l": {
-        "id": "collider_post_l",
-        "name": "collider_post_l",
-        "kind": "box",
-        "visible": false,
-        "transform": {
-          "position": [
-            -4,
-            2,
-            0
-          ]
-        },
-        "params": {
-          "size": [
-            0.8,
-            4,
-            0.8
-          ]
-        },
-        "gameCollision": true
-      },
-      "collider_post_r": {
-        "id": "collider_post_r",
-        "name": "collider_post_r",
-        "kind": "box",
-        "visible": false,
-        "transform": {
-          "position": [
-            4,
-            2,
-            0
-          ]
-        },
-        "params": {
-          "size": [
-            0.8,
-            4,
-            0.8
-          ]
-        },
-        "gameCollision": true
-      },
-      "collider_beam": {
-        "id": "collider_beam",
-        "name": "collider_beam",
-        "kind": "box",
-        "visible": false,
-        "transform": {
-          "position": [
-            0,
-            4.4,
-            0
-          ]
-        },
-        "params": {
-          "size": [
-            8.8,
-            0.8,
-            0.8
-          ]
-        },
-        "gameCollision": true
+          "output": "poly"
+        }
       },
       "post_l_base": {
         "id": "post_l_base",
@@ -143,6 +53,23 @@
         },
         "gameCollision": false
       },
+      "w_post_l_core": {
+        "id": "w_post_l_core",
+        "name": "post_l_core",
+        "kind": "group",
+        "children": [
+          "post_l_core"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "post_l_core": {
         "id": "post_l_core",
         "name": "post_l_core",
@@ -161,6 +88,23 @@
           "radius": 0.62
         },
         "gameCollision": false
+      },
+      "w_post_l_band": {
+        "id": "w_post_l_band",
+        "name": "post_l_band",
+        "kind": "group",
+        "children": [
+          "post_l_band"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "post_l_band": {
         "id": "post_l_band",
@@ -181,6 +125,23 @@
         },
         "gameCollision": false
       },
+      "w_post_l_rim0": {
+        "id": "w_post_l_rim0",
+        "name": "post_l_rim0",
+        "kind": "group",
+        "children": [
+          "post_l_rim0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "post_l_rim0": {
         "id": "post_l_rim0",
         "name": "post_l_rim0",
@@ -198,6 +159,23 @@
           "minorRadius": 0.13
         },
         "gameCollision": false
+      },
+      "w_post_l_rim1": {
+        "id": "w_post_l_rim1",
+        "name": "post_l_rim1",
+        "kind": "group",
+        "children": [
+          "post_l_rim1"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "post_l_rim1": {
         "id": "post_l_rim1",
@@ -217,6 +195,23 @@
         },
         "gameCollision": false
       },
+      "w_post_l_rim2": {
+        "id": "w_post_l_rim2",
+        "name": "post_l_rim2",
+        "kind": "group",
+        "children": [
+          "post_l_rim2"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "post_l_rim2": {
         "id": "post_l_rim2",
         "name": "post_l_rim2",
@@ -234,6 +229,23 @@
           "minorRadius": 0.13
         },
         "gameCollision": false
+      },
+      "w_post_r_base": {
+        "id": "w_post_r_base",
+        "name": "post_r_base",
+        "kind": "group",
+        "children": [
+          "post_r_base"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "post_r_base": {
         "id": "post_r_base",
@@ -254,6 +266,23 @@
         },
         "gameCollision": false
       },
+      "w_post_r_core": {
+        "id": "w_post_r_core",
+        "name": "post_r_core",
+        "kind": "group",
+        "children": [
+          "post_r_core"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "post_r_core": {
         "id": "post_r_core",
         "name": "post_r_core",
@@ -272,6 +301,23 @@
           "radius": 0.62
         },
         "gameCollision": false
+      },
+      "w_post_r_band": {
+        "id": "w_post_r_band",
+        "name": "post_r_band",
+        "kind": "group",
+        "children": [
+          "post_r_band"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "post_r_band": {
         "id": "post_r_band",
@@ -292,6 +338,23 @@
         },
         "gameCollision": false
       },
+      "w_post_r_rim0": {
+        "id": "w_post_r_rim0",
+        "name": "post_r_rim0",
+        "kind": "group",
+        "children": [
+          "post_r_rim0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "post_r_rim0": {
         "id": "post_r_rim0",
         "name": "post_r_rim0",
@@ -309,6 +372,23 @@
           "minorRadius": 0.13
         },
         "gameCollision": false
+      },
+      "w_post_r_rim1": {
+        "id": "w_post_r_rim1",
+        "name": "post_r_rim1",
+        "kind": "group",
+        "children": [
+          "post_r_rim1"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "post_r_rim1": {
         "id": "post_r_rim1",
@@ -328,6 +408,23 @@
         },
         "gameCollision": false
       },
+      "w_post_r_rim2": {
+        "id": "w_post_r_rim2",
+        "name": "post_r_rim2",
+        "kind": "group",
+        "children": [
+          "post_r_rim2"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "post_r_rim2": {
         "id": "post_r_rim2",
         "name": "post_r_rim2",
@@ -345,6 +442,23 @@
           "minorRadius": 0.13
         },
         "gameCollision": false
+      },
+      "w_beam": {
+        "id": "w_beam",
+        "name": "beam",
+        "kind": "group",
+        "children": [
+          "beam"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "beam": {
         "id": "beam",
@@ -368,6 +482,23 @@
         },
         "gameCollision": false
       },
+      "w_beam_band": {
+        "id": "w_beam_band",
+        "name": "beam_band",
+        "kind": "group",
+        "children": [
+          "beam_band"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "beam_band": {
         "id": "beam_band",
         "name": "beam_band",
@@ -389,6 +520,23 @@
           ]
         },
         "gameCollision": false
+      },
+      "w_beam_zigzag": {
+        "id": "w_beam_zigzag",
+        "name": "beam_zigzag",
+        "kind": "group",
+        "children": [
+          "beam_zigzag"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "beam_zigzag": {
         "id": "beam_zigzag",
@@ -568,6 +716,23 @@
         },
         "gameCollision": false
       },
+      "w_crown": {
+        "id": "w_crown",
+        "name": "crown",
+        "kind": "group",
+        "children": [
+          "crown"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "crown": {
         "id": "crown",
         "name": "crown",
@@ -656,6 +821,23 @@
         },
         "gameCollision": false
       },
+      "w_crown_tip0": {
+        "id": "w_crown_tip0",
+        "name": "crown_tip0",
+        "kind": "group",
+        "children": [
+          "crown_tip0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "crown_tip0": {
         "id": "crown_tip0",
         "name": "crown_tip0",
@@ -672,6 +854,23 @@
           "radius": 0.16
         },
         "gameCollision": false
+      },
+      "w_crown_tip1": {
+        "id": "w_crown_tip1",
+        "name": "crown_tip1",
+        "kind": "group",
+        "children": [
+          "crown_tip1"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "crown_tip1": {
         "id": "crown_tip1",
@@ -690,6 +889,23 @@
         },
         "gameCollision": false
       },
+      "w_crown_tip2": {
+        "id": "w_crown_tip2",
+        "name": "crown_tip2",
+        "kind": "group",
+        "children": [
+          "crown_tip2"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "crown_tip2": {
         "id": "crown_tip2",
         "name": "crown_tip2",
@@ -706,6 +922,23 @@
           "radius": 0.16
         },
         "gameCollision": false
+      },
+      "w_crown_tip3": {
+        "id": "w_crown_tip3",
+        "name": "crown_tip3",
+        "kind": "group",
+        "children": [
+          "crown_tip3"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "crown_tip3": {
         "id": "crown_tip3",
@@ -724,6 +957,23 @@
         },
         "gameCollision": false
       },
+      "w_crown_tip4": {
+        "id": "w_crown_tip4",
+        "name": "crown_tip4",
+        "kind": "group",
+        "children": [
+          "crown_tip4"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "crown_tip4": {
         "id": "crown_tip4",
         "name": "crown_tip4",
@@ -740,6 +990,23 @@
           "radius": 0.16
         },
         "gameCollision": false
+      },
+      "w_crown_jewel0": {
+        "id": "w_crown_jewel0",
+        "name": "crown_jewel0",
+        "kind": "group",
+        "children": [
+          "crown_jewel0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "crown_jewel0": {
         "id": "crown_jewel0",
@@ -765,6 +1032,23 @@
         },
         "gameCollision": false
       },
+      "w_crown_jewel1": {
+        "id": "w_crown_jewel1",
+        "name": "crown_jewel1",
+        "kind": "group",
+        "children": [
+          "crown_jewel1"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "crown_jewel1": {
         "id": "crown_jewel1",
         "name": "crown_jewel1",
@@ -789,6 +1073,23 @@
         },
         "gameCollision": false
       },
+      "w_crown_jewel2": {
+        "id": "w_crown_jewel2",
+        "name": "crown_jewel2",
+        "kind": "group",
+        "children": [
+          "crown_jewel2"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.finish-arch",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "crown_jewel2": {
         "id": "crown_jewel2",
         "name": "crown_jewel2",
@@ -812,6 +1113,103 @@
           "radius": 0.12
         },
         "gameCollision": false
+      },
+      "collider_post_l": {
+        "id": "collider_post_l",
+        "name": "collider_post_l",
+        "kind": "box",
+        "visible": false,
+        "transform": {
+          "position": [
+            -4,
+            2,
+            0
+          ]
+        },
+        "params": {
+          "size": [
+            0.8,
+            4,
+            0.8
+          ]
+        },
+        "gameCollision": true
+      },
+      "collider_post_r": {
+        "id": "collider_post_r",
+        "name": "collider_post_r",
+        "kind": "box",
+        "visible": false,
+        "transform": {
+          "position": [
+            4,
+            2,
+            0
+          ]
+        },
+        "params": {
+          "size": [
+            0.8,
+            4,
+            0.8
+          ]
+        },
+        "gameCollision": true
+      },
+      "collider_beam": {
+        "id": "collider_beam",
+        "name": "collider_beam",
+        "kind": "box",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            4.4,
+            0
+          ]
+        },
+        "params": {
+          "size": [
+            8.8,
+            0.8,
+            0.8
+          ]
+        },
+        "gameCollision": true
+      },
+      "candy_finish_arch": {
+        "id": "candy_finish_arch",
+        "name": "candy-finish-arch",
+        "kind": "group",
+        "children": [
+          "w_post_l_base",
+          "w_post_l_core",
+          "w_post_l_band",
+          "w_post_l_rim0",
+          "w_post_l_rim1",
+          "w_post_l_rim2",
+          "w_post_r_base",
+          "w_post_r_core",
+          "w_post_r_band",
+          "w_post_r_rim0",
+          "w_post_r_rim1",
+          "w_post_r_rim2",
+          "w_beam",
+          "w_beam_band",
+          "w_beam_zigzag",
+          "w_crown",
+          "w_crown_tip0",
+          "w_crown_tip1",
+          "w_crown_tip2",
+          "w_crown_tip3",
+          "w_crown_tip4",
+          "w_crown_jewel0",
+          "w_crown_jewel1",
+          "w_crown_jewel2",
+          "collider_post_l",
+          "collider_post_r",
+          "collider_beam"
+        ]
       }
     },
     "materials": {
@@ -953,5 +1351,5 @@
       0.85
     ]
   },
-  "hash": "295bee6b06ae59fb7a13e208ad74cb4370b54d0def85a83ce57419e46980ee80"
+  "hash": "0a2d104f48cb974eaa64c2c32fd78cfd8dfd0302aa93f24e3aedea198ef22391"
 }

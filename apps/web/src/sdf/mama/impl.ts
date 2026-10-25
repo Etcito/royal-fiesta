@@ -17,12 +17,12 @@ const RAA_SDFM_VERSION = '0.1.0'
 const MAMA_ABSENT_PREFIX = 'MAMA not available: '
 
 function resolvedCommit(): string {
-  let info: { kind?: unknown; commit?: unknown }
-  try {
-    info = JSON.parse(__RF_MAMA__) as { kind?: unknown; commit?: unknown }
-  } catch {
-    throw new RefusalError('sdf', 'MAMA', MAMA_ABSENT_PREFIX + '__RF_MAMA__ is not JSON; rebuild with apps/web/vite.config.ts')
+  // Vite's define value is a JavaScript expression: the JSON becomes an object, not a string.
+  const value: unknown = typeof __RF_MAMA__ === 'undefined' ? undefined : __RF_MAMA__
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new RefusalError('sdf', 'MAMA', MAMA_ABSENT_PREFIX + '__RF_MAMA__ is not an object; rebuild with apps/web/vite.config.ts')
   }
+  const info = value as { kind?: unknown; commit?: unknown }
   if (typeof info.commit !== 'string' || info.commit === '') {
     throw new RefusalError('sdf', 'MAMA', MAMA_ABSENT_PREFIX + `no resolved commit; the ${String(info.kind)} MAMA checkout has no readable git HEAD, run npm run bricks -- fetch mama (see docs/bricks.md)`)
   }

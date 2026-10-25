@@ -38,6 +38,42 @@ sibling link or a clone made with a build-machine token; docs/bricks.md).
 - A published MAMA release (a tarball like the other bricks) would remove the token, the clone and
   the stub from the public build path.
 
+### quad mesher on the content assets
+
+The committed MAMA pin is `7f198428fdb55e05824d949fa6835cf3695f77ea`
+(`bricks.pins.json`). The content survey used the resolved sibling
+`864ebc3e0780feb4261f3fa00a5029356045b89e`, which differs from that pin; these
+results are not a claim that the pinned checkout was tested. Of the 24 committed
+assets, eight mesh: candy.podium-block, candy.seesaw-plank, penguin.body and the
+five lowpoly scenery assets (candy.slime-pool, candy.banner, candy.hot-air-balloon,
+candy.tower and candy.cloud). The other 16 quad assets are listed below with
+MAMA's refusal message or the per-group 300 s timeout.
+
+| Asset | MAMA message / timeout |
+| --- | --- |
+| `candy.bounce-pad` | group 'candy-bounce-pad' cannot be meshed with Quad mesh (clean) (quad): extract: vertex 33864 at (1.503386, 0.137733, 0.001665) does not project onto the surface (\|F\| = 4.081e-5 > 6.940e-7); extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `candy.checkpoint-gate` | group 'candy-checkpoint-gate' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (19354, 19355) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `candy.conveyor-belt` | timed out after 300 s |
+| `candy.finish-arch` | group 'candy-finish-arch' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (11565, 26709) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `candy.floor-disc` | group 'Floor Disc' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (46018, 46025) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `candy.floor-tile` | timed out after 300 s |
+| `candy.moving-platform` | group 'Moving Platform' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (33939, 33940) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `candy.pendulum-hammer` | group 'Pendulum Hammer' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (598, 599) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `candy.plaza-fountain` | timed out after 300 s |
+| `candy.queue-pad` | group 'candy-queue-pad' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (22890, 22891) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `candy.rotating-door` | timed out after 300 s |
+| `candy.spinner-bar` | group 'Spinner Bar' cannot be meshed with Quad mesh (clean) (quad): extract: vertex 77122 at (-0.473927, 0.341803, -0.288762) does not project onto the surface (\|F\| = 7.881e-5 > 1.253e-6); extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `candy.wall-block` | timed out after 300 s |
+| `costume.fish-scarf` | group 'fish_scarf' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (30227, 30237) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `costume.pineapple-suit` | group 'pineapple_suit' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (18823, 18946) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+| `costume.propeller-hat` | group 'propeller_hat' cannot be meshed with Quad mesh (clean) (quad): extract: the mesh is not 2-manifold: Edge (6615, 6637) is used by 4 triangles; extract again with a smaller cellSize (e.g. half the current one, or baseCellSize with a shorter edgeLength) |
+
+The fix comes from an upstream MAMA update followed by a pin bump in
+`bricks.pins.json`, or the content project re-saving the assets and regenerating
+its views records in SDF Modeler. This repository does not patch MAMA, change
+asset meshers or params, retry, or fall back. The m17 mesh-node check keeps its
+full 24/24 threshold and fails until those assets mesh.
+
 ## ui font upload
 
 `@etcito/raa-assets-tools` 0.1.0 has no remote put: `raa-assets put` only writes a local store

@@ -32,7 +32,7 @@ function converter(helpers: Helpers, common: string): (built: Built) => Promise<
         return { sha256Hex: (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex') }
       }
       if (['@etcito/mama/sdfm.ts', '@etcito/mama/core/game/mesh-assets.ts',
-        '@etcito/mama/core/paramesh/runtime.ts', '@etcito/mama/core/compute/pool.ts'].includes(id)) return {}
+        '@etcito/mama/core/paramesh/runtime.ts', '@etcito/mama/core/compute/pool.ts', '../meshValidity.ts'].includes(id)) return {}
       throw new Error(`unexpected worker import: ${id}`)
     },
   })

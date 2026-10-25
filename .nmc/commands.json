@@ -12,9 +12,16 @@
     "cwd": "."
   },
   {
+    "name": "m17-mesh-node",
+    "command": "node --experimental-strip-types apps/headless/proofs/m17-sdf-runtime.ts --only mesh-node",
+    "timeout_s": 1800,
+    "cwd": ".",
+    "after": ["m17-bricks-check", "m17-worker-bootstrap"]
+  },
+  {
     "name": "m17-sdf-match",
     "command": "env NMC_GPU_WAIT_S=900 node --experimental-strip-types tools/m17SdfMatch.ts",
-    "timeout_s": 3600,
+    "timeout_s": 1680,
     "cwd": ".",
     "after": ["m17-bricks-check", "m17-worker-bootstrap"]
   }

@@ -188,6 +188,31 @@ bump alone does not replace a resolved sibling: verify the resolved commit
 with `bricks check`, then run the unchanged m17 `mesh-node` acceptance and GPU
 tour. No successful GPU record has been produced by this corrective card.
 
+### attempt 18 floor-tile refusal and subsequent content fixes
+
+Card 5296 reported `candy.floor-tile#group:Floor Tile` refusing Low-poly with
+8 degenerate triangles after one repair round (27,396 triangles, detail
+0.11703646517084966 m, adaptivity 0.02). That output predates the current
+content: commit `edb8730` declares `poly` on Floor Tile's group, and `f131d7c`
+splits Finish Arch into 24 visual groups, each declaring `poly`. The worker
+preserves these group declarations even when the asset-level default is `quad`.
+The earlier quad survey above is historical, not a survey of this new content.
+
+Card 5297 verified the current Floor Tile through the unchanged `meshGameAsset`
+and shared worker: 1 part, 4,241 triangles. The resolved MAMA was still
+`864ebc3e0780feb4261f3fa00a5029356045b89e`, with the pin-mismatch warning.
+The full Finish Arch diagnostic exceeded the local 60 s command limit;
+a reduced diagnostic selecting only `post_l_base` produced 1 part and
+1,174 triangles. Neither diagnostic establishes that every asset meshes or
+that the browser tour succeeds. No assets, mesher settings or brick code were
+changed by this corrective card.
+
+Card 5298's commands include the existing full `mesh-node` acceptance as well
+as the GPU tour and its built-in judges. The Node acceptance collects every
+asset's refusal instead of stopping at the first asset, retains the 24/24
+threshold and 300 s per-group timeout, and runs independently of the GPU tour.
+Both long checks remain programmatic; no new successful GPU record is claimed.
+
 ### cause of the extract refusals (operator fix 1057)
 
 The `cellSize` named by the refusal is not reachable from this repository. MAMA's

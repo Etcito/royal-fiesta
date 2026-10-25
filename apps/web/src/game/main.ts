@@ -817,7 +817,9 @@ class App {
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
       })
-      const course = q.course === null ? null : content.course(q.course)
+      // ?course=<hub> opens the hub itself: the hub is the lobby, not a round (courseSetup refuses hubs).
+      const picked = q.course === null ? null : content.course(q.course)
+      const course = picked !== null && picked.kind === 'hub' ? null : picked
       const { ports, canvases } = await this.mountPorts(content, q.clients)
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.

@@ -188,6 +188,45 @@ bump alone does not replace a resolved sibling: verify the resolved commit
 with `bricks check`, then run the unchanged m17 `mesh-node` acceptance and GPU
 tour. No successful GPU record has been produced by this corrective card.
 
+### cause of the extract refusals (operator fix 1057)
+
+The `cellSize` named by the refusal is not reachable from this repository. MAMA's
+quad stage (`packages/quadmesh/src/stages/extract-dc.ts`) first extracts at a fixed
+`diag / 192`, then at `baseCellSize(edgeLength)`. On `candy.checkpoint-gate` the
+fixed coarse pass is the one that fails. No worker retry, group mesher param or
+asset setting changes that cell, so a worker-side halving or an asset edit cannot
+fix it. Halving the coarse cell globally (`diag / 384`) passes the 300 s group
+timeout on that asset.
+
+The cause is in MAMA's manifold dual contouring
+(`packages/quadmesh/src/extract/dual-contour.ts`). Take a leaf face crossed by two
+surface arcs, where each leaf merges both arcs into one vertex. Then the dual edge
+between those two vertices is in all 4 polygons around the face's crossings. On
+`candy.checkpoint-gate`, leaves (level 2) 512,223,38 and 513,223,38 share such a
+face, and that gives edge (19354, 19355) right after contouring, before any cleanup.
+
+A MAMA fix is committed on the local branch `op-1057-dc-manifold-refine` (commit
+`c6f364b`, on top of `864ebc3`). The clone is the
+operator scratch copy `op-1057-bricks/MAMA` next to the worktrees; the branch is not pushed. The fix
+splits only the leaves that own the bad vertices and redoes the extract, at most 3
+rounds. Its scope is the 9 'not 2-manifold' refusals and the 2 'does not
+project' refusals. MAMA's own `extract.test` passes on it. Node results with that
+build (`RF_BRICKS_DIR`):
+
+| Asset | Extract with the fix | Then |
+| --- | --- | --- |
+| `candy.checkpoint-gate`, `candy.finish-arch`, `candy.floor-disc`, `candy.moving-platform`, `candy.pendulum-hammer`, `candy.queue-pad`, `candy.bounce-pad` | passes (1-2 repair rounds) | the group times out in the later quad stages (checkpoint-gate: over 300 s; the others over 120 s in a parallel run) |
+| `costume.fish-scarf`, `costume.pineapple-suit`, `costume.propeller-hat` | still 'not 2-manifold' | the bad vertices are in finest-level leaves (`MAX_REFINE_LEVEL` 3), so no split is left |
+| `candy.spinner-bar` | still 'does not project' | the same, after 1 round |
+
+So the fix alone does not get the GPU tour through meshing. The 5 assets that
+already timed out, plus the 7 that now pass extract, need a faster MAMA quad
+pipeline: the extract runs more than once per group, and features, sizing and
+remesh each take tens of seconds. The 4 finest-level cases need a dual-contouring
+change in MAMA, for example splitting a vertex across an ambiguous face. The
+quad mesher stays the mesher, and the m17 thresholds and the 300 s group timeout
+are unchanged.
+
 ## ui font upload
 
 `@etcito/raa-assets-tools` 0.1.0 has no remote put: `raa-assets put` only writes a local store

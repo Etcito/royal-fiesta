@@ -15,6 +15,24 @@
 - Node has no WebGPU, so the Node proofs (m7-web, m8-hub) record RAA as absent; captures and frame timing come only from a browser run on a GPU.
 - `@etcito/raa-sdfm` cannot upload MAMA meshes on the published `@etcito/raa`. Both published raa-sdfm tarballs (`raa-sdfm-v0.1.0`, pinned in apps/web; and `raa-sdfm-v0.1.1`, whose `index.d.ts` and `index.js` are identical and which only drops the manifest's peer dependencies) are built against RAA's m07/m10 mesh and material API: `Engine.addMesh`, `addMeshInstance`, `addSurfaceMaterial`, `addMaterialFunction` and the per-instance `SurfaceMaterialDesc.params`. Upstream main declares that API in `packages/raa/types/m07-meshes-hdr.d.ts` and `types/m10-materials.d.ts`, but the published `@etcito/raa` v0.1.1 tarball (tag `v0.1.1`) is the older v0 API: its `index.d.ts` and `pkg/raa_js_bg.wasm` stop at `engine_addInstance`, `engine_addMaterial`, `engine_addNode` and `engine_setMaterial`, with no mesh upload and no per-instance material parameter. Upstream main `3bbd94b` (2026-10-25) bumps `@etcito/raa` and `@etcito/raa-sdfm` to 0.2.0 with that API, but no `v0.2.0` tag or release is published, so no newer release can be pinned yet; raa-sdfm 0.2.0 on main also declares registry peers `@etcito/raa@^0.2.0` and `mama@^0.1.0`, which kong cannot resolve, and the release workflow packs only `@etcito/raa`. raa-sdfm's public types also expose no upload of pre-meshed data: `createSdfmLoader` meshes the asset document through MAMA itself, and `mapMaterial` returns a description with no params. `apps/web/src/sdf/sdfPort.ts` therefore cannot upload the MeshPool payload or tint through a graph-material parameter, and is not written: card 5129 stays blocked until an `@etcito/raa` release (a version bump, so the tarball carries m07/m10) is published and pinned with a matching raa-sdfm. The 2026-10-25 recheck found four releases (`v0.1.0`, `v0.1.1`, `raa-sdfm-v0.1.0`, `raa-sdfm-v0.1.1`); none ships both tarballs. `RF_RAA_LOCAL` and an unreleased `../raa` build stay forbidden (1.2).
 
+The 0.2.0 releases published later on 2026-10-25 close the upload gap: `v0.2.0` ships
+`etcito-raa-0.2.0.tgz` with `addMesh`, `addMeshInstance`, `addSurfaceMaterial` and
+`addMaterialFunction`, and `raa-sdfm-v0.2.0` ships the matching release with
+`mapMaterial`. Both are pinned in `apps/web/package.json`, `apps/web/src/sdf/sdfPort.ts`
+uploads the MeshPool payload through them, and the notes above describe the earlier
+attempts. Two limits remain:
+
+- raa-sdfm 0.2.0 declares peers `@etcito/raa@^0.2.0` and `mama@^0.1.0`. `mama` is not on
+  the npm registry: `npm ci` from the committed lock installs both 0.2.0 packages without
+  it, while a lock-only `npm install` tries to auto-install `mama` and fails. MAMA stays
+  resolved through `.bricks/MAMA`, never as an npm dependency.
+- The engine has a per-instance tint (`InstanceExtra.tint`, applied by `raa_apply_tint`),
+  but 0.2.0 has no JS setter for it: `setLiquidImpacts` writes only instance params. The
+  SDF port therefore applies a character tint as a per-tint variant of the graph material
+  (the MAMA graph stays, its linear base colour is multiplied) and gives the instance the
+  variant meshes. A `setInstanceTint(instance, [r, g, b])` binding would remove those
+  per-tint material and mesh variants.
+
 ## raa-sdfm: SDF tour prerequisites
 
 At revision `97861ef`, `apps/web/package.json` has no `@etcito/raa-sdfm` release pin,
@@ -92,6 +110,11 @@ Card 5131 rechecked the same baseline on 2026-10-25: the pin is present, but
 on the `## raa` API gap, so `apps/web/src/content/providers/sdf.ts` is not
 written. The 'sdf' provider stays unavailable rather than falling back to v1 or
 shipping a stub; typecheck, test and build stay green with MAMA absent.
+
+Card 5129 then pinned the published `v0.2.0` and `raa-sdfm-v0.2.0` releases and wrote
+`apps/web/src/sdf/sdfPort.ts` against their m07/m10 API (see the `## raa` entry). The
+earlier absent-release and 404 notes above describe the earlier attempts only. The tour
+still needs `apps/web/src/content/providers/sdf.ts` (card 5131) and fix card 5212.
 
 ## raa.prims assets
 

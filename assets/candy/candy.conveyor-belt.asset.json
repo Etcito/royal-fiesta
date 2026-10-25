@@ -41,35 +41,57 @@
         "kind": "box",
         "visible": false,
         "params": {
-          "size": [
-            4,
-            0.5,
-            12
-          ]
+          "size": [4, 0.5, 12]
         },
         "gameCollision": true
+      },
+      "w_rim": {
+        "id": "w_rim",
+        "name": "rim",
+        "kind": "group",
+        "children": [
+          "rim"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "rim": {
         "id": "rim",
         "name": "rim",
         "kind": "box",
         "transform": {
-          "position": [
-            0,
-            -0.15,
-            0
-          ]
+          "position": [0, -0.15, 0]
         },
         "round": 0.18,
         "material": "candy-pink",
         "params": {
-          "size": [
-            4,
-            0.9,
-            12
-          ]
+          "size": [4, 0.9, 12]
         },
         "gameCollision": false
+      },
+      "w_zigzag_r": {
+        "id": "w_zigzag_r",
+        "name": "zigzag r",
+        "kind": "group",
+        "children": [
+          "zigzag_r"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "zigzag_r": {
         "id": "zigzag_r",
@@ -83,95 +105,43 @@
             "closed": false,
             "points": [
               {
-                "p": [
-                  2,
-                  -0.1,
-                  -5.4
-                ]
+                "p": [2, -0.1, -5.4]
               },
               {
-                "p": [
-                  2,
-                  -0.44,
-                  -4.5
-                ]
+                "p": [2, -0.44, -4.5]
               },
               {
-                "p": [
-                  2,
-                  -0.1,
-                  -3.6
-                ]
+                "p": [2, -0.1, -3.6]
               },
               {
-                "p": [
-                  2,
-                  -0.44,
-                  -2.7
-                ]
+                "p": [2, -0.44, -2.7]
               },
               {
-                "p": [
-                  2,
-                  -0.1,
-                  -1.8
-                ]
+                "p": [2, -0.1, -1.8]
               },
               {
-                "p": [
-                  2,
-                  -0.44,
-                  -0.9
-                ]
+                "p": [2, -0.44, -0.9]
               },
               {
-                "p": [
-                  2,
-                  -0.1,
-                  0
-                ]
+                "p": [2, -0.1, 0]
               },
               {
-                "p": [
-                  2,
-                  -0.44,
-                  0.9
-                ]
+                "p": [2, -0.44, 0.9]
               },
               {
-                "p": [
-                  2,
-                  -0.1,
-                  1.8
-                ]
+                "p": [2, -0.1, 1.8]
               },
               {
-                "p": [
-                  2,
-                  -0.44,
-                  2.7
-                ]
+                "p": [2, -0.44, 2.7]
               },
               {
-                "p": [
-                  2,
-                  -0.1,
-                  3.6
-                ]
+                "p": [2, -0.1, 3.6]
               },
               {
-                "p": [
-                  2,
-                  -0.44,
-                  4.5
-                ]
+                "p": [2, -0.44, 4.5]
               },
               {
-                "p": [
-                  2,
-                  -0.1,
-                  5.4
-                ]
+                "p": [2, -0.1, 5.4]
               }
             ]
           },
@@ -193,6 +163,23 @@
         },
         "gameCollision": false
       },
+      "w_zigzag_l": {
+        "id": "w_zigzag_l",
+        "name": "zigzag l",
+        "kind": "group",
+        "children": [
+          "zigzag_l"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "zigzag_l": {
         "id": "zigzag_l",
         "name": "zigzag l",
@@ -205,95 +192,43 @@
             "closed": false,
             "points": [
               {
-                "p": [
-                  -2,
-                  -0.1,
-                  -5.4
-                ]
+                "p": [-2, -0.1, -5.4]
               },
               {
-                "p": [
-                  -2,
-                  -0.44,
-                  -4.5
-                ]
+                "p": [-2, -0.44, -4.5]
               },
               {
-                "p": [
-                  -2,
-                  -0.1,
-                  -3.6
-                ]
+                "p": [-2, -0.1, -3.6]
               },
               {
-                "p": [
-                  -2,
-                  -0.44,
-                  -2.7
-                ]
+                "p": [-2, -0.44, -2.7]
               },
               {
-                "p": [
-                  -2,
-                  -0.1,
-                  -1.8
-                ]
+                "p": [-2, -0.1, -1.8]
               },
               {
-                "p": [
-                  -2,
-                  -0.44,
-                  -0.9
-                ]
+                "p": [-2, -0.44, -0.9]
               },
               {
-                "p": [
-                  -2,
-                  -0.1,
-                  0
-                ]
+                "p": [-2, -0.1, 0]
               },
               {
-                "p": [
-                  -2,
-                  -0.44,
-                  0.9
-                ]
+                "p": [-2, -0.44, 0.9]
               },
               {
-                "p": [
-                  -2,
-                  -0.1,
-                  1.8
-                ]
+                "p": [-2, -0.1, 1.8]
               },
               {
-                "p": [
-                  -2,
-                  -0.44,
-                  2.7
-                ]
+                "p": [-2, -0.44, 2.7]
               },
               {
-                "p": [
-                  -2,
-                  -0.1,
-                  3.6
-                ]
+                "p": [-2, -0.1, 3.6]
               },
               {
-                "p": [
-                  -2,
-                  -0.44,
-                  4.5
-                ]
+                "p": [-2, -0.44, 4.5]
               },
               {
-                "p": [
-                  -2,
-                  -0.1,
-                  5.4
-                ]
+                "p": [-2, -0.1, 5.4]
               }
             ]
           },
@@ -328,131 +263,185 @@
         ],
         "gameCollision": false
       },
+      "w_cushion_0": {
+        "id": "w_cushion_0",
+        "name": "cushion 0",
+        "kind": "group",
+        "children": [
+          "cushion_0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "cushion_0": {
         "id": "cushion_0",
         "name": "cushion 0",
         "kind": "box",
         "transform": {
-          "position": [
-            0,
-            0.3,
-            -4.4
-          ]
+          "position": [0, 0.3, -4.4]
         },
         "round": 0.2,
         "material": "candy-pink",
         "params": {
-          "size": [
-            2.736,
-            0.4,
-            2.08
-          ]
+          "size": [2.736, 0.4, 2.08]
         },
         "gameCollision": false
+      },
+      "w_cushion_1": {
+        "id": "w_cushion_1",
+        "name": "cushion 1",
+        "kind": "group",
+        "children": [
+          "cushion_1"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "cushion_1": {
         "id": "cushion_1",
         "name": "cushion 1",
         "kind": "box",
         "transform": {
-          "position": [
-            0,
-            0.3,
-            -2.2
-          ]
+          "position": [0, 0.3, -2.2]
         },
         "round": 0.2,
         "material": "candy-pink",
         "params": {
-          "size": [
-            2.736,
-            0.4,
-            2.08
-          ]
+          "size": [2.736, 0.4, 2.08]
         },
         "gameCollision": false
+      },
+      "w_cushion_2": {
+        "id": "w_cushion_2",
+        "name": "cushion 2",
+        "kind": "group",
+        "children": [
+          "cushion_2"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "cushion_2": {
         "id": "cushion_2",
         "name": "cushion 2",
         "kind": "box",
         "transform": {
-          "position": [
-            0,
-            0.3,
-            0
-          ]
+          "position": [0, 0.3, 0]
         },
         "round": 0.2,
         "material": "candy-pink",
         "params": {
-          "size": [
-            2.736,
-            0.4,
-            2.08
-          ]
+          "size": [2.736, 0.4, 2.08]
         },
         "gameCollision": false
+      },
+      "w_cushion_3": {
+        "id": "w_cushion_3",
+        "name": "cushion 3",
+        "kind": "group",
+        "children": [
+          "cushion_3"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "cushion_3": {
         "id": "cushion_3",
         "name": "cushion 3",
         "kind": "box",
         "transform": {
-          "position": [
-            0,
-            0.3,
-            2.2
-          ]
+          "position": [0, 0.3, 2.2]
         },
         "round": 0.2,
         "material": "candy-pink",
         "params": {
-          "size": [
-            2.736,
-            0.4,
-            2.08
-          ]
+          "size": [2.736, 0.4, 2.08]
         },
         "gameCollision": false
+      },
+      "w_cushion_4": {
+        "id": "w_cushion_4",
+        "name": "cushion 4",
+        "kind": "group",
+        "children": [
+          "cushion_4"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "cushion_4": {
         "id": "cushion_4",
         "name": "cushion 4",
         "kind": "box",
         "transform": {
-          "position": [
-            0,
-            0.3,
-            4.4
-          ]
+          "position": [0, 0.3, 4.4]
         },
         "round": 0.2,
         "material": "candy-pink",
         "params": {
-          "size": [
-            2.736,
-            0.4,
-            2.08
-          ]
+          "size": [2.736, 0.4, 2.08]
         },
         "gameCollision": false
+      },
+      "w_cap_front": {
+        "id": "w_cap_front",
+        "name": "cap-front",
+        "kind": "group",
+        "children": [
+          "cap_front"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "cap_front": {
         "id": "cap_front",
         "name": "cap-front",
         "kind": "cylinder",
         "transform": {
-          "position": [
-            0,
-            -0.04,
-            6
-          ],
-          "rotation": [
-            0,
-            0,
-            90
-          ]
+          "position": [0, -0.04, 6],
+          "rotation": [0, 0, 90]
         },
         "round": 0.14,
         "material": "candy-blue",
@@ -461,22 +450,31 @@
           "radius": 0.48
         },
         "gameCollision": false
+      },
+      "w_cap_back": {
+        "id": "w_cap_back",
+        "name": "cap-back",
+        "kind": "group",
+        "children": [
+          "cap_back"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       },
       "cap_back": {
         "id": "cap_back",
         "name": "cap-back",
         "kind": "cylinder",
         "transform": {
-          "position": [
-            0,
-            -0.04,
-            -6
-          ],
-          "rotation": [
-            0,
-            0,
-            90
-          ]
+          "position": [0, -0.04, -6],
+          "rotation": [0, 0, 90]
         },
         "round": 0.14,
         "material": "candy-blue",
@@ -486,21 +484,30 @@
         },
         "gameCollision": false
       },
+      "w_bolster_r": {
+        "id": "w_bolster_r",
+        "name": "bolster r",
+        "kind": "group",
+        "children": [
+          "bolster_r"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "bolster_r": {
         "id": "bolster_r",
         "name": "bolster r",
         "kind": "capsule",
         "transform": {
-          "position": [
-            1.62,
-            0.3,
-            0
-          ],
-          "rotation": [
-            90,
-            0,
-            0
-          ]
+          "position": [1.62, 0.3, 0],
+          "rotation": [90, 0, 0]
         },
         "material": "candy-yellow",
         "params": {
@@ -509,21 +516,30 @@
         },
         "gameCollision": false
       },
+      "w_bolster_l": {
+        "id": "w_bolster_l",
+        "name": "bolster l",
+        "kind": "group",
+        "children": [
+          "bolster_l"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
       "bolster_l": {
         "id": "bolster_l",
         "name": "bolster l",
         "kind": "capsule",
         "transform": {
-          "position": [
-            -1.62,
-            0.3,
-            0
-          ],
-          "rotation": [
-            90,
-            0,
-            0
-          ]
+          "position": [-1.62, 0.3, 0],
+          "rotation": [90, 0, 0]
         },
         "material": "candy-yellow",
         "params": {
@@ -546,475 +562,6 @@
         ],
         "gameCollision": false
       },
-      "chevron_0": {
-        "id": "chevron_0",
-        "name": "chevron 0",
-        "kind": "sweep",
-        "material": "candy-white",
-        "params": {
-          "frame": "up",
-          "height": 0.15,
-          "path": {
-            "type": "polyline",
-            "closed": false,
-            "points": [
-              {
-                "p": [
-                  -0.95,
-                  0.43,
-                  -4.8
-                ]
-              },
-              {
-                "p": [
-                  0,
-                  0.43,
-                  -4
-                ]
-              },
-              {
-                "p": [
-                  0.95,
-                  0.43,
-                  -4.8
-                ]
-              }
-            ]
-          },
-          "radius": {
-            "type": "radius",
-            "points": [
-              {
-                "t": 0,
-                "r": 0.25
-              },
-              {
-                "t": 1,
-                "r": 0.25
-              }
-            ]
-          },
-          "roundEnd": true,
-          "roundStart": true
-        },
-        "gameCollision": false
-      },
-      "chevron_1": {
-        "id": "chevron_1",
-        "name": "chevron 1",
-        "kind": "sweep",
-        "material": "candy-white",
-        "params": {
-          "frame": "up",
-          "height": 0.15,
-          "path": {
-            "type": "polyline",
-            "closed": false,
-            "points": [
-              {
-                "p": [
-                  -0.95,
-                  0.43,
-                  -2.6
-                ]
-              },
-              {
-                "p": [
-                  0,
-                  0.43,
-                  -1.8
-                ]
-              },
-              {
-                "p": [
-                  0.95,
-                  0.43,
-                  -2.6
-                ]
-              }
-            ]
-          },
-          "radius": {
-            "type": "radius",
-            "points": [
-              {
-                "t": 0,
-                "r": 0.25
-              },
-              {
-                "t": 1,
-                "r": 0.25
-              }
-            ]
-          },
-          "roundEnd": true,
-          "roundStart": true
-        },
-        "gameCollision": false
-      },
-      "chevron_2": {
-        "id": "chevron_2",
-        "name": "chevron 2",
-        "kind": "sweep",
-        "material": "candy-white",
-        "params": {
-          "frame": "up",
-          "height": 0.15,
-          "path": {
-            "type": "polyline",
-            "closed": false,
-            "points": [
-              {
-                "p": [
-                  -0.95,
-                  0.43,
-                  -0.4
-                ]
-              },
-              {
-                "p": [
-                  0,
-                  0.43,
-                  0.4
-                ]
-              },
-              {
-                "p": [
-                  0.95,
-                  0.43,
-                  -0.4
-                ]
-              }
-            ]
-          },
-          "radius": {
-            "type": "radius",
-            "points": [
-              {
-                "t": 0,
-                "r": 0.25
-              },
-              {
-                "t": 1,
-                "r": 0.25
-              }
-            ]
-          },
-          "roundEnd": true,
-          "roundStart": true
-        },
-        "gameCollision": false
-      },
-      "chevron_3": {
-        "id": "chevron_3",
-        "name": "chevron 3",
-        "kind": "sweep",
-        "material": "candy-white",
-        "params": {
-          "frame": "up",
-          "height": 0.15,
-          "path": {
-            "type": "polyline",
-            "closed": false,
-            "points": [
-              {
-                "p": [
-                  -0.95,
-                  0.43,
-                  1.8
-                ]
-              },
-              {
-                "p": [
-                  0,
-                  0.43,
-                  2.6
-                ]
-              },
-              {
-                "p": [
-                  0.95,
-                  0.43,
-                  1.8
-                ]
-              }
-            ]
-          },
-          "radius": {
-            "type": "radius",
-            "points": [
-              {
-                "t": 0,
-                "r": 0.25
-              },
-              {
-                "t": 1,
-                "r": 0.25
-              }
-            ]
-          },
-          "roundEnd": true,
-          "roundStart": true
-        },
-        "gameCollision": false
-      },
-      "chevron_4": {
-        "id": "chevron_4",
-        "name": "chevron 4",
-        "kind": "sweep",
-        "material": "candy-white",
-        "params": {
-          "frame": "up",
-          "height": 0.15,
-          "path": {
-            "type": "polyline",
-            "closed": false,
-            "points": [
-              {
-                "p": [
-                  -0.95,
-                  0.43,
-                  4
-                ]
-              },
-              {
-                "p": [
-                  0,
-                  0.43,
-                  4.8
-                ]
-              },
-              {
-                "p": [
-                  0.95,
-                  0.43,
-                  4
-                ]
-              }
-            ]
-          },
-          "radius": {
-            "type": "radius",
-            "points": [
-              {
-                "t": 0,
-                "r": 0.25
-              },
-              {
-                "t": 1,
-                "r": 0.25
-              }
-            ]
-          },
-          "roundEnd": true,
-          "roundStart": true
-        },
-        "gameCollision": false
-      },
-      "w_rim": {
-        "id": "w_rim",
-        "name": "rim",
-        "kind": "group",
-        "children": [
-          "rim"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_zigzag_r": {
-        "id": "w_zigzag_r",
-        "name": "zigzag r",
-        "kind": "group",
-        "children": [
-          "zigzag_r"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_zigzag_l": {
-        "id": "w_zigzag_l",
-        "name": "zigzag l",
-        "kind": "group",
-        "children": [
-          "zigzag_l"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_cushion_0": {
-        "id": "w_cushion_0",
-        "name": "cushion 0",
-        "kind": "group",
-        "children": [
-          "cushion_0"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_cushion_1": {
-        "id": "w_cushion_1",
-        "name": "cushion 1",
-        "kind": "group",
-        "children": [
-          "cushion_1"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_cushion_2": {
-        "id": "w_cushion_2",
-        "name": "cushion 2",
-        "kind": "group",
-        "children": [
-          "cushion_2"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_cushion_3": {
-        "id": "w_cushion_3",
-        "name": "cushion 3",
-        "kind": "group",
-        "children": [
-          "cushion_3"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_cushion_4": {
-        "id": "w_cushion_4",
-        "name": "cushion 4",
-        "kind": "group",
-        "children": [
-          "cushion_4"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_cap_front": {
-        "id": "w_cap_front",
-        "name": "cap-front",
-        "kind": "group",
-        "children": [
-          "cap_front"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_cap_back": {
-        "id": "w_cap_back",
-        "name": "cap-back",
-        "kind": "group",
-        "children": [
-          "cap_back"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_bolster_r": {
-        "id": "w_bolster_r",
-        "name": "bolster r",
-        "kind": "group",
-        "children": [
-          "bolster_r"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
-      "w_bolster_l": {
-        "id": "w_bolster_l",
-        "name": "bolster l",
-        "kind": "group",
-        "children": [
-          "bolster_l"
-        ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "poly"
-        }
-      },
       "w_chevron_0": {
         "id": "w_chevron_0",
         "name": "chevron 0",
@@ -1031,6 +578,47 @@
         "mesher": {
           "output": "poly"
         }
+      },
+      "chevron_0": {
+        "id": "chevron_0",
+        "name": "chevron 0",
+        "kind": "sweep",
+        "material": "candy-white",
+        "params": {
+          "frame": "up",
+          "height": 0.15,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-0.95, 0.43, -4.8]
+              },
+              {
+                "p": [0, 0.43, -4]
+              },
+              {
+                "p": [0.95, 0.43, -4.8]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.25
+              },
+              {
+                "t": 1,
+                "r": 0.25
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
+        },
+        "gameCollision": false
       },
       "w_chevron_1": {
         "id": "w_chevron_1",
@@ -1049,6 +637,47 @@
           "output": "poly"
         }
       },
+      "chevron_1": {
+        "id": "chevron_1",
+        "name": "chevron 1",
+        "kind": "sweep",
+        "material": "candy-white",
+        "params": {
+          "frame": "up",
+          "height": 0.15,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-0.95, 0.43, -2.6]
+              },
+              {
+                "p": [0, 0.43, -1.8]
+              },
+              {
+                "p": [0.95, 0.43, -2.6]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.25
+              },
+              {
+                "t": 1,
+                "r": 0.25
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
+        },
+        "gameCollision": false
+      },
       "w_chevron_2": {
         "id": "w_chevron_2",
         "name": "chevron 2",
@@ -1065,6 +694,47 @@
         "mesher": {
           "output": "poly"
         }
+      },
+      "chevron_2": {
+        "id": "chevron_2",
+        "name": "chevron 2",
+        "kind": "sweep",
+        "material": "candy-white",
+        "params": {
+          "frame": "up",
+          "height": 0.15,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-0.95, 0.43, -0.4]
+              },
+              {
+                "p": [0, 0.43, 0.4]
+              },
+              {
+                "p": [0.95, 0.43, -0.4]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.25
+              },
+              {
+                "t": 1,
+                "r": 0.25
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
+        },
+        "gameCollision": false
       },
       "w_chevron_3": {
         "id": "w_chevron_3",
@@ -1083,6 +753,47 @@
           "output": "poly"
         }
       },
+      "chevron_3": {
+        "id": "chevron_3",
+        "name": "chevron 3",
+        "kind": "sweep",
+        "material": "candy-white",
+        "params": {
+          "frame": "up",
+          "height": 0.15,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-0.95, 0.43, 1.8]
+              },
+              {
+                "p": [0, 0.43, 2.6]
+              },
+              {
+                "p": [0.95, 0.43, 1.8]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.25
+              },
+              {
+                "t": 1,
+                "r": 0.25
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
+        },
+        "gameCollision": false
+      },
       "w_chevron_4": {
         "id": "w_chevron_4",
         "name": "chevron 4",
@@ -1099,6 +810,47 @@
         "mesher": {
           "output": "poly"
         }
+      },
+      "chevron_4": {
+        "id": "chevron_4",
+        "name": "chevron 4",
+        "kind": "sweep",
+        "material": "candy-white",
+        "params": {
+          "frame": "up",
+          "height": 0.15,
+          "path": {
+            "type": "polyline",
+            "closed": false,
+            "points": [
+              {
+                "p": [-0.95, 0.43, 4]
+              },
+              {
+                "p": [0, 0.43, 4.8]
+              },
+              {
+                "p": [0.95, 0.43, 4]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.25
+              },
+              {
+                "t": 1,
+                "r": 0.25
+              }
+            ]
+          },
+          "roundEnd": true,
+          "roundStart": true
+        },
+        "gameCollision": false
       }
     },
     "materials": {
@@ -1171,36 +923,15 @@
   "collision": [
     {
       "shape": "cuboid",
-      "t": [
-        0,
-        0,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ],
-      "halfExtents": [
-        2,
-        0.25,
-        6
-      ]
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [2, 0.25, 6]
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [
-      -2.137601,
-      -0.6,
-      -6.48
-    ],
-    "max": [
-      2.137601,
-      0.7426,
-      6.48
-    ]
+    "min": [-2.137601, -0.6, -6.48],
+    "max": [2.137601, 0.7426, 6.48]
   },
   "hash": "3d2a8d2be952a497065b684b2e014bec66f598327abaecac9cc30d6e57fe9c12"
 }

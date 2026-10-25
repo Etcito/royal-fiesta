@@ -51,11 +51,7 @@
         "visible": false,
         "params": {
           "radius": 0.05,
-          "size": [
-            3,
-            0.4,
-            8
-          ]
+          "size": [3, 0.4, 8]
         },
         "gameCollision": true
       },
@@ -66,11 +62,7 @@
         "round": 0.18,
         "material": "candy-yellow",
         "params": {
-          "size": [
-            2.7,
-            0.42,
-            7.6
-          ]
+          "size": [2.7, 0.42, 7.6]
         },
         "gameCollision": false
       },
@@ -79,20 +71,12 @@
         "name": "rim_r",
         "kind": "box",
         "transform": {
-          "position": [
-            1.32,
-            0.03,
-            0
-          ]
+          "position": [1.32, 0.03, 0]
         },
         "round": 0.28,
         "material": "candy-pink",
         "params": {
-          "size": [
-            0.56,
-            0.6,
-            8.1
-          ]
+          "size": [0.56, 0.6, 8.1]
         },
         "gameCollision": false
       },
@@ -101,20 +85,12 @@
         "name": "rim_l",
         "kind": "box",
         "transform": {
-          "position": [
-            -1.32,
-            0.03,
-            0
-          ]
+          "position": [-1.32, 0.03, 0]
         },
         "round": 0.28,
         "material": "candy-pink",
         "params": {
-          "size": [
-            0.56,
-            0.6,
-            8.1
-          ]
+          "size": [0.56, 0.6, 8.1]
         },
         "gameCollision": false
       },
@@ -123,20 +99,12 @@
         "name": "rim_f",
         "kind": "box",
         "transform": {
-          "position": [
-            0,
-            0.03,
-            3.78
-          ]
+          "position": [0, 0.03, 3.78]
         },
         "round": 0.28,
         "material": "candy-pink",
         "params": {
-          "size": [
-            3.2,
-            0.6,
-            0.56
-          ]
+          "size": [3.2, 0.6, 0.56]
         },
         "gameCollision": false
       },
@@ -145,20 +113,12 @@
         "name": "rim_b",
         "kind": "box",
         "transform": {
-          "position": [
-            0,
-            0.03,
-            -3.78
-          ]
+          "position": [0, 0.03, -3.78]
         },
         "round": 0.28,
         "material": "candy-pink",
         "params": {
-          "size": [
-            3.2,
-            0.6,
-            0.56
-          ]
+          "size": [3.2, 0.6, 0.56]
         },
         "gameCollision": false
       },
@@ -167,16 +127,8 @@
         "name": "zigzag",
         "kind": "extrude",
         "transform": {
-          "position": [
-            0,
-            0.2,
-            0
-          ],
-          "rotation": [
-            -90,
-            0,
-            -90
-          ]
+          "position": [0, 0.2, 0],
+          "rotation": [-90, 0, -90]
         },
         "round": 0.02,
         "material": "candy-white",
@@ -185,112 +137,58 @@
           "profile": {
             "points": [
               {
-                "p": [
-                  -3.2,
-                  0.26
-                ]
+                "p": [-3.2, 0.26]
               },
               {
-                "p": [
-                  -2.4,
-                  -0.74
-                ]
+                "p": [-2.4, -0.74]
               },
               {
-                "p": [
-                  -1.6,
-                  0.26
-                ]
+                "p": [-1.6, 0.26]
               },
               {
-                "p": [
-                  -0.8,
-                  -0.74
-                ]
+                "p": [-0.8, -0.74]
               },
               {
-                "p": [
-                  0,
-                  0.26
-                ]
+                "p": [0, 0.26]
               },
               {
-                "p": [
-                  0.8,
-                  -0.74
-                ]
+                "p": [0.8, -0.74]
               },
               {
-                "p": [
-                  1.6,
-                  0.26
-                ]
+                "p": [1.6, 0.26]
               },
               {
-                "p": [
-                  2.4,
-                  -0.74
-                ]
+                "p": [2.4, -0.74]
               },
               {
-                "p": [
-                  3.2,
-                  0.26
-                ]
+                "p": [3.2, 0.26]
               },
               {
-                "p": [
-                  3.2,
-                  0.74
-                ]
+                "p": [3.2, 0.74]
               },
               {
-                "p": [
-                  2.4,
-                  -0.26
-                ]
+                "p": [2.4, -0.26]
               },
               {
-                "p": [
-                  1.6,
-                  0.74
-                ]
+                "p": [1.6, 0.74]
               },
               {
-                "p": [
-                  0.8,
-                  -0.26
-                ]
+                "p": [0.8, -0.26]
               },
               {
-                "p": [
-                  0,
-                  0.74
-                ]
+                "p": [0, 0.74]
               },
               {
-                "p": [
-                  -0.8,
-                  -0.26
-                ]
+                "p": [-0.8, -0.26]
               },
               {
-                "p": [
-                  -1.6,
-                  0.74
-                ]
+                "p": [-1.6, 0.74]
               },
               {
-                "p": [
-                  -2.4,
-                  -0.26
-                ]
+                "p": [-2.4, -0.26]
               },
               {
-                "p": [
-                  -3.2,
-                  0.74
-                ]
+                "p": [-3.2, 0.74]
               }
             ]
           }
@@ -302,16 +200,8 @@
         "name": "fulcrum",
         "kind": "cylinder",
         "transform": {
-          "position": [
-            0,
-            -0.32,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            90
-          ]
+          "position": [0, -0.32, 0],
+          "rotation": [0, 0, 90]
         },
         "round": 0.08,
         "material": "candy-blue",
@@ -326,48 +216,32 @@
         "name": "fulcrum_cap_r",
         "kind": "cylinder",
         "transform": {
-          "position": [
-            1.9,
-            -0.32,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            90
-          ]
+          "position": [1.9, -0.32, 0],
+          "rotation": [0, 0, 90]
         },
+        "round": 0.04,
         "material": "candy-yellow",
         "params": {
           "height": 0.14,
           "radius": 0.34
         },
-        "gameCollision": false,
-        "round": 0.04
+        "gameCollision": false
       },
       "fulcrum_cap_l": {
         "id": "fulcrum_cap_l",
         "name": "fulcrum_cap_l",
         "kind": "cylinder",
         "transform": {
-          "position": [
-            -1.9,
-            -0.32,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            90
-          ]
+          "position": [-1.9, -0.32, 0],
+          "rotation": [0, 0, 90]
         },
+        "round": 0.04,
         "material": "candy-yellow",
         "params": {
           "height": 0.14,
           "radius": 0.34
         },
-        "gameCollision": false,
-        "round": 0.04
+        "gameCollision": false
       }
     },
     "materials": {
@@ -440,37 +314,16 @@
   "collision": [
     {
       "shape": "roundCuboid",
-      "t": [
-        0,
-        0,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ],
-      "halfExtents": [
-        1.45,
-        0.15,
-        3.95
-      ],
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [1.45, 0.15, 3.95],
       "borderRadius": 0.05
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [
-      -1.98,
-      -0.68,
-      -4.06
-    ],
-    "max": [
-      1.98,
-      0.33,
-      4.06
-    ]
+    "min": [-1.98, -0.68, -4.06],
+    "max": [1.98, 0.33, 4.06]
   },
   "hash": "c5a4bb12bb6f7f20617beab046521d084248915bd6fe39f6a7690c80d278e37a"
 }

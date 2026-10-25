@@ -72,11 +72,20 @@ or proof-threshold change is authorized by decision Q5.
 
 Card 5129 rechecked the chain on 2026-10-25 after card 5122 landed: the
 `@etcito/raa-sdfm` pin is now in `apps/web/package.json` (release
-`raa-sdfm-v0.1.0`), and the cache and inline-worker fixes are present. The SDF
+`raa-sdfm-v0.1.1`), and the cache and inline-worker fixes are present. The SDF
 renderer and provider are still absent because the published `@etcito/raa`
 release does not carry the m07/m10 upload API that raa-sdfm is built against
-(the `## raa` entry above has the details). The guarded m17 command therefore
-still refuses at its prerequisite check; nothing is substituted.
+(the `## raa` entry above has the details). A later 2026-10-25 recheck of the
+installed 0.1.1 pins confirms it at runtime: `@etcito/raa`'s wasm exports
+`engine_addInstance`, `engine_addMaterial`, `engine_primitiveMesh`,
+`engine_removeInstance`, `engine_removeMesh` and `engine_setMaterial` only,
+while `@etcito/raa-sdfm`'s `src/loader.js` calls `engine.addSurfaceMaterial`,
+`engine.addMesh`, `engine.addMaterialFunction` and `engine.addMeshInstance`,
+and its `mapMaterial` description is `{function, blend}` with no `params`. The
+releases API still lists only `v0.1.0`, `v0.1.1`, `raa-sdfm-v0.1.0` and
+`raa-sdfm-v0.1.1`, and the `v0.2.0` / `raa-sdfm-v0.2.0` tarball URLs answer 404.
+The guarded m17 command therefore still refuses at its prerequisite check;
+nothing is substituted.
 
 Card 5131 rechecked the same baseline on 2026-10-25: the pin is present, but
 `apps/web/src/sdf/sdfPort.ts` is still absent because card 5129 remains blocked

@@ -1,5 +1,11 @@
 [
   {
+    "name": "m17-bricks-check",
+    "command": "node --experimental-strip-types tools/bricks.ts check",
+    "timeout_s": 60,
+    "cwd": "."
+  },
+  {
     "name": "m17-worker-bootstrap",
     "command": "node --experimental-strip-types --test apps/web/test/classicWorker.test.ts apps/web/test/mamaImpl.test.ts apps/web/test/meshPool.test.ts",
     "timeout_s": 60,
@@ -10,6 +16,6 @@
     "command": "env NMC_GPU_WAIT_S=900 node --experimental-strip-types tools/m17SdfMatch.ts",
     "timeout_s": 3600,
     "cwd": ".",
-    "after": ["m17-worker-bootstrap"]
+    "after": ["m17-bricks-check", "m17-worker-bootstrap"]
   }
 ]

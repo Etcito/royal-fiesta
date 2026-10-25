@@ -176,6 +176,18 @@ its views records in SDF Modeler. This repository does not patch MAMA, change
 asset meshers or params, retry, or fall back. The m17 mesh-node check keeps its
 full 24/24 threshold and fails until those assets mesh.
 
+The GPU tour on card 5294 (attempt 17) reached the mesh worker and reported the
+same `candy.checkpoint-gate` refusal above, including edge `(19354, 19355)`.
+Card 5295's local `bricks check` still resolves MAMA to
+`864ebc3e0780feb4261f3fa00a5029356045b89e`, with a pin-mismatch warning.
+The published RAA 0.2.0 pins, SDF provider and render port are now present;
+worker bootstrap passed on card 5294. Those prerequisites do not resolve this
+separate mesher gap. The GPU tour remains blocked by decision Q2 until an
+upstream MAMA fix or content re-save covers all 16 assets listed above. A pin
+bump alone does not replace a resolved sibling: verify the resolved commit
+with `bricks check`, then run the unchanged m17 `mesh-node` acceptance and GPU
+tour. No successful GPU record has been produced by this corrective card.
+
 ## ui font upload
 
 `@etcito/raa-assets-tools` 0.1.0 has no remote put: `raa-assets put` only writes a local store

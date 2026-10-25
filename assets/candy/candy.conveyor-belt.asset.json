@@ -23,25 +23,16 @@
         "kind": "group",
         "children": [
           "collider",
-          "rim",
-          "zigzag_r",
-          "zigzag_l",
+          "w_rim",
+          "w_zigzag_r",
+          "w_zigzag_l",
           "belt",
-          "cap_front",
-          "cap_back",
-          "bolster_r",
-          "bolster_l",
+          "w_cap_front",
+          "w_cap_back",
+          "w_bolster_r",
+          "w_bolster_l",
           "chevrons"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "candy.conveyor-belt",
-          "category": "obstacle",
-          "world": "candy"
-        },
-        "mesher": {
-          "output": "lowpoly"
-        },
         "gameCollision": false
       },
       "collider": {
@@ -329,11 +320,11 @@
         "name": "belt",
         "kind": "group",
         "children": [
-          "cushion_0",
-          "cushion_1",
-          "cushion_2",
-          "cushion_3",
-          "cushion_4"
+          "w_cushion_0",
+          "w_cushion_1",
+          "w_cushion_2",
+          "w_cushion_3",
+          "w_cushion_4"
         ],
         "gameCollision": false
       },
@@ -547,11 +538,11 @@
         "kind": "group",
         "colorBlend": "hard",
         "children": [
-          "chevron_0",
-          "chevron_1",
-          "chevron_2",
-          "chevron_3",
-          "chevron_4"
+          "w_chevron_0",
+          "w_chevron_1",
+          "w_chevron_2",
+          "w_chevron_3",
+          "w_chevron_4"
         ],
         "gameCollision": false
       },
@@ -819,6 +810,295 @@
           "roundStart": true
         },
         "gameCollision": false
+      },
+      "w_rim": {
+        "id": "w_rim",
+        "name": "rim",
+        "kind": "group",
+        "children": [
+          "rim"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_zigzag_r": {
+        "id": "w_zigzag_r",
+        "name": "zigzag r",
+        "kind": "group",
+        "children": [
+          "zigzag_r"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_zigzag_l": {
+        "id": "w_zigzag_l",
+        "name": "zigzag l",
+        "kind": "group",
+        "children": [
+          "zigzag_l"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_cushion_0": {
+        "id": "w_cushion_0",
+        "name": "cushion 0",
+        "kind": "group",
+        "children": [
+          "cushion_0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_cushion_1": {
+        "id": "w_cushion_1",
+        "name": "cushion 1",
+        "kind": "group",
+        "children": [
+          "cushion_1"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_cushion_2": {
+        "id": "w_cushion_2",
+        "name": "cushion 2",
+        "kind": "group",
+        "children": [
+          "cushion_2"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_cushion_3": {
+        "id": "w_cushion_3",
+        "name": "cushion 3",
+        "kind": "group",
+        "children": [
+          "cushion_3"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_cushion_4": {
+        "id": "w_cushion_4",
+        "name": "cushion 4",
+        "kind": "group",
+        "children": [
+          "cushion_4"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_cap_front": {
+        "id": "w_cap_front",
+        "name": "cap-front",
+        "kind": "group",
+        "children": [
+          "cap_front"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_cap_back": {
+        "id": "w_cap_back",
+        "name": "cap-back",
+        "kind": "group",
+        "children": [
+          "cap_back"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_bolster_r": {
+        "id": "w_bolster_r",
+        "name": "bolster r",
+        "kind": "group",
+        "children": [
+          "bolster_r"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_bolster_l": {
+        "id": "w_bolster_l",
+        "name": "bolster l",
+        "kind": "group",
+        "children": [
+          "bolster_l"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_chevron_0": {
+        "id": "w_chevron_0",
+        "name": "chevron 0",
+        "kind": "group",
+        "children": [
+          "chevron_0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_chevron_1": {
+        "id": "w_chevron_1",
+        "name": "chevron 1",
+        "kind": "group",
+        "children": [
+          "chevron_1"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_chevron_2": {
+        "id": "w_chevron_2",
+        "name": "chevron 2",
+        "kind": "group",
+        "children": [
+          "chevron_2"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_chevron_3": {
+        "id": "w_chevron_3",
+        "name": "chevron 3",
+        "kind": "group",
+        "children": [
+          "chevron_3"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
+      },
+      "w_chevron_4": {
+        "id": "w_chevron_4",
+        "name": "chevron 4",
+        "kind": "group",
+        "children": [
+          "chevron_4"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.conveyor-belt",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "poly"
+        }
       }
     },
     "materials": {
@@ -922,5 +1202,5 @@
       6.48
     ]
   },
-  "hash": "2f42f5dd2cc5bc779aa16db51017dfa872051a1861c5f409ddc88f3caba074a2"
+  "hash": "583ec51e2b081e3892095a94700544edba4d18d5ccf992e1cf79f14cdf1d0743"
 }

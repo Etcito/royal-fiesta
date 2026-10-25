@@ -213,6 +213,37 @@ asset's refusal instead of stopping at the first asset, retains the 24/24
 threshold and 300 s per-group timeout, and runs independently of the GPU tour.
 Both long checks remain programmatic; no new successful GPU record is claimed.
 
+### attempt 19 refusals and subsequent content fixes
+
+Card 5298 reported 20/24 assets meshed. Its four remaining refusals predate
+the content changes now integrated into this checkout:
+
+| Asset | Content fix | Current declared groups |
+| --- | --- | --- |
+| `candy.conveyor-belt` | `177fc08` | 17 separate `poly` groups |
+| `costume.fish-scarf` | `da513d2` | 1 `poly` group |
+| `costume.pineapple-suit` | `290bbba` | 1 `poly` group |
+| `costume.propeller-hat` | `372394c` | 19 separate `poly` groups |
+
+Card 5299 verified those declarations and all four document hashes through
+the game asset loader. These are integrated content fixes, not a runtime
+fallback: the existing worker preserves each group's declared mesher.
+The resolved MAMA remains `864ebc3e0780feb4261f3fa00a5029356045b89e`;
+the pin-mismatch warning remains. No asset or brick was edited by this card.
+
+A local full scarf probe reached the 60 s diagnostic limit without a result.
+That does not establish a refusal at the acceptance's 300 s per-group limit,
+nor a passing mesh. A reduced conveyor probe selecting only `w_chevron_0`
+passed through `meshGameAsset`: 1 part, 1,162 triangles. It verifies that one
+declared group, not the full 17-group conveyor. Typecheck, the build with Vite's
+runner config loader, the worker checks and guard passed. `npm test` passed
+688 tests with 12 skipped (the MAMA integration tests require `.bricks/MAMA`).
+Card 5300 must run the unchanged full 24/24 `mesh-node`
+check and the GPU tour with reload and judges. `.nmc/commands.json` retains
+both long commands, with the brick and worker checks as prerequisites.
+The old 20/24 output must not be treated as a result for this new content;
+no new full-mesh or GPU success is claimed here.
+
 ### cause of the extract refusals (operator fix 1057)
 
 The `cellSize` named by the refusal is not reachable from this repository. MAMA's

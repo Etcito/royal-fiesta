@@ -32,11 +32,11 @@ argv command. Missing prerequisites fail locally with all missing items listed;
 this is a blocked proof, not passing render evidence. Once the prerequisites land,
 the same command builds, publishes, renders, and writes the original proof record.
 
-Card 5220 rechecked revision `131491d`: all three prerequisites are still absent,
+Card 5226 rechecked revision `1183899`: all three prerequisites are still absent,
 including from the available history for the two module paths. The authorized
-opaque-origin fixes remain present. Card 5219's failure is therefore the expected
+opaque-origin fixes remain present. Card 5221's failure is therefore the expected
 prerequisite refusal; changing the GPU command cannot supply the missing runtime.
-Card 5221 retains that command, but must wait for the dependency sequence above
+Card 5227 retains that command, but must wait for the dependency sequence above
 and fix card 5212 before it can produce render evidence. Decision Q5 does not
 authorize this corrective card to implement or substitute those dependencies.
 

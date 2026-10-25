@@ -36,7 +36,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "dc"
+          "output": "poly"
         },
         "gameCollision": false
       },
@@ -593,5 +593,5 @@
       5.25
     ]
   },
-  "hash": "178b77385cea00c33002c4add6535ea4da6da0488ce375159453d823be5b27df"
+  "hash": "a99d154de146be4af323f87f35df63d758a204f93be2bccb7e32d11e1dd05b2e"
 }

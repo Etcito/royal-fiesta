@@ -60,10 +60,10 @@ pass until decision #987's release and dependency sequence is integrated;
 another GPU retry on this baseline cannot fix the missing runtime. Publishing
 or patching the upstream repository is outside this repository worktree task.
 
-Card 5236 verified baseline `b712e64`: the release pin and both modules are
+Card 5238 verified baseline `b36e19f`: the release pin and both modules are
 still absent, and neither module appears in the available git history. The
-cache and inline-worker fixes remain present. Card 5235's reported refusal
-therefore still matches this checkout. Card 5237 retains the guarded command;
+cache and inline-worker fixes remain present. Card 5237's reported refusal
+therefore still matches this checkout. Card 5239 retains the guarded command;
 it remains blocked until the release, cards 5122, 5129, 5131 and 5132, and fix
 card 5212 are integrated in decision #987's order. Repeating the GPU attempt
 before that integration cannot produce a passing proof. No runtime substitute

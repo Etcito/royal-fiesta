@@ -34,7 +34,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -44,7 +44,11 @@
         "kind": "cylinder",
         "visible": false,
         "transform": {
-          "position": [0, 0.6, 0]
+          "position": [
+            0,
+            0.6,
+            0
+          ]
         },
         "params": {
           "height": 1.2,
@@ -58,10 +62,18 @@
         "kind": "box",
         "visible": false,
         "transform": {
-          "position": [0, 0.75, 0]
+          "position": [
+            0,
+            0.75,
+            0
+          ]
         },
         "params": {
-          "size": [8, 0.5, 0.5]
+          "size": [
+            8,
+            0.5,
+            0.5
+          ]
         },
         "gameCollision": true
       },
@@ -83,7 +95,11 @@
         "name": "base",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.17, 0]
+          "position": [
+            0,
+            0.17,
+            0
+          ]
         },
         "round": 0.13,
         "material": "candy-blue",
@@ -98,7 +114,11 @@
         "name": "base-rim",
         "kind": "torus",
         "transform": {
-          "position": [0, 0.34, 0]
+          "position": [
+            0,
+            0.34,
+            0
+          ]
         },
         "smooth": 0.04,
         "material": "candy-yellow",
@@ -113,7 +133,11 @@
         "name": "post",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.5, 0]
+          "position": [
+            0,
+            0.5,
+            0
+          ]
         },
         "smooth": 0.06,
         "round": 0.08,
@@ -129,7 +153,11 @@
         "name": "cap",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.8, 0]
+          "position": [
+            0,
+            0.8,
+            0
+          ]
         },
         "smooth": 0.04,
         "round": 0.24,
@@ -145,7 +173,11 @@
         "name": "knob",
         "kind": "sphere",
         "transform": {
-          "position": [0, 1.36, 0]
+          "position": [
+            0,
+            1.36,
+            0
+          ]
         },
         "smooth": 0.05,
         "material": "candy-yellow",
@@ -173,8 +205,16 @@
         "name": "tube",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.75, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            0,
+            0.75,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "round": 0.12,
         "material": "candy-pink",
@@ -189,8 +229,16 @@
         "name": "end-r",
         "kind": "cylinder",
         "transform": {
-          "position": [3.7, 0.75, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            3.7,
+            0.75,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "smooth": 0.04,
         "round": 0.22,
@@ -206,8 +254,16 @@
         "name": "collar-r",
         "kind": "cylinder",
         "transform": {
-          "position": [0.98, 0.75, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            0.98,
+            0.75,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "smooth": 0.03,
         "round": 0.1,
@@ -223,8 +279,16 @@
         "name": "end-l",
         "kind": "cylinder",
         "transform": {
-          "position": [-3.7, 0.75, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            -3.7,
+            0.75,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "smooth": 0.04,
         "round": 0.22,
@@ -240,8 +304,16 @@
         "name": "collar-l",
         "kind": "cylinder",
         "transform": {
-          "position": [-0.98, 0.75, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            -0.98,
+            0.75,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "smooth": 0.03,
         "round": 0.1,
@@ -269,7 +341,11 @@
         "name": "stripe-a",
         "kind": "box",
         "transform": {
-          "position": [0, 0.75, 0]
+          "position": [
+            0,
+            0.75,
+            0
+          ]
         },
         "material": "candy-white",
         "deformers": [
@@ -281,12 +357,20 @@
               "angle": 1260,
               "start": -3.5,
               "end": 3.5,
-              "center": [0, 0, 0]
+              "center": [
+                0,
+                0,
+                0
+              ]
             }
           }
         ],
         "params": {
-          "size": [7, 0.26, 1.2]
+          "size": [
+            7,
+            0.26,
+            1.2
+          ]
         },
         "gameCollision": false
       },
@@ -295,8 +379,16 @@
         "name": "stripe-b",
         "kind": "box",
         "transform": {
-          "position": [0, 0.75, 0],
-          "rotation": [90, 0, 0]
+          "position": [
+            0,
+            0.75,
+            0
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ]
         },
         "material": "candy-white",
         "deformers": [
@@ -308,12 +400,20 @@
               "angle": 1260,
               "start": -3.5,
               "end": 3.5,
-              "center": [0, 0, 0]
+              "center": [
+                0,
+                0,
+                0
+              ]
             }
           }
         ],
         "params": {
-          "size": [7, 0.26, 1.2]
+          "size": [
+            7,
+            0.26,
+            1.2
+          ]
         },
         "gameCollision": false
       },
@@ -322,8 +422,16 @@
         "name": "stripe-clip",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.75, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            0,
+            0.75,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "op": "intersect",
         "material": "candy-white",
@@ -404,22 +512,52 @@
   "collision": [
     {
       "shape": "cylinder",
-      "t": [0, 0.6, 0],
-      "r": [0, 0, 0, 1],
+      "t": [
+        0,
+        0.6,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
       "radius": 0.4,
       "halfHeight": 0.6
     },
     {
       "shape": "cuboid",
-      "t": [0, 0.75, 0],
-      "r": [0, 0, 0, 1],
-      "halfExtents": [4, 0.25, 0.25]
+      "t": [
+        0,
+        0.75,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "halfExtents": [
+        4,
+        0.25,
+        0.25
+      ]
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [-4, 0, -0.88],
-    "max": [4, 1.63, 0.88]
+    "min": [
+      -4,
+      0,
+      -0.88
+    ],
+    "max": [
+      4,
+      1.63,
+      0.88
+    ]
   },
-  "hash": "2ac6ee030d0449047c403f1ac1a4161c7d454d4b553513517fc8aac97d3b93c7"
+  "hash": "93c4646213a1b0d75a0193bb49b3ce300c0fe5e0fd85377cf265b5ad8ef6881d"
 }

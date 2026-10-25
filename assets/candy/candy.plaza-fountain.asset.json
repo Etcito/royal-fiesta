@@ -36,7 +36,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -46,7 +46,11 @@
         "kind": "cylinder",
         "visible": false,
         "transform": {
-          "position": [0, 0.3, 0]
+          "position": [
+            0,
+            0.3,
+            0
+          ]
         },
         "params": {
           "height": 0.6,
@@ -60,7 +64,11 @@
         "kind": "cylinder",
         "visible": false,
         "transform": {
-          "position": [0, 0.8, 0]
+          "position": [
+            0,
+            0.8,
+            0
+          ]
         },
         "params": {
           "height": 1.6,
@@ -79,7 +87,7 @@
           "basin_hole"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -88,7 +96,11 @@
         "name": "basin-wall",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.27, 0]
+          "position": [
+            0,
+            0.27,
+            0
+          ]
         },
         "round": 0.12,
         "material": "candy-pink",
@@ -103,7 +115,11 @@
         "name": "basin-foot",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.09, 0]
+          "position": [
+            0,
+            0.09,
+            0
+          ]
         },
         "smooth": 0.04,
         "round": 0.09,
@@ -119,7 +135,11 @@
         "name": "basin-rim",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.52, 0]
+          "position": [
+            0,
+            0.52,
+            0
+          ]
         },
         "smooth": 0.05,
         "round": 0.15,
@@ -135,7 +155,11 @@
         "name": "basin-hole",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.72, 0]
+          "position": [
+            0,
+            0.72,
+            0
+          ]
         },
         "op": "subtract",
         "round": 0.08,
@@ -151,7 +175,11 @@
         "name": "slime",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.6, 0]
+          "position": [
+            0,
+            0.6,
+            0
+          ]
         },
         "round": 0.21,
         "material": "candy-slime",
@@ -170,7 +198,7 @@
           "zigzag_clip"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -179,7 +207,11 @@
         "name": "zigzag-ring",
         "kind": "group",
         "transform": {
-          "position": [0, 0.27, 0]
+          "position": [
+            0,
+            0.27,
+            0
+          ]
         },
         "children": [
           "zigzag_v"
@@ -191,13 +223,17 @@
             "params": {
               "angleDeg": 360,
               "axis": "y",
-              "center": [0, 0, 0],
+              "center": [
+                0,
+                0,
+                0
+              ],
               "count": 20
             }
           }
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -206,14 +242,18 @@
         "name": "zigzag-v",
         "kind": "group",
         "transform": {
-          "position": [0, 0, 2]
+          "position": [
+            0,
+            0,
+            2
+          ]
         },
         "children": [
           "zigzag_up",
           "zigzag_dn"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -222,12 +262,24 @@
         "name": "zigzag-up",
         "kind": "box",
         "transform": {
-          "position": [-0.15708, 0, 0],
-          "rotation": [0, 0, 14.28661]
+          "position": [
+            -0.15708,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            14.28661
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.372185, 0.08, 0.08]
+          "size": [
+            0.372185,
+            0.08,
+            0.08
+          ]
         },
         "gameCollision": false
       },
@@ -236,12 +288,24 @@
         "name": "zigzag-dn",
         "kind": "box",
         "transform": {
-          "position": [0.15708, 0, 0],
-          "rotation": [0, 0, -14.28661]
+          "position": [
+            0.15708,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -14.28661
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.372185, 0.08, 0.08]
+          "size": [
+            0.372185,
+            0.08,
+            0.08
+          ]
         },
         "gameCollision": false
       },
@@ -250,7 +314,11 @@
         "name": "zigzag-clip",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.27, 0]
+          "position": [
+            0,
+            0.27,
+            0
+          ]
         },
         "op": "intersect",
         "material": "candy-white",
@@ -276,7 +344,7 @@
           "spout"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -285,7 +353,11 @@
         "name": "column",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.75, 0]
+          "position": [
+            0,
+            0.75,
+            0
+          ]
         },
         "round": 0.08,
         "material": "candy-pink",
@@ -300,7 +372,11 @@
         "name": "band-low",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.62, 0]
+          "position": [
+            0,
+            0.62,
+            0
+          ]
         },
         "round": 0.08,
         "material": "candy-yellow",
@@ -315,7 +391,11 @@
         "name": "band-mid",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 1.22, 0]
+          "position": [
+            0,
+            1.22,
+            0
+          ]
         },
         "round": 0.07,
         "material": "candy-white",
@@ -330,7 +410,11 @@
         "name": "dish-low",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.98, 0]
+          "position": [
+            0,
+            0.98,
+            0
+          ]
         },
         "smooth": 0.06,
         "round": 0.09,
@@ -346,7 +430,11 @@
         "name": "pool-low",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 1.07, 0]
+          "position": [
+            0,
+            1.07,
+            0
+          ]
         },
         "round": 0.03,
         "material": "candy-blue",
@@ -361,7 +449,11 @@
         "name": "dish-top",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 1.45, 0]
+          "position": [
+            0,
+            1.45,
+            0
+          ]
         },
         "smooth": 0.05,
         "round": 0.08,
@@ -377,7 +469,11 @@
         "name": "pool-top",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 1.53, 0]
+          "position": [
+            0,
+            1.53,
+            0
+          ]
         },
         "round": 0.03,
         "material": "candy-blue",
@@ -392,7 +488,11 @@
         "name": "crown-ball",
         "kind": "sphere",
         "transform": {
-          "position": [0, 1.74, 0]
+          "position": [
+            0,
+            1.74,
+            0
+          ]
         },
         "material": "candy-yellow",
         "params": {
@@ -405,7 +505,11 @@
         "name": "spout",
         "kind": "sphere",
         "transform": {
-          "position": [0, 1.94, 0]
+          "position": [
+            0,
+            1.94,
+            0
+          ]
         },
         "material": "candy-blue",
         "params": {
@@ -500,23 +604,49 @@
   "collision": [
     {
       "shape": "cylinder",
-      "t": [0, 0.3, 0],
-      "r": [0, 0, 0, 1],
+      "t": [
+        0,
+        0.3,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
       "radius": 2,
       "halfHeight": 0.3
     },
     {
       "shape": "cylinder",
-      "t": [0, 0.8, 0],
-      "r": [0, 0, 0, 1],
+      "t": [
+        0,
+        0.8,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
       "radius": 0.35,
       "halfHeight": 0.8
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [-2.21, -0.04, -2.21],
-    "max": [2.21, 2.06, 2.21]
+    "min": [
+      -2.21,
+      -0.04,
+      -2.21
+    ],
+    "max": [
+      2.21,
+      2.06,
+      2.21
+    ]
   },
-  "hash": "18a24dbf1686491d28981ccbc2f6949456aaca8576ee1fca4e5b9a9a04c25f79"
+  "hash": "d90bb75df14373cc8e1f1f6db2114e89af0cf8dd86890c1e8f542815f26ed97b"
 }

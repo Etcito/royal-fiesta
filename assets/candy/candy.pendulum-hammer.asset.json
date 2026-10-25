@@ -34,7 +34,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -44,7 +44,11 @@
         "kind": "box",
         "visible": false,
         "params": {
-          "size": [2.4, 1.2, 1.2]
+          "size": [
+            2.4,
+            1.2,
+            1.2
+          ]
         },
         "gameCollision": true
       },
@@ -54,10 +58,18 @@
         "kind": "box",
         "visible": false,
         "transform": {
-          "position": [0, 3.1, 0]
+          "position": [
+            0,
+            3.1,
+            0
+          ]
         },
         "params": {
-          "size": [0.3, 5, 0.3]
+          "size": [
+            0.3,
+            5,
+            0.3
+          ]
         },
         "gameCollision": true
       },
@@ -80,7 +92,11 @@
         "name": "drum",
         "kind": "cylinder",
         "transform": {
-          "rotation": [0, 0, 90]
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "round": 0.12,
         "material": "candy-pink",
@@ -95,8 +111,16 @@
         "name": "rim-r",
         "kind": "cylinder",
         "transform": {
-          "position": [1.27, 0, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            1.27,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "smooth": 0.05,
         "round": 0.2,
@@ -112,8 +136,16 @@
         "name": "face-r",
         "kind": "cylinder",
         "transform": {
-          "position": [1.48, 0, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            1.48,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "smooth": 0.03,
         "round": 0.05,
@@ -129,8 +161,16 @@
         "name": "rim-l",
         "kind": "cylinder",
         "transform": {
-          "position": [-1.27, 0, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            -1.27,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "smooth": 0.05,
         "round": 0.2,
@@ -146,8 +186,16 @@
         "name": "face-l",
         "kind": "cylinder",
         "transform": {
-          "position": [-1.48, 0, 0],
-          "rotation": [0, 0, 90]
+          "position": [
+            -1.48,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "smooth": 0.03,
         "round": 0.05,
@@ -185,12 +233,24 @@
         "name": "zig-0a",
         "kind": "box",
         "transform": {
-          "position": [0, 0.877294, 0.240482],
-          "rotation": [30, -29.940164, 0]
+          "position": [
+            0,
+            0.877294,
+            0.240482
+          ],
+          "rotation": [
+            30,
+            -29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -199,12 +259,24 @@
         "name": "zig-0b",
         "kind": "box",
         "transform": {
-          "position": [0, 0.646911, 0.639518],
-          "rotation": [30, 29.940164, 0]
+          "position": [
+            0,
+            0.646911,
+            0.639518
+          ],
+          "rotation": [
+            30,
+            29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -213,12 +285,24 @@
         "name": "zig-1a",
         "kind": "box",
         "transform": {
-          "position": [0, 0.230383, 0.88],
-          "rotation": [90, -29.940164, 0]
+          "position": [
+            0,
+            0.230383,
+            0.88
+          ],
+          "rotation": [
+            90,
+            -29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -227,12 +311,24 @@
         "name": "zig-1b",
         "kind": "box",
         "transform": {
-          "position": [0, -0.230383, 0.88],
-          "rotation": [90, 29.940164, 0]
+          "position": [
+            0,
+            -0.230383,
+            0.88
+          ],
+          "rotation": [
+            90,
+            29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -241,12 +337,24 @@
         "name": "zig-2a",
         "kind": "box",
         "transform": {
-          "position": [0, -0.646911, 0.639518],
-          "rotation": [150, -29.940164, 0]
+          "position": [
+            0,
+            -0.646911,
+            0.639518
+          ],
+          "rotation": [
+            150,
+            -29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -255,12 +363,24 @@
         "name": "zig-2b",
         "kind": "box",
         "transform": {
-          "position": [0, -0.877294, 0.240482],
-          "rotation": [150, 29.940164, 0]
+          "position": [
+            0,
+            -0.877294,
+            0.240482
+          ],
+          "rotation": [
+            150,
+            29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -269,12 +389,24 @@
         "name": "zig-3a",
         "kind": "box",
         "transform": {
-          "position": [0, -0.877294, -0.240482],
-          "rotation": [210, -29.940164, 0]
+          "position": [
+            0,
+            -0.877294,
+            -0.240482
+          ],
+          "rotation": [
+            210,
+            -29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -283,12 +415,24 @@
         "name": "zig-3b",
         "kind": "box",
         "transform": {
-          "position": [0, -0.646911, -0.639518],
-          "rotation": [210, 29.940164, 0]
+          "position": [
+            0,
+            -0.646911,
+            -0.639518
+          ],
+          "rotation": [
+            210,
+            29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -297,12 +441,24 @@
         "name": "zig-4a",
         "kind": "box",
         "transform": {
-          "position": [0, -0.230383, -0.88],
-          "rotation": [270, -29.940164, 0]
+          "position": [
+            0,
+            -0.230383,
+            -0.88
+          ],
+          "rotation": [
+            270,
+            -29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -311,12 +467,24 @@
         "name": "zig-4b",
         "kind": "box",
         "transform": {
-          "position": [0, 0.230383, -0.88],
-          "rotation": [270, 29.940164, 0]
+          "position": [
+            0,
+            0.230383,
+            -0.88
+          ],
+          "rotation": [
+            270,
+            29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -325,12 +493,24 @@
         "name": "zig-5a",
         "kind": "box",
         "transform": {
-          "position": [0, 0.646911, -0.639518],
-          "rotation": [330, -29.940164, 0]
+          "position": [
+            0,
+            0.646911,
+            -0.639518
+          ],
+          "rotation": [
+            330,
+            -29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -339,12 +519,24 @@
         "name": "zig-5b",
         "kind": "box",
         "transform": {
-          "position": [0, 0.877294, -0.240482],
-          "rotation": [330, 29.940164, 0]
+          "position": [
+            0,
+            0.877294,
+            -0.240482
+          ],
+          "rotation": [
+            330,
+            29.940164,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.343204, 0.17, 0.3]
+          "size": [
+            1.343204,
+            0.17,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -353,7 +545,11 @@
         "name": "zig-clip",
         "kind": "cylinder",
         "transform": {
-          "rotation": [0, 0, 90]
+          "rotation": [
+            0,
+            0,
+            90
+          ]
         },
         "op": "intersect",
         "round": 0.03,
@@ -382,7 +578,11 @@
         "name": "shaft",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 3.05, 0]
+          "position": [
+            0,
+            3.05,
+            0
+          ]
         },
         "round": 0.06,
         "material": "candy-blue",
@@ -397,7 +597,11 @@
         "name": "collar-low",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.98, 0]
+          "position": [
+            0,
+            0.98,
+            0
+          ]
         },
         "smooth": 0.04,
         "round": 0.11,
@@ -413,7 +617,11 @@
         "name": "collar-high",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 4.65, 0]
+          "position": [
+            0,
+            4.65,
+            0
+          ]
         },
         "smooth": 0.04,
         "round": 0.1,
@@ -429,8 +637,16 @@
         "name": "hub",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 5.28, 0],
-          "rotation": [90, 0, 0]
+          "position": [
+            0,
+            5.28,
+            0
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ]
         },
         "round": 0.15,
         "material": "candy-yellow",
@@ -445,8 +661,16 @@
         "name": "axle",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 5.28, 0],
-          "rotation": [90, 0, 0]
+          "position": [
+            0,
+            5.28,
+            0
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ]
         },
         "round": 0.07,
         "material": "candy-pink",
@@ -527,21 +751,55 @@
   "collision": [
     {
       "shape": "cuboid",
-      "t": [0, 0, 0],
-      "r": [0, 0, 0, 1],
-      "halfExtents": [1.2, 0.6, 0.6]
+      "t": [
+        0,
+        0,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "halfExtents": [
+        1.2,
+        0.6,
+        0.6
+      ]
     },
     {
       "shape": "cuboid",
-      "t": [0, 3.1, 0],
-      "r": [0, 0, 0, 1],
-      "halfExtents": [0.15, 2.5, 0.15]
+      "t": [
+        0,
+        3.1,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "halfExtents": [
+        0.15,
+        2.5,
+        0.15
+      ]
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [-1.57, -1.183494, -1.084872],
-    "max": [1.57, 5.7, 1.084872]
+    "min": [
+      -1.57,
+      -1.183494,
+      -1.084872
+    ],
+    "max": [
+      1.57,
+      5.7,
+      1.084872
+    ]
   },
-  "hash": "931c69c90503ac8092a4a5e84860246fb69fa432db905bbd571e776d1c00ca3a"
+  "hash": "b83563cbbb8bcb676c22cc3be47d5ea54f0a41cc45ee3b0bb1403dd83f03c424"
 }

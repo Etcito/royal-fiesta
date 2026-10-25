@@ -57,7 +57,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -67,10 +67,18 @@
         "kind": "box",
         "visible": false,
         "transform": {
-          "position": [-4, 2, 0]
+          "position": [
+            -4,
+            2,
+            0
+          ]
         },
         "params": {
-          "size": [0.8, 4, 0.8]
+          "size": [
+            0.8,
+            4,
+            0.8
+          ]
         },
         "gameCollision": true
       },
@@ -80,10 +88,18 @@
         "kind": "box",
         "visible": false,
         "transform": {
-          "position": [4, 2, 0]
+          "position": [
+            4,
+            2,
+            0
+          ]
         },
         "params": {
-          "size": [0.8, 4, 0.8]
+          "size": [
+            0.8,
+            4,
+            0.8
+          ]
         },
         "gameCollision": true
       },
@@ -93,10 +109,18 @@
         "kind": "box",
         "visible": false,
         "transform": {
-          "position": [0, 4.4, 0]
+          "position": [
+            0,
+            4.4,
+            0
+          ]
         },
         "params": {
-          "size": [8.8, 0.8, 0.8]
+          "size": [
+            8.8,
+            0.8,
+            0.8
+          ]
         },
         "gameCollision": true
       },
@@ -105,7 +129,11 @@
         "name": "post_l_base",
         "kind": "cylinder",
         "transform": {
-          "position": [-4, 0.2, 0]
+          "position": [
+            -4,
+            0.2,
+            0
+          ]
         },
         "round": 0.12,
         "material": "candy-yellow",
@@ -120,7 +148,11 @@
         "name": "post_l_core",
         "kind": "cylinder",
         "transform": {
-          "position": [-4, 2, 0]
+          "position": [
+            -4,
+            2,
+            0
+          ]
         },
         "round": 0.1,
         "material": "candy-pink",
@@ -135,7 +167,11 @@
         "name": "post_l_band",
         "kind": "cylinder",
         "transform": {
-          "position": [-4, 2, 0]
+          "position": [
+            -4,
+            2,
+            0
+          ]
         },
         "round": 0.1,
         "material": "candy-blue",
@@ -150,7 +186,11 @@
         "name": "post_l_rim0",
         "kind": "torus",
         "transform": {
-          "position": [-4, 1.45, 0]
+          "position": [
+            -4,
+            1.45,
+            0
+          ]
         },
         "material": "candy-yellow",
         "params": {
@@ -164,7 +204,11 @@
         "name": "post_l_rim1",
         "kind": "torus",
         "transform": {
-          "position": [-4, 2.55, 0]
+          "position": [
+            -4,
+            2.55,
+            0
+          ]
         },
         "material": "candy-yellow",
         "params": {
@@ -178,7 +222,11 @@
         "name": "post_l_rim2",
         "kind": "torus",
         "transform": {
-          "position": [-4, 3.75, 0]
+          "position": [
+            -4,
+            3.75,
+            0
+          ]
         },
         "material": "candy-yellow",
         "params": {
@@ -192,7 +240,11 @@
         "name": "post_r_base",
         "kind": "cylinder",
         "transform": {
-          "position": [4, 0.2, 0]
+          "position": [
+            4,
+            0.2,
+            0
+          ]
         },
         "round": 0.12,
         "material": "candy-yellow",
@@ -207,7 +259,11 @@
         "name": "post_r_core",
         "kind": "cylinder",
         "transform": {
-          "position": [4, 2, 0]
+          "position": [
+            4,
+            2,
+            0
+          ]
         },
         "round": 0.1,
         "material": "candy-blue",
@@ -222,7 +278,11 @@
         "name": "post_r_band",
         "kind": "cylinder",
         "transform": {
-          "position": [4, 2, 0]
+          "position": [
+            4,
+            2,
+            0
+          ]
         },
         "round": 0.1,
         "material": "candy-pink",
@@ -237,7 +297,11 @@
         "name": "post_r_rim0",
         "kind": "torus",
         "transform": {
-          "position": [4, 1.45, 0]
+          "position": [
+            4,
+            1.45,
+            0
+          ]
         },
         "material": "candy-yellow",
         "params": {
@@ -251,7 +315,11 @@
         "name": "post_r_rim1",
         "kind": "torus",
         "transform": {
-          "position": [4, 2.55, 0]
+          "position": [
+            4,
+            2.55,
+            0
+          ]
         },
         "material": "candy-yellow",
         "params": {
@@ -265,7 +333,11 @@
         "name": "post_r_rim2",
         "kind": "torus",
         "transform": {
-          "position": [4, 3.75, 0]
+          "position": [
+            4,
+            3.75,
+            0
+          ]
         },
         "material": "candy-yellow",
         "params": {
@@ -279,12 +351,20 @@
         "name": "beam",
         "kind": "box",
         "transform": {
-          "position": [0, 4.4, 0]
+          "position": [
+            0,
+            4.4,
+            0
+          ]
         },
         "round": 0.35,
         "material": "candy-yellow",
         "params": {
-          "size": [9.8, 1, 1]
+          "size": [
+            9.8,
+            1,
+            1
+          ]
         },
         "gameCollision": false
       },
@@ -293,12 +373,20 @@
         "name": "beam_band",
         "kind": "box",
         "transform": {
-          "position": [0, 4.4, 0]
+          "position": [
+            0,
+            4.4,
+            0
+          ]
         },
         "round": 0.06,
         "material": "candy-pink",
         "params": {
-          "size": [9, 0.62, 1.08]
+          "size": [
+            9,
+            0.62,
+            1.08
+          ]
         },
         "gameCollision": false
       },
@@ -307,7 +395,11 @@
         "name": "beam_zigzag",
         "kind": "extrude",
         "transform": {
-          "position": [0, 4.4, 0]
+          "position": [
+            0,
+            4.4,
+            0
+          ]
         },
         "round": 0.02,
         "material": "candy-white",
@@ -316,82 +408,160 @@
           "profile": {
             "points": [
               {
-                "p": [-4.3, 0.06]
+                "p": [
+                  -4.3,
+                  0.06
+                ]
               },
               {
-                "p": [-3.583333, -0.26]
+                "p": [
+                  -3.583333,
+                  -0.26
+                ]
               },
               {
-                "p": [-2.866667, 0.06]
+                "p": [
+                  -2.866667,
+                  0.06
+                ]
               },
               {
-                "p": [-2.15, -0.26]
+                "p": [
+                  -2.15,
+                  -0.26
+                ]
               },
               {
-                "p": [-1.433333, 0.06]
+                "p": [
+                  -1.433333,
+                  0.06
+                ]
               },
               {
-                "p": [-0.716667, -0.26]
+                "p": [
+                  -0.716667,
+                  -0.26
+                ]
               },
               {
-                "p": [0, 0.06]
+                "p": [
+                  0,
+                  0.06
+                ]
               },
               {
-                "p": [0.716667, -0.26]
+                "p": [
+                  0.716667,
+                  -0.26
+                ]
               },
               {
-                "p": [1.433333, 0.06]
+                "p": [
+                  1.433333,
+                  0.06
+                ]
               },
               {
-                "p": [2.15, -0.26]
+                "p": [
+                  2.15,
+                  -0.26
+                ]
               },
               {
-                "p": [2.866667, 0.06]
+                "p": [
+                  2.866667,
+                  0.06
+                ]
               },
               {
-                "p": [3.583333, -0.26]
+                "p": [
+                  3.583333,
+                  -0.26
+                ]
               },
               {
-                "p": [4.3, 0.06]
+                "p": [
+                  4.3,
+                  0.06
+                ]
               },
               {
-                "p": [4.3, 0.26]
+                "p": [
+                  4.3,
+                  0.26
+                ]
               },
               {
-                "p": [3.583333, -0.06]
+                "p": [
+                  3.583333,
+                  -0.06
+                ]
               },
               {
-                "p": [2.866667, 0.26]
+                "p": [
+                  2.866667,
+                  0.26
+                ]
               },
               {
-                "p": [2.15, -0.06]
+                "p": [
+                  2.15,
+                  -0.06
+                ]
               },
               {
-                "p": [1.433333, 0.26]
+                "p": [
+                  1.433333,
+                  0.26
+                ]
               },
               {
-                "p": [0.716667, -0.06]
+                "p": [
+                  0.716667,
+                  -0.06
+                ]
               },
               {
-                "p": [0, 0.26]
+                "p": [
+                  0,
+                  0.26
+                ]
               },
               {
-                "p": [-0.716667, -0.06]
+                "p": [
+                  -0.716667,
+                  -0.06
+                ]
               },
               {
-                "p": [-1.433333, 0.26]
+                "p": [
+                  -1.433333,
+                  0.26
+                ]
               },
               {
-                "p": [-2.15, -0.06]
+                "p": [
+                  -2.15,
+                  -0.06
+                ]
               },
               {
-                "p": [-2.866667, 0.26]
+                "p": [
+                  -2.866667,
+                  0.26
+                ]
               },
               {
-                "p": [-3.583333, -0.06]
+                "p": [
+                  -3.583333,
+                  -0.06
+                ]
               },
               {
-                "p": [-4.3, 0.26]
+                "p": [
+                  -4.3,
+                  0.26
+                ]
               }
             ]
           }
@@ -403,7 +573,11 @@
         "name": "crown",
         "kind": "extrude",
         "transform": {
-          "position": [0, 4.82, 0]
+          "position": [
+            0,
+            4.82,
+            0
+          ]
         },
         "round": 0.06,
         "material": "candy-yellow",
@@ -412,37 +586,70 @@
           "profile": {
             "points": [
               {
-                "p": [-1.35, 0]
+                "p": [
+                  -1.35,
+                  0
+                ]
               },
               {
-                "p": [1.35, 0]
+                "p": [
+                  1.35,
+                  0
+                ]
               },
               {
-                "p": [1.575, 0.85]
+                "p": [
+                  1.575,
+                  0.85
+                ]
               },
               {
-                "p": [1.2, 0.42]
+                "p": [
+                  1.2,
+                  0.42
+                ]
               },
               {
-                "p": [0.825, 0.75]
+                "p": [
+                  0.825,
+                  0.75
+                ]
               },
               {
-                "p": [0.42, 0.42]
+                "p": [
+                  0.42,
+                  0.42
+                ]
               },
               {
-                "p": [0, 0.9]
+                "p": [
+                  0,
+                  0.9
+                ]
               },
               {
-                "p": [-0.42, 0.42]
+                "p": [
+                  -0.42,
+                  0.42
+                ]
               },
               {
-                "p": [-0.825, 0.75]
+                "p": [
+                  -0.825,
+                  0.75
+                ]
               },
               {
-                "p": [-1.2, 0.42]
+                "p": [
+                  -1.2,
+                  0.42
+                ]
               },
               {
-                "p": [-1.575, 0.85]
+                "p": [
+                  -1.575,
+                  0.85
+                ]
               }
             ]
           }
@@ -454,7 +661,11 @@
         "name": "crown_tip0",
         "kind": "sphere",
         "transform": {
-          "position": [-1.575, 5.64, 0]
+          "position": [
+            -1.575,
+            5.64,
+            0
+          ]
         },
         "material": "candy-pink",
         "params": {
@@ -467,7 +678,11 @@
         "name": "crown_tip1",
         "kind": "sphere",
         "transform": {
-          "position": [-0.825, 5.54, 0]
+          "position": [
+            -0.825,
+            5.54,
+            0
+          ]
         },
         "material": "candy-blue",
         "params": {
@@ -480,7 +695,11 @@
         "name": "crown_tip2",
         "kind": "sphere",
         "transform": {
-          "position": [0, 5.69, 0]
+          "position": [
+            0,
+            5.69,
+            0
+          ]
         },
         "material": "candy-pink",
         "params": {
@@ -493,7 +712,11 @@
         "name": "crown_tip3",
         "kind": "sphere",
         "transform": {
-          "position": [0.825, 5.54, 0]
+          "position": [
+            0.825,
+            5.54,
+            0
+          ]
         },
         "material": "candy-blue",
         "params": {
@@ -506,7 +729,11 @@
         "name": "crown_tip4",
         "kind": "sphere",
         "transform": {
-          "position": [1.575, 5.64, 0]
+          "position": [
+            1.575,
+            5.64,
+            0
+          ]
         },
         "material": "candy-pink",
         "params": {
@@ -519,8 +746,16 @@
         "name": "crown_jewel0",
         "kind": "cylinder",
         "transform": {
-          "position": [-0.75, 5.04, 0],
-          "rotation": [90, 0, 0]
+          "position": [
+            -0.75,
+            5.04,
+            0
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ]
         },
         "round": 0.04,
         "material": "candy-blue",
@@ -535,8 +770,16 @@
         "name": "crown_jewel1",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 5.04, 0],
-          "rotation": [90, 0, 0]
+          "position": [
+            0,
+            5.04,
+            0
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ]
         },
         "round": 0.04,
         "material": "candy-pink",
@@ -551,8 +794,16 @@
         "name": "crown_jewel2",
         "kind": "cylinder",
         "transform": {
-          "position": [0.75, 5.04, 0],
-          "rotation": [90, 0, 0]
+          "position": [
+            0.75,
+            5.04,
+            0
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ]
         },
         "round": 0.04,
         "material": "candy-blue",
@@ -633,27 +884,74 @@
   "collision": [
     {
       "shape": "cuboid",
-      "t": [-4, 2, 0],
-      "r": [0, 0, 0, 1],
-      "halfExtents": [0.4, 2, 0.4]
+      "t": [
+        -4,
+        2,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "halfExtents": [
+        0.4,
+        2,
+        0.4
+      ]
     },
     {
       "shape": "cuboid",
-      "t": [4, 2, 0],
-      "r": [0, 0, 0, 1],
-      "halfExtents": [0.4, 2, 0.4]
+      "t": [
+        4,
+        2,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "halfExtents": [
+        0.4,
+        2,
+        0.4
+      ]
     },
     {
       "shape": "cuboid",
-      "t": [0, 4.4, 0],
-      "r": [0, 0, 0, 1],
-      "halfExtents": [4.4, 0.4, 0.4]
+      "t": [
+        0,
+        4.4,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "halfExtents": [
+        4.4,
+        0.4,
+        0.4
+      ]
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [-4.9, 0, -0.85],
-    "max": [4.9, 5.85, 0.85]
+    "min": [
+      -4.9,
+      0,
+      -0.85
+    ],
+    "max": [
+      4.9,
+      5.85,
+      0.85
+    ]
   },
-  "hash": "67dab9f737b5ca9569100d79856a4f7c8f5bbbe969bf3f3905756ef5a53453d5"
+  "hash": "bccb6992c54a4b1652d24b9f7482bd70069568d14c42de912b3ea3dc07276c0d"
 }

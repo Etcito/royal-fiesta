@@ -37,7 +37,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -57,7 +57,11 @@
         "name": "rim-low",
         "kind": "torus",
         "transform": {
-          "position": [0, -0.76, 0]
+          "position": [
+            0,
+            -0.76,
+            0
+          ]
         },
         "material": "candy-yellow",
         "params": {
@@ -71,7 +75,11 @@
         "name": "base",
         "kind": "cylinder",
         "transform": {
-          "position": [0, -0.25, 0]
+          "position": [
+            0,
+            -0.25,
+            0
+          ]
         },
         "round": 0.2,
         "material": "candy-blue",
@@ -86,7 +94,11 @@
         "name": "rim-top",
         "kind": "torus",
         "transform": {
-          "position": [0, 0.46, 0]
+          "position": [
+            0,
+            0.46,
+            0
+          ]
         },
         "smooth": 0.06,
         "material": "candy-yellow",
@@ -105,7 +117,7 @@
           "pad_dome"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -114,7 +126,11 @@
         "name": "pad-body",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.3, 0]
+          "position": [
+            0,
+            0.3,
+            0
+          ]
         },
         "round": 0.3,
         "material": "candy-pink",
@@ -129,12 +145,20 @@
         "name": "pad-dome",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.12, 0]
+          "position": [
+            0,
+            0.12,
+            0
+          ]
         },
         "op": "intersect",
         "material": "candy-pink",
         "params": {
-          "radii": [6.1, 0.8, 6.1]
+          "radii": [
+            6.1,
+            0.8,
+            6.1
+          ]
         },
         "gameCollision": false
       },
@@ -147,7 +171,7 @@
           "dot"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -161,7 +185,7 @@
           "ring_in"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -170,11 +194,19 @@
         "name": "ring-shell",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.12, 0]
+          "position": [
+            0,
+            0.12,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "radii": [6.14, 0.84, 6.14]
+          "radii": [
+            6.14,
+            0.84,
+            6.14
+          ]
         },
         "gameCollision": false
       },
@@ -183,7 +215,11 @@
         "name": "ring-out",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.65, 0]
+          "position": [
+            0,
+            0.65,
+            0
+          ]
         },
         "op": "intersect",
         "material": "candy-white",
@@ -198,7 +234,11 @@
         "name": "ring-in",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.65, 0]
+          "position": [
+            0,
+            0.65,
+            0
+          ]
         },
         "op": "subtract",
         "material": "candy-white",
@@ -217,7 +257,7 @@
           "dot_cyl"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -226,11 +266,19 @@
         "name": "dot-shell",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.12, 0]
+          "position": [
+            0,
+            0.12,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "radii": [6.14, 0.84, 6.14]
+          "radii": [
+            6.14,
+            0.84,
+            6.14
+          ]
         },
         "gameCollision": false
       },
@@ -239,7 +287,11 @@
         "name": "dot-cyl",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.65, 0]
+          "position": [
+            0,
+            0.65,
+            0
+          ]
         },
         "op": "intersect",
         "material": "candy-white",
@@ -258,7 +310,7 @@
           "zz_clip"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -276,13 +328,17 @@
             "params": {
               "angleDeg": 360,
               "axis": "y",
-              "center": [0, 0, 0],
+              "center": [
+                0,
+                0,
+                0
+              ],
               "count": 22
             }
           }
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -291,14 +347,18 @@
         "name": "v-ring",
         "kind": "group",
         "transform": {
-          "position": [0, 0, 5.95]
+          "position": [
+            0,
+            0,
+            5.95
+          ]
         },
         "children": [
           "s_ring_up",
           "s_ring_down"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -307,12 +367,24 @@
         "name": "s-ring-up",
         "kind": "box",
         "transform": {
-          "position": [-0.424829, -0.22, 0],
-          "rotation": [0, 0, 21.809361]
+          "position": [
+            -0.424829,
+            -0.22,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            21.809361
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.17516, 0.26, 0.3]
+          "size": [
+            1.17516,
+            0.26,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -321,12 +393,24 @@
         "name": "s-ring-down",
         "kind": "box",
         "transform": {
-          "position": [0.424829, -0.22, 0],
-          "rotation": [0, 0, -21.809361]
+          "position": [
+            0.424829,
+            -0.22,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -21.809361
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [1.17516, 0.26, 0.3]
+          "size": [
+            1.17516,
+            0.26,
+            0.3
+          ]
         },
         "gameCollision": false
       },
@@ -335,7 +419,11 @@
         "name": "zz-clip",
         "kind": "cylinder",
         "transform": {
-          "position": [0, -0.22, 0]
+          "position": [
+            0,
+            -0.22,
+            0
+          ]
         },
         "op": "intersect",
         "material": "candy-white",
@@ -416,16 +504,33 @@
   "collision": [
     {
       "shape": "cylinder",
-      "t": [0, 0, 0],
-      "r": [0, 0, 0, 1],
+      "t": [
+        0,
+        0,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
       "radius": 6,
       "halfHeight": 0.5
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [-6.2, -1, -6.2],
-    "max": [6.2, 0.98, 6.2]
+    "min": [
+      -6.2,
+      -1,
+      -6.2
+    ],
+    "max": [
+      6.2,
+      0.98,
+      6.2
+    ]
   },
-  "hash": "32400454fea1a11ee1ac0e53777916e0bb73ad1f4dc6309eb6b01f22133368bf"
+  "hash": "8b896acd5774fcd4a1d6e5b3032a4b7378e66aa5290da182d76eab8b9b1133fc"
 }

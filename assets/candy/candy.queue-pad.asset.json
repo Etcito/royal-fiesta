@@ -37,7 +37,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -47,7 +47,11 @@
         "kind": "cylinder",
         "visible": false,
         "transform": {
-          "position": [0, 0.05, 0]
+          "position": [
+            0,
+            0.05,
+            0
+          ]
         },
         "params": {
           "height": 0.1,
@@ -60,7 +64,11 @@
         "name": "base",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.06, 0]
+          "position": [
+            0,
+            0.06,
+            0
+          ]
         },
         "round": 0.1,
         "material": "candy-yellow",
@@ -75,7 +83,11 @@
         "name": "rim",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.2, 0]
+          "position": [
+            0,
+            0.2,
+            0
+          ]
         },
         "smooth": 0.04,
         "round": 0.13,
@@ -91,7 +103,11 @@
         "name": "pad",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.28, 0]
+          "position": [
+            0,
+            0.28,
+            0
+          ]
         },
         "smooth": 0.03,
         "round": 0.1,
@@ -112,7 +128,7 @@
           "dot"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -121,7 +137,11 @@
         "name": "ring",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.4, 0]
+          "position": [
+            0,
+            0.4,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
@@ -135,7 +155,11 @@
         "name": "ring-cut",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.4, 0]
+          "position": [
+            0,
+            0.4,
+            0
+          ]
         },
         "op": "subtract",
         "material": "candy-pink",
@@ -150,7 +174,11 @@
         "name": "dot",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.4, 0]
+          "position": [
+            0,
+            0.4,
+            0
+          ]
         },
         "material": "candy-blue",
         "params": {
@@ -173,13 +201,17 @@
             "params": {
               "angleDeg": 360,
               "axis": "y",
-              "center": [0, 0, 0],
+              "center": [
+                0,
+                0,
+                0
+              ],
               "count": 4
             }
           }
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -188,15 +220,23 @@
         "name": "arrow",
         "kind": "group",
         "transform": {
-          "position": [0, 0.4, 0.95],
-          "rotation": [0, 180, 0]
+          "position": [
+            0,
+            0.4,
+            0.95
+          ],
+          "rotation": [
+            0,
+            180,
+            0
+          ]
         },
         "children": [
           "arrow_l",
           "arrow_r"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -205,12 +245,24 @@
         "name": "arrow-l",
         "kind": "box",
         "transform": {
-          "position": [-0.16, 0, 0],
-          "rotation": [0, -45, 0]
+          "position": [
+            -0.16,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            -45,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.52, 0.04, 0.17]
+          "size": [
+            0.52,
+            0.04,
+            0.17
+          ]
         },
         "gameCollision": false
       },
@@ -219,12 +271,24 @@
         "name": "arrow-r",
         "kind": "box",
         "transform": {
-          "position": [0.16, 0, 0],
-          "rotation": [0, 45, 0]
+          "position": [
+            0.16,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            45,
+            0
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.52, 0.04, 0.17]
+          "size": [
+            0.52,
+            0.04,
+            0.17
+          ]
         },
         "gameCollision": false
       },
@@ -237,7 +301,7 @@
           "zigzag_clip"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -246,7 +310,11 @@
         "name": "zigzag-ring",
         "kind": "group",
         "transform": {
-          "position": [0, 0.2, 0]
+          "position": [
+            0,
+            0.2,
+            0
+          ]
         },
         "children": [
           "zigzag_v"
@@ -258,13 +326,17 @@
             "params": {
               "angleDeg": 360,
               "axis": "y",
-              "center": [0, 0, 0],
+              "center": [
+                0,
+                0,
+                0
+              ],
               "count": 18
             }
           }
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -273,14 +345,18 @@
         "name": "zigzag-v",
         "kind": "group",
         "transform": {
-          "position": [0, 0, 1.7]
+          "position": [
+            0,
+            0,
+            1.7
+          ]
         },
         "children": [
           "zigzag_up",
           "zigzag_dn"
         ],
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },
@@ -289,12 +365,24 @@
         "name": "zigzag-up",
         "kind": "box",
         "transform": {
-          "position": [-0.148353, 0, 0],
-          "rotation": [0, 0, 13.2747]
+          "position": [
+            -0.148353,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            13.2747
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.346851, 0.07, 0.07]
+          "size": [
+            0.346851,
+            0.07,
+            0.07
+          ]
         },
         "gameCollision": false
       },
@@ -303,12 +391,24 @@
         "name": "zigzag-dn",
         "kind": "box",
         "transform": {
-          "position": [0.148353, 0, 0],
-          "rotation": [0, 0, -13.2747]
+          "position": [
+            0.148353,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -13.2747
+          ]
         },
         "material": "candy-white",
         "params": {
-          "size": [0.346851, 0.07, 0.07]
+          "size": [
+            0.346851,
+            0.07,
+            0.07
+          ]
         },
         "gameCollision": false
       },
@@ -317,7 +417,11 @@
         "name": "zigzag-clip",
         "kind": "cylinder",
         "transform": {
-          "position": [0, 0.2, 0]
+          "position": [
+            0,
+            0.2,
+            0
+          ]
         },
         "op": "intersect",
         "material": "candy-white",
@@ -398,16 +502,33 @@
   "collision": [
     {
       "shape": "cylinder",
-      "t": [0, 0.05, 0],
-      "r": [0, 0, 0, 1],
+      "t": [
+        0,
+        0.05,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
       "radius": 1.6,
       "halfHeight": 0.05
     }
   ],
   "anchors": {},
   "bounds": {
-    "min": [-1.765109, -0.05, -1.741585],
-    "max": [1.765109, 0.5, 1.741585]
+    "min": [
+      -1.765109,
+      -0.05,
+      -1.741585
+    ],
+    "max": [
+      1.765109,
+      0.5,
+      1.741585
+    ]
   },
-  "hash": "7d85d73bd66b353f4c798464585e47b1f543f837e021c1ca3f46311aca5981ce"
+  "hash": "ceea056cb335851e8957b6be5d940bdc13a5e28764e53dbd1a12b95add9b4fd5"
 }

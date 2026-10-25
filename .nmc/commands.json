@@ -1,7 +1,7 @@
 [
   {
-    "name": "c4-candy-courses",
-    "command": "node --experimental-strip-types apps/headless/proofs/c4-candy-courses.ts",
-    "timeout_s": 1200
+    "name": "m17-sdf-match",
+    "command": "env NMC_GPU_WAIT_S=900 node --experimental-strip-types apps/headless/proofs/m17-sdf-runtime.ts --render",
+    "timeout_s": 3600
   }
 ]

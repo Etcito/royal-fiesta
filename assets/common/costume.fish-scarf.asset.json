@@ -53,7 +53,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "quad"
+          "output": "poly"
         },
         "gameCollision": true
       },
@@ -62,7 +62,11 @@
         "name": "neck",
         "kind": "anchor",
         "transform": {
-          "position": [0, 0.3, 0]
+          "position": [
+            0,
+            0.3,
+            0
+          ]
         },
         "gameCollision": true
       },
@@ -71,8 +75,16 @@
         "name": "wrap_low",
         "kind": "sweep",
         "transform": {
-          "position": [0, 0.19, 0.01],
-          "rotation": [10, 0, 0]
+          "position": [
+            0,
+            0.19,
+            0.01
+          ],
+          "rotation": [
+            10,
+            0,
+            0
+          ]
         },
         "material": "m8",
         "params": {
@@ -83,24 +95,72 @@
             "closed": true,
             "points": [
               {
-                "p": [0, 0, 0.285],
-                "in": [-0.1574, 0, 0.285],
-                "out": [0.1574, 0, 0.285]
+                "p": [
+                  0,
+                  0,
+                  0.285
+                ],
+                "in": [
+                  -0.1574,
+                  0,
+                  0.285
+                ],
+                "out": [
+                  0.1574,
+                  0,
+                  0.285
+                ]
               },
               {
-                "p": [0.285, 0, 0],
-                "in": [0.285, 0, 0.1574],
-                "out": [0.285, 0, -0.1574]
+                "p": [
+                  0.285,
+                  0,
+                  0
+                ],
+                "in": [
+                  0.285,
+                  0,
+                  0.1574
+                ],
+                "out": [
+                  0.285,
+                  0,
+                  -0.1574
+                ]
               },
               {
-                "p": [0, 0, -0.285],
-                "in": [0.1574, 0, -0.285],
-                "out": [-0.1574, 0, -0.285]
+                "p": [
+                  0,
+                  0,
+                  -0.285
+                ],
+                "in": [
+                  0.1574,
+                  0,
+                  -0.285
+                ],
+                "out": [
+                  -0.1574,
+                  0,
+                  -0.285
+                ]
               },
               {
-                "p": [-0.285, 0, 0],
-                "in": [-0.285, 0, -0.1574],
-                "out": [-0.285, 0, 0.1574]
+                "p": [
+                  -0.285,
+                  0,
+                  0
+                ],
+                "in": [
+                  -0.285,
+                  0,
+                  -0.1574
+                ],
+                "out": [
+                  -0.285,
+                  0,
+                  0.1574
+                ]
               }
             ]
           },
@@ -108,22 +168,34 @@
             {
               "t": 0,
               "shape": "circle",
-              "scale": [0.06, 0.085]
+              "scale": [
+                0.06,
+                0.085
+              ]
             },
             {
               "t": 0.3,
               "shape": "circle",
-              "scale": [0.0672, 0.0765]
+              "scale": [
+                0.0672,
+                0.0765
+              ]
             },
             {
               "t": 0.6,
               "shape": "circle",
-              "scale": [0.0552, 0.0935]
+              "scale": [
+                0.0552,
+                0.0935
+              ]
             },
             {
               "t": 0.85,
               "shape": "circle",
-              "scale": [0.0648, 0.08075]
+              "scale": [
+                0.0648,
+                0.08075
+              ]
             }
           ]
         },
@@ -134,8 +206,16 @@
         "name": "wrap_high",
         "kind": "sweep",
         "transform": {
-          "position": [0, 0.275, -0.005],
-          "rotation": [-6, 0, 0]
+          "position": [
+            0,
+            0.275,
+            -0.005
+          ],
+          "rotation": [
+            -6,
+            0,
+            0
+          ]
         },
         "smooth": 0.035,
         "material": "m8",
@@ -147,24 +227,72 @@
             "closed": true,
             "points": [
               {
-                "p": [0, 0, 0.262],
-                "in": [-0.1447, 0, 0.262],
-                "out": [0.1447, 0, 0.262]
+                "p": [
+                  0,
+                  0,
+                  0.262
+                ],
+                "in": [
+                  -0.1447,
+                  0,
+                  0.262
+                ],
+                "out": [
+                  0.1447,
+                  0,
+                  0.262
+                ]
               },
               {
-                "p": [0.262, 0, 0],
-                "in": [0.262, 0, 0.1447],
-                "out": [0.262, 0, -0.1447]
+                "p": [
+                  0.262,
+                  0,
+                  0
+                ],
+                "in": [
+                  0.262,
+                  0,
+                  0.1447
+                ],
+                "out": [
+                  0.262,
+                  0,
+                  -0.1447
+                ]
               },
               {
-                "p": [0, 0, -0.262],
-                "in": [0.1447, 0, -0.262],
-                "out": [-0.1447, 0, -0.262]
+                "p": [
+                  0,
+                  0,
+                  -0.262
+                ],
+                "in": [
+                  0.1447,
+                  0,
+                  -0.262
+                ],
+                "out": [
+                  -0.1447,
+                  0,
+                  -0.262
+                ]
               },
               {
-                "p": [-0.262, 0, 0],
-                "in": [-0.262, 0, -0.1447],
-                "out": [-0.262, 0, 0.1447]
+                "p": [
+                  -0.262,
+                  0,
+                  0
+                ],
+                "in": [
+                  -0.262,
+                  0,
+                  -0.1447
+                ],
+                "out": [
+                  -0.262,
+                  0,
+                  0.1447
+                ]
               }
             ]
           },
@@ -172,22 +300,34 @@
             {
               "t": 0,
               "shape": "circle",
-              "scale": [0.05, 0.07]
+              "scale": [
+                0.05,
+                0.07
+              ]
             },
             {
               "t": 0.3,
               "shape": "circle",
-              "scale": [0.056, 0.063]
+              "scale": [
+                0.056,
+                0.063
+              ]
             },
             {
               "t": 0.6,
               "shape": "circle",
-              "scale": [0.046, 0.077]
+              "scale": [
+                0.046,
+                0.077
+              ]
             },
             {
               "t": 0.85,
               "shape": "circle",
-              "scale": [0.054, 0.0665]
+              "scale": [
+                0.054,
+                0.0665
+              ]
             }
           ]
         },
@@ -198,13 +338,25 @@
         "name": "knot",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0.15, 0.2, 0.275],
-          "rotation": [0, 30, 15]
+          "position": [
+            0.15,
+            0.2,
+            0.275
+          ],
+          "rotation": [
+            0,
+            30,
+            15
+          ]
         },
         "smooth": 0.03,
         "material": "m8",
         "params": {
-          "radii": [0.1, 0.085, 0.075]
+          "radii": [
+            0.1,
+            0.085,
+            0.075
+          ]
         },
         "gameCollision": false
       },
@@ -221,27 +373,79 @@
             "closed": false,
             "points": [
               {
-                "p": [0.15, 0.18, 0.3],
-                "out": [0.1467, 0.1367, 0.325]
+                "p": [
+                  0.15,
+                  0.18,
+                  0.3
+                ],
+                "out": [
+                  0.1467,
+                  0.1367,
+                  0.325
+                ]
               },
               {
-                "p": [0.14, 0.05, 0.375],
-                "in": [0.1475, 0.0933, 0.3558],
-                "out": [0.1325, 0.0067, 0.3942]
+                "p": [
+                  0.14,
+                  0.05,
+                  0.375
+                ],
+                "in": [
+                  0.1475,
+                  0.0933,
+                  0.3558
+                ],
+                "out": [
+                  0.1325,
+                  0.0067,
+                  0.3942
+                ]
               },
               {
-                "p": [0.105, -0.08, 0.415],
-                "in": [0.1083, -0.0383, 0.4042],
-                "out": [0.1017, -0.1217, 0.4258]
+                "p": [
+                  0.105,
+                  -0.08,
+                  0.415
+                ],
+                "in": [
+                  0.1083,
+                  -0.0383,
+                  0.4042
+                ],
+                "out": [
+                  0.1017,
+                  -0.1217,
+                  0.4258
+                ]
               },
               {
-                "p": [0.12, -0.2, 0.44],
-                "in": [0.1208, -0.165, 0.4342],
-                "out": [0.1192, -0.235, 0.4458]
+                "p": [
+                  0.12,
+                  -0.2,
+                  0.44
+                ],
+                "in": [
+                  0.1208,
+                  -0.165,
+                  0.4342
+                ],
+                "out": [
+                  0.1192,
+                  -0.235,
+                  0.4458
+                ]
               },
               {
-                "p": [0.1, -0.29, 0.45],
-                "in": [0.1067, -0.26, 0.4467]
+                "p": [
+                  0.1,
+                  -0.29,
+                  0.45
+                ],
+                "in": [
+                  0.1067,
+                  -0.26,
+                  0.4467
+                ]
               }
             ]
           },
@@ -250,22 +454,35 @@
             {
               "t": 0,
               "shape": "circle",
-              "scale": [0.062, 0.032]
+              "scale": [
+                0.062,
+                0.032
+              ]
             },
             {
               "t": 0.45,
               "shape": "circle",
               "twist": 10,
-              "scale": [0.07, 0.03]
+              "scale": [
+                0.07,
+                0.03
+              ]
             },
             {
               "t": 1,
               "shape": "circle",
               "twist": -6,
-              "scale": [0.082, 0.028]
+              "scale": [
+                0.082,
+                0.028
+              ]
             }
           ],
-          "up": [0, 0.25, 1]
+          "up": [
+            0,
+            0.25,
+            1
+          ]
         },
         "gameCollision": false
       },
@@ -282,32 +499,96 @@
             "closed": false,
             "points": [
               {
-                "p": [0.2, 0.22, 0.24],
-                "out": [0.245, 0.2367, 0.18]
+                "p": [
+                  0.2,
+                  0.22,
+                  0.24
+                ],
+                "out": [
+                  0.245,
+                  0.2367,
+                  0.18
+                ]
               },
               {
-                "p": [0.335, 0.27, 0.06],
-                "in": [0.3183, 0.27, 0.1367],
-                "out": [0.3517, 0.27, -0.0167]
+                "p": [
+                  0.335,
+                  0.27,
+                  0.06
+                ],
+                "in": [
+                  0.3183,
+                  0.27,
+                  0.1367
+                ],
+                "out": [
+                  0.3517,
+                  0.27,
+                  -0.0167
+                ]
               },
               {
-                "p": [0.3, 0.22, -0.22],
-                "in": [0.315, 0.255, -0.1542],
-                "out": [0.285, 0.185, -0.2858]
+                "p": [
+                  0.3,
+                  0.22,
+                  -0.22
+                ],
+                "in": [
+                  0.315,
+                  0.255,
+                  -0.1542
+                ],
+                "out": [
+                  0.285,
+                  0.185,
+                  -0.2858
+                ]
               },
               {
-                "p": [0.245, 0.06, -0.335],
-                "in": [0.2525, 0.1167, -0.305],
-                "out": [0.2375, 0.0033, -0.365]
+                "p": [
+                  0.245,
+                  0.06,
+                  -0.335
+                ],
+                "in": [
+                  0.2525,
+                  0.1167,
+                  -0.305
+                ],
+                "out": [
+                  0.2375,
+                  0.0033,
+                  -0.365
+                ]
               },
               {
-                "p": [0.255, -0.12, -0.4],
-                "in": [0.2542, -0.0667, -0.3858],
-                "out": [0.2558, -0.1733, -0.4142]
+                "p": [
+                  0.255,
+                  -0.12,
+                  -0.4
+                ],
+                "in": [
+                  0.2542,
+                  -0.0667,
+                  -0.3858
+                ],
+                "out": [
+                  0.2558,
+                  -0.1733,
+                  -0.4142
+                ]
               },
               {
-                "p": [0.25, -0.26, -0.42],
-                "in": [0.2517, -0.2133, -0.4133]
+                "p": [
+                  0.25,
+                  -0.26,
+                  -0.42
+                ],
+                "in": [
+                  0.2517,
+                  -0.2133,
+                  -0.4133
+                ]
               }
             ]
           },
@@ -316,22 +597,35 @@
             {
               "t": 0,
               "shape": "circle",
-              "scale": [0.062, 0.032]
+              "scale": [
+                0.062,
+                0.032
+              ]
             },
             {
               "t": 0.5,
               "shape": "circle",
               "twist": -8,
-              "scale": [0.068, 0.03]
+              "scale": [
+                0.068,
+                0.03
+              ]
             },
             {
               "t": 1,
               "shape": "circle",
               "twist": 6,
-              "scale": [0.08, 0.028]
+              "scale": [
+                0.08,
+                0.028
+              ]
             }
           ],
-          "up": [0.35, 0.9, 0.2]
+          "up": [
+            0.35,
+            0.9,
+            0.2
+          ]
         },
         "gameCollision": false
       },
@@ -340,8 +634,16 @@
         "name": "fish_wrap_0",
         "kind": "group",
         "transform": {
-          "position": [-0.1685, 0.1511, 0.2995],
-          "rotation": [0, -30, 0]
+          "position": [
+            -0.1685,
+            0.1511,
+            0.2995
+          ],
+          "rotation": [
+            0,
+            -30,
+            0
+          ]
         },
         "children": [
           "fish_wrap_0_body",
@@ -354,11 +656,19 @@
         "name": "fish_wrap_0_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 12]
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "material": "m10",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -367,14 +677,26 @@
         "name": "fish_wrap_0_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, -0.0109, 0],
-          "rotation": [0, 0, 12]
+          "position": [
+            -0.0511,
+            -0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m10",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -383,8 +705,16 @@
         "name": "fish_wrap_1",
         "kind": "group",
         "transform": {
-          "position": [-0.2976, 0.1507, 0.1637],
-          "rotation": [0, -62, 0]
+          "position": [
+            -0.2976,
+            0.1507,
+            0.1637
+          ],
+          "rotation": [
+            0,
+            -62,
+            0
+          ]
         },
         "children": [
           "fish_wrap_1_body",
@@ -397,11 +727,19 @@
         "name": "fish_wrap_1_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, -12]
+          "rotation": [
+            0,
+            0,
+            -12
+          ]
         },
         "material": "m11",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -410,14 +748,26 @@
         "name": "fish_wrap_1_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, 0.0109, 0],
-          "rotation": [0, 0, -12]
+          "position": [
+            -0.0511,
+            0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m11",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -426,8 +776,16 @@
         "name": "fish_wrap_2",
         "kind": "group",
         "transform": {
-          "position": [-0.3362, 0.2059, -0.0111],
-          "rotation": [0, -94, 0]
+          "position": [
+            -0.3362,
+            0.2059,
+            -0.0111
+          ],
+          "rotation": [
+            0,
+            -94,
+            0
+          ]
         },
         "children": [
           "fish_wrap_2_body",
@@ -440,11 +798,19 @@
         "name": "fish_wrap_2_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 12]
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "material": "m12",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -453,14 +819,26 @@
         "name": "fish_wrap_2_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, -0.0109, 0],
-          "rotation": [0, 0, 12]
+          "position": [
+            -0.0511,
+            -0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m12",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -469,8 +847,16 @@
         "name": "fish_wrap_3",
         "kind": "group",
         "transform": {
-          "position": [-0.2726, 0.2126, -0.1872],
-          "rotation": [0, -126, 0]
+          "position": [
+            -0.2726,
+            0.2126,
+            -0.1872
+          ],
+          "rotation": [
+            0,
+            -126,
+            0
+          ]
         },
         "children": [
           "fish_wrap_3_body",
@@ -483,11 +869,19 @@
         "name": "fish_wrap_3_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, -12]
+          "rotation": [
+            0,
+            0,
+            -12
+          ]
         },
         "material": "m9",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -496,14 +890,26 @@
         "name": "fish_wrap_3_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, 0.0109, 0],
-          "rotation": [0, 0, -12]
+          "position": [
+            -0.0511,
+            0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m9",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -512,8 +918,16 @@
         "name": "fish_wrap_4",
         "kind": "group",
         "transform": {
-          "position": [-0.1262, 0.2561, -0.2956],
-          "rotation": [0, -158, 0]
+          "position": [
+            -0.1262,
+            0.2561,
+            -0.2956
+          ],
+          "rotation": [
+            0,
+            -158,
+            0
+          ]
         },
         "children": [
           "fish_wrap_4_body",
@@ -526,11 +940,19 @@
         "name": "fish_wrap_4_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 12]
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "material": "m13",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -539,14 +961,26 @@
         "name": "fish_wrap_4_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, -0.0109, 0],
-          "rotation": [0, 0, 12]
+          "position": [
+            -0.0511,
+            -0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m13",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -555,8 +989,16 @@
         "name": "fish_wrap_5",
         "kind": "group",
         "transform": {
-          "position": [0.0585, 0.2358, -0.3189],
-          "rotation": [0, 170, 0]
+          "position": [
+            0.0585,
+            0.2358,
+            -0.3189
+          ],
+          "rotation": [
+            0,
+            170,
+            0
+          ]
         },
         "children": [
           "fish_wrap_5_body",
@@ -569,11 +1011,19 @@
         "name": "fish_wrap_5_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, -12]
+          "rotation": [
+            0,
+            0,
+            -12
+          ]
         },
         "material": "m10",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -582,14 +1032,26 @@
         "name": "fish_wrap_5_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, 0.0109, 0],
-          "rotation": [0, 0, -12]
+          "position": [
+            -0.0511,
+            0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m10",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -598,8 +1060,16 @@
         "name": "fish_wrap_6",
         "kind": "group",
         "transform": {
-          "position": [0.2255, 0.2453, -0.2346],
-          "rotation": [0, 138, 0]
+          "position": [
+            0.2255,
+            0.2453,
+            -0.2346
+          ],
+          "rotation": [
+            0,
+            138,
+            0
+          ]
         },
         "children": [
           "fish_wrap_6_body",
@@ -612,11 +1082,19 @@
         "name": "fish_wrap_6_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 12]
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "material": "m11",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -625,14 +1103,26 @@
         "name": "fish_wrap_6_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, -0.0109, 0],
-          "rotation": [0, 0, 12]
+          "position": [
+            -0.0511,
+            -0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m11",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -641,8 +1131,16 @@
         "name": "fish_wrap_7",
         "kind": "group",
         "transform": {
-          "position": [0.3205, 0.1963, -0.0946],
-          "rotation": [0, 108, 0]
+          "position": [
+            0.3205,
+            0.1963,
+            -0.0946
+          ],
+          "rotation": [
+            0,
+            108,
+            0
+          ]
         },
         "children": [
           "fish_wrap_7_body",
@@ -655,11 +1153,19 @@
         "name": "fish_wrap_7_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, -12]
+          "rotation": [
+            0,
+            0,
+            -12
+          ]
         },
         "material": "m12",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -668,14 +1174,26 @@
         "name": "fish_wrap_7_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, 0.0109, 0],
-          "rotation": [0, 0, -12]
+          "position": [
+            -0.0511,
+            0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m12",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -684,8 +1202,16 @@
         "name": "fish_wrap_8",
         "kind": "group",
         "transform": {
-          "position": [0.3337, 0.1937, 0.0583],
-          "rotation": [0, 82, 0]
+          "position": [
+            0.3337,
+            0.1937,
+            0.0583
+          ],
+          "rotation": [
+            0,
+            82,
+            0
+          ]
         },
         "children": [
           "fish_wrap_8_body",
@@ -698,11 +1224,19 @@
         "name": "fish_wrap_8_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 12]
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "material": "m9",
         "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+          "radii": [
+            0.0432,
+            0.0243,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -711,14 +1245,26 @@
         "name": "fish_wrap_8_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0511, -0.0109, 0],
-          "rotation": [0, 0, 12]
+          "position": [
+            -0.0511,
+            -0.0109,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            12
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m9",
         "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+          "radii": [
+            0.0126,
+            0.0288,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -727,8 +1273,16 @@
         "name": "fish_front_0",
         "kind": "group",
         "transform": {
-          "position": [0.1538, 0.0565, 0.4057],
-          "rotation": [0, 20.77, 0]
+          "position": [
+            0.1538,
+            0.0565,
+            0.4057
+          ],
+          "rotation": [
+            0,
+            20.77,
+            0
+          ]
         },
         "children": [
           "fish_front_0_body",
@@ -741,11 +1295,19 @@
         "name": "fish_front_0_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 18]
+          "rotation": [
+            0,
+            0,
+            18
+          ]
         },
         "material": "m13",
         "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+          "radii": [
+            0.0384,
+            0.0216,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -754,14 +1316,26 @@
         "name": "fish_front_0_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0441, -0.0143, 0],
-          "rotation": [0, 0, 18]
+          "position": [
+            -0.0441,
+            -0.0143,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            18
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m13",
         "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+          "radii": [
+            0.0112,
+            0.0256,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -770,8 +1344,16 @@
         "name": "fish_front_1",
         "kind": "group",
         "transform": {
-          "position": [0.1203, -0.0482, 0.4416],
-          "rotation": [0, 15.23, 0]
+          "position": [
+            0.1203,
+            -0.0482,
+            0.4416
+          ],
+          "rotation": [
+            0,
+            15.23,
+            0
+          ]
         },
         "children": [
           "fish_front_1_body",
@@ -784,11 +1366,19 @@
         "name": "fish_front_1_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, -18]
+          "rotation": [
+            0,
+            0,
+            -18
+          ]
         },
         "material": "m10",
         "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+          "radii": [
+            0.0384,
+            0.0216,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -797,14 +1387,26 @@
         "name": "fish_front_1_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0441, 0.0143, 0],
-          "rotation": [0, 0, -18]
+          "position": [
+            -0.0441,
+            0.0143,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -18
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m10",
         "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+          "radii": [
+            0.0112,
+            0.0256,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -813,8 +1415,16 @@
         "name": "fish_front_2",
         "kind": "group",
         "transform": {
-          "position": [0.1206, -0.1425, 0.4642],
-          "rotation": [0, 14.56, 0]
+          "position": [
+            0.1206,
+            -0.1425,
+            0.4642
+          ],
+          "rotation": [
+            0,
+            14.56,
+            0
+          ]
         },
         "children": [
           "fish_front_2_body",
@@ -827,11 +1437,19 @@
         "name": "fish_front_2_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 18]
+          "rotation": [
+            0,
+            0,
+            18
+          ]
         },
         "material": "m11",
         "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+          "radii": [
+            0.0384,
+            0.0216,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -840,14 +1458,26 @@
         "name": "fish_front_2_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0441, -0.0143, 0],
-          "rotation": [0, 0, 18]
+          "position": [
+            -0.0441,
+            -0.0143,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            18
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m11",
         "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+          "radii": [
+            0.0112,
+            0.0256,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -856,8 +1486,16 @@
         "name": "fish_front_3",
         "kind": "group",
         "transform": {
-          "position": [0.1257, -0.2292, 0.4789],
-          "rotation": [0, 14.71, 0]
+          "position": [
+            0.1257,
+            -0.2292,
+            0.4789
+          ],
+          "rotation": [
+            0,
+            14.71,
+            0
+          ]
         },
         "children": [
           "fish_front_3_body",
@@ -870,11 +1508,19 @@
         "name": "fish_front_3_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, -18]
+          "rotation": [
+            0,
+            0,
+            -18
+          ]
         },
         "material": "m12",
         "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+          "radii": [
+            0.0384,
+            0.0216,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -883,14 +1529,26 @@
         "name": "fish_front_3_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0441, 0.0143, 0],
-          "rotation": [0, 0, -18]
+          "position": [
+            -0.0441,
+            0.0143,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -18
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m12",
         "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+          "radii": [
+            0.0112,
+            0.0256,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -899,8 +1557,16 @@
         "name": "fish_back_0",
         "kind": "group",
         "transform": {
-          "position": [0.2844, 0.1566, -0.3199],
-          "rotation": [0, 161.51, 0]
+          "position": [
+            0.2844,
+            0.1566,
+            -0.3199
+          ],
+          "rotation": [
+            0,
+            161.51,
+            0
+          ]
         },
         "children": [
           "fish_back_0_body",
@@ -913,11 +1579,19 @@
         "name": "fish_back_0_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, -18]
+          "rotation": [
+            0,
+            0,
+            -18
+          ]
         },
         "material": "m9",
         "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+          "radii": [
+            0.0384,
+            0.0216,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -926,14 +1600,26 @@
         "name": "fish_back_0_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0441, 0.0143, 0],
-          "rotation": [0, 0, -18]
+          "position": [
+            -0.0441,
+            0.0143,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -18
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m9",
         "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+          "radii": [
+            0.0112,
+            0.0256,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -942,8 +1628,16 @@
         "name": "fish_back_1",
         "kind": "group",
         "transform": {
-          "position": [0.2521, 0.0426, -0.3787],
-          "rotation": [0, 166.08, 0]
+          "position": [
+            0.2521,
+            0.0426,
+            -0.3787
+          ],
+          "rotation": [
+            0,
+            166.08,
+            0
+          ]
         },
         "children": [
           "fish_back_1_body",
@@ -956,11 +1650,19 @@
         "name": "fish_back_1_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 18]
+          "rotation": [
+            0,
+            0,
+            18
+          ]
         },
         "material": "m13",
         "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+          "radii": [
+            0.0384,
+            0.0216,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -969,14 +1671,26 @@
         "name": "fish_back_1_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0441, -0.0143, 0],
-          "rotation": [0, 0, 18]
+          "position": [
+            -0.0441,
+            -0.0143,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            18
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m13",
         "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+          "radii": [
+            0.0112,
+            0.0256,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -985,8 +1699,16 @@
         "name": "fish_back_2",
         "kind": "group",
         "transform": {
-          "position": [0.2609, -0.0863, -0.4258],
-          "rotation": [0, 167.23, 0]
+          "position": [
+            0.2609,
+            -0.0863,
+            -0.4258
+          ],
+          "rotation": [
+            0,
+            167.23,
+            0
+          ]
         },
         "children": [
           "fish_back_2_body",
@@ -999,11 +1721,19 @@
         "name": "fish_back_2_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, -18]
+          "rotation": [
+            0,
+            0,
+            -18
+          ]
         },
         "material": "m10",
         "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+          "radii": [
+            0.0384,
+            0.0216,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -1012,14 +1742,26 @@
         "name": "fish_back_2_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0441, 0.0143, 0],
-          "rotation": [0, 0, -18]
+          "position": [
+            -0.0441,
+            0.0143,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -18
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m10",
         "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+          "radii": [
+            0.0112,
+            0.0256,
+            0.011
+          ]
         },
         "gameCollision": false
       },
@@ -1028,8 +1770,16 @@
         "name": "fish_back_3",
         "kind": "group",
         "transform": {
-          "position": [0.261, -0.1925, -0.448],
-          "rotation": [0, 167.87, 0]
+          "position": [
+            0.261,
+            -0.1925,
+            -0.448
+          ],
+          "rotation": [
+            0,
+            167.87,
+            0
+          ]
         },
         "children": [
           "fish_back_3_body",
@@ -1042,11 +1792,19 @@
         "name": "fish_back_3_body",
         "kind": "ellipsoid",
         "transform": {
-          "rotation": [0, 0, 18]
+          "rotation": [
+            0,
+            0,
+            18
+          ]
         },
         "material": "m11",
         "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+          "radii": [
+            0.0384,
+            0.0216,
+            0.015
+          ]
         },
         "gameCollision": false
       },
@@ -1055,14 +1813,26 @@
         "name": "fish_back_3_tail",
         "kind": "ellipsoid",
         "transform": {
-          "position": [-0.0441, -0.0143, 0],
-          "rotation": [0, 0, 18]
+          "position": [
+            -0.0441,
+            -0.0143,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            18
+          ]
         },
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m11",
         "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+          "radii": [
+            0.0112,
+            0.0256,
+            0.011
+          ]
         },
         "gameCollision": false
       }
@@ -1079,7 +1849,10 @@
                 "in.base_color": "#cff3ee",
                 "in.roughness": 0.95
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -1096,7 +1869,10 @@
                 "in.base_color": "#ff8a3d",
                 "in.roughness": 0.8
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -1113,7 +1889,10 @@
                 "in.base_color": "#f0287f",
                 "in.roughness": 0.8
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -1130,7 +1909,10 @@
                 "in.base_color": "#ffc93c",
                 "in.roughness": 0.8
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -1147,7 +1929,10 @@
                 "in.base_color": "#3fa9f5",
                 "in.roughness": 0.8
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -1164,7 +1949,10 @@
                 "in.base_color": "#7cff3a",
                 "in.roughness": 0.8
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -1175,13 +1963,30 @@
   "collision": [],
   "anchors": {
     "neck": {
-      "t": [0, 0.3, 0],
-      "r": [0, 0, 0, 1]
+      "t": [
+        0,
+        0.3,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
     }
   },
   "bounds": {
-    "min": [-0.3786, -0.4021, -0.5301],
-    "max": [0.449351, 0.422124, 0.5621]
+    "min": [
+      -0.3786,
+      -0.4021,
+      -0.5301
+    ],
+    "max": [
+      0.449351,
+      0.422124,
+      0.5621
+    ]
   },
-  "hash": "19ca7b9249ac30f9661fd9790b208a2a4f15bf9d2958499e648c28be0c3280a5"
+  "hash": "b13fc2df348491f43419211e422b3cf45a99731d3a70afbf4bc04beb87f2f9fa"
 }

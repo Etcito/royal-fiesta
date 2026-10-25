@@ -78,6 +78,12 @@ release does not carry the m07/m10 upload API that raa-sdfm is built against
 (the `## raa` entry above has the details). The guarded m17 command therefore
 still refuses at its prerequisite check; nothing is substituted.
 
+Card 5131 rechecked the same baseline on 2026-10-25: the pin is present, but
+`apps/web/src/sdf/sdfPort.ts` is still absent because card 5129 remains blocked
+on the `## raa` API gap, so `apps/web/src/content/providers/sdf.ts` is not
+written. The 'sdf' provider stays unavailable rather than falling back to v1 or
+shipping a stub; typecheck, test and build stay green with MAMA absent.
+
 ## raa.prims assets
 
 The 15 files in `fixtures/assets` are raa.prims v0 as published (raa-assets-tools 0.1.0 schema). They were converted from the pre-v0 shape with the same geometry and colliders (collision mode `override`), so the sim is unchanged. `packages/game/test/shippedAssets.test.ts` checks each one with the published validator.

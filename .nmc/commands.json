@@ -24,13 +24,41 @@
     ]
   },
   {
+    "name": "m17-typecheck",
+    "command": "npm run typecheck",
+    "timeout_s": 60,
+    "cwd": ".",
+    "after": [
+      "m17-worker-bootstrap"
+    ]
+  },
+  {
+    "name": "m17-typecheck-mama",
+    "command": "npm run typecheck:mama",
+    "timeout_s": 60,
+    "cwd": ".",
+    "after": [
+      "m17-worker-bootstrap"
+    ]
+  },
+  {
+    "name": "m17-tests",
+    "command": "npm run test -- --test-concurrency=3",
+    "timeout_s": 1800,
+    "cwd": ".",
+    "after": [
+      "m17-typecheck",
+      "m17-typecheck-mama"
+    ]
+  },
+  {
     "name": "m17-mesh-node",
     "command": "node --experimental-strip-types apps/headless/proofs/m17-sdf-runtime.ts --only mesh-node",
     "timeout_s": 1800,
     "cwd": ".",
     "after": [
       "m17-bricks-check",
-      "m17-worker-bootstrap"
+      "m17-tests"
     ]
   },
   {
@@ -40,7 +68,7 @@
     "cwd": ".",
     "after": [
       "m17-bricks-check",
-      "m17-worker-bootstrap"
+      "m17-tests"
     ]
   }
 ]

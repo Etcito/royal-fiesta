@@ -41,6 +41,35 @@ function converter(helpers: Helpers, common: string): (built: Built) => Promise<
 
 const body = 'return MaterialFull(vec3f(1.0), 0.0, 0.5, vec3f(0.0), 0.0);'
 
+test('shared hash and noise helpers are emitted once even when graph dependencies request them', async () => {
+  const hash = 'fn pcg_hash(x: u32) -> u32 { return x; }'
+  const noise = [
+    'fn noise_lattice() -> u32 { return pcg_hash(1u); }',
+    'fn value_noise3() -> u32 { return noise_lattice(); }',
+    'fn fbm3() -> u32 { return value_noise3(); }',
+  ].join('\n')
+  const helpers = {
+    BASE_WGSL: '// base',
+    HELPERS: {
+      hash: { code: `\n${hash}\n` },
+      noise: { code: `\n${noise}\n`, deps: ['hash'] },
+      pattern: { code: 'fn pattern() -> u32 { return fbm3(); }', deps: ['noise'] },
+    },
+  }
+  const convert = converter(helpers, `${hash}\n${noise}`)
+  for (const ids of [['pattern'], ['hash', 'noise', 'pattern', 'noise']]) {
+    const material = await convert({ id: 'noise', graph: { wgslBody: body, helpers: ids, constants: new Uint32Array() }, error: null })
+    const mapped = mapMaterial(material).wgsl
+    for (const name of ['pcg_hash', 'noise_lattice', 'value_noise3', 'fbm3', 'pattern']) {
+      assert.equal([...mapped.matchAll(new RegExp(`\\bfn\\s+${name}\\s*\\(`, 'g'))].length, 1, name)
+    }
+  }
+  // Same name alone is not proof that two implementations are interchangeable.
+  helpers.HELPERS.hash.code = hash.replace('return x;', 'return x + 1u;')
+  const changed = await convert({ id: 'changed', graph: { wgslBody: body, helpers: ['hash'], constants: new Uint32Array() }, error: null })
+  assert.ok(changed.helpers.some(helper => helper.wgsl.includes('return x + 1u;')))
+})
+
 test('worker includes MAMA shared WGSL and hashes it in the material identity', async () => {
   const helpers = { BASE_WGSL: '// base', HELPERS: {} }
   const built = { id: 'plain', graph: { wgslBody: body, helpers: [], constants: new Uint32Array() }, error: null }

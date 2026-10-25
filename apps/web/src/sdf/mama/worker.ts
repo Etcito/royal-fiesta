@@ -76,7 +76,9 @@ function resolveHelpers(ids: readonly string[], material: string): { id: string;
     }
     for (const dep of helper.deps ?? []) visit(dep, [...chain, id])
     done.add(id)
-    out.push({ id, wgsl: helper.code })
+    // Some MAMA revisions also expose the common hash/noise code as graph helpers.
+    // Only omit byte-identical source already supplied by the prelude, never by name alone.
+    if (!COMMON_NO_PROGRAM_WGSL.includes(helper.code.trim())) out.push({ id, wgsl: helper.code })
   }
   for (const id of ids) visit(id, [])
   return out

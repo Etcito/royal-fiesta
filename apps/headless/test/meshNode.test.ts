@@ -28,7 +28,11 @@ for (const id of passing) {
 test('meshNode names the asset and group on a quad refusal', { skip: !present }, async () => {
   const { meshGameAsset } = await import(moduleUrl)
   const { asset } = await nodeGameAssets().resolve('candy.checkpoint-gate')
-  await assert.rejects(meshGameAsset(asset), (error: unknown) => {
+  // The saved gate now uses lowpoly successfully. Quad still refuses this geometry.
+  const forced = structuredClone(asset)
+  const nodes = forced.document.nodes as Record<string, { mesher: { output: string } }>
+  nodes.candy_checkpoint_gate.mesher = { output: 'quad' }
+  await assert.rejects(meshGameAsset(forced), (error: unknown) => {
     assert.ok(error instanceof RefusalError)
     assert.equal(error.area, 'mesh')
     assert.equal(error.path, 'candy.checkpoint-gate#candy_checkpoint_gate')

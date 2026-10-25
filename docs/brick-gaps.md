@@ -14,6 +14,24 @@
   - `sun` given by name, or any `sun` key other than dir/color/intensity: LightDesc has no named presets or other fields.
 - Node has no WebGPU, so the Node proofs (m7-web, m8-hub) record RAA as absent; captures and frame timing come only from a browser run on a GPU.
 
+## raa-sdfm: SDF tour prerequisites
+
+At revision `97861ef`, `apps/web/package.json` has no `@etcito/raa-sdfm` release pin,
+and neither `apps/web/src/sdf/sdfPort.ts` nor `apps/web/src/content/providers/sdf.ts`
+exists. The GPU tour therefore refuses `content=sdf` with only `v1, v0` available.
+The opaque-origin cache and inline-worker fixes are already present in that revision.
+
+Decision Q5 requires the published raa-sdfm release, then cards 5122 (pin), 5129
+(renderer adapter), and 5131 (provider), in that order. The follow-up GPU card also
+depends on fix card 5212. These prerequisites cannot be replaced by a stub, a local
+RAA build, changes to assets, or a mesher fallback.
+
+`tools/m17SdfMatch.ts` checks the release pin and both module paths before invoking
+the unchanged m17 GPU record writer. The programmatic command remains a single
+argv command. Missing prerequisites fail locally with all missing items listed;
+this is a blocked proof, not passing render evidence. Once the prerequisites land,
+the same command builds, publishes, renders, and writes the original proof record.
+
 ## raa.prims assets
 
 The 15 files in `fixtures/assets` are raa.prims v0 as published (raa-assets-tools 0.1.0 schema). They were converted from the pre-v0 shape with the same geometry and colliders (collision mode `override`), so the sim is unchanged. `packages/game/test/shippedAssets.test.ts` checks each one with the published validator.

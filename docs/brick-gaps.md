@@ -13,6 +13,7 @@
   - `post`: no post-processing API in @etcito/raa 0.1.1.
   - `sun` given by name, or any `sun` key other than dir/color/intensity: LightDesc has no named presets or other fields.
 - Node has no WebGPU, so the Node proofs (m7-web, m8-hub) record RAA as absent; captures and frame timing come only from a browser run on a GPU.
+- `@etcito/raa-sdfm` cannot upload MAMA meshes on the published `@etcito/raa`. Both published raa-sdfm tarballs (`raa-sdfm-v0.1.0`, pinned in apps/web; and `raa-sdfm-v0.1.1`, whose `index.d.ts` and `index.js` are identical and which only drops the manifest's peer dependencies) are built against RAA's m07/m10 mesh and material API: `Engine.addMesh`, `addMeshInstance`, `addSurfaceMaterial`, `addMaterialFunction` and the per-instance `SurfaceMaterialDesc.params`. Upstream main declares that API in `packages/raa/types/m07-meshes-hdr.d.ts` and `types/m10-materials.d.ts`, but the published `@etcito/raa` v0.1.1 tarball (tag `v0.1.1`) is the older v0 API: its `index.d.ts` and `pkg/raa_js_bg.wasm` stop at `engine_addInstance`, `engine_addMaterial`, `engine_addNode` and `engine_setMaterial`, with no mesh upload and no per-instance material parameter. Upstream `packages/raa/package.json` on main still says 0.1.1, so no newer release can be pinned yet. raa-sdfm's public types also expose no upload of pre-meshed data: `createSdfmLoader` meshes the asset document through MAMA itself, and `mapMaterial` returns a description with no params. `apps/web/src/sdf/sdfPort.ts` therefore cannot upload the MeshPool payload or tint through a graph-material parameter, and is not written: card 5129 stays blocked until an `@etcito/raa` release (a version bump, so the tarball carries m07/m10) is published and pinned with a matching raa-sdfm. The 2026-10-25 recheck found four releases (`v0.1.0`, `v0.1.1`, `raa-sdfm-v0.1.0`, `raa-sdfm-v0.1.1`); none ships both tarballs. `RF_RAA_LOCAL` and an unreleased `../raa` build stay forbidden (1.2).
 
 ## raa-sdfm: SDF tour prerequisites
 
@@ -68,6 +69,14 @@ it remains blocked until the release, cards 5122, 5129, 5131 and 5132, and fix
 card 5212 are integrated in decision #987's order. Repeating the GPU attempt
 before that integration cannot produce a passing proof. No runtime substitute
 or proof-threshold change is authorized by decision Q5.
+
+Card 5129 rechecked the chain on 2026-10-25 after card 5122 landed: the
+`@etcito/raa-sdfm` pin is now in `apps/web/package.json` (release
+`raa-sdfm-v0.1.0`), and the cache and inline-worker fixes are present. The SDF
+renderer and provider are still absent because the published `@etcito/raa`
+release does not carry the m07/m10 upload API that raa-sdfm is built against
+(the `## raa` entry above has the details). The guarded m17 command therefore
+still refuses at its prerequisite check; nothing is substituted.
 
 ## raa.prims assets
 

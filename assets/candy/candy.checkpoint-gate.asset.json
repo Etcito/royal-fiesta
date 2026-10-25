@@ -51,7 +51,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": false
       },

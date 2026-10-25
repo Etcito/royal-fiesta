@@ -40,6 +40,26 @@ Card 5227 retains that command, but must wait for the dependency sequence above
 and fix card 5212 before it can produce render evidence. Decision Q5 does not
 authorize this corrective card to implement or substitute those dependencies.
 
+Card 5232 checked the upstream release prerequisite on 2026-10-25:
+
+- The [published releases](https://github.com/Etcito/raa/releases) are v0.1.0
+  and v0.1.1. Each contains only `etcito-raa-<version>.tgz` and `SHA256SUMS`;
+  neither contains a raa-sdfm tarball.
+- At upstream main commit `8aa0afbac4f1239c700c32435150618bcd6ce765`,
+  [packages/raa-sdfm/package.json](https://github.com/Etcito/raa/blob/8aa0afbac4f1239c700c32435150618bcd6ce765/packages/raa-sdfm/package.json)
+  defines `@etcito/raa-sdfm` version 0.1.0. The package exists, so decision
+  #987's alternative of replanning M3 for an absent package does not apply.
+- The [release workflow](https://github.com/Etcito/raa/blob/8aa0afbac4f1239c700c32435150618bcd6ce765/.github/workflows/release.yml)
+  uploads only `release/etcito-raa-*.tgz` and `release/SHA256SUMS`.
+  The upstream release task must package raa-sdfm, include its checksum and
+  upload its tarball before the pin card can use a published URL.
+
+The local baseline `d621e21` still lacks the release pin and both modules.
+Card 5233's command is retained with its prerequisite refusal intact. It cannot
+pass until decision #987's release and dependency sequence is integrated;
+another GPU retry on this baseline cannot fix the missing runtime. Publishing
+or patching the upstream repository is outside this repository worktree task.
+
 ## raa.prims assets
 
 The 15 files in `fixtures/assets` are raa.prims v0 as published (raa-assets-tools 0.1.0 schema). They were converted from the pre-v0 shape with the same geometry and colliders (collision mode `override`), so the sim is unchanged. `packages/game/test/shippedAssets.test.ts` checks each one with the published validator.

@@ -37,7 +37,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "quad"
+          "output": "poly"
         },
         "gameCollision": true
       },
@@ -52,11 +52,19 @@
         "name": "shell",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, -0.2, 0]
+          "position": [
+            0,
+            -0.2,
+            0
+          ]
         },
         "material": "m8",
         "params": {
-          "radii": [0.5, 0.52, 0.48]
+          "radii": [
+            0.5,
+            0.52,
+            0.48
+          ]
         },
         "gameCollision": false
       },
@@ -65,12 +73,20 @@
         "name": "shell_hem",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, -0.5, 0.01]
+          "position": [
+            0,
+            -0.5,
+            0.01
+          ]
         },
         "smooth": 0.08,
         "material": "m8",
         "params": {
-          "radii": [0.44, 0.2, 0.43]
+          "radii": [
+            0.44,
+            0.2,
+            0.43
+          ]
         },
         "gameCollision": false
       },
@@ -79,7 +95,11 @@
         "name": "lattice_cw",
         "kind": "group",
         "transform": {
-          "position": [0, -0.2, 0]
+          "position": [
+            0,
+            -0.2,
+            0
+          ]
         },
         "deformers": [
           {
@@ -90,7 +110,11 @@
               "angle": 120,
               "start": -0.52,
               "end": 0.52,
-              "center": [0, 0, 0]
+              "center": [
+                0,
+                0,
+                0
+              ]
             }
           }
         ],
@@ -104,7 +128,11 @@
             "params": {
               "angleDeg": 360,
               "axis": "y",
-              "center": [0, 0, 0],
+              "center": [
+                0,
+                0,
+                0
+              ],
               "count": 6
             }
           }
@@ -116,7 +144,11 @@
         "name": "lattice_cw_ring",
         "kind": "torus",
         "transform": {
-          "rotation": [90, 0, 0]
+          "rotation": [
+            90,
+            0,
+            0
+          ]
         },
         "material": "m9",
         "params": {
@@ -130,7 +162,11 @@
         "name": "lattice_ccw",
         "kind": "group",
         "transform": {
-          "position": [0, -0.2, 0]
+          "position": [
+            0,
+            -0.2,
+            0
+          ]
         },
         "deformers": [
           {
@@ -141,7 +177,11 @@
               "angle": -120,
               "start": -0.52,
               "end": 0.52,
-              "center": [0, 0, 0]
+              "center": [
+                0,
+                0,
+                0
+              ]
             }
           }
         ],
@@ -155,7 +195,11 @@
             "params": {
               "angleDeg": 360,
               "axis": "y",
-              "center": [0, 0, 0],
+              "center": [
+                0,
+                0,
+                0
+              ],
               "count": 6
             }
           }
@@ -167,7 +211,11 @@
         "name": "lattice_ccw_ring",
         "kind": "torus",
         "transform": {
-          "rotation": [90, 0, 0]
+          "rotation": [
+            90,
+            0,
+            0
+          ]
         },
         "material": "m9",
         "params": {
@@ -181,9 +229,21 @@
         "name": "strap",
         "kind": "torus",
         "transform": {
-          "position": [0, -0.2, 0],
-          "rotation": [0, 0, 50],
-          "scale": [1, 1.8, 1]
+          "position": [
+            0,
+            -0.2,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            50
+          ],
+          "scale": [
+            1,
+            1.8,
+            1
+          ]
         },
         "material": "m11",
         "params": {
@@ -209,11 +269,19 @@
         "name": "crown_base",
         "kind": "ellipsoid",
         "transform": {
-          "position": [0, 0.84, 0]
+          "position": [
+            0,
+            0.84,
+            0
+          ]
         },
         "material": "m10",
         "params": {
-          "radii": [0.09, 0.05, 0.09]
+          "radii": [
+            0.09,
+            0.05,
+            0.09
+          ]
         },
         "gameCollision": false
       },
@@ -222,8 +290,16 @@
         "name": "leaf_mid",
         "kind": "cone",
         "transform": {
-          "position": [0, 1.02, 0],
-          "scale": [1, 1, 0.4]
+          "position": [
+            0,
+            1.02,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            0.4
+          ]
         },
         "material": "m10",
         "params": {
@@ -247,7 +323,11 @@
             "params": {
               "angleDeg": 360,
               "axis": "y",
-              "center": [0, 0, 0],
+              "center": [
+                0,
+                0,
+                0
+              ],
               "count": 5
             }
           }
@@ -259,9 +339,21 @@
         "name": "leaf_outer",
         "kind": "cone",
         "transform": {
-          "position": [0, 0.95, 0.1],
-          "rotation": [40, 0, 0],
-          "scale": [1, 1, 0.4]
+          "position": [
+            0,
+            0.95,
+            0.1
+          ],
+          "rotation": [
+            40,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            0.4
+          ]
         },
         "material": "m10",
         "params": {
@@ -276,7 +368,11 @@
         "name": "leaves_inner",
         "kind": "group",
         "transform": {
-          "rotation": [0, 36, 0]
+          "rotation": [
+            0,
+            36,
+            0
+          ]
         },
         "children": [
           "leaf_inner"
@@ -288,7 +384,11 @@
             "params": {
               "angleDeg": 360,
               "axis": "y",
-              "center": [0, 0, 0],
+              "center": [
+                0,
+                0,
+                0
+              ],
               "count": 5
             }
           }
@@ -300,9 +400,21 @@
         "name": "leaf_inner",
         "kind": "cone",
         "transform": {
-          "position": [0, 0.99, 0.05],
-          "rotation": [20, 0, 0],
-          "scale": [1, 1, 0.4]
+          "position": [
+            0,
+            0.99,
+            0.05
+          ],
+          "rotation": [
+            20,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            0.4
+          ]
         },
         "material": "m10",
         "params": {
@@ -325,7 +437,10 @@
                 "in.base_color": "#ffc93c",
                 "in.roughness": 0.9
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -342,7 +457,10 @@
                 "in.base_color": "#ff8a3d",
                 "in.roughness": 0.85
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -359,7 +477,10 @@
                 "in.base_color": "#5cc23a",
                 "in.roughness": 0.85
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -376,7 +497,10 @@
                 "in.base_color": "#6b3e1f",
                 "in.roughness": 0.9
               },
-              "position": [0, 0]
+              "position": [
+                0,
+                0
+              ]
             }
           ],
           "links": []
@@ -387,13 +511,30 @@
   "collision": [],
   "anchors": {
     "body": {
-      "t": [0, 0, 0],
-      "r": [0, 0, 0, 1]
+      "t": [
+        0,
+        0,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
     }
   },
   "bounds": {
-    "min": [-0.677947, -0.78, -0.677947],
-    "max": [0.677947, 1.21, 0.677947]
+    "min": [
+      -0.677947,
+      -0.78,
+      -0.677947
+    ],
+    "max": [
+      0.677947,
+      1.21,
+      0.677947
+    ]
   },
-  "hash": "5db2f29c22a440204ee477e1c3b4eaa5ef6d9e3d66cff1d887668dc86c92d931"
+  "hash": "4298d65c23731d5a87c5dd63afe9725422a33a015d0f21e8257d2651a0ffa9d5"
 }

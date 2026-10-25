@@ -35,6 +35,22 @@ attempts. Two limits remain:
 
 ## raa-sdfm: SDF tour prerequisites
 
+### Shared material shader prelude (card 5301)
+
+The 0.2.0 bridge's material conversion includes MAMA's `BASE_WGSL` and graph
+helpers, but those helpers also call `fbm3`, `value_noise3` and `pcg_hash` from
+MAMA's shared GPU prelude. They are not entries in `HELPERS` or its dependency
+lists. The SDF tour failed with `material.fn_invalid` and an undefined `fbm3`.
+The game worker now supplies MAMA's exported `COMMON_NO_PROGRAM_WGSL` before
+the material helpers. This preserves MAMA's shader implementations and avoids
+the `prog_data` binding required by the full `COMMON_WGSL` polygon helper.
+The prelude participates in the compiled material hash. The facade cache version
+now matches the pinned raa-sdfm 0.2.0, invalidating the old incomplete payloads.
+The upstream bridge needs the same prelude when it converts materials itself.
+`mamaMaterials.test.ts` checks the worker conversion, every content material,
+and every built-in pattern without meshing or a GPU; GPU validation remains
+the programmatic SDF tour's job.
+
 At revision `97861ef`, `apps/web/package.json` has no `@etcito/raa-sdfm` release pin,
 and neither `apps/web/src/sdf/sdfPort.ts` nor `apps/web/src/content/providers/sdf.ts`
 exists. The GPU tour therefore refuses `content=sdf` with only `v1, v0` available.

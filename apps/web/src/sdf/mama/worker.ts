@@ -10,6 +10,7 @@ import type { BuiltMaterial } from '@etcito/mama/sdfm.ts'
 import { meshAssets } from '@etcito/mama/core/game/mesh-assets.ts'
 import type { AssetMeshResult } from '@etcito/mama/core/game/mesh-assets.ts'
 import { BASE_WGSL, HELPERS } from '@etcito/mama/core/material-graph/helpers.ts'
+import { COMMON_NO_PROGRAM_WGSL } from '@etcito/mama/gpu/wgsl/common.ts'
 import { sha256Hex } from '@etcito/mama/core/image/sha256.ts'
 import { ensureMesher, setMesherWasm } from '@etcito/mama/core/paramesh/runtime.ts'
 import { inlinePool } from '@etcito/mama/core/compute/pool.ts'
@@ -59,8 +60,8 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(value, null, 2) + '\n'
 }
 
-// Same order and dedupe as @etcito/raa-sdfm's toMamaMaterial: BASE_WGSL first, then each helper
-// with its dependencies first. A helper MAMA cannot render refuses, never silently disappears.
+// Resolve graph helpers with dependencies first. MAMA's shared shader prelude is supplied
+// separately: graph helpers assume its noise/hash functions without listing them as dependencies.
 function resolveHelpers(ids: readonly string[], material: string): { id: string; wgsl: string }[] {
   const out: { id: string; wgsl: string }[] = []
   const done = new Set<string>()
@@ -87,7 +88,11 @@ async function toPayloadMaterial(built: BuiltMaterial): Promise<SdfmCompiledMate
     throw new RefusalError('sdf', built.id, `material '${built.id}' was not built by MAMA (${why}); fix the material graph in SDF Modeler`)
   }
   const body = built.graph.wgslBody
-  const helpers = [{ id: 'base', wgsl: BASE_WGSL }, ...resolveHelpers(built.graph.helpers, built.id)]
+  const helpers = [
+    { id: 'common', wgsl: COMMON_NO_PROGRAM_WGSL },
+    { id: 'base', wgsl: BASE_WGSL },
+    ...resolveHelpers(built.graph.helpers, built.id),
+  ]
   const constants = Array.from(built.graph.constants)
   const fields = [...MATERIAL_FULL_FIELDS]
   const key = sha256Hex(new TextEncoder().encode(canonicalJson({ body, helpers, constants, fields })))

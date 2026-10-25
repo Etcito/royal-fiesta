@@ -1,15 +1,27 @@
 [
   {
-    "name": "m17-bricks-check",
-    "command": "node --experimental-strip-types tools/bricks.ts check",
+    "name": "m17-mama-fetch",
+    "command": "node --experimental-strip-types tools/bricks.ts fetch mama",
     "timeout_s": 60,
     "cwd": "."
   },
   {
-    "name": "m17-worker-bootstrap",
-    "command": "node --experimental-strip-types --test apps/web/test/classicWorker.test.ts apps/web/test/mamaImpl.test.ts apps/web/test/meshPool.test.ts",
+    "name": "m17-bricks-check",
+    "command": "node --experimental-strip-types tools/bricks.ts check",
     "timeout_s": 60,
-    "cwd": "."
+    "cwd": ".",
+    "after": [
+      "m17-mama-fetch"
+    ]
+  },
+  {
+    "name": "m17-worker-bootstrap",
+    "command": "node --experimental-strip-types --test --test-concurrency=3 apps/web/test/classicWorker.test.ts apps/web/test/mamaImpl.test.ts apps/web/test/meshPool.test.ts apps/web/test/mamaMaterials.test.ts",
+    "timeout_s": 60,
+    "cwd": ".",
+    "after": [
+      "m17-mama-fetch"
+    ]
   },
   {
     "name": "m17-mesh-node",

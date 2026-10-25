@@ -11,8 +11,8 @@ import type { WorkerLike } from '../meshPool.ts'
 export const MAMA_PRESENT = true
 
 // @etcito/raa-sdfm exports no version. Keep this equal to its version pinned in
-// apps/web/package.json (0.1.0 is the raa-sdfm the worker payload follows; no release pin yet).
-const RAA_SDFM_VERSION = '0.1.0'
+// apps/web/package.json. This also invalidates payloads cached before the shared WGSL fix.
+const RAA_SDFM_VERSION = '0.2.0'
 
 // tools/bricks.ts is Node-only, so the absent prefix is repeated here, as in mamaAbsent.ts.
 const MAMA_ABSENT_PREFIX = 'MAMA not available: '

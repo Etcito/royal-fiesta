@@ -2,6 +2,7 @@
   {
     "name": "m17-sdf-match",
     "command": "env NMC_GPU_WAIT_S=900 node --experimental-strip-types apps/headless/proofs/m17-sdf-runtime.ts --render",
-    "timeout_s": 3600
+    "timeout_s": 3600,
+    "cwd": "."
   }
 ]

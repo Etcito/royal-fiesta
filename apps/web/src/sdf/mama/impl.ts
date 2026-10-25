@@ -2,6 +2,7 @@
 // Meshing runs in workers (mama/worker.ts); nothing of raa-sdfm needs main-thread initialisation
 // here: the worker builds its upload payload and the renderer consumes it.
 import { RefusalError } from '@royal-fiesta/sim/refusal'
+import MeshWorker from './worker.ts?worker&inline'
 import type { MamaFacade, MeshedAsset, MeshRequest } from '../mamaApi.ts'
 import { MeshPool } from '../meshPool.ts'
 import type { WorkerLike } from '../meshPool.ts'
@@ -29,7 +30,12 @@ function resolvedCommit(): string {
 }
 
 function spawnWorker(): WorkerLike {
-  return new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }) as unknown as WorkerLike
+  try {
+    return new MeshWorker() as unknown as WorkerLike
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new RefusalError('sdf', 'MAMA worker', `${message}; this page cannot start a mesh worker`)
+  }
 }
 
 export async function loadMama(): Promise<MamaFacade> {

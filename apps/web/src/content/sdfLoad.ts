@@ -27,7 +27,14 @@ let pool: MeshPool | null = null
 
 function meshCache(): MeshCache {
   if (cache === null) {
-    const persistent = globalThis.indexedDB ? idbStore() : null
+    let persistent = null
+    try {
+      const factory = globalThis.indexedDB
+      persistent = factory ? idbStore(factory) : null
+    } catch {
+      // Opaque origins may throw even when probing IndexedDB.
+      persistent = null
+    }
     cache = new MeshCache({ memory: memoryStore(), persistent })
   }
   return cache

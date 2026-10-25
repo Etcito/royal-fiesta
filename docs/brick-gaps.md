@@ -32,6 +32,14 @@ argv command. Missing prerequisites fail locally with all missing items listed;
 this is a blocked proof, not passing render evidence. Once the prerequisites land,
 the same command builds, publishes, renders, and writes the original proof record.
 
+Card 5218 rechecked revision `16dc33c`: all three prerequisites are still absent,
+including from the available history for the two module paths. The authorized
+opaque-origin fixes remain present. Card 5217's failure is therefore the expected
+prerequisite refusal; changing the GPU command cannot supply the missing runtime.
+Card 5219 retains that command, but must wait for the dependency sequence above
+and fix card 5212 before it can produce render evidence. Decision Q5 does not
+authorize this corrective card to implement or substitute those dependencies.
+
 ## raa.prims assets
 
 The 15 files in `fixtures/assets` are raa.prims v0 as published (raa-assets-tools 0.1.0 schema). They were converted from the pre-v0 shape with the same geometry and colliders (collision mode `override`), so the sim is unchanged. `packages/game/test/shippedAssets.test.ts` checks each one with the published validator.

@@ -84,6 +84,70 @@ test('idbStore refuses without an IndexedDB factory', () => {
   assert.throws(() => idbStore(null as unknown as IDBFactory), (e: unknown) => e instanceof Error && e.message.includes('indexedDB is not available'))
 })
 
+for (const mode of ['throw', 'request error'] as const) {
+  test(`denied IndexedDB open (${mode}) keeps all assets and reloads in memory`, async () => {
+    let opens = 0
+    const denied = new DOMException('Indexed Database access denied', 'SecurityError')
+    const factory = {
+      open() {
+        opens++
+        if (mode === 'throw') throw denied
+        const request = { error: denied, onerror: null as (() => void) | null }
+        queueMicrotask(() => request.onerror?.())
+        return request
+      },
+    } as unknown as IDBFactory
+    const cache = new MeshCache({ memory: memoryStore(), persistent: idbStore(factory) })
+    const values = [meshed('candy.a'), meshed('candy.b')]
+    for (const value of values) {
+      assert.equal(await cache.get(value.assetId), null)
+      await cache.put(value.assetId, value)
+    }
+    for (const value of values) {
+      assert.deepEqual(await cache.get(value.assetId), { value, from: 'memory' })
+    }
+    assert.equal(opens, 1)
+    assert.deepEqual(cache.stats, { memory: 2, idb: 0, miss: 2, evictedCorrupt: 0 })
+  })
+}
+
+for (const operation of ['get', 'put', 'delete'] as const) {
+  test(`storage denied during ${operation} disables persistence without losing memory`, async () => {
+    const persistent = new FakeStore()
+    let attempts = 0
+    persistent[operation] = async () => {
+      attempts++
+      throw new DOMException('Storage denied', 'SecurityError')
+    }
+    const cache = new MeshCache({ memory: memoryStore(), persistent })
+    const value = meshed('candy.a')
+    if (operation === 'delete') {
+      persistent.map.set('a', { ...value, transfer: null } as unknown as MeshedAsset)
+    }
+    assert.equal(await cache.get('a'), null)
+    await cache.put('a', value)
+    assert.deepEqual(await cache.get('a'), { value, from: 'memory' })
+    assert.equal(await cache.get('b'), null)
+    await cache.put('b', meshed('candy.b'))
+    assert.equal(attempts, 1, 'denied storage is not retried for subsequent assets')
+    assert.equal(persistent.map.has('b'), false)
+  })
+
+  test(`unrelated persistent ${operation} errors still reject`, async () => {
+    const persistent = new FakeStore()
+    const failure = new Error('Unexpected storage failure')
+    persistent[operation] = async () => { throw failure }
+    const cache = new MeshCache({ memory: memoryStore(), persistent })
+    if (operation === 'delete') {
+      persistent.map.set('a', { ...meshed('candy.a'), transfer: null } as unknown as MeshedAsset)
+    }
+    await assert.rejects(
+      operation === 'put' ? cache.put('a', meshed('candy.a')) : cache.get('a'),
+      error => error === failure,
+    )
+  })
+}
+
 test('an idb hit fills memory, so the second get answers memory', async () => {
   const memory = new FakeStore()
   const persistent = new FakeStore()

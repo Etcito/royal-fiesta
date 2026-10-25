@@ -84,11 +84,24 @@ function validMeshed(v: unknown): v is MeshedAsset {
 export class MeshCache {
   readonly stats: { memory: number; idb: number; miss: number; evictedCorrupt: number } = { memory: 0, idb: 0, miss: 0, evictedCorrupt: 0 }
   private readonly memory: MeshStore
-  private readonly persistent: MeshStore | null
+  private persistent: MeshStore | null
 
   constructor(layers: { memory: MeshStore; persistent: MeshStore | null }) {
     this.memory = layers.memory
     this.persistent = layers.persistent
+  }
+
+  private async persistentOp<T>(run: (store: MeshStore) => Promise<T>): Promise<T | null> {
+    if (this.persistent === null) return null
+    try {
+      return await run(this.persistent)
+    } catch (error) {
+      if (typeof error !== 'object' || error === null || !('name' in error) || error.name !== 'SecurityError') throw error
+      // Opening is lazy, and storage policy can also deny a later transaction.
+      // Keep this page's meshes in memory when the browser forbids persistence.
+      this.persistent = null
+      return null
+    }
   }
 
   async get(key: string): Promise<{ value: MeshedAsset; from: 'memory' | 'idb' } | null> {
@@ -102,18 +115,14 @@ export class MeshCache {
       this.stats.evictedCorrupt++
       await this.memory.delete(key)
     }
-    if (this.persistent === null) {
-      this.stats.miss++
-      return null
-    }
-    const fromIdb = await this.persistent.get(key)
+    const fromIdb = await this.persistentOp(store => store.get(key))
     if (fromIdb === null) {
       this.stats.miss++
       return null
     }
     if (!validMeshed(fromIdb)) {
       this.stats.evictedCorrupt++
-      await this.persistent.delete(key)
+      await this.persistentOp(store => store.delete(key))
       this.stats.miss++
       return null
     }
@@ -125,6 +134,6 @@ export class MeshCache {
   async put(key: string, v: MeshedAsset): Promise<void> {
     // The value is never transformed: a hit is the same bytes the mesher produced.
     await this.memory.put(key, v)
-    if (this.persistent !== null) await this.persistent.put(key, v)
+    await this.persistentOp(store => store.put(key, v))
   }
 }

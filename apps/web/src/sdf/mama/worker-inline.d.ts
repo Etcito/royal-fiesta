@@ -1,4 +1,4 @@
-declare module '*?worker&inline' {
-  const MeshWorker: new () => Worker
-  export default MeshWorker
+declare module '*?worker&url' {
+  const workerUrl: string
+  export default workerUrl
 }

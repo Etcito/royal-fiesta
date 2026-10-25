@@ -10,19 +10,21 @@ import config from '../vite.config.ts'
 
 // Exercise the real facade without loading private MAMA code or starting a browser worker.
 const source = readFileSync(new URL('../src/sdf/mama/impl.ts', import.meta.url), 'utf8')
-const compiled = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS } }).outputText
+const compiled = transpileModule(source.replaceAll('import.meta.url', JSON.stringify(import.meta.url)), {
+  compilerOptions: { module: ModuleKind.CommonJS },
+}).outputText
 
 function loadFacade(info: unknown): Promise<MamaFacade> {
   const exports = {} as { loadMama(): Promise<MamaFacade> }
   runInNewContext(compiled, {
     exports,
+    URL,
     __RF_MAMA__: info,
     require(id: string): unknown {
       if (id === '@royal-fiesta/sim/refusal') return { RefusalError }
       if (id === '../meshPool.ts') return { MeshPool }
-      if (id === './worker.ts?worker&inline') {
-        return { default: class { constructor() { throw new Error('test must not spawn a worker') } } }
-      }
+      if (id === './worker.ts?worker&url') return { default: './worker.js' }
+      if (id === '../classicWorker.ts') return { classicWorker() { throw new Error('test must not spawn a worker') } }
       throw new Error(`unexpected facade import: ${id}`)
     },
   })

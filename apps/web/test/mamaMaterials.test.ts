@@ -3,7 +3,10 @@ import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { PALETTE } from '@royal-fiesta/game/render/palette'
+import { PODIUM_TINTS } from '@royal-fiesta/game/render/podiumStage'
+import { materialProgram } from '../src/sdf/materialProgram.ts'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
 import { ModuleKind, transpileModule } from 'typescript'
@@ -19,8 +22,8 @@ interface Built {
 interface Helpers { BASE_WGSL: string; HELPERS: Record<string, { code: string; deps?: string[] }> }
 
 // Run only the worker's material conversion: no geometry, browser, GPU or private dependency needed.
-function converter(helpers: Helpers, common: string): (built: Built) => Promise<SdfmCompiledMaterial> {
-  const source = readFileSync(new URL('../src/sdf/mama/worker.ts', import.meta.url), 'utf8')
+function converter(helpers: Helpers, common: string, baseline?: string): (built: Built) => Promise<SdfmCompiledMaterial> {
+  const source = baseline ?? readFileSync(new URL('../src/sdf/mama/worker.ts', import.meta.url), 'utf8')
   const compiled = transpileModule(source + '\nexports.convert = toPayloadMaterial\n', {
     compilerOptions: { module: ModuleKind.CommonJS },
   }).outputText
@@ -83,6 +86,17 @@ test('worker includes MAMA shared WGSL and hashes it in the material identity', 
   assert.match(mapMaterial(first).wgsl, /common A/)
 })
 
+test('helper discovery order does not change the material key or WGSL', async () => {
+  const convert = converter({ BASE_WGSL: '', HELPERS: {
+    a: { code: 'fn a() {}' }, b: { code: 'fn b() {}', deps: ['a'] }, c: { code: 'fn c() {}' },
+  } }, '')
+  const build = (ids: string[]): Built => ({ id: 'plain', graph: { wgslBody: body, helpers: ids, constants: new Uint32Array() }, error: null })
+  const a = await convert(build(['c', 'b', 'a']))
+  const b = await convert(build(['a', 'b', 'c']))
+  assert.equal(a.key, b.key)
+  assert.equal(mapMaterial(a).wgsl, mapMaterial(b).wgsl)
+})
+
 const mama = new URL('../../../.bricks/MAMA/dist/', import.meta.url)
 const present = existsSync(new URL('sdfm.js', mama))
 if (!present) console.info('INFO material coverage skipped: built .bricks/MAMA is absent')
@@ -104,6 +118,9 @@ test('every content material and MAMA pattern carries its shared shader dependen
     check(await convert({ id, graph: { wgslBody: body, helpers: [id], constants: new Uint32Array() }, error: null }))
   }
   const assets = pathToFileURL(join(contentDir(), 'assets') + '/')
+  const baseline = process.env.RF_SHADER_BASELINE_WORKER
+  const convertBefore = baseline ? converter(helpers, common, readFileSync(baseline, 'utf8')) : convert
+  const materials: { asset: string; material: SdfmCompiledMaterial; beforeMaterial: SdfmCompiledMaterial }[] = []
   let count = 0
   for (const world of readdirSync(assets, { withFileTypes: true }).filter(entry => entry.isDirectory())) {
     const dir = new URL(`${world.name}/`, assets)
@@ -113,11 +130,69 @@ test('every content material and MAMA pattern carries its shared shader dependen
       for (const id of Object.keys(doc.materials)) {
         const built: Built = buildMaterial(doc, id)
         assert.ok(built.graph, `${asset.id}#${id}: ${JSON.stringify(built.error)}`)
-        check(await convert(built))
+        const material = await convert(built)
+        check(material)
+        materials.push({ asset: asset.id, material, beforeMaterial: await convertBefore(built) })
         count++
       }
     }
   }
   assert.ok(count > 0)
+  const programs = materials.map(({ material }) => materialProgram(material))
+  assert.equal(new Set(programs.map(program => program.wgsl)).size, 2, '24 assets share two material graph structures')
+  for (const { material } of materials) {
+    const mapped = materialProgram(material)
+    const indices = [...new Set([...material.body.matchAll(/extra_words\s*\[\s*b\s*\+\s*(\d+)u?\s*\]/g)].map(read => Number(read[1])))].sort((a, b) => a - b)
+    const values = Object.values(mapped.desc.params ?? {}).flat()
+    assert.equal(values.length, indices.length * 2)
+    for (const [slot, index] of indices.entries()) {
+      assert.equal((values[slot * 2] | (values[slot * 2 + 1] << 16)) >>> 0, material.constants[index], `${material.name} word ${index}`)
+    }
+    assert.equal(mapped.wgsl, materialProgram({ ...material, name: 'another asset', constants: material.constants.map(word => word ^ 1) }).wgsl)
+  }
   console.info(`INFO compiled and mapped ${count} content materials without meshing`)
+  // Model the registration performed by prepare(), without geometry or a GPU. Baseline tint
+  // wrappers match the old game path; the new path needs only the original graph function.
+  const launches = [0, 1].map(() => {
+    const before: { asset: string; hash: string; ms: number }[] = []
+    const after: typeof before = []
+    const oldFunctions = new Set<string>()
+    const newFunctions = new Set<string>()
+    let sequence = 0
+    const hash = (wgsl: string): string => createHash('sha256').update(wgsl).digest('hex')
+    for (const { asset, material, beforeMaterial } of [...materials].sort((a, b) => a.asset.localeCompare(b.asset))) {
+      const start = performance.now()
+      const mapped = mapMaterial(beforeMaterial)
+      const ms = performance.now() - start
+      if (!oldFunctions.has(mapped.functionName)) {
+        before.push({ asset, hash: hash(mapped.wgsl), ms })
+        oldFunctions.add(mapped.functionName)
+      }
+      const next = performance.now()
+      const stable = materialProgram(material)
+      const stableMs = performance.now() - next
+      if (!newFunctions.has(stable.functionName)) {
+        after.push({ asset, hash: hash(stable.wgsl), ms: stableMs })
+        newFunctions.add(stable.functionName)
+      }
+      const tints = asset === 'penguin.body' ? PALETTE : asset === 'candy.wall-block' ? PODIUM_TINTS : []
+      for (const tint of tints) {
+        const next = performance.now()
+        const id = `sdfm_tint_${sequence++}`
+        const renamed = mapped.wgsl.replace(/\bfn\s+material_main\s*\(/, `fn ${id}_graph(`)
+        const rgb = tint.map(c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)).map(c => c.toFixed(6))
+        const wgsl = `${renamed}\nfn material_main(in: MaterialInput) -> MaterialOutput {\n  var out = ${id}_graph(in);\n  out.base_color = out.base_color * vec3<f32>(${rgb.join(', ')});\n  return out;\n}\n`
+        const tintMs = performance.now() - next
+        before.push({ asset, hash: hash(wgsl), ms: tintMs })
+      }
+    }
+    return { before, after }
+  })
+  assert.deepEqual(launches[0].after.map(m => m.hash).sort(), launches[1].after.map(m => m.hash).sort())
+  for (const [i, launch] of launches.entries()) {
+    for (const [kind, modules] of Object.entries(launch)) {
+      console.info(`INFO shader generation launch=${i + 1} ${kind}: ${modules.length} registrations, ${new Set(modules.map(m => m.hash)).size} unique WGSL, ${modules.reduce((sum, m) => sum + m.ms, 0).toFixed(2)} ms`)
+    }
+  }
+  if (process.env.RF_SHADER_REPORT) writeFileSync(process.env.RF_SHADER_REPORT, JSON.stringify(launches, null, 2) + '\n')
 })

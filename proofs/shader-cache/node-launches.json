@@ -1,0 +1,1197 @@
+{
+  "scope": "Node registered material program generation only; graph constants are per-material buffer parameters",
+  "launches": [
+    {
+      "before": [
+        {
+          "asset": "candy.banner",
+          "hash": "9f950707d615bf894d5b53953e0839baf5bdaf2734a8422afc27316570e29624",
+          "ms": 0.5996000000000095
+        },
+        {
+          "asset": "candy.banner",
+          "hash": "7756afdfa79aac979af98ec96cfaeaa680ed2d101102c476194f846d2fbce601",
+          "ms": 0.30549999999993815
+        },
+        {
+          "asset": "candy.banner",
+          "hash": "b94f914f79ece8a37ba0bc000f009b97feb1d8929c89ad5fe578c5d465cc16e9",
+          "ms": 0.3288000000000011
+        },
+        {
+          "asset": "candy.banner",
+          "hash": "a09e970c6937e9d47f474078763831402f437af8aeececa84fdf0a96d5c8a985",
+          "ms": 0.3079000000000178
+        },
+        {
+          "asset": "candy.banner",
+          "hash": "4f0e0f1aa6ff83c9d23a9111446edc112289759af361b5f61f6b688ce4387644",
+          "ms": 0.3750999999999749
+        },
+        {
+          "asset": "candy.bounce-pad",
+          "hash": "5d0aa7b72356c4a6a3289652080a279149051add0c9e2ca030c9333ddafc65be",
+          "ms": 0.3062999999999647
+        },
+        {
+          "asset": "candy.bounce-pad",
+          "hash": "5ae587a39778dcdb22fe3685f1e0f0b9bff69c3940d1c85f3e7f55783ba42022",
+          "ms": 0.34050000000002
+        },
+        {
+          "asset": "candy.bounce-pad",
+          "hash": "f9804b3e5e006ace70174f12ead49eaa0f3ba89b9f22f6c969b945560dc259e8",
+          "ms": 0.2998999999999796
+        },
+        {
+          "asset": "candy.bounce-pad",
+          "hash": "45ec6546aff3a0c4626f4db7dc223a08ee9a5fe9321a24d7119e4c054a73be4f",
+          "ms": 0.35740000000009786
+        },
+        {
+          "asset": "candy.cloud",
+          "hash": "d723d3e8f40a23006b67f4a3a8536e139eb53910e525d525f980c15bdfd58258",
+          "ms": 0.3138000000001284
+        },
+        {
+          "asset": "candy.conveyor-belt",
+          "hash": "be8985ff4c84253402857b50669223d92deefc3d78674be5d9232a46313f4e36",
+          "ms": 0.31979999999998654
+        },
+        {
+          "asset": "candy.conveyor-belt",
+          "hash": "19ced9f03fc07698d5f381b7acb81053144c372d36e7060b677b0b2ac9d3cad9",
+          "ms": 0.3104000000000724
+        },
+        {
+          "asset": "candy.conveyor-belt",
+          "hash": "ab8c2e73bf8c6a5dc66344e463cc947595188f8512f8b782f6714e4f8902f104",
+          "ms": 0.3683000000000902
+        },
+        {
+          "asset": "candy.conveyor-belt",
+          "hash": "651bb42e3fff41c8b917d7adccee054fec46c21e416262c4c715ed834d761575",
+          "ms": 0.3132999999997992
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "1a0dc5ba593917036ccd0c753105be828b816c9b1b02d9ceb2922dddf13b0bfc",
+          "ms": 0.3531000000000404
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "22a16c41a3645020b844cca915b61bb5058c71563048c5cf9728bbe42c678ee8",
+          "ms": 0.32549999999991996
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "88c70addc0a665cf72cf8324f8847a0fe9fc27235fff5dc3988ad4c5a1d75d85",
+          "ms": 0.3103000000000975
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "ad9f3728878e0a1c8ca84c1af67d7fd60a2c70049ce68036e5ea8c323ef5bd21",
+          "ms": 0.30549999999993815
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "abdc881f5a4dc49033d829dfa7a017d070f9aea862003554845ef59ddde4370a",
+          "ms": 0.3029999999998836
+        },
+        {
+          "asset": "candy.plaza-fountain",
+          "hash": "6bfd189287f35c42ef54221be5dbc490f9b24c2409af6315879022406a7c335e",
+          "ms": 0.328899999999976
+        },
+        {
+          "asset": "candy.rotating-door",
+          "hash": "957d8ba502b5dedfaa3bc81479714de76fab6aad8d06c48625d3e09e400ce3cf",
+          "ms": 0.5306000000000495
+        },
+        {
+          "asset": "candy.slime-pool",
+          "hash": "5db4a4a0d7c10955fe8321219ddbd1374ee8f2d7e17450fc6d52b8fba5fbbdea",
+          "ms": 0.3161999999999807
+        },
+        {
+          "asset": "candy.slime-pool",
+          "hash": "9c625b78dda8b9b86cf1e8b78e91fc8c7c4fd83c23c9b6b84407522f98e4238b",
+          "ms": 0.3083000000001448
+        },
+        {
+          "asset": "candy.slime-pool",
+          "hash": "830f2c7cc853bd907338e65761ad11846c2d8918b8213ab822bc980238bc1bdf",
+          "ms": 0.3009999999999309
+        },
+        {
+          "asset": "candy.slime-pool",
+          "hash": "a9076e907a1ed8313e1d2d7415a6f6e21083a659b5f13f5b5f761444275026cb",
+          "ms": 0.3400000000001455
+        },
+        {
+          "asset": "candy.tower",
+          "hash": "16075127e4ee3cfb7670cb75bd20853d7e772a6fafb766e22c33ef736c35ae70",
+          "ms": 0.33809999999994034
+        },
+        {
+          "asset": "candy.tower",
+          "hash": "e6325b56a072c093a45906d39fa13c9e21698b25e309cdf027dda6548322d264",
+          "ms": 0.32529999999997017
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "fe4f84d9bf30b1cb84890a69ada78caa7172f5d584d0ee299c4b777f77383bca",
+          "ms": 0.298200000000179
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "b893354b019c4b3f14712200dec209c54bd4b4b145b155d1ad13f7aa6e4c1694",
+          "ms": 0.012199999999893407
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "bb440bcd85f5335ef73455444e19fa128b60565e36b37e207276566f8a6b41b5",
+          "ms": 0.010800000000017462
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "75f20a33d0d21f543cfa8f28da97389143577f383ad2108adf011443a5968204",
+          "ms": 0.014299999999821011
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "cf36bdeaa3de750916aaffc6039313ad68afe16b66f51ff2711de1ddcea5309e",
+          "ms": 0.004599999999982174
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "622df2dd1e8a6c2223b63d041cfe1004fd134e152391eeeb97c24d5912686449",
+          "ms": 0.0039999999999054126
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "ff8644e4ceb74c24d55f58ce7934ed0ab548dc24c96a0177bd10ba34df04b02b",
+          "ms": 0.007699999999886131
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "2f424a134ee596b209362e2ebc2fd365253e0aa8a1c502018fda781dd76d2adf",
+          "ms": 0.0041999999998552084
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "319a0d30e8b2b65c74c60e0e561b64ea947d33c58e986f1da5310a82e42ccaa4",
+          "ms": 0.0036999999999807187
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "0e01b7b1e53b54949aad9afbe45c39e26139e2d9ff311b802f78076f1812977d",
+          "ms": 0.009899999999788633
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "925e5972cf3056b44e680e149b6737f0d826e1dfaaf287e4bb1eaeea301b82f2",
+          "ms": 0.004699999999957072
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "178a73063f80a1ffc6377b7bb97d414de242e70e59663ab47df4921ded08d731",
+          "ms": 0.0036000000000058208
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "0f891622e163e0b45658b0a57b7c5d9bbe0e5d45e2ffb9e96d291e6b16807e7f",
+          "ms": 0.31599999999980355
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "81858902050a003afe999627aa51f730b6e94ca958115379614960bc9af9019f",
+          "ms": 0.30770000000006803
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "b5610574e2900b1b04be02021687041d942c43d0d9d4789b5785220c1e98a3d7",
+          "ms": 0.3104999999998199
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "9081913b6b1615c79b04bb39af91283edf33eac0e8b90339421afeb3901d7efb",
+          "ms": 0.3102000000001226
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "5f6008ce514a63c76f84ad5e27da6be1ef1ed941d03f15e11158916e6cbb5bb6",
+          "ms": 0.31579999999985375
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "4992b821e70c44c404732f8912bc7ddb103cc25281b0320968947fc3606092a7",
+          "ms": 0.3140000000000782
+        },
+        {
+          "asset": "costume.pineapple-suit",
+          "hash": "85c40544109ebd4c6004b4347d46b9494a4ab6b16fa6b883de18a4c0387f0ec6",
+          "ms": 0.3106000000000222
+        },
+        {
+          "asset": "costume.pineapple-suit",
+          "hash": "272c3425cc2f4e73ec12f084bf0f4a0132a3078dcfe319b0424e0a182c4e55a7",
+          "ms": 0.31570000000010623
+        },
+        {
+          "asset": "costume.pineapple-suit",
+          "hash": "f88dd2d036f1b8302c5bdb87d751412f38a37e9f2e0c7fa6eb0accdbb6a60d82",
+          "ms": 0.3086000000000695
+        },
+        {
+          "asset": "costume.pineapple-suit",
+          "hash": "5fbff5a49d2a52c3d919f6514cbbee5ea610852c20a7a040c88c762c82c76956",
+          "ms": 0.3138000000001284
+        },
+        {
+          "asset": "costume.propeller-hat",
+          "hash": "d6c34e735c5ab4dea97f591008d42b0e50b5196ee1e45ef4b4534c214121f93f",
+          "ms": 0.38020000000005894
+        },
+        {
+          "asset": "costume.propeller-hat",
+          "hash": "11dec27dde551737ca2cf2b5d9803f0a7fc352265bbb6675604c1f7df80e1ffe",
+          "ms": 0.3533999999999651
+        },
+        {
+          "asset": "costume.propeller-hat",
+          "hash": "890be0d5c6cc503608840dca529cd5a714fe578d2cd09d0696fa90955fa51615",
+          "ms": 0.3864000000000942
+        },
+        {
+          "asset": "costume.propeller-hat",
+          "hash": "5c9b29e3304c4c9973642005079017c70f64415b94799f8a7980d1f79baf9929",
+          "ms": 0.3347000000001117
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "24d382fc3baccbcb531506f570c5c0731d7bdb3d2be0411ab678f5f30f882854",
+          "ms": 0.42640000000005784
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "bc579f036e46fd76e79163bcb4225d120643b0a80ae9bb8cd9a273af6c9a7617",
+          "ms": 0.08510000000001128
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "e2088ee510f060e73df8dfb3101673f0a79fce8445a4904143335b473764261b",
+          "ms": 0.011999999999943611
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "a03b5c8d0b7f091a42fc93b0151b677d04b98b2eabac2fdf3f7c0fcfe1ec8182",
+          "ms": 0.00860000000011496
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "ae72c8b121636eff406696b6ec83284a9e821b861128c52861b51da2b7ac1fd5",
+          "ms": 0.007000000000061846
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "8773920301d0bd507d74c03ca69b64b6bdaaab12254e6e41804c4801c91a35ba",
+          "ms": 0.007799999999861029
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "065888d2011bcd6ab0c53c5dbb3876d33ef0e5a7377e3e48983d959cafc184e3",
+          "ms": 0.006399999999985084
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "a91cdb2bc656259679eb126b416723bae9b9d4c8a3dc5e1890de80c0848da26f",
+          "ms": 0.006799999999884676
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "5fe6005604793758e038ec672de04d32b769121c0906ea04e0325a93e9ce6e6a",
+          "ms": 0.005300000000033833
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "231d34b8aa0999e20c1abd9b2fc1ca5e275de1b4d77cdb7d9d0553b5a2d5b576",
+          "ms": 0.7180000000000746
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1918cf82164e9f5bc9cfbf72acce761c450590fcf801c0fdbc201151474aaaeb",
+          "ms": 0.015799999999899228
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "699e639f7c042ef2764ad87f21828a4ae67cb35f2ab16e5b95760e4c86435504",
+          "ms": 0.006199999999807915
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "f433b5b50b77074c41ab3b8b0bdb325e6a1eb23946163fd98a073d99926d1622",
+          "ms": 0.005599999999958527
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "309be19c02c8c71f8cffe3e2e852ba15ffa7437f7af13b4bef4643d7429675ed",
+          "ms": 0.005400000000008731
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "67c2ae5a40e0c7ed12aa001dfb72c9c963d7660bd8029cee2565dd8618bd221d",
+          "ms": 0.005199999999831562
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "01b344fd740e0b272d2f44464c7b429082f31c6ce9bdd138cf2b370983fbcd9f",
+          "ms": 0.005699999999933425
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "5c452488e0bf1657b173b871bfbbec5747345b80d898fcc82497efe588858d24",
+          "ms": 0.005699999999933425
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "30451f67bdc1c72116be133b972d9064f52fdc62dceb6ea0f163f926c0887346",
+          "ms": 0.004999999999881766
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "3e15d73208dbaab17d9c815ed3a2d371d02ee5455cd8bf5c52f0764d0fe5febe",
+          "ms": 0.4415000000001328
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "cdf81ea5d244435c7de3ee6145712460aa29fd88788801379a17a6e59c6e7dd1",
+          "ms": 0.016599999999925785
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "930fac1f2996a5f7337428116257beba147579c2f0d45489a6d9d70e4a9ca846",
+          "ms": 0.0061000000000603904
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "8e8ab1cf624f55b34ab3a30fa9b3c1f045a6a4bc0c608331dbb4459d42d6e449",
+          "ms": 0.005100000000084037
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "999db24c8e214e45e10c16bbb52e0c332371ae68cf7eb6afbebd0671c6060e74",
+          "ms": 0.005099999999856664
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "b6fe4aba7d9d4130dc1f911426f2216037c5b7bc64bdee0cf05b3bec9582b1c4",
+          "ms": 0.005499999999983629
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "0c96986168f770e0e0fc2172946d34ea519de4dc216d9e1243d1b2160c1e020d",
+          "ms": 0.005000000000109139
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "715c95e6f5c53a25ce567433aa2707f8551261d2d27a51fc30d9e34dfce35aa3",
+          "ms": 0.005500000000211003
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "df8f2704de28b6ef07d70b7276ca68900f92bd20e2f3677f3a4c5f26bce805b0",
+          "ms": 0.004900000000134241
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "471b535c70aebc9508cd82c5bdb12d40b7ff9d8a26a04fa21b6b1959e9ab8f27",
+          "ms": 0.45280000000002474
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1d1997e9d2b8d9a5bd65de5af61f83eb8b6aa1c5f77343442dcb017767fca589",
+          "ms": 0.013099999999894862
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "51033d4fdf44d522a5f7c539b40ae1b2f781ca258e554077228b1f5f3db311e8",
+          "ms": 0.0059000000001105946
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "2ce85ebb14dcdbfb642073da8d943c98e28de360c3631c1c62bb547fe9d39889",
+          "ms": 0.00479999999993197
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "57ed437d49be5e592bbaf65e43a53889c5370683ca7deae77cb5c370a1456a1a",
+          "ms": 0.007399999999961437
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "b987e5520ead346d394d7c9c5bbec264e05e3dfb2991ad11f4f70edffe670964",
+          "ms": 0.004500000000007276
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "ffdc44d6bd2115bc7554867103868c3784ab3018520aabbb22e8e7b34c496df4",
+          "ms": 0.005099999999856664
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "7c0385bb2ed2e3401c26d28ff9e41c61ba5335af7501519c283f58330f29dd28",
+          "ms": 0.004699999999957072
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "565f3662689d60acdea1705c8e92ca844d002f02289604e0816eb38a72d42360",
+          "ms": 0.004699999999957072
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "7b82d4bb9bce612d86cc605a4ce922c6fbc20f40be9f81d8e1b1bcae43638e47",
+          "ms": 0.42830000000003565
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "71dc84e55c9b0aede4c81bb730bfbc394f91da41281e7f70f71ad0192ac411d0",
+          "ms": 0.01999999999998181
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "e826d140435d4df7200a59a378a986a4b7216919fc90a49b0db41612aa5d4ea0",
+          "ms": 0.008100000000013097
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1a3e64f6f6b38436a2e0081891531c9174e365d5e05fb59695b69594356567bb",
+          "ms": 0.005400000000008731
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "46e08ac8849542bac919b99390043788320c65393261cd4f2fec06f86b951bb0",
+          "ms": 0.0037999999999556167
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "241f81d85e31f1b87c29847a04d12f25965e571afedad3db9f66dc37b54d8567",
+          "ms": 0.0036000000000058208
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "4334252c3a6c89d5e41f330826a74cbe3dbd25d3f8cb0576ca3f92be4f27bf47",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1a038ac603e3718dd46f9ccee988c769313e4e603dac2110e202bce5c78e729d",
+          "ms": 0.0037999999999556167
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "594c0250f683926cb3f4325bb366727da66bdd30e58ba65d29b9128243185da2",
+          "ms": 0.0036999999999807187
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "e5769249352c3872560e6f7615c8cb9a86b12c7e9636676c3721bdb3a03b419c",
+          "ms": 0.3386000000000422
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "d850bbfca00825a831caa6a9edb89b32184e6b3968cb4e6e81e135197e9caab8",
+          "ms": 0.007600000000138607
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "5fa9dc2decbcf795249b5f86e9a9155896e43dda8e2cf87b73fe549c4cd359a8",
+          "ms": 0.004500000000007276
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "62cd1c1f3024a1650af46c040160bdab8f633ccceb81259280af2b0fa43406ed",
+          "ms": 0.004100000000107684
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "008dcddce07150950ce44a3548d8cc3dca94574d774e9370dc35f18c5443de0d",
+          "ms": 0.0036000000000058208
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "725c1ffed9d311ac1b021ef2cd6f5dc7bf7903e9321e265cf9e6d3782166cfac",
+          "ms": 0.003499999999803549
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "09beff5805b3adc8deb222a7469525b1bdf5232f8dd10654716f3fd5d5fb0c7e",
+          "ms": 0.0036999999999807187
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "04275c1f32c3f5b98d8735973facbc3171aa00daabff2c92981707e87655ade2",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "9a16d29f4cab067aebeec2b8c8d7dad4b959624f7e83b31577e44b1547d4149e",
+          "ms": 0.0039000000001578883
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "28a2a2ec2ba2ba6d09b515fae0b1d592a86d33d750272a456c605cbf0ba489d6",
+          "ms": 0.3324000000000069
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "968de797bd2ab96e30d6441512c007e3e724dc884b611981a0529c5d0489df1a",
+          "ms": 0.007399999999961437
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "863313f8d8dfdc23c9048be84a603823b310a52092d8e793cb84a412d7cb10d4",
+          "ms": 0.0041999999998552084
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "5ee540b25705568a2227611be0468a997584640943d58d1e6002cde0e75b0db0",
+          "ms": 0.0036000000000058208
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "dc86103841dab16614bf4b1cd52e28d4370be263aa733dbdbeb2895624920fdf",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1ff6085c717f29c5655b2d1c8f935f4acf87bfd733d3d0a45eeee582255b0cfe",
+          "ms": 0.0036000000000058208
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "2551173d673e14d9a5b4ead01fcbb8f1f486cb9309c83e7d271bc627a65bdf08",
+          "ms": 0.003400000000056025
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "dd62e8cf11a46aa980f34d37f1652c1d3d78f4adf276002ab23c5c255b6bc928",
+          "ms": 0.003400000000056025
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "2c43c08e80550e8705b91a72c99e50b26a1c55dbb3e01f4d71b7f22584331c24",
+          "ms": 0.0032999999998537533
+        }
+      ],
+      "after": [
+        {
+          "asset": "candy.banner",
+          "hash": "ee347c515f38582817463a02fe95cc80cd530b688f6b78896de2a9e56b4b2975",
+          "ms": 0.6920000000000073
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "981d0064994069f984dee39ea9adc3b3cad987d8e7f6f76e27d1f45a9e6cae55",
+          "ms": 1.199100000000044
+        }
+      ]
+    },
+    {
+      "before": [
+        {
+          "asset": "candy.banner",
+          "hash": "9f950707d615bf894d5b53953e0839baf5bdaf2734a8422afc27316570e29624",
+          "ms": 0.49159999999983484
+        },
+        {
+          "asset": "candy.banner",
+          "hash": "7756afdfa79aac979af98ec96cfaeaa680ed2d101102c476194f846d2fbce601",
+          "ms": 0.3087000000000444
+        },
+        {
+          "asset": "candy.banner",
+          "hash": "b94f914f79ece8a37ba0bc000f009b97feb1d8929c89ad5fe578c5d465cc16e9",
+          "ms": 0.3047999999998865
+        },
+        {
+          "asset": "candy.banner",
+          "hash": "a09e970c6937e9d47f474078763831402f437af8aeececa84fdf0a96d5c8a985",
+          "ms": 0.449100000000044
+        },
+        {
+          "asset": "candy.banner",
+          "hash": "4f0e0f1aa6ff83c9d23a9111446edc112289759af361b5f61f6b688ce4387644",
+          "ms": 0.34999999999990905
+        },
+        {
+          "asset": "candy.bounce-pad",
+          "hash": "5d0aa7b72356c4a6a3289652080a279149051add0c9e2ca030c9333ddafc65be",
+          "ms": 0.3088000000000193
+        },
+        {
+          "asset": "candy.bounce-pad",
+          "hash": "5ae587a39778dcdb22fe3685f1e0f0b9bff69c3940d1c85f3e7f55783ba42022",
+          "ms": 0.3042000000000371
+        },
+        {
+          "asset": "candy.bounce-pad",
+          "hash": "f9804b3e5e006ace70174f12ead49eaa0f3ba89b9f22f6c969b945560dc259e8",
+          "ms": 0.30199999999990723
+        },
+        {
+          "asset": "candy.bounce-pad",
+          "hash": "45ec6546aff3a0c4626f4db7dc223a08ee9a5fe9321a24d7119e4c054a73be4f",
+          "ms": 0.32999999999992724
+        },
+        {
+          "asset": "candy.cloud",
+          "hash": "d723d3e8f40a23006b67f4a3a8536e139eb53910e525d525f980c15bdfd58258",
+          "ms": 0.29389999999989413
+        },
+        {
+          "asset": "candy.conveyor-belt",
+          "hash": "be8985ff4c84253402857b50669223d92deefc3d78674be5d9232a46313f4e36",
+          "ms": 0.3061999999999898
+        },
+        {
+          "asset": "candy.conveyor-belt",
+          "hash": "19ced9f03fc07698d5f381b7acb81053144c372d36e7060b677b0b2ac9d3cad9",
+          "ms": 0.3061999999999898
+        },
+        {
+          "asset": "candy.conveyor-belt",
+          "hash": "ab8c2e73bf8c6a5dc66344e463cc947595188f8512f8b782f6714e4f8902f104",
+          "ms": 0.5125000000000455
+        },
+        {
+          "asset": "candy.conveyor-belt",
+          "hash": "651bb42e3fff41c8b917d7adccee054fec46c21e416262c4c715ed834d761575",
+          "ms": 0.4613000000001648
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "1a0dc5ba593917036ccd0c753105be828b816c9b1b02d9ceb2922dddf13b0bfc",
+          "ms": 0.33969999999999345
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "22a16c41a3645020b844cca915b61bb5058c71563048c5cf9728bbe42c678ee8",
+          "ms": 0.3668999999999869
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "88c70addc0a665cf72cf8324f8847a0fe9fc27235fff5dc3988ad4c5a1d75d85",
+          "ms": 0.33780000000001564
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "ad9f3728878e0a1c8ca84c1af67d7fd60a2c70049ce68036e5ea8c323ef5bd21",
+          "ms": 0.32409999999981665
+        },
+        {
+          "asset": "candy.hot-air-balloon",
+          "hash": "abdc881f5a4dc49033d829dfa7a017d070f9aea862003554845ef59ddde4370a",
+          "ms": 0.3242000000000189
+        },
+        {
+          "asset": "candy.plaza-fountain",
+          "hash": "6bfd189287f35c42ef54221be5dbc490f9b24c2409af6315879022406a7c335e",
+          "ms": 0.37249999999994543
+        },
+        {
+          "asset": "candy.rotating-door",
+          "hash": "957d8ba502b5dedfaa3bc81479714de76fab6aad8d06c48625d3e09e400ce3cf",
+          "ms": 0.3688999999999396
+        },
+        {
+          "asset": "candy.slime-pool",
+          "hash": "5db4a4a0d7c10955fe8321219ddbd1374ee8f2d7e17450fc6d52b8fba5fbbdea",
+          "ms": 0.3180999999999585
+        },
+        {
+          "asset": "candy.slime-pool",
+          "hash": "9c625b78dda8b9b86cf1e8b78e91fc8c7c4fd83c23c9b6b84407522f98e4238b",
+          "ms": 0.3063999999999396
+        },
+        {
+          "asset": "candy.slime-pool",
+          "hash": "830f2c7cc853bd907338e65761ad11846c2d8918b8213ab822bc980238bc1bdf",
+          "ms": 0.3789999999999054
+        },
+        {
+          "asset": "candy.slime-pool",
+          "hash": "a9076e907a1ed8313e1d2d7415a6f6e21083a659b5f13f5b5f761444275026cb",
+          "ms": 0.2987000000000535
+        },
+        {
+          "asset": "candy.tower",
+          "hash": "16075127e4ee3cfb7670cb75bd20853d7e772a6fafb766e22c33ef736c35ae70",
+          "ms": 0.34400000000005093
+        },
+        {
+          "asset": "candy.tower",
+          "hash": "e6325b56a072c093a45906d39fa13c9e21698b25e309cdf027dda6548322d264",
+          "ms": 0.3011999999998807
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "fe4f84d9bf30b1cb84890a69ada78caa7172f5d584d0ee299c4b777f77383bca",
+          "ms": 0.2177999999998974
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "b893354b019c4b3f14712200dec209c54bd4b4b145b155d1ad13f7aa6e4c1694",
+          "ms": 0.010199999999940701
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "bb440bcd85f5335ef73455444e19fa128b60565e36b37e207276566f8a6b41b5",
+          "ms": 0.012500000000045475
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "75f20a33d0d21f543cfa8f28da97389143577f383ad2108adf011443a5968204",
+          "ms": 0.01630000000000109
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "cf36bdeaa3de750916aaffc6039313ad68afe16b66f51ff2711de1ddcea5309e",
+          "ms": 0.004699999999957072
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "622df2dd1e8a6c2223b63d041cfe1004fd134e152391eeeb97c24d5912686449",
+          "ms": 0.0036999999999807187
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "ff8644e4ceb74c24d55f58ce7934ed0ab548dc24c96a0177bd10ba34df04b02b",
+          "ms": 0.008000000000038199
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "2f424a134ee596b209362e2ebc2fd365253e0aa8a1c502018fda781dd76d2adf",
+          "ms": 0.00430000000005748
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "319a0d30e8b2b65c74c60e0e561b64ea947d33c58e986f1da5310a82e42ccaa4",
+          "ms": 0.0036999999999807187
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "0e01b7b1e53b54949aad9afbe45c39e26139e2d9ff311b802f78076f1812977d",
+          "ms": 0.00980000000004111
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "925e5972cf3056b44e680e149b6737f0d826e1dfaaf287e4bb1eaeea301b82f2",
+          "ms": 0.004599999999982174
+        },
+        {
+          "asset": "candy.wall-block",
+          "hash": "178a73063f80a1ffc6377b7bb97d414de242e70e59663ab47df4921ded08d731",
+          "ms": 0.0038000000001829903
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "0f891622e163e0b45658b0a57b7c5d9bbe0e5d45e2ffb9e96d291e6b16807e7f",
+          "ms": 0.31179999999994834
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "81858902050a003afe999627aa51f730b6e94ca958115379614960bc9af9019f",
+          "ms": 0.300499999999829
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "b5610574e2900b1b04be02021687041d942c43d0d9d4789b5785220c1e98a3d7",
+          "ms": 0.3665000000000873
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "9081913b6b1615c79b04bb39af91283edf33eac0e8b90339421afeb3901d7efb",
+          "ms": 0.3850999999999658
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "5f6008ce514a63c76f84ad5e27da6be1ef1ed941d03f15e11158916e6cbb5bb6",
+          "ms": 0.3158000000000811
+        },
+        {
+          "asset": "costume.fish-scarf",
+          "hash": "4992b821e70c44c404732f8912bc7ddb103cc25281b0320968947fc3606092a7",
+          "ms": 0.32349999999996726
+        },
+        {
+          "asset": "costume.pineapple-suit",
+          "hash": "85c40544109ebd4c6004b4347d46b9494a4ab6b16fa6b883de18a4c0387f0ec6",
+          "ms": 0.3451999999999771
+        },
+        {
+          "asset": "costume.pineapple-suit",
+          "hash": "272c3425cc2f4e73ec12f084bf0f4a0132a3078dcfe319b0424e0a182c4e55a7",
+          "ms": 0.29389999999989413
+        },
+        {
+          "asset": "costume.pineapple-suit",
+          "hash": "f88dd2d036f1b8302c5bdb87d751412f38a37e9f2e0c7fa6eb0accdbb6a60d82",
+          "ms": 0.30600000000004
+        },
+        {
+          "asset": "costume.pineapple-suit",
+          "hash": "5fbff5a49d2a52c3d919f6514cbbee5ea610852c20a7a040c88c762c82c76956",
+          "ms": 0.3044999999999618
+        },
+        {
+          "asset": "costume.propeller-hat",
+          "hash": "d6c34e735c5ab4dea97f591008d42b0e50b5196ee1e45ef4b4534c214121f93f",
+          "ms": 0.29330000000004475
+        },
+        {
+          "asset": "costume.propeller-hat",
+          "hash": "11dec27dde551737ca2cf2b5d9803f0a7fc352265bbb6675604c1f7df80e1ffe",
+          "ms": 0.29589999999984684
+        },
+        {
+          "asset": "costume.propeller-hat",
+          "hash": "890be0d5c6cc503608840dca529cd5a714fe578d2cd09d0696fa90955fa51615",
+          "ms": 0.31539999999995416
+        },
+        {
+          "asset": "costume.propeller-hat",
+          "hash": "5c9b29e3304c4c9973642005079017c70f64415b94799f8a7980d1f79baf9929",
+          "ms": 0.3086000000000695
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "24d382fc3baccbcb531506f570c5c0731d7bdb3d2be0411ab678f5f30f882854",
+          "ms": 0.412900000000036
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "bc579f036e46fd76e79163bcb4225d120643b0a80ae9bb8cd9a273af6c9a7617",
+          "ms": 0.05819999999994252
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "e2088ee510f060e73df8dfb3101673f0a79fce8445a4904143335b473764261b",
+          "ms": 0.009500000000116415
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "a03b5c8d0b7f091a42fc93b0151b677d04b98b2eabac2fdf3f7c0fcfe1ec8182",
+          "ms": 0.0048000000001593435
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "ae72c8b121636eff406696b6ec83284a9e821b861128c52861b51da2b7ac1fd5",
+          "ms": 0.004100000000107684
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "8773920301d0bd507d74c03ca69b64b6bdaaab12254e6e41804c4801c91a35ba",
+          "ms": 0.004899999999906868
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "065888d2011bcd6ab0c53c5dbb3876d33ef0e5a7377e3e48983d959cafc184e3",
+          "ms": 0.0039999999999054126
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "a91cdb2bc656259679eb126b416723bae9b9d4c8a3dc5e1890de80c0848da26f",
+          "ms": 0.004100000000107684
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "5fe6005604793758e038ec672de04d32b769121c0906ea04e0325a93e9ce6e6a",
+          "ms": 0.0038999999999305146
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "231d34b8aa0999e20c1abd9b2fc1ca5e275de1b4d77cdb7d9d0553b5a2d5b576",
+          "ms": 0.4214999999999236
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1918cf82164e9f5bc9cfbf72acce761c450590fcf801c0fdbc201151474aaaeb",
+          "ms": 0.008299999999962893
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "699e639f7c042ef2764ad87f21828a4ae67cb35f2ab16e5b95760e4c86435504",
+          "ms": 0.004900000000134241
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "f433b5b50b77074c41ab3b8b0bdb325e6a1eb23946163fd98a073d99926d1622",
+          "ms": 0.004100000000107684
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "309be19c02c8c71f8cffe3e2e852ba15ffa7437f7af13b4bef4643d7429675ed",
+          "ms": 0.0038999999999305146
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "67c2ae5a40e0c7ed12aa001dfb72c9c963d7660bd8029cee2565dd8618bd221d",
+          "ms": 0.0038999999999305146
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "01b344fd740e0b272d2f44464c7b429082f31c6ce9bdd138cf2b370983fbcd9f",
+          "ms": 0.0039000000001578883
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "5c452488e0bf1657b173b871bfbbec5747345b80d898fcc82497efe588858d24",
+          "ms": 0.0039000000001578883
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "30451f67bdc1c72116be133b972d9064f52fdc62dceb6ea0f163f926c0887346",
+          "ms": 0.0036999999999807187
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "3e15d73208dbaab17d9c815ed3a2d371d02ee5455cd8bf5c52f0764d0fe5febe",
+          "ms": 0.3389999999999418
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "cdf81ea5d244435c7de3ee6145712460aa29fd88788801379a17a6e59c6e7dd1",
+          "ms": 0.006999999999834472
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "930fac1f2996a5f7337428116257beba147579c2f0d45489a6d9d70e4a9ca846",
+          "ms": 0.004200000000082582
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "8e8ab1cf624f55b34ab3a30fa9b3c1f045a6a4bc0c608331dbb4459d42d6e449",
+          "ms": 0.0036000000000058208
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "999db24c8e214e45e10c16bbb52e0c332371ae68cf7eb6afbebd0671c6060e74",
+          "ms": 0.0040999999998803105
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "b6fe4aba7d9d4130dc1f911426f2216037c5b7bc64bdee0cf05b3bec9582b1c4",
+          "ms": 0.004500000000007276
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "0c96986168f770e0e0fc2172946d34ea519de4dc216d9e1243d1b2160c1e020d",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "715c95e6f5c53a25ce567433aa2707f8551261d2d27a51fc30d9e34dfce35aa3",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "df8f2704de28b6ef07d70b7276ca68900f92bd20e2f3677f3a4c5f26bce805b0",
+          "ms": 0.003399999999828651
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "471b535c70aebc9508cd82c5bdb12d40b7ff9d8a26a04fa21b6b1959e9ab8f27",
+          "ms": 0.3546000000001186
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1d1997e9d2b8d9a5bd65de5af61f83eb8b6aa1c5f77343442dcb017767fca589",
+          "ms": 0.007599999999911233
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "51033d4fdf44d522a5f7c539b40ae1b2f781ca258e554077228b1f5f3db311e8",
+          "ms": 0.004699999999957072
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "2ce85ebb14dcdbfb642073da8d943c98e28de360c3631c1c62bb547fe9d39889",
+          "ms": 0.0037999999999556167
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "57ed437d49be5e592bbaf65e43a53889c5370683ca7deae77cb5c370a1456a1a",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "b987e5520ead346d394d7c9c5bbec264e05e3dfb2991ad11f4f70edffe670964",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "ffdc44d6bd2115bc7554867103868c3784ab3018520aabbb22e8e7b34c496df4",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "7c0385bb2ed2e3401c26d28ff9e41c61ba5335af7501519c283f58330f29dd28",
+          "ms": 0.003400000000056025
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "565f3662689d60acdea1705c8e92ca844d002f02289604e0816eb38a72d42360",
+          "ms": 0.003399999999828651
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "7b82d4bb9bce612d86cc605a4ce922c6fbc20f40be9f81d8e1b1bcae43638e47",
+          "ms": 0.4090000000001055
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "71dc84e55c9b0aede4c81bb730bfbc394f91da41281e7f70f71ad0192ac411d0",
+          "ms": 0.017400000000179716
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "e826d140435d4df7200a59a378a986a4b7216919fc90a49b0db41612aa5d4ea0",
+          "ms": 0.004699999999957072
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1a3e64f6f6b38436a2e0081891531c9174e365d5e05fb59695b69594356567bb",
+          "ms": 0.005499999999983629
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "46e08ac8849542bac919b99390043788320c65393261cd4f2fec06f86b951bb0",
+          "ms": 0.0039999999999054126
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "241f81d85e31f1b87c29847a04d12f25965e571afedad3db9f66dc37b54d8567",
+          "ms": 0.004000000000132786
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "4334252c3a6c89d5e41f330826a74cbe3dbd25d3f8cb0576ca3f92be4f27bf47",
+          "ms": 0.0039999999999054126
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1a038ac603e3718dd46f9ccee988c769313e4e603dac2110e202bce5c78e729d",
+          "ms": 0.0036999999999807187
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "594c0250f683926cb3f4325bb366727da66bdd30e58ba65d29b9128243185da2",
+          "ms": 0.003400000000056025
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "e5769249352c3872560e6f7615c8cb9a86b12c7e9636676c3721bdb3a03b419c",
+          "ms": 0.3285999999998239
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "d850bbfca00825a831caa6a9edb89b32184e6b3968cb4e6e81e135197e9caab8",
+          "ms": 0.009999999999990905
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "5fa9dc2decbcf795249b5f86e9a9155896e43dda8e2cf87b73fe549c4cd359a8",
+          "ms": 0.00479999999993197
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "62cd1c1f3024a1650af46c040160bdab8f633ccceb81259280af2b0fa43406ed",
+          "ms": 0.004000000000132786
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "008dcddce07150950ce44a3548d8cc3dca94574d774e9370dc35f18c5443de0d",
+          "ms": 0.0037999999999556167
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "725c1ffed9d311ac1b021ef2cd6f5dc7bf7903e9321e265cf9e6d3782166cfac",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "09beff5805b3adc8deb222a7469525b1bdf5232f8dd10654716f3fd5d5fb0c7e",
+          "ms": 0.003400000000056025
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "04275c1f32c3f5b98d8735973facbc3171aa00daabff2c92981707e87655ade2",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "9a16d29f4cab067aebeec2b8c8d7dad4b959624f7e83b31577e44b1547d4149e",
+          "ms": 0.003400000000056025
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "28a2a2ec2ba2ba6d09b515fae0b1d592a86d33d750272a456c605cbf0ba489d6",
+          "ms": 0.3481000000001586
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "968de797bd2ab96e30d6441512c007e3e724dc884b611981a0529c5d0489df1a",
+          "ms": 0.007700000000113505
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "863313f8d8dfdc23c9048be84a603823b310a52092d8e793cb84a412d7cb10d4",
+          "ms": 0.004500000000007276
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "5ee540b25705568a2227611be0468a997584640943d58d1e6002cde0e75b0db0",
+          "ms": 0.0036999999999807187
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "dc86103841dab16614bf4b1cd52e28d4370be263aa733dbdbeb2895624920fdf",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "1ff6085c717f29c5655b2d1c8f935f4acf87bfd733d3d0a45eeee582255b0cfe",
+          "ms": 0.003500000000030923
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "2551173d673e14d9a5b4ead01fcbb8f1f486cb9309c83e7d271bc627a65bdf08",
+          "ms": 0.0036000000000058208
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "dd62e8cf11a46aa980f34d37f1652c1d3d78f4adf276002ab23c5c255b6bc928",
+          "ms": 0.003499999999803549
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "2c43c08e80550e8705b91a72c99e50b26a1c55dbb3e01f4d71b7f22584331c24",
+          "ms": 0.0036000000000058208
+        }
+      ],
+      "after": [
+        {
+          "asset": "candy.banner",
+          "hash": "ee347c515f38582817463a02fe95cc80cd530b688f6b78896de2a9e56b4b2975",
+          "ms": 0.6109000000001288
+        },
+        {
+          "asset": "penguin.body",
+          "hash": "981d0064994069f984dee39ea9adc3b3cad987d8e7f6f76e27d1f45a9e6cae55",
+          "ms": 0.7960000000000491
+        }
+      ]
+    }
+  ]
+}

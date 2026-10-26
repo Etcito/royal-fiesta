@@ -4,6 +4,7 @@
 // uaa Ui from menuModel results through screenMap. There is no fallback: a GPU, asset or font
 // failure rejects with the uaa error, and there is no DOM or Canvas2D substitute.
 // Every import.meta.glob sits in a function body, so Node tests can import this module.
+import { installShaderCache } from '../render/shaderCache.ts'
 import {
   createFontRegistry, createUi, loadUiDoc, parseUiAssetText, UaaError,
   type FontEntry, type Rect, type Ui, type UiAsset, type UiDoc, type UiInputEvent, type UiRenderer, type Viewport,
@@ -125,6 +126,7 @@ interface GpuAdapterLike { requestDevice(): Promise<GpuDeviceLike> }
 interface GpuLike { requestAdapter(opts?: { powerPreference?: string }): Promise<GpuAdapterLike | null> }
 
 async function requestDevice(): Promise<GpuDeviceLike> {
+  installShaderCache()
   const gpu = typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { gpu?: GpuLike }).gpu
   if (gpu === undefined) throw new UaaError('GPU_UNAVAILABLE', '', 'WebGPU is not available: this browser exposes no navigator.gpu.')
   let adapter: GpuAdapterLike | null

@@ -1,13 +1,10 @@
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the
 // MAMA workers already produced (one mesh per part, split by material) and the graph materials
-// compiled by @etcito/raa-sdfm's mapMaterial. Tint multiplies the graph material's base colour.
-import { PALETTE } from '@royal-fiesta/game/render/palette'
-import { PODIUM_TINTS } from '@royal-fiesta/game/render/podiumStage'
-import { V0_ASSET_MAP } from '@royal-fiesta/game/courseV1'
+// compiled by @etcito/raa-sdfm's mapMaterial. RAA applies per-instance tint after the graph.
 import { roundStep, renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import { loadRaa } from '@etcito/raa'
 import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
-import { mapMaterial } from '@etcito/raa-sdfm'
+import { materialProgram } from './materialProgram.ts'
 import type { SdfmCompiledMaterial, SdfmMappedMaterial } from '@etcito/raa-sdfm'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
@@ -16,6 +13,7 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../render/courseEnvironment.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import type { MeshedAsset } from './mamaApi.ts'
+import { installShaderCache } from '../render/shaderCache.ts'
 
 const AREA = 'sdf'
 const WHERE = 'sdf-port'
@@ -29,9 +27,7 @@ interface PayloadGroup { group: string; parts: PayloadPart[] }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
 interface PartUpload { name: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number] }
-interface TintMesh { mesh: number; t: [number, number, number]; r: [number, number, number, number] }
-interface MaterialRecord { base: number; mapped: SdfmMappedMaterial; tints: Map<string, number> }
-interface Uploaded { assetId: string; parts: PartUpload[]; materials: MaterialRecord[]; tints: Map<string, TintMesh[]> }
+interface Uploaded { assetId: string; parts: PartUpload[]; tintedParts?: PartUpload[] }
 interface Live { root: number; instances: number[]; visible: boolean }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
@@ -64,10 +60,9 @@ class SdfRenderPort implements RenderPort {
   private readonly uploaded: Uploaded[] = []
   private readonly handleOfId = new Map<string, number>()
   private readonly handleOfName = new Map<string, number>()
-  private readonly functions = new Set<string>()
+  private readonly functions = new Map<string, string>()
   private readonly live: (Live | null)[] = []
-  private readonly tintSurfaces = new Map<string, number>()
-  private tintSeq = 0
+  private whiteSurface: number | null = null
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
   constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map()) {
@@ -84,6 +79,7 @@ class SdfRenderPort implements RenderPort {
       refuse(AREA, WHERE, `${p}: the viewport must cover the whole ${target.width}x${target.height} canvas`)
     }
     if (!(target.canvas instanceof HTMLCanvasElement)) refuse(AREA, WHERE, `${p}: pass an HTMLCanvasElement as the target canvas`)
+    installShaderCache()
     const raa = await loadRaa()
     this.engine = await raa.createEngine(target.canvas, { maxInstances: MAX_INSTANCES, maxMaterials: MAX_MATERIALS })
     this.engine.resize(target.width, target.height)
@@ -93,35 +89,20 @@ class SdfRenderPort implements RenderPort {
     this.target = target
   }
 
-  // Register the complete material function set before the first render. Adding functions lazily
-  // during a round can force RAA to compile another shader containing the growing function set.
+  // Upload data only. The renderer requests pipelines for visible draws during gameplay;
+  // off-screen course and costume shaders do not delay the first frame.
   async prepare(onProgress: (p: LoadProgress) => void, onTiming: (span: { step: string; start: number; end: number; ms: number }) => void): Promise<void> {
-    const instances: number[] = []
     const ids = [...this.meshed.keys()].sort()
-    const paint = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-    try {
-      for (let i = 0; i < ids.length; i++) {
-        const id = ids[i]
-        onProgress({ phase: 'upload', done: i, total: ids.length, label: `Uploading ${id}` })
-        await paint()
-        const start = performance.now()
-        const handle = this.registerAsset(id, { id } as PrimsAsset)
-        instances.push(this.createInstance(handle, null))
-        const tints = id === 'penguin.body' ? PALETTE : id === V0_ASSET_MAP['wall-block'] ? PODIUM_TINTS : []
-        for (const tint of tints) instances.push(this.createInstance(handle, tint))
-        const end = performance.now()
-        onTiming({ step: `Upload and material variants: ${id}`, start, end, ms: end - start })
-      }
-      onProgress({ phase: 'upload', done: ids.length, total: ids.length, label: 'Compiling course shaders' })
-      await paint()
-      this.setCamera(0, { eye: [0, 3, 8], target: [0, 0, 0], fovYDeg: 55, near: 0.1, far: 1000 })
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]
+      onProgress({ phase: 'upload', done: i, total: ids.length, label: `Uploading ${id}` })
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
       const start = performance.now()
-      this.render()
+      this.registerAsset(id, { id } as PrimsAsset)
       const end = performance.now()
-      onTiming({ step: 'RAA pipeline / shader warmup', start, end, ms: end - start })
-    } finally {
-      for (const instance of instances) this.destroyInstance(instance)
+      onTiming({ step: `Mesh and material data: ${id}`, start, end, ms: end - start })
     }
+    onProgress({ phase: 'upload', done: ids.length, total: ids.length, label: 'Assets uploaded' })
   }
 
   registerAsset(name: string, asset: PrimsAsset): number {
@@ -141,7 +122,7 @@ class SdfRenderPort implements RenderPort {
     const empty = meshed === undefined && this.failed.has(id)
     if (meshed === undefined && !empty) refuse(AREA, id, `not meshed; mesh asset '${id}' before the SDF port uploads it`)
     if (meshed !== undefined && meshed.assetId !== id) refuse(AREA, id, `the meshed entry says asset '${meshed.assetId}'; clear the mesh cache and remesh the asset`)
-    const uploaded: Uploaded = meshed === undefined ? { assetId: id, parts: [], materials: [], tints: new Map() } : roundStep(`Mesh upload / materials: ${id}`, () => this.upload(id, meshed))
+    const uploaded: Uploaded = meshed === undefined ? { assetId: id, parts: [] } : roundStep(`Mesh upload / materials: ${id}`, () => this.upload(id, meshed))
     const handle = this.uploaded.length
     this.uploaded.push(uploaded)
     this.handleOfId.set(id, handle)
@@ -155,20 +136,20 @@ class SdfRenderPort implements RenderPort {
     const payload = payloadOf(id, meshed)
     const engine = this.need()
     const handles = new Map<string, number>()
-    const materials: MaterialRecord[] = []
     for (const compiled of payload.materials) {
       const mapped = mapCompiled(compiled, id)
-      if (!this.functions.has(mapped.functionName)) {
+      const known = this.functions.get(mapped.functionName)
+      if (known !== undefined && known !== mapped.wgsl) refuse(AREA, WHERE, `material program hash collision: ${mapped.functionName}`)
+      if (known === undefined) {
         try {
           engine.addMaterialFunction(mapped.functionName, mapped.wgsl)
         } catch (e) {
           if (raaCode(e) !== 'material.fn_duplicate') throw e
         }
-        this.functions.add(mapped.functionName)
+        this.functions.set(mapped.functionName, mapped.wgsl)
       }
       const base = engine.addSurfaceMaterial({ ...mapped.desc })
       handles.set(compiled.name, base)
-      materials.push({ base, mapped, tints: new Map() })
     }
     const parts: PartUpload[] = []
     for (const group of payload.groups) {
@@ -180,19 +161,22 @@ class SdfRenderPort implements RenderPort {
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
-    return { assetId: id, parts, materials, tints: new Map() }
+    return { assetId: id, parts }
   }
 
   createInstance(asset: number, tint: Vec3T | null): number {
     const uploaded = this.uploaded[asset]
     if (uploaded === undefined) refuse(AREA, WHERE, `createInstance: unknown asset handle ${asset}; register the asset first with registerAsset`)
-    const parts = tint === null ? uploaded.parts : this.tintedParts(uploaded, tint)
+    if (tint !== null && (tint.length !== 3 || !tint.every(Number.isFinite))) refuse(AREA, WHERE, 'tint is not 3 finite numbers; pass [r, g, b] or null')
+    const parts = tint === null ? uploaded.parts : this.tintableParts(uploaded)
     const engine = this.need()
     const root = engine.addNode(null)
     const instances: number[] = []
     for (const part of parts) {
       const node = engine.addNode(root, part.t, part.r)
-      instances.push(engine.addMeshInstance(node, part.mesh))
+      const instance = engine.addMeshInstance(node, part.mesh)
+      if (tint !== null) engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
+      instances.push(instance)
     }
     this.live.push({ root, instances, visible: true })
     return this.live.length - 1
@@ -262,46 +246,19 @@ class SdfRenderPort implements RenderPort {
     return live
   }
 
-  // A tint is a variant of the graph material: the graph still compiles, its base colour is
-  // multiplied by the tint, and each instance picks the variant material of its own parts.
-  private tintedParts(uploaded: Uploaded, tint: Vec3T): TintMesh[] {
-    if (tint.length !== 3 || !tint.every(Number.isFinite)) refuse(AREA, WHERE, 'tint is not 3 finite numbers; pass [r, g, b] or null')
-    const key = tint.join(',')
-    const cached = uploaded.tints.get(key)
-    if (cached !== undefined) return cached
-    const variants = new Map<number, number>()
-    for (const record of uploaded.materials) variants.set(record.base, this.tintedMaterial(record, tint, key))
-    const fallback = this.tintSurface(tint, key)
-    const parts: TintMesh[] = []
-    for (const part of uploaded.parts) {
-      parts.push({ mesh: this.need().addMesh(tintedDesc(part, variants, fallback)), t: part.t, r: part.r })
-    }
-    uploaded.tints.set(key, parts)
-    return parts
-  }
-
-  private tintedMaterial(record: MaterialRecord, tint: Vec3T, key: string): number {
-    const known = record.tints.get(key)
-    if (known !== undefined) return known
+  // Graphs share their original meshes. Material-less parts used a white standard surface
+  // for tint before; keep that surface and geometry shared by every tint colour too.
+  private tintableParts(uploaded: Uploaded): PartUpload[] {
+    if (uploaded.tintedParts !== undefined) return uploaded.tintedParts
     const engine = this.need()
-    const id = `sdfm_tint_${this.tintSeq++}`
-    try {
-      engine.addMaterialFunction(id, tintedWgsl(record.mapped.wgsl, id, tint))
-    } catch (e) {
-      if (raaCode(e) !== 'material.fn_duplicate') throw e
-    }
-    const handle = engine.addSurfaceMaterial({ ...record.mapped.desc, function: id })
-    record.tints.set(key, handle)
-    return handle
-  }
-
-  // A part with no graph material has nothing to tint through; a tinted standard surface is its own.
-  private tintSurface(tint: Vec3T, key: string): number {
-    const known = this.tintSurfaces.get(key)
-    if (known !== undefined) return known
-    const handle = this.need().addSurfaceMaterial({ color: [tint[0], tint[1], tint[2]], roughness: 0.6 })
-    this.tintSurfaces.set(key, handle)
-    return handle
+    uploaded.tintedParts = uploaded.parts.map(part => {
+      if (part.subMeshes.every(sub => sub.material !== undefined)) return part
+      this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
+      const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? this.whiteSurface! }))
+      const desc = { ...part.desc, subMeshes }
+      return { ...part, desc, subMeshes, mesh: engine.addMesh(desc) }
+    })
+    return uploaded.tintedParts
   }
 }
 
@@ -383,35 +340,6 @@ function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, asset
   return { desc, subMeshes }
 }
 
-function tintedDesc(part: PartUpload, variants: ReadonlyMap<number, number>, fallback: number): MeshDesc {
-  const subMeshes = part.subMeshes.map((sub) => {
-    const material = sub.material === undefined ? fallback : variants.get(sub.material) ?? fallback
-    return { first: sub.first, count: sub.count, material }
-  })
-  const desc: MeshDesc = { positions: part.desc.positions, normals: part.desc.normals, indices: part.desc.indices, subMeshes }
-  if (part.desc.uvs !== undefined) desc.uvs = part.desc.uvs
-  return desc
-}
-
-// A tint variant of a mapped graph material: the graph function is kept under a private name and a
-// new material_main multiplies its linear base colour, so the graph still drives the surface.
-function tintedWgsl(wgsl: string, id: string, tint: Vec3T): string {
-  const renamed = wgsl.replace(/\bfn\s+material_main\s*\(/, `fn ${id}_graph(`)
-  if (renamed === wgsl) refuse(AREA, WHERE, 'the mapped graph material has no material_main; @etcito/raa-sdfm did not map a material function')
-  const rgb = tint.map(srgbToLinear).map((c) => c.toFixed(6))
-  return `${renamed}
-fn material_main(in: MaterialInput) -> MaterialOutput {
-  var out = ${id}_graph(in);
-  out.base_color = out.base_color * vec3<f32>(${rgb.join(', ')});
-  return out;
-}
-`
-}
-
-function srgbToLinear(c: number): number {
-  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
-}
-
 // Translation and rotation of a column-major 4x4 MAMA part frame; a frame scale is not carried.
 function frameToTr(f: Float64Array): { t: [number, number, number]; r: [number, number, number, number] } {
   const t: [number, number, number] = [f[12], f[13], f[14]]
@@ -447,7 +375,7 @@ function frameToTr(f: Float64Array): { t: [number, number, number]; r: [number, 
 
 function mapCompiled(material: SdfmCompiledMaterial, assetId: string): SdfmMappedMaterial {
   try {
-    return mapMaterial(material)
+    return materialProgram(material)
   } catch (e) {
     refuse(AREA, `${assetId}#material:${material.name}`, `${messageOf(e)}; fix the material graph in SDF Modeler`)
   }

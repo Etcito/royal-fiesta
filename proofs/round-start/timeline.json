@@ -1,0 +1,181 @@
+{
+  "base": "112dbc9",
+  "environment": "Chrome headless, software WebGPU, 800x600; same browser profile. Timings are CPU submission times from performance.now, not a GPU completion fence.",
+  "beforeMethod": "Main behavior with timing/overlay instrumentation, without boot upload and shader warmup. Local hub, Play, Find a match.",
+  "afterMethod": "Boot upload and shader warmup including player/podium tint variants. Local hub, Play, Find a match. Playlist selection is random.",
+  "before": {
+    "course": "race-sprint",
+    "spans": [
+      {
+        "step": "Simulation start",
+        "start": 40569.70000000298,
+        "end": 40570.60000000149,
+        "ms": 0.8999999985098839
+      },
+      {
+        "step": "Mesh upload / materials: candy.floor-tile",
+        "start": 40919.800000000745,
+        "end": 40922.60000000149,
+        "ms": 2.800000000745058
+      },
+      {
+        "step": "Mesh upload / materials: candy.spinner-bar",
+        "start": 40922.70000000298,
+        "end": 40926.10000000149,
+        "ms": 3.399999998509884
+      },
+      {
+        "step": "Mesh upload / materials: candy.checkpoint-gate",
+        "start": 40926.20000000298,
+        "end": 40928.20000000298,
+        "ms": 2
+      },
+      {
+        "step": "Mesh upload / materials: candy.pendulum-hammer",
+        "start": 40928.300000000745,
+        "end": 40929.800000000745,
+        "ms": 1.5
+      },
+      {
+        "step": "Mesh upload / materials: candy.rotating-door",
+        "start": 40929.900000002235,
+        "end": 40950.10000000149,
+        "ms": 20.199999999254942
+      },
+      {
+        "step": "Mesh upload / materials: candy.finish-arch",
+        "start": 40950.20000000298,
+        "end": 40955.20000000298,
+        "ms": 5
+      },
+      {
+        "step": "Course instances: race-sprint",
+        "start": 40919.60000000149,
+        "end": 40955.5,
+        "ms": 35.899999998509884
+      },
+      {
+        "step": "RAA render / pipeline compilation",
+        "start": 40955.900000002235,
+        "end": 42911.5,
+        "ms": 1955.5999999977648
+      }
+    ],
+    "startToRenderReturnMs": 2341.7999999970198,
+    "renderPipelineCalls": 150,
+    "consoleErrors": []
+  },
+  "after": {
+    "course": "race-hammer-hill",
+    "spans": [
+      {
+        "step": "Simulation start",
+        "start": 22815.300000000745,
+        "end": 22817.300000000745,
+        "ms": 2
+      },
+      {
+        "step": "Course instances: race-hammer-hill",
+        "start": 22831.300000000745,
+        "end": 22832.699999999255,
+        "ms": 1.3999999985098839
+      },
+      {
+        "step": "RAA render / pipeline compilation",
+        "start": 22833.5,
+        "end": 22835.39999999851,
+        "ms": 1.8999999985098839
+      }
+    ],
+    "startToRenderReturnMs": 20.099999997764826,
+    "renderPipelineCalls": 0,
+    "consoleErrors": []
+  },
+  "owner18Seconds": "Not reproduced exactly on this adapter. The dominant measured round-start cost is first-use RAA pipeline construction. MAMA meshes all playlist assets before the hub is available.",
+  "onlineHeadless": {
+    "check": "two clients start",
+    "renderer": "null",
+    "frames": 508,
+    "wallMs": 9521.129711,
+    "ticksCompared": 120,
+    "mismatches": 0,
+    "roundTimeline": [
+      {
+        "round": "Online round",
+        "step": "MatchSim construction",
+        "start": 7552.893452,
+        "end": 7554.746752,
+        "ms": 1.8532999999997628
+      },
+      {
+        "round": "Online round",
+        "step": "Simulation start",
+        "start": 7552.802452,
+        "end": 7554.765952,
+        "ms": 1.96349999999984
+      },
+      {
+        "round": "Online round",
+        "step": "Rollback session start",
+        "start": 7554.799752,
+        "end": 7556.101752,
+        "ms": 1.3019999999996799
+      },
+      {
+        "round": "Online round",
+        "step": "Course instances: race-sprint",
+        "start": 7579.114452,
+        "end": 7579.302852,
+        "ms": 0.18840000000000146
+      },
+      {
+        "round": "Online round",
+        "step": "RAA render / pipeline compilation",
+        "start": 7580.197652,
+        "end": 7580.203152,
+        "ms": 0.005500000000211003
+      },
+      {
+        "round": "Online round",
+        "step": "MatchSim construction",
+        "start": 7556.378652,
+        "end": 7556.924352,
+        "ms": 0.5456999999996697
+      },
+      {
+        "round": "Online round",
+        "step": "Simulation start",
+        "start": 7556.376952,
+        "end": 7556.934152,
+        "ms": 0.5572000000001935
+      },
+      {
+        "round": "Online round",
+        "step": "Rollback session start",
+        "start": 7556.942352,
+        "end": 7557.231552,
+        "ms": 0.28920000000016444
+      },
+      {
+        "round": "Online round",
+        "step": "Course instances: race-sprint",
+        "start": 7579.921752,
+        "end": 7579.958052,
+        "ms": 0.03629999999975553
+      },
+      {
+        "round": "Online round",
+        "step": "RAA render / pipeline compilation",
+        "start": 7581.651352,
+        "end": 7581.656652,
+        "ms": 0.0052999999998064595
+      }
+    ],
+    "method": "apps/headless/proofs/round-start.ts: existing m8 fixture courses, LoopbackRelay, two piloted clients on a real clock, NullRenderPort."
+  },
+  "onlineBrowser": {
+    "result": "blocked",
+    "reason": "RAA core.no_adapter while creating the second canvas renderer; no two-canvas GPU timing claimed."
+  },
+  "otherHarnessObservation": "Adapting the full m8 inpage-loop to two clients reached the rounds but later failed with match socket closed. The focused startup probe passes; the full four-client m8 inpage-loop passed (2538 compared ticks, zero mismatches)."
+}

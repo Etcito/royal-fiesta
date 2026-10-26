@@ -75,13 +75,13 @@ function resolveHelpers(ids: readonly string[], material: string): { id: string;
     if (chain.includes(id)) {
       throw new RefusalError('sdf', material, `material '${material}': helper '${id}' depends on itself; fix the material graph in SDF Modeler`)
     }
-    for (const dep of helper.deps ?? []) visit(dep, [...chain, id])
+    for (const dep of [...(helper.deps ?? [])].sort()) visit(dep, [...chain, id])
     done.add(id)
     // Some MAMA revisions also expose the common hash/noise code as graph helpers.
     // Only omit byte-identical source already supplied by the prelude, never by name alone.
     if (!COMMON_NO_PROGRAM_WGSL.includes(helper.code.trim())) out.push({ id, wgsl: helper.code })
   }
-  for (const id of ids) visit(id, [])
+  for (const id of [...ids].sort()) visit(id, [])
   return out
 }
 

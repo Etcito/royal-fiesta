@@ -563,7 +563,7 @@
           "stations": [
             {
               "t": 0,
-              "shape": "classic-extrude:crown"
+              "shape": "extrude_crown"
             }
           ]
         }
@@ -729,7 +729,7 @@
           "stations": [
             {
               "t": 0,
-              "shape": "classic-extrude:flag_yellow"
+              "shape": "extrude_flag_yellow"
             }
           ]
         },
@@ -759,7 +759,7 @@
           "stations": [
             {
               "t": 0,
-              "shape": "classic-extrude:flag_orange"
+              "shape": "extrude_flag_orange"
             }
           ]
         },
@@ -854,7 +854,7 @@
       }
     },
     "shapes": {
-      "classic-extrude:crown": {
+      "extrude_crown": {
         "profile": {
           "points": [
             {
@@ -881,7 +881,7 @@
           ]
         }
       },
-      "classic-extrude:flag_yellow": {
+      "extrude_flag_yellow": {
         "profile": {
           "points": [
             {
@@ -899,7 +899,7 @@
           ]
         }
       },
-      "classic-extrude:flag_orange": {
+      "extrude_flag_orange": {
         "profile": {
           "points": [
             {
@@ -922,5 +922,5 @@
     "min": [-0.92, 0, -0.34],
     "max": [0.92, 3.97, 0.34]
   },
-  "hash": "7016e2882fa876c3e57f28c2c3e6a473d70e9ebd69c59f918138ed3f6da79c6e"
+  "hash": "907d4419a836452b3e5458f5fa9acc10a0a9e56eb82eb1f2e15b819b29c67f88"
 }

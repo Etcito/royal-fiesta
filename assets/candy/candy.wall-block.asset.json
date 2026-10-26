@@ -362,7 +362,7 @@
           "stations": [
             {
               "t": 0,
-              "shape": "classic-extrude:zigzag"
+              "shape": "extrude_zigzag"
             }
           ]
         },
@@ -436,7 +436,7 @@
       }
     },
     "shapes": {
-      "classic-extrude:zigzag": {
+      "extrude_zigzag": {
         "profile": {
           "points": [
             {
@@ -535,5 +535,5 @@
     "min": [-0.625, -1, -5.05],
     "max": [0.625, 1.01, 5.05]
   },
-  "hash": "df317110f9f6ce29c037d646b8d0cd49c1af3fdf518a86f216ed9c45d3942ebf"
+  "hash": "472951d79dbd649eff06da86ef2a27e3f6af6b160d6f8a5f22f0dae0e55f6f85"
 }

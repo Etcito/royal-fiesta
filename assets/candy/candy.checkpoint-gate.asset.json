@@ -770,7 +770,7 @@
           "stations": [
             {
               "t": 0,
-              "shape": "classic-extrude:beam_zigzag"
+              "shape": "extrude_beam_zigzag"
             }
           ]
         },
@@ -863,7 +863,7 @@
           "stations": [
             {
               "t": 0,
-              "shape": "classic-extrude:pennant_flag"
+              "shape": "extrude_pennant_flag"
             }
           ]
         },
@@ -937,7 +937,7 @@
       }
     },
     "shapes": {
-      "classic-extrude:beam_zigzag": {
+      "extrude_beam_zigzag": {
         "profile": {
           "points": [
             {
@@ -1009,7 +1009,7 @@
           ]
         }
       },
-      "classic-extrude:pennant_flag": {
+      "extrude_pennant_flag": {
         "profile": {
           "points": [
             {
@@ -1051,5 +1051,5 @@
     "min": [-3.56, 0, -0.56],
     "max": [3.56, 3.94, 0.56]
   },
-  "hash": "b80b3d607ef9b188a626d4044258e94c387cdc989a99f43a34307441d8efee3a"
+  "hash": "837b96f70425412729cea81422d7434a06f7a4f6d1528376caba22fc01f61edc"
 }

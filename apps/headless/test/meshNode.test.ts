@@ -28,7 +28,7 @@ for (const id of passing) {
 test('meshNode names the asset and group on a quad refusal', { skip: !present }, async () => {
   const { meshGameAsset } = await import(moduleUrl)
   const { asset } = await nodeGameAssets().resolve('candy.checkpoint-gate')
-  // The saved gate now uses lowpoly successfully. Quad still refuses this geometry.
+  // Quad still refuses the saved gate geometry.
   const forced = structuredClone(asset)
   const nodes = forced.document.nodes as Record<string, { mesher: { output: string } }>
   nodes.candy_checkpoint_gate.mesher = { output: 'quad' }
@@ -67,7 +67,7 @@ test('meshNode meshes every group and preserves its declared mesher', { skip: !p
   }
   const roots = asset.document.root as string[]
   roots.push('candy_cloud_second')
-  // Both groups still declare lowpoly, which must win over the asset-level default.
+  // Both groups retain the saved cloud's mesher, which must win over the asset-level default.
   asset.mesher = { output: 'quad' }
   const before = JSON.stringify(asset)
   const result = await meshGameAsset(asset)

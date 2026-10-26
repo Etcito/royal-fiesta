@@ -2012,7 +2012,17 @@ export function browserAssetResolver(): AssetResolver
 export async function browserCourses(profile: ProfileName): Promise<ResolvedCourse[]>
 export async function preloadAssets(courses: readonly ResolvedCourse[], resolver: AssetResolver): Promise<(name: string) => PrimsAsset>
 ```
-Fixtures are bundled with `import.meta.glob('fixtures/**/*.json', ?raw)`.
+Legacy fixtures are bundled with `import.meta.glob('fixtures/**/*.json', ?raw)`.
+V1 game assets and courses are fetched at runtime from a content root (default
+`content/` next to the page, build override `VITE_RF_CONTENT_URL`, runtime override
+`?content=<root URL>`). Every fetch uses `cache: 'no-cache'`. The root contains
+`index.json` = `{assets: [{id, world, path, hash}], courses: [{id, path}]}`, plus
+`assets/<world>/<id>.asset.json` and `courses/<id>.course.json`. The index hash
+comes from the asset's own hash field, which also keys the client mesh cache.
+Node tools use `RF_CONTENT_DIR`, defaulting to the repository root. Local play
+serves this content live; `npm run content:pack -- <out dir>` produces a separate
+upload tree. The plain web build includes no v1 data. Shipping bundles include a
+content copy until the CDN serves it.
 
 hud.ts:
 ```ts

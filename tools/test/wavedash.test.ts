@@ -43,7 +43,9 @@ test('packWavedash writes the documented layout and manifest, entry game.html', 
     const out = join(dir, 'out')
     const result = await withDist(join(dir, 'dist'), () => packWavedash({ outDir: out }))
     assert.equal(result.entry, 'game.html')
-    assert.deepEqual(result.files, ['assets/game.js', 'game.html', 'index.html', 'play.html', 'rf-build.json'])
+    assert.deepEqual(result.files.filter(f => !f.startsWith('content/')), ['assets/game.js', 'game.html', 'index.html', 'play.html', 'rf-build.json'])
+    assert.ok(result.files.includes('content/index.json'))
+    assert.ok(result.files.includes('content/assets/candy/candy.banner.asset.json'))
     assert.equal(readFileSync(join(out, 'upload', 'game.html'), 'utf8'), GAME)
     assert.equal(existsSync(join(out, 'upload', 'nmc.gpu.json')), false)
     assert.equal(existsSync(join(out, 'upload', 'store')), false)
@@ -73,7 +75,7 @@ test('packing again replaces the previous upload', async () => {
   const dir = tree({ 'dist/game.html': GAME, 'out/upload/stale.js': 'old\n' })
   try {
     const result = await withDist(join(dir, 'dist'), () => packWavedash({ outDir: join(dir, 'out') }))
-    assert.deepEqual(result.files, ['game.html', 'rf-build.json'])
+    assert.deepEqual(result.files.filter(f => !f.startsWith('content/')), ['game.html', 'rf-build.json'])
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

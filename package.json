@@ -22,6 +22,7 @@
     "audio:bake": "node --experimental-strip-types tools/bake-audio.ts",
     "ui:fonts": "node --experimental-strip-types tools/uiFont.ts bundle",
     "web:build": "npm run audio:bake && npm run ui:fonts && npm run build -w @royal-fiesta/web",
+    "content:pack": "node --experimental-strip-types tools/content.ts",
     "play": "node --experimental-strip-types tools/play.ts",
     "wavedash": "node --experimental-strip-types tools/wavedash.ts",
     "etcito:build": "node --experimental-strip-types tools/etcitoBuild.ts",

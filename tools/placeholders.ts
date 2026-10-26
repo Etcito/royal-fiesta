@@ -1,6 +1,7 @@
 // Placeholder content (S12/S13): one sdfm.game-asset per fixture prims, the v1 courses and the podium course.
 // It only writes JSON: no MAMA, raa-sdfm or apps import, so the MAMA document shape (sdfm v2) is spelled out here.
 // node --experimental-strip-types tools/placeholders.ts [--check]
+import { contentPath } from './content.ts'
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
@@ -274,7 +275,7 @@ function text(v: unknown): string {
 }
 
 async function readJson(root: string, rel: string): Promise<unknown> {
-  return JSON.parse(await readFile(join(root, rel), 'utf8'))
+  return JSON.parse(await readFile(contentPath(rel, root), 'utf8'))
 }
 
 export async function buildContent(authored?: Authored): Promise<Map<string, string>> {
@@ -308,9 +309,9 @@ export async function buildContent(authored?: Authored): Promise<Map<string, str
 }
 
 async function listFiles(root: string, rel: string): Promise<string[]> {
-  if (!existsSync(join(root, rel))) return []
+  if (!existsSync(contentPath(rel, root))) return []
   const out: string[] = []
-  for (const e of await readdir(join(root, rel), { withFileTypes: true })) {
+  for (const e of await readdir(contentPath(rel, root), { withFileTypes: true })) {
     const p = `${rel}/${e.name}`
     if (e.isDirectory()) out.push(...await listFiles(root, p))
     else out.push(p)
@@ -337,12 +338,12 @@ async function main(argv: string[]): Promise<number> {
   if (argv.includes('--check')) {
     const problems: string[] = []
     for (const [p, t] of content) {
-      const file = join(root, p)
+      const file = contentPath(p, root)
       if (!existsSync(file)) problems.push(`missing ${p}`)
       else if (await readFile(file, 'utf8') !== t) problems.push(`differs ${p}`)
     }
     // Authored files are only checked for presence, never compared.
-    for (const p of authored.files) if (!existsSync(join(root, p))) problems.push(`missing ${p}`)
+    for (const p of authored.files) if (!existsSync(contentPath(p, root))) problems.push(`missing ${p}`)
     for (const p of stale) problems.push(`stale ${p}`)
     if (problems.length === 0) {
       console.log(`placeholders: ${content.size} files up to date${authored.files.length > 0 ? ` (+${authored.files.length} authored)` : ''}`)
@@ -353,8 +354,8 @@ async function main(argv: string[]): Promise<number> {
     return 1
   }
   for (const [p, t] of content) {
-    await mkdir(dirname(join(root, p)), { recursive: true })
-    await writeFile(join(root, p), t)
+    await mkdir(dirname(contentPath(p, root)), { recursive: true })
+    await writeFile(contentPath(p, root), t)
   }
   console.log(`placeholders: wrote ${content.size} files`)
   if (stale.length === 0) return 0

@@ -4,6 +4,7 @@ import { createServer } from 'node:http'
 import type { Server } from 'node:http'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { buildContentIndex, contentDir } from './content.ts'
 import { repoRoot } from './bricks.ts'
 
 // Ported from the V0 M11 play tool, on the public dependency path: the RAA release comes from
@@ -56,10 +57,27 @@ function serveDir(dist: string): Server {
       res.writeHead(400).end('bad request')
       return
     }
+    if (path === '/content/index.json') {
+      try {
+        res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' })
+        res.end(req.method === 'HEAD' ? undefined : JSON.stringify(buildContentIndex()))
+      } catch {
+        res.writeHead(500).end('cannot build content index')
+      }
+      return
+    }
+    const live = path.startsWith('/content/')
+    const requestBase = live ? contentDir() : base
+    if (live) path = path.slice('/content'.length)
+    // Live content is only the asset and course files: the content directory may be the repository root.
+    if (live && !/^\/(assets|courses)\/[^/]+(\/[^/]+)?\.(asset|course)\.json$/.test(path)) {
+      res.writeHead(404).end('not found')
+      return
+    }
     if (path.endsWith('/')) path += 'index.html'
-    const file = normalize(join(base, path))
-    // Never serve outside dist (../ in the URL).
-    if (file !== base && !file.startsWith(base + sep)) {
+    const file = normalize(join(requestBase, path))
+    // Never serve outside the selected build or content directory.
+    if (file !== requestBase && !file.startsWith(requestBase + sep)) {
       res.writeHead(403).end('forbidden')
       return
     }

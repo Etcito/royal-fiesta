@@ -1,3 +1,4 @@
+import { contentDir } from '../../../tools/content.ts'
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -10,7 +11,7 @@ import { isAuthored, readAuthored } from '../../../tools/authored.ts'
 import { repoRoot } from '../../../tools/bricks.ts'
 
 test('loadAllCoursesV1 loads every course on disk sorted by id', async () => {
-  const onDisk = readdirSync(join(repoRoot(), 'courses'))
+  const onDisk = readdirSync(join(contentDir(), 'courses'))
     .filter(f => f.endsWith('.course.json'))
     .map(f => f.slice(0, -'.course.json'.length))
     .sort()

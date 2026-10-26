@@ -96,3 +96,10 @@ level (not framed) did get the lock.
 The real Wavedash frame has not been probed. If pointer lock does not work in the Wavedash frame, the mouse camera
 does not work in the frame and there is NO fallback (owner decision: no drag-to-orbit); the right stick still turns
 the camera. See [controls.md](controls.md).
+
+Game data is not part of the web build. The packager adds `upload/content/` using
+the shared content packer: `index.json`, `assets/<world>/<id>.asset.json` and
+`courses/<id>.course.json`. `RF_CONTENT_DIR` chooses the source directory and
+defaults to the repository root. This bundle copy goes away when the CDN serves
+content. Use `VITE_RF_CONTENT_URL` at build time for that CDN, or the page's
+`content` query parameter for a runtime root override. See README for the layout.

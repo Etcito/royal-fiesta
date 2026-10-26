@@ -2,6 +2,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { packContent } from './content.ts'
 import { mamaSource, repoRoot } from './bricks.ts'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
 
@@ -71,6 +72,9 @@ export async function packWavedash(opts: { outDir: string }): Promise<{ files: s
     if (EXCLUDED.includes(name)) continue
     cpSync(join(dist, name), join(upload, name), { recursive: true })
   }
+
+  // Remove this bundled content when the CDN serves it.
+  packContent(join(upload, 'content'))
 
   const stamp = {
     format: 'royal-fiesta.build',

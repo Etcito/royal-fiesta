@@ -1,3 +1,4 @@
+import { contentPath } from '../content.ts'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -12,9 +13,9 @@ import { repoRoot } from '../bricks.ts'
 import { buildContent } from '../placeholders.ts'
 
 const root = repoRoot()
-const readJson = (rel: string): unknown => JSON.parse(readFileSync(join(root, rel), 'utf8'))
+const readJson = (rel: string): unknown => JSON.parse(readFileSync(contentPath(rel, root), 'utf8'))
 const filesIn = (dir: string, suffix: string): string[] =>
-  readdirSync(join(root, dir), { withFileTypes: true }).flatMap((e) =>
+  readdirSync(contentPath(dir, root), { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? filesIn(`${dir}/${e.name}`, suffix) : e.name.endsWith(suffix) ? [`${dir}/${e.name}`] : [])
 
 async function loadAssets(): Promise<Map<string, { asset: GameAsset; source: GameAssetSource; world: string; path: string }>> {
@@ -37,7 +38,7 @@ test('buildContent equals the files on disk', async () => {
     assert.ok(!built.has(f), `${f} is both built and authored`)
     assert.ok(disk.includes(f), `authored file missing on disk: ${f}`)
   }
-  for (const [path, text] of built) assert.equal(readFileSync(join(root, path), 'utf8'), text, path)
+  for (const [path, text] of built) assert.equal(readFileSync(contentPath(path, root), 'utf8'), text, path)
 })
 
 test('assets parse, match their stem and world, and keep the prims collision', async () => {

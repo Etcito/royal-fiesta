@@ -8,7 +8,7 @@ import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
 
-const FIXTURES = import.meta.glob<string>('../../../../fixtures/**/*.json', { query: '?raw', import: 'default', eager: true })
+const FIXTURES = import.meta.glob<string>(['../../../../fixtures/assets/*.prims.json', '../../../../fixtures/courses/*.course.json'], { query: '?raw', import: 'default', eager: true })
 const GLOB_PREFIX = '../../../../'
 const COURSE_FILE = /^fixtures\/courses\/[^/]+\.course\.json$/
 const ASSET_FILE = /^fixtures\/assets\/[^/]+\.prims\.json$/

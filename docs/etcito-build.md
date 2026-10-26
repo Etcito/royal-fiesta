@@ -114,3 +114,7 @@ The log never contains the token. A step prints `$ <cmd>` first and `== <cmd> ex
   step (docs/wavedash.md, R5).
 - It does not replay uncommitted files onto the clone (the V0 script did). The build is exactly the checked-out
   commit.
+
+The Wavedash step also packs runtime game content under `upload/content/` using
+`RF_CONTENT_DIR` (the repository root by default). The plain web build has no
+game data. This bundled copy goes away when the CDN serves the content root.

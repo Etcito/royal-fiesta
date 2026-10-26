@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-// V1 data in the browser: S12 assets and S13 courses bundled by Vite, render stand-ins and course dressing.
+// V1 data fetched from a content root, with bundled render stand-ins and course dressing.
 // Every import.meta.glob sits in a function body, so Node tests can import this module.
 import type { CourseDressing, LoadProgress } from '@royal-fiesta/game/content'
 import { loadCourseV1, V0_ASSET_MAP } from '@royal-fiesta/game/courseV1'
@@ -17,47 +17,61 @@ const ASSET_SUFFIX = '.asset.json'
 const STAND_IN = ' (dev stand-in)'
 const STAND_IN_RADIUS = 0.05
 
-interface AssetEntry { path: string; folder: string; load: () => Promise<string> }
+export interface ContentIndex {
+  assets: { id: string; world: string; path: string; hash: string }[]
+  courses: { id: string; path: string }[]
+}
+export interface ContentOptions { root?: string; fetch?: typeof fetch }
+
+export function browserContentRoot(): string {
+  const query = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('content')
+  return query ?? import.meta.env?.VITE_RF_CONTENT_URL ?? 'content/'
+}
+
+function contentReader(options: ContentOptions) {
+  const root = (options.root ?? browserContentRoot()).replace(/\/?$/, '/')
+  const fetcher = options.fetch ?? globalThis.fetch
+  return async (path: string): Promise<unknown> => {
+    const response = await fetcher(root + path, { cache: 'no-cache' })
+    if (!response.ok) throw new Error(`content: ${path}: HTTP ${response.status}`)
+    return JSON.parse(await response.text())
+  }
+}
 
 let gameAssets: GameAssetResolver | null = null
 
-// One entry per file stem; a stem found twice refuses when resolved (ids are unique across assets/).
-export function browserGameAssets(): GameAssetResolver {
-  if (gameAssets !== null) return gameAssets
-  const files = import.meta.glob<string>('../../../../assets/**/*.asset.json', { query: '?raw', import: 'default' })
-  const entries = new Map<string, AssetEntry[]>()
-  for (const key of Object.keys(files).sort()) {
-    if (!key.startsWith(GLOB_PREFIX)) continue
-    const path = key.slice(GLOB_PREFIX.length)
-    const slash = path.lastIndexOf('/')
-    const stem = path.slice(slash + 1, path.length - ASSET_SUFFIX.length)
-    const folder = path.slice('assets/'.length, slash)
-    const list = entries.get(stem) ?? []
-    list.push({ path, folder, load: files[key] })
-    entries.set(stem, list)
-  }
+// One entry per file stem; a stem found twice refuses when resolved.
+export function browserGameAssets(options?: ContentOptions): GameAssetResolver {
+  if (options === undefined && gameAssets !== null) return gameAssets
+  const read = contentReader(options ?? {})
+  let index: Promise<ContentIndex> | undefined
   const cache = new Map<string, Promise<ResolvedGameAsset>>()
 
   async function load(id: string): Promise<ResolvedGameAsset> {
-    const found = entries.get(id)
-    if (found === undefined) {
-      const ids = [...entries.keys()].sort()
+    index ??= read('index.json') as Promise<ContentIndex>
+    const entries = (await index).assets
+    const found = entries.filter(entry => entry.id === id)
+    if (found.length === 0) {
+      const ids = [...new Set(entries.map(entry => entry.id))].sort()
       refuse('assets', `assets/*/${id}${ASSET_SUFFIX}`, `unknown asset id '${id}'; add the asset file or use one of: ${ids.join(', ') || '(none)'}`)
     }
     if (found.length > 1) {
       refuse('assets', found[1].path, `asset id '${id}' is also ${found[0].path}; ids are unique across assets/, rename one`)
     }
-    const { path, folder } = found[0]
-    const json: unknown = JSON.parse(await found[0].load())
+    const { path } = found[0]
+    const slash = path.lastIndexOf('/')
+    const stem = path.slice(slash + 1, -ASSET_SUFFIX.length)
+    const folder = path.slice('assets/'.length, slash)
+    const json = await read(path)
     const asset = await parseGameAsset(json, path)
-    if (asset.id !== id) refuse('assets', `${path}#/id`, `id '${asset.id}' does not match the file stem '${id}'; rename the file or the id`)
+    if (asset.id !== stem) refuse('assets', `${path}#/id`, `id '${asset.id}' does not match the file stem '${stem}'; rename the file or the id`)
     if (asset.world !== folder) {
       refuse('assets', `${path}#/world`, `world '${asset.world}' does not match the folder '${folder}'; move the file to assets/${asset.world}/`)
     }
     return { asset, source: { path, json } }
   }
 
-  gameAssets = {
+  const resolver: GameAssetResolver = {
     resolve(id: string): Promise<ResolvedGameAsset> {
       let p = cache.get(id)
       if (p === undefined) {
@@ -67,21 +81,22 @@ export function browserGameAssets(): GameAssetResolver {
       return p
     },
   }
-  return gameAssets
+  if (options === undefined) gameAssets = resolver
+  return resolver
 }
 
 export interface V1Courses { courses: CourseV1[]; byId: ReadonlyMap<string, CourseV1> }
 
-export async function loadV1Courses(onProgress: (p: LoadProgress) => void): Promise<V1Courses> {
-  const files = import.meta.glob<string>('../../../../courses/*.course.json', { query: '?raw', import: 'default' })
-  const keys = Object.keys(files).filter(k => k.startsWith(GLOB_PREFIX)).sort()
-  const assets = browserGameAssets()
+export async function loadV1Courses(onProgress: (p: LoadProgress) => void, options?: ContentOptions): Promise<V1Courses> {
+  const read = contentReader(options ?? {})
+  const index = await read('index.json') as ContentIndex
+  const entries = [...index.courses].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
+  const assets = browserGameAssets(options)
   const courses: CourseV1[] = []
-  for (let i = 0; i < keys.length; i++) {
-    const path = keys[i].slice(GLOB_PREFIX.length)
-    const text = await files[keys[i]]()
-    courses.push(await loadCourseV1(JSON.parse(text), path, assets))
-    onProgress({ phase: 'courses', done: i + 1, total: keys.length, label: path })
+  for (let i = 0; i < entries.length; i++) {
+    const { path } = entries[i]
+    courses.push(await loadCourseV1(await read(path), path, assets))
+    onProgress({ phase: 'courses', done: i + 1, total: entries.length, label: path })
   }
   const assetIds = new Set<string>()
   for (const c of courses) for (const id of c.assetIds) assetIds.add(id)

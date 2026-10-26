@@ -1,4 +1,5 @@
 // Content-capture inputs, source hashes and the in-game capture run (S22), shared by the content proofs.
+import { contentPath } from './content.ts'
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -276,14 +277,14 @@ export async function runCaptureInputs(milestone: string, inputs: readonly strin
 function sha256File(rel: string): string {
   let bytes: Buffer
   try {
-    bytes = readFileSync(join(repoRoot(), rel))
+    bytes = readFileSync(contentPath(rel))
   } catch {
     return refuse(AREA, rel, 'cannot read the file; restore it or fix the course asset')
   }
   return createHash('sha256').update(bytes).digest('hex')
 }
 
-// Inputs are read under `root`; the source files are always the repository's committed ones.
+// Inputs are read under `root`; the source files use the configured content directory.
 export async function sourcesOf(inputs: readonly string[], root: string = repoRoot()): Promise<Record<string, string>> {
   const courses = new Set<string>()
   for (const file of inputs) {

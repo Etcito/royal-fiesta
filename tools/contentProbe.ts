@@ -1,18 +1,18 @@
 // Read-only probes over authored asset files, shared by the content proofs (C2, C3, C6).
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { repoRoot } from './bricks.ts'
+import { contentPath } from './content.ts'
 import { parseGameAsset, type GameAsset } from '../packages/game/src/gameAsset.ts'
 import { refuse } from '../packages/sim/src/refusal.ts'
-import { repoRoot } from './bricks.ts'
 
 export interface AuthoredAsset { rel: string; asset: GameAsset; json: Record<string, unknown> }
 type V3 = [number, number, number]
 interface Aabb { min: V3; max: V3 }
 
-export async function loadAssetFile(rel: string): Promise<AuthoredAsset> {
+export async function loadAssetFile(rel: string, root = repoRoot()): Promise<AuthoredAsset> {
   let text: string
   try {
-    text = await readFile(join(repoRoot(), rel), 'utf8')
+    text = await readFile(contentPath(rel, root), 'utf8')
   } catch {
     return refuse('content', rel, 'file not found; save the asset there or fix the path')
   }

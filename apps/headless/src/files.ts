@@ -7,6 +7,7 @@ import type { AssetResolver } from '@royal-fiesta/game/assets'
 import { loadCourse } from '@royal-fiesta/game/course'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
+import { contentPath } from '../../../tools/content.ts'
 import { repoRoot } from '../../../tools/bricks.ts'
 
 const COURSES_DIR = 'fixtures/courses'
@@ -17,7 +18,7 @@ export function repoPath(rel: string): string {
   if (path.isAbsolute(rel) || (abs !== root && !abs.startsWith(root + path.sep))) {
     refuse('files', rel, 'path escapes the repository; use a repo-relative path')
   }
-  return abs
+  return contentPath(rel, root)
 }
 
 export async function readRepoText(rel: string): Promise<string> {

@@ -11,7 +11,7 @@ import { parsePrims } from '@royal-fiesta/game/prims'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
-import { standInFrom, v1Dressing } from '../src/content/v1Data.ts'
+import { browserGameAssets, loadV1Courses, standInFrom, v1Dressing } from '../src/content/v1Data.ts'
 
 function sha256(doc: unknown): string {
   return createHash('sha256').update(canonicalJson(doc), 'utf8').digest('hex')
@@ -111,4 +111,62 @@ test('v1Dressing.enter refuses an unknown course id', () => {
     assert.match(e.message, /^\[content\] courses\/nope\.course\.json: .*plain/)
     return true
   })
+})
+
+// Runtime resolution is exercised in Node with HTTP stubbed, without a Vite build.
+function assetJson(asset: GameAsset): unknown {
+  const { min, max } = asset.bounds
+  return { ...asset, bounds: { min: [min.x, min.y, min.z], max: [max.x, max.y, max.z] } }
+}
+
+function runtime(files: Record<string, unknown>) {
+  const requests: { url: string; cache: RequestCache | undefined }[] = []
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = String(input)
+    requests.push({ url, cache: init?.cache })
+    const value = files[url.replace('https://content.example/', '')]
+    return new Response(JSON.stringify(value), { status: value === undefined ? 404 : 200 })
+  }
+  return { options: { root: 'https://content.example', fetch: fetcher }, requests }
+}
+
+test('runtime resolves on demand, caches within the page and revalidates every request', async () => {
+  const asset = await gameAsset('candy.test', { min: [-1, -1, -1], max: [1, 1, 1] })
+  const path = 'assets/candy/candy.test.asset.json'
+  const stub = runtime({ 'index.json': { assets: [{ id: asset.id, world: 'candy', path, hash: asset.hash }], courses: [] }, [path]: assetJson(asset) })
+  const resolver = browserGameAssets(stub.options)
+  assert.equal(stub.requests.length, 0)
+  assert.equal((await resolver.resolve(asset.id)).asset.hash, asset.hash)
+  await resolver.resolve(asset.id)
+  assert.equal(stub.requests.length, 2)
+  assert.ok(stub.requests.every(r => r.cache === 'no-cache'))
+  assert.equal((await browserGameAssets(stub.options).resolve(asset.id)).asset.hash, asset.hash)
+  assert.equal(stub.requests.length, 4)
+})
+
+test('runtime unknown and duplicate ids preserve the refusals', async () => {
+  const entry = { id: 'candy.test', world: 'candy', path: 'assets/candy/candy.test.asset.json', hash: '' }
+  const unknown = runtime({ 'index.json': { assets: [entry], courses: [] } })
+  await assert.rejects(browserGameAssets(unknown.options).resolve('missing'), /unknown asset id 'missing'; add the asset file or use one of: candy.test/)
+  const duplicate = runtime({ 'index.json': { assets: [entry, { ...entry, path: 'assets/common/candy.test.asset.json' }], courses: [] } })
+  await assert.rejects(browserGameAssets(duplicate.options).resolve(entry.id), /asset id 'candy.test' is also assets\/candy\/candy.test.asset.json; ids are unique across assets\/, rename one/)
+  assert.equal(duplicate.requests.length, 1)
+})
+
+test('runtime refuses asset id and world mismatches against the file path', async () => {
+  const asset = await gameAsset('candy.test', { min: [-1, -1, -1], max: [1, 1, 1] })
+  for (const [id, path, reason] of [
+    ['candy.other', 'assets/candy/candy.other.asset.json', /id 'candy.test' does not match the file stem 'candy.other'/],
+    ['candy.test', 'assets/common/candy.test.asset.json', /world 'candy' does not match the folder 'common'/],
+  ] as const) {
+    const stub = runtime({ 'index.json': { assets: [{ id, world: 'candy', path, hash: asset.hash }], courses: [] }, [path]: assetJson(asset) })
+    await assert.rejects(browserGameAssets(stub.options).resolve(id), reason)
+  }
+})
+
+test('runtime courses fetch the index and course with no-cache and preserve parse errors', async () => {
+  const stub = runtime({ 'index.json': { assets: [], courses: [{ id: 'bad', path: 'courses/bad.course.json' }] }, 'courses/bad.course.json': {} })
+  await assert.rejects(loadV1Courses(() => {}, stub.options), (error: unknown) => error instanceof RefusalError && error.area === 'course' && error.path.startsWith('courses/bad.course.json'))
+  assert.equal(stub.requests.length, 2)
+  assert.ok(stub.requests.every(r => r.cache === 'no-cache'))
 })

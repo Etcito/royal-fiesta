@@ -106,3 +106,28 @@ Assets are never stored in git. They live in the content-addressed asset store (
 ## UI
 
 The menus and the round HUD are drawn by uaa on a WebGPU canvas from `ui/*.ui.json` and `ui/screens.ui-doc.json`. How the assets are authored, previewed and wired, the Fredoka font, and the proof command are in [docs/ui.md](docs/ui.md).
+
+### Runtime game content
+
+The web build contains code and fixture stand-ins. Game assets and courses are fetched
+at runtime with revalidation, so reloading after a Modeler save needs no rebuild.
+The default content URL is `content/` next to the page. Set `VITE_RF_CONTENT_URL`
+when building for another origin, or use `?content=<root URL>` on the page for a
+runtime override. Roots may include a trailing slash; CDN origins must allow CORS.
+
+`RF_CONTENT_DIR` selects the disk directory containing `assets/` and `courses/`;
+it defaults to the repository root. It can point at a separate content checkout.
+Local play serves that directory live under `/content/`, including a fresh index
+on every request. Node readers use the same setting. Fixture stand-ins stay in
+the game repository.
+
+The content root contains `index.json` with
+`{assets: [{id, world, path, hash}], courses: [{id, path}]}`, plus
+`assets/<world>/<id>.asset.json` and `courses/<id>.course.json`.
+The index hash is the asset file's own hash; mesh caches use that hash so changed
+documents mesh again. The Modeler must save a valid document hash.
+
+Run `npm run content:pack -- <out dir>` to copy every indexed file and write the
+index for a CDN upload. A plain `npm run build` does not copy content into dist.
+Wavedash, Etcito builds and GPU proof publication currently pack content beside
+the page; this packaging goes away when the CDN serves it.

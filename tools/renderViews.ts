@@ -1,5 +1,6 @@
 // Renders the S21 views with SDF Modeler's Node renderer (1.14 camera) into <input.out>/<subject>-<view>.png.
 // The judge card runs it first: PNGs are never committed, so every fresh worktree renders its own.
+import { contentPath } from './content.ts'
 import { execFileSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -233,7 +234,7 @@ type XYZ = { x: number; y: number; z: number }
 const aabb = (b: { min: XYZ; max: XYZ }): { min: V3; max: V3 } => ({ min: [b.min.x, b.min.y, b.min.z], max: [b.max.x, b.max.y, b.max.z] })
 
 async function loadAsset(id: string, root: string): Promise<AuthoredAsset> {
-  const hits = WORLDS.map((w) => `assets/${w}/${id}.asset.json`).filter((p) => existsSync(join(root, p)))
+  const hits = WORLDS.map((w) => `assets/${w}/${id}.asset.json`).filter((p) => existsSync(contentPath(p, root)))
   if (hits.length !== 1) refuse(AREA, `assets/<world>/${id}.asset.json`, `${hits.length} files for asset '${id}'; save exactly one`)
   return loadAssetFile(hits[0])
 }

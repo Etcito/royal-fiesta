@@ -1,5 +1,5 @@
+import { contentPath } from '../../../tools/content.ts'
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { parseColliderJson } from '@royal-fiesta/game/prims'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
@@ -57,7 +57,7 @@ async function tryLoad(rel: string, notes: string[]): Promise<AuthoredAsset | nu
 
 async function fileBytes(rel: string): Promise<number | null> {
   try {
-    return (await readFile(join(repoRoot(), rel))).length
+    return (await readFile(contentPath(rel))).length
   } catch {
     return null
   }
@@ -192,7 +192,7 @@ interface Shape { name: string; assets: string[]; views: string[] }
 async function readJson(rel: string): Promise<unknown | null> {
   let text: string
   try {
-    text = await readFile(join(repoRoot(), rel), 'utf8')
+    text = await readFile(contentPath(rel), 'utf8')
   } catch {
     return null
   }

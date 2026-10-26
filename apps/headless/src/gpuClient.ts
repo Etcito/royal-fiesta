@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { packContent } from '../../../tools/content.ts'
 import { join } from 'node:path'
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
 
@@ -81,7 +83,16 @@ async function run(args: string[], where: string): Promise<string> {
 }
 
 export async function publishDist(dist: string): Promise<string> {
-  const stdout = await run(['publish', dist], dist)
+  const bundle = mkdtempSync(join(tmpdir(), 'rf-publish-'))
+  let stdout: string
+  try {
+    cpSync(dist, bundle, { recursive: true })
+    // Remove this bundled content when the CDN serves it.
+    packContent(join(bundle, 'content'))
+    stdout = await run(['publish', bundle], dist)
+  } finally {
+    rmSync(bundle, { recursive: true, force: true })
+  }
   let result: unknown
   try { result = JSON.parse(stdout) as unknown } catch {
     return fail(dist, 'publish returned invalid JSON; check the GPU client response')

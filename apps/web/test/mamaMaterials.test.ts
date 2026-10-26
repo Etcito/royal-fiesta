@@ -1,3 +1,6 @@
+import { contentDir } from '../../../tools/content.ts'
+import { pathToFileURL } from 'node:url'
+import { join } from 'node:path'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
@@ -100,7 +103,7 @@ test('every content material and MAMA pattern carries its shared shader dependen
   for (const id of Object.keys(helpers.HELPERS).filter(id => id.startsWith('pat_'))) {
     check(await convert({ id, graph: { wgslBody: body, helpers: [id], constants: new Uint32Array() }, error: null }))
   }
-  const assets = new URL('../../../assets/', import.meta.url)
+  const assets = pathToFileURL(join(contentDir(), 'assets') + '/')
   let count = 0
   for (const world of readdirSync(assets, { withFileTypes: true }).filter(entry => entry.isDirectory())) {
     const dir = new URL(`${world.name}/`, assets)

@@ -1,13 +1,13 @@
 // Views record (S21): hashes the SDF Modeler view PNGs against the committed asset files.
 // The proofs read only this record and the assets, never the PNGs (1.10, 1.14).
+import { contentPath } from './content.ts'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { decodePng, pngNonEmpty } from '../apps/headless/src/gpuRecord.ts'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
 import { loadAssetFile } from './contentProbe.ts'
-import { repoRoot } from './bricks.ts'
 
 const AREA = 'views'
 const USAGE = 'usage: node --experimental-strip-types tools/viewsRecord.ts <views.input.json>'
@@ -96,7 +96,7 @@ function parseViewsInput(json: unknown, path: string): ViewsInput {
 
 // One file per id across the S14 worlds; a missing or doubled id is refused.
 function assetPath(id: string, root: string): string {
-  const hits = WORLDS.map(w => `assets/${w}/${id}.asset.json`).filter(rel => existsSync(join(root, rel)))
+  const hits = WORLDS.map(w => `assets/${w}/${id}.asset.json`).filter(rel => existsSync(contentPath(rel, root)))
   if (hits.length !== 1) {
     const what = hits.length === 0 ? 'no file' : `${hits.length} files (${hits.join(', ')})`
     refuse(AREA, `assets/<world>/${id}.asset.json`, `${what} for asset '${id}'; save exactly one assets/<world>/${id}.asset.json`)
@@ -104,9 +104,9 @@ function assetPath(id: string, root: string): string {
   return hits[0]
 }
 
-// loadAssetFile resolves against the repository, so point it at the same file under root.
+// Read the same content directory used to resolve the asset.
 async function assetHash(rel: string, root: string): Promise<string> {
-  return (await loadAssetFile(relative(repoRoot(), resolve(root, rel)))).asset.hash
+  return (await loadAssetFile(rel, root)).asset.hash
 }
 
 export async function buildViewsRecord(input: ViewsInput, root: string): Promise<ViewsRecord> {

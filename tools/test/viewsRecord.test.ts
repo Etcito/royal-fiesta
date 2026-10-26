@@ -1,3 +1,4 @@
+import { contentPath } from '../content.ts'
 import assert from 'node:assert/strict'
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -50,7 +51,7 @@ const varied = (x: number, y: number): number[] => [(x * 37) & 255, (y * 11) & 2
 function tempRoot(): string {
   const root = mkdtempSync(join(tmpdir(), 'views-record-'))
   mkdirSync(join(root, 'assets/common'), { recursive: true })
-  copyFileSync(join(repoRoot(), BODY), join(root, BODY))
+  copyFileSync(contentPath(BODY), join(root, BODY))
   mkdirSync(join(root, 'out/c2'), { recursive: true })
   writeFileSync(join(root, 'out/c2/penguin-front.png'), makePng(SIZE, SIZE, varied))
   writeFileSync(join(root, 'out/c2/penguin-back.png'), makePng(SIZE, SIZE, () => [90, 90, 90]))
@@ -62,7 +63,7 @@ const input = (): ViewsInput => ({
   subjects: [{ name: 'penguin', assets: ['penguin.body'], views: ['front', 'back'] }],
 })
 
-const assetHash = (): string => JSON.parse(readFileSync(join(repoRoot(), BODY), 'utf8')).hash
+const assetHash = (): string => JSON.parse(readFileSync(contentPath(BODY), 'utf8')).hash
 
 test('the record hashes the asset and flags a uniform view as empty', async () => {
   const root = tempRoot()

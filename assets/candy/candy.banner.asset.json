@@ -7,7 +7,12 @@
   "category": "scenery",
   "world": "candy",
   "mesher": {
-    "output": "paramesh"
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
   },
   "document": {
     "format": "sdfm",
@@ -53,357 +58,710 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "base": {
         "id": "base",
         "name": "base",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.08, 0]
         },
         "round": 0.05,
         "material": "m_pink",
-        "params": {
-          "height": 0.16,
-          "radius": 0.34
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.34, 0, 0],
+              [-0.34, 0, 0],
+              [0, 0.08, 0],
+              [0, -0.08, 0],
+              [0, 0, 0.34],
+              [0, 0, -0.34]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "base_cap": {
         "id": "base_cap",
         "name": "base-cap",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.2, 0]
         },
         "round": 0.03,
         "material": "m_yellow",
-        "params": {
-          "height": 0.1,
-          "radius": 0.2
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.2, 0, 0],
+              [-0.2, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "pole_1": {
         "id": "pole_1",
         "name": "pole-1",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.4425, 0]
         },
         "material": "m_white",
-        "params": {
-          "height": 0.445,
-          "radius": 0.075
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.2225, 0],
+              [0, -0.2225, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "pole_2": {
         "id": "pole_2",
         "name": "pole-2",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.8875, 0]
         },
         "material": "m_pink",
-        "params": {
-          "height": 0.445,
-          "radius": 0.075
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.2225, 0],
+              [0, -0.2225, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "pole_3": {
         "id": "pole_3",
         "name": "pole-3",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 1.3325, 0]
         },
         "material": "m_white",
-        "params": {
-          "height": 0.445,
-          "radius": 0.075
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.2225, 0],
+              [0, -0.2225, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "pole_4": {
         "id": "pole_4",
         "name": "pole-4",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 1.7775, 0]
         },
         "material": "m_pink",
-        "params": {
-          "height": 0.445,
-          "radius": 0.075
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.2225, 0],
+              [0, -0.2225, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "pole_5": {
         "id": "pole_5",
         "name": "pole-5",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 2.2225, 0]
         },
         "material": "m_white",
-        "params": {
-          "height": 0.445,
-          "radius": 0.075
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.2225, 0],
+              [0, -0.2225, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "pole_6": {
         "id": "pole_6",
         "name": "pole-6",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 2.6675, 0]
         },
         "material": "m_pink",
-        "params": {
-          "height": 0.445,
-          "radius": 0.075
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.2225, 0],
+              [0, -0.2225, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "pole_7": {
         "id": "pole_7",
         "name": "pole-7",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 3.1125, 0]
         },
         "material": "m_white",
-        "params": {
-          "height": 0.445,
-          "radius": 0.075
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.2225, 0],
+              [0, -0.2225, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "pole_8": {
         "id": "pole_8",
         "name": "pole-8",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 3.5575, 0]
         },
         "material": "m_pink",
-        "params": {
-          "height": 0.445,
-          "radius": 0.075
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.2225, 0],
+              [0, -0.2225, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "top_ball": {
         "id": "top_ball",
         "name": "top-ball",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 3.8, 0]
         },
         "material": "m_yellow",
-        "params": {
-          "radius": 0.17
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.17, 0, 0],
+              [-0.17, 0, 0],
+              [0, 0.17, 0],
+              [0, -0.17, 0],
+              [0, 0, 0.17],
+              [0, 0, -0.17]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         }
       },
       "crossbar": {
         "id": "crossbar",
         "name": "crossbar",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 3.58, 0.05],
           "rotation": [0, 0, 90]
         },
         "material": "m_yellow",
-        "params": {
-          "height": 1.56,
-          "radius": 0.065
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.065, 0, 0],
+              [-0.065, 0, 0],
+              [0, 0.78, 0],
+              [0, -0.78, 0],
+              [0, 0, 0.065],
+              [0, 0, -0.065]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         }
       },
       "bar_knob": {
         "id": "bar_knob",
         "name": "bar-knob",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [0.8, 3.58, 0.05]
         },
         "material": "m_yellow",
-        "params": {
-          "radius": 0.12
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.12, 0, 0],
+              [-0.12, 0, 0],
+              [0, 0.12, 0],
+              [0, -0.12, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         }
       },
       "flag": {
         "id": "flag",
         "name": "flag",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 2.37, 0.12]
         },
         "round": 0.025,
         "material": "m_blue",
-        "params": {
-          "size": [1.24, 2.12, 0.06]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.62, 0, 0],
+              [-0.62, 0, 0],
+              [0, 1.06, 0],
+              [0, -1.06, 0],
+              [0, 0, 0.03],
+              [0, 0, -0.03]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         }
       },
       "flag_hem": {
         "id": "flag_hem",
         "name": "flag-hem",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 3.44, 0.12]
         },
         "round": 0.04,
         "material": "m_pink",
-        "params": {
-          "size": [1.32, 0.16, 0.11]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.66, 0, 0],
+              [-0.66, 0, 0],
+              [0, 0.08, 0],
+              [0, -0.08, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         }
       },
       "flag_band": {
         "id": "flag_band",
         "name": "flag-hem-bottom",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 1.31, 0.12]
         },
         "round": 0.04,
         "material": "m_pink",
-        "params": {
-          "size": [1.3, 0.12, 0.1]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.65, 0, 0],
+              [-0.65, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 0.05],
+              [0, 0, -0.05]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         }
       },
       "crown": {
         "id": "crown",
         "name": "crown",
-        "kind": "extrude",
+        "kind": "sweep",
         "transform": {
           "position": [0, 2.9, 0.12]
         },
-        "round": 0.015,
         "material": "m_yellow",
         "params": {
-          "depth": 0.1,
-          "profile": {
+          "path": {
+            "type": "polyline",
+            "closed": false,
             "points": [
               {
-                "p": [-0.3, -0.2]
+                "p": [0, 0, -0.05]
               },
               {
-                "p": [0.3, -0.2]
-              },
-              {
-                "p": [0.36, 0.2]
-              },
-              {
-                "p": [0.16, 0.04]
-              },
-              {
-                "p": [0, 0.26]
-              },
-              {
-                "p": [-0.16, 0.04]
-              },
-              {
-                "p": [-0.36, 0.2]
+                "p": [0, 0, 0.05]
               }
             ]
-          }
+          },
+          "stations": [
+            {
+              "t": 0,
+              "shape": "classic-extrude:crown"
+            }
+          ]
         }
       },
       "jewel_l": {
         "id": "jewel_l",
         "name": "jewel-l",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.36, 3.11, 0.12]
         },
         "material": "m_yellow",
-        "params": {
-          "radius": 0.06
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.06, 0, 0],
+              [-0.06, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 0.06],
+              [0, 0, -0.06]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         }
       },
       "jewel_c": {
         "id": "jewel_c",
         "name": "jewel-c",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 3.17, 0.12]
         },
         "material": "m_yellow",
-        "params": {
-          "radius": 0.06
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.06, 0, 0],
+              [-0.06, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 0.06],
+              [0, 0, -0.06]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         }
       },
       "jewel_r": {
         "id": "jewel_r",
         "name": "jewel-r",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [0.36, 3.11, 0.12]
         },
         "material": "m_yellow",
-        "params": {
-          "radius": 0.06
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.06, 0, 0],
+              [-0.06, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 0.06],
+              [0, 0, -0.06]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         }
       },
       "bar_knob_l": {
         "id": "bar_knob_l",
         "name": "bar-knob-l",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.8, 3.58, 0.05]
         },
         "material": "m_yellow",
-        "params": {
-          "radius": 0.12
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.12, 0, 0],
+              [-0.12, 0, 0],
+              [0, 0.12, 0],
+              [0, -0.12, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "flag_yellow": {
         "id": "flag_yellow",
         "name": "flag-yellow",
-        "kind": "extrude",
+        "kind": "sweep",
         "transform": {
           "position": [0, 1.7, 0.12]
         },
         "material": "m_yellow",
         "params": {
-          "depth": 0.075,
-          "profile": {
+          "path": {
+            "type": "polyline",
+            "closed": false,
             "points": [
               {
-                "p": [-0.62, -0.39]
+                "p": [0, 0, -0.0375]
               },
               {
-                "p": [0.62, -0.39]
-              },
-              {
-                "p": [0.62, 0.02]
-              },
-              {
-                "p": [-0.62, 0.42]
+                "p": [0, 0, 0.0375]
               }
             ]
-          }
+          },
+          "stations": [
+            {
+              "t": 0,
+              "shape": "classic-extrude:flag_yellow"
+            }
+          ]
         },
         "gameCollision": false
       },
       "flag_orange": {
         "id": "flag_orange",
         "name": "flag-orange",
-        "kind": "extrude",
+        "kind": "sweep",
         "transform": {
           "position": [0, 1.7, 0.12]
         },
         "material": "m1",
         "params": {
-          "depth": 0.085,
-          "profile": {
+          "path": {
+            "type": "polyline",
+            "closed": false,
             "points": [
               {
-                "p": [-0.62, -0.39]
+                "p": [0, 0, -0.0425]
               },
               {
-                "p": [0.05, -0.39]
-              },
-              {
-                "p": [-0.62, 0]
+                "p": [0, 0, 0.0425]
               }
             ]
-          }
+          },
+          "stations": [
+            {
+              "t": 0,
+              "shape": "classic-extrude:flag_orange"
+            }
+          ]
         },
         "gameCollision": false
       }
@@ -494,6 +852,68 @@
           "links": []
         }
       }
+    },
+    "shapes": {
+      "classic-extrude:crown": {
+        "profile": {
+          "points": [
+            {
+              "p": [-0.3, -0.2]
+            },
+            {
+              "p": [0.3, -0.2]
+            },
+            {
+              "p": [0.36, 0.2]
+            },
+            {
+              "p": [0.16, 0.04]
+            },
+            {
+              "p": [0, 0.26]
+            },
+            {
+              "p": [-0.16, 0.04]
+            },
+            {
+              "p": [-0.36, 0.2]
+            }
+          ]
+        }
+      },
+      "classic-extrude:flag_yellow": {
+        "profile": {
+          "points": [
+            {
+              "p": [-0.62, -0.39]
+            },
+            {
+              "p": [0.62, -0.39]
+            },
+            {
+              "p": [0.62, 0.02]
+            },
+            {
+              "p": [-0.62, 0.42]
+            }
+          ]
+        }
+      },
+      "classic-extrude:flag_orange": {
+        "profile": {
+          "points": [
+            {
+              "p": [-0.62, -0.39]
+            },
+            {
+              "p": [0.05, -0.39]
+            },
+            {
+              "p": [-0.62, 0]
+            }
+          ]
+        }
+      }
     }
   },
   "collision": [],
@@ -502,5 +922,5 @@
     "min": [-0.92, 0, -0.34],
     "max": [0.92, 3.97, 0.34]
   },
-  "hash": "6db4178a7ef64d7bb3ba69516a2e318f3add95cbdccb558c8f83f06ab83e0245"
+  "hash": "7016e2882fa876c3e57f28c2c3e6a473d70e9ebd69c59f918138ed3f6da79c6e"
 }

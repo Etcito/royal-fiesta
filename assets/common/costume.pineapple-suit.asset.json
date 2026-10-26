@@ -7,7 +7,7 @@
   "category": "cosmetic",
   "world": "common",
   "mesher": {
-    "output": "quad"
+    "output": "lowpoly"
   },
   "document": {
     "format": "sdfm",
@@ -37,7 +37,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "lowpoly"
         },
         "gameCollision": true
       },
@@ -50,27 +50,71 @@
       "shell": {
         "id": "shell",
         "name": "shell",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.2, 0]
         },
         "material": "m8",
-        "params": {
-          "radii": [0.5, 0.52, 0.48]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.52, 0],
+              [0, -0.52, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shell_hem": {
         "id": "shell_hem",
         "name": "shell_hem",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.5, 0.01]
         },
         "smooth": 0.08,
         "material": "m8",
-        "params": {
-          "radii": [0.44, 0.2, 0.43]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.44, 0, 0],
+              [-0.44, 0, 0],
+              [0, 0.2, 0],
+              [0, -0.2, 0],
+              [0, 0, 0.43],
+              [0, 0, -0.43]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -114,14 +158,55 @@
       "lattice_cw_ring": {
         "id": "lattice_cw_ring",
         "name": "lattice_cw_ring",
-        "kind": "torus",
+        "kind": "paramesh",
         "transform": {
           "rotation": [90, 0, 0]
         },
         "material": "m9",
-        "params": {
-          "majorRadius": 0.49,
-          "minorRadius": 0.018
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "torus",
+            "radius": 1,
+            "points": [
+              [0.508, 0, 0],
+              [0.49, 0.018, 0],
+              [0.472, 0, 0],
+              [0.49, -0.018, 0],
+              [0, 0, 0.508],
+              [0, 0.018, 0.49],
+              [0, 0, 0.472],
+              [0, -0.018, 0.49],
+              [-0.508, 0, 0],
+              [-0.49, 0.018, 0],
+              [-0.472, 0, 0],
+              [-0.49, -0.018, 0],
+              [0, 0, -0.508],
+              [0, 0.018, -0.49],
+              [0, 0, -0.472],
+              [0, -0.018, -0.49]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -165,30 +250,112 @@
       "lattice_ccw_ring": {
         "id": "lattice_ccw_ring",
         "name": "lattice_ccw_ring",
-        "kind": "torus",
+        "kind": "paramesh",
         "transform": {
           "rotation": [90, 0, 0]
         },
         "material": "m9",
-        "params": {
-          "majorRadius": 0.49,
-          "minorRadius": 0.018
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "torus",
+            "radius": 1,
+            "points": [
+              [0.508, 0, 0],
+              [0.49, 0.018, 0],
+              [0.472, 0, 0],
+              [0.49, -0.018, 0],
+              [0, 0, 0.508],
+              [0, 0.018, 0.49],
+              [0, 0, 0.472],
+              [0, -0.018, 0.49],
+              [-0.508, 0, 0],
+              [-0.49, 0.018, 0],
+              [-0.472, 0, 0],
+              [-0.49, -0.018, 0],
+              [0, 0, -0.508],
+              [0, 0.018, -0.49],
+              [0, 0, -0.472],
+              [0, -0.018, -0.49]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "strap": {
         "id": "strap",
         "name": "strap",
-        "kind": "torus",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.2, 0],
           "rotation": [0, 0, 50],
           "scale": [1, 1.8, 1]
         },
         "material": "m11",
-        "params": {
-          "majorRadius": 0.5,
-          "minorRadius": 0.03
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "torus",
+            "radius": 1,
+            "points": [
+              [0.53, 0, 0],
+              [0.5, 0.03, 0],
+              [0.47, 0, 0],
+              [0.5, -0.03, 0],
+              [0, 0, 0.53],
+              [0, 0.03, 0.5],
+              [0, 0, 0.47],
+              [0, -0.03, 0.5],
+              [-0.53, 0, 0],
+              [-0.5, 0.03, 0],
+              [-0.47, 0, 0],
+              [-0.5, -0.03, 0],
+              [0, 0, -0.53],
+              [0, 0.03, -0.5],
+              [0, 0, -0.47],
+              [0, -0.03, -0.5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -207,29 +374,82 @@
       "crown_base": {
         "id": "crown_base",
         "name": "crown_base",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.84, 0]
         },
         "material": "m10",
-        "params": {
-          "radii": [0.09, 0.05, 0.09]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.09, 0, 0],
+              [-0.09, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "leaf_mid": {
         "id": "leaf_mid",
         "name": "leaf_mid",
-        "kind": "cone",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 1.02, 0],
           "scale": [1, 1, 0.4]
         },
         "material": "m10",
-        "params": {
-          "height": 0.38,
-          "radiusBottom": 0.07,
-          "radiusTop": 0
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.035035, 0, 0],
+              [-0.035035, 0, 0],
+              [0, 0.19, 0],
+              [0, -0.19, 0],
+              [0, 0, 0.035035],
+              [0, 0, -0.035035]
+            ],
+            "normals": [
+              [0.983485, 0.180987, 0],
+              [-0.983485, 0.180987, 0],
+              [0, 1, 0],
+              [0, -1, 0],
+              [0, 0.180987, 0.983485],
+              [0, 0.180987, -0.983485]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {},
+            "cage": [
+              [-0.07, -0.19, -0.07],
+              [0.07, -0.19, -0.07],
+              [-0.00007000000000000001, 0.19, -0.00007000000000000001],
+              [0.00007000000000000001, 0.19, -0.00007000000000000001],
+              [-0.07, -0.19, 0.07],
+              [0.07, -0.19, 0.07],
+              [-0.00007000000000000001, 0.19, 0.00007000000000000001],
+              [0.00007000000000000001, 0.19, 0.00007000000000000001]
+            ]
+          }
         },
         "gameCollision": false
       },
@@ -257,17 +477,48 @@
       "leaf_outer": {
         "id": "leaf_outer",
         "name": "leaf_outer",
-        "kind": "cone",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.95, 0.1],
           "rotation": [40, 0, 0],
           "scale": [1, 1, 0.4]
         },
         "material": "m10",
-        "params": {
-          "height": 0.3,
-          "radiusBottom": 0.085,
-          "radiusTop": 0
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.042543, 0, 0],
+              [-0.042543, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 0.042543],
+              [0, 0, -0.042543]
+            ],
+            "normals": [
+              [0.962198, 0.27235, 0],
+              [-0.962198, 0.27235, 0],
+              [0, 1, 0],
+              [0, -1, 0],
+              [0, 0.27235, 0.962198],
+              [0, 0.27235, -0.962198]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {},
+            "cage": [
+              [-0.085, -0.15, -0.085],
+              [0.085, -0.15, -0.085],
+              [-0.000085, 0.15, -0.000085],
+              [0.000085, 0.15, -0.000085],
+              [-0.085, -0.15, 0.085],
+              [0.085, -0.15, 0.085],
+              [-0.000085, 0.15, 0.000085],
+              [0.000085, 0.15, 0.000085]
+            ]
+          }
         },
         "gameCollision": false
       },
@@ -298,17 +549,48 @@
       "leaf_inner": {
         "id": "leaf_inner",
         "name": "leaf_inner",
-        "kind": "cone",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.99, 0.05],
           "rotation": [20, 0, 0],
           "scale": [1, 1, 0.4]
         },
         "material": "m10",
-        "params": {
-          "height": 0.33,
-          "radiusBottom": 0.075,
-          "radiusTop": 0
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.037538, 0, 0],
+              [-0.037537, 0, 0],
+              [0, 0.165, 0],
+              [0, -0.165, 0],
+              [0, 0, 0.037537],
+              [0, 0, -0.037537]
+            ],
+            "normals": [
+              [0.975181, 0.22141, 0],
+              [-0.975181, 0.22141, 0],
+              [0, 1, 0],
+              [0, -1, 0],
+              [0, 0.22141, 0.975181],
+              [0, 0.22141, -0.975181]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {},
+            "cage": [
+              [-0.075, -0.165, -0.075],
+              [0.075, -0.165, -0.075],
+              [-0.000075, 0.165, -0.000075],
+              [0.000075, 0.165, -0.000075],
+              [-0.075, -0.165, 0.075],
+              [0.075, -0.165, 0.075],
+              [-0.000075, 0.165, 0.000075],
+              [0.000075, 0.165, 0.000075]
+            ]
+          }
         },
         "gameCollision": false
       }
@@ -395,5 +677,5 @@
     "min": [-0.677947, -0.78, -0.677947],
     "max": [0.677947, 1.21, 0.677947]
   },
-  "hash": "414f71e90e7690949b2be95d115811ee12f053b64407007d8a6b494a9406aec4"
+  "hash": "b982470dd9030550136a47b306ad23f220f946f4e9f1251ad714713eab2ea00b"
 }

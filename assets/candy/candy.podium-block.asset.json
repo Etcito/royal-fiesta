@@ -7,7 +7,12 @@
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "paramesh"
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
   },
   "document": {
     "format": "sdfm",
@@ -37,217 +42,248 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         },
         "gameCollision": false
       },
       "collider_block": {
         "id": "collider_block",
         "name": "collider-block",
-        "kind": "box",
+        "kind": "paramesh",
         "visible": false,
-        "params": {
-          "size": [2, 1, 2]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1, 0, 0],
+              [-1, 0, 0],
+              [0, 0.5, 0],
+              [0, -0.5, 0],
+              [0, 0, 1],
+              [0, 0, -1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": true
       },
       "core": {
         "id": "core",
         "name": "core",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.02, 0]
         },
         "round": 0.18,
         "material": "candy-pink",
-        "params": {
-          "size": [1.96, 0.66, 1.96]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.98, 0, 0],
+              [-0.98, 0, 0],
+              [0, 0.33, 0],
+              [0, -0.33, 0],
+              [0, 0, 0.98],
+              [0, 0, -0.98]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "rim_low": {
         "id": "rim_low",
         "name": "rim-low",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.38, 0]
         },
         "smooth": 0.04,
         "round": 0.12,
         "material": "candy-yellow",
-        "params": {
-          "size": [2.12, 0.24, 2.12]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.06, 0, 0],
+              [-1.06, 0, 0],
+              [0, 0.12, 0],
+              [0, -0.12, 0],
+              [0, 0, 1.06],
+              [0, 0, -1.06]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "rim_top": {
         "id": "rim_top",
         "name": "rim-top",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.33, 0]
         },
         "smooth": 0.04,
         "round": 0.11,
         "material": "candy-yellow",
-        "params": {
-          "size": [2.12, 0.22, 2.12]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.06, 0, 0],
+              [-1.06, 0, 0],
+              [0, 0.11, 0],
+              [0, -0.11, 0],
+              [0, 0, 1.06],
+              [0, 0, -1.06]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "cushion": {
         "id": "cushion",
         "name": "cushion",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.45, 0]
         },
         "smooth": 0.03,
         "round": 0.1,
         "material": "candy-blue",
-        "params": {
-          "size": [1.8, 0.2, 1.8]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.9, 0, 0],
+              [-0.9, 0, 0],
+              [0, 0.1, 0],
+              [0, -0.1, 0],
+              [0, 0, 0.9],
+              [0, 0, -0.9]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "zigzag_z": {
         "id": "zigzag_z",
         "name": "zigzag-z",
-        "kind": "extrude",
-        "round": 0.015,
+        "kind": "sweep",
         "material": "candy-white",
         "params": {
-          "depth": 2.03,
-          "profile": {
+          "path": {
+            "type": "polyline",
+            "closed": false,
             "points": [
               {
-                "p": [-0.82, -0.07]
+                "p": [0, 0, -1.015]
               },
               {
-                "p": [-0.615, -0.23]
-              },
-              {
-                "p": [-0.41, -0.07]
-              },
-              {
-                "p": [-0.205, -0.23]
-              },
-              {
-                "p": [0, -0.07]
-              },
-              {
-                "p": [0.205, -0.23]
-              },
-              {
-                "p": [0.41, -0.07]
-              },
-              {
-                "p": [0.615, -0.23]
-              },
-              {
-                "p": [0.82, -0.07]
-              },
-              {
-                "p": [0.82, 0.06]
-              },
-              {
-                "p": [0.615, -0.1]
-              },
-              {
-                "p": [0.41, 0.06]
-              },
-              {
-                "p": [0.205, -0.1]
-              },
-              {
-                "p": [0, 0.06]
-              },
-              {
-                "p": [-0.205, -0.1]
-              },
-              {
-                "p": [-0.41, 0.06]
-              },
-              {
-                "p": [-0.615, -0.1]
-              },
-              {
-                "p": [-0.82, 0.06]
+                "p": [0, 0, 1.015]
               }
             ]
-          }
+          },
+          "stations": [
+            {
+              "t": 0,
+              "shape": "classic-extrude:zigzag_z"
+            }
+          ]
         },
         "gameCollision": false
       },
       "zigzag_x": {
         "id": "zigzag_x",
         "name": "zigzag-x",
-        "kind": "extrude",
+        "kind": "sweep",
         "transform": {
           "rotation": [0, 90, 0]
         },
-        "round": 0.015,
         "material": "candy-white",
         "params": {
-          "depth": 2.03,
-          "profile": {
+          "path": {
+            "type": "polyline",
+            "closed": false,
             "points": [
               {
-                "p": [-0.82, -0.07]
+                "p": [0, 0, -1.015]
               },
               {
-                "p": [-0.615, -0.23]
-              },
-              {
-                "p": [-0.41, -0.07]
-              },
-              {
-                "p": [-0.205, -0.23]
-              },
-              {
-                "p": [0, -0.07]
-              },
-              {
-                "p": [0.205, -0.23]
-              },
-              {
-                "p": [0.41, -0.07]
-              },
-              {
-                "p": [0.615, -0.23]
-              },
-              {
-                "p": [0.82, -0.07]
-              },
-              {
-                "p": [0.82, 0.06]
-              },
-              {
-                "p": [0.615, -0.1]
-              },
-              {
-                "p": [0.41, 0.06]
-              },
-              {
-                "p": [0.205, -0.1]
-              },
-              {
-                "p": [0, 0.06]
-              },
-              {
-                "p": [-0.205, -0.1]
-              },
-              {
-                "p": [-0.41, 0.06]
-              },
-              {
-                "p": [-0.615, -0.1]
-              },
-              {
-                "p": [-0.82, 0.06]
+                "p": [0, 0, 1.015]
               }
             ]
-          }
+          },
+          "stations": [
+            {
+              "t": 0,
+              "shape": "classic-extrude:zigzag_x"
+            }
+          ]
         },
         "gameCollision": false
       }
@@ -317,6 +353,128 @@
           "links": []
         }
       }
+    },
+    "shapes": {
+      "classic-extrude:zigzag_z": {
+        "profile": {
+          "points": [
+            {
+              "p": [-0.82, -0.07]
+            },
+            {
+              "p": [-0.615, -0.23]
+            },
+            {
+              "p": [-0.41, -0.07]
+            },
+            {
+              "p": [-0.205, -0.23]
+            },
+            {
+              "p": [0, -0.07]
+            },
+            {
+              "p": [0.205, -0.23]
+            },
+            {
+              "p": [0.41, -0.07]
+            },
+            {
+              "p": [0.615, -0.23]
+            },
+            {
+              "p": [0.82, -0.07]
+            },
+            {
+              "p": [0.82, 0.06]
+            },
+            {
+              "p": [0.615, -0.1]
+            },
+            {
+              "p": [0.41, 0.06]
+            },
+            {
+              "p": [0.205, -0.1]
+            },
+            {
+              "p": [0, 0.06]
+            },
+            {
+              "p": [-0.205, -0.1]
+            },
+            {
+              "p": [-0.41, 0.06]
+            },
+            {
+              "p": [-0.615, -0.1]
+            },
+            {
+              "p": [-0.82, 0.06]
+            }
+          ]
+        }
+      },
+      "classic-extrude:zigzag_x": {
+        "profile": {
+          "points": [
+            {
+              "p": [-0.82, -0.07]
+            },
+            {
+              "p": [-0.615, -0.23]
+            },
+            {
+              "p": [-0.41, -0.07]
+            },
+            {
+              "p": [-0.205, -0.23]
+            },
+            {
+              "p": [0, -0.07]
+            },
+            {
+              "p": [0.205, -0.23]
+            },
+            {
+              "p": [0.41, -0.07]
+            },
+            {
+              "p": [0.615, -0.23]
+            },
+            {
+              "p": [0.82, -0.07]
+            },
+            {
+              "p": [0.82, 0.06]
+            },
+            {
+              "p": [0.615, -0.1]
+            },
+            {
+              "p": [0.41, 0.06]
+            },
+            {
+              "p": [0.205, -0.1]
+            },
+            {
+              "p": [0, 0.06]
+            },
+            {
+              "p": [-0.205, -0.1]
+            },
+            {
+              "p": [-0.41, 0.06]
+            },
+            {
+              "p": [-0.615, -0.1]
+            },
+            {
+              "p": [-0.82, 0.06]
+            }
+          ]
+        }
+      }
     }
   },
   "collision": [
@@ -332,5 +490,5 @@
     "min": [-1.1, -0.54, -1.1],
     "max": [1.1, 0.58, 1.1]
   },
-  "hash": "8f3f27c2b9f29876d3220d8c079114658571852c7aa3ebb2dd8e4d2f056834d8"
+  "hash": "61a1c72f204591506e2e7a10ae77e7768a05f4085efda8d56182790d568bd59b"
 }

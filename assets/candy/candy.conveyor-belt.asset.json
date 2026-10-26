@@ -38,10 +38,32 @@
       "collider": {
         "id": "collider",
         "name": "collider",
-        "kind": "box",
+        "kind": "paramesh",
         "visible": false,
-        "params": {
-          "size": [4, 0.5, 12]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [2, 0, 0],
+              [-2, 0, 0],
+              [0, 0.25, 0],
+              [0, -0.25, 0],
+              [0, 0, 6],
+              [0, 0, -6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": true
       },
@@ -59,20 +81,47 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "rim": {
         "id": "rim",
         "name": "rim",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.15, 0]
         },
         "round": 0.18,
         "material": "candy-pink",
-        "params": {
-          "size": [4, 0.9, 12]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [2, 0, 0],
+              [-2, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 6],
+              [0, 0, -6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -90,7 +139,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "zigzag_r": {
@@ -177,7 +231,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "zigzag_l": {
@@ -277,20 +336,47 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "cushion_0": {
         "id": "cushion_0",
         "name": "cushion 0",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.3, -4.4]
         },
         "round": 0.2,
         "material": "candy-pink",
-        "params": {
-          "size": [2.736, 0.4, 2.08]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.368, 0, 0],
+              [-1.368, 0, 0],
+              [0, 0.2, 0],
+              [0, -0.2, 0],
+              [0, 0, 1.04],
+              [0, 0, -1.04]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -308,20 +394,47 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "cushion_1": {
         "id": "cushion_1",
         "name": "cushion 1",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.3, -2.2]
         },
         "round": 0.2,
         "material": "candy-pink",
-        "params": {
-          "size": [2.736, 0.4, 2.08]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.368, 0, 0],
+              [-1.368, 0, 0],
+              [0, 0.2, 0],
+              [0, -0.2, 0],
+              [0, 0, 1.04],
+              [0, 0, -1.04]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -339,20 +452,47 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "cushion_2": {
         "id": "cushion_2",
         "name": "cushion 2",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.3, 0]
         },
         "round": 0.2,
         "material": "candy-pink",
-        "params": {
-          "size": [2.736, 0.4, 2.08]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.368, 0, 0],
+              [-1.368, 0, 0],
+              [0, 0.2, 0],
+              [0, -0.2, 0],
+              [0, 0, 1.04],
+              [0, 0, -1.04]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -370,20 +510,47 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "cushion_3": {
         "id": "cushion_3",
         "name": "cushion 3",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.3, 2.2]
         },
         "round": 0.2,
         "material": "candy-pink",
-        "params": {
-          "size": [2.736, 0.4, 2.08]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.368, 0, 0],
+              [-1.368, 0, 0],
+              [0, 0.2, 0],
+              [0, -0.2, 0],
+              [0, 0, 1.04],
+              [0, 0, -1.04]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -401,20 +568,47 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "cushion_4": {
         "id": "cushion_4",
         "name": "cushion 4",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.3, 4.4]
         },
         "round": 0.2,
         "material": "candy-pink",
-        "params": {
-          "size": [2.736, 0.4, 2.08]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.368, 0, 0],
+              [-1.368, 0, 0],
+              [0, 0.2, 0],
+              [0, -0.2, 0],
+              [0, 0, 1.04],
+              [0, 0, -1.04]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -432,22 +626,41 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "cap_front": {
         "id": "cap_front",
         "name": "cap-front",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.04, 6],
           "rotation": [0, 0, 90]
         },
         "round": 0.14,
         "material": "candy-blue",
-        "params": {
-          "height": 4.2,
-          "radius": 0.48
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.48, 0, 0],
+              [-0.48, 0, 0],
+              [0, 2.1, 0],
+              [0, -2.1, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -465,22 +678,41 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "cap_back": {
         "id": "cap_back",
         "name": "cap-back",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.04, -6],
           "rotation": [0, 0, 90]
         },
         "round": 0.14,
         "material": "candy-blue",
-        "params": {
-          "height": 4.2,
-          "radius": 0.48
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.48, 0, 0],
+              [-0.48, 0, 0],
+              [0, 2.1, 0],
+              [0, -2.1, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -498,21 +730,40 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "bolster_r": {
         "id": "bolster_r",
         "name": "bolster r",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [1.62, 0.3, 0],
           "rotation": [90, 0, 0]
         },
         "material": "candy-yellow",
-        "params": {
-          "height": 11,
-          "radius": 0.42
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.42, 0, 0],
+              [-0.42, 0, 0],
+              [0, 5.5, 0],
+              [0, -5.5, 0],
+              [0, 0, 0.42],
+              [0, 0, -0.42]
+            ],
+            "pointRadii": [1, 1, 0.076364, 0.076364, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -530,21 +781,40 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "bolster_l": {
         "id": "bolster_l",
         "name": "bolster l",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [-1.62, 0.3, 0],
           "rotation": [90, 0, 0]
         },
         "material": "candy-yellow",
-        "params": {
-          "height": 11,
-          "radius": 0.42
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.42, 0, 0],
+              [-0.42, 0, 0],
+              [0, 5.5, 0],
+              [0, -5.5, 0],
+              [0, 0, 0.42],
+              [0, 0, -0.42]
+            ],
+            "pointRadii": [1, 1, 0.076364, 0.076364, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -576,7 +846,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "chevron_0": {
@@ -634,7 +909,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "chevron_1": {
@@ -692,7 +972,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "chevron_2": {
@@ -750,7 +1035,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "chevron_3": {
@@ -808,7 +1098,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "chevron_4": {
@@ -933,5 +1228,5 @@
     "min": [-2.137601, -0.6, -6.48],
     "max": [2.137601, 0.7426, 6.48]
   },
-  "hash": "06dd8919bbe216d215d6a54427a4d382d5cd4c775c06f27186e607b70ef8e030"
+  "hash": "a76b754bcbd01bd9456b7c5de64883b50aeff359781cc9290eecd7265e5bc01c"
 }

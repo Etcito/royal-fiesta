@@ -69,14 +69,36 @@
       "slime_bed": {
         "id": "slime_bed",
         "name": "slime-bed",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.2, 0]
         },
         "round": 0.1,
         "material": "m1",
-        "params": {
-          "size": [11, 0.5, 11]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5.5, 0, 0],
+              [-5.5, 0, 0],
+              [0, 0.25, 0],
+              [0, -0.25, 0],
+              [0, 0, 5.5],
+              [0, 0, -5.5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -128,20 +150,42 @@
       "lump_a": {
         "id": "lump_a",
         "name": "lump-a",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.04, 0]
         },
         "material": "m1",
-        "params": {
-          "radii": [0.68, 0.32, 0.68]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.68, 0, 0],
+              [-0.68, 0, 0],
+              [0, 0.32, 0],
+              [0, -0.32, 0],
+              [0, 0, 0.68],
+              [0, 0, -0.68]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "glint_a": {
         "id": "glint_a",
         "name": "glint-a",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.14, 0.21, 0.26],
           "rotation": [0, -45, 0]
@@ -149,8 +193,30 @@
         "smooth": 0.02,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.3, 0.055, 0.12]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -184,170 +250,412 @@
       "lump_b": {
         "id": "lump_b",
         "name": "lump-b",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.06, 0]
         },
         "material": "m1",
-        "params": {
-          "radii": [0.48, 0.24, 0.48]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.48, 0, 0],
+              [-0.48, 0, 0],
+              [0, 0.24, 0],
+              [0, -0.24, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_1": {
         "id": "bubble_1",
         "name": "bubble-1",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-2.1, 0.3, -1.4]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.26
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.26, 0, 0],
+              [-0.26, 0, 0],
+              [0, 0.26, 0],
+              [0, -0.26, 0],
+              [0, 0, 0.26],
+              [0, 0, -0.26]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_2": {
         "id": "bubble_2",
         "name": "bubble-2",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [2.8, 0.3, 0.7]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.3
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.3, 0],
+              [0, -0.3, 0],
+              [0, 0, 0.3],
+              [0, 0, -0.3]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_3": {
         "id": "bubble_3",
         "name": "bubble-3",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-3.4, 0.3, 2.1]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.22
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.22, 0, 0],
+              [-0.22, 0, 0],
+              [0, 0.22, 0],
+              [0, -0.22, 0],
+              [0, 0, 0.22],
+              [0, 0, -0.22]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_4": {
         "id": "bubble_4",
         "name": "bubble-4",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [0.7, 0.3, 2.9]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.25
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.25, 0, 0],
+              [-0.25, 0, 0],
+              [0, 0.25, 0],
+              [0, -0.25, 0],
+              [0, 0, 0.25],
+              [0, 0, -0.25]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_5": {
         "id": "bubble_5",
         "name": "bubble-5",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [4.1, 0.3, -2.1]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.2
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.2, 0, 0],
+              [-0.2, 0, 0],
+              [0, 0.2, 0],
+              [0, -0.2, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_6": {
         "id": "bubble_6",
         "name": "bubble-6",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.7, 0.3, -3.6]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.24
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.24, 0, 0],
+              [-0.24, 0, 0],
+              [0, 0.24, 0],
+              [0, -0.24, 0],
+              [0, 0, 0.24],
+              [0, 0, -0.24]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_7": {
         "id": "bubble_7",
         "name": "bubble-7",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-4.2, 0.3, -3.4]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.16
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.16, 0, 0],
+              [-0.16, 0, 0],
+              [0, 0.16, 0],
+              [0, -0.16, 0],
+              [0, 0, 0.16],
+              [0, 0, -0.16]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_8": {
         "id": "bubble_8",
         "name": "bubble-8",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [2.1, 0.3, -3]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.18
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.18, 0, 0],
+              [-0.18, 0, 0],
+              [0, 0.18, 0],
+              [0, -0.18, 0],
+              [0, 0, 0.18],
+              [0, 0, -0.18]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_9": {
         "id": "bubble_9",
         "name": "bubble-9",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-2.8, 0.3, 4.2]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.18
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.18, 0, 0],
+              [-0.18, 0, 0],
+              [0, 0.18, 0],
+              [0, -0.18, 0],
+              [0, 0, 0.18],
+              [0, 0, -0.18]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "bubble_10": {
         "id": "bubble_10",
         "name": "bubble-10",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [3.6, 0.3, 3.9]
         },
         "smooth": 0.04,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radius": 0.22
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.22, 0, 0],
+              [-0.22, 0, 0],
+              [0, 0.22, 0],
+              [0, -0.22, 0],
+              [0, 0, 0.22],
+              [0, 0, -0.22]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "streak_1": {
         "id": "streak_1",
         "name": "streak-1",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-3, 0.27, -2.4],
           "rotation": [0, 25, 0]
@@ -355,15 +663,37 @@
         "smooth": 0.03,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.7, 0.05, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.7, 0, 0],
+              [-0.7, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "streak_2": {
         "id": "streak_2",
         "name": "streak-2",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.9, 0.27, 0.9],
           "rotation": [0, 50, 0]
@@ -371,15 +701,37 @@
         "smooth": 0.03,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.85, 0.05, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.85, 0, 0],
+              [-0.85, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "streak_3": {
         "id": "streak_3",
         "name": "streak-3",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [3, 0.27, 2.2],
           "rotation": [0, 5, 0]
@@ -387,15 +739,37 @@
         "smooth": 0.03,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.6, 0.05, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.6, 0, 0],
+              [-0.6, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "streak_4": {
         "id": "streak_4",
         "name": "streak-4",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [2.2, 0.27, -3.2],
           "rotation": [0, -35, 0]
@@ -403,30 +777,74 @@
         "smooth": 0.03,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.6, 0.05, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.6, 0, 0],
+              [-0.6, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "streak_5": {
         "id": "streak_5",
         "name": "streak-5",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [1, 0.27, 3.9]
         },
         "smooth": 0.03,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.5, 0.05, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "streak_6": {
         "id": "streak_6",
         "name": "streak-6",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-3.5, 0.27, 3.4],
           "rotation": [0, -20, 0]
@@ -434,15 +852,37 @@
         "smooth": 0.03,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.5, 0.05, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "streak_7": {
         "id": "streak_7",
         "name": "streak-7",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.3, 0.27, -1.6],
           "rotation": [0, 70, 0]
@@ -450,15 +890,37 @@
         "smooth": 0.03,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.55, 0.05, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.55, 0, 0],
+              [-0.55, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "streak_8": {
         "id": "streak_8",
         "name": "streak-8",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-4, 0.27, -0.3],
           "rotation": [0, 30, 0]
@@ -466,15 +928,37 @@
         "smooth": 0.03,
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "radii": [0.5, 0.05, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "base_lip": {
         "id": "base_lip",
         "name": "base-lip",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.42, 0]
         },
@@ -482,15 +966,37 @@
         "colorBlend": "hard",
         "round": 0.14,
         "material": "m4",
-        "params": {
-          "size": [12.2, 0.3, 12.2]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [6.1, 0, 0],
+              [-6.1, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 6.1],
+              [0, 0, -6.1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "rim_n": {
         "id": "rim_n",
         "name": "rim-n",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.05, 5.45],
           "rotation": [0, 0, 90]
@@ -498,16 +1004,30 @@
         "smooth": 0.08,
         "colorBlend": "hard",
         "material": "m2",
-        "params": {
-          "height": 10.9,
-          "radius": 0.45
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.45, 0, 0],
+              [-0.45, 0, 0],
+              [0, 5.45, 0],
+              [0, -5.45, 0],
+              [0, 0, 0.45],
+              [0, 0, -0.45]
+            ],
+            "pointRadii": [1, 1, 0.082569, 0.082569, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "rim_s": {
         "id": "rim_s",
         "name": "rim-s",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.05, -5.45],
           "rotation": [0, 0, 90]
@@ -515,16 +1035,30 @@
         "smooth": 0.08,
         "colorBlend": "hard",
         "material": "m2",
-        "params": {
-          "height": 10.9,
-          "radius": 0.45
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.45, 0, 0],
+              [-0.45, 0, 0],
+              [0, 5.45, 0],
+              [0, -5.45, 0],
+              [0, 0, 0.45],
+              [0, 0, -0.45]
+            ],
+            "pointRadii": [1, 1, 0.082569, 0.082569, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "rim_e": {
         "id": "rim_e",
         "name": "rim-e",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [5.45, 0.05, 0],
           "rotation": [90, 0, 0]
@@ -532,16 +1066,30 @@
         "smooth": 0.08,
         "colorBlend": "hard",
         "material": "m2",
-        "params": {
-          "height": 10.9,
-          "radius": 0.45
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.45, 0, 0],
+              [-0.45, 0, 0],
+              [0, 5.45, 0],
+              [0, -5.45, 0],
+              [0, 0, 0.45],
+              [0, 0, -0.45]
+            ],
+            "pointRadii": [1, 1, 0.082569, 0.082569, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "rim_w": {
         "id": "rim_w",
         "name": "rim-w",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [-5.45, 0.05, 0],
           "rotation": [90, 0, 0]
@@ -549,9 +1097,23 @@
         "smooth": 0.08,
         "colorBlend": "hard",
         "material": "m2",
-        "params": {
-          "height": 10.9,
-          "radius": 0.45
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.45, 0, 0],
+              [-0.45, 0, 0],
+              [0, 5.45, 0],
+              [0, -5.45, 0],
+              [0, 0, 0.45],
+              [0, 0, -0.45]
+            ],
+            "pointRadii": [1, 1, 0.082569, 0.082569, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -605,15 +1167,29 @@
       "band_z": {
         "id": "band_z",
         "name": "band-z",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 90]
         },
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "height": 0.34,
-          "radius": 0.475
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.475, 0, 0],
+              [-0.475, 0, 0],
+              [0, 0.17, 0],
+              [0, -0.17, 0],
+              [0, 0, 0.475],
+              [0, 0, -0.475]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -670,75 +1246,177 @@
       "band_x": {
         "id": "band_x",
         "name": "band-x",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 90]
         },
         "colorBlend": "hard",
         "material": "m3",
-        "params": {
-          "height": 0.34,
-          "radius": 0.475
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.475, 0, 0],
+              [-0.475, 0, 0],
+              [0, 0.17, 0],
+              [0, -0.17, 0],
+              [0, 0, 0.475],
+              [0, 0, -0.475]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "knob_1": {
         "id": "knob_1",
         "name": "knob-1",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [5.45, 0.12, 5.45]
         },
         "smooth": 0.06,
         "colorBlend": "hard",
         "material": "m4",
-        "params": {
-          "radius": 0.6
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.6, 0, 0],
+              [-0.6, 0, 0],
+              [0, 0.6, 0],
+              [0, -0.6, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "knob_2": {
         "id": "knob_2",
         "name": "knob-2",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [5.45, 0.12, -5.45]
         },
         "smooth": 0.06,
         "colorBlend": "hard",
         "material": "m4",
-        "params": {
-          "radius": 0.6
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.6, 0, 0],
+              [-0.6, 0, 0],
+              [0, 0.6, 0],
+              [0, -0.6, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "knob_3": {
         "id": "knob_3",
         "name": "knob-3",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-5.45, 0.12, 5.45]
         },
         "smooth": 0.06,
         "colorBlend": "hard",
         "material": "m4",
-        "params": {
-          "radius": 0.6
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.6, 0, 0],
+              [-0.6, 0, 0],
+              [0, 0.6, 0],
+              [0, -0.6, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "knob_4": {
         "id": "knob_4",
         "name": "knob-4",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-5.45, 0.12, -5.45]
         },
         "smooth": 0.06,
         "colorBlend": "hard",
         "material": "m4",
-        "params": {
-          "radius": 0.6
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.6, 0, 0],
+              [-0.6, 0, 0],
+              [0, 0.6, 0],
+              [0, -0.6, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       }
@@ -820,5 +1498,5 @@
     "min": [-6.16, -0.63, -6.16],
     "max": [6.16, 0.78, 6.16]
   },
-  "hash": "d5ce8ab68f28ecaffca6e6346b571b2593a5c09428d5546457cc8c83d2e68d2e"
+  "hash": "f76ea9de80ccc23f44b2a4bf4daddba040999b14ecf468c9c95525eb5b6fe83e"
 }

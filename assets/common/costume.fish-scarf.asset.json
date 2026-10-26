@@ -7,7 +7,7 @@
   "category": "cosmetic",
   "world": "common",
   "mesher": {
-    "output": "quad"
+    "output": "lowpoly"
   },
   "document": {
     "format": "sdfm",
@@ -53,7 +53,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "lowpoly"
         },
         "gameCollision": true
       },
@@ -196,15 +196,37 @@
       "knot": {
         "id": "knot",
         "name": "knot",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.15, 0.2, 0.275],
           "rotation": [0, 30, 15]
         },
         "smooth": 0.03,
         "material": "m8",
-        "params": {
-          "radii": [0.1, 0.085, 0.075]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.085, 0],
+              [0, -0.085, 0],
+              [0, 0, 0.075],
+              [0, 0, -0.075]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -352,20 +374,42 @@
       "fish_wrap_0_body": {
         "id": "fish_wrap_0_body",
         "name": "fish_wrap_0_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
         "material": "m10",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_0_tail": {
         "id": "fish_wrap_0_tail",
         "name": "fish_wrap_0_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, -0.0109, 0],
           "rotation": [0, 0, 12]
@@ -373,8 +417,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m10",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -395,20 +461,42 @@
       "fish_wrap_1_body": {
         "id": "fish_wrap_1_body",
         "name": "fish_wrap_1_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -12]
         },
         "material": "m11",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_1_tail": {
         "id": "fish_wrap_1_tail",
         "name": "fish_wrap_1_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, 0.0109, 0],
           "rotation": [0, 0, -12]
@@ -416,8 +504,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m11",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -438,20 +548,42 @@
       "fish_wrap_2_body": {
         "id": "fish_wrap_2_body",
         "name": "fish_wrap_2_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
         "material": "m12",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_2_tail": {
         "id": "fish_wrap_2_tail",
         "name": "fish_wrap_2_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, -0.0109, 0],
           "rotation": [0, 0, 12]
@@ -459,8 +591,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m12",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -481,20 +635,42 @@
       "fish_wrap_3_body": {
         "id": "fish_wrap_3_body",
         "name": "fish_wrap_3_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -12]
         },
         "material": "m9",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_3_tail": {
         "id": "fish_wrap_3_tail",
         "name": "fish_wrap_3_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, 0.0109, 0],
           "rotation": [0, 0, -12]
@@ -502,8 +678,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m9",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -524,20 +722,42 @@
       "fish_wrap_4_body": {
         "id": "fish_wrap_4_body",
         "name": "fish_wrap_4_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
         "material": "m13",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_4_tail": {
         "id": "fish_wrap_4_tail",
         "name": "fish_wrap_4_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, -0.0109, 0],
           "rotation": [0, 0, 12]
@@ -545,8 +765,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m13",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -567,20 +809,42 @@
       "fish_wrap_5_body": {
         "id": "fish_wrap_5_body",
         "name": "fish_wrap_5_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -12]
         },
         "material": "m10",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_5_tail": {
         "id": "fish_wrap_5_tail",
         "name": "fish_wrap_5_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, 0.0109, 0],
           "rotation": [0, 0, -12]
@@ -588,8 +852,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m10",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -610,20 +896,42 @@
       "fish_wrap_6_body": {
         "id": "fish_wrap_6_body",
         "name": "fish_wrap_6_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
         "material": "m11",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_6_tail": {
         "id": "fish_wrap_6_tail",
         "name": "fish_wrap_6_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, -0.0109, 0],
           "rotation": [0, 0, 12]
@@ -631,8 +939,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m11",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -653,20 +983,42 @@
       "fish_wrap_7_body": {
         "id": "fish_wrap_7_body",
         "name": "fish_wrap_7_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -12]
         },
         "material": "m12",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_7_tail": {
         "id": "fish_wrap_7_tail",
         "name": "fish_wrap_7_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, 0.0109, 0],
           "rotation": [0, 0, -12]
@@ -674,8 +1026,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m12",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -696,20 +1070,42 @@
       "fish_wrap_8_body": {
         "id": "fish_wrap_8_body",
         "name": "fish_wrap_8_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
         "material": "m9",
-        "params": {
-          "radii": [0.0432, 0.0243, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0432, 0, 0],
+              [-0.0432, 0, 0],
+              [0, 0.0243, 0],
+              [0, -0.0243, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_wrap_8_tail": {
         "id": "fish_wrap_8_tail",
         "name": "fish_wrap_8_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0511, -0.0109, 0],
           "rotation": [0, 0, 12]
@@ -717,8 +1113,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m9",
-        "params": {
-          "radii": [0.0126, 0.0288, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0126, 0, 0],
+              [-0.0126, 0, 0],
+              [0, 0.0288, 0],
+              [0, -0.0288, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -739,20 +1157,42 @@
       "fish_front_0_body": {
         "id": "fish_front_0_body",
         "name": "fish_front_0_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 18]
         },
         "material": "m13",
-        "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0384, 0, 0],
+              [-0.0384, 0, 0],
+              [0, 0.0216, 0],
+              [0, -0.0216, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_front_0_tail": {
         "id": "fish_front_0_tail",
         "name": "fish_front_0_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0441, -0.0143, 0],
           "rotation": [0, 0, 18]
@@ -760,8 +1200,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m13",
-        "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0112, 0, 0],
+              [-0.0112, 0, 0],
+              [0, 0.0256, 0],
+              [0, -0.0256, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -782,20 +1244,42 @@
       "fish_front_1_body": {
         "id": "fish_front_1_body",
         "name": "fish_front_1_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -18]
         },
         "material": "m10",
-        "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0384, 0, 0],
+              [-0.0384, 0, 0],
+              [0, 0.0216, 0],
+              [0, -0.0216, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_front_1_tail": {
         "id": "fish_front_1_tail",
         "name": "fish_front_1_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0441, 0.0143, 0],
           "rotation": [0, 0, -18]
@@ -803,8 +1287,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m10",
-        "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0112, 0, 0],
+              [-0.0112, 0, 0],
+              [0, 0.0256, 0],
+              [0, -0.0256, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -825,20 +1331,42 @@
       "fish_front_2_body": {
         "id": "fish_front_2_body",
         "name": "fish_front_2_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 18]
         },
         "material": "m11",
-        "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0384, 0, 0],
+              [-0.0384, 0, 0],
+              [0, 0.0216, 0],
+              [0, -0.0216, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_front_2_tail": {
         "id": "fish_front_2_tail",
         "name": "fish_front_2_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0441, -0.0143, 0],
           "rotation": [0, 0, 18]
@@ -846,8 +1374,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m11",
-        "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0112, 0, 0],
+              [-0.0112, 0, 0],
+              [0, 0.0256, 0],
+              [0, -0.0256, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -868,20 +1418,42 @@
       "fish_front_3_body": {
         "id": "fish_front_3_body",
         "name": "fish_front_3_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -18]
         },
         "material": "m12",
-        "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0384, 0, 0],
+              [-0.0384, 0, 0],
+              [0, 0.0216, 0],
+              [0, -0.0216, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_front_3_tail": {
         "id": "fish_front_3_tail",
         "name": "fish_front_3_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0441, 0.0143, 0],
           "rotation": [0, 0, -18]
@@ -889,8 +1461,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m12",
-        "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0112, 0, 0],
+              [-0.0112, 0, 0],
+              [0, 0.0256, 0],
+              [0, -0.0256, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -911,20 +1505,42 @@
       "fish_back_0_body": {
         "id": "fish_back_0_body",
         "name": "fish_back_0_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -18]
         },
         "material": "m9",
-        "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0384, 0, 0],
+              [-0.0384, 0, 0],
+              [0, 0.0216, 0],
+              [0, -0.0216, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_back_0_tail": {
         "id": "fish_back_0_tail",
         "name": "fish_back_0_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0441, 0.0143, 0],
           "rotation": [0, 0, -18]
@@ -932,8 +1548,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m9",
-        "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0112, 0, 0],
+              [-0.0112, 0, 0],
+              [0, 0.0256, 0],
+              [0, -0.0256, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -954,20 +1592,42 @@
       "fish_back_1_body": {
         "id": "fish_back_1_body",
         "name": "fish_back_1_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 18]
         },
         "material": "m13",
-        "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0384, 0, 0],
+              [-0.0384, 0, 0],
+              [0, 0.0216, 0],
+              [0, -0.0216, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_back_1_tail": {
         "id": "fish_back_1_tail",
         "name": "fish_back_1_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0441, -0.0143, 0],
           "rotation": [0, 0, 18]
@@ -975,8 +1635,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m13",
-        "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0112, 0, 0],
+              [-0.0112, 0, 0],
+              [0, 0.0256, 0],
+              [0, -0.0256, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -997,20 +1679,42 @@
       "fish_back_2_body": {
         "id": "fish_back_2_body",
         "name": "fish_back_2_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -18]
         },
         "material": "m10",
-        "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0384, 0, 0],
+              [-0.0384, 0, 0],
+              [0, 0.0216, 0],
+              [0, -0.0216, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_back_2_tail": {
         "id": "fish_back_2_tail",
         "name": "fish_back_2_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0441, 0.0143, 0],
           "rotation": [0, 0, -18]
@@ -1018,8 +1722,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m10",
-        "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0112, 0, 0],
+              [-0.0112, 0, 0],
+              [0, 0.0256, 0],
+              [0, -0.0256, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -1040,20 +1766,42 @@
       "fish_back_3_body": {
         "id": "fish_back_3_body",
         "name": "fish_back_3_body",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 18]
         },
         "material": "m11",
-        "params": {
-          "radii": [0.0384, 0.0216, 0.015]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0384, 0, 0],
+              [-0.0384, 0, 0],
+              [0, 0.0216, 0],
+              [0, -0.0216, 0],
+              [0, 0, 0.015],
+              [0, 0, -0.015]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "fish_back_3_tail": {
         "id": "fish_back_3_tail",
         "name": "fish_back_3_tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0441, -0.0143, 0],
           "rotation": [0, 0, 18]
@@ -1061,8 +1809,30 @@
         "smooth": 0.006,
         "colorBlend": "hard",
         "material": "m11",
-        "params": {
-          "radii": [0.0112, 0.0256, 0.011]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.0112, 0, 0],
+              [-0.0112, 0, 0],
+              [0, 0.0256, 0],
+              [0, -0.0256, 0],
+              [0, 0, 0.011],
+              [0, 0, -0.011]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       }
@@ -1183,5 +1953,5 @@
     "min": [-0.3786, -0.4021, -0.5301],
     "max": [0.449351, 0.422124, 0.5621]
   },
-  "hash": "37ffc8173a20868e45f1b64d683be0e1a993b52032146bc0abdbe9f79bf76a5c"
+  "hash": "9f156eae1f953d07a722a9c1a188f938873646ad2f47a94598b4aa492400dcfb"
 }

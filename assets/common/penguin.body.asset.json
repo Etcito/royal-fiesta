@@ -7,7 +7,7 @@
   "category": "character",
   "world": "common",
   "mesher": {
-    "output": "quad"
+    "output": "lowpoly"
   },
   "document": {
     "format": "sdfm",
@@ -40,18 +40,32 @@
           "world": "common"
         },
         "mesher": {
-          "output": "quad"
+          "output": "lowpoly"
         },
         "gameCollision": true
       },
       "collider": {
         "id": "collider",
         "name": "collider",
-        "kind": "capsule",
+        "kind": "paramesh",
         "visible": false,
-        "params": {
-          "height": 1.7,
-          "radius": 0.4
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.4, 0, 0],
+              [-0.4, 0, 0],
+              [0, 0.85, 0],
+              [0, -0.85, 0],
+              [0, 0, 0.4],
+              [0, 0, -0.4]
+            ],
+            "pointRadii": [1, 1, 0.470588, 0.470588, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": true
       },
@@ -75,72 +89,182 @@
       "torso": {
         "id": "torso",
         "name": "torso",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.2, 0]
         },
         "material": "m1",
-        "params": {
-          "radii": [0.43, 0.48, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.43, 0, 0],
+              [-0.43, 0, 0],
+              [0, 0.48, 0],
+              [0, -0.48, 0],
+              [0, 0, 0.4],
+              [0, 0, -0.4]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "hips": {
         "id": "hips",
         "name": "hips",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.42, -0.02]
         },
         "smooth": 0.12,
         "material": "m1",
-        "params": {
-          "radii": [0.4, 0.26, 0.37]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.4, 0, 0],
+              [-0.4, 0, 0],
+              [0, 0.26, 0],
+              [0, -0.26, 0],
+              [0, 0, 0.37],
+              [0, 0, -0.37]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "belly": {
         "id": "belly",
         "name": "belly",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.26, 0.27]
         },
         "smooth": 0.08,
         "colorBlend": "hard",
         "material": "m2",
-        "params": {
-          "radii": [0.31, 0.38, 0.14]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.31, 0, 0],
+              [-0.31, 0, 0],
+              [0, 0.38, 0],
+              [0, -0.38, 0],
+              [0, 0, 0.14],
+              [0, 0, -0.14]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "belly_low": {
         "id": "belly_low",
         "name": "belly_low",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.52, 0.12]
         },
         "smooth": 0.08,
         "colorBlend": "hard",
         "material": "m2",
-        "params": {
-          "radii": [0.3, 0.16, 0.26]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.16, 0],
+              [0, -0.16, 0],
+              [0, 0, 0.26],
+              [0, 0, -0.26]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "tail": {
         "id": "tail",
         "name": "tail",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, -0.56, -0.37],
           "rotation": [-30, 0, 0]
         },
         "smooth": 0.06,
         "material": "m1",
-        "params": {
-          "radii": [0.13, 0.05, 0.12]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.13, 0, 0],
+              [-0.13, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -170,136 +294,356 @@
       "skull": {
         "id": "skull",
         "name": "skull",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.51, 0]
         },
         "material": "m1",
-        "params": {
-          "radius": 0.34
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.34, 0, 0],
+              [-0.34, 0, 0],
+              [0, 0.34, 0],
+              [0, -0.34, 0],
+              [0, 0, 0.34],
+              [0, 0, -0.34]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "cheek_mass": {
         "id": "cheek_mass",
         "name": "cheek_mass",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.43, 0.03]
         },
         "smooth": 0.1,
         "material": "m1",
-        "params": {
-          "radii": [0.36, 0.22, 0.32]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.36, 0, 0],
+              [-0.36, 0, 0],
+              [0, 0.22, 0],
+              [0, -0.22, 0],
+              [0, 0, 0.32],
+              [0, 0, -0.32]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "eye_white_r": {
         "id": "eye_white_r",
         "name": "eye_white_r",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.115, 0.56, 0.3]
         },
         "smooth": 0.01,
         "material": "m2",
-        "params": {
-          "radii": [0.075, 0.09, 0.05]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.05],
+              [0, 0, -0.05]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "pupil_r": {
         "id": "pupil_r",
         "name": "pupil_r",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [0.1173, 0.555, 0.335]
         },
         "material": "m7",
-        "params": {
-          "radius": 0.05
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.05, 0, 0],
+              [-0.05, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.05],
+              [0, 0, -0.05]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "glint_r": {
         "id": "glint_r",
         "name": "glint_r",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [0.1023, 0.58, 0.378]
         },
         "material": "m5",
-        "params": {
-          "radius": 0.014
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.014, 0, 0],
+              [-0.014, 0, 0],
+              [0, 0.014, 0],
+              [0, -0.014, 0],
+              [0, 0, 0.014],
+              [0, 0, -0.014]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "eye_white_l": {
         "id": "eye_white_l",
         "name": "eye_white_l",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.115, 0.56, 0.3]
         },
         "smooth": 0.01,
         "material": "m2",
-        "params": {
-          "radii": [0.075, 0.09, 0.05]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.075, 0, 0],
+              [-0.075, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.05],
+              [0, 0, -0.05]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "pupil_l": {
         "id": "pupil_l",
         "name": "pupil_l",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.1173, 0.555, 0.335]
         },
         "material": "m7",
-        "params": {
-          "radius": 0.05
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.05, 0, 0],
+              [-0.05, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.05],
+              [0, 0, -0.05]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "glint_l": {
         "id": "glint_l",
         "name": "glint_l",
-        "kind": "sphere",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.1323, 0.58, 0.378]
         },
         "material": "m5",
-        "params": {
-          "radius": 0.014
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.014, 0, 0],
+              [-0.014, 0, 0],
+              [0, 0.014, 0],
+              [0, -0.014, 0],
+              [0, 0, 0.014],
+              [0, 0, -0.014]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "beak": {
         "id": "beak",
         "name": "beak",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.455, 0.37],
           "rotation": [-8, 0, 0]
         },
         "smooth": 0.015,
         "material": "m3",
-        "params": {
-          "radii": [0.085, 0.045, 0.085]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.085, 0, 0],
+              [-0.085, 0, 0],
+              [0, 0.045, 0],
+              [0, -0.045, 0],
+              [0, 0, 0.085],
+              [0, 0, -0.085]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "beak_low": {
         "id": "beak_low",
         "name": "beak_low",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.425, 0.355]
         },
         "smooth": 0.015,
         "material": "m3",
-        "params": {
-          "radii": [0.06, 0.03, 0.06]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.06, 0, 0],
+              [-0.06, 0, 0],
+              [0, 0.03, 0],
+              [0, -0.03, 0],
+              [0, 0, 0.06],
+              [0, 0, -0.06]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -321,29 +665,73 @@
       "flipper_r_blade": {
         "id": "flipper_r_blade",
         "name": "flipper_r_blade",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.5, -0.06, 0],
           "rotation": [0, 0, 24]
         },
         "material": "m1",
-        "params": {
-          "radii": [0.07, 0.27, 0.15]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.27, 0],
+              [0, -0.27, 0],
+              [0, 0, 0.15],
+              [0, 0, -0.15]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "flipper_r_root": {
         "id": "flipper_r_root",
         "name": "flipper_r_root",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.41, 0.12, 0],
           "rotation": [0, 0, 24]
         },
         "smooth": 0.06,
         "material": "m1",
-        "params": {
-          "radii": [0.07, 0.1, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.1, 0],
+              [0, -0.1, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -365,29 +753,73 @@
       "flipper_l_blade": {
         "id": "flipper_l_blade",
         "name": "flipper_l_blade",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.5, -0.06, 0],
           "rotation": [0, 0, -24]
         },
         "material": "m1",
-        "params": {
-          "radii": [0.07, 0.27, 0.15]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.27, 0],
+              [0, -0.27, 0],
+              [0, 0, 0.15],
+              [0, 0, -0.15]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "flipper_l_root": {
         "id": "flipper_l_root",
         "name": "flipper_l_root",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.41, 0.12, 0],
           "rotation": [0, 0, -24]
         },
         "smooth": 0.06,
         "material": "m1",
-        "params": {
-          "radii": [0.07, 0.1, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.1, 0],
+              [0, -0.1, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -416,133 +848,315 @@
       "foot_r_ankle": {
         "id": "foot_r_ankle",
         "name": "foot_r_ankle",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.64, 0.03]
         },
         "material": "m3",
-        "params": {
-          "radii": [0.09, 0.08, 0.1]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.09, 0, 0],
+              [-0.09, 0, 0],
+              [0, 0.08, 0],
+              [0, -0.08, 0],
+              [0, 0, 0.1],
+              [0, 0, -0.1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_r_upper": {
         "id": "shoe_r_upper",
         "name": "shoe_r_upper",
-        "kind": "roundBox",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.75, 0.1]
         },
         "smooth": 0.03,
+        "round": 0.07,
         "material": "m4",
-        "params": {
-          "radius": 0.07,
-          "size": [0.22, 0.16, 0.36]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.11, 0, 0],
+              [-0.11, 0, 0],
+              [0, 0.08, 0],
+              [0, -0.08, 0],
+              [0, 0, 0.18],
+              [0, 0, -0.18]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_r_collar": {
         "id": "shoe_r_collar",
         "name": "shoe_r_collar",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.68, 0.02]
         },
         "smooth": 0.02,
         "material": "m4",
-        "params": {
-          "radii": [0.1, 0.04, 0.1]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.04, 0],
+              [0, -0.04, 0],
+              [0, 0, 0.1],
+              [0, 0, -0.1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_r_sole": {
         "id": "shoe_r_sole",
         "name": "shoe_r_sole",
-        "kind": "roundBox",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.825, 0.1]
         },
         "smooth": 0.01,
         "colorBlend": "hard",
+        "round": 0.022,
         "material": "m5",
-        "params": {
-          "radius": 0.022,
-          "size": [0.24, 0.05, 0.38]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.12, 0, 0],
+              [-0.12, 0, 0],
+              [0, 0.025, 0],
+              [0, -0.025, 0],
+              [0, 0, 0.19],
+              [0, 0, -0.19]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_r_toe": {
         "id": "shoe_r_toe",
         "name": "shoe_r_toe",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.785, 0.24]
         },
         "smooth": 0.015,
         "colorBlend": "hard",
         "material": "m5",
-        "params": {
-          "radii": [0.105, 0.065, 0.07]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.065, 0],
+              [0, -0.065, 0],
+              [0, 0, 0.07],
+              [0, 0, -0.07]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_r_stripe": {
         "id": "shoe_r_stripe",
         "name": "shoe_r_stripe",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.76, 0.07]
         },
         "smooth": 0.005,
         "colorBlend": "hard",
         "material": "m6",
-        "params": {
-          "radii": [0.116, 0.024, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.116, 0, 0],
+              [-0.116, 0, 0],
+              [0, 0.024, 0],
+              [0, -0.024, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_r_lace_a": {
         "id": "shoe_r_lace_a",
         "name": "shoe_r_lace_a",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.675, 0.13],
           "rotation": [0, 0, 90]
         },
         "material": "m6",
-        "params": {
-          "height": 0.13,
-          "radius": 0.014
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.014, 0, 0],
+              [-0.014, 0, 0],
+              [0, 0.065, 0],
+              [0, -0.065, 0],
+              [0, 0, 0.014],
+              [0, 0, -0.014]
+            ],
+            "pointRadii": [1, 1, 0.215385, 0.215385, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_r_lace_b": {
         "id": "shoe_r_lace_b",
         "name": "shoe_r_lace_b",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.69, 0.19],
           "rotation": [0, 0, 90]
         },
         "material": "m6",
-        "params": {
-          "height": 0.12,
-          "radius": 0.014
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.014, 0, 0],
+              [-0.014, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 0.014],
+              [0, 0, -0.014]
+            ],
+            "pointRadii": [1, 1, 0.233333, 0.233333, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_r_heel": {
         "id": "shoe_r_heel",
         "name": "shoe_r_heel",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, -0.74, -0.075]
         },
         "smooth": 0.015,
         "colorBlend": "hard",
         "material": "m5",
-        "params": {
-          "radii": [0.065, 0.055, 0.03]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.065, 0, 0],
+              [-0.065, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.03],
+              [0, 0, -0.03]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -571,133 +1185,315 @@
       "foot_l_ankle": {
         "id": "foot_l_ankle",
         "name": "foot_l_ankle",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.64, 0.03]
         },
         "material": "m3",
-        "params": {
-          "radii": [0.09, 0.08, 0.1]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.09, 0, 0],
+              [-0.09, 0, 0],
+              [0, 0.08, 0],
+              [0, -0.08, 0],
+              [0, 0, 0.1],
+              [0, 0, -0.1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_l_upper": {
         "id": "shoe_l_upper",
         "name": "shoe_l_upper",
-        "kind": "roundBox",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.75, 0.1]
         },
         "smooth": 0.03,
+        "round": 0.07,
         "material": "m4",
-        "params": {
-          "radius": 0.07,
-          "size": [0.22, 0.16, 0.36]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.11, 0, 0],
+              [-0.11, 0, 0],
+              [0, 0.08, 0],
+              [0, -0.08, 0],
+              [0, 0, 0.18],
+              [0, 0, -0.18]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_l_collar": {
         "id": "shoe_l_collar",
         "name": "shoe_l_collar",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.68, 0.02]
         },
         "smooth": 0.02,
         "material": "m4",
-        "params": {
-          "radii": [0.1, 0.04, 0.1]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.04, 0],
+              [0, -0.04, 0],
+              [0, 0, 0.1],
+              [0, 0, -0.1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_l_sole": {
         "id": "shoe_l_sole",
         "name": "shoe_l_sole",
-        "kind": "roundBox",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.825, 0.1]
         },
         "smooth": 0.01,
         "colorBlend": "hard",
+        "round": 0.022,
         "material": "m5",
-        "params": {
-          "radius": 0.022,
-          "size": [0.24, 0.05, 0.38]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.12, 0, 0],
+              [-0.12, 0, 0],
+              [0, 0.025, 0],
+              [0, -0.025, 0],
+              [0, 0, 0.19],
+              [0, 0, -0.19]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_l_toe": {
         "id": "shoe_l_toe",
         "name": "shoe_l_toe",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.785, 0.24]
         },
         "smooth": 0.015,
         "colorBlend": "hard",
         "material": "m5",
-        "params": {
-          "radii": [0.105, 0.065, 0.07]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.065, 0],
+              [0, -0.065, 0],
+              [0, 0, 0.07],
+              [0, 0, -0.07]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_l_stripe": {
         "id": "shoe_l_stripe",
         "name": "shoe_l_stripe",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.76, 0.07]
         },
         "smooth": 0.005,
         "colorBlend": "hard",
         "material": "m6",
-        "params": {
-          "radii": [0.116, 0.024, 0.13]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.116, 0, 0],
+              [-0.116, 0, 0],
+              [0, 0.024, 0],
+              [0, -0.024, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_l_lace_a": {
         "id": "shoe_l_lace_a",
         "name": "shoe_l_lace_a",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.675, 0.13],
           "rotation": [0, 0, 90]
         },
         "material": "m6",
-        "params": {
-          "height": 0.13,
-          "radius": 0.014
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.014, 0, 0],
+              [-0.014, 0, 0],
+              [0, 0.065, 0],
+              [0, -0.065, 0],
+              [0, 0, 0.014],
+              [0, 0, -0.014]
+            ],
+            "pointRadii": [1, 1, 0.215385, 0.215385, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_l_lace_b": {
         "id": "shoe_l_lace_b",
         "name": "shoe_l_lace_b",
-        "kind": "capsule",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.69, 0.19],
           "rotation": [0, 0, 90]
         },
         "material": "m6",
-        "params": {
-          "height": 0.12,
-          "radius": 0.014
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.014, 0, 0],
+              [-0.014, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 0.014],
+              [0, 0, -0.014]
+            ],
+            "pointRadii": [1, 1, 0.233333, 0.233333, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "shoe_l_heel": {
         "id": "shoe_l_heel",
         "name": "shoe_l_heel",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, -0.74, -0.075]
         },
         "smooth": 0.015,
         "colorBlend": "hard",
         "material": "m5",
-        "params": {
-          "radii": [0.065, 0.055, 0.03]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.065, 0, 0],
+              [-0.065, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.03],
+              [0, 0, -0.03]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -917,5 +1713,5 @@
     "min": [-0.673767, -0.865, -0.558923],
     "max": [0.673767, 0.85, 0.49]
   },
-  "hash": "80933fb67db5a8b80bd91b62fca43b2393dc7dcec5ad3af5652334c0c2d98a5d"
+  "hash": "695db617ceb64133bcef9f9e3f58b9e38c402201fe336bc2eff0d4c514ad57d1"
 }

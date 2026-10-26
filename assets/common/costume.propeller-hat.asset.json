@@ -81,7 +81,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_1": {
@@ -98,32 +103,76 @@
       "gore_1_dome": {
         "id": "gore_1_dome",
         "name": "gore_1_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m8",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_1_a": {
         "id": "gore_1_a",
         "name": "gore_1_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.105, 0.325, 0.18]
         },
         "op": "intersect",
         "smooth": 0.012,
         "material": "m8",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_1_b": {
         "id": "gore_1_b",
         "name": "gore_1_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0009, 0.325, 0.2084],
           "rotation": [0, 30, 0]
@@ -131,8 +180,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m8",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -150,7 +221,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_2": {
@@ -167,17 +243,39 @@
       "gore_2_dome": {
         "id": "gore_2_dome",
         "name": "gore_2_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m9",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_2_a": {
         "id": "gore_2_a",
         "name": "gore_2_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.1809, 0.325, 0.1034],
           "rotation": [0, 30, 0]
@@ -185,15 +283,37 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m9",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_2_b": {
         "id": "gore_2_b",
         "name": "gore_2_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.1034, 0.325, 0.1809],
           "rotation": [0, 60, 0]
@@ -201,8 +321,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m9",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -220,7 +362,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_3": {
@@ -237,17 +384,39 @@
       "gore_3_dome": {
         "id": "gore_3_dome",
         "name": "gore_3_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m10",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_3_a": {
         "id": "gore_3_a",
         "name": "gore_3_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.2084, 0.325, -0.0009],
           "rotation": [0, 60, 0]
@@ -255,15 +424,37 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m10",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_3_b": {
         "id": "gore_3_b",
         "name": "gore_3_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, 0.325, 0.105],
           "rotation": [0, 90, 0]
@@ -271,8 +462,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m10",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -290,7 +503,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_4": {
@@ -307,17 +525,39 @@
       "gore_4_dome": {
         "id": "gore_4_dome",
         "name": "gore_4_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m11",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_4_a": {
         "id": "gore_4_a",
         "name": "gore_4_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.18, 0.325, -0.105],
           "rotation": [0, 90, 0]
@@ -325,15 +565,37 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m11",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_4_b": {
         "id": "gore_4_b",
         "name": "gore_4_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.2084, 0.325, 0.0009],
           "rotation": [0, 120, 0]
@@ -341,8 +603,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m11",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -360,7 +644,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_5": {
@@ -377,17 +666,39 @@
       "gore_5_dome": {
         "id": "gore_5_dome",
         "name": "gore_5_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m8",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_5_a": {
         "id": "gore_5_a",
         "name": "gore_5_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.1034, 0.325, -0.1809],
           "rotation": [0, 120, 0]
@@ -395,15 +706,37 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m8",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_5_b": {
         "id": "gore_5_b",
         "name": "gore_5_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.1809, 0.325, -0.1034],
           "rotation": [0, 150, 0]
@@ -411,8 +744,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m8",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -430,7 +785,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_6": {
@@ -447,17 +807,39 @@
       "gore_6_dome": {
         "id": "gore_6_dome",
         "name": "gore_6_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m9",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_6_a": {
         "id": "gore_6_a",
         "name": "gore_6_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.0009, 0.325, -0.2084],
           "rotation": [0, 150, 0]
@@ -465,23 +847,67 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m9",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_6_b": {
         "id": "gore_6_b",
         "name": "gore_6_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.105, 0.325, -0.18]
         },
         "op": "intersect",
         "smooth": 0.012,
         "material": "m9",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -499,7 +925,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_7": {
@@ -516,32 +947,76 @@
       "gore_7_dome": {
         "id": "gore_7_dome",
         "name": "gore_7_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m10",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_7_a": {
         "id": "gore_7_a",
         "name": "gore_7_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.105, 0.325, -0.18]
         },
         "op": "intersect",
         "smooth": 0.012,
         "material": "m10",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_7_b": {
         "id": "gore_7_b",
         "name": "gore_7_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.0009, 0.325, -0.2084],
           "rotation": [0, 30, 0]
@@ -549,8 +1024,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m10",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -568,7 +1065,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_8": {
@@ -585,17 +1087,39 @@
       "gore_8_dome": {
         "id": "gore_8_dome",
         "name": "gore_8_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m11",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_8_a": {
         "id": "gore_8_a",
         "name": "gore_8_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.1809, 0.325, -0.1034],
           "rotation": [0, 30, 0]
@@ -603,15 +1127,37 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m11",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_8_b": {
         "id": "gore_8_b",
         "name": "gore_8_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.1034, 0.325, -0.1809],
           "rotation": [0, 60, 0]
@@ -619,8 +1165,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m11",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -638,7 +1206,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_9": {
@@ -655,17 +1228,39 @@
       "gore_9_dome": {
         "id": "gore_9_dome",
         "name": "gore_9_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m8",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_9_a": {
         "id": "gore_9_a",
         "name": "gore_9_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.2084, 0.325, 0.0009],
           "rotation": [0, 60, 0]
@@ -673,15 +1268,37 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m8",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_9_b": {
         "id": "gore_9_b",
         "name": "gore_9_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, 0.325, -0.105],
           "rotation": [0, 90, 0]
@@ -689,8 +1306,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m8",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -708,7 +1347,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_10": {
@@ -725,17 +1369,39 @@
       "gore_10_dome": {
         "id": "gore_10_dome",
         "name": "gore_10_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m9",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_10_a": {
         "id": "gore_10_a",
         "name": "gore_10_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.18, 0.325, 0.105],
           "rotation": [0, 90, 0]
@@ -743,15 +1409,37 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m9",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_10_b": {
         "id": "gore_10_b",
         "name": "gore_10_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.2084, 0.325, -0.0009],
           "rotation": [0, 120, 0]
@@ -759,8 +1447,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m9",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -778,7 +1488,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_11": {
@@ -795,17 +1510,39 @@
       "gore_11_dome": {
         "id": "gore_11_dome",
         "name": "gore_11_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m10",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_11_a": {
         "id": "gore_11_a",
         "name": "gore_11_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.1034, 0.325, 0.1809],
           "rotation": [0, 120, 0]
@@ -813,15 +1550,37 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m10",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_11_b": {
         "id": "gore_11_b",
         "name": "gore_11_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.1809, 0.325, 0.1034],
           "rotation": [0, 150, 0]
@@ -829,8 +1588,30 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m10",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -848,7 +1629,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "gore_12": {
@@ -865,17 +1651,39 @@
       "gore_12_dome": {
         "id": "gore_12_dome",
         "name": "gore_12_dome",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "material": "m11",
-        "params": {
-          "radii": [0.365, 0.45, 0.365]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [-0.365, 0, 0],
+              [0, 0.45, 0],
+              [0, -0.45, 0],
+              [0, 0, 0.365],
+              [0, 0, -0.365]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_12_a": {
         "id": "gore_12_a",
         "name": "gore_12_a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0.0009, 0.325, 0.2084],
           "rotation": [0, 150, 0]
@@ -883,23 +1691,67 @@
         "op": "intersect",
         "smooth": 0.012,
         "material": "m11",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "gore_12_b": {
         "id": "gore_12_b",
         "name": "gore_12_b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.105, 0.325, 0.18]
         },
         "op": "intersect",
         "smooth": 0.012,
         "material": "m11",
-        "params": {
-          "size": [0.21, 0.35, 0.4]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.105, 0, 0],
+              [-0.105, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.2],
+              [0, 0, -0.2]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -917,20 +1769,66 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "hat_rim": {
         "id": "hat_rim",
         "name": "hat_rim",
-        "kind": "torus",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.15, 0]
         },
         "material": "m12",
-        "params": {
-          "majorRadius": 0.345,
-          "minorRadius": 0.02
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "torus",
+            "radius": 1,
+            "points": [
+              [0.365, 0, 0],
+              [0.345, 0.02, 0],
+              [0.325, 0, 0],
+              [0.345, -0.02, 0],
+              [0, 0, 0.365],
+              [0, 0.02, 0.345],
+              [0, 0, 0.325],
+              [0, -0.02, 0.345],
+              [-0.365, 0, 0],
+              [-0.345, 0.02, 0],
+              [-0.325, 0, 0],
+              [-0.345, -0.02, 0],
+              [0, 0, -0.365],
+              [0, 0.02, -0.345],
+              [0, 0, -0.325],
+              [0, -0.02, -0.345]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -948,21 +1846,48 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "hat_button": {
         "id": "hat_button",
         "name": "hat_button",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.455, 0]
         },
         "smooth": 0.012,
         "colorBlend": "hard",
         "material": "m8",
-        "params": {
-          "radii": [0.055, 0.032, 0.055]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.032, 0],
+              [0, -0.032, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -980,22 +1905,41 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "prop_stem": {
         "id": "prop_stem",
         "name": "prop_stem",
-        "kind": "cylinder",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.515, 0]
         },
         "smooth": 0.01,
         "colorBlend": "hard",
         "material": "m9",
-        "params": {
-          "height": 0.1,
-          "radius": 0.018
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.018, 0, 0],
+              [-0.018, 0, 0],
+              [0, 0.05, 0],
+              [0, -0.05, 0],
+              [0, 0, 0.018],
+              [0, 0, -0.018]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -1013,21 +1957,48 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "prop_hub": {
         "id": "prop_hub",
         "name": "prop_hub",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.575, 0]
         },
         "smooth": 0.01,
         "colorBlend": "hard",
         "material": "m9",
-        "params": {
-          "radii": [0.045, 0.03, 0.045]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.045, 0, 0],
+              [-0.045, 0, 0],
+              [0, 0.03, 0],
+              [0, -0.03, 0],
+              [0, 0, 0.045],
+              [0, 0, -0.045]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -1045,13 +2016,18 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "prop_blade_1": {
         "id": "prop_blade_1",
         "name": "prop_blade_1",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.085, 0.575, 0.1472],
           "rotation": [0, 30, 15]
@@ -1059,8 +2035,30 @@
         "smooth": 0.015,
         "colorBlend": "hard",
         "material": "m9",
-        "params": {
-          "radii": [0.055, 0.012, 0.15]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.15],
+              [0, 0, -0.15]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -1078,13 +2076,18 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "prop_blade_2": {
         "id": "prop_blade_2",
         "name": "prop_blade_2",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [0.085, 0.575, -0.1472],
           "rotation": [0, 150, 15]
@@ -1092,8 +2095,30 @@
         "smooth": 0.015,
         "colorBlend": "hard",
         "material": "m9",
-        "params": {
-          "radii": [0.055, 0.012, 0.15]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.15],
+              [0, 0, -0.15]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -1111,13 +2136,18 @@
           "world": "common"
         },
         "mesher": {
-          "output": "paramesh"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         }
       },
       "prop_blade_3": {
         "id": "prop_blade_3",
         "name": "prop_blade_3",
-        "kind": "ellipsoid",
+        "kind": "paramesh",
         "transform": {
           "position": [-0.17, 0.575, 0],
           "rotation": [0, 270, 15]
@@ -1125,8 +2155,30 @@
         "smooth": 0.015,
         "colorBlend": "hard",
         "material": "m9",
-        "params": {
-          "radii": [0.055, 0.012, 0.15]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.15],
+              [0, 0, -0.15]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       }
@@ -1230,5 +2282,5 @@
     "min": [-0.446105, -0.006054, -0.540575],
     "max": [0.446105, 1.16511, 0.450584]
   },
-  "hash": "9e7f558f687d4d650418637d68cc2088ae972f0d8eaa2deb5b80d69fdbcc62cc"
+  "hash": "25443b5b641f33bdbd5fd767cfcc7b667d57c3db845e51829c6c2447d8779b52"
 }

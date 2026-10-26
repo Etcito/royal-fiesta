@@ -7,7 +7,7 @@
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "quad"
+    "output": "paramesh"
   },
   "document": {
     "format": "sdfm",
@@ -59,7 +59,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "rim": {
@@ -90,7 +90,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "zigzag_r": {
@@ -177,7 +177,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "zigzag_l": {
@@ -277,7 +277,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "cushion_0": {
@@ -308,7 +308,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "cushion_1": {
@@ -339,7 +339,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "cushion_2": {
@@ -370,7 +370,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "cushion_3": {
@@ -401,7 +401,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "cushion_4": {
@@ -432,7 +432,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "cap_front": {
@@ -465,7 +465,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "cap_back": {
@@ -498,7 +498,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "bolster_r": {
@@ -530,7 +530,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "bolster_l": {
@@ -576,7 +576,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "chevron_0": {
@@ -634,7 +634,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "chevron_1": {
@@ -692,7 +692,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "chevron_2": {
@@ -750,7 +750,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "chevron_3": {
@@ -808,7 +808,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "chevron_4": {
@@ -933,5 +933,5 @@
     "min": [-2.137601, -0.6, -6.48],
     "max": [2.137601, 0.7426, 6.48]
   },
-  "hash": "3d2a8d2be952a497065b684b2e014bec66f598327abaecac9cc30d6e57fe9c12"
+  "hash": "06dd8919bbe216d215d6a54427a4d382d5cd4c775c06f27186e607b70ef8e030"
 }

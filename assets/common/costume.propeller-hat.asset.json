@@ -7,7 +7,7 @@
   "category": "cosmetic",
   "world": "common",
   "mesher": {
-    "output": "quad"
+    "output": "paramesh"
   },
   "document": {
     "format": "sdfm",
@@ -81,7 +81,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_1": {
@@ -150,7 +150,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_2": {
@@ -220,7 +220,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_3": {
@@ -290,7 +290,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_4": {
@@ -360,7 +360,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_5": {
@@ -430,7 +430,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_6": {
@@ -499,7 +499,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_7": {
@@ -568,7 +568,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_8": {
@@ -638,7 +638,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_9": {
@@ -708,7 +708,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_10": {
@@ -778,7 +778,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_11": {
@@ -848,7 +848,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "gore_12": {
@@ -917,7 +917,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "hat_rim": {
@@ -948,7 +948,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "hat_button": {
@@ -980,7 +980,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "prop_stem": {
@@ -1013,7 +1013,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "prop_hub": {
@@ -1045,7 +1045,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "prop_blade_1": {
@@ -1078,7 +1078,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "prop_blade_2": {
@@ -1111,7 +1111,7 @@
           "world": "common"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "prop_blade_3": {
@@ -1230,5 +1230,5 @@
     "min": [-0.446105, -0.006054, -0.540575],
     "max": [0.446105, 1.16511, 0.450584]
   },
-  "hash": "dd2b24df80ae11b14b6c97cd94a937a6ef71b8c9b8f0ed862e51a2f64db09c9c"
+  "hash": "9e7f558f687d4d650418637d68cc2088ae972f0d8eaa2deb5b80d69fdbcc62cc"
 }

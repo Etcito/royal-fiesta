@@ -7,7 +7,7 @@
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "quad"
+    "output": "paramesh"
   },
   "document": {
     "format": "sdfm",
@@ -65,7 +65,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_l_base": {
@@ -97,7 +97,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_l_core": {
@@ -129,7 +129,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_l_band": {
@@ -161,7 +161,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_l_rim0": {
@@ -192,7 +192,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_l_rim1": {
@@ -223,7 +223,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_l_rim2": {
@@ -254,7 +254,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_r_base": {
@@ -286,7 +286,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_r_core": {
@@ -318,7 +318,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_r_band": {
@@ -350,7 +350,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_r_rim0": {
@@ -381,7 +381,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_r_rim1": {
@@ -412,7 +412,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "post_r_rim2": {
@@ -443,7 +443,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "beam": {
@@ -474,7 +474,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "beam_band": {
@@ -505,7 +505,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "beam_zigzag": {
@@ -618,7 +618,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown": {
@@ -686,7 +686,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown_tip0": {
@@ -716,7 +716,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown_tip1": {
@@ -746,7 +746,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown_tip2": {
@@ -776,7 +776,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown_tip3": {
@@ -806,7 +806,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown_tip4": {
@@ -836,7 +836,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown_jewel0": {
@@ -869,7 +869,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown_jewel1": {
@@ -902,7 +902,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         }
       },
       "crown_jewel2": {
@@ -1053,5 +1053,5 @@
     "min": [-4.9, 0, -0.85],
     "max": [4.9, 5.85, 0.85]
   },
-  "hash": "6920bd3654ce80786bf4bbed26f72227b3c3b3dadb7ecd5891d354c0d077862e"
+  "hash": "a013a9f2f54c49ebd955fd94505e8d1acb77d14c0658c00d8e4aa22247db1c0a"
 }

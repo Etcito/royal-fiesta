@@ -7,7 +7,12 @@
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
   },
   "document": {
     "format": "sdfm",
@@ -34,7 +39,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "lowpoly"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         },
         "gameCollision": false
       },
@@ -478,7 +488,7 @@
       "stripe_a": {
         "id": "stripe_a",
         "name": "stripe-a",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.75, 0]
         },
@@ -496,15 +506,37 @@
             }
           }
         ],
-        "params": {
-          "size": [7, 0.26, 1.2]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [3.5, 0, 0],
+              [-3.5, 0, 0],
+              [0, 0.13, 0],
+              [0, -0.13, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
       "stripe_b": {
         "id": "stripe_b",
         "name": "stripe-b",
-        "kind": "box",
+        "kind": "paramesh",
         "transform": {
           "position": [0, 0.75, 0],
           "rotation": [90, 0, 0]
@@ -523,8 +555,30 @@
             }
           }
         ],
-        "params": {
-          "size": [7, 0.26, 1.2]
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [3.5, 0, 0],
+              [-3.5, 0, 0],
+              [0, 0.13, 0],
+              [0, -0.13, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
         },
         "gameCollision": false
       },
@@ -646,5 +700,5 @@
     "min": [-4, 0, -0.88],
     "max": [4, 1.63, 0.88]
   },
-  "hash": "37e19f1d5023f4b030657bac5aed9f6a4756e5844748ba78183c57a5daaf2dff"
+  "hash": "12f699c5bb0a41ba5e18cb296cf83b8cea246b55304c693643d9df168c64448e"
 }

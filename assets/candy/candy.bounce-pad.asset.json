@@ -7,7 +7,12 @@
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
   },
   "document": {
     "format": "sdfm",
@@ -37,7 +42,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "lowpoly"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         },
         "gameCollision": false
       },
@@ -72,19 +82,42 @@
       "rim": {
         "id": "rim",
         "name": "rim",
-        "kind": "cylinder",
+        "kind": "group",
         "transform": {
           "position": [0, 0.22, 0]
         },
-        "round": 0.12,
         "material": "candy-blue",
-        "params": {
-          "height": 0.44,
-          "radius": 1.5
-        },
+        "parameshOptions": {},
         "children": [
+          "rim_host",
           "ridge"
         ],
+        "gameCollision": false
+      },
+      "rim_host": {
+        "id": "rim_host",
+        "name": "rim",
+        "kind": "paramesh",
+        "round": 0.12,
+        "material": "candy-blue",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.5, 0, 0],
+              [-1.5, 0, 0],
+              [0, 0.22, 0],
+              [0, -0.22, 0],
+              [0, 0, 1.5],
+              [0, 0, -1.5]
+            ],
+            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "edgeRadii": {}
+          }
+        },
         "gameCollision": false
       },
       "ridge": {
@@ -591,5 +624,5 @@
     "min": [-1.56635, 0, -1.56635],
     "max": [1.56635, 0.765, 1.56635]
   },
-  "hash": "e9729a9292565d76b7468b2de4e7538c38cc14ac3f979ae27d2e72d41e4cdaa7"
+  "hash": "8071605076053e9ff2ba2f7afbc6bc415f98085db47b1256d39bf4f3dca6380e"
 }

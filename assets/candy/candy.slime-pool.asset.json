@@ -7,7 +7,12 @@
   "category": "scenery",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
   },
   "document": {
     "format": "sdfm",
@@ -62,7 +67,12 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "lowpoly"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         },
         "gameCollision": true
       },
@@ -1498,5 +1508,5 @@
     "min": [-6.16, -0.63, -6.16],
     "max": [6.16, 0.78, 6.16]
   },
-  "hash": "f76ea9de80ccc23f44b2a4bf4daddba040999b14ecf468c9c95525eb5b6fe83e"
+  "hash": "5fca51c0072aaddf67eb5d306528a1909878ca10466814ca37b5ecdb300607b9"
 }

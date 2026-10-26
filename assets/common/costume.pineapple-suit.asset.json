@@ -7,7 +7,12 @@
   "category": "cosmetic",
   "world": "common",
   "mesher": {
-    "output": "lowpoly"
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
   },
   "document": {
     "format": "sdfm",
@@ -37,7 +42,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "lowpoly"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         },
         "gameCollision": true
       },
@@ -677,5 +687,5 @@
     "min": [-0.677947, -0.78, -0.677947],
     "max": [0.677947, 1.21, 0.677947]
   },
-  "hash": "b982470dd9030550136a47b306ad23f220f946f4e9f1251ad714713eab2ea00b"
+  "hash": "a78d49e30f8eac07d8f0253d0b6e2b3e39160f5522bb4564fdfba614227044eb"
 }

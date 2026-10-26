@@ -8,17 +8,13 @@ classic ones (visual tolerance 5 % of the smallest dimension); the owner accepte
 
 24 asset files, 447 primitives converted, 74 groups on Paramesh, 7 on Low poly.
 
-## Groups on Low poly (to investigate)
+## Update: every group on Paramesh
 
-| Asset | Group | Paramesh | Quad |
-|---|---|---|---|
-| candy.bounce-pad | candy-bounce-pad | group 'candy-bounce-pad' cannot be meshed with Quad mesh (clean) (quad): The cylinder 'rim' has no Paramesh source: it holds detail shapes. | group 'candy-bounce-pad' cannot be meshed with Quad mesh (clean) (quad): The cylinder 'rim' has no Paramesh source: it holds detail shapes. |
-| candy.hot-air-balloon | candy-hot-air-balloon | group 'candy-hot-air-balloon' cannot be meshed with Quad mesh (clean) (quad): Paramesh failed while meshing, at the polygon mesh stage (mesher code polygon): The blended projection could not preserve a closed solid for this group. Reduce fusion or change its Paramesh quality. | no result in 180 s |
-| candy.slime-pool | candy-slime-pool | group 'candy-slime-pool' cannot be meshed with Quad mesh (clean) (quad): The group 'lumps-a' has deformers; the Paramesh output meshes only plain groups of shapes. | group 'candy-slime-pool' cannot be meshed with Quad mesh (clean) (quad): The group 'lumps-a' has deformers; the Paramesh output meshes only plain groups of shapes. |
-| candy.spinner-bar | Spinner Bar | group 'Spinner Bar' cannot be meshed with Quad mesh (clean) (quad): The box 'stripe-a' has no Paramesh shape within the visual tolerance: it has deformers. | group 'Spinner Bar' cannot be meshed with Quad mesh (clean) (quad): The box 'stripe-a' has no Paramesh shape within the visual tolerance: it has deformers. |
-| costume.fish-scarf | fish_scarf | no result in 180 s | no result in 180 s |
-| costume.pineapple-suit | pineapple_suit | group 'pineapple_suit' cannot be meshed with Quad mesh (clean) (quad): The group 'lattice_cw' has deformers; the Paramesh output meshes only plain groups of shapes. | group 'pineapple_suit' cannot be meshed with Quad mesh (clean) (quad): The group 'lattice_cw' has deformers; the Paramesh output meshes only plain groups of shapes. |
-| penguin.body | penguin | no result in 180 s | no result in 180 s |
+The 7 groups first set to Low poly mesh with Paramesh since MAMA a6b1b47 and are back on it: hot-air-balloon,
+penguin.body and costume.fish-scarf (MAMA 00e87f6: the relaxed projection culls distant operands and measures
+ellipsoids exactly; 7 to 11 s), candy.bounce-pad (detail shapes become Paramesh operands), candy.slime-pool,
+candy.spinner-bar and costume.pineapple-suit (deformers kept on the Paramesh nodes as warps; 3.6 to 44 s).
+Still slow: candy.tower (about 165 s), being fixed.
 
 ## Primitives that stayed classic
 

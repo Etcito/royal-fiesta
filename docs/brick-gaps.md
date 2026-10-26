@@ -339,7 +339,11 @@ pendulum-hammer, rotating-door, seesaw-plank and tower (MAMA 1aff821: no shape-c
 floor-tile, moving-platform, queue-pad and plaza-fountain (MAMA 9d7fe03: rigid modifiers of nested groups become
 copies). Exported Paramesh normals are unit length since 9d7fe03 (podium-block had 256 normals a few thousandths off).
 
-Groups that keep their mesher, with the reason Paramesh gives:
+MAMA 46af6c0 (pinned since): classic primitives map to Paramesh within a visual tolerance (5 % of the smallest
+dimension), extrudes become sweeps, absolute round and chamfer bevels (a group round is inherited by its members),
+and the field display takes up to 32 shapes per group.
+
+Groups that keep their mesher, with the reason Paramesh gives (forced runs at MAMA 46af6c0):
 - candy.bounce-pad (lowpoly): the cylinder rim holds detail shapes.
 - candy.spinner-bar (lowpoly), candy.slime-pool (lowpoly), costume.pineapple-suit (poly): deformers.
-- penguin.body (quad), costume.fish-scarf (poly): a forced Paramesh run did not finish in 600 s.
+- penguin.body (quad), costume.fish-scarf (poly): a forced Paramesh run did not finish in 900 s.

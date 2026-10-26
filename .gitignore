@@ -11,6 +11,8 @@ pkg/
 *.avif
 *.ktx2
 *.bin
+# the SDF Modeler saves <id>.thumb.webp next to each asset for its asset browser; it renders a missing one again
+*.thumb.webp
 out/
 .vite/
 .bricks/

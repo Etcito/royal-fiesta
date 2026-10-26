@@ -44,6 +44,21 @@ function meshCache(): MeshCache {
   return cache
 }
 
+// Mesh failures by mesh cache key, in this browser only (localStorage; the page works without it). `?remesh` in the
+// page address ignores them for one load.
+const FAILED_PREFIX = 'rf-mesh-failed:'
+function knownFailure(key: string): string | null {
+  try {
+    if (new URLSearchParams(location.search).has('remesh')) return null
+    return localStorage.getItem(FAILED_PREFIX + key)
+  } catch {
+    return null
+  }
+}
+function rememberFailure(key: string, reason: string): void {
+  try { localStorage.setItem(FAILED_PREFIX + key, reason) } catch { /* no storage: the next load retries */ }
+}
+
 function meshPool(facade: MamaFacade): MeshPool {
   if (pool === null) pool = facade.createPool(poolSize(navigator.hardwareConcurrency))
   return pool
@@ -117,6 +132,13 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       step(a.id)
       continue
     }
+    const known = knownFailure(key)
+    if (known !== null) {
+      failed.set(a.id, known)
+      console.warn(`[content] ${a.id} is not drawn (failed before with this asset and MAMA; ?remesh retries): ${known}`)
+      step(a.id)
+      continue
+    }
     const req = { assetId: a.id, hash: a.hash, mesher: a.mesher, document: a.document }
     const miss = meshPool(facade).mesh(req, MESH_LIMIT_S * 1000).then(async (value) => {
       await c.put(key, value)
@@ -125,8 +147,10 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       step(a.id)
     }, (e: unknown) => {
       // Permissive load (owner rule): an asset the mesher refuses is left out (drawn as nothing) and named in the
-      // console and the report; the game still starts. Failures are not cached, so a fixed asset meshes next time.
+      // console and the report; the game still starts. The failure is remembered under the mesh cache key (asset
+      // hash, mesher, MAMA commit), so the next launch does not wait for it again; a changed asset or MAMA retries.
       const reason = e instanceof Error ? e.message : String(e)
+      rememberFailure(key, reason)
       failed.set(a.id, reason)
       console.warn(`[content] ${a.id} is not drawn: ${reason}`)
       step(a.id)

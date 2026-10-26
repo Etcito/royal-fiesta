@@ -710,6 +710,7 @@
     }
   ],
   "environment": {
+    "sky": "day",
     "sun": {
       "dir": [
         -0.35,
@@ -722,7 +723,9 @@
         0.9
       ],
       "intensity": 3.2
-    }
+    },
+    "fog": "haze",
+    "post": "candy"
   },
   "podium": null
 }

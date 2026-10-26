@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
-import { capturesProblems, sourcesOf } from '../contentCapture.ts'
+import { buildCaptureRecord, capturesProblems, runCaptureInputs, sourcesOf } from '../contentCapture.ts'
+import type { CaptureInput } from '../contentCapture.ts'
 
-const INPUT = {
+const INPUT: CaptureInput = {
   content: 'sdf',
   course: 'race-hammer-hill',
   flow: 'match',
@@ -128,4 +129,81 @@ test('a missing expected capture is a problem', async () => {
 test('a missing record names the producer', async () => {
   const root = tempRoot()
   assert.deepEqual(await capturesProblems('c5', EXPECTED, root), ['proofs/c5/captures.json is missing: run the --gpu-run producer'])
+})
+
+test('runCaptureInputs refuses a missing dist with the build fix', async () => {
+  const root = tempRoot()
+  const cwd = process.cwd()
+  try {
+    await assert.rejects(runCaptureInputs('c5', [], root), (e: unknown) => {
+      assert.ok(isRefusal(e))
+      assert.match(e.message, /^\[content-capture\] apps\/web\/dist:/)
+      assert.match(e.message, /npm run build/)
+      return true
+    })
+  } finally {
+    process.chdir(cwd)
+  }
+})
+
+const ADAPTER = { vendor: 'nvidia', architecture: 'ampere', description: 'NVIDIA GeForce RTX 3090', software: false }
+
+function fakeResult(json: Record<string, unknown> = {}): { file: string; json: Record<string, unknown> } {
+  return {
+    file: 'out/c5/race/result.json',
+    json: {
+      renderer: 'raa',
+      adapter: ADAPTER,
+      software: false,
+      pageRef: 'page-ref-1',
+      captures: [{ ...CAPTURE, name: 'match-8s' }],
+      frameTiming: null,
+      content: 'sdf',
+      courses: ['race-hammer-hill'],
+      events: [{ t: 0, what: 'run' }],
+      ...json,
+    },
+  }
+}
+
+test('buildCaptureRecord renames op moments to <case>-<moment>', () => {
+  const record = buildCaptureRecord([{ name: 'race', input: INPUT, result: fakeResult() }], ['proofs/c5/race.input.json'], 'page-ref-1', {
+    'courses/race-hammer-hill.course.json': 'a'.repeat(64),
+  })
+  assert.equal(record.renderer, 'raa')
+  assert.equal(record.content, 'sdf')
+  assert.equal(record.frameTiming, null)
+  assert.deepEqual(record.captures, [{ ...CAPTURE, name: 'race-match-8s' }])
+  assert.deepEqual(record.courses, { race: ['race-hammer-hill'] })
+  assert.deepEqual(record.events, { race: [{ t: 0, what: 'run' }] })
+  assert.deepEqual(record.inputs, ['proofs/c5/race.input.json'])
+  assert.deepEqual(record.sources, { 'courses/race-hammer-hill.course.json': 'a'.repeat(64) })
+})
+
+test('buildCaptureRecord refuses a non-raa renderer', () => {
+  assert.throws(
+    () => buildCaptureRecord([{ name: 'race', input: INPUT, result: fakeResult({ renderer: 'v0' }) }], ['proofs/c5/race.input.json'], 'page-ref-1', {}),
+    (e: unknown) => {
+      assert.ok(isRefusal(e))
+      assert.match(e.message, /renderer/)
+      return true
+    },
+  )
+})
+
+test('buildCaptureRecord refuses captures that do not match captureAt', () => {
+  assert.throws(
+    () => buildCaptureRecord(
+      [{ name: 'race', input: INPUT, result: fakeResult({ captures: [{ ...CAPTURE, name: 'match-9s' }] }) }],
+      ['proofs/c5/race.input.json'],
+      'page-ref-1',
+      {},
+    ),
+    (e: unknown) => {
+      assert.ok(isRefusal(e))
+      assert.match(e.message, /match-9s/)
+      assert.match(e.message, /match-8s/)
+      return true
+    },
+  )
 })

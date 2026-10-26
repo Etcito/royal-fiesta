@@ -7,7 +7,12 @@
   "category": "character",
   "world": "common",
   "mesher": {
-    "output": "lowpoly"
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
   },
   "document": {
     "format": "sdfm",
@@ -40,7 +45,12 @@
           "world": "common"
         },
         "mesher": {
-          "output": "lowpoly"
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
         },
         "gameCollision": true
       },
@@ -1713,5 +1723,5 @@
     "min": [-0.673767, -0.865, -0.558923],
     "max": [0.673767, 0.85, 0.49]
   },
-  "hash": "695db617ceb64133bcef9f9e3f58b9e38c402201fe336bc2eff0d4c514ad57d1"
+  "hash": "afdfd00056d94c4d8df7e449919b961963a92c0c0d278f00f3309eba6a9dff58"
 }

@@ -2,25 +2,20 @@
 // MAMA workers already produced (one mesh per part, split by material) and the graph materials
 // compiled by @etcito/raa-sdfm's mapMaterial. Tint multiplies the graph material's base colour.
 import { loadRaa } from '@etcito/raa'
-import type { AmbientDesc, Engine, LightDesc, MeshDesc, SubMeshDesc } from '@etcito/raa'
+import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
 import { mapMaterial } from '@etcito/raa-sdfm'
 import type { SdfmCompiledMaterial, SdfmMappedMaterial } from '@etcito/raa-sdfm'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { CameraPose, QuatT, RenderPort, RenderStats, RenderTarget, Vec3T } from '@royal-fiesta/game/render/port'
 import { refuse } from '@royal-fiesta/sim/refusal'
+import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../render/courseEnvironment.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import type { MeshedAsset } from './mamaApi.ts'
 
 const AREA = 'sdf'
 const WHERE = 'sdf-port'
-const RELEASE = '@etcito/raa 0.2.0'
 const MAX_INSTANCES = 4096
 const MAX_MATERIALS = 1024
-// The port's own lighting: set at init and restored by setEnvironment(null).
-const DEFAULT_LIGHT: LightDesc = { direction: [-0.4, -1, -0.3], color: [1, 1, 1], intensity: 3 }
-const DEFAULT_AMBIENT: AmbientDesc = { color: [0.6, 0.7, 0.9], intensity: 0.3 }
-// S13 environment keys this port has no RAA call for (setLight is its only environment call).
-const MISSING_ENV = ['sky', 'fog', 'post']
 
 // The payload of apps/web/src/sdf/mama/worker.ts: MAMA parts with per-material meshes.
 interface PayloadMesh { material: string | null; positions: Float32Array; normals: Float32Array; uvs: Float32Array | null; indices: Uint32Array }
@@ -175,24 +170,7 @@ class SdfRenderPort implements RenderPort {
 
   // Everything is checked before the engine is touched, so a refusal never applies half an environment.
   setEnvironment(env: Readonly<Record<string, unknown>> | null): void {
-    const engine = this.need()
-    if (env === null) {
-      engine.setLight(DEFAULT_LIGHT)
-      engine.setAmbient(DEFAULT_AMBIENT)
-      return
-    }
-    const p = 'SdfRenderPort.setEnvironment'
-    if (typeof env !== 'object' || Array.isArray(env)) refuse(AREA, p, 'environment is not an object; pass the course environment object or null')
-    let light: LightDesc | null = null
-    for (const key of Object.keys(env)) {
-      const v = env[key]
-      if (v === undefined || v === null) continue
-      if (key === 'sun') light = sunLight(p, v)
-      else if (MISSING_ENV.includes(key)) unsupported(p, key)
-      else refuse(AREA, p, `environment.${key} is not an S13 environment key; use sky, sun, fog or post`)
-    }
-    engine.setLight(light ?? DEFAULT_LIGHT)
-    engine.setAmbient(DEFAULT_AMBIENT)
+    applyCourseEnvironment(this.need(), env, AREA, 'SdfRenderPort.setEnvironment')
   }
 
   render(): RenderStats {
@@ -439,29 +417,4 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function badPayload(id: string, what: string): never {
   return refuse(AREA, id, `the meshed payload is malformed (${what}); clear the mesh cache and remesh the asset`)
-}
-
-function unsupported(p: string, field: string): never {
-  refuse(AREA, p, `'${field}' not supported by ${RELEASE}; brick gap, see docs/brick-gaps.md`)
-}
-
-function vec3(v: unknown): [number, number, number] | null {
-  if (!Array.isArray(v) || v.length !== 3 || !v.every(Number.isFinite)) return null
-  return [v[0], v[1], v[2]]
-}
-
-// S13 sun {dir, color, intensity} -> the release's LightDesc. A named sun has no release API.
-function sunLight(p: string, sun: unknown): LightDesc {
-  if (typeof sun !== 'object' || sun === null || Array.isArray(sun)) unsupported(p, 'sun (by name)')
-  const s = sun as Record<string, unknown>
-  for (const key of Object.keys(s)) {
-    if (key !== 'dir' && key !== 'color' && key !== 'intensity') unsupported(p, `sun.${key}`)
-  }
-  const direction = vec3(s.dir)
-  if (direction === null || direction.every((c) => c === 0)) refuse(AREA, p, 'environment.sun.dir is not 3 finite numbers, not all 0; pass [x, y, z]')
-  const color = vec3(s.color)
-  if (color === null) refuse(AREA, p, 'environment.sun.color is not 3 finite numbers; pass linear [r, g, b]')
-  const intensity = s.intensity
-  if (typeof intensity !== 'number' || !Number.isFinite(intensity) || intensity < 0) refuse(AREA, p, 'environment.sun.intensity is not a finite number >= 0; pass the light intensity')
-  return { direction, color, intensity }
 }

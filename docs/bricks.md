@@ -188,3 +188,16 @@ above. Per `docs/v0-port.md`:
 | `brickDir('raa')` in the m7-web and m8-hub proofs | keep-base (m7-proof, m8-proof) | main reads `@etcito/raa`; `brickDir('raa')` serves only the local override and returns null when absent |
 | `brickDir('gamesaloon-rollback')` | no target | not a brick name: the rollback packages are releases |
 | `linkBricks` | no target | the only links are `.bricks/MAMA` (`fetch mama`) and `.bricks/UAA` (`fetch uaa`) |
+
+### Shared mesh cache
+
+`npm run play` bakes content meshes in the background and checks live content for changes.
+`npm run meshes:bake` runs the same baker alone, using `RF_CONTENT_DIR` and the resolved MAMA
+commit and raa-sdfm version. It runs three assets at a time with a 300 second limit per asset;
+set `RF_MESH_JOBS` and `RF_MESH_TIMEOUT_S` to change these limits. Successes and refusals persist
+in the ignored `.cache/meshes` folder (`RF_MESH_CACHE_DIR` overrides it); delete a key's `.failed`
+file to retry a refusal. After forcibly killing a baker, remove its abandoned `.lock` files before retrying. Browsers check IndexedDB first, then `<content root>/meshes/<key>`:
+200 supplies a versioned binary mesh, 202 waits for the server, 422 supplies a refusal reason,
+and 404 or an unavailable service falls back to local meshing. Old browser failures do not hide
+server successes. Missing meshes still leave the asset undrawn and allow the title to load.
+`content:pack` includes cached successful meshes for a static content host.

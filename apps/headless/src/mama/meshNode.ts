@@ -114,19 +114,23 @@ function groupRequest(req: MeshRequest, group: string): MeshRequest {
   return { ...req, document }
 }
 
-async function meshGroup(req: MeshRequest, group: string, timeoutMs: number): Promise<MeshedAsset> {
+async function meshGroup(req: MeshRequest, group: string | null, timeoutMs: number, signal?: AbortSignal): Promise<MeshedAsset> {
   const thread = new Worker(new URL(import.meta.url), { workerData: { meshNode: true } })
+  const abort = (): void => { void thread.terminate() }
+  signal?.addEventListener('abort', abort, { once: true })
+  if (signal?.aborted) abort()
   try {
     return await new Promise<MeshedAsset>((resolve, reject) => {
       let timer: ReturnType<typeof setTimeout> | undefined
+      if (group === null) timer = setTimeout(() => fail(`timed out after ${timeoutMs / 1000} s`), timeoutMs)
       const fail = (reason: string): void => {
-        reject(new RefusalError('mesh', `${req.assetId}#${group}`, `${reason}; update the MAMA pin or re-save the asset in SDF Modeler`))
+        reject(new RefusalError('mesh', group === null ? req.assetId : `${req.assetId}#${group}`, `${reason}; update the MAMA pin or re-save the asset in SDF Modeler`))
       }
       thread.on('message', (message) => {
         if (message.ready) {
           // Start each group's budget after plugin/wasm initialisation.
-          timer = setTimeout(() => fail(`timed out after ${timeoutMs / 1000} s`), timeoutMs)
-          thread.postMessage(groupRequest(req, group))
+          if (group !== null) timer = setTimeout(() => fail(`timed out after ${timeoutMs / 1000} s`), timeoutMs)
+          thread.postMessage(group === null ? req : groupRequest(req, group))
         } else {
           clearTimeout(timer)
           if (message.ok) resolve(message.value as MeshedAsset)
@@ -137,8 +141,13 @@ async function meshGroup(req: MeshRequest, group: string, timeoutMs: number): Pr
       thread.once('exit', (code) => { clearTimeout(timer); fail(`MAMA thread exited (${code}) without a result`) })
     })
   } finally {
+    signal?.removeEventListener('abort', abort)
     await thread.terminate()
   }
+}
+
+export async function meshWholeAsset(asset: GameAsset, timeoutMs = 300000, signal?: AbortSignal): Promise<MeshedAsset> {
+  return meshGroup(meshRequestOf(asset), null, timeoutMs, signal)
 }
 
 export async function meshGameAsset(asset: GameAsset, options: MeshNodeOptions = {}): Promise<MeshedAsset> {

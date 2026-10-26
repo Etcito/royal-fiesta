@@ -26,7 +26,8 @@
     "play": "node --experimental-strip-types tools/play.ts",
     "wavedash": "node --experimental-strip-types tools/wavedash.ts",
     "etcito:build": "node --experimental-strip-types tools/etcitoBuild.ts",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "meshes:bake": "node --experimental-strip-types tools/meshBake.ts"
   },
   "dependencies": {
     "@etcito/uaa": "file:../uaa"

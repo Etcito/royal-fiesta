@@ -7,7 +7,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test, { afterEach } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { play } from '../play.ts'
+import { play, serveDir } from '../play.ts'
+import { MeshBaker } from '../meshBake.ts'
 
 const ENV_KEYS = ['RF_PLAY_SKIP_BUILD', 'RF_PLAY_DIST'] as const
 const saved = new Map<string, string | undefined>(ENV_KEYS.map((key) => [key, process.env[key]]))
@@ -111,4 +112,36 @@ test('cleanClone CLI without --out exits 1 with the usage line', () => {
   assert.equal(result.status, 1)
   assert.equal(result.stdout, '')
   assert.ok(result.stderr.split('\n').includes('usage: node --experimental-strip-types tools/cleanClone.ts --out <file>'), result.stderr)
+})
+
+
+test('play mesh routes expose success, pending, refusal and unknown keys', async () => {
+  const dist = fakeDist(['game.html'])
+  const content = mkdtempSync(join(tmpdir(), 'rf-mesh-routes-'))
+  temps.push(content)
+  mkdirSync(join(content, 'assets'))
+  mkdirSync(join(content, 'courses'))
+  const baker = new MeshBaker(content, content)
+  const success = 'a'.repeat(64), pending = 'b'.repeat(64), failed = 'c'.repeat(64)
+  writeFileSync(join(content, success + '.mesh'), new Uint8Array([1, 2, 3]))
+  writeFileSync(join(content, failed + '.failed'), 'geometry refused')
+  baker.pending.add(pending)
+  const server = serveDir(dist, baker)
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  const base = `http://127.0.0.1:${portOf(server)}`
+  try {
+    for (const prefix of ['/meshes/', '/content/meshes/']) {
+      const ok = await fetch(base + prefix + success)
+      assert.equal(ok.status, 200)
+      assert.deepEqual(new Uint8Array(await ok.arrayBuffer()), new Uint8Array([1, 2, 3]))
+      assert.equal((await fetch(base + prefix + pending)).status, 202)
+      const refusal = await fetch(base + prefix + failed)
+      assert.equal(refusal.status, 422)
+      assert.equal(await refusal.text(), 'geometry refused')
+      assert.equal((await fetch(base + prefix + 'd'.repeat(64))).status, 404)
+    }
+  } finally {
+    server.closeAllConnections()
+    await closeServer(server)
+  }
 })

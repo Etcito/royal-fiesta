@@ -22,3 +22,5 @@ kong.rules
 apps/web/public/audio/
 # staged by npm run ui:fonts (tools/uiFont.ts bundle): the verified ui/fonts.json fonts
 apps/web/public/fonts/
+
+.cache/

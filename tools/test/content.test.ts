@@ -45,3 +45,23 @@ test('RF_CONTENT_DIR is shared by content paths while fixtures stay in the game'
     else process.env.RF_CONTENT_DIR = before
   }
 })
+
+test('content pack includes baked meshes at extensionless cache-key URLs', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rf-packed-mesh-'))
+  const saved = process.env.RF_MESH_CACHE_DIR
+  try {
+    mkdirSync(join(dir, 'assets'))
+    mkdirSync(join(dir, 'courses'))
+    mkdirSync(join(dir, 'cache'))
+    process.env.RF_MESH_CACHE_DIR = join(dir, 'cache')
+    const key = 'a'.repeat(64)
+    writeFileSync(join(dir, 'cache', key + '.mesh'), new Uint8Array([1, 2, 3]))
+    writeFileSync(join(dir, 'cache', key + '.failed'), 'refused')
+    packContent(join(dir, 'out'), dir)
+    assert.deepEqual(readFileSync(join(dir, 'out/meshes', key)), Buffer.from([1, 2, 3]))
+  } finally {
+    if (saved === undefined) delete process.env.RF_MESH_CACHE_DIR
+    else process.env.RF_MESH_CACHE_DIR = saved
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

@@ -1,5 +1,5 @@
 // Shared disk layout for local play, content checkouts and CDN uploads.
-import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { repoRoot } from './bricks.ts'
@@ -39,6 +39,14 @@ export function packContent(out: string, dir = contentDir()): ContentIndex {
     const target = join(out, path)
     mkdirSync(dirname(target), { recursive: true })
     cpSync(join(dir, path), target)
+  }
+  // Baked successes are directly addressable by the same key on a static content host.
+  const meshes = resolve(process.env.RF_MESH_CACHE_DIR ?? join(repoRoot(), '.cache', 'meshes'))
+  if (existsSync(meshes)) {
+    mkdirSync(join(out, 'meshes'), { recursive: true })
+    for (const name of readdirSync(meshes)) {
+      if (/^[a-f0-9]{64}\.mesh$/.test(name)) cpSync(join(meshes, name), join(out, 'meshes', name.slice(0, -5)))
+    }
   }
   mkdirSync(out, { recursive: true })
   writeFileSync(join(out, 'index.json'), JSON.stringify(index, null, 2) + '\n')

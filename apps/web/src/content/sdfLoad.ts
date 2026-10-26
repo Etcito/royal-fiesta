@@ -10,7 +10,8 @@ import type { MamaFacade, MeshedAsset } from '../sdf/mamaApi.ts'
 import { idbStore, MeshCache, meshCacheKey, memoryStore } from '../sdf/meshCache.ts'
 import { poolSize } from '../sdf/meshPool.ts'
 import type { MeshPool } from '../sdf/meshPool.ts'
-import { browserGameAssets, loadV1Courses } from './v1Data.ts'
+import { fetchServerMesh } from '../sdf/serverMesh.ts'
+import { browserContentRoot, browserGameAssets, loadV1Courses } from './v1Data.ts'
 
 const PODIUM_ID = 'podium'
 const CHARACTER_ID = 'penguin.body'
@@ -132,15 +133,20 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       step(a.id)
       continue
     }
-    const known = knownFailure(key)
-    if (known !== null) {
-      failed.set(a.id, known)
-      console.warn(`[content] ${a.id} is not drawn (failed before with this asset and MAMA; ?remesh retries): ${known}`)
-      step(a.id)
-      continue
+    const load = async (): Promise<MeshedAsset> => {
+      const server = await fetchServerMesh(browserContentRoot(), key, () => {
+        onProgress({ phase: 'meshing', done, total: assets.length, label: 'Building meshes on the server' })
+      })
+      if (server !== null) {
+        if (server.assetId !== a.id || server.hash !== a.hash || server.mesher !== a.mesher.output) throw new Error('server mesh does not match asset')
+        return server
+      }
+      const known = knownFailure(key)
+      if (known !== null) throw new Error(known)
+      return meshPool(facade).mesh({ assetId: a.id, hash: a.hash, mesher: a.mesher, document: a.document }, MESH_LIMIT_S * 1000)
     }
-    const req = { assetId: a.id, hash: a.hash, mesher: a.mesher, document: a.document }
-    const miss = meshPool(facade).mesh(req, MESH_LIMIT_S * 1000).then(async (value) => {
+    /* Local failures are checked only after the server, so old browser timeouts cannot hide baked meshes. */
+    const miss = load().then(async (value) => {
       await c.put(key, value)
       meshed.set(a.id, value)
       source.set(a.id, 'miss')

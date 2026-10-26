@@ -102,9 +102,18 @@ function playlistIds(courses: readonly CourseV1[], profile: ProfileName): string
 
 export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadProgress) => void): Promise<SdfContent> {
   // First, so a missing MAMA refuses before any fetch.
+  const timeline: string[] = []
+  let previous = performance.now()
+  const mark = (step: string): void => {
+    const end = performance.now()
+    timeline.push(JSON.stringify({ step, start: previous, end, ms: end - previous }))
+    previous = end
+  }
   const facade = await loadMamaFacade()
+  mark('MAMA module')
   const { courses, byId } = await loadV1Courses(onProgress)
 
+  mark('Course and referenced asset load')
   const ids = assetSet(courses, byId, profile)
   const resolver = browserGameAssets()
   const assets: GameAsset[] = []
@@ -113,6 +122,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     onProgress({ phase: 'assets', done: i + 1, total: ids.length, label: ids[i] })
   }
 
+  mark('Playlist assets')
   const c = meshCache()
   const before = { ...c.stats }
   const meshed = new Map<string, MeshedAsset>()
@@ -164,6 +174,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     misses.push(miss)
   }
   await Promise.all(misses)
+  mark('MAMA meshing / cache')
   onProgress({ phase: 'done', done: assets.length, total: assets.length, label: 'done' })
 
   const meshedLines = ids.map((id) => {
@@ -175,6 +186,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     meshed,
     failed,
     report: {
+      bootTimeline: timeline,
       failed: [...failed.keys()].sort(),
       content: 'sdf',
       mamaVersion: facade.mamaVersion,

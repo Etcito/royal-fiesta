@@ -1,5 +1,6 @@
 // Binds a MatchSim to a RenderPort: bean and obstacle instances, interpolated poses and the follow camera.
 // View side only: reads the sim view API and the smoother, never writes either.
+import { courseFrame, roundReady } from './roundLoad.ts'
 import type { CorrectionSmoother } from '@gamesaloon/rollback'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
@@ -84,8 +85,12 @@ export class SceneView {
     const course = sim.course()
     let reset = false
     if (course !== this.course) {
-      this.loadObstacles(sim, course)
-      this.dress(course)
+      if (!roundReady(port, course?.id ?? 'round')) return
+      courseFrame(sim, port, course?.id ?? 'round', () => {
+        this.loadObstacles(sim, course)
+        this.dress(course)
+        if (this.beans.length === 0) this.createBeans(sim.setup.playerCount)
+      })
       reset = true
     }
     const players = sim.setup.playerCount

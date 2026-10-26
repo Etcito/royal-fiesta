@@ -3,6 +3,8 @@
 // that many piloted clients over a LoopbackRelay. Content comes from pickContent, input only from GameInput.
 // Every screen and the round HUD are drawn by uaa on canvas#ui, above the RAA views.
 /// <reference types="vite/client" />
+import { roundOverlay } from '../content/roundOverlay.ts'
+import { observeRoundLoad, startup, renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import { UaaError } from '@etcito/uaa'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
@@ -362,7 +364,7 @@ class LocalMode implements Mode {
     const { R, content, course } = this.c.loaded
     const seed = Date.now() >>> 0
     const setup = course !== null ? courseSetup(seed, course, content.playlist()) : netSetup(seed, 1, 'sprint', content.playlist())
-    const sim = new MatchSim(R, setup)
+    const sim = startup('Local round', () => new MatchSim(R, setup))
     const inputs = Array.from({ length: setup.playerCount }, () => neutralInput())
     this.match = { sim, inputs, acc: 0, singleRace: course !== null && course.kind === 'race', order: [] }
     // Hide the hub before the match view's first update (its dressing leaves before the course's enters).
@@ -387,7 +389,7 @@ class LocalMode implements Mode {
 
   frame(f: FrameIn): GameScreen {
     const screen = this.match === null ? this.frameHub(f) : this.frameMatch(this.match, f)
-    this.c.loaded.ports[0].render()
+    renderFrame(this.c.loaded.ports[0], () => this.c.loaded.ports[0].render())
     return screen
   }
 
@@ -570,7 +572,7 @@ class OnlineMode implements Mode {
     } else if (flow.state === 'hub' || flow.state === 'queued') {
       this.hubView.update(flow.hub.state(this.local), this.c.q.colour, flow.remotes(now), flow.hub.tick, f.dt, flow.hub.emote(now))
     }
-    this.c.loaded.ports[0].render()
+    renderFrame(this.c.loaded.ports[0], () => this.c.loaded.ports[0].render())
     return screen
   }
 
@@ -709,6 +711,9 @@ class App {
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
+  private readonly loadingOverlay = roundOverlay()
+  private roundLoading: string | null = null
+  private stopRoundLoad: (() => void) | null = null
   private loaded: Loaded | null = null
   private query: Query | null = null
   private emote = 0
@@ -762,6 +767,8 @@ class App {
   }
 
   fail(message: string): void {
+    this.roundLoading = null
+    this.loadingOverlay.hide()
     this.run(this.nav.dispatch({ kind: 'error', message }))
   }
 
@@ -777,6 +784,9 @@ class App {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
+    this.loadingOverlay.hide(true)
+    this.stopRoundLoad?.()
+    this.stopRoundLoad = null
     this.stopLoop?.()
     this.stopLoop = null
     this.stopMode()
@@ -814,12 +824,14 @@ class App {
       const content = pickContent(new URLSearchParams(this.search))
       const R = await initRapier()
       await content.load('sprint', progress => {
+        this.loadingOverlay.show(progress.label, progress.done, progress.total)
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
       })
       // ?course=<hub> opens the hub itself: the hub is the lobby, not a round (courseSetup refuses hubs).
       const picked = q.course === null ? null : content.course(q.course)
       const course = picked !== null && picked.kind === 'hub' ? null : picked
+      this.loadingOverlay.show('Creating renderer')
       const { ports, canvases } = await this.mountPorts(content, q.clients)
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.
@@ -827,8 +839,17 @@ class App {
         this.views.replaceChildren()
         return
       }
+      this.stopRoundLoad?.()
+      this.stopRoundLoad = observeRoundLoad(label => {
+        this.roundLoading = label
+        if (label !== null) {
+          this.loadingOverlay.show(label)
+          this.host.setLoading(0, label)
+        } else this.loadingOverlay.hide()
+      }, content.report())
       this.loaded = { R, content, ports, canvases, course }
       this.run(this.nav.dispatch({ kind: 'loaded' }))
+      if (this.roundLoading === null) this.loadingOverlay.hide()
     } catch (e) {
       console.error(e)
       this.fail(messageOf(e))
@@ -882,6 +903,8 @@ class App {
   }
 
   private stopMode(): void {
+    this.roundLoading = null
+    this.loadingOverlay.hide()
     this.mode?.dispose()
     this.mode = null
     this.orbit.reset(0)
@@ -939,7 +962,7 @@ class App {
     // The spectate banner has no HUD pills: its lines carry the round and the qualified count.
     if (nav.screen === 'spectate' && values !== null) info = [values.kind, values.qualified ?? '']
     const error = nav.screen === 'settings' ? this.settingsError : nav.error
-    const model = menuModel(nav.screen, nav.actions(), { settings: this.settings, rebinding: this.rebinding, error, info })
+    const model = menuModel(this.roundLoading === null ? nav.screen : 'loading', this.roundLoading === null ? nav.actions() : [], { settings: this.settings, rebinding: this.rebinding, error, info })
     // Overlays leave the pointer to the views (pointer lock on the game canvas); menus take clicks.
     this.screens.style.pointerEvents = model.overlay ? 'none' : 'auto'
     this.resize()
@@ -1107,6 +1130,7 @@ function bootFailed(e: unknown): void {
 // (no storage: the App could not keep its settings, and its failed boot would empty the page an op needs).
 // The first op call tears the App down.
 const opsMode = new URLSearchParams(window.location.search).get('mode') === 'ops' || window.origin === 'null'
+if (opsMode) roundOverlay().hide(true)
 let app: App | null = null
 let opTookPage = false
 try {

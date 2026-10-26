@@ -1,3 +1,4 @@
+import { startup, roundStep, simStep } from '../render/roundLoad.ts'
 import { RollbackSession, evenPeers, hex8 } from '@gamesaloon/rollback'
 import type { NetTransport } from '@gamesaloon/rollback'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
@@ -39,9 +40,9 @@ function check(cfg: NetMatchConfig): void {
 export function createNetMatch(R: RapierModule, cfg: NetMatchConfig, net: NetTransport, opts?: { cpuMs?: () => number }): NetMatch {
   check(cfg)
   const setup = cfg.setup
-  const sim = new MatchSim(R, setup)
+  const sim = startup('Online round', () => roundStep('MatchSim construction', () => new MatchSim(R, setup)))
   // Bots (players humanPeers..7) belong to no peer: the session feeds them neutral input and BotSystem overrides it.
-  const session = new RollbackSession<PlayerInput>(sim, {
+  const session = simStep(sim, 'Rollback session start', () => new RollbackSession<PlayerInput>(sim, {
     ...FIESTA_TUNING,
     localPeer: cfg.localPeer,
     playerCount: NET_PLAYERS,
@@ -49,7 +50,7 @@ export function createNetMatch(R: RapierModule, cfg: NetMatchConfig, net: NetTra
     codec: inputCodec,
     dumpInfo: () => ({ setupHash: hex8(setupHash(setup)), seed: setup.seed, profile: setup.profile }),
     cpuMs: opts?.cpuMs,
-  }, net)
+  }, net))
   let finalTick = -1
   let disposed = false
   return {

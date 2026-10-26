@@ -1,10 +1,15 @@
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the
 // MAMA workers already produced (one mesh per part, split by material) and the graph materials
 // compiled by @etcito/raa-sdfm's mapMaterial. Tint multiplies the graph material's base colour.
+import { PALETTE } from '@royal-fiesta/game/render/palette'
+import { PODIUM_TINTS } from '@royal-fiesta/game/render/podiumStage'
+import { V0_ASSET_MAP } from '@royal-fiesta/game/courseV1'
+import { roundStep, renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import { loadRaa } from '@etcito/raa'
 import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
 import { mapMaterial } from '@etcito/raa-sdfm'
 import type { SdfmCompiledMaterial, SdfmMappedMaterial } from '@etcito/raa-sdfm'
+import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { CameraPose, QuatT, RenderPort, RenderStats, RenderTarget, Vec3T } from '@royal-fiesta/game/render/port'
 import { refuse } from '@royal-fiesta/sim/refusal'
@@ -30,12 +35,23 @@ interface Uploaded { assetId: string; parts: PartUpload[]; materials: MaterialRe
 interface Live { root: number; instances: number[]; visible: boolean }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
-  failed: ReadonlyMap<string, string> = new Map()): Promise<RenderPort> {
+  failed: ReadonlyMap<string, string> = new Map(),
+  onProgress: (p: LoadProgress) => void = () => {},
+  onTiming: (span: { step: string; start: number; end: number; ms: number }) => void = () => {}): Promise<RenderPort> {
   const status = await raaStatus()
   if (!status.available) refuse(AREA, WHERE, status.reason)
   const port = new SdfRenderPort(meshed, failed)
+  const start = performance.now()
   await port.init(target)
-  return port
+  const end = performance.now()
+  onTiming({ step: 'RAA engine init', start, end, ms: end - start })
+  try {
+    await port.prepare(onProgress, onTiming)
+    return port
+  } catch (e) {
+    port.dispose()
+    throw e
+  }
 }
 
 class SdfRenderPort implements RenderPort {
@@ -77,6 +93,37 @@ class SdfRenderPort implements RenderPort {
     this.target = target
   }
 
+  // Register the complete material function set before the first render. Adding functions lazily
+  // during a round can force RAA to compile another shader containing the growing function set.
+  async prepare(onProgress: (p: LoadProgress) => void, onTiming: (span: { step: string; start: number; end: number; ms: number }) => void): Promise<void> {
+    const instances: number[] = []
+    const ids = [...this.meshed.keys()].sort()
+    const paint = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    try {
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i]
+        onProgress({ phase: 'upload', done: i, total: ids.length, label: `Uploading ${id}` })
+        await paint()
+        const start = performance.now()
+        const handle = this.registerAsset(id, { id } as PrimsAsset)
+        instances.push(this.createInstance(handle, null))
+        const tints = id === 'penguin.body' ? PALETTE : id === V0_ASSET_MAP['wall-block'] ? PODIUM_TINTS : []
+        for (const tint of tints) instances.push(this.createInstance(handle, tint))
+        const end = performance.now()
+        onTiming({ step: `Upload and material variants: ${id}`, start, end, ms: end - start })
+      }
+      onProgress({ phase: 'upload', done: ids.length, total: ids.length, label: 'Compiling course shaders' })
+      await paint()
+      this.setCamera(0, { eye: [0, 3, 8], target: [0, 0, 0], fovYDeg: 55, near: 0.1, far: 1000 })
+      const start = performance.now()
+      this.render()
+      const end = performance.now()
+      onTiming({ step: 'RAA pipeline / shader warmup', start, end, ms: end - start })
+    } finally {
+      for (const instance of instances) this.destroyInstance(instance)
+    }
+  }
+
   registerAsset(name: string, asset: PrimsAsset): number {
     const named = this.handleOfName.get(name)
     if (named !== undefined) return named
@@ -94,7 +141,7 @@ class SdfRenderPort implements RenderPort {
     const empty = meshed === undefined && this.failed.has(id)
     if (meshed === undefined && !empty) refuse(AREA, id, `not meshed; mesh asset '${id}' before the SDF port uploads it`)
     if (meshed !== undefined && meshed.assetId !== id) refuse(AREA, id, `the meshed entry says asset '${meshed.assetId}'; clear the mesh cache and remesh the asset`)
-    const uploaded: Uploaded = meshed === undefined ? { assetId: id, parts: [], materials: [], tints: new Map() } : this.upload(id, meshed)
+    const uploaded: Uploaded = meshed === undefined ? { assetId: id, parts: [], materials: [], tints: new Map() } : roundStep(`Mesh upload / materials: ${id}`, () => this.upload(id, meshed))
     const handle = this.uploaded.length
     this.uploaded.push(uploaded)
     this.handleOfId.set(id, handle)
@@ -181,7 +228,7 @@ class SdfRenderPort implements RenderPort {
   render(): RenderStats {
     const engine = this.need()
     const t0 = performance.now()
-    engine.render(t0)
+    renderFrame(this, () => engine.render(t0))
     const frameMs = performance.now() - t0
     const stats = engine.stats()
     let visible = 0

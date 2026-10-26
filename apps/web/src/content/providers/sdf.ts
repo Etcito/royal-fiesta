@@ -1,5 +1,6 @@
 // SDF content: the v1 courses, rendered from meshes the MAMA workers built through the SDF render port.
 // The load reads courses and builds meshes only; the sim session never waits on or reads it (1.5).
+import { attachRoundReport } from '@royal-fiesta/game/render/roundLoad'
 import type { ContentProvider, CourseDressing, GameContent, LoadProgress, PodiumLayout } from '@royal-fiesta/game/content'
 import { podiumLayoutOf, V0_ASSET_MAP } from '@royal-fiesta/game/courseV1'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
@@ -35,9 +36,11 @@ function byIdOrder(a: { id: string }, b: { id: string }): number {
 class SdfContent implements GameContent {
   readonly id = 'sdf' as const
   private loaded: Loaded | null = null
+  private onProgress: (p: LoadProgress) => void = () => {}
 
   // A missing MAMA refuses from loadSdfContent before any fetch; it never falls back to v1.
   async load(profile: ProfileName, onProgress: (p: LoadProgress) => void): Promise<void> {
+    this.onProgress = onProgress
     const content = await loadSdfContent(profile, onProgress)
     const { all: courses, byId } = content.courses
     const playlist: ResolvedCourse[] = []
@@ -116,9 +119,18 @@ class SdfContent implements GameContent {
     return this.assets(CHARACTER_ID)
   }
 
-  createPort(target: RenderTarget): Promise<RenderPort> {
+  async createPort(target: RenderTarget): Promise<RenderPort> {
     const loaded = this.need('port')
-    return createSdfPort(target, loaded.meshed, loaded.failed)
+    const start = performance.now()
+    const port = await createSdfPort(target, loaded.meshed, loaded.failed, this.onProgress, span => {
+      const history = loaded.report.bootTimeline
+      loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify(span)]
+    })
+    attachRoundReport(port, loaded.report)
+    const end = performance.now()
+    const history = loaded.report.bootTimeline
+    loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify({ step: 'RAA init / upload / shader warmup', start, end, ms: end - start })]
+    return port
   }
 
   dressing(): CourseDressing {

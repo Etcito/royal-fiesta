@@ -2,6 +2,7 @@
 // DOM-free and Node-API-free: the Node proof drives it with NullRenderPort.
 // LoopbackRelay rate-limits on globalThis.performance.now(), so in Node and in the GPU op the caller must point
 // performance.now at the same clock it passes as deps.now, or the relay and the flows disagree on time.
+import { renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import type { CourseDressing } from '@royal-fiesta/game/content'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
@@ -87,7 +88,7 @@ export class InPageHubLoop {
     this.relay.pump()
     const now = this.deps.now()
     for (let k = 0; k < this.flows.length; k++) this.view(k, dtS, now)
-    for (const p of this.ports) p.render()
+    for (const p of this.ports) renderFrame(p, () => p.render())
   }
 
   // Compares the confirmed hashes of the clients' current (or last) matches.

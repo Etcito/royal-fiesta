@@ -7,7 +7,7 @@
   "category": "obstacle",
   "world": "candy",
   "mesher": {
-    "output": "quad"
+    "output": "paramesh"
   },
   "document": {
     "format": "sdfm",
@@ -36,7 +36,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "poly"
+          "output": "paramesh"
         },
         "gameCollision": false
       },
@@ -444,5 +444,5 @@
     "min": [-5.25, -1, -5.25],
     "max": [5.25, 0.98, 5.25]
   },
-  "hash": "444869467e0ceae08972407f30fcd61197541d24ee179f020c1d2835ab8138be"
+  "hash": "26f15f2ea293c72c6fa7098d0177168e08d429210d41c645f6b8045c43f8a259"
 }

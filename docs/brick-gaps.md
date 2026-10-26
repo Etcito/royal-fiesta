@@ -332,10 +332,14 @@ sibling's `dist/` was built at 00:59 on 2026-10-25, from an earlier commit than 
 Until `npm run build` is re-run in the sibling, the Node check meshes older MAMA code than the
 browser does.
 
-## ui font upload
+### Paramesh migration (MAMA 9d7fe03, 2026-10-26)
 
-`@etcito/raa-assets-tools` 0.1.0 has no remote put: `raa-assets put` only writes a local store
-(`--store <dir>`). `tools/uiFont.ts upload` therefore stages the WOFF2 with
-`raa-assets put --store out/font-store`, then publishes the staged object to
-https://assets.etcito.com over SSH (scp-form `ASSET_STORE_SSH`, private key path in
-`ASSET_STORE_KEY`), and verifies the object URL. A remote put in the CLI would remove the SSH step.
+Every asset group that Paramesh meshes now uses it: banner, checkpoint-gate, cloud, hot-air-balloon,
+pendulum-hammer, rotating-door, seesaw-plank and tower (MAMA 1aff821: no shape-count limit), then floor-disc,
+floor-tile, moving-platform, queue-pad and plaza-fountain (MAMA 9d7fe03: rigid modifiers of nested groups become
+copies). Exported Paramesh normals are unit length since 9d7fe03 (podium-block had 256 normals a few thousandths off).
+
+Groups that keep their mesher, with the reason Paramesh gives:
+- candy.bounce-pad (lowpoly): the cylinder rim holds detail shapes.
+- candy.spinner-bar (lowpoly), candy.slime-pool (lowpoly), costume.pineapple-suit (poly): deformers.
+- penguin.body (quad), costume.fish-scarf (poly): a forced Paramesh run did not finish in 600 s.

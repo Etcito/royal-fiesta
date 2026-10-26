@@ -7,7 +7,7 @@
   "category": "scenery",
   "world": "candy",
   "mesher": {
-    "output": "lowpoly"
+    "output": "paramesh"
   },
   "document": {
     "format": "sdfm",
@@ -46,7 +46,7 @@
           "world": "candy"
         },
         "mesher": {
-          "output": "lowpoly"
+          "output": "paramesh"
         }
       },
       "envelope": {
@@ -352,5 +352,5 @@
     "min": [-2.318653, 0, -2.318653],
     "max": [2.318653, 6.08, 2.318653]
   },
-  "hash": "fbae00af69fa17e1ef51b6dc89fd2a74a9b2d931b30b53b0a8b54513766e7cbf"
+  "hash": "bcff8f986cea586eb0559a4bc7eabf8f85d0369d5fbec048290d44bc99b39e04"
 }

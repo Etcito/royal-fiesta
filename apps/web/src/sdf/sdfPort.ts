@@ -29,10 +29,11 @@ interface MaterialRecord { base: number; mapped: SdfmMappedMaterial; tints: Map<
 interface Uploaded { assetId: string; parts: PartUpload[]; materials: MaterialRecord[]; tints: Map<string, TintMesh[]> }
 interface Live { root: number; instances: number[]; visible: boolean }
 
-export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>): Promise<RenderPort> {
+export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
+  failed: ReadonlyMap<string, string> = new Map()): Promise<RenderPort> {
   const status = await raaStatus()
   if (!status.available) refuse(AREA, WHERE, status.reason)
-  const port = new SdfRenderPort(meshed)
+  const port = new SdfRenderPort(meshed, failed)
   await port.init(target)
   return port
 }
@@ -40,6 +41,7 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
 class SdfRenderPort implements RenderPort {
   readonly kind = 'raa' as const
   private readonly meshed: ReadonlyMap<string, MeshedAsset>
+  private readonly failed: ReadonlyMap<string, string>
   private engine: Engine | null = null
   private canvas: HTMLCanvasElement | null = null
   private target: RenderTarget | null = null
@@ -52,8 +54,9 @@ class SdfRenderPort implements RenderPort {
   private tintSeq = 0
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
-  constructor(meshed: ReadonlyMap<string, MeshedAsset>) {
+  constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map()) {
     this.meshed = meshed
+    this.failed = failed
   }
 
   // Same target rule as raa-port: RAA has one camera and no scissor, so one full-canvas viewport.
@@ -87,9 +90,11 @@ class SdfRenderPort implements RenderPort {
       return known
     }
     const meshed = this.meshed.get(id)
-    if (meshed === undefined) refuse(AREA, id, `not meshed; mesh asset '${id}' before the SDF port uploads it`)
-    if (meshed.assetId !== id) refuse(AREA, id, `the meshed entry says asset '${meshed.assetId}'; clear the mesh cache and remesh the asset`)
-    const uploaded = this.upload(id, meshed)
+    // An asset the mesher refused at load (permissive load) gets a visual with no part: its instances draw nothing.
+    const empty = meshed === undefined && this.failed.has(id)
+    if (meshed === undefined && !empty) refuse(AREA, id, `not meshed; mesh asset '${id}' before the SDF port uploads it`)
+    if (meshed !== undefined && meshed.assetId !== id) refuse(AREA, id, `the meshed entry says asset '${meshed.assetId}'; clear the mesh cache and remesh the asset`)
+    const uploaded: Uploaded = meshed === undefined ? { assetId: id, parts: [], materials: [], tints: new Map() } : this.upload(id, meshed)
     const handle = this.uploaded.length
     this.uploaded.push(uploaded)
     this.handleOfId.set(id, handle)

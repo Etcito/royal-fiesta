@@ -23,6 +23,7 @@ interface Loaded {
   hub: ResolvedCourse
   podium: PodiumLayout
   meshed: Map<string, MeshedAsset>
+  failed: ReadonlyMap<string, string>
   standIns: Map<string, PrimsAsset>
   report: Record<string, number | string | readonly string[]>
 }
@@ -58,7 +59,7 @@ class SdfContent implements GameContent {
     // to scale its platforms; retain that metadata without loading v0 primitives.
     const resolver = browserGameAssets()
     const standIns = new Map<string, PrimsAsset>()
-    for (const id of [...content.meshed.keys()].sort()) {
+    for (const id of [...content.meshed.keys(), ...content.failed.keys()].sort()) {
       const prims: PrimsAsset = {
         format: 'raa.prims', version: 0, id, name: id,
         budget: { triangles: 0, segments: 0 },
@@ -71,7 +72,7 @@ class SdfContent implements GameContent {
       }
       standIns.set(id, prims)
     }
-    this.loaded = { courses, byId, playlist, hub, podium: podiumLayoutOf(podiumCourse), meshed: content.meshed, standIns, report: content.report }
+    this.loaded = { courses, byId, playlist, hub, podium: podiumLayoutOf(podiumCourse), meshed: content.meshed, failed: content.failed, standIns, report: content.report }
   }
 
   private need(what: string): Loaded {
@@ -117,7 +118,7 @@ class SdfContent implements GameContent {
 
   createPort(target: RenderTarget): Promise<RenderPort> {
     const loaded = this.need('port')
-    return createSdfPort(target, loaded.meshed)
+    return createSdfPort(target, loaded.meshed, loaded.failed)
   }
 
   dressing(): CourseDressing {

@@ -11,8 +11,8 @@ export type MeshReplyMessage =
   | { id: number; ok: true; value: MeshedAsset }
   | { id: number; ok: false; area: string; path: string; reason: string }
 
-interface Job { id: number; req: MeshRequest; resolve(v: MeshedAsset): void; reject(e: unknown): void }
-interface Slot { worker: WorkerLike; job: Job | null }
+interface Job { id: number; req: MeshRequest; limitMs: number; resolve(v: MeshedAsset): void; reject(e: unknown): void }
+interface Slot { worker: WorkerLike; job: Job | null; timer?: ReturnType<typeof setTimeout> }
 
 function parseReply(data: unknown): MeshReplyMessage | null {
   if (typeof data !== 'object' || data === null) return null
@@ -47,10 +47,11 @@ export class MeshPool {
     return this.queue.length + busy
   }
 
-  mesh(req: MeshRequest): Promise<MeshedAsset> {
+  /** limitMs > 0: a worker still meshing this asset that long after it started is stopped and replaced, and the asset refused. */
+  mesh(req: MeshRequest, limitMs = 0): Promise<MeshedAsset> {
     if (this.closed) return Promise.reject(new RefusalError('sdf', req.assetId, 'mesh pool is closed; create a new pool'))
     return new Promise<MeshedAsset>((resolve, reject) => {
-      this.queue.push({ id: this.nextId++, req, resolve, reject })
+      this.queue.push({ id: this.nextId++, req, limitMs, resolve, reject })
       this.dispatch()
     })
   }
@@ -83,6 +84,7 @@ export class MeshPool {
       s.job = job
       const msg: MeshJobMessage = { id: job.id, req: job.req }
       s.worker.postMessage(msg)
+      if (job.limitMs > 0) s.timer = setTimeout(() => { if (s.job === job) this.onCrash(s, new Error(`no mesh after ${job.limitMs / 1000} s`)) }, job.limitMs)
     }
   }
 
@@ -95,6 +97,7 @@ export class MeshPool {
       return
     }
     slot.job = null
+    clearTimeout(slot.timer)
     if (reply.ok) job.resolve(reply.value)
     else job.reject(new RefusalError(reply.area, reply.path, reply.reason))
     this.dispatch()
@@ -103,6 +106,7 @@ export class MeshPool {
   private onCrash(slot: Slot, e: unknown): void {
     const job = slot.job
     slot.job = null
+    clearTimeout(slot.timer)
     slot.worker.onmessage = null
     slot.worker.onerror = null
     slot.worker.terminate()

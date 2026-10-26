@@ -14,10 +14,14 @@ import { browserGameAssets, loadV1Courses } from './v1Data.ts'
 
 const PODIUM_ID = 'podium'
 const CHARACTER_ID = 'penguin.body'
+/** An asset still meshing this many seconds after its worker started is left out like a refused one; the load goes on. */
+const MESH_LIMIT_S = 90
 
 export interface SdfContent {
   courses: { all: CourseV1[]; byId: ReadonlyMap<string, CourseV1> }
   meshed: Map<string, MeshedAsset>
+  /** Assets the mesher refused, with the reason: drawn as nothing. */
+  failed: Map<string, string>
   report: Record<string, number | string | readonly string[]>
 }
 
@@ -96,6 +100,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   const c = meshCache()
   const before = { ...c.stats }
   const meshed = new Map<string, MeshedAsset>()
+  const failed = new Map<string, string>()
   const source = new Map<string, 'miss' | 'memory' | 'idb'>()
   let done = 0
   const step = (id: string): void => {
@@ -113,28 +118,34 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       continue
     }
     const req = { assetId: a.id, hash: a.hash, mesher: a.mesher, document: a.document }
-    const miss = meshPool(facade).mesh(req).then(async (value) => {
+    const miss = meshPool(facade).mesh(req, MESH_LIMIT_S * 1000).then(async (value) => {
       await c.put(key, value)
       meshed.set(a.id, value)
       source.set(a.id, 'miss')
       step(a.id)
+    }, (e: unknown) => {
+      // Permissive load (owner rule): an asset the mesher refuses is left out (drawn as nothing) and named in the
+      // console and the report; the game still starts. Failures are not cached, so a fixed asset meshes next time.
+      const reason = e instanceof Error ? e.message : String(e)
+      failed.set(a.id, reason)
+      console.warn(`[content] ${a.id} is not drawn: ${reason}`)
+      step(a.id)
     })
-    // Handled by Promise.all below; this only avoids an unhandled rejection while lookups continue.
-    miss.catch(() => {})
     misses.push(miss)
   }
-  // Any refusal (mesher naming asset and group, worker crash) stops the load unchanged.
   await Promise.all(misses)
   onProgress({ phase: 'done', done: assets.length, total: assets.length, label: 'done' })
 
   const meshedLines = ids.map((id) => {
-    const m = meshed.get(id) as MeshedAsset
-    return `${id}|${m.mesher}|${m.parts}|${m.triangles}|${source.get(id)}`
+    const m = meshed.get(id)
+    return m === undefined ? `${id}|failed|0|0|-` : `${id}|${m.mesher}|${m.parts}|${m.triangles}|${source.get(id)}`
   })
   return {
     courses: { all: courses, byId },
     meshed,
+    failed,
     report: {
+      failed: [...failed.keys()].sort(),
       content: 'sdf',
       mamaVersion: facade.mamaVersion,
       raaSdfmVersion: facade.raaSdfmVersion,

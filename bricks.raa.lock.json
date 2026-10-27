@@ -1,0 +1,6 @@
+{
+  "repo": "Etcito/raa",
+  "source": "../raa",
+  "manifest": "dist/bricks/bricks.json",
+  "commit": "55754d1e774dd7e344bd7153aef7c8f7da05d5ec"
+}

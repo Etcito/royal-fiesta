@@ -39,7 +39,9 @@ async function main() {
   writeFileSync(join(probe, 'index.html'), '<script>window.nmcGpu={ops:{render:async()=>({json:{ok:true},files:[]})}}</script>')
   const probeResult = await render(await publish(probe), {}, 'probe-result')
   assert.equal(unwrapOp(probeResult, 'ok').out.ok, true)
-  await run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'])
+  if (!process.argv.includes('--built')) {
+    await run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'])
+  }
   const dist = join(ROOT, 'apps/web/dist')
   packContent(join(dist, 'content'))
   const manifestFile = join(dist, 'nmc.gpu.json'); const manifest = read(manifestFile)

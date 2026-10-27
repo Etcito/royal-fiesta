@@ -170,6 +170,25 @@ validates the same channel before the SDF tour: `apps/web/package.json` must use
 pin. `raaLocal()` stays exported for the legacy Vite alias and the m11-m13 proofs only; the
 fetch/status workflow and the m17 check do not read it.
 
+The managed, read-only `../raa` staging at commit
+`55754d1e774dd7e344bd7153aef7c8f7da05d5ec` has an older `dist/bricks/bricks.json`
+without a commit field. `bricks.raa.lock.json` records its build provenance in this
+repository. The reader uses that record only for the named sibling with matching Git
+HEAD and only when the staged manifest omits `commit`; it never overrides a manifest
+commit. Refresh this record during environment provisioning when the staged build changes.
+No sibling build or write is performed by the M18 capture queue.
+
+`.nmc/commands.json` builds the game before calling
+`node tools/anim-brick-capture.mjs --built`. The writer packs content, then invokes
+`node "$NMC_GPU_CLIENT" publish <directory>` and
+`node "$NMC_GPU_CLIENT" render <input.json> --page-ref <published-ref> -o <output>`
+with argument arrays and a 60-second limit per client call. Publishing supplies the
+server-managed page hosting; no local HTTP server is needed. It first runs a blank
+transport probe, then the real `game.html` at one frame, then the full game capture.
+The transport delegates to the game's `animBrick` operation. The validated result is
+written to `proofs/m18/brick-browser.json`, followed by the unchanged five-label proof.
+This is execution/non-empty evidence, not a judged visual change; no image judge is used.
+
 ## CLI
 
 ```sh

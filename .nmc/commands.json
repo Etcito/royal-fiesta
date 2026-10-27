@@ -1,89 +1,53 @@
 [
   {
-    "name": "m17-mama-fetch",
-    "command": "node --experimental-strip-types tools/bricks.ts fetch mama",
+    "name": "m18-fetch-node",
+    "command": "node --experimental-strip-types apps/headless/proofs/m18-raa-brick.ts --only fetch,node",
     "timeout_s": 60,
     "cwd": "."
   },
   {
-    "name": "m17-bricks-check",
-    "command": "node --experimental-strip-types tools/bricks.ts check",
-    "timeout_s": 60,
-    "cwd": ".",
-    "after": [
-      "m17-mama-fetch"
-    ]
-  },
-  {
-    "name": "m17-worker-bootstrap",
-    "command": "node --experimental-strip-types --test --test-concurrency=3 apps/web/test/classicWorker.test.ts apps/web/test/mamaImpl.test.ts apps/web/test/meshPool.test.ts apps/web/test/mamaMaterials.test.ts",
-    "timeout_s": 60,
-    "cwd": ".",
-    "after": [
-      "m17-mama-fetch"
-    ]
-  },
-  {
-    "name": "m17-typecheck",
+    "name": "m18-typecheck",
     "command": "npm run typecheck",
     "timeout_s": 60,
     "cwd": ".",
     "after": [
-      "m17-worker-bootstrap"
+      "m18-fetch-node"
     ]
   },
   {
-    "name": "m17-typecheck-mama",
-    "command": "npm run typecheck:mama",
-    "timeout_s": 60,
+    "name": "m18-build",
+    "command": "npm run build",
+    "timeout_s": 180,
     "cwd": ".",
     "after": [
-      "m17-worker-bootstrap"
-    ]
-  },
-  {
-    "name": "m17-tests",
-    "command": "npm run test -- --test-concurrency=3",
-    "timeout_s": 1800,
-    "cwd": ".",
-    "after": [
-      "m17-typecheck",
-      "m17-typecheck-mama"
-    ]
-  },
-  {
-    "name": "m17-mesh-node",
-    "command": "node --experimental-strip-types apps/headless/proofs/m17-sdf-runtime.ts --only mesh-node",
-    "timeout_s": 1800,
-    "cwd": ".",
-    "after": [
-      "m17-bricks-check",
-      "m17-tests"
-    ]
-  },
-  {
-    "name": "m17-sdf-match",
-    "command": "env NMC_GPU_WAIT_S=900 node --experimental-strip-types tools/m17SdfMatch.ts",
-    "timeout_s": 3600,
-    "cwd": ".",
-    "after": [
-      "m17-bricks-check",
-      "m17-tests",
-      "m17-mesh-node"
+      "m18-typecheck"
     ]
   },
   {
     "name": "m18-anim-brick-capture",
-    "command": "env NMC_GPU_WAIT_S=45 node tools/anim-brick-capture.mjs",
+    "command": "env NMC_GPU_WAIT_S=45 node tools/anim-brick-capture.mjs --built",
     "timeout_s": 600,
     "cwd": ".",
-    "after": ["m17-sdf-match"]
+    "after": [
+      "m18-build"
+    ]
   },
   {
     "name": "m18-raa-brick-proof",
     "command": "node --experimental-strip-types apps/headless/proofs/m18-raa-brick.ts",
     "timeout_s": 180,
     "cwd": ".",
-    "after": ["m18-anim-brick-capture"]
+    "after": [
+      "m18-anim-brick-capture"
+    ]
+  },
+  {
+    "name": "m18-tests",
+    "command": "npm run test -- --test-concurrency=2",
+    "timeout_s": 1800,
+    "cwd": ".",
+    "after": [
+      "m18-raa-brick-proof"
+    ]
   }
 ]

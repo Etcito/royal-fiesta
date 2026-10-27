@@ -10,9 +10,9 @@ import type { WorkerLike } from '../meshPool.ts'
 
 export const MAMA_PRESENT = true
 
-// @etcito/raa-sdfm exports no version. Keep this equal to its version pinned in
-// apps/web/package.json. This also invalidates payloads cached before the shared WGSL fix.
-const RAA_SDFM_VERSION = '0.3.0'
+// @etcito/raa-sdfm exports no version: vite.config.ts defines the installed one (tools/bricks.ts
+// raaSdfmVersion), so the mesh cache key follows every raa-sdfm upgrade.
+const RAA_SDFM_VERSION: string = __RF_RAA_SDFM__
 
 // tools/bricks.ts is Node-only, so the absent prefix is repeated here, as in mamaAbsent.ts.
 const MAMA_ABSENT_PREFIX = 'MAMA not available: '

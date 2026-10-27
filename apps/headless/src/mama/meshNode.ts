@@ -1,13 +1,13 @@
 // Node meshing uses a terminable thread so synchronous MAMA work cannot block the timeout.
 // Only tsconfig.mama.json checks this file; callers import it through a computed specifier.
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { register } from 'node:module'
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { RefusalError, refuse, isRefusal } from '@royal-fiesta/sim/refusal'
-import { MAMA_ABSENT_PREFIX, brickDir, mamaSource, raaLocal, repoRoot } from '../../../../tools/bricks.ts'
+import { MAMA_ABSENT_PREFIX, mamaSource, raaSdfmVersion } from '../../../../tools/bricks.ts'
 import type { MeshedAsset, MeshRequest } from '../../../web/src/sdf/mamaApi.ts'
 
 type WorkerModule = typeof import('../../../web/src/sdf/mama/worker.ts')
@@ -28,26 +28,7 @@ export function mamaVersion(): string {
   return resolvedMama().commit
 }
 
-// The @etcito/raa-sdfm the web build uses: the installed package, or the local RAA override (1.2).
-export function raaSdfmVersion(): string {
-  const root = repoRoot()
-  const candidates = [
-    join(root, 'apps', 'web', 'node_modules', '@etcito', 'raa-sdfm', 'package.json'),
-    join(root, 'node_modules', '@etcito', 'raa-sdfm', 'package.json'),
-  ]
-  const raa = raaLocal()
-  if (raa.active) {
-    const dir = raa.dir ?? brickDir('raa')
-    if (dir !== null) candidates.unshift(join(dir, 'packages', 'raa-sdfm', 'package.json'))
-  }
-  for (const file of candidates) {
-    if (!existsSync(file)) continue
-    const manifest = JSON.parse(readFileSync(file, 'utf8')) as { name?: unknown; version?: unknown }
-    if (manifest.name === '@etcito/raa-sdfm' && typeof manifest.version === 'string' && manifest.version !== '') return manifest.version
-    throw new RefusalError('sdf', '@etcito/raa-sdfm', `${file} has no name @etcito/raa-sdfm with a version; reinstall it with npm install`)
-  }
-  throw new RefusalError('sdf', '@etcito/raa-sdfm', 'the package is not installed; run npm install at the repository root')
-}
+export { raaSdfmVersion }
 
 // Node cannot read tsconfig paths, and MAMA's sources import .js names: @etcito/mama/<x>.ts resolves
 // to MAMA's built dist/<x>.js, whose own imports find MAMA's node_modules.

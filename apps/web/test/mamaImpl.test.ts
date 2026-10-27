@@ -20,6 +20,7 @@ function loadFacade(info: unknown): Promise<MamaFacade> {
     exports,
     URL,
     __RF_MAMA__: info,
+    __RF_RAA_SDFM__: runInNewContext(`(${config.define!.__RF_RAA_SDFM__})`),
     require(id: string): unknown {
       if (id === '@royal-fiesta/sim/refusal') return { RefusalError }
       if (id === '../meshPool.ts') return { MeshPool }
@@ -41,7 +42,7 @@ test('facade consumes the object expression injected by the Vite config', async 
   }
 })
 
-test('facade cache version matches the pinned raa-sdfm release', async () => {
+test('facade cache version is the installed raa-sdfm, the pinned release', async () => {
   const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   const facade = await loadFacade({ kind: 'sibling', commit: 'test-commit' })
   assert.ok(manifest.dependencies['@etcito/raa-sdfm'].endsWith(`/etcito-raa-sdfm-${facade.raaSdfmVersion}.tgz`))

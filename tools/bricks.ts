@@ -270,6 +270,28 @@ export function raaLocal(): { active: boolean; dir: string | null } {
   return { active: dir !== null, dir }
 }
 
+// The @etcito/raa-sdfm the web build uses: the installed package, or the local RAA override (1.2).
+// Part of the client mesh cache key (S15), read by vite.config.ts and by Node meshing alike.
+export function raaSdfmVersion(): string {
+  const root = repoRoot()
+  const candidates = [
+    join(root, 'apps', 'web', 'node_modules', '@etcito', 'raa-sdfm', 'package.json'),
+    join(root, 'node_modules', '@etcito', 'raa-sdfm', 'package.json'),
+  ]
+  const raa = raaLocal()
+  if (raa.active) {
+    const dir = raa.dir ?? brickDir('raa')
+    if (dir !== null) candidates.unshift(join(dir, 'packages', 'raa-sdfm', 'package.json'))
+  }
+  for (const file of candidates) {
+    if (!existsSync(file)) continue
+    const manifest = JSON.parse(readFileSync(file, 'utf8')) as { name?: unknown; version?: unknown }
+    if (manifest.name === '@etcito/raa-sdfm' && typeof manifest.version === 'string' && manifest.version !== '') return manifest.version
+    throw new RefusalError('sdf', '@etcito/raa-sdfm', `${file} has no name @etcito/raa-sdfm with a version; reinstall it with npm install`)
+  }
+  throw new RefusalError('sdf', '@etcito/raa-sdfm', 'the package is not installed; run npm install at the repository root')
+}
+
 // Children never see the token variables; only `git fetch` gets the auth header (extra).
 function childEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, ...extra }

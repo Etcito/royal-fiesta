@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
-import { mamaSource, raaLocal, repoRoot, type MamaSource } from '../../tools/bricks.ts'
+import { mamaSource, raaLocal, raaSdfmVersion, repoRoot, type MamaSource } from '../../tools/bricks.ts'
 
 const webDir = fileURLToPath(new URL('.', import.meta.url))
 const input = Object.fromEntries(
@@ -70,11 +70,12 @@ export default defineConfig({
     rollupOptions: { input },
   },
   plugins: [rfMama()],
-  // S15: the resolved MAMA commit is part of the client mesh cache key.
+  // S15: the resolved MAMA commit and the installed raa-sdfm version are part of the client mesh cache key.
   define: {
     __RF_MAMA__: JSON.stringify(
       mama.kind === 'absent' ? { kind: 'absent', commit: null } : { kind: mama.kind, commit: mama.commit },
     ),
+    __RF_RAA_SDFM__: JSON.stringify(raaSdfmVersion()),
   },
   server: { fs: { allow: [repoRoot()] } },
   resolve: { preserveSymlinks: false, alias },

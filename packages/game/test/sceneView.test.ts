@@ -194,3 +194,29 @@ test('SceneView registers the custom character asset for the character instances
     sim.free()
   }
 })
+
+test('prepared local scenes build on the first update without scheduling a loading paint', async () => {
+  const { observeRoundLoad } = await import('../src/render/roundLoad.ts')
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame')
+  let paints = 0
+  Object.defineProperty(globalThis, 'requestAnimationFrame', { configurable: true, value: () => { paints++; return 1 } })
+  const labels: (string | null)[] = []
+  const stop = observeRoundLoad(label => labels.push(label), {})
+  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const port = new NullRenderPort()
+  await port.init({ canvas: null, width: 640, height: 360, viewports: [{ x: 0, y: 0, width: 640, height: 360 }] })
+  const scene = new SceneView({ port, viewport: 0, localPlayer: 0, bean, assets: name => assets.get(name)!, loadingPaint: false })
+  try {
+    sim.step(Array.from({ length: sim.setup.playerCount }, () => neutralInput()))
+    scene.update(sim, null, 1, 0)
+    assert.ok(scene.instanceCount > sim.setup.playerCount, 'course and bots exist before launch')
+    assert.equal(paints, 0)
+    assert.equal(labels.some(label => label?.startsWith('Preparing course:')), false)
+  } finally {
+    scene.dispose()
+    sim.free()
+    stop()
+    if (original) Object.defineProperty(globalThis, 'requestAnimationFrame', original)
+    else Reflect.deleteProperty(globalThis, 'requestAnimationFrame')
+  }
+})

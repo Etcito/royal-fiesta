@@ -4,7 +4,7 @@
 // Every screen and the round HUD are drawn by uaa on canvas#ui, above the RAA views.
 /// <reference types="vite/client" />
 import { roundOverlay } from '../content/roundOverlay.ts'
-import { observeRoundLoad, startup, renderFrame } from '@royal-fiesta/game/render/roundLoad'
+import { observeRoundLoad, startup, renderFrame, simStep } from '@royal-fiesta/game/render/roundLoad'
 import { UaaError } from '@etcito/uaa'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
@@ -22,6 +22,8 @@ import { globalWsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import type { RenderPort } from '@royal-fiesta/game/render/port'
+import { pendingPipelines } from '../render/asyncPipelines.ts'
+import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import { menuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
@@ -76,8 +78,6 @@ const STEP_S = 1 / 60
 const PLAYERS = 8
 // The podium screen returns to the hub by itself after this, or earlier with its button.
 const PODIUM_HOLD_S = 6
-// The offline queue: seconds of unpaused game time before the match against bots starts.
-const QUEUE_S = 3
 
 function intParam(q: URLSearchParams, key: string, def: number, min: number, max: number): number {
   const raw = q.get(key)
@@ -223,7 +223,7 @@ interface Mode {
   dispose(): void
 }
 
-interface ModeCtx { loaded: Loaded; q: Query; orbit: OrbitCamera }
+interface ModeCtx { loaded: Loaded; q: Query; orbit: OrbitCamera; prepared?: boolean }
 
 // Draws one match on port 0: the SceneView framed by the orbit camera while rounds run, then the
 // PodiumStage (content.podium()) once a podium is known.
@@ -260,6 +260,7 @@ class MatchPresenter {
     this.scene = new SceneView({
       port: ports[0], viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
       character: content.character(), dressing: content.dressing(), camera: focus => orbit.pose(focus),
+      loadingPaint: !this.c.prepared,
     })
   }
 
@@ -315,11 +316,12 @@ class LocalMode implements Mode {
   private readonly presenter: MatchPresenter
   private readonly hubView: HubView
   private hub: HubWorld
-  private pad = new QueuePad()
+  private pad = new QueuePad(1)
   private hubAcc = 0
   private match: LocalMatch | null = null
-  // The offline queue, s: its unpaused game time so far.
-  private queued: { s: number } | null = null
+  private prepared: LocalMatch | null = null
+  private readonly hubLayer: SceneLayer
+  private readonly matchLayer: SceneLayer
   private readonly names: string[]
   private readonly local = emptyChar()
   private readonly cv = emptyCharView()
@@ -329,10 +331,13 @@ class LocalMode implements Mode {
     const { R, content, ports } = c.loaded
     this.names = playerNames(0, c.q.name)
     this.hub = new HubWorld(R, content.hub(), 0)
-    this.hubView = new HubView(ports[0], 0, name => content.assets(name), content.character(), content.hub(), {
+    this.hubLayer = new SceneLayer(ports[0])
+    this.matchLayer = new SceneLayer(ports[0])
+    this.hubView = new HubView(this.hubLayer.port, 0, name => content.assets(name), content.character(), content.hub(), {
       orbit: c.orbit, character: content.character(), dressing: content.dressing(),
     })
-    this.presenter = new MatchPresenter(c)
+    this.presenter = new MatchPresenter({ ...c, prepared: true, loaded: { ...c.loaded, ports: [this.matchLayer.port] } })
+    this.prepareMatch()
     // ?course= goes straight into its round.
     if (c.loaded.course !== null) this.enqueue()
   }
@@ -348,28 +353,57 @@ class LocalMode implements Mode {
     return this.match?.sim ?? null
   }
 
-  // ?course= goes straight into its round; otherwise the queue finds the bots for QUEUE_S first.
   enqueue(): void {
-    if (this.match !== null || this.queued !== null) return
-    if (this.c.loaded.course !== null) this.startMatch()
-    else this.queued = { s: 0 }
-  }
-
-  dequeue(): void {
-    this.queued = null
-  }
-
-  private startMatch(): void {
     if (this.match !== null) return
-    const { R, content, course } = this.c.loaded
+    this.match = this.prepared
+    this.prepared = null
+    this.hubLayer.setVisible(false)
+    this.matchLayer.setVisible(true)
+    this.c.orbit.reset(0)
+  }
+
+  dequeue(): void {}
+
+  private prepareMatch(): void {
+    const { R, content, course, ports } = this.c.loaded
     const seed = Date.now() >>> 0
     const setup = course !== null ? courseSetup(seed, course, content.playlist()) : netSetup(seed, 1, 'sprint', content.playlist())
     const sim = startup('Local round', () => new MatchSim(R, setup))
     const inputs = Array.from({ length: setup.playerCount }, () => neutralInput())
-    this.match = { sim, inputs, acc: 0, singleRace: course !== null && course.kind === 'race', order: [] }
-    // Hide the hub before the match view's first update (its dressing leaves before the course's enters).
-    this.hubView.setVisible(false)
+    // Enter round zero and finish its intro before handing control to the local player.
+    simStep(sim, 'Round physics / bots / intro', () => {
+      do { sim.step(inputs) } while (sim.phase(this.presenter.view).phase === Phase.intro)
+    })
+    this.prepared = { sim, inputs, acc: 0, singleRace: course !== null && course.kind === 'race', order: [] }
+    this.hubLayer.setVisible(false)
+    this.matchLayer.setVisible(true)
     this.presenter.begin(0)
+    this.presenter.draw(sim, null, 1, 0, null)
+    renderFrame(this.matchLayer.port, () => ports[0].render())
+    this.matchLayer.setVisible(false)
+    this.hubLayer.setVisible(true)
+    this.hubView.update(this.hub.state(this.local), this.c.q.colour, [], this.hub.tick, 0, this.hub.emote(performance.now()))
+    ports[0].render()
+  }
+
+  // Async compilation can omit lit draws on the first render. Submit the complete
+  // course once those pipelines exist, and read it back to finish GPU work before Play.
+  async ready(): Promise<void> {
+    const { ports } = this.c.loaded
+    while (pendingPipelines() > 0) await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    this.hubLayer.setVisible(false)
+    this.matchLayer.setVisible(true)
+    const sim = this.prepared?.sim ?? this.match?.sim
+    if (sim !== undefined) this.presenter.draw(sim, null, 1, 0, null)
+    ports[0].render()
+    await ports[0].capture()
+    if (this.match === null) {
+      this.matchLayer.setVisible(false)
+      this.hubLayer.setVisible(true)
+      this.hubView.update(this.hub.state(this.local), this.c.q.colour, [], this.hub.tick, 0, this.hub.emote(performance.now()))
+      ports[0].render()
+      await ports[0].capture()
+    }
   }
 
   leaveMatch(): void {
@@ -381,15 +415,15 @@ class LocalMode implements Mode {
     // Back at the spawn, off the queue pad, as PlayFlow does after a match.
     this.hub.free()
     this.hub = new HubWorld(this.c.loaded.R, this.c.loaded.content.hub(), 0)
-    this.pad = new QueuePad()
+    this.pad = new QueuePad(1)
     this.hubAcc = 0
     this.c.orbit.reset(0)
-    this.hubView.setVisible(true)
+    this.prepareMatch()
   }
 
   frame(f: FrameIn): GameScreen {
     const screen = this.match === null ? this.frameHub(f) : this.frameMatch(this.match, f)
-    renderFrame(this.c.loaded.ports[0], () => this.c.loaded.ports[0].render())
+    renderFrame(this.match === null ? this.c.loaded.ports[0] : this.matchLayer.port, () => this.c.loaded.ports[0].render())
     return screen
   }
 
@@ -399,10 +433,6 @@ class LocalMode implements Mode {
 
   lines(): string[] {
     const m = this.match
-    if (m === null && this.queued !== null) {
-      const found = Math.min(8, 1 + Math.floor(7 * this.queued.s / QUEUE_S))
-      return [`${this.c.q.name} - local hub`, `Players found ${found}/8`]
-    }
     if (m === null) {
       const course = this.c.loaded.course
       const what = course === null ? 'a match against bots' : course.name
@@ -418,7 +448,8 @@ class LocalMode implements Mode {
     this.presenter.dispose()
     this.match?.sim.free()
     this.match = null
-    this.queued = null
+    this.prepared?.sim.free()
+    this.prepared = null
     this.hubView.dispose()
     this.hub.free()
   }
@@ -434,19 +465,12 @@ class LocalMode implements Mode {
         const pad = this.pad.update(this.hub.onQueuePad())
         if (pad === 'armed') {
           this.enqueue()
-          // ?course=: enqueue started the match at once.
           if (this.match !== null) return this.frameMatch(this.match, f)
-        } else if (pad === 'cancel' && this.queued !== null) this.dequeue()
+        }
       }
-      if (this.queued !== null) this.queued.s += f.dt
-    }
-    if (this.queued !== null && this.queued.s >= QUEUE_S) {
-      this.queued = null
-      this.startMatch()
-      return this.frameMatch(this.match!, f)
     }
     this.hubView.update(this.hub.state(this.local), this.c.q.colour, [], this.hub.tick, f.dt, this.hub.emote(now))
-    return this.queued !== null ? 'queue' : 'hub'
+    return 'hub'
   }
 
   // A single ?course= race ends with its round; every other match runs to its own podium.
@@ -711,6 +735,7 @@ class App {
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
+  private preparedLocal: LocalMode | null = null
   private readonly loadingOverlay = roundOverlay()
   private roundLoading: string | null = null
   private stopRoundLoad: (() => void) | null = null
@@ -790,6 +815,8 @@ class App {
     this.stopLoop?.()
     this.stopLoop = null
     this.stopMode()
+    this.preparedLocal?.dispose()
+    this.preparedLocal = null
     this.input.dispose()
     void this.sound.close()
     for (const port of this.loaded?.ports ?? []) port.dispose()
@@ -848,6 +875,10 @@ class App {
         } else this.loadingOverlay.hide()
       }, content.report())
       this.loaded = { R, content, ports, canvases, course }
+      if (q.server === null && q.clients === 1) {
+        this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit })
+        await this.preparedLocal.ready()
+      }
       this.run(this.nav.dispatch({ kind: 'loaded' }))
       if (this.roundLoading === null) this.loadingOverlay.hide()
     } catch (e) {
@@ -887,7 +918,10 @@ class App {
     try {
       if (q.server !== null) this.mode = new OnlineMode(c, q.server)
       else if (q.clients > 1) this.mode = new InPageMode(c)
-      else this.mode = new LocalMode(c)
+      else {
+        this.mode = this.preparedLocal ?? new LocalMode(c)
+        this.preparedLocal = null
+      }
     } catch (e) {
       console.error(e)
       this.fail(messageOf(e))
@@ -905,7 +939,10 @@ class App {
   private stopMode(): void {
     this.roundLoading = null
     this.loadingOverlay.hide()
-    this.mode?.dispose()
+    if (this.mode instanceof LocalMode && !this.disposed && this.nav.screen === 'title') {
+      this.preparedLocal?.dispose()
+      this.preparedLocal = this.mode
+    } else this.mode?.dispose()
     this.mode = null
     this.orbit.reset(0)
     this.input.look.release()

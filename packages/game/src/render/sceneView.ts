@@ -21,6 +21,8 @@ export interface SceneViewOptions {
   character?: PrimsAsset
   // Course decor and environment, swapped on every course change. Default NO_DRESSING.
   dressing?: CourseDressing
+  // Prepared local scenes build behind the menu, without a loading paint.
+  loadingPaint?: boolean
 }
 
 const UNIT: readonly [number, number, number] = [1, 1, 1]
@@ -85,7 +87,7 @@ export class SceneView {
     const course = sim.course()
     let reset = false
     if (course !== this.course) {
-      if (!roundReady(port, course?.id ?? 'round')) return
+      if (this.opts.loadingPaint !== false && !roundReady(port, course?.id ?? 'round')) return
       courseFrame(sim, port, course?.id ?? 'round', () => {
         this.loadObstacles(sim, course)
         this.dress(course)

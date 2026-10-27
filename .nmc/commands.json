@@ -6,12 +6,21 @@
     "cwd": "."
   },
   {
+    "name": "m18-node-loader",
+    "command": "node --experimental-strip-types --test packages/game/test/animBrick.test.ts",
+    "timeout_s": 60,
+    "cwd": ".",
+    "after": [
+      "m18-fetch-node"
+    ]
+  },
+  {
     "name": "m18-typecheck",
     "command": "npm run typecheck",
     "timeout_s": 60,
     "cwd": ".",
     "after": [
-      "m18-fetch-node"
+      "m18-node-loader"
     ]
   },
   {

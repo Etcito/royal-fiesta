@@ -310,18 +310,7 @@ export function raaBricks(dir: string): RaaBricks {
     const document = JSON.parse(readFileSync(manifest, 'utf8')) as { commit?: unknown }
     const value = document.commit
     if (typeof value === 'string') commit = value
-    // Managed siblings are read-only. Older build-bricks.sh manifests omit provenance;
-    // retain their staging record here, bound to the actual sibling and its Git HEAD.
-    // An explicit manifest commit (including an invalid one) always takes precedence.
-    if (!Object.hasOwn(document, 'commit')) {
-      const root = repoRoot()
-      const lock = JSON.parse(readFileSync(join(root, 'bricks.raa.lock.json'), 'utf8'))
-      if (lock.repo === readPins().RAA.repo && lock.source === '../raa'
-        && lock.manifest === 'dist/bricks/bricks.json'
-        && typeof lock.commit === 'string' && COMMIT_PATTERN.test(lock.commit)
-        && realpathSync(resolve(root, lock.source)) === realpathSync(dir)
-        && readGitHead(dir) === lock.commit) commit = lock.commit
-    }
+    // Provenance must come from the actual staged build, never a repository-side lock.
   } catch {}
   const packages = RAA_BRICK_DIRS.filter((name) => {
     try { return statSync(join(dir, 'dist', 'bricks', name)).isDirectory() } catch { return false }

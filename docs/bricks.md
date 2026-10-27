@@ -170,13 +170,17 @@ validates the same channel before the SDF tour: `apps/web/package.json` must use
 pin. `raaLocal()` stays exported for the legacy Vite alias and the m11-m13 proofs only; the
 fetch/status workflow and the m17 check do not read it.
 
-The managed, read-only `../raa` staging at commit
-`55754d1e774dd7e344bd7153aef7c8f7da05d5ec` has an older `dist/bricks/bricks.json`
-without a commit field. `bricks.raa.lock.json` records its build provenance in this
-repository. The reader uses that record only for the named sibling with matching Git
-HEAD and only when the staged manifest omits `commit`; it never overrides a manifest
-commit. Refresh this record during environment provisioning when the staged build changes.
+The managed, read-only `../raa` staging must record its actual build commit in
+`dist/bricks/bricks.json#/commit`. The historical `bricks.raa.lock.json` is not a
+substitute for that manifest provenance and is not read by the validation code.
 No sibling build or write is performed by the M18 capture queue.
+
+The required `commit` is `55754d1e774dd7e344bd7153aef7c8f7da05d5ec`.
+Both the M18 fetch proof and `tools/m17SdfMatch.ts` read it through `raaBricks()`;
+neither accepts a repository-side lock as build provenance. Environment provisioning must
+stage the pinned checkout and write its actual build commit in `dist/bricks/bricks.json`
+before releasing the capture queue. A missing manifest commit or a mismatched HEAD is
+not repaired by changing the proof's expected value or relabelling another build.
 
 `.nmc/commands.json` builds the game before calling
 `node tools/anim-brick-capture.mjs --built`. The writer packs content, then invokes

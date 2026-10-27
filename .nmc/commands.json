@@ -1,0 +1,53 @@
+[
+  {
+    "name": "m18-fetch-node",
+    "command": "node --experimental-strip-types apps/headless/proofs/m18-raa-brick.ts --only fetch,node",
+    "timeout_s": 60,
+    "cwd": "."
+  },
+  {
+    "name": "m18-typecheck",
+    "command": "npm run typecheck",
+    "timeout_s": 60,
+    "cwd": ".",
+    "after": [
+      "m18-fetch-node"
+    ]
+  },
+  {
+    "name": "m18-build",
+    "command": "npm run build",
+    "timeout_s": 180,
+    "cwd": ".",
+    "after": [
+      "m18-typecheck"
+    ]
+  },
+  {
+    "name": "m18-anim-brick-capture",
+    "command": "env NMC_GPU_WAIT_S=45 node --experimental-strip-types tools/anim-brick-capture.mjs --built",
+    "timeout_s": 600,
+    "cwd": ".",
+    "after": [
+      "m18-build"
+    ]
+  },
+  {
+    "name": "m18-raa-brick-proof",
+    "command": "node --experimental-strip-types apps/headless/proofs/m18-raa-brick.ts",
+    "timeout_s": 180,
+    "cwd": ".",
+    "after": [
+      "m18-anim-brick-capture"
+    ]
+  },
+  {
+    "name": "m18-tests",
+    "command": "npm run test -- --test-concurrency=1",
+    "timeout_s": 1800,
+    "cwd": ".",
+    "after": [
+      "m18-raa-brick-proof"
+    ]
+  }
+]

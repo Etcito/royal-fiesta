@@ -47,12 +47,12 @@ export function browser(value: any): void {
   }).join(' ')
   assert(adapter.trim() && !/swiftshader|llvmpipe|lavapipe|software/i.test(adapter), 'hardware adapter required')
   assert.equal(typeof value.pageRef, 'string'); assert(value.pageRef.length > 0)
-  assert.equal(value.nonEmpty, true); assert.equal(value.frameTiming, null)
+  assert.equal(value.nonEmpty, true, `animBrick returned nonEmpty=${value.nonEmpty}; captures=${JSON.stringify(value.captures)}`); assert.equal(value.frameTiming, null)
   assert(Array.isArray(value.courses) && value.courses.length > 0)
   assert(Array.isArray(value.events) && Array.isArray(value.reports) && value.report)
   assert(Array.isArray(value.captures) && value.captures.length > 0)
   for (const c of value.captures) {
-    assert.equal(c.nonEmpty, true); assert(c.bytes > 0 && c.width > 0 && c.height > 0)
+    assert.equal(c.nonEmpty, true, `game capture ${c.name} is empty`); assert(c.bytes > 0 && c.width > 0 && c.height > 0)
     assert.match(c.name, /^match-\d+(?:\.\d+)?s$/)
   }
 }

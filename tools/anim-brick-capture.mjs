@@ -38,7 +38,7 @@ async function main() {
   json(join(probe, 'nmc.gpu.json'), { page: 'index.html', ops: ['render'] })
   writeFileSync(join(probe, 'index.html'), '<script>window.nmcGpu={ops:{render:async()=>({json:{ok:true},files:[]})}}</script>')
   const probeResult = await render(await publish(probe), {}, 'probe-result')
-  assert.equal(unwrapOp(probeResult, 'ok').out.ok, true)
+  assert.equal(unwrapOp(probeResult, 'ok').out.ok, true, 'blank GPU transport probe must return ok=true')
   if (!process.argv.includes('--built')) {
     await run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'])
   }
@@ -56,9 +56,11 @@ async function main() {
   const pageRef = await publish(dist)
   const input = { content: 'v1', flow: 'match', clients: 1, width: 64, height: 64, captureAt: ['match-0.016666667s'] }
   const first = unwrapOp(await render(pageRef, input, 'one-frame'), 'captures').out
+  console.log('m18 validating one-frame game capture')
   browser({ ...first, pageRef })
   const result = await render(pageRef, { ...input, width: 1280, height: 720, captureAt: ['match-1s'] }, 'game')
   const record = { ...unwrapOp(result, 'captures').out, pageRef }
+  console.log('m18 validating full game capture')
   browser(record)
   // Keep the established game capture envelope and ordered records verbatim; no synthetic evidence.
   const text = JSON.stringify(record, null, 2) + '\n'
@@ -68,5 +70,5 @@ async function main() {
   console.log(`m18 game capture saved; adapter ${record.adapter.vendor}`)
 }
 try { await main() }
-catch (error) { console.error(safe(error)); process.exitCode = 1 }
+catch (error) { console.error(safe(error instanceof Error ? error.stack ?? error.message : error)); process.exitCode = 1 }
 finally { rmSync(scratch, { recursive: true, force: true }) }

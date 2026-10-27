@@ -175,7 +175,7 @@ The managed, read-only `../raa` staging must record its actual build commit in
 substitute for that manifest provenance and is not read by the validation code.
 No sibling build or write is performed by the M18 capture queue.
 
-The required `commit` is `55754d1e774dd7e344bd7153aef7c8f7da05d5ec`.
+The required `commit` is `91b335289fb48d59e9221e0cdf8b39cc1bc18e8e`.
 Both the M18 fetch proof and `tools/m17SdfMatch.ts` read it through `raaBricks()`;
 neither accepts a repository-side lock as build provenance. Environment provisioning must
 stage the pinned checkout and write its actual build commit in `dist/bricks/bricks.json`

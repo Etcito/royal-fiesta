@@ -135,16 +135,21 @@ function readGitHead(dir: string): string | null {
     if (COMMIT_PATTERN.test(head)) return head
     if (!head.startsWith('ref: ')) return null
     const ref = head.slice('ref: '.length).trim()
-    try {
-      const direct = readFileSync(join(gitDir, ref), 'utf8').trim()
-      if (COMMIT_PATTERN.test(direct)) return direct
-    } catch {}
-    try {
-      for (const line of readFileSync(join(gitDir, 'packed-refs'), 'utf8').split('\n')) {
-        const [hash, name] = line.trim().split(/\s+/)
-        if (name === ref && COMMIT_PATTERN.test(hash)) return hash
-      }
-    } catch {}
+    // A linked worktree keeps its branch refs in the main repository (the `commondir` file).
+    let commonDir = gitDir
+    try { commonDir = resolve(gitDir, readFileSync(join(gitDir, 'commondir'), 'utf8').trim()) } catch {}
+    for (const refDir of commonDir === gitDir ? [gitDir] : [gitDir, commonDir]) {
+      try {
+        const direct = readFileSync(join(refDir, ref), 'utf8').trim()
+        if (COMMIT_PATTERN.test(direct)) return direct
+      } catch {}
+      try {
+        for (const line of readFileSync(join(refDir, 'packed-refs'), 'utf8').split('\n')) {
+          const [hash, name] = line.trim().split(/\s+/)
+          if (name === ref && COMMIT_PATTERN.test(hash)) return hash
+        }
+      } catch {}
+    }
   } catch {}
   return null
 }

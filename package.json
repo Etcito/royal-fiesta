@@ -30,6 +30,7 @@
     "meshes:bake": "node --experimental-strip-types tools/meshBake.ts"
   },
   "dependencies": {
+    "@etcito/raa-anim": "file:../raa/dist/bricks/raa-anim",
     "@etcito/uaa": "file:../uaa"
   },
   "devDependencies": {

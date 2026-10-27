@@ -8,7 +8,7 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "build": "vite build --configLoader runner",
+    "build": "vite build --configLoader runner --config anim-brick.vite.config.ts",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {

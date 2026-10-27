@@ -42,10 +42,12 @@ test('facade consumes the object expression injected by the Vite config', async 
   }
 })
 
-test('facade cache version is the installed raa-sdfm, the pinned release', async () => {
+test('facade cache version is the installed raa-sdfm from the pinned local channel', async () => {
   const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  const installed = JSON.parse(readFileSync(new URL('./package.json', import.meta.resolve('@etcito/raa-sdfm')), 'utf8'))
   const facade = await loadFacade({ kind: 'sibling', commit: 'test-commit' })
-  assert.ok(manifest.dependencies['@etcito/raa-sdfm'].endsWith(`/etcito-raa-sdfm-${facade.raaSdfmVersion}.tgz`))
+  assert.equal(manifest.dependencies['@etcito/raa-sdfm'], 'file:../../../raa/dist/bricks/raa-sdfm')
+  assert.equal(facade.raaSdfmVersion, installed.version)
 })
 
 for (const kind of ['sibling', 'cloned']) {

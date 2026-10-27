@@ -15,13 +15,12 @@ and locked in `package-lock.json`:
 | `@gamesaloon/rollback-rapier` | v0.1.0 | packages/sim, packages/game, apps/headless, apps/web |
 | `@dimforge/rapier3d-deterministic-compat` | 0.21.0 (npm) | wherever Rapier is used |
 | `@etcito/haa` | v0.1.1 | packages/game (audio) |
-| `@etcito/raa` | v0.1.1 | apps/web (renderer) |
 | `@etcito/raa-assets-tools` | v0.1.0 | root dev dependency |
 
-`@etcito/raa-sdfm` (a release of the raa repository, with MAMA as its peer) joins apps/web from
-milestone 3. A clean clone gets every one of them from `npm ci`: there is no sibling checkout, no
-alias and no build step for them. `npm run bricks -- check` verifies that the GameSaloon packages
-resolve and that the Rapier WASM initialises.
+The three RAA packages (`@etcito/raa`, `@etcito/raa-sdfm` and `@etcito/raa-anim`) are not release
+tarballs: they come from the pinned local build described below. A clean clone gets the release
+packages from `npm ci`; `npm run bricks -- check` verifies that the GameSaloon packages resolve and
+that the Rapier WASM initialises.
 
 To update a release pin, change the tarball URL in the `package.json` that declares it, run
 `npm install` from the repository root so `package-lock.json` follows, and commit both. Bump
@@ -165,8 +164,11 @@ RAA is the pinned local brick: the game reads the packages built from the `RAA` 
 `bricks.pins.json`, through `.bricks/RAA`. The channel is unconditional: there is no environment
 variable that switches it on or off, and a release build, a proof and the clean clone all see the
 same pin. Work that needs an RAA change lands in RAA, is pinned here, and is built by
-`npm run bricks -- fetch raa`; it is never patched in this repository. `raaLocal()` stays exported
-for the legacy Vite alias and the m11-m13 proofs only; the fetch/status workflow does not read it.
+`npm run bricks -- fetch raa`; it is never patched in this repository. `tools/m17SdfMatch.ts`
+validates the same channel before the SDF tour: `apps/web/package.json` must use
+`file:../../../raa/dist/bricks/raa-sdfm`, and the RAA checkout and manifest commit must equal the
+pin. `raaLocal()` stays exported for the legacy Vite alias and the m11-m13 proofs only; the
+fetch/status workflow and the m17 check do not read it.
 
 ## CLI
 

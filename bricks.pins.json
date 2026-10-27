@@ -6,5 +6,9 @@
   "UAA": {
     "repo": "Etcito/uaa",
     "commit": "8cf42aba5090a25981185e853902d97776ef04d3"
+  },
+  "RAA": {
+    "repo": "Etcito/raa",
+    "commit": "55754d1e774dd7e344bd7153aef7c8f7da05d5ec"
   }
 }

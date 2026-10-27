@@ -30,37 +30,39 @@ the feature it brings).
 
 ## bricks.pins.json
 
-MAMA and uaa are private and have no tarballs, so they are pinned by commit instead.
+MAMA, uaa and raa are private and have no tarballs, so they are pinned by commit instead.
 `bricks.pins.json` is the one pin table (S15):
 
 | Brick | Repository | Consumed as |
 | --- | --- | --- |
 | MAMA | `Etcito/MAMA` | `.bricks/MAMA` (Vite alias; see below) |
 | uaa | `Etcito/uaa` | the `file:../uaa` package dependency |
+| raa | `Etcito/raa` | `.bricks/RAA` (the pinned local brick; see below) |
 
 ```json
 {
   "MAMA": { "repo": "Etcito/MAMA", "commit": "<40 lowercase hex>" },
-  "UAA": { "repo": "Etcito/uaa", "commit": "<40 lowercase hex>" }
+  "UAA": { "repo": "Etcito/uaa", "commit": "<40 lowercase hex>" },
+  "RAA": { "repo": "Etcito/raa", "commit": "<40 lowercase hex>" }
 }
 ```
 
-`readPins` (and `npm run bricks -- pins`) accepts the `MAMA` and `UAA` keys, a `repo` of the form
+`readPins` (and `npm run bricks -- pins`) accepts the `MAMA`, `UAA` and `RAA` keys, a `repo` of the form
 `owner/name` and a `commit` of 40 lowercase hex. Anything else is refused with its pointer, e.g.
 `[bricks] bricks.pins.json#/UAA/commit: expected 40 lowercase hex, got "abc"; fix the UAA pin in bricks.pins.json`.
 
 To update a pin:
 
-1. take the commit from a real source, never by hand: `git -C ../MAMA rev-parse HEAD` or
-   `git -C ../uaa rev-parse HEAD` in a sibling checkout of the wanted revision, or the GitHub page
-   of that commit;
+1. take the commit from a real source, never by hand: `git -C ../MAMA rev-parse HEAD`,
+   `git -C ../uaa rev-parse HEAD` or `git -C ../raa rev-parse HEAD` in a sibling checkout of the
+   wanted revision, or the GitHub page of that commit;
 2. write it into `bricks.pins.json` (2-space JSON, trailing newline);
-3. run `npm run bricks -- pins`, then `npm run bricks -- fetch mama` (or `fetch uaa`) and
-   `npm run bricks -- check` (the MAMA line is PASS, not WARN);
+3. run `npm run bricks -- pins`, then `npm run bricks -- fetch mama` (or `fetch uaa`, or
+   `fetch raa`) and `npm run bricks -- check` (the MAMA line is PASS, not WARN);
 4. commit the pins file alone, or with the change that needs it. The commit message says why the
    pin moves.
 
-Any milestone that needs a newer MAMA or uaa may update its pin.
+Any milestone that needs a newer MAMA, uaa or raa may update its pin.
 
 ## Resolving .bricks/MAMA
 
@@ -119,50 +121,62 @@ When `../uaa/dist` is missing, fetch runs `npm ci` and `npm run build` in `../ua
 and for a fresh clone), so the `file:../uaa` exports resolve. Every failed step is a refusal that
 names the step and the fix.
 
+## Resolving .bricks/RAA
+
+RAA is consumed from a pinned local build: `npm run bricks -- fetch raa` provisions the checkout
+and runs the brick build script; there is no environment switch and no release fallback in this
+channel. `raaSource()` is offline: `.bricks/RAA` first (a symlink is a sibling, a directory is a
+clone), then `$RF_BRICKS_DIR/raa` and `../raa`, then absent with a reason.
+
+`fetchRaa` never checks out, resets or otherwise modifies a sibling, so uncommitted work there is
+kept. It refuses a sibling whose HEAD is not the pin. Fetch links the sibling (or copies a
+read-only sibling to `.bricks/RAA`) and runs `bash scripts/build-bricks.sh`; with no sibling it
+clones the pin into `../raa` with the token and links it, removing `../raa` again on failure.
+
+The build stages `dist/bricks/{raa,raa-sdfm,raa-anim}` and writes `dist/bricks/bricks.json`. Fetch
+requires that manifest and the three directories and rejects a manifest whose `commit` differs from
+the pin; when the build omits the commit, fetch writes the pinned one after checking HEAD.
+
+`npm run bricks -- status` prints the MAMA, UAA and RAA lines plus the RAA manifest commit and
+staged packages. It exits non-zero unless the RAA checkout, manifest commit and three package
+directories match the pin.
+
 ## Token variables
 
-The clone of either private repository needs a GitHub token with read access to `Etcito/MAMA` and
-`Etcito/uaa`. `githubToken()` takes it from `MAMA_TOKEN`, else `GH_TOKEN`, else `GITHUB_TOKEN`.
+A clone needs a GitHub token with read access to `Etcito/MAMA`, `Etcito/uaa` and `Etcito/raa`.
+`githubToken()` takes it from `MAMA_TOKEN`, else `GH_TOKEN`, else `GITHUB_TOKEN`. Set it on the
+build machine only (the shell that runs `fetch mama`, `fetch uaa` or `fetch raa`, or a CI secret);
+it is never committed and never printed.
 
-- Set it on the build machine only: the shell of the machine that runs `fetch mama` or `fetch uaa`, or a CI secret.
-  It is never committed (no `.env` file, script, record or doc carries it) and never printed.
 - It reaches git only through the environment of `git fetch`: `GIT_CONFIG_COUNT=1`,
   `GIT_CONFIG_KEY_0=http.https://github.com/.extraheader` and
   `GIT_CONFIG_VALUE_0=AUTHORIZATION: basic <base64 of x-access-token:<token>>`. It is never in an
   argv, a file, a log or the bundle.
-- No child sees `MAMA_TOKEN`, `GH_TOKEN` or `GITHUB_TOKEN`. `git init`, `git checkout` and `npm ci`
-  run without the auth header.
-- Every line a child prints goes through `redact([token, its base64 form])` (tools/guard.ts) before
-  it is printed. A refusal names the failed step, never its output.
+- No child sees `MAMA_TOKEN`, `GH_TOKEN` or `GITHUB_TOKEN`; `git init`, `git checkout`, `npm ci`
+  and the brick build script run without the auth header.
+- Every child line goes through `redact` (tools/guard.ts) with the token, its base64 form and every
+  token variable before it is printed. A refusal names the failed step, never its output.
 - Proof records and transcripts that include a fetch go through `redact` and then `leakScan` before
   they are committed (docs/private-assets.md, "Public leaks").
 
-## Local RAA override
+## The local RAA channel
 
-By default Vite resolves the published `@etcito/raa` (and `@etcito/raa-sdfm`). For unreleased RAA
-work only, `RF_RAA_LOCAL=1` makes `apps/web/vite.config.ts` alias both packages to the built
-packages of `brickDir('raa')` (`$RF_BRICKS_DIR/raa`, else `../raa`), found by the package names under
-its `packages/` folder:
-
-```sh
-RF_RAA_LOCAL=1 npm run build
-```
-
-- It is never the default, and it is never committed as active (not in a `package.json` script, a
-  workflow or an env file). Release builds, proofs and the clean clone run without it.
-- `raaLocal()` is active only when `RF_RAA_LOCAL=1` and the raa brick exists.
-  `npm run bricks -- check` prints a WARN with the directory when it is active, and an INFO when it is
-  off; Vite prints the same warning when it builds with it.
-- Work that needs an RAA change lands in RAA, ships as an RAA release, and comes here as a pin
-  update. It is never patched here.
+RAA is the pinned local brick: the game reads the packages built from the `RAA` checkout in
+`bricks.pins.json`, through `.bricks/RAA`. The channel is unconditional: there is no environment
+variable that switches it on or off, and a release build, a proof and the clean clone all see the
+same pin. Work that needs an RAA change lands in RAA, is pinned here, and is built by
+`npm run bricks -- fetch raa`; it is never patched in this repository. `raaLocal()` stays exported
+for the legacy Vite alias and the m11-m13 proofs only; the fetch/status workflow does not read it.
 
 ## CLI
 
 ```sh
-npm run bricks -- check                # GameSaloon packages, Rapier, the MAMA line, the RF_RAA_LOCAL line
+npm run bricks -- check                # GameSaloon packages, Rapier, the MAMA and RAA lines
+npm run bricks -- status               # every pin, plus the RAA manifest commit and staged packages
 npm run bricks -- where <gamesaloon-public|raa-assets-tools|raa|MAMA>
 npm run bricks -- fetch mama           # link or clone .bricks/MAMA, print its kind and commit
 npm run bricks -- fetch uaa            # link or clone ../uaa at the pin, build it, print its kind and commit
+npm run bricks -- fetch raa            # link or clone ../raa at the pin, build dist/bricks, check the manifest
 npm run bricks -- pins                 # print the validated bricks.pins.json
 ```
 
@@ -179,15 +193,15 @@ above. Per `docs/v0-port.md`:
 | raaBuild step in `tools/play.ts` | take+rewrite (local-play) | `npm run play` builds against the release |
 | raaBuild step in `tools/packageWavedash.ts` and its test | take+rewrite (wavedash) | the Wavedash build uses the release |
 | `RAA_PIN` (a raaBuild commit) in `tools/wavedashCheck.ts` and its test | take+rewrite (wavedash) | the `@etcito/raa` release version |
-| raaBuild and the sibling alias roots in `apps/web/vite.config.ts` | keep-base (web-client) | main's config: releases, `virtual:rf-mama`, and `RF_RAA_LOCAL` as the only local alias |
+| raaBuild and the sibling alias roots in `apps/web/vite.config.ts` | keep-base (web-client) | main's config: `virtual:rf-mama`, and the pinned local RAA channel |
 | `apps/web/aliases.json` (`@raa/engine` to a sibling) | keep-base (raa-port) | `import ... from '@etcito/raa'` |
 | `scripts/fresh-clone-build.sh` | drop (wavedash) | `npm ci` and `npm run build` |
 | the `raa:build` script and `file:` sibling dependencies in `package.json` | not ported (workspace) | the release URLs in `package.json` |
 | `vendor/gamesaloon-rollback/` | keep-base (wavedash) | the `@gamesaloon/rollback*` release tarballs |
 | `repoRoot` from tools/bricks.ts (m11, m14, controlsProbe, previewWavedash, storeCache) | take | unchanged on main |
-| `brickDir('raa')` in the m7-web and m8-hub proofs | keep-base (m7-proof, m8-proof) | main reads `@etcito/raa`; `brickDir('raa')` serves only the local override and returns null when absent |
+| `brickDir('raa')` in the m7-web and m8-hub proofs | keep-base (m7-proof, m8-proof) | `brickDir('raa')` locates the pinned local channel and returns null when absent |
 | `brickDir('gamesaloon-rollback')` | no target | not a brick name: the rollback packages are releases |
-| `linkBricks` | no target | the only links are `.bricks/MAMA` (`fetch mama`) and `.bricks/UAA` (`fetch uaa`) |
+| `linkBricks` | no target | the only links are `.bricks/MAMA` (`fetch mama`), `.bricks/UAA` (`fetch uaa`) and `.bricks/RAA` (`fetch raa`) |
 
 ### Shared mesh cache
 

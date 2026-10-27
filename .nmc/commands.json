@@ -71,5 +71,19 @@
       "m17-tests",
       "m17-mesh-node"
     ]
+  },
+  {
+    "name": "m18-anim-brick-capture",
+    "command": "env NMC_GPU_WAIT_S=45 node tools/anim-brick-capture.mjs",
+    "timeout_s": 600,
+    "cwd": ".",
+    "after": ["m17-sdf-match"]
+  },
+  {
+    "name": "m18-raa-brick-proof",
+    "command": "node --experimental-strip-types apps/headless/proofs/m18-raa-brick.ts",
+    "timeout_s": 180,
+    "cwd": ".",
+    "after": ["m18-anim-brick-capture"]
   }
 ]

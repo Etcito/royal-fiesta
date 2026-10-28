@@ -1,6 +1,6 @@
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import type { CameraPose, QuatT, RenderPort, RenderStats, RenderTarget, Vec3T } from './port.ts'
+import type { CameraPose, QuatT, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, Vec3T } from './port.ts'
 
 const AREA = 'render'
 
@@ -13,14 +13,54 @@ function posInt(n: number): boolean {
   return Number.isInteger(n) && n > 0
 }
 
+const MAX_JOINTS = 256
+
+/** Checks S18 skin data for registerSkinned (shared by the ports); returns the rig bone count. */
+export function checkSkin(area: string, path: string, skin: SkinnedAssetT): number {
+  const bones = skin.rig?.bones
+  if (!Array.isArray(bones) || bones.length === 0 || bones.length > MAX_JOINTS) {
+    refuse(area, path, `the rig has ${Array.isArray(bones) ? bones.length : 'no'} bones; pass the S16 rig of the asset with 1..${MAX_JOINTS} bones`)
+  }
+  if (!Array.isArray(skin.parts)) refuse(area, path, 'skin.parts is not an array; pass the parts of the loaded raa-sdfm asset')
+  let skinned = 0
+  for (const part of skin.parts) {
+    if (part.skin === undefined) continue
+    const { joints, weights } = part.skin
+    const where = `${path}#part:${part.name}`
+    if (!(joints instanceof Uint16Array) || !(weights instanceof Float32Array)) refuse(area, where, 'skin needs Uint16Array joints and Float32Array weights')
+    if (joints.length === 0 || joints.length % 4 !== 0 || weights.length !== joints.length) {
+      refuse(area, where, `skin has ${joints.length} joints and ${weights.length} weights; pass 4 of each per vertex`)
+    }
+    for (let i = 0; i < joints.length; i++) {
+      if (joints[i] >= bones.length) refuse(area, where, `joint ${joints[i]} at ${i} is outside the ${bones.length} rig bones`)
+      if (!(weights[i] >= 0) || !Number.isFinite(weights[i])) refuse(area, where, `weight ${i} is not a finite non-negative number`)
+    }
+    skinned++
+  }
+  if (skinned === 0) refuse(area, path, 'no part carries a skin; register a rigged asset or use registerAsset')
+  return bones.length
+}
+
+/** Checks a setPose argument: 16 finite floats per rig bone. */
+export function checkPose(area: string, path: string, matrices: Float32Array, bones: number): void {
+  if (!(matrices instanceof Float32Array) || matrices.length !== 16 * bones) {
+    refuse(area, path, `the pose has ${matrices?.length} floats; pass 16 x ${bones} skin matrices in rig bone order`)
+  }
+  for (let i = 0; i < matrices.length; i++) if (!Number.isFinite(matrices[i])) refuse(area, path, `pose float ${i} is not finite`)
+}
+
 /** Validates and counts like a real port but draws nothing, so sim and client code run in Node. */
-export class NullRenderPort implements RenderPort {
+export class NullRenderPort implements SkinnedRenderPort {
   readonly kind = 'null' as const
-  readonly calls = { registerAsset: 0, createInstance: 0, setTransform: 0, render: 0 }
+  readonly calls = { registerAsset: 0, createInstance: 0, setTransform: 0, render: 0, setPose: 0 }
   private env: Readonly<Record<string, unknown>> | null = null
   private target: RenderTarget | null = null
   private assets = new Map<string, number>()
   private assetCount = 0
+  // Asset handle -> rig bone count of a skinned asset.
+  private skinBones = new Map<number, number>()
+  // Instance handle -> its own copy of the last submitted pose; absent = rest.
+  private poses = new Map<number, Float32Array>()
   // Index = instance handle; null once destroyed, so handles are never reused.
   private live: ({ asset: number; visible: boolean } | null)[] = []
 
@@ -49,6 +89,27 @@ export class NullRenderPort implements RenderPort {
     return h
   }
 
+  registerSkinned(assetId: string, skin: SkinnedAssetT): number {
+    const bones = checkSkin(AREA, `NullRenderPort.registerSkinned(${assetId})`, skin)
+    const h = this.registerAsset(assetId, { id: assetId } as PrimsAsset)
+    this.skinBones.set(h, bones)
+    return h
+  }
+
+  setPose(instance: number, matrices: Float32Array): void {
+    this.calls.setPose++
+    const p = 'NullRenderPort.setPose'
+    const bones = this.skinBones.get(this.get(p, instance).asset)
+    if (bones === undefined) refuse(AREA, p, `instance ${instance} is not skinned; create it from a registerSkinned handle`)
+    checkPose(AREA, p, matrices, bones)
+    this.poses.set(instance, matrices.slice())
+  }
+
+  /** The last pose submitted for an instance, or null when it draws at rest. */
+  poseOf(instance: number): Float32Array | null {
+    return this.poses.get(instance) ?? null
+  }
+
   createInstance(asset: number, tint: Vec3T | null): number {
     this.calls.createInstance++
     const p = 'NullRenderPort.createInstance'
@@ -75,6 +136,7 @@ export class NullRenderPort implements RenderPort {
   destroyInstance(instance: number): void {
     this.get('NullRenderPort.destroyInstance', instance)
     this.live[instance] = null
+    this.poses.delete(instance)
   }
 
   setCamera(viewport: number, cam: CameraPose): void {
@@ -121,6 +183,8 @@ export class NullRenderPort implements RenderPort {
     this.env = null
     this.assets.clear()
     this.assetCount = 0
+    this.skinBones.clear()
+    this.poses.clear()
     this.live = []
   }
 

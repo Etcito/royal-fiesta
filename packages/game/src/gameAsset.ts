@@ -140,7 +140,8 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 function utf8(s: string): Uint8Array { return new TextEncoder().encode(s) }
 
 // SDF Modeler's serializeDocument text (its asset_save_game hash form): 2-space JSON in
-// insertion key order, number-only arrays on one line as `[a, b, c]`, one trailing newline.
+// insertion key order, number-only arrays on one line as `[a, b, c]`, one trailing newline;
+// a node's rig and clips keep plain JSON.stringify layout (MAMA Exact json fields).
 function sdfmText(value: unknown): string {
   const write = (v: unknown, pad: string): string => {
     if (Array.isArray(v)) {
@@ -153,7 +154,11 @@ function sdfmText(value: unknown): string {
       const ks = Object.keys(v).filter((k) => (v as Record<string, unknown>)[k] !== undefined)
       if (ks.length === 0) return '{}'
       const inner = pad + '  '
-      return `{\n${ks.map((k) => `${inner}${JSON.stringify(k)}: ${write((v as Record<string, unknown>)[k], inner)}`).join(',\n')}\n${pad}}`
+      // a document node's rig and clips are written as plain JSON.stringify(v, null, 2), re-indented
+      const node = 'id' in v && 'kind' in v
+      const field = (k: string, x: unknown): string =>
+        node && (k === 'rig' || k === 'clips') ? JSON.stringify(x, null, 2).replace(/\n/g, '\n' + inner) : write(x, inner)
+      return `{\n${ks.map((k) => `${inner}${JSON.stringify(k)}: ${field(k, (v as Record<string, unknown>)[k])}`).join(',\n')}\n${pad}}`
     }
     return JSON.stringify(v)
   }

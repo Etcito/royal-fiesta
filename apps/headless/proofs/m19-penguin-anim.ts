@@ -24,7 +24,7 @@ async function verify() {
   const node = asset.document.nodes.penguin
   const prior = JSON.parse(await run('git', ['show', 'a73d1ce:assets/common/penguin.body.asset.json'])).document.nodes.penguin
   assert.deepEqual(node.rig, prior.rig, 'owner rig and bindings must remain intact')
-  assert.deepEqual(node.clips.filter((c: { name: string }) => !['fall', 'dive', 'bellySlide', 'handPush'].includes(c.name)), prior.clips, 'preserve all prior clips')
+  assert.deepEqual(node.clips.filter((c: { name: string }) => !['fall', 'dive', 'bellySlide', 'handPush', 'grab', 'hang'].includes(c.name)), prior.clips, 'preserve all prior clips')
   const { bindings, smooth, ...preset } = node.rig
   const api = await loadRaaAnim(), rig = api.loadRig(JSON.stringify(preset))
   const poses = new Map<string, Float32Array>()

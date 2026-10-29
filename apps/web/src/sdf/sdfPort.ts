@@ -1,6 +1,7 @@
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the
 // MAMA workers already produced (one mesh per part, split by material) and the graph materials
-// compiled by @etcito/raa-sdfm's mapMaterial. RAA applies per-instance tint after the graph.
+// compiled by @etcito/raa-sdfm's mapMaterial. The player colour (S23) reaches graph-mode materials
+// through setInstanceTint; parts without any graph material keep RAA's post-material multiply.
 import { roundStep, renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import { loadRaa } from '@etcito/raa'
 import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
@@ -28,7 +29,9 @@ interface PayloadGroup { group: string; parts: PayloadPart[] }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
 // key = the raa-sdfm part name (group/partId when two parts share a name); joints = 1 + max joint of a skinned part.
-interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tintable: boolean }
+interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint }
+// graph: a material of the part holds input.player_color; multiply: a part with no SDF material (white fallback).
+type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
 interface Uploaded { assetId: string; parts: PartUpload[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
 interface SkinSlot { instance: number; part: PartUpload }
@@ -69,6 +72,8 @@ class SdfRenderPort implements SkinnedRenderPort {
   private readonly live: (Live | null)[] = []
   // Game handles whose pose changed since the last render; flushed as one setSkinPoses batch.
   private readonly posed = new Set<number>()
+  // RAA instances given a player colour; a later untinted instance with a reused id clears it.
+  private readonly tinted = new Set<number>()
   private whiteSurface: number | null = null
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
@@ -143,6 +148,7 @@ class SdfRenderPort implements SkinnedRenderPort {
     const payload = payloadOf(id, meshed)
     const engine = this.need()
     const handles = new Map<string, number>()
+    const graph = new Set<string>()
     for (const compiled of payload.materials) {
       const mapped = mapCompiled(compiled, id)
       const known = this.functions.get(mapped.functionName)
@@ -157,17 +163,21 @@ class SdfRenderPort implements SkinnedRenderPort {
       }
       const base = engine.addSurfaceMaterial({ ...mapped.desc })
       handles.set(compiled.name, base)
+      if (usesPlayerColour(compiled, mapped)) graph.add(compiled.name)
     }
+    // An asset that uses the node puts its fixed materials in graph mode too: a tinted part may mix
+    // them with a player-colour material, and in multiply mode the beak and feet would take the tint.
+    if (graph.size > 0) for (const handle of handles.values()) engine.setMaterialTintMode(handle, 'graph')
     const parts: PartUpload[] = []
     const keys = new Set<string>()
     for (const group of payload.groups) {
       for (const part of group.parts) {
-        const built = partMesh(part, handles, id)
+        const built = partMesh(part, handles, graph, id)
         const mesh = engine.addMesh(built.desc)
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
-        parts.push({ name: part.name, key, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r, tintable: built.tintable })
+        parts.push({ name: part.name, key, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r, tint: built.tint })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
@@ -227,7 +237,10 @@ class SdfRenderPort implements SkinnedRenderPort {
     for (const part of parts) {
       const node = engine.addNode(root, part.t, part.r)
       const instance = engine.addMeshInstance(node, part.mesh)
-      if (tint !== null && part.tintable) engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
+      if (tint !== null && part.tint !== 'none') {
+        engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
+        this.tinted.add(instance)
+      } else if (this.tinted.delete(instance)) engine.clearInstanceTint(instance)
       instances.push(instance)
       if (part.joints !== undefined) skin.push({ instance, part })
     }
@@ -330,13 +343,13 @@ class SdfRenderPort implements SkinnedRenderPort {
     return live
   }
 
-  // Graphs share their original meshes. Material-less parts used a white standard surface
-  // for tint before; keep that surface and geometry shared by every tint colour too.
+  // Graphs share their original meshes. Material-less parts keep the multiply tint on a white
+  // standard surface; that surface and geometry are shared by every tint colour too.
   private tintableParts(uploaded: Uploaded): PartUpload[] {
     if (uploaded.tintedParts !== undefined) return uploaded.tintedParts
     const engine = this.need()
     uploaded.tintedParts = uploaded.parts.map(part => {
-      if (part.subMeshes.every(sub => sub.material !== undefined)) return part
+      if (part.tint !== 'multiply') return part
       this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
       const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? this.whiteSurface! }))
       const desc = { ...part.desc, subMeshes }
@@ -419,12 +432,15 @@ function payloadOf(id: string, meshed: MeshedAsset): Payload {
   return data as unknown as Payload
 }
 
-// SDF Modeler decides which materials take the player colour: those named player* (and parts with no material at all).
-const PLAYER_MATERIAL = /^player/i
-function takesPlayerColour(material: string | null): boolean { return material === null || PLAYER_MATERIAL.test(material) }
+// S23: a material takes the player colour when its graph holds input.player_color, which alone emits
+// mat_instance_tint. The built raa-sdfm types do not declare tintMode yet, hence the WGSL fallback.
+function usesPlayerColour(compiled: SdfmCompiledMaterial, mapped: SdfmMappedMaterial): boolean {
+  if ((mapped as { tintMode?: unknown }).tintMode === 'graph') return true
+  return [compiled.body, ...compiled.helpers.map(helper => helper.wgsl)].some(text => /\bmat_instance_tint\b/.test(text))
+}
 
 // One MeshDesc per part: MAMA meshes concatenated, one sub-mesh per material, first use first.
-function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, assetId: string): { desc: MeshDesc; subMeshes: SubMeshDesc[]; tintable: boolean } {
+function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, graph: ReadonlySet<string>, assetId: string): { desc: MeshDesc; subMeshes: SubMeshDesc[]; tint: PartTint } {
   const byMaterial = new Map<string | null, PayloadMesh[]>()
   for (const mesh of part.meshes) {
     const list = byMaterial.get(mesh.material)
@@ -466,7 +482,10 @@ function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, asset
   }
   const desc: MeshDesc = { positions, normals, indices, subMeshes }
   if (uvs !== null) desc.uvs = uvs
-  return { desc, subMeshes, tintable: [...byMaterial.keys()].every(takesPlayerColour) }
+  const materials = [...byMaterial.keys()]
+  const tint: PartTint = materials.some(m => m !== null && graph.has(m)) ? 'graph'
+    : graph.size === 0 && materials.every(m => m === null) ? 'multiply' : 'none'
+  return { desc, subMeshes, tint }
 }
 
 // Translation and rotation of a column-major 4x4 MAMA part frame; a frame scale is not carried.

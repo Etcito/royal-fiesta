@@ -1,4 +1,5 @@
 import type { Vec3, Quat } from './vec.ts'
+import type { MechanismSpec, SoundSpec } from './mechanismSpec.ts'
 
 // ResolvedCourse is plain data produced by game/course; colliders are already
 // scaled by `s` and expressed in the obstacle's local frame; contentHash is
@@ -12,6 +13,9 @@ export const MOTION_KINDS = [
 export type MotionKind = typeof MOTION_KINDS[number]
 export const MAX_OBSTACLES = 96
 export const MAX_COLLIDERS_PER_OBSTACLE = 8
+
+export type Surface = 'normal' | 'ice' | 'mud' | 'rubber'
+export const SURFACES: readonly Surface[] = ['normal', 'ice', 'mud', 'rubber']
 
 export type ColliderSpec =
   | { shape: 'cuboid'; half: Vec3; t: Vec3; r: Quat }
@@ -40,12 +44,13 @@ export interface ObstacleSpec {
   friction: number
   colliders: ColliderSpec[]
   motion: Motion
+  surface?: Surface
 }
 
 export interface Box { center: Vec3; half: Vec3 }
 export interface SpawnPoint { t: Vec3; facing: { x: number; z: number } }
 export interface Checkpoint { box: Box; respawn: SpawnPoint }
-export interface PathNode { p: Vec3; jump: boolean; dive: boolean }
+export interface PathNode { p: Vec3; jump: boolean; dive: boolean; wait?: string; pull?: string }
 export interface Region { id: number; box: Box; adjacent: number[] }
 
 export interface ResolvedCourse {
@@ -63,12 +68,18 @@ export interface ResolvedCourse {
   queuePad: Box | null
   obstacles: ObstacleSpec[]
   contentHash: number
+  mechanisms?: MechanismSpec | null
+  sounds?: SoundSpec[]
 }
 
 export function inBox(b: Box, p: Vec3): boolean {
   return Math.abs(p.x - b.center.x) <= b.half.x &&
     Math.abs(p.y - b.center.y) <= b.half.y &&
     Math.abs(p.z - b.center.z) <= b.half.z
+}
+
+export function surfaceOf(o: ObstacleSpec): Surface {
+  return o.surface ?? 'normal'
 }
 
 export function regionOf(c: ResolvedCourse, p: Vec3): number {

@@ -358,7 +358,12 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
     if (resolved[i].asset.physics) {
       const k = items.length
       const item = itemOf({ id: o.id, asset: aid, t: o.t, r: o.r, s: o.s }, resolved[i].asset, `${path}#/obstacles/${i}`)
-      items.push({ ...item, joints: item.joints.map(j => ({ ...j, a: { ...j.a, item: k }, b: { ...j.b, item: k } })) })
+      // itemOf bakes the item pose into each body rest; the sim composes item.t/item.r on top, so
+      // store identity here and the body rest stays the world pose.
+      items.push({
+        ...item, t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 },
+        joints: item.joints.map(j => ({ ...j, a: { ...j.a, item: k }, b: { ...j.b, item: k } })),
+      })
     } else {
       simObstacles.push({ ...o, asset: aid, ...(surface === undefined ? {} : { surface }) })
     }

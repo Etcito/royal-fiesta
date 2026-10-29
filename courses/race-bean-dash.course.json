@@ -620,14 +620,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "spinner",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "speedDegS": 90,
-        "phaseDeg": 0
+        "kind": "static"
       },
       "colliders": null
     },
@@ -652,14 +645,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "spinner",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "speedDegS": -110,
-        "phaseDeg": 90
+        "kind": "static"
       },
       "colliders": null
     },
@@ -809,20 +795,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "pendulum",
-        "pivot": [
-          0,
-          6.8,
-          27
-        ],
-        "axis": [
-          0,
-          0,
-          1
-        ],
-        "ampDeg": 60,
-        "periodS": 3,
-        "phaseDeg": 0
+        "kind": "static"
       },
       "colliders": null
     },
@@ -847,20 +820,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "pendulum",
-        "pivot": [
-          0,
-          6.8,
-          32
-        ],
-        "axis": [
-          0,
-          0,
-          1
-        ],
-        "ampDeg": 60,
-        "periodS": 2.5,
-        "phaseDeg": 120
+        "kind": "static"
       },
       "colliders": null
     },
@@ -885,20 +845,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "pendulum",
-        "pivot": [
-          0,
-          6.8,
-          37
-        ],
-        "axis": [
-          0,
-          0,
-          1
-        ],
-        "ampDeg": 55,
-        "periodS": 3,
-        "phaseDeg": 240
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1058,16 +1005,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "rotatingDoor",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "stepDeg": 90,
-        "periodS": 2,
-        "moveS": 0.5,
-        "phaseS": 0
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1167,16 +1105,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "rotatingDoor",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "stepDeg": 90,
-        "periodS": 2,
-        "moveS": 0.5,
-        "phaseS": 0.5
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1201,14 +1130,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "spinner",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "speedDegS": 120,
-        "phaseDeg": 45
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1233,16 +1155,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "rotatingDoor",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "stepDeg": 90,
-        "periodS": 2.5,
-        "moveS": 0.5,
-        "phaseS": 1
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1292,15 +1205,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "movingPlatform",
-        "offset": [
-          1.5,
-          0,
-          0
-        ],
-        "periodS": 4,
-        "phaseDeg": 0,
-        "wave": "sine"
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1325,15 +1230,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "movingPlatform",
-        "offset": [
-          1.5,
-          0,
-          0
-        ],
-        "periodS": 4,
-        "phaseDeg": 180,
-        "wave": "sine"
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1433,16 +1330,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "seesaw",
-        "axis": [
-          1,
-          0,
-          0
-        ],
-        "maxDeg": 20,
-        "spring": 800,
-        "damping": 300,
-        "inertia": 900
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1467,8 +1355,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "bouncePad",
-        "speed": 14
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1493,8 +1380,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "bouncePad",
-        "speed": 14
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1569,14 +1455,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "spinner",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "speedDegS": -100,
-        "phaseDeg": 0
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1601,20 +1480,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "pendulum",
-        "pivot": [
-          0,
-          6.8,
-          117
-        ],
-        "axis": [
-          0,
-          0,
-          1
-        ],
-        "ampDeg": 65,
-        "periodS": 2.5,
-        "phaseDeg": 90
+        "kind": "static"
       },
       "colliders": null
     },
@@ -1644,6 +1510,1180 @@
       "colliders": null
     }
   ],
+  "mechanisms": {
+    "animations": [
+      {
+        "id": "spinner-1-anim",
+        "target": {
+          "item": "spinner-1",
+          "body": "rotor"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "atS": 0.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              45,
+              0
+            ]
+          },
+          {
+            "atS": 1,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 1.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              135,
+              0
+            ]
+          },
+          {
+            "atS": 2,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              180,
+              0
+            ]
+          },
+          {
+            "atS": 2.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              225,
+              0
+            ]
+          },
+          {
+            "atS": 3,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              270,
+              0
+            ]
+          },
+          {
+            "atS": 3.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              315,
+              0
+            ]
+          },
+          {
+            "atS": 4,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              360,
+              0
+            ]
+          }
+        ],
+        "easing": "linear",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "spinner-2-anim",
+        "target": {
+          "item": "spinner-2",
+          "body": "rotor"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 0.4090909090909091,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              45,
+              0
+            ]
+          },
+          {
+            "atS": 0.8181818181818182,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "atS": 1.2272727272727273,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -45,
+              0
+            ]
+          },
+          {
+            "atS": 1.6363636363636365,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -90,
+              0
+            ]
+          },
+          {
+            "atS": 2.0454545454545454,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -135,
+              0
+            ]
+          },
+          {
+            "atS": 2.4545454545454546,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -180,
+              0
+            ]
+          },
+          {
+            "atS": 2.8636363636363638,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -225,
+              0
+            ]
+          },
+          {
+            "atS": 3.272727272727273,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -270,
+              0
+            ]
+          }
+        ],
+        "easing": "linear",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "pendulum-1-anim",
+        "target": {
+          "item": "pendulum-1",
+          "body": "hammer"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              -4.849742261,
+              2.8,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              -60
+            ]
+          },
+          {
+            "atS": 1.5,
+            "t": [
+              4.849742261,
+              2.8,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              60
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "pingpong",
+        "autostart": true
+      },
+      {
+        "id": "pendulum-2-anim",
+        "target": {
+          "item": "pendulum-2",
+          "body": "hammer"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              4.849742261,
+              2.8,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              60
+            ]
+          },
+          {
+            "atS": 1.25,
+            "t": [
+              -4.849742261,
+              2.8,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              -60
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "pingpong",
+        "autostart": true
+      },
+      {
+        "id": "pendulum-3-anim",
+        "target": {
+          "item": "pendulum-3",
+          "body": "hammer"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              -4.587251448,
+              2.387971956,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              -55
+            ]
+          },
+          {
+            "atS": 1.5,
+            "t": [
+              4.587251448,
+              2.387971956,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              55
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "pingpong",
+        "autostart": true
+      },
+      {
+        "id": "door-1-anim",
+        "target": {
+          "item": "door-1",
+          "body": "door"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "atS": 0.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 2,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 2.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              180,
+              0
+            ]
+          },
+          {
+            "atS": 4,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              180,
+              0
+            ]
+          },
+          {
+            "atS": 4.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              270,
+              0
+            ]
+          },
+          {
+            "atS": 6,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              270,
+              0
+            ]
+          },
+          {
+            "atS": 6.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              360,
+              0
+            ]
+          },
+          {
+            "atS": 8,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              360,
+              0
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "door-2-anim",
+        "target": {
+          "item": "door-2",
+          "body": "door"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 1.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 2,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              180,
+              0
+            ]
+          },
+          {
+            "atS": 3.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              180,
+              0
+            ]
+          },
+          {
+            "atS": 4,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              270,
+              0
+            ]
+          },
+          {
+            "atS": 5.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              270,
+              0
+            ]
+          },
+          {
+            "atS": 6,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              360,
+              0
+            ]
+          },
+          {
+            "atS": 7.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              360,
+              0
+            ]
+          },
+          {
+            "atS": 8,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              450,
+              0
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "spinner-3-anim",
+        "target": {
+          "item": "spinner-3",
+          "body": "rotor"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              45,
+              0
+            ]
+          },
+          {
+            "atS": 0.375,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 0.75,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              135,
+              0
+            ]
+          },
+          {
+            "atS": 1.125,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              180,
+              0
+            ]
+          },
+          {
+            "atS": 1.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              225,
+              0
+            ]
+          },
+          {
+            "atS": 1.875,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              270,
+              0
+            ]
+          },
+          {
+            "atS": 2.25,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              315,
+              0
+            ]
+          },
+          {
+            "atS": 2.625,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              360,
+              0
+            ]
+          },
+          {
+            "atS": 3,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              405,
+              0
+            ]
+          }
+        ],
+        "easing": "linear",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "door-3-anim",
+        "target": {
+          "item": "door-3",
+          "body": "door"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 1.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "atS": 2,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              180,
+              0
+            ]
+          },
+          {
+            "atS": 4,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              180,
+              0
+            ]
+          },
+          {
+            "atS": 4.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              270,
+              0
+            ]
+          },
+          {
+            "atS": 6.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              270,
+              0
+            ]
+          },
+          {
+            "atS": 7,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              360,
+              0
+            ]
+          },
+          {
+            "atS": 9,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              360,
+              0
+            ]
+          },
+          {
+            "atS": 9.5,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              450,
+              0
+            ]
+          },
+          {
+            "atS": 10,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              450,
+              0
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "platform-1-anim",
+        "target": {
+          "item": "platform-1",
+          "body": "platform"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "atS": 2,
+            "t": [
+              1.5,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "atS": 4,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "platform-2-anim",
+        "target": {
+          "item": "platform-2",
+          "body": "platform"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "atS": 2,
+            "t": [
+              -1.5,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "atS": 4,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "spinner-4-anim",
+        "target": {
+          "item": "spinner-4",
+          "body": "rotor"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "atS": 0.45,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -45,
+              0
+            ]
+          },
+          {
+            "atS": 0.9,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -90,
+              0
+            ]
+          },
+          {
+            "atS": 1.35,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -135,
+              0
+            ]
+          },
+          {
+            "atS": 1.8,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -180,
+              0
+            ]
+          },
+          {
+            "atS": 2.25,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -225,
+              0
+            ]
+          },
+          {
+            "atS": 2.7,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -270,
+              0
+            ]
+          },
+          {
+            "atS": 3.15,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -315,
+              0
+            ]
+          },
+          {
+            "atS": 3.6,
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "rDeg": [
+              0,
+              -360,
+              0
+            ]
+          }
+        ],
+        "easing": "linear",
+        "loop": "loop",
+        "autostart": true
+      },
+      {
+        "id": "pendulum-4-anim",
+        "target": {
+          "item": "pendulum-4",
+          "body": "hammer"
+        },
+        "keys": [
+          {
+            "atS": 0,
+            "t": [
+              5.075323607,
+              3.233337734,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              65
+            ]
+          },
+          {
+            "atS": 1.25,
+            "t": [
+              -5.075323607,
+              3.233337734,
+              0
+            ],
+            "rDeg": [
+              0,
+              0,
+              -65
+            ]
+          }
+        ],
+        "easing": "smooth",
+        "loop": "pingpong",
+        "autostart": true
+      }
+    ]
+  },
   "decor": [],
   "environment": null,
   "podium": null

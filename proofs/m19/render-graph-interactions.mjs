@@ -10,7 +10,6 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { spawn } from 'node:child_process'
 import { loadRaaAnim } from '@etcito/raa-anim'
-const { loadGraph } = await import(new URL('./pkg/raa_anim_js.js', import.meta.resolve('@etcito/raa-anim')).href)
 
 const W = 960, H = 540, FPS = 30, TICKS = 1620, OUT = 'proofs/m19/penguin-animgraph-interactions.mp4'
 const asset = JSON.parse(readFileSync('assets/common/penguin.body.asset.json', 'utf8'))
@@ -18,7 +17,7 @@ const owner = asset.document.nodes.penguin
 const { bindings, smooth, ...preset } = owner.rig
 const api = await loadRaaAnim(), rig = api.loadRig(JSON.stringify(preset))
 const clips = owner.clips.map(def => ({ def, clip: api.loadClip(rig, JSON.stringify(def)) }))
-const graph = loadGraph(readFileSync('assets/common/penguin.animgraph.json', 'utf8'), rig, clips.map(c => c.clip))
+const graph = api.loadGraph(readFileSync('assets/common/penguin.animgraph.json', 'utf8'), rig, clips.map(c => c.clip))
 const state = graph.newState()
 const NB = preset.bones.length * 16
 const samples = clips.map(({ def, clip }) => ({ name: def.name, length: def.lengthTicks, loop: def.loop, poses: Array.from({ length: def.lengthTicks + 1 }, (_, t) => api.sampleClip(clip, t).skin.slice(0, NB)) }))

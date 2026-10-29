@@ -7,5 +7,7 @@
   "proofs/m19/fall.png",
   "proofs/m19/dive.png",
   "proofs/m19/waddle.png",
-  "proofs/m19/waddle-reference.png"
+  "proofs/m19/waddle-reference.png",
+  "proofs/m19/penguin-fall-dive.mp4",
+  "proofs/m19/render-fall-dive-preview.mjs"
 ]

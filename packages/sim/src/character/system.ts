@@ -10,6 +10,7 @@ import type { PlayerInput } from '../input.ts'
 import { isKinematic } from '../obstacles/motion.ts'
 import type { ObstacleSystem } from '../obstacles/system.ts'
 import { refuse } from '../refusal.ts'
+import { pose } from '../vec.ts'
 import type { Vec3 } from '../vec.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
 import { CHAR, CharMode, SURFACE_TUNING } from './constants.ts'
@@ -49,6 +50,7 @@ const scratchBase = { x: 0, y: 0, z: 0 }
 const scratchHit = { x: 0, y: 0, z: 0 }
 const scratchN = { x: 0, y: 0, z: 0 }
 const scratchPt = { x: 0, y: 0, z: 0 }
+const scratchHandle = pose()
 const scratchBody: BodyRef = { item: -1, body: -1 }
 const scratchObsV = { x: 0, y: 0, z: 0 }
 let scratchRay: InstanceType<RapierModule['Ray']> | null = null
@@ -191,7 +193,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#groundObstacle[p] = -1
     this.#groundItem[p] = -1
     this.#groundBody[p] = -1
-    this.#grabLever[p] = -1
+    if (this.#grabLever[p] >= 0) this.#release(ctx, p)
     this.#coyote[p] = 0
     this.#jumpBuffer[p] = 0
     this.#teleportTick[p] = ctx.tick
@@ -447,7 +449,23 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         timer = 0
       }
 
-      if (mode !== CharMode.grabbing && this.#grabTarget[p] >= 0) this.#release(p)
+      if ((mode === CharMode.ground || mode === CharMode.air) &&
+          (pressed & GRAB_BIT) !== 0 && this.#grabCooldown[p] === 0 && mechanisms !== null) {
+        const levers = mechanisms.spec()?.levers ?? []
+        for (let lever = 0; lever < levers.length; lever++) {
+          const spec = levers[lever]
+          if (!mechanisms.bodyPose(ctx, spec.handle, scratchHandle)) continue
+          const h = scratchHandle.t
+          if (Math.hypot(h.x - t.x, h.y - t.y, h.z - t.z) > spec.grabRange) continue
+          this.#grabTarget[p] = -1
+          this.#grabLever[p] = lever
+          this.#grabTicks[p] = 0
+          mode = CharMode.grabbing
+          break
+        }
+      }
+      if (mode !== CharMode.grabbing && (this.#grabTarget[p] >= 0 || this.#grabLever[p] >= 0)) this.#release(ctx, p)
+      if (this.#grabLever[p] >= 0) mechanisms!.grabHandle(ctx, this.#grabLever[p], p)
       this.#mode[p] = mode
       this.#timer[p] = timer
       // Stunned: the knockback is left to physics.
@@ -468,7 +486,11 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#grabPass(ctx)
   }
 
-  #release(p: number): void {
+  #release(ctx: WorldCtx<PlayerInput>, p: number): void {
+    if (this.#grabLever[p] >= 0 && ctx.hasSystem('mechanisms')) {
+      ctx.system<MechanismSystem>('mechanisms').releaseHandle(ctx, this.#grabLever[p], p)
+    }
+    this.#grabLever[p] = -1
     this.#grabTarget[p] = -1
     this.#grabTicks[p] = 0
     this.#grabCooldown[p] = CHAR.grabCooldownTicks
@@ -481,9 +503,11 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     for (let p = 0; p < this.playerCount; p++) {
       if (this.#parked[p] !== 0) continue
       let q = this.#grabTarget[p]
-      if (q >= 0) {
+      if (this.#grabLever[p] >= 0) {
+        this.#scaleHorizontal(ctx, p, CHAR.grabSlow)
+      } else if (q >= 0) {
         if (this.#parked[q] !== 0 || this.#dist(p, q) > CHAR.grabRange) {
-          this.#release(p)
+          this.#release(ctx, p)
           this.#mode[p] = this.#grounded[p] !== 0 ? CharMode.ground : CharMode.air
           continue
         }
@@ -497,7 +521,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         this.#grabTicks[p] = 0
         this.#mode[p] = CharMode.grabbing
       }
-      this.#scaleHorizontal(ctx, q, CHAR.grabSlow)
+      if (q >= 0) this.#scaleHorizontal(ctx, q, CHAR.grabSlow)
       const gv = this.#preVel
       const h = Math.sqrt(gv[p * 3] * gv[p * 3] + gv[p * 3 + 2] * gv[p * 3 + 2])
       if (h > CHAR.grabberMaxSpeed) this.#scaleHorizontal(ctx, p, CHAR.grabberMaxSpeed / h)
@@ -577,6 +601,12 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         this.#bumpObs = obs[k]
         this.#bumpBody = mechanisms?.bodyOfCollider(ctx, cols[k].handle) ?? null
         world.contactPair(col, cols[k], this.#onManifold)
+      }
+      // Mechanisms clears its one-tick loads before character postStep. Queue the
+      // held handle again for the next tick, just like the standing weight below.
+      if (this.#grabLever[p] >= 0 && mechanisms !== null) {
+        if (this.#mode[p] === CharMode.grabbing) mechanisms.grabHandle(ctx, this.#grabLever[p], p)
+        else this.#release(ctx, p)
       }
       const gi = this.#groundObstacle[p]
       if (this.#grounded[p] !== 0 && obstacles !== null && gi >= 0 && gi < obstacles.count && obstacles.spec(gi).motion.kind === 'seesaw') {

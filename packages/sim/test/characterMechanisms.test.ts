@@ -9,7 +9,7 @@ import { G, groups } from '../src/groups.ts'
 import { decodeInput, inputCode, neutralInput } from '../src/input.ts'
 import type { PlayerInput } from '../src/input.ts'
 import { emptyMechanisms } from '../src/mechanismSpec.ts'
-import type { BodySpec, JointSpec } from '../src/mechanismSpec.ts'
+import type { BodySpec, JointSpec, LeverSpec } from '../src/mechanismSpec.ts'
 import { MechanismSystem } from '../src/mechanisms/system.ts'
 import { pose, quatRotate } from '../src/vec.ts'
 import { FiestaWorld } from '../src/world.ts'
@@ -37,20 +37,20 @@ function hinge(overrides: Partial<JointSpec> = {}): JointSpec {
     anchorA: O, anchorB: O, axis: { x: 0, y: 0, z: 1 }, limits: null,
     stiffness: 0, damping: 0, length: 0, motor: null, ...overrides }
 }
-function fixture(b: BodySpec, joints: JointSpec[] = [], at = O) {
+function fixture(b: BodySpec, joints: JointSpec[] = [], at = O, levers: LeverSpec[] = [], playerCount = 1) {
   const course: ResolvedCourse = {
     id: 'character-lab', name: 'Character lab', kind: 'gallery', profiles: ['standard'],
     timeLimitS: 60, killPlaneY: -100, spawns: [], checkpoints: [], finish: null,
     path: [], regions: [], queuePad: null, obstacles: [], contentHash: 0,
     mechanisms: { ...emptyMechanisms(), items: [{ id: 'lab', asset: 'lab', t: O, r: I,
-      s: { x: 1, y: 1, z: 1 }, bodies: [b], joints: [] }], joints },
+      s: { x: 1, y: 1, z: 1 }, bodies: [b], joints: [] }], joints, levers },
   }
   const mechanisms = new MechanismSystem([course])
-  const chars = new CharacterSystem({ playerCount: 1 })
-  const world = new FiestaWorld<PlayerInput>(R, { playerCount: 1, systems: [mechanisms, chars] })
+  const chars = new CharacterSystem({ playerCount })
+  const world = new FiestaWorld<PlayerInput>(R, { playerCount, systems: [mechanisms, chars] })
   mechanisms.load(world.ctx, 0)
   // Populate Rapier query structures before placing the character on the body.
-  world.step([NEUTRAL])
+  world.step(Array.from({ length: playerCount }, () => NEUTRAL))
   chars.place(world.ctx, 0, { t: at, facing: { x: 0, z: 1 } })
   const out = state()
   return { world, mechanisms, chars, read: () => chars.state(world.ctx, 0, out) }
@@ -179,4 +179,108 @@ test('characters still step on a flat floor without mechanisms or obstacles', ()
       else assert.ok(Math.abs(s.pos.z) < 0.1, 'neutral character stays put')
     }
   } finally { world.free() }
+})
+
+const GRAB = decodeInput(inputCode({ grab: true }), neutralInput())
+function leverFixture(playerCount = 1) {
+  const handle = { x: 0.7, y: STAND, z: 0 }
+  const f = fixture(body({ gravityScale: 0, rest: { t: handle, r: I },
+    colliders: [{ shape: 'ball', radius: 0.1, t: O, r: I }] }),
+  [hinge({ anchorA: handle, limits: [0, 0] })], O,
+  [{ id: 'lever', handle: REF, joint: 0, onAngle: 0.5, offAngle: 0.1, grabRange: 0.8 }], playerCount)
+  f.world.physics.createBody(R.RigidBodyDesc.fixed().setTranslation(0, -0.5, 0), [
+    R.ColliderDesc.cuboid(20, 0.5, 20).setCollisionGroups(groups(G.STATIC, G.CHAR | G.PROBE)),
+  ])
+  f.world.step(Array.from({ length: playerCount }, () => NEUTRAL))
+  return f
+}
+
+test('lever grab renews the handle load between steps and releases on button up', () => {
+  const f = leverFixture()
+  try {
+    for (let tick = 0; tick < 10; tick++) {
+      f.world.step([GRAB])
+      assert.equal(f.chars.grabbingLever(0), 0)
+      assert.equal(f.read().grabLever, 0)
+      assert.equal(f.read().mode, CharMode.grabbing)
+      assert.ok(f.mechanisms.loadKg(REF) >= 60)
+    }
+    f.world.step([NEUTRAL])
+    assert.equal(f.chars.grabbingLever(0), -1)
+    assert.notEqual(f.read().mode, CharMode.grabbing)
+    assert.equal(f.mechanisms.loadKg(REF), 0)
+    f.world.step([GRAB])
+    assert.equal(f.chars.grabbingLever(0), -1, 'cooldown prevents immediate regrab')
+  } finally { f.world.free() }
+})
+
+test('lever grab auto-releases at grabMaxTicks and does not restart while held', () => {
+  const f = leverFixture()
+  try {
+    f.world.step([GRAB])
+    for (let tick = 1; tick < CHAR.grabMaxTicks; tick++) {
+      f.world.step([GRAB])
+      assert.equal(f.chars.grabbingLever(0), 0)
+    }
+    f.world.step([GRAB])
+    assert.equal(f.chars.grabbingLever(0), -1)
+    assert.equal(f.mechanisms.loadKg(REF), 0)
+    for (let tick = 0; tick < CHAR.grabCooldownTicks + 2; tick++) f.world.step([GRAB])
+    assert.equal(f.chars.grabbingLever(0), -1)
+    f.world.step([NEUTRAL])
+    f.world.step([GRAB])
+    assert.equal(f.chars.grabbingLever(0), 0)
+  } finally { f.world.free() }
+})
+
+test('lever wins over a player in the grab cone without slowing that player', () => {
+  const f = leverFixture(2)
+  try {
+    f.chars.place(f.world.ctx, 1, { t: { x: 0, y: 0, z: 0.9 }, facing: { x: 0, z: 1 } })
+    f.world.step([GRAB, RUN])
+    assert.equal(f.chars.grabbingLever(0), 0)
+    assert.equal(f.read().mode, CharMode.grabbing)
+    assert.ok(f.mechanisms.loadKg(REF) >= 60)
+    assert.ok(f.chars.state(f.world.ctx, 1, state()).vel.z > 0.9, 'target keeps its steering speed')
+  } finally { f.world.free() }
+})
+
+test('snapshot mid-lever-grab restores identical character and handle poses in-process', () => {
+  const f = leverFixture()
+  try {
+    for (let tick = 0; tick < 20; tick++) f.world.step([GRAB])
+    const snapshot = f.world.takeSnapshotBytes()
+    const replay = () => {
+      const rows = []
+      for (let tick = 0; tick < CHAR.grabMaxTicks + 5; tick++) {
+        f.world.step([GRAB])
+        const handle = pose()
+        assert.ok(f.mechanisms.bodyPose(f.world.ctx, REF, handle))
+        rows.push({ character: f.chars.state(f.world.ctx, 0, state()), handle,
+          load: f.mechanisms.loadKg(REF) })
+      }
+      return rows
+    }
+    const expected = replay()
+    f.world.restoreSnapshotBytes(snapshot)
+    assert.equal(f.chars.grabbingLever(0), 0)
+    assert.deepEqual(replay(), expected)
+  } finally { f.world.free() }
+})
+
+test('lever grabs use spec order and keep grabSlow and grabberMaxSpeed', () => {
+  const f = leverFixture()
+  try {
+    const spec = f.mechanisms.spec()!
+    spec.levers.push({ ...spec.levers[0], id: 'second' })
+    const movingGrab = decodeInput(inputCode({ grab: true, moveZ: 1 }), neutralInput())
+    f.world.step([movingGrab])
+    assert.equal(f.chars.grabbingLever(0), 0)
+    assert.ok(Math.abs(f.read().vel.z - CHAR.grabSlow) < 0.01)
+    for (let tick = 0; tick < 30; tick++) {
+      f.world.step([movingGrab])
+      assert.equal(f.chars.grabbingLever(0), 0)
+      assert.ok(Math.hypot(f.read().vel.x, f.read().vel.z) <= CHAR.grabberMaxSpeed + 0.001)
+    }
+  } finally { f.world.free() }
 })

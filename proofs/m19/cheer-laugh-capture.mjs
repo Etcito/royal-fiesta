@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { decodePng, unwrapOp } from '../../apps/headless/src/gpuRecord.ts'
+import { frameName } from './clip-review-frames.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const destination = join(root, 'proofs/m19'), dist = join(root, 'out/m19-cheer-laugh')
@@ -18,6 +19,23 @@ const exec = promisify(execFile)
 export function captureResult(envelope, key, file) {
   assert(envelope && Object.hasOwn(envelope, 'result'), 'GPU client result envelope missing')
   return unwrapOp({ file, json: envelope.result }, key).out
+}
+export function reviewInput(clip, frames) {
+  assert(['emote.cheer', 'emote.laugh', 'waddle'].includes(clip))
+  assert([1, 2, 120].includes(frames))
+  assert(clip !== 'waddle' || frames === 1)
+  return { clip, frames, width: frames === 120 ? 1280 : 320,
+    height: frames === 120 ? 720 : 180, fps: 30,
+    ...(frames > 1 ? { videoFormat: 'png-sequence' } : {}) }
+}
+export function sequenceEncodingArgs(input, result, directory, output) {
+  assert.equal(input.videoFormat, 'png-sequence')
+  assert.deepEqual(result.video, { format: 'png-sequence', pattern: 'frame-%04d.png', frames: input.frames, fps: input.fps })
+  assert.deepEqual(result.files.filter(name => name.startsWith('frame-')),
+    Array.from({ length: input.frames }, (_, i) => frameName(i)), 'Every GPU frame must be returned in order')
+  return ['-y', '-v', 'error', '-framerate', String(input.fps), '-start_number', '0',
+    '-i', join(directory, result.video.pattern), '-frames:v', String(input.frames),
+    '-an', '-c:v', 'libvpx-vp9', '-threads', '1', '-pix_fmt', 'yuv420p', output]
 }
 async function run(command, args) {
   return (await exec(command, args, { cwd: root, timeout: 60000, killSignal: 'SIGKILL', maxBuffer: 4 * 1024 * 1024 })).stdout
@@ -81,8 +99,10 @@ async function capture() {
       assert.equal(result.adapter.isFallbackAdapter, false)
       assert(!/swiftshader|llvmpipe|lavapipe|software/i.test(JSON.stringify(result.adapter)))
       assert.equal(result.clip, input.clip); assert.equal(result.frames, input.frames)
-      assert.equal(result.source?.sourceRevision, source.sourceRevision)
-      assert.equal(result.source?.assetRevision, source.assetRevision)
+      if (input.clip !== 'waddle') {
+        assert.equal(result.source?.sourceRevision, source.sourceRevision)
+        assert.equal(result.source?.assetRevision, source.assetRevision)
+      }
       nonEmpty(join(out, `${input.clip}.png`), input.width, input.height)
     }
     return { out, result }
@@ -91,25 +111,49 @@ async function capture() {
   assert.equal(blank.result.ok, true)
   const pageRef = await publish(dist)
   json(join(execution, 'published.json'), { pageRef, source })
-  const remux = (input, output) => run('ffmpeg', ['-y', '-v', 'error', '-i', input, '-c', 'copy', output])
+  const encode = async ({ out, result }, input, video) => {
+    // ffmpeg encodes returned hardware-GPU PNGs; it never renders any geometry.
+    await run('ffmpeg', sequenceEncodingArgs(input, result, out, video))
+    const media = JSON.parse(await run('ffprobe', ['-v', 'error', '-count_frames', '-show_streams', '-show_format', '-of', 'json', video]))
+    assert(media.streams.some(s => s.codec_type === 'video' && s.width === input.width && s.height === input.height
+      && Number(s.nb_read_frames) === input.frames), 'Encoded video must contain every returned GPU frame')
+    assert(Number(media.format.duration) >= input.frames / input.fps - 0.01)
+    json(join(out, 'media.json'), media)
+  }
   for (const clip of ['emote.cheer', 'emote.laugh']) {
-    const small = { clip, width: 320, height: 180, fps: 30 }
-    await render(pageRef, `${clip}-one-frame`, { ...small, frames: 1 })
-    const two = await render(pageRef, `${clip}-two-frame`, { ...small, frames: 2 })
-    assert(existsSync(join(two.out, `penguin-${clip}.webm`)), 'Missing two-frame video probe')
-    await remux(join(two.out, `penguin-${clip}.webm`), join(two.out, 'seekable.webm'))
-    const { out, result } = await render(pageRef, clip, { clip, width: 1280, height: 720, fps: 30, frames: 120 })
-    assert.deepEqual(result.files, [`${clip}.png`, `penguin-${clip}.webm`, `${clip}-reference.png`])
+    await render(pageRef, `${clip}-one-frame`, reviewInput(clip, 1))
+    const twoInput = reviewInput(clip, 2)
+    const two = await render(pageRef, `${clip}-two-frame`, twoInput)
+    await encode(two, twoInput, join(two.out, `penguin-${clip}.webm`))
+    const input = reviewInput(clip, 120), capture = await render(pageRef, clip, input)
+    const { out, result } = capture
+    assert.deepEqual(result.files, [`${clip}.png`, ...Array.from({ length: 120 }, (_, i) => frameName(i)), `${clip}-reference.png`])
     copyFileSync(join(out, `${clip}.png`), join(destination, `${clip}.png`))
     copyFileSync(join(out, `${clip}-reference.png`), join(destination, `${clip}-reference.png`))
     const video = join(destination, `penguin-${clip}.webm`)
-    await remux(join(out, `penguin-${clip}.webm`), video)
-    const media = JSON.parse(await run('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', video]))
-    assert(media.streams.some(s => s.codec_type === 'video' && s.width === 1280 && s.height === 720))
-    assert(Number(media.format.duration) >= 3.9, 'Four seconds of review media required')
-    json(join(out, 'media.json'), media)
+    await encode(capture, input, video)
   }
+  // Retain the prescribed fresh mid-waddle capture and judge in this four-command queue.
+  const waddleInput = { ...reviewInput('waddle', 1), width: 1280, height: 720 }
+  const waddle = await render(pageRef, 'waddle', waddleInput)
+  for (const file of ['waddle.png', 'waddle-reference.png']) copyFileSync(join(waddle.out, file), join(destination, file))
   await assemble()
+  await judgeMidWaddle()
+}
+export const midWaddleJudgeArgs = ['proofs/m19/waddle.png', '--description',
+  'In-game mid-waddle skinned penguin: rounded dark body, cream face and belly, two black eyes, orange beak and separate orange feet, long flippers attached at the shoulders. Match the silhouette, proportions and materials of /refs/penguin-base-ortho.png; the pose must remain coherent without detached parts or torn skin.',
+  '--reference', '/refs/penguin-base-ortho.png', '--min-score', '6']
+async function judgeMidWaddle() {
+  const client = process.env.NMC_JUDGE_CLIENT
+  assert(client && existsSync(client), 'Programmatic executor must provide NMC_JUDGE_CLIENT')
+  const record = { command: ['python3', client, ...midWaddleJudgeArgs], at: new Date().toISOString() }
+  try {
+    const output = await run('python3', [client, ...midWaddleJudgeArgs])
+    json(join(execution, 'mid-waddle-judge.json'), { ...record, exit: 0, output })
+  } catch (error) {
+    json(join(execution, 'mid-waddle-judge.json'), { ...record, exit: error.code, output: error.stdout, stderr: error.stderr })
+    throw error
+  }
 }
 async function assemble() {
   const clips = ['emote.cheer', 'emote.laugh'], videos = []

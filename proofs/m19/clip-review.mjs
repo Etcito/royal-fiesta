@@ -2,6 +2,7 @@
 import { loadRaa } from '@etcito/raa'
 import { loadRaaAnim } from '@etcito/raa-anim'
 import { DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../../apps/web/src/render/courseEnvironment.ts'
+import { captureFrameSequence } from './clip-review-frames.mjs'
 const require = (ok, message) => { if (!ok) throw new Error(message) }
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const png = canvas => new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(Error('PNG encoding failed')), 'image/png'))
@@ -10,6 +11,7 @@ async function render(input) {
   const emote = ['emote.cheer', 'emote.laugh'].includes(name)
   require(['fall', 'dive', 'waddle'].includes(name) || emote, 'Select a supported clip explicitly')
   require([1, 2, 120].includes(frames) && fps === 30, 'Use 1 frame, 2 frames or four seconds at 30 fps')
+  if (emote && frames > 1) require(input.videoFormat === 'png-sequence', 'Emote video requires explicit PNG sequence output')
   require([[320, 180], [1280, 720]].some(([w, h]) => w === width && h === height), 'Unsupported capture size')
   const canvas = Object.assign(document.createElement('canvas'), { width, height })
   document.body.replaceChildren(canvas)
@@ -70,7 +72,21 @@ async function render(input) {
     await sleep(100); draw(stillTick, false)
     require(engine.stats().triangles > 0, 'No rendered triangles')
     const still = await png(canvas), files = [{ name: `${name}.png`, blob: still }]
-    if (frames > 1) {
+    let video
+    if (emote && frames > 1) {
+      const output = Object.assign(document.createElement('canvas'), { width, height }), ctx = output.getContext('2d')
+      require(ctx, 'Canvas compositor unavailable')
+      const sequence = await captureFrameSequence(input, async ({ tick, side }) => {
+        draw(tick, side)
+        // Readback waits for this GPU submission, independent of rAF or wall time.
+        const bitmap = await createImageBitmap(await png(canvas))
+        ctx.drawImage(bitmap, 0, 0); bitmap.close()
+        ctx.fillStyle = '#fff'; ctx.font = `${Math.max(14, width / 45)}px sans-serif`
+        ctx.fillText(`${name} | tick ${tick} | ${side ? 'side' : 'front'} | S17 / 60 Hz`, 16, 32)
+        return png(output)
+      })
+      files.push(...sequence.files); video = sequence.video
+    } else if (frames > 1) {
       const output = Object.assign(document.createElement('canvas'), { width, height }), ctx = output.getContext('2d')
       require(ctx, 'Canvas compositor unavailable')
       stream = output.captureStream(0)
@@ -109,7 +125,7 @@ async function render(input) {
     require(errors.length === 0, errors.join('\n'))
     window.removeEventListener('error', onError); window.removeEventListener('unhandledrejection', onError)
     return { json: { renderer: 'raa', adapter: stats.adapter, hardware: stats.hardware, clip: name,
-      ...(source ? { source } : {}),
+      ...(source ? { source } : {}), ...(video ? { video } : {}),
       frames, fps, seconds: frames / fps, sampleHz: 60, rootMotion: definition.rootMotion, files: files.map(f => f.name) }, files }
   } finally { stream?.getTracks().forEach(t => t.stop()); clip?.free(); rig?.free(); engine.dispose() }
 }

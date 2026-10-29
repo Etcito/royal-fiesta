@@ -19,8 +19,8 @@ const restored = structuredClone(asset)
 restored.document.nodes.penguin.clips = restored.document.nodes.penguin.clips.slice(0, -2)
 restored.hash = original.hash
 assert.deepEqual(restored, original)
-assert.equal(names.length, 12)
-assert(!names.includes('jaw'), 'Q7 keeps the owner rig intact')
+assert.deepEqual(names, ['root', 'upper.l', 'lower.l', 'tip.l', 'upper.r', 'lower.r', 'tip.r',
+  'upperLeg.l', 'foot.l', 'upperLeg.r', 'foot.r', 'head'], 'Q2/Q7 protected rig inventory')
 const { bindings, smooth, ...preset } = node.rig
 const api = await loadRaaAnim(), rig = api.loadRig(JSON.stringify(preset)), handles = []
 const report = { ok: true, inventory: node.clips.map(c => c.name), preservedInheritedAsset: true }
@@ -69,14 +69,28 @@ try {
       assert(bounce > 0.06 && headPitch > 0.25, 'body bounce and head toss')
       const flipperShake = Math.min(range(poses, 'lower.l', 5), range(poses, 'lower.r', 5))
       assert(flipperShake > 0.1)
+      // Binding Q7 supersedes the original independent-jaw criterion. Verify positive
+      // beak movement through the sampled head skin matrix, alongside body/head rhythm.
+      const beak = node.rig.bindings.find(b => b.source.shape === 'beak')
+      assert.deepEqual(beak.bones, [{ bone: 'head', factor: 1 }])
+      const restBeak = asset.document.nodes.beak.transform.position
+      const beakPosition = pose => {
+        const m = pose.skin.slice(names.indexOf('head') * 16, (names.indexOf('head') + 1) * 16)
+        return restBeak.map((_, i) => m[i] * restBeak[0] + m[4 + i] * restBeak[1]
+          + m[8 + i] * restBeak[2] + m[12 + i])
+      }
+      const chuckles = []
       for (const [up, down] of [[24, 32], [40, 48], [56, 64]]) {
         assert(poses[up].local[1] > poses[down].local[1] + 0.06, 'chuckle body bounce')
         assert(poses[up].local[at('head', 3)] < poses[down].local[at('head', 3)] - 0.15, 'head toss coordinated with bounce')
+        const beakUp = beakPosition(poses[up]), beakDown = beakPosition(poses[down])
+        assert(beakUp[1] > beakDown[1] + 0.2, 'head-bound beak rises with each chuckle')
+        assert(beakUp[2] < beakDown[2] - 0.2, 'head-bound beak follows the head toss')
+        chuckles.push({ ticks: [up, down], beakUp, beakDown })
       }
-      // The unchanged beak binding makes it follow the head rigidly, as Q7 requires.
-      const beak = node.rig.bindings.find(b => b.source.shape === 'beak')
-      assert.deepEqual(beak.bones, [{ bone: 'head', factor: 1 }])
-      report.laugh = { lengthTicks: def.lengthTicks, bounce, headPitch, flipperShake, maxTickStep, beak: 'rigid head binding (Q7)' }
+      report.laugh = { lengthTicks: def.lengthTicks, bounce, headPitch, flipperShake, maxTickStep,
+        acceptance: 'Binding Q7: coordinated body/head motion; beak moves rigidly with head',
+        beak: 'rigid head binding (Q7)', chuckles }
     }
   }
   // Every name in the completed S19 inventory loads and yields a finite pose.

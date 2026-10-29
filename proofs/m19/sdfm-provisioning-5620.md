@@ -4,6 +4,33 @@ The asset now has exactly the fifteen S19 names, with no duplicates. The thirtee
 12-bone rig, weights, costume attachments, geometry, collider and all other asset data are unchanged.
 Q7 is applied: laugh uses a head toss, body bounce and flipper shake; the beak follows the head rigidly.
 
+## Current acceptance and handoff (verifier corrective)
+
+The previous verifier applied the original jaw-motion wording. The binding Q7 answer explicitly
+supersedes it: "Independent beak opening is not required and must not be claimed."
+ARCHITECTURE's rf-anim contract likewise requires body motion and head nods with the beak rigidly
+bound to head. Adding a jaw bone or changing that binding would violate Q2/Q7.
+
+`cheer-laugh-check.mjs` now verifies the exact protected twelve-bone inventory and records positive
+beak motion from the runtime's sampled head skin matrix during three synchronized chuckles.
+Its existing body/head/flipper gesture thresholds are preserved. Each chuckle moves the beak
+center approximately 0.320 m vertically and 0.310 m in depth through head motion.
+This is rigid beak motion, with no claim of independent articulation. The authored asset,
+earlier clips, attachments, geometry and binary animation deliverables remain unchanged.
+
+Card 5739 owns the GPU video and its review records. All fourteen commands in
+`.nmc/commands.json` remain unchanged, including the original mid-waddle judge and all minimum
+scores of 6. The separate cheer/laugh queue is already removed. Finish this model card without
+running GPU commands or waiting for `proofs/m19/penguin-cheer-laugh.mp4`.
+The older blocked/separate-queue notes below are historical and superseded by this handoff.
+
+Corrective verification: the updated laugh probe and full gesture/preservation check passed;
+`npm run typecheck` and `npm run build` exited 0. The rigged serializer regression passed alone,
+then contentFiles, courseV1 and gameAsset passed all 29 tests. The three existing GLBs were
+parsed successfully: cheer has 109 sampled frames and laugh has 97, both individually and in
+the combined animation file. Queue names, dependencies and unchanged contents were verified;
+`git diff --check` passed. No GPU command, capture, judge or software substitute was run.
+
 ## Registered authoring path
 
 No live `mcp__sdfm__*` tools were exposed. Provisioned the Q5/Q6-authorized isolated runtime under

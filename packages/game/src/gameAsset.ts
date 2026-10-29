@@ -1,15 +1,67 @@
 // The game's reader of sdfm.game-asset v1 (S12). Content only: the file stem == id and folder == world
 // rules belong to the scanners (node-content, web-content-v1), so invalid fixtures can live under fixtures/.
 // An obstacle with an empty collision is valid here; course-v1 refuses it when a course uses it as an obstacle.
-import type { ColliderSpec } from '@royal-fiesta/sim/course'
+import type { ColliderSpec, Surface } from '@royal-fiesta/sim/course'
+import type { BodyType, JointKind } from '@royal-fiesta/sim/mechanismSpec'
 import type { Quat, Vec3 } from '@royal-fiesta/sim/vec'
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
 import { canonicalJson } from './course.ts'
+import { parseAssetPhysics } from './mechanismsJson.ts'
 import { parseColliderJson } from './prims.ts'
 
 export type World = 'candy' | 'ice' | 'jungle' | 'neon' | 'common'
 export type AssetCategory = 'obstacle' | 'prop' | 'scenery' | 'character' | 'cosmetic' | 'fx'
 export type MesherOutput = 'quad' | 'paramesh' | 'dc' | 'lowpoly' | 'poly'
+
+export interface MotorJson {
+  mode: 'speed' | 'target'
+  speedDegS?: number
+  speedMS?: number
+  targetDeg?: number
+  targetM?: number
+  stiffness: number
+  damping: number
+  maxForce: number
+  enabled: boolean
+}
+
+export interface AssetBodyJson {
+  id: string
+  type: BodyType
+  colliders: number[]
+  parts: string[]
+  t: [number, number, number]
+  r: [number, number, number, number]
+  density: number
+  friction: number
+  restitution: number
+  linearDamping: number
+  angularDamping: number
+  gravityScale: number
+  ccd: boolean
+  surface: Surface
+}
+
+export interface AssetJointJson {
+  id: string
+  kind: JointKind
+  a: string
+  b: string
+  anchorA: [number, number, number]
+  anchorB: [number, number, number]
+  axis: [number, number, number]
+  limitsDeg?: [number, number] | null
+  limitsM?: [number, number] | null
+  stiffness?: number
+  damping?: number
+  lengthM?: number
+  motor: MotorJson | null
+}
+
+export interface AssetPhysicsJson {
+  bodies: AssetBodyJson[]
+  joints: AssetJointJson[]
+}
 
 export interface GameAsset {
   format: 'sdfm.game-asset'
@@ -22,6 +74,7 @@ export interface GameAsset {
   mesher: { output: MesherOutput; params?: Record<string, unknown> }
   document: Record<string, unknown>
   collision: ColliderSpec[]
+  physics?: AssetPhysicsJson
   anchors: Record<string, { t: Vec3; r: Quat }>
   bounds: { min: Vec3; max: Vec3 }
   hash: string
@@ -44,6 +97,10 @@ type Obj = Record<string, unknown>
 
 export function assetFilePath(world: World, id: string): string {
   return `assets/${world}/${id}.asset.json`
+}
+
+export function assetMeshPath(world: World, id: string): string {
+  return `assets/${world}/${id}.mesh`
 }
 
 function fail(path: string, ptr: string, reason: string): never {
@@ -167,7 +224,7 @@ function sdfmText(value: unknown): string {
 
 export async function parseGameAsset(json: unknown, path: string): Promise<GameAsset> {
   const o = obj(json, path, '')
-  keys(o, TOP_KEYS, [], path, '')
+  keys(o, TOP_KEYS, ['physics'], path, '')
   if (o.format !== 'sdfm.game-asset') fail(path, '/format', "format must be 'sdfm.game-asset'; write \"format\": \"sdfm.game-asset\"")
   if (o.version !== 1) fail(path, '/version', 'version must be 1; write "version": 1')
   if (o.game !== 'royal-fiesta') fail(path, '/game', "game must be 'royal-fiesta'; write \"game\": \"royal-fiesta\"")
@@ -199,6 +256,7 @@ export async function parseGameAsset(json: unknown, path: string): Promise<GameA
     fail(path, '/collision', `${o.collision.length} colliders, over ${GAME_ASSET_CAPS.maxColliders}; merge or remove some`)
   }
   const collision = o.collision.map((c, i) => collider(c, path, `/collision/${i}`))
+  const physics = parseAssetPhysics(o.physics, collision, path)
 
   const a = obj(o.anchors, path, '/anchors')
   const anchors: GameAsset['anchors'] = {}
@@ -231,5 +289,6 @@ export async function parseGameAsset(json: unknown, path: string): Promise<GameA
   return {
     format: 'sdfm.game-asset', version: 1, game: 'royal-fiesta',
     id, name, category, world, mesher, document, collision, anchors, bounds: { min, max }, hash,
+    ...(physics ? { physics } : {}),
   }
 }

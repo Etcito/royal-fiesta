@@ -15,6 +15,13 @@ const qRel: Quat = quatIdentity()
 const qAxis: Quat = quatIdentity()
 const qFrame2: Quat = quatIdentity()
 
+// Extra solver substeps for the dynamic bodies of a limited hinge or slider.
+// Rapier enforces joint limits only once a substep has crossed them (they are
+// not speculative), so with the world's 4 substeps a hinge hitting its limit
+// at 3 rad/s overshoots by up to ~0.8° for one tick. 4 + 8 substeps on the
+// limited bodies' island keep the end-of-tick angle on the limit.
+const LIMIT_EXTRA_SUBSTEPS = 8
+
 // The world side of a joint (BodyRef item -1): a hidden fixed body without
 // colliders at the identity pose, so world anchors and axes are course space.
 // It is found by a scan in body order rather than cached, so every peer gets
@@ -111,7 +118,13 @@ export function createJoint(ctx: WorldCtx<unknown>, j: JointSpec, a: BodyId | nu
     joint.setLocalFrame1(anchorA, { x: qAxis.x, y: qAxis.y, z: qAxis.z, w: qAxis.w })
     joint.setLocalFrame2(anchorB, { x: qFrame2.x, y: qFrame2.y, z: qFrame2.z, w: qFrame2.w })
     // JointData limits are dropped for revolute joints by 0.21's intoRaw: set them on the joint.
-    if (j.limits !== null) (joint as UnitJoint).setLimits(j.limits[0], j.limits[1])
+    if (j.limits !== null) {
+      (joint as UnitJoint).setLimits(j.limits[0], j.limits[1])
+      for (const id of [idA, idB]) {
+        const rb = ctx.physics.body(id)
+        if (rb.isDynamic() && rb.additionalSolverIterations() < LIMIT_EXTRA_SUBSTEPS) rb.setAdditionalSolverIterations(LIMIT_EXTRA_SUBSTEPS)
+      }
+    }
   }
   // Welded bodies never touch each other, in the game and the preview alike.
   if (j.kind === 'fixed') joint.setContactsEnabled(false)
@@ -126,13 +139,16 @@ export function applyMotor(ctx: WorldCtx<unknown>, joint: number, kind: JointKin
   }
   const j = ctx.physics.world.getImpulseJoint(joint) as UnitJoint | null | undefined
   if (!j) refuse('mechanisms', `joint ${joint}`, 'no such joint in the world; pass a handle returned by createJoint')
-  if (m === null) {
+  // Off (null or disabled): zero velocity, stiffness and damping, and no force.
+  // Stiffness and damping 0 alone are not off in Rapier: its acceleration
+  // motor model then has no softness and locks the joint at velocity 0 up to
+  // maxForce, so the force bound must be 0 as well.
+  if (m === null || !m.enabled) {
     j.configureMotor(0, 0, 0, 0)
     j.setMotorMaxForce(0)
     return
   }
-  if (!m.enabled) j.configureMotor(m.mode === 'target' ? m.target : 0, 0, 0, 0)
-  else if (m.mode === 'speed') j.configureMotorVelocity(m.speed, m.damping)
+  if (m.mode === 'speed') j.configureMotorVelocity(m.speed, m.damping)
   else j.configureMotorPosition(m.target, m.stiffness, m.damping)
   j.setMotorMaxForce(m.maxForce)
 }

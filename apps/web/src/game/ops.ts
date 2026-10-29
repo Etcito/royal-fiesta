@@ -17,6 +17,7 @@ import { PALETTE } from '@royal-fiesta/game/render/palette'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import type { CameraPose, RenderPort, RenderStats, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
+import { disposeAll } from './disposeAll.ts'
 import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { DEFAULT_SETTINGS } from '@royal-fiesta/game/screens/settings'
 import { CharacterSystem } from '@royal-fiesta/sim/character/system'
@@ -358,6 +359,7 @@ async function controlsProbe(raw: unknown): Promise<OpResult<ControlsOutput>> {
   let gameInput: GameInput | null = null
   let world: ProbeWorld | null = null
   let marker = -1
+  let failed = false
   try {
     port = await makePort(content, canvas)
     const pad = syntheticPad()
@@ -455,18 +457,20 @@ async function controlsProbe(raw: unknown): Promise<OpResult<ControlsOutput>> {
       json: { renderer: 'raa', adapter, software: adapter.software, pageRef: pageRef(), content: content.id, course: course.id, cases },
       files,
     }
+  } catch (e) {
+    failed = true
+    throw e
   } finally {
-    try {
-      if (marker >= 0) port?.destroyInstance(marker)
-      world?.free()
-      gameInput?.dispose()
-      view?.dispose()
-      port?.dispose()
-    } finally {
-      for (const restore of restores.reverse()) restore()
-      canvas.remove()
-      overlay.remove()
-    }
+    disposeAll([
+      () => { if (marker >= 0) port?.destroyInstance(marker) },
+      () => world?.free(),
+      () => gameInput?.dispose(),
+      () => view?.dispose(),
+      () => port?.dispose(),
+      () => { for (const restore of restores.reverse()) restore() },
+      () => canvas.remove(),
+      () => overlay.remove(),
+    ], failed)
   }
 }
 
@@ -973,6 +977,7 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
   const virtualNow = () => frame * DT * 1000
   const originalNow = Object.getOwnPropertyDescriptor(performance, 'now')
   let clockInstalled = false
+  let failed = false
   try {
     for (const cell of plan.cells) {
       const canvas = makeCanvas(cell.canvasWidth, cell.canvasHeight)
@@ -1032,17 +1037,20 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
       if (stage === 'hub' && stageFrames >= SETTLE.hub && wants !== undefined && wants.kind !== 'hub') driver.enqueue()
     }
     if (driver instanceof MultiDriver) for (const ev of driver.events) note(`${run.prefix}${ev.client} ${ev.state}`)
+  } catch (e) {
+    failed = true
+    throw e
   } finally {
-    try {
-      driver?.dispose()
-      for (const port of ports) port.dispose()
-    } finally {
-      for (const canvas of canvases) canvas.remove()
-      if (clockInstalled) {
+    disposeAll([
+      () => driver?.dispose(),
+      ...ports.map(port => () => port.dispose()),
+      () => { for (const canvas of canvases) canvas.remove() },
+      () => {
+        if (!clockInstalled) return
         if (originalNow) Object.defineProperty(performance, 'now', originalNow)
         else Reflect.deleteProperty(performance, 'now')
-      }
-    }
+      },
+    ], failed)
   }
 }
 

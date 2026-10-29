@@ -38,7 +38,7 @@
   },
   {
     "name": "rf-tests",
-    "command": "npm test",
+    "command": "npm run test",
     "timeout_s": 900,
     "after": [
       "sdf-port-build",

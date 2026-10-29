@@ -103,6 +103,33 @@ test('v1Dressing creates one instance per decor item, passes the environment and
   dressing.leave(port)
 })
 
+test('v1Dressing shared by several ports: each leave destroys only what its own port entered', async () => {
+  const tree = await gameAsset('candy.lolly-tree', { min: [-1, 0, -1], max: [1, 3, 1] })
+  const decor: DecorItem[] = [
+    { id: 'tree-a', asset: 'candy.lolly-tree', t: [0, 0, 5], r: [0, 0, 0, 1], s: [1, 1, 1] },
+    { id: 'tree-b', asset: 'candy.lolly-tree', t: [4, 0, 9], r: [0, 0, 0, 1], s: [1, 1, 1] },
+  ]
+  const dressing = v1Dressing([course('gallery-a', decor, null)], () => standInFrom(tree, null))
+  const a = initPort()
+  const b = initPort()
+  dressing.enter(a, 'gallery-a')
+  dressing.enter(b, 'gallery-a')
+  dressing.leave(b)
+  assert.equal(b.render().instances, 0)
+  assert.equal(a.render().instances, 2, 'the other port keeps its decor')
+  dressing.leave(a)
+  assert.equal(a.render().instances, 0)
+
+  // Two viewports of one shared port: each leave gives back one enter.
+  dressing.enter(a, 'gallery-a')
+  dressing.enter(a, 'gallery-a')
+  dressing.leave(a)
+  assert.equal(a.render().instances, 2)
+  dressing.leave(a)
+  assert.equal(a.render().instances, 0)
+  dressing.leave(a)
+})
+
 test('v1Dressing.enter refuses an unknown course id', () => {
   const dressing = v1Dressing([course('plain', [], null)], () => assert.fail('no asset is asked'))
   const port = initPort()

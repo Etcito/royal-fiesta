@@ -1,0 +1,555 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.mech-lever",
+  "name": "Candy mechanism lever",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Candy mechanism lever",
+    "root": [
+      "candy_mech_lever"
+    ],
+    "nodes": {
+      "candy_mech_lever": {
+        "id": "candy_mech_lever",
+        "name": "Candy mechanism lever",
+        "kind": "group",
+        "children": [
+          "base",
+          "handle"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.mech-lever",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "base": {
+        "id": "base",
+        "name": "base",
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "base_plinth",
+          "base_socket"
+        ],
+        "gameCollision": false
+      },
+      "handle": {
+        "id": "handle",
+        "name": "handle",
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "handle_stick",
+          "handle_grip"
+        ],
+        "gameCollision": false
+      },
+      "base_plinth": {
+        "id": "base_plinth",
+        "name": "base_plinth",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            0.2,
+            0
+          ]
+        },
+        "round": 0.12,
+        "material": "candy-blue",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.5,
+                0,
+                0
+              ],
+              [
+                -0.5,
+                0,
+                0
+              ],
+              [
+                0,
+                0.2,
+                0
+              ],
+              [
+                0,
+                -0.2,
+                0
+              ],
+              [
+                0,
+                0,
+                0.45
+              ],
+              [
+                0,
+                0,
+                -0.45
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "base_socket": {
+        "id": "base_socket",
+        "name": "base_socket",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            0.4,
+            0
+          ]
+        },
+        "material": "candy-yellow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [
+                0.25,
+                0,
+                0
+              ],
+              [
+                -0.25,
+                0,
+                0
+              ],
+              [
+                0,
+                0.25,
+                0
+              ],
+              [
+                0,
+                -0.25,
+                0
+              ],
+              [
+                0,
+                0,
+                0.25
+              ],
+              [
+                0,
+                0,
+                -0.25
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "handle_stick": {
+        "id": "handle_stick",
+        "name": "handle_stick",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            1.1,
+            0
+          ]
+        },
+        "round": 0.08,
+        "material": "candy-white",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.09,
+                0,
+                0
+              ],
+              [
+                -0.09,
+                0,
+                0
+              ],
+              [
+                0,
+                0.6,
+                0
+              ],
+              [
+                0,
+                -0.6,
+                0
+              ],
+              [
+                0,
+                0,
+                0.09
+              ],
+              [
+                0,
+                0,
+                -0.09
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "handle_grip": {
+        "id": "handle_grip",
+        "name": "handle_grip",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            1.7,
+            0
+          ]
+        },
+        "material": "candy-pink",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [
+                0.23,
+                0,
+                0
+              ],
+              [
+                -0.23,
+                0,
+                0
+              ],
+              [
+                0,
+                0.23,
+                0
+              ],
+              [
+                0,
+                -0.23,
+                0
+              ],
+              [
+                0,
+                0,
+                0.23
+              ],
+              [
+                0,
+                0,
+                -0.23
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "candy-pink": {
+        "name": "candy-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    },
+    "shapes": {}
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "half": [
+        0.5,
+        0.25,
+        0.45
+      ],
+      "t": [
+        0,
+        0.25,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "capsule",
+      "radius": 0.09,
+      "halfHeight": 0.51,
+      "t": [
+        0,
+        1.1,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "ball",
+      "radius": 0.23,
+      "t": [
+        0,
+        1.7,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [
+          0
+        ],
+        "parts": [
+          "base"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "handle",
+        "type": "dynamic",
+        "colliders": [
+          1,
+          2
+        ],
+        "parts": [
+          "handle"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": [
+      {
+        "id": "pivot",
+        "kind": "hinge",
+        "a": "base",
+        "b": "handle",
+        "anchorA": [
+          0,
+          0.5,
+          0
+        ],
+        "anchorB": [
+          0,
+          0.5,
+          0
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": [
+          -40,
+          40
+        ],
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0,
+        "motor": null
+      }
+    ]
+  },
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -0.5,
+      0,
+      -0.45
+    ],
+    "max": [
+      0.5,
+      1.93,
+      0.45
+    ]
+  },
+  "hash": "8a39f998687f82c7f6783d51be64d62a9d896c290185a643bb55208252c39328"
+}

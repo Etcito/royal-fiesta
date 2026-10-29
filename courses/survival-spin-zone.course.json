@@ -251,7 +251,7 @@
     },
     {
       "id": "sweeper-low",
-      "asset": "candy.spinner-bar",
+      "asset": "candy.sweeper-bar",
       "t": [
         0,
         -0.4,
@@ -276,7 +276,7 @@
     },
     {
       "id": "sweeper-high",
-      "asset": "candy.spinner-bar",
+      "asset": "candy.sweeper-bar",
       "t": [
         0,
         0.55,

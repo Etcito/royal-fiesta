@@ -61,5 +61,38 @@
   },
   {"name":"m19-fall-dive-bundle","command":"node --experimental-strip-types apps/headless/proofs/m19-penguin-anim.ts --build","timeout_s":60,"cwd":".","after":["m18-tests"]},
   {"name":"m19-fall-dive-video","command":"env NMC_GPU_WAIT_S=45 node --experimental-strip-types apps/headless/proofs/m19-penguin-anim.ts --capture --clips fall,dive --seconds 4 --output proofs/m19","timeout_s":600,"cwd":".","after":["m19-fall-dive-bundle"]},
-  {"name":"m19-mid-waddle-judge","command":"python3 \"$NMC_JUDGE_CLIENT\" proofs/m19/waddle.png --description \"In-game mid-waddle skinned penguin: rounded dark body, cream face and belly, two black eyes, orange beak and separate orange feet, long flippers attached at the shoulders. Match the silhouette, proportions and materials of /refs/penguin-base-ortho.png; the pose must remain coherent without detached parts or torn skin.\" --reference /refs/penguin-base-ortho.png --min-score 6","timeout_s":60,"cwd":".","after":["m19-fall-dive-video"]}
+  {"name":"m19-mid-waddle-judge","command":"python3 \"$NMC_JUDGE_CLIENT\" proofs/m19/waddle.png --description \"In-game mid-waddle skinned penguin: rounded dark body, cream face and belly, two black eyes, orange beak and separate orange feet, long flippers attached at the shoulders. Match the silhouette, proportions and materials of /refs/penguin-base-ortho.png; the pose must remain coherent without detached parts or torn skin.\" --reference /refs/penguin-base-ortho.png --min-score 6","timeout_s":60,"cwd":".","after":["m19-fall-dive-video"]},
+  {
+    "name": "m19-cheer-laugh-bundle",
+    "command": "node --experimental-strip-types proofs/m19/cheer-laugh-capture.mjs --build",
+    "timeout_s": 60,
+    "cwd": "."
+  },
+  {
+    "name": "m19-cheer-laugh-video",
+    "command": "env NMC_GPU_WAIT_S=45 node --experimental-strip-types proofs/m19/cheer-laugh-capture.mjs --capture",
+    "timeout_s": 600,
+    "cwd": ".",
+    "after": [
+      "m19-cheer-laugh-bundle"
+    ]
+  },
+  {
+    "name": "m19-cheer-judge",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" proofs/m19/emote.cheer.png --description \"Skinned penguin performing emote.cheer: both long flippers raised above its head into a broad celebratory V. Rounded dark body, cream face and belly, two black eyes, orange beak and separate orange feet. Match the silhouette, proportions and materials of /refs/penguin-base-ortho.png; keep coherent skin and attached parts.\" --reference /refs/penguin-base-ortho.png --min-score 6",
+    "timeout_s": 60,
+    "cwd": ".",
+    "after": [
+      "m19-cheer-laugh-video"
+    ]
+  },
+  {
+    "name": "m19-laugh-judge",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" proofs/m19/emote.laugh.png --description \"Skinned penguin performing emote.laugh in a head-toss chuckle pose: tilted head, flippers shaking near its sides, rounded body with cream face and belly, two black eyes, orange beak and separate orange feet. Match /refs/penguin-base-ortho.png and keep coherent skin. The beak is rigidly attached to head; independent jaw articulation is not required.\" --reference /refs/penguin-base-ortho.png --min-score 6",
+    "timeout_s": 60,
+    "cwd": ".",
+    "after": [
+      "m19-cheer-laugh-video"
+    ]
+  }
 ]

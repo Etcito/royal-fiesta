@@ -4,6 +4,26 @@ The asset now has exactly the fifteen S19 names, with no duplicates. The thirtee
 12-bone rig, weights, costume attachments, geometry, collider and all other asset data are unchanged.
 Q7 is applied: laugh uses a head toss, body bounce and flipper shake; the beak follows the head rigidly.
 
+## Capture transport correction for card 5739
+
+The cheer/laugh capture helper now unwraps the GPU transport's `result` before reading operation
+fields, matching the established m18 capture path. Previously, a transport-level `ok` could satisfy
+the blank-page probe even when the operation never returned `ok`. The helper now rejects missing
+operation results and ignores transport-level hardware claims. Two parser regression tests cover
+these cases without submitting GPU jobs or creating synthetic capture evidence.
+
+Each returned GPU call now also writes `submission.json` beside its original `input.json` and
+`result.json`, recording the actual page reference, source asset/revisions, input, submission time
+and return time. These records are produced by the executor only after the call returns.
+
+Current verification: both full gesture/preservation checks passed; all fifteen clips load and
+sample; the 33 contentFiles/courseV1/gameAsset tests and both capture parser tests passed.
+`npm run typecheck`, `npm run build` and the corrected helper's `--build` exited 0.
+The fourteen queue entries were validated for unique names and earlier dependencies and written
+back byte-for-byte, preserving every existing command and judge threshold. The separate queue is
+absent. Card 5739 must execute this queue and return `proofs/m19/penguin-cheer-laugh.mp4`, the
+submission/execution/capture records and score-6 judges. No GPU commands were run here.
+
 ## Current acceptance and handoff (verifier corrective)
 
 The previous verifier applied the original jaw-motion wording. The binding Q7 answer explicitly

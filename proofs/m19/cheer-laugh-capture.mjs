@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { decodePng, unwrapOp } from '../../apps/headless/src/gpuRecord.ts'
@@ -14,6 +14,11 @@ const execution = join(destination, 'cheer-laugh-execution')
 const read = file => JSON.parse(readFileSync(file, 'utf8'))
 const json = (file, value) => writeFileSync(file, JSON.stringify(value, null, 2) + '\n')
 const exec = promisify(execFile)
+// The transport can itself contain `ok`; inspect only its operation result, as in m18.
+export function captureResult(envelope, key, file) {
+  assert(envelope && Object.hasOwn(envelope, 'result'), 'GPU client result envelope missing')
+  return unwrapOp({ file, json: envelope.result }, key).out
+}
 async function run(command, args) {
   return (await exec(command, args, { cwd: root, timeout: 60000, killSignal: 'SIGKILL', maxBuffer: 4 * 1024 * 1024 })).stdout
 }
@@ -64,9 +69,12 @@ async function capture() {
   const render = async (pageRef, label, input) => {
     const out = join(execution, label); mkdirSync(out, { recursive: true })
     const file = join(out, 'input.json'); json(file, input)
+    const submittedAt = new Date().toISOString()
     await call('render', file, '--page-ref', pageRef, '-o', out)
     const record = join(out, 'result.json')
-    const result = unwrapOp({ file: record, json: read(record) }, label === 'blank' ? 'ok' : 'hardware').out
+    json(join(out, 'submission.json'), { operation: 'render', pageRef, input,
+      source, submittedAt, returnedAt: new Date().toISOString(), result: 'result.json' })
+    const result = captureResult(read(record), label === 'blank' ? 'ok' : 'hardware', record)
     if (label !== 'blank') {
       assert.equal(result.hardware, true)
       assert.equal(result.renderer, 'raa')
@@ -110,7 +118,7 @@ async function assemble() {
   assert.equal(source.assetPath, 'assets/common/penguin.body.asset.json')
   for (const clip of clips) {
     const record = join(execution, clip, 'result.json')
-    const result = unwrapOp({ file: record, json: read(record) }, 'hardware').out
+    const result = captureResult(read(record), 'hardware', record)
     assert.equal(result.hardware, true)
     assert.equal(result.renderer, 'raa')
     assert.equal(result.adapter.isFallbackAdapter, false)
@@ -149,7 +157,9 @@ async function assemble() {
   } })
   console.log('Wrote proofs/m19/penguin-cheer-laugh.mp4 from hardware captures; visual review remains required')
 }
-assert(['--build', '--capture', '--assemble'].some(flag => process.argv.includes(flag)), 'Use --build, --capture or --assemble')
-if (process.argv.includes('--build')) await bundle()
-if (process.argv.includes('--capture')) await capture()
-else if (process.argv.includes('--assemble')) await assemble()
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  assert(['--build', '--capture', '--assemble'].some(flag => process.argv.includes(flag)), 'Use --build, --capture or --assemble')
+  if (process.argv.includes('--build')) await bundle()
+  if (process.argv.includes('--capture')) await capture()
+  else if (process.argv.includes('--assemble')) await assemble()
+}

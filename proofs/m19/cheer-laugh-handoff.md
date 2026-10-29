@@ -59,3 +59,14 @@ The GLB sequence is animation media, not rendered approval evidence.
 No GPU command or judge ran on this model card. The review MP4 and hardware
 records remain the responsibility of card 5739; finish this model card
 without submitting or waiting for that job.
+
+Revalidation from `3fc6982` on 2026-10-29 passed `npm run typecheck`,
+`npm run build`, and all 31 affected contentFiles, courseV1, gameAsset and
+capture-result tests. The runtime gesture check against the wave/dance asset
+from `d74d5a6` passed for both emotes and all fifteen clip names. After fresh
+one-frame and two-frame probes, the full exporter wrote the actual 416852-byte
+GLB sequence again and checked all 11070 sampled channel values. Regeneration
+needed no binary changes: commit `3fc6982` already contains that animation
+media, and `a58991f` contains the authored source asset. No clip was re-authored.
+The queue still has fourteen unique names, valid earlier dependencies and
+three unchanged judges at minimum score 6. No capture or queue command ran.

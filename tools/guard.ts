@@ -29,6 +29,7 @@ export const BINARY_EXTS: readonly string[] = [
 export const MAX_FILE_BYTES = 262144
 export const MAX_FIXTURE_BYTES = 65536
 export const MAX_ASSET_FILE_BYTES = 2200000
+const LOGO_SOURCE = /^ui\/logo\.[a-z0-9-]+\.png$/
 
 const BINARY_EXT_SET = new Set(BINARY_EXTS)
 const WORLDS = ['candy', 'ice', 'jungle', 'neon', 'common']
@@ -177,6 +178,9 @@ export function checkFile(file: string, bytes: Uint8Array): GuardViolation[] {
   const name = path.basename(file)
   const ext = path.extname(file).toLowerCase()
   const underFixtures = file.startsWith('fixtures/')
+
+  // the pinned UI logo source (ui/logo.<name>.png, sha256 in ui/logo.json) is the one binary the repository carries
+  if (LOGO_SOURCE.test(file) && bytes.length <= MAX_ASSET_FILE_BYTES) return violations
 
   if (BINARY_EXT_SET.has(ext)) {
     violations.push({ path: file, rule: 'binary-ext', detail: ext })

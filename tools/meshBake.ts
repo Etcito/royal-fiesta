@@ -1,6 +1,6 @@
 // Persistent, bounded server meshing. A lock excludes duplicate work across play and CLI processes.
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, openSync, closeSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, openSync, closeSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseGameAsset } from '@royal-fiesta/game/gameAsset'
@@ -65,8 +65,11 @@ export class MeshBaker {
           }
           let lock: number
           try { lock = openSync(base + '.lock', 'wx') } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === 'EEXIST') continue
-            throw error
+            if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+            // a lock older than the meshing limit belongs to a process that was killed: take it over
+            if (Date.now() - statSync(base + '.lock').mtimeMs <= timeout + 60_000) continue
+            unlinkSync(base + '.lock')
+            lock = openSync(base + '.lock', 'wx')
           }
           closeSync(lock)
           try {

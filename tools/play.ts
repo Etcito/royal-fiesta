@@ -46,6 +46,8 @@ async function build(root: string): Promise<number> {
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
   const bake = await run(npm, ['run', 'audio:bake'], root)
   if (bake !== 0) return bake
+  const fonts = await run(npm, ['run', 'ui:fonts'], root)
+  if (fonts !== 0) return fonts
   return run(npm, ['run', 'build', '-w', '@royal-fiesta/web'], root)
 }
 

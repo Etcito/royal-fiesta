@@ -58,7 +58,9 @@ export async function bundleLogo(root: string, get: typeof fetch = fetch): Promi
   const logo = readLogo(root)
   const destination = join(root, LOGO_BUNDLE, `${logo.sha256}.${logo.format}`)
   let bytes: Uint8Array | undefined
-  for (const file of [join(root, LOGO_STORE, logoObjectKey(logo)), destination]) {
+  // the pinned source is tracked in git (ui/<asset>.<format>), so a clean clone builds with no store or staging step
+  const tracked = join(root, 'ui', `${logo.asset}.${logo.format}`)
+  for (const file of [join(root, LOGO_STORE, logoObjectKey(logo)), tracked, destination]) {
     try { bytes = readFileSync(file) } catch { continue }
     verifyLogo(bytes, logo)
     break

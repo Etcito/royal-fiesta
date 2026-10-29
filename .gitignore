@@ -26,3 +26,6 @@ apps/web/public/fonts/
 apps/web/public/images/
 
 .cache/
+
+# the pinned UI logo source is tracked (tools/uiLogo.ts, allowed by tools/guard.ts)
+!/ui/logo.*.png

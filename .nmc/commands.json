@@ -74,7 +74,8 @@
     "timeout_s": 600,
     "cwd": ".",
     "after": [
-      "m19-cheer-laugh-bundle"
+      "m19-cheer-laugh-bundle",
+      "m19-fall-dive-video"
     ]
   },
   {

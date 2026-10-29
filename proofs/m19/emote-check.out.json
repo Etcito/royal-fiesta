@@ -1,0 +1,30 @@
+{
+ "ok": true,
+ "wave": {
+  "rightFlipperLift": 0.48119932413101196,
+  "leftFlipperLift": 0.05233997106552124,
+  "forearmReversals": 7,
+  "forearmSwing": 0.4968600571155548,
+  "headTurn": 0.16457853838801384,
+  "maxTickStep": 0.06314660608768463
+ },
+ "dance": {
+  "rootYaw": 0.44948092103004456,
+  "rootBounce": 0.10000000149011612,
+  "squash": 0.12999993562698364,
+  "flipperRange": 0.8518999889492989,
+  "kneeRange": 0.4120505675673485,
+  "headRange": 0.4685605764389038,
+  "seamStep": 0.043027088046073914,
+  "maxTickStep": 0.08336693048477173,
+  "distanceToWaddle": 0.023182659529180874,
+  "distanceToRun": 0.033195542845069904,
+  "distanceToIdle": 0.02301948166389998,
+  "meanDistanceFromRest": 0.023226632001165638,
+  "waveVsDance": 0.022160091117533396
+ },
+ "keys": [
+  126,
+  126
+ ]
+}

@@ -7,11 +7,13 @@ import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import { pose } from '@royal-fiesta/sim/vec'
+import { CharMode } from '@royal-fiesta/sim/character/constants'
+import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
 import { PALETTE } from './palette.ts'
-import type { CameraPose, RenderPort } from './port.ts'
+import type { CameraPose, RenderPort, SkinnedAssetT } from './port.ts'
 
 export interface SceneViewOptions {
   port: RenderPort; viewport: number; localPlayer: number; assets: (name: string) => PrimsAsset; bean: PrimsAsset
@@ -23,7 +25,12 @@ export interface SceneViewOptions {
   dressing?: CourseDressing
   // Prepared local scenes build behind the menu, without a loading paint.
   loadingPaint?: boolean
+  // The skinned character (S18): its raa-sdfm skin, registered under assetId, and the S19 graph JSON that
+  // poses it from the skin's rig and clips. Ports without skinning keep the rigid character.
+  skinned?: SkinnedCharacter
 }
+
+export interface SkinnedCharacter { assetId: string; skin: SkinnedAssetT; graph: string }
 
 const UNIT: readonly [number, number, number] = [1, 1, 1]
 // Pose layout in the obstacle buffers: t xyz then r xyzw.
@@ -60,13 +67,33 @@ export class SceneView {
   }
   private readonly pose = pose()
   private readonly shown = new Float64Array(3)
+  // One graph per character, owned with the character instances; null until its brick has loaded.
+  private readonly skinned: SkinnedCharacter | null = null
+  private anim: AnimDriver | null = null
+  // Bumped whenever the instances go, so a driver that resolves late is disposed instead of adopted.
+  private animGen = 0
+  private animError: unknown = null
+  // Per character: the pose last submitted to the port, so a frame never resubmits an unchanged tick.
+  private posed: (CharacterPose | undefined)[] = []
+  private readonly observed: CharacterObservation[] = []
 
   constructor(opts: SceneViewOptions) {
     this.opts = opts
     this.port = opts.port
     this.dressing = opts.dressing ?? NO_DRESSING
-    const character = opts.character ?? opts.bean
-    this.beanAsset = this.asset(character.id, character)
+    const skinned = opts.skinned
+    if (skinned !== undefined && this.port.registerSkinned !== undefined && this.port.setPose !== undefined) {
+      this.beanAsset = this.port.registerSkinned(skinned.assetId, skinned.skin)
+      this.skinned = skinned
+    } else {
+      const character = opts.character ?? opts.bean
+      this.beanAsset = this.asset(character.id, character)
+    }
+  }
+
+  // Why the characters draw at rest: the animation brick or graph failed to load (null otherwise).
+  get animationError(): unknown {
+    return this.animError
   }
 
   get camera(): CameraPose | null {
@@ -105,6 +132,7 @@ export class SceneView {
       this.readCharacters(sim, advanced && !reset, tick)
       this.tick = tick
     }
+    this.observeTick(sim)
 
     const t: [number, number, number] = [0, 0, 0]
     const r: [number, number, number, number] = [0, 0, 0, 1]
@@ -148,6 +176,12 @@ export class SceneView {
       const fz = this.facing[p * 2 + 1]
       const half = Math.atan2(fx, fz) / 2
       port.setTransform(this.beans[p], [d[0], d[1], d[2]], [0, Math.sin(half), 0, Math.cos(half)], UNIT)
+      // Submits the pose retained for the last observed tick; reading it never steps the graph.
+      const posed = this.anim?.pose(p)
+      if (posed !== undefined && posed !== this.posed[p]) {
+        port.setPose!(this.beans[p], posed.skin)
+        this.posed[p] = posed
+      }
       if (p === local) {
         camPos = { x: d[0], y: d[1], z: d[2] }
         camFacing = { x: fx, z: fz }
@@ -178,7 +212,34 @@ export class SceneView {
     }
   }
 
+  /**
+   * Steps every character graph once with the sim's current tick. Call it after each sim.step when
+   * several ticks run before one update(); update() observes the latest tick itself and a tick already
+   * observed is ignored. Ticks nobody observed are not replayed.
+   */
+  observeTick(sim: MatchSim): void {
+    const anim = this.anim
+    const tick = sim.tick
+    if (anim === null || tick <= anim.observedTick) return
+    const c = this.view
+    const out = this.observed
+    out.length = 0
+    for (let p = 0; p < this.beans.length; p++) {
+      sim.character(p, c)
+      // A parked character leaves: the driver frees its graph and a return starts a fresh one.
+      if (c.parked) continue
+      // Matches carry no S9 emote; grounded is every mode but the airborne ones.
+      const grounded = c.mode !== CharMode.air && c.mode !== CharMode.dive
+      out.push({ id: p, mode: c.mode, vel: { x: c.vel.x, y: c.vel.y, z: c.vel.z }, grounded, emote: 0 })
+    }
+    anim.observeTick(tick, out)
+  }
+
   dispose(): void {
+    this.animGen++
+    this.anim?.dispose()
+    this.anim = null
+    this.posed = []
     for (let i = 0; i < this.beans.length; i++) this.port.destroyInstance(this.beans[i])
     for (let i = 0; i < this.obstacles.length; i++) this.port.destroyInstance(this.obstacles[i])
     this.beans = []
@@ -227,6 +288,23 @@ export class SceneView {
     this.chPrev = new Float64Array(players * 3)
     this.chCur = new Float64Array(players * 3)
     this.facing = new Float64Array(players * 2)
+    if (this.skinned !== null) this.loadAnim(this.skinned)
+  }
+
+  // The brick loads asynchronously (and only for skinned scenes); characters draw at rest meanwhile.
+  private loadAnim(skinned: SkinnedCharacter): void {
+    const gen = ++this.animGen
+    // The SDF Modeler rig extension (bindings, smooth) is not part of the S16 rig the graph reads.
+    const { bindings: _b, smooth: _s, ...rig } = skinned.skin.rig as SkinnedAssetT['rig'] & { bindings?: unknown; smooth?: unknown }
+    const clips = (skinned.skin.clips ?? []).map(clip => JSON.stringify(clip))
+    import('../anim/driver.ts').then(m => m.AnimDriver.load(skinned.graph, JSON.stringify(rig), clips)).then(driver => {
+      if (gen === this.animGen) this.anim = driver
+      else driver.dispose()
+    }, (error: unknown) => {
+      if (gen !== this.animGen) return
+      this.animError = error
+      console.error(`[scene] ${skinned.assetId} animation unavailable; characters draw at rest`, error)
+    })
   }
 
   // keep = false after a course change: prev = cur, so nothing is interpolated across the reset.

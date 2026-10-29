@@ -1,0 +1,55 @@
+{
+  "format": "raa.animgraph",
+  "version": 1,
+  "name": "penguin",
+  "rig": "flipper-test",
+  "params": [
+    { "name": "speed", "type": "float", "default": 0 },
+    { "name": "vy", "type": "float", "default": 0 },
+    { "name": "grounded", "type": "bool", "default": true },
+    { "name": "mode", "type": "int", "default": 0 },
+    { "name": "jump", "type": "trigger" }
+  ],
+  "blendSpaces": [
+    {
+      "name": "locomotion",
+      "params": ["speed"],
+      "points": [
+        { "clip": "idle", "at": [0] },
+        { "clip": "waddle", "at": [3] },
+        { "clip": "run", "at": [8] }
+      ],
+      "sync": true
+    }
+  ],
+  "layers": [
+    { "name": "base", "machine": "base", "mask": null, "weight": 1, "additive": false }
+  ],
+  "machines": [
+    {
+      "name": "base",
+      "entry": "locomotion",
+      "states": [
+        { "name": "locomotion", "motion": "locomotion", "loop": true, "speedParam": null },
+        { "name": "jump", "motion": "jump", "loop": false, "speedParam": null },
+        { "name": "fall", "motion": "fall", "loop": true, "speedParam": null },
+        { "name": "dive", "motion": "dive", "loop": false, "speedParam": null }
+      ],
+      "transitions": [
+        { "from": "locomotion", "to": "dive", "when": [{ "param": "mode", "op": "==", "value": 2 }], "blendTicks": 4, "exitTick": null, "priority": 0 },
+        { "from": "locomotion", "to": "jump", "when": [{ "param": "jump", "op": "trigger" }], "blendTicks": 4, "exitTick": null, "priority": 1 },
+        { "from": "locomotion", "to": "jump", "when": [{ "param": "grounded", "op": "==", "value": false }, { "param": "vy", "op": ">", "value": 0 }], "blendTicks": 4, "exitTick": null, "priority": 2 },
+        { "from": "locomotion", "to": "fall", "when": [{ "param": "grounded", "op": "==", "value": false }], "blendTicks": 8, "exitTick": null, "priority": 3 },
+        { "from": "jump", "to": "dive", "when": [{ "param": "mode", "op": "==", "value": 2 }], "blendTicks": 4, "exitTick": null, "priority": 0 },
+        { "from": "jump", "to": "locomotion", "when": [{ "param": "grounded", "op": "==", "value": true }], "blendTicks": 6, "exitTick": 6, "priority": 1 },
+        { "from": "jump", "to": "fall", "when": [{ "param": "vy", "op": "<", "value": 0 }], "blendTicks": 8, "exitTick": null, "priority": 2 },
+        { "from": "jump", "to": "fall", "when": [], "blendTicks": 6, "exitTick": 29, "priority": 3 },
+        { "from": "fall", "to": "dive", "when": [{ "param": "mode", "op": "==", "value": 2 }], "blendTicks": 4, "exitTick": null, "priority": 0 },
+        { "from": "fall", "to": "locomotion", "when": [{ "param": "grounded", "op": "==", "value": true }], "blendTicks": 6, "exitTick": null, "priority": 1 },
+        { "from": "dive", "to": "locomotion", "when": [{ "param": "mode", "op": "!=", "value": 2 }, { "param": "grounded", "op": "==", "value": true }], "blendTicks": 8, "exitTick": null, "priority": 0 },
+        { "from": "dive", "to": "fall", "when": [{ "param": "mode", "op": "==", "value": 1 }], "blendTicks": 8, "exitTick": null, "priority": 1 }
+      ]
+    }
+  ],
+  "rootMotion": { "bone": "root", "mode": "none" }
+}

@@ -1,0 +1,37 @@
+{
+  "haa": 1,
+  "id": "mech-click",
+  "title": "Candy switch tick-clack",
+  "inputs": [],
+  "master": 0.8,
+  "graph": {
+    "duration": 0.12,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      { "id": "tick", "type": "oscillator", "x": 40, "y": 40, "label": "Bright candy tick", "params": { "frequency": 2600, "wave": "sine", "level": 0.5 } },
+      { "id": "tick-env", "type": "curve", "x": 40, "y": 200, "label": "First contact", "params": { "amount": 1 }, "curve": [[0, 0], [0.0125, 1], [0.045, 0.55], [0.14, 0.08], [0.22, 0], [1, 0]] },
+      { "id": "tick-amp", "type": "gain", "x": 300, "y": 40, "label": "Tick envelope", "params": { "gain": 0 } },
+      { "id": "clack", "type": "oscillator", "x": 40, "y": 360, "label": "Lower latch clack", "params": { "frequency": 1120, "wave": "triangle", "level": 0.42 } },
+      { "id": "clack-env", "type": "curve", "x": 40, "y": 520, "label": "Latch 29 ms later", "params": { "amount": 1 }, "curve": [[0, 0], [0.24, 0], [0.26, 1], [0.32, 0.6], [0.48, 0.12], [0.7, 0], [1, 0]] },
+      { "id": "clack-amp", "type": "gain", "x": 300, "y": 360, "label": "Clack envelope", "params": { "gain": 0 } },
+      { "id": "contact", "type": "noise", "x": 40, "y": 680, "label": "Dry contact texture", "params": { "color": "white", "level": 0.16, "width": 0 } },
+      { "id": "contact-filter", "type": "filter", "x": 300, "y": 680, "label": "Small plastic body", "params": { "cutoff": 3200, "resonance": 0.7, "mode": "bandpass" } },
+      { "id": "contact-amp", "type": "gain", "x": 560, "y": 680, "label": "Two contact bursts", "params": { "gain": 0 } },
+      { "id": "out", "type": "output", "x": 820, "y": 200, "label": "Click output", "params": { "gain": 0.8 } }
+    ],
+    "connections": [
+      { "id": "tick-audio", "from": "tick", "to": "tick-amp", "target": "audio" },
+      { "id": "tick-envelope", "from": "tick-env", "to": "tick-amp", "target": "gain" },
+      { "id": "tick-out", "from": "tick-amp", "to": "out", "target": "audio" },
+      { "id": "clack-audio", "from": "clack", "to": "clack-amp", "target": "audio" },
+      { "id": "clack-envelope", "from": "clack-env", "to": "clack-amp", "target": "gain" },
+      { "id": "clack-out", "from": "clack-amp", "to": "out", "target": "audio" },
+      { "id": "contact-audio", "from": "contact", "to": "contact-filter", "target": "audio" },
+      { "id": "contact-filtered", "from": "contact-filter", "to": "contact-amp", "target": "audio" },
+      { "id": "contact-tick", "from": "tick-env", "to": "contact-amp", "target": "gain", "amount": 0.7 },
+      { "id": "contact-clack", "from": "clack-env", "to": "contact-amp", "target": "gain" },
+      { "id": "contact-out", "from": "contact-amp", "to": "out", "target": "audio" }
+    ]
+  }
+}

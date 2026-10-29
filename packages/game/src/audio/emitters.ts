@@ -34,6 +34,8 @@ export interface EmitterCommand {
   /** The HAA patch id the player plays. */
   patch: string
   gain: number
+  /** Event strength for a patch's declared gain input; absent for non-event commands. */
+  strength?: number
   ref: number
   max: number
   loop: boolean
@@ -173,6 +175,7 @@ export class CourseEmitters {
     c.id = s.id
     c.patch = s.patch
     c.gain = s.gain
+    c.strength = 'strength' in at ? at.strength : undefined
     c.ref = s.ref
     c.max = s.max
     c.loop = s.loop

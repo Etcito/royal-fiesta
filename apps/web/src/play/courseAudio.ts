@@ -6,7 +6,7 @@
 // `trigger` moves the sound and restarts its player (creating it on the first event), `stop` frees
 // the emitter and its player. A missing patch is warned once and skipped; at most 32 are active.
 import { createPlayer, createSpatialScene } from '@etcito/haa-spatial'
-import type { HaaPlayer, SpatialEmitter, SpatialScene } from '@etcito/haa-spatial'
+import type { HaaPatch, HaaPlayer, SpatialEmitter, SpatialScene } from '@etcito/haa-spatial'
 import type { CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { EmitterCommand, ListenerPose } from '@royal-fiesta/game/audio/emitters'
 
@@ -26,6 +26,7 @@ interface ActiveSound {
 interface PendingSound {
   readonly version: number
   again: boolean
+  strength?: number
 }
 
 function messageOf(error: unknown): string {
@@ -118,7 +119,9 @@ export function createCourseAudio(
     try {
       const patch = await text
       if (disposed || versions.get(cmd.id) !== entry.version) return
-      const player = await makePlayer(ctx, { module, processorUrl, patch, output: scene.output })
+      const hasGain = (JSON.parse(patch) as HaaPatch).inputs?.some((input) => input.name === 'gain') ?? false
+      const inputs: Record<string, number> = hasGain ? { gain: entry.strength ?? 1 } : {}
+      const player = await makePlayer(ctx, { module, processorUrl, patch, inputs, output: scene.output })
       // A stop, or a newer start, may have landed while this one was awaiting.
       if (disposed || versions.get(cmd.id) !== entry.version) {
         player.dispose()
@@ -128,16 +131,23 @@ export function createCourseAudio(
       emitter.setGain(cmd.gain)
       emitter.setPosition(cmd.x, cmd.y, cmd.z)
       active.set(cmd.id, { player, emitter })
-      if (entry.again) player.restart()
+      if (entry.again) {
+        setStrength(player, entry.strength)
+        player.restart()
+      }
     } catch (error) {
       warn(`${cmd.id} is off: ${messageOf(error)}`)
     }
   }
 
+  function setStrength(player: HaaPlayer, strength: number | undefined): void {
+    if (player.info.inputs.some((input) => input.name === 'gain')) player.set('gain', strength ?? 1)
+  }
+
   function schedule(cmd: EmitterCommand, restartWhenReady: boolean): void {
-    const entry: PendingSound = { version: versions.get(cmd.id) ?? 0, again: restartWhenReady }
+    const entry: PendingSound = { version: versions.get(cmd.id) ?? bump(cmd.id), again: restartWhenReady, strength: cmd.strength }
     pending.set(cmd.id, entry)
-    void spawn(cmd, entry).finally(() => {
+    void spawn({ ...cmd }, entry).finally(() => {
       if (pending.get(cmd.id) === entry) pending.delete(cmd.id)
     })
   }
@@ -163,6 +173,7 @@ export function createCourseAudio(
             const sound = active.get(cmd.id)
             if (sound !== undefined) {
               sound.emitter.setPosition(cmd.x, cmd.y, cmd.z)
+              setStrength(sound.player, cmd.strength)
               sound.player.restart()
               break
             }
@@ -170,6 +181,7 @@ export function createCourseAudio(
             const entry = pending.get(cmd.id)
             if (entry !== undefined) {
               entry.again = true
+              entry.strength = cmd.strength
               break
             }
             if (admit(cmd.id)) schedule(cmd, true)

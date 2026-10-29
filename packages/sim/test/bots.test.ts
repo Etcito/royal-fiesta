@@ -5,6 +5,7 @@ import { Rng } from '@gamesaloon/rollback'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { BEHAVIOUR_FORMAT, BEHAVIOUR_VERSION, bindBehaviour, loadBehaviour, parseBehaviour } from '../src/bots/behaviour.ts'
+import { courseCapabilities, nearestPathIndex, obstaclePhase, phaseInWindow, readMechanisms, readNavigation, regionDistance, regionNeighbours } from '../src/bots/courseRead.ts'
 import { newMemory, raceBrain, rollSkill, survivalBrain } from '../src/bots/brain.ts'
 import type { BotSkill, BrainInput } from '../src/bots/brain.ts'
 import { BotSystem } from '../src/bots/botSystem.ts'
@@ -15,10 +16,11 @@ import type { PlayerInput } from '../src/input.ts'
 import { RoundSystem } from '../src/match/roundSystem.ts'
 import { planRound } from '../src/match/rules.ts'
 import type { MatchSetup } from '../src/match/setup.ts'
+import { motionPose } from '../src/obstacles/motion.ts'
 import { ObstacleSystem } from '../src/obstacles/system.ts'
 import { isRefusal } from '../src/refusal.ts'
-import { v3 } from '../src/vec.ts'
-import type { Vec3 } from '../src/vec.ts'
+import { quatAxisAngle, quatMul, v3 } from '../src/vec.ts'
+import type { Pose, Quat, Vec3 } from '../src/vec.ts'
 import { FiestaWorld } from '../src/world.ts'
 
 const ID = { x: 0, y: 0, z: 0, w: 1 }
@@ -252,4 +254,135 @@ describe('BotSystem', () => {
       b.world.free()
     })
   }
+})
+
+// Race course with three regions in a chain plus one isolated region, and every motion kind.
+function readCourse(): ResolvedCourse {
+  const c = course('read-a', 'race')
+  c.regions = [
+    { id: 0, box: { center: v3(0, 1, 5), half: v3(10, 3, 5) }, adjacent: [1] },
+    { id: 1, box: { center: v3(0, 1, 15), half: v3(10, 3, 5) }, adjacent: [0, 2] },
+    { id: 2, box: { center: v3(0, 1, 30), half: v3(10, 3, 10) }, adjacent: [1] },
+    { id: 7, box: { center: v3(50, 1, 0), half: v3(1, 1, 1) }, adjacent: [] },
+  ]
+  const h = v3(1, 0.25, 1)
+  c.obstacles.push(
+    obstacle('pend', v3(0, 2, 12), { kind: 'pendulum', pivot: v3(0, 4, 12), axis: v3(0, 0, 1), amp: 0.9, periodTicks: 90, phase: 0.4 }, h),
+    obstacle('door', v3(0, 1, 20), { kind: 'rotatingDoor', axis: v3(0, 1, 0), stepAngle: 1.5707963267948966, periodTicks: 60, moveTicks: 20, phaseTicks: 7 }, h),
+    obstacle('plat', v3(0, 0, 25), { kind: 'movingPlatform', offset: v3(3, 0, 0), periodTicks: 80, phase: 1, wave: 'sine' }, h),
+    obstacle('ping', v3(0, 0, 28), { kind: 'movingPlatform', offset: v3(0, 2, 0), periodTicks: 50, phase: 0.5, wave: 'pingpong' }, h),
+    obstacle('saw', v3(0, 0, 32), { kind: 'seesaw', axis: v3(1, 0, 0), maxAngle: 0.4, spring: 2, damping: 1, inertia: 3 }, h),
+    obstacle('belt', v3(0, 0, 34), { kind: 'conveyor', velocity: v3(1, 0, 0) }, h),
+  )
+  return c
+}
+
+function rotated(o: ObstacleSpec, angle: number): Quat {
+  const q = { x: 0, y: 0, z: 0, w: 1 }
+  quatAxisAngle((o.motion as { axis: Vec3 }).axis, angle, q)
+  return quatMul(q, o.r, { x: 0, y: 0, z: 0, w: 1 })
+}
+
+function samePose(a: Quat, b: Quat): boolean {
+  const s = Math.sign(a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z) || 1
+  return Math.abs(a.x - s * b.x) < 1e-12 && Math.abs(a.y - s * b.y) < 1e-12 && Math.abs(a.z - s * b.z) < 1e-12 && Math.abs(a.w - s * b.w) < 1e-12
+}
+
+describe('course-read', () => {
+  it('course-read navigation matches the supplied path, regions and adjacency', () => {
+    const c = readCourse()
+    const nav = readNavigation(c)
+    assert.equal(nav.id, 'read-a')
+    assert.deepEqual(nav.path.map(n => [n.index, n.p.z, n.jump, n.dive, n.region]), [
+      [0, 4, false, false, 0], [1, 9, true, false, 0], [2, 18, false, false, 1], [3, 30, false, false, 2], [4, 36, false, true, 2],
+    ])
+    assert.deepEqual(nav.regions.map(r => [r.id, r.adjacent]), [[0, [1]], [1, [0, 2]], [2, [1]], [7, []]])
+    assert.deepEqual(nav.finish, c.finish)
+    assert.deepEqual(regionNeighbours(c, 1), [0, 2])
+    assert.deepEqual(regionNeighbours(c, 99), [])
+    assert.deepEqual([regionDistance(c, 0, 0), regionDistance(c, 0, 1), regionDistance(c, 0, 2), regionDistance(c, 0, 7), regionDistance(c, 99, 99)], [0, 1, 2, -1, -1])
+    assert.equal(nearestPathIndex(c, v3(1, 0, 17)), 2)
+    const mech = readMechanisms(c)
+    assert.deepEqual(mech.map(m => [m.id, m.kind, m.kinematic, m.tickDriven, m.periodTicks, m.region]), [
+      ['floor', 'static', false, true, null, 1], ['wall', 'static', false, true, null, 0], ['spin', 'spinner', true, true, null, 0],
+      ['pend', 'pendulum', true, true, 90, 1], ['door', 'rotatingDoor', true, true, 60, 1], ['plat', 'movingPlatform', true, true, 80, 2],
+      ['ping', 'movingPlatform', true, true, 50, 2], ['saw', 'seesaw', true, false, null, 2], ['belt', 'conveyor', false, true, null, 2],
+    ])
+  })
+
+  it('course-read phases match motion evaluation at boundaries and wrapped ticks', () => {
+    const c = readCourse()
+    const pose: Pose = { t: v3(0, 0, 0), r: { x: 0, y: 0, z: 0, w: 1 } }
+    const ticks = [0, 1, 6, 7, 19, 20, 21, 49, 50, 52, 53, 59, 60, 61, 79, 80, 89, 90, 91, 210, 1000, 54321, -1, -7, -60, -61]
+    for (const o of c.obstacles) {
+      for (const L of ticks) {
+        const ph = obstaclePhase(o, L)
+        motionPose(o, L, 0, pose)
+        const m = o.motion
+        const tag = `${o.id}@${L}`
+        if (m.kind === 'spinner' || m.kind === 'pendulum' || m.kind === 'rotatingDoor') {
+          assert.ok(samePose(pose.r, rotated(o, ph.value)), tag)
+        } else if (m.kind === 'movingPlatform') {
+          assert.equal(pose.t.x, o.t.x + m.offset.x * ph.value, tag)
+          assert.equal(pose.t.y, o.t.y + m.offset.y * ph.value, tag)
+        }
+        if (ph.periodTicks !== null) {
+          assert.ok(Number.isInteger(ph.cycleTick) && ph.cycleTick! >= 0 && ph.cycleTick! < ph.periodTicks, tag)
+          // One full period later the phase repeats (door angle advances by exactly one step).
+          const next = obstaclePhase(o, L + ph.periodTicks)
+          assert.equal(next.cycleTick, ph.cycleTick, tag)
+          assert.equal(next.moving, ph.moving, tag)
+        }
+      }
+    }
+    const door = c.obstacles.find(o => o.id === 'door')!
+    // tau = L + 7: the door moves for cycle 0..19 and rests for 20..59.
+    assert.deepEqual([-7, 12, 13, 52, 53, -8].map(L => [obstaclePhase(door, L).cycleTick, obstaclePhase(door, L).moving]),
+      [[0, true], [19, true], [20, false], [59, false], [0, true], [59, false]])
+    assert.equal(obstaclePhase(door, 13).value, 1.5707963267948966)
+    assert.equal(obstaclePhase(door, -8).value, 0)
+    const spin = c.obstacles.find(o => o.id === 'spin')!
+    for (const L of [0, 210, 2095, -300]) {
+      const v = obstaclePhase(spin, L).value
+      assert.ok(v >= 0 && v < 6.283185307179586, `spin@${L}`)
+    }
+    const pend = c.obstacles.find(o => o.id === 'pend')!
+    assert.deepEqual([0, 89, 90, 181, -1].map(L => obstaclePhase(pend, L).cycleTick), [0, 89, 0, 1, 89])
+    assert.equal(phaseInWindow(door, 12, 0, 19), true)
+    assert.equal(phaseInWindow(door, 13, 0, 19), false)
+    assert.equal(phaseInWindow(c.obstacles.find(o => o.id === 'saw')!, 5, 0, 1000), false)
+    assert.throws(() => obstaclePhase(door, 1.5), RangeError)
+  })
+
+  it('course-read reports capabilities without levers and refuses useLever', () => {
+    const c = readCourse()
+    const caps = courseCapabilities(c)
+    assert.equal(caps.hasLevers, false)
+    assert.deepEqual(caps.levers, [])
+    assert.deepEqual(caps.actions, ['jump', 'dive', 'grab'])
+    assert.deepEqual(caps.motionKinds, ['static', 'spinner', 'pendulum', 'rotatingDoor', 'movingPlatform', 'seesaw', 'conveyor'])
+    assert.deepEqual([caps.hasPath, caps.hasRegions, caps.hasFinish], [true, true, true])
+    const o = validBehaviour()
+    o.rules[0].action = 'useLever'
+    assert.throws(() => bindBehaviour(parseBehaviour(o, 'lever.bot.json'), caps), (e: unknown) => isRefusal(e) && e.reason.includes("course 'read-a'"))
+  })
+
+  it('course-read repeated reads leave inputs unchanged and return equal values', () => {
+    const c = readCourse()
+    const before = JSON.stringify(c)
+    const reads = () => [
+      readNavigation(c), readMechanisms(c), courseCapabilities(c), regionNeighbours(c, 1), regionDistance(c, 0, 2),
+      nearestPathIndex(c, v3(0, 0, 10)), c.obstacles.map(o => [0, 37, 61, -5].map(L => obstaclePhase(o, L))),
+    ]
+    const a = reads()
+    const nav = a[0] as ReturnType<typeof readNavigation>
+    nav.path[0].p.x = 99
+    nav.regions[0].adjacent.push(5)
+    ;(a[3] as number[]).push(9)
+    ;(a[1] as ReturnType<typeof readMechanisms>)[0].center.y = 42
+    assert.equal(JSON.stringify(c), before)
+    const b = reads()
+    assert.deepEqual(b, reads())
+    assert.equal(JSON.stringify(c), before)
+  })
 })

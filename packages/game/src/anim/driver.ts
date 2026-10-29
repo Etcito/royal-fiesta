@@ -1,4 +1,4 @@
-import type { AnimationGraph, AnimationGraphState, GraphStep } from '@etcito/raa-anim'
+import type { AnimationGraph, AnimationGraphState, GraphStep } from './brick.ts'
 import { loadAnimBrick } from './brick.ts'
 import { VisualIk, type CharacterTransform, type IkActive, type IkTargets } from './ik.ts'
 import { mapParams, newParamMemory, type CharObservation, type ParamMemory } from './params.ts'

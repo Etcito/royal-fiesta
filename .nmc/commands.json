@@ -1,0 +1,4 @@
+[
+  {"name": "qb17-mesh-file", "command": "node --experimental-strip-types --test apps/web/test/meshFile.test.ts apps/web/test/v1Data.test.ts apps/web/test/meshCache.test.ts", "timeout_s": 300},
+  {"name": "rf-tests", "command": "npm test", "timeout_s": 1800}
+]

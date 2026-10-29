@@ -1,4 +1,5 @@
-// SDF content load: v1 courses, the asset set they need, meshed by MAMA workers through the S16 cache.
+// SDF content load: v1 courses, the asset set they need, meshed through the S16 cache, then the saved
+// .mesh file (S24), then MAMA workers.
 // Reads courses and builds meshes only; it never touches sim state (1.5).
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
@@ -10,8 +11,8 @@ import type { MamaFacade, MeshedAsset } from '../sdf/mamaApi.ts'
 import { idbStore, MeshCache, meshCacheKey, memoryStore } from '../sdf/meshCache.ts'
 import { poolSize } from '../sdf/meshPool.ts'
 import type { MeshPool } from '../sdf/meshPool.ts'
-import { fetchServerMesh } from '../sdf/serverMesh.ts'
-import { browserContentRoot, browserGameAssets, loadV1Courses } from './v1Data.ts'
+import { fetchMeshFile, meshFileStats } from '../sdf/meshFile.ts'
+import { browserContentIndex, browserContentRoot, browserGameAssets, loadV1Courses } from './v1Data.ts'
 
 const PODIUM_ID = 'podium'
 const CHARACTER_ID = 'penguin.body'
@@ -123,11 +124,14 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   }
 
   mark('Playlist assets')
+  const root = browserContentRoot().replace(/\/?$/, '/')
+  const meshPaths = new Map((await browserContentIndex()).assets.flatMap(e => e.mesh === undefined ? [] : [[e.id, e.mesh] as const]))
   const c = meshCache()
   const before = { ...c.stats }
+  const fileBefore = { ...meshFileStats }
   const meshed = new Map<string, MeshedAsset>()
   const failed = new Map<string, string>()
-  const source = new Map<string, 'miss' | 'memory' | 'idb'>()
+  const source = new Map<string, 'miss' | 'memory' | 'idb' | 'file'>()
   let done = 0
   const step = (id: string): void => {
     done++
@@ -143,23 +147,21 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       step(a.id)
       continue
     }
-    const load = async (): Promise<MeshedAsset> => {
-      const server = await fetchServerMesh(browserContentRoot(), key, () => {
-        onProgress({ phase: 'meshing', done, total: assets.length, label: 'Building meshes on the server' })
-      })
-      if (server !== null) {
-        if (server.assetId !== a.id || server.hash !== a.hash || server.mesher !== a.mesher.output) throw new Error('server mesh does not match asset')
-        return server
+    const meshPath = meshPaths.get(a.id)
+    const load = async (): Promise<{ value: MeshedAsset; from: 'file' | 'miss' }> => {
+      if (meshPath !== undefined) {
+        const file = await fetchMeshFile(root + meshPath, key, a)
+        if (file !== null) return { value: file, from: 'file' }
       }
       const known = knownFailure(key)
       if (known !== null) throw new Error(known)
-      return meshPool(facade).mesh({ assetId: a.id, hash: a.hash, mesher: a.mesher, document: a.document }, MESH_LIMIT_S * 1000)
+      return { value: await meshPool(facade).mesh({ assetId: a.id, hash: a.hash, mesher: a.mesher, document: a.document }, MESH_LIMIT_S * 1000), from: 'miss' }
     }
-    /* Local failures are checked only after the server, so old browser timeouts cannot hide baked meshes. */
-    const miss = load().then(async (value) => {
+    /* Local failures are checked only after the saved file, so an old browser timeout cannot hide a saved mesh. */
+    const miss = load().then(async ({ value, from }) => {
       await c.put(key, value)
       meshed.set(a.id, value)
-      source.set(a.id, 'miss')
+      source.set(a.id, from)
       step(a.id)
     }, (e: unknown) => {
       // Permissive load (owner rule): an asset the mesher refuses is left out (drawn as nothing) and named in the
@@ -196,6 +198,8 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       cacheIdb: c.stats.idb - before.idb,
       cacheMiss: c.stats.miss - before.miss,
       cacheEvictedCorrupt: c.stats.evictedCorrupt - before.evictedCorrupt,
+      meshFile: meshFileStats.hits - fileBefore.hits,
+      meshFileStale: meshFileStats.stale - fileBefore.stale,
       courseIds: playlistIds(courses, profile),
       assets: ids.length,
     },

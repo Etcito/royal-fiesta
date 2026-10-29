@@ -5,13 +5,15 @@ import type { ContentProvider, CourseDressing, GameContent, LoadProgress, Podium
 import { podiumLayoutOf, V0_ASSET_MAP } from '@royal-fiesta/game/courseV1'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
-import type { RenderPort, RenderTarget } from '@royal-fiesta/game/render/port'
+import type { RenderPort, RenderTarget, SkinPartT, SkinRigT } from '@royal-fiesta/game/render/port'
+import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset } from '../../sdf/mamaApi.ts'
 import { createSdfPort } from '../../sdf/sdfPort.ts'
 import { loadSdfContent } from '../sdfLoad.ts'
 import { browserGameAssets, standInFrom, v1Dressing } from '../v1Data.ts'
+import penguinGraph from '../../../../../assets/common/penguin.animgraph.json?raw'
 
 const HUB_ID = 'hub-plaza'
 const PODIUM_ID = 'podium'
@@ -27,6 +29,7 @@ interface Loaded {
   failed: ReadonlyMap<string, string>
   standIns: Map<string, PrimsAsset>
   report: Record<string, number | string | readonly string[]>
+  skinned: SkinnedCharacter | null
 }
 
 function byIdOrder(a: { id: string }, b: { id: string }): number {
@@ -75,7 +78,13 @@ class SdfContent implements GameContent {
       }
       standIns.set(id, prims)
     }
-    this.loaded = { courses, byId, playlist, hub, podium: podiumLayoutOf(podiumCourse), meshed: content.meshed, failed: content.failed, standIns, report: content.report }
+    const skinned = await characterSkin(content.meshed.get(CHARACTER_ID), async () => (await resolver.resolve(CHARACTER_ID)).asset.document)
+    this.loaded = { courses, byId, playlist, hub, podium: podiumLayoutOf(podiumCourse), meshed: content.meshed, failed: content.failed, standIns, report: content.report, skinned }
+  }
+
+  // The skinned character for SceneView (S18 skin and the S19 penguin graph); undefined keeps the rigid one.
+  skinned(): SkinnedCharacter | undefined {
+    return this.need('skinned').skinned ?? undefined
   }
 
   private need(what: string): Loaded {
@@ -141,6 +150,33 @@ class SdfContent implements GameContent {
   report(): Record<string, number | string | readonly string[]> {
     return this.need('report').report
   }
+}
+
+// The character's skin: the rig and clips of its document group, the joints and weights of its meshed parts
+// (keyed like the render port keys parts), posed by assets/common/penguin.animgraph.json. Null when the meshed
+// character carries no skin (meshed before skins were carried, or without a rig).
+async function characterSkin(meshed: MeshedAsset | undefined, document: () => Promise<Record<string, unknown>>): Promise<SkinnedCharacter | null> {
+  if (meshed === undefined) return null
+  const payload = meshed.data as { groups: { group: string; parts: { partId: string; name: string; skin?: SkinPartT['skin'] }[] }[] }
+  const parts: SkinPartT[] = []
+  const keys = new Set<string>()
+  for (const group of payload.groups) {
+    for (const part of group.parts) {
+      const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
+      keys.add(key)
+      if (part.skin !== undefined) parts.push({ name: key, skin: part.skin })
+    }
+  }
+  if (parts.length === 0) return null
+  const nodes = (await document()).nodes as Record<string, { rig?: SkinRigT; clips?: unknown[] }>
+  const owner = Object.values(nodes).find(node => node.rig !== undefined)
+  if (owner?.rig === undefined) return null
+  return { assetId: CHARACTER_ID, skin: { rig: owner.rig, clips: owner.clips ?? [], parts }, graph: penguinGraph }
+}
+
+/** The content's skinned character, when it has one (SDF content with a meshed, rigged character). */
+export function skinnedCharacterOf(content: GameContent): SkinnedCharacter | undefined {
+  return content instanceof SdfContent ? content.skinned() : undefined
 }
 
 export const provider: ContentProvider = Object.freeze({

@@ -33,6 +33,29 @@ export interface SceneViewOptions {
 export interface SkinnedCharacter { assetId: string; skin: SkinnedAssetT; graph: string }
 
 const UNIT: readonly [number, number, number] = [1, 1, 1]
+// registerSkinned uploads the skinned meshes, so each port registers a skinned asset once for all its views.
+const skinnedHandles = new WeakMap<RenderPort, Map<string, number>>()
+
+// View-side tick flow: each sim's step is wrapped once, so every tick it runs (several may run before one
+// update()) reaches the views observing it right after it completes. Observers only read the sim view API.
+type StepObserver = (sim: MatchSim) => void
+const stepObservers = new WeakMap<MatchSim, Set<StepObserver>>()
+function observeSteps(sim: MatchSim, observer: StepObserver): () => void {
+  let observers = stepObservers.get(sim)
+  if (observers === undefined) {
+    const set = new Set<StepObserver>()
+    const step = sim.step.bind(sim)
+    sim.step = inputs => {
+      step(inputs)
+      for (const o of set) o(sim)
+    }
+    stepObservers.set(sim, set)
+    observers = set
+  }
+  const own = observers
+  own.add(observer)
+  return () => { own.delete(observer) }
+}
 // Pose layout in the obstacle buffers: t xyz then r xyzw.
 const OB = 7
 
@@ -76,19 +99,44 @@ export class SceneView {
   // Per character: the pose last submitted to the port, so a frame never resubmits an unchanged tick.
   private posed: (CharacterPose | undefined)[] = []
   private readonly observed: CharacterObservation[] = []
+  // The sim whose steps feed the graphs, and how to stop observing it.
+  private stepSim: MatchSim | null = null
+  private unobserve: (() => void) | null = null
+  private readonly onStep: StepObserver = sim => this.observeTick(sim)
 
   constructor(opts: SceneViewOptions) {
     this.opts = opts
     this.port = opts.port
     this.dressing = opts.dressing ?? NO_DRESSING
     const skinned = opts.skinned
-    if (skinned !== undefined && this.port.registerSkinned !== undefined && this.port.setPose !== undefined) {
-      this.beanAsset = this.port.registerSkinned(skinned.assetId, skinned.skin)
-      this.skinned = skinned
+    const handle = skinned === undefined ? undefined : this.skinnedAsset(skinned)
+    if (handle !== undefined) {
+      this.beanAsset = handle
+      this.skinned = skinned!
     } else {
       const character = opts.character ?? opts.bean
       this.beanAsset = this.asset(character.id, character)
     }
+  }
+
+  // The port's handle of the skinned character, or undefined when the port cannot skin or refuses this skin.
+  private skinnedAsset(skinned: SkinnedCharacter): number | undefined {
+    const port = this.port
+    if (port.registerSkinned === undefined || port.setPose === undefined) return undefined
+    let handles = skinnedHandles.get(port)
+    if (handles === undefined) skinnedHandles.set(port, handles = new Map())
+    let h = handles.get(skinned.assetId)
+    if (h === undefined) {
+      try {
+        h = port.registerSkinned(skinned.assetId, skinned.skin)
+      } catch (error) {
+        this.animError = error
+        console.error(`[scene] ${skinned.assetId} cannot be skinned; characters keep the rigid asset`, error)
+        return undefined
+      }
+      handles.set(skinned.assetId, h)
+    }
+    return h
   }
 
   // Why the characters draw at rest: the animation brick or graph failed to load (null otherwise).
@@ -124,6 +172,7 @@ export class SceneView {
     }
     const players = sim.setup.playerCount
     if (this.beans.length === 0) this.createBeans(players)
+    if (this.skinned !== null && sim !== this.stepSim) this.follow(sim, this.skinned)
 
     const tick = sim.tick
     const advanced = tick !== this.tick
@@ -213,9 +262,9 @@ export class SceneView {
   }
 
   /**
-   * Steps every character graph once with the sim's current tick. Call it after each sim.step when
-   * several ticks run before one update(); update() observes the latest tick itself and a tick already
-   * observed is ignored. Ticks nobody observed are not replayed.
+   * Steps every character graph once with the sim's current tick. The view calls it after each step of
+   * the sim it updates from, and update() observes the latest tick itself; a tick already observed is
+   * ignored (rendering never steps), and ticks run before the graphs loaded are not replayed.
    */
   observeTick(sim: MatchSim): void {
     const anim = this.anim
@@ -236,6 +285,9 @@ export class SceneView {
   }
 
   dispose(): void {
+    this.unobserve?.()
+    this.unobserve = null
+    this.stepSim = null
     this.animGen++
     this.anim?.dispose()
     this.anim = null
@@ -305,6 +357,19 @@ export class SceneView {
       this.animError = error
       console.error(`[scene] ${skinned.assetId} animation unavailable; characters draw at rest`, error)
     })
+  }
+
+  // Observes every step of sim from now on. A different sim is a new timeline: its graphs start fresh.
+  private follow(sim: MatchSim, skinned: SkinnedCharacter): void {
+    if (this.stepSim !== null) {
+      this.anim?.dispose()
+      this.anim = null
+      this.posed = []
+      this.loadAnim(skinned)
+    }
+    this.unobserve?.()
+    this.unobserve = observeSteps(sim, this.onStep)
+    this.stepSim = sim
   }
 
   // keep = false after a course change: prev = cur, so nothing is interpolated across the reset.

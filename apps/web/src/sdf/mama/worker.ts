@@ -29,11 +29,15 @@ interface PayloadMesh {
   indices: Uint32Array
 }
 
+// S18 joint/weight streams of a skinned part, in the vertex order the render port concatenates its meshes.
+interface PayloadSkin { joints: Uint16Array; weights: Float32Array }
+
 interface PayloadPart {
   partId: string
   name: string
   frame: Float64Array
   meshes: PayloadMesh[]
+  skin?: PayloadSkin
 }
 
 interface PayloadGroup { group: string; parts: PayloadPart[] }
@@ -121,21 +125,57 @@ function throwFirstRefusal(results: readonly AssetMeshResult[], doc: SdfDocument
 // normal is zero on some cut faces, docs/brick-gaps.md). RAA refuses a zero normal, so a sub-mesh that
 // breaks its rules loses its degenerate triangles, gets those normals rebuilt from the triangles around
 // the vertex and drops unused vertices; anything still invalid after that is a mesher refusal.
-function toPayloadMesh(sub: AssetMeshResult['parts'][number]['subMeshes'][number], where: string): PayloadMesh | null {
+// A skinned sub-mesh keeps its joints and weights through the repair: the repair renumbers vertices (first use
+// order), so the source vertex number rides in the uvs and the uvs, joints and weights are gathered by it.
+function toPayloadMesh(sub: AssetMeshResult['parts'][number]['subMeshes'][number], where: string): { mesh: PayloadMesh; skin: PayloadSkin | null } | null {
   const mesh = { positions: sub.positions, normals: sub.normals, uvs: sub.uvs ?? null, indices: sub.indices }
-  if (meshIssues(mesh).length === 0) return { material: sub.material, ...mesh }
+  const skin = sub.skin === undefined ? null : { joints: sub.skin.joints, weights: sub.skin.weights }
+  if (meshIssues(mesh).length === 0) return { mesh: { material: sub.material, ...mesh }, skin }
+  const probe = skin === null ? mesh : { ...mesh, uvs: Float32Array.from({ length: (mesh.positions.length / 3) * 2 }, (_, i) => (i & 1) === 0 ? i / 2 : 0) }
   let repaired: ReturnType<typeof repairMesh>
   try {
-    repaired = repairMesh(mesh, where)
+    repaired = repairMesh(probe, where)
   } catch (e) {
     throw new RefusalError('mesher', where, e instanceof Error ? e.message : String(e))
   }
   if (repaired === null) return null
-  const issues = meshIssues(repaired.mesh)
+  let out = repaired.mesh
+  let outSkin: PayloadSkin | null = null
+  if (skin !== null) {
+    const ids = out.uvs!
+    const m = ids.length / 2
+    const uvs = mesh.uvs === null ? null : new Float32Array(m * 2)
+    outSkin = { joints: new Uint16Array(m * 4), weights: new Float32Array(m * 4) }
+    for (let r = 0; r < m; r++) {
+      const v = ids[2 * r]
+      uvs?.set(mesh.uvs!.subarray(2 * v, 2 * v + 2), 2 * r)
+      outSkin.joints.set(skin.joints.subarray(4 * v, 4 * v + 4), 4 * r)
+      outSkin.weights.set(skin.weights.subarray(4 * v, 4 * v + 4), 4 * r)
+    }
+    out = { ...out, uvs }
+  }
+  const issues = meshIssues(out)
   if (issues.length > 0) {
     throw new RefusalError('mesher', where, `the mesh breaks RAA's mesh rules (${issues.join('; ')}); re-save the asset in SDF Modeler`)
   }
-  return { material: sub.material, ...repaired.mesh }
+  return { mesh: { material: sub.material, ...out }, skin: outSkin }
+}
+
+// The part skin in apps/web/src/sdf/sdfPort.ts partMesh order: meshes grouped by material, in first-use order.
+// Absent unless every mesh of the part is skinned.
+function partSkin(meshes: readonly { mesh: PayloadMesh; skin: PayloadSkin | null }[]): PayloadSkin | undefined {
+  if (meshes.length === 0 || meshes.some(m => m.skin === null)) return undefined
+  const materials = [...new Set(meshes.map(m => m.mesh.material))]
+  const ordered = materials.flatMap(material => meshes.filter(m => m.mesh.material === material))
+  const vertices = ordered.reduce((n, m) => n + m.mesh.positions.length / 3, 0)
+  const skin = { joints: new Uint16Array(vertices * 4), weights: new Float32Array(vertices * 4) }
+  let base = 0
+  for (const m of ordered) {
+    skin.joints.set(m.skin!.joints, base * 4)
+    skin.weights.set(m.skin!.weights, base * 4)
+    base += m.mesh.positions.length / 3
+  }
+  return skin
 }
 
 function toPayload(results: readonly AssetMeshResult[], doc: SdfDocument, assetId: string): { data: BuiltPayload; parts: number; triangles: number } {
@@ -147,15 +187,16 @@ function toPayload(results: readonly AssetMeshResult[], doc: SdfDocument, assetI
     const payloadParts: PayloadPart[] = []
     for (const part of result.parts) {
       parts += 1
-      const meshes: PayloadMesh[] = []
+      const built: { mesh: PayloadMesh; skin: PayloadSkin | null }[] = []
       for (const sub of part.subMeshes) {
         const where = `${assetId}#group:${groupName(doc, result.group)}/${part.name}/${sub.material ?? 'no material'}`
         const mesh = toPayloadMesh(sub, where)
         if (mesh === null) continue
-        triangles += mesh.indices.length / 3
-        meshes.push(mesh)
+        triangles += mesh.mesh.indices.length / 3
+        built.push(mesh)
       }
-      payloadParts.push({ partId: part.partId, name: part.name, frame: part.frame, meshes })
+      const skin = partSkin(built)
+      payloadParts.push({ partId: part.partId, name: part.name, frame: part.frame, meshes: built.map(m => m.mesh), ...(skin ? { skin } : {}) })
     }
     groups.push({ group: result.group, parts: payloadParts })
     for (const built of result.materials) if (!materials.has(built.id)) materials.set(built.id, built)
@@ -171,6 +212,10 @@ function transferOf(groups: readonly PayloadGroup[]): ArrayBuffer[] {
   for (const group of groups) {
     for (const part of group.parts) {
       add(part.frame)
+      if (part.skin !== undefined) {
+        add(part.skin.joints)
+        add(part.skin.weights)
+      }
       for (const mesh of part.meshes) {
         add(mesh.positions)
         add(mesh.normals)

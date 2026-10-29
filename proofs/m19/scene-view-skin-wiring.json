@@ -1,0 +1,19 @@
+{
+  "asset": "assets/common/penguin.body.asset.json",
+  "mesher": "paramesh",
+  "skinnedParts": [
+    {
+      "name": "penguin",
+      "vertices": 4658
+    }
+  ],
+  "bones": 12,
+  "clips": 15,
+  "characters": 8,
+  "posed": 8,
+  "distinctPoses": 8,
+  "setPoseCalls": 1200,
+  "tick": 300,
+  "registerSkinnedCalls": 1,
+  "views": 2
+}

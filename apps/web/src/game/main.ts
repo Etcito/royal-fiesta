@@ -25,6 +25,7 @@ import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
+import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { menuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
 import { Effect, Nav } from '@royal-fiesta/game/screens/nav'
@@ -260,7 +261,7 @@ class MatchPresenter {
     this.scene = new SceneView({
       port: ports[0], viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
       character: content.character(), dressing: content.dressing(), camera: focus => orbit.pose(focus),
-      loadingPaint: !this.c.prepared,
+      loadingPaint: !this.c.prepared, skinned: skinnedCharacterOf(content),
     })
   }
 
@@ -637,7 +638,7 @@ class InPageMode implements Mode {
     const { R, content, ports } = c.loaded
     this.hub = new InPageHubLoop(R, c.q.clients, new LoopbackRelay(), {
       R, courses: content.playlist(), plaza: content.hub(), partySize: c.q.clients as 2 | 3 | 4, now: () => performance.now(), pilot: true,
-    }, ports, { assets: name => content.assets(name), bean: content.character(), character: content.character(), dressing: content.dressing() })
+    }, ports, { assets: name => content.assets(name), bean: content.character(), character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content) })
   }
 
   sim(): MatchSim | null {

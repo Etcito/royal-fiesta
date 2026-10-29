@@ -1,0 +1,65 @@
+{
+  "video": "proofs/m19/penguin-costumes.mp4",
+  "still": "proofs/m19/scene-view-costumes.png",
+  "sideBySide": "proofs/m19/scene-view-costumes-side-by-side.png",
+  "frames": 240,
+  "fps": 30,
+  "simHz": 60,
+  "costumes": [
+    {
+      "slot": "head",
+      "id": "costume.propeller-hat"
+    },
+    {
+      "slot": "neck",
+      "id": "costume.fish-scarf"
+    },
+    {
+      "slot": "body",
+      "id": "costume.pineapple-suit"
+    }
+  ],
+  "characters": 8,
+  "localPlayer": 0,
+  "ticksStepped": 480,
+  "poseFrames": 238,
+  "restFrames": 2,
+  "repeatedRenders": 20,
+  "posesSubmittedOnRepeatedRenders": 0,
+  "setPoseCalls": 1752,
+  "costumeInstances": 3,
+  "maxCostumeMatrixError": 5.960464488641293e-8,
+  "distinctHeadAttitudes": 199,
+  "distinctCostumePlacements": 217,
+  "emoteHeadMotion": 0.17116928100585938,
+  "simStateIdenticalWithoutView": true,
+  "skin": "proofs/m19/penguin-fall-dive.glb",
+  "asset": "assets/common/penguin.body.asset.json",
+  "graph": "assets/common/penguin.animgraph.json",
+  "raster": "CPU preview of the RenderPort state (not a GPU capture)",
+  "presentation": "costume scale 1; the preview draws costumes with a 0.35 m depth bias so the two independently meshed coarse surfaces do not z-fight",
+  "segments": [
+    {
+      "from": 0,
+      "to": 50,
+      "name": "run (locomotion)"
+    },
+    {
+      "from": 56,
+      "to": 74,
+      "name": "jump / dive (actions)"
+    },
+    {
+      "from": 110,
+      "to": 160,
+      "name": "emote.cheer (view-side S19 emote input)"
+    },
+    {
+      "from": 160,
+      "to": 205,
+      "name": "emote.laugh (view-side S19 emote input)"
+    }
+  ],
+  "stillFrame": 180,
+  "stillTick": 362
+}

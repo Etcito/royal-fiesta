@@ -173,9 +173,11 @@ function yieldToBrowser(): Promise<void> {
 
 async function renderPng(port: RenderPort, what: string): Promise<Uint8Array> {
   port.render()
-  const deadline = performance.now() + 10000
+  // realNow, not performance.now: the multi-client run freezes performance.now between frames, so a deadline on it never passed
+  // and a pipeline that stayed pending hung the op until the GPU page limit (295 s) with no cause.
+  const deadline = realNow() + 45000
   while (pendingPipelines() > 0) {
-    if (performance.now() >= deadline) refuse('render', 'raa', `pipeline readiness timed out at ${what}; ${pendingPipelines()} pipelines still pending`)
+    if (realNow() >= deadline) refuse('render', 'raa', `pipeline readiness timed out at ${what}; ${pendingPipelines()} pipelines still pending`)
     await new Promise<void>(resolve => setTimeout(resolve, 10))
   }
   port.render()
@@ -1011,6 +1013,7 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
         stage = next
         stageFrames = 0
       } else stageFrames++
+      if (frame % 600 === 0) note(`${run.prefix}frame ${frame} stage ${stage ?? next} waiting for ${pending[index].name}`)
       if (matchFrames >= 0) matchFrames++
       else if (stage === 'match') matchFrames = 0
       const m = pending[index]
@@ -1020,6 +1023,7 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
         hit = stage === 'match' && matchFrames >= m.frames
       } else if (m.kind !== 'loading') hit = stage === m.kind && stageFrames >= SETTLE[m.kind]
       if (hit) {
+        note(`${run.prefix}capturing ${m.name} at frame ${frame}`)
         await capture(run, m.name, await driver.capture(run.prefix + m.name))
         index++
       }
@@ -1047,7 +1051,11 @@ async function gameCapture(raw: unknown): Promise<OpResult<GameCaptureOutput>> {
   const { R, adapter } = await prelude()
   const t0 = realNow()
   const events: GameEvent[] = []
-  const note: Note = what => events.push({ t: Math.round(realNow() - t0) / 1000, what })
+  // The last note is published for the GPU page bridge: a page that hits its time limit reports the phase it was in.
+  const note: Note = what => {
+    events.push({ t: Math.round(realNow() - t0) / 1000, what })
+    ;(window as unknown as { __nmcGpuProgress?: string }).__nmcGpuProgress = `${events[events.length - 1].t} s ${what}`
+  }
   const captures: SizedCapture[] = []
   const files: OpFile[] = []
   const reports: Report[] = []

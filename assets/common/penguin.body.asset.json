@@ -2630,6 +2630,7 @@
       },
       "belly": {
         "id": "belly",
+        "material": "penguin-belly",
         "name": "Belly",
         "kind": "ellipsoid",
         "transform": {
@@ -2657,6 +2658,7 @@
       },
       "beak": {
         "id": "beak",
+        "material": "penguin-beak",
         "name": "Beak",
         "kind": "cone",
         "transform": {
@@ -2705,6 +2707,7 @@
       },
       "eye_r": {
         "id": "eye_r",
+        "material": "penguin-eye",
         "name": "Eye R",
         "kind": "sphere",
         "transform": {
@@ -2726,6 +2729,7 @@
       },
       "eye_l": {
         "id": "eye_l",
+        "material": "penguin-eye",
         "name": "Eye L",
         "kind": "sphere",
         "transform": {
@@ -2765,6 +2769,7 @@
       },
       "foot_r": {
         "id": "foot_r",
+        "material": "penguin-beak",
         "name": "Foot R",
         "kind": "ellipsoid",
         "transform": {
@@ -2786,6 +2791,7 @@
       },
       "foot_l": {
         "id": "foot_l",
+        "material": "penguin-beak",
         "name": "Foot L",
         "kind": "ellipsoid",
         "transform": {
@@ -2952,6 +2958,7 @@
       },
       "face_patch": {
         "id": "face_patch",
+        "material": "penguin-belly",
         "name": "Face patch",
         "kind": "ellipsoid",
         "transform": {
@@ -3004,6 +3011,56 @@
           ]
         },
         "gameCollision": true
+      }
+    },
+    "materials": {
+      "penguin-belly": {
+        "name": "penguin-belly",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#efe6da",
+                "in.roughness": 0.55
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "penguin-beak": {
+        "name": "penguin-beak",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f5a02a",
+                "in.roughness": 0.4
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "penguin-eye": {
+        "name": "penguin-eye",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#15171c",
+                "in.roughness": 0.15
+              }
+            }
+          ],
+          "links": []
+        }
       }
     },
     "settings": {
@@ -3086,5 +3143,5 @@
       0.6
     ]
   },
-  "hash": "1e7723fb714ceea965af1435bc540f42e722ccad0ee9c051054ec07b7b846a97"
+  "hash": "696c15bb660fd2b128fc3ab51d7bbfce21a4ea2a273565a1c66b78784322bca0"
 }

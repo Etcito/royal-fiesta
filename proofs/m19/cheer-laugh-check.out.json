@@ -1,0 +1,49 @@
+{
+  "ok": true,
+  "inventory": [
+    "idle",
+    "waddle",
+    "run",
+    "jump",
+    "fall",
+    "dive",
+    "bellySlide",
+    "handPush",
+    "grab",
+    "hang",
+    "climbUp",
+    "emote.wave",
+    "emote.dance",
+    "emote.cheer",
+    "emote.laugh"
+  ],
+  "preservedInheritedAsset": true,
+  "cheer": {
+    "lengthTicks": 108,
+    "tipL": [
+      0.8230611085891724,
+      1.5223833322525024,
+      -0.057526882737874985
+    ],
+    "tipR": [
+      -0.8230611085891724,
+      1.5223833322525024,
+      -0.057526882737874985
+    ],
+    "headPivot": [
+      0,
+      0.6005306839942932,
+      -0.04510365054011345
+    ],
+    "bounce": 0.14608203619718552,
+    "maxTickStep": 0.07316216826438904
+  },
+  "laugh": {
+    "lengthTicks": 96,
+    "bounce": 0.06539068929851055,
+    "headPitch": 0.3449910059571266,
+    "flipperShake": 0.17298999428749084,
+    "maxTickStep": 0.03801778331398964,
+    "beak": "rigid head binding (Q7)"
+  }
+}

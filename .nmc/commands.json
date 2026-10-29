@@ -21,11 +21,28 @@
     ]
   },
   {
+    "name": "mechanisms-probe",
+    "command": "node --experimental-strip-types --test --test-concurrency=1 --test-name-pattern=50 packages/sim/test/mechanisms.test.ts",
+    "timeout_s": 60,
+    "after": [
+      "sdf-port-build"
+    ]
+  },
+  {
+    "name": "mechanisms-physics-l12",
+    "command": "node --experimental-strip-types --test --test-concurrency=1 packages/sim/test/mechanisms.test.ts packages/sim/test/mechanismsL12.test.ts",
+    "timeout_s": 60,
+    "after": [
+      "mechanisms-probe"
+    ]
+  },
+  {
     "name": "rf-tests",
     "command": "npm test",
     "timeout_s": 900,
     "after": [
-      "sdf-port-build"
+      "sdf-port-build",
+      "mechanisms-physics-l12"
     ]
   },
   {

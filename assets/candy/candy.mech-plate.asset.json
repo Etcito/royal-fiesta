@@ -1,0 +1,575 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.mech-plate",
+  "name": "Candy mechanism pressure plate",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Candy mechanism pressure plate",
+    "root": [
+      "candy_mech_plate"
+    ],
+    "nodes": {
+      "candy_mech_plate": {
+        "id": "candy_mech_plate",
+        "name": "Candy mechanism pressure plate",
+        "kind": "group",
+        "children": [
+          "base",
+          "plate"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.mech-plate",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "base": {
+        "id": "base",
+        "name": "base",
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "base-left",
+          "base-right",
+          "base-front",
+          "base-back"
+        ],
+        "gameCollision": false
+      },
+      "plate": {
+        "id": "plate",
+        "name": "plate",
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "plate-shell",
+          "plate-mint-left",
+          "plate-mint-right",
+          "plate-lemon-stripe"
+        ],
+        "gameCollision": false
+      },
+      "base-left": {
+        "id": "base-left",
+        "name": "base-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.93, -0.14, 0],
+          "rotation": [0, 0, 0]
+        },
+        "round": 0.035,
+        "material": "candy-blue",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.14, 0],
+              [0, -0.14, 0],
+              [0, 0, 1],
+              [0, 0, -1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "base-right": {
+        "id": "base-right",
+        "name": "base-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.93, -0.14, 0],
+          "rotation": [0, 0, 0]
+        },
+        "round": 0.035,
+        "material": "candy-blue",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.14, 0],
+              [0, -0.14, 0],
+              [0, 0, 1],
+              [0, 0, -1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "base-front": {
+        "id": "base-front",
+        "name": "base-front",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.14, -0.93],
+          "rotation": [0, 0, 0]
+        },
+        "round": 0.035,
+        "material": "candy-pink",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.86, 0, 0],
+              [-0.86, 0, 0],
+              [0, 0.14, 0],
+              [0, -0.14, 0],
+              [0, 0, 0.07],
+              [0, 0, -0.07]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "base-back": {
+        "id": "base-back",
+        "name": "base-back",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.14, 0.93],
+          "rotation": [0, 0, 0]
+        },
+        "round": 0.035,
+        "material": "candy-pink",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.86, 0, 0],
+              [-0.86, 0, 0],
+              [0, 0.14, 0],
+              [0, -0.14, 0],
+              [0, 0, 0.07],
+              [0, 0, -0.07]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plate-shell": {
+        "id": "plate-shell",
+        "name": "plate-shell",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.09, 0],
+          "rotation": [0, 0, 0]
+        },
+        "round": 0.05,
+        "material": "candy-pink",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.84, 0, 0],
+              [-0.84, 0, 0],
+              [0, 0.07, 0],
+              [0, -0.07, 0],
+              [0, 0, 0.84],
+              [0, 0, -0.84]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plate-mint-left": {
+        "id": "plate-mint-left",
+        "name": "plate-mint-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.52, -0.02, 0],
+          "rotation": [0, 0, 0]
+        },
+        "round": 0.015,
+        "material": "candy-mint",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.24, 0, 0],
+              [-0.24, 0, 0],
+              [0, 0.02, 0],
+              [0, -0.02, 0],
+              [0, 0, 0.76],
+              [0, 0, -0.76]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plate-mint-right": {
+        "id": "plate-mint-right",
+        "name": "plate-mint-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.52, -0.02, 0],
+          "rotation": [0, 0, 0]
+        },
+        "round": 0.015,
+        "material": "candy-mint",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.24, 0, 0],
+              [-0.24, 0, 0],
+              [0, 0.02, 0],
+              [0, -0.02, 0],
+              [0, 0, 0.76],
+              [0, 0, -0.76]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plate-lemon-stripe": {
+        "id": "plate-lemon-stripe",
+        "name": "plate-lemon-stripe",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.02, 0],
+          "rotation": [0, 0, 0]
+        },
+        "round": 0.015,
+        "material": "candy-yellow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.25, 0, 0],
+              [-0.25, 0, 0],
+              [0, 0.02, 0],
+              [0, -0.02, 0],
+              [0, 0, 0.76],
+              [0, 0, -0.76]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "candy-pink": {
+        "name": "candy-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-mint": {
+        "name": "candy-mint",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#55e6b2",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "roundCuboid",
+      "half": [0.045, 0.115, 0.975],
+      "border": 0.025,
+      "t": [-0.93, -0.14, 0],
+      "r": [0, 0, 0, 1]
+    },
+    {
+      "shape": "roundCuboid",
+      "half": [0.045, 0.115, 0.975],
+      "border": 0.025,
+      "t": [0.93, -0.14, 0],
+      "r": [0, 0, 0, 1]
+    },
+    {
+      "shape": "roundCuboid",
+      "half": [0.835, 0.115, 0.045],
+      "border": 0.025,
+      "t": [0, -0.14, -0.93],
+      "r": [0, 0, 0, 1]
+    },
+    {
+      "shape": "roundCuboid",
+      "half": [0.835, 0.115, 0.045],
+      "border": 0.025,
+      "t": [0, -0.14, 0.93],
+      "r": [0, 0, 0, 1]
+    },
+    {
+      "shape": "roundCuboid",
+      "half": [0.82, 0.06, 0.82],
+      "border": 0.02,
+      "t": [0, -0.08, 0],
+      "r": [0, 0, 0, 1]
+    }
+  ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [0, 1, 2, 3],
+        "parts": [
+          "base"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "plate",
+        "type": "dynamic",
+        "colliders": [4],
+        "parts": [
+          "plate"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 20,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": [
+      {
+        "id": "travel",
+        "kind": "slider",
+        "a": "base",
+        "b": "plate",
+        "anchorA": [0, -0.08, 0],
+        "anchorB": [0, -0.08, 0],
+        "axis": [0, 1, 0],
+        "limitsDeg": null,
+        "limitsM": [-0.1, 0],
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0,
+        "motor": null
+      },
+      {
+        "id": "return",
+        "kind": "spring",
+        "a": "base",
+        "b": "plate",
+        "anchorA": [0, -0.08, 0],
+        "anchorB": [0, -0.08, 0],
+        "axis": [1, 0, 0],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 3000,
+        "damping": 150,
+        "lengthM": 0,
+        "motor": null
+      }
+    ]
+  },
+  "anchors": {
+    "floor": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-1, -0.28, -1],
+    "max": [1, 0, 1]
+  },
+  "hash": "7b3bfc55b7320c95dcb8bb3505e2a30a88dd81406e2a7b0954e5f810b306f2eb"
+}

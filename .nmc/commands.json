@@ -1,7 +1,7 @@
 [
   {
-    "name": "sdf-port-tests",
-    "command": "node --experimental-strip-types --test apps/web/test/sdfTint.test.ts",
+    "name": "game-asset-tests",
+    "command": "node --experimental-strip-types --test packages/game/test/gameAsset.test.ts",
     "timeout_s": 60
   },
   {
@@ -9,7 +9,7 @@
     "command": "npm run typecheck",
     "timeout_s": 120,
     "after": [
-      "sdf-port-tests"
+      "game-asset-tests"
     ]
   },
   {
@@ -21,8 +21,8 @@
     ]
   },
   {
-    "name": "mechanisms-probe",
-    "command": "node --experimental-strip-types --test --test-concurrency=1 --test-name-pattern=50 packages/sim/test/mechanisms.test.ts",
+    "name": "candy-content-pack",
+    "command": "npm run content:pack -- /tmp/rf-pack-m1",
     "timeout_s": 60,
     "after": [
       "sdf-port-build"
@@ -33,7 +33,7 @@
     "command": "node --experimental-strip-types --test --test-concurrency=1 packages/sim/test/mechanisms.test.ts packages/sim/test/mechanismsL12.test.ts",
     "timeout_s": 60,
     "after": [
-      "mechanisms-probe"
+      "candy-content-pack"
     ]
   },
   {

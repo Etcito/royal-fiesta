@@ -9,13 +9,27 @@ import { materialProgram } from './materialProgram.ts'
 import type { SdfmCompiledMaterial, SdfmMappedMaterial } from '@etcito/raa-sdfm'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
-import type { CameraPose, QuatT, RenderPort, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T } from '@royal-fiesta/game/render/port'
+import type { CameraPose, QuatT, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import { checkPose, checkSkin } from '@royal-fiesta/game/render/nullPort'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../render/courseEnvironment.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import type { MeshedAsset } from './mamaApi.ts'
 import { installShaderCache } from '../render/shaderCache.ts'
+
+export interface ResizablePort extends SkinnedRenderPort {
+  resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
+  setPartFilter(instance: number, parts: readonly string[] | null): void
+}
+
+// Release declarations may lag the sibling's m20/m21 API.
+type SdfEngine = Engine & {
+  setViewports(rects: Viewport[]): void
+  setViewportCamera(index: number, cam: { eye: [number, number, number]; target: [number, number, number]; fovYDeg: number; near: number; far: number }): void
+  resize(cssW: number, cssH: number, dpr: number): void
+  setMaterialTintMode(handle: number, mode: 'graph' | 'multiply'): void
+  clearInstanceTint(instance: number): void
+}
 
 const AREA = 'sdf'
 const WHERE = 'sdf-port'
@@ -36,12 +50,12 @@ type PartTint = 'graph' | 'multiply' | 'none'
 interface Uploaded { assetId: string; parts: PartUpload[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
-interface Live { root: number; instances: number[]; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null }
+interface Live { root: number; instances: number[]; partNames: string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
   failed: ReadonlyMap<string, string> = new Map(),
   onProgress: (p: LoadProgress) => void = () => {},
-  onTiming: (span: { step: string; start: number; end: number; ms: number }) => void = () => {}): Promise<RenderPort> {
+  onTiming: (span: { step: string; start: number; end: number; ms: number }) => void = () => {}): Promise<ResizablePort> {
   const status = await raaStatus()
   if (!status.available) refuse(AREA, WHERE, status.reason)
   const port = new SdfRenderPort(meshed, failed)
@@ -58,11 +72,11 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   }
 }
 
-class SdfRenderPort implements SkinnedRenderPort {
+class SdfRenderPort implements ResizablePort {
   readonly kind = 'raa' as const
   private readonly meshed: ReadonlyMap<string, MeshedAsset>
   private readonly failed: ReadonlyMap<string, string>
-  private engine: Engine | null = null
+  private engine: SdfEngine | null = null
   private canvas: HTMLCanvasElement | null = null
   private target: RenderTarget | null = null
   private readonly uploaded: Uploaded[] = []
@@ -82,23 +96,19 @@ class SdfRenderPort implements SkinnedRenderPort {
     this.failed = failed
   }
 
-  // Same target rule as raa-port: RAA has one camera and no scissor, so one full-canvas viewport.
   async init(target: RenderTarget): Promise<void> {
     const p = 'SdfRenderPort.init'
-    if (target.viewports.length !== 1) refuse(AREA, WHERE, `${p}: RAA draws one full-canvas viewport, got ${target.viewports.length}; use one canvas per client`)
-    const [vp] = target.viewports
-    if (vp.x !== 0 || vp.y !== 0 || vp.width !== target.width || vp.height !== target.height) {
-      refuse(AREA, WHERE, `${p}: the viewport must cover the whole ${target.width}x${target.height} canvas`)
-    }
+    const rects = viewRects(target.width, target.height, target.viewports)
     if (!(target.canvas instanceof HTMLCanvasElement)) refuse(AREA, WHERE, `${p}: pass an HTMLCanvasElement as the target canvas`)
     installShaderCache()
     const raa = await loadRaa()
-    this.engine = await raa.createEngine(target.canvas, { maxInstances: MAX_INSTANCES, maxMaterials: MAX_MATERIALS })
+    this.engine = await raa.createEngine(target.canvas, { maxInstances: MAX_INSTANCES, maxMaterials: MAX_MATERIALS }) as SdfEngine
     this.engine.resize(target.width, target.height)
+    if (!fullView(rects)) this.engine.setViewports(rects)
     this.engine.setLight(DEFAULT_LIGHT)
     this.engine.setAmbient(DEFAULT_AMBIENT)
     this.canvas = target.canvas
-    this.target = target
+    this.target = { ...target, viewports: target.viewports.map(v => ({ ...v })) }
   }
 
   // Upload data only. The renderer requests pipelines for visible draws during gameplay;
@@ -244,7 +254,7 @@ class SdfRenderPort implements SkinnedRenderPort {
       instances.push(instance)
       if (part.joints !== undefined) skin.push({ instance, part })
     }
-    this.live.push({ root, instances, visible: true, bones: uploaded.bones ?? 0, skin, pose: null })
+    this.live.push({ root, instances, partNames: parts.map(part => part.name), filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null })
     return this.live.length - 1
   }
 
@@ -256,7 +266,21 @@ class SdfRenderPort implements SkinnedRenderPort {
   setVisible(instance: number, visible: boolean): void {
     const live = this.liveOf(instance, 'setVisible')
     live.visible = visible
-    for (const id of live.instances) this.need().setVisible(id, visible)
+    this.applyVisibility(live)
+  }
+
+  setPartFilter(instance: number, parts: readonly string[] | null): void {
+    const live = this.liveOf(instance, 'setPartFilter')
+    if (parts !== null) for (const part of parts) {
+      if (!live.partNames.includes(part)) refuse(AREA, WHERE, `setPartFilter: unknown part '${part}'; use a part name from this asset`)
+    }
+    live.filter = parts === null ? null : new Set(parts)
+    this.applyVisibility(live)
+  }
+
+  private applyVisibility(live: Live): void {
+    const engine = this.need()
+    live.instances.forEach((id, i) => engine.setVisible(id, live.visible && (live.filter === null || live.filter.has(live.partNames[i]))))
   }
 
   destroyInstance(instance: number): void {
@@ -267,8 +291,26 @@ class SdfRenderPort implements SkinnedRenderPort {
   }
 
   setCamera(viewport: number, cam: CameraPose): void {
-    if (viewport !== 0) refuse(AREA, WHERE, `setCamera: viewport ${viewport} does not exist; RAA has one viewport (0)`)
-    this.need().setCamera({ eye: [...cam.eye], target: [...cam.target], fovYDeg: cam.fovYDeg, near: cam.near, far: cam.far })
+    const engine = this.need()
+    const count = this.target!.viewports.length
+    if (!Number.isInteger(viewport) || viewport < 0 || viewport >= count) {
+      refuse(AREA, WHERE, `setCamera: viewport ${viewport} does not exist; use an index from 0 to ${count - 1}`)
+    }
+    const camera = { eye: [...cam.eye] as [number, number, number], target: [...cam.target] as [number, number, number], fovYDeg: cam.fovYDeg, near: cam.near, far: cam.far }
+    if (count === 1) engine.setCamera(camera)
+    else engine.setViewportCamera(viewport, camera)
+  }
+
+  resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void {
+    const engine = this.need()
+    const rects = viewRects(cssW, cssH, viewports)
+    if (!Number.isFinite(dpr) || dpr <= 0) refuse(AREA, WHERE, 'resize: dpr must be finite and positive; pass the device pixel ratio')
+    const previous = this.target!
+    const wasFull = fullView(viewRects(previous.width, previous.height, previous.viewports))
+    engine.resize(cssW, cssH, dpr)
+    // Reset a previous split layout too; the default full-canvas path needs no view call.
+    if (!fullView(rects) || !wasFull) engine.setViewports(rects)
+    this.target = { ...previous, width: cssW, height: cssH, viewports: viewports.map(v => ({ ...v })) }
   }
 
   // Everything is checked before the engine is touched, so a refusal never applies half an environment.
@@ -332,7 +374,7 @@ class SdfRenderPort implements SkinnedRenderPort {
     engine.setSkinPoses(Uint32Array.from(ids), matrices)
   }
 
-  private need(): Engine {
+  private need(): SdfEngine {
     if (this.engine === null || this.target === null) refuse(AREA, WHERE, 'the port is not initialised or was disposed; call init first')
     return this.engine
   }
@@ -357,6 +399,28 @@ class SdfRenderPort implements SkinnedRenderPort {
     })
     return uploaded.tintedParts
   }
+}
+
+function fullView(rects: Viewport[]): boolean {
+  return rects.length === 1 && rects[0].x === 0 && rects[0].y === 0 && rects[0].width === 1 && rects[0].height === 1
+}
+
+function viewRects(width: number, height: number, viewports: Viewport[]): Viewport[] {
+  if (![width, height].every(n => Number.isFinite(n) && n > 0)) {
+    refuse(AREA, WHERE, 'canvas dimensions must be finite and positive; pass its width and height')
+  }
+  if (viewports.length < 1 || viewports.length > 4) refuse(AREA, WHERE, 'use 1..4 viewports inside the canvas')
+  for (const [i, v] of viewports.entries()) {
+    if (![v.x, v.y, v.width, v.height].every(Number.isFinite) || v.x < 0 || v.y < 0 || v.width <= 0 || v.height <= 0 || v.x + v.width > width || v.y + v.height > height) {
+      refuse(AREA, WHERE, `viewport ${i} is outside the canvas or has an invalid size; use a positive rectangle inside ${width}x${height}`)
+    }
+    for (const other of viewports.slice(0, i)) {
+      if (v.x < other.x + other.width && other.x < v.x + v.width && v.y < other.y + other.height && other.y < v.y + v.height) {
+        refuse(AREA, WHERE, `viewport ${i} overlaps another viewport; move or shrink the rectangles so only their edges touch`)
+      }
+    }
+  }
+  return viewports.map(v => ({ x: v.x / width, y: v.y / height, width: v.width / width, height: v.height / height }))
 }
 
 // The rig poses the asset space; a part mesh lives in its frame F, so each skin matrix S becomes

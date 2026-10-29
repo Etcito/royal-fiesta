@@ -1,13 +1,40 @@
 [
   {
+    "name": "sdf-port-tests",
+    "command": "node --experimental-strip-types --test apps/web/test/sdfTint.test.ts",
+    "timeout_s": 60
+  },
+  {
+    "name": "sdf-port-typecheck",
+    "command": "npm run typecheck",
+    "timeout_s": 120,
+    "after": [
+      "sdf-port-tests"
+    ]
+  },
+  {
+    "name": "sdf-port-build",
+    "command": "npm run build",
+    "timeout_s": 600,
+    "after": [
+      "sdf-port-typecheck"
+    ]
+  },
+  {
     "name": "rf-tests",
     "command": "npm test",
-    "timeout_s": 900
+    "timeout_s": 900,
+    "after": [
+      "sdf-port-build"
+    ]
   },
   {
     "name": "rf-judge-m1",
     "command": "node --experimental-strip-types tools/judgeCard.ts m1",
-    "timeout_s": 1800
+    "timeout_s": 1800,
+    "after": [
+      "rf-tests"
+    ]
   },
   {
     "name": "rf-judge-m2",

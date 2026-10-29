@@ -6,6 +6,8 @@ import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 import { materialProgram } from '../src/sdf/materialProgram.ts'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 
+import type { CameraPose, RenderTarget, Viewport } from '@royal-fiesta/game/render/port'
+
 const FIELDS = ['base_color', 'metallic', 'roughness', 'emissive', 'height']
 const PLAIN = 'return MaterialFull(vec3f(1.0, 0.5, 0.1), 0.0, 0.5, vec3f(0.0), 0.0);'
 // The S23 emit of input.player_color, as MAMA compiles it into the material body.
@@ -14,6 +16,11 @@ const FRAME = new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 interface Port {
   engine: unknown; target: unknown
+  init(target: RenderTarget): Promise<void>
+  resize(w: number, h: number, dpr: number, views: Viewport[]): void
+  setCamera(index: number, camera: CameraPose): void
+  setPartFilter(instance: number, parts: readonly string[] | null): void
+  setVisible(instance: number, visible: boolean): void
   prepare(progress: () => void, timing: () => void): Promise<void>
   registerAsset(name: string, asset: { id: string }): number
   createInstance(handle: number, tint: readonly number[] | null): number
@@ -24,11 +31,16 @@ const source = readFileSync(new URL('../src/sdf/sdfPort.ts', import.meta.url), '
 const compiled = transpileModule(source + '\nexports.make = (meshed) => new SdfRenderPort(meshed)\n', {
   compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
 }).outputText
+class FakeCanvas {}
+let initEngine: ReturnType<typeof fakeEngine>['engine']
+
 const exports = {} as { make(meshed: ReadonlyMap<string, unknown>): Port }
 runInNewContext(compiled, {
-  exports, Float32Array, Float64Array, Uint32Array, performance,
+  HTMLCanvasElement: FakeCanvas, exports, Float32Array, Float64Array, Uint32Array, performance,
   requestAnimationFrame: (callback: (time: number) => void) => callback(0),
   require(id: string): unknown {
+    if (id === '@etcito/raa') return { loadRaa: async () => ({ createEngine: async () => initEngine }) }
+    if (id === '../render/shaderCache.ts') return { installShaderCache() {} }
     if (id === './materialProgram.ts') return { materialProgram }
     if (id === '@royal-fiesta/game/render/roundLoad') return { roundStep: (_name: string, fn: () => unknown) => fn() }
     if (id === '@royal-fiesta/sim/refusal') return { refuse: (...args: unknown[]) => { throw new Error(args.join(':')) } }
@@ -53,11 +65,19 @@ function part(name: string, materialName: string | null) {
 function fakeEngine() {
   let next = 0
   const calls = {
+    views: [] as Viewport[][], sizes: [] as number[][], cameras: [] as number[],
+    visibility: new Map<number, boolean>(),
     functions: 0, surfaces: 0, meshes: 0, instances: 0,
     tints: new Map<number, number[][]>(), cleared: [] as number[], modes: new Map<number, string>(),
     meshOf: new Map<number, number>(), meshIds: [] as number[], nextInstance: 1000,
   }
   const engine = {
+    resize(...args: number[]) { calls.sizes.push(args) },
+    setViewports(views: Viewport[]) { calls.views.push(Array.from(views, v => ({ ...v }))) },
+    setCamera() { calls.cameras.push(-1) },
+    setViewportCamera(index: number) { calls.cameras.push(index) },
+    setVisible(id: number, visible: boolean) { calls.visibility.set(id, visible) },
+    setLight() {}, setAmbient() {},
     addMaterialFunction() { calls.functions++ },
     addSurfaceMaterial() { calls.surfaces++; return ++next },
     addMesh() { calls.meshes++; const id = ++next; calls.meshIds.push(id); return id },
@@ -130,4 +150,77 @@ test('a prims asset (no SDF material) is still multiplied on a shared white surf
   assert.equal(calls.surfaces, 1)
   assert.equal(calls.modes.size, 0)
   assert.deepEqual([...calls.tints.values()].flat(), PALETTE.map(rgb => [...rgb, 1]))
+})
+
+const quarters = [
+  { x: 0, y: 0, width: 100, height: 50 },
+  { x: 100, y: 0, width: 100, height: 50 },
+  { x: 0, y: 50, width: 100, height: 50 },
+  { x: 100, y: 50, width: 100, height: 50 },
+]
+const camera: CameraPose = { eye: [0, 1, 2], target: [0, 0, 0], fovYDeg: 50, near: 0.1, far: 100 }
+async function initViews(views: Viewport[]) {
+  const fake = fakeEngine()
+  initEngine = fake.engine
+  const port = exports.make(new Map())
+  await port.init({ canvas: new FakeCanvas(), width: 200, height: 100, viewports: views })
+  return { port, calls: fake.calls }
+}
+
+test('four quarter viewports use half-width and half-height fractions and viewport cameras', async () => {
+  const { port, calls } = await initViews(quarters)
+  assert.deepEqual(calls.views, [[
+    { x: 0, y: 0, width: 0.5, height: 0.5 },
+    { x: 0.5, y: 0, width: 0.5, height: 0.5 },
+    { x: 0, y: 0.5, width: 0.5, height: 0.5 },
+    { x: 0.5, y: 0.5, width: 0.5, height: 0.5 },
+  ]])
+  port.setCamera(2, camera)
+  assert.deepEqual(calls.cameras, [2])
+  for (const index of [-1, 4, 0.5, NaN]) assert.throws(() => port.setCamera(index, camera), /use an index/)
+})
+
+test('invalid viewport counts, bounds and overlaps are refused', async () => {
+  await assert.rejects(initViews([quarters[0], quarters[0]]), /overlaps.*move or shrink/)
+  for (const views of [[], [...quarters, quarters[0]]]) await assert.rejects(initViews(views), /1\.\.4/)
+  for (const rect of [{ ...quarters[0], x: -1 }, { ...quarters[0], width: 201 }, { ...quarters[0], height: 0 }, { ...quarters[0], x: NaN }]) {
+    await assert.rejects(initViews([rect]), /positive rectangle inside/)
+  }
+})
+
+test('single full-canvas viewport keeps the existing camera path', async () => {
+  const { port, calls } = await initViews([{ x: 0, y: 0, width: 200, height: 100 }])
+  port.setCamera(0, camera)
+  assert.deepEqual(calls.views, [])
+  assert.deepEqual(calls.cameras, [-1])
+  port.resize(400, 200, 2, [{ x: 0, y: 0, width: 400, height: 200 }])
+  assert.deepEqual(calls.views, [])
+})
+
+test('resize forwards dpr and reapplies views, including returning to full canvas', async () => {
+  const { port, calls } = await initViews(quarters)
+  port.resize(400, 200, 1.5, quarters.map(v => ({ x: v.x * 2, y: v.y * 2, width: v.width * 2, height: v.height * 2 })))
+  assert.deepEqual(calls.sizes, [[200, 100], [400, 200, 1.5]])
+  assert.deepEqual(calls.views[1], calls.views[0])
+  assert.throws(() => port.resize(400, 200, 2, [quarters[0], quarters[0]]), /overlaps/)
+  assert.equal(calls.sizes.length, 2)
+  port.resize(400, 200, 2, [{ x: 0, y: 0, width: 400, height: 200 }])
+  assert.deepEqual(calls.views[2], [{ x: 0, y: 0, width: 1, height: 1 }])
+  assert.throws(() => port.setCamera(2, camera), /use an index/)
+})
+
+test('part filter hides other parts and composes with instance visibility', () => {
+  const { port, calls, handle } = portFor('test.parts', [], [part('body', null), part('beak', null)])
+  const instance = port.createInstance(handle(), null)
+  port.setPartFilter(instance, ['body'])
+  assert.deepEqual([...calls.visibility.values()], [true, false])
+  assert.throws(() => port.setPartFilter(instance, ['missing']), /unknown part/)
+  assert.deepEqual([...calls.visibility.values()], [true, false])
+  port.setVisible(instance, false)
+  port.setPartFilter(instance, null)
+  assert.deepEqual([...calls.visibility.values()], [false, false])
+  port.setVisible(instance, true)
+  assert.deepEqual([...calls.visibility.values()], [true, true])
+  port.setPartFilter(instance, [])
+  assert.deepEqual([...calls.visibility.values()], [false, false])
 })

@@ -6,7 +6,6 @@ import { fileURLToPath } from 'node:url'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { parseGameAsset } from '@royal-fiesta/game/gameAsset'
-import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { runMatchOffline } from '@royal-fiesta/sim/match/offline'
 import type { MatchSetup } from '@royal-fiesta/sim/match/setup'
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
@@ -22,20 +21,19 @@ import { secretsFromEnv } from '@royal-fiesta/headless/controlsGpu'
 import { leakScan, redact } from '../../../tools/guard.ts'
 import { meshIssues } from '../../web/src/sdf/meshValidity.ts'
 import type { MeshArrays } from '../../web/src/sdf/meshValidity.ts'
+import { decodeMesh } from '../../web/src/sdf/meshWire.ts'
 
 // M3 SDF runtime. QB1: a headless v1 sprint match hashes the same with MAMA present and with the facade
 // stubbed. QB11: every assets/*/ asset meshes through MAMA's declared mesher in Node. QB7: a refusal
 // names the asset and group. The mesh-node threshold is full: MAMA's quad gap (docs/brick-gaps.md)
 // keeps it failing until a pin bump or a content re-save, and is never lowered or skipped.
 
-const MESH_TIMEOUT_MS = 300000
 const SEED = 17
 const PLAYERS = 8
 const SIM_CASE_FLAG = '--sim-case'
 const SIM_CASE = 'child'
 const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const PROOF_FILE = fileURLToPath(import.meta.url)
-const MESH_NODE_URL = new URL('../src/mama/meshNode.ts', import.meta.url).href
 
 function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
@@ -158,17 +156,18 @@ async function checkMama(): Promise<CheckResult> {
 
 // ---- mesh-node -----------------------------------------------------------------------------------------
 
-interface MeshNodeModule {
-  meshGameAsset(asset: GameAsset, options?: { timeoutMs?: number }): Promise<{
-    parts: number
-    triangles: number
-    data: { groups: { group: string; parts: { name: string; meshes: (MeshArrays & { material: string | null })[] }[] }[] }
-  }>
+// S24: the server mesher is retired; the proof reads the saved assets/<world>/<id>.mesh files.
+interface SavedMesh {
+  assetId: string
+  hash: string
+  parts: number
+  triangles: number
+  data: { groups: { group: string; parts: { name: string; meshes: (MeshArrays & { material: string | null })[] }[] }[] }
 }
 
 // RAA's upload rules on every mesh the worker hands over (the same payload the browser uploads), so a
 // bad mesh is named here, with all the others, before a GPU job meets the first one.
-function invalidMeshes(id: string, result: Awaited<ReturnType<MeshNodeModule['meshGameAsset']>>): string[] {
+function invalidMeshes(id: string, result: SavedMesh): string[] {
   const notes: string[] = []
   for (const group of result.data.groups) {
     for (const part of group.parts) {
@@ -198,25 +197,19 @@ async function checkMeshNode(): Promise<CheckResult> {
   const files = await assetFiles()
   const notes: string[] = []
   let meshed = 0
-  let meshNode: MeshNodeModule | null = null
-  try {
-    // The root tsconfig excludes mama/ (it imports MAMA); the proof loads it by URL, as its test does.
-    meshNode = (await import(MESH_NODE_URL)) as unknown as MeshNodeModule
-  } catch (e) {
-    notes.push(`apps/headless/src/mama/meshNode.ts did not load: ${messageOf(e)}`)
-  }
   for (const path of files) {
     const id = path.slice(path.lastIndexOf('/') + 1, -ASSET_SUFFIX.length)
-    if (meshNode === null) continue
+    const meshPath = path.slice(0, -ASSET_SUFFIX.length) + '.mesh'
     try {
       const asset = await parseGameAsset(JSON.parse(await readRepoText(path)) as unknown, path)
-      const result = await meshNode.meshGameAsset(asset, { timeoutMs: MESH_TIMEOUT_MS })
+      if (!existsSync(repoPath(meshPath))) { notes.push(`${id}: no saved ${meshPath}; save the asset in sdfm`); continue }
+      const result = decodeMesh(new Uint8Array(readFileSync(repoPath(meshPath)))) as unknown as SavedMesh
+      if (result.assetId !== id || result.hash !== asset.hash) { notes.push(`${id}: ${meshPath} is stale; save the asset again`); continue }
       const invalid = invalidMeshes(id, result)
       if (invalid.length > 0) notes.push(...invalid)
       else if (result.parts >= 1 && result.triangles > 0) meshed++
       else notes.push(`${id}: parts=${result.parts} triangles=${result.triangles}; every mesh needs parts >= 1 and triangles > 0`)
     } catch (e) {
-      // A mesh refusal carries '<asset id>#<group id>' and MAMA's own reason, or 'timed out after <n> s'.
       notes.push(`${id}: ${messageOf(e)}`)
     }
   }
@@ -228,7 +221,7 @@ async function checkMeshNode(): Promise<CheckResult> {
       if (!ids.has(assetId)) { missing++; notes.push(`course ${course.id}: asset '${assetId}' has no assets/*/${assetId}${ASSET_SUFFIX}; add it or remove it from the course`) }
     }
   }
-  report('mesh-node', { assets: files.length, meshed, missingCourseAssets: missing, timeoutMs: MESH_TIMEOUT_MS })
+  report('mesh-node', { assets: files.length, meshed, missingCourseAssets: missing })
   return {
     value: `${meshed}/${files.length}`,
     threshold: `${files.length}/${files.length}, every course asset among them, every mesh valid for RAA`,

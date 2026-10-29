@@ -6,7 +6,6 @@ import { extname, join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { buildContentIndex, contentDir } from './content.ts'
 import { repoRoot } from './bricks.ts'
-import { MeshBaker, meshTimeoutMs } from './meshBake.ts'
 
 // Ported from the V0 M11 play tool, on the public dependency path: the RAA release comes from
 // package.json, so there is no raaBuild step, no sibling and no vite preview.
@@ -32,6 +31,7 @@ const TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',
   '.map': 'application/json; charset=utf-8',
+  '.mesh': 'application/octet-stream',
 }
 
 function run(command: string, args: string[], cwd: string): Promise<number> {
@@ -51,31 +51,15 @@ async function build(root: string): Promise<number> {
   return run(npm, ['run', 'build', '-w', '@royal-fiesta/web'], root)
 }
 
-export function serveDir(dist: string, baker = new MeshBaker()): Server {
+// S29: content is served live as saved; there is no server-side meshing (S24 meshes in the browser).
+export function serveDir(dist: string): Server {
   const base = resolve(dist)
-  const scan = (): void => { void baker.scan().catch(error => console.error(`mesh: ${error.message}`)) }
-  let interval: ReturnType<typeof setInterval> | undefined
   const server = createServer((req, res) => {
     let path: string
     try {
       path = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname)
     } catch {
       res.writeHead(400).end('bad request')
-      return
-    }
-    const mesh = /^\/(?:content\/)?meshes\/([a-f0-9]{64})$/.exec(path)
-    if (mesh) {
-      const key = mesh[1]
-      const base = join(baker.cache, key)
-      const headers = { 'cache-control': 'no-store', 'x-mesh-timeout-ms': String(meshTimeoutMs()) }
-      if (existsSync(base + '.mesh')) {
-        res.writeHead(200, { ...headers, 'content-type': 'application/octet-stream' })
-        res.end(req.method === 'HEAD' ? undefined : readFileSync(base + '.mesh'))
-      } else if (existsSync(base + '.failed')) {
-        res.writeHead(422, { ...headers, 'content-type': 'text/plain; charset=utf-8' }).end(readFileSync(base + '.failed'))
-      } else if (baker.pending.has(key) || existsSync(base + '.lock')) {
-        res.writeHead(202, { ...headers, 'retry-after': '1' }).end('Building meshes on the server')
-      } else res.writeHead(404, headers).end('unknown mesh')
       return
     }
     if (path === '/content/index.json') {
@@ -90,8 +74,8 @@ export function serveDir(dist: string, baker = new MeshBaker()): Server {
     const live = path.startsWith('/content/')
     const requestBase = live ? contentDir() : base
     if (live) path = path.slice('/content'.length)
-    // Live content is only the asset and course files: the content directory may be the repository root.
-    if (live && !/^\/(assets|courses)\/[^/]+(\/[^/]+)?\.(asset|course)\.json$/.test(path)) {
+    // Live content is only the game files: the content directory may be the repository root.
+    if (live && !/^\/(?:courses\/[^/]+(?:\/[^/]+)?\.course\.json|assets\/[^/]+\/[^/]+\.(?:asset\.json|mesh)|audio\/[^/]+\.haa\.json)$/.test(path)) {
       res.writeHead(404).end('not found')
       return
     }
@@ -110,8 +94,6 @@ export function serveDir(dist: string, baker = new MeshBaker()): Server {
     res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' })
     res.end(req.method === 'HEAD' ? undefined : readFileSync(file))
   })
-  server.once('listening', () => { scan(); interval = setInterval(scan, 2000) })
-  server.once('close', () => { clearInterval(interval); baker.stop() })
   return server
 }
 

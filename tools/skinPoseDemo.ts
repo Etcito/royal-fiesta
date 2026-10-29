@@ -4,12 +4,13 @@
 // authored rig yet, so this tool builds a demo core rig (root, hips, spine, head, jaw) and
 // height-band weights; the real rig and weights come from SDF Modeler.
 // Usage: node --experimental-strip-types tools/skinPoseDemo.ts [out.mp4]
-import { readFileSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { spawn } from 'node:child_process'
 import { parseGameAsset } from '@royal-fiesta/game/gameAsset'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import { repoRoot } from './bricks.ts'
+import { decodeMesh } from '../apps/web/src/sdf/meshWire.ts'
 
 type V3 = [number, number, number]
 type M4 = number[]
@@ -19,10 +20,12 @@ const assetPath = 'assets/common/penguin.body.asset.json'
 
 const json = JSON.parse(readFileSync(join(repoRoot(), assetPath), 'utf8'))
 const asset = await parseGameAsset(json, assetPath)
-// A runtime URL like tools/meshBake.ts, so the MAMA worker stays out of the main typecheck.
-const meshNode = new URL('../apps/headless/src/mama/meshNode.ts', import.meta.url).href
-const { meshWholeAsset } = await import(meshNode) as { meshWholeAsset(a: unknown, timeoutMs: number): Promise<unknown> }
-const meshed = await meshWholeAsset(asset, 120000) as unknown as { data: { groups: { parts: { name: string; meshes: { material: string | null; positions: Float32Array; normals: Float32Array; indices: Uint32Array }[] }[] }[] } }
+// S24: the saved mesh sdfm writes next to the asset; the server mesher is retired.
+const meshPath = assetPath.replace(/\.asset\.json$/, '.mesh')
+if (!existsSync(join(repoRoot(), meshPath))) throw new Error(`${meshPath} is missing: save penguin.body in sdfm first`)
+const saved = decodeMesh(new Uint8Array(readFileSync(join(repoRoot(), meshPath))))
+if (saved.assetId !== asset.id || saved.hash !== asset.hash) throw new Error(`${meshPath} is stale: save penguin.body in sdfm again`)
+const meshed = saved as unknown as { data: { groups: { parts: { name: string; meshes: { material: string | null; positions: Float32Array; normals: Float32Array; indices: Uint32Array }[] }[] }[] } }
 const part = meshed.data.groups[0].parts[0]
 const colorOf = (m: string | null): V3 => {
   const hex = m === null ? '#808080' : String(json.document.materials[m]?.graph.nodes[0].params['in.base_color'] ?? '#808080')

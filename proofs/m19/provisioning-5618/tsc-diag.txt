@@ -1,0 +1,3 @@
+src/app/paramesh/game-display.ts(167,48): error TS2339: Property 'addTexture' does not exist on type 'Engine'.
+src/app/paramesh/game-display.ts(180,56): error TS2339: Property 'removeTexture' does not exist on type 'Engine'.
+tsc exit 2

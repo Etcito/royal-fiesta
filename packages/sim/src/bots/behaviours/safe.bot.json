@@ -7,18 +7,17 @@
     "decisionTicks": 6,
     "reactionTicks": 4,
     "wobbleTicks": 60,
-    "stuckTicks": 45
+    "stuckTicks": 30
   },
   "route": {
     "preference": "safe",
-    "advanceDist": 1.2,
-    "arriveDist": 0.6
+    "advanceDist": 2.5,
+    "arriveDist": 0.5
   },
   "rules": [
     { "id": "jump-hazard", "predicate": "hazardNear", "action": "jump" },
+    { "id": "jump-wall", "predicate": "obstacleAhead", "action": "jump" },
     { "id": "jump-stuck", "predicate": "stuck", "action": "jump" },
-    { "id": "wait-hazard", "predicate": "always", "phase": { "from": 0, "to": 90 }, "action": "grab" },
-    { "id": "jump-node", "predicate": "nearNode", "distance": 1.6, "action": "jump" },
     { "id": "dive-finish", "predicate": "nearFinish", "distance": 2, "action": "dive" }
   ]
 }

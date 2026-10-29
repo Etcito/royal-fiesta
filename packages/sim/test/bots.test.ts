@@ -5,6 +5,7 @@ import { Rng } from '@gamesaloon/rollback'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { BEHAVIOUR_FORMAT, BEHAVIOUR_VERSION, bindBehaviour, loadBehaviour, parseBehaviour } from '../src/bots/behaviour.ts'
+import type { BotBehaviour } from '../src/bots/behaviour.ts'
 import { courseCapabilities, nearestPathIndex, obstaclePhase, phaseInWindow, readMechanisms, readNavigation, regionDistance, regionNeighbours } from '../src/bots/courseRead.ts'
 import { cheapestRegions, goalRegion, planRoute, regionExposure, replanDue, updateRoute } from '../src/bots/routes.ts'
 import type { RouteInput, RoutePlan } from '../src/bots/routes.ts'
@@ -15,8 +16,9 @@ import { CharacterSystem } from '../src/character/system.ts'
 import type { CourseKind, Motion, ObstacleSpec, PathNode, ResolvedCourse } from '../src/course.ts'
 import { BTN, decodeInput, neutralInput } from '../src/input.ts'
 import type { PlayerInput } from '../src/input.ts'
-import { RoundSystem } from '../src/match/roundSystem.ts'
-import { planRound } from '../src/match/rules.ts'
+import { PlayerStatus, RoundSystem } from '../src/match/roundSystem.ts'
+import { planRound, roundTicks } from '../src/match/rules.ts'
+import { PROFILES } from '../src/match/setup.ts'
 import type { MatchSetup } from '../src/match/setup.ts'
 import { motionPose } from '../src/obstacles/motion.ts'
 import { ObstacleSystem } from '../src/obstacles/system.ts'
@@ -24,6 +26,7 @@ import { isRefusal } from '../src/refusal.ts'
 import { quatAxisAngle, quatMul, v3 } from '../src/vec.ts'
 import type { Pose, Quat, Vec3 } from '../src/vec.ts'
 import { FiestaWorld } from '../src/world.ts'
+import { loadCourseV1File } from '../../../apps/headless/src/contentFiles.ts'
 
 const ID = { x: 0, y: 0, z: 0, w: 1 }
 const FWD = { x: 0, z: 1 }
@@ -767,5 +770,120 @@ describe('brain-traversal', () => {
       assert.equal(rng.state, state)
     }
     assert.deepEqual(fixtures.map(snapshot), before)
+  })
+})
+
+// Functional integration on the shipped candy race courses. Each case is capped by the
+// round's own time limit, drives the world with neutral human input and only the bot
+// system's overrides, and never touches a character, course or match field directly.
+const CANDY_CACHE = new Map<string, Promise<ResolvedCourse>>()
+
+function candyCourse(id: string): Promise<ResolvedCourse> {
+  let course = CANDY_CACHE.get(id)
+  if (!course) {
+    course = loadCourseV1File(`courses/${id}.course.json`).then(v1 => {
+      assert.ok(v1.sim !== null, `${id} is a race course with a simulation`)
+      return v1.sim
+    })
+    CANDY_CACHE.set(id, course)
+  }
+  return course
+}
+
+interface CandyMatch { world: FiestaWorld<PlayerInput>; bots: BotSystem; round: RoundSystem; cap: number }
+
+function candyMatch(course: ResolvedCourse, behaviour: BotBehaviour, seed: number): CandyMatch {
+  const setup: MatchSetup = {
+    seed, playerCount: PLAYERS, humans: [false, false, false, false], profile: 'standard', courses: [course],
+  }
+  const bots = new BotSystem(setup, [behaviour])
+  const obs = new ObstacleSystem([course])
+  const chars = new CharacterSystem({ playerCount: PLAYERS })
+  const round = new RoundSystem(setup)
+  const world = new FiestaWorld<PlayerInput>(R, { playerCount: PLAYERS, systems: [bots, obs, chars, round] })
+  obs.load(world.ctx, 0)
+  const cap = roundTicks(course, PROFILES.standard)
+  round.begin(world.ctx, planRound(0, PLAYERS), 0, [0, 1, 2, 3], [0, 1, 2, 3], cap)
+  bots.resetForRound(world.ctx)
+  return { world, bots, round, cap }
+}
+
+function stepCandy(m: CandyMatch, n: number, actions?: number[]): number {
+  let done = 0
+  for (; done < n; done++) {
+    m.world.step(NEUTRAL)
+    if (actions) for (let p = 0; p < PLAYERS; p++) actions.push(m.bots.actionOf(p))
+  }
+  return done
+}
+
+const CANDY_COURSES = ['race-sprint', 'race-bean-dash'] as const
+
+describe('bots-candy', () => {
+  it('bots-candy: each shipped profile crosses the real finish on the candy races', async () => {
+    for (const id of CANDY_COURSES) {
+      const course = await candyCourse(id)
+      for (const [name, behaviour] of Object.entries(BEHAVIOURS)) {
+        const m = candyMatch(course, behaviour, 91)
+        let steps = 0
+        while (steps < m.cap && !m.round.over) { m.world.step(NEUTRAL); steps++ }
+        assert.ok(m.round.over, `${name}@${id}: the round did not close within ${m.cap} ticks`)
+        const finished: number[] = []
+        for (let p = 0; p < PLAYERS; p++) {
+          if (m.round.checkpoint(p) === course.checkpoints.length) {
+            finished.push(p)
+            assert.equal(m.round.status(p), PlayerStatus.qualified, `${name}@${id}: p${p} status`)
+          }
+        }
+        assert.ok(finished.length >= 2, `${name}@${id}: only ${finished.length} bots crossed the finish, steps ${steps}`)
+        m.world.free()
+      }
+    }
+  })
+
+  it('bots-candy: snapshot and seed replay every shipped profile action for action', async () => {
+    const course = await candyCourse('race-sprint')
+    for (const [name, behaviour] of Object.entries(BEHAVIOURS)) {
+      const a = candyMatch(course, behaviour, 373)
+      const initial = a.world.takeSnapshotBytes()
+      const actions: number[] = []
+      let steps = 0
+      while (steps < 120 && !a.round.over) { a.world.step(NEUTRAL); for (let p = 0; p < PLAYERS; p++) actions.push(a.bots.actionOf(p)); steps++ }
+      const midTick = steps
+      const midActions = actions.length
+      const mid = a.world.takeSnapshotBytes()
+      while (steps < a.cap && !a.round.over) { a.world.step(NEUTRAL); for (let p = 0; p < PLAYERS; p++) actions.push(a.bots.actionOf(p)); steps++ }
+      const end = a.world.stateHash()
+
+      const b = candyMatch(course, behaviour, 373)
+      b.world.restoreSnapshotBytes(initial)
+      const bActions: number[] = []
+      stepCandy(b, steps, bActions)
+      assert.deepEqual(bActions, actions, `${name}: initial snapshot replay actions`)
+      assert.equal(b.world.stateHash(), end, `${name}: initial snapshot replay state`)
+
+      const c = candyMatch(course, behaviour, 373)
+      c.world.restoreSnapshotBytes(mid)
+      const cActions: number[] = []
+      stepCandy(c, steps - midTick, cActions)
+      assert.deepEqual(cActions, actions.slice(midActions), `${name}: mid-round snapshot replay actions`)
+      assert.equal(c.world.stateHash(), end, `${name}: mid-round snapshot replay state`)
+      a.world.free()
+      b.world.free()
+      c.world.free()
+    }
+  })
+
+  it('bots-candy: a useLever profile refuses before any bot input is written', async () => {
+    const course = await candyCourse('race-sprint')
+    const m = candyMatch(course, BEHAVIOURS.short, 7)
+    const raw = validBehaviour()
+    raw.rules[0].action = 'useLever'
+    m.bots.setBehaviour(0, parseBehaviour(raw, 'lever.bot.json'))
+    assert.throws(
+      () => m.world.step(NEUTRAL),
+      (e: unknown) => isRefusal(e) && e.path === 'behaviours/test-bot/rules/0/action' && e.reason.includes('levers'),
+    )
+    m.world.free()
   })
 })

@@ -309,6 +309,8 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
     return predicate && (r.distance === null || d <= r.distance)
   })
   for (const o of nearby) {
+    const timed = matches.some(r => r.phase !== null)
+    if (!timed) continue
     const box = routeBounds(o, null, ux, uz)
     const gap = box.lo[0] - CHAR.radius - along
     if (gap > behaviour.route.advanceDist + braking + speed * reactionTicks * FIXED_DT) continue

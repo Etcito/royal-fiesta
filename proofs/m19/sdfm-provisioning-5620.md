@@ -108,6 +108,29 @@ captures both videos and runs two additional gesture judges with minimum score 6
 the animation GLB are listed in `.nmc/artifacts.json` for the normal nomorechat commit flow.
 No capture result, video or judge outcome is claimed until the executor returns it.
 
+### Rendered-media corrective
+
+The model rerun still has no returned cheer/laugh GPU execution records or rendered
+media. The registered authoring work and existing GLB are preserved; neither is a
+substitute for the missing visual review. This card remains incomplete pending
+programmatic execution of `.nmc/cheer-laugh.commands.json`, as Q4 requires.
+
+The capture command now assembles both returned four-second WebM segments into
+`proofs/m19/penguin-cheer-laugh.mp4` (H.264, 1280 by 720, at least 7.8 seconds).
+Before assembly it requires each clip's hardware RAA execution record, still,
+reference comparison and playable video. Only successful assembly changes
+`cheer-laugh-media.json` to `renderedReview: true`; visual approval remains pending.
+`--assemble` can resume this postprocessing from existing returned captures.
+The combined MP4 is included in `.nmc/artifacts.json` for normal card integration.
+
+Validation in the corrective: `npm run typecheck`, `npm run build`, capture bundle
+build, syntax check, both clip sampling/preservation checks, and the contentFiles,
+courseV1 and gameAsset suites (33 tests) passed. The H.264 concatenate command was
+probed using one and then two frames of the earlier wave/dance review in `/tmp`;
+those temporary encoding probes are not cheer/laugh evidence or deliverables.
+No GPU capture or vision judge was run on this model card. The executor must return
+the actual media and run the two queued gesture judges before visual acceptance.
+
 Rechecked: `cheer-laugh-check.mjs` passes against d74d5a6 (all fifteen unique names, full inherited
 asset preservation and gesture samples); `npm run typecheck` and `npm run build` pass. The
 gameAsset regression probe passes, as do 59 affected content, asset and animation-brick tests,

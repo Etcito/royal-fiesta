@@ -92,8 +92,49 @@ async function capture() {
     assert(Number(media.format.duration) >= 3.9, 'Four seconds of review media required')
     json(join(out, 'media.json'), media)
   }
-  console.log('Cheer/laugh hardware videos returned under proofs/m19; judge and human review remain required')
+  await assemble()
 }
-assert(process.argv.includes('--build') || process.argv.includes('--capture'), 'Use --build or --capture')
+async function assemble() {
+  const clips = ['emote.cheer', 'emote.laugh'], videos = []
+  for (const clip of clips) {
+    const record = join(execution, clip, 'result.json')
+    const result = unwrapOp({ file: record, json: read(record) }, 'hardware').out
+    assert.equal(result.hardware, true)
+    assert.equal(result.renderer, 'raa')
+    assert.equal(result.adapter.isFallbackAdapter, false)
+    assert(!/swiftshader|llvmpipe|lavapipe|software/i.test(JSON.stringify(result.adapter)))
+    assert.equal(result.clip, clip); assert.equal(result.frames, 120)
+    assert.equal(result.fps, 30)
+    nonEmpty(join(destination, `${clip}.png`), 1280, 720)
+    assert(existsSync(join(destination, `${clip}-reference.png`)), 'Missing reference comparison')
+    const video = join(destination, `penguin-${clip}.webm`)
+    const media = JSON.parse(await run('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', video]))
+    assert(media.streams.some(s => s.codec_type === 'video' && s.width === 1280 && s.height === 720))
+    assert(Number(media.format.duration) >= 3.9)
+    videos.push(video)
+  }
+  // Encode only returned client-GPU frames. This step never renders or substitutes poses.
+  const file = join(destination, 'penguin-cheer-laugh.mp4')
+  await run('ffmpeg', ['-y', '-v', 'error', '-threads', '1', '-i', videos[0], '-threads', '1', '-i', videos[1],
+    '-filter_complex_threads', '1', '-filter_complex',
+    '[0:v]fps=30,setpts=PTS-STARTPTS[v0];[1:v]fps=30,setpts=PTS-STARTPTS[v1];[v0][v1]concat=n=2:v=1:a=0[v]',
+    '-map', '[v]', '-an', '-c:v', 'libx264', '-threads', '1', '-preset', 'veryfast', '-crf', '20',
+    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', file])
+  const media = JSON.parse(await run('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', file]))
+  assert(media.streams.some(s => s.codec_name === 'h264' && s.width === 1280 && s.height === 720))
+  assert(Number(media.format.duration) >= 7.8, 'Both complete review segments required')
+  json(join(execution, 'combined-media.json'), media)
+  const manifest = join(destination, 'cheer-laugh-media.json')
+  json(manifest, { ...read(manifest), renderedReview: true, review: {
+    file: 'proofs/m19/penguin-cheer-laugh.mp4', renderer: 'raa', hardware: true,
+    seconds: Number(media.format.duration), bytes: Number(media.format.size), visualApproval: 'pending',
+    clips: clips.map(clip => ({ name: clip, video: `proofs/m19/penguin-${clip}.webm`,
+      capture: `proofs/m19/${clip}.png`, comparison: `proofs/m19/${clip}-reference.png`,
+      execution: `proofs/m19/cheer-laugh-execution/${clip}/result.json` }))
+  } })
+  console.log('Wrote proofs/m19/penguin-cheer-laugh.mp4 from hardware captures; visual review remains required')
+}
+assert(['--build', '--capture', '--assemble'].some(flag => process.argv.includes(flag)), 'Use --build, --capture or --assemble')
 if (process.argv.includes('--build')) await bundle()
 if (process.argv.includes('--capture')) await capture()
+else if (process.argv.includes('--assemble')) await assemble()

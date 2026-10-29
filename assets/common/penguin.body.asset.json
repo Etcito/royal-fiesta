@@ -3030,8 +3030,7 @@
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#6b727e",
-                "in.roughness": 0.5
+                "in.base_color": "#6b727e"
               }
             }
           ],

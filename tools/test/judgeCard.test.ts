@@ -69,6 +69,7 @@ test('judgeCommands gives build, publish, render and one judge run for M1', () =
   assert.deepEqual(commands[1], ['node', '$NMC_GPU_CLIENT', 'publish', 'apps/web/dist/'])
 
   const render = commands[2]!
+  assert.deepEqual(render.slice(0, 3), ['node', '$NMC_GPU_CLIENT', 'gameCapture'])
   assert.ok(render.includes('out/judge/m1/input.json'))
   assert.equal(render[render.indexOf('--page-ref') + 1], '$PAGE_REF')
   assert.equal(render[render.indexOf('-o') + 1], 'out/judge/m1/')

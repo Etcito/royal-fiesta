@@ -78,13 +78,14 @@ function outDirOf(dir: string): string {
 
 // The S31 contract, one argv array per step: build, publish, render, then one judge run per item. The client
 // scripts stay as $NMC_GPU_CLIENT / $NMC_JUDGE_CLIENT here; main resolves them from the environment. Render
-// takes the page_ref that publish printed ($PAGE_REF here), never a fixed page name.
+// takes the page_ref that publish printed ($PAGE_REF here), never a fixed page name. The client's first argument
+// is the op the page declares in nmc.gpu.json (gameCapture), not the word 'render'.
 export function judgeCommands(input: JudgeInput, outDir: string, inputPath: string): string[][] {
   const dir = outDirOf(outDir)
   const commands: string[][] = [
     ['npm', 'run', 'build'],
     ['node', GPU_CLIENT, 'publish', DIST_DIR],
-    ['node', GPU_CLIENT, 'render', inputPath, '--page-ref', PAGE_REF, '-o', dir],
+    ['node', GPU_CLIENT, input.op, inputPath, '--page-ref', PAGE_REF, '-o', dir],
   ]
   for (const item of input.judge) {
     commands.push(['python3', JUDGE_CLIENT, `${dir}${item.capture}.png`, '--description', item.description, '--min-score', String(MIN_SCORE)])
@@ -150,7 +151,7 @@ function labelOf(args: readonly string[], index: number): string {
   const op = args[2]
   if (index === 0) return 'build'
   if (op === 'publish') return 'publish'
-  if (op === 'render') return 'render'
+  if (op === OP) return 'render'
   const png = args[2]
   return png === undefined ? `judge ${index}` : `judge ${png.slice(png.lastIndexOf('/') + 1)}`
 }

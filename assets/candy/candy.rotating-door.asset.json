@@ -739,6 +739,57 @@
       "halfExtents": [0.15, 1.5, 3]
     }
   ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [],
+        "parts": [],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "door",
+        "type": "kinematic",
+        "colliders": [0, 1],
+        "parts": [
+          "collider_door_x",
+          "collider_door_z",
+          "frame_x",
+          "frame_z",
+          "panel_x",
+          "panel_z",
+          "zigzag_x",
+          "zigzag_z",
+          "hub",
+          "hub_ring_lo",
+          "hub_ring_hi",
+          "base",
+          "cap"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": []
+  },
   "anchors": {},
   "bounds": {
     "min": [-3, 0, -3],

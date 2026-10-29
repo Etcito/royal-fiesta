@@ -1012,6 +1012,48 @@
       "halfExtents": [0.15, 2.5, 0.15]
     }
   ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [],
+        "parts": [],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "hammer",
+        "type": "kinematic",
+        "colliders": [0, 1],
+        "parts": [
+          "collider_head",
+          "collider_arm",
+          "head",
+          "arm"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": []
+  },
   "anchors": {},
   "bounds": {
     "min": [-1.57, -1.183494, -1.084872],

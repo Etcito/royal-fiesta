@@ -695,6 +695,48 @@
       "halfExtents": [4, 0.25, 0.25]
     }
   ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [],
+        "parts": [],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "rotor",
+        "type": "kinematic",
+        "colliders": [0, 1],
+        "parts": [
+          "collider_hub",
+          "collider_bar",
+          "hub",
+          "bar"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": []
+  },
   "anchors": {},
   "bounds": {
     "min": [-4, 0, -0.88],

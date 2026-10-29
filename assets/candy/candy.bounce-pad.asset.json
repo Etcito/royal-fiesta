@@ -619,6 +619,80 @@
       "halfHeight": 0.15
     }
   ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [],
+        "parts": [],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "pad",
+        "type": "dynamic",
+        "colliders": [0],
+        "parts": [
+          "collider",
+          "dome",
+          "ring",
+          "cap",
+          "star"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0.5,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "rubber"
+      }
+    ],
+    "joints": [
+      {
+        "id": "travel",
+        "kind": "slider",
+        "a": "base",
+        "b": "pad",
+        "anchorA": [0, 0, 0],
+        "anchorB": [0, 0, 0],
+        "axis": [0, 1, 0],
+        "limitsDeg": null,
+        "limitsM": [-0.3, 0],
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0,
+        "motor": null
+      },
+      {
+        "id": "bounce",
+        "kind": "spring",
+        "a": "base",
+        "b": "pad",
+        "anchorA": [0, 0, 0],
+        "anchorB": [0, 0, 0],
+        "axis": [1, 0, 0],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 19600,
+        "damping": 50,
+        "lengthM": 0,
+        "motor": null
+      }
+    ]
+  },
   "anchors": {},
   "bounds": {
     "min": [-1.56635, 0, -1.56635],

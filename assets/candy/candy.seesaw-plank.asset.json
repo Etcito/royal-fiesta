@@ -524,6 +524,82 @@
       "borderRadius": 0.05
     }
   ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [],
+        "parts": [],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "plank",
+        "type": "dynamic",
+        "colliders": [0],
+        "parts": [
+          "collider_plank",
+          "plank",
+          "rim_r",
+          "rim_l",
+          "rim_f",
+          "rim_b",
+          "zigzag"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": [
+      {
+        "id": "pivot",
+        "kind": "hinge",
+        "a": "base",
+        "b": "plank",
+        "anchorA": [0, 0, 0],
+        "anchorB": [0, 0, 0],
+        "axis": [1, 0, 0],
+        "limitsDeg": [-20, 20],
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0,
+        "motor": null
+      },
+      {
+        "id": "centre",
+        "kind": "spring",
+        "a": "base",
+        "b": "plank",
+        "anchorA": [0, 0, 3.95],
+        "anchorB": [0, 0, 3.95],
+        "axis": [1, 0, 0],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 1500,
+        "damping": 2000,
+        "lengthM": 0,
+        "motor": null
+      }
+    ]
+  },
   "anchors": {},
   "bounds": {
     "min": [-1.98, -0.68, -4.06],

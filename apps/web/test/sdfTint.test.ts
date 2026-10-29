@@ -36,8 +36,7 @@ let initEngine: ReturnType<typeof fakeEngine>['engine']
 
 const exports = {} as { make(meshed: ReadonlyMap<string, unknown>): Port }
 runInNewContext(compiled, {
-  HTMLCanvasElement: FakeCanvas, exports, Float32Array, Float64Array, Uint32Array, performance,
-  requestAnimationFrame: (callback: (time: number) => void) => callback(0),
+  HTMLCanvasElement: FakeCanvas, exports, Float32Array, Float64Array, Uint32Array, performance, setTimeout,
   require(id: string): unknown {
     if (id === '@etcito/raa') return { loadRaa: async () => ({ createEngine: async () => initEngine }) }
     if (id === '../render/shaderCache.ts') return { installShaderCache() {} }

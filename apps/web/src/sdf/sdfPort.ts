@@ -118,7 +118,8 @@ class SdfRenderPort implements ResizablePort {
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i]
       onProgress({ phase: 'upload', done: i, total: ids.length, label: `Uploading ${id}` })
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      // A timer, not a frame: the GPU op's pages get frames rarely, and 4 clients x every asset of frame waits outlast the job.
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
       const start = performance.now()
       this.registerAsset(id, { id } as PrimsAsset)
       const end = performance.now()

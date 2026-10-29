@@ -1,13 +1,13 @@
 # Cheer/laugh handoff to programmatic card 5739
 
-Revalidated on 2026-10-29 from repository revision `95e13a3`.
+Revalidated on 2026-10-29 from repository revision `80e3147`.
 The registered-operation authoring is already integrated in the source asset;
 this continuation preserves the asset and the existing animation binaries.
 Authoring transcripts remain under `proofs/m19/provisioning-5620/`.
 
-`.nmc/commands.json` has been written with all fourteen existing entries,
-preserving every name, command, dependency and timeout. Only JSON formatting
-changed. Names are unique and dependencies point to earlier entries. The
+`.nmc/commands.json` already contains all fourteen required entries and is
+preserved byte-for-byte in this continuation, including every name, command,
+dependency and timeout. Names are unique and dependencies point to earlier entries. The
 separate `.nmc/cheer-laugh.commands.json` is absent. The operator's explicit
 requirement to preserve every entry takes precedence over the generic
 limit of ten entries. All three judges retain the reference, descriptions
@@ -22,7 +22,10 @@ the returned frames into the eight-second MP4. Its bundle and execution
 records retain the source revision, asset revision and saved asset hash.
 The expected media paths are registered in `.nmc/artifacts.json`.
 
-Existing real animation deliverables were parsed and validated in this run:
+Real animation deliverables were regenerated from the existing authored asset
+in this run, after successful one-frame and two-frame probes for each emote.
+The exporter round-tripped the files, checked every channel sample against the
+game's pinned runtime, and verified retained mesh and skin data:
 
 - `penguin-cheer-laugh.glb`: both emotes, 371684 bytes.
 - `penguin-emote.cheer.glb`: 109 samples, 1.8 seconds, 346668 bytes.
@@ -31,7 +34,7 @@ Existing real animation deliverables were parsed and validated in this run:
 Local verification passed:
 
 - `npm run typecheck` and `npm run build`.
-- The isolated SDF Modeler document/rigged serializer regressions (2 tests).
+- The isolated rigged document serializer regression (1 test).
 - contentFiles, courseV1, gameAsset and capture parser suites (31 tests).
 - Runtime gesture/preservation check against wave/dance baseline `d74d5a6`:
   fifteen unique S19 names load and sample; both flippers rise above the head;

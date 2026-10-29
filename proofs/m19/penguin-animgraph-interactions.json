@@ -1,0 +1,294 @@
+{
+  "video": "proofs/m19/penguin-animgraph-interactions.mp4",
+  "graph": "assets/common/penguin.animgraph.json",
+  "ticks": 1620,
+  "fps": 30,
+  "frames": 810,
+  "labels": true,
+  "segments": [
+    {
+      "pose": "idle",
+      "fromTick": 0,
+      "toTick": 39
+    },
+    {
+      "pose": "blend",
+      "fromTick": 40,
+      "toTick": 45
+    },
+    {
+      "pose": "bellySlide",
+      "fromTick": 46,
+      "toTick": 160
+    },
+    {
+      "pose": "blend",
+      "fromTick": 161,
+      "toTick": 167
+    },
+    {
+      "pose": "idle",
+      "fromTick": 168,
+      "toTick": 220
+    },
+    {
+      "pose": "blend",
+      "fromTick": 221,
+      "toTick": 223
+    },
+    {
+      "pose": "grab",
+      "fromTick": 224,
+      "toTick": 245
+    },
+    {
+      "pose": "blend",
+      "fromTick": 246,
+      "toTick": 250
+    },
+    {
+      "pose": "handPush",
+      "fromTick": 251,
+      "toTick": 340
+    },
+    {
+      "pose": "blend",
+      "fromTick": 341,
+      "toTick": 345
+    },
+    {
+      "pose": "idle",
+      "fromTick": 346,
+      "toTick": 379
+    },
+    {
+      "pose": "blend",
+      "fromTick": 380,
+      "toTick": 383
+    },
+    {
+      "pose": "jump",
+      "fromTick": 384,
+      "toTick": 400
+    },
+    {
+      "pose": "blend",
+      "fromTick": 401,
+      "toTick": 403
+    },
+    {
+      "pose": "grab",
+      "fromTick": 404,
+      "toTick": 425
+    },
+    {
+      "pose": "blend",
+      "fromTick": 426,
+      "toTick": 430
+    },
+    {
+      "pose": "hang",
+      "fromTick": 431,
+      "toTick": 520
+    },
+    {
+      "pose": "blend",
+      "fromTick": 521,
+      "toTick": 525
+    },
+    {
+      "pose": "climbUp",
+      "fromTick": 526,
+      "toTick": 593
+    },
+    {
+      "pose": "blend",
+      "fromTick": 594,
+      "toTick": 600
+    },
+    {
+      "pose": "idle",
+      "fromTick": 601,
+      "toTick": 640
+    },
+    {
+      "pose": "blend",
+      "fromTick": 641,
+      "toTick": 647
+    },
+    {
+      "pose": "emote.wave",
+      "fromTick": 648,
+      "toTick": 760
+    },
+    {
+      "pose": "blend",
+      "fromTick": 761,
+      "toTick": 769
+    },
+    {
+      "pose": "idle",
+      "fromTick": 770,
+      "toTick": 800
+    },
+    {
+      "pose": "blend",
+      "fromTick": 801,
+      "toTick": 807
+    },
+    {
+      "pose": "emote.cheer",
+      "fromTick": 808,
+      "toTick": 920
+    },
+    {
+      "pose": "blend",
+      "fromTick": 921,
+      "toTick": 929
+    },
+    {
+      "pose": "idle",
+      "fromTick": 930,
+      "toTick": 960
+    },
+    {
+      "pose": "blend",
+      "fromTick": 961,
+      "toTick": 967
+    },
+    {
+      "pose": "emote.laugh",
+      "fromTick": 968,
+      "toTick": 1080
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1081,
+      "toTick": 1089
+    },
+    {
+      "pose": "idle",
+      "fromTick": 1090,
+      "toTick": 1120
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1121,
+      "toTick": 1127
+    },
+    {
+      "pose": "emote.dance",
+      "fromTick": 1128,
+      "toTick": 1240
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1241,
+      "toTick": 1249
+    },
+    {
+      "pose": "idle",
+      "fromTick": 1250,
+      "toTick": 1280
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1281,
+      "toTick": 1287
+    },
+    {
+      "pose": "emote.cheer",
+      "fromTick": 1288,
+      "toTick": 1400
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1401,
+      "toTick": 1409
+    },
+    {
+      "pose": "idle",
+      "fromTick": 1410,
+      "toTick": 1440
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1441,
+      "toTick": 1447
+    },
+    {
+      "pose": "emote.laugh",
+      "fromTick": 1448,
+      "toTick": 1470
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1471,
+      "toTick": 1473
+    },
+    {
+      "pose": "jump",
+      "fromTick": 1474,
+      "toTick": 1496
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1497,
+      "toTick": 1503
+    },
+    {
+      "pose": "fall",
+      "fromTick": 1504,
+      "toTick": 1520
+    },
+    {
+      "pose": "idle",
+      "fromTick": 1521,
+      "toTick": 1521
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1522,
+      "toTick": 1528
+    },
+    {
+      "pose": "emote.laugh",
+      "fromTick": 1529,
+      "toTick": 1560
+    },
+    {
+      "pose": "blend",
+      "fromTick": 1561,
+      "toTick": 1569
+    },
+    {
+      "pose": "idle",
+      "fromTick": 1570,
+      "toTick": 1619
+    }
+  ],
+  "checks": {
+    "idleAtStart": true,
+    "bellySlideSustained": true,
+    "bellySlideExitsToLocomotion": true,
+    "grabOnGroundedGrabbing": true,
+    "handPushSustained": true,
+    "handPushExitsToLocomotion": true,
+    "jumpOnTrigger": true,
+    "grabInAir": true,
+    "hangSustained": true,
+    "climbUpOnLanding": true,
+    "climbUpFinishesToLocomotion": true,
+    "waveFinishes": true,
+    "waveExitsOnRelease": true,
+    "cheerFinishes": true,
+    "laughFinishes": true,
+    "danceLoops": true,
+    "danceExitsOnRelease": true,
+    "cheerRequestedAgain": true,
+    "laughInterruptedByJump": true,
+    "laughResumesAfterLanding": true,
+    "locomotionAfterEmoteEnds": true
+  },
+  "ok": true
+}

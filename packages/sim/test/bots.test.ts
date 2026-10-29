@@ -8,12 +8,12 @@ import { BEHAVIOUR_FORMAT, BEHAVIOUR_VERSION, bindBehaviour, loadBehaviour, pars
 import { courseCapabilities, nearestPathIndex, obstaclePhase, phaseInWindow, readMechanisms, readNavigation, regionDistance, regionNeighbours } from '../src/bots/courseRead.ts'
 import { cheapestRegions, goalRegion, planRoute, regionExposure, replanDue, updateRoute } from '../src/bots/routes.ts'
 import type { RouteInput, RoutePlan } from '../src/bots/routes.ts'
-import { newMemory, raceBrain, rollSkill, survivalBrain } from '../src/bots/brain.ts'
+import { evaluateBrain, newMemory, raceBrain, rollSkill, survivalBrain } from '../src/bots/brain.ts'
 import type { BotSkill, BrainInput } from '../src/bots/brain.ts'
 import { BotSystem } from '../src/bots/botSystem.ts'
 import { CharacterSystem } from '../src/character/system.ts'
 import type { CourseKind, Motion, ObstacleSpec, PathNode, ResolvedCourse } from '../src/course.ts'
-import { BTN, neutralInput } from '../src/input.ts'
+import { BTN, decodeInput, neutralInput } from '../src/input.ts'
 import type { PlayerInput } from '../src/input.ts'
 import { RoundSystem } from '../src/match/roundSystem.ts'
 import { planRound } from '../src/match/rules.ts'
@@ -523,4 +523,113 @@ describe('routes', () => {
     assert.equal(JSON.stringify(c), before)
     assert.equal(JSON.stringify(BEHAVIOURS.safe), behaviourBefore)
   })
+})
+
+function timingCase(kind: 'pendulum' | 'spinner' | 'movingPlatform', phase = 0) {
+  const c = course('timing', 'race')
+  c.path = [node(kind === 'spinner' ? 2 : 0, 10)]
+  const motion: Motion = kind === 'spinner' ? { kind, axis: v3(0, 1, 0), radPerTick: 2 * Math.PI / 600, phase }
+    : kind === 'pendulum' ? { kind, axis: v3(0, 0, 1), pivot: v3(0, 5, 4), amp: 1.2, periodTicks: 600, phase }
+    : { kind, offset: v3(3, 0, 0), periodTicks: 600, wave: 'sine', phase }
+  c.obstacles = [obstacle(kind, v3(0, kind === 'movingPlatform' ? -0.25 : 1, 4), motion, v3(kind === 'spinner' ? 4 : 1, 0.25, 0.2))]
+  const raw = validBehaviour()
+  raw.tick = { decisionTicks: 1, reactionTicks: 0, wobbleTicks: 45, stuckTicks: 30 }
+  raw.rules = [{ id: 'window', predicate: 'always', phase: { from: 0, to: 600 }, distance: 10, action: 'grab' }]
+  const behaviour = parseBehaviour(raw)
+  const input = brainInput(c, v3(kind === 'spinner' ? 2 : 0, 0.85, 3.4), { vel: v3(0, 0, 8) })
+  const route = planRoute({ course: c, behaviour, pos: input.pos, tick: 0, seed: 77 })
+  const decide = (tick: number) => evaluateBrain(input, behaviour, route, tick)
+  const moves = (ticks: number[]) => ticks.map(t => decodeInput(decide(t), neutralInput()).moveZ)
+  return { c, raw, behaviour, input, route, decide, moves }
+}
+
+describe('brain-timing', () => {
+  it('brain-timing: snapshots wait outside and advance inside each motion window', () => {
+    assert.deepEqual(timingCase('pendulum').moves([0, 150, 300, 450, 600]), [0, 1, 0, 1, 0])
+    assert.deepEqual(timingCase('spinner').moves([0, 150, 300, 450, 600]), [0, 1, 0, 1, 0])
+    assert.deepEqual(timingCase('movingPlatform').moves([0, 150, 300, 450, 600]), [1, 0, 1, 0, 1])
+  })
+
+  it('brain-timing: phase, distance, approach and crossing all constrain entry', () => {
+    const f = timingCase('spinner')
+    f.behaviour.rules[0].phase = { from: 140, to: 170 }
+    assert.deepEqual(f.moves([130, 140, 160, 168, 170]), [0, 1, 1, 0, 0])
+    // From rest it takes longer to clear the same window than at running speed.
+    f.input.vel.z = 0
+    assert.equal(f.moves([160])[0], 0)
+    f.input.vel.z = 8
+    f.input.pos.z = 2
+    assert.equal(f.moves([130])[0], 1, 'approach travel reaches the opening at tick 141')
+    f.input.pos.z = 0
+    assert.equal(f.moves([130])[0], 1, 'a remote obstacle must not halt the approach')
+    f.input.pos.z = 3.4
+    f.input.vel.z = 8
+    f.behaviour.rules[0].distance = 0.1
+    assert.equal(f.moves([130])[0], 1, 'an out-of-range phase rule does not match')
+    assert.equal(f.decide(140) & BTN.GRAB, 0)
+  })
+
+  it('brain-timing: unrolled phase windows cross the cycle boundary', () => {
+    for (const kind of ['pendulum', 'spinner', 'movingPlatform'] as const) {
+      const f = timingCase(kind, kind === 'movingPlatform' ? 0 : Math.PI / 2)
+      f.behaviour.rules[0].phase = kind === 'spinner' ? { from: 730, to: 770 } : { from: 580, to: 620 }
+      assert.deepEqual(f.moves([570, 590, 600, 610, 620]), [0, 1, 1, 1, 0], kind)
+    }
+  })
+
+  it('brain-timing: reaction and decision boundaries are integer-tick reproducible', () => {
+    const f = timingCase('pendulum', Math.PI / 2)
+    f.behaviour.tick.reactionTicks = 4
+    f.behaviour.tick.decisionTicks = 6
+    f.behaviour.rules[0].phase = { from: 10, to: 40 }
+    assert.deepEqual(f.moves([0, 3, 4, 9, 10, 15, 16, 33, 34]), [0, 0, 0, 0, 1, 1, 1, 1, 0])
+    assert.throws(() => f.decide(1.5), RangeError)
+    assert.throws(() => f.decide(-1), RangeError)
+  })
+
+  it('brain-timing: stable rule priority and route targets translate to character inputs', () => {
+    const f = timingCase('pendulum')
+    f.c.obstacles = []
+    f.raw.rules = [{ id: 'jump', predicate: 'nearNode', distance: 10, action: 'jump' }, { id: 'dive', predicate: 'always', action: 'dive' }]
+    const behaviour = parseBehaviour(f.raw)
+    assert.equal(evaluateBrain(f.input, behaviour, f.route, 0) & (BTN.JUMP | BTN.DIVE), BTN.JUMP)
+    assert.equal(evaluateBrain(f.input, behaviour, f.route, 1) & (BTN.JUMP | BTN.DIVE), 0)
+    behaviour.rules.reverse()
+    assert.equal(evaluateBrain(f.input, behaviour, f.route, 0) & (BTN.JUMP | BTN.DIVE), BTN.DIVE)
+    f.c.path.push(node(8, 3.4))
+    f.route.waypoints = [1]
+    assert.equal(decodeInput(f.decide(0), neutralInput()).moveX, 1)
+    f.route.reachable = false
+    assert.deepEqual(decodeInput(f.decide(0), neutralInput()), neutralInput())
+  })
+
+  it('brain-timing: repeated and reordered evaluations preserve all input snapshots', () => {
+    const fixtures = ['pendulum', 'spinner', 'movingPlatform'].map(k => timingCase(k as 'pendulum' | 'spinner' | 'movingPlatform'))
+    const before = JSON.stringify(fixtures)
+    const ticks = [0, 149, 150, 299, 300, 599, 600]
+    const expected = fixtures.map(f => ticks.map(f.decide))
+    for (let i = fixtures.length - 1; i >= 0; i--) {
+      const f = fixtures[i], mem = newMemory(), rng = new Rng(77), state = rng.state
+      for (let j = ticks.length - 1; j >= 0; j--) {
+        assert.equal(f.decide(ticks[j]), expected[i][j])
+        const b = { ...f.input, bot: { behaviour: f.behaviour, route: f.route, localTick: ticks[j] } }
+        assert.equal(raceBrain(b, SKILL, mem, rng), expected[i][j])
+        assert.equal(survivalBrain(b, SKILL, mem, rng), expected[i][j])
+      }
+      assert.deepEqual(mem, newMemory())
+      assert.equal(rng.state, state)
+    }
+    assert.equal(JSON.stringify(fixtures), before)
+  })
+})
+
+it('brain-timing: moving platforms must align along the route and at foot height', () => {
+  const f = timingCase('movingPlatform')
+  const motion = f.c.obstacles[0].motion
+  assert.equal(motion.kind, 'movingPlatform')
+  if (motion.kind !== 'movingPlatform') return
+  motion.offset = v3(0, 0, 3)
+  assert.deepEqual(f.moves([0, 150, 300]), [1, 0, 0])
+  motion.offset = v3(0, 3, 0)
+  assert.deepEqual(f.moves([0, 150, 300]), [1, 0, 1])
 })

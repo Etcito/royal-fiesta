@@ -1,6 +1,6 @@
 # Cheer/laugh handoff to programmatic card 5739
 
-Revalidated on 2026-10-29 from repository revision `80e3147`.
+Revalidated on 2026-10-29 from repository revision `fcd0afc`.
 The registered-operation authoring is already integrated in the source asset;
 this continuation preserves the asset and the existing animation binaries.
 Authoring transcripts remain under `proofs/m19/provisioning-5620/`.
@@ -22,10 +22,10 @@ the returned frames into the eight-second MP4. Its bundle and execution
 records retain the source revision, asset revision and saved asset hash.
 The expected media paths are registered in `.nmc/artifacts.json`.
 
-Real animation deliverables were regenerated from the existing authored asset
-in this run, after successful one-frame and two-frame probes for each emote.
-The exporter round-tripped the files, checked every channel sample against the
-game's pinned runtime, and verified retained mesh and skin data:
+Real animation deliverables are already committed in `64bad4c`; the source
+asset is committed in `a58991f`. This continuation read and validated the
+existing binary files, including every channel sample against the game's
+pinned runtime. The earlier exporter also verified retained mesh and skin data:
 
 - `penguin-cheer-laugh.glb`: both emotes, 371684 bytes.
 - `penguin-emote.cheer.glb`: 109 samples, 1.8 seconds, 346668 bytes.
@@ -42,6 +42,9 @@ Local verification passed:
   under Q7. The entire inherited asset is preserved, including rig, bindings,
   attachments, geometry, earlier clips and saved-hash compatibility.
 - Queue equivalence to the inherited queue and `git diff --check`.
+- Existing GLB channel samples match the authored clips: 2884 in the combined
+  file, 1526 in the cheer file and 1358 in the laugh file. No binary needed
+  regeneration. This continuation changes only this verification handoff.
 
 No GPU command or judge ran on this model card. The review MP4 and hardware
 records have not yet been returned; rendered-media approval remains pending

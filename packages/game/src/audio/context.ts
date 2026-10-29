@@ -22,6 +22,10 @@ export interface BrowserAudioOptions {
 /** The sound of one browser page: the HAA engine plus the game's SoundPort over it. */
 export interface BrowserSound {
   readonly audio: HaaAudio
+  /** The one context the page's sound lives on (the engine, the crowd bed and the course audio share it). */
+  readonly ctx: BaseAudioContext
+  /** Where other sound graphs attach: the context destination. */
+  readonly output: AudioNode
   readonly port: SoundPort
   close(): Promise<void>
 }
@@ -95,5 +99,5 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
     play: (id: string, options?: { pos?: Vec3 }) => audio.play(id, options),
     startBed: (id: string): BedPort | null => (id === CROWD_BED_ID ? new CrowdBed(ctx) : audio.startBed(id)),
   }
-  return { audio, port, close: () => audio.close() }
+  return { audio, ctx, output: ctx.destination, port, close: () => audio.close() }
 }

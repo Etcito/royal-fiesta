@@ -3,6 +3,17 @@
 // drives the browser engine (context.ts) and the offline engine in the headless tests.
 import { CROWD_BED_ID } from './ids.ts'
 import { bedState, copySample, diffSamples, BED_FADE_S, type MatchSample, type SoundEvent, type Vec3 } from './events.ts'
+import type { EmitterCommand, ListenerPose } from './emitters.ts'
+
+/**
+ * The view's course audio: it applies the commands of the course's sound emitters to the spatial
+ * scene. Implemented in apps/web (haa 0.2.0); this package only names the shape, so no haa import.
+ */
+export interface CourseAudio {
+  apply(cmds: readonly EmitterCommand[], n: number): void
+  setListener(l: ListenerPose): void
+  dispose(): void
+}
 
 export interface BedPort {
   setParam(name: string, value: number): void

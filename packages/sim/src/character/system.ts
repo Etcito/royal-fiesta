@@ -1,6 +1,9 @@
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { BodyId, RapierModule } from '@gamesaloon/rollback-rapier'
-import type { Motion, SpawnPoint } from '../course.ts'
+import { surfaceOf } from '../course.ts'
+import type { BodyRef } from '../mechanismSpec.ts'
+import type { MechanismSystem } from '../mechanisms/system.ts'
+import type { Motion, SpawnPoint, Surface } from '../course.ts'
 import { G, groups } from '../groups.ts'
 import { BTN, decodeInput, encodeInput, neutralInput } from '../input.ts'
 import type { PlayerInput } from '../input.ts'
@@ -9,7 +12,7 @@ import type { ObstacleSystem } from '../obstacles/system.ts'
 import { refuse } from '../refusal.ts'
 import type { Vec3 } from '../vec.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
-import { CHAR, CharMode } from './constants.ts'
+import { CHAR, CharMode, SURFACE_TUNING } from './constants.ts'
 import { approach2, turnFacing } from './controller.ts'
 
 export interface CharacterOptions { playerCount: number }
@@ -21,6 +24,8 @@ export interface CharState {
   mode: number
   grounded: boolean
   groundObstacle: number
+  groundBody?: BodyRef | null
+  grabLever?: number
   knockbacks: number
   teleportTick: number
 }
@@ -44,6 +49,7 @@ const scratchBase = { x: 0, y: 0, z: 0 }
 const scratchHit = { x: 0, y: 0, z: 0 }
 const scratchN = { x: 0, y: 0, z: 0 }
 const scratchPt = { x: 0, y: 0, z: 0 }
+const scratchBody: BodyRef = { item: -1, body: -1 }
 const scratchObsV = { x: 0, y: 0, z: 0 }
 let scratchRay: InstanceType<RapierModule['Ray']> | null = null
 
@@ -65,6 +71,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   readonly #facingX: Float64Array
   readonly #facingZ: Float64Array
   readonly #grounded: Uint8Array
+  readonly #groundItem: Int16Array
+  readonly #groundBody: Int16Array
+  readonly #grabLever: Int16Array
   readonly #groundObstacle: Int16Array
   readonly #knockbacks: Uint16Array
   readonly #teleportTick: Int32Array
@@ -82,6 +91,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   #pairCol: Collider[] = []
   #postCtx: WorldCtx<PlayerInput> | null = null
   #postObs: ObstacleSystem | null = null
+  #postMech: MechanismSystem | null = null
+  #bumpBody: BodyRef | null = null
   #bumpP = 0
   #bumpObs = 0
   #bumped = false
@@ -101,6 +112,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#facingX = new Float64Array(n)
     this.#facingZ = new Float64Array(n)
     this.#grounded = new Uint8Array(n)
+    this.#groundItem = new Int16Array(n)
+    this.#groundBody = new Int16Array(n)
+    this.#grabLever = new Int16Array(n)
     this.#groundObstacle = new Int16Array(n)
     this.#knockbacks = new Uint16Array(n)
     this.#teleportTick = new Int32Array(n)
@@ -152,6 +166,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#facingZ[p] = 1
     this.#grounded[p] = 0
     this.#groundObstacle[p] = -1
+    this.#groundItem[p] = -1
+    this.#groundBody[p] = -1
+    this.#grabLever[p] = -1
     this.#teleportTick[p] = -1
     this.#frozen[p] = 0
     this.#parked[p] = 1
@@ -172,6 +189,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     rb.collider(0).setCollisionGroups(live ? CHAR_GROUPS : 0)
     this.#grounded[p] = 0
     this.#groundObstacle[p] = -1
+    this.#groundItem[p] = -1
+    this.#groundBody[p] = -1
+    this.#grabLever[p] = -1
     this.#coyote[p] = 0
     this.#jumpBuffer[p] = 0
     this.#teleportTick[p] = ctx.tick
@@ -226,6 +246,14 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     out.mode = this.#mode[p]
     out.grounded = this.#grounded[p] !== 0
     out.groundObstacle = this.#groundObstacle[p]
+    if (this.#groundItem[p] < 0) out.groundBody = null
+    else {
+      const ref = out.groundBody ?? { item: -1, body: -1 }
+      ref.item = this.#groundItem[p]
+      ref.body = this.#groundBody[p]
+      out.groundBody = ref
+    }
+    out.grabLever = this.#grabLever[p]
     out.knockbacks = this.#knockbacks[p]
     out.teleportTick = this.#teleportTick[p]
     return out
@@ -245,10 +273,16 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     }
   }
 
+  grabbingLever(p: number): number {
+    this.#check(p, 'grabbingLever')
+    return this.#grabLever[p]
+  }
+
   preStep(ctx: WorldCtx<PlayerInput>, inputs: readonly PlayerInput[]): void {
     const world = ctx.physics.world
     const dt = ctx.dt
     const obstacles = ctx.hasSystem('obstacles') ? ctx.system<ObstacleSystem>('obstacles') : null
+    const mechanisms = ctx.hasSystem('mechanisms') ? ctx.system<MechanismSystem>('mechanisms') : null
     if (scratchRay === null) scratchRay = new ctx.R.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 })
     const ray = scratchRay
     for (let p = 0; p < this.playerCount; p++) {
@@ -285,6 +319,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       const grounded = hit !== null && hit.normal.y >= CHAR.groundMinNy
       // The probe reaches further when falling; a pad fires only on actual contact.
       const touching = grounded && hit.timeOfImpact <= STAND + CHAR.groundProbe
+      const wasGrounded = this.#grounded[p] !== 0
       this.#grounded[p] = grounded ? 1 : 0
       // Riding: a kinematic obstacle or a conveyor carries the character at the hit point.
       const base = scratchBase
@@ -294,8 +329,12 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       let gi = -1
       let motion: Motion | null = null
       let riding = false
+      let surface: Surface = 'normal'
+      this.#groundItem[p] = -1
+      this.#groundBody[p] = -1
       if (grounded && obstacles !== null) {
         gi = obstacles.obstacleOfCollider(ctx, hit.collider.handle)
+        if (gi >= 0) surface = surfaceOf(obstacles.spec(gi))
         motion = gi >= 0 ? obstacles.spec(gi).motion : null
         if (motion !== null && (isKinematic(motion.kind) || motion.kind === 'conveyor')) {
           riding = isKinematic(motion.kind)
@@ -305,7 +344,24 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
           obstacles.pointVelocity(ctx, gi, scratchHit, base)
         }
       }
+      if (grounded && mechanisms !== null) {
+        const ref = mechanisms.bodyOfCollider(ctx, hit.collider.handle)
+        if (ref !== null) {
+          this.#groundItem[p] = ref.item
+          this.#groundBody[p] = ref.body
+          gi = -1
+          motion = null
+          const spec = mechanisms.spec()!.items[ref.item].bodies[ref.body]
+          surface = spec.surface
+          riding = spec.type === 'dynamic' || spec.type === 'kinematic'
+          scratchHit.x = t.x
+          scratchHit.y = t.y - hit.timeOfImpact
+          scratchHit.z = t.z
+          mechanisms.pointVelocity(ctx, ref, scratchHit, base)
+        }
+      }
       this.#groundObstacle[p] = gi
+      const tuning = SURFACE_TUNING[surface]
 
       // Mode machine; ground/air is re-derived each tick from the probe.
       const free: number = grounded ? CharMode.ground : CharMode.air
@@ -340,8 +396,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         vz = 0
       } else if (steer) {
         const hasMove = mlen > 0
-        const rate = !grounded ? CHAR.airAccel : hasMove ? CHAR.groundAccel : CHAR.groundBrake
-        approach2(v.x, v.z, base.x + mx * CHAR.maxRun, base.z + mz * CHAR.maxRun, rate * dt, scratchH)
+        const rate = !grounded ? CHAR.airAccel : hasMove ? CHAR.groundAccel * tuning.accel : CHAR.groundBrake * tuning.brake
+        const maxRun = CHAR.maxRun * (grounded ? tuning.maxRun : 1)
+        approach2(v.x, v.z, base.x + mx * maxRun, base.z + mz * maxRun, rate * dt, scratchH)
         vx = scratchH.x
         vz = scratchH.z
         turnFacing(this.#facingX[p], this.#facingZ[p], mx, mz, CHAR.turnRate * dt, scratchH)
@@ -377,6 +434,12 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         this.#diveUsed[p] = 1
       }
       if (grounded && mode !== CharMode.dive) this.#diveUsed[p] = 0
+
+      if (!wasGrounded && grounded && v.y < -3 && tuning.bounce > 0 && !frozen && mode !== CharMode.stunned) {
+        vy = tuning.bounce * -v.y
+        mode = CharMode.air
+        timer = 0
+      }
 
       if (motion !== null && motion.kind === 'bouncePad' && touching && !frozen && mode !== CharMode.stunned) {
         vy = motion.speed
@@ -480,11 +543,12 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   }
 
   postStep(ctx: WorldCtx<PlayerInput>): void {
-    if (!ctx.hasSystem('obstacles')) return
-    const obstacles = ctx.system<ObstacleSystem>('obstacles')
+    const obstacles = ctx.hasSystem('obstacles') ? ctx.system<ObstacleSystem>('obstacles') : null
+    const mechanisms = ctx.hasSystem('mechanisms') ? ctx.system<MechanismSystem>('mechanisms') : null
     const world = ctx.physics.world
     this.#postCtx = ctx
     this.#postObs = obstacles
+    this.#postMech = mechanisms
     const obs = this.#pairObs
     const cols = this.#pairCol
     for (let p = 0; p < this.playerCount; p++) {
@@ -493,7 +557,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       const col = rb.collider(0)
       this.#pairCount = 0
       world.contactPairsWith(col, this.#collect)
-      // Insertion sort by obstacle index, then handle: the order never depends on the narrow phase.
+      // Insertion sort by obstacle index, then flat mechanism body index, then handle: the order never depends on the narrow phase.
       const n = this.#pairCount
       for (let a = 1; a < n; a++) {
         const oi = obs[a]
@@ -511,24 +575,39 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       this.#bumped = false
       for (let k = 0; k < n && !this.#bumped; k++) {
         this.#bumpObs = obs[k]
+        this.#bumpBody = mechanisms?.bodyOfCollider(ctx, cols[k].handle) ?? null
         world.contactPair(col, cols[k], this.#onManifold)
       }
       const gi = this.#groundObstacle[p]
-      if (this.#grounded[p] !== 0 && gi >= 0 && gi < obstacles.count && obstacles.spec(gi).motion.kind === 'seesaw') {
+      if (this.#grounded[p] !== 0 && obstacles !== null && gi >= 0 && gi < obstacles.count && obstacles.spec(gi).motion.kind === 'seesaw') {
         obstacles.addLoad(gi, rb.translation(), CHAR.mass)
+      }
+      if (this.#grounded[p] !== 0 && mechanisms !== null && this.#groundItem[p] >= 0) {
+        scratchBody.item = this.#groundItem[p]
+        scratchBody.body = this.#groundBody[p]
+        mechanisms.addLoad(scratchBody, rb.translation(), CHAR.mass)
       }
     }
     this.#postCtx = null
     this.#postObs = null
+    this.#postMech = null
+    this.#bumpBody = null
   }
 
   // Bound once, so contactPairsWith allocates no closure per tick.
   readonly #collect = (other: Collider): void => {
     const ctx = this.#postCtx
     const obstacles = this.#postObs
-    if (ctx === null || obstacles === null || ((other.collisionGroups() >>> 16) & G.MOVING) === 0) return
-    const i = obstacles.obstacleOfCollider(ctx, other.handle)
-    if (i < 0) return
+    if (ctx === null || ((other.collisionGroups() >>> 16) & G.MOVING) === 0) return
+    let i = obstacles?.obstacleOfCollider(ctx, other.handle) ?? -1
+    if (i < 0) {
+      const mechanisms = this.#postMech
+      const ref = mechanisms?.bodyOfCollider(ctx, other.handle) ?? null
+      if (ref === null || mechanisms === null) return
+      i = (obstacles?.count ?? 0) + ref.body
+      const items = mechanisms.spec()!.items
+      for (let item = 0; item < ref.item; item++) i += items[item].bodies.length
+    }
     this.#pairObs[this.#pairCount] = i
     this.#pairCol[this.#pairCount] = other
     this.#pairCount++
@@ -537,7 +616,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   readonly #onManifold = (m: Manifold, flipped: boolean): void => {
     const ctx = this.#postCtx
     const obstacles = this.#postObs
-    if (this.#bumped || ctx === null || obstacles === null) return
+    if (this.#bumped || ctx === null) return
     const p = this.#bumpP
     // The manifold normal points out of its first collider: orient it from the obstacle to the character.
     const s = flipped ? 1 : -1
@@ -551,7 +630,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     const count = m.numSolverContacts()
     for (let k = 0; k < count; k++) {
       if (m.solverContactPoint(k, scratchPt) === null) continue
-      const vo = obstacles.pointVelocity(ctx, this.#bumpObs, scratchPt, scratchObsV)
+      const vo = this.#bumpBody !== null && this.#postMech !== null
+        ? this.#postMech.pointVelocity(ctx, this.#bumpBody, scratchPt, scratchObsV)
+        : obstacles!.pointVelocity(ctx, this.#bumpObs, scratchPt, scratchObsV)
       // dot(v_obs - v_char, n) with v_char's part into the obstacle dropped: running or falling
       // into a slow obstacle is a collision, not a bump.
       const away = Math.max(0, pv[p * 3] * nx + pv[p * 3 + 1] * ny + pv[p * 3 + 2] * nz)
@@ -591,6 +672,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       w.i32(this.#teleportTick[p])
       w.u8(this.#frozen[p])
       w.u8(this.#parked[p])
+      w.i16(this.#groundItem[p])
+      w.i16(this.#groundBody[p])
+      w.i16(this.#grabLever[p])
     }
   }
 
@@ -615,6 +699,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       this.#teleportTick[p] = r.i32()
       this.#frozen[p] = r.u8()
       this.#parked[p] = r.u8()
+      this.#groundItem[p] = r.i16()
+      this.#groundBody[p] = r.i16()
+      this.#grabLever[p] = r.i16()
       this.#override[p] = NO_OVERRIDE
     }
   }

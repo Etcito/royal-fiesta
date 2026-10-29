@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
-import { judgeCommands, pageRefOf, parseJudgeInput } from '../judgeCard.ts'
+import { judgeCommands, pageRefOf, parseJudgeInput, preflightJudgeInput } from '../judgeCard.ts'
 import type { JudgeInput } from '../judgeCard.ts'
 
 const M1 = fileURLToPath(new URL('../../.nmc/judge/m1.json', import.meta.url))
@@ -92,4 +92,20 @@ test('pageRefOf takes the page_ref publish printed and refuses a response withou
   assert.equal(pageRefOf('{"page_ref":"exec-9640-3a5d"}\n'), 'exec-9640-3a5d')
   refusedWith(() => pageRefOf('{"ok":true}'), /^\[judge\] publish: response has no page_ref; .*$/)
   refusedWith(() => pageRefOf('not json'), /^\[judge\] publish: printed invalid JSON; .*$/)
+})
+
+test('preflightJudgeInput accepts the M1 judge file', () => {
+  preflightJudgeInput(m1(), M1_PATH)
+})
+
+test('preflightJudgeInput refuses with the op message: 4 clients with a course', () => {
+  const json = m1Json()
+  ;(json.input as Record<string, unknown>).course = 'candy'
+  refusedWith(() => preflightJudgeInput(parseJudgeInput(json, M1_PATH), M1_PATH), /\.nmc\/judge\/m1\.json#\/input.*4 clients play the in-page hub loop; drop course and net/)
+})
+
+test('preflightJudgeInput refuses a moment that is not of the flow', () => {
+  const json = m1Json()
+  ;(json.input as Record<string, unknown>).captureAt = ['playing']
+  refusedWith(() => preflightJudgeInput(parseJudgeInput(json, M1_PATH), M1_PATH), /"playing" is not a moment of flow match/)
 })

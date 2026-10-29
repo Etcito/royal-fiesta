@@ -6,6 +6,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
+import { validateCapture } from '../apps/web/src/game/captureInput.ts'
 import { repoRoot } from './bricks.ts'
 
 const AREA = 'judge'
@@ -70,6 +71,18 @@ export function parseJudgeInput(json: unknown, path: string): JudgeInput {
     judge.push({ capture: raw.capture, description: raw.description })
   })
   return { page: PAGE, op: OP, input: json.input, judge }
+}
+
+// Fail-fast preflight (no build, no GPU): the op input goes through the page op's own validator, so a judge file the
+// op would refuse in the browser (bad clients/course mix, a moment that is not one of the flow) stops here in
+// about a second with the op's own message instead of after a build, a publish and a queued GPU job.
+export function preflightJudgeInput(input: JudgeInput, file: string): void {
+  try {
+    validateCapture(input.input)
+  } catch (e) {
+    if (!isRefusal(e)) throw e
+    return fail(file, '/input', `the ${OP} op would refuse this input before any GPU job: ${e.message}; fix the input in the judge file`)
+  }
 }
 
 function outDirOf(dir: string): string {
@@ -183,6 +196,7 @@ export async function main(argv: string[]): Promise<number> {
     const root = repoRoot()
     const judgePath = `.nmc/judge/${name}.json`
     const input = parseJudgeInput(readJudgeInput(root, judgePath), judgePath)
+    preflightJudgeInput(input, judgePath)
     const outDir = `out/judge/${name}/`
     const inputPath = `${outDir}input.json`
     mkdirSync(join(root, outDir), { recursive: true })

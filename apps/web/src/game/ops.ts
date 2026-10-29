@@ -493,6 +493,8 @@ const PODIUM_HOLD_FRAMES = 360
 
 interface Driver {
   frame(dt: number): Stage
+  // The driven match sim is in Phase.playing (the playing moments count frames from its first true answer).
+  playing(): boolean
   // Leaves the hub for a match (the local driver; pilots walk onto the pad themselves).
   enqueue(): void
   capture(what: string): Promise<Uint8Array>
@@ -637,6 +639,10 @@ class LocalDriver implements Driver {
     }
   }
 
+  playing(): boolean {
+    return this.sim !== null && this.sim.phase(this.vs).phase === Phase.playing
+  }
+
   enqueue(): void {
     if (this.sim !== null) return
     this.hub?.free()
@@ -728,6 +734,11 @@ class NetDriver implements Driver {
     void this.flow.start()
   }
 
+  playing(): boolean {
+    const sim = this.flow.match?.sim
+    return sim !== undefined && sim.phase(this.vs).phase === Phase.playing
+  }
+
   enqueue(): void {}
 
   frame(dt: number): Stage {
@@ -790,6 +801,7 @@ class MultiDriver implements Driver {
   private readonly width: number
   private readonly height: number
   private readonly now: () => number
+  private readonly vs = emptyViewState()
 
   constructor(R: RapierModule, content: GameContent, ports: RenderPort[], tiles: Viewport[], width: number, height: number, now: () => number) {
     this.ports = ports
@@ -805,6 +817,15 @@ class MultiDriver implements Driver {
 
   get events(): readonly FlowEvent[] {
     return this.loop.events
+  }
+
+  playing(): boolean {
+    const flows = this.loop.flows
+    if (flows.length < this.ports.length) return false
+    return flows.every(flow => {
+      const sim = flow.match?.sim
+      return sim !== undefined && sim.phase(this.vs).phase === Phase.playing
+    })
   }
 
   enqueue(): void {}
@@ -848,7 +869,7 @@ class MultiDriver implements Driver {
 // ---- gameCapture: the op ----------------------------------------------------------------------------------
 
 type MomentKind = 'loading' | 'hub' | 'match' | 'podium' | 'back-in-hub'
-interface Moment { name: string; kind: MomentKind; frames: number }
+interface Moment { name: string; kind: MomentKind; frames: number; clock: 'stage' | 'playing' }
 const RANK: Record<MomentKind, number> = { loading: 0, hub: 1, match: 2, podium: 3, 'back-in-hub': 4 }
 const FLOW_MOMENTS: Record<GameCaptureInput['flow'], readonly MomentKind[]> = {
   hub: ['loading', 'hub'],
@@ -891,12 +912,16 @@ function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Mome
   const moments: Moment[] = []
   for (let i = 0; i < o.captureAt.length; i++) {
     const name: unknown = o.captureAt[i]
+    // playing and playing+<s>s count from the first frame the match sim is in Phase.playing; match-<s>s counts
+    // from the match stage, as it always has.
     const s = typeof name === 'string' ? /^match-(\d+(?:\.\d+)?)s$/.exec(name) : null
-    const kind = (s !== null ? 'match' : name) as MomentKind
-    const seconds = s !== null ? Number(s[1]) : 0
+    const p = typeof name === 'string' ? /^playing(?:\+(\d+(?:\.\d+)?)s)?$/.exec(name) : null
+    const kind = (s !== null || p !== null ? 'match' : name) as MomentKind
+    const seconds = s !== null ? Number(s[1]) : p !== null ? Number(p[1] ?? 0) : 0
+    const clock: Moment['clock'] = p !== null ? 'playing' : 'stage'
     const where = `${op}.input.captureAt/${i}`
     if (typeof name !== 'string' || !allowed.includes(kind)) {
-      refuse('ops', where, `${JSON.stringify(name)} is not a moment of flow ${flow}; choose from ${allowed.map(k => (k === 'match' ? 'match-<s>s' : k)).join(', ')}`)
+      refuse('ops', where, `${JSON.stringify(name)} is not a moment of flow ${flow}; choose from ${allowed.map(k => (k === 'match' ? 'match-<s>s, playing, playing+<s>s' : k)).join(', ')}`)
     }
     if (seconds > MAX_MATCH_S) refuse('ops', where, `${name} is past ${MAX_MATCH_S} s of match`)
     const frames = Math.round(seconds / DT)
@@ -904,7 +929,7 @@ function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Mome
     if (prev !== undefined && (RANK[kind] < RANK[prev.kind] || (RANK[kind] === RANK[prev.kind] && (kind !== 'match' || frames <= prev.frames)))) {
       refuse('ops', where, `${name} is repeated or out of order; list moments in flow order (${allowed.join(', ')}), match seconds ascending`)
     }
-    moments.push({ name, kind, frames })
+    moments.push({ name, kind, frames, clock })
   }
   return { input: { content, course, flow, clients, width, height, captureAt: o.captureAt as string[], reload: o.reload === true, net }, moments }
 }
@@ -1010,6 +1035,7 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
     let stage: Stage | null = null
     let stageFrames = 0
     let matchFrames = -1
+    let playingFrames = -1
     let index = 0
     while (index < pending.length) {
       if (++frame > MAX_FRAMES) refuse('ops', 'gameCapture', `did not reach ${run.prefix}${pending[index].name} within ${MAX_FRAMES} frames; inspect the flow events`)
@@ -1029,11 +1055,13 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
       if (frame % 600 === 0) note(`${run.prefix}frame ${frame} stage ${stage ?? next} waiting for ${pending[index].name}`)
       if (matchFrames >= 0) matchFrames++
       else if (stage === 'match') matchFrames = 0
+      if (driver.playing()) playingFrames = playingFrames < 0 ? 0 : playingFrames + 1
+      else playingFrames = -1
       const m = pending[index]
       let hit = false
       if (m.kind === 'match') {
         if (stage === 'podium' || stage === 'back-in-hub') refuse('ops', `gameCapture.${m.name}`, `the match reached its podium after ${matchFrames} frames, before ${m.name}; pick an earlier second`)
-        hit = stage === 'match' && matchFrames >= m.frames
+        hit = stage === 'match' && (m.clock === 'playing' ? playingFrames : matchFrames) >= m.frames
       } else if (m.kind !== 'loading') hit = stage === m.kind && stageFrames >= SETTLE[m.kind]
       if (hit) {
         note(`${run.prefix}capturing ${m.name} at frame ${frame}`)

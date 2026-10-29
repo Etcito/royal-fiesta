@@ -93,3 +93,23 @@ test('pageRefOf takes the page_ref publish printed and refuses a response withou
   refusedWith(() => pageRefOf('{"ok":true}'), /^\[judge\] publish: response has no page_ref; .*$/)
   refusedWith(() => pageRefOf('not json'), /^\[judge\] publish: printed invalid JSON; .*$/)
 })
+
+test('parseJudgeInput accepts playing+8s and judgeCommands keeps it in the PNG path', () => {
+  const json = m1Json()
+  const item = (json.judge as Record<string, unknown>[])[0]!
+  item.capture = 'playing+8s'
+  const input = parseJudgeInput(json, M1_PATH)
+  assert.deepEqual(input.judge.map(i => i.capture), ['playing+8s'])
+  const commands = judgeCommands(input, 'out/judge/m2', 'out/judge/m2/input.json')
+  assert.equal(commands.at(-1)![2], 'out/judge/m2/playing+8s.png')
+})
+
+test('parseJudgeInput refuses a capture with a space', () => {
+  const json = m1Json()
+  const item = (json.judge as Record<string, unknown>[])[0]!
+  item.capture = 'a b'
+  refusedWith(
+    () => parseJudgeInput(json, M1_PATH),
+    /^\[judge\] \.nmc\/judge\/m1\.json#\/judge\/0\/capture: capture "a b" is not a file-safe capture name; fix .*$/,
+  )
+})

@@ -54,6 +54,14 @@
     ]
   },
   {
+    "name": "rf-judge-m2",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m2",
+    "timeout_s": 1800,
+    "after": [
+      "rf-tests"
+    ]
+  },
+  {
     "name": "mech-manifest-tests",
     "command": "node --experimental-strip-types --test packages/game/test/mechanismsJson.test.ts packages/game/test/gameManifest.test.ts",
     "timeout_s": 120

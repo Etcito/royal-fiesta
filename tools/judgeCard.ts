@@ -17,7 +17,7 @@ const OP = 'gameCapture'
 const MIN_SCORE = 6
 const DIST_DIR = 'apps/web/dist/'
 const MILESTONE_RE = /^m[0-9]{1,3}$/
-const CAPTURE_RE = /^[A-Za-z0-9._-]{1,80}$/
+const CAPTURE_RE = /^[A-Za-z0-9._+-]{1,80}$/
 const INPUT_KEYS = ['page', 'op', 'input', 'judge']
 const ITEM_KEYS = ['capture', 'description']
 

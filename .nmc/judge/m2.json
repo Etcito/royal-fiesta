@@ -1,0 +1,26 @@
+{
+  "page": "game",
+  "op": "gameCapture",
+  "input": {
+    "content": "sdf",
+    "course": "mech-lab",
+    "flow": "match",
+    "clients": 1,
+    "width": 1920,
+    "height": 1080,
+    "captureAt": [
+      "playing",
+      "playing+8s"
+    ]
+  },
+  "judge": [
+    {
+      "capture": "playing",
+      "description": "A bright candy-coloured 3D obstacle course with a tilting seesaw plank, a hinged door and a piston, penguin characters running on it, no missing or black geometry"
+    },
+    {
+      "capture": "playing+8s",
+      "description": "The same candy course a few seconds later with a door opened and penguins further along, seesaw tilted"
+    }
+  ]
+}

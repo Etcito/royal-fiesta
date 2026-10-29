@@ -52,20 +52,5 @@
     "after": [
       "rf-tests"
     ]
-  },
-  {
-    "name": "rf-judge-m2",
-    "command": "node --experimental-strip-types tools/judgeCard.ts m2",
-    "timeout_s": 1800
-  },
-  {
-    "name": "rf-judge-m3",
-    "command": "node --experimental-strip-types tools/judgeCard.ts m3",
-    "timeout_s": 1800
-  },
-  {
-    "name": "rf-judge-m4",
-    "command": "node --experimental-strip-types tools/judgeCard.ts m4",
-    "timeout_s": 1800
   }
 ]

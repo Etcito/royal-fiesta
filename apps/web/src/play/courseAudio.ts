@@ -5,8 +5,8 @@
 // HaaPlayer into the scene and adds an emitter with the sound's falloff. `move` follows the item,
 // `trigger` moves the sound and restarts its player (creating it on the first event), `stop` frees
 // the emitter and its player. A missing patch is warned once and skipped; at most 32 are active.
-import { createPlayer, createSpatialScene } from '@etcito/haa'
-import type { HaaPlayer, SpatialEmitter, SpatialScene } from '@etcito/haa'
+import { createPlayer, createSpatialScene } from '@etcito/haa-spatial'
+import type { HaaPlayer, SpatialEmitter, SpatialScene } from '@etcito/haa-spatial'
 import type { CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { EmitterCommand, ListenerPose } from '@royal-fiesta/game/audio/emitters'
 

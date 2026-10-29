@@ -17,8 +17,8 @@ import fiestaWorkletUrl from '../audio/fiestaWorklet.ts?worker&url'
 // haa 0.2.0's player bundle and compiled engine. The legacy 0.1.1 worklet the engine bakes next to
 // the manifest registers haa-bed/haa-sampler/haa-mix; 0.2.0 registers haa-player (PLAYER_PROCESSOR),
 // so both modules can live on the one context opened by openBrowserAudio.
-import haaWorkletUrl from '@etcito/haa/worklet?url'
-import haaWasmUrl from '@etcito/haa/wasm?url'
+import haaWorkletUrl from '@etcito/haa-spatial/worklet?url'
+import haaWasmUrl from '@etcito/haa-spatial/wasm?url'
 
 export class SoundDriver {
   #opening: Promise<void> | null = null

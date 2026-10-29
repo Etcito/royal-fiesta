@@ -19,6 +19,8 @@
       "channels": 14
     }
   ],
-  "bytes": 392856,
-  "verifiedEveryChannelSample": true
+  "bytes": 371684,
+  "verifiedEveryChannelSample": true,
+  "verifiedMeshAndSkinData": true,
+  "retainedMeshAndSkinAccessors": 7
 }

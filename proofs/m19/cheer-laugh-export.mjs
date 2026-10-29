@@ -12,8 +12,41 @@ const provenance = { sourceAsset, assetHash: asset.hash,
 const source = readFileSync('proofs/m19/penguin-fall-dive.glb')
 const jsonLength = source.readUInt32LE(12)
 const gltf = JSON.parse(source.subarray(20, 20 + jsonLength))
-const binary = [source.subarray(28 + jsonLength)]
-let bytes = binary[0].length
+// Retain only the mesh and skin data from the inherited export. Its fall/dive
+// animation accessors and binary payload do not belong in these emote files.
+const sourceBinary = source.subarray(28 + jsonLength)
+const sourceAccessors = gltf.accessors, sourceViews = gltf.bufferViews
+const accessorMap = new Map(), viewMap = new Map(), binary = []
+let bytes = 0
+gltf.accessors = []; gltf.bufferViews = []
+function retainAccessor(id) {
+  if (accessorMap.has(id)) return accessorMap.get(id)
+  const a = structuredClone(sourceAccessors[id])
+  assert(!a.sparse, 'Sparse source accessor requires explicit support')
+  if (!viewMap.has(a.bufferView)) {
+    const v = sourceViews[a.bufferView]
+    assert.equal(v.buffer, 0)
+    const padding = (4 - bytes % 4) % 4
+    if (padding) { binary.push(Buffer.alloc(padding)); bytes += padding }
+    viewMap.set(a.bufferView, gltf.bufferViews.length)
+    const data = sourceBinary.subarray(v.byteOffset ?? 0, (v.byteOffset ?? 0) + v.byteLength)
+    assert.equal(data.length, v.byteLength)
+    gltf.bufferViews.push({ ...v, byteOffset: bytes })
+    binary.push(data); bytes += data.length
+  }
+  a.bufferView = viewMap.get(a.bufferView)
+  const next = gltf.accessors.push(a) - 1
+  accessorMap.set(id, next)
+  return next
+}
+for (const mesh of gltf.meshes) for (const p of mesh.primitives) {
+  for (const name of Object.keys(p.attributes)) p.attributes[name] = retainAccessor(p.attributes[name])
+  if (p.indices !== undefined) p.indices = retainAccessor(p.indices)
+  assert(!p.targets, 'Morph source requires explicit support')
+}
+for (const skin of gltf.skins) if (skin.inverseBindMatrices !== undefined) {
+  skin.inverseBindMatrices = retainAccessor(skin.inverseBindMatrices)
+}
 const limit = Number(process.argv.find(a => a.startsWith('--frames='))?.slice(9)) || Infinity
 assert([1, 2, Infinity].includes(limit), 'Probe with one frame, then two, before the full animation')
 const selected = process.argv.find(a => a.startsWith('--clip='))?.slice(7)
@@ -95,6 +128,17 @@ const saved = readFileSync(output), length = saved.readUInt32LE(12)
 assert.equal(saved.length, saved.readUInt32LE(8))
 const savedGltf = JSON.parse(saved.subarray(20, 20 + length)), start = 28 + length
 assert.deepEqual(savedGltf.animations.map(a => a.name), names)
+for (const [oldId, newId] of accessorMap) {
+  const before = sourceAccessors[oldId], after = savedGltf.accessors[newId]
+  assert.deepEqual(after, { ...before, bufferView: viewMap.get(before.bufferView) })
+}
+for (const [oldId, newId] of viewMap) {
+  const before = sourceViews[oldId], after = savedGltf.bufferViews[newId]
+  assert.deepEqual(after, { ...before, byteOffset: after.byteOffset })
+  assert.deepEqual(saved.subarray(start + after.byteOffset, start + after.byteOffset + after.byteLength),
+    sourceBinary.subarray(before.byteOffset ?? 0, (before.byteOffset ?? 0) + before.byteLength),
+    'Inherited mesh, weights and inverse binds preserved')
+}
 const values = id => {
   const a = savedGltf.accessors[id], b = savedGltf.bufferViews[a.bufferView]
   return Array.from({ length: a.count * ({ SCALAR: 1, VEC3: 3, VEC4: 4 }[a.type]) },
@@ -118,6 +162,7 @@ try {
     } finally { clip.free() }
   }
 } finally { checkRig.free() }
-const result = JSON.stringify({ ...report, bytes: saved.length, verifiedEveryChannelSample: true }, null, 2) + '\n'
+const result = JSON.stringify({ ...report, bytes: saved.length, verifiedEveryChannelSample: true,
+  verifiedMeshAndSkinData: true, retainedMeshAndSkinAccessors: accessorMap.size }, null, 2) + '\n'
 if (limit === Infinity) writeFileSync(selected ? `proofs/m19/${stem}-media.json` : 'proofs/m19/cheer-laugh-media.json', result)
 console.log(result.trimEnd())

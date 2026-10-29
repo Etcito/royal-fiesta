@@ -1,0 +1,38 @@
+# Cheer/laugh handoff to programmatic card 5739
+
+This run regenerated the actual animation media in the repository:
+
+- `penguin-cheer-laugh.glb`: both emotes, 371684 bytes.
+- `penguin-emote.cheer.glb`: 109 sampled frames, 1.8 seconds, 346668 bytes.
+- `penguin-emote.laugh.glb`: 97 sampled frames, 1.6 seconds, 344012 bytes.
+
+The exporter now copies only mesh and skin accessors from the earlier fall/dive
+GLB, removing its unused animation payload. One-frame and two-frame probes
+passed before full exports. Round-trip checks verify every animation channel
+sample against the pinned S17 runtime and preserve mesh, weights and inverse
+bind data byte-for-byte. These are animation files, not rendered video evidence.
+
+The MCP-authored source asset was preserved. Its fifteen unique S19 names load
+and sample; cheer raises both flippers above the head, and laugh coordinates
+body/head motion with its rigid head-bound beak as Q7 requires. The preservation
+check against wave/dance baseline d74d5a6 passes for the entire inherited asset.
+
+Verification completed in this worktree:
+
+- `npm run typecheck` and `npm run build`: passed.
+- Rigged SDF Modeler hash regression: passed alone.
+- contentFiles, courseV1, gameAsset and capture parser suites: 31 passed.
+- Cheer/laugh capture bundle `--build`: passed without GPU submission.
+- Queue validation and `git diff --check`: passed.
+
+`.nmc/commands.json` was written with all fourteen existing entries unchanged.
+Names are unique and dependencies point to earlier entries. The separate
+cheer/laugh queue is absent. All three judges retain their descriptions,
+reference and minimum score of 6. The explicit instruction to preserve existing
+entries accounts for exceeding the generic ten-entry queue limit.
+
+Card 5739 must execute that queue and return `penguin-cheer-laugh.mp4`, real
+hardware submission/execution/capture records and judge results under this
+directory. The GLBs and expected capture outputs are already registered in
+`.nmc/artifacts.json`. No GPU command, judge or software substitute ran here;
+rendered media and visual approval are pending the programmatic card.

@@ -2,13 +2,17 @@
 // The sim course is built by the v0 loader on a v0-shaped copy with explicit colliders (the course
 // override or the asset's raw collision), so every conversion stays identical (rule 1.5).
 import { fnv1a32 } from '@gamesaloon/rollback'
-import type { MotionKind, ResolvedCourse } from '@royal-fiesta/sim/course'
+import { SURFACES } from '@royal-fiesta/sim/course'
+import type { MotionKind, ObstacleSpec, PathNode, ResolvedCourse, Surface } from '@royal-fiesta/sim/course'
+import { emptyMechanisms } from '@royal-fiesta/sim/mechanismSpec'
+import type { MechanismSpec, MechItem, SoundSpec } from '@royal-fiesta/sim/mechanismSpec'
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
 import type { AssetResolver, ResolvedAsset } from './assets.ts'
 import type { PodiumLayout } from './content.ts'
 import { canonicalJson, loadCourse } from './course.ts'
 import { ASSET_ID_RE } from './gameAsset.ts'
 import type { GameAsset, GameAssetSource, World } from './gameAsset.ts'
+import { itemOf, parseCourseMechanisms, parseCourseSounds } from './mechanismsJson.ts'
 import type { PrimsAsset } from './prims.ts'
 import type { QuatT, Vec3T } from './render/port.ts'
 
@@ -63,7 +67,7 @@ export const V0_ASSET_MAP: Readonly<Record<string, string>> = Object.freeze({
 const KINDS: readonly CourseKindV1[] = ['race', 'survival', 'hub', 'podium', 'gallery']
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const S2_KEYS = ['format', 'version', 'id', 'name', 'kind', 'profiles', 'timeLimitS', 'killPlaneY', 'spawns', 'checkpoints', 'finish', 'path', 'regions', 'queuePad', 'obstacles']
-const S13_KEYS = [...S2_KEYS, 'world', 'decor', 'environment', 'podium']
+const S13_KEYS = [...S2_KEYS, 'world', 'decor', 'environment', 'podium', 'mechanisms', 'sounds']
 const ENV_KEYS = ['sky', 'sun', 'fog', 'post']
 
 type Obj = Record<string, unknown>
@@ -254,7 +258,20 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
     if (ids.has(oid)) fail(path, `${ptr}/id`, `duplicate id '${oid}'; use ids unique across obstacles and decor`)
     ids.add(oid)
     if (o.colliders !== null && !Array.isArray(o.colliders)) fail(path, `${ptr}/colliders`, 'must be null or an array; use null or collider objects')
-    return { o, id: oid, asset: assetId(o.asset, path, `${ptr}/asset`) }
+    let surface: Surface | undefined
+    if (o.surface !== undefined) {
+      surface = str(o.surface, path, `${ptr}/surface`) as Surface
+      if (!SURFACES.includes(surface)) fail(path, `${ptr}/surface`, `unknown surface '${surface}'; use one of ${SURFACES.join('|')}`)
+    }
+    return { o, id: oid, asset: assetId(o.asset, path, `${ptr}/asset`), surface }
+  })
+  // Bot hints of S13 path nodes, resolved against the mechanisms once they are parsed.
+  const hints = (Array.isArray(v1.path) ? v1.path : []).map((v, i) => {
+    const n = obj(v, path, `#/path/${i}`)
+    return {
+      wait: n.wait === undefined ? undefined : str(n.wait, path, `#/path/${i}/wait`),
+      pull: n.pull === undefined ? undefined : str(n.pull, path, `#/path/${i}/pull`),
+    }
   })
   const decor = arr(v1.decor, path, '#/decor').map((v, i) => {
     const d = decorItem(v, path, `#/decor/${i}`)
@@ -290,11 +307,18 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
     if (r.asset.category === 'obstacle' && raw.length === 0 && obstacles[i].o.colliders === null) {
       fail(path, ptr, `obstacle asset '${obstacles[i].asset}' has an empty collision; add collision to ${r.source.path} or a colliders override here`)
     }
+    if (r.asset.physics) {
+      // A mechanism item: its bodies own the asset colliders and its joints move them.
+      if (obstacles[i].o.colliders !== null) fail(path, `#/obstacles/${i}/colliders`, `asset '${obstacles[i].asset}' has physics, whose bodies index its collision; set colliders to null`)
+      const m = obj(obstacles[i].o.motion, path, `#/obstacles/${i}/motion`)
+      if (m.kind !== 'static') fail(path, `#/obstacles/${i}/motion/kind`, `asset '${obstacles[i].asset}' has physics and moves through its joints; use motion static and a mechanisms link or animation`)
+    }
     resolved.push(r)
     rawCollision.push(raw)
   }
   for (let i = 0; i < decor.length; i++) await resolveAsset(assets, decor[i].asset, path, `#/decor/${i}/asset`)
 
+  // canonicalJson(v1) includes the S13 `mechanisms` and `sounds` blocks, so the hash covers them.
   const enc = new TextEncoder()
   let hash = fnv1a32(enc.encode(canonicalJson(v1)))
   for (let i = 0; i < resolved.length; i++) {
@@ -307,18 +331,59 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
   for (const k of S2_KEYS) if (Object.hasOwn(v1, k)) copy[k] = structuredClone(v1[k])
   copy.version = 0
   copy.assetsManifest = null
-  copy.obstacles = obstacles.map(({ o }, i) => ({ ...structuredClone(o), asset: `o${i}`, colliders: structuredClone(o.colliders ?? rawCollision[i]) }))
-  let sim: ResolvedCourse | null = null
+  copy.obstacles = obstacles.map(({ o }, i) => {
+    const { surface: _surface, ...rest } = structuredClone(o)
+    return { ...rest, asset: `o${i}`, colliders: structuredClone(o.colliders ?? rawCollision[i]) }
+  })
+  if (Array.isArray(copy.path)) {
+    copy.path = copy.path.map(n => {
+      if (typeof n !== 'object' || n === null || Array.isArray(n)) return n
+      const { wait: _wait, pull: _pull, ...rest } = n as Obj
+      return rest
+    })
+  }
   if (kind === 'podium') {
     // Validated with the gallery rules (spawns padded to its minimum of 8); the podium is view only.
     const spawns = arr(copy.spawns, path, '#/spawns')
     while (spawns.length < 8) spawns.push({ t: [0, 0, 0], yawDeg: 0 })
     copy.kind = 'gallery'
-    await loadCourse(copy, path, EXPLICIT_ONLY)
-  } else {
-    const c = await loadCourse(copy, path, EXPLICIT_ONLY)
-    sim = { ...c, obstacles: c.obstacles.map((o, i) => ({ ...o, asset: obstacles[i].asset })), contentHash }
   }
+  const c = await loadCourse(copy, path, EXPLICIT_ONLY)
+
+  // Physics obstacles become mechanism items in course order (ObstacleSystem never sees them).
+  const items: MechItem[] = []
+  const simObstacles: ObstacleSpec[] = []
+  c.obstacles.forEach((o, i) => {
+    const { asset: aid, surface } = obstacles[i]
+    if (resolved[i].asset.physics) {
+      const k = items.length
+      const item = itemOf({ id: o.id, asset: aid, t: o.t, r: o.r, s: o.s }, resolved[i].asset, `${path}#/obstacles/${i}`)
+      items.push({ ...item, joints: item.joints.map(j => ({ ...j, a: { ...j.a, item: k }, b: { ...j.b, item: k } })) })
+    } else {
+      simObstacles.push({ ...o, asset: aid, ...(surface === undefined ? {} : { surface }) })
+    }
+  })
+  const noBlock = v1.mechanisms === undefined || v1.mechanisms === null
+  const mechanisms: MechanismSpec | null = items.length === 0 && noBlock ? null : parseCourseMechanisms(v1.mechanisms, items, path)
+  const sounds: SoundSpec[] = parseCourseSounds(v1.sounds, mechanisms ?? emptyMechanisms(), obstacles.map(o => o.id), path)
+  const simPath: PathNode[] = c.path.map((n, i) => {
+    const { wait, pull } = hints[i]
+    if (wait !== undefined && !mechanisms?.signals.includes(wait)) {
+      fail(path, `#/path/${i}/wait`, `unknown signal '${wait}'; use a switch, lever or logic id of the course mechanisms`)
+    }
+    if (pull !== undefined && !mechanisms?.levers.some(l => l.id === pull)) {
+      fail(path, `#/path/${i}/pull`, `unknown lever '${pull}'; use a lever id of the course mechanisms`)
+    }
+    return { ...n, ...(wait === undefined ? {} : { wait }), ...(pull === undefined ? {} : { pull }) }
+  })
+  // `mechanisms` null and `sounds` [] are left out (they read as none), so a course without physics keeps
+  // exactly the sim course it had before mechanisms existed.
+  const sim: ResolvedCourse | null = kind === 'podium'
+    ? null
+    : {
+        ...c, path: simPath, obstacles: simObstacles, contentHash,
+        ...(mechanisms === null ? {} : { mechanisms }), ...(sounds.length === 0 ? {} : { sounds }),
+      }
 
   const assetIds = [...new Set([...obstacles.map(o => o.asset), ...decor.map(d => d.asset)])].sort()
   return { id, name, kind, world, decor, environment: env, podium, sim, assetIds, contentHash, json: v1 }

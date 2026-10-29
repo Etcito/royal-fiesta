@@ -24,12 +24,13 @@ function sha256(doc: unknown): string {
   return createHash('sha256').update(canonicalJson(doc), 'utf8').digest('hex')
 }
 
-async function gameAsset(id: string, category: AssetCategory, collision: unknown[], world: World = 'candy'): Promise<ResolvedGameAsset> {
+async function gameAsset(id: string, category: AssetCategory, collision: unknown[], world: World = 'candy', physics?: unknown): Promise<ResolvedGameAsset> {
   const document = { nodes: [{ kind: 'box', size: [1, 1, 1] }], note: id }
   const json = {
     format: 'sdfm.game-asset', version: 1, game: 'royal-fiesta', id, name: id, category, world,
     mesher: { output: 'lowpoly' }, document, collision, anchors: {},
     bounds: { min: [-1, -1, -1], max: [1, 1, 1] }, hash: sha256(document),
+    ...(physics === undefined ? {} : { physics }),
   }
   const source = { path: assetFilePath(world, id), json }
   return { asset: await parseGameAsset(json, source.path), source }
@@ -161,8 +162,11 @@ test('loadCourseV1 of every v0 fixture equals loadCourse except contentHash and 
     const v1 = await loadCourseV1(json, path, assets)
     assert.ok(v1.sim, f)
     const { contentHash: h0, obstacles: o0, ...rest0 } = v0
-    const { contentHash: h1, obstacles: o1, ...rest1 } = v1.sim
+    const { contentHash: h1, obstacles: o1, mechanisms, sounds, ...rest1 } = v1.sim
     assert.deepEqual(rest1, rest0, f)
+    assert.equal(mechanisms ?? null, null, `${f}: no physics asset and no mechanisms block`)
+    assert.deepEqual(sounds ?? [], [], f)
+    assert.ok(!Object.hasOwn(v1.sim, 'mechanisms') && !Object.hasOwn(v1.sim, 'sounds'), `${f}: the sim course keeps its v0 keys`)
     assert.deepEqual(o1.map(o => ({ ...o, asset: '' })), o0.map(o => ({ ...o, asset: '' })), f)
     assert.deepEqual(o1.map(o => o.asset), o0.map(o => V0_ASSET_MAP[o.asset]), f)
     assert.equal(h1, v1.contentHash)
@@ -339,4 +343,134 @@ test('every invalid v1 course fixture refuses with file#pointer and a fix', asyn
       return true
     })
   }
+})
+
+// ---- S13 mechanisms, surfaces, path signals and sounds ----
+
+function gateBody(id: string, type: string, colliders: number[]): Record<string, unknown> {
+  return {
+    id, type, colliders, parts: [id], t: [0, 0, 0], r: [0, 0, 0, 1], density: 400, friction: 0.6, restitution: 0,
+    linearDamping: 0, angularDamping: 0.05, gravityScale: 1, ccd: false, surface: 'normal',
+  }
+}
+
+// A physics asset: a fixed base and a dynamic plank on a hinge.
+function gateAsset(): Promise<ResolvedGameAsset> {
+  return gameAsset('candy.gate', 'obstacle', [{ shape: 'cuboid', half: [1, 0.25, 1] }, { shape: 'cuboid', half: [0.1, 1, 0.5], t: [0, 1, 0] }], 'candy', {
+    bodies: [gateBody('base', 'fixed', [0]), gateBody('plank', 'dynamic', [1])],
+    joints: [{
+      id: 'pivot', kind: 'hinge', a: 'base', b: 'plank', anchorA: [0, 0.25, 0], anchorB: [0, -1, 0],
+      axis: [1, 0, 0], limitsDeg: [-45, 45], stiffness: 0, damping: 0, lengthM: 0, motor: null,
+    }],
+  })
+}
+
+async function mechAssets(): Promise<GameAssetResolver & { calls: string[] }> {
+  return resolverOf([...await basics(), await gateAsset()])
+}
+
+function mechCourse(over: Record<string, unknown> = {}): Record<string, unknown> {
+  return v1Course('t-mech', [
+    obstacle('gate-1', 'candy.gate', { t: [0, 1, 0] }),
+    obstacle('a', 'candy.block', { surface: 'ice' }),
+    obstacle('gate-2', 'candy.gate', { t: [4, 0, 0] }),
+    obstacle('b', 'candy.block', { t: [0, 0, 6] }),
+  ], {
+    path: [
+      { p: [0, 0, 0], jump: false, dive: false, wait: 'plate' },
+      { p: [0, 0, 2], jump: false, dive: false, pull: 'lever' },
+      { p: [0, 0, 4], jump: true, dive: false },
+    ],
+    mechanisms: {
+      switches: [{ id: 'plate', plate: { item: 'gate-2', body: 'base' }, mode: 'weight', onKg: 50, offKg: 30 }],
+      levers: [{ id: 'lever', handle: { item: 'gate-1', body: 'plank' }, joint: 'pivot', onDeg: 30, offDeg: 10, grabRangeM: 1 }],
+    },
+    sounds: [{ id: 'creak', patch: 'gate-creak', item: 'gate-1', t: [0, 0, 0], event: 'leverOn', signal: null }],
+    ...over,
+  })
+}
+
+test('a physics asset becomes a mechanism item, never an obstacle', async () => {
+  const c = await loadCourseV1(mechCourse(), coursePath('t-mech'), await mechAssets())
+  assert.ok(c.sim?.mechanisms)
+  const m = c.sim.mechanisms
+  assert.deepEqual(c.sim.obstacles.map(o => o.id), ['a', 'b'])
+  assert.deepEqual(m.items.map(it => [it.id, it.asset]), [['gate-1', 'candy.gate'], ['gate-2', 'candy.gate']])
+  assert.deepEqual(m.items.map(it => it.joints.map(j => [j.a.item, j.b.item])), [[[0, 0]], [[1, 1]]])
+  assert.deepEqual(m.items[0].bodies.map(b => [b.id, b.rest.t]), [['base', { x: 0, y: 1, z: 0 }], ['plank', { x: 0, y: 1, z: 0 }]])
+  assert.deepEqual(m.signals, ['plate', 'lever'])
+  assert.deepEqual(m.switches[0].plate, { item: 1, body: 0 })
+  assert.deepEqual(m.levers[0].handle, { item: 0, body: 1 })
+  assert.deepEqual(c.assetIds, ['candy.block', 'candy.gate'])
+  assert.equal(c.sim.sounds?.length, 1)
+  assert.deepEqual(c.sim.sounds?.[0], { id: 'creak', patch: 'gate-creak', item: 0, t: ZERO, event: 'leverOn', signal: -1, gain: 1, ref: 2, max: 60, loop: false })
+
+  const itemsOnly = mechCourse({ path: [], mechanisms: undefined, sounds: undefined })
+  delete itemsOnly.mechanisms
+  delete itemsOnly.sounds
+  const bare = await loadCourseV1(itemsOnly, coursePath('t-mech'), await mechAssets())
+  assert.deepEqual(bare.sim?.mechanisms?.items.map(it => it.id), ['gate-1', 'gate-2'], 'items without a mechanisms block')
+  assert.deepEqual(bare.sim?.sounds ?? [], [])
+  const plain = await loadCourseV1(v1Course('t-plain', [obstacle('a', 'candy.block')]), coursePath('t-plain'), await mechAssets())
+  assert.equal(plain.sim?.mechanisms ?? null, null, 'no items and no mechanisms block')
+  assert.deepEqual(plain.sim?.sounds ?? [], [])
+})
+
+test('surface, wait and pull are read', async () => {
+  const c = await loadCourseV1(mechCourse(), coursePath('t-mech'), await mechAssets())
+  assert.equal(c.sim?.obstacles[0].surface, 'ice')
+  assert.equal(Object.hasOwn(c.sim?.obstacles[1] ?? {}, 'surface'), false, 'a missing surface stays absent (reads normal)')
+  assert.deepEqual(c.sim?.path, [
+    { p: ZERO, jump: false, dive: false, wait: 'plate' },
+    { p: { x: 0, y: 0, z: 2 }, jump: false, dive: false, pull: 'lever' },
+    { p: { x: 0, y: 0, z: 4 }, jump: true, dive: false },
+  ])
+  const p = coursePath('t-mech')
+  const badSurface = mechCourse()
+  ;(badSurface.obstacles as Record<string, unknown>[])[1].surface = 'lava'
+  await refused(loadCourseV1(badSurface, p, await mechAssets()), 'course', `${p}#/obstacles/1/surface`, ['normal|ice|mud|rubber'])
+})
+
+test('changing a mechanism or sound field changes contentHash', async () => {
+  const assets = await mechAssets()
+  const base = await loadCourseV1(mechCourse(), coursePath('t-mech'), assets)
+  const heavier = mechCourse()
+  ;(heavier.mechanisms as { switches: Record<string, unknown>[] }).switches[0].onKg = 60
+  const h = await loadCourseV1(heavier, coursePath('t-mech'), assets)
+  assert.equal(h.sim?.mechanisms?.switches[0].onKg, 60)
+  assert.notEqual(h.contentHash, base.contentHash)
+  const louder = mechCourse()
+  ;(louder.sounds as Record<string, unknown>[])[0].gain = 2
+  assert.notEqual((await loadCourseV1(louder, coursePath('t-mech'), assets)).contentHash, base.contentHash)
+  assert.equal((await loadCourseV1(mechCourse(), coursePath('t-mech'), assets)).contentHash, base.contentHash)
+})
+
+test('an unknown wait signal or pull lever is refused', async () => {
+  const assets = await mechAssets()
+  const p = coursePath('t-mech')
+  const wait = mechCourse()
+  ;(wait.path as Record<string, unknown>[])[0].wait = 'ghost'
+  await refused(loadCourseV1(wait, p, assets), 'course', `${p}#/path/0/wait`, ['ghost'])
+  const pull = mechCourse()
+  ;(pull.path as Record<string, unknown>[])[1].pull = 'plate'
+  await refused(loadCourseV1(pull, p, assets), 'course', `${p}#/path/1/pull`, ['plate'])
+  const noMech = v1Course('t-plain', [obstacle('a', 'candy.block')], { path: [{ p: [0, 0, 0], jump: false, dive: false, wait: 'plate' }] })
+  await refused(loadCourseV1(noMech, coursePath('t-plain'), assets), 'course', `${coursePath('t-plain')}#/path/0/wait`)
+})
+
+test('physics obstacles refuse a colliders override and a motion; mechanism refusals keep the pointer', async () => {
+  const assets = await mechAssets()
+  const p = coursePath('t-mech')
+  const override = mechCourse()
+  ;(override.obstacles as Record<string, unknown>[])[0].colliders = [{ shape: 'ball', radius: 1 }]
+  await refused(loadCourseV1(override, p, assets), 'course', `${p}#/obstacles/0/colliders`)
+  const moving = mechCourse()
+  ;(moving.obstacles as Record<string, unknown>[])[2].motion = { kind: 'spinner', axis: [0, 1, 0], speedDegS: 90, phaseDeg: 0 }
+  await refused(loadCourseV1(moving, p, assets), 'course', `${p}#/obstacles/2/motion/kind`)
+  const ghost = mechCourse()
+  ;(ghost.mechanisms as { levers: Record<string, unknown>[] }).levers[0].handle = { item: 'gate-1', body: 'ghost' }
+  await refused(loadCourseV1(ghost, p, assets), 'course', `${p}#/mechanisms/levers/0/handle/body`)
+  const notItem = mechCourse()
+  ;(notItem.sounds as Record<string, unknown>[])[0].item = 'a'
+  await refused(loadCourseV1(notItem, p, assets), 'course', `${p}#/sounds/0/item`, ['use item null and a world t'])
 })

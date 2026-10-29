@@ -1,0 +1,128 @@
+{
+  "video": "proofs/m19/penguin-animgraph-run.mp4",
+  "graph": "assets/common/penguin.animgraph.json",
+  "ticks": 780,
+  "fps": 30,
+  "frames": 390,
+  "labels": true,
+  "segments": [
+    {
+      "pose": "idle",
+      "fromTick": 0,
+      "toTick": 90
+    },
+    {
+      "pose": "blend",
+      "fromTick": 91,
+      "toTick": 149
+    },
+    {
+      "pose": "waddle",
+      "fromTick": 150,
+      "toTick": 180
+    },
+    {
+      "pose": "blend",
+      "fromTick": 181,
+      "toTick": 239
+    },
+    {
+      "pose": "run",
+      "fromTick": 240,
+      "toTick": 339
+    },
+    {
+      "pose": "blend",
+      "fromTick": 340,
+      "toTick": 343
+    },
+    {
+      "pose": "jump",
+      "fromTick": 344,
+      "toTick": 370
+    },
+    {
+      "pose": "blend",
+      "fromTick": 371,
+      "toTick": 375
+    },
+    {
+      "pose": "fall",
+      "fromTick": 376,
+      "toTick": 420
+    },
+    {
+      "pose": "blend",
+      "fromTick": 421,
+      "toTick": 425
+    },
+    {
+      "pose": "waddle",
+      "fromTick": 426,
+      "toTick": 500
+    },
+    {
+      "pose": "blend",
+      "fromTick": 501,
+      "toTick": 507
+    },
+    {
+      "pose": "fall",
+      "fromTick": 508,
+      "toTick": 560
+    },
+    {
+      "pose": "blend",
+      "fromTick": 561,
+      "toTick": 565
+    },
+    {
+      "pose": "waddle",
+      "fromTick": 566,
+      "toTick": 599
+    },
+    {
+      "pose": "blend",
+      "fromTick": 600,
+      "toTick": 603
+    },
+    {
+      "pose": "jump",
+      "fromTick": 604,
+      "toTick": 620
+    },
+    {
+      "pose": "blend",
+      "fromTick": 621,
+      "toTick": 623
+    },
+    {
+      "pose": "dive",
+      "fromTick": 624,
+      "toTick": 680
+    },
+    {
+      "pose": "blend",
+      "fromTick": 681,
+      "toTick": 699
+    },
+    {
+      "pose": "idle",
+      "fromTick": 700,
+      "toTick": 779
+    }
+  ],
+  "checks": {
+    "idleAtRest": true,
+    "waddleAtSpeed3": true,
+    "blendBetweenPoints": true,
+    "runAtSpeed8": true,
+    "jumpOnTrigger": true,
+    "fallWhenDescending": true,
+    "landToLocomotion": true,
+    "ledgeFall": true,
+    "diveOnMode2": true,
+    "recoverToLocomotion": true
+  },
+  "ok": true
+}

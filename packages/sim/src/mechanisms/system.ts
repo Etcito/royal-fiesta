@@ -1,5 +1,6 @@
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { BodyId } from '@gamesaloon/rollback-rapier'
+import { CHAR } from '../character/constants.ts'
 import type { ResolvedCourse } from '../course.ts'
 import { datan2, dhypot3 } from '../detmath.ts'
 import { emptyMechanisms, MECH_EVENT_RING } from '../mechanismSpec.ts'
@@ -23,6 +24,10 @@ const EVENT_KINDS: readonly MechEventKind[] = [
 // A dynamic body that loses more than 3 m/s in one tick emits an impact; 10 m/s is full strength.
 const IMPACT_DROP = 3
 const IMPACT_FULL = 10
+
+// A pending load is x, y, z, mass, player; player -1 = an addLoad, >= 0 = a grabHandle.
+const LOAD_STRIDE = 5
+const NO_PLAYER = -1
 
 // Module scratch, reused across calls; never part of sim state.
 const scratchPose: Pose = newPose()
@@ -79,6 +84,47 @@ function readQuat(q: { x: number; y: number; z: number; w: number }, out: Quat):
   return out
 }
 
+// Drops the player's grab record from one body's pending loads, keeping the others in order.
+function removePlayerLoad(loads: number[], player: number): void {
+  let w = 0
+  for (let k = 0; k < loads.length; k += LOAD_STRIDE) {
+    if (loads[k + 4] === player) continue
+    for (let f = 0; f < LOAD_STRIDE; f++) loads[w + f] = loads[k + f]
+    w += LOAD_STRIDE
+  }
+  loads.length = w
+}
+
+function writeMotor(w: SnapWriter, m: MotorSpec | null): void {
+  if (m === null) {
+    w.u8(0)
+    return
+  }
+  w.u8(1)
+  w.u8(m.mode === 'speed' ? 0 : 1)
+  w.f64(m.speed)
+  w.f64(m.target)
+  w.f64(m.stiffness)
+  w.f64(m.damping)
+  w.f64(m.maxForce)
+  w.u8(m.enabled ? 1 : 0)
+}
+
+function readMotor(r: SnapReader): MotorSpec | null {
+  const flag = r.u8()
+  if (flag === 0) return null
+  if (flag !== 1) refuse('mechanisms', 'snapshot/motors', `motor flag ${flag} is not 0 or 1; restore a mechanisms snapshot`)
+  const modeByte = r.u8()
+  if (modeByte > 1) refuse('mechanisms', 'snapshot/motors', `motor mode ${modeByte} is not 0 or 1; restore a mechanisms snapshot`)
+  const speed = r.f64()
+  const target = r.f64()
+  const stiffness = r.f64()
+  const damping = r.f64()
+  const maxForce = r.f64()
+  const enabled = r.u8() === 1
+  return { mode: modeByte === 0 ? 'speed' : 'target', speed, target, stiffness, damping, maxForce, enabled }
+}
+
 function blankEvent(): MechEvent {
   return { tick: 0, kind: 'impact', source: 0, x: 0, y: 0, z: 0, strength: 0 }
 }
@@ -120,7 +166,7 @@ export class MechanismSystem implements SimSystem<unknown> {
   #motors: (MotorSpec | null)[] = []
   #kinTarget: Pose[] = []
   #kinPending: boolean[] = []
-  // Per body: flat x, y, z, mass quadruples, in arrival order.
+  // Per body: flat LOAD_STRIDE records, in arrival order.
   #loads: number[][] = []
   #loadApplied: number[] = []
   #prevSpeed: number[] = []
@@ -354,13 +400,13 @@ export class MechanismSystem implements SimSystem<unknown> {
     if (!finiteVec(point) || !Number.isFinite(mass) || mass < 0) {
       refuse('mechanisms', `addLoad(${ref.item}, ${ref.body})`, 'non-finite point or mass, or a negative mass; pass finite numbers with mass >= 0')
     }
-    this.#loads[this.#flat(ref, 'addLoad')].push(point.x, point.y, point.z, mass)
+    this.#loads[this.#flat(ref, 'addLoad')].push(point.x, point.y, point.z, mass, NO_PLAYER)
   }
 
   loadKg(ref: BodyRef): number {
     const loads = this.#loads[this.#flat(ref, 'loadKg')]
     let kg = 0
-    for (let k = 3; k < loads.length; k += 4) kg += loads[k]
+    for (let k = 3; k < loads.length; k += LOAD_STRIDE) kg += loads[k]
     return kg
   }
 
@@ -407,6 +453,31 @@ export class MechanismSystem implements SimSystem<unknown> {
     target.r.w = pose.r.w
     this.#kinPending[flat] = true
   }
+
+  // The character system (M2) calls grabHandle every tick a player holds the lever, and
+  // releaseHandle when they let go: like addLoad, the grab lasts the next preStep only.
+  grabHandle(ctx: WorldCtx<unknown>, lever: number, player: number): void {
+    const flat = this.#leverBody(ctx, lever, player, 'grabHandle')
+    const loads = this.#loads[flat]
+    removePlayerLoad(loads, player)
+    const t = ctx.physics.body(this.#bodies[flat]).translation()
+    loads.push(t.x, t.y, t.z, CHAR.mass, player)
+  }
+
+  releaseHandle(ctx: WorldCtx<unknown>, lever: number, player: number): void {
+    removePlayerLoad(this.#loads[this.#leverBody(ctx, lever, player, 'releaseHandle')], player)
+  }
+
+  #leverBody(ctx: WorldCtx<unknown>, lever: number, player: number, what: string): number {
+    const levers = this.#spec === null ? [] : this.#spec.levers
+    if (!Number.isInteger(lever) || lever < 0 || lever >= levers.length) {
+      refuse('mechanisms', `${what}(${lever}, ${player})`, `lever out of range 0..${levers.length - 1}; pass a lever index of the loaded course`)
+    }
+    if (!Number.isInteger(player) || player < 0 || player >= ctx.playerCount) {
+      refuse('mechanisms', `${what}(${lever}, ${player})`, `player out of range 0..${ctx.playerCount - 1}; pass a player index`)
+    }
+    return this.#flat(levers[lever].handle, what)
+  }
   preStep(ctx: WorldCtx<unknown>, _inputs: readonly unknown[]): void {
     if (this.#courseIndex < 0) return
     this.#captureSpeeds(ctx)
@@ -416,7 +487,7 @@ export class MechanismSystem implements SimSystem<unknown> {
       if (loads.length === 0) continue
       const rb = ctx.physics.body(this.#bodies[i])
       if (!rb.isDynamic()) continue
-      for (let k = 0; k < loads.length; k += 4) {
+      for (let k = 0; k < loads.length; k += LOAD_STRIDE) {
         const mass = loads[k + 3]
         rb.addForceAtPoint(
           { x: 0, y: mass * GRAVITY_Y, z: 0 },
@@ -529,6 +600,36 @@ export class MechanismSystem implements SimSystem<unknown> {
     const joints = this.#jointHandles
     w.u32(joints.length)
     for (let i = 0; i < joints.length; i++) w.u32(handleIndex(joints[i]))
+    for (let i = 0; i < joints.length; i++) {
+      writeMotor(w, this.#motors[i])
+      w.f64(this.#jointSpecs[i].stiffness)
+    }
+    for (let i = 0; i < bodies.length; i++) {
+      if (!this.#kinPending[i]) {
+        w.u8(0)
+        continue
+      }
+      const p = this.#kinTarget[i]
+      w.u8(1)
+      w.f64(p.t.x)
+      w.f64(p.t.y)
+      w.f64(p.t.z)
+      w.f64(p.r.x)
+      w.f64(p.r.y)
+      w.f64(p.r.z)
+      w.f64(p.r.w)
+    }
+    for (let i = 0; i < bodies.length; i++) {
+      const loads = this.#loads[i]
+      w.u32(loads.length / LOAD_STRIDE)
+      for (let k = 0; k < loads.length; k += LOAD_STRIDE) {
+        w.f64(loads[k])
+        w.f64(loads[k + 1])
+        w.f64(loads[k + 2])
+        w.f64(loads[k + 3])
+        w.i16(loads[k + 4])
+      }
+    }
     w.u32(this.#head)
     w.u32(this.#count)
     for (let k = 0; k < this.#count; k++) {
@@ -553,6 +654,38 @@ export class MechanismSystem implements SimSystem<unknown> {
     const jointCount = r.u32()
     const handles: number[] = []
     for (let i = 0; i < jointCount; i++) handles.push(r.u32())
+    const motors: (MotorSpec | null)[] = []
+    const stiffness: number[] = []
+    for (let i = 0; i < jointCount; i++) {
+      motors.push(readMotor(r))
+      stiffness.push(r.f64())
+    }
+    const kinPending: boolean[] = []
+    const kinTarget: Pose[] = []
+    for (let i = 0; i < bodyCount; i++) {
+      const p = newPose()
+      const flag = r.u8()
+      if (flag === 1) {
+        p.t.x = r.f64()
+        p.t.y = r.f64()
+        p.t.z = r.f64()
+        p.r.x = r.f64()
+        p.r.y = r.f64()
+        p.r.z = r.f64()
+        p.r.w = r.f64()
+      } else if (flag !== 0) {
+        refuse('mechanisms', 'snapshot/kinematic', `target flag ${flag} is not 0 or 1; restore a mechanisms snapshot`)
+      }
+      kinPending.push(flag === 1)
+      kinTarget.push(p)
+    }
+    const loads: number[][] = []
+    for (let i = 0; i < bodyCount; i++) {
+      const n = r.u32()
+      const list: number[] = []
+      for (let k = 0; k < n; k++) list.push(r.f64(), r.f64(), r.f64(), r.f64(), r.i16())
+      loads.push(list)
+    }
     const head = r.u32()
     const count = r.u32()
     if (head >= MECH_EVENT_RING) {
@@ -594,8 +727,8 @@ export class MechanismSystem implements SimSystem<unknown> {
           bodyLocals.push(b)
         }
       }
-      if (bodyCount !== bodies.length) {
-        refuse('mechanisms', 'snapshot/bodies', `snapshot has ${bodyCount} bodies, course has ${bodies.length}; restore with the same course list`)
+      if (bodyCount !== bodyItems.length) {
+        refuse('mechanisms', 'snapshot/bodies', `snapshot has ${bodyCount} bodies, course has ${bodyItems.length}; restore with the same course list`)
       }
       let expectedJoints = spec.joints.length
       for (let i = 0; i < items.length; i++) expectedJoints += items[i].joints.length
@@ -630,7 +763,14 @@ export class MechanismSystem implements SimSystem<unknown> {
         this.#restoreJoint(j, this.#levelJointBody(j.a, `joints/${j.id}/a`), this.#levelJointBody(j.b, `joints/${j.id}/b`))
       }
     }
+    for (let i = 0; i < this.#jointSpecs.length; i++) {
+      this.#motors[i] = motors[i]
+      this.#jointSpecs[i].stiffness = stiffness[i]
+    }
     this.#initBodyState()
+    this.#kinPending = kinPending
+    this.#kinTarget = kinTarget
+    this.#loads = loads
     this.#head = head
     this.#count = count
     this.#events = []

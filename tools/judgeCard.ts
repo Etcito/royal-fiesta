@@ -84,6 +84,9 @@ export function judgeCommands(input: JudgeInput, outDir: string, inputPath: stri
   const dir = outDirOf(outDir)
   const commands: string[][] = [
     ['npm', 'run', 'build'],
+    // The plain web build has no game data and the page fetches content/index.json from its own folder:
+    // pack it into the published dist (a missing file is a CORS-less 404, a bare "Failed to fetch" in the page).
+    ['npm', 'run', 'content:pack', '--', `${DIST_DIR}content`],
     ['node', GPU_CLIENT, 'publish', DIST_DIR],
     ['node', GPU_CLIENT, input.op, inputPath, '--page-ref', PAGE_REF, '-o', dir],
   ]
@@ -150,6 +153,7 @@ export function pageRefOf(stdout: string): string {
 function labelOf(args: readonly string[], index: number): string {
   const op = args[2]
   if (index === 0) return 'build'
+  if (args[2] === 'content:pack') return 'pack content'
   if (op === 'publish') return 'publish'
   if (op === OP) return 'render'
   const png = args[2]

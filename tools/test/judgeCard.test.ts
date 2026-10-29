@@ -63,18 +63,19 @@ test('parseJudgeInput refuses a wrong op with its pointer and a fix', () => {
 
 test('judgeCommands gives build, publish, render and one judge run for M1', () => {
   const commands = judgeCommands(m1(), 'out/judge/m1/', 'out/judge/m1/input.json')
-  assert.equal(commands.length, 4)
+  assert.equal(commands.length, 5)
 
   assert.deepEqual(commands[0], ['npm', 'run', 'build'])
-  assert.deepEqual(commands[1], ['node', '$NMC_GPU_CLIENT', 'publish', 'apps/web/dist/'])
+  assert.deepEqual(commands[1], ['npm', 'run', 'content:pack', '--', 'apps/web/dist/content'])
+  assert.deepEqual(commands[2], ['node', '$NMC_GPU_CLIENT', 'publish', 'apps/web/dist/'])
 
-  const render = commands[2]!
+  const render = commands[3]!
   assert.deepEqual(render.slice(0, 3), ['node', '$NMC_GPU_CLIENT', 'gameCapture'])
   assert.ok(render.includes('out/judge/m1/input.json'))
   assert.equal(render[render.indexOf('--page-ref') + 1], '$PAGE_REF')
   assert.equal(render[render.indexOf('-o') + 1], 'out/judge/m1/')
 
-  const judge = commands[3]!
+  const judge = commands[4]!
   assert.equal(judge[0], 'python3')
   assert.equal(judge[1], '$NMC_JUDGE_CLIENT')
   assert.equal(judge[2], 'out/judge/m1/playing.png')
@@ -84,8 +85,8 @@ test('judgeCommands gives build, publish, render and one judge run for M1', () =
 
 test('judgeCommands normalises an out dir that has no trailing slash', () => {
   const commands = judgeCommands(m1(), 'out/judge/m1', 'out/judge/m1/input.json')
-  assert.equal(commands[2]![commands[2]!.indexOf('-o') + 1], 'out/judge/m1/')
-  assert.equal(commands[3]![2], 'out/judge/m1/playing.png')
+  assert.equal(commands[3]![commands[3]!.indexOf('-o') + 1], 'out/judge/m1/')
+  assert.equal(commands[4]![2], 'out/judge/m1/playing.png')
 })
 
 test('pageRefOf takes the page_ref publish printed and refuses a response without one', () => {

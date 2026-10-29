@@ -225,8 +225,16 @@ function preferCompatibilityAdapter(): void {
   const gpu = (navigator as Navigator & { gpu?: GpuLike }).gpu
   if (!gpu || typeof gpu.requestAdapter !== 'function') return
   const orig = gpu.requestAdapter.bind(gpu)
-  gpu.requestAdapter = (opts?: { powerPreference?: string; featureLevel?: string }) =>
-    orig({ ...(opts ?? {}), featureLevel: opts?.featureLevel ?? 'compatibility' })
+  gpu.requestAdapter = async (opts?: { powerPreference?: string; featureLevel?: string }) => {
+    // Core first: the compatibility level yields a device RAA's lit pipeline cannot use. Fall back to it only when the
+    // core adapter is missing or a software one (an older GPU client exposed the RTX only at that level).
+    const core = await orig({ ...(opts ?? {}) })
+    const info = (core as { info?: { isFallbackAdapter?: boolean; device?: string; description?: string; vendor?: string } } | null)?.info
+    const software = info?.isFallbackAdapter === true || /swiftshader|llvmpipe|lavapipe/i.test(`${info?.vendor ?? ''} ${info?.device ?? ''} ${info?.description ?? ''}`)
+    if (core !== null && !software) return core
+    if (opts?.featureLevel !== undefined) return core
+    return (await orig({ ...(opts ?? {}), featureLevel: 'compatibility' })) ?? core
+  }
 }
 
 export function installPlayOps(): void {

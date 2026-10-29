@@ -675,6 +675,62 @@
         },
         "gameCollision": true
       },
+      "collider": {
+        "id": "collider",
+        "name": "collider",
+        "kind": "paramesh",
+        "visible": false,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.4,
+                0,
+                0
+              ],
+              [
+                -0.4,
+                0,
+                0
+              ],
+              [
+                0,
+                0.85,
+                0
+              ],
+              [
+                0,
+                -0.85,
+                0
+              ],
+              [
+                0,
+                0,
+                0.4
+              ],
+              [
+                0,
+                0,
+                -0.4
+              ]
+            ],
+            "pointRadii": [
+              1,
+              1,
+              0.470588,
+              0.470588,
+              1,
+              1
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
       "body": {
         "id": "body",
         "name": "Body",
@@ -1168,62 +1224,6 @@
         },
         "gameCollision": true
       },
-      "collider": {
-        "id": "collider",
-        "name": "collider",
-        "kind": "paramesh",
-        "visible": false,
-        "paramesh": {
-          "shape": {
-            "format": "paramesh.shape",
-            "version": 1,
-            "shape": "cube",
-            "radius": 0,
-            "points": [
-              [
-                0.4,
-                0,
-                0
-              ],
-              [
-                -0.4,
-                0,
-                0
-              ],
-              [
-                0,
-                0.85,
-                0
-              ],
-              [
-                0,
-                -0.85,
-                0
-              ],
-              [
-                0,
-                0,
-                0.4
-              ],
-              [
-                0,
-                0,
-                -0.4
-              ]
-            ],
-            "pointRadii": [
-              1,
-              1,
-              0.470588,
-              0.470588,
-              1,
-              1
-            ],
-            "edgeRadii": {}
-          }
-        },
-        "gameCollision": true
-      },
       "anchor_body": {
         "id": "anchor_body",
         "name": "body",
@@ -1337,5 +1337,5 @@
       0.6
     ]
   },
-  "hash": "2f8860d099481fd9ab1379cfff43cd47b058784c7bd9cd6ac242bea9ef4e21e6"
+  "hash": "105d69f3ec57f11f93c5dbcb3d565f143d17c56f047f1e03d747bd5afbc22292"
 }

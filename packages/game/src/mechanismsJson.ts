@@ -316,7 +316,7 @@ export function itemOf(o: { id: string; asset: string; t: Vec3; r: Quat; s: Vec3
       r: quatMul(o.r, toQuat(b.r), quatIdentity()),
     }
     return {
-      id: b.id, type: b.type, colliders, rest,
+      id: b.id, type: b.type, colliders, parts: b.parts, rest,
       density: b.density, friction: b.friction, restitution: b.restitution,
       linearDamping: b.linearDamping, angularDamping: b.angularDamping,
       gravityScale: b.gravityScale, ccd: b.ccd, surface: b.surface,

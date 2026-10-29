@@ -12,6 +12,7 @@ export interface BodySpec {
   id: string
   type: BodyType
   colliders: ColliderSpec[]
+  parts?: readonly string[]
   rest: Pose
   density: number
   friction: number

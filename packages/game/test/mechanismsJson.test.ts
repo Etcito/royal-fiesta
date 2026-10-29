@@ -123,6 +123,13 @@ test('a body rest pose is rotated by the item yaw and translated by the item', a
   near(plank.rest.r, yaw90)
 })
 
+test('itemOf gives each BodySpec the parts of its asset body', async () => {
+  const asset = await assetWith(physicsOf())
+  const item = itemOf({ id: 'gate', asset: 'candy.gate', t: ZERO, r: IDENT, s: ONE }, asset, PATH)
+  assert.deepEqual(item.bodies.find(b => b.id === 'base')?.parts, ['base'])
+  assert.deepEqual(item.bodies.find(b => b.id === 'plank')?.parts, ['plank'])
+})
+
 test('body density stays in kg/m3', async () => {
   const asset = await assetWith(physicsOf())
   const item = itemOf({ id: 'gate', asset: 'candy.gate', t: ZERO, r: IDENT, s: ONE }, asset, PATH)

@@ -80,100 +80,12 @@
               }
             },
             {
-              "name": "hips",
+              "name": "upper.l",
               "parent": "root",
               "rest": {
                 "t": [
-                  0,
-                  -0.42,
-                  -0.02
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "spine",
-              "parent": "hips",
-              "rest": {
-                "t": [
-                  0,
-                  0.32,
-                  0.02
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "head",
-              "parent": "spine",
-              "rest": {
-                "t": [
-                  0,
-                  0.48,
-                  0
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "jaw",
-              "parent": "head",
-              "rest": {
-                "t": [
-                  0,
-                  0.05,
-                  0.3
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "upperArm.l",
-              "parent": "spine",
-              "rest": {
-                "t": [
                   -0.41,
-                  0.22,
+                  0.12,
                   0
                 ],
                 "r": [
@@ -190,8 +102,8 @@
               }
             },
             {
-              "name": "lowerArm.l",
-              "parent": "upperArm.l",
+              "name": "lower.l",
+              "parent": "upper.l",
               "rest": {
                 "t": [
                   -0.09,
@@ -212,12 +124,12 @@
               }
             },
             {
-              "name": "upperArm.r",
-              "parent": "spine",
+              "name": "tip.l",
+              "parent": "lower.l",
               "rest": {
                 "t": [
-                  0.41,
-                  0.22,
+                  -0.1098,
+                  -0.2467,
                   0
                 ],
                 "r": [
@@ -234,8 +146,30 @@
               }
             },
             {
-              "name": "lowerArm.r",
-              "parent": "upperArm.r",
+              "name": "upper.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.41,
+                  0.12,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.r",
+              "parent": "upper.r",
               "rest": {
                 "t": [
                   0.09,
@@ -256,12 +190,78 @@
               }
             },
             {
-              "name": "foot.l",
-              "parent": "hips",
+              "name": "tip.r",
+              "parent": "lower.r",
+              "rest": {
+                "t": [
+                  0.1098,
+                  -0.2467,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.l",
+              "parent": "root",
               "rest": {
                 "t": [
                   -0.18,
-                  -0.22,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.l",
+              "parent": "upperLeg.l",
+              "rest": {
+                "t": [
+                  0,
+                  -0.14,
+                  -0.02
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.18,
+                  -0.5,
                   0.05
                 ],
                 "r": [
@@ -279,12 +279,34 @@
             },
             {
               "name": "foot.r",
-              "parent": "hips",
+              "parent": "upperLeg.r",
               "rest": {
                 "t": [
-                  0.18,
-                  -0.22,
-                  0.05
+                  0,
+                  -0.14,
+                  -0.02
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "head",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0,
+                  0.5,
+                  0
                 ],
                 "r": [
                   0,
@@ -303,36 +325,288 @@
           "roles": {
             "foot.l": "foot.l",
             "foot.r": "foot.r",
+            "hand.l": "tip.l",
+            "hand.r": "tip.r",
             "head": "head",
-            "hips": "hips",
-            "jaw": "jaw",
-            "lowerArm.l": "lowerArm.l",
-            "lowerArm.r": "lowerArm.r",
+            "lowerArm.l": "lower.l",
+            "lowerArm.r": "lower.r",
             "root": "root",
-            "spine": "spine",
-            "upperArm.l": "upperArm.l",
-            "upperArm.r": "upperArm.r"
+            "upperArm.l": "upper.l",
+            "upperArm.r": "upper.r",
+            "upperLeg.l": "upperLeg.l",
+            "upperLeg.r": "upperLeg.r"
+          },
+          "ikChains": [
+            {
+              "name": "flipperL",
+              "solver": "twoBone",
+              "bones": [
+                "upper.l",
+                "lower.l",
+                "tip.l"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            },
+            {
+              "name": "flipperR",
+              "solver": "twoBone",
+              "bones": [
+                "upper.r",
+                "lower.r",
+                "tip.r"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            }
+          ],
+          "limits": [
+            {
+              "bone": "upper.l",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "upper.r",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "head",
+              "min": [
+                -40,
+                -60,
+                -30
+              ],
+              "max": [
+                40,
+                60,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.l",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.r",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "foot.l",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            },
+            {
+              "bone": "foot.r",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            }
+          ],
+          "attach": {
+            "body": {
+              "bone": "root",
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "head": {
+              "bone": "head",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "neck": {
+              "bone": "root",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
           },
           "bindings": [
             {
               "source": {
-                "group": "body"
+                "group": "penguin"
               },
               "bones": [
                 {
-                  "bone": "spine",
+                  "bone": "root",
                   "factor": 1
                 }
               ]
             },
             {
               "source": {
-                "shape": "hips"
+                "group": "body"
               },
               "bones": [
                 {
-                  "bone": "hips",
+                  "bone": "root",
                   "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "group": "flipper_l"
+              },
+              "bones": [
+                {
+                  "bone": "upper.l",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "flipper_l_blade"
+              },
+              "bones": [
+                {
+                  "bone": "lower.l",
+                  "factor": 0.85
+                },
+                {
+                  "bone": "upper.l",
+                  "factor": 0.15
+                }
+              ]
+            },
+            {
+              "source": {
+                "group": "flipper_r"
+              },
+              "bones": [
+                {
+                  "bone": "upper.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "flipper_r_blade"
+              },
+              "bones": [
+                {
+                  "bone": "lower.r",
+                  "factor": 0.85
+                },
+                {
+                  "bone": "upper.r",
+                  "factor": 0.15
+                }
+              ]
+            },
+            {
+              "source": {
+                "group": "foot_l"
+              },
+              "bones": [
+                {
+                  "bone": "foot.l",
+                  "factor": 0.85
+                },
+                {
+                  "bone": "upperLeg.l",
+                  "factor": 0.15
+                }
+              ]
+            },
+            {
+              "source": {
+                "group": "foot_r"
+              },
+              "bones": [
+                {
+                  "bone": "foot.r",
+                  "factor": 0.85
+                },
+                {
+                  "bone": "upperLeg.r",
+                  "factor": 0.15
                 }
               ]
             },
@@ -353,78 +627,28 @@
               },
               "bones": [
                 {
-                  "bone": "jaw",
+                  "bone": "head",
                   "factor": 1
                 }
               ]
             },
             {
               "source": {
-                "group": "flipper_l"
+                "shape": "hips"
               },
               "bones": [
                 {
-                  "bone": "upperArm.l",
-                  "factor": 1
-                }
-              ]
-            },
-            {
-              "source": {
-                "shape": "flipper_l_blade"
-              },
-              "bones": [
+                  "bone": "upperLeg.l",
+                  "factor": 0.5
+                },
                 {
-                  "bone": "lowerArm.l",
-                  "factor": 1
-                }
-              ]
-            },
-            {
-              "source": {
-                "group": "flipper_r"
-              },
-              "bones": [
-                {
-                  "bone": "upperArm.r",
-                  "factor": 1
-                }
-              ]
-            },
-            {
-              "source": {
-                "shape": "flipper_r_blade"
-              },
-              "bones": [
-                {
-                  "bone": "lowerArm.r",
-                  "factor": 1
-                }
-              ]
-            },
-            {
-              "source": {
-                "group": "foot_l"
-              },
-              "bones": [
-                {
-                  "bone": "foot.l",
-                  "factor": 1
-                }
-              ]
-            },
-            {
-              "source": {
-                "group": "foot_r"
-              },
-              "bones": [
-                {
-                  "bone": "foot.r",
-                  "factor": 1
+                  "bone": "upperLeg.r",
+                  "factor": 0.5
                 }
               ]
             }
-          ]
+          ],
+          "smooth": 0.2
         },
         "gameCollision": true
       },
@@ -2097,5 +2321,5 @@
     "min": [-0.673767, -0.865, -0.558923],
     "max": [0.673767, 0.85, 0.49]
   },
-  "hash": "268452e4cc667f18a3c955271459ac3b2da34855b5ef05b6827edc1cd639c01f"
+  "hash": "318c98b0135690390984f0f1d7bd3fea433f9af19bf3fcff57d18d21602b99b2"
 }

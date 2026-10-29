@@ -1,10 +1,14 @@
 // Export existing MCP-authored clips as playable glTF animations; never author S17 data here.
-// Usage: node proofs/m19/cheer-laugh-export.mjs [--frames=1|2]
+// Usage: node proofs/m19/cheer-laugh-export.mjs [--clip=emote.cheer|emote.laugh] [--frames=1|2]
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { loadRaaAnim } from '@etcito/raa-anim'
 
-const owner = JSON.parse(readFileSync('assets/common/penguin.body.asset.json')).document.nodes.penguin
+const sourceAsset = 'assets/common/penguin.body.asset.json'
+const asset = JSON.parse(readFileSync(sourceAsset)), owner = asset.document.nodes.penguin
+const provenance = { sourceAsset, assetHash: asset.hash,
+  assetRevision: execFileSync('git', ['log', '-1', '--format=%H', '--', sourceAsset], { encoding: 'utf8' }).trim() }
 const source = readFileSync('proofs/m19/penguin-fall-dive.glb')
 const jsonLength = source.readUInt32LE(12)
 const gltf = JSON.parse(source.subarray(20, 20 + jsonLength))
@@ -12,8 +16,11 @@ const binary = [source.subarray(28 + jsonLength)]
 let bytes = binary[0].length
 const limit = Number(process.argv.find(a => a.startsWith('--frames='))?.slice(9)) || Infinity
 assert([1, 2, Infinity].includes(limit), 'Probe with one frame, then two, before the full animation')
-const output = limit === Infinity ? 'proofs/m19/penguin-cheer-laugh.glb' : `/tmp/penguin-cheer-laugh-${limit}.glb`
-const names = ['emote.cheer', 'emote.laugh']
+const selected = process.argv.find(a => a.startsWith('--clip='))?.slice(7)
+assert(!selected || ['emote.cheer', 'emote.laugh'].includes(selected), 'Select an authored cheer or laugh clip')
+const stem = selected ? `penguin-${selected}` : 'penguin-cheer-laugh'
+const output = limit === Infinity ? `proofs/m19/${stem}.glb` : `/tmp/${stem}-${limit}.glb`
+const names = selected ? [selected] : ['emote.cheer', 'emote.laugh']
 const { bindings, smooth, ...preset } = owner.rig
 const api = await loadRaaAnim(), rig = api.loadRig(JSON.stringify(preset))
 const joints = gltf.skins[0].joints
@@ -41,7 +48,7 @@ function accessor(values, type, min, max) {
     ...(min ? { min, max } : {}) }) - 1
 }
 gltf.animations = []
-const report = { file: output, tickRate: 60, renderedReview: false, animations: [] }
+const report = { file: output, ...provenance, tickRate: 60, renderedReview: false, animations: [] }
 try {
   for (const name of names) {
     const definition = owner.clips.find(c => c.name === name)
@@ -53,7 +60,7 @@ try {
       const times = poses.map((_, tick) => tick / 60)
       const input = accessor(times, 'SCALAR', [0], [times.at(-1)])
       const animation = { name, samplers: [], channels: [], extras: {
-        source: 'assets/common/penguin.body.asset.json', authoredBy: 'SDF Modeler registered animation operations',
+        source: sourceAsset, ...provenance, authoredBy: 'SDF Modeler registered animation operations',
         sampleHz: 60, loop: definition.loop, rootMotion: definition.rootMotion,
         beak: 'Rigidly bound to head; no independent jaw articulation (Q7)' } }
       for (const track of definition.tracks) {
@@ -72,7 +79,7 @@ try {
   }
 } finally { rig.free() }
 gltf.asset.generator = 'royal-fiesta S17 runtime sample export'
-gltf.scenes[0].name = 'Penguin cheer and laugh'
+gltf.scenes[0].name = selected ? `Penguin ${selected}` : 'Penguin cheer and laugh'
 gltf.scenes[0].extras = { source: 'assets/common/penguin.body.asset.json', sampleHz: 60, clips: names }
 gltf.buffers[0].byteLength = bytes
 const json = Buffer.from(JSON.stringify(gltf)), jsonPadding = (4 - json.length % 4) % 4
@@ -112,5 +119,5 @@ try {
   }
 } finally { checkRig.free() }
 const result = JSON.stringify({ ...report, bytes: saved.length, verifiedEveryChannelSample: true }, null, 2) + '\n'
-if (limit === Infinity) writeFileSync('proofs/m19/cheer-laugh-media.json', result)
+if (limit === Infinity) writeFileSync(selected ? `proofs/m19/${stem}-media.json` : 'proofs/m19/cheer-laugh-media.json', result)
 console.log(result.trimEnd())

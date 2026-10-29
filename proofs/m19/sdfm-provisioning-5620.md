@@ -135,3 +135,31 @@ Rechecked: `cheer-laugh-check.mjs` passes against d74d5a6 (all fifteen unique na
 asset preservation and gesture samples); `npm run typecheck` and `npm run build` pass. The
 gameAsset regression probe passes, as do 59 affected content, asset and animation-brick tests,
 including contentFiles and courseV1. Only the existing build warnings remain.
+
+### Separate animation deliverables (2026-10-29 resumed run)
+
+Wrote two additional binary animation files directly in the repository:
+
+- `penguin-emote.cheer.glb`: emote.cheer, 109 samples at 60 Hz, 1.8 seconds, 14 channels.
+- `penguin-emote.laugh.glb`: emote.laugh, 97 samples at 60 Hz, 1.6 seconds, 14 channels.
+
+These contain the existing skinned mesh, protected skeleton and actual sampled animations.
+The exporter now accepts `--clip=emote.cheer` or `--clip=emote.laugh`; it retains the original
+combined export by default. One-sample and two-sample probes passed before the full exports.
+Each written file was read back and every channel sample checked against the pinned runtime.
+Each GLB and adjacent `*-media.json` records the source asset path, its format hash and the
+asset's source commit. Both GLBs are registered in `.nmc/artifacts.json` for normal integration.
+No clip, rig, geometry, binding, attachment or asset hash was changed in this resumed run.
+
+Revalidated against the wave/dance baseline d74d5a6: all fifteen unique S19 names load and
+sample, both gestures pass, and the entire inherited asset is preserved. `npm run typecheck`,
+`npm run build`, the capture bundle build and 54 affected content/asset/animation-brick tests
+passed, including contentFiles, courseV1 and gameAsset. The rigged-hash regression also passed
+in isolation. Syntax and whitespace checks passed.
+
+Q8 remains unresolved: neither `penguin-cheer-laugh.mp4` nor `cheer-laugh-execution/` was
+returned to this worktree. No hardware capture, side-by-side review or judge result can be
+reviewed here. The animation files are real deliverables, but visual acceptance remains blocked
+until orchestration executes the existing `.nmc/cheer-laugh.commands.json` and returns its
+media and hardware records. Both existing command queues remain unchanged; no GPU job was
+submitted by this model card and no software-rendered video was substituted.

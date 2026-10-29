@@ -1,5 +1,8 @@
 {
   "file": "proofs/m19/penguin-cheer-laugh.glb",
+  "sourceAsset": "assets/common/penguin.body.asset.json",
+  "assetHash": "1e7723fb714ceea965af1435bc540f42e722ccad0ee9c051054ec07b7b846a97",
+  "assetRevision": "a58991f8dbfeb3f0101b1dd9fb2c3839fec44937",
   "tickRate": 60,
   "renderedReview": false,
   "animations": [
@@ -16,6 +19,6 @@
       "channels": 14
     }
   ],
-  "bytes": 392472,
+  "bytes": 392856,
   "verifiedEveryChannelSample": true
 }

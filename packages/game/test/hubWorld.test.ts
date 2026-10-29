@@ -8,6 +8,10 @@ import { readFileSync } from 'node:fs'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import type { CharState } from '@royal-fiesta/sim/character/system'
+import type { ResolvedCourse } from '@royal-fiesta/sim/course'
+import { emptyMechanisms } from '@royal-fiesta/sim/mechanismSpec'
+import type { BodySpec } from '@royal-fiesta/sim/mechanismSpec'
+import { pose } from '@royal-fiesta/sim/vec'
 import { neutralInput } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
@@ -258,4 +262,87 @@ test('hub world refuses a non-hub course, a missing pad and a bad spawn', () => 
   assert.throws(() => new HubWorld(R, { ...plaza, queuePad: null }, 0), RefusalError)
   assert.throws(() => new HubWorld(R, plaza, plaza.spawns.length), RefusalError)
   assert.throws(() => new HubWorld(R, plaza, -1), RefusalError)
+})
+
+// A resolved plaza literal isolates mechanism collisions from the legacy obstacle path.
+function mechanismPlaza(): ResolvedCourse {
+  const origin = { x: 0, y: 0, z: 0 }
+  const rotation = { x: 0, y: 0, z: 0, w: 1 }
+  const scale = { x: 1, y: 1, z: 1 }
+  const body = (id: string, type: BodySpec['type'], y: number): BodySpec => ({
+    id, type, rest: { t: { x: 0, y, z: 0 }, r: rotation },
+    colliders: [{ shape: 'cuboid', half: { x: 1.5, y: 0.15, z: 1.5 }, t: origin, r: rotation }],
+    density: 20, friction: 0.6, restitution: 0, linearDamping: 0, angularDamping: 0.05,
+    gravityScale: 1, ccd: true, surface: 'normal',
+  })
+  return {
+    id: 'hub-mechanisms', name: 'Mechanism plaza', kind: 'hub', profiles: [],
+    timeLimitS: 60, killPlaneY: -10, contentHash: 0,
+    spawns: [
+      { t: { x: 0, y: 0.15, z: 0 }, facing: { x: 0, z: 1 } },
+      { t: { x: 6, y: 4, z: 0 }, facing: { x: 0, z: 1 } },
+    ],
+    checkpoints: [], finish: null, path: [], regions: [],
+    queuePad: { center: { x: 0, y: 1, z: 10 }, half: scale }, obstacles: [],
+    mechanisms: {
+      ...emptyMechanisms(),
+      items: [
+        { id: 'platform', asset: 'platform', t: origin, r: rotation, s: scale,
+          bodies: [body('platform', 'kinematic', 0)], joints: [] },
+        { id: 'spring-pad', asset: 'spring-pad', t: { x: 6, y: 0, z: 0 }, r: rotation, s: scale,
+          bodies: [body('base', 'fixed', -0.5), body('pad', 'dynamic', 0.5)],
+          joints: [
+            { id: 'guide', kind: 'slider', a: { item: 1, body: 0 }, b: { item: 1, body: 1 },
+              anchorA: { x: 0, y: 1, z: 0 }, anchorB: origin, axis: { x: 0, y: 1, z: 0 },
+              limits: [-0.4, 0.25], stiffness: 0, damping: 0, length: 0, motor: null },
+            { id: 'spring', kind: 'spring', a: { item: 1, body: 0 }, b: { item: 1, body: 1 },
+              anchorA: origin, anchorB: origin, axis: { x: 0, y: 1, z: 0 }, limits: null,
+              stiffness: 20000, damping: 1200, length: 1, motor: null },
+          ] },
+      ],
+      animations: [{ id: 'platform-track', target: { item: 0, body: 0 }, easing: 'linear',
+        loop: 'pingpong', autostart: true,
+        keys: [{ tick: 0, ...pose() }, { tick: 120, t: { x: 4, y: 0, z: 0 }, r: rotation }] }],
+    },
+  }
+}
+
+test('hub world: a mechanism platform carries a standing character along its pingpong track', () => {
+  const hw = new HubWorld(R, mechanismPlaza(), 0)
+  try {
+    assert.equal(hw.tick, 0)
+    const s = newState()
+    // Follow the outward leg, reversal, return and second outward leg.
+    for (let tick = 1; tick <= 300; tick++) {
+      hw.step(neutralInput())
+      hw.state(s)
+      const phase = tick % 240
+      const x = 4 * (phase <= 120 ? phase : 240 - phase) / 120
+      assert.ok(Math.abs(s.pos.x - x) < 0.3, `tick ${tick}: character x ${s.pos.x}, track x ${x}`)
+      if (tick > 10) {
+        assert.equal(s.grounded, true, `tick ${tick}`)
+        assert.deepEqual(s.groundBody, { item: 0, body: 0 })
+      }
+      assert.equal(s.teleportTick, 0, 'the character stays on the platform without respawning')
+    }
+  } finally { hw.free() }
+})
+
+test('hub world: a character dropped above a mechanism spring pad lands on its moving body', () => {
+  const hw = new HubWorld(R, mechanismPlaza(), 1)
+  try {
+    const s = hw.state(newState())
+    const startY = s.pos.y
+    let landed = false
+    for (let tick = 1; tick <= 180; tick++) {
+      hw.step(neutralInput())
+      hw.state(s)
+      assert.equal(s.teleportTick, 0, 'the character must not fall through and respawn')
+      if (s.grounded && s.groundBody?.item === 1 && s.groundBody.body === 1) landed = true
+    }
+    assert.ok(landed, 'the character must land on the spring pad, rather than its fixed base')
+    assert.equal(s.grounded, true)
+    assert.deepEqual(s.groundBody, { item: 1, body: 1 })
+    assert.ok(s.pos.y < startY - 2 && s.pos.y > 0.7, `landed y ${s.pos.y}, drop y ${startY}`)
+  } finally { hw.free() }
 })

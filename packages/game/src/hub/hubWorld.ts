@@ -6,6 +6,8 @@ import type { CharState } from '@royal-fiesta/sim/character/system'
 import { inBox } from '@royal-fiesta/sim/course'
 import type { Box, ResolvedCourse, SpawnPoint } from '@royal-fiesta/sim/course'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
+import { MechLogicSystem } from '@royal-fiesta/sim/mechanisms/logicSystem'
+import { MechanismSystem } from '@royal-fiesta/sim/mechanisms/system'
 import { ObstacleSystem } from '@royal-fiesta/sim/obstacles/system'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { FiestaWorld } from '@royal-fiesta/sim/world'
@@ -40,13 +42,17 @@ export class HubWorld {
     this.#spawn = plaza.spawns[spawn]
     this.#killY = plaza.killPlaneY
     const obstacles = new ObstacleSystem([plaza])
+    const mechLogic = new MechLogicSystem([plaza])
+    const mechanisms = new MechanismSystem([plaza])
     this.#chars = new CharacterSystem({ playerCount: 1 })
     this.#world = new FiestaWorld<PlayerInput>(R, {
       playerCount: 1,
-      systems: [obstacles as SimSystem<PlayerInput>, this.#chars],
+      systems: [obstacles as SimSystem<PlayerInput>, mechLogic, mechanisms, this.#chars],
     })
     const ctx = this.#world.ctx
     obstacles.load(ctx, 0)
+    mechanisms.load(ctx, 0)
+    mechLogic.load(ctx, 0)
     this.#chars.place(ctx, 0, this.#spawn)
   }
 

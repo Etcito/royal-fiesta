@@ -16,8 +16,12 @@ pkg/
 out/
 .vite/
 .bricks/
-.nmc/
+.nmc/*
+!.nmc/commands.json
+!.nmc/judge/
 kong.rules
+# S24 saved meshes are a local cache written by the SDF Modeler save: never tracked
+*.mesh
 # baked by npm run audio:bake (tools/bake-audio.ts): MP3 strips, manifest.json, haa-processors.js
 apps/web/public/audio/
 # staged by npm run ui:fonts (tools/uiFont.ts bundle): the verified ui/fonts.json fonts

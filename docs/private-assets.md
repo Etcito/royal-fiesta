@@ -82,12 +82,24 @@ source or JSON.
 Fixtures are test data, not a delivery path for production assets. A model,
 texture, audio clip or Wasm module never belongs in `fixtures/`.
 
+## Saved meshes and audio
+
+The SDF Modeler asset save writes a saved mesh next to each asset as
+`assets/<world>/<id>.mesh` (the S24 meshWire encoding). It is a local cache: the
+file is untracked (`*.mesh` in `.gitignore`) and is never committed. The game
+lookup order is memory/IndexedDB cache, then the `.mesh` file, then browser MAMA
+meshing; `content:pack` copies the file into the content root when it exists.
+
+Audio patches are `audio/<id>.haa.json`. They live only under `audio/` or as a
+small test fixture under `fixtures/`, never under `assets/` or `courses/`.
+
 ## Guard rules
 
 `tools/guard.ts` refuses, for every tracked or staged file:
 
 - binary extensions such as `.glb`, `.gltf`, `.png`, `.jpg`, `.ktx2`, `.bin`,
-  `.wasm`, `.zip`, `.mp3`, `.mp4`, `.fbx`, `.ttf`, `.woff2` and `.pdf`;
+  `.wasm`, `.zip`, `.mp3`, `.mp4`, `.fbx`, `.ttf`, `.woff2`, `.pdf` and `.mesh`
+  (the saved mesh);
 - a NUL byte in the first 8000 bytes;
 - bytes that are not valid UTF-8;
 - more than 256 KiB (262144 bytes), with `package-lock.json` exempt; files
@@ -96,7 +108,7 @@ texture, audio clip or Wasm module never belongs in `fixtures/`.
   `.prims.json` and `.manifest.json` only under `fixtures/`; `.course.json`
   under `fixtures/` or `courses/`; `.asset.json` under `fixtures/` or directly in
   `assets/<world>/` (world `candy`, `ice`, `jungle`, `neon` or `common`);
-  `.ui.json` under `ui/`;
+  `.ui.json` under `ui/`; `.haa.json` under `fixtures/` or `audio/`;
 - a non-JSON file under `fixtures/`, or one over 64 KiB;
 - a public leak in any UTF-8 file (rule `public-leak`, see below).
 

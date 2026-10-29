@@ -78,7 +78,24 @@ test('binary extension list includes common formats and is lower-case', () => {
   assert.ok(BINARY_EXTS.includes('.glb'))
   assert.ok(BINARY_EXTS.includes('.wasm'))
   assert.ok(BINARY_EXTS.includes('.woff2'))
+  assert.ok(BINARY_EXTS.includes('.mesh'))
   assert.ok(BINARY_EXTS.every((ext) => ext === ext.toLowerCase()))
+})
+
+test('saved .mesh files are refused as binary', () => {
+  assert.deepEqual(rules('assets/candy/candy.penguin.mesh', text('mesh')), ['binary-ext'])
+})
+
+test('.haa.json is only allowed under audio/ or fixtures/', () => {
+  assert.deepEqual(rules('audio/fiesta.haa.json', text('{}')), [])
+  assert.deepEqual(rules('fixtures/audio/fiesta.haa.json', text('{}')), [])
+  for (const file of [
+    'src/fiesta.haa.json',
+    'assets/candy/fiesta.haa.json',
+    'courses/fiesta.haa.json',
+  ]) {
+    assert.deepEqual(rules(file, text('{}')), ['asset-outside-fixtures'], file)
+  }
 })
 
 test('checkPaths skips files that are gone from disk', () => {

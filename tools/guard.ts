@@ -23,7 +23,7 @@ export const BINARY_EXTS: readonly string[] = [
   '.tga', '.ico', '.ktx2', '.dds', '.basis', '.exr', '.hdr', '.bin', '.wasm',
   '.zip', '.gz', '.tgz', '.7z', '.tar', '.rar', '.mp3', '.ogg', '.wav', '.flac',
   '.mp4', '.webm', '.mov', '.fbx', '.obj', '.blend', '.psd', '.ttf', '.otf',
-  '.woff', '.woff2', '.pdf',
+  '.woff', '.woff2', '.pdf', '.mesh',
 ]
 
 export const MAX_FILE_BYTES = 262144
@@ -55,6 +55,11 @@ const PLACEMENT: readonly Placement[] = [
     where: `fixtures/ or assets/<world>/ (${WORLDS.join('|')})`,
   },
   { suffix: '.ui.json', allowed: (file) => file.startsWith('ui/'), where: 'ui/' },
+  {
+    suffix: '.haa.json',
+    allowed: (file) => file.startsWith('fixtures/') || file.startsWith('audio/'),
+    where: 'fixtures/ or audio/',
+  },
 ]
 
 // The guard's own files spell out every pattern on purpose.

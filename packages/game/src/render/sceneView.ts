@@ -7,13 +7,29 @@ import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import { pose } from '@royal-fiesta/sim/vec'
-import { CharMode } from '@royal-fiesta/sim/character/constants'
+import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
 import { PALETTE } from './palette.ts'
 import type { CameraPose, RenderPort, SkinnedAssetT, SkinRigT } from './port.ts'
+
+// Visual IK inputs, read from this tick's sim state only: the capsule's foot contact while grounded, the
+// grab reach point in front while grabbing, and a forward look target. Copies, so the sim is never shared.
+export function ikInputs(c: CharacterView, grounded: boolean): Pick<CharacterObservation, 'xf' | 'ik'> {
+  const pos = { x: c.pos.x, y: c.pos.y, z: c.pos.z }, f = { x: c.facing.x, z: c.facing.z }
+  const ahead = (d: number) => ({ x: pos.x + f.x * d, y: pos.y, z: pos.z + f.z * d })
+  return {
+    xf: { pos, facing: f },
+    ik: {
+      mode: c.mode,
+      ground: grounded ? { point: { x: pos.x, y: pos.y - CHAR.halfHeight - CHAR.radius, z: pos.z }, normal: { x: 0, y: 1, z: 0 } } : null,
+      grab: c.mode === CharMode.grabbing ? ahead(CHAR.grabRange) : null,
+      look: f.x === 0 && f.z === 0 ? null : ahead(10),
+    },
+  }
+}
 
 // S16 attach points the costumes mount on: the penguin hat, scarf and suit use head, neck and body.
 export type CostumeSlot = 'head' | 'neck' | 'body'
@@ -437,7 +453,7 @@ export class SceneView {
       if (c.parked) continue
       // Matches carry no S9 emote; grounded is every mode but the airborne ones.
       const grounded = c.mode !== CharMode.air && c.mode !== CharMode.dive
-      out.push({ id: p, mode: c.mode, vel: { x: c.vel.x, y: c.vel.y, z: c.vel.z }, grounded, emote: 0 })
+      out.push({ id: p, mode: c.mode, vel: { x: c.vel.x, y: c.vel.y, z: c.vel.z }, grounded, emote: 0, ...ikInputs(c, grounded) })
     }
     anim.observeTick(tick, out)
   }

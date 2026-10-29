@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { CharMode } from '@royal-fiesta/sim/character/constants'
-import { AnimDriver, type CharacterPose } from '../src/anim/driver.ts'
+import { AnimDriver, type CharacterObservation, type CharacterPose } from '../src/anim/driver.ts'
 import { loadAnimBrick } from '../src/anim/brick.ts'
 import { VisualIk, toPoseFrame, type CharacterTransform, type IkTargets, type VisualPose } from '../src/anim/ik.ts'
 
@@ -131,4 +131,93 @@ test('evaluation never mutates the sim targets or the source pose, and never acc
     near(ik.evaluate(fresh, xf, { mode: CharMode.grabbing }).skin, fresh.skin)
     assert.deepEqual(ik.evaluate(fresh, xf, targets).skin, first.skin)
   } finally { ik.dispose() }
+})
+
+// Integration: the driver runs IK after its single graph step and the scene feeds sim-only targets.
+const { initRapier } = await import('@gamesaloon/rollback-rapier')
+const { createMatchSim } = await import('@royal-fiesta/sim/match/matchSim')
+const { neutralInput } = await import('@royal-fiesta/sim/input')
+const { fixtureResolver } = await import('../src/assets.ts')
+const { matchCourses } = await import('../src/courseSet.ts')
+const { netSetup } = await import('../src/net/tuning.ts')
+const { ikInputs } = await import('../src/render/sceneView.ts')
+type View = import('@royal-fiesta/sim/match/matchSim').CharacterView
+
+const observe = (id: number, mode: number, extra: Pick<CharacterObservation, 'xf' | 'ik'> = {}): CharacterObservation =>
+  ({ id, mode, emote: 0, grounded: mode !== CharMode.air && mode !== CharMode.dive, vel: { x: 1, y: 0, z: 2 }, ...extra })
+const view = (mode: number, x = 0): View =>
+  ({ pos: { x, y: 0.85, z: 0 }, vel: { x: 1, y: 0, z: 2 }, facing: { x: 0, z: 1 }, mode, status: 0, parked: false, teleportTick: 0 })
+const withIk = (v: View) => observe(0, v.mode, ikInputs(v, v.mode !== CharMode.air && v.mode !== CharMode.dive))
+
+test('integration: IK corrects the stepped graph pose once per tick and that pose is the one submitted', async () => {
+  const on = await AnimDriver.load(graphJson, rigJson, clipsJson), off = await AnimDriver.load(graphJson, rigJson, clipsJson, { ik: false })
+  const ik = VisualIk.create(await loadAnimBrick(), rigJson)
+  try {
+    for (let tick = 1; tick <= 3; tick++) {
+      const v = view(CharMode.grabbing), obs = withIk(v)
+      on.observeTick(tick, [obs]); off.observeTick(tick, [obs])
+      on.observeTick(tick, [obs]) // a repeated render of the same tick never steps again
+      const raw = off.pose(0)!, posed = on.pose(0)!
+      // Evaluation order: the corrected pose equals IK applied to this tick's uncorrected graph pose.
+      const expect = ik.evaluate(raw, obs.xf!, obs.ik!)
+      assert.deepEqual(posed.skin, expect.skin); assert.deepEqual(posed.model, expect.model)
+      assert.deepEqual(posed.ik, { feet: true, hands: true, look: true })
+      assert.equal(raw.ik, undefined)
+      assert.deepEqual(posed.events, raw.events)
+    }
+  } finally { on.dispose(); off.dispose(); ik.dispose() }
+})
+
+test('integration: airborne and released grabs drop the feet and hand corrections', async () => {
+  const driver = await AnimDriver.load(graphJson, rigJson, clipsJson)
+  try {
+    const modes = [CharMode.ground, CharMode.air, CharMode.dive, CharMode.grabbing, CharMode.ground]
+    const expected = [
+      { feet: true, hands: false, look: true }, { feet: false, hands: false, look: true }, { feet: false, hands: false, look: true },
+      { feet: true, hands: true, look: true }, { feet: true, hands: false, look: true },
+    ]
+    modes.forEach((mode, i) => {
+      driver.observeTick(i + 1, [withIk(view(mode))])
+      assert.deepEqual(driver.pose(0)!.ik, expected[i], `mode ${mode}`)
+      finiteOut({ ...driver.pose(0)!, local: new Float32Array(1), active: expected[i] })
+    })
+  } finally { driver.dispose() }
+})
+
+test('integration: each character is corrected from its own targets only', async () => {
+  const both = await AnimDriver.load(graphJson, rigJson, clipsJson), alone = await AnimDriver.load(graphJson, rigJson, clipsJson)
+  try {
+    const a = view(CharMode.grabbing, 0), b = view(CharMode.air, 3)
+    both.observeTick(1, [withIk(a), { ...withIk(b), id: 1 }])
+    alone.observeTick(1, [withIk(a)])
+    assert.deepEqual(both.pose(0)!.skin, alone.pose(0)!.skin)
+    assert.deepEqual(both.pose(1)!.ik, { feet: false, hands: false, look: true })
+    assert.notDeepEqual(both.pose(1)!.skin, both.pose(0)!.skin)
+  } finally { both.dispose(); alone.dispose() }
+})
+
+test('integration: simulation state is identical with IK enabled or bypassed', async () => {
+  const R = await initRapier()
+  const read = async (rel: string) => readFileSync(new URL(`../../../${rel}`, import.meta.url), 'utf8')
+  const dir = new URL('../../../fixtures/courses/', import.meta.url)
+  const paths = readdirSync(dir).filter(n => n.endsWith('.course.json')).sort().map(n => `fixtures/courses/${n}`)
+  const entries = await Promise.all(paths.map(async path => ({ path, json: JSON.parse(await read(path)) as unknown })))
+  const courses = await matchCourses(entries, fixtureResolver(read), 'sprint')
+  const setup = netSetup(5, 2, 'sprint', courses), n = setup.playerCount, ids = [...Array(n).keys()]
+  const sims = [createMatchSim(R, setup), createMatchSim(R, netSetup(5, 2, 'sprint', courses))]
+  const drivers = [await AnimDriver.load(graphJson, rigJson, clipsJson), await AnimDriver.load(graphJson, rigJson, clipsJson, { ik: false })]
+  try {
+    const inputs = ids.map(() => neutralInput())
+    for (let t = 0; t < 40; t++) {
+      const states = sims.map((sim, s) => {
+        sim.step(inputs)
+        const out = ids.map(p => sim.character(p, view(0)))
+        const before = structuredClone(out)
+        drivers[s].observeTick(sim.tick, out.map((c, p) => observe(p, c.mode, ikInputs(c, c.mode !== CharMode.air))))
+        assert.deepEqual(out, before) // observing never writes the sim views
+        return ids.map(p => sim.character(p, view(0)))
+      })
+      assert.deepEqual(states[0], states[1], `tick ${t}`)
+    }
+  } finally { for (const d of drivers) d.dispose() }
 })

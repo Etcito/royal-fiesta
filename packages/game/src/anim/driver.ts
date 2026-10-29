@@ -1,12 +1,16 @@
 import type { AnimationGraph, AnimationGraphState, GraphStep } from '@etcito/raa-anim'
 import { loadAnimBrick } from './brick.ts'
+import { VisualIk, type CharacterTransform, type IkActive, type IkTargets } from './ik.ts'
 import { mapParams, newParamMemory, type CharObservation, type ParamMemory } from './params.ts'
 
 type Brick = Awaited<ReturnType<typeof loadAnimBrick>>
 type Rig = ReturnType<Brick['loadRig']>
 type Clip = ReturnType<Brick['loadClip']>
-export type CharacterPose = GraphStep & Pick<ReturnType<Brick['sampleClip']>, 'model'>
-export interface CharacterObservation extends CharObservation { readonly id: number }
+export type CharacterPose = GraphStep & Pick<ReturnType<Brick['sampleClip']>, 'model'> & { readonly ik?: IkActive }
+/** `xf` and `ik` are the sim placement and targets for visual IK; the corrected pose never reaches the sim. */
+export interface CharacterObservation extends CharObservation {
+  readonly id: number; readonly xf?: CharacterTransform; readonly ik?: IkTargets
+}
 interface Entry {
   graph: AnimationGraph; state: AnimationGraphState; memory: ParamMemory; pose?: CharacterPose
 }
@@ -53,20 +57,22 @@ export class AnimDriver {
   private readonly rig: Rig
   private readonly clips: Clip[]
   private readonly rest: Float32Array
+  private readonly ik: VisualIk | null
 
-  private constructor(api: Brick, json: string, rig: Rig, clips: Clip[], rest: Float32Array) {
-    this.api = api; this.json = json; this.rig = rig; this.clips = clips; this.rest = rest
+  private constructor(api: Brick, json: string, rig: Rig, clips: Clip[], rest: Float32Array, ik: VisualIk | null) {
+    this.api = api; this.json = json; this.rig = rig; this.clips = clips; this.rest = rest; this.ik = ik
   }
 
   /** rigJson is S16 (without the SDF Modeler bindings/smooth extension). */
-  static async load(graphJson: string, rigJson: string, clipJson: readonly string[]): Promise<AnimDriver> {
+  static async load(graphJson: string, rigJson: string, clipJson: readonly string[], opts: { ik?: boolean } = {}): Promise<AnimDriver> {
     const api = await loadAnimBrick(), rig = api.loadRig(rigJson), clips: Clip[] = []
     try {
       for (const json of clipJson) clips.push(api.loadClip(rig, json))
       const rest = restModels(JSON.parse(rigJson).bones)
       // Validate even before the first character joins.
       api.loadGraph(graphJson, rig, clips).free()
-      return new AnimDriver(api, graphJson, rig, clips, rest)
+      const ik = opts.ik === false ? null : VisualIk.create(api, rigJson)
+      return new AnimDriver(api, graphJson, rig, clips, rest, ik)
     } catch (error) {
       for (const clip of clips) clip.free()
       rig.free()
@@ -95,7 +101,12 @@ export class AnimDriver {
       for (let i = 0; i < model.length; i += 16) {
         model.set(multiply(step.skin.subarray(i, i + 16), this.rest.subarray(i, i + 16)), i)
       }
-      entry.pose = { ...step, model }
+      // IK runs after the single graph step, from that fresh pose; its output only feeds rendering.
+      const { xf, ik: targets } = character
+      if (this.ik !== null && xf !== undefined && targets !== undefined) {
+        const out = this.ik.evaluate({ model, skin: step.skin }, xf, targets)
+        entry.pose = { ...step, model: out.model, skin: out.skin, ik: out.active }
+      } else entry.pose = { ...step, model }
     }
     this.tick = tick
   }
@@ -114,6 +125,6 @@ export class AnimDriver {
     if (this.disposed) return
     for (const id of this.entries.keys()) this.remove(id)
     for (const clip of this.clips) clip.free()
-    this.rig.free(); this.disposed = true
+    this.ik?.dispose(); this.rig.free(); this.disposed = true
   }
 }

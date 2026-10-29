@@ -379,6 +379,53 @@ test('see-saw: pending loads and angles survive snapshot -> restore (QB1)', () =
   }
 })
 
+test('see-saw state get/set round-trip', () => {
+  const { sys, world } = makeWorld()
+  try {
+    for (let k = 0; k < 20; k++) loadedStep(sys, world, 3)
+    const bytes = world.takeSnapshotBytes()
+    const got = sys.seesawState(SAW, { angle: 0, prevAngle: 0, angVel: 0 })
+    assert.ok(got.angle > 0 && got.angVel > 0, `angle ${got.angle}, angVel ${got.angVel}`)
+    assert.equal(sys.seesawAngle(SAW), got.angle)
+    sys.setSeesawState(SAW, 0.2, 0.1, 1.5)
+    assert.deepEqual(sys.seesawState(SAW, { angle: 0, prevAngle: 0, angVel: 0 }), { angle: 0.2, prevAngle: 0.1, angVel: 1.5 })
+    sys.setSeesawState(SAW, got.angle, got.prevAngle, got.angVel)
+    assert.deepEqual(sys.seesawState(SAW, { angle: 0, prevAngle: 0, angVel: 0 }), got)
+    // All three fields are back: the snapshot bytes did not move.
+    assert.deepEqual(world.takeSnapshotBytes(), bytes)
+    assert.throws(() => sys.setSeesawState(1, 0, 0, 0), (e: unknown) => e instanceof RefusalError && /not a seesaw/.test(e.message))
+    assert.throws(() => sys.setSeesawState(SAW, NaN, 0, 0), RefusalError)
+  } finally {
+    world.free()
+  }
+})
+
+test('placeKinematic puts every kinematic body directly at pose(i, L)', () => {
+  const { sys, world } = makeWorld()
+  try {
+    run(world, 30)
+    // A world rebuilt at tick 30 calls this after load: the body is at the pose now, not after a step.
+    sys.placeKinematic(world.ctx, 0)
+    sys.placeKinematic(world.ctx, 30)
+    for (let i = 0; i < sys.count; i++) {
+      const o = sys.spec(i)
+      if (!isKinematic(o.motion.kind)) continue
+      const want = sys.pose(i, 30, pose())
+      const rb = world.physics.body(sys.bodyId(i))
+      const t = rb.translation()
+      const q = rb.rotation()
+      const f = Math.fround
+      assert.deepEqual([t.x, t.y, t.z], [f(want.t.x), f(want.t.y), f(want.t.z)], o.id)
+      // setRotation stores f32 and normalises the quaternion, so the components move by a few f32 ulps.
+      const got = [q.x, q.y, q.z, q.w]
+      const target = [want.r.x, want.r.y, want.r.z, want.r.w]
+      for (let k = 0; k < 4; k++) assert.ok(Math.abs(got[k] - target[k]) <= 1e-6, `${o.id} r[${k}] ${got[k]} vs ${target[k]}`)
+    }
+  } finally {
+    world.free()
+  }
+})
+
 // Runs `fn` inside preStep, after the obstacles have integrated.
 function probeWorld(fn: (ctx: WorldCtx<unknown>) => void) {
   const sys = new ObstacleSystem([course])

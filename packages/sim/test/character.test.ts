@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
+import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { FIXED_DT, initRapier } from '@gamesaloon/rollback-rapier'
-import type { RapierModule } from '@gamesaloon/rollback-rapier'
+import type { BodyId, RapierModule } from '@gamesaloon/rollback-rapier'
 import { CHAR, CharMode } from '../src/character/constants.ts'
 import { approach2, turnFacing } from '../src/character/controller.ts'
-import { CharacterSystem } from '../src/character/system.ts'
+import { CharacterSystem, characterBody } from '../src/character/system.ts'
 import type { CharState } from '../src/character/system.ts'
 import type { Motion, ObstacleSpec, ResolvedCourse } from '../src/course.ts'
 import { PI, datan2 } from '../src/detmath.ts'
@@ -146,6 +147,26 @@ function input(partial: Partial<PlayerInput>): PlayerInput {
   return decodeInput(inputCode(partial), neutralInput())
 }
 
+// A domain-style recipe: the caller spawns the character bodies from the shared helper, then
+// hands their ids to a CharacterSystem created with externalBodies.
+function externalBodySystem(chars: CharacterSystem): SimSystem<PlayerInput> {
+  return {
+    name: 'externalBodies',
+    init(ctx) {
+      const ids: BodyId[] = []
+      for (let p = 0; p < chars.playerCount; p++) {
+        const recipe = characterBody(ctx.R, p)
+        ids.push(ctx.physics.createBody(recipe.body, recipe.colliders))
+      }
+      chars.bindBodies(ids)
+    },
+    preStep() {},
+    postStep() {},
+    snapshot() {},
+    restore() {},
+  }
+}
+
 const NEUTRAL = neutralInput()
 const FORWARD = input({ moveZ: 1 })
 const JUMP = input({ jump: true })
@@ -250,6 +271,59 @@ describe('system', () => {
     chars.readPositions(world.ctx, after)
     assert.deepEqual(after, pos, 'parked players do not move')
     world.free()
+  })
+
+  it('external bodies bound from the shared recipe match V1 state after 60 steps', () => {
+    const players = 2
+    const script = (t: number, p: number): PlayerInput =>
+      input({ moveX: ((t * 7 + p * 3) % 11) / 5 - 1, moveZ: ((t * 5 + p) % 13) / 6 - 1, jump: (t + p) % 23 < 2 })
+    const placeAll = (chars: CharacterSystem, world: FiestaWorld<PlayerInput>): void => {
+      for (let p = 0; p < players; p++) chars.place(world.ctx, p, { t: v3(p * 2, 0, 0), facing: { x: 0, z: 1 } })
+    }
+    const v1Chars = new CharacterSystem({ playerCount: players })
+    const v1 = new FiestaWorld<PlayerInput>(R, { playerCount: players, systems: [groundSystem(), v1Chars] })
+    placeAll(v1Chars, v1)
+    const extChars = new CharacterSystem({ playerCount: players, externalBodies: true })
+    const ext = new FiestaWorld<PlayerInput>(R, {
+      playerCount: players,
+      systems: [groundSystem(), extChars, externalBodySystem(extChars)],
+    })
+    placeAll(extChars, ext)
+    // init created no bodies of its own: the recipe spawned exactly V1's bodies and bind copied the ids.
+    assert.equal(ext.physics.bodyCount, v1.physics.bodyCount)
+    for (let t = 0; t < 60; t++) {
+      const frame = [script(t, 0), script(t, 1)]
+      v1.step(frame)
+      ext.step(frame)
+    }
+    for (let p = 0; p < players; p++) {
+      assert.deepEqual(state({ world: ext, chars: extChars }, p), state({ world: v1, chars: v1Chars }, p), `player ${p}`)
+    }
+    v1.free()
+    ext.free()
+  })
+
+  it('writePlayer/readPlayer round-trip every per-player field', () => {
+    const players = 3
+    const a = rig(players)
+    for (let t = 0; t < 50; t++) {
+      a.world.step([FORWARD, GRABBER, input({ moveX: -1, jump: t % 7 === 0 })])
+    }
+    const src = new SnapWriter()
+    for (let p = 0; p < players; p++) a.chars.writePlayer(src, p)
+    const bytes = src.bytes().slice()
+    // The concatenation of the per-player blocks is exactly the system's snapshot.
+    const snap = new SnapWriter()
+    a.chars.snapshot(snap)
+    assert.deepEqual(snap.bytes().slice(), bytes)
+
+    const fresh = new CharacterSystem({ playerCount: players })
+    const r = new SnapReader(bytes)
+    for (let p = 0; p < players; p++) fresh.readPlayer(r, p)
+    const out = new SnapWriter()
+    for (let p = 0; p < players; p++) fresh.writePlayer(out, p)
+    assert.deepEqual(out.bytes().slice(), bytes)
+    a.world.free()
   })
 
   it('after place, the character is grounded within 60 ticks with mode ground', () => {

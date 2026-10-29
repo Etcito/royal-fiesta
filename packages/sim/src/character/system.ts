@@ -12,7 +12,16 @@ import type { SimSystem, WorldCtx } from '../world.ts'
 import { CHAR, CharMode } from './constants.ts'
 import { approach2, turnFacing } from './controller.ts'
 
-export interface CharacterOptions { playerCount: number }
+export interface CharacterOptions {
+  playerCount: number
+  // Domain worlds spawn the seat bodies themselves; init then only resets the players.
+  externalBodies?: boolean
+}
+
+export interface CharacterBodyDescs {
+  body: InstanceType<RapierModule['RigidBodyDesc']>
+  colliders: InstanceType<RapierModule['ColliderDesc']>[]
+}
 
 export interface CharState {
   pos: Vec3
@@ -47,9 +56,30 @@ const scratchPt = { x: 0, y: 0, z: 0 }
 const scratchObsV = { x: 0, y: 0, z: 0 }
 let scratchRay: InstanceType<RapierModule['Ray']> | null = null
 
+// The one character body: FiestaWorld's init and a domain entity recipe both call this, so a
+// domain seat is byte-for-byte the same body as a full-mesh seat.
+export function characterBody(R: RapierModule, parkSlot: number): CharacterBodyDescs {
+  const body = R.RigidBodyDesc.dynamic()
+    .setTranslation(CHAR.parkOrigin.x + parkSlot * CHAR.parkStep, CHAR.parkOrigin.y, CHAR.parkOrigin.z)
+    .lockRotations()
+    .setCanSleep(false)
+    .setCcdEnabled(false)
+    .setGravityScale(0)
+    .setAdditionalMass(CHAR.mass)
+  // Density 0 so the body mass is exactly CHAR.mass.
+  const collider = R.ColliderDesc.capsule(CHAR.halfHeight, CHAR.radius)
+    .setDensity(0)
+    .setFriction(0)
+    .setFrictionCombineRule(R.CoefficientCombineRule.Min)
+    .setRestitution(0)
+    .setCollisionGroups(0)
+  return { body, colliders: [collider] }
+}
+
 export class CharacterSystem implements SimSystem<PlayerInput> {
   readonly name = 'characters'
   readonly playerCount: number
+  readonly #externalBodies: boolean
   // Created once in init, so the ids are the same in every world with the same systems.
   #bodies: BodyId[] = []
   // Per-player SoA state, all of it snapshotted.
@@ -89,6 +119,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   constructor(opts: CharacterOptions) {
     const n = opts.playerCount
     this.playerCount = n
+    this.#externalBodies = opts.externalBodies === true
+    this.#bodies = new Array<BodyId>(n).fill(-1)
     this.#mode = new Uint8Array(n)
     this.#timer = new Int32Array(n)
     this.#coyote = new Uint8Array(n)
@@ -116,26 +148,30 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       refuse('characters', 'playerCount', `system has ${this.playerCount}, world has ${ctx.playerCount}; pass the world's player count`)
     }
     const R = ctx.R
-    const bodies: BodyId[] = []
+    const bodies = this.#bodies
     for (let p = 0; p < this.playerCount; p++) {
-      const desc = R.RigidBodyDesc.dynamic()
-        .setTranslation(CHAR.parkOrigin.x + p * CHAR.parkStep, CHAR.parkOrigin.y, CHAR.parkOrigin.z)
-        .lockRotations()
-        .setCanSleep(false)
-        .setCcdEnabled(false)
-        .setGravityScale(0)
-        .setAdditionalMass(CHAR.mass)
-      // Density 0 so the body mass is exactly CHAR.mass.
-      const col = R.ColliderDesc.capsule(CHAR.halfHeight, CHAR.radius)
-        .setDensity(0)
-        .setFriction(0)
-        .setFrictionCombineRule(R.CoefficientCombineRule.Min)
-        .setRestitution(0)
-        .setCollisionGroups(0)
-      bodies.push(ctx.physics.createBody(desc, [col]))
+      if (!this.#externalBodies) {
+        const recipe = characterBody(R, p)
+        bodies[p] = ctx.physics.createBody(recipe.body, recipe.colliders)
+      }
       this.#resetPlayer(p)
     }
-    this.#bodies = bodies
+  }
+
+  // The caller owns the bodies (a domain world); this only replaces the ids it will step.
+  // The ids are copied in place, so the caller array may be reused and no allocation happens here.
+  bindBodies(ids: ArrayLike<BodyId>): void {
+    if (ids.length !== this.playerCount) {
+      refuse('characters', 'bindBodies', `${ids.length} ids for ${this.playerCount} players; pass one body id per player`)
+    }
+    const bodies = this.#bodies
+    for (let p = 0; p < this.playerCount; p++) {
+      const id = ids[p]
+      if (!Number.isInteger(id) || id < 0) {
+        refuse('characters', `bindBodies[${p}]`, `got ${id}; pass a non-negative integer body id`)
+      }
+      bodies[p] = id
+    }
   }
 
   #resetPlayer(p: number): void {
@@ -571,51 +607,60 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     }
   }
 
+  // Exactly the per-player fields snapshot() writes, in the same order. A domain world writes and
+  // reads one seat's block at a time; the bytes are identical to the full-mesh layout.
+  writePlayer(w: SnapWriter, p: number): void {
+    this.#check(p, 'writePlayer')
+    w.u8(this.#mode[p])
+    w.i32(this.#timer[p])
+    w.u8(this.#coyote[p])
+    w.u8(this.#jumpBuffer[p])
+    w.u8(this.#prevButtons[p])
+    w.u8(this.#diveUsed[p])
+    // SnapWriter has no i8: written as its low byte, sign-extended on read.
+    w.u8(this.#grabTarget[p] & 0xff)
+    w.u16(this.#grabTicks[p])
+    w.u16(this.#grabCooldown[p])
+    w.f64(this.#facingX[p])
+    w.f64(this.#facingZ[p])
+    w.u8(this.#grounded[p])
+    w.i16(this.#groundObstacle[p])
+    w.u16(this.#knockbacks[p])
+    w.i32(this.#teleportTick[p])
+    w.u8(this.#frozen[p])
+    w.u8(this.#parked[p])
+  }
+
+  readPlayer(r: SnapReader, p: number): void {
+    this.#check(p, 'readPlayer')
+    this.#mode[p] = r.u8()
+    this.#timer[p] = r.i32()
+    this.#coyote[p] = r.u8()
+    this.#jumpBuffer[p] = r.u8()
+    this.#prevButtons[p] = r.u8()
+    this.#diveUsed[p] = r.u8()
+    this.#grabTarget[p] = (r.u8() << 24) >> 24
+    this.#grabTicks[p] = r.u16()
+    this.#grabCooldown[p] = r.u16()
+    this.#facingX[p] = r.f64()
+    this.#facingZ[p] = r.f64()
+    this.#grounded[p] = r.u8()
+    this.#groundObstacle[p] = r.i16()
+    this.#knockbacks[p] = r.u16()
+    this.#teleportTick[p] = r.i32()
+    this.#frozen[p] = r.u8()
+    this.#parked[p] = r.u8()
+    // Consumed within a tick, so never snapshotted: a restored player has no pending override.
+    this.#override[p] = NO_OVERRIDE
+  }
+
   snapshot(w: SnapWriter): void {
-    for (let p = 0; p < this.playerCount; p++) {
-      w.u8(this.#mode[p])
-      w.i32(this.#timer[p])
-      w.u8(this.#coyote[p])
-      w.u8(this.#jumpBuffer[p])
-      w.u8(this.#prevButtons[p])
-      w.u8(this.#diveUsed[p])
-      // SnapWriter has no i8: written as its low byte, sign-extended on read.
-      w.u8(this.#grabTarget[p] & 0xff)
-      w.u16(this.#grabTicks[p])
-      w.u16(this.#grabCooldown[p])
-      w.f64(this.#facingX[p])
-      w.f64(this.#facingZ[p])
-      w.u8(this.#grounded[p])
-      w.i16(this.#groundObstacle[p])
-      w.u16(this.#knockbacks[p])
-      w.i32(this.#teleportTick[p])
-      w.u8(this.#frozen[p])
-      w.u8(this.#parked[p])
-    }
+    for (let p = 0; p < this.playerCount; p++) this.writePlayer(w, p)
   }
 
   // Never touches Rapier: the world is replaced after the systems restore. BodyIds are kept:
   // they come from init order, identical in every world with the same systems.
   restore(r: SnapReader, _ctx: WorldCtx<PlayerInput>): void {
-    for (let p = 0; p < this.playerCount; p++) {
-      this.#mode[p] = r.u8()
-      this.#timer[p] = r.i32()
-      this.#coyote[p] = r.u8()
-      this.#jumpBuffer[p] = r.u8()
-      this.#prevButtons[p] = r.u8()
-      this.#diveUsed[p] = r.u8()
-      this.#grabTarget[p] = (r.u8() << 24) >> 24
-      this.#grabTicks[p] = r.u16()
-      this.#grabCooldown[p] = r.u16()
-      this.#facingX[p] = r.f64()
-      this.#facingZ[p] = r.f64()
-      this.#grounded[p] = r.u8()
-      this.#groundObstacle[p] = r.i16()
-      this.#knockbacks[p] = r.u16()
-      this.#teleportTick[p] = r.i32()
-      this.#frozen[p] = r.u8()
-      this.#parked[p] = r.u8()
-      this.#override[p] = NO_OVERRIDE
-    }
+    for (let p = 0; p < this.playerCount; p++) this.readPlayer(r, p)
   }
 }

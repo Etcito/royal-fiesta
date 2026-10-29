@@ -14,6 +14,12 @@ import { isKinematic, motionPose, pointVelocity } from './motion.ts'
 const MAX_LOADS = 64
 const COLLIDE_WITH = G.CHAR | G.DEBRIS | G.PROBE
 
+export interface SeesawState {
+  angle: number
+  prevAngle: number
+  angVel: number
+}
+
 // Scratch pose for preStep and load; never part of sim state.
 const scratchPose: Pose = newPose()
 const scratchArm: Vec3 = v3(0, 0, 0)
@@ -192,6 +198,39 @@ export class ObstacleSystem implements SimSystem<unknown> {
 
   seesawAngle(i: number): number {
     return this.#angle[this.#seesawSlot(i, 'seesawAngle')]
+  }
+
+  // The three snapshotted see-saw fields, in snapshot order.
+  seesawState(i: number, out: SeesawState): SeesawState {
+    const s = this.#seesawSlot(i, 'seesawState')
+    out.angle = this.#angle[s]
+    out.prevAngle = this.#prevAngle[s]
+    out.angVel = this.#angVel[s]
+    return out
+  }
+
+  // A world rebuilt at a tick restores its see-saws from the source world's state.
+  setSeesawState(i: number, angle: number, prevAngle: number, angVel: number): void {
+    const s = this.#seesawSlot(i, 'setSeesawState')
+    if (!Number.isFinite(angle) || !Number.isFinite(prevAngle) || !Number.isFinite(angVel)) {
+      refuse('obstacles', `setSeesawState(${i})`, 'non-finite see-saw state; pass finite numbers')
+    }
+    this.#angle[s] = angle
+    this.#prevAngle[s] = prevAngle
+    this.#angVel[s] = angVel
+  }
+
+  // Puts every kinematic body straight at its pose for a round-local tick: a domain rebuilt at
+  // tick S starts where the source world was, without waiting for a next-kinematic step.
+  placeKinematic(ctx: WorldCtx<unknown>, localTick: number): void {
+    const specs = this.#specs
+    for (let i = 0; i < specs.length; i++) {
+      if (!isKinematic(specs[i].motion.kind)) continue
+      const p = this.pose(i, localTick, scratchPose)
+      const rb = ctx.physics.body(this.#bodies[i])
+      rb.setTranslation(p.t, true)
+      rb.setRotation(p.r, true)
+    }
   }
 
   preStep(ctx: WorldCtx<unknown>, _inputs: readonly unknown[]): void {

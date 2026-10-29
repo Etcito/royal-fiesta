@@ -5,8 +5,8 @@
     "content": "sdf",
     "flow": "match",
     "clients": 4,
-    "width": 1920,
-    "height": 1080,
+    "width": 960,
+    "height": 540,
     "captureAt": [
       "match-5s"
     ]

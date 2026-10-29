@@ -22,7 +22,7 @@ test('the committed sdfm.game.json parses and covers every motion and marker', (
   assert.equal(m.id, 'royal-fiesta')
   assert.deepEqual(m.worlds, ['candy', 'ice', 'jungle', 'neon', 'common'])
   assert.equal(m.play.dev, 'http://localhost:5173/game.html?course={id}')
-  assert.deepEqual(manifestCoverage(m), { missingMotions: [], extraMotions: [], keyMismatches: [], missingMarkers: [] })
+  assert.deepEqual(manifestCoverage(m), { missingMotions: [], extraMotions: [], keyMismatches: [], missingMarkers: [], audioFolder: 'audio', mechanisms: null })
 })
 
 test('the committed file is 2-space JSON with a trailing newline', () => {
@@ -74,4 +74,29 @@ test('field types and fixed values are checked strictly', () => {
     edit(json)
     refusesAt(json, `[manifest] ${PATH}${ptr}`)
   }
+})
+
+test('folders.audio and mechanisms are optional, parsed and reported', () => {
+  const plain = parseGameManifest(read(), PATH)
+  assert.equal(plain.folders.audio, 'audio')
+  assert.equal(plain.mechanisms, undefined)
+  const json = read()
+  json.folders.audio = 'sounds'
+  json.mechanisms = { version: 1, jointKinds: ['hinge', 'spring'], linkTargets: ['motor', 'door', 'spring', 'animation'], presets: ['seesaw', 'door'] }
+  const m = parseGameManifest(json, PATH)
+  assert.equal(m.folders.audio, 'sounds')
+  assert.deepEqual(m.mechanisms?.presets, ['seesaw', 'door'])
+  const cov = manifestCoverage(m)
+  assert.equal(cov.audioFolder, 'sounds')
+  assert.deepEqual(cov.mechanisms, {
+    missingJointKinds: ['fixed', 'slider', 'ball', 'rope'],
+    missingLinkTargets: [],
+    missingPresets: ['piston', 'crane', 'springPlatform', 'lever', 'pressurePlate'],
+  })
+})
+
+test('an unknown mechanism preset refuses at its pointer', () => {
+  const json = read()
+  json.mechanisms = { version: 1, jointKinds: [], linkTargets: [], presets: ['seesaw', 'trampoline'] }
+  refusesAt(json, `[manifest] ${PATH}#/mechanisms/presets/1`)
 })

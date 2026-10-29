@@ -740,3 +740,133 @@ export function parseCourseSounds(json: unknown, m: MechanismSpec, obstacleIds: 
     })
   })
 }
+
+// Mechanism presets (S14 `presets`, S31). Collider 0 is always the fixed base; the next colliders go to the moving bodies.
+export const MECHANISM_PRESETS = ['seesaw', 'door', 'piston', 'crane', 'springPlatform', 'lever', 'pressurePlate'] as const
+export type MechanismPreset = typeof MECHANISM_PRESETS[number]
+
+// Collider count each preset needs: crane 3 (base, arm, hook), every other preset 2 (base, moving body).
+export const PRESET_COLLIDERS: Readonly<Record<MechanismPreset, number>> = {
+  seesaw: 2, door: 2, piston: 2, crane: 3, springPlatform: 2, lever: 2, pressurePlate: 2,
+}
+
+function presetBody(id: string, type: BodyType, colliders: number[], over: Partial<AssetBodyJson> = {}): AssetBodyJson {
+  return {
+    id, type, colliders, parts: [id], t: [0, 0, 0], r: [0, 0, 0, 1], density: 400, friction: 0.6, restitution: 0,
+    linearDamping: 0, angularDamping: 0.05, gravityScale: 1, ccd: false, surface: 'normal', ...over,
+  }
+}
+
+function presetJoint(id: string, kind: JointKind, a: string, b: string, over: Partial<AssetJointJson> = {}): AssetJointJson {
+  return {
+    id, kind, a, b, anchorA: [0, 0.5, 0], anchorB: [0, 0, 0], axis: [1, 0, 0],
+    limitsDeg: null, limitsM: null, stiffness: 0, damping: 0, lengthM: 0, motor: null, ...over,
+  }
+}
+
+function motor(over: Partial<MotorJson>): MotorJson {
+  return { mode: 'speed', stiffness: 0, damping: 0, maxForce: 1000, enabled: true, ...over }
+}
+
+export function presetPhysics(preset: MechanismPreset): AssetPhysicsJson {
+  const base = presetBody('base', 'fixed', [0])
+  switch (preset) {
+    case 'seesaw':
+      return { bodies: [base, presetBody('plank', 'dynamic', [1])], joints: [presetJoint('pivot', 'hinge', 'base', 'plank', { limitsDeg: [-20, 20] })] }
+    case 'door':
+      return {
+        bodies: [base, presetBody('leaf', 'dynamic', [1])],
+        joints: [presetJoint('hinge', 'hinge', 'base', 'leaf', { axis: [0, 1, 0], motor: motor({ mode: 'target', targetDeg: 0, stiffness: 2000, damping: 200, maxForce: 5000 }) })],
+      }
+    case 'piston':
+      return { bodies: [base, presetBody('block', 'kinematic', [1])], joints: [presetJoint('slide', 'slider', 'base', 'block', { axis: [0, 1, 0], limitsM: [0, 1] })] }
+    case 'crane':
+      return {
+        bodies: [base, presetBody('arm', 'dynamic', [1]), presetBody('hook', 'dynamic', [2], { t: [2, 0, 0] })],
+        joints: [
+          presetJoint('turn', 'hinge', 'base', 'arm', { axis: [0, 1, 0], motor: motor({ speedDegS: 30, maxForce: 8000 }) }),
+          presetJoint('rope', 'rope', 'arm', 'hook', { anchorA: [2, 0, 0], lengthM: 2 }),
+        ],
+      }
+    case 'springPlatform':
+      return { bodies: [base, presetBody('platform', 'dynamic', [1])], joints: [presetJoint('spring', 'spring', 'base', 'platform', { stiffness: 4000, damping: 200 })] }
+    case 'lever':
+      return { bodies: [base, presetBody('handle', 'dynamic', [1])], joints: [presetJoint('pivot', 'hinge', 'base', 'handle', { limitsDeg: [-40, 40] })] }
+    case 'pressurePlate':
+      return {
+        bodies: [base, presetBody('plate', 'dynamic', [1])],
+        joints: [
+          presetJoint('travel', 'slider', 'base', 'plate', { axis: [0, 1, 0], limitsM: [-0.1, 0] }),
+          presetJoint('return', 'spring', 'base', 'plate', { stiffness: 3000, damping: 150 }),
+        ],
+      }
+  }
+}
+
+function numOr(v: unknown, d: number): number { return typeof v === 'number' && Number.isFinite(v) ? v : d }
+function vec3Of(v: unknown, d: [number, number, number]): [number, number, number] {
+  return Array.isArray(v) && v.length === 3 && v.every(x => typeof x === 'number') ? [v[0], v[1], v[2]] : d
+}
+
+// Rewrites an S2/S13 motion as S12 physics (plus an S13 course animation record, ready for the sdfm save).
+// The obstacle's colliders all go to the moving body (collider 0 in the returned physics); the base is a
+// collider-less fixed anchor. Static, pendulum and conveyor have no preset: null.
+export function presetFromMotion(o: { id: string; motion: Record<string, unknown> }): { physics: AssetPhysicsJson; animation: Record<string, unknown> | null } | null {
+  const m = o.motion
+  const base = presetBody('base', 'fixed', [], { parts: [] })
+  const axis = vec3Of(m.axis, [0, 1, 0])
+  const anim = (body: string, keys: Record<string, unknown>[], easing: string, loop: string): Record<string, unknown> =>
+    ({ id: `${o.id}-anim`, target: { item: o.id, body }, keys, easing, loop, autostart: true })
+  switch (m.kind) {
+    case 'spinner':
+      return {
+        physics: {
+          bodies: [base, presetBody('rotor', 'dynamic', [0])],
+          joints: [presetJoint('spin', 'hinge', 'base', 'rotor', { anchorA: [0, 0, 0], axis, motor: motor({ speedDegS: numOr(m.speedDegS, 90), damping: 1000, maxForce: 1e6 }) })],
+        },
+        animation: null,
+      }
+    case 'rotatingDoor': {
+      const step = numOr(m.stepDeg, 90), period = numOr(m.periodS, 2), move = numOr(m.moveS, 0.5)
+      const steps = Math.max(1, Math.min(15, Math.round(360 / Math.abs(step || 360))))
+      const rot = (deg: number): number[] => axis.map(a => a * deg)
+      const keys: Record<string, unknown>[] = []
+      for (let k = 0; k < steps; k++) {
+        keys.push({ atS: k * period, t: [0, 0, 0], rDeg: rot(k * step) })
+        keys.push({ atS: k * period + move, t: [0, 0, 0], rDeg: rot((k + 1) * step) })
+      }
+      keys.push({ atS: steps * period, t: [0, 0, 0], rDeg: rot(steps * step) })
+      return { physics: { bodies: [base, presetBody('door', 'kinematic', [0])], joints: [] }, animation: anim('door', keys, 'linear', 'loop') }
+    }
+    case 'movingPlatform': {
+      const offset = vec3Of(m.offset, [0, 0, 0]), period = numOr(m.periodS, 4)
+      const physics: AssetPhysicsJson = { bodies: [base, presetBody('platform', 'kinematic', [0])], joints: [] }
+      const at = (atS: number, t: number[]): Record<string, unknown> => ({ atS, t, rDeg: [0, 0, 0] })
+      const animation = m.wave === 'pingpong'
+        ? anim('platform', [at(0, [0, 0, 0]), at(period / 2, offset)], 'linear', 'pingpong')
+        : anim('platform', [at(0, [0, 0, 0]), at(period / 2, offset), at(period, [0, 0, 0])], 'smooth', 'loop')
+      return { physics, animation }
+    }
+    case 'bouncePad':
+      // A stiff spring: stiffness grows with the launch speed squared.
+      return {
+        physics: {
+          bodies: [base, presetBody('pad', 'dynamic', [0], { restitution: 0.5 })],
+          joints: [presetJoint('bounce', 'spring', 'base', 'pad', { anchorA: [0, 0, 0], stiffness: 100 * numOr(m.speed, 14) ** 2, damping: 50 })],
+        },
+        animation: null,
+      }
+    case 'seesaw': {
+      const max = numOr(m.maxDeg, 20)
+      return {
+        physics: {
+          bodies: [base, presetBody('plank', 'dynamic', [0])],
+          joints: [presetJoint('pivot', 'hinge', 'base', 'plank', { anchorA: [0, 0, 0], axis: vec3Of(m.axis, [1, 0, 0]), limitsDeg: [-max, max] })],
+        },
+        animation: null,
+      }
+    }
+    default:
+      return null
+  }
+}

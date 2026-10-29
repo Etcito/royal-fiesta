@@ -7,7 +7,7 @@ import type { BodyType, JointKind, MechItem } from '@royal-fiesta/sim/mechanismS
 import { degToRad, quatAxisAngle, quatMul, v3 } from '@royal-fiesta/sim/vec'
 import { canonicalJson } from '../src/course.ts'
 import { parseGameAsset } from '../src/gameAsset.ts'
-import { itemOf, parseAssetPhysics, parseCourseMechanisms, parseCourseSounds } from '../src/mechanismsJson.ts'
+import { MECHANISM_PRESETS, PRESET_COLLIDERS, itemOf, parseAssetPhysics, parseCourseMechanisms, parseCourseSounds, presetFromMotion, presetPhysics } from '../src/mechanismsJson.ts'
 
 const PATH = 'assets/candy/candy.gate.asset.json'
 const ZERO = { x: 0, y: 0, z: 0 }
@@ -305,4 +305,48 @@ test('refuses a sound on an obstacle that is not a mechanism item', () => {
 test('refuses a sound with maxM <= refM', () => {
   const m = parseCourseMechanisms(validBlock(), ITEMS, COURSE)
   courseRefusedAt(() => parseCourseSounds([sound({ refM: 10, maxM: 10 })], m, ['door-1'], COURSE), '/sounds/0/maxM')
+})
+
+test('every preset parses as S12 physics with its documented collider count', () => {
+  for (const p of MECHANISM_PRESETS) {
+    const collision: ColliderSpec[] = Array.from({ length: PRESET_COLLIDERS[p] }, () => COLLISION[0])
+    const phys = parseAssetPhysics(JSON.parse(JSON.stringify(presetPhysics(p))), collision, PATH)
+    assert.ok(phys, p)
+    assert.deepEqual(phys.bodies[0].colliders, [0], p)
+    assert.equal(phys.bodies[0].type, 'fixed', p)
+  }
+  assert.deepEqual(presetPhysics('seesaw').joints[0].limitsDeg, [-20, 20])
+  assert.deepEqual(presetPhysics('lever').joints[0].limitsDeg, [-40, 40])
+  const door = presetPhysics('door').joints[0].motor
+  assert.equal(door?.mode, 'target')
+  assert.ok((door?.maxForce ?? 0) > 0)
+})
+
+test('presetFromMotion rewrites spinner, movingPlatform and seesaw, and skips conveyor', () => {
+  const one: ColliderSpec[] = [COLLISION[0]]
+  const spin = presetFromMotion({ id: 'spin-1', motion: { kind: 'spinner', axis: [0, 1, 0], speedDegS: 120, phaseDeg: 0 } })
+  assert.ok(spin)
+  assert.equal(spin.animation, null)
+  assert.equal(spin.physics.joints[0].kind, 'hinge')
+  assert.equal(spin.physics.joints[0].motor?.mode, 'speed')
+  assert.equal(spin.physics.joints[0].motor?.speedDegS, 120)
+  assert.ok(parseAssetPhysics(spin.physics, one, PATH))
+
+  const plat = presetFromMotion({ id: 'plat-1', motion: { kind: 'movingPlatform', offset: [4, 0, 0], periodS: 4, phaseDeg: 0, wave: 'pingpong' } })
+  assert.ok(plat?.animation)
+  assert.equal(plat.physics.bodies[1].type, 'kinematic')
+  assert.deepEqual(plat.animation, {
+    id: 'plat-1-anim', target: { item: 'plat-1', body: 'platform' },
+    keys: [{ atS: 0, t: [0, 0, 0], rDeg: [0, 0, 0] }, { atS: 2, t: [4, 0, 0], rDeg: [0, 0, 0] }],
+    easing: 'linear', loop: 'pingpong', autostart: true,
+  })
+  assert.ok(parseAssetPhysics(plat.physics, one, PATH))
+
+  const saw = presetFromMotion({ id: 'saw-1', motion: { kind: 'seesaw', axis: [1, 0, 0], maxDeg: 15, spring: 800, damping: 300, inertia: 900 } })
+  assert.ok(saw)
+  assert.equal(saw.physics.bodies[1].type, 'dynamic')
+  assert.deepEqual(saw.physics.joints[0].limitsDeg, [-15, 15])
+  assert.ok(parseAssetPhysics(saw.physics, one, PATH))
+
+  assert.equal(presetFromMotion({ id: 'belt', motion: { kind: 'conveyor', velocity: [0, 0, -3] } }), null)
 })

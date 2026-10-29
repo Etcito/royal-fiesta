@@ -1,6 +1,26 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { readFileSync } from 'node:fs'
 import { loadAnimBrick } from '../src/anim/brick.ts'
+
+test('game loader exposes the public graph API and steps the completed penguin', async () => {
+  const read = (name: string) => readFileSync(new URL(`../../../assets/common/${name}`, import.meta.url), 'utf8')
+  const node = JSON.parse(read('penguin.body.asset.json')).document.nodes.penguin
+  const { bindings, smooth, ...preset } = node.rig
+  const api = await loadAnimBrick(), rig = api.loadRig(JSON.stringify(preset))
+  const clips = node.clips.map((c: unknown) => api.loadClip(rig, JSON.stringify(c)))
+  try {
+    const graph = api.loadGraph(read('penguin.animgraph.json'), rig, clips)
+    try {
+      const state = graph.newState()
+      try {
+        const pose = graph.step(state, { speed: 3, grounded: true })
+        assert.equal(pose.skin.length, 12 * 16)
+        assert(pose.skin.every(Number.isFinite))
+      } finally { state.free() }
+    } finally { graph.free() }
+  } finally { for (const clip of clips) clip.free(); rig.free() }
+})
 
 test('loads the real animation wasm brick in Node and runs canonical cases in order', async () => {
   const brick = await loadAnimBrick()

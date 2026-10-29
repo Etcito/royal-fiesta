@@ -14,6 +14,7 @@ const TOP_KEYS = ['format', 'version', 'files']
 // The worlds of sdfm.game.json (S14); gameAsset.ts keeps its own list private.
 const WORLDS = ['candy', 'ice', 'jungle', 'neon', 'common']
 const ASSET_PATH_RE = /^assets\/([^/]+)\/([^/]+)\.asset\.json$/
+const ANIMGRAPH_PATH_RE = /^assets\/([^/]+)\/[a-z][a-z0-9-]*\.animgraph\.json$/
 const COURSE_PATH_RE = /^courses\/([a-z0-9-]{1,40})\.course\.json$/
 
 function fail(path: string, ptr: string, reason: string): never {
@@ -22,6 +23,8 @@ function fail(path: string, ptr: string, reason: string): never {
 
 function isEntryPath(rel: string): boolean {
   if (COURSE_PATH_RE.test(rel)) return true
+  const graph = ANIMGRAPH_PATH_RE.exec(rel)
+  if (graph !== null) return WORLDS.includes(graph[1])
   const m = ASSET_PATH_RE.exec(rel)
   return m !== null && WORLDS.includes(m[1]) && ASSET_ID_RE.test(m[2])
 }
@@ -41,7 +44,7 @@ export function parseAuthored(json: unknown, path: string): Authored {
     const rel: unknown = obj.files[i]
     if (typeof rel !== 'string') fail(path, `/files/${i}`, `entry ${JSON.stringify(rel)} is not a string; write a repository path`)
     if (!isEntryPath(rel)) {
-      fail(path, `/files/${i}`, `'${rel}' is neither assets/<world>/<id>.asset.json (world candy|ice|jungle|neon|common) nor courses/<id>.course.json; list only game asset and course files`)
+      fail(path, `/files/${i}`, `'${rel}' is neither assets/<world>/<id>.asset.json, assets/<world>/<name>.animgraph.json (world candy|ice|jungle|neon|common) nor courses/<id>.course.json; list only game asset, animgraph and course files`)
     }
     const first = firstIndex.get(rel)
     if (first !== undefined) fail(path, `/files/${i}`, `'${rel}' duplicates entry ${first}; remove the duplicate`)

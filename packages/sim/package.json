@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-deterministic-compat": "0.21.0",
-    "@gamesaloon/rollback": "https://github.com/Etcito/gamesaloon-rollback/releases/download/v0.1.0/gamesaloon-rollback-0.1.0.tgz",
-    "@gamesaloon/rollback-rapier": "https://github.com/Etcito/gamesaloon-rollback/releases/download/v0.1.0/gamesaloon-rollback-rapier-0.1.0.tgz"
+    "@gamesaloon/rollback": "file:../../../gamesaloon-rollback/packages/core",
+    "@gamesaloon/rollback-rapier": "file:../../../gamesaloon-rollback/packages/rapier"
   }
 }

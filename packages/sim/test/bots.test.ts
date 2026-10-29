@@ -6,6 +6,8 @@ import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { BEHAVIOUR_FORMAT, BEHAVIOUR_VERSION, bindBehaviour, loadBehaviour, parseBehaviour } from '../src/bots/behaviour.ts'
 import { courseCapabilities, nearestPathIndex, obstaclePhase, phaseInWindow, readMechanisms, readNavigation, regionDistance, regionNeighbours } from '../src/bots/courseRead.ts'
+import { cheapestRegions, goalRegion, planRoute, regionExposure, replanDue, updateRoute } from '../src/bots/routes.ts'
+import type { RouteInput, RoutePlan } from '../src/bots/routes.ts'
 import { newMemory, raceBrain, rollSkill, survivalBrain } from '../src/bots/brain.ts'
 import type { BotSkill, BrainInput } from '../src/bots/brain.ts'
 import { BotSystem } from '../src/bots/botSystem.ts'
@@ -384,5 +386,141 @@ describe('course-read', () => {
     const b = reads()
     assert.deepEqual(b, reads())
     assert.equal(JSON.stringify(c), before)
+  })
+})
+
+// Two lanes from region 0 to the finish region 3: a short lane (1) with a pendulum, and a
+// longer hazard-free detour (2 then 4).
+function branchCourse(): ResolvedCourse {
+  const c = course('branch-a', 'race')
+  c.regions = [
+    { id: 0, box: { center: v3(0, 1, 5), half: v3(10, 3, 5) }, adjacent: [1, 2] },
+    { id: 1, box: { center: v3(0, 1, 15), half: v3(2, 3, 5) }, adjacent: [3] },
+    { id: 2, box: { center: v3(-12, 1, 12), half: v3(2, 3, 3) }, adjacent: [4] },
+    { id: 4, box: { center: v3(-12, 1, 22), half: v3(2, 3, 5) }, adjacent: [3] },
+    { id: 3, box: { center: v3(0, 1, 32), half: v3(10, 3, 8) }, adjacent: [] },
+  ]
+  c.obstacles.push(obstacle('pend', v3(0, 2, 15), { kind: 'pendulum', pivot: v3(0, 4, 15), axis: v3(0, 0, 1), amp: 0.9, periodTicks: 90, phase: 0 }, v3(1, 0.25, 1)))
+  return c
+}
+
+// Mirror-symmetric lanes 1 and 2 of exactly equal cost.
+function tieCourse(): ResolvedCourse {
+  const c = course('tie-a', 'race')
+  c.regions = [
+    { id: 0, box: { center: v3(0, 1, 5), half: v3(10, 3, 5) }, adjacent: [1, 2] },
+    { id: 1, box: { center: v3(-5, 1, 15), half: v3(3, 3, 5) }, adjacent: [3] },
+    { id: 2, box: { center: v3(5, 1, 15), half: v3(3, 3, 5) }, adjacent: [3] },
+    { id: 3, box: { center: v3(0, 1, 30), half: v3(10, 3, 10) }, adjacent: [] },
+  ]
+  return c
+}
+
+const BEHAVIOURS = {
+  short: loadBehaviour(SHORT_TEXT, 'short.bot.json'),
+  safe: loadBehaviour(SAFE_TEXT, 'safe.bot.json'),
+}
+
+function routeInput(c: ResolvedCourse, pref: 'short' | 'safe', pos: Vec3, seed: number, tick: number, startTick = 0): RouteInput {
+  return { course: c, behaviour: BEHAVIOURS[pref], pos, seed, tick, startTick }
+}
+
+function assertEdgesInAdjacency(c: ResolvedCourse, plan: RoutePlan): void {
+  for (const e of plan.edges) {
+    const r = c.regions.find(x => x.id === e.from)
+    assert.ok(r !== undefined && r.adjacent.includes(e.to), `edge ${e.from}->${e.to}`)
+  }
+  for (let i = 1; i < plan.regions.length; i++) assert.deepEqual(plan.edges[i - 1], { from: plan.regions[i - 1], to: plan.regions[i] })
+}
+
+describe('routes', () => {
+  it('routes: short takes the shorter lane and safe the lower-exposure lane', () => {
+    const c = branchCourse()
+    assert.equal(goalRegion(c), 3)
+    assert.deepEqual([...regionExposure(c)], [[0, 1], [1, 1], [2, 0], [4, 0], [3, 0]])
+    const short = planRoute(routeInput(c, 'short', v3(0, 0.85, 2), 1, 0))
+    const safe = planRoute(routeInput(c, 'safe', v3(0, 0.85, 2), 1, 0))
+    assert.deepEqual(short.regions, [0, 1, 3])
+    assert.deepEqual(safe.regions, [0, 2, 4, 3])
+    assert.deepEqual([short.preference, safe.preference, short.reachable, safe.reachable], ['short', 'safe', true, true])
+    // Waypoints follow the course path inside the chosen regions.
+    assert.deepEqual(short.waypoints, [0, 1, 2, 3, 4])
+    assert.deepEqual(safe.waypoints, [0, 1, 3, 4])
+    for (const p of [short, safe]) assertEdgesInAdjacency(c, p)
+    assert.equal(cheapestRegions(c, 'short', 1, 3, 0), null)
+  })
+
+  it('routes: chosen edges exist in adjacency from every start region', () => {
+    for (const c of [branchCourse(), tieCourse(), readCourse()]) {
+      for (const r of c.regions) {
+        for (const pref of ['short', 'safe'] as const) {
+          for (const seed of [1, 2, 3]) {
+            const plan = planRoute(routeInput(c, pref, r.box.center, seed, 0))
+            assertEdgesInAdjacency(c, plan)
+            if (plan.reachable && plan.regions.length > 0) {
+              assert.equal(plan.regions[0], r.id)
+              assert.equal(plan.regions[plan.regions.length - 1], goalRegion(c))
+            }
+          }
+        }
+      }
+    }
+  })
+
+  it('routes: equal choices resolve from the seed and reproduce exactly', () => {
+    const c = tieCourse()
+    const picks = new Set<number>()
+    for (let seed = 1; seed <= 32; seed++) {
+      const a = planRoute(routeInput(c, 'short', v3(0, 0.85, 2), seed, 0))
+      assert.deepEqual(planRoute(routeInput(c, 'short', v3(0, 0.85, 2), seed, 0)), a)
+      assert.equal(a.regions.length, 3)
+      picks.add(a.regions[1])
+    }
+    assert.deepEqual([...picks].sort(), [1, 2])
+  })
+
+  it('routes: disconnected destinations give a safe unreachable plan', () => {
+    const c = readCourse()
+    const plan = planRoute(routeInput(c, 'safe', v3(50, 1, 0), 9, 0))
+    assert.equal(plan.reachable, false)
+    assert.deepEqual(plan.regions, [7])
+    assert.deepEqual(plan.edges, [])
+    assert.ok(plan.waypoints.length > 0 && plan.waypoints.every((w, i) => i === 0 || w === plan.waypoints[i - 1] + 1))
+    const flat = course('flat-a', 'race')
+    const none = planRoute(routeInput(flat, 'short', v3(0, 0.85, 15), 9, 0))
+    assert.deepEqual([none.regions, none.edges, none.waypoints, none.reachable], [[], [], [2, 3, 4], true])
+  })
+
+  it('routes: replanning happens only on the configured tick boundaries', () => {
+    const c = branchCourse()
+    for (const pref of ['short', 'safe'] as const) {
+      const step = BEHAVIOURS[pref].tick.decisionTicks
+      const start = 10
+      let plan: RoutePlan | null = null
+      const planned: number[] = []
+      for (let tick = start; tick <= start + 5 * step; tick++) {
+        const next: RoutePlan = updateRoute(plan, routeInput(c, pref, v3(0, 0.85, 2 + (tick - start) * 0.3), 4, tick, start))
+        if (next !== plan) planned.push(tick)
+        assert.equal(next.nextPlanTick, start + (Math.floor((tick - start) / step) + 1) * step)
+        plan = next
+      }
+      assert.deepEqual(planned, [0, 1, 2, 3, 4, 5].map(k => start + k * step))
+      // A bot without a plan gets one immediately, scheduled for the next boundary.
+      const late = updateRoute(null, routeInput(c, pref, v3(0, 0.85, 2), 4, start + 1, start))
+      assert.deepEqual([late.planTick, late.nextPlanTick], [start + 1, start + step])
+      assert.deepEqual([replanDue(start, step, start - 1), replanDue(start, step, start + step), replanDue(start, step, start + step + 1)], [false, true, false])
+    }
+    assert.throws(() => planRoute(routeInput(c, 'short', v3(0, 0, 0), 1, 0.5)), RangeError)
+  })
+
+  it('routes: identical inputs reproduce identical routes and leave inputs unchanged', () => {
+    const c = branchCourse()
+    const before = JSON.stringify(c)
+    const behaviourBefore = JSON.stringify(BEHAVIOURS.safe)
+    const runs = () => [0, 6, 12, 60].map(t => planRoute(routeInput(c, 'safe', v3(-1, 0.85, 3 + t * 0.1), 77, t)))
+    const a = runs()
+    assert.deepEqual(runs(), a)
+    assert.equal(JSON.stringify(c), before)
+    assert.equal(JSON.stringify(BEHAVIOURS.safe), behaviourBefore)
   })
 })

@@ -1,35 +1,27 @@
-{
-  "version": 1,
-  "cards": [
-    {
-      "id": "rf-tests",
-      "title": "Royal Fiesta tests: tool, package and app node:test suites",
-      "command": "npm test",
-      "timeout_s": 900
-    },
-    {
-      "id": "rf-judge-m1",
-      "title": "Judge card M1: four penguins racing on race-bean-dash, 2x2 capture",
-      "command": "node --experimental-strip-types tools/judgeCard.ts m1",
-      "timeout_s": 1800
-    },
-    {
-      "id": "rf-judge-m2",
-      "title": "Judge card M2: milestone 2 capture",
-      "command": "node --experimental-strip-types tools/judgeCard.ts m2",
-      "timeout_s": 1800
-    },
-    {
-      "id": "rf-judge-m3",
-      "title": "Judge card M3: milestone 3 capture",
-      "command": "node --experimental-strip-types tools/judgeCard.ts m3",
-      "timeout_s": 1800
-    },
-    {
-      "id": "rf-judge-m4",
-      "title": "Judge card M4: milestone 4 capture",
-      "command": "node --experimental-strip-types tools/judgeCard.ts m4",
-      "timeout_s": 1800
-    }
-  ]
-}
+[
+  {
+    "name": "rf-tests",
+    "command": "npm test",
+    "timeout_s": 900
+  },
+  {
+    "name": "rf-judge-m1",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m1",
+    "timeout_s": 1800
+  },
+  {
+    "name": "rf-judge-m2",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m2",
+    "timeout_s": 1800
+  },
+  {
+    "name": "rf-judge-m3",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m3",
+    "timeout_s": 1800
+  },
+  {
+    "name": "rf-judge-m4",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m4",
+    "timeout_s": 1800
+  }
+]

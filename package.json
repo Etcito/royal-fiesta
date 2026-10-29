@@ -35,6 +35,7 @@
   "devDependencies": {
     "@etcito/raa-assets-tools": "https://github.com/Etcito/raa-assets-tools/releases/download/v0.1.0/raa-assets-tools-0.1.0.tgz",
     "@types/node": "^24",
+    "sharp": "0.35.5",
     "typescript": "^5.9.3"
   }
 }

@@ -43,45 +43,20 @@
           "rect": {
             "anchorMin": [0.5, 0],
             "anchorMax": [0.5, 0],
-            "offsetMin": [-200, 60],
-            "offsetMax": [200, 360]
+            "offsetMin": [-300, 80],
+            "offsetMax": [300, 418]
           },
           "landscape": {
             "anchorMin": [0.3, 0.5],
             "anchorMax": [0.3, 0.5],
-            "offsetMin": [-240, -260],
-            "offsetMax": [240, 100]
+            "offsetMin": [-300, -210],
+            "offsetMax": [300, 128]
           },
           "anim": {
             "enter": {
               "kind": "bounce",
               "duration": 400
             }
-          }
-        },
-        {
-          "id": "title",
-          "type": "label",
-          "text": "Royal Fiesta",
-          "font": { "family": "Fredoka", "weight": 700 },
-          "size": 64,
-          "color": "#ffd23f",
-          "align": "center",
-          "outline": {
-            "width": 6,
-            "color": "#c2187a"
-          },
-          "rect": {
-            "anchorMin": [0.5, 0],
-            "anchorMax": [0.5, 0],
-            "offsetMin": [-320, 370],
-            "offsetMax": [320, 450]
-          },
-          "landscape": {
-            "anchorMin": [0.3, 0.5],
-            "anchorMax": [0.3, 0.5],
-            "offsetMin": [-320, 110],
-            "offsetMax": [320, 190]
           }
         },
         {
@@ -254,14 +229,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-200, -460],
-            "offsetMax": [200, -160]
+            "offsetMin": [-300, -480],
+            "offsetMax": [300, -142]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-160, -300],
-            "offsetMax": [160, -60]
+            "offsetMin": [-200, -295],
+            "offsetMax": [200, -70]
           },
           "anim": {
             "enter": {
@@ -1010,14 +985,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, -500],
-            "offsetMax": [260, -436]
+            "offsetMin": [-220, -490],
+            "offsetMax": [220, -430]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-560, -260],
-            "offsetMax": [-20, -200]
+            "offsetMin": [-490, -250],
+            "offsetMax": [-20, -190]
           },
           "anim": {
             "focus": {
@@ -1041,14 +1016,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, -424],
-            "offsetMax": [260, -360]
+            "offsetMin": [-220, -420],
+            "offsetMax": [220, -360]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-560, -188],
-            "offsetMax": [-20, -128]
+            "offsetMin": [-490, -182],
+            "offsetMax": [-20, -122]
           },
           "anim": {
             "focus": {
@@ -1072,14 +1047,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, -348],
-            "offsetMax": [260, -284]
+            "offsetMin": [-220, -350],
+            "offsetMax": [220, -290]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-560, -116],
-            "offsetMax": [-20, -56]
+            "offsetMin": [-490, -114],
+            "offsetMax": [-20, -54]
           },
           "anim": {
             "focus": {
@@ -1103,14 +1078,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, -272],
-            "offsetMax": [260, -208]
+            "offsetMin": [-220, -280],
+            "offsetMax": [220, -220]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-560, -44],
-            "offsetMax": [-20, 16]
+            "offsetMin": [-490, -46],
+            "offsetMax": [-20, 14]
           },
           "anim": {
             "focus": {
@@ -1134,14 +1109,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, -196],
-            "offsetMax": [260, -132]
+            "offsetMin": [-220, -210],
+            "offsetMax": [220, -150]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-560, 28],
-            "offsetMax": [-20, 88]
+            "offsetMin": [-490, 22],
+            "offsetMax": [-20, 82]
           },
           "anim": {
             "focus": {
@@ -1165,14 +1140,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, -120],
-            "offsetMax": [260, -56]
+            "offsetMin": [-220, -140],
+            "offsetMax": [220, -80]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-560, 100],
-            "offsetMax": [-20, 160]
+            "offsetMin": [-490, 90],
+            "offsetMax": [-20, 150]
           },
           "anim": {
             "focus": {
@@ -1196,14 +1171,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, -44],
-            "offsetMax": [260, 20]
+            "offsetMin": [-220, -70],
+            "offsetMax": [220, -10]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-560, 172],
-            "offsetMax": [-20, 232]
+            "offsetMin": [-490, 158],
+            "offsetMax": [-20, 218]
           },
           "anim": {
             "focus": {
@@ -1227,14 +1202,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, 32],
-            "offsetMax": [260, 96]
+            "offsetMin": [-220, 0],
+            "offsetMax": [220, 60]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -260],
-            "offsetMax": [560, -200]
+            "offsetMin": [20, -250],
+            "offsetMax": [490, -190]
           },
           "anim": {
             "focus": {
@@ -1258,14 +1233,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, 108],
-            "offsetMax": [260, 172]
+            "offsetMin": [-220, 70],
+            "offsetMax": [220, 130]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -188],
-            "offsetMax": [560, -128]
+            "offsetMin": [20, -182],
+            "offsetMax": [490, -122]
           },
           "anim": {
             "focus": {
@@ -1289,14 +1264,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, 184],
-            "offsetMax": [260, 248]
+            "offsetMin": [-220, 140],
+            "offsetMax": [220, 200]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -116],
-            "offsetMax": [560, -56]
+            "offsetMin": [20, -114],
+            "offsetMax": [490, -54]
           },
           "anim": {
             "focus": {
@@ -1320,14 +1295,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, 260],
-            "offsetMax": [260, 324]
+            "offsetMin": [-220, 210],
+            "offsetMax": [220, 270]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -44],
-            "offsetMax": [560, 16]
+            "offsetMin": [20, -46],
+            "offsetMax": [490, 14]
           },
           "anim": {
             "focus": {
@@ -1351,14 +1326,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, 336],
-            "offsetMax": [260, 400]
+            "offsetMin": [-220, 280],
+            "offsetMax": [220, 340]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 28],
-            "offsetMax": [560, 88]
+            "offsetMin": [20, 22],
+            "offsetMax": [490, 82]
           },
           "anim": {
             "focus": {
@@ -1382,14 +1357,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-260, 412],
-            "offsetMax": [260, 476]
+            "offsetMin": [-220, 350],
+            "offsetMax": [220, 410]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 100],
-            "offsetMax": [560, 160]
+            "offsetMin": [20, 90],
+            "offsetMax": [490, 150]
           },
           "anim": {
             "focus": {
@@ -1417,14 +1392,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, 482],
-            "offsetMax": [300, 530]
+            "offsetMin": [-220, 420],
+            "offsetMax": [220, 454]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 196],
-            "offsetMax": [560, 236]
+            "offsetMin": [20, 156],
+            "offsetMax": [490, 180]
           }
         },
         {
@@ -1438,14 +1413,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-180, 540],
-            "offsetMax": [180, 610]
+            "offsetMin": [-180, 470],
+            "offsetMax": [180, 520]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 250],
-            "offsetMax": [300, 330]
+            "offsetMin": [140, 190],
+            "offsetMax": [420, 250]
           },
           "anim": {
             "focus": {

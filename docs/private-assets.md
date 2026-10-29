@@ -41,6 +41,35 @@ The game and its proofs only read the store. Write access belongs to the
 `raa-assets-tools` CLI, which uses `ASSET_STORE_SSH` and `ASSET_STORE_KEY`.
 Never put credentials in the repository, a fixture or a proof record.
 
+## UI logo delivery
+
+`ui/logo.json` pins the source format (`png` or `svg`), SHA-256, byte length and
+dimensions. To stage a
+new logo before publication, update that registry and run:
+
+```sh
+node --experimental-strip-types tools/uiLogo.ts stage <source.png-or-svg>
+```
+
+The verified original waits at `out/ui-store/objects/<first 2 hex>/<sha256>` for
+publication with `raa-assets-tools`. Staging also copies it to
+`apps/web/public/images/<sha256>.<format>`. Both are ignored by Git. The web build
+verifies the staged or bundled source, or downloads and verifies the pinned
+object from the asset store when neither exists. It generates a full-resolution
+AVIF with alpha using pinned Sharp/libvips: quality 85, effort 4, 8-bit, 4:4:4
+chroma. `images/logo-build.json` records the source/output sizes, hashes and
+encoder versions. The derived AVIF also waits under its own content-addressed
+key in `out/ui-store/objects/` for optional publication.
+
+The game loads the AVIF for a PNG source. There is no existing browser-format
+fallback pattern, so it does not silently load the PNG instead. A future SVG
+can use `format: "svg"` in the registry: the same loader decodes that SVG directly
+for the WebGPU logo pass, and the build still produces an AVIF for comparison.
+Like the UI font, the delivered images ship beside the page so the GPU client
+needs no network.
+Keep the original transparency and proportions; do not embed image bytes in
+source or JSON.
+
 ## Fixtures
 
 `fixtures/` contains small JSON only:

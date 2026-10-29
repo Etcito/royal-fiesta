@@ -12,6 +12,9 @@ import {
 import { createWebGpuRenderer, type WebGpuRendererOptions } from '@etcito/uaa/webgpu'
 import type { MenuCmd, MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import { actionToCmd, screenProps, type WidgetProps } from './screenMap.ts'
+import { withLogo, type LogoDevice } from './logoRenderer.ts'
+import logo from '../../../../ui/logo.json' with { type: 'json' }
+import { withCapsuleButtons } from './buttonMapping.ts'
 
 export interface UaaCommand {
   cmd: MenuCmd
@@ -161,6 +164,8 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
   let ui: Ui
   try {
     renderer = await createWebGpuRenderer(canvas, { device: device as NonNullable<WebGpuRendererOptions['device']> })
+    renderer = withCapsuleButtons(renderer)
+    renderer = await withLogo(renderer, canvas, device as unknown as LogoDevice, { ...logo, format: logo.format as 'png' | 'svg' }, document.baseURI)
     const assets = loadAssets(uiAssetTexts())
     try {
       doc = loadUiDoc(JSON.parse(uiDocText()), assets)

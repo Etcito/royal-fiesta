@@ -27,6 +27,7 @@ const TYPES: Record<string, string> = {
   '.wasm': 'application/wasm',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.avif': 'image/avif',
   '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',

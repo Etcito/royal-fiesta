@@ -22,5 +22,7 @@ kong.rules
 apps/web/public/audio/
 # staged by npm run ui:fonts (tools/uiFont.ts bundle): the verified ui/fonts.json fonts
 apps/web/public/fonts/
+# verified logo source, generated AVIF and encoder report (tools/uiLogo.ts)
+apps/web/public/images/
 
 .cache/

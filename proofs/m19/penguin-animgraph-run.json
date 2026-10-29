@@ -104,11 +104,21 @@
     {
       "pose": "blend",
       "fromTick": 681,
-      "toTick": 699
+      "toTick": 685
+    },
+    {
+      "pose": "bellySlide",
+      "fromTick": 686,
+      "toTick": 700
+    },
+    {
+      "pose": "blend",
+      "fromTick": 701,
+      "toTick": 707
     },
     {
       "pose": "idle",
-      "fromTick": 700,
+      "fromTick": 708,
       "toTick": 779
     }
   ],

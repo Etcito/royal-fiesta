@@ -24,7 +24,7 @@ async function verify() {
   const node = asset.document.nodes.penguin
   const prior = JSON.parse(await run('git', ['show', 'a73d1ce:assets/common/penguin.body.asset.json'])).document.nodes.penguin
   assert.deepEqual(node.rig, prior.rig, 'owner rig and bindings must remain intact')
-  assert.deepEqual(node.clips.filter((c: { name: string }) => !['fall', 'dive'].includes(c.name)), prior.clips, 'preserve all prior clips')
+  assert.deepEqual(node.clips.filter((c: { name: string }) => !['fall', 'dive', 'bellySlide', 'handPush'].includes(c.name)), prior.clips, 'preserve all prior clips')
   const { bindings, smooth, ...preset } = node.rig
   const api = await loadRaaAnim(), rig = api.loadRig(JSON.stringify(preset))
   const poses = new Map<string, Float32Array>()
@@ -45,14 +45,24 @@ async function verify() {
           }
           assert.deepEqual(api.sampleClip(clip, 0).skin, api.sampleClip(clip, definition.lengthTicks).skin)
         }
+        if (definition.name === 'bellySlide' || definition.name === 'handPush') {
+          assert.equal(definition.loop, true); assert.equal(definition.rootMotion, 'none')
+          assert.deepEqual(api.sampleClip(clip, 0).skin, api.sampleClip(clip, definition.lengthTicks).skin, `${definition.name} loop seam`)
+        }
         poses.set(definition.name, api.sampleClip(clip, 16).local)
       } finally { clip.free() }
     }
     const fall = poses.get('fall')!, dive = poses.get('dive')!
     assert(Math.abs(fall[3] - dive[3]) > 0.4, 'fall and dive body orientations must differ')
     assert(dive[8] > fall[8] + 0.08, 'dive must visibly extend the body')
+    const slide = poses.get('bellySlide')!, push = poses.get('handPush')!
+    assert(slide && push, 'bellySlide and handPush must load')
+    for (const other of ['idle', 'waddle', 'run', 'jump', 'fall', 'dive', 'handPush']) {
+      assert(slide.some((v, i) => Math.abs(v - poses.get(other)![i]) > 0.1), `bellySlide must differ from ${other}`)
+    }
+    assert(push.some((v, i) => Math.abs(v - poses.get('idle')![i]) > 0.1), 'handPush must differ from idle')
   } finally { rig.free() }
-  console.log('m19: all six clips sample; prior data preserved; fall flippers move; dive extends and pitches; no root motion')
+  console.log('m19: all eight clips sample incl. bellySlide and handPush; prior data preserved; fall flippers move; dive extends and pitches; no root motion')
 }
 async function bundle() {
   const require = createRequire(import.meta.url)

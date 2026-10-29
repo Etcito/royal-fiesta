@@ -26,6 +26,12 @@ async function bundle() {
   writeFileSync(join(dist, 'index.html'), '<!doctype html><meta charset="utf-8"><title>Cheer and laugh review</title><script type="module" src="./review.js"></script>')
   json(join(dist, 'nmc.gpu.json'), { page: 'index.html', ops: ['render'] })
   copyFileSync(join(root, 'assets/common/penguin.body.asset.json'), join(dist, 'penguin.body.asset.json'))
+  json(join(dist, 'capture-source.json'), {
+    sourceRevision: (await run('git', ['rev-parse', 'HEAD'])).trim(),
+    assetRevision: (await run('git', ['log', '-1', '--format=%H', '--', 'assets/common/penguin.body.asset.json'])).trim(),
+    assetPath: 'assets/common/penguin.body.asset.json',
+    assetHash: read(join(dist, 'penguin.body.asset.json')).hash,
+  })
   copyFileSync(join(destination, 'penguin-fall-dive.glb'), join(dist, 'penguin-fall-dive.glb'))
   copyFileSync('/refs/penguin-base-ortho.png', join(dist, 'penguin-base-ortho.png'))
   const probe = join(dist, 'probe'); mkdirSync(probe)
@@ -48,6 +54,7 @@ function nonEmpty(file, width, height) {
 async function capture() {
   const client = process.env.NMC_GPU_CLIENT
   assert(client && existsSync(client), 'Run --capture on the programmatic client-GPU executor')
+  const source = read(join(dist, 'capture-source.json'))
   mkdirSync(execution, { recursive: true })
   const call = (...args) => run(process.execPath, [client, ...args])
   const publish = async dir => {
@@ -66,6 +73,8 @@ async function capture() {
       assert.equal(result.adapter.isFallbackAdapter, false)
       assert(!/swiftshader|llvmpipe|lavapipe|software/i.test(JSON.stringify(result.adapter)))
       assert.equal(result.clip, input.clip); assert.equal(result.frames, input.frames)
+      assert.equal(result.source?.sourceRevision, source.sourceRevision)
+      assert.equal(result.source?.assetRevision, source.assetRevision)
       nonEmpty(join(out, `${input.clip}.png`), input.width, input.height)
     }
     return { out, result }
@@ -73,7 +82,7 @@ async function capture() {
   const blank = await render(await publish(join(dist, 'probe')), 'blank', {})
   assert.equal(blank.result.ok, true)
   const pageRef = await publish(dist)
-  json(join(execution, 'published.json'), { pageRef })
+  json(join(execution, 'published.json'), { pageRef, source })
   const remux = (input, output) => run('ffmpeg', ['-y', '-v', 'error', '-i', input, '-c', 'copy', output])
   for (const clip of ['emote.cheer', 'emote.laugh']) {
     const small = { clip, width: 320, height: 180, fps: 30 }
@@ -96,6 +105,9 @@ async function capture() {
 }
 async function assemble() {
   const clips = ['emote.cheer', 'emote.laugh'], videos = []
+  const { source } = read(join(execution, 'published.json'))
+  assert(source?.sourceRevision && source?.assetRevision, 'Missing capture source revisions')
+  assert.equal(source.assetPath, 'assets/common/penguin.body.asset.json')
   for (const clip of clips) {
     const record = join(execution, clip, 'result.json')
     const result = unwrapOp({ file: record, json: read(record) }, 'hardware').out
@@ -105,6 +117,8 @@ async function assemble() {
     assert(!/swiftshader|llvmpipe|lavapipe|software/i.test(JSON.stringify(result.adapter)))
     assert.equal(result.clip, clip); assert.equal(result.frames, 120)
     assert.equal(result.fps, 30)
+    assert.equal(result.source?.sourceRevision, source.sourceRevision)
+    assert.equal(result.source?.assetRevision, source.assetRevision)
     nonEmpty(join(destination, `${clip}.png`), 1280, 720)
     assert(existsSync(join(destination, `${clip}-reference.png`)), 'Missing reference comparison')
     const video = join(destination, `penguin-${clip}.webm`)
@@ -127,6 +141,7 @@ async function assemble() {
   const manifest = join(destination, 'cheer-laugh-media.json')
   json(manifest, { ...read(manifest), renderedReview: true, review: {
     file: 'proofs/m19/penguin-cheer-laugh.mp4', renderer: 'raa', hardware: true,
+    source,
     seconds: Number(media.format.duration), bytes: Number(media.format.size), visualApproval: 'pending',
     clips: clips.map(clip => ({ name: clip, video: `proofs/m19/penguin-${clip}.webm`,
       capture: `proofs/m19/${clip}.png`, comparison: `proofs/m19/${clip}-reference.png`,

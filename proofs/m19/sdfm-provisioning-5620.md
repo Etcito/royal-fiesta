@@ -163,3 +163,26 @@ reviewed here. The animation files are real deliverables, but visual acceptance 
 until orchestration executes the existing `.nmc/cheer-laugh.commands.json` and returns its
 media and hardware records. Both existing command queues remain unchanged; no GPU job was
 submitted by this model card and no software-rendered video was substituted.
+
+### Visual-evidence corrective (2026-10-29, after 6eb3c47)
+
+The required `penguin-cheer-laugh.mp4`, `emote.cheer.png`, `emote.laugh.png`
+and `cheer-laugh-execution/` are still absent. The existing MP4s cover earlier
+tasks; they are not cheer/laugh evidence. No new rendered media or visual
+approval is claimed, and the asset and all three animation GLBs remain unchanged.
+Q8 requires orchestration to execute `.nmc/cheer-laugh.commands.json` before
+resuming this model card; model-card GPU submission remains prohibited.
+
+The capture bundle now includes `capture-source.json` with source and asset
+revisions, asset path and the format's saved hash as provenance data. The GPU
+operation reports the loaded asset's hash and source revisions; publication,
+per-clip execution and combined-media records retain that provenance. No
+build-output hash comparison was added. Both command queues remain unchanged.
+
+Local verification: the rigged-hash regression passed in isolation; the
+contentFiles, courseV1 and gameAsset suites passed (29 tests). The existing
+cheer/laugh check passed against d74d5a6, verifying fifteen unique names, gesture
+samples and complete inherited-asset preservation. `npm run typecheck`,
+`npm run build`, and the capture bundle build passed. Syntax and whitespace
+checks passed. Hardware capture, reference comparison, video review and queued
+judges remain unexecuted; this task is still blocked on the Q8 executor return.

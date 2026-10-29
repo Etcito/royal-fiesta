@@ -25,6 +25,12 @@ async function render(input) {
     window.addEventListener('error', onError); window.addEventListener('unhandledrejection', onError)
     engine.resize(width, height); engine.setLight(DEFAULT_LIGHT); engine.setAmbient(DEFAULT_AMBIENT)
     const asset = await (await fetch('./penguin.body.asset.json')).json()
+    const source = emote ? await (await fetch('./capture-source.json')).json() : undefined
+    if (emote) {
+      require(source.sourceRevision && source.assetRevision, 'Capture source revisions missing')
+      // The format hash is provenance data, never a build-output comparison gate.
+      source.assetHash = asset.hash
+    }
     const owner = asset.document.nodes.penguin
     const { bindings, smooth, ...preset } = owner.rig
     rig = api.loadRig(JSON.stringify(preset))
@@ -103,6 +109,7 @@ async function render(input) {
     require(errors.length === 0, errors.join('\n'))
     window.removeEventListener('error', onError); window.removeEventListener('unhandledrejection', onError)
     return { json: { renderer: 'raa', adapter: stats.adapter, hardware: stats.hardware, clip: name,
+      ...(source ? { source } : {}),
       frames, fps, seconds: frames / fps, sampleHz: 60, rootMotion: definition.rootMotion, files: files.map(f => f.name) }, files }
   } finally { stream?.getTracks().forEach(t => t.stop()); clip?.free(); rig?.free(); engine.dispose() }
 }

@@ -139,6 +139,10 @@ export function applyMotor(ctx: WorldCtx<unknown>, joint: number, kind: JointKin
   }
   const j = ctx.physics.world.getImpulseJoint(joint) as UnitJoint | null | undefined
   if (!j) refuse('mechanisms', `joint ${joint}`, 'no such joint in the world; pass a handle returned by createJoint')
+  // Motor setters do not wake Rapier's sleeping island. Changes (including
+  // release to gravity) must take effect even after the driven body settles.
+  j.body1().wakeUp()
+  j.body2().wakeUp()
   // Off (null or disabled): zero velocity, stiffness and damping, and no force.
   // Stiffness and damping 0 alone are not off in Rapier: its acceleration
   // motor model then has no softness and locks the joint at velocity 0 up to

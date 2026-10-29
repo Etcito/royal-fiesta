@@ -183,8 +183,6 @@ export async function main(argv: string[]): Promise<number> {
     const inputPath = `${outDir}input.json`
     mkdirSync(join(root, outDir), { recursive: true })
     writeFileSync(join(root, inputPath), `${JSON.stringify(input.input, null, 2)}\n`)
-    const gpu = clientEnv('NMC_GPU_CLIENT', true)
-    const judge = clientEnv('NMC_JUDGE_CLIENT', false)
     const commands = judgeCommands(input, outDir, inputPath)
     let pageRef: string | null = null
     for (let i = 0; i < commands.length; i++) {
@@ -193,6 +191,10 @@ export async function main(argv: string[]): Promise<number> {
       console.log(`[judge] ${name} ${i + 1}/${commands.length}: ${label}`)
       let result: StepResult
       try {
+        // Build and input preparation also work without attached clients.
+        // Resolve credentials only at the step that actually needs them.
+        const gpu = step.includes(GPU_CLIENT) ? clientEnv('NMC_GPU_CLIENT', true) : ''
+        const judge = step.includes(JUDGE_CLIENT) ? clientEnv('NMC_JUDGE_CLIENT', false) : ''
         result = await runStep(resolveStep(step, gpu, judge, pageRef), root, label === 'publish')
       } catch (e) {
         if (isRefusal(e)) throw e

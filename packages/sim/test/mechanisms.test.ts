@@ -82,6 +82,30 @@ test('QB10: target motor reaches its target only with enough maxForce against gr
   }
 })
 
+test('motor disable wakes a sleeping body and survives restore without driving again', () => {
+  for (const off of [null, { ...motor(100000), enabled: false }]) {
+    const f = fixture([body()], [joint({ kind: 'slider', axis: { x: 0, y: 1, z: 0 }, motor: motor(100000) })])
+    try {
+      for (let i = 0; i < 120; i++) f.preview.step()
+      const raised = f.sys.jointTravel(f.ctx, 0)
+      assert.ok(raised > 0.9)
+      f.rb().sleep()
+      assert.ok(f.rb().isSleeping())
+      f.sys.setMotor(f.ctx, 0, off)
+      assert.equal(f.rb().isSleeping(), false, 'motor change wakes the body')
+      const released = f.preview.world.takeSnapshotBytes()
+      for (let i = 0; i < 60; i++) f.preview.step()
+      const fallen = f.sys.jointTravel(f.ctx, 0)
+      assert.ok(fallen < raised - 1, 'released body falls under gravity')
+      f.sys.setMotor(f.ctx, 0, motor(100000))
+      f.preview.step()
+      f.preview.world.restoreSnapshotBytes(released)
+      for (let i = 0; i < 60; i++) f.preview.step()
+      assert.equal(f.sys.jointTravel(f.ctx, 0), fallen, 'restore keeps the motor disabled')
+    } finally { f.preview.free() }
+  }
+})
+
 test('QB10: a displaced spring settles within 2 cm of its rest anchor distance in 240 ticks', () => {
   const f = fixture([body({ gravityScale: 0, rest: { t: { x: 0, y: -2, z: 0 }, r: I } })],
     [joint({ kind: 'spring', length: 2, stiffness: 1000, damping: 300 })])

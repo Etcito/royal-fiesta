@@ -75,3 +75,40 @@ asset_open_game and eleven seeks, including both endpoints, against this final f
 To reproduce the preservation check from the task baseline:
 `git show d74d5a6f3f5dfd65616f17c1e81d2c8b276f132d:assets/common/penguin.body.asset.json > /tmp/5620-before.json`
 then `node --experimental-strip-types proofs/m19/cheer-laugh-check.mjs /tmp/5620-before.json`.
+
+## Media correction (2026-10-29)
+
+The inherited clip authoring is preserved without any asset edits. The new
+`penguin-cheer-laugh.glb` is an actual skinned animation file containing both exact clip names,
+not a description or placeholder. `cheer-laugh-export.mjs` copies the existing penguin mesh,
+materials, weights, skeleton and inverse binds, and exports the already-authored clips sampled
+through the game's pinned S17 runtime at every 60 Hz tick. It checks the GLB skeleton against
+the asset's protected rig, then reads the exported file back and verifies every animation
+channel sample against the runtime. It does not author S17 clips or render any pixels.
+One-frame and two-frame export probes passed before the full export.
+`cheer-laugh-media.json` records the resulting file, duration and sample counts.
+
+**Visual acceptance is still blocked on the client-GPU executor.** The GLB is animation media,
+but does not replace the required rendered videos, reference comparisons, judges or human review.
+No model-card GPU job or software-rendered substitute was run.
+
+`cheer-laugh-capture.mjs --build` successfully builds the existing RAA clip-review page with
+explicit cheer/laugh selection. The page takes representative stills (cheer tick 44, laugh tick 24)
+and records four seconds per clip, replaying the entire gesture for each camera. It returns
+real WebM videos plus still/reference comparison PNGs. `--capture` is reserved for the
+programmatic executor: blank-page probe, then one frame and two frames **for each clip**, then
+the full captures, hardware-adapter checks, remux and ffprobe duration checks. Calls are bounded
+to 60 seconds. Original GPU result envelopes and inputs are retained under
+`proofs/m19/cheer-laugh-execution/`.
+
+Orchestration must dispatch `.nmc/cheer-laugh.commands.json` as a separate commands_file using
+the Q4 executor path. The existing `.nmc/commands.json` already contains ten entries and is
+preserved, including its exact mid-waddle judge. The new four-command file builds the bundle,
+captures both videos and runs two additional gesture judges with minimum score 6. Captures and
+the animation GLB are listed in `.nmc/artifacts.json` for the normal nomorechat commit flow.
+No capture result, video or judge outcome is claimed until the executor returns it.
+
+Rechecked: `cheer-laugh-check.mjs` passes against d74d5a6 (all fifteen unique names, full inherited
+asset preservation and gesture samples); `npm run typecheck` and `npm run build` pass. The
+gameAsset regression probe passes, as do 59 affected content, asset and animation-brick tests,
+including contentFiles and courseV1. Only the existing build warnings remain.

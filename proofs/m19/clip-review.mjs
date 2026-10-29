@@ -7,7 +7,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const png = canvas => new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(Error('PNG encoding failed')), 'image/png'))
 async function render(input) {
   const { clip: name, frames, width, height, fps } = input
-  require(['fall', 'dive', 'waddle'].includes(name), 'Select fall, dive or waddle explicitly')
+  const emote = ['emote.cheer', 'emote.laugh'].includes(name)
+  require(['fall', 'dive', 'waddle'].includes(name) || emote, 'Select a supported clip explicitly')
   require([1, 2, 120].includes(frames) && fps === 30, 'Use 1 frame, 2 frames or four seconds at 30 fps')
   require([[320, 180], [1280, 720]].some(([w, h]) => w === width && h === height), 'Unsupported capture size')
   const canvas = Object.assign(document.createElement('canvas'), { width, height })
@@ -58,8 +59,9 @@ async function render(input) {
       engine.setSkinPose(instance, api.sampleClip(clip, tick).skin.slice(0, jointCount * 16))
       engine.render(performance.now())
     }
-    draw(name === 'waddle' ? 12 : 16, false)
-    await sleep(100); draw(name === 'waddle' ? 12 : 16, false)
+    const stillTick = name === 'waddle' ? 12 : name === 'emote.cheer' ? 44 : name === 'emote.laugh' ? 24 : 16
+    draw(stillTick, false)
+    await sleep(100); draw(stillTick, false)
     require(engine.stats().triangles > 0, 'No rendered triangles')
     const still = await png(canvas), files = [{ name: `${name}.png`, blob: still }]
     if (frames > 1) {
@@ -75,12 +77,14 @@ async function render(input) {
       recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data) }
       recorder.start()
       for (let frame = 0; frame < frames; frame++) {
-        draw(frame * 2, frame >= frames / 2)
+        // Each emote camera receives the complete gesture, rather than a clamped resting pose.
+        const tick = emote ? (frame % Math.ceil(frames / 2)) * 2 : frame * 2
+        draw(tick, frame >= frames / 2)
         // PNG readback waits for the GPU submission; no rAF-dependent playback loop.
         const bitmap = await createImageBitmap(await png(canvas))
         ctx.drawImage(bitmap, 0, 0); bitmap.close()
         ctx.fillStyle = '#fff'; ctx.font = `${Math.max(14, width / 45)}px sans-serif`
-        ctx.fillText(`${name} | tick ${frame * 2} | ${frame < frames / 2 ? 'front' : 'side'} | S17 / 60 Hz`, 16, 32)
+        ctx.fillText(`${name} | tick ${tick} | ${frame < frames / 2 ? 'front' : 'side'} | S17 / 60 Hz`, 16, 32)
         track.requestFrame(); await sleep(1000 / fps)
       }
       recorder.stop(); await stopped
@@ -88,13 +92,13 @@ async function render(input) {
       require(video.size > 1024, 'Video encoder returned no review media')
       files.push({ name: `penguin-${name}.webm`, blob: video })
     }
-    if (name === 'waddle') {
+    if (name === 'waddle' || emote) {
       const ref = await createImageBitmap(await (await fetch('./penguin-base-ortho.png')).blob())
       const compare = Object.assign(document.createElement('canvas'), { width: width * 2, height }), ctx = compare.getContext('2d')
       ctx.fillStyle = '#d8dde3'; ctx.fillRect(0, 0, compare.width, height)
       ctx.drawImage(await createImageBitmap(still), 0, 0)
       ctx.drawImage(ref, width, (height - width * ref.height / ref.width) / 2, width, width * ref.height / ref.width)
-      ref.close(); files.push({ name: 'waddle-reference.png', blob: await png(compare) })
+      ref.close(); files.push({ name: `${name}-reference.png`, blob: await png(compare) })
     }
     require(errors.length === 0, errors.join('\n'))
     window.removeEventListener('error', onError); window.removeEventListener('unhandledrejection', onError)

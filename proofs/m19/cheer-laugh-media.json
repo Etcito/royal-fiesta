@@ -1,0 +1,21 @@
+{
+  "file": "proofs/m19/penguin-cheer-laugh.glb",
+  "tickRate": 60,
+  "renderedReview": false,
+  "animations": [
+    {
+      "name": "emote.cheer",
+      "frames": 109,
+      "seconds": 1.8,
+      "channels": 14
+    },
+    {
+      "name": "emote.laugh",
+      "frames": 97,
+      "seconds": 1.6,
+      "channels": 14
+    }
+  ],
+  "bytes": 392472,
+  "verifiedEveryChannelSample": true
+}

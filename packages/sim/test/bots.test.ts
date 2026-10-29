@@ -633,3 +633,139 @@ it('brain-timing: moving platforms must align along the route and at foot height
   motion.offset = v3(0, 3, 0)
   assert.deepEqual(f.moves([0, 150, 300]), [1, 0, 1])
 })
+
+function traversalRules(rules: Json['rules']): ReturnType<typeof parseBehaviour> {
+  const raw = validBehaviour()
+  raw.tick = { decisionTicks: 1, reactionTicks: 0, wobbleTicks: 45, stuckTicks: 30 }
+  raw.rules = rules
+  return parseBehaviour(raw)
+}
+
+function traversalCase(c: ResolvedCourse, pos: Vec3, over: Partial<BrainInput>, rules: Json['rules']) {
+  const behaviour = traversalRules(rules)
+  const input = brainInput(c, pos, over)
+  const route = planRoute({ course: c, behaviour, pos, tick: 0, seed: 77 })
+  return { c, behaviour, input, route, decide: (tick: number) => evaluateBrain(input, behaviour, route, tick) }
+}
+
+// Floor split at z=5..7 with a 2 m gap; the route continues on the far slab.
+function gapCourse(): ResolvedCourse {
+  const c = course('gap-traverse', 'race')
+  c.path = [node(0, 3), node(0, 12)]
+  c.obstacles = [
+    obstacle('floor-a', v3(0, -0.5, 2.5), { kind: 'static' }, v3(10, 0.5, 2.5)),
+    obstacle('floor-b', v3(0, -0.5, 9.5), { kind: 'static' }, v3(10, 0.5, 2.5)),
+  ]
+  return c
+}
+
+// Floor up to z=6, then a 1.6 m high slab whose top is the ledge; both path nodes sit on it.
+function ledgeCourse(): ResolvedCourse {
+  const c = course('ledge-traverse', 'race')
+  c.path = [{ p: v3(0, 2.45, 7.5), jump: false, dive: false }, { p: v3(0, 2.45, 9.5), jump: false, dive: false }]
+  c.obstacles = [
+    obstacle('floor', v3(0, -0.5, 3), { kind: 'static' }, v3(4, 0.5, 3)),
+    obstacle('ledge', v3(0, 0.8, 8), { kind: 'static' }, v3(4, 0.8, 2)),
+  ]
+  return c
+}
+
+function seesawCourse(): ResolvedCourse {
+  const c = course('seesaw-traverse', 'race')
+  c.path = [node(0, 4), node(0, 14)]
+  c.obstacles = [
+    obstacle('floor', v3(0, -0.5, 10), { kind: 'static' }, v3(10, 0.5, 10)),
+    obstacle('saw', v3(0, 0.3, 8), { kind: 'seesaw', axis: v3(1, 0, 0), maxAngle: 0.4, spring: 2, damping: 1, inertia: 3 }, v3(2, 0.2, 1.5)),
+  ]
+  return c
+}
+
+const WAIT_RULE = [{ id: 'wait', predicate: 'stuck', action: 'jump' }]
+
+describe('brain-traversal', () => {
+  it('brain-traversal: a gap close ahead is jumped once, and not from afar or mid-air', () => {
+    const c = gapCourse()
+    const near = traversalCase(c, v3(0, 0.85, 3.5), { vel: v3(0, 0, 8) }, WAIT_RULE)
+    assert.notEqual(near.decide(0) & BTN.JUMP, 0)
+    assert.equal(near.decide(1) & BTN.JUMP, 0, 'the pulse never retriggers on the next tick')
+    assert.notEqual(decodeInput(near.decide(0), neutralInput()).moveZ, 0, 'the bot keeps steering at the far side')
+    const far = traversalCase(c, v3(0, 0.85, 1.5), { vel: v3(0, 0, 8) }, WAIT_RULE)
+    assert.equal(far.decide(0) & BTN.JUMP, 0, 'a gap beyond jump lead does not trigger')
+    const across = traversalCase(c, v3(0, 0.85, 8.5), { vel: v3(0, 0, 8) }, WAIT_RULE)
+    assert.equal(across.decide(0) & BTN.JUMP, 0, 'the far slab needs no jump')
+    const air = traversalCase(c, v3(0, 1.3, 3.5), { vel: v3(0, 0, 8), grounded: false, mode: 1 }, WAIT_RULE)
+    assert.equal(air.decide(0) & BTN.JUMP, 0, 'airborne bots never buffer a jump')
+    const waiting = traversalCase(c, v3(0, 0.85, 3.5), { vel: v3(0, 0, 8) },
+      [{ id: 'wait', predicate: 'always', phase: { from: 0, to: 90 }, action: 'grab' }])
+    assert.notEqual(waiting.decide(0) & BTN.JUMP, 0, 'a waiting grab rule never suppresses the gap jump')
+  })
+
+  it('brain-traversal: the near-finish dive aims at the finish and dives only when eligible', () => {
+    const c = course('finish-traverse', 'race')
+    const rules = [{ id: 'dive-finish', predicate: 'nearFinish', distance: 3, action: 'dive' }]
+    const f = traversalCase(c, v3(0, 0.85, 33.5), { vel: v3(0, 0, 7) }, rules)
+    assert.notEqual(f.decide(0) & BTN.DIVE, 0)
+    assert.equal(f.decide(1) & BTN.DIVE, 0, 'the dive pulse needs a fresh press')
+    assert.ok(decodeInput(f.decide(0), neutralInput()).moveZ > 0.9, 'the dive faces the finish centre')
+    const recovering = traversalCase(c, v3(0, 0.85, 33.5), { vel: v3(0, 0, 7), mode: 2 }, rules)
+    assert.equal(recovering.decide(0) & BTN.DIVE, 0, 'a diving character cannot dive again')
+    const afar = traversalCase(c, v3(0, 0.85, 28), { vel: v3(0, 0, 7) }, rules)
+    assert.equal(afar.decide(0) & BTN.DIVE, 0, 'the near-finish rule does not match from afar')
+  })
+
+  it('brain-traversal: a see-saw is dived across from the ground, not from afar or while diving', () => {
+    const c = seesawCourse()
+    const near = traversalCase(c, v3(0, 0.85, 5.5), { vel: v3(0, 0, 7) }, WAIT_RULE)
+    assert.notEqual(near.decide(0) & BTN.DIVE, 0)
+    assert.ok(decodeInput(near.decide(0), neutralInput()).moveZ > 0.9, 'the dive crosses towards the far edge')
+    assert.equal(near.decide(1) & BTN.DIVE, 0)
+    const far = traversalCase(c, v3(0, 0.85, 1), { vel: v3(0, 0, 7) }, WAIT_RULE)
+    assert.equal(far.decide(0) & BTN.DIVE, 0, 'no see-saw within dive distance')
+    const diving = traversalCase(c, v3(0, 0.85, 5.5), { vel: v3(0, 0, 7), mode: 2 }, WAIT_RULE)
+    assert.equal(diving.decide(0) & BTN.DIVE, 0, 'a diving character does not retrigger')
+  })
+
+  it('brain-traversal: a reachable ledge is jumped at, grabbed while hanging, then left behind', () => {
+    const c = ledgeCourse()
+    const base = traversalCase(c, v3(0, 0.85, 4.5), { vel: v3(0, 0, 6) }, WAIT_RULE)
+    assert.notEqual(base.decide(0) & BTN.JUMP, 0, 'the bot jumps at the ledge')
+    assert.equal(base.decide(0) & BTN.GRAB, 0, 'it does not grab from the ground')
+    const rising = traversalCase(c, v3(0, 1.4, 5.6), { vel: v3(0, 2, 4), grounded: false, mode: 1 }, WAIT_RULE)
+    assert.notEqual(rising.decide(0) & BTN.GRAB, 0, 'an airborne bot grabs the ledge it can reach')
+    assert.equal(rising.decide(0) & BTN.JUMP, 0)
+    const hanging = traversalCase(c, v3(0, 1.9, 5.9), { vel: v3(0, 0, 0), grounded: false, mode: 5 }, WAIT_RULE)
+    assert.notEqual(hanging.decide(0) & BTN.GRAB, 0, 'the hang holds grab')
+    const up = traversalCase(c, v3(0, 2.45, 8.2), { vel: v3(0, 0, 4) }, WAIT_RULE)
+    assert.equal(up.decide(0) & BTN.GRAB, 0, 'on the ledge the grab is released')
+    assert.equal(up.decide(0) & BTN.JUMP, 0)
+    assert.ok(decodeInput(up.decide(0), neutralInput()).moveZ > 0.9, 'the route continues across the ledge')
+  })
+
+  it('brain-traversal: repeated snapshot-and-seed evaluations return equal actions', () => {
+    const fixtures = [
+      traversalCase(gapCourse(), v3(0, 0.85, 3.5), { vel: v3(0, 0, 8) }, WAIT_RULE),
+      traversalCase(course('finish-traverse', 'race'), v3(0, 0.85, 33.5), { vel: v3(0, 0, 7) }, [{ id: 'dive-finish', predicate: 'nearFinish', distance: 3, action: 'dive' }]),
+      traversalCase(seesawCourse(), v3(0, 0.85, 5.5), { vel: v3(0, 0, 7) }, WAIT_RULE),
+      traversalCase(ledgeCourse(), v3(0, 1.4, 5.6), { vel: v3(0, 2, 4), grounded: false, mode: 1 }, WAIT_RULE),
+    ]
+    const snapshot = (f: typeof fixtures[number]) => JSON.stringify({ input: f.input, behaviour: f.behaviour, route: f.route })
+    const before = fixtures.map(snapshot)
+    const ticks = [0, 1, 2, 3]
+    const expected = fixtures.map(f => ticks.map(f.decide))
+    for (let i = fixtures.length - 1; i >= 0; i--) {
+      const saved = JSON.parse(before[i])
+      const mem = newMemory()
+      const rng = new Rng(91)
+      const state = rng.state
+      for (let j = ticks.length - 1; j >= 0; j--) {
+        assert.equal(evaluateBrain(saved.input, saved.behaviour, saved.route, ticks[j]), expected[i][j])
+        const withBot = { ...saved.input, bot: { behaviour: saved.behaviour, route: saved.route, localTick: ticks[j] } }
+        assert.equal(raceBrain(withBot, SKILL, mem, rng), expected[i][j])
+        assert.equal(survivalBrain(withBot, SKILL, mem, rng), expected[i][j])
+      }
+      assert.deepEqual(mem, newMemory())
+      assert.equal(rng.state, state)
+    }
+    assert.deepEqual(fixtures.map(snapshot), before)
+  })
+})

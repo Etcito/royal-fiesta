@@ -7,8 +7,9 @@ import type { PlayerInput } from '../input.ts'
 import type { Vec3 } from '../vec.ts'
 import { quatMul, quatRotate, v3 } from '../vec.ts'
 import { FIXED_DT } from '@gamesaloon/rollback-rapier'
-import { CHAR } from '../character/constants.ts'
+import { CHAR, CharMode } from '../character/constants.ts'
 import type { ObstacleSpec } from '../course.ts'
+import { GRAVITY_Y } from '../world.ts'
 import { motionPose } from '../obstacles/motion.ts'
 import { TAU } from '../detmath.ts'
 import type { BotBehaviour, PhaseWindow } from './behaviour.ts'
@@ -27,6 +28,18 @@ const FINISH_DIVE_DIST = 3
 const RETARGET_TICKS = 120
 const RETARGET_RANDOM = 0.25
 const ARRIVE_DIST = 0.5
+// Traversal geometry: a gap must start within GAP_LEAD and be no wider than GAP_MAX;
+// a ledge is a raised support surface within GRAB_REACH of the feet and LEDGE_SCAN ahead.
+const JUMP_APEX = (CHAR.jumpSpeed * CHAR.jumpSpeed) / (2 * -GRAVITY_Y)
+const GAP_STEP = 0.2
+const GAP_MAX = 2.6
+const GAP_LEAD = 2.2
+const GAP_PROBE = GAP_LEAD + GAP_MAX + GAP_STEP
+const LEDGE_STEP = 0.35
+const GRAB_REACH = JUMP_APEX + 0.6
+const LEDGE_SCAN = 2.6
+const LEDGE_NEAR = 1
+const SEESAW_DIVE_DIST = 3
 
 export interface BotSkill { reactionTicks: number; aimError: number; jumpLead: number; diveChance: number }
 
@@ -175,6 +188,68 @@ function routeBounds(o: ObstacleSpec, tick: number | null, ux: number, uz: numbe
   return { lo, hi }
 }
 
+interface GroundBox { x0: number; x1: number; z0: number; z1: number; top: number }
+interface TraversalScan { gap: boolean; ledgeTop: number; ledgeDist: number }
+
+// Static support geometry around the route, in world-space AABBs. Moving mechanisms are
+// excluded: their crossing is already governed by the phase windows above.
+function groundBoxes(course: ResolvedCourse, tick: number): GroundBox[] {
+  const out: GroundBox[] = []
+  for (const o of course.obstacles) {
+    const kind = o.motion.kind
+    if (kind !== 'static' && kind !== 'seesaw' && kind !== 'conveyor' && kind !== 'bouncePad') continue
+    const b = routeBounds(o, tick, 1, 0)
+    out.push({ x0: b.lo[0], x1: b.hi[0], z0: -b.hi[1], z1: -b.lo[1], top: b.hi[2] })
+  }
+  return out
+}
+
+function topUnder(fp: GroundBox[], x: number, z: number, maxTop: number): number {
+  let top = -Infinity
+  for (const f of fp) {
+    if (x < f.x0 || x > f.x1 || z < f.z0 || z > f.z1 || f.top > maxTop) continue
+    if (f.top > top) top = f.top
+  }
+  return top
+}
+
+// Walks the route direction: the first unsupported run is a gap when it opens close enough
+// and closes within jump range; a raised surface close ahead is a reachable ledge.
+function scanAhead(fp: GroundBox[], feet: number, x: number, z: number, ux: number, uz: number): TraversalScan {
+  let gapStart = -1
+  let gap = false
+  let ledgeTop = -Infinity
+  let ledgeDist = Infinity
+  for (let s = 0.3; s <= GAP_PROBE + 1e-9; s += GAP_STEP) {
+    const top = topUnder(fp, x + ux * s, z + uz * s, feet + GRAB_REACH)
+    if (top === -Infinity) {
+      if (gapStart < 0) gapStart = s
+      continue
+    }
+    if (gapStart >= 0) {
+      if (gapStart <= GAP_LEAD && s - gapStart <= GAP_MAX) gap = true
+      gapStart = -1
+    }
+    if (top > feet + LEDGE_STEP && top - feet <= GRAB_REACH && s <= LEDGE_SCAN && s < ledgeDist) {
+      ledgeTop = top
+      ledgeDist = s
+    }
+  }
+  return { gap, ledgeTop, ledgeDist }
+}
+
+function seesawAhead(course: ResolvedCourse, x: number, z: number, ux: number, uz: number): boolean {
+  for (const o of course.obstacles) {
+    if (o.motion.kind !== 'seesaw') continue
+    const dx = o.t.x - x
+    const dz = o.t.z - z
+    const along = dx * ux + dz * uz
+    if (along < 0 || along > SEESAW_DIVE_DIST) continue
+    if (Math.abs(dx * uz - dz * ux) <= 2) return true
+  }
+  return false
+}
+
 // Authored intervals are inclusive and may extend past a cycle boundary (90..110 in a
 // 100-tick cycle). Spinner windows use ticks of angular travel, including reverse rotation.
 function inWindow(o: ObstacleSpec, tick: number, w: PhaseWindow): boolean {
@@ -197,7 +272,10 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
   if (tick < reactionTicks || !route.reachable) return NEUTRAL_CODE
   const observed = Math.floor((tick - reactionTicks) / decisionTicks) * decisionTicks
   const now = observed + reactionTicks
-  const distance = (p: Vec3) => Math.hypot(p.x - b.pos.x, p.z - b.pos.z)
+  const distance = (p: Vec3) => {
+    const dx = p.x - b.pos.x, dz = p.z - b.pos.z
+    return Math.sqrt(dx * dx + dz * dz)
+  }
   let index = 0
   for (let i = 1; i < route.waypoints.length; i++) {
     if (distance(b.course.path[route.waypoints[i]].p) < distance(b.course.path[route.waypoints[index]].p)) index = i
@@ -206,7 +284,8 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
   const node = b.course.path[route.waypoints[index]]
   if (!node) return NEUTRAL_CODE
   const dist = distance(node.p)
-  if (dist <= behaviour.route.arriveDist) return NEUTRAL_CODE
+  // An elevated node is not reached by standing underneath it: only stop when level too.
+  if (dist <= behaviour.route.arriveDist && Math.abs(node.p.y - b.pos.y) <= 0.9) return NEUTRAL_CODE
   const ux = (node.p.x - b.pos.x) / dist, uz = (node.p.z - b.pos.z) / dist
   const along = b.pos.x * ux + b.pos.z * uz, across = b.pos.x * uz - b.pos.z * ux
   const speed = Math.max(0, b.vel.x * ux + b.vel.z * uz)
@@ -218,7 +297,9 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
       across >= box.lo[1] - CHAR.radius && across <= box.hi[1] + CHAR.radius
   }).sort((a, c) => a.id < c.id ? -1 : a.id > c.id ? 1 : 0)
   const fin = b.course.finish
-  const finishDist = fin === null ? Infinity : Math.hypot(Math.max(0, Math.abs(b.pos.x - fin.center.x) - fin.half.x), Math.max(0, Math.abs(b.pos.z - fin.center.z) - fin.half.z))
+  const fdx = fin === null ? 0 : Math.max(0, Math.abs(b.pos.x - fin.center.x) - fin.half.x)
+  const fdz = fin === null ? 0 : Math.max(0, Math.abs(b.pos.z - fin.center.z) - fin.half.z)
+  const finishDist = fin === null ? Infinity : Math.sqrt(fdx * fdx + fdz * fdz)
   // File order is priority; the first matching action wins. Distance and phase are AND gates.
   const matches = behaviour.rules.filter(r => {
     const d = r.predicate === 'nearFinish' ? finishDist : r.predicate === 'nearNode' ? dist : Math.min(...nearby.map(o => distance(o.t)))
@@ -252,7 +333,33 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
     }
   }
   const rule = matches.find(r => r.phase === null || (nearby.length ? nearby.some(o => inWindow(o, observed, r.phase!)) : observed >= r.phase.from && observed <= r.phase.to))
+  const hanging = b.mode === CharMode.grabbing
+  const canJump = b.grounded && !hanging && b.mode !== CharMode.dive && b.mode !== CharMode.diveRecover && b.mode !== CharMode.stunned
+  const canDive = b.mode === CharMode.ground || b.mode === CharMode.air
+  const feet = b.pos.y - CHAR.halfHeight - CHAR.radius
+  const scan = scanAhead(groundBoxes(b.course, observed), feet, b.pos.x, b.pos.z, ux, uz)
+  const climb = node.p.y > b.pos.y + 0.4 || (b.obstacleAhead && scan.ledgeTop !== -Infinity)
+  let jump = rule?.action === 'jump' && canJump
+  let dive = rule?.action === 'dive' && canDive
+  let grab = rule?.action === 'grab' || hanging
+  // The route geometry drives traversal independently of the matched action: a gap close
+  // ahead is jumped, a reachable ledge is jumped at and caught while airborne, and a
+  // see-saw in front is dived when no action already claims the tick.
+  if (scan.gap && canJump) jump = true
+  if (climb) {
+    if (canJump && scan.ledgeTop !== -Infinity) jump = true
+    else if (!b.grounded && scan.ledgeTop !== -Infinity && scan.ledgeDist <= LEDGE_NEAR) grab = true
+  }
+  if (!jump && !grab && canDive && b.grounded && seesawAhead(b.course, b.pos.x, b.pos.z, ux, uz)) dive = true
+  if (dive) jump = false
+  // Dive at the finish box centre when the near-finish rule asks for it; otherwise keep
+  // steering at the route node, which crosses a see-saw towards its far edge.
+  let mx = ux, mz = uz
+  if (dive && rule?.predicate === 'nearFinish' && fin !== null) {
+    const dx = fin.center.x - b.pos.x, dz = fin.center.z - b.pos.z
+    const len = Math.sqrt(dx * dx + dz * dz)
+    if (len > 1e-6) { mx = dx / len; mz = dz / len }
+  }
   const pulse = (tick & 1) === 0
-  return encodeInput({ moveX: ux, moveZ: uz, jump: rule?.action === 'jump' && pulse,
-    dive: rule?.action === 'dive' && pulse, grab: rule?.action === 'grab' })
+  return encodeInput({ moveX: mx, moveZ: mz, jump: jump && pulse, dive: dive && pulse, grab })
 }

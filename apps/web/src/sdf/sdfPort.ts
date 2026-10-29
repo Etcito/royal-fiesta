@@ -175,9 +175,15 @@ class SdfRenderPort implements SkinnedRenderPort {
   }
 
   // The rigid upload stays as is; skinned parts get a second mesh with the S18 joint/weight streams.
-  // Later registerAsset calls of the id resolve to the skinned visual.
+  // Later registerAsset calls of the id resolve to the skinned visual; a SceneView per match on the
+  // same port registers it again and gets that visual back instead of a second upload.
   registerSkinned(assetId: string, skin: SkinnedAssetT): number {
     const bones = checkSkin(AREA, `registerSkinned(${assetId})`, skin)
+    const known = this.handleOfId.get(assetId)
+    if (known !== undefined && this.uploaded[known].bones !== undefined) {
+      if (this.uploaded[known].bones !== bones) refuse(AREA, assetId, `already registered with ${this.uploaded[known].bones} bones, not ${bones}; pass the same raa-sdfm asset`)
+      return known
+    }
     const rigidHandle = this.registerAsset(assetId, { id: assetId } as PrimsAsset)
     const streams = new Map(skin.parts.map(part => [part.name, part.skin]))
     const engine = this.need()

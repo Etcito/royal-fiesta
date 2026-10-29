@@ -186,3 +186,25 @@ samples and complete inherited-asset preservation. `npm run typecheck`,
 `npm run build`, and the capture bundle build passed. Syntax and whitespace
 checks passed. Hardware capture, reference comparison, video review and queued
 judges remain unexecuted; this task is still blocked on the Q8 executor return.
+
+### Programmatic handoff to card 5739
+
+The latest operator instruction assigns GPU execution and media return to card 5739;
+this model card finishes without submitting jobs or waiting for its video.
+The queue merge is already committed in 4187237, with capture serialization in 30561a8.
+`.nmc/commands.json` retains all fourteen entries, unique names, dependencies and three
+judges with their original descriptions, reference and minimum score of 6. The separate
+cheer/laugh queue is absent. The explicit instruction to preserve every existing entry
+accounts for the queue exceeding the generic ten-entry limit.
+
+A local prerequisite probe found the fall/dive proof rejected later authored clips before
+building its bundle. Its preservation assertion now selects the baseline clips by their
+baseline names, still comparing their complete contents and order. All current clips still
+undergo the existing sampling and root-motion checks. No asset or capture settings changed.
+
+Verification: the corrected proof passes for all fifteen clips; cheer/laugh gesture and
+complete inherited-asset preservation checks pass against d74d5a6; typecheck, build and
+the contentFiles, courseV1 and gameAsset suites pass (29 tests). All fourteen queue entries
+are unchanged from 30561a8. The existing binary animation files remain intact. Card 5739
+must return `penguin-cheer-laugh.mp4` and hardware records under `proofs/m19/`, and execute
+the queued judges. This run claims no rendered media or visual approval.

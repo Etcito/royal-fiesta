@@ -24,7 +24,8 @@ async function verify() {
   const node = asset.document.nodes.penguin
   const prior = JSON.parse(await run('git', ['show', 'a73d1ce:assets/common/penguin.body.asset.json'])).document.nodes.penguin
   assert.deepEqual(node.rig, prior.rig, 'owner rig and bindings must remain intact')
-  assert.deepEqual(node.clips.filter((c: { name: string }) => !['fall', 'dive', 'bellySlide', 'handPush', 'grab', 'hang'].includes(c.name)), prior.clips, 'preserve all prior clips')
+  const priorNames = new Set(prior.clips.map((c: { name: string }) => c.name))
+  assert.deepEqual(node.clips.filter((c: { name: string }) => priorNames.has(c.name)), prior.clips, 'preserve all prior clips')
   const { bindings, smooth, ...preset } = node.rig
   const api = await loadRaaAnim(), rig = api.loadRig(JSON.stringify(preset))
   const poses = new Map<string, Float32Array>()
@@ -62,7 +63,7 @@ async function verify() {
     }
     assert(push.some((v, i) => Math.abs(v - poses.get('idle')![i]) > 0.1), 'handPush must differ from idle')
   } finally { rig.free() }
-  console.log('m19: all eight clips sample incl. bellySlide and handPush; prior data preserved; fall flippers move; dive extends and pitches; no root motion')
+  console.log(`m19: all ${node.clips.length} clips sample incl. bellySlide and handPush; prior data preserved; fall flippers move; dive extends and pitches; no root motion`)
 }
 async function bundle() {
   const require = createRequire(import.meta.url)

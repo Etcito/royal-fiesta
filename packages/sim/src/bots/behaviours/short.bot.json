@@ -1,0 +1,24 @@
+{
+  "format": "royal-fiesta.bot",
+  "version": 0,
+  "id": "short-route",
+  "name": "Short route",
+  "tick": {
+    "decisionTicks": 4,
+    "reactionTicks": 2,
+    "wobbleTicks": 45,
+    "stuckTicks": 30
+  },
+  "route": {
+    "preference": "short",
+    "advanceDist": 1.5,
+    "arriveDist": 0.5
+  },
+  "rules": [
+    { "id": "jump-wall", "predicate": "obstacleAhead", "action": "jump" },
+    { "id": "jump-stuck", "predicate": "stuck", "action": "jump" },
+    { "id": "jump-node", "predicate": "nearNode", "distance": 2, "phase": { "from": 0, "to": 3600 }, "action": "jump" },
+    { "id": "dive-finish", "predicate": "nearFinish", "distance": 3, "action": "dive" },
+    { "id": "grab-hazard", "predicate": "hazardNear", "action": "grab" }
+  ]
+}

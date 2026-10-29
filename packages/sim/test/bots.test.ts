@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { describe, it } from 'node:test'
 import { Rng } from '@gamesaloon/rollback'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
+import { BEHAVIOUR_FORMAT, BEHAVIOUR_VERSION, bindBehaviour, loadBehaviour, parseBehaviour } from '../src/bots/behaviour.ts'
 import { newMemory, raceBrain, rollSkill, survivalBrain } from '../src/bots/brain.ts'
 import type { BotSkill, BrainInput } from '../src/bots/brain.ts'
 import { BotSystem } from '../src/bots/botSystem.ts'
@@ -14,6 +16,7 @@ import { RoundSystem } from '../src/match/roundSystem.ts'
 import { planRound } from '../src/match/rules.ts'
 import type { MatchSetup } from '../src/match/setup.ts'
 import { ObstacleSystem } from '../src/obstacles/system.ts'
+import { isRefusal } from '../src/refusal.ts'
 import { v3 } from '../src/vec.ts'
 import type { Vec3 } from '../src/vec.ts'
 import { FiestaWorld } from '../src/world.ts'
@@ -95,6 +98,89 @@ describe('brains', () => {
     const at = v3(0, 0.85, 1)
     assert.notEqual(survivalBrain(brainInput(c, at, { hazardNear: true }), SKILL, newMemory(), new Rng(1)) & BTN.JUMP, 0)
     assert.equal(survivalBrain(brainInput(c, at), SKILL, newMemory(), new Rng(1)) & BTN.JUMP, 0)
+  })
+})
+
+type Json = Record<string, any>
+
+function validBehaviour(): Json {
+  return {
+    format: 'royal-fiesta.bot',
+    version: 0,
+    id: 'test-bot',
+    name: 'Test bot',
+    tick: { decisionTicks: 4, reactionTicks: 2, wobbleTicks: 45, stuckTicks: 30 },
+    route: { preference: 'short', advanceDist: 1.5, arriveDist: 0.5 },
+    rules: [{ id: 'jump-wall', predicate: 'obstacleAhead', action: 'jump' }],
+  }
+}
+
+const MALFORMED: Array<{ name: string; edit: (o: Json) => void; path: string; reason: string }> = [
+  { name: 'format', edit: o => { o.format = 'royal-fiesta.bots' }, path: '/format', reason: 'royal-fiesta.bot' },
+  { name: 'version', edit: o => { o.version = 1 }, path: '/version', reason: 'version' },
+  { name: 'missing rules', edit: o => { delete o.rules }, path: '/rules', reason: 'missing required field' },
+  { name: 'non-integer tick', edit: o => { o.tick.decisionTicks = 2.5 }, path: '/tick/decisionTicks', reason: 'integer' },
+  { name: 'tick range', edit: o => { o.tick.reactionTicks = -1 }, path: '/tick/reactionTicks', reason: '0..120' },
+  { name: 'unknown tick key', edit: o => { o.tick.boost = 1 }, path: '/tick/boost', reason: 'unknown key' },
+  { name: 'route preference', edit: o => { o.route.preference = 'scenic' }, path: '/route/preference', reason: 'scenic' },
+  { name: 'route distance', edit: o => { o.route.advanceDist = 0 }, path: '/route/advanceDist', reason: '> 0' },
+  { name: 'predicate', edit: o => { o.rules[0].predicate = 'teleport' }, path: '/rules/0/predicate', reason: 'teleport' },
+  { name: 'predicate distance', edit: o => { o.rules[0].predicate = 'nearNode' }, path: '/rules/0/distance', reason: 'needs a distance' },
+  { name: 'phase order', edit: o => { o.rules[0].phase = { from: 10, to: 5 } }, path: '/rules/0/phase', reason: 'after' },
+  { name: 'phase integer', edit: o => { o.rules[0].phase = { from: 0.5, to: 10 } }, path: '/rules/0/phase/from', reason: 'integer' },
+  { name: 'distance', edit: o => { o.rules[0].predicate = 'nearFinish'; o.rules[0].distance = -1 }, path: '/rules/0/distance', reason: 'distance' },
+  { name: 'action', edit: o => { o.rules[0].action = 'fly' }, path: '/rules/0/action', reason: 'fly' },
+  { name: 'duplicate rule id', edit: o => { o.rules.push({ ...o.rules[0] }) }, path: '/rules/1/id', reason: 'duplicate' },
+]
+
+const SHORT_TEXT = await readFile(new URL('../src/bots/behaviours/short.bot.json', import.meta.url), 'utf8')
+const SAFE_TEXT = await readFile(new URL('../src/bots/behaviours/safe.bot.json', import.meta.url), 'utf8')
+
+describe('behaviour', () => {
+  it('loads both behaviour profiles and binds them to an S2 course', () => {
+    const short = loadBehaviour(SHORT_TEXT, 'short.bot.json')
+    const safe = loadBehaviour(SAFE_TEXT, 'safe.bot.json')
+    assert.equal(short.format, BEHAVIOUR_FORMAT)
+    assert.equal(short.version, BEHAVIOUR_VERSION)
+    assert.equal(short.id, 'short-route')
+    assert.equal(safe.id, 'safe-route')
+    assert.equal(short.route.preference, 'short')
+    assert.equal(safe.route.preference, 'safe')
+    assert.ok(short.rules.length > 0 && safe.rules.length > 0)
+    const c = course('race-a', 'race')
+    assert.equal(bindBehaviour(short, c), short)
+    assert.equal(bindBehaviour(safe, c), safe)
+  })
+
+  it('refuses malformed behaviour fields with identifiable paths', () => {
+    for (const c of MALFORMED) {
+      const o = validBehaviour()
+      c.edit(o)
+      assert.throws(
+        () => parseBehaviour(o, 'test.bot.json'),
+        (e: unknown) => isRefusal(e) && e.path === `test.bot.json#${c.path}` && e.reason.includes(c.reason),
+        c.name,
+      )
+    }
+  })
+
+  it('refuses a useLever behaviour bound to a course without levers', () => {
+    const o = validBehaviour()
+    o.rules[0].action = 'useLever'
+    const b = parseBehaviour(o, 'lever.bot.json')
+    assert.equal(b.rules[0].action, 'useLever')
+    assert.throws(
+      () => bindBehaviour(b, course('race-a', 'race')),
+      (e: unknown) => isRefusal(e) && e.path === 'behaviours/test-bot/rules/0/action' && e.reason.includes('levers'),
+    )
+    assert.equal(bindBehaviour(b, { id: 'lever-course', levers: [{}] }), b)
+  })
+
+  it('refuses invalid behaviour JSON text', () => {
+    assert.throws(
+      () => loadBehaviour('{ nope', 'broken.bot.json'),
+      (e: unknown) => isRefusal(e) && e.path === 'broken.bot.json' && e.reason.includes('invalid JSON'),
+    )
   })
 })
 

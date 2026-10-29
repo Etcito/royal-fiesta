@@ -516,14 +516,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "spinner",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "speedDegS": 90,
-        "phaseDeg": 0
+        "kind": "static"
       },
       "colliders": null
     },
@@ -548,14 +541,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "spinner",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "speedDegS": -110,
-        "phaseDeg": 90
+        "kind": "static"
       },
       "colliders": null
     },
@@ -580,15 +566,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "movingPlatform",
-        "offset": [
-          2,
-          0,
-          0
-        ],
-        "periodS": 4,
-        "phaseDeg": 0,
-        "wave": "sine"
+        "kind": "static"
       },
       "colliders": null
     },
@@ -638,20 +616,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "pendulum",
-        "pivot": [
-          0,
-          6.8,
-          32
-        ],
-        "axis": [
-          0,
-          0,
-          1
-        ],
-        "ampDeg": 60,
-        "periodS": 3,
-        "phaseDeg": 0
+        "kind": "static"
       },
       "colliders": null
     },
@@ -676,16 +641,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "rotatingDoor",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "stepDeg": 90,
-        "periodS": 2,
-        "moveS": 0.5,
-        "phaseS": 0
+        "kind": "static"
       },
       "colliders": null
     },

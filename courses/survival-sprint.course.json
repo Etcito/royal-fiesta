@@ -253,14 +253,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "spinner",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "speedDegS": 150,
-        "phaseDeg": 0
+        "kind": "static"
       },
       "colliders": null
     },
@@ -285,14 +278,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "spinner",
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "speedDegS": -150,
-        "phaseDeg": 90
+        "kind": "static"
       },
       "colliders": null
     },
@@ -317,20 +303,7 @@
       ],
       "friction": 0.5,
       "motion": {
-        "kind": "pendulum",
-        "pivot": [
-          0,
-          6.8,
-          0
-        ],
-        "axis": [
-          0,
-          0,
-          1
-        ],
-        "ampDeg": 60,
-        "periodS": 3,
-        "phaseDeg": 0
+        "kind": "static"
       },
       "colliders": null
     }

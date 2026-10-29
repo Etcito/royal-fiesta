@@ -32,5 +32,6 @@
   "proofs/m20/penguin-ik.json",
   "proofs/m20/penguin-ik-slope.png",
   "proofs/m20/penguin-ik-grab.png",
-  "proofs/m20/render-ik-preview.mjs"
+  "proofs/m20/render-ik-preview.mjs",
+  "proofs/m2/candy-assets/"
 ]

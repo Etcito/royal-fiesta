@@ -11,6 +11,7 @@ import { repoRoot } from './bricks.ts'
 const AREA = 'judge'
 const GPU_CLIENT = '$NMC_GPU_CLIENT'
 const JUDGE_CLIENT = '$NMC_JUDGE_CLIENT'
+const PAGE_REF = '$PAGE_REF'
 const PAGE = 'game'
 const OP = 'gameCapture'
 const MIN_SCORE = 6
@@ -76,13 +77,14 @@ function outDirOf(dir: string): string {
 }
 
 // The S31 contract, one argv array per step: build, publish, render, then one judge run per item. The client
-// scripts stay as $NMC_GPU_CLIENT / $NMC_JUDGE_CLIENT here; main resolves them from the environment.
+// scripts stay as $NMC_GPU_CLIENT / $NMC_JUDGE_CLIENT here; main resolves them from the environment. Render
+// takes the page_ref that publish printed ($PAGE_REF here), never a fixed page name.
 export function judgeCommands(input: JudgeInput, outDir: string, inputPath: string): string[][] {
   const dir = outDirOf(outDir)
   const commands: string[][] = [
     ['npm', 'run', 'build'],
     ['node', GPU_CLIENT, 'publish', DIST_DIR],
-    ['node', GPU_CLIENT, 'render', inputPath, '--page-ref', 'game', '-o', dir],
+    ['node', GPU_CLIENT, 'render', inputPath, '--page-ref', PAGE_REF, '-o', dir],
   ]
   for (const item of input.judge) {
     commands.push(['python3', JUDGE_CLIENT, `${dir}${item.capture}.png`, '--description', item.description, '--min-score', String(MIN_SCORE)])
@@ -101,22 +103,47 @@ function clientEnv(name: string, wait: boolean): string {
   return value
 }
 
-function resolveStep(args: readonly string[], gpu: string, judge: string): string[] {
+function resolveStep(args: readonly string[], gpu: string, judge: string, pageRef: string | null): string[] {
   return args.map(arg => {
     if (arg === GPU_CLIENT) return gpu
     if (arg === JUDGE_CLIENT) return judge
+    if (arg === PAGE_REF) return pageRef ?? refuse(AREA, 'render', 'has no page_ref; publish must run first and print {"page_ref": ...}')
     return arg
   })
 }
 
-function runStep(args: readonly string[], cwd: string): Promise<number> {
+interface StepResult { code: number; stdout: string }
+
+// stdout is echoed and kept when capture is set (publish), so its page_ref can feed the render step.
+function runStep(args: readonly string[], cwd: string, capture: boolean): Promise<StepResult> {
   return new Promise((done, reject) => {
     const command = args[0]
     if (command === undefined) return reject(new Error('empty command'))
-    const child = spawn(process.platform === 'win32' && command === 'npm' ? 'npm.cmd' : command, args.slice(1), { cwd, stdio: 'inherit' })
+    const child = spawn(process.platform === 'win32' && command === 'npm' ? 'npm.cmd' : command, args.slice(1), {
+      cwd,
+      stdio: ['inherit', capture ? 'pipe' : 'inherit', 'inherit'],
+    })
+    let stdout = ''
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString('utf8')
+      process.stdout.write(chunk)
+    })
     child.once('error', reject)
-    child.once('close', code => done(code ?? 1))
+    child.once('close', code => done({ code: code ?? 1, stdout }))
   })
+}
+
+export function pageRefOf(stdout: string): string {
+  let result: unknown
+  try {
+    result = JSON.parse(stdout.trim()) as unknown
+  } catch {
+    return refuse(AREA, 'publish', 'printed invalid JSON; check the GPU client publish response')
+  }
+  if (!isObj(result) || typeof result.page_ref !== 'string' || result.page_ref.length === 0) {
+    return refuse(AREA, 'publish', 'response has no page_ref; use the GPU client response for the published page')
+  }
+  return result.page_ref
 }
 
 function labelOf(args: readonly string[], index: number): string {
@@ -158,20 +185,23 @@ export async function main(argv: string[]): Promise<number> {
     const gpu = clientEnv('NMC_GPU_CLIENT', true)
     const judge = clientEnv('NMC_JUDGE_CLIENT', false)
     const commands = judgeCommands(input, outDir, inputPath)
+    let pageRef: string | null = null
     for (let i = 0; i < commands.length; i++) {
       const step = commands[i] as string[]
       const label = labelOf(step, i)
       console.log(`[judge] ${name} ${i + 1}/${commands.length}: ${label}`)
-      let code: number
+      let result: StepResult
       try {
-        code = await runStep(resolveStep(step, gpu, judge), root)
-      } catch {
+        result = await runStep(resolveStep(step, gpu, judge, pageRef), root, label === 'publish')
+      } catch (e) {
+        if (isRefusal(e)) throw e
         return refuse(AREA, label, 'could not start; fix the command or the client script')
       }
-      if (code !== 0) {
-        console.error(`[judge] ${name} ${label} exited with ${code}; stopping`)
+      if (result.code !== 0) {
+        console.error(`[judge] ${name} ${label} exited with ${result.code}; stopping`)
         return 1
       }
+      if (label === 'publish') pageRef = pageRefOf(result.stdout)
     }
     console.log(`[judge] ${name} passed ${input.judge.length} judge item(s); PNGs in ${outDir}`)
     return 0

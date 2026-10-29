@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
-import { judgeCommands, parseJudgeInput } from '../judgeCard.ts'
+import { judgeCommands, pageRefOf, parseJudgeInput } from '../judgeCard.ts'
 import type { JudgeInput } from '../judgeCard.ts'
 
 const M1 = fileURLToPath(new URL('../../.nmc/judge/m1.json', import.meta.url))
@@ -70,7 +70,7 @@ test('judgeCommands gives build, publish, render and one judge run for M1', () =
 
   const render = commands[2]!
   assert.ok(render.includes('out/judge/m1/input.json'))
-  assert.equal(render[render.indexOf('--page-ref') + 1], 'game')
+  assert.equal(render[render.indexOf('--page-ref') + 1], '$PAGE_REF')
   assert.equal(render[render.indexOf('-o') + 1], 'out/judge/m1/')
 
   const judge = commands[3]!
@@ -85,4 +85,10 @@ test('judgeCommands normalises an out dir that has no trailing slash', () => {
   const commands = judgeCommands(m1(), 'out/judge/m1', 'out/judge/m1/input.json')
   assert.equal(commands[2]![commands[2]!.indexOf('-o') + 1], 'out/judge/m1/')
   assert.equal(commands[3]![2], 'out/judge/m1/playing.png')
+})
+
+test('pageRefOf takes the page_ref publish printed and refuses a response without one', () => {
+  assert.equal(pageRefOf('{"page_ref":"exec-9640-3a5d"}\n'), 'exec-9640-3a5d')
+  refusedWith(() => pageRefOf('{"ok":true}'), /^\[judge\] publish: response has no page_ref; .*$/)
+  refusedWith(() => pageRefOf('not json'), /^\[judge\] publish: printed invalid JSON; .*$/)
 })

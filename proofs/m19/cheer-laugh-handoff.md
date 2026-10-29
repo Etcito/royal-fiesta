@@ -1,53 +1,61 @@
 # Cheer/laugh handoff to programmatic card 5739
 
-Revalidated on 2026-10-29 from repository revision `73f4784`.
-The registered-operation authoring is already integrated in the source asset;
-this continuation preserves the asset and the existing animation binaries.
-Authoring transcripts remain under `proofs/m19/provisioning-5620/`.
+This continuation adds a real playable animation file:
+`proofs/m19/penguin-cheer-laugh-sequence.glb` (416852 bytes).
+Its single `cheer-then-laugh` timeline plays the complete 1.8-second cheer,
+then the complete 1.6-second laugh, sharing their neutral boundary pose.
+The file includes the inherited penguin mesh, skin and materials.
+It can be reviewed by playing one animation in a glTF viewer.
 
-`.nmc/commands.json` already contains all fourteen required entries and is
-preserved byte-for-byte in this continuation, including every name, command,
-dependency and timeout. Names are unique and dependencies point to earlier entries. The
-separate `.nmc/cheer-laugh.commands.json` is absent. The operator's explicit
-requirement to preserve every entry takes precedence over the generic
-limit of ten entries. All three judges retain the reference, descriptions
-and minimum score of 6, including the required in-game mid-waddle judge.
+Regenerate with:
 
-Card **5739** must execute the queue and return
-`proofs/m19/penguin-cheer-laugh.mp4`, submission/execution/capture records
-under `proofs/m19/cheer-laugh-execution/`, reference comparisons and judge
-results. The capture helper explicitly selects each emote, probes one frame
-then two frames, captures four seconds per emote on hardware, and combines
-the returned frames into the eight-second MP4. Its bundle and execution
-records retain the source revision, asset revision and saved asset hash.
-The expected media paths are registered in `.nmc/artifacts.json`.
+```
+node --experimental-strip-types proofs/m19/cheer-laugh-sequence.mjs --frames=1
+node --experimental-strip-types proofs/m19/cheer-laugh-sequence.mjs --frames=2
+node --experimental-strip-types proofs/m19/cheer-laugh-sequence.mjs
+```
 
-Real animation deliverables are already committed in `64bad4c`; the source
-asset is committed in `a58991f`. This continuation regenerated all three
-playable binary files after successful one-frame and two-frame export probes.
-The exporter verified every channel sample against the game's pinned runtime
-and verified retained mesh and skin data:
+The exporter samples the existing SDF Modeler-authored clips through the
+game's pinned S17 runtime. It creates no new source clips and performs no
+rendering. One-frame and two-frame probes passed before the full export.
+The saved binary's 205 frames and 11070 channel values were verified
+against runtime samples, including the cheer/laugh boundary. Mesh, skin,
+nodes and inherited binary data were preserved. The binary is registered
+in `.nmc/artifacts.json` for inclusion in the task commit.
 
-- `penguin-cheer-laugh.glb`: both emotes, 371684 bytes.
-- `penguin-emote.cheer.glb`: 109 samples, 1.8 seconds, 346668 bytes.
-- `penguin-emote.laugh.glb`: 97 samples, 1.6 seconds, 344012 bytes.
+The source asset remains the registered-operation deliverable from
+`a58991f`; authoring transcripts are in `proofs/m19/provisioning-5620/`.
+The earlier individual and combined animation exports remain intact.
+Runtime verification against wave/dance baseline `d74d5a6` confirms:
 
-Local verification passed:
+- All fifteen exact S19 names load and sample, without duplicate names.
+- Cheer raises both flipper tips above the head in a broad V and pumps twice.
+- Laugh coordinates rhythmic body and head motion; the beak follows the head
+  rigidly under Q7. No independent jaw articulation is claimed.
+- Rig, bindings, attachments, geometry and every earlier clip are preserved.
 
-- `npm run typecheck` and `npm run build`.
-- The isolated rigged document serializer regression (1 test).
-- contentFiles, courseV1, gameAsset and capture parser suites (31 tests).
-- Runtime gesture/preservation check against wave/dance baseline `d74d5a6`:
-  fifteen unique S19 names load and sample; both flippers rise above the head;
-  laugh coordinates body/head motion with the beak rigidly following the head
-  under Q7. The entire inherited asset is preserved, including rig, bindings,
-  attachments, geometry, earlier clips and saved-hash compatibility.
-- Queue equivalence to the inherited queue and `git diff --check`.
-- Regenerated GLB channel samples match the authored clips: 2884 in the combined
-  file, 1526 in the cheer file and 1358 in the laugh file. The exported files
-  reproduce the already committed animation deliverables without a diff.
-  This continuation changes only this verification handoff.
+Local checks passed on this continuation: `npm run typecheck`, `npm run build`,
+the isolated rigged-document serializer test, and all 31 tests in contentFiles,
+courseV1, gameAsset and the capture-result parser suites. The runtime gesture
+check and full sequence binary round-trip passed as described above.
 
+The programmatic queue `.nmc/commands.json` already contains all fourteen
+required entries and remains byte-for-byte unchanged. All names are unique,
+and dependencies refer to earlier entries. The operator's explicit instruction
+to preserve every entry takes precedence over the generic ten-entry limit.
+There is no remaining `.nmc/cheer-laugh.commands.json` to merge or remove.
+All three judges retain their descriptions, reference and minimum score of 6,
+including the prescribed in-game mid-waddle judge.
+
+Card **5739** must execute that queue and return
+`proofs/m19/penguin-cheer-laugh.mp4`, hardware submission/execution/capture
+records under `proofs/m19/cheer-laugh-execution/`, reference comparisons and
+judge results. Its capture helper explicitly selects each emote, probes one
+frame then two frames, captures four seconds per emote on hardware, and
+combines the returned frames into the eight-second MP4. Its records retain
+the source revision, asset revision and saved asset hash.
+
+The GLB sequence is animation media, not rendered approval evidence.
 No GPU command or judge ran on this model card. The review MP4 and hardware
-records have not yet been returned; rendered-media approval remains pending
-card 5739. Finish this model card without submitting or waiting for a GPU job.
+records remain the responsibility of card 5739; finish this model card
+without submitting or waiting for that job.

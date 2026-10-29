@@ -36,8 +36,13 @@
     "assets/common/penguin.body.asset.json",
     "courses/hub-plaza.course.json",
     "courses/mech-lab.course.json",
+    "courses/obstacle-gallery.course.json",
     "courses/podium.course.json",
+    "courses/race-bean-dash.course.json",
     "courses/race-hammer-hill.course.json",
-    "courses/survival-hammer-ring.course.json"
+    "courses/race-sprint.course.json",
+    "courses/survival-hammer-ring.course.json",
+    "courses/survival-spin-zone.course.json",
+    "courses/survival-sprint.course.json"
   ]
 }

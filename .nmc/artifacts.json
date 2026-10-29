@@ -27,5 +27,10 @@
   "proofs/m19/scene-view-waddle.png",
   "proofs/m19/scene-view-waddle-side-by-side.png",
   "proofs/m19/scene-view-costumes.png",
-  "proofs/m19/scene-view-costumes-side-by-side.png"
+  "proofs/m19/scene-view-costumes-side-by-side.png",
+  "proofs/m20/penguin-ik.mp4",
+  "proofs/m20/penguin-ik.json",
+  "proofs/m20/penguin-ik-slope.png",
+  "proofs/m20/penguin-ik-grab.png",
+  "proofs/m20/render-ik-preview.mjs"
 ]

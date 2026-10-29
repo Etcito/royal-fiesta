@@ -1,0 +1,42 @@
+{
+  "out": "proofs/m20/penguin-ik.mp4",
+  "script": "proofs/m20/render-ik-preview.mjs",
+  "frames": 240,
+  "fps": 30,
+  "characterTransform": {
+    "pos": {
+      "x": 5,
+      "y": 1,
+      "z": -2
+    },
+    "facing": {
+      "x": 0.6,
+      "z": 0.8
+    }
+  },
+  "active": [
+    "slope:{\"feet\":true,\"hands\":false,\"look\":true}",
+    "grab:{\"feet\":false,\"hands\":true,\"look\":true}",
+    "removed:{\"feet\":false,\"hands\":false,\"look\":false}"
+  ],
+  "means": {
+    "slope": {
+      "frames": 90,
+      "footSlopeErrOff": 0.0629,
+      "footSlopeErrOn": 0.0403,
+      "lookDegOff": 34.964,
+      "lookDegOn": 0
+    },
+    "grab": {
+      "frames": 90,
+      "tipDistOff": 1.5707,
+      "tipDistOn": 0.4465,
+      "lookDegOff": 25.8596,
+      "lookDegOn": 0
+    },
+    "removed": {
+      "frames": 60,
+      "maxSkinDelta": 0
+    }
+  }
+}

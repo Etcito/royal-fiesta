@@ -143,12 +143,15 @@ export class VisualIk {
     const p = ground && finite(ground.point) && finite(ground.normal) ? toPoseFrame(ground.point, xf) : null
     const n = p && ground ? toPoseFrame(ground.normal, xf, true) : null
     if (p && n && n[1] > 1e-3) {
-      // Keep each animated foot's height above the ground but follow the contact plane under it,
-      // then turn the foot's up axis to the contact normal.
+      // Keep each animated foot's height above the ground but follow the contact plane under it: with no
+      // knee, the upper leg swings its fixed length to that height. Then the foot's up axis turns to the normal.
       for (const [upper, foot] of LEGS) {
-        const f = this.index.get(foot)!, o = f * 16 + 12
+        const f = this.index.get(foot)!, o = f * 16 + 12, h = this.index.get(upper)! * 16 + 12
         let m = pose.model
-        const target: Vec3 = [m[o], m[o + 1] - (n[0] * (m[o] - p[0]) + n[2] * (m[o + 2] - p[2])) / n[1], m[o + 2]]
+        const d = [m[o] - m[h], m[o + 1] - m[h + 1], m[o + 2] - m[h + 2]], len = Math.hypot(d[0], d[1], d[2])
+        const dy = Math.max(-len, Math.min(len, d[1] - (n[0] * (m[o] - p[0]) + n[2] * (m[o + 2] - p[2])) / n[1]))
+        const flat = Math.hypot(d[0], d[2]), k = Math.sqrt(len * len - dy * dy) / (flat || 1)
+        const target: Vec3 = [m[h] + d[0] * k, m[h + 1] + dy, m[h + 2] + (flat ? d[2] * k : k)]
         const axis: Vec3 = [pose.local[f * 10], pose.local[f * 10 + 1], pose.local[f * 10 + 2]]
         pose = ik.lookAt(this.rig, pose, upper, target, axis, LEG_MAX_DEG)
         m = pose.model

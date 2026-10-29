@@ -28,7 +28,7 @@ interface PayloadGroup { group: string; parts: PayloadPart[] }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
 // key = the raa-sdfm part name (group/partId when two parts share a name); joints = 1 + max joint of a skinned part.
-interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number }
+interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tintable: boolean }
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
 interface Uploaded { assetId: string; parts: PartUpload[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
 interface SkinSlot { instance: number; part: PartUpload }
@@ -167,7 +167,7 @@ class SdfRenderPort implements SkinnedRenderPort {
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
-        parts.push({ name: part.name, key, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r })
+        parts.push({ name: part.name, key, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r, tintable: built.tintable })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
@@ -227,7 +227,7 @@ class SdfRenderPort implements SkinnedRenderPort {
     for (const part of parts) {
       const node = engine.addNode(root, part.t, part.r)
       const instance = engine.addMeshInstance(node, part.mesh)
-      if (tint !== null) engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
+      if (tint !== null && part.tintable) engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
       instances.push(instance)
       if (part.joints !== undefined) skin.push({ instance, part })
     }
@@ -419,8 +419,12 @@ function payloadOf(id: string, meshed: MeshedAsset): Payload {
   return data as unknown as Payload
 }
 
+// SDF Modeler decides which materials take the player colour: those named player* (and parts with no material at all).
+const PLAYER_MATERIAL = /^player/i
+function takesPlayerColour(material: string | null): boolean { return material === null || PLAYER_MATERIAL.test(material) }
+
 // One MeshDesc per part: MAMA meshes concatenated, one sub-mesh per material, first use first.
-function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, assetId: string): { desc: MeshDesc; subMeshes: SubMeshDesc[] } {
+function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, assetId: string): { desc: MeshDesc; subMeshes: SubMeshDesc[]; tintable: boolean } {
   const byMaterial = new Map<string | null, PayloadMesh[]>()
   for (const mesh of part.meshes) {
     const list = byMaterial.get(mesh.material)
@@ -462,7 +466,7 @@ function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, asset
   }
   const desc: MeshDesc = { positions, normals, indices, subMeshes }
   if (uvs !== null) desc.uvs = uvs
-  return { desc, subMeshes }
+  return { desc, subMeshes, tintable: [...byMaterial.keys()].every(takesPlayerColour) }
 }
 
 // Translation and rotation of a column-major 4x4 MAMA part frame; a frame scale is not carried.

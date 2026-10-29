@@ -1,7 +1,8 @@
 import { createRequire } from 'node:module'
 import { spawn } from 'node:child_process'
 import {
-  existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, unlinkSync,
+  accessSync, constants, cpSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync,
+  symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { pathToFileURL, fileURLToPath } from 'node:url'
@@ -56,15 +57,16 @@ export interface BrickPin { repo: string; commit: string }
 const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/
 
-const PIN_NAMES = ['MAMA', 'UAA'] as const
+const PIN_NAMES = ['MAMA', 'UAA', 'RAA'] as const
 type PinName = (typeof PIN_NAMES)[number]
 const PIN_EXAMPLES: Record<PinName, string> = {
   MAMA: '{"repo":"Etcito/MAMA","commit":"<40 hex>"}',
   UAA: '{"repo":"Etcito/uaa","commit":"<40 hex>"}',
+  RAA: '{"repo":"Etcito/raa","commit":"<40 hex>"}',
 }
 
-// The one pin table (S15). MAMA and uaa are pinned; everything else is a release dependency.
-export function readPins(file?: string): { MAMA: BrickPin; UAA: BrickPin } {
+// The one pin table (S15). MAMA, uaa and raa are pinned; everything else is a release dependency.
+export function readPins(file?: string): { MAMA: BrickPin; UAA: BrickPin; RAA: BrickPin } {
   const path = file ?? join(repoRoot(), PIN_FILE)
   const label = basename(path)
   const pointer = (name: PinName, field?: string): string => `${label}#/${name}${field ? `/${field}` : ''}`
@@ -81,12 +83,12 @@ export function readPins(file?: string): { MAMA: BrickPin; UAA: BrickPin } {
     refuse('bricks', label, `not valid JSON (${error instanceof Error ? error.message : String(error)}); fix the pins file`)
   }
   if (!document || typeof document !== 'object' || Array.isArray(document)) {
-    refuse('bricks', label, `must be an object with the ${PIN_NAMES.join(' and ')} keys; fix the pins file`)
+    refuse('bricks', label, `must be an object with the ${PIN_NAMES.join(', ')} keys; fix the pins file`)
   }
   const record = document as Record<string, unknown>
   for (const key of Object.keys(record)) {
     if (!PIN_NAMES.includes(key as PinName)) {
-      refuse('bricks', `${label}#/${key}`, `unknown brick; the pins are ${PIN_NAMES.join(' and ')}; remove it`)
+      refuse('bricks', `${label}#/${key}`, `unknown brick; the pins are ${PIN_NAMES.join(', ')}; remove it`)
     }
   }
   const pins = {} as Record<PinName, BrickPin>
@@ -107,7 +109,7 @@ export function readPins(file?: string): { MAMA: BrickPin; UAA: BrickPin } {
     }
     pins[name] = { repo: pin.repo, commit: pin.commit }
   }
-  return { MAMA: pins.MAMA, UAA: pins.UAA }
+  return { MAMA: pins.MAMA, UAA: pins.UAA, RAA: pins.RAA }
 }
 
 // Reads HEAD from the git files (a checkout or a `gitdir:` worktree file) without spawning git.
@@ -133,16 +135,21 @@ function readGitHead(dir: string): string | null {
     if (COMMIT_PATTERN.test(head)) return head
     if (!head.startsWith('ref: ')) return null
     const ref = head.slice('ref: '.length).trim()
-    try {
-      const direct = readFileSync(join(gitDir, ref), 'utf8').trim()
-      if (COMMIT_PATTERN.test(direct)) return direct
-    } catch {}
-    try {
-      for (const line of readFileSync(join(gitDir, 'packed-refs'), 'utf8').split('\n')) {
-        const [hash, name] = line.trim().split(/\s+/)
-        if (name === ref && COMMIT_PATTERN.test(hash)) return hash
-      }
-    } catch {}
+    // A linked worktree keeps its branch refs in the main repository (the `commondir` file).
+    let commonDir = gitDir
+    try { commonDir = resolve(gitDir, readFileSync(join(gitDir, 'commondir'), 'utf8').trim()) } catch {}
+    for (const refDir of commonDir === gitDir ? [gitDir] : [gitDir, commonDir]) {
+      try {
+        const direct = readFileSync(join(refDir, ref), 'utf8').trim()
+        if (COMMIT_PATTERN.test(direct)) return direct
+      } catch {}
+      try {
+        for (const line of readFileSync(join(refDir, 'packed-refs'), 'utf8').split('\n')) {
+          const [hash, name] = line.trim().split(/\s+/)
+          if (name === ref && COMMIT_PATTERN.test(hash)) return hash
+        }
+      } catch {}
+    }
   } catch {}
   return null
 }
@@ -252,9 +259,212 @@ export function uaaSource(root: string = repoRoot()): UaaSource {
   }
   return { kind: 'absent', reason: `no .bricks/UAA or ../uaa; clone ${pins.repo} next to this repository or run npm run bricks -- fetch uaa` }
 }
-
+export type RaaSource =
+  | { kind: 'sibling'; dir: string; commit: string | null }
+  | { kind: 'cloned'; dir: string; commit: string }
+  | { kind: 'absent'; reason: string }
+export const RAA_ABSENT_PREFIX = 'RAA not available: '
+export const RAA_BRICK_DIRS = ['raa', 'raa-sdfm', 'raa-anim'] as const
+// $RF_BRICKS_DIR/raa, then ../raa (brickDir's order). .bricks/RAA itself is never its own sibling.
+function raaSibling(root: string): string | null {
+  const candidates = [
+    ...(process.env.RF_BRICKS_DIR ? [join(process.env.RF_BRICKS_DIR, 'raa')] : []),
+    join(dirname(root), 'raa'),
+  ]
+  for (const candidate of candidates) {
+    if (resolve(candidate) === join(root, '.bricks', 'RAA')) continue
+    try {
+      if (existsSync(candidate) && statSync(candidate).isDirectory()) return realpathSync(candidate)
+    } catch {}
+  }
+  return null
+}
+// Offline resolution of RAA: .bricks/RAA first, then the documented siblings. Never builds.
+export function raaSource(root: string = repoRoot()): RaaSource {
+  const pins = readPins().RAA
+  const link = join(root, '.bricks', 'RAA')
+  try {
+    const stats = lstatSync(link)
+    if (stats.isSymbolicLink()) {
+      let dir: string
+      try { dir = realpathSync(link) } catch { return { kind: 'absent', reason: `${link} is a broken symlink; run npm run bricks -- fetch raa` } }
+      const commit = readGitHead(dir)
+      return { kind: 'sibling', dir, commit }
+    }
+    if (stats.isDirectory()) {
+      const commit = readGitHead(link)
+      if (commit === null) return { kind: 'absent', reason: `${link} is a directory without a readable git HEAD; remove it and run npm run bricks -- fetch raa` }
+      return { kind: 'cloned', dir: realpathSync(link), commit }
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return { kind: 'absent', reason: `cannot inspect ${link} (${error instanceof Error ? error.message : String(error)})` }
+  }
+  const sibling = raaSibling(root)
+  if (sibling) {
+    const commit = readGitHead(sibling)
+    return { kind: 'sibling', dir: sibling, commit }
+  }
+  return { kind: 'absent', reason: `no .bricks/RAA, no $RF_BRICKS_DIR/raa or ../raa; clone ${pins.repo} next to this repository or run npm run bricks -- fetch raa` }
+}
+export interface RaaBricks { manifest: string; commit: string | null; packages: string[] }
+// The staged brick manifest and the three package directories under dist/bricks.
+export function raaBricks(dir: string): RaaBricks {
+  const manifest = join(dir, 'dist', 'bricks', 'bricks.json')
+  let commit: string | null = null
+  try {
+    const document = JSON.parse(readFileSync(manifest, 'utf8')) as { commit?: unknown }
+    const value = document.commit
+    if (typeof value === 'string') commit = value
+    // Provenance must come from the actual staged build, never a repository-side lock.
+  } catch {}
+  const packages = RAA_BRICK_DIRS.filter((name) => {
+    try { return statSync(join(dir, 'dist', 'bricks', name)).isDirectory() } catch { return false }
+  })
+  return { manifest, commit, packages }
+}
+// The build script writes versions and wasm sizes; fetch records the pinned commit in the same
+// manifest when the script did not, so the manifest can be checked against the pin.
+function verifyRaaBricks(dir: string, pin: BrickPin, print: (line: string) => void): RaaBricks {
+  const bricks = raaBricks(dir)
+  let document: Record<string, unknown>
+  try {
+    document = JSON.parse(readFileSync(bricks.manifest, 'utf8')) as Record<string, unknown>
+  } catch (error) {
+    refuse('bricks', 'RAA', `${bricks.manifest} is missing or not JSON (${error instanceof Error ? error.message : String(error)}); run bash scripts/build-bricks.sh in ${dir} and fix the error`)
+  }
+  if ('commit' in document && document.commit !== pin.commit) refuse('bricks', 'RAA', `${bricks.manifest} records commit ${JSON.stringify(document.commit)}, expected the pin ${pin.commit}; rebuild the pinned checkout or update ${PIN_FILE}`)
+  if (!('commit' in document)) {
+    document.commit = pin.commit
+    writeFileSync(bricks.manifest, `${JSON.stringify(document, null, 2)}\n`)
+  }
+  const missing = RAA_BRICK_DIRS.filter((name) => !bricks.packages.includes(name))
+  if (missing.length > 0) refuse('bricks', 'RAA', `${bricks.manifest} is at the pin but dist/bricks/${missing.join(', dist/bricks/')} is missing; run bash scripts/build-bricks.sh in ${dir} and fix the error`)
+  print(`RAA bricks.json ${bricks.manifest} commit ${pin.commit} packages ${bricks.packages.join(' ')}`)
+  return { ...bricks, commit: pin.commit }
+}
+function writable(dir: string): boolean {
+  try { accessSync(dir, constants.W_OK); return true } catch { return false }
+}
+// Runs the consumed brick build script in the pinned checkout and checks its manifest.
+async function buildRaa(dir: string, pin: BrickPin, print: (line: string) => void): Promise<void> {
+  await run('bash', ['scripts/build-bricks.sh'], dir, childEnv(), [], print, {
+    brick: 'RAA',
+    timeoutMs: 1800000,
+    exitHint: `see its output above, then run bash scripts/build-bricks.sh in ${dir} by hand and fix the error`,
+  })
+  verifyRaaBricks(dir, pin, print)
+}
+// S15: links a sibling at .bricks/RAA and builds it, else clones the pinned commit into ../raa.
+// A read-only sibling (CI/containers) is copied under .bricks/RAA instead of being written to;
+// the sibling checkout itself is never checked out, reset or otherwise modified.
+export async function fetchRaa(root: string = repoRoot(), print: (line: string) => void = printLine): Promise<RaaSource> {
+  const pin = readPins().RAA
+  const link = join(root, '.bricks', 'RAA')
+  const target = join(dirname(root), 'raa')
+  const sibling = raaSibling(root)
+  if (sibling) {
+    const commit = readGitHead(sibling)
+    if (commit === null) {
+      refuse('bricks', 'RAA', `${sibling} has no readable git HEAD; check out ${pin.repo} at ${pin.commit} there or remove it and run npm run bricks -- fetch raa`)
+    }
+    if (commit !== pin.commit) {
+      refuse('bricks', 'RAA', `the sibling ${sibling} is at ${commit}, expected the pin ${pin.commit}; check out the pinned commit or update ${PIN_FILE}`)
+    }
+    mkdirSync(dirname(link), { recursive: true })
+    removeLink(link)
+    let dir = sibling
+    try {
+      if (writable(sibling)) {
+        symlinkSync(relative(dirname(link), sibling), link, 'dir')
+      } else {
+        print(`RAA: ${sibling} is read-only; building the pinned copy at ${link}`)
+        cpSync(sibling, link, { recursive: true })
+        dir = realpathSync(link)
+      }
+      await buildRaa(dir, pin, print)
+    } catch (error) {
+      removeLink(link)
+      throw error
+    }
+    return raaSource(root)
+  }
+  try {
+    if (!lstatSync(target).isDirectory()) {
+      refuse('bricks', 'RAA', `${target} is not a directory; remove it or move it aside and run npm run bricks -- fetch raa`)
+    }
+  } catch (error) {
+    if (isRefusal(error)) throw error
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      refuse('bricks', 'RAA', `cannot inspect ${target} (${error instanceof Error ? error.message : String(error)}); remove it or move it aside and run npm run bricks -- fetch raa`)
+    }
+  }
+  const token = githubToken()
+  if (!token) {
+    refuse('bricks', 'RAA', `not found; clone ${pin.repo} next to this repository or set MAMA_TOKEN, GH_TOKEN or GITHUB_TOKEN on the build machine`)
+  }
+  const basic = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64')
+  const secrets = [token, basic]
+  const gitEnv = childEnv({ GIT_TERMINAL_PROMPT: '0' })
+  const fetchEnv = childEnv({
+    GIT_TERMINAL_PROMPT: '0',
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+    GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}`,
+  })
+  const url = `https://github.com/${pin.repo}.git`
+  removeLink(link)
+  mkdirSync(target, { recursive: true })
+  try {
+    const steps: [string[], NodeJS.ProcessEnv][] = [
+      [['init', '--quiet'], gitEnv],
+      [['fetch', '--depth', '1', url, pin.commit], fetchEnv],
+      [['checkout', '--quiet', '--detach', 'FETCH_HEAD'], gitEnv],
+    ]
+    for (const [args, env] of steps) await run('git', args, target, env, secrets, print, { brick: 'RAA' })
+    await buildRaa(target, pin, print)
+    mkdirSync(dirname(link), { recursive: true })
+    removeLink(link)
+    symlinkSync(relative(dirname(link), target), link, 'dir')
+    return { kind: 'cloned', dir: realpathSync(target), commit: pin.commit }
+  } catch (error) {
+    removeLink(link)
+    rmSync(target, { recursive: true, force: true })
+    throw error
+  }
+}
+export interface BrickStatus { ok: boolean; lines: string[] }
+// Reports every pinned brick. The RAA channel is the required one: its checkout, manifest
+// commit and three package directories must all be at the pin for the status to pass.
+export function brickStatus(root: string = repoRoot()): BrickStatus {
+  const pins = readPins()
+  const lines: string[] = []
+  const report = (name: 'MAMA' | 'UAA', pin: BrickPin, source: MamaSource | UaaSource): void => {
+    if (source.kind === 'absent') lines.push(`${name} absent: ${source.reason}`)
+    else lines.push(`${name} ${source.kind} ${source.dir} commit ${source.commit ?? 'unknown'} ${source.commit === pin.commit ? 'pin ok' : `pin differs (${pin.commit})`}`)
+  }
+  report('MAMA', pins.MAMA, mamaSource(root))
+  report('UAA', pins.UAA, uaaSource(root))
+  const raa = raaSource(root)
+  if (raa.kind === 'absent') {
+    lines.push(`RAA absent: ${raa.reason}`)
+    return { ok: false, lines }
+  }
+  const bricks = raaBricks(raa.dir)
+  const atPin = raa.commit === pins.RAA.commit
+  const complete = atPin && bricks.commit === pins.RAA.commit && RAA_BRICK_DIRS.every((name) => bricks.packages.includes(name))
+  lines.push(`RAA ${raa.kind} ${raa.dir} commit ${raa.commit ?? 'unknown'} ${atPin ? 'pin ok' : `pin differs (${pins.RAA.commit})`}`)
+  lines.push(`RAA bricks ${bricks.manifest} commit ${bricks.commit ?? 'missing'} packages ${bricks.packages.join(' ') || 'none'}`)
+  if (!complete) lines.push('RAA channel incomplete; run npm run bricks -- fetch raa')
+  return { ok: complete, lines }
+}
 const TOKEN_KEYS = ['MAMA_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN'] as const
-
+// Every secret value that could reach a child line, raw and trimmed. The values are never printed.
+function tokenSecrets(): string[] {
+  return TOKEN_KEYS.flatMap((key) => {
+    const value = process.env[key]
+    return value ? [value, value.trim()] : []
+  })
+}
 // MAMA_TOKEN, else GH_TOKEN, else GITHUB_TOKEN. The value is never printed.
 export function githubToken(): string | null {
   for (const key of TOKEN_KEYS) {
@@ -263,7 +473,8 @@ export function githubToken(): string | null {
   }
   return null
 }
-
+// Deprecated: apps/web/vite.config.ts and the m11-m13 proofs still import this for their release
+// alias. The pinned RAA channel (fetch/status) never reads RF_RAA_LOCAL.
 export function raaLocal(): { active: boolean; dir: string | null } {
   if (process.env.RF_RAA_LOCAL !== '1') return { active: false, dir: null }
   const dir = brickDir('raa')
@@ -303,19 +514,21 @@ function printLine(line: string): void {
   process.stderr.write(`${line}\n`)
 }
 
-interface RunHints { brick?: string; exitHint?: string; spawnHint?: string }
+interface RunHints { brick?: string; exitHint?: string; spawnHint?: string; timeoutMs?: number }
 
 // Runs one child from an argv array. Its stdout and stderr are printed line by line, each line
-// redacted first, so a secret never reaches the terminal or a transcript.
+// redacted first, so a secret never reaches the terminal or a transcript. Every token variable is
+// redacted even when a child was not handed it, so build output cannot leak one either.
 function run(
   command: string, args: readonly string[], cwd: string, env: NodeJS.ProcessEnv,
-  secrets: readonly string[], print: (line: string) => void, hints: RunHints = {},
+  givenSecrets: readonly string[], print: (line: string) => void, hints: RunHints = {},
 ): Promise<void> {
   const label = `${command} ${args[0] ?? ''}`.trim()
   const brick = hints.brick ?? 'MAMA'
+  const secrets = [...givenSecrets, ...tokenSecrets()]
   print(redact(`$ ${[command, ...args].join(' ')}`, secrets))
   return new Promise((done, fail) => {
-    const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], timeout: 600000 })
+    const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], timeout: hints.timeoutMs ?? 600000 })
     const relay = (stream: NodeJS.ReadableStream): void => {
       let pending = ''
       stream.setEncoding('utf8')
@@ -523,10 +736,13 @@ export async function checkBricks(): Promise<BrickCheck> {
   } catch (error) {
     lines.push(`FAIL ${isRefusal(error) ? error.message : String(error)}`)
   }
-  const raa = raaLocal()
-  if (raa.active) lines.push(`WARN RF_RAA_LOCAL=1: local RAA override active from ${raa.dir}`)
-  else if (process.env.RF_RAA_LOCAL === '1') lines.push('INFO RF_RAA_LOCAL=1 but no raa brick ($RF_BRICKS_DIR/raa or ../raa); using the release @etcito/raa')
-  else lines.push('INFO RF_RAA_LOCAL is off; using the release @etcito/raa')
+  try {
+    const raa = raaSource()
+    if (raa.kind === 'absent') lines.push(`INFO ${RAA_ABSENT_PREFIX}${raa.reason}`)
+    else lines.push(`INFO RAA ${raa.kind} ${raa.dir} at ${raa.commit ?? 'unknown'}; the pinned local channel (RF_RAA_LOCAL is no longer read by fetch or status)`)
+  } catch (error) {
+    lines.push(`FAIL ${isRefusal(error) ? error.message : String(error)}`)
+  }
   return { ok: !lines.some((line) => line.startsWith('FAIL ')), lines }
 }
 
@@ -557,6 +773,11 @@ export async function main(argv: string[]): Promise<number> {
       console.log(dir)
       return 0
     }
+    if (command === 'status') {
+      const status = brickStatus()
+      for (const line of status.lines) console.log(line)
+      return status.ok ? 0 : 1
+    }
     if (command === 'pins') {
       console.log(JSON.stringify(readPins(), null, 2))
       return 0
@@ -582,6 +803,15 @@ export async function main(argv: string[]): Promise<number> {
       console.log(`UAA ${source.kind} ${source.commit ?? 'unknown'}`)
       return 0
     }
+    if (command === 'fetch' && name === 'raa') {
+      const source = await fetchRaa()
+      if (source.kind === 'absent') {
+        console.log(`${RAA_ABSENT_PREFIX}${source.reason}`)
+        return 1
+      }
+      console.log(`RAA ${source.kind} ${source.commit ?? 'unknown'}`)
+      return 0
+    }
   } catch (error) {
     if (isRefusal(error)) {
       console.error(error.message)
@@ -589,7 +819,7 @@ export async function main(argv: string[]): Promise<number> {
     }
     throw error
   }
-  console.error(`usage: npm run bricks -- check | where <${names.join('|')}> | fetch mama | fetch uaa | pins`)
+  console.error(`usage: npm run bricks -- check | status | where <${names.join('|')}> | fetch mama | fetch uaa | fetch raa | pins`)
   return 1
 }
 

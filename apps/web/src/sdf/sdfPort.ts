@@ -8,7 +8,8 @@ import { materialProgram } from './materialProgram.ts'
 import type { SdfmCompiledMaterial, SdfmMappedMaterial } from '@etcito/raa-sdfm'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
-import type { CameraPose, QuatT, RenderPort, RenderStats, RenderTarget, Vec3T } from '@royal-fiesta/game/render/port'
+import type { CameraPose, QuatT, RenderPort, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T } from '@royal-fiesta/game/render/port'
+import { checkPose, checkSkin } from '@royal-fiesta/game/render/nullPort'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../render/courseEnvironment.ts'
 import { raaStatus } from '../render/raaStatus.ts'
@@ -26,9 +27,13 @@ interface PayloadPart { partId: string; name: string; frame: Float64Array; meshe
 interface PayloadGroup { group: string; parts: PayloadPart[] }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
-interface PartUpload { name: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number] }
-interface Uploaded { assetId: string; parts: PartUpload[]; tintedParts?: PartUpload[] }
-interface Live { root: number; instances: number[]; visible: boolean }
+// key = the raa-sdfm part name (group/partId when two parts share a name); joints = 1 + max joint of a skinned part.
+interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number }
+// bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
+interface Uploaded { assetId: string; parts: PartUpload[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
+interface SkinSlot { instance: number; part: PartUpload }
+// pose = this character's own copy of its last setPose; null draws the rest pose.
+interface Live { root: number; instances: number[]; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
   failed: ReadonlyMap<string, string> = new Map(),
@@ -50,7 +55,7 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   }
 }
 
-class SdfRenderPort implements RenderPort {
+class SdfRenderPort implements SkinnedRenderPort {
   readonly kind = 'raa' as const
   private readonly meshed: ReadonlyMap<string, MeshedAsset>
   private readonly failed: ReadonlyMap<string, string>
@@ -62,6 +67,8 @@ class SdfRenderPort implements RenderPort {
   private readonly handleOfName = new Map<string, number>()
   private readonly functions = new Map<string, string>()
   private readonly live: (Live | null)[] = []
+  // Game handles whose pose changed since the last render; flushed as one setSkinPoses batch.
+  private readonly posed = new Set<number>()
   private whiteSurface: number | null = null
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
@@ -152,16 +159,60 @@ class SdfRenderPort implements RenderPort {
       handles.set(compiled.name, base)
     }
     const parts: PartUpload[] = []
+    const keys = new Set<string>()
     for (const group of payload.groups) {
       for (const part of group.parts) {
         const built = partMesh(part, handles, id)
         const mesh = engine.addMesh(built.desc)
         const { t, r } = frameToTr(part.frame)
-        parts.push({ name: part.name, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r })
+        const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
+        keys.add(key)
+        parts.push({ name: part.name, key, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
     return { assetId: id, parts }
+  }
+
+  // The rigid upload stays as is; skinned parts get a second mesh with the S18 joint/weight streams.
+  // Later registerAsset calls of the id resolve to the skinned visual; a SceneView per match on the
+  // same port registers it again and gets that visual back instead of a second upload.
+  registerSkinned(assetId: string, skin: SkinnedAssetT): number {
+    const bones = checkSkin(AREA, `registerSkinned(${assetId})`, skin)
+    const known = this.handleOfId.get(assetId)
+    if (known !== undefined && this.uploaded[known].bones !== undefined) {
+      if (this.uploaded[known].bones !== bones) refuse(AREA, assetId, `already registered with ${this.uploaded[known].bones} bones, not ${bones}; pass the same raa-sdfm asset`)
+      return known
+    }
+    const rigidHandle = this.registerAsset(assetId, { id: assetId } as PrimsAsset)
+    const streams = new Map(skin.parts.map(part => [part.name, part.skin]))
+    const engine = this.need()
+    const parts = this.uploaded[rigidHandle].parts.map((part): PartUpload => {
+      const s = streams.get(part.key)
+      if (s === undefined) return part
+      const vertices = part.desc.positions.length / 3
+      if (s.joints.length !== vertices * 4) {
+        refuse(AREA, `${assetId}#part:${part.key}`, `the skin has ${s.joints.length / 4} vertices and the mesh ${vertices}; remesh the asset from the same document`)
+      }
+      let max = 0
+      for (let i = 0; i < s.joints.length; i++) if (s.joints[i] > max) max = s.joints[i]
+      const desc: MeshDesc = { ...part.desc, joints: s.joints, weights: s.weights }
+      return { ...part, desc, mesh: engine.addMesh(desc), joints: max + 1 }
+    })
+    if (!parts.some(part => part.joints !== undefined)) refuse(AREA, assetId, 'no skinned part matches a meshed part name; pass the parts of the same raa-sdfm asset')
+    const handle = this.uploaded.length
+    this.uploaded.push({ assetId, parts, bones, rig: skin.rig, clips: skin.clips ?? [] })
+    this.handleOfId.set(assetId, handle)
+    for (const [name, h] of this.handleOfName) if (h === rigidHandle) this.handleOfName.set(name, handle)
+    return handle
+  }
+
+  setPose(instance: number, matrices: Float32Array): void {
+    const live = this.liveOf(instance, 'setPose')
+    if (live.bones === 0) refuse(AREA, WHERE, `setPose: instance ${instance} is not skinned; create it from a registerSkinned handle`)
+    checkPose(AREA, WHERE, matrices, live.bones)
+    live.pose = matrices.slice()
+    this.posed.add(instance)
   }
 
   createInstance(asset: number, tint: Vec3T | null): number {
@@ -172,13 +223,15 @@ class SdfRenderPort implements RenderPort {
     const engine = this.need()
     const root = engine.addNode(null)
     const instances: number[] = []
+    const skin: SkinSlot[] = []
     for (const part of parts) {
       const node = engine.addNode(root, part.t, part.r)
       const instance = engine.addMeshInstance(node, part.mesh)
       if (tint !== null) engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
       instances.push(instance)
+      if (part.joints !== undefined) skin.push({ instance, part })
     }
-    this.live.push({ root, instances, visible: true })
+    this.live.push({ root, instances, visible: true, bones: uploaded.bones ?? 0, skin, pose: null })
     return this.live.length - 1
   }
 
@@ -197,6 +250,7 @@ class SdfRenderPort implements RenderPort {
     const live = this.liveOf(instance, 'destroyInstance')
     this.need().removeNode(live.root)
     this.live[instance] = null
+    this.posed.delete(instance)
   }
 
   setCamera(viewport: number, cam: CameraPose): void {
@@ -212,6 +266,7 @@ class SdfRenderPort implements RenderPort {
   render(): RenderStats {
     const engine = this.need()
     const t0 = performance.now()
+    this.flushPoses(engine)
     renderFrame(this, () => engine.render(t0))
     const frameMs = performance.now() - t0
     const stats = engine.stats()
@@ -233,6 +288,35 @@ class SdfRenderPort implements RenderPort {
     this.engine = null
     this.canvas = null
     this.target = null
+    this.posed.clear()
+  }
+
+  // One RAA setSkinPoses call per frame for every character posed since the last frame. Each part
+  // gets the first 16 x J matrices of its character's pose, moved into the part's mesh space.
+  private flushPoses(engine: Engine): void {
+    if (this.posed.size === 0) return
+    const ids: number[] = []
+    const slices: Float32Array[] = []
+    let floats = 0
+    for (const handle of this.posed) {
+      const live = this.live[handle]
+      if (!live || live.pose === null) continue
+      for (const slot of live.skin) {
+        const slice = partPose(live.pose, slot.part)
+        ids.push(slot.instance)
+        slices.push(slice)
+        floats += slice.length
+      }
+    }
+    this.posed.clear()
+    if (ids.length === 0) return
+    const matrices = new Float32Array(floats)
+    let offset = 0
+    for (const slice of slices) {
+      matrices.set(slice, offset)
+      offset += slice.length
+    }
+    engine.setSkinPoses(Uint32Array.from(ids), matrices)
   }
 
   private need(): Engine {
@@ -260,6 +344,47 @@ class SdfRenderPort implements RenderPort {
     })
     return uploaded.tintedParts
   }
+}
+
+// The rig poses the asset space; a part mesh lives in its frame F, so each skin matrix S becomes
+// F^-1 * S * F (identity frames skip this).
+function partPose(pose: Float32Array, part: PartUpload): Float32Array {
+  const out = pose.slice(0, 16 * part.joints!)
+  const [x, y, z, w] = part.r
+  if (part.t.every(v => v === 0) && x === 0 && y === 0 && z === 0) return out
+  const f = trMatrix(part.t, part.r)
+  const inv = trMatrix([0, 0, 0], [-x, -y, -z, w])
+  const back = mul4(inv, [-part.t[0], -part.t[1], -part.t[2], 1])
+  inv[12] = back[0]
+  inv[13] = back[1]
+  inv[14] = back[2]
+  const m = new Array<number>(16)
+  for (let j = 0; j < out.length; j += 16) {
+    for (let c = 0; c < 4; c++) {
+      const col = mul4(Array.from(out.subarray(j, j + 16)), [f[c * 4], f[c * 4 + 1], f[c * 4 + 2], f[c * 4 + 3]])
+      for (let r = 0; r < 4; r++) m[c * 4 + r] = col[r]
+    }
+    for (let c = 0; c < 4; c++) out.set(mul4(inv, m.slice(c * 4, c * 4 + 4)), j + c * 4)
+  }
+  return out
+}
+
+// Column-major rigid TRS matrix of a translation and a unit quaternion [x, y, z, w].
+function trMatrix(t: readonly number[], q: readonly number[]): number[] {
+  const [x, y, z, w] = q
+  return [
+    1 - 2 * (y * y + z * z), 2 * (x * y + z * w), 2 * (x * z - y * w), 0,
+    2 * (x * y - z * w), 1 - 2 * (x * x + z * z), 2 * (y * z + x * w), 0,
+    2 * (x * z + y * w), 2 * (y * z - x * w), 1 - 2 * (x * x + y * y), 0,
+    t[0], t[1], t[2], 1,
+  ]
+}
+
+// Column-major 4x4 matrix times a 4-vector.
+function mul4(m: readonly number[], v: readonly number[]): number[] {
+  const out = [0, 0, 0, 0]
+  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) out[r] += m[c * 4 + r] * v[c]
+  return out
 }
 
 function payloadOf(id: string, meshed: MeshedAsset): Payload {

@@ -14,13 +14,15 @@ import { netSetup } from '../net/tuning.ts'
 import type { PrimsAsset } from '../prims.ts'
 import type { RenderPort } from '../render/port.ts'
 import { SceneView } from '../render/sceneView.ts'
+import type { SkinnedCharacter } from '../render/sceneView.ts'
 
 export interface InPageOptions {
   R: RapierModule; clients: number; seed: number; profile: ProfileName; courses: readonly ResolvedCourse[]
   ports: RenderPort[]; assets: (name: string) => PrimsAsset; bean: PrimsAsset
   net: { rttMs: number; jitterMs: number; loss: number }; pilots: boolean[]
-  // Forwarded to each SceneView (decor and environment per course).
+  // Forwarded to each SceneView (decor and environment per course; the skinned character).
   dressing?: CourseDressing
+  skinned?: SkinnedCharacter
 }
 
 export class InPageMatch {
@@ -48,7 +50,7 @@ export class InPageMatch {
         this.logs.push(new ConfirmedHashLog())
         this.views.push(new SceneView({
           port: shared ? o.ports[0] : o.ports[k], viewport: shared ? k : 0, localPlayer: k, assets: o.assets, bean: o.bean,
-          dressing: o.dressing,
+          dressing: o.dressing, skinned: o.skinned,
         }))
       }
     } catch (e) {

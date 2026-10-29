@@ -13,14 +13,15 @@ import type { NetMatch } from '@royal-fiesta/game/net/netMatch'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
+import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { HubView } from './hubView.ts'
 
 export type HubLoopDeps = Omit<FlowDeps, 'relayUrl' | 'ws' | 'hubCode' | 'name' | 'colour' | 'log'>
 // character: the content's character asset (the bean when absent). dressing: course and hub decor, entered on
-// each client's port, so pass it with one port per client.
-export interface HubLoopArt { assets: (name: string) => PrimsAsset; bean: PrimsAsset; character?: PrimsAsset; dressing?: CourseDressing }
+// each client's port, so pass it with one port per client. skinned: the posed character of the match views.
+export interface HubLoopArt { assets: (name: string) => PrimsAsset; bean: PrimsAsset; character?: PrimsAsset; dressing?: CourseDressing; skinned?: SkinnedCharacter }
 
 // PlayFlow runs the session frame itself and does not expose its alpha, so the match view draws the current tick.
 const MATCH_ALPHA = 1
@@ -135,7 +136,7 @@ export class InPageHubLoop {
         this.logs[k] = new ConfirmedHashLog()
         this.sceneViews[k] = new SceneView({
           port: this.portOf[k], viewport: this.viewportOf[k], localPlayer: this.seats[k], assets: this.art.assets, bean: this.art.bean,
-          character: this.art.character, dressing: this.art.dressing,
+          character: this.art.character, dressing: this.art.dressing, skinned: this.art.skinned,
         })
       }
     }

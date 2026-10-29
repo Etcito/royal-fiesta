@@ -1,10 +1,12 @@
 // play.html entry: the walkable hub. ?server=ws://... plays online; ?mode=inpage runs N piloted clients over a
-// LoopbackRelay; ?mode=ops only installs the GPU client ops.
+// LoopbackRelay; ?mode=ops only installs the GPU client ops. ?content=<id> takes courses, the hub, assets, ports and the
+// (skinned) character from that content provider, as game.html does.
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { basisFromFacing } from '@royal-fiesta/game/client/cameraBasis'
 import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
 import { controlsToInput, emptyControls } from '@royal-fiesta/game/client/inputMap'
+import type { GameContent } from '@royal-fiesta/game/content'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import { loadCourse } from '@royal-fiesta/game/course'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
@@ -17,6 +19,7 @@ import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
+import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { neutralInput } from '@royal-fiesta/sim/input'
@@ -25,9 +28,11 @@ import type { CharacterView, MatchViewState } from '@royal-fiesta/sim/match/matc
 import { refuse } from '@royal-fiesta/sim/refusal'
 import plazaJson from '../../../../fixtures/courses/hub-plaza.course.json?raw'
 import { initPerClient, planCanvases } from '../client/canvases.ts'
-import type { ClientCell } from '../client/canvases.ts'
+import type { CanvasPlan, ClientCell, MountedClient } from '../client/canvases.ts'
 import { mountHud } from '../client/hud.ts'
 import { browserAssetResolver, browserCourses, preloadAssets } from '../client/sources.ts'
+import { skinnedCharacterOf } from '../content/providers/sdf.ts'
+import { pickContent } from '../content/source.ts'
 import { GameInput } from '../input/input.ts'
 import { createRaaPort } from '../render/raaPort.ts'
 import { SoundDriver } from './sound.ts'
@@ -41,7 +46,11 @@ type Query =
   | { mode: 'online'; server: string; hub: string | 'new'; name: string; colour: number; party: 2 | 3 | 4 }
   | { mode: 'inpage'; clients: number }
 // ports: one RenderPort per client canvas (each in-page client has its own canvas and RAA engine).
-interface Ctx { note: string; R: RapierModule; hud: Hud; ports: RenderPort[]; courses: ResolvedCourse[]; plaza: ResolvedCourse; assets: (name: string) => PrimsAsset }
+// bean: the character asset; skinned: the content's posed character, when it has one.
+interface Ctx {
+  note: string; R: RapierModule; hud: Hud; ports: RenderPort[]; courses: ResolvedCourse[]; plaza: ResolvedCourse; assets: (name: string) => PrimsAsset
+  bean: PrimsAsset; skinned?: SkinnedCharacter
+}
 
 // Look sensitivity setting 1..10; docs/controls.md default.
 const LOOK_SENSITIVITY = 5
@@ -134,7 +143,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameI
   void flow.start()
   const sound = new SoundDriver()
   const orbit = new OrbitCamera()
-  const hubView = new HubView(port, 0, ctx.assets, ctx.assets('bean'), ctx.plaza, { orbit })
+  const hubView = new HubView(port, 0, ctx.assets, ctx.bean, ctx.plaza, { orbit })
   const local: CharState = {
     pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 },
     mode: 0, grounded: false, groundObstacle: -1, knockbacks: 0, teleportTick: 0,
@@ -179,7 +188,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameI
       hubView.setVisible(match === null)
       if (match !== null) {
         scene = new SceneView({
-          port, viewport: 0, localPlayer: seat, assets: ctx.assets, bean: ctx.assets('bean'), camera: focus => orbit.pose(focus),
+          port, viewport: 0, localPlayer: seat, assets: ctx.assets, bean: ctx.bean, camera: focus => orbit.pose(focus), skinned: ctx.skinned,
         })
         names = Array.from({ length: 8 }, (_, p) => (p === seat ? q.name : `Bean ${p + 1}`))
         show([])
@@ -211,7 +220,7 @@ function runInPage(ctx: Ctx, clients: number): void {
   const now = () => performance.now()
   const hub = new InPageHubLoop(ctx.R, clients, new LoopbackRelay(), {
     R: ctx.R, courses: ctx.courses, plaza: ctx.plaza, partySize: clients as 2 | 3 | 4, now, pilot: true,
-  }, ctx.ports, { assets: ctx.assets, bean: ctx.assets('bean') })
+  }, ctx.ports, { assets: ctx.assets, bean: ctx.bean, skinned: ctx.skinned })
   let shown = ''
   loop(dt => {
     hub.frame(dt)
@@ -238,6 +247,16 @@ function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
 
+// One canvas and port per client from the content; content.createPort already inits each port on its canvas.
+async function contentPorts(content: GameContent, plan: CanvasPlan, mount: (cell: ClientCell) => HTMLCanvasElement): Promise<MountedClient[]> {
+  const out: MountedClient[] = []
+  for (const cell of plan.cells) {
+    const canvas = mount(cell)
+    out.push({ canvas, port: await content.createPort({ canvas, width: cell.canvasWidth, height: cell.canvasHeight, viewports: [cell.viewport] }) })
+  }
+  return out
+}
+
 // One canvas per client, appended to the #views grid in client order.
 function mountCanvas(root: HTMLElement, cell: ClientCell): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
@@ -258,19 +277,26 @@ async function main(): Promise<void> {
   const hud = mountHud(hudRoot)
   try {
     const q = parseQuery(search)
-    const { makePort, note } = await pickPort(hud)
+    const query = new URLSearchParams(search)
+    const content = query.has('content') ? pickContent(query) : null
+    const picked = content === null ? await pickPort(hud) : null
+    const note = picked?.note ?? ''
     const R = await initRapier()
-    const courses = await browserCourses('sprint')
+    await content?.load('sprint', () => {})
+    const courses = content === null ? await browserCourses('sprint') : [...content.playlist()]
     const resolver = browserAssetResolver()
-    const plaza = await loadCourse(JSON.parse(plazaJson), 'fixtures/courses/hub-plaza.course.json', resolver)
-    const assets = await preloadAssets([...courses, plaza], resolver)
+    const plaza = content === null ? await loadCourse(JSON.parse(plazaJson), 'fixtures/courses/hub-plaza.course.json', resolver) : content.hub()
+    const assets = content === null ? await preloadAssets([...courses, plaza], resolver) : (name: string) => content.assets(name)
     const width = Math.max(1, Math.floor(window.innerWidth))
     const height = Math.max(1, Math.floor(window.innerHeight))
     const plan = planCanvases(width, height, q.mode === 'inpage' ? q.clients : 1)
     views.style.gridTemplateColumns = `repeat(${plan.cols}, 1fr)`
     views.style.gridTemplateRows = `repeat(${plan.rows}, 1fr)`
-    const mounted = await initPerClient(plan, cell => mountCanvas(views, cell), () => makePort())
-    const ctx: Ctx = { note, R, hud, ports: mounted.map(m => m.port), courses, plaza, assets }
+    const mount = (cell: ClientCell) => mountCanvas(views, cell)
+    const mounted = content !== null ? await contentPorts(content, plan, mount) : await initPerClient(plan, mount, () => picked!.makePort())
+    const bean = content === null ? assets('bean') : content.character()
+    const skinned = content === null ? undefined : skinnedCharacterOf(content)
+    const ctx: Ctx = { note, R, hud, ports: mounted.map(m => m.port), courses, plaza, assets, bean, skinned }
     if (q.mode === 'inpage') runInPage(ctx, q.clients)
     else {
       // Clicking the canvas locks the pointer for the mouse look.

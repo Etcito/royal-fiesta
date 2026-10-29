@@ -17,6 +17,7 @@ import { PALETTE } from '@royal-fiesta/game/render/palette'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import type { CameraPose, RenderPort, RenderStats, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
+import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { DEFAULT_SETTINGS } from '@royal-fiesta/game/screens/settings'
 import { CharacterSystem } from '@royal-fiesta/sim/character/system'
 import type { CharState } from '@royal-fiesta/sim/character/system'
@@ -40,6 +41,7 @@ import type { AdapterInfo } from '../nmc/ops.ts'
 import { HubView } from '../play/hubView.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
 import { raaStatus } from '../render/raaStatus.ts'
+import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { uiTour } from './uiTour.ts'
 import type { BootGame, UiTourOutput } from './uiTour.ts'
 
@@ -170,6 +172,12 @@ function yieldToBrowser(): Promise<void> {
 }
 
 async function renderPng(port: RenderPort, what: string): Promise<Uint8Array> {
+  port.render()
+  const deadline = performance.now() + 10000
+  while (pendingPipelines() > 0) {
+    if (performance.now() >= deadline) refuse('render', 'raa', `pipeline readiness timed out at ${what}; ${pendingPipelines()} pipelines still pending`)
+    await new Promise<void>(resolve => setTimeout(resolve, 10))
+  }
   port.render()
   const png = await port.capture()
   if (png === null || png.length === 0) refuse('render', 'raa', `the capture at ${what} returned no PNG bytes; the RAA port must read the canvas back`)
@@ -534,6 +542,7 @@ class SingleView {
       this.scene = new SceneView({
         port: this.port, viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
         character: content.character(), dressing: content.dressing(), camera: focus => orbit.pose(focus),
+        skinned: skinnedCharacterOf(content),
       })
       this.sceneSim = sim
     }
@@ -777,7 +786,7 @@ class MultiDriver implements Driver {
     const clients = ports.length
     this.loop = new InPageHubLoop(R, clients, new LoopbackRelay({ seed: 8 }), {
       R, courses: content.playlist(), plaza: content.hub(), partySize: clients as 2 | 4, now, pilot: true,
-    }, ports.map(gated), { assets: name => content.assets(name), bean: content.character(), character: content.character(), dressing: content.dressing() })
+    }, ports.map(gated), { assets: name => content.assets(name), bean: content.character(), character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content) })
   }
 
   get events(): readonly FlowEvent[] {

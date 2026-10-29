@@ -1,0 +1,23 @@
+{
+  "format": "royal-fiesta.bot",
+  "version": 0,
+  "id": "safe-route",
+  "name": "Safe route",
+  "tick": {
+    "decisionTicks": 6,
+    "reactionTicks": 4,
+    "wobbleTicks": 60,
+    "stuckTicks": 30
+  },
+  "route": {
+    "preference": "safe",
+    "advanceDist": 2.5,
+    "arriveDist": 0.5
+  },
+  "rules": [
+    { "id": "jump-hazard", "predicate": "hazardNear", "action": "jump" },
+    { "id": "jump-wall", "predicate": "obstacleAhead", "action": "jump" },
+    { "id": "jump-stuck", "predicate": "stuck", "action": "jump" },
+    { "id": "dive-finish", "predicate": "nearFinish", "distance": 2, "action": "dive" }
+  ]
+}

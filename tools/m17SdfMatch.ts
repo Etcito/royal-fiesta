@@ -3,17 +3,34 @@ import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { RefusalError } from '../packages/sim/src/refusal.ts'
+import { raaBricks, raaSource, readPins } from './bricks.ts'
 
 const root = new URL('../', import.meta.url)
+const RAA_SDFM_DEPENDENCY = 'file:../../../raa/dist/bricks/raa-sdfm'
 
 async function main(): Promise<number> {
   const manifest = JSON.parse(readFileSync(new URL('apps/web/package.json', root), 'utf8')) as {
     dependencies?: Record<string, string>
   }
   const missing: string[] = []
-  const pin = manifest.dependencies?.['@etcito/raa-sdfm']
-  if (!pin?.startsWith('https://github.com/Etcito/raa/releases/download/') || !pin.endsWith('.tgz')) {
-    missing.push('card 5122: pin a published @etcito/raa-sdfm release in apps/web/package.json')
+  const dependency = manifest.dependencies?.['@etcito/raa-sdfm']
+  if (dependency !== RAA_SDFM_DEPENDENCY) {
+    missing.push(`pinned local RAA: apps/web/package.json must declare "@etcito/raa-sdfm": "${RAA_SDFM_DEPENDENCY}", got ${JSON.stringify(dependency)}`)
+  }
+  const pin = readPins().RAA.commit
+  const source = raaSource()
+  if (source.kind === 'absent') {
+    missing.push(`pinned local RAA: ${source.reason}`)
+  } else {
+    if (source.commit !== pin) {
+      missing.push(`pinned local RAA: ${source.dir} is at ${source.commit ?? 'unknown'}, expected the pin ${pin}; check out the pinned commit or run npm run bricks -- fetch raa`)
+    }
+    const bricks = raaBricks(source.dir)
+    if (bricks.commit === null) {
+      missing.push(`pinned local RAA: ${bricks.manifest} is missing or records no commit; run npm run bricks -- fetch raa`)
+    } else if (bricks.commit !== pin) {
+      missing.push(`pinned local RAA: ${bricks.manifest} records commit ${bricks.commit}, expected the pin ${pin}; run npm run bricks -- fetch raa`)
+    }
   }
   for (const [card, path] of [
     ['5129', 'apps/web/src/sdf/sdfPort.ts'],
@@ -23,10 +40,7 @@ async function main(): Promise<number> {
   }
   if (missing.length > 0) {
     throw new RefusalError('content', 'm17-sdf-match',
-      `SDF prerequisites are missing; ${missing.join('; ')}; complete those cards in order and fix card 5212 before retrying the GPU tour (decision Q5)`)
-  }
-  if (process.env.RF_RAA_LOCAL === '1') {
-    throw new RefusalError('bricks', 'm17-sdf-match', 'RF_RAA_LOCAL=1 is active; use the published release for this proof')
+      `SDF prerequisites are missing; ${missing.join('; ')}; complete those cards in order, run npm run bricks -- fetch raa and retry the GPU tour (decision Q5)`)
   }
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [

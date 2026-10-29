@@ -114,6 +114,39 @@ test('a hash of the SDF Modeler document text is accepted', async () => {
   assert.equal(parsed.hash, a.hash)
 })
 
+test('a rigged node hashes with its rig in plain JSON.stringify layout', async () => {
+  const a = valid()
+  const rig = { name: 'r', bones: [{ name: 'root', t: [0, 1] }] }
+  a.document = { nodes: [{ id: 'g', kind: 'group', rig }] }
+  // SDF Modeler writes a node's rig (and clips) with JSON.stringify(v, null, 2), re-indented.
+  const text = [
+    '{',
+    '  "nodes": [',
+    '    {',
+    '      "id": "g",',
+    '      "kind": "group",',
+    '      "rig": {',
+    '        "name": "r",',
+    '        "bones": [',
+    '          {',
+    '            "name": "root",',
+    '            "t": [',
+    '              0,',
+    '              1',
+    '            ]',
+    '          }',
+    '        ]',
+    '      }',
+    '    }',
+    '  ]',
+    '}',
+    '',
+  ].join('\n')
+  a.hash = createHash('sha256').update(text, 'utf8').digest('hex')
+  const parsed = await parseGameAsset(a, FILE)
+  assert.equal(parsed.hash, a.hash)
+})
+
 test('a hash matching neither form is refused with both digests', async () => {
   const a = valid()
   const right = a.hash

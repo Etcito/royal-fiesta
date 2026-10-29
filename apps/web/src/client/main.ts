@@ -1,8 +1,10 @@
 // client.html entry: ?mode=inpage|relay|webrtc plays a match; ?mode=ops only installs the GPU client ops.
+// ?content=<id> takes courses, assets, ports and the (skinned) character from that content provider, as game.html does.
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { NetTransport } from '@gamesaloon/rollback'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { openBrowserAudio } from '@royal-fiesta/game/audio/context'
+import type { GameContent } from '@royal-fiesta/game/content'
 import { cameraBasis } from '@royal-fiesta/game/client/cameraBasis'
 import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
 import { InPageMatch } from '@royal-fiesta/game/client/inpageMatch'
@@ -23,15 +25,18 @@ import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
+import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import type { MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { refuse } from '@royal-fiesta/sim/refusal'
+import { skinnedCharacterOf } from '../content/providers/sdf.ts'
+import { pickContent } from '../content/source.ts'
 import { installNmcOps } from '../nmc/ops.ts'
 import { createRaaPort } from '../render/raaPort.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import { initPerClient, planCanvases } from './canvases.ts'
-import type { ClientCell } from './canvases.ts'
+import type { CanvasPlan, ClientCell, MountedClient } from './canvases.ts'
 import { mountHud } from './hud.ts'
 import { parseQuery } from './query.ts'
 import type { Query } from './query.ts'
@@ -115,7 +120,11 @@ function loop(frame: (dtS: number) => void): void {
 
 // ports: one RenderPort per client canvas (each in-page client has its own canvas and RAA engine).
 // sound: only client 0's match is heard (in-page clients 1..n are silent); networked modes hear their own match.
-interface Ctx { note: string; q: Query; R: RapierModule; hud: Hud; ports: RenderPort[]; courses: ResolvedCourse[]; assets: (name: string) => PrimsAsset; sound: ClientSound }
+// bean: the character asset; skinned: the content's posed character, when it has one.
+interface Ctx {
+  note: string; q: Query; R: RapierModule; hud: Hud; ports: RenderPort[]; courses: ResolvedCourse[]; assets: (name: string) => PrimsAsset; sound: ClientSound
+  bean: PrimsAsset; skinned?: SkinnedCharacter
+}
 
 function runInPage(ctx: Ctx, controls: () => RawControls): void {
   const { q } = ctx
@@ -123,7 +132,7 @@ function runInPage(ctx: Ctx, controls: () => RawControls): void {
   const pilots = Array.from({ length: q.clients }, (_, k) => k > 0 || q.pilot)
   const match = new InPageMatch({
     R: ctx.R, clients: q.clients, seed: q.seed, profile: q.profile, courses: ctx.courses, ports: ctx.ports,
-    assets: ctx.assets, bean: ctx.assets('bean'), net: INPAGE_NET, pilots,
+    assets: ctx.assets, bean: ctx.bean, net: INPAGE_NET, pilots, skinned: ctx.skinned,
   })
   const state = emptyViewState()
   loop(dt => {
@@ -140,7 +149,7 @@ function runInPage(ctx: Ctx, controls: () => RawControls): void {
 function runNet(ctx: Ctx, net: NetTransport, localPeer: number, humanPeers: number, seed: number, controls: () => RawControls, endFrame: () => void): void {
   const setup = netSetup(seed, humanPeers, ctx.q.profile, ctx.courses)
   const match: NetMatch = createNetMatch(ctx.R, { setup, localPeer, humanPeers }, net, { cpuMs: () => performance.now() })
-  const view = new SceneView({ port: ctx.ports[0], viewport: 0, localPlayer: localPeer, assets: ctx.assets, bean: ctx.assets('bean') })
+  const view = new SceneView({ port: ctx.ports[0], viewport: 0, localPlayer: localPeer, assets: ctx.assets, bean: ctx.bean, skinned: ctx.skinned })
   const pilot = ctx.q.pilot ? new Pilot(localPeer, seed) : null
   const state = emptyViewState()
   loop(dt => {
@@ -215,6 +224,16 @@ function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
 
+// One canvas and port per client from the content; content.createPort already inits each port on its canvas.
+async function contentPorts(content: GameContent, plan: CanvasPlan, mount: (cell: ClientCell) => HTMLCanvasElement): Promise<MountedClient[]> {
+  const out: MountedClient[] = []
+  for (const cell of plan.cells) {
+    const canvas = mount(cell)
+    out.push({ canvas, port: await content.createPort({ canvas, width: cell.canvasWidth, height: cell.canvasHeight, viewports: [cell.viewport] }) })
+  }
+  return out
+}
+
 // One canvas per client, appended to the #views grid in client order.
 function mountCanvas(root: HTMLElement, cell: ClientCell): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
@@ -253,18 +272,25 @@ async function main(): Promise<void> {
   sound.expose(window)
   try {
     const q = parseQuery(search)
-    const { makePort, note } = await pickPort(hud)
+    const query = new URLSearchParams(search)
+    const content = query.has('content') ? pickContent(query) : null
+    const picked = content === null ? await pickPort(hud) : null
+    const note = picked?.note ?? ''
     const R = await initRapier()
-    const courses = await browserCourses(q.profile)
-    const assets = await preloadAssets(courses, browserAssetResolver())
+    await content?.load(q.profile, () => {})
+    const courses = content === null ? await browserCourses(q.profile) : [...content.playlist()]
+    const assets = content === null ? await preloadAssets(courses, browserAssetResolver()) : (name: string) => content.assets(name)
     // One canvas per in-page client, each with its own port; networked modes draw one canvas.
     const width = Math.max(1, Math.floor(window.innerWidth))
     const height = Math.max(1, Math.floor(window.innerHeight))
     const plan = planCanvases(width, height, q.mode === 'inpage' ? q.clients : 1)
     views.style.gridTemplateColumns = `repeat(${plan.cols}, 1fr)`
     views.style.gridTemplateRows = `repeat(${plan.rows}, 1fr)`
-    const mounted = await initPerClient(plan, cell => mountCanvas(views, cell), () => makePort())
-    const ctx: Ctx = { note, q, R, hud, ports: mounted.map(m => m.port), courses, assets, sound }
+    const mount = (cell: ClientCell) => mountCanvas(views, cell)
+    const mounted = content !== null ? await contentPorts(content, plan, mount) : await initPerClient(plan, mount, () => picked!.makePort())
+    const bean = content === null ? assets('bean') : content.character()
+    const skinned = content === null ? undefined : skinnedCharacterOf(content)
+    const ctx: Ctx = { note, q, R, hud, ports: mounted.map(m => m.port), courses, assets, sound, bean, skinned }
     const controls = trackControls()
     if (q.mode === 'inpage') runInPage(ctx, controls)
     else if (q.mode === 'relay') await runRelay(ctx, q.server as string, controls)

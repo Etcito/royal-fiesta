@@ -31,14 +31,13 @@ test('parseJudgeInput accepts the M1 judge file', () => {
   assert.equal(input.op, 'gameCapture')
   assert.deepEqual(input.input, {
     content: 'sdf',
-    course: 'race-bean-dash',
     flow: 'match',
     clients: 4,
-    width: 1920,
-    height: 1080,
-    captureAt: ['playing'],
+    width: 960,
+    height: 540,
+    captureAt: ['match-5s'],
   })
-  assert.deepEqual(input.judge.map(item => item.capture), ['playing'])
+  assert.deepEqual(input.judge.map(item => item.capture), ['match-5s'])
   assert.match(input.judge[0]!.description, /Four penguin characters/)
 })
 
@@ -78,7 +77,7 @@ test('judgeCommands gives build, publish, render and one judge run for M1', () =
   const judge = commands[4]!
   assert.equal(judge[0], 'python3')
   assert.equal(judge[1], '$NMC_JUDGE_CLIENT')
-  assert.equal(judge[2], 'out/judge/m1/playing.png')
+  assert.equal(judge[2], 'out/judge/m1/match-5s.png')
   assert.equal(judge[judge.indexOf('--description') + 1], m1().judge[0]!.description)
   assert.deepEqual(judge.slice(-2), ['--min-score', '6'])
 })
@@ -86,7 +85,7 @@ test('judgeCommands gives build, publish, render and one judge run for M1', () =
 test('judgeCommands normalises an out dir that has no trailing slash', () => {
   const commands = judgeCommands(m1(), 'out/judge/m1', 'out/judge/m1/input.json')
   assert.equal(commands[3]![commands[3]!.indexOf('-o') + 1], 'out/judge/m1/')
-  assert.equal(commands[4]![2], 'out/judge/m1/playing.png')
+  assert.equal(commands[4]![2], 'out/judge/m1/match-5s.png')
 })
 
 test('pageRefOf takes the page_ref publish printed and refuses a response without one', () => {

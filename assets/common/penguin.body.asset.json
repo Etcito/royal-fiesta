@@ -2497,7 +2497,7 @@
           ]
         },
         "color": "#6b727e",
-        "material": "player-grey",
+        "material": "penguin-plumage",
         "params": {
           "radii": [
             0.46,
@@ -2529,7 +2529,7 @@
         },
         "smooth": 0.2,
         "color": "#6b727e",
-        "material": "player-grey",
+        "material": "penguin-plumage",
         "params": {
           "radii": [
             0.5,
@@ -2600,7 +2600,7 @@
         },
         "smooth": 0.2,
         "color": "#6b727e",
-        "material": "player-grey",
+        "material": "penguin-plumage",
         "params": {
           "radii": [
             0.5,
@@ -2622,7 +2622,7 @@
         },
         "smooth": 0.2,
         "color": "#6b727e",
-        "material": "player-grey",
+        "material": "penguin-plumage",
         "parameshOptions": {
           "quality": {
             "fieldResolution": 96
@@ -2854,7 +2854,7 @@
         },
         "smooth": 0.08,
         "color": "#6b727e",
-        "material": "player-grey",
+        "material": "penguin-plumage",
         "params": {
           "height": 0.8,
           "radius": 0.16
@@ -2883,7 +2883,7 @@
         },
         "smooth": 0.08,
         "color": "#6b727e",
-        "material": "player-grey",
+        "material": "penguin-plumage",
         "params": {
           "height": 0.7,
           "radius": 0.09
@@ -2929,7 +2929,7 @@
         },
         "smooth": 0.08,
         "color": "#6b727e",
-        "material": "player-grey",
+        "material": "penguin-plumage",
         "params": {
           "height": 0.8,
           "radius": 0.16
@@ -2958,7 +2958,7 @@
         },
         "smooth": 0.08,
         "color": "#6b727e",
-        "material": "player-grey",
+        "material": "penguin-plumage",
         "params": {
           "height": 0.7,
           "radius": 0.09
@@ -3022,19 +3022,34 @@
       }
     },
     "materials": {
-      "player-grey": {
-        "name": "player-grey",
+      "penguin-plumage": {
+        "name": "penguin-plumage",
         "graph": {
           "nodes": [
             {
-              "id": "out",
-              "type": "material.output",
+              "id": "input_player_color",
+              "type": "input.player_color",
               "params": {
-                "in.base_color": "#6b727e"
+                "color": "#808080"
               }
+            },
+            {
+              "id": "out",
+              "type": "material.output"
             }
           ],
-          "links": []
+          "links": [
+            {
+              "from": {
+                "node": "input_player_color",
+                "port": "color"
+              },
+              "to": {
+                "node": "out",
+                "port": "base_color"
+              }
+            }
+          ]
         }
       },
       "penguin-belly": {
@@ -3166,5 +3181,5 @@
       0.6
     ]
   },
-  "hash": "aac5fcc7bb4c6387f10d8dfe2b4b8d58307b0640fa0294249ec6a44597e33f6c"
+  "hash": "42ac7025084a72c01571a6a8fadfc330e40df93aeb09ae4e975625b0594a1774"
 }

@@ -1,0 +1,11 @@
+[
+  ".nmc/commands.json",
+  ".nmc/artifacts.json",
+  "proofs/m19/fall-dive-execution/",
+  "proofs/m19/penguin-fall.webm",
+  "proofs/m19/penguin-dive.webm",
+  "proofs/m19/fall.png",
+  "proofs/m19/dive.png",
+  "proofs/m19/waddle.png",
+  "proofs/m19/waddle-reference.png"
+]

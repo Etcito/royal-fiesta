@@ -200,6 +200,7 @@ export class MechLogicSystem implements SimSystem<unknown> {
             state.dir = to.on === 'play' ? 1 : -1
             this.#emit(ctx, mech, 'animStart', to.animation, m.animations[to.animation].target)
           } else if (to.off === 'reverse') {
+            state.running = 1
             state.dir = -state.dir
           } else {
             state.running = 0

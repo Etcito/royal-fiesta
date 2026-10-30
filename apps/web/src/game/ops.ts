@@ -543,12 +543,12 @@ class SingleView {
       const orbit = this.orbit
       this.scene = new SceneView({
         port: this.port, viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
-        character: content.character(), dressing: content.dressing(), camera: focus => {
+        character: content.character(), dressing: content.dressing(), camera: (focus, dt, clip) => {
           const state = sim.phase(emptyViewState())
           if (sim.setup.courses[state.courseIndex]?.id === 'ice-slide-gates') {
             return { eye: [11, 8, 16], target: [0, 1, 10], fovYDeg: 55, near: 0.05, far: 160 }
           }
-          return orbit.pose(focus)
+          return orbit.pose(focus, dt, clip)
         },
         skinned: skinnedCharacterOf(content),
       })

@@ -64,8 +64,14 @@ function sphere(o: number[], d: number[], r: number, maxLen: number): number {
   return t > 0 && t <= maxLen ? t : -1
 }
 
+// Extra posed bodies to test (the mechanism bodies that carry colliders): their collider lists and
+// their world poses, OB numbers each, read live like the obstacle poses.
+export interface ArmBodies { colliders: readonly (readonly ColliderSpec[])[]; poses: Float64Array }
+
 // poses: the course obstacles' world poses, OB numbers each (t xyz, r xyzw).
-export function armClip(course: ResolvedCourse, poses: Float64Array): ArmClip {
+export function armClip(course: Pick<ResolvedCourse, 'obstacles'>, poses: Float64Array, extra?: ArmBodies): ArmClip {
+  const sets: (readonly ColliderSpec[])[] = course.obstacles.map(o => o.colliders)
+  const count = sets.length
   const o = [0, 0, 0]
   const d = [0, 0, 0]
   const w = [0, 0, 0]
@@ -74,14 +80,17 @@ export function armClip(course: ResolvedCourse, poses: Float64Array): ArmClip {
   const q = [0, 0, 0, 1]
   return (from, dir, maxLen, radius) => {
     let best = maxLen
-    const obstacles = course.obstacles
-    for (let i = 0; i < obstacles.length; i++) {
-      const b = i * OB
-      if (b + OB > poses.length) break
-      rotInv(poses, b + 3, from[0] - poses[b], from[1] - poses[b + 1], from[2] - poses[b + 2], w)
+    const total = count + (extra === undefined ? 0 : extra.colliders.length)
+    for (let i = 0; i < total; i++) {
+      const own = i < count
+      const pz0 = own ? poses : extra!.poses
+      const set = own ? sets[i] : extra!.colliders[i - count]
+      const b = (own ? i : i - count) * OB
+      if (b + OB > pz0.length) continue
+      rotInv(pz0, b + 3, from[0] - pz0[b], from[1] - pz0[b + 1], from[2] - pz0[b + 2], w)
       const px = w[0], py = w[1], pz = w[2]
-      rotInv(poses, b + 3, dir[0], dir[1], dir[2], d)
-      for (const c of obstacles[i].colliders) {
+      rotInv(pz0, b + 3, dir[0], dir[1], dir[2], d)
+      for (const c of set) {
         q[0] = c.r.x; q[1] = c.r.y; q[2] = c.r.z; q[3] = c.r.w
         rotInv(q, 0, px - c.t.x, py - c.t.y, pz - c.t.z, o)
         rotInv(q, 0, d[0], d[1], d[2], dl)

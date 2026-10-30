@@ -187,3 +187,17 @@ test('spring arm: a wall behind the player shortens the arm, eases back out, a w
   const inside = cam.pose({ x: 0, y: 0, z: -3.5 }, 0, clip)
   near(dist(inside), ORBIT_DISTANCE, 'a start inside a collider keeps the full arm')
 })
+
+test('spring arm: a posed mechanism body shortens the arm like an obstacle, and moves with its pose', () => {
+  const course = { obstacles: [] } as unknown as ResolvedCourse
+  const wall = [{ shape: 'cuboid', half: { x: 5, y: 5, z: 0.5 }, t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 } }] as never
+  const poses = new Float64Array([0, 0, -3.5, 0, 0, 0, 1])
+  const clip = armClip(course, new Float64Array(0), { colliders: [wall], poses })
+  const cam = new OrbitCamera()
+  cam.reset(0)
+  const hit = cam.pose({ x: 0, y: 0, z: 0 }, 0, clip)
+  assert.ok(dist(hit) < ORBIT_DISTANCE - 1 && hit.eye[2] > -3, 'the body stops the arm short of its face')
+  poses[2] = -30
+  cam.reset(0)
+  near(dist(cam.pose({ x: 0, y: 0, z: 0 }, 0, clip)), ORBIT_DISTANCE, 'the body moved away: full arm')
+})

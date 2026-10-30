@@ -365,11 +365,11 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
     port, viewport: 0, localPlayer: roster.peers[localPeer].seats[0], assets, bean,
     character, skinned: options.skinned, dressing: options.dressing,
     // An overview along the course keeps the whole foreground pack and downstream FAR rows visible.
-    camera: focus => spread ? {
+    camera: (focus, dt, clip) => spread ? {
       eye: [course.path[0].p.x, course.path[0].p.y + 5, course.path[0].p.z - 9],
       target: [course.path[0].p.x, course.path[0].p.y, course.path[0].p.z + 12],
       fovYDeg: 52, near: 0.1, far: 500,
-    } : orbit.pose(focus),
+    } : orbit.pose(focus, dt, clip),
   })
   const far = new FarRenderer({
     port, bean, feed, holdsLocalSeat: seat => adapter.holdsSeat(seat),

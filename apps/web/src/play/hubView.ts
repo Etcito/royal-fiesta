@@ -6,17 +6,21 @@ import type { CourseDressing } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { RemoteView } from '@royal-fiesta/game/hub/remotes'
 import { followCamera } from '@royal-fiesta/game/render/camera'
+import { armClip } from '@royal-fiesta/game/render/cameraOcclusion'
+import type { ArmClip } from '@royal-fiesta/game/render/cameraOcclusion'
 import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, QuatT, RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
 import type { CharState } from '@royal-fiesta/sim/character/system'
-import type { ResolvedCourse } from '@royal-fiesta/sim/course'
+import type { ColliderSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { animationKind, trackPose } from '@royal-fiesta/sim/mechanisms/animation'
 import { motionPose } from '@royal-fiesta/sim/obstacles/motion'
 import { add3, pose, quatConj, quatMul, quatRotate, sub3 } from '@royal-fiesta/sim/vec'
 import type { Vec3 } from '@royal-fiesta/sim/vec'
 
 const TAU = Math.PI * 2
+// Numbers per posed body in the camera's pose buffers: t xyz, r xyzw.
+const OB = 7
 // A remote bean grows in when it arrives and shrinks out when it leaves, over this long.
 const POP_MS = 350
 // Spectators of the lobby are drawn smaller than its players.
@@ -80,6 +84,12 @@ export class HubView {
   private clock = 0
   private readonly pose = pose()
   private readonly rest = pose()
+  // The camera's spring arm tests the plaza as drawn: obstacle poses, then the mechanism bodies (fixed and
+  // kinematic only) at their rest pose, overwritten by the tick-owned pose while an animation moves them.
+  private readonly obDrawn: Float64Array
+  private readonly bodyDrawn: Float64Array
+  private readonly bodyFirst: number[] = []
+  private readonly clip: ArmClip
 
   constructor(port: RenderPort, viewport: number, assets: (n: string) => PrimsAsset, bean: PrimsAsset, plaza: ResolvedCourse, opts: HubViewOptions = {}) {
     this.port = port
@@ -96,7 +106,31 @@ export class HubView {
     for (const item of plaza.mechanisms?.items ?? []) {
       this.mechanisms.push(this.create(this.asset(item.asset, assets(item.asset)), null, true))
     }
+    const bodyColliders: (readonly ColliderSpec[])[] = []
+    const rest = pose()
+    for (const item of plaza.mechanisms?.items ?? []) {
+      this.bodyFirst.push(bodyColliders.length)
+      for (const body of item.bodies) bodyColliders.push(body.type === 'dynamic' ? [] : body.colliders)
+    }
+    this.obDrawn = new Float64Array(plaza.obstacles.length * OB)
+    this.bodyDrawn = new Float64Array(bodyColliders.length * OB)
+    let flat = 0
+    for (const item of plaza.mechanisms?.items ?? []) {
+      for (const body of item.bodies) {
+        quatRotate(item.r, body.rest.t, rest.t)
+        add3(item.t, rest.t, rest.t)
+        quatMul(item.r, body.rest.r, rest.r)
+        this.drawn(this.bodyDrawn, flat++, rest)
+      }
+    }
+    this.clip = armClip(plaza, this.obDrawn, { colliders: bodyColliders, poses: this.bodyDrawn })
     this.dress(true)
+  }
+
+  private drawn(into: Float64Array, i: number, p: { t: Vec3; r: { x: number; y: number; z: number; w: number } }): void {
+    const b = i * OB
+    into[b] = p.t.x; into[b + 1] = p.t.y; into[b + 2] = p.t.z
+    into[b + 3] = p.r.x; into[b + 4] = p.r.y; into[b + 5] = p.r.z; into[b + 6] = p.r.w
   }
 
   get camera(): CameraPose | null {
@@ -112,6 +146,7 @@ export class HubView {
     for (let i = 0; i < this.obstacles.length; i++) {
       const spec = this.plaza.obstacles[i]
       motionPose(spec, tick, 0, q)
+      this.drawn(this.obDrawn, i, q)
       port.setTransform(this.obstacles[i], [q.t.x, q.t.y, q.t.z], [q.r.x, q.r.y, q.r.z, q.r.w], [spec.s.x, spec.s.y, spec.s.z])
     }
     const m = this.plaza.mechanisms
@@ -133,6 +168,7 @@ export class HubView {
         trackPose(anim, tick, q)
         add3(rest.t, q.t, q.t)
         quatMul(q.r, rest.r, q.r)
+        this.drawn(this.bodyDrawn, this.bodyFirst[i] + anim.target.body, q)
         // The motion since the world rest (body world pose * inverse world rest) moves the placement.
         sub3(place.t, rest.t, rest.t)
         quatConj(rest.r, rest.r)
@@ -210,7 +246,7 @@ export class HubView {
       this.draw(slot.inst, slot.pos, slot.yaw, slot.emote, slot.mode, slot.speed, slot.stride, scale)
     }
 
-    this.cam = this.orbit !== null ? this.orbit.pose(local.pos) : followCamera(this.cam, local.pos, local.facing, dtS)
+    this.cam = this.orbit !== null ? this.orbit.pose(local.pos, dtS, this.clip) : followCamera(this.cam, local.pos, local.facing, dtS)
     port.setCamera(this.viewport, this.cam)
   }
 

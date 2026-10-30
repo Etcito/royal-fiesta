@@ -213,7 +213,7 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
     port, viewport: 0, localPlayer: localSeat, assets, bean,
     character, skinned: options.skinned, dressing: options.dressing,
     // Third-person orbit around the local seat, so the near pack and nearby far rows stay in frame.
-    camera: focus => orbit.pose(focus),
+    camera: (focus, dt, clip) => orbit.pose(focus, dt, clip),
   })
   const far = new FarRenderer({
     port, bean, feed, holdsLocalSeat: seat => adapter.holdsSeat(seat),

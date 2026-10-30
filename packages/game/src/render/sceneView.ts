@@ -3,7 +3,7 @@
 import { courseFrame, roundReady } from './roundLoad.ts'
 import type { CorrectionSmoother } from '@gamesaloon/rollback'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
-import type { ResolvedCourse } from '@royal-fiesta/sim/course'
+import type { ColliderSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import type { BodyRef } from '@royal-fiesta/sim/mechanismSpec'
@@ -116,6 +116,8 @@ interface MechanismInstance {
   restR: QuatT
   restInvR: QuatT
   fixed: boolean
+  // The colliders the camera arm tests: fixed and kinematic bodies (decor, movers); none for dynamic debris.
+  colliders: readonly ColliderSpec[]
   s: Vec3T
   prev: Float64Array
   cur: Float64Array
@@ -273,6 +275,7 @@ export class SceneView {
   // Obstacle world poses of the frame being drawn (the camera's spring arm tests against them).
   private obDrawn = new Float64Array(0)
   private obClip: ArmClip | null = null
+  private mechDrawn = new Float64Array(0)
   private chPrev = new Float64Array(0)
   private chCur = new Float64Array(0)
   private facing = new Float64Array(0)
@@ -418,12 +421,18 @@ export class SceneView {
       const s = this.course!.obstacles[i].s
       port.setTransform(this.obstacles[i], t, r, [s.x, s.y, s.z])
     }
+    let mb = 0
     for (const body of this.mechanisms) {
+      const o = mb++ * OB
       if (body.fixed) {
         port.setTransform(body.instance, body.placeT, body.placeR, body.s)
+        for (let k = 0; k < 3; k++) this.mechDrawn[o + k] = body.restT[k]
+        for (let k = 0; k < 4; k++) this.mechDrawn[o + 3 + k] = body.restR[k]
         continue
       }
       interpolatePose(body.prev, body.cur, 0, alpha, t, r)
+      for (let k = 0; k < 3; k++) this.mechDrawn[o + k] = t[k]
+      for (let k = 0; k < 4; k++) this.mechDrawn[o + 3 + k] = r[k]
       // The placement carries the asset; the body's motion since rest (pose * inverse world rest) moves it.
       const motion = quatMul(r, body.restInvR)
       const arm = quatRotate(motion, [body.placeT[0] - body.restT[0], body.placeT[1] - body.restT[1], body.placeT[2] - body.restT[2]])
@@ -558,7 +567,6 @@ export class SceneView {
     this.obPrev = new Float64Array(n * OB)
     this.obCur = new Float64Array(n * OB)
     this.obDrawn = new Float64Array(n * OB)
-    this.obClip = course === null ? null : armClip(course, this.obDrawn)
     const port = this.port as RenderPort & { setPartFilter?: (instance: number, parts: readonly string[] | null) => void }
     for (let i = 0; i < sim.mechanismItemCount(); i++) {
       const item = sim.mechanismItem(i)
@@ -575,12 +583,17 @@ export class SceneView {
           placeT: [place.t.x, place.t.y, place.t.z], placeR: [place.r.x, place.r.y, place.r.z, place.r.w],
           restT: [item.t.x + local[0], item.t.y + local[1], item.t.z + local[2]], restR, restInvR: conjugate(restR),
           fixed: body.type === 'fixed',
+          colliders: body.type === 'dynamic' ? [] : body.colliders,
           s: [item.s.x, item.s.y, item.s.z], prev: new Float64Array(OB), cur: new Float64Array(OB),
         })
         if (typeof port.setPartFilter === 'function') port.setPartFilter(instance, body.parts ?? null)
         else if (b > 0) port.setVisible(instance, false)
       }
     }
+    this.mechDrawn = new Float64Array(this.mechanisms.length * OB)
+    this.obClip = course === null ? null : armClip(course, this.obDrawn, {
+      colliders: this.mechanisms.map(m => m.colliders), poses: this.mechDrawn,
+    })
   }
 
   private destroyMechanisms(): void {

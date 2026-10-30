@@ -1,0 +1,47 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "ice.wall-block",
+  "name": "Snow Capped Ice Brick Wall",
+  "category": "obstacle",
+  "world": "ice",
+  "mesher": {"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Snow Capped Ice Brick Wall",
+    "root": ["ice_wall_block"],
+    "nodes": {
+      "ice_wall_block": {"id":"ice_wall_block","name":"Snow Capped Ice Brick Wall","kind":"group","children":["collider_0","ice_core","brick_0_0","brick_0_1","brick_0_2","brick_0_3","brick_0_4","brick_1_0","brick_1_1","brick_1_2","brick_1_3","brick_1_4","brick_1_5","brick_2_0","brick_2_1","brick_2_2","brick_2_3","brick_2_4","snow_cap"],"asset":{"game":"royal-fiesta","id":"ice.wall-block","category":"obstacle","world":"ice"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
+      "collider_0": {"id":"collider_0","name":"collider_0","kind":"paramesh","transform":{"position":[0,0,0]},"round":0,"visible":false,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.5,0,0],[-0.5,0,0],[0,1,0],[0,-1,0],[0,0,5],[0,0,-5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
+      "ice_core": {"id":"ice_core","name":"ice_core","kind":"paramesh","transform":{"position":[0,-0.03,0]},"round":0.02,"material":"ice_blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.48,0,0],[-0.48,0,0],[0,0.92,0],[0,-0.92,0],[0,0,4.99],[0,0,-4.99]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_0_0": {"id":"brick_0_0","name":"brick_0_0","kind":"paramesh","transform":{"position":[0,-0.65,-4]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_0_1": {"id":"brick_0_1","name":"brick_0_1","kind":"paramesh","transform":{"position":[0,-0.65,-2]},"round":0.04,"material":"ice_blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_0_2": {"id":"brick_0_2","name":"brick_0_2","kind":"paramesh","transform":{"position":[0,-0.65,0]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_0_3": {"id":"brick_0_3","name":"brick_0_3","kind":"paramesh","transform":{"position":[0,-0.65,2]},"round":0.04,"material":"ice_blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_0_4": {"id":"brick_0_4","name":"brick_0_4","kind":"paramesh","transform":{"position":[0,-0.65,4]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_1_0": {"id":"brick_1_0","name":"brick_1_0","kind":"paramesh","transform":{"position":[0,-0.050000000000000044,-4.5]},"round":0.04,"material":"ice_blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.475],[0,0,-0.475]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_1_1": {"id":"brick_1_1","name":"brick_1_1","kind":"paramesh","transform":{"position":[0,-0.050000000000000044,-3]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_1_2": {"id":"brick_1_2","name":"brick_1_2","kind":"paramesh","transform":{"position":[0,-0.050000000000000044,-1]},"round":0.04,"material":"ice_blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_1_3": {"id":"brick_1_3","name":"brick_1_3","kind":"paramesh","transform":{"position":[0,-0.050000000000000044,1]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_1_4": {"id":"brick_1_4","name":"brick_1_4","kind":"paramesh","transform":{"position":[0,-0.050000000000000044,3]},"round":0.04,"material":"ice_blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_1_5": {"id":"brick_1_5","name":"brick_1_5","kind":"paramesh","transform":{"position":[0,-0.050000000000000044,4.5]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.475],[0,0,-0.475]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_2_0": {"id":"brick_2_0","name":"brick_2_0","kind":"paramesh","transform":{"position":[0,0.5499999999999999,-4]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_2_1": {"id":"brick_2_1","name":"brick_2_1","kind":"paramesh","transform":{"position":[0,0.5499999999999999,-2]},"round":0.04,"material":"ice_blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_2_2": {"id":"brick_2_2","name":"brick_2_2","kind":"paramesh","transform":{"position":[0,0.5499999999999999,0]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_2_3": {"id":"brick_2_3","name":"brick_2_3","kind":"paramesh","transform":{"position":[0,0.5499999999999999,2]},"round":0.04,"material":"ice_blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "brick_2_4": {"id":"brick_2_4","name":"brick_2_4","kind":"paramesh","transform":{"position":[0,0.5499999999999999,4]},"round":0.04,"material":"ice_frost","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.575,0,0],[-0.575,0,0],[0,0.29,0],[0,-0.29,0],[0,0,0.975],[0,0,-0.975]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "snow_cap": {"id":"snow_cap","name":"snow_cap","kind":"paramesh","transform":{"position":[0,0.92,0]},"round":0.06,"material":"snow","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.625,0,0],[-0.625,0,0],[0,0.09,0],[0,-0.09,0],[0,0,5.05],[0,0,-5.05]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false}
+    },
+    "materials": {
+      "ice_frost": {"name":"Frosted ice brick","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#e8f6ff","in.roughness":0.05}}],"links":[]}},
+      "ice_blue": {"name":"Blue ice brick","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#9fd3f5","in.roughness":0.05}}],"links":[]}},
+      "snow": {"name":"White snow cap","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#ffffff","in.roughness":0.8}}],"links":[]}}
+    }
+  },
+  "collision": [{"shape":"cuboid","t":[0,0,0],"r":[0,0,0,1],"halfExtents":[0.5,1,5]}],
+  "anchors": {},
+  "bounds": {"min":[-0.625,-1,-5.05],"max":[0.625,1.01,5.05]},
+  "hash": "2c64150cf1c6523e0fc55d9c2ab5573f7a9692dd6ac5dd5bb2e4dfd10c72f29b"
+}

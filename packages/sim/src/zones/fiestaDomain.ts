@@ -109,6 +109,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   }
 
   get tick(): number { return this.inner.tick }
+  set tick(tick: number) { this.inner.tick = tick }
   get seats(): readonly number[] { return this.#seats }
   get host(): Int16Array { return this.inner.host }
   get bot(): Uint8Array { return this.inner.bot }

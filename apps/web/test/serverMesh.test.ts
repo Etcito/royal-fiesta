@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { gzipSync } from 'node:zlib'
 import { encodeMesh, decodeMesh } from '../src/sdf/meshWire.ts'
 import { fetchServerMesh } from '../src/sdf/serverMesh.ts'
 import type { MeshedAsset } from '../src/sdf/mamaApi.ts'
@@ -28,6 +29,10 @@ test('server mesh waits for 202 then decodes a success', async () => {
   assert.deepEqual(await fetchServerMesh('content', 'key', () => { waits++ }, fetcher), mesh())
   assert.equal(calls, 2)
   assert.equal(waits, 1)
+})
+test('a gzipped packed mesh decodes like a raw one', async () => {
+  const fetcher: typeof fetch = async () => new Response(gzipSync(encodeMesh(mesh())) as BodyInit)
+  assert.deepEqual(await fetchServerMesh('content', 'key', () => {}, fetcher), mesh())
 })
 test('missing service falls back, explicit server refusal does not', async () => {
   const missing: typeof fetch = async () => new Response('', { status: 404 })

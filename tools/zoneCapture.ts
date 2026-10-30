@@ -109,9 +109,11 @@ async function main(): Promise<void> {
   stage = 'bake meshes on the server'
   // A fresh checkout has no mesh cache: spread the assets over the run's cores (bounded for memory).
   process.env.RF_MESH_JOBS ??= String(Math.min(8, Number(process.env.NMC_CPUS) || Math.max(1, availableParallelism() - 1)))
-  await new MeshBaker(undefined, undefined, await profileAssetIds(ZONE_PROFILE)).scan()
+  const baker = new MeshBaker(undefined, undefined, await profileAssetIds(ZONE_PROFILE))
+  await baker.scan()
   stage = 'prepare built game page'
-  packContent(join(dist, 'content'))
+  // Only this load's meshes: the shared cache holds every worktree's and MAMA pin's, past the page upload limit.
+  packContent(join(dist, 'content'), undefined, baker.keys)
   // Adapt the required transport name without changing any source page or declared source op.
   const script = 'zone-capture-transport.js'
   writeFileSync(join(dist, script),

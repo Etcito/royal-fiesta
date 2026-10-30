@@ -16,7 +16,7 @@ export async function fetchServerMesh(root: string, key: string, waiting: () => 
     if (response.status === 404) return publishedFailure(url, fetcher)
     if (response.status === 422) throw new Error(await response.text())
     if (response.status === 200) {
-      try { return decodeMesh(new Uint8Array(await response.arrayBuffer())) } catch { return null }
+      try { return decodeMesh(await gunzipped(new Uint8Array(await response.arrayBuffer()))) } catch { return null }
     }
     if (response.status !== 202) return null
     if (!started) {
@@ -28,6 +28,14 @@ export async function fetchServerMesh(root: string, key: string, waiting: () => 
     if (Date.now() >= deadline) throw new Error('timed out waiting for meshes on the server')
     await new Promise(resolve => setTimeout(resolve, Math.min(1000, deadline - Date.now())))
   }
+}
+
+// A content pack stores meshes gzipped (tools/content.ts packContent); the mesh wire starts with version 1,
+// never the gzip magic, so a mesh server's raw answer passes through unchanged.
+async function gunzipped(bytes: Uint8Array): Promise<Uint8Array> {
+  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return bytes
+  const inflated = new Blob([bytes as BlobPart]).stream().pipeThrough(new DecompressionStream('gzip'))
+  return new Uint8Array(await new Response(inflated).arrayBuffer())
 }
 
 // A static content host cannot answer 422: a mesh the server refused is published as <key>.failed.

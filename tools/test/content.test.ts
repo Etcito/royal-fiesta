@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { gunzipSync } from 'node:zlib'
 import { buildContentIndex, contentDir, contentPath, packContent, profileAssetIds } from '../content.ts'
 
 test('index lists sorted stems and worlds, preserves document hashes and packs every byte', () => {
@@ -59,7 +60,7 @@ test('content pack includes baked meshes at extensionless cache-key URLs', () =>
     const failed = 'b'.repeat(64)
     writeFileSync(join(dir, 'cache', failed + '.failed'), 'refused at /opt/mama/dist/a.js')
     packContent(join(dir, 'out'), dir)
-    assert.deepEqual(readFileSync(join(dir, 'out/meshes', key)), Buffer.from([1, 2, 3]))
+    assert.deepEqual(gunzipSync(readFileSync(join(dir, 'out/meshes', key))), Buffer.from([1, 2, 3]))
     assert.equal(readFileSync(join(dir, 'out/meshes', failed + '.failed'), 'utf8'), 'refused at <path>')
   } finally {
     if (saved === undefined) delete process.env.RF_MESH_CACHE_DIR

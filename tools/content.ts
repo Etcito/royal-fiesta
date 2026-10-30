@@ -2,6 +2,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { gzipSync } from 'node:zlib'
 import type { ProfileName } from '@royal-fiesta/sim/course'
 import { repoRoot } from './bricks.ts'
 
@@ -68,7 +69,9 @@ export async function profileAssetIds(profile: ProfileName, dir = contentDir()):
   return assetSet(courses, byId, profile)
 }
 
-export function packContent(out: string, dir = contentDir()): ContentIndex {
+// meshKeys limits the meshes to one load set (MeshBaker.keys); every cached mesh when absent. The cache is
+// shared by every worktree and MAMA pin, so an unfiltered pack can outgrow a page upload.
+export function packContent(out: string, dir = contentDir(), meshKeys?: ReadonlySet<string>): ContentIndex {
   const index = buildContentIndex(dir)
   for (const { path } of [...index.assets, ...index.courses]) {
     const target = join(out, path)
@@ -81,7 +84,9 @@ export function packContent(out: string, dir = contentDir()): ContentIndex {
   if (existsSync(meshes)) {
     mkdirSync(join(out, 'meshes'), { recursive: true })
     for (const name of readdirSync(meshes)) {
-      if (/^[a-f0-9]{64}\.mesh$/.test(name)) cpSync(join(meshes, name), join(out, 'meshes', name.slice(0, -5)))
+      if (meshKeys !== undefined && !meshKeys.has(name.replace(/\.(mesh|failed)$/, ''))) continue
+      // Gzipped (a third of the size; apps/web/src/sdf/serverMesh.ts inflates it) so a load's meshes fit a page upload.
+      if (/^[a-f0-9]{64}\.mesh$/.test(name)) writeFileSync(join(out, 'meshes', name.slice(0, -5)), gzipSync(readFileSync(join(meshes, name))))
       if (/^[a-f0-9]{64}\.failed$/.test(name)) {
         const reason = readFileSync(join(meshes, name), 'utf8').replace(/(^|[\s('"=])(?:[A-Za-z]:)?[\\/][^\s:)'"]+/g, '$1<path>')
         writeFileSync(join(out, 'meshes', name), reason)

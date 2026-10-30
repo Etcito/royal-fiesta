@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { assetDocumentText, assetFileText } from '../../packages/game/src/gameAsset.ts'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -78,7 +80,24 @@ test('binary extension list includes common formats and is lower-case', () => {
   assert.ok(BINARY_EXTS.includes('.glb'))
   assert.ok(BINARY_EXTS.includes('.wasm'))
   assert.ok(BINARY_EXTS.includes('.woff2'))
+  assert.ok(BINARY_EXTS.includes('.mesh'))
   assert.ok(BINARY_EXTS.every((ext) => ext === ext.toLowerCase()))
+})
+
+test('saved .mesh files are refused as binary', () => {
+  assert.deepEqual(rules('assets/candy/candy.penguin.mesh', text('mesh')), ['binary-ext'])
+})
+
+test('.haa.json is only allowed under audio/ or fixtures/', () => {
+  assert.deepEqual(rules('audio/fiesta.haa.json', text('{}')), [])
+  assert.deepEqual(rules('fixtures/audio/fiesta.haa.json', text('{}')), [])
+  for (const file of [
+    'src/fiesta.haa.json',
+    'assets/candy/fiesta.haa.json',
+    'courses/fiesta.haa.json',
+  ]) {
+    assert.deepEqual(rules(file, text('{}')), ['asset-outside-fixtures'], file)
+  }
 })
 
 test('checkPaths skips files that are gone from disk', () => {
@@ -240,6 +259,41 @@ test('placement follows the v1 data layout', () => {
   ]) {
     assert.deepEqual(rules(file, text('{}')), ['asset-outside-fixtures'], file)
   }
+})
+
+test('a world asset must be in the form SDF Modeler reads: slug ids and its own document hash', () => {
+  const asset = (nodeId: string, hash: string): Uint8Array =>
+    text(assetFileText({ hash, document: { nodes: { [nodeId]: { id: nodeId, kind: 'group' } } } }))
+  assert.deepEqual(rules('assets/ice/ice.x.asset.json', asset('floe-main', 'x')), ['asset-not-modeler-valid', 'asset-not-modeler-valid'])
+  assert.deepEqual(rules('assets/ice/ice.x.asset.json', asset('floe_main', 'x')), ['asset-not-modeler-valid'])
+  assert.deepEqual(rules('fixtures/game-assets/invalid/x.asset.json', asset('floe-main', 'x')), [])
+})
+
+test('a world asset must be byte-identical to the canonical SDF Modeler text of its own content', () => {
+  const document = {
+    format: 'sdfm', version: 1, name: 'x', root: ['floe'],
+    nodes: { floe: { id: 'floe', kind: 'group', transform: { position: [0, 1.25, -2.8] }, clips: [{ name: 'idle', times: [0, 0.5] }] } },
+  }
+  const hash = createHash('sha256').update(assetDocumentText(document)).digest('hex')
+  const asset = { format: 'sdfm.game-asset', version: 1, game: 'royal-fiesta', id: 'ice.x', name: 'X', category: 'prop', world: 'ice',
+    mesher: { params: { subdivisions: 4, fieldResolution: 16 }, output: 'paramesh' }, document, collision: [], anchors: {},
+    bounds: { min: [0, 0, 0], max: [1, 1, 1] }, hash }
+  const canonical = assetFileText(asset)
+  assert.deepEqual(rules('assets/ice/ice.x.asset.json', text(canonical)), [])
+  // the layouts a hand or tool writer produces: compact JSON, clips on one line, unrounded float noise, another key order
+  const drift = [
+    JSON.stringify(asset, null, 2) + '\n',
+    canonical.replace(/"clips": \[[\s\S]*?\n {8}\]/, `"clips": ${JSON.stringify(document.nodes.floe.clips)}`),
+    canonical.replace('-2.8]', '-2.8000000000000003]'),
+    canonical.replace(/"output": "paramesh",\n {4}"params": (\{[\s\S]*?\n {4}\})/, (_, p: string) => `"params": ${p},\n    "output": "paramesh"`),
+  ]
+  for (const t of drift) {
+    assert.notEqual(t, canonical)
+    assert.ok(rules('assets/ice/ice.x.asset.json', text(t)).includes('asset-not-modeler-valid'), t.slice(0, 200))
+  }
+  // the mesher is written output first with sorted params, the document clips as plain JSON layout
+  assert.match(canonical, /"mesher": \{\n {4}"output": "paramesh",\n {4}"params": \{\n {6}"fieldResolution": 16,/)
+  assert.match(canonical, /"clips": \[\n {10}\{\n {12}"name": "idle",\n {12}"times": \[\n {14}0,/)
 })
 
 test('files under assets/ have the larger size cap', () => {

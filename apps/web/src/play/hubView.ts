@@ -11,8 +11,9 @@ import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, QuatT, RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
+import { animationKind, trackPose } from '@royal-fiesta/sim/mechanisms/animation'
 import { motionPose } from '@royal-fiesta/sim/obstacles/motion'
-import { pose } from '@royal-fiesta/sim/vec'
+import { add3, pose, quatConj, quatMul, quatRotate, sub3 } from '@royal-fiesta/sim/vec'
 import type { Vec3 } from '@royal-fiesta/sim/vec'
 
 const POOL = 4
@@ -48,6 +49,7 @@ export class HubView {
   // Last visibility sent per instance, so setVisible is called only on a change.
   private readonly shown = new Map<number, boolean>()
   private obstacles: number[] = []
+  private mechanisms: number[] = []
   private localBean = -1
   private localColour = -1
   private slots: Slot[] = []
@@ -55,6 +57,7 @@ export class HubView {
   private visible = true
   private clock = 0
   private readonly pose = pose()
+  private readonly rest = pose()
 
   constructor(port: RenderPort, viewport: number, assets: (n: string) => PrimsAsset, bean: PrimsAsset, plaza: ResolvedCourse, opts: HubViewOptions = {}) {
     this.port = port
@@ -67,6 +70,9 @@ export class HubView {
     for (let i = 0; i < plaza.obstacles.length; i++) {
       const spec = plaza.obstacles[i]
       this.obstacles.push(this.create(this.asset(spec.asset, assets(spec.asset)), null, true))
+    }
+    for (const item of plaza.mechanisms?.items ?? []) {
+      this.mechanisms.push(this.create(this.asset(item.asset, assets(item.asset)), null, true))
     }
     for (let k = 0; k < POOL; k++) this.slots.push({ inst: this.create(this.beanAsset, PALETTE[k], false), colour: k })
     this.dress(true)
@@ -86,6 +92,38 @@ export class HubView {
       const spec = this.plaza.obstacles[i]
       motionPose(spec, tick, 0, q)
       port.setTransform(this.obstacles[i], [q.t.x, q.t.y, q.t.z], [q.r.x, q.r.y, q.r.z, q.r.w], [spec.s.x, spec.s.y, spec.s.z])
+    }
+    const m = this.plaza.mechanisms
+    if (m != null) for (let i = 0; i < this.mechanisms.length; i++) {
+      const item = m.items[i]
+      // Course v1 items keep identity t/r with world body rests; `place` is where their asset draws.
+      const place = item.place ?? item
+      let t = place.t
+      let r = place.r
+      for (let a = 0; a < m.animations.length; a++) {
+        const anim = m.animations[a]
+        if (anim.target.item !== i || animationKind(m, a) !== 'tick') continue
+        const body = item.bodies[anim.target.body]
+        const rest = this.rest
+        quatRotate(item.r, body.rest.t, rest.t)
+        add3(item.t, rest.t, rest.t)
+        quatMul(item.r, body.rest.r, rest.r)
+        // Tick-owned body world pose; the hub loads at tick 0.
+        trackPose(anim, tick, q)
+        add3(rest.t, q.t, q.t)
+        quatMul(q.r, rest.r, q.r)
+        // The motion since the world rest (body world pose * inverse world rest) moves the placement.
+        sub3(place.t, rest.t, rest.t)
+        quatConj(rest.r, rest.r)
+        quatMul(q.r, rest.r, q.r)
+        quatRotate(q.r, rest.t, rest.t)
+        add3(q.t, rest.t, q.t)
+        quatMul(q.r, place.r, q.r)
+        t = q.t
+        r = q.r
+        break
+      }
+      port.setTransform(this.mechanisms[i], [t.x, t.y, t.z], [r.x, r.y, r.z, r.w], [item.s.x, item.s.y, item.s.z])
     }
 
     const lc = localColour % 8
@@ -131,6 +169,7 @@ export class HubView {
     this.dress(false)
     for (const inst of [...this.shown.keys()]) this.destroy(inst)
     this.obstacles = []
+    this.mechanisms = []
     this.slots = []
     this.localBean = -1
     this.localColour = -1

@@ -1,0 +1,20 @@
+{
+  "page": "game",
+  "op": "gameCapture",
+  "input": {
+    "content": "sdf",
+    "flow": "match",
+    "clients": 4,
+    "width": 960,
+    "height": 540,
+    "captureAt": [
+      "match-5s"
+    ]
+  },
+  "judge": [
+    {
+      "capture": "match-5s",
+      "description": "Four penguin characters with pink, sky blue, yellow and green bodies racing on a colourful candy 3D obstacle course shown as a 2x2 split of four views, no missing or black geometry"
+    }
+  ]
+}

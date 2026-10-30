@@ -1,0 +1,3 @@
+{"job_id":"fd7b655586f4a2a495bff088651b78ac","client_id":"08906386e86999c05c82aa90","output":"out/candy-assets-one"}
+GPU job fd7b655586f4a2a495bff088651b78ac: running
+done

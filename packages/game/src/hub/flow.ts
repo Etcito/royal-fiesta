@@ -21,15 +21,24 @@ import { HubWorld } from './hubWorld.ts'
 import { decodeHubAct, encodeState, HUB_HELLO_EVERY_MS, HUB_MATCH_RATE_HZ, HUB_MAX_ACTS_PER_MIN, HUB_RATE_HZ } from './protocol.ts'
 import type { HubHello, HubState } from './protocol.ts'
 import { QueuePad } from './queuePad.ts'
+import { LobbyTracker } from './lobby.ts'
+import type { LobbyPick, LobbyServerMsg } from './lobby.ts'
+import type { RelayMatched } from '../net/relayProtocol.ts'
 import { RemoteBuffer } from './remotes.ts'
 import type { RemoteView } from './remotes.ts'
 
-export type FlowState = 'connecting' | 'hub' | 'queued' | 'match' | 'podium' | 'returning' | 'failed'
+export type FlowState = 'connecting' | 'hub' | 'queued' | 'choosing' | 'watching' | 'match' | 'podium' | 'returning' | 'failed'
 export interface FlowEvent { ms: number; client: string; state: FlowState; detail: Record<string, string | number | boolean | number[]> }
 export interface FlowDeps {
   R: RapierModule; relayUrl: string; ws: WsFactory; hubCode: string | 'new'; name: string; colour: number
   courses: readonly ResolvedCourse[]; plaza: ResolvedCourse; partySize: 2 | 3 | 4; now: () => number
   pilot: boolean; log: (ev: FlowEvent) => void
+  /**
+   * 'lobby': enter a GameSaloon timed lobby as soon as the hub is up and after every round (no pad, no
+   * key); the server starts the round after its wait with whoever is there. A server without lobbies
+   * falls back to the exact-size queue. 'pad' (default): the green pad queues for exactly partySize.
+   */
+  matchmaking?: 'lobby' | 'pad'
 }
 
 const STEP_S = 1 / 60
@@ -77,6 +86,8 @@ export class PlayFlow {
   private closed = false
   private queueRequested = false
   private cancelling = false
+  private readonly lobbyTracker = new LobbyTracker()
+  private fallingBack = false
   droppedActs = 0
 
   constructor(d: FlowDeps) { this.d = d }
@@ -89,6 +100,16 @@ export class PlayFlow {
   }
   get match(): NetMatch | null { return this.netMatch }
   get lastLog(): MatchLog | null { return this.savedLog }
+  /** The lobby being waited in, watched or offered (matchmaking 'lobby'). */
+  get lobby(): LobbyTracker { return this.lobbyTracker }
+  private get lobbyMode(): boolean { return this.d.matchmaking === 'lobby' }
+
+  /** Answers the lobby choice (state 'choosing'). */
+  pick(p: LobbyPick): void {
+    const client = this.matchClient
+    if (this.current !== 'choosing' || !client) return
+    try { client.lobbyPick(p, this.lobbyTracker.pick(p)) } catch (e) { this.fail(e) }
+  }
 
   async start(): Promise<void> {
     if (this.started || this.closed) return
@@ -133,6 +154,7 @@ export class PlayFlow {
       if (d.pilot) this.hubPilot = new HubPilot(d.plaza, this.hubSeat, d.partySize)
       this.hello(d.now())
       this.transition('hub', { seat: this.hubSeat, code: this.code! })
+      if (this.lobbyMode) void this.queue()
     } catch (e) { this.fail(e) }
   }
 
@@ -149,9 +171,11 @@ export class PlayFlow {
         this.accumulator = 0
         this.lastState = -Infinity
         this.transition('hub', { winner: this.savedLog!.winner })
+        if (this.lobbyMode) void this.queue()
       }
       if (emote !== 0) this.hub.setEmote(emote, now)
-      if (this.current === 'hub' || this.current === 'queued') {
+      if (this.lobbyMode) this.lobbyTimers(now)
+      if (this.current === 'hub' || this.current === 'queued' || this.current === 'choosing' || this.current === 'watching') {
         this.accumulator = Math.min(this.accumulator + dtS, 8 * STEP_S)
         for (let ticks = 0; ticks < 8 && this.accumulator >= STEP_S; ticks++) {
           this.accumulator -= STEP_S
@@ -162,6 +186,7 @@ export class PlayFlow {
             if (id !== 0) this.hub.setEmote(id, now)
           } else controlsToInput(controls ?? this.idle, st.facing, this.input)
           this.hub.step(this.input)
+          if (this.lobbyMode) continue
           const event = this.pad.update(this.hub.onQueuePad())
           if (event === 'armed' && this.current === 'hub') void this.queue()
           if (event === 'cancel' && this.current === 'queued') void this.cancelQueue()
@@ -227,11 +252,24 @@ export class PlayFlow {
       await client.connect()
       if (!this.active(client) || this.cancelling) return
       this.queueRequested = true
-      const m = await client.queue(d.partySize, { g: 'royal-fiesta', v: 1, name: d.name, c: d.colour })
+      const payload = { g: 'royal-fiesta' as const, v: 1 as const, name: d.name, c: d.colour }
+      let m: RelayMatched
+      if (this.lobbyMode) {
+        this.fallingBack = false
+        client.onLobby(msg => this.onLobby(client, msg))
+        this.lobbyTracker.entered(d.now())
+        try { m = await client.lobby(d.partySize, payload) } catch (e) {
+          // No lobby answer in time: this server only has the exact-size queue.
+          if (!this.fallingBack || !this.active(client)) throw e
+          m = await client.queue(d.partySize, payload)
+        }
+      } else m = await client.queue(d.partySize, payload)
       if (!this.active(client) || this.cancelling) return
-      const setup = netSetup(m.seed, d.partySize, 'sprint', d.courses)
-      this.transport = new RelayTransport(client, m.youAre, d.partySize, d.now)
-      this.netMatch = createNetMatch(d.R, { setup, localPeer: m.youAre, humanPeers: d.partySize }, this.transport, { cpuMs: d.now })
+      // A lobby round seats whoever was there (1..partySize humans); bots take the other places.
+      const humans = m.players
+      const setup = netSetup(m.seed, humans, 'sprint', d.courses)
+      this.transport = new RelayTransport(client, m.youAre, humans, d.now)
+      this.netMatch = createNetMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, this.transport, { cpuMs: d.now })
       if (d.pilot) this.matchPilot = new Pilot(m.youAre, m.seed)
       this.accumulator = 0
       this.lastState = -Infinity
@@ -239,6 +277,29 @@ export class PlayFlow {
     } catch (e) {
       // unqueue() rejects the outstanding queue promise as part of cancellation.
       if (this.active(client) && !this.cancelling) this.fail(e)
+    }
+  }
+
+  private onLobby(client: RelayClient, msg: LobbyServerMsg): void {
+    if (!this.active(client) || client.matched) return
+    try {
+      const step = this.lobbyTracker.apply(msg, this.d.now())
+      if (step.kind === 'fail') throw new RefusalError('hub', 'lobby', `${step.reason}: the GameSaloon lobby refused; reload to try again`)
+      if (step.kind === 'reenter') client.lobbyAgain(this.d.partySize, { g: 'royal-fiesta', v: 1, name: this.d.name, c: this.d.colour })
+      const stage = this.lobbyTracker.view.stage
+      const next: FlowState = stage === 'choosing' ? 'choosing' : stage === 'spectator' ? 'watching' : 'queued'
+      if (next !== this.current) this.transition(next, { lobby: this.lobbyTracker.view.id ?? '' })
+    } catch (e) { this.fail(e) }
+  }
+
+  // The choice's default once unanswered, and the fallback to the queue when the server has no lobbies.
+  private lobbyTimers(now: number): void {
+    const client = this.matchClient
+    if (!client || client.matched) return
+    if (this.current === 'choosing' && this.lobbyTracker.choiceDue(now)) this.pick(this.lobbyTracker.defaultPick())
+    if (this.current === 'queued' && this.queueRequested && !this.fallingBack && this.lobbyTracker.fallbackDue(now)) {
+      this.fallingBack = true
+      client.abandonLobby()
     }
   }
 
@@ -339,8 +400,9 @@ export class PlayFlow {
       const msg = typeof e.data === 'string' ? parseRelayServerMsg(e.data) : null
       if (!ended && msg?.t === 'matched') {
         room.seated = true
-        remaining = Array<boolean>(this.d.partySize).fill(true)
-        room.lastSeat = this.d.partySize - 1
+        remaining = Array<boolean>(msg.players).fill(true)
+        // A one-player lobby round has nobody to wait for: its only seat leaves at once.
+        room.lastSeat = msg.players > 1 ? msg.players - 1 : -1
       }
       if (msg?.t === 'player_left') {
         remaining[msg.seat] = false

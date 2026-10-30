@@ -17,10 +17,13 @@ const ASSET_SUFFIX = '.asset.json'
 const STAND_IN = ' (dev stand-in)'
 const STAND_IN_RADIUS = 0.05
 
-export interface ContentIndex {
-  assets: { id: string; world: string; path: string; hash: string }[]
+// S29: mesh = the saved .mesh path when the file exists; audio = the haa patches (audio/<id>.haa.json).
+export interface ContentIndexV1 {
+  assets: { id: string; world: string; path: string; hash: string; mesh?: string }[]
   courses: { id: string; path: string }[]
+  audio: { id: string; path: string }[]
 }
+export type ContentIndex = ContentIndexV1
 export interface ContentOptions { root?: string; fetch?: typeof fetch }
 
 export function browserContentRoot(): string {
@@ -36,6 +39,34 @@ function contentReader(options: ContentOptions) {
     if (!response.ok) throw new Error(`content: ${path}: HTTP ${response.status}`)
     return JSON.parse(await response.text())
   }
+}
+
+let contentIndex: Promise<ContentIndexV1> | null = null
+let audioPatches: Promise<ReadonlyMap<string, string>> | null = null
+
+// The page's index.json, fetched once (with options: a fresh, uncached read).
+export function browserContentIndex(options?: ContentOptions): Promise<ContentIndexV1> {
+  if (options === undefined && contentIndex !== null) return contentIndex
+  const index = contentReader(options ?? {})('index.json') as Promise<ContentIndexV1>
+  if (options === undefined) {
+    contentIndex = index
+    // A failed read is not kept: the next call fetches again.
+    index.catch(() => { if (contentIndex === index) contentIndex = null })
+  }
+  return index
+}
+
+// Haa patch id -> absolute URL of its audio/<id>.haa.json against the content root (an index without audio has none).
+export function browserAudioPatches(options?: ContentOptions): Promise<ReadonlyMap<string, string>> {
+  if (options === undefined && audioPatches !== null) return audioPatches
+  const root = (options?.root ?? browserContentRoot()).replace(/\/?$/, '/')
+  const base = new URL(root, typeof location === 'undefined' ? undefined : location.href)
+  const patches = browserContentIndex(options).then(index => new Map((index.audio ?? []).map(entry => [entry.id, new URL(entry.path, base).href])))
+  if (options === undefined) {
+    audioPatches = patches
+    patches.catch(() => { if (audioPatches === patches) audioPatches = null })
+  }
+  return patches
 }
 
 let gameAssets: GameAssetResolver | null = null
@@ -162,10 +193,12 @@ export function standInPrims(asset: GameAsset): PrimsAsset {
   return standInFrom(asset, v0PrimsOf(asset.id))
 }
 
-// Decor is view only: instances on the port plus the course environment; leave removes what enter made.
+// Decor is view only: instances on the port plus the course environment; leave removes what enter made on that
+// same port. One dressing serves every client's port (and every viewport of a shared port), so the instances are
+// kept per port, one entry per enter: a leave never destroys handles another port made.
 export function v1Dressing(courses: readonly CourseV1[], prims: (id: string) => PrimsAsset): CourseDressing {
   const byId = new Map(courses.map(c => [c.id, c]))
-  let instances: number[] = []
+  const entered = new Map<RenderPort, number[][]>()
   return {
     enter(port: RenderPort, courseId: string): void {
       const course = byId.get(courseId)
@@ -173,6 +206,7 @@ export function v1Dressing(courses: readonly CourseV1[], prims: (id: string) => 
         refuse('content', `courses/${courseId}.course.json`, `unknown v1 course '${courseId}'; use one of: ${[...byId.keys()].sort().join(', ')}`)
       }
       const handles = new Map<string, number>()
+      const instances: number[] = []
       for (const d of course.decor) {
         let h = handles.get(d.asset)
         if (h === undefined) {
@@ -183,11 +217,16 @@ export function v1Dressing(courses: readonly CourseV1[], prims: (id: string) => 
         port.setTransform(inst, d.t, d.r, d.s)
         instances.push(inst)
       }
+      const stack = entered.get(port)
+      if (stack === undefined) entered.set(port, [instances])
+      else stack.push(instances)
       port.setEnvironment(course.environment)
     },
     leave(port: RenderPort): void {
-      for (const inst of instances) port.destroyInstance(inst)
-      instances = []
+      const stack = entered.get(port)
+      const instances = stack?.pop()
+      if (stack !== undefined && stack.length === 0) entered.delete(port)
+      if (instances !== undefined) for (const inst of instances) port.destroyInstance(inst)
     },
   }
 }

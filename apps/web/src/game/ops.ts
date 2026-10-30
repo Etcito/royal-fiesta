@@ -5,18 +5,24 @@
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { controlsToInput } from '@royal-fiesta/game/client/inputMap'
+import type { RawControls } from '@royal-fiesta/game/client/inputMap'
+import { LocalMatch } from '@royal-fiesta/game/client/localMatch'
+import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
 import type { ContentId, GameContent, LoadProgress } from '@royal-fiesta/game/content'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import type { FlowEvent } from '@royal-fiesta/game/hub/flow'
 import { HubWorld } from '@royal-fiesta/game/hub/hubWorld'
 import type { RemoteView } from '@royal-fiesta/game/hub/remotes'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
+import { Pilot } from '@royal-fiesta/game/net/pilot'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import type { CameraPose, RenderPort, RenderStats, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
+import { disposeAll } from './disposeAll.ts'
+import { iceAction, iceActionReady } from './iceCapture.ts'
 import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { DEFAULT_SETTINGS } from '@royal-fiesta/game/screens/settings'
 import { CharacterSystem } from '@royal-fiesta/sim/character/system'
@@ -36,21 +42,24 @@ import { planCanvases } from '../client/canvases.ts'
 import { mountLoading } from '../content/loading.ts'
 import { pickContent } from '../content/source.ts'
 import { GameInput } from '../input/input.ts'
+import { mountTouchControls } from '../input/touch.ts'
 import { installNmcOps } from '../nmc/ops.ts'
 import type { AdapterInfo } from '../nmc/ops.ts'
 import { HubView } from '../play/hubView.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
 import { raaStatus } from '../render/raaStatus.ts'
+import { DT, FLOW_MOMENTS, RANK, contentId, int, obj, onlyKeys, str, validateCapture } from './captureInput.ts'
+import type { GameCaptureInput, Moment } from './captureInput.ts'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { installZoneLobbyOps } from '../zone/zoneLobbyOps.ts'
 import { installSplitOps } from '../zone/splitOps.ts'
 import { installZoneOps } from '../zone/zoneOps.ts'
-import { uiTour } from './uiTour.ts'
-import type { BootGame, UiTourOutput } from './uiTour.ts'
+import { uiTour, tourScreens, TOUR_SCREENS } from './uiTour.ts'
+import type { BootGame, TourDeps, UiTourOutput } from './uiTour.ts'
 
 export interface ControlCase { name: string; input: 'KeyD' | 'ArrowRight' | 'stickRight' | 'KeyA' | 'ArrowLeft' | 'stickLeft' | 'mouseRight' | 'rightStickRight'; holdMs: number }
 export interface ControlsProbeInput { width: 1280; height: 720; content: ContentId; course: string; cases: ControlCase[] }
-export interface GameCaptureInput { content: ContentId; course?: string; flow: 'match' | 'hub' | 'podium' | 'tour'; clients: 1 | 2 | 4; width: number; height: number; captureAt: string[]; reload?: boolean; net?: { server: string; party: 2 } }
+export type { GameCaptureInput }
 
 type ControlInput = ControlCase['input']
 interface CaptureRecord { name: string; sha256: string; bytes: number; nonEmpty: boolean }
@@ -70,36 +79,9 @@ interface GameCaptureOutput {
 interface OpFile { name: string; blob: Blob }
 interface OpResult<T> { json: T; files: OpFile[] }
 
-const DT = 1 / 60
 const CONTROL_INPUTS: readonly ControlInput[] = ['KeyD', 'ArrowRight', 'stickRight', 'KeyA', 'ArrowLeft', 'stickLeft', 'mouseRight', 'rightStickRight']
-const CONTENT_IDS: readonly ContentId[] = ['v0', 'v1', 'sdf']
 
 // ---- input validation -------------------------------------------------------------------------------------
-
-function obj(op: string, path: string, v: unknown): Record<string, unknown> {
-  if (typeof v !== 'object' || v === null || Array.isArray(v)) refuse('ops', `${op}.${path}`, 'is not an object; pass the JSON input declared in nmc.gpu.json')
-  return v as Record<string, unknown>
-}
-
-function onlyKeys(op: string, path: string, o: Record<string, unknown>, keys: readonly string[]): void {
-  const extra = Object.keys(o).filter(k => !keys.includes(k))
-  if (extra.length > 0) refuse('ops', `${op}.${path}`, `has unknown fields ${extra.join(', ')}; pass only ${keys.join(', ')}`)
-}
-
-function int(op: string, path: string, v: unknown, min: number, max: number): number {
-  if (typeof v !== 'number' || !Number.isInteger(v) || v < min || v > max) refuse('ops', `${op}.${path}`, `is ${JSON.stringify(v)}; pass an integer in ${min}..${max}`)
-  return v
-}
-
-function str(op: string, path: string, v: unknown, pattern: RegExp): string {
-  if (typeof v !== 'string' || !pattern.test(v)) refuse('ops', `${op}.${path}`, `is ${JSON.stringify(v)}; pass a string matching ${pattern}`)
-  return v
-}
-
-function contentId(op: string, v: unknown): ContentId {
-  if (!CONTENT_IDS.includes(v as ContentId)) refuse('ops', `${op}.input.content`, `is ${JSON.stringify(v)}; choose ${CONTENT_IDS.join(', ')}`)
-  return v as ContentId
-}
 
 // ---- browser helpers --------------------------------------------------------------------------------------
 
@@ -123,13 +105,21 @@ async function adapterInfo(): Promise<AdapterInfo> {
   return { vendor, architecture, description, software }
 }
 
-// The GPU client exposes the RTX only at WebGPU's compatibility feature level (see play/ops.ts).
+// Prefer the core adapter; the compatibility level is only a fallback (see play/ops.ts).
 function preferCompatibilityAdapter(): void {
   const gpu = (navigator as Navigator & { gpu?: GpuLike }).gpu
   if (!gpu || typeof gpu.requestAdapter !== 'function') return
   const orig = gpu.requestAdapter.bind(gpu)
-  gpu.requestAdapter = (opts?: { powerPreference?: string; featureLevel?: string }) =>
-    orig({ ...(opts ?? {}), featureLevel: opts?.featureLevel ?? 'compatibility' })
+  gpu.requestAdapter = async (opts?: { powerPreference?: string; featureLevel?: string }) => {
+    // Core first: the compatibility level yields a device RAA's lit pipeline cannot use. Fall back to it only when the
+    // core adapter is missing or a software one (an older GPU client exposed the RTX only at that level).
+    const core = await orig({ ...(opts ?? {}) })
+    const info = (core as { info?: { isFallbackAdapter?: boolean; device?: string; description?: string; vendor?: string } } | null)?.info
+    const software = info?.isFallbackAdapter === true || /swiftshader|llvmpipe|lavapipe/i.test(`${info?.vendor ?? ''} ${info?.device ?? ''} ${info?.description ?? ''}`)
+    if (core !== null && !software) return core
+    if (opts?.featureLevel !== undefined) return core
+    return (await orig({ ...(opts ?? {}), featureLevel: 'compatibility' })) ?? core
+  }
 }
 
 let rapier: Promise<RapierModule> | undefined
@@ -155,8 +145,9 @@ function makeCanvas(width: number, height: number): HTMLCanvasElement {
   return canvas
 }
 
-async function makePort(content: GameContent, canvas: HTMLCanvasElement): Promise<RenderPort> {
-  const port = await content.createPort({ canvas, width: canvas.width, height: canvas.height, viewports: [{ x: 0, y: 0, width: canvas.width, height: canvas.height }] })
+async function makePort(content: GameContent, canvas: HTMLCanvasElement, viewports?: Viewport[]): Promise<RenderPort> {
+  const rects = viewports ?? [{ x: 0, y: 0, width: canvas.width, height: canvas.height }]
+  const port = await content.createPort({ canvas, width: canvas.width, height: canvas.height, viewports: rects })
   if (port.kind !== 'raa') {
     port.dispose()
     refuse('render', 'raa', `content '${content.id}' made a ${port.kind} port; captures need an RAA port`)
@@ -176,9 +167,11 @@ function yieldToBrowser(): Promise<void> {
 
 async function renderPng(port: RenderPort, what: string): Promise<Uint8Array> {
   port.render()
-  const deadline = performance.now() + 10000
+  // realNow, not performance.now: the multi-client run freezes performance.now between frames, so a deadline on it never passed
+  // and a pipeline that stayed pending hung the op until the GPU page limit (295 s) with no cause.
+  const deadline = realNow() + 45000
   while (pendingPipelines() > 0) {
-    if (performance.now() >= deadline) refuse('render', 'raa', `pipeline readiness timed out at ${what}; ${pendingPipelines()} pipelines still pending`)
+    if (realNow() >= deadline) refuse('render', 'raa', `pipeline readiness timed out at ${what}; ${pendingPipelines()} pipelines still pending`)
     await new Promise<void>(resolve => setTimeout(resolve, 10))
   }
   port.render()
@@ -359,6 +352,7 @@ async function controlsProbe(raw: unknown): Promise<OpResult<ControlsOutput>> {
   let gameInput: GameInput | null = null
   let world: ProbeWorld | null = null
   let marker = -1
+  let failed = false
   try {
     port = await makePort(content, canvas)
     const pad = syntheticPad()
@@ -456,18 +450,20 @@ async function controlsProbe(raw: unknown): Promise<OpResult<ControlsOutput>> {
       json: { renderer: 'raa', adapter, software: adapter.software, pageRef: pageRef(), content: content.id, course: course.id, cases },
       files,
     }
+  } catch (e) {
+    failed = true
+    throw e
   } finally {
-    try {
-      if (marker >= 0) port?.destroyInstance(marker)
-      world?.free()
-      gameInput?.dispose()
-      view?.dispose()
-      port?.dispose()
-    } finally {
-      for (const restore of restores.reverse()) restore()
-      canvas.remove()
-      overlay.remove()
-    }
+    disposeAll([
+      () => { if (marker >= 0) port?.destroyInstance(marker) },
+      () => world?.free(),
+      () => gameInput?.dispose(),
+      () => view?.dispose(),
+      () => port?.dispose(),
+      () => { for (const restore of restores.reverse()) restore() },
+      () => canvas.remove(),
+      () => overlay.remove(),
+    ], failed)
   }
 }
 
@@ -482,6 +478,9 @@ const PODIUM_HOLD_FRAMES = 360
 
 interface Driver {
   frame(dt: number): Stage
+  // The driven match sim is in Phase.playing (the playing moments count frames from its first true answer).
+  playing(): boolean
+  captureReady?(name: string): boolean
   // Leaves the hub for a match (the local driver; pilots walk onto the pad themselves).
   enqueue(): void
   capture(what: string): Promise<Uint8Array>
@@ -544,7 +543,13 @@ class SingleView {
       const orbit = this.orbit
       this.scene = new SceneView({
         port: this.port, viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
-        character: content.character(), dressing: content.dressing(), camera: focus => orbit.pose(focus),
+        character: content.character(), dressing: content.dressing(), camera: focus => {
+          const state = sim.phase(emptyViewState())
+          if (sim.setup.courses[state.courseIndex]?.id === 'ice-slide-gates') {
+            return { eye: [11, 8, 16], target: [0, 1, 10], fovYDeg: 55, near: 0.05, far: 160 }
+          }
+          return orbit.pose(focus)
+        },
         skinned: skinnedCharacterOf(content),
       })
       this.sceneSim = sim
@@ -626,6 +631,10 @@ class LocalDriver implements Driver {
     }
   }
 
+  playing(): boolean {
+    return this.sim !== null && this.sim.phase(this.vs).phase === Phase.playing
+  }
+
   enqueue(): void {
     if (this.sim !== null) return
     this.hub?.free()
@@ -647,7 +656,18 @@ class LocalDriver implements Driver {
   }
 
   capture(what: string): Promise<Uint8Array> {
+    if (this.course?.id === 'ice-slide-gates' && this.sim !== null) {
+      this.note(`ice-action ${JSON.stringify(iceAction(this.sim, this.course))}`)
+    }
     return renderPng(this.port, what)
+  }
+
+  // Keep the named playing image, but photograph this course's action rather than its spawn tick.
+  captureReady(name: string): boolean {
+    if (this.course?.id !== 'ice-slide-gates' || name !== 'playing') return true
+    const sim = this.sim
+    if (sim === null || !this.playing()) return false
+    return iceActionReady(iceAction(sim, this.course))
   }
 
   dispose(): void {
@@ -690,6 +710,87 @@ class LocalDriver implements Driver {
   }
 }
 
+// Local split screen (S26): one canvas and port split into `seats` viewports, one LocalMatch and one Pilot per
+// seat, one SceneView per seat; with 3 seats the free fourth cell shows the course overview camera. Touch
+// controls (S26) mount on a div over the canvas and are composited onto the capture.
+class LocalSeatsDriver implements Driver {
+  private readonly port: RenderPort
+  private readonly run: LocalMatch
+  private readonly pilots: Pilot[]
+  private readonly views: SceneView[]
+  private readonly vs = emptyViewState()
+  private readonly width: number
+  private readonly height: number
+  private readonly overlay: HTMLDivElement | null
+  private readonly touch: { readonly active: boolean; read(out: RawControls): void; dispose(): void } | null
+
+  constructor(R: RapierModule, content: GameContent, canvas: HTMLCanvasElement, port: RenderPort, seats: 1 | 2 | 3 | 4,
+    course: ResolvedCourse | null, touch: boolean, note: Note) {
+    this.port = port
+    this.width = canvas.width
+    this.height = canvas.height
+    const courses = botSetup(content, course).courses
+    this.run = new LocalMatch({ R, seats, seed: SEED, profile: 'sprint', courses })
+    this.pilots = Array.from({ length: seats }, (_, k) => new Pilot(k, SEED))
+    this.views = Array.from({ length: seats }, (_, k) => new SceneView({
+      port, viewport: k, localPlayer: k, assets: name => content.assets(name), bean: content.character(),
+      character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content),
+    }))
+    note(`local match started (${seats} seats, sprint)`)
+    if (touch) {
+      const div = document.createElement('div')
+      div.style.cssText = `position: absolute; left: ${canvas.offsetLeft}px; top: ${canvas.offsetTop}px; width: ${canvas.width}px; height: ${canvas.height}px;`
+      document.body.appendChild(div)
+      this.overlay = div
+      this.touch = mountTouchControls(div)
+    } else {
+      this.overlay = null
+      this.touch = null
+    }
+  }
+
+  playing(): boolean {
+    return this.run.sim.phase(this.vs).phase === Phase.playing
+  }
+
+  enqueue(): void {}
+
+  frame(dt: number): Stage {
+    const m = this.run
+    const alpha = m.frame(dt, (seat, out) => { this.pilots[seat].sample(m.sim, out) })
+    for (const view of this.views) view.update(m.sim, null, alpha, dt)
+    if (this.views.length === 3) {
+      const course = m.sim.course()
+      if (course !== null) this.port.setCamera(3, overviewCamera(course))
+    }
+    return m.done ? 'podium' : 'match'
+  }
+
+  async capture(what: string): Promise<Uint8Array> {
+    const png = await renderPng(this.port, what)
+    if (this.touch === null || this.overlay === null) return png
+    const canvas = document.createElement('canvas')
+    canvas.width = this.width
+    canvas.height = this.height
+    const ctx = canvas.getContext('2d')
+    if (ctx === null) refuse('ops', 'gameCapture', 'no 2D canvas context to composite the touch controls; run the op in a browser with canvas 2D')
+    const image = await createImageBitmap(new Blob([png as Uint8Array<ArrayBuffer>], { type: 'image/png' }))
+    ctx.drawImage(image, 0, 0)
+    image.close()
+    const overlay = this.overlay.querySelector('canvas.rf-touch')
+    if (!(overlay instanceof HTMLCanvasElement)) refuse('ops', 'gameCapture.touch', 'the touch overlay canvas is missing; mountTouchControls must draw onto canvas.rf-touch')
+    ctx.drawImage(overlay, 0, 0, this.width, this.height)
+    return pngBlob(canvas, `gameCapture.${what}`)
+  }
+
+  dispose(): void {
+    this.touch?.dispose()
+    this.overlay?.remove()
+    for (const view of this.views) view.dispose()
+    this.run.dispose()
+  }
+}
+
 // One relay client (net.server), piloted to the pad, as game.html's online mode draws it.
 class NetDriver implements Driver {
   private readonly port: RenderPort
@@ -715,6 +816,11 @@ class NetDriver implements Driver {
       },
     })
     void this.flow.start()
+  }
+
+  playing(): boolean {
+    const sim = this.flow.match?.sim
+    return sim !== undefined && sim.phase(this.vs).phase === Phase.playing
   }
 
   enqueue(): void {}
@@ -779,6 +885,7 @@ class MultiDriver implements Driver {
   private readonly width: number
   private readonly height: number
   private readonly now: () => number
+  private readonly vs = emptyViewState()
 
   constructor(R: RapierModule, content: GameContent, ports: RenderPort[], tiles: Viewport[], width: number, height: number, now: () => number) {
     this.ports = ports
@@ -794,6 +901,15 @@ class MultiDriver implements Driver {
 
   get events(): readonly FlowEvent[] {
     return this.loop.events
+  }
+
+  playing(): boolean {
+    const flows = this.loop.flows
+    if (flows.length < this.ports.length) return false
+    return flows.every(flow => {
+      const sim = flow.match?.sim
+      return sim !== undefined && sim.phase(this.vs).phase === Phase.playing
+    })
   }
 
   enqueue(): void {}
@@ -836,67 +952,11 @@ class MultiDriver implements Driver {
 
 // ---- gameCapture: the op ----------------------------------------------------------------------------------
 
-type MomentKind = 'loading' | 'hub' | 'match' | 'podium' | 'back-in-hub'
-interface Moment { name: string; kind: MomentKind; frames: number }
-const RANK: Record<MomentKind, number> = { loading: 0, hub: 1, match: 2, podium: 3, 'back-in-hub': 4 }
-const FLOW_MOMENTS: Record<GameCaptureInput['flow'], readonly MomentKind[]> = {
-  hub: ['loading', 'hub'],
-  match: ['loading', 'match', 'podium'],
-  podium: ['loading', 'podium'],
-  tour: ['loading', 'hub', 'match', 'podium', 'back-in-hub'],
-}
 // Frames a stage is shown before its capture: hub (with every remote), podium, back in the hub.
 const SETTLE: Record<'hub' | 'podium' | 'back-in-hub', number> = { hub: 120, podium: 60, 'back-in-hub': 120 }
-const MAX_MATCH_S = 600
 const MAX_FRAMES = 60 * 900
 // The original clock: the multi-client run replaces performance.now with its virtual clock.
 const realNow = performance.now.bind(performance)
-
-function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Moment[] } {
-  const op = 'gameCapture'
-  const o = obj(op, 'input', raw)
-  onlyKeys(op, 'input', o, ['content', 'course', 'flow', 'clients', 'width', 'height', 'captureAt', 'reload', 'net'])
-  const content = contentId(op, o.content)
-  const course = o.course === undefined ? undefined : str(op, 'input.course', o.course, /^[a-z0-9-]{1,40}$/)
-  const flow = o.flow as GameCaptureInput['flow']
-  if (!Object.hasOwn(FLOW_MOMENTS, String(flow))) refuse('ops', `${op}.input.flow`, `is ${JSON.stringify(o.flow)}; choose match, hub, podium or tour`)
-  const clients = o.clients as 1 | 2 | 4
-  if (clients !== 1 && clients !== 2 && clients !== 4) refuse('ops', `${op}.input.clients`, `is ${JSON.stringify(o.clients)}; choose 1, 2 or 4`)
-  const width = int(op, 'input.width', o.width, 64, 3840)
-  const height = int(op, 'input.height', o.height, 64, 2160)
-  if (o.reload !== undefined && typeof o.reload !== 'boolean') refuse('ops', `${op}.input.reload`, `is ${JSON.stringify(o.reload)}; pass true or false`)
-  let net: GameCaptureInput['net']
-  if (o.net !== undefined) {
-    const n = obj(op, 'input.net', o.net)
-    onlyKeys(op, 'input.net', n, ['server', 'party'])
-    if (n.party !== 2) refuse('ops', `${op}.input.net.party`, `is ${JSON.stringify(n.party)}; this op queues parties of 2`)
-    net = { server: str(op, 'input.net.server', n.server, /^wss?:\/\/\S+$/), party: 2 }
-  }
-  if (clients > 1 && (course !== undefined || net !== undefined)) refuse('ops', `${op}.input.clients`, `${clients} clients play the in-page hub loop; drop course and net`)
-  if (net !== undefined && course !== undefined) refuse('ops', `${op}.input.course`, 'plays in-page with bots; drop net or course')
-  if (flow === 'podium' && (clients > 1 || net !== undefined)) refuse('ops', `${op}.input.flow`, 'podium shows content.podium() on one in-page client; use clients 1 without net')
-  if (!Array.isArray(o.captureAt) || o.captureAt.length < 1 || o.captureAt.length > 16) refuse('ops', `${op}.input.captureAt`, 'is not an array of 1..16 moment names')
-  const allowed = FLOW_MOMENTS[flow]
-  const moments: Moment[] = []
-  for (let i = 0; i < o.captureAt.length; i++) {
-    const name: unknown = o.captureAt[i]
-    const s = typeof name === 'string' ? /^match-(\d+(?:\.\d+)?)s$/.exec(name) : null
-    const kind = (s !== null ? 'match' : name) as MomentKind
-    const seconds = s !== null ? Number(s[1]) : 0
-    const where = `${op}.input.captureAt/${i}`
-    if (typeof name !== 'string' || !allowed.includes(kind)) {
-      refuse('ops', where, `${JSON.stringify(name)} is not a moment of flow ${flow}; choose from ${allowed.map(k => (k === 'match' ? 'match-<s>s' : k)).join(', ')}`)
-    }
-    if (seconds > MAX_MATCH_S) refuse('ops', where, `${name} is past ${MAX_MATCH_S} s of match`)
-    const frames = Math.round(seconds / DT)
-    const prev = moments[moments.length - 1]
-    if (prev !== undefined && (RANK[kind] < RANK[prev.kind] || (RANK[kind] === RANK[prev.kind] && (kind !== 'match' || frames <= prev.frames)))) {
-      refuse('ops', where, `${name} is repeated or out of order; list moments in flow order (${allowed.join(', ')}), match seconds ascending`)
-    }
-    moments.push({ name, kind, frames })
-  }
-  return { input: { content, course, flow, clients, width, height, captureAt: o.captureAt as string[], reload: o.reload === true, net }, moments }
-}
 
 // The loading screen is DOM and cannot be read back, so its capture is a 2D drawing of the same progress.
 function drawLoading(p: LoadProgress, width: number, height: number): HTMLCanvasElement {
@@ -959,6 +1019,25 @@ async function runOnce(run: Run): Promise<{ content: GameContent; report: Report
   }
   if (moments.every(m => m.kind === 'loading')) return { content, report }
   const course = input.course === undefined ? null : content.course(input.course)
+  if (input.content === 'sdf' && course?.id === 'ice-slide-gates') {
+    // A capture must not silently omit the character after a mesh failure. SDF loads the saved
+    // mesh or meshes it with MAMA before this point; v1 primitives cannot satisfy this path.
+    const required = ['penguin.body', 'ice.slide-gate', 'ice.floe-platform', 'ice.floor-tile', 'ice.wall-block']
+    const meshes = report.meshed
+    for (const id of required) {
+      const line = Array.isArray(meshes) ? meshes.find(line => line.startsWith(`${id}|`)) : undefined
+      const fields = line?.split('|')
+      if (!fields || !(Number(fields[2]) > 0 && Number(fields[3]) > 0)) {
+        refuse('content', id, `the ice capture requires the real SDF mesh; load report: ${JSON.stringify(report.failed)}`)
+      }
+    }
+    if (skinnedCharacterOf(content) === undefined) refuse('content', 'penguin.body', 'the ice capture requires the penguin skin')
+    // SceneView loads animation asynchronously. Warm its module and WASM before the fast, explicitly
+    // stepped capture loop, so the opening action has a running pose rather than the rest pose.
+    await import('@royal-fiesta/game/anim/driver')
+    const { loadAnimBrick } = await import('@royal-fiesta/game/anim/brick')
+    await loadAnimBrick()
+  }
   await playFlow(run, content, course)
   return { content, report }
 }
@@ -974,23 +1053,33 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
   const virtualNow = () => frame * DT * 1000
   const originalNow = Object.getOwnPropertyDescriptor(performance, 'now')
   let clockInstalled = false
+  let failed = false
   try {
-    for (const cell of plan.cells) {
-      const canvas = makeCanvas(cell.canvasWidth, cell.canvasHeight)
+    if (input['local'] !== undefined) {
+      // One canvas split into local seats (S26), its pixel viewports at dpr 1 (a capture is backing pixels).
+      const canvas = makeCanvas(input.width, input.height)
       canvases.push(canvas)
-      ports.push(await makePort(content, canvas))
-    }
-    if (input.clients > 1) {
-      // LoopbackRelay rate-limits on performance.now, so it shares the loop's virtual clock.
-      Object.defineProperty(performance, 'now', { configurable: true, writable: true, value: virtualNow })
-      clockInstalled = true
-      const tiles = plan.cells.map(c => ({ x: c.col * c.canvasWidth, y: c.row * c.canvasHeight, width: c.canvasWidth, height: c.canvasHeight }))
-      driver = new MultiDriver(R, content, ports, tiles, input.width, input.height, virtualNow)
-    } else if (input.net !== undefined) {
-      driver = new NetDriver(R, content, ports[0], input.net.server, note)
+      const viewports = pixelViewports(splitLayout(input['local'], input['local'] === 3), input.width, input.height, 1)
+      ports.push(await makePort(content, canvas, viewports))
+      driver = new LocalSeatsDriver(R, content, canvas, ports[0], input['local'], course, input.touch === true, note)
     } else {
-      const start = input.flow === 'tour' ? 'hub' : input.flow
-      driver = new LocalDriver(R, content, ports[0], course, start, note)
+      for (const cell of plan.cells) {
+        const canvas = makeCanvas(cell.canvasWidth, cell.canvasHeight)
+        canvases.push(canvas)
+        ports.push(await makePort(content, canvas))
+      }
+      if (input.clients > 1) {
+        // LoopbackRelay rate-limits on performance.now, so it shares the loop's virtual clock.
+        Object.defineProperty(performance, 'now', { configurable: true, writable: true, value: virtualNow })
+        clockInstalled = true
+        const tiles = plan.cells.map(c => ({ x: c.col * c.canvasWidth, y: c.row * c.canvasHeight, width: c.canvasWidth, height: c.canvasHeight }))
+        driver = new MultiDriver(R, content, ports, tiles, input.width, input.height, virtualNow)
+      } else if (input.net !== undefined) {
+        driver = new NetDriver(R, content, ports[0], input.net.server, note)
+      } else {
+        const start = input.flow === 'tour' ? 'hub' : input.flow
+        driver = new LocalDriver(R, content, ports[0], course, start, note)
+      }
     }
     // The relay runs on wall time; the in-page flows step a fixed 1/60 s per frame.
     const realTime = input.net !== undefined
@@ -998,6 +1087,7 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
     let stage: Stage | null = null
     let stageFrames = 0
     let matchFrames = -1
+    let playingFrames = -1
     let index = 0
     while (index < pending.length) {
       if (++frame > MAX_FRAMES) refuse('ops', 'gameCapture', `did not reach ${run.prefix}${pending[index].name} within ${MAX_FRAMES} frames; inspect the flow events`)
@@ -1014,15 +1104,19 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
         stage = next
         stageFrames = 0
       } else stageFrames++
+      if (frame % 600 === 0) note(`${run.prefix}frame ${frame} stage ${stage ?? next} waiting for ${pending[index].name}`)
       if (matchFrames >= 0) matchFrames++
       else if (stage === 'match') matchFrames = 0
+      if (driver.playing()) playingFrames = playingFrames < 0 ? 0 : playingFrames + 1
+      else playingFrames = -1
       const m = pending[index]
       let hit = false
       if (m.kind === 'match') {
         if (stage === 'podium' || stage === 'back-in-hub') refuse('ops', `gameCapture.${m.name}`, `the match reached its podium after ${matchFrames} frames, before ${m.name}; pick an earlier second`)
-        hit = stage === 'match' && matchFrames >= m.frames
+        hit = stage === 'match' && (m.clock === 'playing' ? playingFrames : matchFrames) >= m.frames
       } else if (m.kind !== 'loading') hit = stage === m.kind && stageFrames >= SETTLE[m.kind]
-      if (hit) {
+      if (hit && (driver.captureReady?.(m.name) ?? true)) {
+        note(`${run.prefix}capturing ${m.name} at frame ${frame}`)
         await capture(run, m.name, await driver.capture(run.prefix + m.name))
         index++
       }
@@ -1031,26 +1125,60 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
       if (stage === 'hub' && stageFrames >= SETTLE.hub && wants !== undefined && wants.kind !== 'hub') driver.enqueue()
     }
     if (driver instanceof MultiDriver) for (const ev of driver.events) note(`${run.prefix}${ev.client} ${ev.state}`)
+  } catch (e) {
+    failed = true
+    throw e
   } finally {
-    try {
-      driver?.dispose()
-      for (const port of ports) port.dispose()
-    } finally {
-      for (const canvas of canvases) canvas.remove()
-      if (clockInstalled) {
+    disposeAll([
+      () => driver?.dispose(),
+      ...ports.map(port => () => port.dispose()),
+      () => { for (const canvas of canvases) canvas.remove() },
+      () => {
+        if (!clockInstalled) return
         if (originalNow) Object.defineProperty(performance, 'now', originalNow)
         else Reflect.deleteProperty(performance, 'now')
-      }
-    }
+      },
+    ], failed)
   }
 }
 
-async function gameCapture(raw: unknown): Promise<OpResult<GameCaptureOutput>> {
-  const { input, moments } = validateCapture(raw)
+async function gameCapture(raw: unknown, deps: TourDeps): Promise<OpResult<GameCaptureOutput>> {
+  const { input, moments, screens } = validateCapture(raw, TOUR_SCREENS)
+  if (screens.length > 0) {
+    const tour = await tourScreens(screens, deps)
+    const captures: SizedCapture[] = []
+    const files: OpFile[] = []
+    for (const file of tour.files) {
+      const image = await createImageBitmap(file.blob)
+      const canvas = document.createElement('canvas')
+      canvas.width = input.width
+      canvas.height = input.height
+      const ctx = canvas.getContext('2d')
+      if (ctx === null) refuse('ops', 'gameCapture.tour', 'no 2D canvas context to size the tour capture')
+      ctx.drawImage(image, 0, 0, input.width, input.height)
+      image.close()
+      const png = await pngBlob(canvas, 'gameCapture.tour')
+      const rec = await record(file.name.slice(0, -4), png, files)
+      captures.push({ ...rec, width: input.width, height: input.height })
+    }
+    return {
+      json: {
+        renderer: 'raa', adapter: tour.json.adapter, software: tour.json.software, pageRef: pageRef(),
+        captures, frameTiming: null, content: input.content, courses: [],
+        events: tour.json.transitions.map(t => ({ t: t.t, what: `${t.from ?? '-'} -> ${t.to}` })),
+        report: {}, reports: [],
+      },
+      files,
+    }
+  }
   const { R, adapter } = await prelude()
   const t0 = realNow()
   const events: GameEvent[] = []
-  const note: Note = what => events.push({ t: Math.round(realNow() - t0) / 1000, what })
+  // The last note is published for the GPU page bridge: a page that hits its time limit reports the phase it was in.
+  const note: Note = what => {
+    events.push({ t: Math.round(realNow() - t0) / 1000, what })
+    ;(window as unknown as { __nmcGpuProgress?: string }).__nmcGpuProgress = `${events[events.length - 1].t} s ${what}`
+  }
   const captures: SizedCapture[] = []
   const files: OpFile[] = []
   const reports: Report[] = []
@@ -1080,9 +1208,11 @@ type GameOps = {
 // window.nmcGpu.ops.controlsProbe / gameCapture / uiTour, next to the client page's ops. Registering has no
 // side effect: the first op call runs teardown (the page's App) first; every op but uiTour (the real App,
 // on the core adapter) also prefers the compatibility adapter. bootGame starts the App for uiTour.
+// The game page registers no frameTiming op (frame timing is a client-page op).
 export function installGameOps(teardown: () => void, bootGame: BootGame): void {
   installNmcOps()
   const gpu = window.nmcGpu as NonNullable<Window['nmcGpu']> & { ops: GameOps }
+  delete (gpu.ops as { frameTiming?: unknown }).frameTiming
   let taken = false
   const take = (): void => {
     if (taken) return
@@ -1095,11 +1225,15 @@ export function installGameOps(teardown: () => void, bootGame: BootGame): void {
     prepared = true
     take()
   }
-  const { roundCapture, frameTiming } = gpu.ops
+  const { roundCapture } = gpu.ops
   gpu.ops.roundCapture = input => (prepare(), roundCapture(input))
-  gpu.ops.frameTiming = input => (prepare(), frameTiming(input))
   gpu.ops.controlsProbe = input => (prepare(), controlsProbe(input))
-  gpu.ops.gameCapture = input => (prepare(), gameCapture(input))
+  gpu.ops.gameCapture = input => {
+    const { screens } = validateCapture(input, TOUR_SCREENS)
+    if (screens.length > 0) take()
+    else prepare()
+    return gameCapture(input, { boot: bootGame, adapter: adapterInfo })
+  }
   gpu.ops.uiTour = input => (take(), uiTour(input, { boot: bootGame, adapter: adapterInfo }))
   installZoneOps()
   installZoneLobbyOps()

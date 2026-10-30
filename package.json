@@ -27,14 +27,14 @@
     "play": "node --experimental-strip-types tools/play.ts",
     "wavedash": "node --experimental-strip-types tools/wavedash.ts",
     "etcito:build": "node --experimental-strip-types tools/etcitoBuild.ts",
-    "prepare": "git config core.hooksPath .githooks || true",
-    "meshes:bake": "node --experimental-strip-types tools/meshBake.ts"
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@etcito/raa-anim": "file:../raa/dist/bricks/raa-anim",
     "@etcito/uaa": "file:../uaa"
   },
   "devDependencies": {
+    "@etcito/haa": "https://github.com/Etcito/haa/releases/download/v0.1.1/etcito-haa-0.1.1.tgz",
     "@etcito/raa-assets-tools": "https://github.com/Etcito/raa-assets-tools/releases/download/v0.1.0/raa-assets-tools-0.1.0.tgz",
     "@types/node": "^24",
     "sharp": "0.35.5",

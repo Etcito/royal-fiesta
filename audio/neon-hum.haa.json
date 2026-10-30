@@ -1,0 +1,33 @@
+{
+  "haa": 1,
+  "id": "neon-hum",
+  "title": "Electric neon piston and laser-door hum",
+  "inputs": [],
+  "master": 0.7,
+  "graph": {
+    "duration": 4,
+    "loop": true,
+    "mode": "live",
+    "nodes": [
+      { "id": "flicker", "type": "lfo", "x": 560, "y": 40, "label": "Slow neon amplitude flicker", "params": { "rate": 0.25, "depth": 1, "wave": "sine" } },
+      { "id": "fundamental", "type": "oscillator", "x": 40, "y": 40, "label": "60 Hz electric hum", "params": { "frequency": 60, "wave": "sine", "level": 0.22 } },
+      { "id": "buzz-120", "type": "oscillator", "x": 40, "y": 200, "label": "120 Hz saw harmonic buzz", "params": { "frequency": 120, "wave": "saw", "level": 0.07 } },
+      { "id": "buzz-180", "type": "oscillator", "x": 40, "y": 360, "label": "180 Hz saw harmonic buzz", "params": { "frequency": 180, "wave": "saw", "level": 0.045 } },
+      { "id": "buzz-filter", "type": "filter", "x": 300, "y": 200, "label": "Resonant 1.5 kHz neon housing", "params": { "cutoff": 1500, "resonance": 1.2, "mode": "lowpass" } },
+      { "id": "fizz", "type": "noise", "x": 40, "y": 520, "label": "Faint white electrical fizz", "params": { "color": "white", "level": 0.012, "width": 0 } },
+      { "id": "fizz-filter", "type": "filter", "x": 300, "y": 520, "label": "High-frequency fizz above 4 kHz", "params": { "cutoff": 4000, "resonance": 0.7, "mode": "highpass" } },
+      { "id": "amplitude", "type": "gain", "x": 560, "y": 280, "label": "Slight continuous amplitude flicker", "params": { "gain": 0.85 } },
+      { "id": "out", "type": "output", "x": 820, "y": 280, "label": "Signal-controlled neon loop output", "params": { "gain": 0.65 } }
+    ],
+    "connections": [
+      { "id": "fundamental-audio", "from": "fundamental", "to": "buzz-filter", "target": "audio" },
+      { "id": "buzz-120-audio", "from": "buzz-120", "to": "buzz-filter", "target": "audio" },
+      { "id": "buzz-180-audio", "from": "buzz-180", "to": "buzz-filter", "target": "audio" },
+      { "id": "buzz-filtered", "from": "buzz-filter", "to": "amplitude", "target": "audio" },
+      { "id": "fizz-audio", "from": "fizz", "to": "fizz-filter", "target": "audio" },
+      { "id": "fizz-filtered", "from": "fizz-filter", "to": "amplitude", "target": "audio" },
+      { "id": "amplitude-flicker", "from": "flicker", "to": "amplitude", "target": "gain", "amount": 0.04 },
+      { "id": "neon-out", "from": "amplitude", "to": "out", "target": "audio" }
+    ]
+  }
+}

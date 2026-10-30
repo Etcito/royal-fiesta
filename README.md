@@ -16,12 +16,14 @@ The repository is an npm workspace:
 
 ## Build from a clean clone
 
-You need Node.js 22.18 or newer and git. No sibling folder is needed: the GameSaloon rollback packages, the HAA sound engine and the RAA renderer are installed from their GitHub releases.
+You need Node.js 22.18 or newer and git. The RAA renderer (raa), the MAMA mesher (mama) and the HAA sound engine (haa) are sibling checkout `file:` dependencies: clone those three repositories next to royal-fiesta before installing. The GameSaloon rollback packages and `@etcito/raa-assets-tools` come from their GitHub releases.
+
+`@etcito/haa` has two sources during step 2: the game pack and the root devDependency use the 0.1.1 release tarball, while apps/web uses the haa sibling checkout until the v0.2.0 release is published.
 
 ```
 git clone https://github.com/Etcito/royal-fiesta.git
 cd royal-fiesta
-npm install            # the release tarballs of @gamesaloon/rollback, @gamesaloon/rollback-rapier, @etcito/haa and @etcito/raa
+npm install            # sibling raa/mama/haa file: dependencies plus the release tarballs
 npm run typecheck
 npm test
 npm run web:build      # apps/web/dist/
@@ -55,6 +57,10 @@ The browser plays it from a bake made at build time: `npm run audio:bake` (`tool
 | `npm run bricks -- check` | verify the installed GameSaloon packages; `where <name>` locates a local brick checkout (gamesaloon-public, raa-assets-tools) |
 | `npm run smoke` | end-to-end smoke run over the workspace |
 | `npm run web:build` | Vite build of every `apps/web/*.html` page into `apps/web/dist/` |
+
+## Cards
+
+Local runner cards and their commands live in `.nmc/commands.json`; judge inputs live under `.nmc/judge/`.
 
 ## Proofs
 

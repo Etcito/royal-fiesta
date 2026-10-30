@@ -1,7 +1,10 @@
 // Versioned wire format preserves typed arrays and shared transfer buffers exactly.
+// S24: a saved .mesh file is this encoding of the MeshedAsset plus its S16 mesh cache key.
 import type { MeshedAsset } from './mamaApi.ts'
 
-export function encodeMesh(value: MeshedAsset): Uint8Array {
+export type KeyedMeshedAsset = MeshedAsset & { key?: string }
+
+export function encodeMesh(value: KeyedMeshedAsset): Uint8Array {
   const buffers: ArrayBuffer[] = []
   const index = (buffer: ArrayBuffer): number => {
     let i = buffers.indexOf(buffer)
@@ -30,7 +33,7 @@ export function encodeMesh(value: MeshedAsset): Uint8Array {
   return out
 }
 
-export function decodeMesh(bytes: Uint8Array): MeshedAsset {
+export function decodeMesh(bytes: Uint8Array): KeyedMeshedAsset {
   if (bytes[0] !== 1) throw new Error('unsupported mesh format')
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const length = view.getUint32(1)
@@ -54,5 +57,5 @@ export function decodeMesh(bytes: Uint8Array): MeshedAsset {
       return new Type(buffers[v.buffer], v.offset, v.length / Type.BYTES_PER_ELEMENT)
     }
     return v
-  }) as MeshedAsset
+  }) as KeyedMeshedAsset
 }

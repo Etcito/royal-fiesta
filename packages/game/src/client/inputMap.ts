@@ -15,6 +15,23 @@ export function emptyControls(): RawControls {
   return { left: false, right: false, forward: false, back: false, stickX: 0, stickY: 0, jump: false, dive: false, grab: false }
 }
 
+// One player, several sources (keyboard, first pad, touch): directions and actions are ORed, and the
+// stick with the larger deflection wins. Touch used to be left out of the hub's walk entirely.
+export function mergeControls(base: RawControls, extra: RawControls): RawControls {
+  base.left = base.left || extra.left
+  base.right = base.right || extra.right
+  base.forward = base.forward || extra.forward
+  base.back = base.back || extra.back
+  base.jump = base.jump || extra.jump
+  base.dive = base.dive || extra.dive
+  base.grab = base.grab || extra.grab
+  if (Math.abs(extra.stickX) + Math.abs(extra.stickY) > Math.abs(base.stickX) + Math.abs(base.stickY)) {
+    base.stickX = extra.stickX
+    base.stickY = extra.stickY
+  }
+  return base
+}
+
 export function controlsToInput(c: RawControls, cameraFacing: { x: number; z: number }, out: PlayerInput): PlayerInput {
   let x = (c.right ? 1 : 0) - (c.left ? 1 : 0)
   let y = (c.forward ? 1 : 0) - (c.back ? 1 : 0)

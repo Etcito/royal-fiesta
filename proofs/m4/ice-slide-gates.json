@@ -1,0 +1,97 @@
+{
+  "renderer": "raa",
+  "adapter": {
+    "vendor": "nvidia",
+    "architecture": "ampere",
+    "description": "",
+    "software": false
+  },
+  "pageRef": "/api/gpu/pages/29060278b9f883e35cd14635085526769b785d499feaf9c4/",
+  "capture": "out/judge/m4/ice-slide-gates.png",
+  "action": {
+    "tick": 118,
+    "travel": 0.43615157604217525,
+    "signal": true,
+    "players": [
+      {
+        "player": 0,
+        "position": {
+          "x": -0.37545254826545715,
+          "y": 0.8499994277954102,
+          "z": 5.933188438415527
+        },
+        "speed": 8.58409254900552
+      },
+      {
+        "player": 1,
+        "position": {
+          "x": 0.33854952454566956,
+          "y": 0.8499302268028259,
+          "z": 4.606665134429932
+        },
+        "speed": 7.077839697552554
+      },
+      {
+        "player": 2,
+        "position": {
+          "x": 0.3136717677116394,
+          "y": 0.8914234638214111,
+          "z": 5.526977062225342
+        },
+        "speed": 8.637106366524163
+      },
+      {
+        "player": 3,
+        "position": {
+          "x": 0.479679673910141,
+          "y": 0.9897043108940125,
+          "z": 7.318587779998779
+        },
+        "speed": 8.232330782028562
+      },
+      {
+        "player": 4,
+        "position": {
+          "x": -0.8872987031936646,
+          "y": 0.8499718308448792,
+          "z": 6.548161506652832
+        },
+        "speed": 8.769449717411513
+      },
+      {
+        "player": 5,
+        "position": {
+          "x": -0.28602686524391174,
+          "y": 0.7635549902915955,
+          "z": 7.0866923332214355
+        },
+        "speed": 7.743501199988479
+      },
+      {
+        "player": 6,
+        "position": {
+          "x": -0.32736632227897644,
+          "y": 0.8690234422683716,
+          "z": 5.052781105041504
+        },
+        "speed": 7.958835796194293
+      },
+      {
+        "player": 7,
+        "position": {
+          "x": 0.3203117549419403,
+          "y": 0.7533428072929382,
+          "z": 8.107613563537598
+        },
+        "speed": 7.98908071312315
+      }
+    ]
+  },
+  "meshes": [
+    "ice.floe-platform|paramesh|7|768|memory",
+    "ice.floor-tile|paramesh|1|1344|memory",
+    "ice.slide-gate|paramesh|25|2208|memory",
+    "ice.wall-block|paramesh|1|5352|memory",
+    "penguin.body|paramesh|1|2864|memory"
+  ]
+}

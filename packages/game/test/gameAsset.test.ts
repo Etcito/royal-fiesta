@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
 import { canonicalJson } from '../src/course.ts'
-import { GAME_ASSET_CAPS, assetFilePath, parseGameAsset } from '../src/gameAsset.ts'
+import { GAME_ASSET_CAPS, assetFilePath, assetMeshPath, parseGameAsset } from '../src/gameAsset.ts'
 
 const FILE = 'assets/candy/candy.spinner-bar.asset.json'
 
@@ -32,6 +32,21 @@ function patched(patch: (a: Record<string, any>) => void): Record<string, any> {
   patch(a)
   a.hash = sha256(a.document)
   return a
+}
+
+// Two bodies, one collider each (valid() has two colliders), one hinge.
+function physicsBlock(over: Record<string, unknown> = {}): Record<string, any> {
+  const body = { t: [0, 0, 0], r: [0, 0, 0, 1], density: 400, friction: 0.6, restitution: 0, linearDamping: 0, angularDamping: 0.05, gravityScale: 1, ccd: false, surface: 'normal' }
+  return {
+    bodies: [
+      { ...body, id: 'base', type: 'fixed', colliders: [0], parts: ['base'] },
+      { ...body, id: 'plank', type: 'dynamic', colliders: [1], parts: ['plank'] },
+    ],
+    joints: [
+      { id: 'pivot', kind: 'hinge', a: 'base', b: 'plank', anchorA: [0, 0.5, 0], anchorB: [0, 0, 0], axis: [1, 0, 0], limitsDeg: [-20, 20], stiffness: 0, damping: 0, lengthM: 0, motor: null },
+    ],
+    ...over,
+  }
 }
 
 async function refused(json: unknown, pointer: string, contains: string[] = []): Promise<void> {
@@ -67,6 +82,28 @@ test('an obstacle with an empty collision is valid content', async () => {
 test('assetFilePath is assets/<world>/<id>.asset.json', () => {
   assert.equal(assetFilePath('candy', 'candy.spinner-bar'), 'assets/candy/candy.spinner-bar.asset.json')
   assert.equal(assetFilePath('common', 'penguin.body'), 'assets/common/penguin.body.asset.json')
+})
+
+test('assetMeshPath is assets/<world>/<id>.mesh', () => {
+  assert.equal(assetMeshPath('candy', 'candy.x'), 'assets/candy/candy.x.mesh')
+})
+
+test('an asset without physics has no physics key', async () => {
+  const a = await parseGameAsset(valid(), FILE)
+  assert.equal('physics' in a, false)
+})
+
+test('an asset with physics keeps the parsed physics block', async () => {
+  const a = await parseGameAsset(patched(x => { x.physics = physicsBlock() }), FILE)
+  assert.equal(a.physics?.bodies.length, 2)
+  assert.equal(a.physics?.bodies[1].type, 'dynamic')
+  assert.deepEqual(a.physics?.bodies[1].colliders, [1])
+  assert.deepEqual(a.physics?.joints[0].limitsDeg, [-20, 20])
+  assert.equal(a.physics?.joints[0].motor, null)
+})
+
+test('a physics refusal names its pointer in the asset file', async () => {
+  await refused(patched(x => { x.physics = physicsBlock({ joints: [{ ...physicsBlock().joints[0], axis: [1, 1, 0] }] }) }), '/physics/joints/0/axis', ['must be 1 within 1e-6'])
 })
 
 test('unknown top-level key', async () => {

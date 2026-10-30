@@ -28,8 +28,19 @@
         "kind": "group",
         "children": [
           "slime_bed",
-          "lumps_a",
-          "lumps_b",
+          "lumps_a_0",
+          "lumps_a_1",
+          "lumps_a_2",
+          "lumps_a_3",
+          "lumps_a_4",
+          "lumps_a_5",
+          "lumps_a_6",
+          "lumps_b_0",
+          "lumps_b_1",
+          "lumps_b_2",
+          "lumps_b_3",
+          "lumps_b_4",
+          "lumps_b_5",
           "bubble_1",
           "bubble_2",
           "bubble_3",
@@ -112,34 +123,17 @@
         },
         "gameCollision": false
       },
-      "lumps_a": {
-        "id": "lumps_a",
-        "name": "lumps-a",
+      "lumps_a_0": {
+        "id": "lumps_a_0",
+        "name": "lumps-a-0",
         "kind": "group",
         "transform": {
           "position": [-4.2, 0, -4.2]
         },
         "smooth": 0.14,
-        "deformers": [
-          {
-            "id": "wave_1",
-            "kind": "wave",
-            "params": {
-              "axis": "y",
-              "along": "x",
-              "amplitude": 0.06,
-              "wavelength": 4.2,
-              "phase": 0,
-              "start": -1,
-              "end": 9.4,
-              "falloff": 0.5,
-              "center": [0, 0, 0]
-            }
-          }
-        ],
         "children": [
-          "lump_a",
-          "glint_a"
+          "lump_a_0",
+          "glint_a_0"
         ],
         "modifiers": [
           {
@@ -147,7 +141,7 @@
             "kind": "gridArray",
             "smooth": 0.06,
             "params": {
-              "counts": [7, 1, 7],
+              "counts": [7, 1, 1],
               "spacing": [1.4, 1, 1.4]
             }
           }
@@ -157,9 +151,9 @@
         },
         "gameCollision": false
       },
-      "lump_a": {
-        "id": "lump_a",
-        "name": "lump-a",
+      "lump_a_0": {
+        "id": "lump_a_0",
+        "name": "lump-a-0",
         "kind": "paramesh",
         "transform": {
           "position": [0, -0.04, 0]
@@ -192,9 +186,9 @@
         },
         "gameCollision": false
       },
-      "glint_a": {
-        "id": "glint_a",
-        "name": "glint-a",
+      "glint_a_0": {
+        "id": "glint_a_0",
+        "name": "glint-a-0",
         "kind": "paramesh",
         "transform": {
           "position": [-0.14, 0.21, 0.26],
@@ -230,16 +224,17 @@
         },
         "gameCollision": false
       },
-      "lumps_b": {
-        "id": "lumps_b",
-        "name": "lumps-b",
+      "lumps_a_1": {
+        "id": "lumps_a_1",
+        "name": "lumps-a-1",
         "kind": "group",
         "transform": {
-          "position": [-3.5, 0, -3.5]
+          "position": [-4.2, 0, -2.8]
         },
         "smooth": 0.14,
         "children": [
-          "lump_b"
+          "lump_a_1",
+          "glint_a_1"
         ],
         "modifiers": [
           {
@@ -247,7 +242,7 @@
             "kind": "gridArray",
             "smooth": 0.06,
             "params": {
-              "counts": [6, 1, 6],
+              "counts": [7, 1, 1],
               "spacing": [1.4, 1, 1.4]
             }
           }
@@ -257,9 +252,924 @@
         },
         "gameCollision": false
       },
-      "lump_b": {
-        "id": "lump_b",
-        "name": "lump-b",
+      "lump_a_1": {
+        "id": "lump_a_1",
+        "name": "lump-a-1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.04, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.68, 0, 0],
+              [-0.68, 0, 0],
+              [0, 0.32, 0],
+              [0, -0.32, 0],
+              [0, 0, 0.68],
+              [0, 0, -0.68]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "glint_a_1": {
+        "id": "glint_a_1",
+        "name": "glint-a-1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.14, 0.21, 0.26],
+          "rotation": [0, -45, 0]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m3",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_a_2": {
+        "id": "lumps_a_2",
+        "name": "lumps-a-2",
+        "kind": "group",
+        "transform": {
+          "position": [-4.2, 0, -1.4]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_a_2",
+          "glint_a_2"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [7, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_a_2": {
+        "id": "lump_a_2",
+        "name": "lump-a-2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.04, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.68, 0, 0],
+              [-0.68, 0, 0],
+              [0, 0.32, 0],
+              [0, -0.32, 0],
+              [0, 0, 0.68],
+              [0, 0, -0.68]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "glint_a_2": {
+        "id": "glint_a_2",
+        "name": "glint-a-2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.14, 0.21, 0.26],
+          "rotation": [0, -45, 0]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m3",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_a_3": {
+        "id": "lumps_a_3",
+        "name": "lumps-a-3",
+        "kind": "group",
+        "transform": {
+          "position": [-4.2, 0, 0]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_a_3",
+          "glint_a_3"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [7, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_a_3": {
+        "id": "lump_a_3",
+        "name": "lump-a-3",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.04, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.68, 0, 0],
+              [-0.68, 0, 0],
+              [0, 0.32, 0],
+              [0, -0.32, 0],
+              [0, 0, 0.68],
+              [0, 0, -0.68]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "glint_a_3": {
+        "id": "glint_a_3",
+        "name": "glint-a-3",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.14, 0.21, 0.26],
+          "rotation": [0, -45, 0]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m3",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_a_4": {
+        "id": "lumps_a_4",
+        "name": "lumps-a-4",
+        "kind": "group",
+        "transform": {
+          "position": [-4.2, 0, 1.4]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_a_4",
+          "glint_a_4"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [7, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_a_4": {
+        "id": "lump_a_4",
+        "name": "lump-a-4",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.04, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.68, 0, 0],
+              [-0.68, 0, 0],
+              [0, 0.32, 0],
+              [0, -0.32, 0],
+              [0, 0, 0.68],
+              [0, 0, -0.68]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "glint_a_4": {
+        "id": "glint_a_4",
+        "name": "glint-a-4",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.14, 0.21, 0.26],
+          "rotation": [0, -45, 0]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m3",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_a_5": {
+        "id": "lumps_a_5",
+        "name": "lumps-a-5",
+        "kind": "group",
+        "transform": {
+          "position": [-4.2, 0, 2.8]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_a_5",
+          "glint_a_5"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [7, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_a_5": {
+        "id": "lump_a_5",
+        "name": "lump-a-5",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.04, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.68, 0, 0],
+              [-0.68, 0, 0],
+              [0, 0.32, 0],
+              [0, -0.32, 0],
+              [0, 0, 0.68],
+              [0, 0, -0.68]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "glint_a_5": {
+        "id": "glint_a_5",
+        "name": "glint-a-5",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.14, 0.21, 0.26],
+          "rotation": [0, -45, 0]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m3",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_a_6": {
+        "id": "lumps_a_6",
+        "name": "lumps-a-6",
+        "kind": "group",
+        "transform": {
+          "position": [-4.2, 0, 4.2]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_a_6",
+          "glint_a_6"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [7, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_a_6": {
+        "id": "lump_a_6",
+        "name": "lump-a-6",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.04, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.68, 0, 0],
+              [-0.68, 0, 0],
+              [0, 0.32, 0],
+              [0, -0.32, 0],
+              [0, 0, 0.68],
+              [0, 0, -0.68]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "glint_a_6": {
+        "id": "glint_a_6",
+        "name": "glint-a-6",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.14, 0.21, 0.26],
+          "rotation": [0, -45, 0]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m3",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.3, 0, 0],
+              [-0.3, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.12],
+              [0, 0, -0.12]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_b_0": {
+        "id": "lumps_b_0",
+        "name": "lumps-b-0",
+        "kind": "group",
+        "transform": {
+          "position": [-3.5, 0, -3.5]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_b_0"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [6, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_b_0": {
+        "id": "lump_b_0",
+        "name": "lump-b-0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.06, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.48, 0, 0],
+              [-0.48, 0, 0],
+              [0, 0.24, 0],
+              [0, -0.24, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_b_1": {
+        "id": "lumps_b_1",
+        "name": "lumps-b-1",
+        "kind": "group",
+        "transform": {
+          "position": [-3.5, 0, -2.1]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_b_1"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [6, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_b_1": {
+        "id": "lump_b_1",
+        "name": "lump-b-1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.06, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.48, 0, 0],
+              [-0.48, 0, 0],
+              [0, 0.24, 0],
+              [0, -0.24, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_b_2": {
+        "id": "lumps_b_2",
+        "name": "lumps-b-2",
+        "kind": "group",
+        "transform": {
+          "position": [-3.5, 0, -0.7]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_b_2"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [6, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_b_2": {
+        "id": "lump_b_2",
+        "name": "lump-b-2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.06, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.48, 0, 0],
+              [-0.48, 0, 0],
+              [0, 0.24, 0],
+              [0, -0.24, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_b_3": {
+        "id": "lumps_b_3",
+        "name": "lumps-b-3",
+        "kind": "group",
+        "transform": {
+          "position": [-3.5, 0, 0.7]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_b_3"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [6, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_b_3": {
+        "id": "lump_b_3",
+        "name": "lump-b-3",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.06, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.48, 0, 0],
+              [-0.48, 0, 0],
+              [0, 0.24, 0],
+              [0, -0.24, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_b_4": {
+        "id": "lumps_b_4",
+        "name": "lumps-b-4",
+        "kind": "group",
+        "transform": {
+          "position": [-3.5, 0, 2.1]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_b_4"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [6, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_b_4": {
+        "id": "lump_b_4",
+        "name": "lump-b-4",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.06, 0]
+        },
+        "material": "m1",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.48, 0, 0],
+              [-0.48, 0, 0],
+              [0, 0.24, 0],
+              [0, -0.24, 0],
+              [0, 0, 0.48],
+              [0, 0, -0.48]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lumps_b_5": {
+        "id": "lumps_b_5",
+        "name": "lumps-b-5",
+        "kind": "group",
+        "transform": {
+          "position": [-3.5, 0, 3.5]
+        },
+        "smooth": 0.14,
+        "children": [
+          "lump_b_5"
+        ],
+        "modifiers": [
+          {
+            "id": "gridArray_1",
+            "kind": "gridArray",
+            "smooth": 0.06,
+            "params": {
+              "counts": [6, 1, 1],
+              "spacing": [1.4, 1, 1.4]
+            }
+          }
+        ],
+        "mesher": {
+          "output": "lowpoly"
+        },
+        "gameCollision": false
+      },
+      "lump_b_5": {
+        "id": "lump_b_5",
+        "name": "lump-b-5",
         "kind": "paramesh",
         "transform": {
           "position": [0, -0.06, 0]
@@ -1508,5 +2418,5 @@
     "min": [-6.16, -0.63, -6.16],
     "max": [6.16, 0.78, 6.16]
   },
-  "hash": "5fca51c0072aaddf67eb5d306528a1909878ca10466814ca37b5ecdb300607b9"
+  "hash": "b05600f4cbd3d41f1441f951b40ac57928acec6887bf28ffbfdc168965647166"
 }

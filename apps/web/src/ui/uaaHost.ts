@@ -59,6 +59,20 @@ export interface UaaHost {
 
 const NO_INSETS: Viewport['safeArea'] = { top: 0, right: 0, bottom: 0, left: 0 }
 
+// The device cutouts (notch, home bar) in CSS px, read from env(safe-area-inset-*) through a throwaway probe; zeros when
+// the browser has none or there is no DOM. game.html uses viewport-fit=cover so the insets are reported.
+function deviceSafeArea(): Viewport['safeArea'] {
+  if (typeof document === 'undefined' || document.body === null) return NO_INSETS
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)'
+  document.body.appendChild(probe)
+  const cs = getComputedStyle(probe)
+  const px = (v: string): number => Math.max(0, Number.parseFloat(v) || 0)
+  const insets = { top: px(cs.paddingTop), right: px(cs.paddingRight), bottom: px(cs.paddingBottom), left: px(cs.paddingLeft) }
+  probe.remove()
+  return insets
+}
+
 // ui/*.ui.json raw texts keyed by file name (logo.crown.ui.json ...), bundled by Vite.
 function uiAssetTexts(): Record<string, string> {
   const files = import.meta.glob<string>('../../../../ui/*.ui.json', { query: '?raw', import: 'default', eager: true })
@@ -175,7 +189,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     }
     const fonts = createFontRegistry(fontEntries(uiFontsText(), document.baseURI))
     await fonts.loadAll()
-    const viewport: Viewport = { width: o.width, height: o.height, pixelRatio: o.dpr, safeArea: o.safeArea ?? NO_INSETS }
+    const viewport: Viewport = { width: o.width, height: o.height, pixelRatio: o.dpr, safeArea: o.safeArea ?? deviceSafeArea() }
     ui = createUi({ doc, assets, fonts, renderer, viewport, nowMs: performance.now() })
   } catch (e) {
     renderer?.destroy()
@@ -184,7 +198,6 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
   }
 
   let dpr = o.dpr
-  const safeArea = o.safeArea ?? NO_INSETS
   let destroyed = false
   // The last props set per widget id: present() runs every page frame and uaa re-lays out on each set.
   const last = new Map<string, string>()
@@ -225,7 +238,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     resize(width, height, ratio) {
       dpr = ratio
       sizeCanvas(canvas, width, height, ratio)
-      ui.resize({ width, height, pixelRatio: ratio, safeArea })
+      ui.resize({ width, height, pixelRatio: ratio, safeArea: o.safeArea ?? deviceSafeArea() })
     },
     widgetRect: (id) => ui.rectOf(id),
     currentScreen: () => ui.screen(),

@@ -11,6 +11,13 @@ const RESUME_GRACE_MS = 60_000
 const SEQUENCE_MAX = 1_000_000
 // The hub also knows resume, which the game's copy leaves out.
 const CLIENT_TYPES: readonly unknown[] = ['create', 'join', 'act', 'bye', 'queue', 'unqueue', 'resume', 'ping']
+// GameSaloon's lobby extension (gamesaloon src/lobby, docs/lobby.md), present only with opts.lobby.
+const LOBBY_TYPES: readonly unknown[] = ['lobby_enter', 'lobby_pick', 'lobby_leave']
+interface Lobby {
+  id: string; key: string; seats: number; cadence: boolean; phase: 'waiting' | 'playing'; openedAt: number; startsAt: number
+  members: { id: number; payload: unknown }[]; spectators: Set<number>; room: string | null; seed: number
+}
+interface LobbyWant { key: string; game: string; seats: number; cadence: boolean; payload: unknown }
 
 type Obj = Record<string, unknown>
 interface Client { id: number; sock: Sock; room: string | null; cadence: boolean; invalid: number; times: number[] }
@@ -57,8 +64,17 @@ export class LoopbackRelay {
   private waitLists = new Map<string, Waiter[]>()
   private recentWaitsMs: number[] = []
   private quickSeq = 0
+  private lobbyOpts: { waitMs: number; minPlayers: number } | null
+  private lobbies = new Map<string, Lobby>()
+  private lobbyOf = new Map<number, string>()
+  private lobbyWants = new Map<number, LobbyWant>()
+  private lobbySeq = 0
 
-  constructor(opts?: { seed?: number }) { this.rng = new Rng(opts?.seed ?? 1) }
+  /** opts.lobby turns on the GameSaloon lobby extension (waitMs default 60000, minPlayers default 1). */
+  constructor(opts?: { seed?: number; lobby?: { waitMs?: number; minPlayers?: number } }) {
+    this.rng = new Rng(opts?.seed ?? 1)
+    this.lobbyOpts = opts?.lobby ? { waitMs: opts.lobby.waitMs ?? 60_000, minPlayers: opts.lobby.minPlayers ?? 1 } : null
+  }
 
   factory(): WsFactory {
     return (_url) => {
@@ -111,6 +127,7 @@ export class LoopbackRelay {
     if (typeof raw !== 'string' || utf8.encode(raw).length > RELAY_MAX_MSG_BYTES) return this.dropInvalid(c)
     let m: unknown
     try { m = JSON.parse(raw) } catch { return this.dropInvalid(c) }
+    if (isObj(m) && this.lobbyOpts && LOBBY_TYPES.includes(m.t)) return this.lobbyMessage(c, m, now)
     if (!isObj(m) || !CLIENT_TYPES.includes(m.t)) return this.dropInvalid(c)
     if (!validMsg(m)) {
       // The hub coerces join codes and answers a bad queue payload instead of counting it invalid.
@@ -135,7 +152,7 @@ export class LoopbackRelay {
       if (free < 0 || room.started) return this.error(c.id, 'room full')
       this.seat(room, free, c, m.payload)
       if (room.seats.includes(null)) return this.send(c.id, { t: 'waiting', seat: free, players: room.players })
-      return this.startRoom(room)
+      this.startRoom(room)
     }
     if (t === 'queue') return this.queue(c, m, now)
     if (t === 'unqueue') { this.dropFromWaitLists(c.id); return this.send(c.id, { t: 'unqueued' }) }
@@ -148,7 +165,10 @@ export class LoopbackRelay {
       if (n <= room.recv[side]) return this.send(c.id, { t: 'ack', n })
       room.recv[side] = n
       this.send(c.id, { t: 'ack', n })
-      return this.broadcast(room, { t: 'act', a: m.a, n, from: side }, side)
+      this.broadcast(room, { t: 'act', a: m.a, n, from: side }, side)
+      const watched = [...this.lobbies.values()].find((l) => l.room === room.code)
+      if (watched) for (const w of watched.spectators) this.send(w, { t: 'lobby_act', id: watched.id, a: m.a, n, from: side })
+      return
     }
     if (t === 'ping') return this.send(c.id, { t: 'pong' })
     // No resume here (the game never resumes): every token gets the hub's unknown-token answer.
@@ -188,7 +208,7 @@ export class LoopbackRelay {
     room.payloads[i] = payload ?? null
     c.room = room.code
   }
-  private startRoom(room: Room): void {
+  private startRoom(room: Room): number {
     const seed = (this.random() * 0xffffffff) >>> 0
     const hostStarts = this.random() < 0.5
     const tokens = Array.from({ length: room.players }, () => this.uuid())
@@ -201,9 +221,11 @@ export class LoopbackRelay {
       if (room.players === 2) msg.opp = room.payloads[1 - s]
       this.send(c.id, msg)
     })
+    return seed
   }
   // Grace deadlines of dropped seats, checked at each pump (the hub ticks them).
   private tick(now: number): void {
+    this.startDueLobbies(now)
     for (const room of [...this.rooms.values()]) {
       for (let side = 0; side < room.players && this.rooms.has(room.code); side++) if (now >= (room.down[side] ?? Infinity)) this.endSeat(room, side)
     }
@@ -223,7 +245,7 @@ export class LoopbackRelay {
   }
   private disconnect(id: number): void {
     const c = this.clients.get(id)
-    if (c) { this.clients.delete(id); this.cleanup(c) }
+    if (c) { this.clients.delete(id); this.cleanup(c); this.lobbyLeave(id, this.now()) }
   }
   // A disconnect holds a started seat for the grace (dropped); a bye, or any leave before matched, ends it (left).
   private cleanup(c: Client, graceful = false): void {
@@ -250,10 +272,16 @@ export class LoopbackRelay {
     this.broadcast(room, { t: 'opp_left' }, side)
     room.seats.forEach((id) => this.unseat(id))
     this.rooms.delete(room.code)
+    const ended = [...this.lobbies.values()].find((l) => l.room === room.code)
+    if (ended) {
+      this.closeLobby(ended)
+      for (const w of ended.spectators) this.send(w, { t: 'lobby_closed', id: ended.id, reason: 'ended' })
+    }
   }
   private unseat(id: number | null): void {
     const c = id === null ? undefined : this.clients.get(id)
-    if (c) { c.room = null; c.cadence = false }
+    // The send budget belongs to the seat: a fresh (or returning) connection starts a new window.
+    if (c) { c.room = null; c.cadence = false; c.times = [] }
   }
   private dropFromWaitLists(id: number): void {
     for (const [key, list] of this.waitLists) {
@@ -271,6 +299,108 @@ export class LoopbackRelay {
     if (!c) return
     this.serverLog.push({ to: id, t: msg.t as string })
     this.enqueue({ k: 'out', s: c.sock, data: JSON.stringify(msg) })
+  }
+  private lobbyMessage(c: Client, m: Obj, now: number): void {
+    if (m.t === 'lobby_leave') {
+      this.lobbyWants.delete(c.id)
+      this.lobbyLeave(c.id, now)
+      return this.send(c.id, { t: 'lobby_left' })
+    }
+    if (c.room !== null) return this.send(c.id, { t: 'lobby_error', reason: 'in_session' })
+    if (m.t === 'lobby_enter') {
+      const seats = m.seats
+      if (typeof m.game !== 'string' || !isInt(seats, 1, RELAY_MAX_PLAYERS)) return this.dropInvalid(c)
+      const want: LobbyWant = { key: `${m.game}|${seats}|${m.cadence ? 1 : 0}`, game: m.game, seats: seats as number, cadence: m.cadence === true, payload: m.payload ?? null }
+      this.lobbyLeave(c.id, now)
+      const open = [...this.lobbies.values()].filter((l) => l.key === want.key).sort((a, b) => a.openedAt - b.openedAt)
+      if (!open.length) return this.openLobby(c.id, want, now)
+      this.lobbyWants.set(c.id, want)
+      return this.send(c.id, { t: 'lobby_choice', lobbies: open.map((l) => this.lobbySummary(l, now)) })
+    }
+    const want = this.lobbyWants.get(c.id)
+    if (!want) return this.send(c.id, { t: 'lobby_error', reason: 'not_entered' })
+    if (m.action === 'new') { this.lobbyWants.delete(c.id); return this.openLobby(c.id, want, now) }
+    const l = this.lobbies.get(String(m.id))
+    if (!l) return this.send(c.id, { t: 'lobby_error', reason: 'unknown_lobby' })
+    if (m.action === 'join') {
+      if (l.phase !== 'waiting' || l.members.length >= l.seats) return this.send(c.id, { t: 'lobby_error', reason: 'lobby_closed' })
+      this.lobbyWants.delete(c.id)
+      l.members.push({ id: c.id, payload: want.payload })
+      this.lobbyOf.set(c.id, l.id)
+      this.publishLobby(l, now)
+      return this.startDueLobbies(now)
+    }
+    if (m.action !== 'spectate') return this.dropInvalid(c)
+    this.lobbyWants.delete(c.id)
+    l.spectators.add(c.id)
+    this.lobbyOf.set(c.id, l.id)
+    this.lobbyStateTo(c.id, l, now)
+    if (l.phase === 'playing') this.lobbyWatch(c.id, l)
+  }
+  private openLobby(id: number, want: LobbyWant, now: number): void {
+    const l: Lobby = {
+      id: `L${++this.lobbySeq}`, key: want.key, seats: want.seats, cadence: want.cadence, phase: 'waiting', openedAt: now,
+      startsAt: now + this.lobbyOpts!.waitMs, members: [{ id, payload: want.payload }], spectators: new Set(), room: null, seed: 0,
+    }
+    this.lobbies.set(l.id, l)
+    this.lobbyOf.set(id, l.id)
+    this.publishLobby(l, now)
+    this.startDueLobbies(now)
+  }
+  private lobbySummary(l: Lobby, now: number): Obj {
+    const canJoin = l.phase === 'waiting' && l.members.length < l.seats
+    return {
+      id: l.id, phase: l.phase, players: l.members.length, seats: l.seats,
+      startsInMs: l.phase === 'waiting' ? Math.max(0, l.startsAt - now) : 0,
+      actions: canJoin ? ['join', 'spectate'] : ['spectate'], names: l.members.map((e) => e.payload),
+    }
+  }
+  private lobbyStateTo(id: number, l: Lobby, now: number): void {
+    const seat = l.members.findIndex((e) => e.id === id)
+    this.send(id, {
+      t: 'lobby_state', id: l.id, phase: l.phase, role: seat >= 0 ? 'player' : 'spectator', seat,
+      players: l.members.map((e) => e.payload), seats: l.seats,
+      startsInMs: l.phase === 'waiting' ? Math.max(0, l.startsAt - now) : 0, waitMs: this.lobbyOpts!.waitMs,
+    })
+  }
+  private publishLobby(l: Lobby, now: number): void {
+    for (const e of l.members) this.lobbyStateTo(e.id, l, now)
+    for (const w of l.spectators) this.lobbyStateTo(w, l, now)
+  }
+  // No act log is kept here: a spectator joining a playing round gets replay:false (no catch-up).
+  private lobbyWatch(id: number, l: Lobby): void {
+    this.send(id, { t: 'lobby_watch', id: l.id, session: l.room, seed: l.seed, players: l.members.length, opps: l.members.map((e) => e.payload), replay: false })
+  }
+  private lobbyLeave(id: number, now: number): void {
+    const lid = this.lobbyOf.get(id)
+    const l = lid === undefined ? undefined : this.lobbies.get(lid)
+    this.lobbyOf.delete(id)
+    if (!l) return
+    l.spectators.delete(id)
+    if (l.phase !== 'waiting') return
+    l.members = l.members.filter((e) => e.id !== id)
+    if (l.members.length) return this.publishLobby(l, now)
+    this.closeLobby(l)
+    for (const w of l.spectators) this.send(w, { t: 'lobby_closed', id: l.id, reason: 'empty' })
+  }
+  private closeLobby(l: Lobby): void {
+    this.lobbies.delete(l.id)
+    for (const e of l.members) if (this.lobbyOf.get(e.id) === l.id) this.lobbyOf.delete(e.id)
+    for (const w of l.spectators) if (this.lobbyOf.get(w) === l.id) this.lobbyOf.delete(w)
+  }
+  private startDueLobbies(now: number): void {
+    if (!this.lobbyOpts) return
+    for (const l of [...this.lobbies.values()]) {
+      if (l.phase !== 'waiting') continue
+      const full = l.members.length >= l.seats
+      if (!full && !(now >= l.startsAt && l.members.length >= this.lobbyOpts.minPlayers)) continue
+      const room = this.makeRoom(`q${++this.quickSeq}`, l.members.length, l.cadence)
+      l.members.forEach((e, i) => { room.seats[i] = e.id; room.payloads[i] = e.payload })
+      l.phase = 'playing'
+      l.room = room.code
+      l.seed = this.startRoom(room)
+      for (const w of l.spectators) { this.lobbyStateTo(w, l, now); this.lobbyWatch(w, l) }
+    }
   }
   private newCode(): string | null {
     for (let i = 0; i < 50; i++) {

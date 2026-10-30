@@ -83,6 +83,8 @@ export async function packWavedash(opts: { outDir: string }): Promise<{ files: s
     entry: ENTRY,
     raa: raaVersion(root),
     mama: mamaStamp(root),
+    // Only whether the build had a default relay (VITE_RF_SERVER, read from the build environment): never its value.
+    defaultServer: (process.env.VITE_RF_SERVER ?? '').trim() !== '',
   }
   writeFileSync(join(upload, BUILD_STAMP), `${JSON.stringify(stamp, null, 2)}\n`)
   writeFileSync(join(out, CONFIG_NAME), wavedashToml())

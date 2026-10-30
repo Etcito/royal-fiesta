@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { assetDocumentText, assetFileText } from '../packages/game/src/gameAsset.ts'
 
 export type GuardRule =
   | 'binary-ext'
@@ -8,6 +10,7 @@ export type GuardRule =
   | 'not-utf8'
   | 'too-large'
   | 'asset-outside-fixtures'
+  | 'asset-not-modeler-valid'
   | 'fixture-not-json'
   | 'fixture-too-large'
   | 'public-leak'
@@ -23,7 +26,7 @@ export const BINARY_EXTS: readonly string[] = [
   '.tga', '.ico', '.ktx2', '.dds', '.basis', '.exr', '.hdr', '.bin', '.wasm',
   '.zip', '.gz', '.tgz', '.7z', '.tar', '.rar', '.mp3', '.ogg', '.wav', '.flac',
   '.mp4', '.webm', '.mov', '.fbx', '.obj', '.blend', '.psd', '.ttf', '.otf',
-  '.woff', '.woff2', '.pdf',
+  '.woff', '.woff2', '.pdf', '.mesh',
 ]
 
 export const MAX_FILE_BYTES = 262144
@@ -55,6 +58,11 @@ const PLACEMENT: readonly Placement[] = [
     where: `fixtures/ or assets/<world>/ (${WORLDS.join('|')})`,
   },
   { suffix: '.ui.json', allowed: (file) => file.startsWith('ui/'), where: 'ui/' },
+  {
+    suffix: '.haa.json',
+    allowed: (file) => file.startsWith('fixtures/') || file.startsWith('audio/'),
+    where: 'fixtures/ or audio/',
+  },
 ]
 
 // The guard's own files spell out every pattern on purpose.
@@ -217,6 +225,8 @@ export function checkFile(file: string, bytes: Uint8Array): GuardViolation[] {
     })
   }
 
+  if (decoded !== null && isWorldAsset(file)) violations.push(...modelerAssetViolations(file, decoded))
+
   if (underFixtures) {
     if (!name.endsWith('.json')) {
       violations.push({ path: file, rule: 'fixture-not-json', detail: 'not .json' })
@@ -241,6 +251,49 @@ export function checkFile(file: string, bytes: Uint8Array): GuardViolation[] {
   }
 
   return violations
+}
+
+const NODE_ID = /^[a-z][a-z0-9_]{0,47}$/
+
+function isWorldAsset(file: string): boolean {
+  return file.endsWith('.asset.json') && file.startsWith('assets/') && file.split('/').length === 3
+}
+
+// SDF Modeler reads an asset strictly: node ids and shape names are lowercase slugs (letters, digits, underscore) and
+// the hash is the sha256 of its own document text. The game parser also accepts a canonicalJson hash and any id, so an
+// asset written by a tool can load in the game and still be refused by the modeler's asset browser ("placed assets
+// could not be found"). Assets must therefore be saved in the modeler's form.
+function modelerAssetViolations(file: string, decoded: string): GuardViolation[] {
+  const out: GuardViolation[] = []
+  let asset: { hash?: unknown; document?: { nodes?: Record<string, { id?: unknown }>; shapes?: Record<string, unknown> } }
+  try {
+    asset = JSON.parse(decoded)
+  } catch {
+    return out
+  }
+  const doc = asset.document
+  if (doc === null || typeof doc !== 'object') return out
+  const bad = [
+    ...Object.entries(doc.nodes ?? {}).flatMap(([key, n]) => [key, n?.id]),
+    ...Object.keys(doc.shapes ?? {}),
+  ].filter((id): id is string => typeof id === 'string' && !NODE_ID.test(id))
+  if (bad.length > 0) {
+    out.push({ path: file, rule: 'asset-not-modeler-valid', detail: `node ids and shape names must match ${NODE_ID}: ${[...new Set(bad)].slice(0, 3).join(', ')}` })
+  }
+  const hash = createHash('sha256').update(assetDocumentText(doc)).digest('hex')
+  if (asset.hash !== hash) {
+    out.push({ path: file, rule: 'asset-not-modeler-valid', detail: 'hash is not the sha256 of the document text SDF Modeler saves; save the asset again from SDF Modeler' })
+  }
+  // The modeler's text is the canonical form: any other layout (compact clips, unrounded numbers, another key order)
+  // would come back as a pure formatting diff on the next modeler save, so it is refused at commit time.
+  const canonical = assetFileText(asset)
+  if (canonical !== decoded) {
+    const a = decoded.split('\n'), b = canonical.split('\n')
+    let line = 0
+    while (line < a.length && a[line] === b[line]) line++
+    out.push({ path: file, rule: 'asset-not-modeler-valid', detail: `text is not the canonical SDF Modeler serialization of its own content (first difference at line ${line + 1}); save the asset again from SDF Modeler or write it with assetFileText` })
+  }
+  return out
 }
 
 export function checkPaths(root: string, files: readonly string[]): GuardViolation[] {

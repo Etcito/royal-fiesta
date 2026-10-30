@@ -1,4 +1,4 @@
-// Binds a MatchSim to a RenderPort: bean and obstacle instances, interpolated poses and the follow camera.
+// Binds a MatchSim to a RenderPort: bean, obstacle and mechanism instances and the follow camera.
 // View side only: reads the sim view API and the smoother, never writes either.
 import { courseFrame, roundReady } from './roundLoad.ts'
 import type { CorrectionSmoother } from '@gamesaloon/rollback'
@@ -6,14 +6,15 @@ import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
+import type { BodyRef } from '@royal-fiesta/sim/mechanismSpec'
 import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
-import { seatTint } from './palette.ts'
-import type { CameraPose, RenderPort, SkinnedAssetT, SkinRigT } from './port.ts'
+import { PALETTE, seatTint } from './palette.ts'
+import type { CameraPose, QuatT, RenderPort, SkinnedAssetT, SkinRigT, Vec3T } from './port.ts'
 
 // Visual IK inputs, read from this tick's sim state only: the capsule's foot contact while grounded, the
 // grab reach point in front while grabbing, and a forward look target. Copies, so the sim is never shared.
@@ -84,6 +85,38 @@ function observeSteps(sim: MatchSim, observer: StepObserver): () => void {
 }
 // Pose layout in the obstacle buffers: t xyz then r xyzw.
 const OB = 7
+
+function interpolatePose(prev: Float64Array, cur: Float64Array, b: number, alpha: number,
+  t: [number, number, number], r: [number, number, number, number]): void {
+  for (let k = 0; k < 3; k++) t[k] = prev[b + k] + (cur[b + k] - prev[b + k]) * alpha
+  // nlerp along the shorter arc.
+  const dot = prev[b + 3] * cur[b + 3] + prev[b + 4] * cur[b + 4] + prev[b + 5] * cur[b + 5] + prev[b + 6] * cur[b + 6]
+  const sign = dot < 0 ? -1 : 1
+  let n = 0
+  for (let k = 0; k < 4; k++) {
+    const a = prev[b + 3 + k]
+    r[k] = a + (cur[b + 3 + k] * sign - a) * alpha
+    n += r[k] * r[k]
+  }
+  n = Math.sqrt(n)
+  for (let k = 0; k < 4; k++) r[k] /= n
+}
+
+interface MechanismInstance {
+  instance: number
+  ref: BodyRef
+  // Where the whole asset draws at rest: the item's `place` (course items, whose t/r are identity) or its pose.
+  placeT: Vec3T
+  placeR: QuatT
+  // The body rest in world space (item pose * body rest), the frame the sim reports body poses in.
+  restT: Vec3T
+  restR: QuatT
+  restInvR: QuatT
+  fixed: boolean
+  s: Vec3T
+  prev: Float64Array
+  cur: Float64Array
+}
 
 // ---- costume attachment math ---------------------------------------------------------------------------
 // The rig as the SDF Modeler asset carries it: S16 bones with rest TRS and named attach points (in bone space).
@@ -228,6 +261,7 @@ export class SceneView {
   private beans: number[] = []
   private beanShown: boolean[] = []
   private obstacles: number[] = []
+  private mechanisms: MechanismInstance[] = []
   private course: ResolvedCourse | null = null
   private ci = -1
   private tick = -1
@@ -328,7 +362,11 @@ export class SceneView {
   }
 
   get instanceCount(): number {
-    return this.beans.length + this.obstacles.length
+    return this.beans.length + this.obstacles.length + this.mechanisms.length
+  }
+
+  get mechanismInstanceCount(): number {
+    return this.mechanisms.length
   }
 
   get courseIndex(): number {
@@ -368,20 +406,20 @@ export class SceneView {
     const cur = this.obCur
     for (let i = 0; i < this.obstacles.length; i++) {
       const b = i * OB
-      for (let k = 0; k < 3; k++) t[k] = prev[b + k] + (cur[b + k] - prev[b + k]) * alpha
-      // nlerp along the shorter arc.
-      const dot = prev[b + 3] * cur[b + 3] + prev[b + 4] * cur[b + 4] + prev[b + 5] * cur[b + 5] + prev[b + 6] * cur[b + 6]
-      const sign = dot < 0 ? -1 : 1
-      let n = 0
-      for (let k = 0; k < 4; k++) {
-        const a = prev[b + 3 + k]
-        r[k] = a + (cur[b + 3 + k] * sign - a) * alpha
-        n += r[k] * r[k]
-      }
-      n = Math.sqrt(n)
-      for (let k = 0; k < 4; k++) r[k] /= n
+      interpolatePose(prev, cur, b, alpha, t, r)
       const s = this.course!.obstacles[i].s
       port.setTransform(this.obstacles[i], t, r, [s.x, s.y, s.z])
+    }
+    for (const body of this.mechanisms) {
+      if (body.fixed) {
+        port.setTransform(body.instance, body.placeT, body.placeR, body.s)
+        continue
+      }
+      interpolatePose(body.prev, body.cur, 0, alpha, t, r)
+      // The placement carries the asset; the body's motion since rest (pose * inverse world rest) moves it.
+      const motion = quatMul(r, body.restInvR)
+      const arm = quatRotate(motion, [body.placeT[0] - body.restT[0], body.placeT[1] - body.restT[1], body.placeT[2] - body.restT[2]])
+      port.setTransform(body.instance, [t[0] + arm[0], t[1] + arm[1], t[2] + arm[2]], quatMul(motion, body.placeR), body.s)
     }
 
     const c = this.view
@@ -481,6 +519,7 @@ export class SceneView {
     this.worn = []
     for (let i = 0; i < this.beans.length; i++) this.port.destroyInstance(this.beans[i])
     for (let i = 0; i < this.obstacles.length; i++) this.port.destroyInstance(this.obstacles[i])
+    this.destroyMechanisms()
     this.beans = []
     this.beanShown = []
     this.obstacles = []
@@ -500,6 +539,7 @@ export class SceneView {
 
   private loadObstacles(sim: MatchSim, course: ResolvedCourse | null): void {
     for (let i = 0; i < this.obstacles.length; i++) this.port.destroyInstance(this.obstacles[i])
+    this.destroyMechanisms()
     this.obstacles = []
     this.course = course
     const n = course === null ? 0 : sim.obstacleCount()
@@ -509,6 +549,33 @@ export class SceneView {
     }
     this.obPrev = new Float64Array(n * OB)
     this.obCur = new Float64Array(n * OB)
+    const port = this.port as RenderPort & { setPartFilter?: (instance: number, parts: readonly string[] | null) => void }
+    for (let i = 0; i < sim.mechanismItemCount(); i++) {
+      const item = sim.mechanismItem(i)
+      const asset = this.asset(item.asset, this.opts.assets(item.asset))
+      for (let b = 0; b < item.bodies.length; b++) {
+        const body = item.bodies[b]
+        const instance = port.createInstance(asset, null)
+        const itemR: QuatT = [item.r.x, item.r.y, item.r.z, item.r.w]
+        const local = quatRotate(itemR, [body.rest.t.x, body.rest.t.y, body.rest.t.z])
+        const restR = quatMul(itemR, [body.rest.r.x, body.rest.r.y, body.rest.r.z, body.rest.r.w])
+        const place = item.place ?? item
+        this.mechanisms.push({
+          instance, ref: { item: i, body: b },
+          placeT: [place.t.x, place.t.y, place.t.z], placeR: [place.r.x, place.r.y, place.r.z, place.r.w],
+          restT: [item.t.x + local[0], item.t.y + local[1], item.t.z + local[2]], restR, restInvR: conjugate(restR),
+          fixed: body.type === 'fixed',
+          s: [item.s.x, item.s.y, item.s.z], prev: new Float64Array(OB), cur: new Float64Array(OB),
+        })
+        if (typeof port.setPartFilter === 'function') port.setPartFilter(instance, body.parts ?? null)
+        else if (b > 0) port.setVisible(instance, false)
+      }
+    }
+  }
+
+  private destroyMechanisms(): void {
+    for (let i = this.mechanisms.length - 1; i >= 0; i--) this.port.destroyInstance(this.mechanisms[i].instance)
+    this.mechanisms = []
   }
 
   private dress(course: ResolvedCourse | null): void {
@@ -583,6 +650,12 @@ export class SceneView {
       cur[b + 5] = q.r.z
       cur[b + 6] = q.r.w
       if (!keep) for (let k = 0; k < OB; k++) prev[b + k] = cur[b + k]
+    }
+    for (const body of this.mechanisms) {
+      if (keep) [body.prev, body.cur] = [body.cur, body.prev]
+      if (sim.mechanismBodyPose(body.ref, q)) body.cur.set([q.t.x, q.t.y, q.t.z, q.r.x, q.r.y, q.r.z, q.r.w])
+      else body.cur.set([body.restT[0], body.restT[1], body.restT[2], body.restR[0], body.restR[1], body.restR[2], body.restR[3]])
+      if (!keep) body.prev.set(body.cur)
     }
   }
 

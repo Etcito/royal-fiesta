@@ -1,0 +1,368 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "ice.floor-tile",
+  "name": "Frosted Ice Floor Tile",
+  "category": "obstacle",
+  "world": "ice",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Frosted Ice Floor Tile",
+    "root": [
+      "ice_floor_tile"
+    ],
+    "nodes": {
+      "ice_floor_tile": {
+        "id": "ice_floor_tile",
+        "name": "Frosted Ice Floor Tile",
+        "kind": "group",
+        "children": [
+          "collider_0",
+          "ice_sides",
+          "frosted_top",
+          "snow_rim_north",
+          "snow_rim_south",
+          "snow_rim_east",
+          "snow_rim_west"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "ice.floor-tile",
+          "category": "obstacle",
+          "world": "ice"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5, 0, 0],
+              [-5, 0, 0],
+              [0, 0.5, 0],
+              [0, -0.5, 0],
+              [0, 0, 5],
+              [0, 0, -5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "ice_sides": {
+        "id": "ice_sides",
+        "name": "ice_sides",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.325, 0]
+        },
+        "round": 0.1,
+        "material": "ice_side",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5.1, 0, 0],
+              [-5.1, 0, 0],
+              [0, 0.675, 0],
+              [0, -0.675, 0],
+              [0, 0, 5.1],
+              [0, 0, -5.1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "frosted_top": {
+        "id": "frosted_top",
+        "name": "frosted_top",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.375, 0]
+        },
+        "round": 0.05,
+        "material": "ice_top",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5.02, 0, 0],
+              [-5.02, 0, 0],
+              [0, 0.125, 0],
+              [0, -0.125, 0],
+              [0, 0, 5.02],
+              [0, 0, -5.02]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "snow_rim_north": {
+        "id": "snow_rim_north",
+        "name": "snow_rim_north",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.46, -5.02]
+        },
+        "round": 0.04,
+        "material": "snow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5.18, 0, 0],
+              [-5.18, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 0.16],
+              [0, 0, -0.16]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "snow_rim_south": {
+        "id": "snow_rim_south",
+        "name": "snow_rim_south",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.46, 5.02]
+        },
+        "round": 0.04,
+        "material": "snow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5.18, 0, 0],
+              [-5.18, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 0.16],
+              [0, 0, -0.16]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "snow_rim_east": {
+        "id": "snow_rim_east",
+        "name": "snow_rim_east",
+        "kind": "paramesh",
+        "transform": {
+          "position": [5.02, 0.46, 0]
+        },
+        "round": 0.04,
+        "material": "snow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.16, 0, 0],
+              [-0.16, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 4.86],
+              [0, 0, -4.86]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "snow_rim_west": {
+        "id": "snow_rim_west",
+        "name": "snow_rim_west",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-5.02, 0.46, 0]
+        },
+        "round": 0.04,
+        "material": "snow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.16, 0, 0],
+              [-0.16, 0, 0],
+              [0, 0.06, 0],
+              [0, -0.06, 0],
+              [0, 0, 4.86],
+              [0, 0, -4.86]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "ice_top": {
+        "name": "Frosted pale blue ice",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#bfe6ff",
+                "in.roughness": 0.05
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "ice_side": {
+        "name": "Blue ice sides",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#7cc4f0",
+                "in.roughness": 0.05
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "snow": {
+        "name": "White snow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.8
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [5, 0.5, 5]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [-5.25, -1, -5.25],
+    "max": [5.25, 0.98, 5.25]
+  },
+  "hash": "713b635abf749cdb11bb7f7cbb158fa157c5346c63a90eaeaa48dc69d29f85f9"
+}

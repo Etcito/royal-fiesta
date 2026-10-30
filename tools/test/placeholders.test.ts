@@ -10,7 +10,8 @@ import type { GameAsset, GameAssetSource } from '../../packages/game/src/gameAss
 import { collidersOf, parsePrims } from '../../packages/game/src/prims.ts'
 import { readAuthored } from '../authored.ts'
 import { repoRoot } from '../bricks.ts'
-import { buildContent } from '../placeholders.ts'
+import { checkFile } from '../guard.ts'
+import { buildContent, slugId } from '../placeholders.ts'
 
 const root = repoRoot()
 const readJson = (rel: string): unknown => JSON.parse(readFileSync(contentPath(rel, root), 'utf8'))
@@ -31,7 +32,7 @@ async function loadAssets(): Promise<Map<string, { asset: GameAsset; source: Gam
 test('buildContent equals the files on disk', async () => {
   const authored = readAuthored(root)
   const built = await buildContent(authored)
-  const disk = [...filesIn('assets', '.json'), ...filesIn('courses', '.course.json')].sort()
+  const disk = [...filesIn('assets', '.asset.json'), ...filesIn('courses', '.course.json')].sort()
   const builtKeys = [...built.keys()]
   assert.deepEqual([...builtKeys, ...authored.files].sort(), disk)
   for (const f of authored.files) {
@@ -84,4 +85,18 @@ test('courses load through an in-memory asset source', async () => {
   assert.equal(podium?.kind, 'podium')
   assert.equal(podium?.sim, null)
   assert.equal(podium?.podium?.spots.length, 3)
+})
+
+test('generated assets are SDF Modeler valid: modeler hash, slug node ids', async () => {
+  const built = await buildContent({ files: [] })
+  let n = 0
+  for (const [path, text] of built) {
+    if (!path.endsWith('.asset.json')) continue
+    n++
+    const bad = checkFile(path, Buffer.from(text)).filter((v) => v.rule === 'asset-not-modeler-valid')
+    assert.deepEqual(bad, [], path)
+  }
+  assert.ok(n >= 16)
+  assert.equal(slugId('post-A.left'), 'post_a_left')
+  assert.equal(slugId('1-x'), 'nx')
 })

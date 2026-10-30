@@ -61,33 +61,6 @@
       "height": 512
     },
     {
-      "screen": "queue",
-      "inputs": [
-        {
-          "kind": "key",
-          "key": "Escape",
-          "on": "pause",
-          "events": [
-            "keydown",
-            "keyup"
-          ]
-        },
-        {
-          "kind": "key",
-          "key": "Enter",
-          "on": "hub",
-          "events": [
-            "keydown",
-            "keyup"
-          ]
-        }
-      ],
-      "capture": "out/ui/queue.png",
-      "sha256": "2558b9a0def2558155795cd366dea7efa5bcf771bcc36a02d88d3a91bc5b0bd1",
-      "width": 512,
-      "height": 512
-    },
-    {
       "screen": "countdown",
       "inputs": [
         {
@@ -345,5 +318,10 @@
       "width": 512,
       "height": 512
     }
+  ],
+  "onlineOnly": [
+    "queue",
+    "lobbyChoice",
+    "lobbyLive"
   ]
 }

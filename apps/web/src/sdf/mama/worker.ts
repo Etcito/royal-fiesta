@@ -16,6 +16,7 @@ import { sha256Hex } from '@etcito/mama/core/image/sha256.ts'
 import { ensureMesher, setMesherWasm } from '@etcito/mama/core/paramesh/runtime.ts'
 import { inlinePool } from '@etcito/mama/core/compute/pool.ts'
 import type { GroupMesher, SdfDocument } from '@etcito/mama/core/doc/types.ts'
+import type { NormalVolume } from '@etcito/mama/core/game/normal-volume.ts'
 
 // MaterialFull fields in declaration order (MAMA core/material-graph/wgsl-parts.ts). The renderer
 // reads exactly these names out of every compiled graph material.
@@ -32,12 +33,14 @@ interface PayloadMesh {
 // S18 joint/weight streams of a skinned part, in the vertex order the render port concatenates its meshes.
 interface PayloadSkin { joints: Uint16Array; weights: Float32Array }
 
+// normalVolume: MAMA's per-pixel normal volume of a Paramesh part (core/game/normal-volume.ts), in the part's mesh space.
 interface PayloadPart {
   partId: string
   name: string
   frame: Float64Array
   meshes: PayloadMesh[]
   skin?: PayloadSkin
+  normalVolume?: NormalVolume
 }
 
 interface PayloadGroup { group: string; parts: PayloadPart[] }
@@ -196,7 +199,8 @@ function toPayload(results: readonly AssetMeshResult[], doc: SdfDocument, assetI
         built.push(mesh)
       }
       const skin = partSkin(built)
-      payloadParts.push({ partId: part.partId, name: part.name, frame: part.frame, meshes: built.map(m => m.mesh), ...(skin ? { skin } : {}) })
+      payloadParts.push({ partId: part.partId, name: part.name, frame: part.frame, meshes: built.map(m => m.mesh), ...(skin ? { skin } : {}),
+        ...(part.normalVolume ? { normalVolume: part.normalVolume } : {}) })
     }
     groups.push({ group: result.group, parts: payloadParts })
     for (const built of result.materials) if (!materials.has(built.id)) materials.set(built.id, built)
@@ -212,6 +216,7 @@ function transferOf(groups: readonly PayloadGroup[]): ArrayBuffer[] {
   for (const group of groups) {
     for (const part of group.parts) {
       add(part.frame)
+      if (part.normalVolume !== undefined) add(part.normalVolume.texels)
       if (part.skin !== undefined) {
         add(part.skin.joints)
         add(part.skin.weights)
@@ -238,11 +243,49 @@ function applyAssetMesher(doc: SdfDocument, mesher: MeshRequest['mesher']): void
   }
 }
 
+// A game asset with S12 physics draws each body from named document nodes. MAMA meshes a group asset as one part, so
+// each requested node is meshed alone (the asset group with that one child) and becomes a part named by its node id.
+// A hidden node (collider) has no triangle: it stays a part with no mesh, so the port still knows its name.
+async function meshByParts(doc: SdfDocument, parts: readonly string[], assetId: string): Promise<AssetMeshResult[]> {
+  const pool = inlinePool()
+  const groups = Object.keys(doc.nodes).filter(id => doc.nodes[id].kind === 'group' && doc.nodes[id].asset !== undefined)
+  const out: AssetMeshResult[] = []
+  for (const group of groups) {
+    const node = doc.nodes[group]
+    const children = node.children ?? []
+    const mine = parts.filter(part => children.includes(part))
+    if (mine.length === 0) {
+      out.push(...await meshAssets(doc, { groups: [group], pool, normalVolumes: true }))
+      continue
+    }
+    const combined: AssetMeshResult = { group, asset: node.asset ?? null, output: node.mesher?.output ?? (doc.settings.export.geometry as AssetMeshResult['output']), parts: [], materials: [], error: null }
+    const materials = new Map<string, BuiltMaterial>()
+    for (const part of mine) {
+      if (doc.nodes[part].visible === false) {
+        combined.parts.push({ partId: part, name: part, frame: new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]), subMeshes: [] })
+        continue
+      }
+      const variant: SdfDocument = { ...doc, nodes: { ...doc.nodes, [group]: { ...node, children: [part] } } }
+      const results = await meshAssets(variant, { groups: [group], pool, normalVolumes: true })
+      throwFirstRefusal(results, doc, assetId)
+      for (const result of results) {
+        for (const built of result.materials) materials.set(built.id, built)
+        for (const p of result.parts) combined.parts.push({ ...p, partId: part, name: part })
+      }
+    }
+    combined.materials = [...materials.values()].sort((a, b) => a.id < b.id ? -1 : 1)
+    out.push(combined)
+  }
+  return out
+}
+
 export async function meshRequest(req: MeshRequest): Promise<MeshedAsset> {
   const doc = readSdfm(req.document)
   applyAssetMesher(doc, req.mesher)
   await ensureMesherOnce()
-  const results = await meshAssets(doc, { pool: inlinePool() })
+  const results = req.parts !== undefined && req.parts.length > 0
+    ? await meshByParts(doc, req.parts, req.assetId)
+    : await meshAssets(doc, { pool: inlinePool(), normalVolumes: true })
   throwFirstRefusal(results, doc, req.assetId)
   if (results.length === 0) {
     throw new RefusalError('sdf', req.assetId, 'the document has no group with a game asset; save the asset from SDF Modeler or mark its group as a game asset')

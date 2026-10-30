@@ -4,6 +4,9 @@ import { MOTION_KINDS } from '@royal-fiesta/sim/course'
 import type { MotionKind } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { MOTION_FIELDS } from './courseV1.ts'
+import { MECHANISM_PRESETS } from './mechanismsJson.ts'
+import type { MechanismPreset } from './mechanismsJson.ts'
+import type { JointKind, LinkTarget } from '@royal-fiesta/sim/mechanismSpec'
 import type { World } from './gameAsset.ts'
 
 export type FieldType = 'number' | 'integer' | 'boolean' | 'string' | 'vec3' | 'quat' | { enum: readonly string[] } | { readonly [k: string]: FieldType }
@@ -12,17 +15,25 @@ export interface GameManifest {
   version: 1
   id: string
   name: string
-  folders: { assets: string; courses: string; ui: string }
+  folders: { assets: string; courses: string; ui: string; audio: string }
   worlds: World[]
   courseFormat: string
   courseVersion: 1
   markers: Record<string, Record<string, FieldType>>
   motions: Record<MotionKind, Record<string, FieldType>>
   play: { dev: string }
+  mechanisms?: ManifestMechanisms
 }
+
+// S14: the S12/S13 mechanism schemas declared to sdfm.
+export interface ManifestMechanisms { version: 1; jointKinds: JointKind[]; linkTargets: LinkTarget['kind'][]; presets: MechanismPreset[] }
+
+const JOINT_KINDS: readonly JointKind[] = ['fixed', 'hinge', 'slider', 'ball', 'spring', 'rope']
+const LINK_TARGETS: readonly LinkTarget['kind'][] = ['motor', 'door', 'spring', 'animation']
 
 const TOP_KEYS = ['format', 'version', 'id', 'name', 'folders', 'worlds', 'courseFormat', 'courseVersion', 'markers', 'motions', 'play']
 const FOLDER_KEYS = ['assets', 'courses', 'ui']
+const OPTIONAL_TOP = ['mechanisms']
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const SCALARS = ['number', 'integer', 'boolean', 'string', 'vec3', 'quat']
 const MARKERS = ['spawn', 'checkpoint', 'finish', 'killPlane', 'queuePad', 'podiumSpot']
@@ -45,9 +56,9 @@ function obj(v: unknown, path: string, ptr: string): Obj {
   return v as Obj
 }
 
-function exactKeys(v: Obj, allowed: readonly string[], path: string, ptr: string): void {
+function exactKeys(v: Obj, allowed: readonly string[], path: string, ptr: string, optional: readonly string[] = []): void {
   for (const k of Object.keys(v)) {
-    if (!allowed.includes(k)) fail(path, `${ptr}/${escapePointer(k)}`, `unknown key '${k}'; remove it or use a supported field`)
+    if (!allowed.includes(k) && !optional.includes(k)) fail(path, `${ptr}/${escapePointer(k)}`, `unknown key '${k}'; remove it or use a supported field`)
   }
   for (const k of allowed) {
     if (!Object.hasOwn(v, k)) fail(path, `${ptr}/${escapePointer(k)}`, `missing key '${k}'; add it`)
@@ -101,9 +112,9 @@ function schemaTable(v: unknown, path: string, ptr: string): Record<string, Reco
 
 export function parseGameManifest(json: unknown, path: string): GameManifest {
   const m = obj(json, path, '')
-  exactKeys(m, TOP_KEYS, path, '')
+  exactKeys(m, TOP_KEYS, path, '', OPTIONAL_TOP)
   const folders = obj(m.folders, path, '/folders')
-  exactKeys(folders, FOLDER_KEYS, path, '/folders')
+  exactKeys(folders, FOLDER_KEYS, path, '/folders', ['audio'])
   const list = m.worlds
   if (!Array.isArray(list)) fail(path, '/worlds', 'must be an array; list the worlds')
   const worlds = list.map((w, i): World => {
@@ -124,6 +135,7 @@ export function parseGameManifest(json: unknown, path: string): GameManifest {
       assets: text(folders.assets, path, '/folders/assets'),
       courses: text(folders.courses, path, '/folders/courses'),
       ui: text(folders.ui, path, '/folders/ui'),
+      audio: Object.hasOwn(folders, 'audio') ? text(folders.audio, path, '/folders/audio') : 'audio',
     },
     worlds,
     courseFormat: literal(m.courseFormat, 'royal-fiesta.course', path, '/courseFormat'),
@@ -132,6 +144,27 @@ export function parseGameManifest(json: unknown, path: string): GameManifest {
     // Missing or extra motion kinds parse; manifestCoverage reports them.
     motions: schemaTable(m.motions, path, '/motions') as Record<MotionKind, Record<string, FieldType>>,
     play: { dev },
+    ...(Object.hasOwn(m, 'mechanisms') ? { mechanisms: mechanismsOf(m.mechanisms, path) } : {}),
+  }
+}
+
+function subset<T extends string>(v: unknown, allowed: readonly T[], path: string, ptr: string): T[] {
+  if (!Array.isArray(v)) fail(path, ptr, 'must be an array; list the supported values')
+  return v.map((x, i): T => {
+    if (!allowed.includes(x as T)) fail(path, `${ptr}/${i}`, `unknown value '${String(x)}'; use one of ${allowed.join(', ')}`)
+    if (v.indexOf(x) !== i) fail(path, `${ptr}/${i}`, `duplicate value '${x}'; list each value once`)
+    return x as T
+  })
+}
+
+function mechanismsOf(v: unknown, path: string): ManifestMechanisms {
+  const o = obj(v, path, '/mechanisms')
+  exactKeys(o, ['version', 'jointKinds', 'linkTargets', 'presets'], path, '/mechanisms')
+  return {
+    version: literal(o.version, 1, path, '/mechanisms/version'),
+    jointKinds: subset(o.jointKinds, JOINT_KINDS, path, '/mechanisms/jointKinds'),
+    linkTargets: subset(o.linkTargets, LINK_TARGETS, path, '/mechanisms/linkTargets'),
+    presets: subset(o.presets, MECHANISM_PRESETS, path, '/mechanisms/presets'),
   }
 }
 
@@ -144,7 +177,14 @@ function describe(t: FieldType | undefined): string {
   return `{${Object.keys(o).sort().map(k => `${k}:${describe(o[k])}`).join(',')}}`
 }
 
-export function manifestCoverage(m: GameManifest): { missingMotions: string[]; extraMotions: string[]; keyMismatches: string[]; missingMarkers: string[] } {
+export interface ManifestCoverage {
+  missingMotions: string[]; extraMotions: string[]; keyMismatches: string[]; missingMarkers: string[]
+  audioFolder: string
+  // null when the manifest declares no mechanisms; otherwise what the game reads but the manifest omits.
+  mechanisms: { missingJointKinds: string[]; missingLinkTargets: string[]; missingPresets: string[] } | null
+}
+
+export function manifestCoverage(m: GameManifest): ManifestCoverage {
   const kinds: readonly string[] = MOTION_KINDS
   const motions: Record<string, Record<string, FieldType>> = m.motions
   const declared = Object.keys(motions)
@@ -166,5 +206,11 @@ export function manifestCoverage(m: GameManifest): { missingMotions: string[]; e
     extraMotions: declared.filter(k => !kinds.includes(k)),
     keyMismatches,
     missingMarkers: MARKERS.filter(k => !Object.hasOwn(m.markers, k)),
+    audioFolder: m.folders.audio,
+    mechanisms: m.mechanisms ? {
+      missingJointKinds: JOINT_KINDS.filter(k => !m.mechanisms!.jointKinds.includes(k)),
+      missingLinkTargets: LINK_TARGETS.filter(k => !m.mechanisms!.linkTargets.includes(k)),
+      missingPresets: MECHANISM_PRESETS.filter(k => !m.mechanisms!.presets.includes(k)),
+    } : null,
   }
 }

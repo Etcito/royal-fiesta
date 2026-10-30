@@ -85,6 +85,77 @@ and https://docs.wavedash.com/platform/cross-origin-isolation (retrieved 2026-10
 
 Any other Wavedash requirement not stated in the sourced statements above is **unverified**.
 
+## Loader contract (R3)
+
+Sources: https://docs.wavedash.com/sdk/setup, https://docs.wavedash.com/engines/custom and
+https://docs.wavedash.com/cli/configuration (retrieved 2026-10-30).
+
+- The Wavedash shell injects the `Wavedash` global into the frame before the page's code runs, and it keeps the
+  frame hidden behind its own loading screen ("Still Loading 0%") until the game calls `Wavedash.init(config)`.
+  `init()` is synchronous, returns a boolean, and also calls `loadComplete()`. Without it the game never appears.
+- `Wavedash.updateLoadProgressZeroToOne(p)` (0..1, any number of calls) drives the shell's bar.
+- A plain HTML build has no engine section in `wavedash.toml` (the frame URL then says `engine=CUSTOM`).
+  `entrypoint` may name any `.html` file in `upload_dir`, so `game.html` is valid.
+
+The game page implements the contract in `apps/web/src/platform/wavedash.ts`. `App.load` (apps/web/src/game/main.ts)
+reports progress per boot stage and per content phase (`bootFraction`). It calls `init()` once, when the title is
+up, or when the error screen or the boot-failure message is up, so a refusal is never hidden behind the shell.
+Off Wavedash there is no global and every call is a no-op. A throwing SDK is logged and never stops the game.
+
+Observed on the real frame (2026-10-30, Chrome, playtest pages of build bc44ed8a and of a working V0 build): the
+game runs inside the shell's `/embed?entrypoint=<entry>&engine=CUSTOM&pk=...&sdkconfig=...&gameSlug=...`
+document itself, so `location.search` is that embed query. Every file of the bundle was served 200, and the 15d9352
+build reached its title screen when that frame URL was opened at top level, but `Wavedash._initialized` stayed
+`false`, so the playtest page stayed on 0%. The working V0 build (commit 2950b88, `platform/wavedash.ts`) calls
+`init()` and shows the game. The V0 M13 port (abdd4a6) took over the packager but not that adapter.
+
+Each boot stage is logged as `[boot] +<s>s <stage>`. A stage that lasts more than 10 s is named under the page's
+loading bar (`Still on: <stage> (<n> s)`), so a stuck boot says where it is.
+
+## Frame probe
+
+Off by default. `?probe=1`, or a build made with `VITE_RF_PROBE=1` (the Wavedash page cannot carry a query into its
+frame; `?probe=0` still turns it off), runs `apps/web/src/platform/probe.ts` next to the game. It calls
+`Wavedash.init()` at once so its panel is visible even if the boot stalls, then reports to the console
+(`[probe] <item> <json>`) and to a panel in the top-left corner:
+
+- `env`: origin, query keys, framed or not, `crossOriginIsolated`, `SharedArrayBuffer`, WebGPU, the SDK's launch
+  parameter keys;
+- `headers`: the page's own CSP, COEP, COOP, CORP and Permissions-Policy response headers;
+- `storage`: localStorage and indexedDB.open;
+- `websocket-1`, `websocket-2`: `wss://echo.websocket.events` and `wss://ws.postman-echo.com/raw` (open, echo, or
+  error). The first did not answer anywhere on 2026-10-30, so only the second tells whether the frame allows sockets;
+- `webrtc`: ICE gathering with `stun:stun.l.google.com:19302` (an `srflx` candidate means STUN is reachable);
+- `fetch-cors` (`https://api.github.com/zen`) and `fetch-no-cors` (`https://www.google.com/favicon.ico`, which COEP
+  blocks unless the host sends CORP);
+- `csp-violation`: every `securitypolicyviolation` event.
+
+On the real frame, the probe runs either from a build made with `VITE_RF_PROBE=1` inside the playtest page, or
+from any build by opening the frame URL at top level with `&probe=1` appended.
+
+## Relay URL in the frame
+
+The GameSaloon server URL is never committed, and the Wavedash page cannot carry `?server=` into its frame. What
+the frame can carry:
+
+- The frame URL opened at top level: the game reads the embed query, so `&server=wss://...` appended to the frame
+  URL reaches `parseQuery` (useful for tests only, since players open the Wavedash page).
+- A build-time default, like `VITE_RF_CONTENT_URL`: `VITE_RF_SERVER=wss://host/ws`, set in the ENVIRONMENT of the
+  build that is pushed (`npm run wavedash` and `npm run etcito:build` pass their environment down to `vite build`;
+  Vite injects it and apps/web/src/platform/relay.ts reads it). Never put it in a file of the repository. The value
+  ends up in the built JavaScript, so it is a public relay URL and no token belongs in it. A malformed value (not
+  ws:// or wss://) is refused when Play online is chosen.
+  - Order: an explicit `?server=` first, then the build default. An explicit `?server=` keeps its behaviour (the
+    whole page is online: `parseQuery` then `OnlineMode`). The build default feeds ONLY the title's Play online (the
+    online lobby flow, PlayFlow with `matchmaking: 'lobby'`): the page still boots in-page, Play stays offline with
+    bots, and leaving the online hub returns to the title where Play is offline again.
+  - With neither, Play online shows the refusal "Play online needs a relay; pass ?server=wss://host/... or choose
+    Play to play with bots" and does not hang.
+  - `rf-build.json` records only `defaultServer` (a boolean: a default relay was set), never the URL.
+  - Example, placeholder host: `VITE_RF_SERVER=wss://relay.example.invalid/ws npm run wavedash`.
+- `Wavedash.getLaunchParams()` exists in the frame and returned no keys for the playtest build; the docs read on
+  2026-10-30 do not say how launch parameters are set.
+
 ## Pointer lock in the frame
 
 V0 M14 emulated the Wavedash frame locally (the game inside an iframe of an embedder on another origin, with the

@@ -37,7 +37,49 @@
           "game": "royal-fiesta",
           "id": "candy.pendulum-hammer",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [],
+                "parts": [],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "hammer",
+                "type": "kinematic",
+                "colliders": [0, 1],
+                "parts": [
+                  "collider_head",
+                  "collider_arm",
+                  "head",
+                  "arm"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": []
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -1012,10 +1054,52 @@
       "halfExtents": [0.15, 2.5, 0.15]
     }
   ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [],
+        "parts": [],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "hammer",
+        "type": "kinematic",
+        "colliders": [0, 1],
+        "parts": [
+          "collider_head",
+          "collider_arm",
+          "head",
+          "arm"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": []
+  },
   "anchors": {},
   "bounds": {
     "min": [-1.57, -1.183494, -1.084872],
     "max": [1.57, 5.7, 1.084872]
   },
-  "hash": "9d8ffe81d9b115e814bd7c142bb74ed8c00ae5e7c28b55a2ba3c18711d636d44"
+  "hash": "387f84381546658ea4483641eb2d80148c1dcf934798efcf8cacb1d52fb12e46"
 }

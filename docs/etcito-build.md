@@ -60,6 +60,7 @@ After the last step:
 | `MAMA_TOKEN`, else `GH_TOKEN`, else `GITHUB_TOKEN` | The token for the uaa and MAMA clones. Only the two bricks steps see it, and tools/bricks.ts passes it to git through `GIT_CONFIG_*` env only. Every other step runs without these variables. |
 | `RF_BRICKS_DIR` | Kept, for the sibling route (`$RF_BRICKS_DIR/MAMA`). A record needs a GitHub clone, so leave it unset for a record run. |
 | `RF_RAA_LOCAL`, `GAMESALOON_DIR`, `RF_WAVEDASH_DIST`, `RF_PLAY_SKIP_BUILD`, `RF_PLAY_DIST` | Removed for every step. The build uses release dependencies only, with no test seam. |
+| `VITE_RF_SERVER` | Optional build-time default relay, for example `VITE_RF_SERVER=wss://relay.example.invalid/ws npm run etcito:build -- ...` (placeholder host). Set it in the environment of the command only, never in a file. Every step inherits it; the page build uses it as the fallback after `?server=` for the title's Play online only (Play stays offline with bots), and `rf-build.json` records only `defaultServer: true`, never the URL. Unset, Play online says it needs a relay. See docs/wavedash.md, "Relay URL in the frame". |
 
 `GIT_TERMINAL_PROMPT=0` makes a git step fail at once instead of asking for credentials. `NO_COLOR=1` keeps the
 log free of colour codes.

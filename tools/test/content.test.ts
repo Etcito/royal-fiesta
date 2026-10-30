@@ -3,8 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { gunzipSync } from 'node:zlib'
-import { buildContentIndex, contentDir, contentPath, packContent, profileAssetIds } from '../content.ts'
+import { buildContentIndex, contentDir, contentPath, packContent, profileAssetIds, validateContent } from '../content.ts'
 
 test('index lists sorted stems and worlds, preserves document hashes and packs every byte', () => {
   const dir = mkdtempSync(join(tmpdir(), 'rf-content-'))
@@ -22,6 +21,7 @@ test('index lists sorted stems and worlds, preserves document hashes and packs e
         { id: 'z', world: 'common', path: 'assets/common/z.asset.json', hash: 'saved-hash' },
       ],
       courses: [{ id: 'demo', path: 'courses/demo.course.json' }],
+      audio: [],
     })
     const out = join(dir, 'pack')
     assert.deepEqual(packContent(out, dir), index)
@@ -47,26 +47,40 @@ test('RF_CONTENT_DIR is shared by content paths while fixtures stay in the game'
   }
 })
 
-test('content pack includes baked meshes at extensionless cache-key URLs', () => {
+test('index and pack carry saved meshes and audio patches', () => {
   const dir = mkdtempSync(join(tmpdir(), 'rf-packed-mesh-'))
-  const saved = process.env.RF_MESH_CACHE_DIR
+  try {
+    mkdirSync(join(dir, 'assets/candy'), { recursive: true })
+    mkdirSync(join(dir, 'courses'))
+    mkdirSync(join(dir, 'audio'))
+    writeFileSync(join(dir, 'assets/candy/candy.a.asset.json'), '{"hash":"x"}')
+    writeFileSync(join(dir, 'assets/candy/candy.a.mesh'), new Uint8Array([1, 2, 3]))
+    writeFileSync(join(dir, 'assets/candy/candy.b.asset.json'), '{"hash":"y"}')
+    writeFileSync(join(dir, 'audio/bell.haa.json'), '{"haa":1,"id":"bell"}')
+    writeFileSync(join(dir, 'audio/notes.txt'), 'ignored')
+    const index = packContent(join(dir, 'out'), dir)
+    assert.equal(index.assets[0].mesh, 'assets/candy/candy.a.mesh')
+    assert.equal('mesh' in index.assets[1], false)
+    assert.deepEqual(index.audio, [{ id: 'bell', path: 'audio/bell.haa.json' }])
+    assert.deepEqual(readFileSync(join(dir, 'out/assets/candy/candy.a.mesh')), Buffer.from([1, 2, 3]))
+    assert.equal(readFileSync(join(dir, 'out/audio/bell.haa.json'), 'utf8'), '{"haa":1,"id":"bell"}')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('strict validation refuses a bad haa header and accepts the shipped content', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rf-validate-'))
   try {
     mkdirSync(join(dir, 'assets'))
     mkdirSync(join(dir, 'courses'))
-    mkdirSync(join(dir, 'cache'))
-    process.env.RF_MESH_CACHE_DIR = join(dir, 'cache')
-    const key = 'a'.repeat(64)
-    writeFileSync(join(dir, 'cache', key + '.mesh'), new Uint8Array([1, 2, 3]))
-    const failed = 'b'.repeat(64)
-    writeFileSync(join(dir, 'cache', failed + '.failed'), 'refused at /opt/mama/dist/a.js')
-    packContent(join(dir, 'out'), dir)
-    assert.deepEqual(gunzipSync(readFileSync(join(dir, 'out/meshes', key))), Buffer.from([1, 2, 3]))
-    assert.equal(readFileSync(join(dir, 'out/meshes', failed + '.failed'), 'utf8'), 'refused at <path>')
-  } finally {
-    if (saved === undefined) delete process.env.RF_MESH_CACHE_DIR
-    else process.env.RF_MESH_CACHE_DIR = saved
-    rmSync(dir, { recursive: true, force: true })
-  }
+    mkdirSync(join(dir, 'audio'))
+    writeFileSync(join(dir, 'audio/bell.haa.json'), '{"haa":1,"id":"gong"}')
+    await assert.rejects(validateContent(buildContentIndex(dir), dir), /audio\/bell\.haa\.json: a haa patch needs the header/)
+    writeFileSync(join(dir, 'audio/bell.haa.json'), '{"haa":1,"id":"bell"}')
+    await validateContent(buildContentIndex(dir), dir)
+    const started = Date.now()
+    await validateContent(buildContentIndex())
+    assert.ok(Date.now() - started < 60000)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('the sprint load set is what the page meshes: playlist, hub, podium and character, not every asset', async () => {

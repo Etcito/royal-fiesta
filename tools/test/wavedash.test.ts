@@ -58,15 +58,35 @@ test('packWavedash writes the documented layout and manifest, entry game.html', 
 
     const stampText = readFileSync(join(out, 'upload', 'rf-build.json'), 'utf8')
     const stamp = JSON.parse(stampText) as Record<string, unknown>
-    assert.deepEqual(Object.keys(stamp), ['format', 'version', 'commit', 'entry', 'raa', 'mama'])
+    assert.deepEqual(Object.keys(stamp), ['format', 'version', 'commit', 'entry', 'raa', 'mama', 'defaultServer'])
     assert.equal(stamp.format, 'royal-fiesta.build')
     assert.equal(stamp.version, 1)
     assert.equal(stamp.entry, 'game.html')
     assert.ok(stamp.commit === null || /^[0-9a-f]{40}$/.test(String(stamp.commit)))
     assert.ok(['sibling', 'cloned', 'absent'].includes((stamp.mama as { source: string }).source))
+    assert.equal(typeof stamp.defaultServer, 'boolean')
     assert.ok(stampText.endsWith('\n'))
     assert.deepEqual(leakScan(stampText + toml), [])
   } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('rf-build.json records only that a default relay was set, never its URL', async () => {
+  const dir = tree({ 'dist/game.html': GAME })
+  const before = process.env.VITE_RF_SERVER
+  const stampOf = () => readFileSync(join(dir, 'out', 'upload', 'rf-build.json'), 'utf8')
+  try {
+    process.env.VITE_RF_SERVER = 'wss://relay.example.invalid/ws'
+    await withDist(join(dir, 'dist'), () => packWavedash({ outDir: join(dir, 'out') }))
+    assert.equal((JSON.parse(stampOf()) as { defaultServer: unknown }).defaultServer, true)
+    assert.doesNotMatch(stampOf(), /relay\.example|wss:/)
+    delete process.env.VITE_RF_SERVER
+    await withDist(join(dir, 'dist'), () => packWavedash({ outDir: join(dir, 'out') }))
+    assert.equal((JSON.parse(stampOf()) as { defaultServer: unknown }).defaultServer, false)
+  } finally {
+    if (before === undefined) delete process.env.VITE_RF_SERVER
+    else process.env.VITE_RF_SERVER = before
     rmSync(dir, { recursive: true, force: true })
   }
 })
@@ -114,3 +134,4 @@ test('etcitoBuild with a missing from path returns 1 with a [bricks] message, an
     rmSync(dir, { recursive: true, force: true })
   }
 })
+

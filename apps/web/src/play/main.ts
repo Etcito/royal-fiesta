@@ -11,6 +11,7 @@ import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import { loadCourse } from '@royal-fiesta/game/course'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import type { FlowState } from '@royal-fiesta/game/hub/flow'
+import { lobbyLines } from '@royal-fiesta/game/hub/lobby'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
 import type { NetMatch } from '@royal-fiesta/game/net/netMatch'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
@@ -116,10 +117,11 @@ function banner(ctx: Ctx, lines: string[]): void {
   ctx.hud.banner([...lines, ctx.note].filter(l => l.length > 0).join(' - '))
 }
 
-function queueLine(state: FlowState, party: number): string {
+function queueLine(state: FlowState, flow: PlayFlow): string {
   if (state === 'connecting') return 'Connecting...'
-  if (state === 'hub') return 'Walk onto the green pad to queue'
-  if (state === 'queued') return `Queued for ${party} players...`
+  if (state === 'hub') return 'Joining a lobby...'
+  // The choice takes its default by itself here (no menu on play.html): join a waiting lobby, else a new one.
+  if (state === 'queued' || state === 'choosing' || state === 'watching') return lobbyLines(flow.lobby, performance.now()).filter(l => l.length > 0).join(' - ')
   if (state === 'match' || state === 'podium') return 'Match!'
   if (state === 'returning') return 'Back to the hub...'
   return 'Hub failed'
@@ -134,6 +136,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameI
   const flow = new PlayFlow({
     R: ctx.R, relayUrl: q.server, ws: globalWsFactory(), hubCode: q.hub, name: q.name, colour: q.colour,
     courses: ctx.courses, plaza: ctx.plaza, partySize: q.party, now: () => performance.now(), pilot: false,
+    matchmaking: 'lobby',
     log: ev => {
       if (ev.state === 'match' && typeof ev.detail.seat === 'number') seat = ev.detail.seat
       if (ev.state === 'failed') failure = String(ev.detail.message ?? '')
@@ -174,7 +177,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameI
     const before = flow.state
     let charFacing: Planar = { x: 0, z: 1 }
     if (flow.match !== null) charFacing = flow.match.sim.character(seat, matchChar).facing
-    else if (before === 'hub' || before === 'queued') charFacing = flow.hub.state(local).facing
+    else if (before === 'hub' || before === 'queued' || before === 'choosing' || before === 'watching') charFacing = flow.hub.state(local).facing
     controlsToInput(input.controls(), orbit.ground(), world)
     flow.frame(dt, inCharacterFrame(world, charFacing, moved), emote)
     const match = flow.match
@@ -201,12 +204,12 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameI
       ctx.hud.update(match.sim.phase(view), names, seat)
     } else {
       const remotes = state === 'connecting' || state === 'failed' ? [] : flow.remotes(now)
-      if (state === 'hub' || state === 'queued') {
+      if (state === 'hub' || state === 'queued' || state === 'choosing' || state === 'watching') {
         hubView.update(flow.hub.state(local), q.colour, remotes, flow.hub.tick, dt, flow.hub.emote(now))
       }
       const lines: string[] = []
       if (flow.hubCode !== null) lines.push(`Hub ${flow.hubCode} - ${1 + remotes.length}/4 online`)
-      lines.push(queueLine(state, q.party))
+      lines.push(queueLine(state, flow))
       if (state === 'failed' && failure.length > 0) lines.push(failure)
       show(lines)
     }

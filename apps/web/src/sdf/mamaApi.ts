@@ -7,9 +7,24 @@ import type { MeshPool } from './meshPool.ts'
 // tools/bricks.ts is Node-only, so the absent prefix is repeated here, as in mamaAbsent.ts.
 const MAMA_ABSENT_PREFIX = 'MAMA not available: '
 
-export interface MeshRequest { assetId: string; hash: string; mesher: GameAsset['mesher']; document: Readonly<Record<string, unknown>> }
+// parts: the document nodes (direct children of the asset group) that S12 physics bodies draw apart. When given,
+// the payload holds one part per id, named by the id, so the port's part filter can address them.
+export interface MeshRequest { assetId: string; hash: string; mesher: GameAsset['mesher']; document: Readonly<Record<string, unknown>>; parts?: readonly string[] }
 // data = the @etcito/raa-sdfm upload payload (per-material mesh parts + compiled graph materials)
 export interface MeshedAsset { assetId: string; hash: string; mesher: MesherOutput; parts: number; triangles: number; data: unknown; transfer: ArrayBuffer[] }
+export function meshRequestOf(asset: GameAsset): MeshRequest {
+  const parts = [...new Set((asset.physics?.bodies ?? []).flatMap(body => body.parts))]
+  return { assetId: asset.id, hash: asset.hash, mesher: asset.mesher, document: asset.document, ...(parts.length > 0 ? { parts } : {}) }
+}
+
+// False for a mesh made before the asset's physics parts existed (an old cache entry or a saved single-part mesh).
+export function meshHasParts(meshed: MeshedAsset, parts: readonly string[] | undefined): boolean {
+  if (parts === undefined || parts.length === 0) return true
+  const data = meshed.data as { groups?: { parts?: { name?: unknown }[] }[] } | null
+  const names = new Set((data?.groups ?? []).flatMap(g => (g.parts ?? []).map(p => p.name)))
+  return parts.every(part => names.has(part))
+}
+
 export interface MamaFacade { readonly mamaVersion: string; readonly raaSdfmVersion: string; createPool(size: number): MeshPool; meshOnce(req: MeshRequest): Promise<MeshedAsset> }
 
 function absent(reason: string): RefusalError {

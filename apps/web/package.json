@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-deterministic-compat": "0.21.0",
+    "@etcito/haa-spatial": "file:../../../haa/packages/haa",
     "@etcito/raa": "file:../../../raa/dist/bricks/raa",
     "@etcito/raa-anim": "file:../../../raa/dist/bricks/raa-anim",
     "@etcito/raa-sdfm": "file:../../../raa/dist/bricks/raa-sdfm",

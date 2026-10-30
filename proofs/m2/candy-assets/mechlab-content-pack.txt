@@ -1,0 +1,5 @@
+
+> content:pack
+> node --experimental-strip-types tools/content.ts /tmp/rf-pack-mechlab
+
+content:pack: 32 assets, 0 meshes, 10 courses, 3 audio, index.json

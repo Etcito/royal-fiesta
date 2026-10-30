@@ -34,26 +34,25 @@ export interface UiTourOutput {
 }
 interface OpFile { name: string; blob: Blob }
 
-type Act = { key: TourKey } | { click: string }
-// A leg gives its inputs on the settled previous screen and waits for the host to enter `to`.
-// holdS: once settled, `to` must hold for this much game time with no transition.
-// queuedS: `to` must come at least this much game time after the last leg's inputs (the Enter that queued).
-interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; holdS?: number; queuedS?: number }
-
-// LocalMode's QUEUE_S (main.ts): the offline queue's game time before the match starts.
-const QUEUE_S = 3
+type Act = { key: TourKey } | { click: string } | { dom: string }
+// A leg gives its inputs on the settled previous screen and waits for `until`, or the host to enter `to`.
+interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; until?: 'remap-open' | 'remap-closed'; name?: string }
 
 // docs/screens.md 'Reached by': the boot load is refused (bootGame), so Retry on the error screen enters
 // 'loading' with a real click; that load lands on title; menus by their buttons; Escape goes back; Play goes to
-// the hub, Escape pauses it, Enter queues. The queue is captured within its QUEUE_S window, then checked:
-// Escape cancels it back to the hub, where no match starts; Enter queues again and the match starts only after
-// QUEUE_S. The offline sprint match then runs by itself to its podium (round 0 is a race the idle player cannot
-// qualify in, so round 1 is spectated).
+// the hub, Escape pauses it. The offline hub has no queue screen: it counts down by itself ('Round starts in N s',
+// ?wait= seconds, 60 by default) and Enter starts the round at once, so the tour presses Enter and the match
+// follows with its countdown. The offline sprint match then runs by itself to its podium (round 0 is a race the
+// idle player cannot qualify in, so round 1 is spectated). Screens the offline App never shows (the online
+// queue, lobbyChoice, lobbyLive) are not in this tour.
 const TOUR: readonly Leg[] = [
   { acts: [], to: 'error', capture: false, timeoutS: 20 },
   { acts: [{ click: 'act-retry' }], to: 'loading', capture: true, timeoutS: 10 },
   { acts: [], to: 'title', capture: false, timeoutS: 120 },
   { acts: [{ click: 'act-settings' }], to: 'settings', capture: true, timeoutS: 10 },
+  // Captured idle, as opened: Enter there would start listening and hide the focused row's button.
+  { acts: [{ dom: '#open-remap' }], to: 'settings', until: 'remap-open', name: 'settings-controls', capture: true, timeoutS: 10 },
+  { acts: [{ key: 'Escape' }], to: 'settings', until: 'remap-closed', capture: false, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: true, timeoutS: 10 },
   { acts: [{ click: 'act-credits' }], to: 'credits', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
@@ -62,15 +61,14 @@ const TOUR: readonly Leg[] = [
   { acts: [{ click: 'act-play' }], to: 'hub', capture: true, timeoutS: 30 },
   { acts: [{ key: 'Escape' }], to: 'pause', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'hub', capture: false, timeoutS: 10 },
-  { acts: [{ key: 'Enter' }], to: 'queue', capture: true, timeoutS: 10 },
-  { acts: [{ key: 'Escape' }], to: 'hub', capture: false, timeoutS: 10, holdS: QUEUE_S + 1 },
-  { acts: [{ key: 'Enter' }], to: 'queue', capture: false, timeoutS: 10 },
-  { acts: [], to: 'countdown', capture: true, timeoutS: 30, queuedS: QUEUE_S },
+  { acts: [{ key: 'Enter' }], to: 'countdown', capture: true, timeoutS: 30 },
   { acts: [], to: 'round', capture: true, timeoutS: 15 },
   { acts: [], to: 'result', capture: true, timeoutS: 60 },
   { acts: [], to: 'spectate', capture: true, timeoutS: 60 },
   { acts: [], to: 'podium', capture: true, timeoutS: 120 },
 ]
+
+export const TOUR_SCREENS: readonly string[] = TOUR.filter(leg => leg.capture).map(leg => leg.name ?? leg.to)
 
 const FRAME_MS = 16
 // Game time per frame: real time on short screens, 3 ticks while a round plays (up to its 20 s sprint cap).
@@ -123,16 +121,29 @@ function press(g: TourGame, key: TourKey): TourInput {
 function click(g: TourGame, target: string): TourInput {
   const r = g.host.widgetRect(target)
   if (r === null) refuse('ops', `uiTour.click.${target}`, `widget '${target}' is hidden or not on screen '${g.host.currentScreen()}'; fix the tour leg or the ui doc`)
-  const on = g.host.currentScreen()
   const x = r.x + r.w / 2
   const y = r.y + r.h / 2
   const box = g.ui.getBoundingClientRect()
-  const at = { clientX: box.left + x, clientY: box.top + y, bubbles: true, cancelable: true, view: window }
+  return clickAt(g, g.ui, target, x, y, box.left + x, box.top + y)
+}
+
+function domClick(g: TourGame, selector: string): TourInput {
+  const element = document.querySelector(selector)
+  if (element === null) refuse('ops', `uiTour.dom.${selector}`, 'the DOM target is missing')
+  const box = element.getBoundingClientRect()
+  const x = box.left + box.width / 2
+  const y = box.top + box.height / 2
+  return clickAt(g, element, selector, x, y, x, y)
+}
+
+function clickAt(g: TourGame, element: Element, target: string, x: number, y: number, clientX: number, clientY: number): TourInput {
+  const on = g.host.currentScreen()
+  const at = { clientX, clientY, bubbles: true, cancelable: true, view: window }
   const pointer: PointerEventInit = { ...at, pointerId: 1, pointerType: 'mouse', isPrimary: true }
   const events: string[] = []
   const fire = (e: MouseEvent): void => {
     events.push(e.type)
-    g.ui.dispatchEvent(e)
+    element.dispatchEvent(e)
   }
   fire(new PointerEvent('pointermove', { ...pointer, buttons: 0 }))
   fire(new PointerEvent('pointerdown', { ...pointer, button: 0, buttons: 1 }))
@@ -154,6 +165,8 @@ async function capturePng(g: TourGame): Promise<{ blob: Blob | null; width: numb
   // to spoil the next WebGPU read in the same task.
   const uiShot = createImageBitmap(ui)
   const views = Array.from(g.views.querySelectorAll('canvas'), view => ({ rect: view.getBoundingClientRect(), shot: createImageBitmap(view) }))
+  const overlays = ['canvas.rf-remap', 'canvas.rf-touch'].flatMap(selector =>
+    Array.from(document.querySelectorAll<HTMLCanvasElement>(selector), canvas => ({ rect: canvas.getBoundingClientRect(), shot: createImageBitmap(canvas) })))
   const out = document.createElement('canvas')
   out.width = ui.width
   out.height = ui.height
@@ -175,55 +188,58 @@ async function capturePng(g: TourGame): Promise<{ blob: Blob | null; width: numb
   ctx.drawImage(bitmap, 0, 0)
   flush()
   bitmap.close()
+  for (const { rect: r, shot } of overlays) {
+    const overlay = await shot
+    ctx.drawImage(overlay, (r.left - box.left) * sx, (r.top - box.top) * sy, r.width * sx, r.height * sy)
+    flush()
+    overlay.close()
+  }
   const blob = await new Promise<Blob | null>(resolve => out.toBlob(resolve, 'image/png'))
   return { blob, width: out.width, height: out.height }
 }
 
 function describe(acts: readonly Act[]): string {
   if (acts.length === 0) return 'no input'
-  return acts.map(a => ('key' in a ? `key ${a.key}` : `a click on ${a.click}`)).join(', ')
+  return acts.map(a => ('key' in a ? `key ${a.key}` : `a click on ${'dom' in a ? a.dom : a.click}`)).join(', ')
 }
 
 class Tour {
   readonly transitions: TourTransition[] = []
   readonly captures: TourCapture[] = []
   readonly files: OpFile[] = []
-  // performance.now() and the stepped game time of each transition, by index.
+  // performance.now() and of each transition, by index.
   private readonly at: number[] = []
-  private readonly gameAt: number[] = []
-  private gameS = 0
-  // The game time when the last leg with inputs gave them.
-  private actedS = 0
   private readonly t0 = performance.now()
   // The real inputs since the previous capture.
   private inputs: TourInput[] = []
   // The inputs that reached the previous capture. A screen the game moves to by itself (the match screens
-  // after the Enter that queued) was reached by them, so its capture records them again.
+  // after the Enter that started the round) was reached by them, so its capture records them again.
   private reachedBy: TourInput[] = []
 
   onScreen(e: UaaScreenChange): void {
     const now = performance.now()
     this.at.push(now)
-    this.gameAt.push(this.gameS)
     this.transitions.push({ t: Math.round(now - this.t0) / 1000, from: e.from, to: e.to })
   }
 
   // Inputs on the settled screen, then frames until the host enters leg.to, then its settled frames.
   async leg(g: TourGame, leg: Leg): Promise<void> {
     const seen = this.transitions.length
-    if (leg.acts.length > 0) this.actedS = this.gameS
-    for (const act of leg.acts) this.inputs.push('key' in act ? press(g, act.key) : click(g, act.click))
+    for (const act of leg.acts) this.inputs.push('key' in act ? press(g, act.key) : 'dom' in act ? domClick(g, act.dom) : click(g, act.click))
     const deadline = performance.now() + leg.timeoutS * 1000
     let entered = -1
-    let index = -1
     while (entered < 0) {
       if (performance.now() > deadline) this.timeout(g, leg, seen)
       await sleep(FRAME_MS)
       this.step(g, FAST.includes(g.host.currentScreen()) ? FAST_DT : DT)
-      index = this.transitions.findIndex((t, i) => i >= seen && t.to === leg.to)
+      if (leg.until !== undefined) {
+        const open = document.querySelector('canvas.rf-remap') !== null
+        if (open === (leg.until === 'remap-open')) entered = performance.now()
+        continue
+      }
+      const index = this.transitions.findIndex((t, i) => i >= seen && t.to === leg.to)
       if (index >= 0) entered = this.at[index]
     }
-    if (leg.queuedS !== undefined) this.checkQueued(leg, leg.queuedS, index)
     // Game time stands still while the enter anims (uaa time is performance.now) play out.
     const settleMs = SETTLE_MS.get(leg.to) ?? 0
     let settled = 0
@@ -233,9 +249,9 @@ class Tour {
       this.step(g, 0)
       if (now - entered >= settleMs && ++settled === SETTLED_FRAMES) break
     }
-    const screen = g.host.currentScreen()
-    if (screen !== leg.to) refuse('ops', `uiTour.${leg.to}`, `the host left '${leg.to}' for '${screen}' before it settled; inspect the transitions`)
-    if (leg.holdS !== undefined) await this.hold(g, leg, leg.holdS)
+    const hostScreen = g.host.currentScreen()
+    const screen = leg.name ?? hostScreen
+    if (hostScreen !== leg.to) refuse('ops', `uiTour.${leg.to}`, `the host left '${leg.to}' for '${hostScreen}' before it settled; inspect the transitions`)
     if (!leg.capture) return
     const shot = await capturePng(g)
     const blob = shot.blob
@@ -251,33 +267,7 @@ class Tour {
   }
 
   private step(g: TourGame, dtS: number): void {
-    this.gameS += dtS
     g.step(dtS)
-  }
-
-  // No transition at all while `to` holds for holdS of game time (after Escape on 'queue': no match starts).
-  private async hold(g: TourGame, leg: Leg, holdS: number): Promise<void> {
-    const seen = this.transitions.length
-    const until = this.gameS + holdS
-    while (this.gameS < until) {
-      await sleep(FRAME_MS)
-      this.step(g, DT)
-      if (this.transitions.length > seen) {
-        const went = this.transitions.slice(seen).map(t => `${t.from ?? '-'} -> ${t.to}`).join(', ')
-        refuse('ops', `uiTour.${leg.to}.hold`, `'${leg.to}' after ${describe(leg.acts)} did not hold for ${holdS} s of game time: ${went}`)
-      }
-    }
-  }
-
-  // The host enters a screen once the previous one's exit anim is done, so transition index comes at or after
-  // the mode's change: the game time from the Enter that queued to it bounds the queue's time from above. A
-  // match that started early (without the queue) shows as less than queuedS.
-  private checkQueued(leg: Leg, queuedS: number, index: number): void {
-    if (!this.transitions.slice(0, index).some(t => t.to === 'queue')) refuse('ops', `uiTour.${leg.to}.queue`, `the host entered '${leg.to}' without passing through 'queue'`)
-    const s = this.gameAt[index] - this.actedS
-    if (s < queuedS - 1e-6) {
-      refuse('ops', `uiTour.${leg.to}.queue`, `'${leg.to}' came ${s.toFixed(3)} s of game time after the Enter that queued, before the ${queuedS} s queue`)
-    }
   }
 
   private timeout(g: TourGame, leg: Leg, seen: number): never {
@@ -289,6 +279,17 @@ class Tour {
 
 export async function uiTour(raw: unknown, deps: TourDeps): Promise<{ json: UiTourOutput; files: OpFile[] }> {
   validate(raw)
+  return runTour(deps)
+}
+
+export async function tourScreens(names: readonly string[], deps: TourDeps): Promise<{ json: UiTourOutput; files: OpFile[] }> {
+  if (names.length === 0 || names.some(name => !TOUR_SCREENS.includes(name)) || new Set(names).size !== names.length) {
+    refuse('ops', 'tourScreens.names', 'pass unique tour capture screen names')
+  }
+  return runTour(deps, names)
+}
+
+async function runTour(deps: TourDeps, names?: readonly string[]): Promise<{ json: UiTourOutput; files: OpFile[] }> {
   const status = await raaStatus()
   if (!status.available) refuse('render', 'raa', status.reason)
   const adapter = await deps.adapter()
@@ -296,11 +297,25 @@ export async function uiTour(raw: unknown, deps: TourDeps): Promise<{ json: UiTo
     refuse('gpu', 'adapter', `'${adapter.vendor} ${adapter.architecture} ${adapter.description}' is a software or fallback adapter; a capture on it is evidence of nothing, run the op in the GPU client`)
   }
   const tour = new Tour()
-  const game = await deps.boot(e => tour.onScreen(e))
+  const pad = {
+    id: 'Tour Pad (STANDARD GAMEPAD)', index: 0, connected: true, mapping: 'standard', timestamp: 0,
+    axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
+    vibrationActuator: null,
+  } as unknown as Gamepad
+  const own = Object.getOwnPropertyDescriptor(navigator, 'getGamepads')
+  Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] })
+  let game: TourGame | undefined
   try {
-    for (const leg of TOUR) await tour.leg(game, leg)
+    game = await deps.boot(e => tour.onScreen(e))
+    const last = names === undefined ? TOUR.length - 1 : Math.max(...names.map(name => TOUR.findIndex(leg => leg.capture && (leg.name ?? leg.to) === name)))
+    for (const leg of TOUR.slice(0, last + 1)) {
+      await tour.leg(game, { ...leg, capture: leg.capture && (names === undefined || names.includes(leg.name ?? leg.to)) })
+    }
   } finally {
-    game.dispose()
+    try { game?.dispose() } finally {
+      if (own) Object.defineProperty(navigator, 'getGamepads', own)
+      else Reflect.deleteProperty(navigator, 'getGamepads')
+    }
   }
   return {
     json: { renderer: 'raa', adapter, software: adapter.software, captures: tour.captures, transitions: tour.transitions },

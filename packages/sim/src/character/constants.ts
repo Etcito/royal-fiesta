@@ -1,4 +1,5 @@
 import { degToRad, v3 } from '../vec.ts'
+import type { Surface } from '../course.ts'
 import type { Vec3 } from '../vec.ts'
 
 // Starting values for the M3 tuning task. Tuning may change them only to make the
@@ -51,3 +52,10 @@ export const CharMode = {
 } as const
 
 export type CharModeValue = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+
+export const SURFACE_TUNING: Readonly<Record<Surface, { accel: number; brake: number; maxRun: number; bounce: number }>> = {
+  normal: { accel: 1, brake: 1, maxRun: 1, bounce: 0 },
+  ice: { accel: 0.25, brake: 0.15, maxRun: 1.1, bounce: 0 },
+  mud: { accel: 0.7, brake: 1.2, maxRun: 0.6, bounce: 0 },
+  rubber: { accel: 1, brake: 1, maxRun: 1, bounce: 0.6 },
+}

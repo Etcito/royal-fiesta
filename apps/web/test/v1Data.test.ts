@@ -11,7 +11,7 @@ import { parsePrims } from '@royal-fiesta/game/prims'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
-import { browserGameAssets, loadV1Courses, standInFrom, v1Dressing } from '../src/content/v1Data.ts'
+import { browserAudioPatches, browserContentIndex, browserGameAssets, loadV1Courses, standInFrom, v1Dressing } from '../src/content/v1Data.ts'
 
 function sha256(doc: unknown): string {
   return createHash('sha256').update(canonicalJson(doc), 'utf8').digest('hex')
@@ -103,6 +103,33 @@ test('v1Dressing creates one instance per decor item, passes the environment and
   dressing.leave(port)
 })
 
+test('v1Dressing shared by several ports: each leave destroys only what its own port entered', async () => {
+  const tree = await gameAsset('candy.lolly-tree', { min: [-1, 0, -1], max: [1, 3, 1] })
+  const decor: DecorItem[] = [
+    { id: 'tree-a', asset: 'candy.lolly-tree', t: [0, 0, 5], r: [0, 0, 0, 1], s: [1, 1, 1] },
+    { id: 'tree-b', asset: 'candy.lolly-tree', t: [4, 0, 9], r: [0, 0, 0, 1], s: [1, 1, 1] },
+  ]
+  const dressing = v1Dressing([course('gallery-a', decor, null)], () => standInFrom(tree, null))
+  const a = initPort()
+  const b = initPort()
+  dressing.enter(a, 'gallery-a')
+  dressing.enter(b, 'gallery-a')
+  dressing.leave(b)
+  assert.equal(b.render().instances, 0)
+  assert.equal(a.render().instances, 2, 'the other port keeps its decor')
+  dressing.leave(a)
+  assert.equal(a.render().instances, 0)
+
+  // Two viewports of one shared port: each leave gives back one enter.
+  dressing.enter(a, 'gallery-a')
+  dressing.enter(a, 'gallery-a')
+  dressing.leave(a)
+  assert.equal(a.render().instances, 2)
+  dressing.leave(a)
+  assert.equal(a.render().instances, 0)
+  dressing.leave(a)
+})
+
 test('v1Dressing.enter refuses an unknown course id', () => {
   const dressing = v1Dressing([course('plain', [], null)], () => assert.fail('no asset is asked'))
   const port = initPort()
@@ -169,4 +196,30 @@ test('runtime courses fetch the index and course with no-cache and preserve pars
   await assert.rejects(loadV1Courses(() => {}, stub.options), (error: unknown) => error instanceof RefusalError && error.area === 'course' && error.path.startsWith('courses/bad.course.json'))
   assert.equal(stub.requests.length, 2)
   assert.ok(stub.requests.every(r => r.cache === 'no-cache'))
+})
+
+test('the S29 index keeps each asset mesh path and the audio patches, read with no-cache', async () => {
+  const index = {
+    assets: [
+      { id: 'candy.test', world: 'candy', path: 'assets/candy/candy.test.asset.json', hash: 'h1', mesh: 'assets/candy/candy.test.mesh' },
+      { id: 'candy.bare', world: 'candy', path: 'assets/candy/candy.bare.asset.json', hash: 'h2' },
+    ],
+    courses: [],
+    audio: [{ id: 'door-creak', path: 'audio/door-creak.haa.json' }, { id: 'plate-click', path: 'audio/plate-click.haa.json' }],
+  }
+  const stub = runtime({ 'index.json': index })
+  const read = await browserContentIndex(stub.options)
+  assert.equal(read.assets[0].mesh, 'assets/candy/candy.test.mesh')
+  assert.equal(read.assets[1].mesh, undefined)
+  assert.deepEqual(read.audio, index.audio)
+  assert.deepEqual(stub.requests, [{ url: 'https://content.example/index.json', cache: 'no-cache' }])
+})
+
+test('browserAudioPatches maps patch ids to absolute URLs against the content root', async () => {
+  const stub = runtime({ 'index.json': { assets: [], courses: [], audio: [{ id: 'door-creak', path: 'audio/door-creak.haa.json' }] } })
+  const patches = await browserAudioPatches({ ...stub.options, root: 'https://content.example/' })
+  assert.deepEqual([...patches], [['door-creak', 'https://content.example/audio/door-creak.haa.json']])
+  const nested = runtime({ 'index.json': { assets: [], courses: [], audio: [{ id: 'hum', path: 'audio/hum.haa.json' }] } })
+  const fetcher: typeof fetch = async (input, init) => nested.options.fetch(String(input).replace('https://cdn.example/rf/v2/', 'https://content.example/'), init)
+  assert.deepEqual([...await browserAudioPatches({ root: 'https://cdn.example/rf/v2', fetch: fetcher })], [['hum', 'https://cdn.example/rf/v2/audio/hum.haa.json']])
 })

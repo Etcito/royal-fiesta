@@ -1,0 +1,68 @@
+{
+  "page": "game",
+  "op": "gameCapture",
+  "items": [
+    {
+      "prefix": "",
+      "input": {
+        "content": "sdf",
+        "course": "race-sprint",
+        "flow": "match",
+        "clients": 1,
+        "local": 3,
+        "width": 1920,
+        "height": 1080,
+        "captureAt": [
+          "playing"
+        ]
+      },
+      "judge": [
+        {
+          "capture": "playing",
+          "description": "Game screen split into a 2x2 grid: three views each following a different coloured penguin on the same 3D obstacle course, and the fourth cell showing an overview of the whole course from above"
+        }
+      ]
+    },
+    {
+      "prefix": "touch-",
+      "input": {
+        "content": "sdf",
+        "course": "race-sprint",
+        "flow": "match",
+        "clients": 1,
+        "local": 1,
+        "touch": true,
+        "width": 844,
+        "height": 390,
+        "captureAt": [
+          "playing"
+        ]
+      },
+      "judge": [
+        {
+          "capture": "playing",
+          "description": "Phone-landscape game view of a 3D obstacle course with a round virtual joystick at the bottom left and jump, dive and grab buttons at the bottom right"
+        }
+      ]
+    },
+    {
+      "prefix": "",
+      "input": {
+        "content": "sdf",
+        "flow": "tour",
+        "clients": 1,
+        "width": 1920,
+        "height": 1080,
+        "captureAt": [
+          "settings-controls"
+        ]
+      },
+      "judge": [
+        {
+          "capture": "settings-controls",
+          "description": "Settings screen listing controller actions Jump, Dive, Grab and Pause, each with its assigned gamepad button and a remap prompt"
+        }
+      ]
+    }
+  ]
+}

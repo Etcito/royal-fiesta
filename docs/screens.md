@@ -3,8 +3,10 @@ The playable game is `apps/web/game.html`. Navigation is the state machine in `p
 | id | Screen | Reached by (UI) | Leave with | What it does |
 |---|---|---|---|---|
 | `title` | Title / main menu | A finished load; Escape from credits, settings, or error | Play (vs bots), Play online, Settings, Credits | Starts a game, opens settings, or shows credits. |
-| `hub` | Lobby hub | Play on title | WASD to walk, 1–4 to emote, stand on the green queue pad or press Enter to queue; Escape opens pause | A walkable 3D plaza with bots walking and emoting and a green queue pad. |
-| `queue` | Matchmaking queue | Queue from the hub | Escape cancels back to the hub | Shows players found n/8. |
+| `hub` | Lobby hub | Play on title | Nothing to press: the round starts by itself. WASD to walk, 1–4 to emote; Escape opens pause | A walkable 3D plaza. Offline: a countdown (`?wait=` seconds, default 60) starts the round with bots; Enter or the green pad start it early. Online: the hub enters a GameSaloon lobby by itself and shows its countdown and players (or the round being spectated) in the overlay; the server starts the round when its wait ends, with whoever is there plus bots. |
+| `queue` | Matchmaking queue | Queue from the hub (in-page piloted clients and the exact-size queue only) | Escape cancels back to the hub | Shows players found n/8. |
+| `lobbyChoice` | A lobby is open | Online, arriving while a lobby waits for players | Join this lobby, Spectate, New lobby (pad, touch or keys); unanswered for 10 s, or Escape: join | Shows the lobby's players, its countdown and the time left before the default. |
+| `lobbyLive` | A round is on | Online, arriving while a lobby's round is played | Spectate, New lobby; unanswered for 10 s, or Escape: new lobby | Spectating keeps the walkable hub with the round's players and status in the overlay; when that round ends the hub enters a lobby again. |
 | `countdown` | Round intro | Match starts | Countdown completes to the round | Shows 3-2-1-GO and the round name. |
 | `round` | In-round HUD | Countdown completes | Round ends or player is eliminated | Shows round type, timer, qualified count, and alive count. |
 | `spectate` | Spectating | You are eliminated | Round ends | Shows an ELIMINATED banner; camera follows a live bean and displays its name. |

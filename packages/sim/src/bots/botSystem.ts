@@ -10,14 +10,19 @@ import type { PlayerInput } from '../input.ts'
 import { PlayerStatus } from '../match/roundSystem.ts'
 import type { RoundSystem } from '../match/roundSystem.ts'
 import type { MatchSetup } from '../match/setup.ts'
+import type { MechLogicSystem } from '../mechanisms/logicSystem.ts'
+import type { MechanismSystem } from '../mechanisms/system.ts'
 import type { ObstacleSystem } from '../obstacles/system.ts'
 import { refuse } from '../refusal.ts'
+import { pose } from '../vec.ts'
+import type { Pose } from '../vec.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
 import { bindBehaviour } from './behaviour.ts'
 import type { BotBehaviour } from './behaviour.ts'
 import { newMemory, raceBrain, rollSkill, survivalBrain } from './brain.ts'
 import type { BotSkill, BrainInput, BrainMemory } from './brain.ts'
-import { courseCapabilities } from './courseRead.ts'
+import { courseCapabilities, readLevers, signalIndex } from './courseRead.ts'
+import type { ReadLever } from './courseRead.ts'
 import { updateRoute } from './routes.ts'
 import type { RoutePlan } from './routes.ts'
 
@@ -26,6 +31,8 @@ const KNEE = 0.4
 const AHEAD_DIST = 1.2
 const AHEAD_MAX_NY = 0.6
 const HAZARD_RADIUS = 1.6
+// mechanisms/bodies.ts groups fixed bodies as STATIC and dynamic/kinematic bodies as
+// MOVING, so both queries below include dynamic and kinematic mechanism colliders.
 const PROBE_GROUPS = groups(G.PROBE, G.STATIC | G.MOVING)
 const HAZARD_GROUPS = groups(G.PROBE, G.MOVING)
 const ROT_ID = { x: 0, y: 0, z: 0, w: 1 }
@@ -46,6 +53,7 @@ const scratchState: CharState = {
   teleportTick: 0,
 }
 const scratchPos = { x: 0, y: 0, z: 0 }
+const scratchHandle: Pose = pose()
 let scratchRay: InstanceType<RapierModule['Ray']> | null = null
 let scratchBall: InstanceType<RapierModule['Ball']> | null = null
 
@@ -81,6 +89,31 @@ export class BotSystem implements SimSystem<PlayerInput> {
   readonly #last: Int32Array
   // Hazard query scratch, valid only inside one preStep.
   #hazard = false
+  // Callback scratch, refreshed before the bot loop; never snapshotted.
+  #ctx: WorldCtx<PlayerInput> | null = null
+  #course: ResolvedCourse | null = null
+  #levers: readonly ReadLever[] = []
+
+  // Bound once per system, reading the current bot from scratchState.
+  readonly #signalOn = (id: string): boolean => {
+    const ctx = this.#ctx
+    const course = this.#course
+    return ctx !== null && course !== null && ctx.hasSystem('mechLogic') &&
+      signalIndex(course, id) >= 0 && ctx.system<MechLogicSystem>('mechLogic').signal(id)
+  }
+
+  readonly #leverNear = (id: string): boolean => {
+    const ctx = this.#ctx
+    if (ctx === null || !ctx.hasSystem('mechanisms')) return false
+    for (const lever of this.#levers) {
+      if (lever.id !== id) continue
+      if (!ctx.system<MechanismSystem>('mechanisms').bodyPose(ctx, lever.handle, scratchHandle)) return false
+      const dx = scratchHandle.t.x - scratchState.pos.x
+      const dz = scratchHandle.t.z - scratchState.pos.z
+      return Math.sqrt(dx * dx + dz * dz) <= lever.grabRange - 0.1
+    }
+    return false
+  }
 
   constructor(setup: MatchSetup, behaviours: readonly BotBehaviour[] = []) {
     const n = setup.playerCount
@@ -156,6 +189,7 @@ export class BotSystem implements SimSystem<PlayerInput> {
     m.lastZ = fresh.lastZ
     m.wobble = fresh.wobble
     m.ticks = fresh.ticks
+    m.waitTicks = fresh.waitTicks
     this.#ring[p].fill(NEUTRAL_CODE)
     this.#head[p] = 0
     this.#route[p] = null
@@ -177,6 +211,9 @@ export class BotSystem implements SimSystem<PlayerInput> {
     const course = obstacles.courses[ci]
     const survival = course.kind === 'survival'
     const chars = ctx.system<CharacterSystem>('characters')
+    this.#ctx = ctx
+    this.#course = course
+    this.#levers = readLevers(course)
     const caps = courseCapabilities(course)
     // Bind every profile to the course before a single bot input is written: a useLever
     // profile on a leverless course refuses the tick without half-stepping the others.
@@ -198,6 +235,8 @@ export class BotSystem implements SimSystem<PlayerInput> {
         mode: st.mode,
         obstacleAhead: this.#obstacleAhead(ctx, st),
         hazardNear: this.#hazardNear(ctx, st),
+        signalOn: this.#signalOn,
+        leverNear: this.#leverNear,
       }
       const beh = this.#behaviour[p]
       if (beh !== null) {
@@ -319,6 +358,7 @@ export class BotSystem implements SimSystem<PlayerInput> {
       w.f64(m.lastZ)
       w.f64(m.wobble)
       w.i32(m.ticks)
+      w.i32(m.waitTicks)
       w.u32(this.#head[p])
       for (let i = 0; i < ring.length; i++) w.u32(ring[i])
       w.str(this.#behaviour[p]?.id ?? '')
@@ -375,6 +415,7 @@ export class BotSystem implements SimSystem<PlayerInput> {
       m.lastZ = r.f64()
       m.wobble = r.f64()
       m.ticks = r.i32()
+      m.waitTicks = r.i32()
       const head = r.u32()
       if (head >= Math.max(1, ring.length)) {
         refuse('bots', `snapshot/bots/${p}/head`, `${head} is outside the reaction ring of ${ring.length}; restore a snapshot from the same match setup`)

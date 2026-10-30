@@ -6,7 +6,7 @@ import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { BEHAVIOUR_FORMAT, BEHAVIOUR_VERSION, bindBehaviour, loadBehaviour, parseBehaviour } from '../src/bots/behaviour.ts'
 import type { BotBehaviour } from '../src/bots/behaviour.ts'
-import { courseCapabilities, nearestPathIndex, obstaclePhase, phaseInWindow, readMechanisms, readNavigation, regionDistance, regionNeighbours } from '../src/bots/courseRead.ts'
+import { courseCapabilities, leverByPull, nearestPathIndex, obstaclePhase, phaseInWindow, readLevers, readMechanisms, readNavigation, regionDistance, regionNeighbours } from '../src/bots/courseRead.ts'
 import { cheapestRegions, goalRegion, planRoute, regionExposure, replanDue, updateRoute } from '../src/bots/routes.ts'
 import type { RouteInput, RoutePlan } from '../src/bots/routes.ts'
 import { evaluateBrain, newMemory, raceBrain, rollSkill, survivalBrain } from '../src/bots/brain.ts'
@@ -14,14 +14,19 @@ import type { BotSkill, BrainInput } from '../src/bots/brain.ts'
 import { BotSystem } from '../src/bots/botSystem.ts'
 import { CharacterSystem } from '../src/character/system.ts'
 import type { CourseKind, Motion, ObstacleSpec, PathNode, ResolvedCourse } from '../src/course.ts'
-import { BTN, decodeInput, neutralInput } from '../src/input.ts'
+import { BTN, NEUTRAL_CODE, decodeInput, neutralInput } from '../src/input.ts'
 import type { PlayerInput } from '../src/input.ts'
+import { createMatchSim } from '../src/match/matchSim.ts'
+import type { CharacterView } from '../src/match/matchSim.ts'
 import { PlayerStatus, RoundSystem } from '../src/match/roundSystem.ts'
+import type { MechEvent, MechanismSpec } from '../src/mechanismSpec.ts'
 import { planRound, roundTicks } from '../src/match/rules.ts'
 import { PROFILES } from '../src/match/setup.ts'
 import type { MatchSetup } from '../src/match/setup.ts'
 import { motionPose } from '../src/obstacles/motion.ts'
 import { ObstacleSystem } from '../src/obstacles/system.ts'
+import { MechLogicSystem } from '../src/mechanisms/logicSystem.ts'
+import { MechanismSystem } from '../src/mechanisms/system.ts'
 import { isRefusal } from '../src/refusal.ts'
 import { quatAxisAngle, quatMul, v3 } from '../src/vec.ts'
 import type { Pose, Quat, Vec3 } from '../src/vec.ts'
@@ -798,10 +803,14 @@ function candyMatch(course: ResolvedCourse, behaviour: BotBehaviour, seed: numbe
   }
   const bots = new BotSystem(setup, [behaviour])
   const obs = new ObstacleSystem([course])
+  const mechLogic = new MechLogicSystem([course])
+  const mechanisms = new MechanismSystem([course])
   const chars = new CharacterSystem({ playerCount: PLAYERS })
   const round = new RoundSystem(setup)
-  const world = new FiestaWorld<PlayerInput>(R, { playerCount: PLAYERS, systems: [bots, obs, chars, round] })
+  const world = new FiestaWorld<PlayerInput>(R, { playerCount: PLAYERS, systems: [bots, obs, mechLogic, mechanisms, chars, round] })
   obs.load(world.ctx, 0)
+  mechanisms.load(world.ctx, 0)
+  mechLogic.load(world.ctx, 0)
   const cap = roundTicks(course, PROFILES.standard)
   round.begin(world.ctx, planRound(0, PLAYERS), 0, [0, 1, 2, 3], [0, 1, 2, 3], cap)
   bots.resetForRound(world.ctx)
@@ -885,5 +894,293 @@ describe('bots-candy', () => {
       (e: unknown) => isRefusal(e) && e.path === 'behaviours/test-bot/rules/0/action' && e.reason.includes('levers'),
     )
     m.world.free()
+  })
+})
+
+// Synthetic courses for the L11 wait/pull rules and the shipped mech-lab read/integration.
+async function repoCourse(rel: string): Promise<ResolvedCourse> {
+  const v1 = await loadCourseV1File(rel)
+  const sim = v1.sim
+  assert.ok(sim !== null, `${rel} has a simulation course`)
+  return sim
+}
+
+const MECH_LAB = 'courses/mech-lab.course.json'
+const SURVIVAL_SPRINT = 'courses/survival-sprint.course.json'
+
+function waitCourse(): ResolvedCourse {
+  const c = course('wait-a', 'race')
+  c.path = [node(0, 4), { p: v3(0, 1, 9), jump: false, dive: false, wait: 'gate' }, node(0, 14)]
+  return c
+}
+
+// One lever item whose handle body rest sits at `rest`; readLevers reads that body pose.
+function pullCourse(rest: Vec3): ResolvedCourse {
+  const c = course('pull-a', 'race')
+  c.path = [node(0, 4), { p: v3(0, 1, 9), jump: false, dive: false, pull: 'lever' }, node(0, 14)]
+  const mechanisms: MechanismSpec = {
+    items: [{
+      id: 'lever', asset: 'test.lever', t: v3(rest.x, rest.y, rest.z), r: ID, s: v3(1, 1, 1), joints: [],
+      bodies: [{
+        id: 'handle', type: 'dynamic', colliders: [], rest: { t: v3(rest.x, rest.y, rest.z), r: ID },
+        density: 400, friction: 0.6, restitution: 0, linearDamping: 0, angularDamping: 0.05,
+        gravityScale: 1, ccd: false, surface: 'normal',
+      }],
+    }],
+    joints: [], switches: [],
+    levers: [{ id: 'lever', handle: { item: 0, body: 0 }, joint: 0, onAngle: 0.6, offAngle: 0.2, grabRange: 1 }],
+    logic: [], links: [], animations: [], signals: ['lever'], budget: { dynamicBodies: 1, joints: 0 },
+  }
+  c.mechanisms = mechanisms
+  return c
+}
+
+function charView(): CharacterView {
+  return { pos: v3(0, 0, 0), vel: v3(0, 0, 0), facing: { x: 0, z: 1 }, mode: 0, status: 0, parked: false, teleportTick: 0 }
+}
+
+function atWaitNode(sim: ReturnType<typeof createMatchSim>, p: number, waitNode: PathNode, view: CharacterView): boolean {
+  const c = sim.character(p, view)
+  const dx = c.pos.x - waitNode.p.x
+  const dz = c.pos.z - waitNode.p.z
+  return Math.sqrt(dx * dx + dz * dz) <= 1.5
+}
+
+describe('bots-mechanisms', () => {
+  it('bots-mechanisms: a wait node holds neutral until its signal is on, then advances', () => {
+    const c = waitCourse()
+    const mem = newMemory()
+    mem.pathIndex = 1
+    const pos = v3(0, 0.85, 8.5)
+    let on = false
+    const input = brainInput(c, pos, { signalOn: () => on })
+    assert.equal(raceBrain(input, SKILL, mem, new Rng(1)), NEUTRAL_CODE)
+    assert.equal(mem.waitTicks, 1)
+    assert.equal(raceBrain(input, SKILL, mem, new Rng(1)), NEUTRAL_CODE)
+    assert.equal(mem.waitTicks, 2)
+    on = true
+    const code = raceBrain(input, SKILL, mem, new Rng(1))
+    assert.equal(mem.pathIndex, 2)
+    assert.equal(mem.waitTicks, 0)
+    assert.notEqual(code, NEUTRAL_CODE)
+  })
+
+  it('bots-mechanisms: a wait node times out after exactly 600 held ticks', () => {
+    const c = waitCourse()
+    const mem = newMemory()
+    mem.pathIndex = 1
+    const input = brainInput(c, v3(0, 0.85, 8.5), { signalOn: () => false })
+    for (let i = 0; i < 600; i++) {
+      assert.equal(raceBrain(input, SKILL, mem, new Rng(1)), NEUTRAL_CODE)
+      assert.equal(mem.waitTicks, i + 1)
+    }
+    assert.equal(mem.waitTicks, 600)
+    const code = raceBrain(input, SKILL, mem, new Rng(1))
+    assert.equal(mem.waitTicks, 0)
+    assert.equal(mem.pathIndex, 2)
+    assert.notEqual(code, NEUTRAL_CODE)
+  })
+
+  it('bots-mechanisms: a pull node walks to the lever, presses in short grabs, and stops', () => {
+    const c = pullCourse(v3(3, 0, 9))
+    const pos = v3(0, 0.85, 9)
+    let on = false
+    let near = false
+    const input = brainInput(c, pos, { signalOn: () => on, leverNear: () => near })
+
+    const walking = newMemory()
+    walking.pathIndex = 1
+    const walk = decodeInput(raceBrain(input, SKILL, walking, new Rng(3)), neutralInput())
+    assert.ok(walk.moveX > 0.9, `the bot steers toward the lever rest, got moveX ${walk.moveX}`)
+    assert.ok(Math.abs(walk.moveZ) < 0.1)
+    assert.equal(walk.grab, false)
+
+    near = true
+    const pressing = newMemory()
+    pressing.pathIndex = 1
+    const presses: boolean[] = []
+    for (let i = 0; i < 12; i++) {
+      const d = decodeInput(raceBrain(input, SKILL, pressing, new Rng(3)), neutralInput())
+      presses.push(d.grab)
+      assert.equal(d.moveX, 0)
+      assert.equal(d.moveZ, 0)
+    }
+    assert.deepEqual(presses, [true, true, true, true, false, false, false, false, false, false, false, false])
+
+    on = true
+    near = false
+    const released = newMemory()
+    released.pathIndex = 1
+    raceBrain(input, SKILL, released, new Rng(3))
+    assert.equal(released.pathIndex, 2)
+    assert.equal(released.waitTicks, 0)
+
+    on = false
+    near = true
+    const timedOut = newMemory()
+    timedOut.pathIndex = 1
+    for (let i = 0; i < 240; i++) raceBrain(input, SKILL, timedOut, new Rng(3))
+    assert.equal(timedOut.waitTicks, 240)
+    assert.equal(timedOut.pathIndex, 1)
+    raceBrain(input, SKILL, timedOut, new Rng(3))
+    assert.equal(timedOut.waitTicks, 0)
+    assert.equal(timedOut.pathIndex, 2)
+
+    on = true
+    near = true
+    const alreadyOn = newMemory()
+    alreadyOn.pathIndex = 1
+    for (let i = 0; i < 12; i++) {
+      assert.equal(raceBrain(input, SKILL, alreadyOn, new Rng(3)) & BTN.GRAB, 0)
+    }
+  })
+
+  it('bots-mechanisms: absent signalOn and leverNear callbacks read as false', () => {
+    const wait = waitCourse()
+    const waitMem = newMemory()
+    waitMem.pathIndex = 1
+    const waitInput = brainInput(wait, v3(0, 0.85, 8.5))
+    for (let i = 0; i < 600; i++) assert.equal(raceBrain(waitInput, SKILL, waitMem, new Rng(1)), NEUTRAL_CODE)
+    assert.equal(waitMem.waitTicks, 600)
+    raceBrain(waitInput, SKILL, waitMem, new Rng(1))
+    assert.equal(waitMem.pathIndex, 2)
+    assert.equal(waitMem.waitTicks, 0)
+
+    const pull = pullCourse(v3(3, 0, 9))
+    const pullMem = newMemory()
+    pullMem.pathIndex = 1
+    const pullInput = brainInput(pull, v3(0, 0.85, 9))
+    for (let i = 0; i < 240; i++) assert.equal(raceBrain(pullInput, SKILL, pullMem, new Rng(1)) & BTN.GRAB, 0)
+    assert.equal(pullMem.waitTicks, 240)
+    raceBrain(pullInput, SKILL, pullMem, new Rng(1))
+    assert.equal(pullMem.pathIndex, 2)
+    assert.equal(pullMem.waitTicks, 0)
+  })
+
+  it('bots-mechanisms: courseRead exposes mech-lab waits, pulls and levers', async () => {
+    const c = await repoCourse(MECH_LAB)
+    const nav = readNavigation(c)
+    assert.ok(nav.path.some(n => n.wait === 'door-hold'), 'mech-lab path carries the door-hold wait')
+    assert.ok(nav.path.some(n => n.pull === 'lever'), 'mech-lab path carries the lever pull')
+    const lever = readLevers(c).find(l => l.id === 'lever')
+    assert.ok(lever !== undefined, 'readLevers returns the mech-lab lever')
+    assert.equal(lever.grabRange, 1)
+    const spec = c.mechanisms
+    assert.ok(spec)
+    assert.deepEqual(lever.rest, spec.items[lever.handle.item].bodies[lever.handle.body].rest.t)
+    assert.equal(leverByPull(c, 'lever')?.id, 'lever')
+    const caps = courseCapabilities(c)
+    assert.equal(caps.hasLevers, true)
+    assert.deepEqual(caps.levers, ['lever'])
+  })
+
+  it('bots-mechanisms: eight bots finish mech-lab with waits and lever pulls', { timeout: 200_000 }, async () => {
+    const lab = await repoCourse(MECH_LAB)
+    const survival = await repoCourse(SURVIVAL_SPRINT)
+    const sim = createMatchSim(R, { seed: 36, playerCount: 8, humans: Array(8).fill(false), profile: 'sprint', courses: [lab, survival] })
+    try {
+      const rounds = sim.world.ctx.system<RoundSystem>('round')
+      const bots = sim.world.ctx.system<BotSystem>('bots')
+      const spec = lab.mechanisms
+      assert.ok(spec !== null && spec !== undefined)
+      const inputs = Array.from({ length: 8 }, () => neutralInput())
+      for (let t = 0; t <= PROFILES.sprint.introTicks; t++) sim.step(inputs)
+      const players = Array.from({ length: 8 }, (_, p) => p)
+      rounds.begin(sim.world.ctx, { index: 0, kind: 'race', final: false, target: 8 },
+        0, players, players, PROFILES.sprint.timeCapS! * 60 - sim.tick)
+      const waitNode = lab.path.find(n => n.wait === 'door-hold')
+      assert.ok(waitNode !== undefined, 'mech-lab has the door-hold wait node')
+      const view = charView()
+      const events: MechEvent[] = []
+      let waited = false
+      let leverOn: MechEvent | undefined
+      const maxTicks = PROFILES.sprint.introTicks + PROFILES.sprint.timeCapS! * 60 + 2
+      while (!rounds.over && sim.tick < maxTicks) {
+        const fromTick = sim.tick
+        sim.step(inputs)
+        sim.mechanismEvents(fromTick, events)
+        if (leverOn === undefined) {
+          const found = events.find(e => e.kind === 'leverOn')
+          if (found !== undefined) leverOn = { ...found }
+        }
+        if (!sim.signal('door-hold')) {
+          for (let p = 0; p < 8; p++) {
+            if (atWaitNode(sim, p, waitNode, view) && bots.actionOf(p) === NEUTRAL_CODE) waited = true
+          }
+        }
+      }
+      assert.ok(rounds.over, 'the mech-lab round ends inside the sprint cap')
+      const round = rounds.result()
+      assert.ok(round !== null)
+      assert.equal(round.reason, 'target', `mech-lab result: ${JSON.stringify({ qualified: round.qualified, reason: round.reason })}`)
+      assert.equal(round.qualified.length, 8)
+      assert.ok(waited, 'a bot held neutral at the door-hold node while the signal was off')
+      assert.ok(leverOn !== undefined, 'a bot grab toggled the lever')
+      assert.equal(leverOn.source, spec.signals.indexOf('lever'))
+    } finally {
+      sim.free()
+    }
+  })
+
+  it('bots-mechanisms: a mid-wait mech-lab snapshot replays action for action', { timeout: 200_000 }, async () => {
+    const lab = await repoCourse(MECH_LAB)
+    const survival = await repoCourse(SURVIVAL_SPRINT)
+    const inputs = Array.from({ length: 8 }, () => neutralInput())
+    const waitNode = lab.path.find(n => n.wait === 'door-hold')
+    assert.ok(waitNode !== undefined, 'mech-lab has the door-hold wait node')
+    const view = charView()
+    const maxTicks = PROFILES.sprint.introTicks + PROFILES.sprint.timeCapS! * 60 + 2
+    const build = () => {
+      const sim = createMatchSim(R, { seed: 36, playerCount: 8, humans: Array(8).fill(false), profile: 'sprint', courses: [lab, survival] })
+      const rounds = sim.world.ctx.system<RoundSystem>('round')
+      const bots = sim.world.ctx.system<BotSystem>('bots')
+      for (let t = 0; t <= PROFILES.sprint.introTicks; t++) sim.step(inputs)
+      const players = Array.from({ length: 8 }, (_, p) => p)
+      rounds.begin(sim.world.ctx, { index: 0, kind: 'race', final: false, target: 8 },
+        0, players, players, PROFILES.sprint.timeCapS! * 60 - sim.tick)
+      return { sim, rounds, bots }
+    }
+
+    const a = build()
+    try {
+      let mid: Uint8Array | null = null
+      while (!a.rounds.over && a.sim.tick < maxTicks && mid === null) {
+        a.sim.step(inputs)
+        if (a.sim.signal('door-hold')) continue
+        for (let p = 0; p < 8; p++) {
+          if (atWaitNode(a.sim, p, waitNode, view) && a.bots.actionOf(p) === NEUTRAL_CODE) {
+            mid = a.sim.world.takeSnapshotBytes()
+            break
+          }
+        }
+      }
+      assert.ok(mid !== null, 'a mid-wait snapshot was taken')
+      const original: number[] = []
+      while (!a.rounds.over && a.sim.tick < maxTicks) {
+        a.sim.step(inputs)
+        for (let p = 0; p < 8; p++) original.push(a.bots.actionOf(p))
+      }
+      const endTick = a.sim.tick
+      const endHash = a.sim.world.stateHash()
+      assert.ok(a.rounds.over, 'the original mech-lab round ends inside the sprint cap')
+
+      const b = build()
+      try {
+        b.sim.world.restoreSnapshotBytes(mid)
+        const restored: number[] = []
+        while (!b.rounds.over && b.sim.tick < maxTicks) {
+          b.sim.step(inputs)
+          for (let p = 0; p < 8; p++) restored.push(b.bots.actionOf(p))
+        }
+        assert.deepEqual(restored, original, 'restored bots replay the same actionOf sequence')
+        assert.equal(b.sim.tick, endTick)
+        assert.equal(b.rounds.result()?.reason, a.rounds.result()?.reason)
+        assert.equal(b.sim.world.stateHash(), endHash, 'restored run reaches the same state hash')
+      } finally {
+        b.sim.free()
+      }
+    } finally {
+      a.sim.free()
+    }
   })
 })

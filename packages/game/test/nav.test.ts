@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { Nav, SCREENS, navGraph, navStates } from '../src/screens/nav.ts'
+import { Effect, Nav, SCREENS, navGraph, navStates } from '../src/screens/nav.ts'
 import type { NavEvent, Screen } from '../src/screens/nav.ts'
 import type { LoadProgress } from '../src/content.ts'
 
@@ -182,4 +182,21 @@ test('loading -> fail keeps the message text, then retry reloads', () => {
   assert.equal(nav.error, null)
   nav.dispatch({ kind: 'loaded' })
   assert.equal(nav.screen, 'title')
+})
+
+test('lobby choice: join / spectate / new lobby buttons, back takes the default and returns to the hub; neither counts as a match', () => {
+  const n = new Nav()
+  n.dispatch({ kind: 'action', action: 'play' })
+  n.dispatch({ kind: 'game', screen: 'lobbyChoice' })
+  assert.equal(n.screen, 'lobbyChoice')
+  assert.equal(n.inMatch, false)
+  assert.deepEqual(n.actions(), ['join', 'spectate', 'newLobby'])
+  assert.deepEqual(n.dispatch({ kind: 'action', action: 'join' }), [Effect.pickJoin])
+  assert.deepEqual(n.dispatch({ kind: 'action', action: 'newLobby' }), [Effect.pickNew])
+  n.dispatch({ kind: 'game', screen: 'lobbyLive' })
+  assert.deepEqual(n.actions(), ['spectate', 'newLobby'])
+  assert.deepEqual(n.dispatch({ kind: 'action', action: 'join' }), [])
+  assert.deepEqual(n.dispatch({ kind: 'action', action: 'spectate' }), [Effect.pickSpectate])
+  assert.deepEqual(n.dispatch({ kind: 'back' }), [Effect.pickDefault])
+  assert.equal(n.screen, 'hub')
 })

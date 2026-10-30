@@ -36,7 +36,49 @@
           "game": "royal-fiesta",
           "id": "candy.spinner-bar",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [],
+                "parts": [],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "rotor",
+                "type": "kinematic",
+                "colliders": [0, 1],
+                "parts": [
+                  "collider_hub",
+                  "collider_bar",
+                  "hub",
+                  "bar"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": []
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -70,7 +112,14 @@
               [0, 0, 0.4],
               [0, 0, -0.4]
             ],
-            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
             "edgeRadii": {}
           }
         },
@@ -682,11 +731,10 @@
   },
   "collision": [
     {
-      "shape": "cylinder",
+      "shape": "cuboid",
       "t": [0, 0.6, 0],
       "r": [0, 0, 0, 1],
-      "radius": 0.4,
-      "halfHeight": 0.6
+      "halfExtents": [0.4, 0.6, 0.4]
     },
     {
       "shape": "cuboid",
@@ -695,10 +743,52 @@
       "halfExtents": [4, 0.25, 0.25]
     }
   ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [],
+        "parts": [],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "rotor",
+        "type": "kinematic",
+        "colliders": [0, 1],
+        "parts": [
+          "collider_hub",
+          "collider_bar",
+          "hub",
+          "bar"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": []
+  },
   "anchors": {},
   "bounds": {
     "min": [-4, 0, -0.88],
     "max": [4, 1.63, 0.88]
   },
-  "hash": "12f699c5bb0a41ba5e18cb296cf83b8cea246b55304c693643d9df168c64448e"
+  "hash": "4b7a7f24324d6ee2ccecd6372b1452eecbc6787f1cd03f738d37f5a2c7ab2a84"
 }

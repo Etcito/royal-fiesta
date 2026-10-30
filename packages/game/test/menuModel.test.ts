@@ -115,7 +115,7 @@ test('pause lists all controls with current key bindings', () => {
   const pause = modelAt(ctx({ settings }), { kind: 'action', action: 'play' }, { kind: 'back' })
   assert.equal(pause.screen, 'pause')
   assert.deepEqual(pause.lines, lines)
-  assert.equal(HINTS.hub, 'WASD/ZQSD move - mouse or right stick: camera - 1-4 emote - Enter or green pad: play - Esc menu')
+  assert.equal(HINTS.hub, 'WASD/ZQSD move - mouse or right stick: camera - 1-4 emote - the round starts by itself - Esc menu')
 })
 
 test('loading shows its progress line and has no button', () => {

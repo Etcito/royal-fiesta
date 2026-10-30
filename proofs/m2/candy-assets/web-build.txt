@@ -1,0 +1,124 @@
+
+> build
+> npm run web:build
+
+
+> web:build
+> npm run audio:bake && npm run ui:fonts && npm run build -w @royal-fiesta/web
+
+
+> audio:bake
+> node --experimental-strip-types tools/bake-audio.ts
+
+crowd.aww 8 variants 15.19 s 243456 B
+crowd.cheer.big 8 variants 24.79 s 397056 B
+crowd.cheer.small 8 variants 12.78 s 205056 B
+fiesta.dive 8 variants 4.15 s 66816 B
+fiesta.eliminate 8 variants 9.14 s 146688 B
+fiesta.grab 8 variants 1.91 s 31104 B
+fiesta.jump 8 variants 3.43 s 55296 B
+fiesta.squash 8 variants 2.81 s 45696 B
+fiesta.wobble 8 variants 5.39 s 86784 B
+total 9 families 72 variants 79.58 s 1277952 B
+baked 9 families into apps/web/public/audio in 7.4 s
+
+> ui:fonts
+> node --experimental-strip-types tools/uiFont.ts bundle
+
+ui-font: https://cdn.jsdelivr.net/fontsource/fonts/fredoka@5.3.0/latin-700-normal.woff2 answered fetch failed; used https://registry.npmjs.org/@fontsource/fredoka/-/fredoka-5.3.0.tgz
+PASS font fetch fredoka-700.woff2 ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16 15900 bytes
+PASS font bundle fredoka-700.woff2 -> apps/web/public/fonts/ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16.ttf (35564 bytes sfnt)
+PASS ui-font bundle: 1 font(s)
+
+> @royal-fiesta/web@0.0.0 prebuild
+> node --experimental-strip-types ../../tools/uiLogo.ts bundle
+
+ui-logo: verified source 431b9f822059fe47645811d8a030767d5b524e0cf15e75fd1e6baf3f977c1b9a
+{
+  "source": {
+    "sha256": "431b9f822059fe47645811d8a030767d5b524e0cf15e75fd1e6baf3f977c1b9a",
+    "bytes": 1691133,
+    "format": "png"
+  },
+  "avif": {
+    "sha256": "375ce04563ba6e46858626a175cc6e84c0fd608cb3599cff1fb157d2c67323e4",
+    "bytes": 224631,
+    "quality": 85,
+    "effort": 4,
+    "chromaSubsampling": "4:4:4",
+    "bitdepth": 8
+  },
+  "encoder": {
+    "sharp": "0.35.5",
+    "vips": "8.18.7",
+    "aom": "3.15.1"
+  }
+}
+
+> @royal-fiesta/web@0.0.0 build
+> vite build --configLoader runner --config anim-brick.vite.config.ts
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 284 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/assets/manifold-B02xp8N7.js                     0.08 kB
+dist/assets/__vite-browser-external-OH2khA84.js      0.11 kB
+dist/nmc.gpu.json                                    0.15 kB │ gzip:     0.12 kB
+dist/assets/errors-DtmIYxrB.js                       0.15 kB
+dist/candy-assets.html                               0.53 kB │ gzip:     0.32 kB
+dist/index.html                                      0.62 kB │ gzip:     0.33 kB
+dist/assets/rolldown-runtime-XKyaHtl9.js             0.72 kB
+dist/client.html                                     1.00 kB │ gzip:     0.48 kB
+dist/play.html                                       1.16 kB │ gzip:     0.52 kB
+dist/game.html                                       1.83 kB │ gzip:     0.78 kB
+dist/assets/raa_anim_js.d-kOobO0W_.ts                6.15 kB
+dist/assets/worklet-BWRBPW4G.js                     15.08 kB
+dist/assets/raa_anim_js-BOA1HjHV.js                 33.63 kB
+dist/assets/fiestaWorklet-CvwXm_CH.js               75.34 kB
+dist/assets/highs-rM7BQ6EF.js                       99.63 kB
+dist/assets/raa_anim_js_bg-DjEI8ACU.wasm           385.44 kB │ gzip:   150.26 kB
+dist/assets/haa-rBHkVqCt.wasm                      396.97 kB │ gzip:   148.48 kB
+dist/assets/manifold-BE4c7gO-.wasm                 541.47 kB │ gzip:   207.94 kB
+dist/assets/raa_js_bg-Cgq4U3DC.wasm              2,297.38 kB │ gzip:   785.33 kB
+dist/assets/worker-CJBpqHwE.js                   2,680.03 kB
+dist/assets/highs-CTQpMom3.wasm                  3,531.40 kB │ gzip: 1,231.01 kB
+dist/assets/__vite-browser-external-BimtPnnJ.js      0.09 kB │ gzip:     0.10 kB
+dist/assets/protocol-B75Ag6L4.js                     1.20 kB │ gzip:     0.65 kB
+dist/assets/impl-gchCs5sf.js                         1.82 kB │ gzip:     1.01 kB
+dist/assets/index-DqrC9ZZt.js                        1.92 kB │ gzip:     1.08 kB
+dist/assets/meshPool-ueRH7Jxx.js                     2.36 kB │ gzip:     1.09 kB
+dist/assets/snap-BLFc8znx.js                         2.87 kB │ gzip:     1.14 kB
+dist/assets/candy-assets-CdZSiH7U.js                 3.24 kB │ gzip:     1.72 kB
+dist/assets/driver-BcEAvWdz.js                       6.33 kB │ gzip:     2.85 kB
+dist/assets/play-DlRKnR-q.js                        12.23 kB │ gzip:     5.33 kB
+dist/assets/brick--9jVPLUR.js                       18.82 kB │ gzip:     5.39 kB
+dist/assets/client-CKXnTfh9.js                      21.94 kB │ gzip:     8.48 kB
+dist/assets/sound-CRw_Cdr4.js                       42.58 kB │ gzip:    15.72 kB
+dist/assets/sdfPort-IVC0qlVY.js                    151.45 kB │ gzip:    46.38 kB
+dist/assets/fiestaWorklet-DYuasejn.js              437.90 kB │ gzip:   125.36 kB
+dist/assets/game-Qi04cfBO.js                     1,497.14 kB │ gzip:   373.17 kB
+dist/assets/world-BCm36RfC.js                    4,369.80 kB │ gzip: 1,678.72 kB
+
+✓ built in 1.56s
+[plugin rolldown:vite-resolve] Module "node:fs/promises" has been externalized for browser compatibility, imported by "../raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:url" has been externalized for browser compatibility, imported by "../raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "../raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "../MAMA/node_modules/manifold-3d/manifold.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "../MAMA/node_modules/highs/build/highs.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0m../../../MAMA/src/core/lowpoly/qem.ts is dynamically imported by ../../../MAMA/src/core/paramesh/relaxed-mesh.ts, ../../../MAMA/src/core/paramesh/viewport-mesh.ts but also statically imported by ../../../MAMA/src/core/bake/textured-export.ts, ../../../MAMA/src/core/lowpoly/decimate.ts, dynamic import will not move module into another chunk.
+
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0m../../../MAMA/packages/quadmesh/dist/stages/index.js is dynamically imported by ../../../MAMA/packages/quadmesh/dist/stages/quad-csg-layout-default.js but also statically imported by ../../../MAMA/packages/quadmesh/dist/index.js, ../../../MAMA/packages/quadmesh/dist/pipeline/run.js, dynamic import will not move module into another chunk.
+
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0m../../../MAMA/src/core/paramesh/relaxed-mesh.ts is dynamically imported by ../../../MAMA/src/core/paramesh/viewport-mesh.ts but also statically imported by ../../../MAMA/src/core/mesh/view-shading.ts, ../../../MAMA/src/core/paramesh/warped-field.ts, dynamic import will not move module into another chunk.
+
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0m../../../MAMA/src/core/mesh/view-shading.ts is dynamically imported by ../../../MAMA/src/core/mesh/pipeline.ts but also statically imported by ../../../MAMA/src/core/paramesh/mesh-part.ts, dynamic import will not move module into another chunk.
+
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0m../../../MAMA/src/core/paramesh/output.ts is dynamically imported by ../../../MAMA/src/core/mesh/pipeline.ts but also statically imported by ../../../MAMA/src/core/quadmesh/output.ts, ../../../MAMA/src/plugins/core/80-paramesh-mesher.ts, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

@@ -7,6 +7,9 @@ import type { CharState } from '../character/system.ts'
 import { regionOf } from '../course.ts'
 import type { ObstacleSpec, ResolvedCourse } from '../course.ts'
 import type { PlayerInput } from '../input.ts'
+import type { BodyRef, MechEvent, MechItem, MechanismView } from '../mechanismSpec.ts'
+import { MechLogicSystem } from '../mechanisms/logicSystem.ts'
+import { MechanismSystem } from '../mechanisms/system.ts'
 import { ObstacleSystem } from '../obstacles/system.ts'
 import { refuse } from '../refusal.ts'
 import type { Pose, Vec3 } from '../vec.ts'
@@ -84,6 +87,8 @@ class MatchSystem implements SimSystem<PlayerInput> {
   readonly name = 'match'
   readonly #setup: MatchSetup
   readonly #profile: MatchProfile
+  readonly #mechLogic: MechLogicSystem
+  readonly #mechanisms: MechanismSystem
   readonly #obstacles: ObstacleSystem
   readonly #chars: CharacterSystem
   readonly #bots: BotSystem
@@ -104,9 +109,11 @@ class MatchSystem implements SimSystem<PlayerInput> {
   finalHash = 0
   hashed = false
 
-  constructor(setup: MatchSetup, obstacles: ObstacleSystem, chars: CharacterSystem, bots: BotSystem, round: RoundSystem) {
+  constructor(setup: MatchSetup, obstacles: ObstacleSystem, mechLogic: MechLogicSystem, mechanisms: MechanismSystem, chars: CharacterSystem, bots: BotSystem, round: RoundSystem) {
     this.#setup = setup
     this.#profile = PROFILES[setup.profile]
+    this.#mechLogic = mechLogic
+    this.#mechanisms = mechanisms
     this.#obstacles = obstacles
     this.#chars = chars
     this.#bots = bots
@@ -176,8 +183,14 @@ class MatchSystem implements SimSystem<PlayerInput> {
     this.lastCourse = ci
     const obstacles = this.#obstacles
     if (obstacles.courseIndex !== ci) {
-      if (obstacles.courseIndex >= 0) obstacles.unload(ctx)
+      if (obstacles.courseIndex >= 0) {
+        this.#mechLogic.unload(ctx)
+        this.#mechanisms.unload(ctx)
+        obstacles.unload(ctx)
+      }
       obstacles.load(ctx, ci)
+      this.#mechanisms.load(ctx, ci)
+      this.#mechLogic.load(ctx, ci)
     }
     const course = setup.courses[ci]
     // Fisher-Yates over every spawn; the first participants.length entries are used.
@@ -294,12 +307,14 @@ class MatchSystem implements SimSystem<PlayerInput> {
   }
 }
 
-export class MatchSim implements Simulation<PlayerInput> {
+export class MatchSim implements Simulation<PlayerInput>, MechanismView {
   readonly setup: MatchSetup
   readonly world: FiestaWorld<PlayerInput>
   readonly view: SimView
   readonly regions: RegionHints
   readonly #match: MatchSystem
+  readonly #mechLogic: MechLogicSystem
+  readonly #mechanisms: MechanismSystem
   readonly #obstacles: ObstacleSystem
   readonly #chars: CharacterSystem
   readonly #round: RoundSystem
@@ -310,10 +325,14 @@ export class MatchSim implements Simulation<PlayerInput> {
     const n = setup.playerCount
     const bots = new BotSystem(setup)
     const obstacles = new ObstacleSystem(setup.courses)
+    const mechLogic = new MechLogicSystem(setup.courses)
+    const mechanisms = new MechanismSystem(setup.courses)
     const chars = new CharacterSystem({ playerCount: n })
     const round = new RoundSystem(setup)
-    const match = new MatchSystem(setup, obstacles, chars, bots, round)
+    const match = new MatchSystem(setup, obstacles, mechLogic, mechanisms, chars, bots, round)
     this.#match = match
+    this.#mechLogic = mechLogic
+    this.#mechanisms = mechanisms
     this.#obstacles = obstacles
     this.#chars = chars
     this.#round = round
@@ -341,7 +360,7 @@ export class MatchSim implements Simulation<PlayerInput> {
     }
     this.world = new FiestaWorld<PlayerInput>(R, {
       playerCount: n,
-      systems: [match, bots, obstacles, chars, round],
+      systems: [match, bots, obstacles, mechLogic, mechanisms, chars, round],
       view: this.view,
       regions: this.regions,
     })
@@ -442,6 +461,24 @@ export class MatchSim implements Simulation<PlayerInput> {
     const o = this.#obstacles
     return o.pose(i, o.localTick(this.world.ctx), out)
   }
+
+  mechanismItemCount(): number { return this.#mechanisms.spec()?.items.length ?? 0 }
+
+  mechanismItem(i: number): MechItem {
+    const item = this.#mechanisms.spec()?.items[i]
+    if (item === undefined) refuse('match', 'mechanismItem(i)', `no mechanism item ${i}; pass a loaded item index`)
+    return item
+  }
+
+  mechanismEvents(fromTick: number, out: MechEvent[]): number {
+    return this.#mechanisms.events(fromTick, out)
+  }
+
+  mechanismBodyPose(ref: BodyRef, out: Pose): boolean {
+    return this.#mechanisms.bodyPose(this.world.ctx, ref, out)
+  }
+
+  signal(id: string): boolean { return this.#mechLogic.signal(id) }
 
   course(): ResolvedCourse | null {
     const ci = this.#obstacles.courseIndex

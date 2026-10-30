@@ -132,6 +132,7 @@ async function main(): Promise<void> {
   mkdirSync('out/m4', { recursive: true })
   writeFileSync('out/m4/zone-view.png', png)
   console.log(`zone adapter: ${JSON.stringify(adapter)}`)
+  console.log(`zone players: near ${out.near}, far ${out.far}`)
   console.log('zone capture saved to out/m4/zone-view.png')
 }
 

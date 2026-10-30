@@ -8,6 +8,8 @@ import type { CorrectionSmoother } from '@gamesaloon/rollback'
 import { MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
 import { refuse } from '@royal-fiesta/sim/refusal'
+import { skinnedCharacterOf } from '../content/providers/sdf.ts'
+import { pickContent } from '../content/source.ts'
 import type { AdapterInfo } from '../nmc/ops.ts'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { raaStatus } from '../render/raaStatus.ts'
@@ -19,6 +21,9 @@ const HEIGHT = 720
 const DT = 1 / 60
 const MAX_SECONDS = 120
 const PIPELINE_WAIT_MS = 10000
+// The meshed, rigged character and course dressing of the game's own match view (gameCapture uses it too);
+// near seats draw the skinned character, far seats the same figure lighter and unskinned.
+const CONTENT = 'sdf'
 
 export interface ZoneCaptureInput {
   width: typeof WIDTH
@@ -168,6 +173,8 @@ function observeDraws(seatCount: number): { counts: DrawCounts; restore: () => v
 async function zoneCapture(raw: unknown): Promise<OpEnvelope<ZoneCaptureOutput>> {
   const input = validate(raw)
   const adapter = await prelude()
+  const content = pickContent(new URLSearchParams({ content: CONTENT }))
+  await content.load('sprint', () => {})
   const canvas = makeCanvas(input.width, input.height)
   const realNow = performance.now.bind(performance)
   const originalNow = Object.getOwnPropertyDescriptor(performance, 'now')
@@ -183,6 +190,16 @@ async function zoneCapture(raw: unknown): Promise<OpEnvelope<ZoneCaptureOutput>>
       spreadSpawns: true,
       width: input.width,
       height: input.height,
+      assets: name => content.assets(name),
+      character: content.character(),
+      bean: content.character(),
+      skinned: skinnedCharacterOf(content),
+      dressing: content.dressing(),
+      createPort: async target => {
+        const port = await content.createPort(target)
+        if (port.kind !== 'raa') refuse('render', 'raa', `content '${content.id}' made a ${port.kind} port; zone captures need an RAA port`)
+        return port
+      },
     })
     const view = zone
     const observer = observeDraws(input.peers * input.seatsPerPeer)

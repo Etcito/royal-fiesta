@@ -15,6 +15,7 @@ import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
+import type { RenderPort, RenderTarget } from '@royal-fiesta/game/render/port'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
 import { CharMode } from '@royal-fiesta/sim/character/constants'
 import type { CharState } from '@royal-fiesta/sim/character/system'
@@ -65,9 +66,13 @@ export interface ZoneViewOptions {
   assets?: (name: string) => PrimsAsset
   /** The character asset for SceneView; the unskinned bean when absent. */
   character?: PrimsAsset
+  /** The asset FarRenderer draws (and SceneView's fallback); assets('bean') when absent. */
+  bean?: PrimsAsset
   /** Only a skinning port uses this; the RAA port keeps the rigid character. */
   skinned?: SkinnedCharacter
   dressing?: CourseDressing
+  /** Builds and initialises the render port, e.g. GameContent.createPort; a plain RAA port when absent. */
+  createPort?: (target: RenderTarget) => Promise<RenderPort>
 }
 
 export interface ZoneView {
@@ -266,13 +271,19 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
   }
 
   const assets = options.assets ?? await preloadAssets([course], browserAssetResolver())
-  const bean = assets('bean')
+  const bean = options.bean ?? assets('bean')
   const character = options.character ?? bean
 
   const width = Math.max(1, options.width ?? options.canvas.width)
   const height = Math.max(1, options.height ?? options.canvas.height)
-  const port = await createRaaPort()
-  await port.init({ canvas: options.canvas, width, height, viewports: [{ x: 0, y: 0, width, height }] })
+  const target: RenderTarget = { canvas: options.canvas, width, height, viewports: [{ x: 0, y: 0, width, height }] }
+  let port: RenderPort
+  if (options.createPort !== undefined) {
+    port = await options.createPort(target)
+  } else {
+    port = await createRaaPort()
+    await port.init(target)
+  }
 
   const loopback = new ZoneLoopback(peers, {
     seed,

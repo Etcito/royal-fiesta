@@ -102,7 +102,7 @@ async function main(): Promise<void> {
   const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'))
   assert(manifest.page === 'game.html' && Array.isArray(manifest.ops) && manifest.ops.includes('zoneCapture'))
   // The page answers content/meshes/<key> from the pack; a missing mesh makes the browser run MAMA itself
-  // for every asset, which outlasts a render. Mesh on the server first (cached in .cache/meshes).
+  // for every asset, which outlasts a render. Mesh on the server first (cached for every worktree, see meshCacheDir).
   stage = 'bake meshes on the server'
   // A fresh checkout has no mesh cache: spread the assets over the run's cores (bounded for memory).
   process.env.RF_MESH_JOBS ??= String(Math.min(8, Number(process.env.NMC_CPUS) || Math.max(1, availableParallelism() - 1)))

@@ -234,7 +234,8 @@ above. Per `docs/v0-port.md`:
 `npm run meshes:bake` runs the same baker alone, using `RF_CONTENT_DIR` and the resolved MAMA
 commit and raa-sdfm version. It runs three assets at a time with a 300 second limit per asset;
 set `RF_MESH_JOBS` and `RF_MESH_TIMEOUT_S` to change these limits. Successes and refusals persist
-in the ignored `.cache/meshes` folder (`RF_MESH_CACHE_DIR` overrides it); delete a key's `.failed`
+in `rf-cache/meshes` inside the git common dir, shared by every worktree of the clone (`.cache/meshes`
+outside git; `RF_MESH_CACHE_DIR` overrides it); delete a key's `.failed`
 file to retry a refusal. After forcibly killing a baker, remove its abandoned `.lock` files before retrying. Browsers check IndexedDB first, then `<content root>/meshes/<key>`:
 200 supplies a versioned binary mesh, 202 waits for the server, 422 supplies a refusal reason,
 and 404 or an unavailable service falls back to local meshing. Old browser failures do not hide

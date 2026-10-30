@@ -7,8 +7,7 @@ import { parseGameAsset } from '@royal-fiesta/game/gameAsset'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { meshCacheKey } from '../apps/web/src/sdf/meshCache.ts'
 import { encodeMesh } from '../apps/web/src/sdf/meshWire.ts'
-import { buildContentIndex, contentDir } from './content.ts'
-import { repoRoot } from './bricks.ts'
+import { buildContentIndex, contentDir, meshCacheDir } from './content.ts'
 import type { MeshedAsset } from '../apps/web/src/sdf/mamaApi.ts'
 
 interface NodeMesher {
@@ -16,7 +15,7 @@ interface NodeMesher {
   raaSdfmVersion(): string
   meshWholeAsset(asset: GameAsset, timeoutMs: number, signal?: AbortSignal): Promise<MeshedAsset>
 }
-export const meshCacheDir = (): string => resolve(process.env.RF_MESH_CACHE_DIR ?? join(repoRoot(), '.cache/meshes'))
+export { meshCacheDir }
 export const meshTimeoutMs = (): number => positive(process.env.RF_MESH_TIMEOUT_S, 300) * 1000
 function positive(value: string | undefined, fallback: number): number {
   const n = value === undefined ? fallback : Number(value)

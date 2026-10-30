@@ -1,5 +1,5 @@
 // Shared disk layout for local play, content checkouts and CDN uploads.
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { repoRoot } from './bricks.ts'
@@ -11,6 +11,27 @@ export interface ContentIndex {
 
 export function contentDir(root = repoRoot()): string {
   return resolve(process.env.RF_CONTENT_DIR ?? root)
+}
+
+// Meshes are keyed by asset hash, mesher and MAMA/RAA commits, so every worktree of one clone shares one
+// cache in the git common dir: a fresh worktree reuses the meshes another one baked instead of meshing cold.
+export function meshCacheDir(root = repoRoot()): string {
+  if (process.env.RF_MESH_CACHE_DIR) return resolve(process.env.RF_MESH_CACHE_DIR)
+  const common = gitCommonDir(root)
+  return common === null ? join(root, '.cache', 'meshes') : join(common, 'rf-cache', 'meshes')
+}
+
+function gitCommonDir(root: string): string | null {
+  const dotGit = join(root, '.git')
+  try {
+    if (statSync(dotGit).isDirectory()) return dotGit
+    // A linked worktree: .git names its private git dir, whose commondir names the shared one.
+    const gitDir = resolve(root, /^gitdir: (.+)$/m.exec(readFileSync(dotGit, 'utf8'))![1].trim())
+    const common = join(gitDir, 'commondir')
+    return existsSync(common) ? resolve(gitDir, readFileSync(common, 'utf8').trim()) : gitDir
+  } catch {
+    return null
+  }
 }
 
 export function contentPath(rel: string, root = repoRoot()): string {
@@ -41,7 +62,7 @@ export function packContent(out: string, dir = contentDir()): ContentIndex {
     cpSync(join(dir, path), target)
   }
   // Baked successes are directly addressable by the same key on a static content host.
-  const meshes = resolve(process.env.RF_MESH_CACHE_DIR ?? join(repoRoot(), '.cache', 'meshes'))
+  const meshes = meshCacheDir()
   if (existsSync(meshes)) {
     mkdirSync(join(out, 'meshes'), { recursive: true })
     for (const name of readdirSync(meshes)) {

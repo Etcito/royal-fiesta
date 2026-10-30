@@ -199,7 +199,7 @@ function utf8(s: string): Uint8Array { return new TextEncoder().encode(s) }
 // SDF Modeler's serializeDocument text (its asset_save_game hash form): 2-space JSON in
 // insertion key order, number-only arrays on one line as `[a, b, c]`, one trailing newline;
 // a node's rig and clips keep plain JSON.stringify layout (MAMA Exact json fields).
-function sdfmText(value: unknown): string {
+export function sdfmText(value: unknown): string {
   const write = (v: unknown, pad: string): string => {
     if (Array.isArray(v)) {
       if (v.length === 0) return '[]'

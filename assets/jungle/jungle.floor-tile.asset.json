@@ -6,46 +6,907 @@
   "name": "Mossy Jungle Floor Tile",
   "category": "obstacle",
   "world": "jungle",
-  "mesher": {"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
   "document": {
     "format": "sdfm",
     "version": 2,
     "name": "Mossy Jungle Floor Tile",
-    "root": ["jungle_floor_tile"],
+    "root": [
+      "jungle_floor_tile"
+    ],
     "nodes": {
-      "jungle_floor_tile": {"id":"jungle_floor_tile","name":"Mossy Jungle Floor Tile","kind":"group","children":["earth_slab","grass_top","plank_0","plank_grain_0","plank_peg_0_0","plank_peg_0_1","plank_1","plank_grain_1","plank_peg_1_0","plank_peg_1_1","plank_2","plank_grain_2","plank_peg_2_0","plank_peg_2_1","moss_edge_0_0","moss_edge_0_1","moss_edge_0_2","moss_edge_1_0","moss_edge_1_1","moss_edge_1_2","collider_0"],"asset":{"game":"royal-fiesta","id":"jungle.floor-tile","category":"obstacle","world":"jungle"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
-      "earth_slab": {"id":"earth_slab","name":"earth_slab","kind":"paramesh","transform":{"position":[0,-0.09,0]},"round":0.12,"material":"earth","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[5,0,0],[-5,0,0],[0,0.41,0],[0,-0.41,0],[0,0,5],[0,0,-5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "grass_top": {"id":"grass_top","name":"grass_top","kind":"paramesh","transform":{"position":[0,0.385,0]},"round":0.08,"material":"grass","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[5,0,0],[-5,0,0],[0,0.115,0],[0,-0.115,0],[0,0,5],[0,0,-5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_0": {"id":"plank_0","name":"plank_0","kind":"paramesh","transform":{"position":[-2.2,0.51,0]},"round":0.045,"material":"wood","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.42,0,0],[-0.42,0,0],[0,0.07,0],[0,-0.07,0],[0,0,4.4],[0,0,-4.4]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_grain_0": {"id":"plank_grain_0","name":"plank_grain_0","kind":"paramesh","transform":{"position":[-2.08,0.574,0]},"round":0.007,"material":"bark","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.025,0,0],[-0.025,0,0],[0,0.008,0],[0,-0.008,0],[0,0,3.9],[0,0,-3.9]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_peg_0_0": {"id":"plank_peg_0_0","name":"plank_peg_0_0","kind":"paramesh","transform":{"position":[-2.2,0.577,-3.9]},"material":"rope","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"sphere","radius":1,"points":[[0.055,0,0],[-0.055,0,0],[0,0.012,0],[0,-0.012,0],[0,0,0.055],[0,0,-0.055]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_peg_0_1": {"id":"plank_peg_0_1","name":"plank_peg_0_1","kind":"paramesh","transform":{"position":[-2.2,0.577,3.9]},"material":"rope","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"sphere","radius":1,"points":[[0.055,0,0],[-0.055,0,0],[0,0.012,0],[0,-0.012,0],[0,0,0.055],[0,0,-0.055]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_1": {"id":"plank_1","name":"plank_1","kind":"paramesh","transform":{"position":[0,0.51,0]},"round":0.045,"material":"wood","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.42,0,0],[-0.42,0,0],[0,0.07,0],[0,-0.07,0],[0,0,4.4],[0,0,-4.4]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_grain_1": {"id":"plank_grain_1","name":"plank_grain_1","kind":"paramesh","transform":{"position":[0.12,0.574,0]},"round":0.007,"material":"bark","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.025,0,0],[-0.025,0,0],[0,0.008,0],[0,-0.008,0],[0,0,3.9],[0,0,-3.9]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_peg_1_0": {"id":"plank_peg_1_0","name":"plank_peg_1_0","kind":"paramesh","transform":{"position":[0,0.577,-3.9]},"material":"rope","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"sphere","radius":1,"points":[[0.055,0,0],[-0.055,0,0],[0,0.012,0],[0,-0.012,0],[0,0,0.055],[0,0,-0.055]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_peg_1_1": {"id":"plank_peg_1_1","name":"plank_peg_1_1","kind":"paramesh","transform":{"position":[0,0.577,3.9]},"material":"rope","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"sphere","radius":1,"points":[[0.055,0,0],[-0.055,0,0],[0,0.012,0],[0,-0.012,0],[0,0,0.055],[0,0,-0.055]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_2": {"id":"plank_2","name":"plank_2","kind":"paramesh","transform":{"position":[2.2,0.51,0]},"round":0.045,"material":"wood","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.42,0,0],[-0.42,0,0],[0,0.07,0],[0,-0.07,0],[0,0,4.4],[0,0,-4.4]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_grain_2": {"id":"plank_grain_2","name":"plank_grain_2","kind":"paramesh","transform":{"position":[2.3200000000000003,0.574,0]},"round":0.007,"material":"bark","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.025,0,0],[-0.025,0,0],[0,0.008,0],[0,-0.008,0],[0,0,3.9],[0,0,-3.9]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_peg_2_0": {"id":"plank_peg_2_0","name":"plank_peg_2_0","kind":"paramesh","transform":{"position":[2.2,0.577,-3.9]},"material":"rope","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"sphere","radius":1,"points":[[0.055,0,0],[-0.055,0,0],[0,0.012,0],[0,-0.012,0],[0,0,0.055],[0,0,-0.055]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "plank_peg_2_1": {"id":"plank_peg_2_1","name":"plank_peg_2_1","kind":"paramesh","transform":{"position":[2.2,0.577,3.9]},"material":"rope","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"sphere","radius":1,"points":[[0.055,0,0],[-0.055,0,0],[0,0.012,0],[0,-0.012,0],[0,0,0.055],[0,0,-0.055]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "moss_edge_0_0": {"id":"moss_edge_0_0","name":"moss_edge_0_0","kind":"paramesh","transform":{"position":[-4.9,0.21,-3]},"round":0.09,"material":"grass","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.1,0,0],[-0.1,0,0],[0,0.15,0],[0,-0.15,0],[0,0,0.6],[0,0,-0.6]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "moss_edge_0_1": {"id":"moss_edge_0_1","name":"moss_edge_0_1","kind":"paramesh","transform":{"position":[-4.9,0.21,0]},"round":0.09,"material":"grass","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.1,0,0],[-0.1,0,0],[0,0.15,0],[0,-0.15,0],[0,0,0.6],[0,0,-0.6]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "moss_edge_0_2": {"id":"moss_edge_0_2","name":"moss_edge_0_2","kind":"paramesh","transform":{"position":[-4.9,0.21,3]},"round":0.09,"material":"grass","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.1,0,0],[-0.1,0,0],[0,0.15,0],[0,-0.15,0],[0,0,0.6],[0,0,-0.6]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "moss_edge_1_0": {"id":"moss_edge_1_0","name":"moss_edge_1_0","kind":"paramesh","transform":{"position":[4.9,0.21,-3]},"round":0.09,"material":"grass","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.1,0,0],[-0.1,0,0],[0,0.15,0],[0,-0.15,0],[0,0,0.6],[0,0,-0.6]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "moss_edge_1_1": {"id":"moss_edge_1_1","name":"moss_edge_1_1","kind":"paramesh","transform":{"position":[4.9,0.21,0]},"round":0.09,"material":"grass","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.1,0,0],[-0.1,0,0],[0,0.15,0],[0,-0.15,0],[0,0,0.6],[0,0,-0.6]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "moss_edge_1_2": {"id":"moss_edge_1_2","name":"moss_edge_1_2","kind":"paramesh","transform":{"position":[4.9,0.21,3]},"round":0.09,"material":"grass","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.1,0,0],[-0.1,0,0],[0,0.15,0],[0,-0.15,0],[0,0,0.6],[0,0,-0.6]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "collider_0": {"id":"collider_0","name":"collider_0","kind":"paramesh","transform":{"position":[0,0,0]},"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[5,0,0],[-5,0,0],[0,0.5,0],[0,-0.5,0],[0,0,5],[0,0,-5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true,"visible":false}
+      "jungle_floor_tile": {
+        "id": "jungle_floor_tile",
+        "name": "Mossy Jungle Floor Tile",
+        "kind": "group",
+        "children": [
+          "earth_slab",
+          "grass_top",
+          "plank_0",
+          "plank_grain_0",
+          "plank_peg_0_0",
+          "plank_peg_0_1",
+          "plank_1",
+          "plank_grain_1",
+          "plank_peg_1_0",
+          "plank_peg_1_1",
+          "plank_2",
+          "plank_grain_2",
+          "plank_peg_2_0",
+          "plank_peg_2_1",
+          "moss_edge_0_0",
+          "moss_edge_0_1",
+          "moss_edge_0_2",
+          "moss_edge_1_0",
+          "moss_edge_1_1",
+          "moss_edge_1_2",
+          "collider_0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "jungle.floor-tile",
+          "category": "obstacle",
+          "world": "jungle"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "earth_slab": {
+        "id": "earth_slab",
+        "name": "earth_slab",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.09, 0]
+        },
+        "round": 0.12,
+        "material": "earth",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5, 0, 0],
+              [-5, 0, 0],
+              [0, 0.41, 0],
+              [0, -0.41, 0],
+              [0, 0, 5],
+              [0, 0, -5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "grass_top": {
+        "id": "grass_top",
+        "name": "grass_top",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.385, 0]
+        },
+        "round": 0.08,
+        "material": "grass",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5, 0, 0],
+              [-5, 0, 0],
+              [0, 0.115, 0],
+              [0, -0.115, 0],
+              [0, 0, 5],
+              [0, 0, -5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_0": {
+        "id": "plank_0",
+        "name": "plank_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-2.2, 0.51, 0]
+        },
+        "round": 0.045,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.42, 0, 0],
+              [-0.42, 0, 0],
+              [0, 0.07, 0],
+              [0, -0.07, 0],
+              [0, 0, 4.4],
+              [0, 0, -4.4]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_grain_0": {
+        "id": "plank_grain_0",
+        "name": "plank_grain_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-2.08, 0.574, 0]
+        },
+        "round": 0.007,
+        "material": "bark",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.025, 0, 0],
+              [-0.025, 0, 0],
+              [0, 0.008, 0],
+              [0, -0.008, 0],
+              [0, 0, 3.9],
+              [0, 0, -3.9]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_peg_0_0": {
+        "id": "plank_peg_0_0",
+        "name": "plank_peg_0_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-2.2, 0.577, -3.9]
+        },
+        "material": "rope",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_peg_0_1": {
+        "id": "plank_peg_0_1",
+        "name": "plank_peg_0_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-2.2, 0.577, 3.9]
+        },
+        "material": "rope",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_1": {
+        "id": "plank_1",
+        "name": "plank_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.51, 0]
+        },
+        "round": 0.045,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.42, 0, 0],
+              [-0.42, 0, 0],
+              [0, 0.07, 0],
+              [0, -0.07, 0],
+              [0, 0, 4.4],
+              [0, 0, -4.4]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_grain_1": {
+        "id": "plank_grain_1",
+        "name": "plank_grain_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.12, 0.574, 0]
+        },
+        "round": 0.007,
+        "material": "bark",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.025, 0, 0],
+              [-0.025, 0, 0],
+              [0, 0.008, 0],
+              [0, -0.008, 0],
+              [0, 0, 3.9],
+              [0, 0, -3.9]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_peg_1_0": {
+        "id": "plank_peg_1_0",
+        "name": "plank_peg_1_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.577, -3.9]
+        },
+        "material": "rope",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_peg_1_1": {
+        "id": "plank_peg_1_1",
+        "name": "plank_peg_1_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.577, 3.9]
+        },
+        "material": "rope",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_2": {
+        "id": "plank_2",
+        "name": "plank_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [2.2, 0.51, 0]
+        },
+        "round": 0.045,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.42, 0, 0],
+              [-0.42, 0, 0],
+              [0, 0.07, 0],
+              [0, -0.07, 0],
+              [0, 0, 4.4],
+              [0, 0, -4.4]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_grain_2": {
+        "id": "plank_grain_2",
+        "name": "plank_grain_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [2.32, 0.574, 0]
+        },
+        "round": 0.007,
+        "material": "bark",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.025, 0, 0],
+              [-0.025, 0, 0],
+              [0, 0.008, 0],
+              [0, -0.008, 0],
+              [0, 0, 3.9],
+              [0, 0, -3.9]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_peg_2_0": {
+        "id": "plank_peg_2_0",
+        "name": "plank_peg_2_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [2.2, 0.577, -3.9]
+        },
+        "material": "rope",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank_peg_2_1": {
+        "id": "plank_peg_2_1",
+        "name": "plank_peg_2_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [2.2, 0.577, 3.9]
+        },
+        "material": "rope",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.012, 0],
+              [0, -0.012, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "moss_edge_0_0": {
+        "id": "moss_edge_0_0",
+        "name": "moss_edge_0_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-4.9, 0.21, -3]
+        },
+        "round": 0.09,
+        "material": "grass",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "moss_edge_0_1": {
+        "id": "moss_edge_0_1",
+        "name": "moss_edge_0_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-4.9, 0.21, 0]
+        },
+        "round": 0.09,
+        "material": "grass",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "moss_edge_0_2": {
+        "id": "moss_edge_0_2",
+        "name": "moss_edge_0_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-4.9, 0.21, 3]
+        },
+        "round": 0.09,
+        "material": "grass",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "moss_edge_1_0": {
+        "id": "moss_edge_1_0",
+        "name": "moss_edge_1_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [4.9, 0.21, -3]
+        },
+        "round": 0.09,
+        "material": "grass",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "moss_edge_1_1": {
+        "id": "moss_edge_1_1",
+        "name": "moss_edge_1_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [4.9, 0.21, 0]
+        },
+        "round": 0.09,
+        "material": "grass",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "moss_edge_1_2": {
+        "id": "moss_edge_1_2",
+        "name": "moss_edge_1_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [4.9, 0.21, 3]
+        },
+        "round": 0.09,
+        "material": "grass",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.1, 0, 0],
+              [-0.1, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5, 0, 0],
+              [-5, 0, 0],
+              [0, 0.5, 0],
+              [0, -0.5, 0],
+              [0, 0, 5],
+              [0, 0, -5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      }
     },
     "materials": {
-      "earth": {"name":"Earth","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#6b4a2b","in.roughness":0.8}}],"links":[]}},
-      "grass": {"name":"Grass","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#4f9a3a","in.roughness":0.8}}],"links":[]}},
-      "wood": {"name":"Wooden planks","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#7a5230","in.roughness":0.8}}],"links":[]}},
-      "bark": {"name":"Wood grain","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#583b24","in.roughness":0.8}}],"links":[]}},
-      "rope": {"name":"Wood pegs","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#b69760","in.roughness":0.8}}],"links":[]}}
+      "earth": {
+        "name": "Earth",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#6b4a2b",
+                "in.roughness": 0.8
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "grass": {
+        "name": "Grass",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#4f9a3a",
+                "in.roughness": 0.8
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "wood": {
+        "name": "Wooden planks",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#7a5230",
+                "in.roughness": 0.8
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "bark": {
+        "name": "Wood grain",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#583b24",
+                "in.roughness": 0.8
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "rope": {
+        "name": "Wood pegs",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#b69760",
+                "in.roughness": 0.8
+              }
+            }
+          ],
+          "links": []
+        }
+      }
     }
   },
-  "collision": [{"shape":"cuboid","t":[0,0,0],"r":[0,0,0,1],"halfExtents":[5,0.5,5]}],
+  "collision": [
+    {
+      "shape": "cuboid",
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [5, 0.5, 5]
+    }
+  ],
   "anchors": {},
-  "bounds": {"min":[-5,-0.5,-5],"max":[5,0.589,5]},
-  "hash": "c7b92d8bbc5c67054a55b7a8bf6491ccb93f381cb3b2cb165205ed8c21196959"
+  "bounds": {
+    "min": [-5, -0.5, -5],
+    "max": [5, 0.589, 5]
+  },
+  "hash": "5ff6b33eafa06bd8eee18d304d012e4de0d2d8e33be27759e80dfd08d0017196"
 }

@@ -36,7 +36,49 @@
           "game": "royal-fiesta",
           "id": "candy.spinner-bar",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [],
+                "parts": [],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "rotor",
+                "type": "kinematic",
+                "colliders": [0, 1],
+                "parts": [
+                  "collider_hub",
+                  "collider_bar",
+                  "hub",
+                  "bar"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": []
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -748,5 +790,5 @@
     "min": [-4, 0, -0.88],
     "max": [4, 1.63, 0.88]
   },
-  "hash": "bb0c2a7bd998fab080820fd7be9d378d5a7ad6f8fb60f25a56ae2abbbca61e00"
+  "hash": "4b7a7f24324d6ee2ccecd6372b1452eecbc6787f1cd03f738d37f5a2c7ab2a84"
 }

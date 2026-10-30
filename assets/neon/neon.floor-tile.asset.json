@@ -6,28 +6,303 @@
   "name": "Neon Floor Tile",
   "category": "obstacle",
   "world": "neon",
-  "mesher": {"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
   "document": {
     "format": "sdfm",
     "version": 2,
     "name": "Neon Floor Tile",
-    "root": ["neon_floor_tile"],
+    "root": [
+      "neon_floor_tile"
+    ],
     "nodes": {
-      "neon_floor_tile": {"id":"neon_floor_tile","name":"Neon Floor Tile","kind":"group","children":["tile_panel","edge_left","edge_right","edge_front","edge_back","collider_0"],"asset":{"game":"royal-fiesta","id":"neon.floor-tile","category":"obstacle","world":"neon"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
-      "tile_panel": {"id":"tile_panel","name":"tile_panel","kind":"paramesh","transform":{"position":[0,0,0]},"material":"neon_dark","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[5,0,0],[-5,0,0],[0,0.5,0],[0,-0.5,0],[0,0,5],[0,0,-5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "edge_left": {"id":"edge_left","name":"edge_left","kind":"paramesh","transform":{"position":[-4.94,0.53,0]},"material":"neon_cyan","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.06,0,0],[-0.06,0,0],[0,0.03,0],[0,-0.03,0],[0,0,4.88],[0,0,-4.88]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "edge_right": {"id":"edge_right","name":"edge_right","kind":"paramesh","transform":{"position":[4.94,0.53,0]},"material":"neon_cyan","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.06,0,0],[-0.06,0,0],[0,0.03,0],[0,-0.03,0],[0,0,4.88],[0,0,-4.88]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "edge_front": {"id":"edge_front","name":"edge_front","kind":"paramesh","transform":{"position":[0,0.53,-4.94]},"material":"neon_cyan","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[5,0,0],[-5,0,0],[0,0.03,0],[0,-0.03,0],[0,0,0.06],[0,0,-0.06]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "edge_back": {"id":"edge_back","name":"edge_back","kind":"paramesh","transform":{"position":[0,0.53,4.94]},"material":"neon_cyan","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[5,0,0],[-5,0,0],[0,0.03,0],[0,-0.03,0],[0,0,0.06],[0,0,-0.06]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "collider_0": {"id":"collider_0","name":"collider_0","kind":"paramesh","visible":false,"transform":{"position":[0,0,0]},"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[5,0,0],[-5,0,0],[0,0.5,0],[0,-0.5,0],[0,0,5],[0,0,-5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true}
+      "neon_floor_tile": {
+        "id": "neon_floor_tile",
+        "name": "Neon Floor Tile",
+        "kind": "group",
+        "children": [
+          "tile_panel",
+          "edge_left",
+          "edge_right",
+          "edge_front",
+          "edge_back",
+          "collider_0"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "neon.floor-tile",
+          "category": "obstacle",
+          "world": "neon"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "tile_panel": {
+        "id": "tile_panel",
+        "name": "tile_panel",
+        "kind": "paramesh",
+        "material": "neon_dark",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5, 0, 0],
+              [-5, 0, 0],
+              [0, 0.5, 0],
+              [0, -0.5, 0],
+              [0, 0, 5],
+              [0, 0, -5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "edge_left": {
+        "id": "edge_left",
+        "name": "edge_left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-4.94, 0.53, 0]
+        },
+        "material": "neon_cyan",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.06, 0, 0],
+              [-0.06, 0, 0],
+              [0, 0.03, 0],
+              [0, -0.03, 0],
+              [0, 0, 4.88],
+              [0, 0, -4.88]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "edge_right": {
+        "id": "edge_right",
+        "name": "edge_right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [4.94, 0.53, 0]
+        },
+        "material": "neon_cyan",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.06, 0, 0],
+              [-0.06, 0, 0],
+              [0, 0.03, 0],
+              [0, -0.03, 0],
+              [0, 0, 4.88],
+              [0, 0, -4.88]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "edge_front": {
+        "id": "edge_front",
+        "name": "edge_front",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.53, -4.94]
+        },
+        "material": "neon_cyan",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5, 0, 0],
+              [-5, 0, 0],
+              [0, 0.03, 0],
+              [0, -0.03, 0],
+              [0, 0, 0.06],
+              [0, 0, -0.06]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "edge_back": {
+        "id": "edge_back",
+        "name": "edge_back",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.53, 4.94]
+        },
+        "material": "neon_cyan",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5, 0, 0],
+              [-5, 0, 0],
+              [0, 0.03, 0],
+              [0, -0.03, 0],
+              [0, 0, 0.06],
+              [0, 0, -0.06]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [5, 0, 0],
+              [-5, 0, 0],
+              [0, 0.5, 0],
+              [0, -0.5, 0],
+              [0, 0, 5],
+              [0, 0, -5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      }
     },
     "materials": {
-      "neon_dark": {"name":"neon_dark","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#14121f","in.roughness":0.25}}],"links":[]}},
-      "neon_cyan": {"name":"neon_cyan","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#22e8ff","in.roughness":0.25,"in.emissive":"#22e8ff"}}],"links":[]}}
+      "neon_dark": {
+        "name": "neon_dark",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#14121f",
+                "in.roughness": 0.25
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "neon_cyan": {
+        "name": "neon_cyan",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#22e8ff",
+                "in.emissive": "#22e8ff",
+                "in.roughness": 0.25
+              }
+            }
+          ],
+          "links": []
+        }
+      }
     }
   },
-  "collision": [{"shape":"cuboid","t":[0,0,0],"r":[0,0,0,1],"halfExtents":[5,0.5,5]}],
+  "collision": [
+    {
+      "shape": "cuboid",
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [5, 0.5, 5]
+    }
+  ],
   "anchors": {},
-  "bounds": {"min":[-5,-0.5,-5],"max":[5,0.56,5]},
-  "hash": "63ade7720cb846a8f88b0782403eac707c4d891181772853c630c9002d782a64"
+  "bounds": {
+    "min": [-5, -0.5, -5],
+    "max": [5, 0.56, 5]
+  },
+  "hash": "40d2286c90c1f279d8270ba1db583b1e8110ab2434199d729bc7d7b5a21c172f"
 }

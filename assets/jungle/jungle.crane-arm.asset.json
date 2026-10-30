@@ -42,7 +42,79 @@
           "game": "royal-fiesta",
           "id": "jungle.crane-arm",
           "category": "obstacle",
-          "world": "jungle"
+          "world": "jungle",
+          "physics": {
+            "bodies": [
+              {
+                "id": "mast",
+                "type": "fixed",
+                "colliders": [0, 1, 2],
+                "parts": [
+                  "foot",
+                  "mast",
+                  "pulley",
+                  "collider_0",
+                  "collider_1",
+                  "collider_2"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.8,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "arm",
+                "type": "dynamic",
+                "colliders": [3, 4],
+                "parts": [
+                  "arm",
+                  "platform",
+                  "collider_3",
+                  "collider_4"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.8,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.1,
+                "gravityScale": 1,
+                "ccd": true,
+                "surface": "normal"
+              }
+            ],
+            "joints": [
+              {
+                "id": "pivot",
+                "kind": "hinge",
+                "a": "mast",
+                "b": "arm",
+                "anchorA": [0, 3.5, 0],
+                "anchorB": [0, 3.5, 0],
+                "axis": [0, 1, 0],
+                "limitsDeg": [0, 90],
+                "limitsM": null,
+                "stiffness": 0,
+                "damping": 0,
+                "lengthM": 0,
+                "motor": {
+                  "mode": "target",
+                  "targetDeg": 0,
+                  "stiffness": 25000,
+                  "damping": 5000,
+                  "maxForce": 120000,
+                  "enabled": true
+                }
+              }
+            ]
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -59,11 +131,7 @@
         "name": "foot",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            0,
-            0.25,
-            0
-          ]
+          "position": [0, 0.25, 0]
         },
         "round": 0.06,
         "material": "stone",
@@ -74,36 +142,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.55,
-                0,
-                0
-              ],
-              [
-                -0.55,
-                0,
-                0
-              ],
-              [
-                0,
-                0.25,
-                0
-              ],
-              [
-                0,
-                -0.25,
-                0
-              ],
-              [
-                0,
-                0,
-                0.55
-              ],
-              [
-                0,
-                0,
-                -0.55
-              ]
+              [0.55, 0, 0],
+              [-0.55, 0, 0],
+              [0, 0.25, 0],
+              [0, -0.25, 0],
+              [0, 0, 0.55],
+              [0, 0, -0.55]
             ],
             "pointRadii": [
               null,
@@ -123,11 +167,7 @@
         "name": "mast",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            0,
-            2,
-            0
-          ]
+          "position": [0, 2, 0]
         },
         "round": 0.08,
         "material": "wood",
@@ -138,36 +178,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.25,
-                0,
-                0
-              ],
-              [
-                -0.25,
-                0,
-                0
-              ],
-              [
-                0,
-                1.5,
-                0
-              ],
-              [
-                0,
-                -1.5,
-                0
-              ],
-              [
-                0,
-                0,
-                0.25
-              ],
-              [
-                0,
-                0,
-                -0.25
-              ]
+              [0.25, 0, 0],
+              [-0.25, 0, 0],
+              [0, 1.5, 0],
+              [0, -1.5, 0],
+              [0, 0, 0.25],
+              [0, 0, -0.25]
             ],
             "pointRadii": [
               null,
@@ -187,11 +203,7 @@
         "name": "pulley",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            0,
-            3.15,
-            0.35
-          ]
+          "position": [0, 3.15, 0.35]
         },
         "round": 0.05,
         "material": "rope",
@@ -202,36 +214,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.18,
-                0,
-                0
-              ],
-              [
-                -0.18,
-                0,
-                0
-              ],
-              [
-                0,
-                0.18,
-                0
-              ],
-              [
-                0,
-                -0.18,
-                0
-              ],
-              [
-                0,
-                0,
-                0.06
-              ],
-              [
-                0,
-                0,
-                -0.06
-              ]
+              [0.18, 0, 0],
+              [-0.18, 0, 0],
+              [0, 0.18, 0],
+              [0, -0.18, 0],
+              [0, 0, 0.06],
+              [0, 0, -0.06]
             ],
             "pointRadii": [
               null,
@@ -251,11 +239,7 @@
         "name": "arm",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            2.5,
-            3.725,
-            0
-          ]
+          "position": [2.5, 3.725, 0]
         },
         "round": 0.06,
         "material": "wood",
@@ -266,36 +250,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                2.5,
-                0,
-                0
-              ],
-              [
-                -2.5,
-                0,
-                0
-              ],
-              [
-                0,
-                0.175,
-                0
-              ],
-              [
-                0,
-                -0.175,
-                0
-              ],
-              [
-                0,
-                0,
-                0.3
-              ],
-              [
-                0,
-                0,
-                -0.3
-              ]
+              [2.5, 0, 0],
+              [-2.5, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.3],
+              [0, 0, -0.3]
             ],
             "pointRadii": [
               null,
@@ -315,11 +275,7 @@
         "name": "platform",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            5,
-            3.35,
-            0
-          ]
+          "position": [5, 3.35, 0]
         },
         "round": 0.05,
         "material": "wood",
@@ -330,36 +286,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.8,
-                0,
-                0
-              ],
-              [
-                -0.8,
-                0,
-                0
-              ],
-              [
-                0,
-                0.1,
-                0
-              ],
-              [
-                0,
-                -0.1,
-                0
-              ],
-              [
-                0,
-                0,
-                0.8
-              ],
-              [
-                0,
-                0,
-                -0.8
-              ]
+              [0.8, 0, 0],
+              [-0.8, 0, 0],
+              [0, 0.1, 0],
+              [0, -0.1, 0],
+              [0, 0, 0.8],
+              [0, 0, -0.8]
             ],
             "pointRadii": [
               null,
@@ -380,11 +312,7 @@
         "kind": "paramesh",
         "visible": false,
         "transform": {
-          "position": [
-            0,
-            0.25,
-            0
-          ]
+          "position": [0, 0.25, 0]
         },
         "round": 0.06,
         "paramesh": {
@@ -394,36 +322,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.55,
-                0,
-                0
-              ],
-              [
-                -0.55,
-                0,
-                0
-              ],
-              [
-                0,
-                0.25,
-                0
-              ],
-              [
-                0,
-                -0.25,
-                0
-              ],
-              [
-                0,
-                0,
-                0.55
-              ],
-              [
-                0,
-                0,
-                -0.55
-              ]
+              [0.55, 0, 0],
+              [-0.55, 0, 0],
+              [0, 0.25, 0],
+              [0, -0.25, 0],
+              [0, 0, 0.55],
+              [0, 0, -0.55]
             ],
             "pointRadii": [
               null,
@@ -444,11 +348,7 @@
         "kind": "paramesh",
         "visible": false,
         "transform": {
-          "position": [
-            0,
-            2,
-            0
-          ]
+          "position": [0, 2, 0]
         },
         "round": 0.08,
         "paramesh": {
@@ -458,36 +358,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.25,
-                0,
-                0
-              ],
-              [
-                -0.25,
-                0,
-                0
-              ],
-              [
-                0,
-                1.5,
-                0
-              ],
-              [
-                0,
-                -1.5,
-                0
-              ],
-              [
-                0,
-                0,
-                0.25
-              ],
-              [
-                0,
-                0,
-                -0.25
-              ]
+              [0.25, 0, 0],
+              [-0.25, 0, 0],
+              [0, 1.5, 0],
+              [0, -1.5, 0],
+              [0, 0, 0.25],
+              [0, 0, -0.25]
             ],
             "pointRadii": [
               null,
@@ -508,11 +384,7 @@
         "kind": "paramesh",
         "visible": false,
         "transform": {
-          "position": [
-            0,
-            3.15,
-            0.35
-          ]
+          "position": [0, 3.15, 0.35]
         },
         "round": 0.05,
         "paramesh": {
@@ -522,36 +394,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.18,
-                0,
-                0
-              ],
-              [
-                -0.18,
-                0,
-                0
-              ],
-              [
-                0,
-                0.18,
-                0
-              ],
-              [
-                0,
-                -0.18,
-                0
-              ],
-              [
-                0,
-                0,
-                0.06
-              ],
-              [
-                0,
-                0,
-                -0.06
-              ]
+              [0.18, 0, 0],
+              [-0.18, 0, 0],
+              [0, 0.18, 0],
+              [0, -0.18, 0],
+              [0, 0, 0.06],
+              [0, 0, -0.06]
             ],
             "pointRadii": [
               null,
@@ -572,11 +420,7 @@
         "kind": "paramesh",
         "visible": false,
         "transform": {
-          "position": [
-            2.5,
-            3.725,
-            0
-          ]
+          "position": [2.5, 3.725, 0]
         },
         "round": 0.06,
         "paramesh": {
@@ -586,36 +430,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                2.5,
-                0,
-                0
-              ],
-              [
-                -2.5,
-                0,
-                0
-              ],
-              [
-                0,
-                0.175,
-                0
-              ],
-              [
-                0,
-                -0.175,
-                0
-              ],
-              [
-                0,
-                0,
-                0.3
-              ],
-              [
-                0,
-                0,
-                -0.3
-              ]
+              [2.5, 0, 0],
+              [-2.5, 0, 0],
+              [0, 0.175, 0],
+              [0, -0.175, 0],
+              [0, 0, 0.3],
+              [0, 0, -0.3]
             ],
             "pointRadii": [
               null,
@@ -636,11 +456,7 @@
         "kind": "paramesh",
         "visible": false,
         "transform": {
-          "position": [
-            5,
-            3.35,
-            0
-          ]
+          "position": [5, 3.35, 0]
         },
         "round": 0.05,
         "paramesh": {
@@ -650,36 +466,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.8,
-                0,
-                0
-              ],
-              [
-                -0.8,
-                0,
-                0
-              ],
-              [
-                0,
-                0.1,
-                0
-              ],
-              [
-                0,
-                -0.1,
-                0
-              ],
-              [
-                0,
-                0,
-                0.8
-              ],
-              [
-                0,
-                0,
-                -0.8
-              ]
+              [0.8, 0, 0],
+              [-0.8, 0, 0],
+              [0, 0.1, 0],
+              [0, -0.1, 0],
+              [0, 0, 0.8],
+              [0, 0, -0.8]
             ],
             "pointRadii": [
               null,
@@ -749,98 +541,33 @@
   "collision": [
     {
       "shape": "cuboid",
-      "halfExtents": [
-        0.55,
-        0.25,
-        0.55
-      ],
-      "t": [
-        0,
-        0.25,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 0.25, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.55, 0.25, 0.55]
     },
     {
       "shape": "cuboid",
-      "halfExtents": [
-        0.25,
-        1.5,
-        0.25
-      ],
-      "t": [
-        0,
-        2,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 2, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.25, 1.5, 0.25]
     },
     {
       "shape": "cuboid",
-      "halfExtents": [
-        0.18,
-        0.18,
-        0.06
-      ],
-      "t": [
-        0,
-        3.15,
-        0.35
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 3.15, 0.35],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.18, 0.18, 0.06]
     },
     {
       "shape": "cuboid",
-      "halfExtents": [
-        2.5,
-        0.175,
-        0.3
-      ],
-      "t": [
-        2.5,
-        3.725,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [2.5, 3.725, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [2.5, 0.175, 0.3]
     },
     {
       "shape": "cuboid",
-      "halfExtents": [
-        0.8,
-        0.1,
-        0.8
-      ],
-      "t": [
-        5,
-        3.35,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [5, 3.35, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.8, 0.1, 0.8]
     }
   ],
   "physics": {
@@ -848,11 +575,7 @@
       {
         "id": "mast",
         "type": "fixed",
-        "colliders": [
-          0,
-          1,
-          2
-        ],
+        "colliders": [0, 1, 2],
         "parts": [
           "foot",
           "mast",
@@ -861,17 +584,8 @@
           "collider_1",
           "collider_2"
         ],
-        "t": [
-          0,
-          0,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
         "density": 400,
         "friction": 0.8,
         "restitution": 0,
@@ -884,27 +598,15 @@
       {
         "id": "arm",
         "type": "dynamic",
-        "colliders": [
-          3,
-          4
-        ],
+        "colliders": [3, 4],
         "parts": [
           "arm",
           "platform",
           "collider_3",
           "collider_4"
         ],
-        "t": [
-          0,
-          0,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
         "density": 400,
         "friction": 0.8,
         "restitution": 0,
@@ -921,25 +623,10 @@
         "kind": "hinge",
         "a": "mast",
         "b": "arm",
-        "anchorA": [
-          0,
-          3.5,
-          0
-        ],
-        "anchorB": [
-          0,
-          3.5,
-          0
-        ],
-        "axis": [
-          0,
-          1,
-          0
-        ],
-        "limitsDeg": [
-          0,
-          90
-        ],
+        "anchorA": [0, 3.5, 0],
+        "anchorB": [0, 3.5, 0],
+        "axis": [0, 1, 0],
+        "limitsDeg": [0, 90],
         "limitsM": null,
         "stiffness": 0,
         "damping": 0,
@@ -957,16 +644,8 @@
   },
   "anchors": {},
   "bounds": {
-    "min": [
-      -0.55,
-      0,
-      -0.8
-    ],
-    "max": [
-      5.8,
-      3.9,
-      0.8
-    ]
+    "min": [-0.55, 0, -0.8],
+    "max": [5.8, 3.9, 0.8]
   },
-  "hash": "6262366365c6390130c05414d8efce4b2886ee0ef20e7858ebe11220371d5db4"
+  "hash": "1a993464a800887d88e9537f100ba9ae015d77169fa9f2e25d6a990e715e1bc1"
 }

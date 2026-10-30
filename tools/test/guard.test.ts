@@ -259,6 +259,14 @@ test('placement follows the v1 data layout', () => {
   }
 })
 
+test('a world asset must be in the form SDF Modeler reads: slug ids and its own document hash', () => {
+  const asset = (nodeId: string, hash: string): Uint8Array =>
+    text(JSON.stringify({ hash, document: { nodes: { [nodeId]: { id: nodeId, kind: 'group' } } } }))
+  assert.deepEqual(rules('assets/ice/ice.x.asset.json', asset('floe-main', 'x')), ['asset-not-modeler-valid', 'asset-not-modeler-valid'])
+  assert.deepEqual(rules('assets/ice/ice.x.asset.json', asset('floe_main', 'x')), ['asset-not-modeler-valid'])
+  assert.deepEqual(rules('fixtures/game-assets/invalid/x.asset.json', asset('floe-main', 'x')), [])
+})
+
 test('files under assets/ have the larger size cap', () => {
   const million = new Uint8Array(1000000).fill(0x61)
   assert.deepEqual(rules('assets/candy/candy.big.asset.json', million), [])

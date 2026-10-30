@@ -1,0 +1,3107 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "jungle.vine-bridge",
+  "name": "Hanging vine bridge",
+  "category": "obstacle",
+  "world": "jungle",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Hanging vine bridge",
+    "root": [
+      "vine-bridge"
+    ],
+    "nodes": {
+      "vine-bridge": {
+        "id": "vine-bridge",
+        "name": "Hanging vine bridge",
+        "kind": "group",
+        "children": [
+          "post-a",
+          "collider-0",
+          "post-a-left",
+          "post-a-left-moss",
+          "post-a-right",
+          "post-a-right-moss",
+          "post-b",
+          "collider-1",
+          "post-b-left",
+          "post-b-left-moss",
+          "post-b-right",
+          "post-b-right-moss",
+          "plank-1",
+          "collider-2",
+          "vine-1-left",
+          "vine-1-right",
+          "plank-2",
+          "collider-3",
+          "vine-2-left",
+          "vine-2-right",
+          "plank-3",
+          "collider-4",
+          "vine-3-left",
+          "vine-3-right",
+          "plank-4",
+          "collider-5",
+          "vine-4-left",
+          "vine-4-right",
+          "plank-5",
+          "collider-6",
+          "vine-5-left",
+          "vine-5-right",
+          "plank-6",
+          "collider-7",
+          "vine-6-left",
+          "vine-6-right"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "jungle.vine-bridge",
+          "category": "obstacle",
+          "world": "jungle"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "post-a": {
+        "id": "post-a",
+        "name": "post-a",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            0.1,
+            -3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.9,
+                0,
+                0
+              ],
+              [
+                -1.9,
+                0,
+                0
+              ],
+              [
+                0,
+                0.18,
+                0
+              ],
+              [
+                0,
+                -0.18,
+                0
+              ],
+              [
+                0,
+                0,
+                0.24
+              ],
+              [
+                0,
+                0,
+                -0.24
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider-0": {
+        "id": "collider-0",
+        "name": "collider-0",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            0.1,
+            -3.84
+          ]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.9,
+                0,
+                0
+              ],
+              [
+                -1.9,
+                0,
+                0
+              ],
+              [
+                0,
+                0.18,
+                0
+              ],
+              [
+                0,
+                -0.18,
+                0
+              ],
+              [
+                0,
+                0,
+                0.24
+              ],
+              [
+                0,
+                0,
+                -0.24
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "post-a-left": {
+        "id": "post-a-left",
+        "name": "post-a-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.75,
+            0.85,
+            -3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.15,
+                0,
+                0
+              ],
+              [
+                -0.15,
+                0,
+                0
+              ],
+              [
+                0,
+                0.75,
+                0
+              ],
+              [
+                0,
+                -0.75,
+                0
+              ],
+              [
+                0,
+                0,
+                0.15
+              ],
+              [
+                0,
+                0,
+                -0.15
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "post-a-left-moss": {
+        "id": "post-a-left-moss",
+        "name": "post-a-left-moss",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.75,
+            1.62,
+            -3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.19,
+                0,
+                0
+              ],
+              [
+                -0.19,
+                0,
+                0
+              ],
+              [
+                0,
+                0.04,
+                0
+              ],
+              [
+                0,
+                -0.04,
+                0
+              ],
+              [
+                0,
+                0,
+                0.19
+              ],
+              [
+                0,
+                0,
+                -0.19
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "post-a-right": {
+        "id": "post-a-right",
+        "name": "post-a-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.75,
+            0.85,
+            -3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.15,
+                0,
+                0
+              ],
+              [
+                -0.15,
+                0,
+                0
+              ],
+              [
+                0,
+                0.75,
+                0
+              ],
+              [
+                0,
+                -0.75,
+                0
+              ],
+              [
+                0,
+                0,
+                0.15
+              ],
+              [
+                0,
+                0,
+                -0.15
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "post-a-right-moss": {
+        "id": "post-a-right-moss",
+        "name": "post-a-right-moss",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.75,
+            1.62,
+            -3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.19,
+                0,
+                0
+              ],
+              [
+                -0.19,
+                0,
+                0
+              ],
+              [
+                0,
+                0.04,
+                0
+              ],
+              [
+                0,
+                -0.04,
+                0
+              ],
+              [
+                0,
+                0,
+                0.19
+              ],
+              [
+                0,
+                0,
+                -0.19
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "post-b": {
+        "id": "post-b",
+        "name": "post-b",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            0.1,
+            3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.9,
+                0,
+                0
+              ],
+              [
+                -1.9,
+                0,
+                0
+              ],
+              [
+                0,
+                0.18,
+                0
+              ],
+              [
+                0,
+                -0.18,
+                0
+              ],
+              [
+                0,
+                0,
+                0.24
+              ],
+              [
+                0,
+                0,
+                -0.24
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider-1": {
+        "id": "collider-1",
+        "name": "collider-1",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            0.1,
+            3.84
+          ]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.9,
+                0,
+                0
+              ],
+              [
+                -1.9,
+                0,
+                0
+              ],
+              [
+                0,
+                0.18,
+                0
+              ],
+              [
+                0,
+                -0.18,
+                0
+              ],
+              [
+                0,
+                0,
+                0.24
+              ],
+              [
+                0,
+                0,
+                -0.24
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "post-b-left": {
+        "id": "post-b-left",
+        "name": "post-b-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.75,
+            0.85,
+            3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.15,
+                0,
+                0
+              ],
+              [
+                -0.15,
+                0,
+                0
+              ],
+              [
+                0,
+                0.75,
+                0
+              ],
+              [
+                0,
+                -0.75,
+                0
+              ],
+              [
+                0,
+                0,
+                0.15
+              ],
+              [
+                0,
+                0,
+                -0.15
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "post-b-left-moss": {
+        "id": "post-b-left-moss",
+        "name": "post-b-left-moss",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.75,
+            1.62,
+            3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.19,
+                0,
+                0
+              ],
+              [
+                -0.19,
+                0,
+                0
+              ],
+              [
+                0,
+                0.04,
+                0
+              ],
+              [
+                0,
+                -0.04,
+                0
+              ],
+              [
+                0,
+                0,
+                0.19
+              ],
+              [
+                0,
+                0,
+                -0.19
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "post-b-right": {
+        "id": "post-b-right",
+        "name": "post-b-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.75,
+            0.85,
+            3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.15,
+                0,
+                0
+              ],
+              [
+                -0.15,
+                0,
+                0
+              ],
+              [
+                0,
+                0.75,
+                0
+              ],
+              [
+                0,
+                -0.75,
+                0
+              ],
+              [
+                0,
+                0,
+                0.15
+              ],
+              [
+                0,
+                0,
+                -0.15
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "post-b-right-moss": {
+        "id": "post-b-right-moss",
+        "name": "post-b-right-moss",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.75,
+            1.62,
+            3.84
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.19,
+                0,
+                0
+              ],
+              [
+                -0.19,
+                0,
+                0
+              ],
+              [
+                0,
+                0.04,
+                0
+              ],
+              [
+                0,
+                -0.04,
+                0
+              ],
+              [
+                0,
+                0,
+                0.19
+              ],
+              [
+                0,
+                0,
+                -0.19
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank-1": {
+        "id": "plank-1",
+        "name": "plank-1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            0,
+            -3
+          ]
+        },
+        "round": 0.025,
+        "material": "wood-light",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider-2": {
+        "id": "collider-2",
+        "name": "collider-2",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            -3
+          ]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "vine-1-left": {
+        "id": "vine-1-left",
+        "name": "vine-1-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.5,
+            0.15,
+            -3
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "vine-1-right": {
+        "id": "vine-1-right",
+        "name": "vine-1-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.5,
+            0.15,
+            -3
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank-2": {
+        "id": "plank-2",
+        "name": "plank-2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            -0.15,
+            -1.8
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider-3": {
+        "id": "collider-3",
+        "name": "collider-3",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            -0.15,
+            -1.8
+          ]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "vine-2-left": {
+        "id": "vine-2-left",
+        "name": "vine-2-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.5,
+            0,
+            -1.8
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "vine-2-right": {
+        "id": "vine-2-right",
+        "name": "vine-2-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.5,
+            0,
+            -1.8
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank-3": {
+        "id": "plank-3",
+        "name": "plank-3",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            -0.25,
+            -0.6
+          ]
+        },
+        "round": 0.025,
+        "material": "wood-light",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider-4": {
+        "id": "collider-4",
+        "name": "collider-4",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            -0.25,
+            -0.6
+          ]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "vine-3-left": {
+        "id": "vine-3-left",
+        "name": "vine-3-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.5,
+            -0.1,
+            -0.6
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "vine-3-right": {
+        "id": "vine-3-right",
+        "name": "vine-3-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.5,
+            -0.1,
+            -0.6
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank-4": {
+        "id": "plank-4",
+        "name": "plank-4",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            -0.25,
+            0.6
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider-5": {
+        "id": "collider-5",
+        "name": "collider-5",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            -0.25,
+            0.6
+          ]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "vine-4-left": {
+        "id": "vine-4-left",
+        "name": "vine-4-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.5,
+            -0.1,
+            0.6
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "vine-4-right": {
+        "id": "vine-4-right",
+        "name": "vine-4-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.5,
+            -0.1,
+            0.6
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank-5": {
+        "id": "plank-5",
+        "name": "plank-5",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            -0.15,
+            1.8
+          ]
+        },
+        "round": 0.025,
+        "material": "wood-light",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider-6": {
+        "id": "collider-6",
+        "name": "collider-6",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            -0.15,
+            1.8
+          ]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "vine-5-left": {
+        "id": "vine-5-left",
+        "name": "vine-5-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.5,
+            0,
+            1.8
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "vine-5-right": {
+        "id": "vine-5-right",
+        "name": "vine-5-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.5,
+            0,
+            1.8
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "plank-6": {
+        "id": "plank-6",
+        "name": "plank-6",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            0,
+            3
+          ]
+        },
+        "round": 0.025,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider-7": {
+        "id": "collider-7",
+        "name": "collider-7",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            0,
+            3
+          ]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                1.6,
+                0,
+                0
+              ],
+              [
+                -1.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.12,
+                0
+              ],
+              [
+                0,
+                -0.12,
+                0
+              ],
+              [
+                0,
+                0,
+                0.56
+              ],
+              [
+                0,
+                0,
+                -0.56
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "vine-6-left": {
+        "id": "vine-6-left",
+        "name": "vine-6-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            -1.5,
+            0.15,
+            3
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "vine-6-right": {
+        "id": "vine-6-right",
+        "name": "vine-6-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            1.5,
+            0.15,
+            3
+          ]
+        },
+        "round": 0.025,
+        "material": "vine",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.045,
+                0,
+                0
+              ],
+              [
+                -0.045,
+                0,
+                0
+              ],
+              [
+                0,
+                0.045,
+                0
+              ],
+              [
+                0,
+                -0.045,
+                0
+              ],
+              [
+                0,
+                0,
+                0.6
+              ],
+              [
+                0,
+                0,
+                -0.6
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "wood": {
+        "name": "Jungle timber",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#80502b",
+                "in.roughness": 0.85
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "wood-light": {
+        "name": "Worn timber",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#a57342",
+                "in.roughness": 0.85
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "vine": {
+        "name": "Living vine",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#497c32",
+                "in.roughness": 0.85
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [
+    {"shape":"cuboid","halfExtents":[1.9,0.18,0.24],"t":[0,0.1,-3.84],"r":[0,0,0,1]},
+    {"shape":"cuboid","halfExtents":[1.9,0.18,0.24],"t":[0,0.1,3.84],"r":[0,0,0,1]},
+    {"shape":"cuboid","halfExtents":[1.6,0.12,0.56],"t":[0,0,-3],"r":[0,0,0,1]},
+    {"shape":"cuboid","halfExtents":[1.6,0.12,0.56],"t":[0,-0.15,-1.8],"r":[0,0,0,1]},
+    {"shape":"cuboid","halfExtents":[1.6,0.12,0.56],"t":[0,-0.25,-0.6],"r":[0,0,0,1]},
+    {"shape":"cuboid","halfExtents":[1.6,0.12,0.56],"t":[0,-0.25,0.6],"r":[0,0,0,1]},
+    {"shape":"cuboid","halfExtents":[1.6,0.12,0.56],"t":[0,-0.15,1.8],"r":[0,0,0,1]},
+    {"shape":"cuboid","halfExtents":[1.6,0.12,0.56],"t":[0,0,3],"r":[0,0,0,1]}
+  ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "post-a",
+        "type": "fixed",
+        "colliders": [
+          0
+        ],
+        "parts": [
+          "post-a",
+          "collider-0",
+          "post-a-left",
+          "post-a-left-moss",
+          "post-a-right",
+          "post-a-right-moss"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.85,
+        "restitution": 0,
+        "linearDamping": 0.4,
+        "angularDamping": 0.8,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "post-b",
+        "type": "fixed",
+        "colliders": [
+          1
+        ],
+        "parts": [
+          "post-b",
+          "collider-1",
+          "post-b-left",
+          "post-b-left-moss",
+          "post-b-right",
+          "post-b-right-moss"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.85,
+        "restitution": 0,
+        "linearDamping": 0.4,
+        "angularDamping": 0.8,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "plank-1",
+        "type": "dynamic",
+        "colliders": [
+          2
+        ],
+        "parts": [
+          "plank-1",
+          "collider-2",
+          "vine-1-left",
+          "vine-1-right"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.85,
+        "restitution": 0,
+        "linearDamping": 0.4,
+        "angularDamping": 0.8,
+        "gravityScale": 1,
+        "ccd": true,
+        "surface": "normal"
+      },
+      {
+        "id": "plank-2",
+        "type": "dynamic",
+        "colliders": [
+          3
+        ],
+        "parts": [
+          "plank-2",
+          "collider-3",
+          "vine-2-left",
+          "vine-2-right"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.85,
+        "restitution": 0,
+        "linearDamping": 0.4,
+        "angularDamping": 0.8,
+        "gravityScale": 1,
+        "ccd": true,
+        "surface": "normal"
+      },
+      {
+        "id": "plank-3",
+        "type": "dynamic",
+        "colliders": [
+          4
+        ],
+        "parts": [
+          "plank-3",
+          "collider-4",
+          "vine-3-left",
+          "vine-3-right"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.85,
+        "restitution": 0,
+        "linearDamping": 0.4,
+        "angularDamping": 0.8,
+        "gravityScale": 1,
+        "ccd": true,
+        "surface": "normal"
+      },
+      {
+        "id": "plank-4",
+        "type": "dynamic",
+        "colliders": [
+          5
+        ],
+        "parts": [
+          "plank-4",
+          "collider-5",
+          "vine-4-left",
+          "vine-4-right"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.85,
+        "restitution": 0,
+        "linearDamping": 0.4,
+        "angularDamping": 0.8,
+        "gravityScale": 1,
+        "ccd": true,
+        "surface": "normal"
+      },
+      {
+        "id": "plank-5",
+        "type": "dynamic",
+        "colliders": [
+          6
+        ],
+        "parts": [
+          "plank-5",
+          "collider-6",
+          "vine-5-left",
+          "vine-5-right"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.85,
+        "restitution": 0,
+        "linearDamping": 0.4,
+        "angularDamping": 0.8,
+        "gravityScale": 1,
+        "ccd": true,
+        "surface": "normal"
+      },
+      {
+        "id": "plank-6",
+        "type": "dynamic",
+        "colliders": [
+          7
+        ],
+        "parts": [
+          "plank-6",
+          "collider-7",
+          "vine-6-left",
+          "vine-6-right"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.85,
+        "restitution": 0,
+        "linearDamping": 0.4,
+        "angularDamping": 0.8,
+        "gravityScale": 1,
+        "ccd": true,
+        "surface": "normal"
+      }
+    ],
+    "joints": [
+      {
+        "id": "rope-1-left",
+        "kind": "rope",
+        "a": "post-a",
+        "b": "plank-1",
+        "anchorA": [
+          -1.5,
+          0.28,
+          -3.6
+        ],
+        "anchorB": [
+          -1.5,
+          0.15,
+          -3.56
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.156015,
+        "motor": null
+      },
+      {
+        "id": "rope-1-right",
+        "kind": "rope",
+        "a": "post-a",
+        "b": "plank-1",
+        "anchorA": [
+          1.5,
+          0.28,
+          -3.6
+        ],
+        "anchorB": [
+          1.5,
+          0.15,
+          -3.56
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.156015,
+        "motor": null
+      },
+      {
+        "id": "rope-2-left",
+        "kind": "rope",
+        "a": "plank-1",
+        "b": "plank-2",
+        "anchorA": [
+          -1.5,
+          0.15,
+          -2.44
+        ],
+        "anchorB": [
+          -1.5,
+          0,
+          -2.36
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.19,
+        "motor": null
+      },
+      {
+        "id": "rope-2-right",
+        "kind": "rope",
+        "a": "plank-1",
+        "b": "plank-2",
+        "anchorA": [
+          1.5,
+          0.15,
+          -2.44
+        ],
+        "anchorB": [
+          1.5,
+          0,
+          -2.36
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.19,
+        "motor": null
+      },
+      {
+        "id": "rope-3-left",
+        "kind": "rope",
+        "a": "plank-2",
+        "b": "plank-3",
+        "anchorA": [
+          -1.5,
+          0,
+          -1.24
+        ],
+        "anchorB": [
+          -1.5,
+          -0.1,
+          -1.16
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.148062,
+        "motor": null
+      },
+      {
+        "id": "rope-3-right",
+        "kind": "rope",
+        "a": "plank-2",
+        "b": "plank-3",
+        "anchorA": [
+          1.5,
+          0,
+          -1.24
+        ],
+        "anchorB": [
+          1.5,
+          -0.1,
+          -1.16
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.148062,
+        "motor": null
+      },
+      {
+        "id": "rope-4-left",
+        "kind": "rope",
+        "a": "plank-3",
+        "b": "plank-4",
+        "anchorA": [
+          -1.5,
+          -0.1,
+          -0.04
+        ],
+        "anchorB": [
+          -1.5,
+          -0.1,
+          0.04
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.1,
+        "motor": null
+      },
+      {
+        "id": "rope-4-right",
+        "kind": "rope",
+        "a": "plank-3",
+        "b": "plank-4",
+        "anchorA": [
+          1.5,
+          -0.1,
+          -0.04
+        ],
+        "anchorB": [
+          1.5,
+          -0.1,
+          0.04
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.1,
+        "motor": null
+      },
+      {
+        "id": "rope-5-left",
+        "kind": "rope",
+        "a": "plank-4",
+        "b": "plank-5",
+        "anchorA": [
+          -1.5,
+          -0.1,
+          1.16
+        ],
+        "anchorB": [
+          -1.5,
+          0,
+          1.24
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.148062,
+        "motor": null
+      },
+      {
+        "id": "rope-5-right",
+        "kind": "rope",
+        "a": "plank-4",
+        "b": "plank-5",
+        "anchorA": [
+          1.5,
+          -0.1,
+          1.16
+        ],
+        "anchorB": [
+          1.5,
+          0,
+          1.24
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.148062,
+        "motor": null
+      },
+      {
+        "id": "rope-6-left",
+        "kind": "rope",
+        "a": "plank-5",
+        "b": "plank-6",
+        "anchorA": [
+          -1.5,
+          0,
+          2.36
+        ],
+        "anchorB": [
+          -1.5,
+          0.15,
+          2.44
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.19,
+        "motor": null
+      },
+      {
+        "id": "rope-6-right",
+        "kind": "rope",
+        "a": "plank-5",
+        "b": "plank-6",
+        "anchorA": [
+          1.5,
+          0,
+          2.36
+        ],
+        "anchorB": [
+          1.5,
+          0.15,
+          2.44
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.19,
+        "motor": null
+      },
+      {
+        "id": "rope-7-left",
+        "kind": "rope",
+        "a": "plank-6",
+        "b": "post-b",
+        "anchorA": [
+          -1.5,
+          0.15,
+          3.56
+        ],
+        "anchorB": [
+          -1.5,
+          0.28,
+          3.6
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.156015,
+        "motor": null
+      },
+      {
+        "id": "rope-7-right",
+        "kind": "rope",
+        "a": "plank-6",
+        "b": "post-b",
+        "anchorA": [
+          1.5,
+          0.15,
+          3.56
+        ],
+        "anchorB": [
+          1.5,
+          0.28,
+          3.6
+        ],
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "limitsDeg": null,
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0.156015,
+        "motor": null
+      }
+    ]
+  },
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -1.94,
+      -0.37,
+      -4.08
+    ],
+    "max": [
+      1.94,
+      1.66,
+      4.08
+    ]
+  },
+  "hash": "ac511f083a29d399c02bb5dd888144719867e349c68492d89fbf2ef12db43c4e"
+}

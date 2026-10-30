@@ -13,7 +13,8 @@ import { isRefusal } from '../../sim/src/refusal.ts'
 import { loadCourseV1 } from '../src/courseV1.ts'
 import type { CourseV1, GameAssetResolver } from '../src/courseV1.ts'
 import { assetFilePath, parseGameAsset } from '../src/gameAsset.ts'
-import type { World } from '../src/gameAsset.ts'
+import type { AssetJointJson, World } from '../src/gameAsset.ts'
+import { parseAssetPhysics } from '../src/mechanismsJson.ts'
 
 const ROOT = new URL('../../../', import.meta.url)
 const readJson = async (path: string): Promise<unknown> => JSON.parse(await readFile(new URL(path, ROOT), 'utf8'))
@@ -47,6 +48,72 @@ function usedBudget(m: MechanismSpec): { dynamicBodies: number; joints: number }
 
 const R = await initRapier()
 const survival = (await load('survival-sprint')).sim
+
+test('world asset jungle.vine-bridge loads a suspended platform chain within course budgets', async () => {
+  const path = 'assets/jungle/jungle.vine-bridge.asset.json'
+  const json = await readJson(path) as Record<string, unknown>
+  const asset = await parseGameAsset(json, path)
+  const physics = parseAssetPhysics(json.physics, asset.collision, path)
+  assert.ok(physics)
+  assert.equal(asset.world, 'jungle')
+  assert.equal(asset.collision.length, 8)
+  assert.deepEqual(physics.bodies.filter(b => b.type === 'fixed').map(b => b.id), ['post-a', 'post-b'])
+  const planks = physics.bodies.filter(b => b.type === 'dynamic')
+  assert.equal(planks.length, 6)
+  assert.equal(physics.joints.length, 14)
+  assert.deepEqual(physics.bodies.flatMap(b => b.colliders).sort((a, b) => a - b), [0, 1, 2, 3, 4, 5, 6, 7])
+  const chain = ['post-a', ...planks.map(b => b.id), 'post-b']
+  for (let i = 0; i < chain.length - 1; i++) {
+    const ropes: AssetJointJson[] = physics.joints.filter(j => j.a === chain[i] && j.b === chain[i + 1])
+    assert.equal(ropes.length, 2, 'each span is suspended on both sides')
+    for (const rope of ropes) {
+      assert.equal(rope.kind, 'rope')
+      assert.match(rope.a, /^[a-z0-9-]{1,32}$/)
+      assert.match(rope.b, /^[a-z0-9-]{1,32}$/)
+      const distance = Math.hypot(...rope.anchorA.map((v, k) => v - rope.anchorB[k]))
+      assert.ok(rope.lengthM! >= distance, 'rope is not overstretched at rest')
+      assert.ok(rope.lengthM! < distance + 0.021, 'limited slack keeps the deck connected')
+    }
+  }
+
+  // Load through S13 so collider ownership, bot-visible platform geometry and both
+  // budgets are exercised by the real course loader, independently of M4 course files.
+  const course = await readJson('courses/race-sprint.course.json') as Record<string, unknown>
+  course.id = 'bridge-test'
+  course.obstacles = [{ id: 'bridge', asset: asset.id, t: [0, 2, 8], r: [0, 0, 0, 1], s: [1, 1, 1],
+    colliders: null, friction: 0.85, motion: { kind: 'static' } }]
+  course.mechanisms = { budget: DEFAULT_BUDGET }
+  const loaded = await loadCourseV1(course, 'bridge-test.course.json', assets)
+  assert.ok(loaded.sim?.mechanisms)
+  const m = loaded.sim.mechanisms
+  assert.deepEqual(usedBudget(m), { dynamicBodies: 6, joints: 14 })
+  assert.equal(loaded.sim.obstacles.length, 0)
+  const item = m.items[0]
+  for (const body of item.bodies.filter(b => b.type === 'dynamic')) {
+    assert.equal(body.surface, 'normal')
+    assert.equal(body.colliders.length, 1)
+    const collider = body.colliders[0]
+    assert.equal(collider.shape, 'cuboid')
+    if (collider.shape !== 'cuboid') throw new Error('plank must be a platform cuboid')
+    assert.ok(collider.half.x >= 1.5 && collider.half.z >= 0.5)
+    assert.ok(collider.half.y <= 0.15)
+    assert.deepEqual(collider.r, { x: 0, y: 0, z: 0, w: 1 })
+    assert.equal(body.rest.t.y, 2)
+  }
+  for (const joint of item.joints) {
+    assert.ok(item.bodies[joint.a.body])
+    assert.ok(item.bodies[joint.b.body])
+    assert.notEqual(joint.a.body, joint.b.body)
+  }
+  for (const budget of [{ dynamicBodies: 5, joints: 32 }, { dynamicBodies: 24, joints: 13 }]) {
+    course.mechanisms = { budget }
+    await assert.rejects(loadCourseV1(course, 'bridge-test.course.json', assets), (e: unknown) => {
+      assert.ok(isRefusal(e))
+      assert.ok(e.message.includes('#/mechanisms/budget'))
+      return true
+    })
+  }
+})
 
 for (const id of IDS) {
   test(`world course ${id}`, { timeout: 200_000 }, async () => {

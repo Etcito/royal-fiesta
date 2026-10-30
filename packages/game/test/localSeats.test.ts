@@ -5,6 +5,7 @@ import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { emptyControls } from '../src/client/inputMap.ts'
 import { assignPads, LocalSeats } from '../src/client/localSeats.ts'
 import type { KeyScheme, SeatDevices } from '../src/client/localSeats.ts'
+import { splitRects } from '../src/render/splitScreen.ts'
 
 const device = (keyboard: KeyScheme | null, pad: number | null): SeatDevices => ({ keyboard, pad })
 const snapshot = (axes: number[] = [], pressed: number[] = []) => ({
@@ -134,4 +135,58 @@ test('seats without a device remain neutral and can be driven by takeover bots',
   for (const i of [2, 3]) assert.deepEqual(seats.controls(i), emptyControls())
   const withPads = new LocalSeats(assignPads(4, [0, 1, 2, 3]))
   assert.deepEqual([0, 1, 2, 3].map(i => withPads.hasDevice(i)), [true, true, true, true])
+})
+
+test('splitRects lays out 1 to 4 panes exactly at 1920x1080', () => {
+  assert.deepEqual(splitRects(1, 1920, 1080), [
+    { x: 0, y: 0, width: 1920, height: 1080 },
+  ])
+  assert.deepEqual(splitRects(2, 1920, 1080), [
+    { x: 0, y: 0, width: 960, height: 1080 },
+    { x: 960, y: 0, width: 960, height: 1080 },
+  ])
+  assert.deepEqual(splitRects(3, 1920, 1080), [
+    { x: 0, y: 0, width: 1920, height: 540 },
+    { x: 0, y: 540, width: 960, height: 540 },
+    { x: 960, y: 540, width: 960, height: 540 },
+  ])
+  assert.deepEqual(splitRects(4, 1920, 1080), [
+    { x: 0, y: 0, width: 960, height: 540 },
+    { x: 960, y: 0, width: 960, height: 540 },
+    { x: 0, y: 540, width: 960, height: 540 },
+    { x: 960, y: 540, width: 960, height: 540 },
+  ])
+})
+
+test('splitRects covers odd canvases without gaps or overlap', () => {
+  const width = 1281
+  const height = 721
+  for (let count = 1; count <= 4; count++) {
+    const rects = splitRects(count, width, height)
+    let area = 0
+    for (let i = 0; i < rects.length; i++) {
+      const r = rects[i]
+      assert.ok(Number.isInteger(r.x) && Number.isInteger(r.y) && Number.isInteger(r.width) && Number.isInteger(r.height))
+      assert.ok(r.width > 0 && r.height > 0)
+      area += r.width * r.height
+      for (let j = i + 1; j < rects.length; j++) {
+        const o = rects[j]
+        const overlapX = Math.min(r.x + r.width, o.x + o.width) > Math.max(r.x, o.x)
+        const overlapY = Math.min(r.y + r.height, o.y + o.height) > Math.max(r.y, o.y)
+        assert.ok(!(overlapX && overlapY), `rectangles ${i} and ${j} overlap for ${count} panes`)
+      }
+    }
+    assert.equal(area, width * height, `area for ${count} panes`)
+  }
+})
+
+test('splitRects refuses counts outside 1..4', () => {
+  for (const count of [0, 5]) {
+    assert.throws(() => splitRects(count, 1920, 1080), (error: unknown) => {
+      assert.ok(error instanceof RefusalError)
+      assert.equal(error.area, 'render')
+      assert.equal(error.path, 'splitRects')
+      return true
+    })
+  }
 })

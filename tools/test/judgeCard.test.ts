@@ -196,11 +196,11 @@ test('each M3 item independently judges its required image at score 6', () => {
   }
 })
 
-test('command cards keep the ten-entry dependency chain', () => {
+test('command cards keep the dependency chain', () => {
   const cards = JSON.parse(readFileSync(new URL('../../.nmc/commands.json', import.meta.url), 'utf8'))
   assert.deepEqual(cards.map((c: { name: string }) => c.name), [
     'sdf-port-typecheck', 'sdf-port-build', 'candy-content-pack', 'candy-assets-proof',
-    'rf-tests', 'rf-judge-m2', 'rf-judge-m3', 'rf-judge-m3-split', 'rf-judge-m3-touch', 'rf-judge-m3-remap',
+    'rf-tests', 'rf-judge-m3', 'rf-judge-m3-split', 'rf-judge-m3-touch', 'rf-judge-m3-remap',
   ])
   assert.equal(cards[0].after, undefined)
   assert.deepEqual(cards[1].after, ['sdf-port-typecheck'])

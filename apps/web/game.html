@@ -21,6 +21,14 @@
       /* Settings' entry point to the remap: bottom centre, in the game's colours, hidden on other screens. */
       #open-remap { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 5; border: 0; border-radius: 999px; padding: 12px 22px; background: #ff77c8; color: #fff; font: 700 18px system-ui, sans-serif; cursor: pointer; }
       #open-remap[hidden] { display: none; }
+      /* Community levels (docs/community-levels.md): only mounted when the page has a levels base URL. */
+      #open-community { position: fixed; right: 24px; bottom: 24px; z-index: 5; border: 0; border-radius: 999px; padding: 12px 22px; background: #5fd0ff; color: #12203a; font: 700 18px system-ui, sans-serif; cursor: pointer; }
+      #open-community[hidden] { display: none; }
+      #community-panel { position: fixed; right: 24px; bottom: 84px; z-index: 6; width: min(420px, 90vw); max-height: 60vh; overflow: auto; padding: 16px; border-radius: 16px; background: #2a1a47; color: #fff; font: 16px system-ui, sans-serif; }
+      #community-panel[hidden] { display: none; }
+      #community-panel ul { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 8px; }
+      #community-panel li { display: flex; gap: 10px; align-items: center; }
+      #community-panel button { border: 0; border-radius: 999px; padding: 6px 14px; background: #ff77c8; color: #fff; font: 700 15px system-ui, sans-serif; cursor: pointer; }
       #round-loading { position: fixed; inset: 0; z-index: 10; display: grid; place-content: center; gap: 20px; text-align: center; background: #1b0f2e; color: #fff; font: 700 22px system-ui, sans-serif; }
       #round-loading[hidden] { display: none; }
       #round-loading progress { width: 320px; max-width: 80vw; accent-color: #ff77c8; }
@@ -32,6 +40,8 @@
     <div id="touch" hidden></div>
     <div id="remap"></div>
     <button id="open-remap" type="button" hidden>Controller...</button>
+    <button id="open-community" type="button" hidden>Community levels</button>
+    <aside id="community-panel" hidden></aside>
     <script type="module" src="/src/game/main.ts"></script>
     <aside id="round-loading" role="status" aria-live="polite"><strong>Royal Fiesta</strong><span data-label>Starting...</span><progress aria-label="Loading progress"></progress></aside>
   </body>

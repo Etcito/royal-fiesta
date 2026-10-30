@@ -31,13 +31,51 @@ export function browserContentRoot(): string {
   return query ?? import.meta.env?.VITE_RF_CONTENT_URL ?? 'content/'
 }
 
+// A community level (docs/community-levels.md): its verified files overlay the content root for this page. The course
+// and the assets it carries join the index; every other path still comes from the root.
+let overlay: Map<string, string> | null = null
+
+/** Installs a verified community pack's files (path -> exact text) over the page's content. Call before any content read. */
+export function installContentOverlay(files: Readonly<Record<string, string>>): void {
+  overlay = new Map(Object.entries(files))
+  contentIndex = null
+  audioPatches = null
+  gameAssets = null
+}
+
+function mergeOverlayIndex(base: ContentIndexV1, files: ReadonlyMap<string, string>): ContentIndexV1 {
+  const merged: ContentIndexV1 = { assets: [...base.assets], courses: [...base.courses], audio: [...(base.audio ?? [])] }
+  for (const [path, text] of files) {
+    const course = /^courses\/([a-z0-9-]+)\.course\.json$/.exec(path)
+    if (course !== null) {
+      if (merged.courses.some(c => c.id === course[1])) refuse('community', path, `the game already has a course '${course[1]}'; the level cannot load`)
+      merged.courses.push({ id: course[1], path })
+      continue
+    }
+    const asset = /^assets\/([a-z]+)\/(.+)\.asset\.json$/.exec(path)
+    if (asset === null) continue
+    const hash = (JSON.parse(text) as { hash?: unknown }).hash
+    if (typeof hash !== 'string') refuse('community', path, 'the asset has no hash')
+    const same = merged.assets.find(a => a.id === asset[2])
+    if (same !== undefined) {
+      if (same.hash !== hash) refuse('community', path, `the game has an asset '${asset[2]}' with other content; the level cannot load`)
+      continue
+    }
+    merged.assets.push({ id: asset[2], world: asset[1], path, hash })
+  }
+  return merged
+}
+
 function contentReader(options: ContentOptions) {
   const root = (options.root ?? browserContentRoot()).replace(/\/?$/, '/')
   const fetcher = options.fetch ?? globalThis.fetch
   return async (path: string): Promise<unknown> => {
+    const local = overlay?.get(path)
+    if (local !== undefined) return JSON.parse(local)
     const response = await fetcher(root + path, { cache: 'no-cache' })
     if (!response.ok) throw new Error(`content: ${path}: HTTP ${response.status}`)
-    return JSON.parse(await response.text())
+    const json = JSON.parse(await response.text()) as unknown
+    return overlay !== null && path === 'index.json' ? mergeOverlayIndex(json as ContentIndexV1, overlay) : json
   }
 }
 

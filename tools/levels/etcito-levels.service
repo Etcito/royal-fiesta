@@ -1,0 +1,20 @@
+[Unit]
+Description=Etcito community levels store (Royal Fiesta level packs)
+After=network.target
+
+[Service]
+User=etcito-levels
+Group=etcito-levels
+EnvironmentFile=/etc/etcito-levels.env
+Environment=LEVELS_DIR=/var/lib/etcito-levels
+Environment=LEVELS_PORT=9790
+ExecStart=/usr/bin/node /opt/etcito-levels/server.mjs
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/etcito-levels
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

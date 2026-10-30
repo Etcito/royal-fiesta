@@ -74,10 +74,17 @@ import type { UaaCommand, UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
 import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
 import { defaultRelay, onlineRelay } from '../platform/relay.ts'
 import { installGameOps } from './ops.ts'
+import { communityBase, listCommunityLevels, loadCommunityPack } from '../content/community.ts'
+import { installContentOverlay } from '../content/v1Data.ts'
+import { mountCommunityPanel } from './communityPanel.ts'
 import type { TourGame } from './uiTour.ts'
 
 interface Query {
   course: string | null
+  // ?community=<level id>: a published community level (docs/community-levels.md), played as ?course= of its course.
+  community: string | null
+  // ?chash= pins the level to one content hash (a match descriptor does this).
+  chash: string | null
   server: string | null
   hub: string | 'new'
   name: string
@@ -112,6 +119,10 @@ function parseQuery(search: string): Query {
   const q = new URLSearchParams(search)
   const course = q.get('course')
   if (course !== null && course.length === 0) refuse('query', 'course', 'is empty; pass a course id of the content playlist')
+  const community = q.get('community')
+  if (community !== null && !/^ugc-[a-z0-9-]{1,36}-[0-9a-f]{8}$/.test(community)) refuse('query', 'community', `'${community}' is not a community level id; pick one in Community levels`)
+  const chash = q.get('chash')
+  if (chash !== null && !/^[0-9a-f]{64}$/.test(chash)) refuse('query', 'chash', 'is not a 64 hex content hash')
   const server = q.get('server')
   if (server !== null && !/^wss?:\/\/\S+$/.test(server)) refuse('query', 'server', `'${server}' is not a ws:// or wss:// URL; fix ?server=`)
   const hub = q.get('hub') ?? 'new'
@@ -123,10 +134,12 @@ function parseQuery(search: string): Query {
   const clients = intParam(q, 'clients', 1, 1, 4)
   const touch = intParam(q, 'touch', 0, 0, 1) as 0 | 1
   const wait = intParam(q, 'wait', LOCAL_LOBBY_WAIT_S, 1, 600)
+  if (community !== null && (server !== null || course !== null)) refuse('query', 'community', 'plays one level in-page with bots; drop ?server= and ?course=')
+  if (community !== null && clients > 1) refuse('query', 'clients', 'a community level plays one client with bots; drop ?clients=')
   if (course !== null && server !== null) refuse('query', 'course', 'plays in-page with bots; drop ?server= or ?course=')
   if (clients > 1 && server !== null) refuse('query', 'clients', `${clients} in-page clients use a LoopbackRelay; drop ?server= or ?clients=`)
   if (clients > 1 && course !== null) refuse('query', 'clients', `?course= plays one client with bots; drop ?clients= or ?course=`)
-  return { course, server, hub, name, colour, party, clients, touch, wait }
+  return { course, community, chash, server, hub, name, colour, party, clients, touch, wait }
 }
 
 // A coarse pointer (a phone or tablet) uses the on-screen controls; ?touch=1 asks for them on any device.
@@ -1059,6 +1072,7 @@ class App {
   private readonly touch: ReturnType<typeof mountTouchControls> | null
   private readonly remapRoot: HTMLElement
   private readonly remapButton: HTMLButtonElement
+  private readonly community: { setVisible(on: boolean): void; dispose(): void } | null
   private remap: { close(): void } | null = null
   private remapHeld = false
   private readonly onOpenRemap = (): void => this.openRemap()
@@ -1082,6 +1096,11 @@ class App {
     this.remapButton = requiredElement<HTMLButtonElement>('#open-remap')
     this.remapButton.hidden = true
     this.remapButton.addEventListener('click', this.onOpenRemap)
+    const levelsBase = communityBase(search)
+    this.community = levelsBase === null ? null : mountCommunityPanel(requiredElement<HTMLButtonElement>('#open-community'), requiredElement<HTMLElement>('#community-panel'), {
+      list: () => listCommunityLevels(levelsBase),
+      play: id => { const next = new URLSearchParams(search); next.delete('course'); next.set('community', id); location.search = next.toString() },
+    })
     this.remapRoot.addEventListener('rf-remap-close', this.onRemapClose)
     // Clicking the (single) game canvas locks the pointer for the mouse look.
     this.input = new GameInput(window, screens, () => (this.loaded?.canvases.length === 1 ? this.loaded.canvases[0] : null))
@@ -1097,7 +1116,8 @@ class App {
   start(): void {
     let next: 'title' | 'hub' = 'title'
     try {
-      if (parseQuery(this.search).course !== null) next = 'hub'
+      const parsed = parseQuery(this.search)
+      if (parsed.course !== null || parsed.community !== null) next = 'hub'
     } catch {
       // The load parses again and shows the refusal.
     }
@@ -1185,6 +1205,7 @@ class App {
     this.remapButton.removeEventListener('click', this.onOpenRemap)
     this.remapRoot.removeEventListener('rf-remap-close', this.onRemapClose)
     this.remapButton.hidden = true
+    this.community?.dispose()
     this.touch?.dispose()
     this.devices.dispose()
     this.input.dispose()
@@ -1220,7 +1241,16 @@ class App {
     this.host.setLoading(0, 'Starting...')
     try {
       await this.env.beforeLoad?.()
-      const q = parseQuery(this.search)
+      let q = parseQuery(this.search)
+      if (q.community !== null) {
+        // Hash verified before any byte is used; the pack's files then overlay the content for this page.
+        const base = communityBase(this.search)
+        if (base === null) throw new Error('community levels need ?levels=<levels URL> or a build with VITE_RF_LEVELS_URL')
+        this.loadingOverlay.show('Downloading the community level')
+        const pack = await loadCommunityPack(base, q.community, q.chash ?? undefined)
+        installContentOverlay(pack.files)
+        q = { ...q, course: pack.manifest.courseId }
+      }
       this.query = q
       const content = pickContent(new URLSearchParams(this.search))
       boot.enter('physics (Rapier wasm)')
@@ -1495,6 +1525,7 @@ class App {
     if (this.remap !== null && nav.screen !== 'settings') this.closeRemap()
     this.touchRoot.hidden = this.touch === null || !(nav.live && PLAYING.includes(nav.screen))
     this.remapButton.hidden = !(nav.screen === 'settings' && this.remap === null)
+    this.community?.setVisible(nav.screen === 'title')
     const mode = this.mode
     const hud = mode === null || !HUD_SCREENS.includes(nav.screen) ? null : mode.hud()
     const values = hud === null ? null : hudValues(hud.view, hud.names, hud.seat, this.roundTicks(hud.view))

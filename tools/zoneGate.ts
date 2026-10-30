@@ -112,7 +112,7 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
   }catch{finish(false)}
 })}};
 </script>`)
-  const reachable = unwrapOp(await render(await publish(probe), { relay: relay.browserUrl }, 'probe-result'), 'open').out
+  const reachable = unwrapOp(await render(await publish(probe), { relay: await relay.expose() }, 'probe-result'), 'open').out
   if (reachable.open !== true) {
     console.error("zone gate: the GPU client cannot reach the card's relay; stopping (no Linux Chrome fallback)")
     throw new Error('relay reachability probe did not open')
@@ -160,8 +160,9 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
   const ref = await publish(dist)
   stage = 'two Chrome zone captures'
   const names = ['chrome-a', 'chrome-b'] as const
-  const jobs = names.map(name => render(ref, {
-    relay: relay!.browserUrl, players: 8, seatsPerPeer: 1, course: 'race-sprint',
+  const gate = relay
+  const jobs = names.map(async name => render(ref, {
+    relay: await gate.expose(), players: 8, seatsPerPeer: 1, course: 'race-sprint',
     seconds: 20, name, width: 1280, height: 720,
   } satisfies ZoneLobbyCaptureInput, name))
   // Keep scratch and the relay alive even if one of the concurrent jobs fails first.

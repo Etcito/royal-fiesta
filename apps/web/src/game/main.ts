@@ -54,7 +54,9 @@ import { planCanvases } from '../client/canvases.ts'
 import type { ClientCell } from '../client/canvases.ts'
 import { hudValues } from '../client/hud.ts'
 import type { HudValues } from '../client/hud.ts'
-import { mountLoading } from '../content/loading.ts'
+import { bootFraction, mountLoading } from '../content/loading.ts'
+import { BootStages, wavedashProgress, wavedashReady } from '../platform/wavedash.ts'
+import { probeWanted, runProbe } from '../platform/probe.ts'
 import { pickContent } from '../content/source.ts'
 import { GameInput, InputDevices } from '../input/input.ts'
 import type { DevicePoll, UiEvent } from '../input/input.ts'
@@ -1083,6 +1085,9 @@ class App {
     this.roundLoading = null
     this.loadingOverlay.hide()
     this.run(this.nav.dispatch({ kind: 'error', message }))
+    // A refusal must be readable, never hidden behind the Wavedash shell's loading screen.
+    boot.done()
+    wavedashReady()
   }
 
   // A uaa button or back press. One that comes from a screen nav has already left (two inputs in one
@@ -1187,8 +1192,14 @@ class App {
       const q = parseQuery(this.search)
       this.query = q
       const content = pickContent(new URLSearchParams(this.search))
+      boot.enter('physics (Rapier wasm)')
+      wavedashProgress(0.03)
       const R = await initRapier()
+      boot.enter('content')
+      let phase = ''
       await content.load('sprint', progress => {
+        if (progress.phase !== phase) boot.enter(`content: ${phase = progress.phase}`)
+        wavedashProgress(bootFraction(progress))
         this.loadingOverlay.show(progress.label, progress.done, progress.total)
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
@@ -1197,6 +1208,8 @@ class App {
       const picked = q.course === null ? null : content.course(q.course)
       const course = picked !== null && picked.kind === 'hub' ? null : picked
       this.loadingOverlay.show('Creating renderer')
+      boot.enter('renderer')
+      wavedashProgress(0.87)
       const { ports, canvases } = await this.mountPorts(content, q)
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.
@@ -1215,11 +1228,16 @@ class App {
       this.loaded = { R, content, ports, canvases, course }
       this.resizeViews()
       if (q.server === null && q.clients === 1) {
+        boot.enter('first frame (pipelines, capture)')
+        wavedashProgress(0.93)
         this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) })
         await this.preparedLocal.ready()
       }
       this.run(this.nav.dispatch({ kind: 'loaded' }))
       if (this.roundLoading === null) this.loadingOverlay.hide()
+      // R3: the title is up, so the Wavedash shell may show the game now.
+      boot.done()
+      wavedashReady()
     } catch (e) {
       console.error(e)
       this.fail(messageOf(e))
@@ -1596,12 +1614,50 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourG
   return { host: booted.host, ui, views, step: dt => frame?.(dt), dispose: () => booted.app.dispose() }
 }
 
-// Nothing mounted: write the message into the page rather than only the console.
+// Nothing mounted: write the message into the page rather than only the console, and let the Wavedash shell show it.
 function bootFailed(e: unknown): void {
   console.error(e)
   document.body.textContent = `Royal Fiesta could not start: ${bootMessage(e)}`
   document.body.style.cssText = 'color: #fff; font: bold 18px system-ui, sans-serif; padding: 32px'
+  boot.done()
+  wavedashReady()
 }
+
+// A stage that has taken more than 10 s is named under the page's loading bar, so a stuck boot says where it is.
+function showStall(stage: string, seconds: number): void {
+  const aside = document.querySelector<HTMLElement>('#round-loading')
+  if (aside === null) return
+  let line = aside.querySelector<HTMLElement>('[data-stall]')
+  if (line === null) {
+    line = document.createElement('small')
+    line.dataset.stall = ''
+    line.style.cssText = 'font: 14px system-ui, sans-serif; opacity: 0.75'
+    aside.append(line)
+  }
+  line.textContent = `Still on: ${stage} (${seconds} s)`
+}
+
+// Site storage can be refused in a third-party frame (blocked third-party storage throws on access): settings
+// then live in memory for this visit instead of failing the boot.
+function pageStorage(): Storage | null {
+  try {
+    const s = window.localStorage
+    s.getItem('royal-fiesta')
+    return s
+  } catch (e) {
+    console.warn('[boot] localStorage refused; settings are kept for this visit only:', e)
+    return null
+  }
+}
+
+function memoryStore(): SettingsStore {
+  const saved = new Map<string, string>()
+  return { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) }
+}
+
+// Started by the page's own boot only (an ops page has no boot to watch).
+let bootStages: BootStages | null = null
+const boot = { enter: (stage: string) => bootStages?.enter(stage), done: () => bootStages?.done() }
 
 // The GPU runner loads the page without a query, so every load registers the ops (no side effect until
 // one is called); ?mode=ops registers them alone, with no App, and so does the runner's opaque origin
@@ -1619,8 +1675,15 @@ try {
   if (!opsMode) {
     const canvas = document.querySelector<HTMLCanvasElement>('#screens > canvas#ui')
     if (canvas === null) throw new Error('game.html needs main#views and div#screens holding canvas#ui')
-    start(canvas, { store: window.localStorage, padStorage: window.localStorage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
+    const storage = pageStorage()
+    bootStages = new BootStages(showStall)
+    boot.enter('ui host (fonts, images, WebGPU)')
+    start(canvas, { store: storage ?? memoryStore(), padStorage: storage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
   }
 } catch (e) {
   bootFailed(e)
+}
+// The frame probe, off by default (docs/wavedash.md, "Frame probe").
+if (!opsMode && probeWanted(window.location.search)) {
+  runProbe().catch(e => console.error('[probe] failed:', e))
 }

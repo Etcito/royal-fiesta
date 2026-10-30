@@ -41,7 +41,7 @@
       "collider_4": {"id":"collider_4","name":"collider_4","kind":"paramesh","transform":{"position":[-1.05,1,0.12]},"round":0,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1,0,0],[-1,0,0],[0,0.9,0],[0,-0.9,0],[0,0,0.125],[0,0,-0.125]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true,"visible":false}
     },
     "materials": {
-      "ice-pale": {"name":"ice-pale","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#dff3ff","in.roughness":0.14,"in.opacity":0.84,"in.transmission":0.35,"in.ior":1.31}}],"links":[]}},
+      "ice-pale": {"name":"ice-pale","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#dff3ff","in.roughness":0.38}}],"links":[]}},
       "ice-blue": {"name":"ice-blue","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#9fd3f5","in.roughness":0.2}}],"links":[]}},
       "ice-frost": {"name":"ice-frost","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#dff3ff","in.roughness":0.48}}],"links":[]}},
       "snow": {"name":"snow","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#ffffff","in.roughness":0.85}}],"links":[]}}
@@ -55,5 +55,5 @@
   "physics": {"bodies":[{"id":"frame","type":"fixed","colliders":[0,1,2,3],"parts":["post_left","post_right","top_beam","fixed_bay","beam_snow","post_left_snow","post_right_snow","icicle_0","icicle_1","icicle_2","icicle_3","icicle_4","icicle_5","icicle_6","icicle_7","icicle_8","collider_0","collider_1","collider_2","collider_3"],"t":[0,0,0],"r":[0,0,0,1],"density":917,"friction":0.05,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"ice"},{"id":"gate","type":"kinematic","colliders":[4],"parts":["gate_slab","gate_core","gate_snow","gate_fissure","collider_4"],"t":[0,0,0],"r":[0,0,0,1],"density":917,"friction":0.05,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"ice"}],"joints":[{"id":"slide","kind":"slider","a":"frame","b":"gate","anchorA":[-1.05,1,0.12],"anchorB":[-1.05,1,0.12],"axis":[1,0,0],"limitsDeg":null,"limitsM":[0,2.2],"stiffness":0,"damping":0,"lengthM":0,"motor":null}]},
   "anchors": {},
   "bounds": {"min":[-2.38,0,-0.355],"max":[2.38,2.54,0.26]},
-  "hash": "aad81f9ce1243ee5f61a0a7bb6c1f4b9d7593717af8a1c4885dcf2cc4cc65174"
+  "hash": "3dd1dd7dc4095b0b1d0d4af443d5c2112947ca80d27435578d934d6ffb89ae5c"
 }

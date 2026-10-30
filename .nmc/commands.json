@@ -5,7 +5,7 @@
     "timeout_s": 60
   },
   {
-    "name": "zone-build",
+    "name": "zone-view-build",
     "command": "npm run build",
     "timeout_s": 900,
     "after": [
@@ -17,11 +17,11 @@
     "command": "npm run typecheck",
     "timeout_s": 120,
     "after": [
-      "zone-build"
+      "zone-view-build"
     ]
   },
   {
-    "name": "zone-capture",
+    "name": "zone-view-capture",
     "command": "env NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/zoneCapture.ts",
     "timeout_s": 1800,
     "after": [
@@ -29,11 +29,11 @@
     ]
   },
   {
-    "name": "zone-judge",
+    "name": "zone-view-judge",
     "command": "python3 \"$NMC_JUDGE_CLIENT\" out/m4/zone-view.png --description \"Royal Fiesta course with nearby players at full detail and distant players drawn as lighter far figures\" --min-score 6",
     "timeout_s": 600,
     "after": [
-      "zone-capture"
+      "zone-view-capture"
     ]
   }
 ]

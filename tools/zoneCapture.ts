@@ -101,6 +101,13 @@ async function main(): Promise<void> {
   stage = 'prepare built game page'
   const dist = 'apps/web/dist/'
   const manifestFile = join(dist, 'nmc.gpu.json')
+  // The runner may drop an unchanged build entry (it never re-runs an entry older than the producing card), so a
+  // fresh worktree reaches this point with no dist: build the page here rather than fail on a missing manifest.
+  if (!existsSync(manifestFile)) {
+    stage = 'build web page (no apps/web/dist)'
+    await exec('npm', ['run', 'build'], { maxBuffer: 64 << 20 })
+    stage = 'prepare built game page'
+  }
   const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'))
   assert(manifest.page === 'game.html' && Array.isArray(manifest.ops) && manifest.ops.includes('zoneCapture'))
   // The page answers content/meshes/<key> from the pack; a missing mesh makes the browser run MAMA itself

@@ -175,6 +175,19 @@ for (const id of IDS) {
       const players = Array.from({ length: 8 }, (_, p) => p)
       rounds.begin(match.world.ctx, { index: 0, kind: 'race', final: false, target: 8 },
         courseIndex, players, players, PROFILES.sprint.timeCapS! * 60 - match.tick)
+      if (id === 'ice-slide-gates') {
+        // At the playing capture the spring floes must already be suspended, not
+        // resting on the opening deck. Check the settled simulation pose too.
+        for (const itemId of ['opening-floe-left', 'opening-floe-right']) {
+          const item = m.items.findIndex(i => i.id === itemId)
+          assert.ok(item >= 0)
+          const body = m.items[item].bodies.findIndex(b => b.id === 'floe')
+          const current = pose()
+          assert.ok(match.mechanismBodyPose({ item, body }, current))
+          assert.ok(current.t.y - 0.225 > 0, `${itemId} underside clears the deck at playing`)
+          assert.ok(current.t.z < 8, `${itemId} is beside the opening stretch`)
+        }
+      }
       const signals = [...new Set([...waits, ...pulls])]
       const seen = new Set<string>()
       // The start-grid showcase must still run on its real mechanisms: the counter's links on
@@ -185,11 +198,18 @@ for (const id of IDS) {
           ? [['seesaw-1', 'plank', 0.02]] as const
           : []
       const moved = new Set<string>()
+      let iceGateOpened = false
       const current = pose()
       const maxTicks = PROFILES.sprint.introTicks + PROFILES.sprint.timeCapS! * 60 + 2
       while (!rounds.over && match.tick < maxTicks) {
         match.step(inputs)
         for (const s of signals) if (!seen.has(s) && match.signal(s)) seen.add(s)
+        if (id === 'ice-slide-gates' && !iceGateOpened) {
+          const item = m.items.findIndex(i => i.id === 'gate-a')
+          const body = m.items[item].bodies.findIndex(b => b.id === 'gate')
+          assert.ok(match.mechanismBodyPose({ item, body }, current))
+          iceGateOpened = current.t.x - m.items[item].bodies[body].rest.t.x > 1
+        }
         for (const [itemId, bodyId, travel] of showcase) {
           if (moved.has(itemId)) continue
           const item = m.items.findIndex(i => i.id === itemId)
@@ -209,6 +229,7 @@ for (const id of IDS) {
       assert.deepEqual([...round.qualified].sort((a, b) => a - b), players, `${id} qualifies every player once`)
       assert.deepEqual(round.eliminated, [], `${id} eliminates none`)
       for (const s of signals) assert.ok(seen.has(s), `${id} signal '${s}' is on during the round`)
+      if (id === 'ice-slide-gates') assert.ok(iceGateOpened, 'opening ice gate slides on its timer')
       for (const [itemId] of showcase) assert.ok(moved.has(itemId), `${itemId} moves on its real mechanism`)
     } finally {
       match.free()

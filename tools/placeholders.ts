@@ -8,9 +8,8 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { TICK_RATE } from '@gamesaloon/rollback-rapier'
-import { canonicalJson } from '../packages/game/src/course.ts'
 import { migrateCourseV0 } from '../packages/game/src/courseV1.ts'
-import { assetFilePath } from '../packages/game/src/gameAsset.ts'
+import { assetFilePath, sdfmText } from '../packages/game/src/gameAsset.ts'
 import type { AssetCategory, World } from '../packages/game/src/gameAsset.ts'
 import { collidersOf, parsePrims, PRIM_CAPS } from '../packages/game/src/prims.ts'
 import type { PrimMaterial, PrimNode, PrimsAsset } from '../packages/game/src/prims.ts'
@@ -129,15 +128,23 @@ function sdfNode(id: string, name: string, kind: string, f: Frame, op: string, c
   }
 }
 
-function addNodes(prims: PrimsAsset, list: PrimNode[], nodes: Obj, used: Set<string>): string[] {
+// SDF Modeler node ids are underscore slugs (guard NODE_ID); the prim id stays the node name.
+export function slugId(id: string): string {
+  const s = id.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^[^a-z]+/, 'n').slice(0, 48)
+  return s.length > 0 ? s : 'n'
+}
+
+function addNodes(prims: PrimsAsset, list: PrimNode[], nodes: Obj, used: Set<string>, path: string): string[] {
   return list.map(n => {
     const m = prims.materials[n.material]
-    const node = sdfNode(n.id, n.id, n.kind, n.transform, n.op, hex(m.color), n.material)
+    const nodeId = slugId(n.id)
+    if (Object.hasOwn(nodes, nodeId)) refuse('asset', `${path}#/nodes`, `node id '${n.id}' becomes '${nodeId}', which another node already has; rename the node`)
+    const node = sdfNode(nodeId, n.id, n.kind, n.transform, n.op, hex(m.color), n.material)
     node.params = structuredClone(n.params)
-    if (n.children) node.children = addNodes(prims, n.children, nodes, used)
+    if (n.children) node.children = addNodes(prims, n.children, nodes, used, path)
     used.add(n.material)
-    nodes[n.id] = node
-    return n.id
+    nodes[nodeId] = node
+    return nodeId
   })
 }
 
@@ -146,7 +153,7 @@ function documentOf(prims: PrimsAsset, id: string, path: string): Obj {
   const groupId = id.replace(/[.-]/g, '_')
   const nodes: Obj = {}
   const used = new Set<string>()
-  const children = addNodes(prims, prims.nodes, nodes, used)
+  const children = addNodes(prims, prims.nodes, nodes, used, path)
   if (Object.hasOwn(nodes, groupId)) refuse('asset', `${path}#/nodes`, `node id '${groupId}' is the group id of ${id}; rename the node`)
   const identity: Frame = { t: [0, 0, 0], r: [0, 0, 0, 1], s: [1, 1, 1] }
   const group = sdfNode(groupId, prims.name, 'group', identity, 'union', GROUP_COLOR, null)
@@ -218,7 +225,7 @@ function assetFile(prims: PrimsAsset, id: string, category: AssetCategory, world
   return {
     format: 'sdfm.game-asset', version: 1, game: 'royal-fiesta', id, name: prims.name, category, world,
     mesher: { ...MESHER }, document, collision: collidersOf(prims, path).map(flatCollider), anchors,
-    bounds: boundsOf(prims, path), hash: createHash('sha256').update(canonicalJson(document)).digest('hex'),
+    bounds: boundsOf(prims, path), hash: createHash('sha256').update(sdfmText(document)).digest('hex'),
   }
 }
 

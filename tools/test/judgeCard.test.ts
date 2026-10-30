@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
-import { judgeCommands, pageRefOf, parseJudgeInput } from '../judgeCard.ts'
-import type { SingleJudgeInput } from '../judgeCard.ts'
+import { judgeCommands, pageRefOf, parseJudgeInput, preflightJudgeInput } from '../judgeCard.ts'
+import type { JudgeInput, SingleJudgeInput } from '../judgeCard.ts'
 
 const M1 = fileURLToPath(new URL('../../.nmc/judge/m1.json', import.meta.url))
 const M1_PATH = '.nmc/judge/m1.json'
@@ -252,4 +252,20 @@ test('items refuses mixed formats and collisions formed from different prefixes'
   json.items[1].prefix = ''
   json.items[1].judge[0].capture = 'touch-playing'
   refusedWith(() => parseJudgeInput(json, M3_PATH), /m3\.json#\/items\/1\/judge\/0\/capture:.*repeats/)
+})
+
+test('preflightJudgeInput accepts the M1 judge file', () => {
+  preflightJudgeInput(m1(), M1_PATH)
+})
+
+test('preflightJudgeInput refuses with the op message: 4 clients with a course', () => {
+  const json = m1Json()
+  ;(json.input as Record<string, unknown>).course = 'candy'
+  refusedWith(() => preflightJudgeInput(parseJudgeInput(json, M1_PATH), M1_PATH), /\.nmc\/judge\/m1\.json#\/input.*4 clients play the in-page hub loop; drop course and net/)
+})
+
+test('preflightJudgeInput refuses a moment that is not of the flow', () => {
+  const json = m1Json()
+  ;(json.input as Record<string, unknown>).captureAt = ['back-in-hub']
+  refusedWith(() => preflightJudgeInput(parseJudgeInput(json, M1_PATH), M1_PATH), /"back-in-hub" is not a moment of flow match/)
 })

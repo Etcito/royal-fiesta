@@ -22,7 +22,7 @@ const POP_MS = 350
 // Spectators of the lobby are drawn smaller than its players.
 const SPECTATOR_SCALE = 0.72
 // Name tags sit this far above a bean's origin (its feet).
-export const TAG_HEIGHT = 2.1
+export const TAG_HEIGHT = 1.5
 // Character modes (sim character/constants CharMode) the view poses.
 const MODE_AIR = 1
 const MODE_DIVE = 2

@@ -24,3 +24,11 @@ export function cellDistance(grid: CellGrid, a: number, b: number): number {
   const bCol = b % grid.cols
   return Math.max(Math.abs(aRow - bRow), Math.abs(aCol - bCol))
 }
+
+/** Cell id of a world point clamped to the grid's edge cells, or CONTROL_NO_CELL for a non-finite point. */
+export function clampedCellOf(grid: CellGrid, x: number, z: number): number {
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return CONTROL_NO_CELL
+  const col = Math.min(grid.cols - 1, Math.max(0, Math.floor((x - grid.origin[0]) / grid.cell[0])))
+  const row = Math.min(grid.rows - 1, Math.max(0, Math.floor((z - grid.origin[1]) / grid.cell[1])))
+  return row * grid.cols + col
+}

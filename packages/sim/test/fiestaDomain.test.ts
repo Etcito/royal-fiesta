@@ -193,6 +193,21 @@ test('split keeps each seat state and transfers the seesaw only to its owner', t
   }
 })
 
+test('a rebuilt live seat keeps falling and colliding like the source', t => {
+  const source = track(t, factory.create(left, 0))
+  // Airborne and rising: a body rebuilt without gravity would keep this velocity forever.
+  for (let i = 0; i < 70; i++) source.step([{ ...neutralInput(), jump: i === 65 }], noShadows)
+  const rebuilt = track(t, factory.rebuild(left, source.tick, [exported(source)]))
+  const body = (domain: FiestaDomain) => domain.inner.world.sim.body(domain.inner.world.bodyOf(1))
+  assert.equal(body(rebuilt).gravityScale(), body(source).gravityScale())
+  assert.equal(body(rebuilt).collider(0).collisionGroups(), body(source).collider(0).collisionGroups())
+  for (let i = 0; i < 30; i++) {
+    source.step([neutralInput()], noShadows)
+    rebuilt.step([neutralInput()], noShadows)
+  }
+  assert.deepEqual(rebuilt.state(0).pos, source.state(0).pos)
+})
+
 test('a zero-length shadow reader is skipped without changing the simulation', t => {
   const a = track(t, factory.create(left, 0))
   const b = track(t, factory.create(left, 0))

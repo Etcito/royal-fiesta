@@ -30,6 +30,8 @@ export interface ZoneLobbyCaptureInput {
   seatsPerPeer: number
   course: string
   seconds: number
+  /** Stop playing at this session tick, before `seconds` ends: a sprint racer parks once it finishes. */
+  captureTick?: number
   name: string
   width: typeof WIDTH
   height: typeof HEIGHT
@@ -89,7 +91,7 @@ function relayUrl(op: string, path: string, v: unknown): string {
 function validate(raw: unknown): ZoneLobbyCaptureInput {
   const op = 'zoneLobbyCapture'
   const o = obj(op, 'input', raw)
-  onlyKeys(op, 'input', o, ['relay', 'players', 'seatsPerPeer', 'course', 'seconds', 'name', 'width', 'height'])
+  onlyKeys(op, 'input', o, ['relay', 'players', 'seatsPerPeer', 'course', 'seconds', 'captureTick', 'name', 'width', 'height'])
   if (o.width !== WIDTH || o.height !== HEIGHT) {
     refuse('ops', `${op}.input`, `is ${JSON.stringify(o.width)}x${JSON.stringify(o.height)}; zone lobby captures are ${WIDTH}x${HEIGHT}`)
   }
@@ -99,6 +101,7 @@ function validate(raw: unknown): ZoneLobbyCaptureInput {
     seatsPerPeer: int(op, 'input.seatsPerPeer', o.seatsPerPeer, 1, 4),
     course: str(op, 'input.course', o.course, /^[a-z0-9-]{1,40}$/),
     seconds: num(op, 'input.seconds', o.seconds, MIN_SECONDS, MAX_SECONDS),
+    ...(o.captureTick === undefined ? {} : { captureTick: int(op, 'input.captureTick', o.captureTick, 1, MAX_SECONDS * 60) }),
     name: str(op, 'input.name', o.name, /^[a-z0-9-]{1,32}$/),
     width: WIDTH,
     height: HEIGHT,
@@ -219,7 +222,7 @@ async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Pro
         await bounded(input.name, 'animation loading', READY_TIMEOUT_MS, joined.ready())
         phase('ticking')
       }
-    } while (realNow() - started < input.seconds * 1000)
+    } while (realNow() - started < input.seconds * 1000 && !(joined.info.tick >= (input.captureTick ?? Infinity)))
     phase(`rendering (tick ${joined.info.tick})`)
     joined.render()
     const deadline = realNow() + PIPELINE_WAIT_MS

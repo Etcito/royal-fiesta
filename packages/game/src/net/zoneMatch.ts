@@ -1,5 +1,5 @@
 import { InputBuffer } from '@gamesaloon/rollback'
-import { CONTROL_BITS, CONTROL_NO_CELL, MAX_PEERS, packControl, ZoneSession } from '@gamesaloon/rollback/zones'
+import { CONTROL_BITS, CONTROL_NO_CELL, MAX_PEERS, packControl, unpackControl, ZoneSession } from '@gamesaloon/rollback/zones'
 import type { DomainFactory, DomainSim, FarSink, GroupTransport, Roster, ZoneStats } from '@gamesaloon/rollback/zones'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
@@ -8,7 +8,7 @@ import { decodeInput, inputCodec } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import type { MatchProfile } from '@royal-fiesta/sim/match/setup'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import { cellOf } from '@royal-fiesta/sim/zones/cells'
+import { cellOf, clampedCellOf } from '@royal-fiesta/sim/zones/cells'
 import { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { createFiestaDomainFactory } from '@royal-fiesta/sim/zones/fiestaDomainFactory'
 import { MatchLedger } from '@royal-fiesta/sim/zones/ledger'
@@ -108,6 +108,8 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
     }
   }
   const localFields = fields[cfg.localPeer]
+  // Last reported cell of each local seat, starting at its spawn cell (the epoch-0 control word).
+  const localCells = localSeats.map(seat => unpackControl(controls[seat], { ...localFields }).cell)
   const recipe = createFiestaDomainFactory(R, {
     course: cfg.course, zones: cfg.zones, profile: cfg.profile, kind: cfg.kind,
     seatCount: cfg.roster.seatCount, spawnIndices: cfg.spawnIndices,
@@ -133,10 +135,18 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
     FIESTA_TUNING.maxPrediction + FIESTA_TUNING.maxDelay
   const botCodes = Array.from({ length: cfg.roster.seatCount }, () => new InputBuffer(inputCodec.neutral, capacity))
   let session: ZoneSession<PlayerInput>
+  // The assignment is planned leadTicks ahead: a state created at its boundary S holds the spawn pose until it steps
+  // S. Until then the seat lives in the state that is stepping now (kept for the handoff grace), remembered here.
+  const running: (FiestaDomain | undefined)[] = new Array(cfg.roster.seatCount).fill(undefined)
+  function started(start: number, sim: FiestaDomain): boolean {
+    return start === 0 || sim.tick > start
+  }
   function seatDomain(seat: number): FiestaDomain | undefined {
     const state = session.domain(session.assignment.seatDomain[seat])
-    return state?.replica && state.sim instanceof FiestaDomain && state.sim.seats.includes(seat)
-      ? state.sim : undefined
+    if (!state?.replica || !(state.sim instanceof FiestaDomain) || !state.sim.seats.includes(seat)) return undefined
+    if (started(state.start, state.sim)) return running[seat] = state.sim
+    const prev = running[seat]
+    return prev !== undefined && prev.seats.includes(seat) ? prev : undefined
   }
   try {
     session = new ZoneSession({
@@ -169,15 +179,19 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
     for (let i = 0; i < localSeats.length; i++) {
       const seat = localSeats[i]
       const domain = seatDomain(seat)
-      localFields.cell = CONTROL_NO_CELL
+      // A live seat always reports a cell: CONTROL_NO_CELL takes it out of every domain, and then no replica
+      // simulates it, so it could never report a cell again. Off the grid it stays in the nearest edge cell.
       if (domain !== undefined) {
         const pos = domain.state(seat).pos
-        localFields.cell = cellOf(cfg.zones.grid, pos.x, pos.z)
+        const cell = clampedCellOf(cfg.zones.grid, pos.x, pos.z)
+        if (cell !== CONTROL_NO_CELL) localCells[i] = cell
       }
+      localFields.cell = localCells[i]
       words[i] = packControl(localFields)
     }
   }
   const domains: FiestaDomain[] = []
+  const listed = new Set<FiestaDomain>()
   let disposed = false
   return {
     stats: session.stats,
@@ -198,10 +212,23 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
     },
     get domains() {
       let count = 0
+      listed.clear()
       const specs = session.assignment.domains
       for (let i = 0; i < specs.length; i++) {
         const state = session.domain(specs[i].id)
-        if (state?.replica && state.sim instanceof FiestaDomain) domains[count++] = state.sim
+        if (!state?.replica || !(state.sim instanceof FiestaDomain)) continue
+        if (started(state.start, state.sim)) {
+          if (!listed.has(state.sim)) domains[count++] = state.sim
+          listed.add(state.sim)
+          continue
+        }
+        // Not stepping yet: list the states its seats are stepping in now.
+        for (const seat of specs[i].seats) {
+          const sim = seatDomain(seat)
+          if (sim === undefined || sim === state.sim || listed.has(sim)) continue
+          domains[count++] = sim
+          listed.add(sim)
+        }
       }
       domains.length = count
       return domains

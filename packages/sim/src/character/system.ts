@@ -222,6 +222,18 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#parked[p] = 0
   }
 
+  /**
+   * Re-applies the live or parked body flags (gravity, collision groups) of a restored player. A domain rebuild makes
+   * the body again from characterBody, which starts parked, and restores only its pose and velocity.
+   */
+  restoreBody(ctx: WorldCtx<PlayerInput>, p: number): void {
+    this.#check(p, 'restoreBody')
+    const live = this.#parked[p] === 0
+    const rb = ctx.physics.body(this.#bodies[p])
+    rb.setGravityScale(live ? 1 : 0, true)
+    rb.collider(0).setCollisionGroups(live ? CHAR_GROUPS : 0)
+  }
+
   park(ctx: WorldCtx<PlayerInput>, p: number): void {
     this.#check(p, 'park')
     const o = CHAR.parkOrigin

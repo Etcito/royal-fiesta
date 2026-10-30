@@ -262,6 +262,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     const p = this.#player(seat)
     this.characters.readPlayer(r, p)
     this.#readStatus(r, p)
+    this.#bindBodies()
+    this.characters.restoreBody(this.ctx, p)
   }
 
   shadowOut(w: SnapWriter, to: number): void { this.inner.shadowOut(w, to) }

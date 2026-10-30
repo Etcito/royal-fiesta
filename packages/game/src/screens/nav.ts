@@ -4,18 +4,19 @@ import type { LoadProgress } from '../content.ts'
 
 export const SCREENS = Object.freeze([
   'title', 'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium',
-  'pause', 'settings', 'credits', 'error', 'loading',
+  'pause', 'settings', 'credits', 'error', 'loading', 'lobbyChoice', 'lobbyLive',
 ] as const)
 export type Screen = typeof SCREENS[number]
 
 // Screens the game itself moves between (with 'game' events).
 export const GAME_SCREENS = Object.freeze([
-  'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium',
+  'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium', 'lobbyChoice', 'lobbyLive',
 ] as const)
 export type GameScreen = typeof GAME_SCREENS[number]
 
 export const ACTIONS = Object.freeze([
   'play', 'playOnline', 'settings', 'credits', 'queue', 'toHub', 'resume', 'leave', 'retry',
+  'join', 'spectate', 'newLobby',
 ] as const)
 export type Action = typeof ACTIONS[number]
 
@@ -28,6 +29,12 @@ export const Effect = Object.freeze({
   resume: 'resume',
   leaveMatch: 'leaveMatch',
   leaveGame: 'leaveGame',
+  // The online lobby choice (GameSaloon timed lobbies): join it, watch it, or open a new lobby.
+  pickJoin: 'pickJoin',
+  pickSpectate: 'pickSpectate',
+  pickNew: 'pickNew',
+  // Back on the choice: take the default now (join a waiting lobby, else a new one).
+  pickDefault: 'pickDefault',
   // Run GameContent.load and report it with progress, then loaded or error.
   load: 'load',
 } as const)
@@ -54,7 +61,13 @@ const BUTTONS: Readonly<Partial<Record<Screen, readonly Action[]>>> = Object.fre
   loading: [],
   podium: ['toHub'],
   hub: ['queue'],
+  // A player arriving while a lobby waits (lobbyChoice) or plays its round (lobbyLive).
+  lobbyChoice: ['join', 'spectate', 'newLobby'],
+  lobbyLive: ['spectate', 'newLobby'],
 })
+
+// Game screens outside a match: the hub, the queue and the lobby choice.
+const OUTSIDE_MATCH: readonly Screen[] = ['hub', 'queue', 'lobbyChoice', 'lobbyLive']
 
 // Game screens of a match, where back pauses the game.
 const PAUSABLE: readonly Screen[] = ['countdown', 'round', 'spectate', 'result']
@@ -136,7 +149,7 @@ export class Nav {
 
   private game(to: GameScreen): Effect[] {
     if (!this.live) return []
-    const inMatch = to !== 'hub' && to !== 'queue'
+    const inMatch = !OUTSIDE_MATCH.includes(to)
     if (this.screen === 'pause' || this.screen === 'settings') {
       // The game is paused, so this is rare: only remember where to return.
       this.resumeTo = to
@@ -160,6 +173,11 @@ export class Nav {
       case 'queue':
         this.screen = 'hub'
         return [Effect.dequeue]
+      case 'lobbyChoice':
+      case 'lobbyLive':
+        // Back takes the default answer and returns to the walkable hub while the lobby replies.
+        this.screen = 'hub'
+        return [Effect.pickDefault]
       case 'podium':
         return this.toHub()
       case 'pause':
@@ -192,6 +210,12 @@ export class Nav {
         return []
       case 'queue':
         return [Effect.enqueue]
+      case 'join':
+        return [Effect.pickJoin]
+      case 'spectate':
+        return [Effect.pickSpectate]
+      case 'newLobby':
+        return [Effect.pickNew]
       case 'toHub':
         return this.toHub()
       case 'resume':

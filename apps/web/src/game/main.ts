@@ -23,6 +23,8 @@ import type { GameContent } from '@royal-fiesta/game/content'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import { HubWorld } from '@royal-fiesta/game/hub/hubWorld'
 import { QueuePad } from '@royal-fiesta/game/hub/queuePad'
+import { LOCAL_LOBBY_WAIT_S, LocalCountdown, lobbyLines } from '@royal-fiesta/game/hub/lobby'
+import type { LobbyPick } from '@royal-fiesta/game/hub/lobby'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
 import { netSetup } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
@@ -79,6 +81,8 @@ interface Query {
   party: 2 | 3 | 4
   clients: number
   touch: 0 | 1
+  // The local hub's countdown before its round starts by itself (online, the GameSaloon server sets it).
+  wait: number
 }
 
 type Look = { dx: number; dy: number; rx: number; ry: number }
@@ -114,10 +118,11 @@ function parseQuery(search: string): Query {
   const party = intParam(q, 'party', 4, 2, 4) as 2 | 3 | 4
   const clients = intParam(q, 'clients', 1, 1, 4)
   const touch = intParam(q, 'touch', 0, 0, 1) as 0 | 1
+  const wait = intParam(q, 'wait', LOCAL_LOBBY_WAIT_S, 1, 600)
   if (course !== null && server !== null) refuse('query', 'course', 'plays in-page with bots; drop ?server= or ?course=')
   if (clients > 1 && server !== null) refuse('query', 'clients', `${clients} in-page clients use a LoopbackRelay; drop ?server= or ?clients=`)
   if (clients > 1 && course !== null) refuse('query', 'clients', `?course= plays one client with bots; drop ?clients= or ?course=`)
-  return { course, server, hub, name, colour, party, clients, touch }
+  return { course, server, hub, name, colour, party, clients, touch, wait }
 }
 
 // A coarse pointer (a phone or tablet) uses the on-screen controls; ?touch=1 asks for them on any device.
@@ -259,6 +264,8 @@ interface Mode {
   readonly failure: string | null
   enqueue(): void
   dequeue(): void
+  // The online lobby choice ('default': join a waiting lobby, else a new one).
+  pick?(p: LobbyPick | 'default'): void
   leaveMatch(): void
   dispose(): void
   // Local split screen: a device with a seat, and seat 0's sound listener when its camera exists.
@@ -496,6 +503,8 @@ class LocalMode implements Mode {
   private readonly hubView: HubView
   private hub: HubWorld
   private pad = new QueuePad(1)
+  // The round starts by itself when it ends; Enter or the green pad still start it early.
+  private readonly countdown: LocalCountdown
   private hubAcc = 0
   private readonly seats: SeatTable
   private match: LocalRun | null = null
@@ -515,6 +524,7 @@ class LocalMode implements Mode {
     // Touch is the only device on a touch screen. Elsewhere nothing is seated: the first device pressed or used is P1.
     if (c.touch) this.seats.join('touch')
     this.names = playerNames(0, c.q.name)
+    this.countdown = new LocalCountdown(c.q.wait)
     this.hub = new HubWorld(R, content.hub(), 0)
     this.hubLayer = new SceneLayer(ports[0])
     this.matchLayer = new SceneLayer(ports[0])
@@ -635,6 +645,7 @@ class LocalMode implements Mode {
     this.hub.free()
     this.hub = new HubWorld(this.c.loaded.R, this.c.loaded.content.hub(), 0)
     this.pad = new QueuePad(1)
+    this.countdown.reset()
     this.hubAcc = 0
     this.c.orbit.reset(0)
     this.prepareMatch()
@@ -654,8 +665,9 @@ class LocalMode implements Mode {
     const m = this.match
     if (m === null) {
       return [
+        `Round starts in ${this.countdown.secondsLeft} s - bots fill the empty places`,
         this.seats.seats.length === 0 ? 'Press any button to take P1' : seatLine(this.seats.seats),
-        'Press Start/Enter on another controller to join - walk onto the green pad or press Enter to play',
+        'Press Start on another controller to join - Enter or the green pad starts now',
       ]
     }
     if (this.presenter.places !== null) return podiumLines(this.presenter.places, this.names)
@@ -685,7 +697,7 @@ class LocalMode implements Mode {
         this.hubAcc -= STEP_S
         this.hub.step(f.world)
         const pad = this.pad.update(this.hub.onQueuePad())
-        if (pad === 'armed') {
+        if (this.countdown.step(STEP_S) || pad === 'armed') {
           this.enqueue()
           if (this.match !== null) return this.frameMatch(this.match, f)
         }
@@ -740,7 +752,7 @@ class LocalMode implements Mode {
 }
 
 // One relay client (?server=): this page's bean in the online hub (PlayFlow), its matches and podiums.
-// PlayFlow queues from the green pad and returns to the hub by itself, so the queue and leave commands
+// PlayFlow enters a GameSaloon lobby by itself and returns to the hub after each round, so the queue and leave commands
 // only explain that; a paused page sends no move (the match cannot pause for the others).
 class OnlineMode implements Mode {
   failure: string | null = null
@@ -765,6 +777,8 @@ class OnlineMode implements Mode {
     this.flow = new PlayFlow({
       R, relayUrl: server, ws: globalWsFactory(), hubCode: q.hub, name: q.name, colour: q.colour,
       courses: content.playlist(), plaza: content.hub(), partySize: q.party, now: () => performance.now(), pilot: false,
+      // GameSaloon timed lobbies: the hub enters one by itself; no pad, no key.
+      matchmaking: 'lobby',
       log: ev => {
         if (ev.state === 'match' && typeof ev.detail.seat === 'number') this.seat = ev.detail.seat
         if (ev.state === 'failed') this.failure = String(ev.detail.message ?? 'the relay connection failed')
@@ -786,12 +800,12 @@ class OnlineMode implements Mode {
     return this.flow.match === null ? null : { view: this.presenter.view, names: this.names, seat: this.seat }
   }
 
-  enqueue(): void {
-    this.note = 'Walk onto the green pad to queue'
-  }
+  // The lobby is entered by itself and its server starts the round: nothing to queue or cancel.
+  enqueue(): void {}
+  dequeue(): void {}
 
-  dequeue(): void {
-    this.note = 'Step off the green pad to leave the queue'
+  pick(p: LobbyPick | 'default'): void {
+    this.flow.pick(p === 'default' ? this.flow.lobby.defaultPick() : p)
   }
 
   leaveMatch(): void {
@@ -804,7 +818,7 @@ class OnlineMode implements Mode {
     const before = flow.state
     let facing: Planar = { x: 0, z: 1 }
     if (flow.match !== null) facing = flow.match.sim.character(this.seat, this.cv).facing
-    else if (before === 'hub' || before === 'queued') facing = flow.hub.state(this.local).facing
+    else if (inHub(before)) facing = flow.hub.state(this.local).facing
     flow.frame(f.dt, f.paused ? null : inCharacterFrame(f.world, facing, this.moved), f.paused ? 0 : f.emote)
     const match = flow.match
     const sim = match?.sim ?? null
@@ -821,12 +835,14 @@ class OnlineMode implements Mode {
         this.names = playerNames(this.seat, this.c.q.name)
       }
     }
-    let screen: GameScreen = flow.state === 'queued' ? 'queue' : 'hub'
+    // Waiting in or watching a lobby keeps the walkable hub; only the choice is a menu.
+    let screen: GameScreen = 'hub'
+    if (flow.state === 'choosing') screen = flow.lobby.view.offer?.actions.includes('join') ? 'lobbyChoice' : 'lobbyLive'
     if (match !== null) {
       const v = match.sim.phase(this.presenter.view)
       this.presenter.draw(match.sim, match.session.smoother, 1, f.dt, v.phase >= Phase.podium ? v.podium : null)
       screen = matchScreen(v, match.sim.character(this.seat, this.cv).status, this.presenter.onPodium)
-    } else if (flow.state === 'hub' || flow.state === 'queued') {
+    } else if (inHub(flow.state)) {
       this.hubView.update(flow.hub.state(this.local), this.c.q.colour, flow.remotes(now), flow.hub.tick, f.dt, flow.hub.emote(now))
     }
     renderFrame(this.c.loaded.ports[0], () => this.c.loaded.ports[0].render())
@@ -840,8 +856,8 @@ class OnlineMode implements Mode {
     const lines: string[] = []
     if (flow.hubCode !== null) lines.push(`Hub ${flow.hubCode} - ${this.c.q.name}`)
     if (state === 'connecting') lines.push('Connecting...')
-    else if (state === 'hub') lines.push('Walk onto the green pad to queue')
-    else if (state === 'queued') lines.push(`Queued for ${this.c.q.party} players...`)
+    else if (state === 'hub') lines.push('Joining a lobby...')
+    else if (state === 'queued' || state === 'choosing' || state === 'watching') lines.push(...lobbyLines(flow.lobby, performance.now()))
     else if (state === 'returning') lines.push('Back to the hub...')
     else if (flow.match !== null) lines.push(`Round ${this.presenter.view.roundIndex + 1}: ${this.presenter.view.qualifiedCount} qualified`)
     if (this.note.length > 0) lines.push(this.note)
@@ -909,6 +925,11 @@ class InPageMode implements Mode {
   dispose(): void {
     this.hub.dispose()
   }
+}
+
+// Flow states where the bean walks the hub: waiting in, choosing or watching a lobby included.
+function inHub(state: string): boolean {
+  return state === 'hub' || state === 'queued' || state === 'choosing' || state === 'watching'
 }
 
 // Screens where the game has the controls and the mouse looks; the rest are menus over it.
@@ -1147,6 +1168,10 @@ class App {
       else if (fx === Effect.startOnline) this.startOnline()
       else if (fx === Effect.enqueue) this.mode?.enqueue()
       else if (fx === Effect.dequeue) this.mode?.dequeue()
+      else if (fx === Effect.pickJoin) this.mode?.pick?.('join')
+      else if (fx === Effect.pickSpectate) this.mode?.pick?.('spectate')
+      else if (fx === Effect.pickNew) this.mode?.pick?.('new')
+      else if (fx === Effect.pickDefault) this.mode?.pick?.('default')
       else if (fx === Effect.leaveMatch) this.mode?.leaveMatch()
       else if (fx === Effect.leaveGame) this.stopMode()
       // pause and resume: frame() reads the paused state from nav.screen.

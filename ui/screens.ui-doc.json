@@ -1551,6 +1551,435 @@
       ]
     },
     {
+      "id": "lobbyChoice",
+      "initialFocus": "act-join",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-340, -430],
+            "offsetMax": [340, 430]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-480, -310],
+            "offsetMax": [480, 310]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "A lobby is open",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -400],
+            "offsetMax": [300, -320]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-440, -290],
+            "offsetMax": [440, -220]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "2/4 players, round in 40 s",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 36,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-310, -300],
+            "offsetMax": [310, -220]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-450, -205],
+            "offsetMax": [450, -155]
+          }
+        },
+        {
+          "id": "line-1",
+          "type": "label",
+          "text": "Ann, Bob",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 30,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-310, -210],
+            "offsetMax": [310, -150]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-450, -150],
+            "offsetMax": [450, -105]
+          }
+        },
+        {
+          "id": "line-2",
+          "type": "label",
+          "text": "Joining it in 8 s",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 30,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-310, -140],
+            "offsetMax": [310, -80]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-450, -100],
+            "offsetMax": [450, -55]
+          }
+        },
+        {
+          "id": "act-join",
+          "type": "button",
+          "asset": "button.primary",
+          "text": {
+            "label": "Join this lobby"
+          },
+          "action": "join",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-240, -40],
+            "offsetMax": [240, 70]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-430, 130],
+            "offsetMax": [-157, 240]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "act-spectate",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Spectate"
+          },
+          "action": "spectate",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-240, 90],
+            "offsetMax": [240, 200]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-137, 130],
+            "offsetMax": [136, 240]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "act-new-lobby",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "New lobby"
+          },
+          "action": "newLobby",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-240, 220],
+            "offsetMax": [240, 330]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [156, 130],
+            "offsetMax": [429, 240]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "lobbyLive",
+      "initialFocus": "act-spectate",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-340, -430],
+            "offsetMax": [340, 430]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-480, -310],
+            "offsetMax": [480, 310]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "A round is on",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -400],
+            "offsetMax": [300, -320]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-440, -290],
+            "offsetMax": [440, -220]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "2/4 players, round in 40 s",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 36,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-310, -300],
+            "offsetMax": [310, -220]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-450, -205],
+            "offsetMax": [450, -155]
+          }
+        },
+        {
+          "id": "line-1",
+          "type": "label",
+          "text": "Ann, Bob",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 30,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-310, -210],
+            "offsetMax": [310, -150]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-450, -150],
+            "offsetMax": [450, -105]
+          }
+        },
+        {
+          "id": "line-2",
+          "type": "label",
+          "text": "Joining it in 8 s",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 30,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-310, -140],
+            "offsetMax": [310, -80]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-450, -100],
+            "offsetMax": [450, -55]
+          }
+        },
+        {
+          "id": "act-spectate",
+          "type": "button",
+          "asset": "button.primary",
+          "text": {
+            "label": "Spectate"
+          },
+          "action": "spectate",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-240, -40],
+            "offsetMax": [240, 70]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-430, 130],
+            "offsetMax": [-10, 240]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "act-new-lobby",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "New lobby"
+          },
+          "action": "newLobby",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-240, 90],
+            "offsetMax": [240, 200]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [10, 130],
+            "offsetMax": [430, 240]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        }
+      ]
+    },
+    {
       "id": "pause",
       "initialFocus": "act-resume",
       "enter": {

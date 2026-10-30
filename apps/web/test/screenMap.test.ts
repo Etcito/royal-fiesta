@@ -17,6 +17,8 @@ const CTX: Record<Screen, MenuCtx> = {
   result: ctx({ info: ['1st Bean 1', '2nd Bean 2'] }), podium: ctx({ info: ['Bean 1', 'Bean 2', 'Bean 3'] }),
   pause: ctx(), settings: ctx({ error: 'KeyW is bound to forward' }), credits: ctx(),
   error: ctx({ error: 'Connection lost' }), loading: ctx({ info: ['assets 3/10 course.glb'] }),
+  lobbyChoice: ctx({ info: ['A lobby is open: 2/4 players, round in 40 s', 'Ann, Bob', 'Joining it in 8 s'] }),
+  lobbyLive: ctx({ info: ['A round is being played: Ann, Bob', 'New lobby in 8 s'] }),
 }
 
 function actionsOf(screen: Screen): readonly Action[] {

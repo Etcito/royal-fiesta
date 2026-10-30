@@ -140,10 +140,19 @@ the frame can carry:
 
 - The frame URL opened at top level: the game reads the embed query, so `&server=wss://...` appended to the frame
   URL reaches `parseQuery` (useful for tests only, since players open the Wavedash page).
-- A build-time default, like `VITE_RF_CONTENT_URL`: a `VITE_RF_SERVER` value set in the environment of the build
-  that is pushed (never in a file of the repository), read as the fallback after `?server=`. It is not wired yet.
-  Today a `?server=` puts the whole page online (`parseQuery` then `OnlineMode`), so the default must feed only the
-  title's Play online, and Play must stay in-page with bots.
+- A build-time default, like `VITE_RF_CONTENT_URL`: `VITE_RF_SERVER=wss://host/ws`, set in the ENVIRONMENT of the
+  build that is pushed (`npm run wavedash` and `npm run etcito:build` pass their environment down to `vite build`;
+  Vite injects it and apps/web/src/platform/relay.ts reads it). Never put it in a file of the repository. The value
+  ends up in the built JavaScript, so it is a public relay URL and no token belongs in it. A malformed value (not
+  ws:// or wss://) is refused when Play online is chosen.
+  - Order: an explicit `?server=` first, then the build default. An explicit `?server=` keeps its behaviour (the
+    whole page is online: `parseQuery` then `OnlineMode`). The build default feeds ONLY the title's Play online (the
+    online lobby flow, PlayFlow with `matchmaking: 'lobby'`): the page still boots in-page, Play stays offline with
+    bots, and leaving the online hub returns to the title where Play is offline again.
+  - With neither, Play online shows the refusal "Play online needs a relay; pass ?server=wss://host/... or choose
+    Play to play with bots" and does not hang.
+  - `rf-build.json` records only `defaultServer` (a boolean: a default relay was set), never the URL.
+  - Example, placeholder host: `VITE_RF_SERVER=wss://relay.example.invalid/ws npm run wavedash`.
 - `Wavedash.getLaunchParams()` exists in the frame and returned no keys for the playtest build; the docs read on
   2026-10-30 do not say how launch parameters are set.
 

@@ -71,6 +71,7 @@ import type { ScreensDoc, WidgetProps } from '../ui/screenMap.ts'
 import { createUaaHost } from '../ui/uaaHost.ts'
 import type { UaaCommand, UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
 import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
+import { defaultRelay, onlineRelay } from '../platform/relay.ts'
 import { installGameOps } from './ops.ts'
 import type { TourGame } from './uiTour.ts'
 
@@ -1331,7 +1332,10 @@ class App {
     this.stopMode()
     const c: ModeCtx = { loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) }
     try {
+      const pending = this.pendingRelay
+      this.pendingRelay = null
       if (q.server !== null) this.mode = new OnlineMode(c, q.server)
+      else if (pending !== null) this.mode = new OnlineMode(c, pending)
       else if (q.clients > 1) this.mode = new InPageMode(c)
       else {
         this.mode = this.preparedLocal ?? new LocalMode(c)
@@ -1343,13 +1347,25 @@ class App {
     }
   }
 
-  // Play goes online by itself when ?server= is given; without it, Play online has nowhere to go.
+  // Play goes online by itself when ?server= is given. Otherwise Play online uses the build default relay
+  // (VITE_RF_SERVER, platform/relay.ts), for this one start only, so Play afterwards stays in-page with bots.
+  // With neither, Play online has nowhere to go and says so.
   private startOnline(): void {
-    if ((this.query?.server ?? null) === null) {
+    let relay: string | null
+    try {
+      relay = onlineRelay(this.query?.server ?? null, defaultRelay())
+    } catch (e) {
+      return this.fail(messageOf(e))
+    }
+    if (relay === null) {
       return this.fail(refusal('query', 'server', 'Play online needs a relay; pass ?server=wss://host/... or choose Play to play with bots'))
     }
+    this.pendingRelay = this.query?.server === null ? relay : null
     this.run(this.nav.dispatch({ kind: 'action', action: 'play' }))
   }
+
+  // The build default relay armed by Play online, consumed by the next startMode.
+  private pendingRelay: string | null = null
 
   private stopMode(): void {
     this.roundLoading = null

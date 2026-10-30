@@ -208,6 +208,15 @@ test('resize forwards dpr and reapplies views, including returning to full canva
   assert.throws(() => port.setCamera(2, camera), /use an index/)
 })
 
+test('a part kept by name with no mesh (a hidden collider) is a valid filter entry and draws nothing', () => {
+  const hidden = { name: 'collider_0', partId: 'collider_0', frame: FRAME, meshes: [] }
+  const { port, calls, handle } = portFor('test.hidden', [], [part('base', null), hidden, part('plank', null)])
+  const instance = port.createInstance(handle(), null)
+  port.setPartFilter(instance, ['plank', 'collider_0'])
+  assert.deepEqual([...calls.visibility.values()], [false, true])
+  assert.throws(() => port.setPartFilter(instance, ['collider_9']), /unknown part/)
+})
+
 test('part filter hides other parts and composes with instance visibility', () => {
   const { port, calls, handle } = portFor('test.parts', [], [part('body', null), part('beak', null)])
   const instance = port.createInstance(handle(), null)

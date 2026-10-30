@@ -47,10 +47,11 @@ interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; 
 // graph: a material of the part holds input.player_color; multiply: a part with no SDF material (white fallback).
 type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
-interface Uploaded { assetId: string; parts: PartUpload[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
+// emptyParts: parts the mesher kept by name with no triangle (hidden colliders): a part filter may list them.
+interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
-interface Live { root: number; instances: number[]; partNames: string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null }
+interface Live { root: number; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
   failed: ReadonlyMap<string, string> = new Map(),
@@ -181,8 +182,13 @@ class SdfRenderPort implements ResizablePort {
     if (graph.size > 0) for (const handle of handles.values()) engine.setMaterialTintMode(handle, 'graph')
     const parts: PartUpload[] = []
     const keys = new Set<string>()
+    const emptyParts: string[] = []
     for (const group of payload.groups) {
       for (const part of group.parts) {
+        if (part.meshes.length === 0) {
+          emptyParts.push(part.name)
+          continue
+        }
         const built = partMesh(part, handles, graph, id)
         const mesh = engine.addMesh(built.desc)
         const { t, r } = frameToTr(part.frame)
@@ -192,7 +198,7 @@ class SdfRenderPort implements ResizablePort {
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
-    return { assetId: id, parts }
+    return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}) }
   }
 
   // The rigid upload stays as is; skinned parts get a second mesh with the S18 joint/weight streams.
@@ -255,7 +261,7 @@ class SdfRenderPort implements ResizablePort {
       instances.push(instance)
       if (part.joints !== undefined) skin.push({ instance, part })
     }
-    this.live.push({ root, instances, partNames: parts.map(part => part.name), filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null })
+    this.live.push({ root, instances, partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [], filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null })
     return this.live.length - 1
   }
 
@@ -273,7 +279,7 @@ class SdfRenderPort implements ResizablePort {
   setPartFilter(instance: number, parts: readonly string[] | null): void {
     const live = this.liveOf(instance, 'setPartFilter')
     if (parts !== null) for (const part of parts) {
-      if (!live.partNames.includes(part)) refuse(AREA, WHERE, `setPartFilter: unknown part '${part}'; use a part name from this asset`)
+      if (!live.partNames.includes(part) && !live.emptyParts.includes(part)) refuse(AREA, WHERE, `setPartFilter: unknown part '${part}'; use a part name from this asset`)
     }
     live.filter = parts === null ? null : new Set(parts)
     this.applyVisibility(live)

@@ -2,10 +2,11 @@
 // material upload and body part filter. Poses show the authored travel limits, not simulated motion.
 import { parseGameAsset } from '@royal-fiesta/game/gameAsset'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
-import type { Vec3T, QuatT } from '@royal-fiesta/game/render/port'
-import { loadMamaFacade } from '../sdf/mamaApi.ts'
+import type { Vec3T } from '@royal-fiesta/game/render/port'
+import { loadMamaFacade, meshRequestOf } from '../sdf/mamaApi.ts'
 import type { MeshedAsset } from '../sdf/mamaApi.ts'
 import { createSdfPort } from '../sdf/sdfPort.ts'
+import { limitPoseOf } from './limitPose.ts'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 
 const IDS = ['candy.mech-seesaw', 'candy.mech-plate'] as const
@@ -47,7 +48,7 @@ async function candyAssets(input: Input) {
       if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`)
       const asset = await parseGameAsset(await response.json(), path)
       assets.push(asset)
-      meshed.set(id, await pool.mesh({ assetId: id, hash: asset.hash, document: asset.document, mesher: asset.mesher }, 60000))
+      meshed.set(id, await pool.mesh(meshRequestOf(asset), 60000))
     }
   } finally {
     pool.close()
@@ -70,23 +71,22 @@ async function candyAssets(input: Input) {
         return { body, instance }
       })
       const seesaw = asset.id === IDS[0]
-      port.setCamera(0, {
-        eye: seesaw ? [7, 5.8, 8] : [2.8, 2.6, 3.4],
-        target: seesaw ? [0, 0.7, 0] : [0, -0.06, 0], fovYDeg: 40, near: 0.05, far: 100,
-      })
-      for (const pose of input.firstAsset ? ['rest'] : ['rest', 'limit']) {
+      // Rest views are kept. The limit view of the seesaw looks along the hinge axis from the side, so the plank
+      // reads as a slope against the level foot; the plate dip is seen from a low, close angle.
+      const views: Record<'rest' | 'limit', { eye: Vec3T; target: Vec3T }> = {
+        rest: seesaw
+          ? { eye: [7, 5.8, 8], target: [0, 0.7, 0] }
+          : { eye: [2.8, 2.6, 3.4], target: [0, -0.06, 0] },
+        limit: seesaw
+          ? { eye: [7, 3.5, 0], target: [0, 1.15, 0] }
+          : { eye: [2.2, 1.2, 2.6], target: [0, -0.06, 0] },
+      }
+      for (const pose of input.firstAsset ? ['rest'] as const : ['rest', 'limit'] as const) {
+        port.setCamera(0, { ...views[pose], fovYDeg: 40, near: 0.05, far: 100 })
         if (pose === 'limit') {
-          const moving = bodies.find(b => b.body.type === 'dynamic')!
-          let t: Vec3T = [0, -0.1, 0]
-          let r: QuatT = [0, 0, 0, 1]
-          if (seesaw) {
-            const pivot = asset.physics!.joints.find(j => j.id === 'pivot')!
-            const angle = pivot.limitsDeg![1] * Math.PI / 180
-            const [, y, z] = pivot.anchorB
-            t = [0, y - Math.cos(angle) * y + Math.sin(angle) * z, z - Math.sin(angle) * y - Math.cos(angle) * z]
-            r = [Math.sin(angle / 2), 0, 0, Math.cos(angle / 2)]
-          }
-          port.setTransform(moving.instance, t, r, [1, 1, 1])
+          const limit = limitPoseOf(asset)
+          const moving = bodies.find(b => b.body.id === limit.body)!
+          port.setTransform(moving.instance, limit.t, limit.r, [1, 1, 1])
         }
         // Shader compilation is asynchronous in the game renderer. Never capture its placeholder draws.
         port.render()

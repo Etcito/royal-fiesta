@@ -238,11 +238,49 @@ function applyAssetMesher(doc: SdfDocument, mesher: MeshRequest['mesher']): void
   }
 }
 
+// A game asset with S12 physics draws each body from named document nodes. MAMA meshes a group asset as one part, so
+// each requested node is meshed alone (the asset group with that one child) and becomes a part named by its node id.
+// A hidden node (collider) has no triangle: it stays a part with no mesh, so the port still knows its name.
+async function meshByParts(doc: SdfDocument, parts: readonly string[], assetId: string): Promise<AssetMeshResult[]> {
+  const pool = inlinePool()
+  const groups = Object.keys(doc.nodes).filter(id => doc.nodes[id].kind === 'group' && doc.nodes[id].asset !== undefined)
+  const out: AssetMeshResult[] = []
+  for (const group of groups) {
+    const node = doc.nodes[group]
+    const children = node.children ?? []
+    const mine = parts.filter(part => children.includes(part))
+    if (mine.length === 0) {
+      out.push(...await meshAssets(doc, { groups: [group], pool }))
+      continue
+    }
+    const combined: AssetMeshResult = { group, asset: node.asset ?? null, output: node.mesher?.output ?? (doc.settings.export.geometry as AssetMeshResult['output']), parts: [], materials: [], error: null }
+    const materials = new Map<string, BuiltMaterial>()
+    for (const part of mine) {
+      if (doc.nodes[part].visible === false) {
+        combined.parts.push({ partId: part, name: part, frame: new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]), subMeshes: [] })
+        continue
+      }
+      const variant: SdfDocument = { ...doc, nodes: { ...doc.nodes, [group]: { ...node, children: [part] } } }
+      const results = await meshAssets(variant, { groups: [group], pool })
+      throwFirstRefusal(results, doc, assetId)
+      for (const result of results) {
+        for (const built of result.materials) materials.set(built.id, built)
+        for (const p of result.parts) combined.parts.push({ ...p, partId: part, name: part })
+      }
+    }
+    combined.materials = [...materials.values()].sort((a, b) => a.id < b.id ? -1 : 1)
+    out.push(combined)
+  }
+  return out
+}
+
 export async function meshRequest(req: MeshRequest): Promise<MeshedAsset> {
   const doc = readSdfm(req.document)
   applyAssetMesher(doc, req.mesher)
   await ensureMesherOnce()
-  const results = await meshAssets(doc, { pool: inlinePool() })
+  const results = req.parts !== undefined && req.parts.length > 0
+    ? await meshByParts(doc, req.parts, req.assetId)
+    : await meshAssets(doc, { pool: inlinePool() })
   throwFirstRefusal(results, doc, req.assetId)
   if (results.length === 0) {
     throw new RefusalError('sdf', req.assetId, 'the document has no group with a game asset; save the asset from SDF Modeler or mark its group as a game asset')

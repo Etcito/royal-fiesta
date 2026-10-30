@@ -6,7 +6,7 @@ import type { CourseV1 } from '@royal-fiesta/game/courseV1'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import type { ProfileName } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import { loadMamaFacade } from '../sdf/mamaApi.ts'
+import { loadMamaFacade, meshHasParts, meshRequestOf } from '../sdf/mamaApi.ts'
 import type { MamaFacade, MeshedAsset } from '../sdf/mamaApi.ts'
 import { idbStore, MeshCache, meshCacheKey, memoryStore } from '../sdf/meshCache.ts'
 import { poolSize } from '../sdf/meshPool.ts'
@@ -140,8 +140,9 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   const misses: Promise<void>[] = []
   for (const a of assets) {
     const key = await meshCacheKey(a, facade.mamaVersion, facade.raaSdfmVersion, sha256Hex)
+    const request = meshRequestOf(a)
     const hit = await c.get(key)
-    if (hit !== null) {
+    if (hit !== null && meshHasParts(hit.value, request.parts)) {
       meshed.set(a.id, hit.value)
       source.set(a.id, hit.from)
       step(a.id)
@@ -151,11 +152,11 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     const load = async (): Promise<{ value: MeshedAsset; from: 'file' | 'miss' }> => {
       if (meshPath !== undefined) {
         const file = await fetchMeshFile(root + meshPath, key, a)
-        if (file !== null) return { value: file, from: 'file' }
+        if (file !== null && meshHasParts(file, request.parts)) return { value: file, from: 'file' }
       }
       const known = knownFailure(key)
       if (known !== null) throw new Error(known)
-      return { value: await meshPool(facade).mesh({ assetId: a.id, hash: a.hash, mesher: a.mesher, document: a.document }, MESH_LIMIT_S * 1000), from: 'miss' }
+      return { value: await meshPool(facade).mesh(request, MESH_LIMIT_S * 1000), from: 'miss' }
     }
     /* Local failures are checked only after the saved file, so an old browser timeout cannot hide a saved mesh. */
     const miss = load().then(async ({ value, from }) => {

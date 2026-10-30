@@ -12,7 +12,12 @@ import { basisFromFacing } from '@royal-fiesta/game/client/cameraBasis'
 import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
 import { controlsToInput, emptyControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
-import { pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
+import { LocalMatch } from '@royal-fiesta/game/client/localMatch'
+import { localPadMapStore } from '@royal-fiesta/game/client/padMap'
+import type { PadMapStore } from '@royal-fiesta/game/client/padMap'
+import { SeatTable } from '@royal-fiesta/game/client/seats'
+import type { DeviceId } from '@royal-fiesta/game/client/seats'
+import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
 import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
 import type { GameContent } from '@royal-fiesta/game/content'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
@@ -23,7 +28,7 @@ import { netSetup } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
-import type { RenderPort, Viewport } from '@royal-fiesta/game/render/port'
+import type { CameraPose, RenderPort, Viewport } from '@royal-fiesta/game/render/port'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
@@ -49,8 +54,9 @@ import { hudValues } from '../client/hud.ts'
 import type { HudValues } from '../client/hud.ts'
 import { mountLoading } from '../content/loading.ts'
 import { pickContent } from '../content/source.ts'
-import { GameInput } from '../input/input.ts'
-import type { UiEvent } from '../input/input.ts'
+import { GameInput, InputDevices } from '../input/input.ts'
+import type { DevicePoll, UiEvent } from '../input/input.ts'
+import type { ListenerPose } from '@royal-fiesta/game/audio/emitters'
 import { HubView } from '../play/hubView.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
 import { SoundDriver } from '../play/sound.ts'
@@ -176,7 +182,7 @@ type FrameLoop = (frame: (dtS: number) => void) => () => void
 // Where the App keeps its settings and what calls its frames: the page's localStorage and rAF loop, or
 // the uiTour op's in-memory store and its own frame steps. beforeLoad runs as each load starts; a throw fails
 // that load as any load failure does (the uiTour op refuses the boot load so it can reach 'loading' with Retry).
-interface AppEnv { store: SettingsStore; loop: FrameLoop; beforeLoad?: () => Promise<void> }
+interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void> }
 
 // The page's FrameLoop, on requestAnimationFrame. An op tears the App down before building its own views.
 function loop(frame: (dtS: number) => void): () => void {
@@ -215,7 +221,11 @@ function backingSize(viewports: readonly Viewport[]): { width: number; height: n
 
 // What the app hands a running mode each page frame. world is the camera-relative move (controlsToInput
 // with the orbit camera's ground facing); a paused mode keeps drawing but does not step.
-interface FrameIn { dt: number; paused: boolean; world: PlayerInput; emote: number }
+interface FrameIn {
+  dt: number; paused: boolean; world: PlayerInput; emote: number
+  // This frame's device polls (0..deviceCount) for the local seats.
+  devices: readonly DevicePoll[]; deviceCount: number
+}
 interface HudState { view: MatchViewState; names: string[]; seat: number }
 
 interface Mode {
@@ -235,9 +245,16 @@ interface Mode {
   dequeue(): void
   leaveMatch(): void
   dispose(): void
+  // Local split screen: a device with a seat, and seat 0's sound listener when its camera exists.
+  seated?(device: DeviceId): boolean
+  listener?(): ListenerPose | null
 }
 
-interface ModeCtx { loaded: Loaded; q: Query; orbit: OrbitCamera; prepared?: boolean }
+interface ModeCtx {
+  loaded: Loaded; q: Query; orbit: OrbitCamera; prepared?: boolean
+  // Local play's S26 canvas layout (App.setLayout): one cell per seat, plus the overview cell at 3.
+  setLayout: (seats: number) => void
+}
 
 // Draws one match on port 0: the SceneView framed by the orbit camera while rounds run, then the
 // PodiumStage (content.podium()) once a podium is known.
@@ -320,29 +337,162 @@ function courseSetup(seed: number, chosen: ResolvedCourse, playlist: readonly Re
   return { seed, playerCount: players, humans: Array.from({ length: players }, (_, p) => p === 0), profile: 'sprint', courses }
 }
 
-interface LocalMatch { sim: MatchSim; inputs: PlayerInput[]; acc: number; singleRace: boolean; order: number[] }
+interface LocalRun { match: LocalMatch; singleRace: boolean; order: number[] }
 
-// The in-page game: the local hub (HubWorld + queue pad), then a match against bots on a plain MatchSim
-// (no peers, so no rollback), its podium, and the hub again. The player is always player 0.
+function deviceName(device: DeviceId): string {
+  if (device === 'keyboard') return 'Keyboard'
+  if (device === 'touch') return 'Touch'
+  return `Pad ${Number(device.slice(4)) + 1}`
+}
+
+// The hub's join prompt: 'P1 Keyboard, P2 Pad 1, ...'.
+function seatLine(seats: readonly { device: DeviceId }[]): string {
+  return seats.map((seat, k) => `P${k + 1} ${deviceName(seat.device)}`).join(', ')
+}
+
+// The XZ facing a camera looks along, in the default +Z when it has none or looks straight down.
+function cameraFacing(cam: CameraPose | null): Planar {
+  if (cam === null) return { x: 0, z: 1 }
+  const dx = cam.target[0] - cam.eye[0]
+  const dz = cam.target[2] - cam.eye[2]
+  const len = Math.hypot(dx, dz)
+  return len === 0 ? { x: 0, z: 1 } : { x: dx / len, z: dz / len }
+}
+
+// Local split screen's views: one SceneView per seat on the shared port (viewport k, localPlayer k),
+// the overview camera in the fourth cell at three seats, and the PodiumStage once a podium is known.
+// Seat 0 keeps the orbit camera; the other seats follow their own player.
+class LocalPresenter {
+  readonly view = emptyViewState()
+  podiumS = 0
+  private readonly c: ModeCtx
+  private readonly stage: PodiumStage
+  private scenes: SceneView[] = []
+  private seats = 0
+  private podium: number[] | null = null
+  private overviewIndex = -1
+  private overviewCam: CameraPose | null = null
+  private readonly state = emptyViewState()
+
+  constructor(c: ModeCtx) {
+    this.c = c
+    const content = c.loaded.content
+    this.stage = new PodiumStage({
+      port: c.loaded.ports[0], viewport: 0, bean: content.character(), block: content.assets('wall-block'), layout: content.podium(),
+    })
+  }
+
+  get onPodium(): boolean {
+    return this.podium !== null
+  }
+
+  get places(): readonly number[] | null {
+    return this.podium
+  }
+
+  begin(match: LocalMatch, seats: number): void {
+    this.end()
+    const { content, ports } = this.c.loaded
+    const orbit = this.c.orbit
+    // Each match starts looking along +Z.
+    orbit.reset(0)
+    this.seats = seats
+    this.scenes = []
+    for (let k = 0; k < seats; k++) {
+      this.scenes.push(new SceneView({
+        port: ports[0], viewport: k, localPlayer: k, assets: name => content.assets(name), bean: content.character(),
+        character: content.character(), dressing: content.dressing(),
+        camera: k === 0 ? focus => orbit.pose(focus) : undefined,
+        loadingPaint: !this.c.prepared, skinned: skinnedCharacterOf(content),
+      }))
+    }
+  }
+
+  // The facing a seat's own camera looks along (default +Z before its first update).
+  facing(seat: number): Planar {
+    return cameraFacing(this.scenes[seat]?.camera ?? null)
+  }
+
+  // Seat 0's sound listener: the eye plus the normalised XZ of target - eye, or null without a camera.
+  listener(): ListenerPose | null {
+    const cam = this.scenes[0]?.camera
+    if (cam === null || cam === undefined) return null
+    const f = cameraFacing(cam)
+    return { x: cam.eye[0], y: cam.eye[1], z: cam.eye[2], fx: f.x, fz: f.z }
+  }
+
+  // Returns true when this draw put the podium up: the caller then gives the stage the whole canvas.
+  draw(match: LocalMatch, alpha: number, dt: number, podium: readonly number[] | null): boolean {
+    if (podium !== null && podium.length > 0 && this.podium === null) {
+      this.podium = podium.slice(0, 3)
+      this.disposeScenes()
+      this.stage.show(this.podium)
+      this.podiumS = 0
+      return true
+    }
+    if (this.podium !== null) {
+      this.podiumS += dt
+      this.stage.update(dt)
+      return false
+    }
+    for (const view of this.scenes) view.update(match.sim, null, alpha, dt)
+    if (this.seats === 3) {
+      const ci = match.sim.phase(this.state).courseIndex
+      if (ci !== this.overviewIndex) {
+        this.overviewIndex = ci
+        const course = match.sim.course()
+        this.overviewCam = course === null ? null : overviewCamera(course)
+      }
+      if (this.overviewCam !== null) this.c.loaded.ports[0].setCamera(3, this.overviewCam)
+    }
+    return false
+  }
+
+  end(): void {
+    this.disposeScenes()
+    this.podium = null
+    this.podiumS = 0
+    this.overviewIndex = -1
+    this.overviewCam = null
+    this.stage.hide()
+  }
+
+  dispose(): void {
+    this.end()
+    this.stage.dispose()
+  }
+
+  private disposeScenes(): void {
+    for (const view of this.scenes) view.dispose()
+    this.scenes = []
+  }
+}
+
+// The in-page game: the local hub (HubWorld + queue pad), then a match against bots on the local-play
+// LocalMatch (no peers, so no rollback), its podium, and the hub again. Keyboard holds seat 0; in the hub
+// a pad's join button takes the next seat, and each seat drives its own player.
 class LocalMode implements Mode {
   failure: string | null = null
   private readonly c: ModeCtx
-  private readonly presenter: MatchPresenter
+  private readonly presenter: LocalPresenter
   private readonly hubView: HubView
   private hub: HubWorld
   private pad = new QueuePad(1)
   private hubAcc = 0
-  private match: LocalMatch | null = null
-  private prepared: LocalMatch | null = null
+  private readonly seats = new SeatTable()
+  private match: LocalRun | null = null
+  private prepared: LocalRun | null = null
   private readonly hubLayer: SceneLayer
   private readonly matchLayer: SceneLayer
   private readonly names: string[]
   private readonly local = emptyChar()
   private readonly cv = emptyCharView()
+  private readonly still = emptyControls()
 
   constructor(c: ModeCtx) {
     this.c = c
     const { R, content, ports } = c.loaded
+    this.seats.join('keyboard')
     this.names = playerNames(0, c.q.name)
     this.hub = new HubWorld(R, content.hub(), 0)
     this.hubLayer = new SceneLayer(ports[0])
@@ -350,7 +500,7 @@ class LocalMode implements Mode {
     this.hubView = new HubView(this.hubLayer.port, 0, name => content.assets(name), content.character(), content.hub(), {
       orbit: c.orbit, character: content.character(), dressing: content.dressing(),
     })
-    this.presenter = new MatchPresenter({ ...c, prepared: true, loaded: { ...c.loaded, ports: [this.matchLayer.port] } })
+    this.presenter = new LocalPresenter({ ...c, prepared: true, loaded: { ...c.loaded, ports: [this.matchLayer.port] } })
     this.prepareMatch()
     // ?course= goes straight into its round.
     if (c.loaded.course !== null) this.enqueue()
@@ -360,17 +510,37 @@ class LocalMode implements Mode {
     const m = this.match
     if (m === null) return false
     if (this.presenter.onPodium) return this.presenter.podiumS >= PODIUM_HOLD_S
-    return m.sim.done || (this.over(m) && m.order.length === 0)
+    return m.match.done || (this.over(m) && m.order.length === 0)
   }
 
   sim(): MatchSim | null {
-    return this.match?.sim ?? null
+    return this.match?.match.sim ?? null
+  }
+
+  seated(device: DeviceId): boolean {
+    return this.seats.seatOf(device) !== -1
+  }
+
+  listener(): ListenerPose | null {
+    return this.presenter.listener()
   }
 
   enqueue(): void {
     if (this.match !== null) return
-    this.match = this.prepared
-    this.prepared = null
+    const count = this.seats.seats.length
+    if (count === 1 && this.prepared !== null) {
+      // The prepared 1-seat match is already stepped past its intro and warmed.
+      this.match = this.prepared
+      this.prepared = null
+      this.c.setLayout(1)
+    } else {
+      this.prepared?.match.dispose()
+      this.prepared = null
+      const run = this.buildMatch(count)
+      this.match = run
+      this.c.setLayout(count)
+      this.presenter.begin(run.match, count)
+    }
     this.hubLayer.setVisible(false)
     this.matchLayer.setVisible(true)
     this.c.orbit.reset(0)
@@ -378,21 +548,30 @@ class LocalMode implements Mode {
 
   dequeue(): void {}
 
-  private prepareMatch(): void {
-    const { R, content, course, ports } = this.c.loaded
+  // A fresh local match: seats humans, fixed profile, the playlist's courses (or ?course='s course list).
+  private buildMatch(seats: number): LocalRun {
+    const { R, content, course } = this.c.loaded
     const seed = Date.now() >>> 0
-    const setup = course !== null ? courseSetup(seed, course, content.playlist()) : netSetup(seed, 1, 'sprint', content.playlist())
-    const sim = startup('Local round', () => new MatchSim(R, setup))
-    const inputs = Array.from({ length: setup.playerCount }, () => neutralInput())
+    const courses = course !== null
+      ? courseSetup(seed, course, content.playlist()).courses
+      : netSetup(seed, seats, 'sprint', content.playlist()).courses
+    const match = startup('Local round', () => new LocalMatch({ R, seats, seed, profile: 'sprint', courses }))
+    return { match, singleRace: course !== null && course.kind === 'race', order: [] }
+  }
+
+  // Warms the menu behind a 1-seat match; enqueue reuses it only while the table still holds one seat.
+  private prepareMatch(): void {
+    const { ports } = this.c.loaded
+    const run = this.buildMatch(1)
     // Enter round zero and finish its intro before handing control to the local player.
-    simStep(sim, 'Round physics / bots / intro', () => {
-      do { sim.step(inputs) } while (sim.phase(this.presenter.view).phase === Phase.intro)
+    simStep(run.match, 'Round physics / bots / intro', () => {
+      do { run.match.frame(STEP_S, () => {}) } while (run.match.sim.phase(this.presenter.view).phase === Phase.intro)
     })
-    this.prepared = { sim, inputs, acc: 0, singleRace: course !== null && course.kind === 'race', order: [] }
+    this.prepared = run
     this.hubLayer.setVisible(false)
     this.matchLayer.setVisible(true)
-    this.presenter.begin(0)
-    this.presenter.draw(sim, null, 1, 0, null)
+    this.presenter.begin(run.match, 1)
+    this.presenter.draw(run.match, 1, 0, null)
     renderFrame(this.matchLayer.port, () => ports[0].render())
     this.matchLayer.setVisible(false)
     this.hubLayer.setVisible(true)
@@ -407,8 +586,8 @@ class LocalMode implements Mode {
     while (pendingPipelines() > 0) await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
     this.hubLayer.setVisible(false)
     this.matchLayer.setVisible(true)
-    const sim = this.prepared?.sim ?? this.match?.sim
-    if (sim !== undefined) this.presenter.draw(sim, null, 1, 0, null)
+    const run = this.prepared ?? this.match
+    if (run !== null) this.presenter.draw(run.match, 1, 0, null)
     ports[0].render()
     await ports[0].capture()
     if (this.match === null) {
@@ -421,10 +600,11 @@ class LocalMode implements Mode {
   }
 
   leaveMatch(): void {
-    const m = this.match
-    if (m === null) return
+    const run = this.match
+    if (run === null) return
     this.presenter.end()
-    m.sim.free()
+    this.c.setLayout(1)
+    run.match.dispose()
     this.match = null
     // Back at the spawn, off the queue pad, as PlayFlow does after a match.
     this.hub.free()
@@ -448,9 +628,10 @@ class LocalMode implements Mode {
   lines(): string[] {
     const m = this.match
     if (m === null) {
-      const course = this.c.loaded.course
-      const what = course === null ? 'a match against bots' : course.name
-      return [`${this.c.q.name} - local hub`, `Walk onto the green pad or press Enter to play ${what}`]
+      return [
+        seatLine(this.seats.seats),
+        'Press Start/Enter on another controller to join - walk onto the green pad or press Enter to play',
+      ]
     }
     if (this.presenter.places !== null) return podiumLines(this.presenter.places, this.names)
     const v = this.presenter.view
@@ -460,9 +641,9 @@ class LocalMode implements Mode {
 
   dispose(): void {
     this.presenter.dispose()
-    this.match?.sim.free()
+    this.match?.match.dispose()
     this.match = null
-    this.prepared?.sim.free()
+    this.prepared?.match.dispose()
     this.prepared = null
     this.hubView.dispose()
     this.hub.free()
@@ -470,6 +651,11 @@ class LocalMode implements Mode {
 
   private frameHub(f: FrameIn): GameScreen {
     const now = performance.now()
+    // A device's join button takes the next free seat while the hub is live; a match freezes the seats.
+    for (let i = 0; i < f.deviceCount; i++) {
+      const poll = f.devices[i]
+      if (poll.joinPressed) this.seats.join(poll.device)
+    }
     if (f.emote !== 0) this.hub.setEmote(f.emote, now)
     if (!f.paused) {
       this.hubAcc = Math.min(this.hubAcc + f.dt, 8 * STEP_S)
@@ -488,34 +674,45 @@ class LocalMode implements Mode {
   }
 
   // A single ?course= race ends with its round; every other match runs to its own podium.
-  private over(m: LocalMatch): boolean {
-    return m.sim.done || (m.singleRace && this.presenter.view.phase >= Phase.roundEnd)
+  private over(run: LocalRun): boolean {
+    return run.match.done || (run.singleRace && this.presenter.view.phase >= Phase.roundEnd)
   }
 
-  private frameMatch(m: LocalMatch, f: FrameIn): GameScreen {
-    const sim = m.sim
-    const view = sim.phase(this.presenter.view)
-    if (!f.paused && !this.over(m)) {
-      m.acc = Math.min(m.acc + f.dt, 8 * STEP_S)
-      while (m.acc >= STEP_S && !this.over(m)) {
-        m.acc -= STEP_S
-        Object.assign(m.inputs[0], f.world)
-        sim.step(m.inputs)
-        sim.phase(view)
-        if (m.singleRace) this.noteQualified(m)
-      }
+  private frameMatch(run: LocalRun, f: FrameIn): GameScreen {
+    const sim = run.match.sim
+    let alpha = 1
+    if (!f.paused && !this.over(run)) {
+      alpha = run.match.frame(f.dt, (seat, out) => this.sample(seat, f, out))
+      if (run.singleRace) this.noteQualified(run)
     }
+    const view = sim.phase(this.presenter.view)
     let podium: readonly number[] | null = null
-    if (m.singleRace) podium = this.over(m) ? m.order : null
+    if (run.singleRace) podium = this.over(run) ? run.order : null
     else if (view.phase >= Phase.podium) podium = view.podium
-    this.presenter.draw(sim, null, this.over(m) ? 1 : m.acc / STEP_S, f.dt, podium)
+    if (this.presenter.draw(run.match, this.over(run) ? 1 : alpha, f.dt, podium)) this.c.setLayout(1)
     return matchScreen(view, sim.character(0, this.cv).status, this.presenter.onPodium)
   }
 
+  // One seat's input: its device's controls turned by seat 0's orbit or the seat's own camera facing.
+  private sample(seat: number, f: FrameIn, out: PlayerInput): void {
+    const row = this.seats.seats[seat]
+    const controls = row === undefined ? this.still : this.deviceControls(row.device, f)
+    const facing = seat === 0 ? this.c.orbit.ground() : this.presenter.facing(seat)
+    controlsToInput(controls, facing, out)
+  }
+
+  private deviceControls(device: DeviceId, f: FrameIn): RawControls {
+    for (let i = 0; i < f.deviceCount; i++) {
+      const poll = f.devices[i]
+      if (poll.device === device) return poll.controls
+    }
+    return this.still
+  }
+
   // The single race's podium is its qualification order.
-  private noteQualified(m: LocalMatch): void {
-    for (let p = 0; p < m.inputs.length; p++) {
-      if (!m.order.includes(p) && m.sim.character(p, this.cv).status === PlayerStatus.qualified) m.order.push(p)
+  private noteQualified(run: LocalRun): void {
+    for (let p = 0; p < PLAYERS; p++) {
+      if (!run.order.includes(p) && run.match.sim.character(p, this.cv).status === PlayerStatus.qualified) run.order.push(p)
     }
   }
 }
@@ -773,6 +970,9 @@ class App {
   private readonly host: UaaHost
   private readonly env: AppEnv
   private readonly input: GameInput
+  private readonly padStore: PadMapStore
+  private readonly devices: InputDevices
+  private readonly devicePolls: DevicePoll[] = []
   private readonly sound = new SoundDriver()
   private readonly orbit = new OrbitCamera()
   private readonly world = neutralInput()
@@ -788,6 +988,9 @@ class App {
     this.settingsError = saved.error
     // Clicking the (single) game canvas locks the pointer for the mouse look.
     this.input = new GameInput(window, screens, () => (this.loaded?.canvases.length === 1 ? this.loaded.canvases[0] : null))
+    // Every device is polled once per frame; key events bubble from the focused element to the body.
+    this.padStore = localPadMapStore(env.padStorage)
+    this.devices = new InputDevices(document.body, () => navigator.getGamepads?.() ?? [], this.padStore, null)
     // The local canvas follows #views when it is resized (S26): the CSS size and DPR reach port.resize.
     this.viewsObserver = new ResizeObserver(() => this.resizeViews())
     this.viewsObserver.observe(this.views)
@@ -840,6 +1043,7 @@ class App {
     this.preparedLocal = null
     this.viewsObserver.disconnect()
     this.cells = []
+    this.devices.dispose()
     this.input.dispose()
     void this.sound.close()
     for (const port of this.loaded?.ports ?? []) port.dispose()
@@ -900,7 +1104,7 @@ class App {
       this.loaded = { R, content, ports, canvases, course }
       this.resizeViews()
       if (q.server === null && q.clients === 1) {
-        this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit })
+        this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit, setLayout: seats => this.setLayout(seats) })
         await this.preparedLocal.ready()
       }
       this.run(this.nav.dispatch({ kind: 'loaded' }))
@@ -996,7 +1200,7 @@ class App {
     const q = this.query
     if (loaded === null || q === null) return this.fail(refusal('game', 'start', 'the content is not loaded; retry the load'))
     this.stopMode()
-    const c: ModeCtx = { loaded, q, orbit: this.orbit }
+    const c: ModeCtx = { loaded, q, orbit: this.orbit, setLayout: seats => this.setLayout(seats) }
     try {
       if (q.server !== null) this.mode = new OnlineMode(c, q.server)
       else if (q.clients > 1) this.mode = new InPageMode(c)
@@ -1032,7 +1236,14 @@ class App {
 
   private frame(dt: number): void {
     const nav = this.nav
-    for (const ev of this.input.takeEvents()) this.onEvent(ev)
+    const events = this.input.takeEvents()
+    // Local seats own pads: GameInput's first-pad Start-as-back would pause the hub when a pad joins.
+    if (this.mode?.seated !== undefined && !events.some(ev => ev.k === 'key' && ev.code === 'Escape')) {
+      for (let i = events.length - 1; i >= 0; i--) {
+        if (events[i].k === 'back') events.splice(i, 1)
+      }
+    }
+    for (const ev of events) this.onEvent(ev)
     this.hover()
     if (this.pendingRebind !== null) {
       // Armed after the batch, so the Enter that chose the row is not taken as the new key.
@@ -1041,6 +1252,20 @@ class App {
       this.settingsError = null
     }
     if (nav.screen !== 'settings') this.rebinding = null
+    // One poll per device: keyboard, every connected pad, then touch.
+    this.devices.bindings = this.settings
+    const deviceCount = this.devices.poll(this.devicePolls)
+    const mode = this.mode
+    // A seated pad's pause/start button is the same back as Escape (the keyboard's Escape is GameInput's).
+    if (mode !== null && nav.live && mode.seated !== undefined) {
+      for (let i = 0; i < deviceCount; i++) {
+        const poll = this.devicePolls[i]
+        if (poll.device !== 'keyboard' && poll.pausePressed && mode.seated(poll.device)) {
+          this.run(nav.dispatch({ kind: 'back' }))
+          break
+        }
+      }
+    }
     const playing = nav.live && PLAYING.includes(nav.screen)
     const s = this.settings
     const look = this.input.takeLook()
@@ -1053,10 +1278,11 @@ class App {
     const controls = this.input.controls(s, !playing)
     if (playing) controlsToInput(controls, this.orbit.ground(), this.world)
     else Object.assign(this.world, neutralInput())
-    const mode = this.mode
     if (mode !== null && nav.live) {
       const paused = nav.screen === 'pause' || nav.screen === 'settings'
-      const screen = mode.frame({ dt, paused, world: this.world, emote: playing ? this.emote : 0 })
+      const screen = mode.frame({
+        dt, paused, world: this.world, emote: playing ? this.emote : 0, devices: this.devicePolls, deviceCount,
+      })
       if (mode.failure !== null) return this.fail(mode.failure)
       this.run(nav.dispatch({ kind: 'game', screen }))
       if (mode.finished) {
@@ -1066,7 +1292,7 @@ class App {
       }
     }
     this.emote = 0
-    this.sound.frame(this.mode?.sim() ?? null)
+    this.sound.frame(this.mode?.sim() ?? null, this.mode?.listener?.() ?? undefined)
     this.draw()
   }
 
@@ -1224,6 +1450,7 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourG
   let loads = 0
   const env: AppEnv = {
     store: { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) },
+    padStorage: null,
     loop: f => {
       frame = f
       return () => { frame = null }
@@ -1260,7 +1487,7 @@ try {
   if (!opsMode) {
     const canvas = document.querySelector<HTMLCanvasElement>('#screens > canvas#ui')
     if (canvas === null) throw new Error('game.html needs main#views and div#screens holding canvas#ui')
-    start(canvas, { store: window.localStorage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
+    start(canvas, { store: window.localStorage, padStorage: window.localStorage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
   }
 } catch (e) {
   bootFailed(e)

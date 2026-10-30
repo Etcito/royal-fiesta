@@ -33931,7 +33931,7 @@
         "params": {
           "radii": [0.33, 0.38, 0.22]
         },
-        "gameCollision": true
+        "gameCollision": false
       },
       "anchor_body": {
         "id": "anchor_body",
@@ -34040,9 +34040,11 @@
     },
     "settings": {
       "lowpoly": {
+        "targetTriangles": 500,
         "featureAngleDeg": 17.4
       },
       "export": {
+        "geometry": "lowpoly",
         "skin": true
       }
     }
@@ -34071,8 +34073,8 @@
     }
   },
   "bounds": {
-    "min": [-1.74, -1, -0.45],
-    "max": [1.74, 1.12, 0.6]
+    "min": [-1.73, -1.187063, -0.569573],
+    "max": [1.730201, 1.32, 0.63]
   },
-  "hash": "42ac7025084a72c01571a6a8fadfc330e40df93aeb09ae4e975625b0594a1774"
+  "hash": "4e30fe14147f47e8c0b573ab16c60718781f0f8acaa071788097d30ab4f8b6f2"
 }

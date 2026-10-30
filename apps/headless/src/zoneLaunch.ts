@@ -5,6 +5,7 @@ import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
+import { checkFullMatchLogs } from './zoneMatchCheck.ts'
 
 export interface ZoneLaunchOptions {
   relay: string
@@ -13,6 +14,7 @@ export interface ZoneLaunchOptions {
   players: number
   course: string
   seconds: number
+  match?: 'round' | 'full'
   namePrefix?: string
 }
 
@@ -43,8 +45,13 @@ export function launchZoneBots(options: ZoneLaunchOptions): ZoneLaunch {
     refuse('zone', '--seconds', 'expected a non-negative number; pass the seconds to play')
   }
   if (!options.course) refuse('zone', '--course', 'missing course id; pass --course race-sprint')
+  if (options.match !== undefined && options.match !== 'round' && options.match !== 'full') {
+    refuse('zone', '--match', 'expected round or full; pass --match round or --match full')
+  }
   const root = fileURLToPath(new URL('../../../', import.meta.url))
-  const script = 'apps/headless/src/zoneBot.ts'
+  const script = options.match === 'full'
+    ? 'apps/headless/src/zoneMatchBot.ts'
+    : 'apps/headless/src/zoneBot.ts'
   // All bots belong to ONE match and must run concurrently: the NMC_CPUS sweep cap does not apply.
   const logs: string[] = []
   const children = Array.from({ length: options.peers }, (_, i) => {
@@ -100,14 +107,28 @@ async function runCli(): Promise<number> {
       relay: { type: 'string' }, peers: { type: 'string', default: '6' },
       seats: { type: 'string', default: '2' }, players: { type: 'string' },
       course: { type: 'string', default: 'race-sprint' }, seconds: { type: 'string', default: '300' },
+      match: { type: 'string', default: 'round' },
     } })
-    const bots = launchZoneBots({ relay: values.relay ?? '', peers: Number(values.peers),
+    const peers = Number(values.peers)
+    const bots = launchZoneBots({ relay: values.relay ?? '', peers,
       seats: Number(values.seats), players: Number(values.players ?? values.peers),
-      course: values.course, seconds: Number(values.seconds) })
+      course: values.course, seconds: Number(values.seconds), match: values.match as 'round' | 'full' })
     const stop = (): void => bots.stop()
     process.on('SIGINT', stop)
-    try { return (await bots.done).some(code => code !== 0) ? 1 : 0 }
-    finally { process.off('SIGINT', stop) }
+    try {
+      const codes = await bots.done
+      if (values.match === 'full') {
+        const check = checkFullMatchLogs(bots.logs, peers)
+        if (check.ok) {
+          console.log(`[zone-launch] full match OK: ${check.rounds} rounds, champion ${check.champion ?? 'none'}`)
+        } else {
+          console.log('[zone-launch] full match FAILED:')
+          for (const problem of check.problems) console.log(problem)
+        }
+        return codes.some(code => code !== 0) || !check.ok ? 1 : 0
+      }
+      return codes.some(code => code !== 0) ? 1 : 0
+    } finally { process.off('SIGINT', stop) }
   } catch (error) {
     console.error(isRefusal(error) ? error.message : String(error))
     return 1

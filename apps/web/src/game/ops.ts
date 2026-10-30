@@ -43,6 +43,7 @@ import { InPageHubLoop } from '../play/inpageHub.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { installZoneLobbyOps } from '../zone/zoneLobbyOps.ts'
+import { installSplitOps } from '../zone/splitOps.ts'
 import { installZoneOps } from '../zone/zoneOps.ts'
 import { uiTour } from './uiTour.ts'
 import type { BootGame, UiTourOutput } from './uiTour.ts'
@@ -1102,4 +1103,5 @@ export function installGameOps(teardown: () => void, bootGame: BootGame): void {
   gpu.ops.uiTour = input => (take(), uiTour(input, { boot: bootGame, adapter: adapterInfo }))
   installZoneOps()
   installZoneLobbyOps()
+  installSplitOps()
 }

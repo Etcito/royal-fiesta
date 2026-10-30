@@ -8,6 +8,7 @@
     "uiTour",
     "zoneCapture",
     "zoneLobbyCapture",
-    "zoneLobbyPair"
+    "zoneLobbyPair",
+    "zoneSplitPair"
   ]
 }

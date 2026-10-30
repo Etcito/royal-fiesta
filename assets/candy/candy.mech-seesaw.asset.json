@@ -56,7 +56,9 @@
           "base_pivot_block",
           "base_axle",
           "base_cap_left",
-          "base_cap_right"
+          "base_cap_right",
+          "collider_0",
+          "collider_1"
         ],
         "gameCollision": false
       },
@@ -222,6 +224,78 @@
         },
         "gameCollision": false
       },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, 0.12, 0]
+        },
+        "round": 0.08,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.5, 0, 0],
+              [-1.5, 0, 0],
+              [0, 0.12, 0],
+              [0, -0.12, 0],
+              [0, 0, 0.65],
+              [0, 0, -0.65]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_1": {
+        "id": "collider_1",
+        "name": "collider_1",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, 0.64, 0]
+        },
+        "round": 0.08,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.4, 0],
+              [0, -0.4, 0],
+              [0, 0, 0.3],
+              [0, 0, -0.3]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
       "plank": {
         "id": "plank",
         "name": "plank",
@@ -234,7 +308,8 @@
           "plank_stripe_1",
           "plank_stripe_2",
           "plank_stripe_3",
-          "plank_stripe_4"
+          "plank_stripe_4",
+          "collider_2"
         ],
         "gameCollision": false
       },
@@ -489,6 +564,42 @@
           }
         },
         "gameCollision": false
+      },
+      "collider_2": {
+        "id": "collider_2",
+        "name": "collider_2",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, 1.2125, 0]
+        },
+        "round": 0.06,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.2, 0, 0],
+              [-1.2, 0, 0],
+              [0, 0.1525, 0],
+              [0, -0.1525, 0],
+              [0, 0, 3],
+              [0, 0, -3]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
       }
     },
     "materials": {
@@ -679,5 +790,5 @@
     "min": [-1.5, 0, -3],
     "max": [1.5, 1.4, 3]
   },
-  "hash": "18afc63e9b7c7de75f50768615882d91a8bbe52a7f91a6b078a2e00c63294694"
+  "hash": "df7a45c4f2ebfe9e89768f79709d4e683b46dc1c450ce29ff422248eda52d56a"
 }

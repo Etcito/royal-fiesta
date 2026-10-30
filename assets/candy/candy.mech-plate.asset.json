@@ -55,7 +55,11 @@
           "base_left",
           "base_right",
           "base_front",
-          "base_back"
+          "base_back",
+          "collider_0",
+          "collider_1",
+          "collider_2",
+          "collider_3"
         ],
         "gameCollision": false
       },
@@ -203,6 +207,150 @@
         },
         "gameCollision": false
       },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [-0.93, -0.14, 0]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.14, 0],
+              [0, -0.14, 0],
+              [0, 0, 1],
+              [0, 0, -1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_1": {
+        "id": "collider_1",
+        "name": "collider_1",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0.93, -0.14, 0]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.14, 0],
+              [0, -0.14, 0],
+              [0, 0, 1],
+              [0, 0, -1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_2": {
+        "id": "collider_2",
+        "name": "collider_2",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, -0.14, -0.93]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.86, 0, 0],
+              [-0.86, 0, 0],
+              [0, 0.14, 0],
+              [0, -0.14, 0],
+              [0, 0, 0.07],
+              [0, 0, -0.07]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_3": {
+        "id": "collider_3",
+        "name": "collider_3",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, -0.14, 0.93]
+        },
+        "round": 0.025,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.86, 0, 0],
+              [-0.86, 0, 0],
+              [0, 0.14, 0],
+              [0, -0.14, 0],
+              [0, 0, 0.07],
+              [0, 0, -0.07]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
       "plate": {
         "id": "plate",
         "name": "plate",
@@ -212,7 +360,8 @@
           "plate_shell",
           "plate_mint_left",
           "plate_mint_right",
-          "plate_lemon_stripe"
+          "plate_lemon_stripe",
+          "collider_4"
         ],
         "gameCollision": false
       },
@@ -359,6 +508,42 @@
           }
         },
         "gameCollision": false
+      },
+      "collider_4": {
+        "id": "collider_4",
+        "name": "collider_4",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, -0.08, 0]
+        },
+        "round": 0.02,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.84, 0, 0],
+              [-0.84, 0, 0],
+              [0, 0.08, 0],
+              [0, -0.08, 0],
+              [0, 0, 0.84],
+              [0, 0, -0.84]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
       }
     },
     "materials": {
@@ -563,5 +748,5 @@
     "min": [-1, -0.28, -1],
     "max": [1, 0, 1]
   },
-  "hash": "5fb776dc9a399823ce0505510f01f75cf7e1b537cfe75c2317cfdb97189286d4"
+  "hash": "e44d8bd443dadc7de604437ad86203a22cccf522d7bcb5aade8c2c200830d6b6"
 }

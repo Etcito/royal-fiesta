@@ -22,6 +22,7 @@ import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import type { CameraPose, RenderPort, RenderStats, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import { disposeAll } from './disposeAll.ts'
+import { iceAction, iceActionReady } from './iceCapture.ts'
 import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { DEFAULT_SETTINGS } from '@royal-fiesta/game/screens/settings'
 import { CharacterSystem } from '@royal-fiesta/sim/character/system'
@@ -501,6 +502,7 @@ interface Driver {
   frame(dt: number): Stage
   // The driven match sim is in Phase.playing (the playing moments count frames from its first true answer).
   playing(): boolean
+  captureReady?(name: string): boolean
   // Leaves the hub for a match (the local driver; pilots walk onto the pad themselves).
   enqueue(): void
   capture(what: string): Promise<Uint8Array>
@@ -563,7 +565,13 @@ class SingleView {
       const orbit = this.orbit
       this.scene = new SceneView({
         port: this.port, viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
-        character: content.character(), dressing: content.dressing(), camera: focus => orbit.pose(focus),
+        character: content.character(), dressing: content.dressing(), camera: focus => {
+          const state = sim.phase(emptyViewState())
+          if (sim.setup.courses[state.courseIndex]?.id === 'ice-slide-gates') {
+            return { eye: [11, 8, 16], target: [0, 1, 10], fovYDeg: 55, near: 0.05, far: 160 }
+          }
+          return orbit.pose(focus)
+        },
         skinned: skinnedCharacterOf(content),
       })
       this.sceneSim = sim
@@ -670,7 +678,18 @@ class LocalDriver implements Driver {
   }
 
   capture(what: string): Promise<Uint8Array> {
+    if (this.course?.id === 'ice-slide-gates' && this.sim !== null) {
+      this.note(`ice-action ${JSON.stringify(iceAction(this.sim, this.course))}`)
+    }
     return renderPng(this.port, what)
+  }
+
+  // Keep the named playing image, but photograph this course's action rather than its spawn tick.
+  captureReady(name: string): boolean {
+    if (this.course?.id !== 'ice-slide-gates' || name !== 'playing') return true
+    const sim = this.sim
+    if (sim === null || !this.playing()) return false
+    return iceActionReady(iceAction(sim, this.course))
   }
 
   dispose(): void {
@@ -971,7 +990,7 @@ const MAX_FRAMES = 60 * 900
 // The original clock: the multi-client run replaces performance.now with its virtual clock.
 const realNow = performance.now.bind(performance)
 
-function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Moment[]; screens: string[] } {
+export function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Moment[]; screens: string[] } {
   const op = 'gameCapture'
   const o = obj(op, 'input', raw)
   onlyKeys(op, 'input', o, ['content', 'course', 'flow', 'clients', 'width', 'height', 'captureAt', 'reload', 'net', 'local', 'touch'])
@@ -1109,6 +1128,25 @@ async function runOnce(run: Run): Promise<{ content: GameContent; report: Report
   }
   if (moments.every(m => m.kind === 'loading')) return { content, report }
   const course = input.course === undefined ? null : content.course(input.course)
+  if (input.content === 'sdf' && course?.id === 'ice-slide-gates') {
+    // A capture must not silently omit the character after a mesh failure. SDF loads the saved
+    // mesh or meshes it with MAMA before this point; v1 primitives cannot satisfy this path.
+    const required = ['penguin.body', 'ice.slide-gate', 'ice.floe-platform', 'ice.floor-tile', 'ice.wall-block']
+    const meshes = report.meshed
+    for (const id of required) {
+      const line = Array.isArray(meshes) ? meshes.find(line => line.startsWith(`${id}|`)) : undefined
+      const fields = line?.split('|')
+      if (!fields || !(Number(fields[2]) > 0 && Number(fields[3]) > 0)) {
+        refuse('content', id, `the ice capture requires the real SDF mesh; load report: ${JSON.stringify(report.failed)}`)
+      }
+    }
+    if (skinnedCharacterOf(content) === undefined) refuse('content', 'penguin.body', 'the ice capture requires the penguin skin')
+    // SceneView loads animation asynchronously. Warm its module and WASM before the fast, explicitly
+    // stepped capture loop, so the opening action has a running pose rather than the rest pose.
+    await import('@royal-fiesta/game/anim/driver')
+    const { loadAnimBrick } = await import('@royal-fiesta/game/anim/brick')
+    await loadAnimBrick()
+  }
   await playFlow(run, content, course)
   return { content, report }
 }
@@ -1186,7 +1224,7 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
         if (stage === 'podium' || stage === 'back-in-hub') refuse('ops', `gameCapture.${m.name}`, `the match reached its podium after ${matchFrames} frames, before ${m.name}; pick an earlier second`)
         hit = stage === 'match' && (m.clock === 'playing' ? playingFrames : matchFrames) >= m.frames
       } else if (m.kind !== 'loading') hit = stage === m.kind && stageFrames >= SETTLE[m.kind]
-      if (hit) {
+      if (hit && (driver.captureReady?.(m.name) ?? true)) {
         note(`${run.prefix}capturing ${m.name} at frame ${frame}`)
         await capture(run, m.name, await driver.capture(run.prefix + m.name))
         index++

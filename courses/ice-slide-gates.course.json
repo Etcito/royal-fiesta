@@ -83,6 +83,8 @@
     {"id":"opening-floe-right","asset":"ice.floe-platform","t":[4,0.65,5.5],"r":[0,0,0,1],"s":[1,1,1],"friction":0.05,"surface":"ice","motion":{"kind":"static"},"colliders":null}
   ],
   "decor": [
+    {"id":"plate-a-snow","asset":"ice.floor-tile","t":[0,0.02,8],"r":[0,0,0,1],"s":[0.195,0.04,0.145]},
+    {"id":"plate-b-snow","asset":"ice.floor-tile","t":[0,0.02,34],"r":[0,0,0,1],"s":[0.195,0.04,0.145]},
     {"id":"water-bed-left","asset":"ice.floor-tile","t":[-4,-1.9,5.5],"r":[0,0,0,1],"s":[0.3,0.15,0.4]},
     {"id":"water-bed-right","asset":"ice.floor-tile","t":[4,-1.9,5.5],"r":[0,0,0,1],"s":[0.3,0.15,0.4]},
     {"id":"start-left","asset":"ice.wall-block","t":[-2.5,2.3,-2],"r":[0,0,0,1],"s":[0.8,2.3,0.08]},
@@ -101,7 +103,7 @@
     {"id":"finish-right","asset":"ice.wall-block","t":[2.5,1.6,49],"r":[0,0,0,1],"s":[0.8,1.6,0.08]},
     {"id":"finish-lintel","asset":"ice.wall-block","t":[0,3.4,49],"r":[0,0,0,1],"s":[5.8,0.3,0.08]}
   ],
-  "environment": {"sky":"snow","sun":{"dir":[-0.4,-0.8,0.3],"color":[0.82,0.93,1],"intensity":1.2}},
+  "environment": {"sky":"snow","post":"ice","sun":{"dir":[-0.4,-0.8,0.3],"color":[0.82,0.93,1],"intensity":1.2}},
   "podium": null,
   "mechanisms": {"joints":[],"switches":[{"id":"plate-a","plate":{"item":"plate-a","body":"plate"},"mode":"weight","onKg":50,"offKg":30},{"id":"plate-b","plate":{"item":"plate-b","body":"plate"},"mode":"weight","onKg":50,"offKg":30}],"levers":[],"logic":[{"id":"timer-a","op":"timer","inputs":["plate-a"],"seconds":4},{"id":"timer-b","op":"timer","inputs":["plate-b"],"seconds":4}],"animations":[{"id":"open-a","target":{"item":"gate-a","body":"gate"},"keys":[{"atS":0,"t":[0,0,0],"rDeg":[0,0,0]},{"atS":0.35,"t":[2.2,0,0],"rDeg":[0,0,0]}],"easing":"smooth","loop":"once","autostart":false},{"id":"open-b","target":{"item":"gate-b","body":"gate"},"keys":[{"atS":0,"t":[0,0,0],"rDeg":[0,0,0]},{"atS":0.35,"t":[2.2,0,0],"rDeg":[0,0,0]}],"easing":"smooth","loop":"once","autostart":false}],"links":[{"id":"gate-a","from":"timer-a","to":{"kind":"animation","animation":"open-a","on":"play","off":"reverse"}},{"id":"gate-b","from":"timer-b","to":{"kind":"animation","animation":"open-b","on":"play","off":"reverse"}}],"budget":{"dynamicBodies":24,"joints":32}},
   "sounds": [

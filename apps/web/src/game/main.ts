@@ -74,6 +74,8 @@ import type { UaaCommand, UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
 import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
 import { defaultRelay, onlineRelay } from '../platform/relay.ts'
 import { installGameOps } from './ops.ts'
+import { NetDiag } from './netDiag.ts'
+import { NetPump } from './netPump.ts'
 import { communityBase, listCommunityLevels, loadCommunityPack } from '../content/community.ts'
 import { installContentOverlay } from '../content/v1Data.ts'
 import { mountCommunityPanel } from './communityPanel.ts'
@@ -875,9 +877,13 @@ class OnlineMode implements Mode {
   // The shared hub: every lobby member's name over its bean.
   private readonly tags: NameTags | null
   private readonly name: string
+  // Steps the flow while the window draws no frames (hidden or behind the other window), see netPump.ts.
+  private readonly pump: NetPump
+  private readonly netDiag = new NetDiag()
 
   constructor(c: ModeCtx, server: string) {
     this.c = c
+    this.pump = new NetPump(dt => this.background(dt))
     const { R, content, ports } = c.loaded
     const q = c.q
     this.name = onlineName(q.name)
@@ -945,6 +951,18 @@ class OnlineMode implements Mode {
     if (this.flow.match !== null) this.note = 'An online match cannot be left; it returns to the hub when it ends'
   }
 
+  // A NetPump step: the flow advances with idle controls (the window has no focus) and nothing is drawn.
+  private background(dtS: number): void {
+    this.flow.frame(dtS, null, 0)
+    this.sampleNet(performance.now(), false)
+  }
+
+  private sampleNet(nowMs: number, drawn: boolean): void {
+    const match = this.flow.match
+    if (match === null) this.netDiag.clear()
+    else this.netDiag.sample(match.session.stats, this.pump.pumped, nowMs, drawn)
+  }
+
   frame(f: FrameIn): GameScreen {
     const flow = this.flow
     const now = performance.now()
@@ -953,7 +971,8 @@ class OnlineMode implements Mode {
     if (flow.match !== null) facing = flow.match.sim.character(this.seat, this.cv).facing
     else if (inHub(before)) facing = flow.hub.state(this.local).facing
     this.diag()
-    flow.frame(f.dt, f.paused ? null : inCharacterFrame(f.world, facing, this.moved), f.paused ? 0 : f.emote)
+    flow.frame(this.pump.frame(f.dt), f.paused ? null : inCharacterFrame(f.world, facing, this.moved), f.paused ? 0 : f.emote)
+    this.sampleNet(now, true)
     const match = flow.match
     const sim = match?.sim ?? null
     if (sim !== this.viewed) {
@@ -1000,6 +1019,8 @@ class OnlineMode implements Mode {
   }
 
   dispose(): void {
+    this.pump.dispose()
+    this.netDiag.dispose()
     this.flow.close()
     this.presenter.dispose()
     this.hubView.dispose()

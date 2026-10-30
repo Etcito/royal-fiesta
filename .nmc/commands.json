@@ -46,7 +46,7 @@
     ]
   },
   {
-    "name": "rf-judge-m4-candy-seesaw-run",
+    "name": "rf-judge-m4-candy",
     "command": "node --experimental-strip-types tools/judgeCard.ts m4 --item 0",
     "timeout_s": 1800,
     "after": [
@@ -54,7 +54,7 @@
     ]
   },
   {
-    "name": "rf-judge-m4-ice-slide-gates",
+    "name": "rf-judge-m4-ice",
     "command": "node --experimental-strip-types tools/judgeCard.ts m4 --item 1",
     "timeout_s": 1800,
     "after": [
@@ -62,7 +62,7 @@
     ]
   },
   {
-    "name": "rf-judge-m4-jungle-crane-crossing",
+    "name": "rf-judge-m4-jungle",
     "command": "node --experimental-strip-types tools/judgeCard.ts m4 --item 2",
     "timeout_s": 1800,
     "after": [
@@ -70,7 +70,7 @@
     ]
   },
   {
-    "name": "rf-judge-m4-neon-piston-alley",
+    "name": "rf-judge-m4-neon",
     "command": "node --experimental-strip-types tools/judgeCard.ts m4 --item 3",
     "timeout_s": 1800,
     "after": [

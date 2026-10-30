@@ -42,7 +42,7 @@ interface Slot {
 }
 
 /** A name tag the page draws over the canvas: world point above the bean, its text and role. */
-export interface HubTag { key: number; name: string; spectator: boolean; local: boolean; pos: Vec3; scale: number }
+export interface HubTag { key: number; name: string; spectator: boolean; own: boolean; pos: Vec3; scale: number }
 
 export interface HubViewOptions {
   // The player page's orbit camera frames the local bean; without it, followCamera (proof pages).
@@ -223,11 +223,11 @@ export class HubView {
     if (!this.visible) return out
     const ms = this.clock * 1000
     if (localName !== null && this.localBean >= 0) {
-      out.push({ key: -1, name: localName, spectator: false, local: true, pos: { x: this.localPos.x, y: this.localPos.y + TAG_HEIGHT, z: this.localPos.z }, scale: 1 })
+      out.push({ key: -1, name: localName, spectator: false, own: true, pos: { x: this.localPos.x, y: this.localPos.y + TAG_HEIGHT, z: this.localPos.z }, scale: 1 })
     }
     for (const [key, slot] of this.slots) {
       const scale = this.popOf(slot, ms) * (slot.spectator ? SPECTATOR_SCALE : 1)
-      out.push({ key, name: slot.name, spectator: slot.spectator, local: false, pos: { x: slot.pos.x, y: slot.pos.y + TAG_HEIGHT * scale, z: slot.pos.z }, scale })
+      out.push({ key, name: slot.name, spectator: slot.spectator, own: false, pos: { x: slot.pos.x, y: slot.pos.y + TAG_HEIGHT * scale, z: slot.pos.z }, scale })
     }
     return out
   }

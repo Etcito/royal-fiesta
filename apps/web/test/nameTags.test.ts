@@ -20,7 +20,7 @@ test('projectPoint: the target is the centre, +x is right, +y is up, behind the 
 })
 
 test('tagText: a spectator says so', () => {
-  const base = { key: 1, name: 'Ann', spectator: false, local: false, pos: { x: 0, y: 0, z: 0 }, scale: 1 }
+  const base = { key: 1, name: 'Ann', spectator: false, own: false, pos: { x: 0, y: 0, z: 0 }, scale: 1 }
   assert.equal(tagText(base), 'Ann')
   assert.equal(tagText({ ...base, spectator: true }), 'Ann (watching)')
 })

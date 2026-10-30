@@ -80,7 +80,7 @@ export class NameTags {
         }
         const text = tagText(tag)
         if (el.textContent !== text) el.textContent = text
-        el.style.color = tag.local ? '#ffe36b' : tag.spectator ? '#c9d2e6' : '#fff'
+        el.style.color = tag.own ? '#ffe36b' : tag.spectator ? '#c9d2e6' : '#fff'
         el.style.fontStyle = tag.spectator ? 'italic' : 'normal'
         // Nearer beans get bigger tags, within reason; arriving and leaving ones fade with their bean.
         const k = Math.max(0.6, Math.min(1.3, 12 / sp.depth)) * Math.min(1, tag.scale)

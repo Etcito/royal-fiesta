@@ -54,9 +54,9 @@ const TOUR: readonly Leg[] = [
   { acts: [{ click: 'act-retry' }], to: 'loading', capture: true, timeoutS: 10 },
   { acts: [], to: 'title', capture: false, timeoutS: 120 },
   { acts: [{ click: 'act-settings' }], to: 'settings', capture: true, timeoutS: 10 },
-  { acts: [{ dom: '#open-remap' }], to: 'settings', until: 'remap-open', capture: false, timeoutS: 10 },
-  { acts: [{ key: 'Enter' }], to: 'settings', until: 'remap-open', name: 'settings-controls', capture: true, timeoutS: 10 },
-  { acts: [{ key: 'Escape' }, { key: 'Escape' }], to: 'settings', until: 'remap-closed', capture: false, timeoutS: 10 },
+  // Captured idle, as opened: Enter there would start listening and hide the focused row's button.
+  { acts: [{ dom: '#open-remap' }], to: 'settings', until: 'remap-open', name: 'settings-controls', capture: true, timeoutS: 10 },
+  { acts: [{ key: 'Escape' }], to: 'settings', until: 'remap-closed', capture: false, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: true, timeoutS: 10 },
   { acts: [{ click: 'act-credits' }], to: 'credits', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },

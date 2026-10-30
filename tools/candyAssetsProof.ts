@@ -5,10 +5,12 @@ import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { repoRoot } from './bricks.ts'
 import { pageRefOf } from './judgeCard.ts'
+import { writeProofLog } from './proofLog.ts'
 
 const root = repoRoot()
 const page = join(root, 'out/candy-assets-page')
 const proof = join(root, 'proofs/m2/candy-assets')
+const shots = join(root, 'out/m2/candy-assets')
 const inputDir = join(root, 'out/candy-assets-inputs')
 
 // Each individual step is bounded. The card runner owns the longer, sequential workflow.
@@ -22,7 +24,7 @@ async function run(command: string, args: string[], label: string, timeout = 600
     child.stderr.on('data', (b: Buffer) => { stderr += b.toString(); process.stderr.write(b) })
     child.once('error', reject)
     child.once('close', code => {
-      writeFileSync(join(proof, `${label}.txt`), stdout + stderr)
+      writeProofLog(join(proof, `${label}.txt`), stdout + stderr, root)
       if (code !== 0) reject(new Error(`${label} exited ${code}; see proofs/m2/candy-assets/${label}.txt`))
       else resolve(stdout)
     })
@@ -34,6 +36,7 @@ async function main(): Promise<void> {
   const judge = process.env.NMC_JUDGE_CLIENT
   if (!gpu || !judge) throw new Error('Run on the programmatic card with NMC_GPU_CLIENT and NMC_JUDGE_CLIENT')
   mkdirSync(proof, { recursive: true })
+  mkdirSync(shots, { recursive: true })
   // A re-run of this one command (programmatic retry, fix-card quick check) does not run sdf-port-build first.
   if (!existsSync(join(root, 'apps/web/dist/candy-assets.html'))) await run('npm', ['run', 'build'], 'web-build', 600000)
   if (!existsSync(join(root, 'apps/web/dist/candy-assets.html'))) {
@@ -49,7 +52,7 @@ async function main(): Promise<void> {
   const captures = [
     { label: 'blank-probe', input: { probe: true }, dir: join(root, 'out/candy-assets-probe') },
     { label: 'one-asset-probe', input: { firstAsset: true, width: 320, height: 240 }, dir: join(root, 'out/candy-assets-one') },
-    { label: 'asset-views', input: { width: 1280, height: 960 }, dir: proof },
+    { label: 'asset-views', input: { width: 1280, height: 960 }, dir: shots },
   ]
   for (const c of captures) {
     const inputPath = join(inputDir, `${c.label}.json`)
@@ -63,9 +66,9 @@ async function main(): Promise<void> {
     ['candy.mech-plate-limit', 'An isolated square candy pressure plate with its pink platform, mint panels and lemon yellow centre stripe pressed slightly below its surrounding sky blue and pink fixed frame. The square platform and frame remain intact, with no missing or black geometry.'],
   ]
   for (const [name, description] of descriptions) {
-    await run('python3', [judge, join(proof, `${name}.png`), '--description', description, '--min-score', '6'], `judge-${name}`)
+    await run('python3', [judge, join(shots, `${name}.png`), '--description', description, '--min-score', '6'], `judge-${name}`)
   }
-  console.log('[candy-assets] four dedicated asset views passed; PNGs, result.json and judge logs in proofs/m2/candy-assets/')
+  console.log('[candy-assets] four dedicated asset views passed; PNGs and result.json in out/m2/candy-assets/, text logs in proofs/m2/candy-assets/')
 }
 
 await main()

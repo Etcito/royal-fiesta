@@ -20,7 +20,7 @@ fiesta.jump 8 variants 3.43 s 55296 B
 fiesta.squash 8 variants 2.81 s 45696 B
 fiesta.wobble 8 variants 5.39 s 86784 B
 total 9 families 72 variants 79.58 s 1277952 B
-baked 9 families into /root/nmc/worktrees/81/6029/apps/web/public/audio in 7.4 s
+baked 9 families into apps/web/public/audio in 7.4 s
 
 > ui:fonts
 > node --experimental-strip-types tools/uiFont.ts bundle
@@ -102,11 +102,11 @@ dist/assets/game-Qi04cfBO.js                     1,497.14 kB │ gzip:   373.17 
 dist/assets/world-BCm36RfC.js                    4,369.80 kB │ gzip: 1,678.72 kB
 
 ✓ built in 1.56s
-[plugin rolldown:vite-resolve] Module "node:fs/promises" has been externalized for browser compatibility, imported by "/root/nmc/worktrees/81/raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
-[plugin rolldown:vite-resolve] Module "node:url" has been externalized for browser compatibility, imported by "/root/nmc/worktrees/81/raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
-[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/root/nmc/worktrees/81/raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
-[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "/root/nmc/worktrees/81/MAMA/node_modules/manifold-3d/manifold.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
-[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "/root/nmc/worktrees/81/MAMA/node_modules/highs/build/highs.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:fs/promises" has been externalized for browser compatibility, imported by "../raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:url" has been externalized for browser compatibility, imported by "../raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "../raa/dist/bricks/raa-anim/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "../MAMA/node_modules/manifold-3d/manifold.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "../MAMA/node_modules/highs/build/highs.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
 [33m[INEFFECTIVE_DYNAMIC_IMPORT] [0m../../../MAMA/src/core/lowpoly/qem.ts is dynamically imported by ../../../MAMA/src/core/paramesh/relaxed-mesh.ts, ../../../MAMA/src/core/paramesh/viewport-mesh.ts but also statically imported by ../../../MAMA/src/core/bake/textured-export.ts, ../../../MAMA/src/core/lowpoly/decimate.ts, dynamic import will not move module into another chunk.
 
 [33m[INEFFECTIVE_DYNAMIC_IMPORT] [0m../../../MAMA/packages/quadmesh/dist/stages/index.js is dynamically imported by ../../../MAMA/packages/quadmesh/dist/stages/quad-csg-layout-default.js but also statically imported by ../../../MAMA/packages/quadmesh/dist/index.js, ../../../MAMA/packages/quadmesh/dist/pipeline/run.js, dynamic import will not move module into another chunk.

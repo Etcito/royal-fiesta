@@ -269,8 +269,8 @@ function mechanismPlaza(): ResolvedCourse {
   const origin = { x: 0, y: 0, z: 0 }
   const rotation = { x: 0, y: 0, z: 0, w: 1 }
   const scale = { x: 1, y: 1, z: 1 }
-  const body = (id: string, type: BodySpec['type'], y: number): BodySpec => ({
-    id, type, rest: { t: { x: 0, y, z: 0 }, r: rotation },
+  const body = (id: string, type: BodySpec['type'], y: number, x = 0): BodySpec => ({
+    id, type, rest: { t: { x, y, z: 0 }, r: rotation },
     colliders: [{ shape: 'cuboid', half: { x: 1.5, y: 0.15, z: 1.5 }, t: origin, r: rotation }],
     density: 20, friction: 0.6, restitution: 0, linearDamping: 0, angularDamping: 0.05,
     gravityScale: 1, ccd: true, surface: 'normal',
@@ -290,7 +290,7 @@ function mechanismPlaza(): ResolvedCourse {
         { id: 'platform', asset: 'platform', t: origin, r: rotation, s: scale,
           bodies: [body('platform', 'kinematic', 0)], joints: [] },
         { id: 'spring-pad', asset: 'spring-pad', t: { x: 6, y: 0, z: 0 }, r: rotation, s: scale,
-          bodies: [body('base', 'fixed', -0.5), body('pad', 'dynamic', 0.5)],
+          bodies: [body('base', 'fixed', -0.5, 6), body('pad', 'dynamic', 0.5, 6)],
           joints: [
             { id: 'guide', kind: 'slider', a: { item: 1, body: 0 }, b: { item: 1, body: 1 },
               anchorA: { x: 0, y: 1, z: 0 }, anchorB: origin, axis: { x: 0, y: 1, z: 0 },

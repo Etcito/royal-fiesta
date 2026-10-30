@@ -5,14 +5,10 @@ import { G, groups } from '../groups.ts'
 import type { BodySpec, MechItem } from '../mechanismSpec.ts'
 import { colliderDesc } from '../obstacles/colliders.ts'
 import { refuse } from '../refusal.ts'
-import { add3, pose as newPose, quatMul, quatNormalize, quatRotate } from '../vec.ts'
 import type { Pose } from '../vec.ts'
 import type { WorldCtx } from '../world.ts'
 
 const COLLIDE_WITH = G.CHAR | G.DEBRIS | G.PROBE | G.MOVING | G.STATIC
-
-// Scratch pose for createBody; never part of sim state.
-const scratchPose: Pose = newPose()
 
 // Volume in m3, so mass = density * sum of the body's collider volumes.
 export function colliderVolume(c: ColliderSpec): number {
@@ -40,13 +36,12 @@ export function colliderVolume(c: ColliderSpec): number {
   }
 }
 
-// One Rapier body for a mechanism body, posed at itemPose ∘ rest.
-// `rest` is item-local: the S12 body pose relative to the asset origin, with
-// the item scale already baked into it and into the colliders by the loader.
-// `itemPose` is the item's course placement (item.t, item.r), so the composed
-// pose is in course space. `type` is fixed here and never changed later: a
+// One Rapier body for a mechanism body, posed at its loaded rest pose.
+// The loader has already placed `rest` in course space and scaled the colliders.
+// Applying the item pose again would move physics away from the rendered parts.
+// `type` is fixed here and never changed later: a
 // kinematic body is kinematicPositionBased for its whole life.
-export function createBody(ctx: WorldCtx<unknown>, item: MechItem, b: BodySpec, itemPose: Pose): BodyId {
+export function createBody(ctx: WorldCtx<unknown>, item: MechItem, b: BodySpec, _itemPose: Pose): BodyId {
   const where = `mechanisms/items/${item.id}/bodies/${b.id}`
   if (!(b.density > 0) || !Number.isFinite(b.density)) {
     refuse('mechanisms', where, `density ${b.density} is not a positive finite kg/m3; pass density > 0`)
@@ -68,10 +63,7 @@ export function createBody(ctx: WorldCtx<unknown>, item: MechItem, b: BodySpec, 
       return refuse('mechanisms', where, `unknown body type '${bad as string}'; use dynamic, kinematic or fixed`)
     }
   }
-  const p = scratchPose
-  quatRotate(itemPose.r, b.rest.t, p.t)
-  add3(itemPose.t, p.t, p.t)
-  quatNormalize(quatMul(itemPose.r, b.rest.r, p.r), p.r)
+  const p = b.rest
   desc.setTranslation(p.t.x, p.t.y, p.t.z)
   desc.setRotation({ x: p.r.x, y: p.r.y, z: p.r.z, w: p.r.w })
   desc.setLinearDamping(b.linearDamping)

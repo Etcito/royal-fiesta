@@ -1,9 +1,33 @@
-import { test } from 'node:test'
+import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { CourseV1, DecorItem } from '../../packages/game/src/courseV1.ts'
 import { nodeGameAssets } from '../../apps/headless/src/contentFiles.ts'
 import { decorProblems, generatedCourse, loadAuthoredCourse, playSprint, simDiff } from '../courseProbe.ts'
+import { buildContent } from '../placeholders.ts'
+import { contentDir } from '../content.ts'
+
+const previousContent = process.env.RF_CONTENT_DIR
+let fixtureRoot: string
+before(async () => {
+  // These legacy parity probes need the generated courses and their matching
+  // primitive assets together; shipped candy assets now have mechanism physics.
+  fixtureRoot = mkdtempSync(join(tmpdir(), 'rf-course-probe-'))
+  cpSync(join(contentDir(), 'assets'), join(fixtureRoot, 'assets'), { recursive: true })
+  for (const [rel, text] of await buildContent({ files: [] })) {
+    mkdirSync(dirname(join(fixtureRoot, rel)), { recursive: true })
+    writeFileSync(join(fixtureRoot, rel), text)
+  }
+  process.env.RF_CONTENT_DIR = fixtureRoot
+})
+after(() => {
+  if (previousContent === undefined) delete process.env.RF_CONTENT_DIR
+  else process.env.RF_CONTENT_DIR = previousContent
+  if (fixtureRoot) rmSync(fixtureRoot, { recursive: true, force: true })
+})
 
 const item = (n: number, asset: string, t: [number, number, number]): DecorItem =>
   ({ id: `d-${n}`, asset, t, r: [0, 0, 0, 1], s: [1, 1, 1] })

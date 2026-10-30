@@ -6,7 +6,7 @@ import { emptyMechanisms } from '../mechanismSpec.ts'
 import type { BodyRef, JointSpec, MechEventKind, MechanismSpec, MotorSpec } from '../mechanismSpec.ts'
 import { ObstacleSystem } from '../obstacles/system.ts'
 import { refuse } from '../refusal.ts'
-import { add3, pose, quatMul, quatRotate } from '../vec.ts'
+import { add3, pose, quatMul } from '../vec.ts'
 import type { Pose } from '../vec.ts'
 import { FiestaWorld } from '../world.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
@@ -79,12 +79,9 @@ export class MechLogicSystem implements SimSystem<unknown> {
       this.#animations.push(animationKind(m, i) === 'tick' ? null : {
         running: a.autostart ? 1 : 0, dir: 1, localTick: 0,
       })
-      const item = m.items[a.target.item], body = item.bodies[a.target.body]
-      const rest = pose()
-      quatRotate(item.r, body.rest.t, rest.t)
-      add3(item.t, rest.t, rest.t)
-      quatMul(item.r, body.rest.r, rest.r)
-      this.#rests.push(rest)
+      const body = m.items[a.target.item].bodies[a.target.body]
+      // S13 body rest poses already include the item's course placement.
+      this.#rests.push({ t: { ...body.rest.t }, r: { ...body.rest.r } })
     }
   }
 

@@ -6,7 +6,7 @@ import { emptyMechanisms } from '../src/mechanismSpec.ts'
 import type { BodySpec, JointSpec, MechItem, MotorSpec } from '../src/mechanismSpec.ts'
 import { createMechanismWorld } from '../src/mechanisms/preview.ts'
 import { MechanismSystem } from '../src/mechanisms/system.ts'
-import { pose } from '../src/vec.ts'
+import { add3, pose, quatMul, quatRotate } from '../src/vec.ts'
 
 const R = await initRapier()
 const O = { x: 0, y: 0, z: 0 }
@@ -111,6 +111,13 @@ test('L12: rotating an item 90° rotates its body positions', () => {
     body('b', { rest: { t: { x: 0, y: 0, z: 3 }, r: I } })])
   item.t = { x: 10, y: 5, z: 20 }
   item.r = { x: 0, y: Math.SQRT1_2, z: 0, w: Math.SQRT1_2 }
+  // Match the loader boundary: converted body rest poses are in course space.
+  for (const b of item.bodies) {
+    b.rest = {
+      t: add3(item.t, quatRotate(item.r, b.rest.t, { ...O }), { ...O }),
+      r: quatMul(item.r, b.rest.r, { ...I }),
+    }
+  }
   const f = make(item)
   try {
     for (const [index, expected] of [[0, [10, 5, 18]], [1, [13, 5, 20]]] as const) {

@@ -1,0 +1,92 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "jungle",
+  "id": "jungle-crane-crossing",
+  "name": "Jungle Crane Crossing",
+  "kind": "race",
+  "profiles": ["sprint","standard"],
+  "timeLimitS": 120,
+  "killPlaneY": -12,
+  "spawns": [
+    {"t":[-1.5,4.45,-0.5],"yawDeg":0},
+    {"t":[-0.5,4.45,-0.5],"yawDeg":0},
+    {"t":[0.5,4.45,-0.5],"yawDeg":0},
+    {"t":[1.5,4.45,-0.5],"yawDeg":0},
+    {"t":[-1.5,4.45,1],"yawDeg":0},
+    {"t":[-0.5,4.45,1],"yawDeg":0},
+    {"t":[0.5,4.45,1],"yawDeg":0},
+    {"t":[1.5,4.45,1],"yawDeg":0}
+  ],
+  "checkpoints": [
+    {"center":[0,4.95,20],"half":[2,2,0.75],"respawn":{"t":[0,4.45,21],"yawDeg":0}},
+    {"center":[0,4.95,29],"half":[2,2,0.75],"respawn":{"t":[0,4.45,30],"yawDeg":0}},
+    {"center":[0,4.95,42],"half":[2,2,0.75],"respawn":{"t":[0,4.45,43],"yawDeg":0}}
+  ],
+  "finish": {"center":[0,4.95,50],"half":[2,2,1]},
+  "path": [
+    {"p":[0,4.45,1],"jump":false,"dive":false},
+    {"p":[0,4.45,5],"jump":false,"dive":false},
+    {"p":[0,4.45,8.5],"jump":false,"dive":false},
+    {"p":[0,4.45,11],"jump":true,"dive":false},
+    {"p":[0,4.45,14],"jump":false,"dive":false},
+    {"p":[0,4.45,17],"jump":true,"dive":false},
+    {"p":[0,4.45,20],"jump":false,"dive":false},
+    {"p":[0,4.45,23],"jump":false,"dive":false},
+    {"p":[0.5,4.45,26],"jump":false,"dive":false,"pull":"crane-lever"},
+    {"p":[0,4.45,30],"jump":false,"dive":false,"wait":"crane-toggle"},
+    {"p":[0,4.45,33],"jump":true,"dive":false},
+    {"p":[-1.25,4.45,36],"jump":true,"dive":false},
+    {"p":[-1.25,4.45,39],"jump":false,"dive":false},
+    {"p":[0,4.45,42],"jump":false,"dive":false},
+    {"p":[0,4.45,46],"jump":false,"dive":false},
+    {"p":[0,4.45,51],"jump":false,"dive":false}
+  ],
+  "regions": [
+    {"id":0,"center":[0,4,3],"half":[7,10,7],"adjacent":[1]},
+    {"id":1,"center":[0,4,14],"half":[7,10,4],"adjacent":[0,2]},
+    {"id":2,"center":[0,4,25],"half":[7,10,7],"adjacent":[1,3]},
+    {"id":3,"center":[0,4,36],"half":[7,10,4],"adjacent":[2,4]},
+    {"id":4,"center":[0,4,47],"half":[7,10,7],"adjacent":[3]}
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {"id":"floor-start","asset":"jungle.floor-tile","t":[0,2.95,1.5],"r":[0,0,0,1],"s":[0.4,1,0.9],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"mud","asset":"jungle.floor-tile","t":[0,2.95,6.6],"r":[0,0,0,1],"s":[0.4,1,0.12],"friction":0.8,"surface":"mud","motion":{"kind":"static"},"colliders":null},
+    {"id":"floor-bridge-entry","asset":"jungle.floor-tile","t":[0,2.95,8.7],"r":[0,0,0,1],"s":[0.4,1,0.3],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"floor-lever","asset":"jungle.floor-tile","t":[0,2.95,25],"r":[0,0,0,1],"s":[0.4,1,1.44],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"floor-finish","asset":"jungle.floor-tile","t":[0,2.95,43],"r":[0,0,0,1],"s":[0.4,1,1.84],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"crane-footing","asset":"jungle.floor-tile","t":[0,-0.5,38],"r":[0,0,0,1],"s":[0.18,1,0.18],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"wall-left-start","asset":"jungle.wall-block","t":[-2.5,4.45,3],"r":[0,0,0,1],"s":[1,1,1],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"wall-right-start","asset":"jungle.wall-block","t":[2.5,4.45,3],"r":[0,0,0,1],"s":[1,1,1],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"wall-left-lever","asset":"jungle.wall-block","t":[-2.5,4.45,25],"r":[0,0,0,1],"s":[1,1,1.4],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"wall-right-lever","asset":"jungle.wall-block","t":[2.5,4.45,25],"r":[0,0,0,1],"s":[1,1,1.4],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"wall-left-finish","asset":"jungle.wall-block","t":[-2.5,4.45,43],"r":[0,0,0,1],"s":[1,1,1.84],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"wall-right-finish","asset":"jungle.wall-block","t":[2.5,4.45,43],"r":[0,0,0,1],"s":[1,1,1.84],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"vine-bridge","asset":"jungle.vine-bridge","t":[0,3.33,14],"r":[0,0,0,1],"s":[1,1,1],"friction":0.85,"motion":{"kind":"static"},"colliders":null},
+    {"id":"lever","asset":"candy.mech-lever","t":[1.25,3.45,26],"r":[0,0,0,1],"s":[1,1,1],"friction":0.6,"motion":{"kind":"static"},"colliders":null},
+    {"id":"crane","asset":"jungle.crane-arm","t":[0,0,38],"r":[0,0,0,1],"s":[1,1,1],"friction":0.8,"motion":{"kind":"static"},"colliders":null},
+    {"id":"checkpoint-1","asset":"candy.checkpoint-gate","t":[0,3.45,20],"r":[0,0,0,1],"s":[0.7272727272727273,1,1],"friction":0.6,"motion":{"kind":"static"},"colliders":null},
+    {"id":"checkpoint-2","asset":"candy.checkpoint-gate","t":[0,3.45,29],"r":[0,0,0,1],"s":[0.7272727272727273,1,1],"friction":0.6,"motion":{"kind":"static"},"colliders":null},
+    {"id":"checkpoint-3","asset":"candy.checkpoint-gate","t":[0,3.45,42],"r":[0,0,0,1],"s":[0.7272727272727273,1,1],"friction":0.6,"motion":{"kind":"static"},"colliders":null},
+    {"id":"finish-arch","asset":"candy.finish-arch","t":[0,3.45,50],"r":[0,0,0,1],"s":[0.5555555555555556,1,1],"friction":0.6,"motion":{"kind":"static"},"colliders":null}
+  ],
+  "decor": [],
+  "environment": {"sky":"jungle"},
+  "podium": null,
+  "mechanisms": {
+    "joints": [],
+    "switches": [],
+    "levers": [{"id":"crane-lever","handle":{"item":"lever","body":"handle"},"joint":"pivot","onDeg":15,"offDeg":5,"grabRangeM":1.5}],
+    "logic": [{"id":"crane-toggle","op":"toggle","inputs":["crane-lever"]}],
+    "animations": [],
+    "links": [{"id":"crane-motor","from":"crane-toggle","to":{"kind":"motor","joint":"crane/pivot","on":{"mode":"target","targetDeg":90,"stiffness":250000,"damping":50000,"maxForce":1200000,"enabled":true},"off":{"mode":"target","targetDeg":0,"stiffness":250000,"damping":50000,"maxForce":1200000,"enabled":true}}}],
+    "budget": {"dynamicBodies":24,"joints":32}
+  },
+  "sounds": [
+    {"id":"crank","patch":"jungle-crank","item":"crane","t":[0,0,0],"event":null,"signal":"crane-toggle","gain":1,"refM":2,"maxM":60,"loop":true},
+    {"id":"click-lever-on","patch":"mech-click","item":"lever","t":[0,0,0],"event":"leverOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-lever-off","patch":"mech-click","item":"lever","t":[0,0,0],"event":"leverOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"thud","patch":"mech-thud","item":null,"t":[0,3.45,33],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
+  ]
+}

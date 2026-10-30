@@ -14,7 +14,7 @@ import { motionPose } from '../obstacles/motion.ts'
 import { TAU } from '../detmath.ts'
 import type { BotBehaviour, PhaseWindow } from './behaviour.ts'
 import { bindBehaviour } from './behaviour.ts'
-import { obstaclePhase } from './courseRead.ts'
+import { leverByPull, obstaclePhase } from './courseRead.ts'
 import type { RoutePlan } from './routes.ts'
 
 // Pure: reads only its arguments, so view-side pilots can share it.
@@ -25,6 +25,11 @@ const JUMP_DIST = 2
 const STUCK_MOVE = 0.02
 const STUCK_TICKS = 30
 const FINISH_DIVE_DIST = 3
+const WAIT_MAX = 600
+const PULL_MAX = 240
+// The lever toggles on a grab press shorter than 12 ticks: hold 4, release 8.
+const PRESS_TICKS = 4
+const PRESS_CYCLE = 12
 const RETARGET_TICKS = 120
 const RETARGET_RANDOM = 0.25
 const ARRIVE_DIST = 0.5
@@ -51,14 +56,21 @@ export function rollSkill(rng: Rng): BotSkill {
   return { reactionTicks, aimError, jumpLead, diveChance }
 }
 
-// ticks drives the wobble (45) and survival re-target (120) cadences.
-export interface BrainMemory { pathIndex: number; stuckTicks: number; lastX: number; lastZ: number; wobble: number; ticks: number }
+// ticks drives the wobble (45) and survival re-target (120) cadences; waitTicks counts a
+// wait hold (600 max) and a pull press sequence (240 max).
+export interface BrainMemory { pathIndex: number; stuckTicks: number; lastX: number; lastZ: number; wobble: number; ticks: number; waitTicks: number }
 
 export function newMemory(): BrainMemory {
-  return { pathIndex: 0, stuckTicks: 0, lastX: 0, lastZ: 0, wobble: 0, ticks: 0 }
+  return { pathIndex: 0, stuckTicks: 0, lastX: 0, lastZ: 0, wobble: 0, ticks: 0, waitTicks: 0 }
 }
 
-export interface BrainInput { course: ResolvedCourse; pos: Vec3; vel: Vec3; facing: { x: number; z: number }; grounded: boolean; mode: number; obstacleAhead: boolean; hazardNear: boolean; bot?: { behaviour: BotBehaviour; route: RoutePlan; localTick: number } }
+export interface BrainInput {
+  course: ResolvedCourse; pos: Vec3; vel: Vec3; facing: { x: number; z: number }; grounded: boolean; mode: number
+  obstacleAhead: boolean; hazardNear: boolean
+  // Absent callbacks read as false, so view-side pilots compile and run unchanged.
+  signalOn?: (id: string) => boolean; leverNear?: (id: string) => boolean
+  bot?: { behaviour: BotBehaviour; route: RoutePlan; localTick: number }
+}
 
 const scratch: PlayerInput = { moveX: 0, moveZ: 0, jump: false, dive: false, grab: false }
 const sc: SinCos = { s: 0, c: 0 }
@@ -72,15 +84,16 @@ function trackStuck(b: BrainInput, mem: BrainMemory): void {
   mem.lastZ = b.pos.z
 }
 
-// Buttons are pulsed on even ticks so a held condition still yields press edges.
-function emit(dx: number, dz: number, jump: boolean, dive: boolean, tick: number): number {
+// Buttons are pulsed on even ticks so a held condition still yields press edges. Grab is
+// driven directly: a lever press is held for a deliberate run of ticks.
+function emit(dx: number, dz: number, jump: boolean, dive: boolean, tick: number, grab = false): number {
   const len = Math.sqrt(dx * dx + dz * dz)
   const pulse = (tick & 1) === 0
   scratch.moveX = len > 1e-6 ? dx / len : 0
   scratch.moveZ = len > 1e-6 ? dz / len : 0
   scratch.jump = jump && pulse
   scratch.dive = dive && pulse
-  scratch.grab = false
+  scratch.grab = grab
   return encodeInput(scratch)
 }
 
@@ -102,8 +115,52 @@ export function raceBrain(b: BrainInput, skill: BotSkill, mem: BrainMemory, rng:
   let dx = node.p.x - b.pos.x
   let dz = node.p.z - b.pos.z
   let dist = Math.sqrt(dx * dx + dz * dz)
-  if (dist < ADVANCE_DIST && mem.pathIndex < path.length - 1) {
+  // A wait/pull node is not skipped by the plain advance: its mechanism rule owns it.
+  const lever = node.pull === undefined ? null : leverByPull(b.course, node.pull)
+  const gated = node.wait !== undefined || lever !== null
+  if (!gated && dist < ADVANCE_DIST && mem.pathIndex < path.length - 1) {
     mem.pathIndex++
+    node = path[mem.pathIndex]
+    dx = node.p.x - b.pos.x
+    dz = node.p.z - b.pos.z
+    dist = Math.sqrt(dx * dx + dz * dz)
+  }
+
+  // L11 mechanism rules, after the path-advance step and before steering. A wait node
+  // holds the bot (neutral input) until its signal is on, at most WAIT_MAX ticks. A pull
+  // node walks to the lever handle and presses it in short bursts until its signal is on,
+  // at most PULL_MAX ticks. A missing lever or a course without mechanisms is a plain node.
+  let advanced = false
+  if (node.wait !== undefined && dist < ADVANCE_DIST) {
+    if (!(b.signalOn?.(node.wait) ?? false) && mem.waitTicks < WAIT_MAX) {
+      mem.waitTicks++
+      return NEUTRAL_CODE
+    }
+    mem.waitTicks = 0
+    if (mem.pathIndex < path.length - 1) { mem.pathIndex++; advanced = true }
+  } else if (lever !== null && node.pull !== undefined) {
+    const pull = node.pull
+    if (b.signalOn?.(pull) ?? false) {
+      // Already on: advancing avoids grabbing it back off.
+      mem.waitTicks = 0
+      if (mem.pathIndex < path.length - 1) { mem.pathIndex++; advanced = true }
+    } else if (mem.waitTicks >= PULL_MAX) {
+      mem.waitTicks = 0
+      if (mem.pathIndex < path.length - 1) { mem.pathIndex++; advanced = true }
+    } else {
+      if (b.leverNear?.(pull) ?? false) {
+        // Stand still and press: 4 ticks held, 8 released, so the lever sees 1..11.
+        const grab = mem.waitTicks % PRESS_CYCLE < PRESS_TICKS
+        mem.waitTicks++
+        return emit(0, 0, false, false, tick, grab)
+      }
+      mem.waitTicks++
+      dx = lever.rest.x - b.pos.x
+      dz = lever.rest.z - b.pos.z
+      dist = Math.sqrt(dx * dx + dz * dz)
+    }
+  }
+  if (advanced) {
     node = path[mem.pathIndex]
     dx = node.p.x - b.pos.x
     dz = node.p.z - b.pos.z

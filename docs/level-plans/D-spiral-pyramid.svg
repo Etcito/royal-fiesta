@@ -1,0 +1,468 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="2240" viewBox="0 0 1900 2240" font-family="Arial, Helvetica, sans-serif"><rect width="100%" height="100%" fill="#f5f3ed"/>
+<rect x="0.00" y="0.00" width="1900.00" height="130.00" rx="0" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="65.00" y="53.00" font-size="32" fill="#fff" text-anchor="start" font-weight="700">D / Spiral of Mischief</text>
+<text x="65.00" y="91.00" font-size="18" fill="#d5e4ed" text-anchor="start" font-weight="400">One continuous square spiral, with narrower upper turns and visible chutes back to earlier ramp sections.</text>
+<text x="1830.00" y="52.00" font-size="16" fill="#d5e4ed" text-anchor="end" font-weight="700">ROYAL FIESTA</text>
+<text x="1830.00" y="82.00" font-size="13" fill="#b7ccda" text-anchor="end" font-weight="400">LEVEL STUDY / 31 OCT 2026</text>
+<rect x="105.00" y="150.00" width="1040.00" height="1040.00" rx="6" fill="#e2e8eb" stroke="#b6c0c8" stroke-width="1"/>
+<polyline points="711.67,236.67 711.67,1086.00" fill="none" stroke="#67b7b5" stroke-width="26.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.25"/>
+<polyline points="711.67,236.67 711.67,1086.00" fill="none" stroke="#2d7372" stroke-width="2.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.9" stroke-dasharray="10 8"/>
+<line x1="711.67" y1="448.13" x2="711.67" y2="491.47" stroke="#2d7372" stroke-width="2"/>
+<path d="M708.2,484.3 L711.7,491.5 L715.1,484.3" fill="none" stroke="#2d7372" stroke-width="2"/>
+<line x1="711.67" y1="872.80" x2="711.67" y2="916.13" stroke="#2d7372" stroke-width="2"/>
+<path d="M708.2,908.9 L711.7,916.1 L715.1,908.9" fill="none" stroke="#2d7372" stroke-width="2"/>
+<text x="711.67" y="1079.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">H1 → base</text>
+<polyline points="902.33,774.00 1041.00,774.00" fill="none" stroke="#67b7b5" stroke-width="26.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.25"/>
+<polyline points="902.33,774.00 1041.00,774.00" fill="none" stroke="#2d7372" stroke-width="2.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.9" stroke-dasharray="10 8"/>
+<line x1="942.20" y1="774.00" x2="985.53" y2="774.00" stroke="#2d7372" stroke-width="2"/>
+<path d="M978.3,777.5 L985.5,774.0 L978.3,770.5" fill="none" stroke="#2d7372" stroke-width="2"/>
+<polyline points="902.33,635.33 1041.00,635.33" fill="none" stroke="#67b7b5" stroke-width="26.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.25"/>
+<polyline points="902.33,635.33 1041.00,635.33" fill="none" stroke="#2d7372" stroke-width="2.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.9" stroke-dasharray="10 8"/>
+<line x1="942.20" y1="635.33" x2="985.53" y2="635.33" stroke="#2d7372" stroke-width="2"/>
+<path d="M978.3,638.8 L985.5,635.3 L978.3,631.9" fill="none" stroke="#2d7372" stroke-width="2"/>
+<polyline points="902.33,496.67 1041.00,496.67" fill="none" stroke="#67b7b5" stroke-width="26.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.25"/>
+<polyline points="902.33,496.67 1041.00,496.67" fill="none" stroke="#2d7372" stroke-width="2.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.9" stroke-dasharray="10 8"/>
+<line x1="942.20" y1="496.67" x2="985.53" y2="496.67" stroke="#2d7372" stroke-width="2"/>
+<path d="M978.3,500.1 L985.5,496.7 L978.3,493.2" fill="none" stroke="#2d7372" stroke-width="2"/>
+<polyline points="633.67,375.33 633.67,254.00" fill="none" stroke="#67b7b5" stroke-width="26.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.25"/>
+<polyline points="633.67,375.33 633.67,254.00" fill="none" stroke="#2d7372" stroke-width="2.00" stroke-linejoin="round" stroke-linecap="round" opacity="0.9" stroke-dasharray="10 8"/>
+<line x1="633.67" y1="345.87" x2="633.67" y2="302.53" stroke="#2d7372" stroke-width="2"/>
+<path d="M637.1,309.7 L633.7,302.5 L630.2,309.7" fill="none" stroke="#2d7372" stroke-width="2"/>
+<text x="633.67" y="247.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">H2 → outer</text>
+<polyline points="581.67,1086.00 1041.00,1086.00" fill="none" stroke="#81909b" stroke-width="106.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="581.67,1086.00 1041.00,1086.00" fill="none" stroke="#f3dfaf" stroke-width="104.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="1041.00,1086.00 1041.00,254.00" fill="none" stroke="#81909b" stroke-width="88.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="1041.00,1086.00 1041.00,254.00" fill="none" stroke="#f3dfaf" stroke-width="86.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="1041.00,254.00 209.00,254.00" fill="none" stroke="#81909b" stroke-width="88.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="1041.00,254.00 209.00,254.00" fill="none" stroke="#f3dfaf" stroke-width="86.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="209.00,254.00 209.00,947.33" fill="none" stroke="#81909b" stroke-width="88.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="209.00,254.00 209.00,947.33" fill="none" stroke="#f3dfaf" stroke-width="86.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="209.00,947.33 902.33,947.33" fill="none" stroke="#81909b" stroke-width="71.33" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="209.00,947.33 902.33,947.33" fill="none" stroke="#f3dfaf" stroke-width="69.33" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="902.33,947.33 902.33,392.67" fill="none" stroke="#81909b" stroke-width="71.33" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="902.33,947.33 902.33,392.67" fill="none" stroke="#f3dfaf" stroke-width="69.33" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="902.33,392.67 347.67,392.67" fill="none" stroke="#81909b" stroke-width="71.33" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="902.33,392.67 347.67,392.67" fill="none" stroke="#f3dfaf" stroke-width="69.33" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="347.67,392.67 347.67,808.67" fill="none" stroke="#81909b" stroke-width="71.33" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="347.67,392.67 347.67,808.67" fill="none" stroke="#f3dfaf" stroke-width="69.33" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="347.67,808.67 763.67,808.67" fill="none" stroke="#81909b" stroke-width="54.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="347.67,808.67 763.67,808.67" fill="none" stroke="#f3dfaf" stroke-width="52.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="763.67,808.67 763.67,531.33" fill="none" stroke="#81909b" stroke-width="54.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="763.67,808.67 763.67,531.33" fill="none" stroke="#f3dfaf" stroke-width="52.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="763.67,531.33 486.33,531.33" fill="none" stroke="#81909b" stroke-width="54.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="763.67,531.33 486.33,531.33" fill="none" stroke="#f3dfaf" stroke-width="52.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="486.33,531.33 486.33,670.00" fill="none" stroke="#81909b" stroke-width="54.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="486.33,531.33 486.33,670.00" fill="none" stroke="#f3dfaf" stroke-width="52.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="486.33,670.00 625.00,670.00" fill="none" stroke="#81909b" stroke-width="54.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="486.33,670.00 625.00,670.00" fill="none" stroke="#f3dfaf" stroke-width="52.00" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<rect x="477.67" y="1034.00" width="208.00" height="138.67" rx="0" fill="#f3dfaf" stroke="#73838e" stroke-width="0.8"/>
+<circle cx="711.67" cy="947.33" r="21.67" fill="#f3b62e" stroke="#7d969f" stroke-width="0.8"/>
+<circle cx="763.67" cy="566.00" r="21.67" fill="#f3b62e" stroke="#7d969f" stroke-width="0.8"/>
+<circle cx="1058.33" cy="843.33" r="34.67" fill="none" stroke="#e46b50" stroke-width="1.5" stroke-dasharray="5 4"/>
+<line x1="1035.80" y1="843.33" x2="1080.87" y2="843.33" stroke="#e46b50" stroke-width="3"/>
+<rect x="1047.93" y="838.13" width="20.80" height="10.40" rx="0" fill="#e46b50" stroke="#203044" stroke-width="0.7"/>
+<circle cx="1058.33" cy="392.67" r="34.67" fill="none" stroke="#e46b50" stroke-width="1.5" stroke-dasharray="5 4"/>
+<line x1="1035.80" y1="392.67" x2="1080.87" y2="392.67" stroke="#e46b50" stroke-width="3"/>
+<rect x="1047.93" y="387.47" width="20.80" height="10.40" rx="0" fill="#e46b50" stroke="#203044" stroke-width="0.7"/>
+<rect x="659.67" y="210.67" width="104.00" height="52.00" rx="0" fill="#354656" stroke="#203044" stroke-width="0.8"/>
+<text x="711.67" y="229.67" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">H1</text>
+<rect x="191.67" y="501.00" width="34.67" height="26.00" rx="0" fill="#e46b50" stroke="#73838e" stroke-width="0.8"/>
+<line x1="191.67" y1="514.00" x2="226.33" y2="514.00" stroke="#203044" stroke-width="3"/>
+<line x1="226.33" y1="514.00" x2="252.33" y2="514.00" stroke="#e46b50" stroke-width="1.5" stroke-dasharray="4 3"/>
+<line x1="252.33" y1="501.00" x2="252.33" y2="527.00" stroke="#e46b50" stroke-width="1.5" stroke-dasharray="4 3"/>
+<rect x="191.67" y="726.33" width="34.67" height="26.00" rx="0" fill="#e46b50" stroke="#73838e" stroke-width="0.8"/>
+<line x1="191.67" y1="739.33" x2="226.33" y2="739.33" stroke="#203044" stroke-width="3"/>
+<line x1="226.33" y1="739.33" x2="252.33" y2="739.33" stroke="#e46b50" stroke-width="1.5" stroke-dasharray="4 3"/>
+<line x1="252.33" y1="726.33" x2="252.33" y2="752.33" stroke="#e46b50" stroke-width="1.5" stroke-dasharray="4 3"/>
+<rect x="460.33" y="930.00" width="121.33" height="34.67" rx="0" fill="#edba56" stroke="#73838e" stroke-width="0.8"/>
+<line x1="501.59" y1="947.33" x2="479.75" y2="947.33" stroke="#8e6423" stroke-width="1.5"/>
+<path d="M487.0,943.9 L479.7,947.3 L487.0,950.8" fill="none" stroke="#8e6423" stroke-width="1.5"/>
+<line x1="531.92" y1="947.33" x2="510.08" y2="947.33" stroke="#8e6423" stroke-width="1.5"/>
+<path d="M517.3,943.9 L510.1,947.3 L517.3,950.8" fill="none" stroke="#8e6423" stroke-width="1.5"/>
+<line x1="562.25" y1="947.33" x2="540.41" y2="947.33" stroke="#8e6423" stroke-width="1.5"/>
+<path d="M547.6,943.9 L540.4,947.3 L547.6,950.8" fill="none" stroke="#8e6423" stroke-width="1.5"/>
+<rect x="581.67" y="358.00" width="104.00" height="34.67" rx="0" fill="#354656" stroke="#203044" stroke-width="0.8"/>
+<text x="633.67" y="368.33" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">H2</text>
+<circle cx="607.67" cy="808.67" r="21.67" fill="none" stroke="#de5b6a" stroke-width="1.5" stroke-dasharray="5 4"/>
+<line x1="586.00" y1="808.67" x2="629.33" y2="808.67" stroke="#de5b6a" stroke-width="4.333333333333333"/>
+<circle cx="607.67" cy="808.67" r="3.47" fill="#203044" stroke="none" stroke-width="1"/>
+<circle cx="763.67" cy="635.33" r="21.67" fill="none" stroke="#de5b6a" stroke-width="1.5" stroke-dasharray="5 4"/>
+<line x1="742.00" y1="635.33" x2="785.33" y2="635.33" stroke="#de5b6a" stroke-width="4.333333333333333"/>
+<circle cx="763.67" cy="635.33" r="3.47" fill="#203044" stroke="none" stroke-width="1"/>
+<rect x="586.00" y="505.33" width="26.00" height="52.00" rx="0" fill="#354656" stroke="#203044" stroke-width="0.8"/>
+<text x="599.00" y="524.33" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">3 m</text>
+<polyline points="798.33,280.00 625.00,280.00" fill="none" stroke="#81909b" stroke-width="36.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="798.33,280.00 625.00,280.00" fill="none" stroke="#c4c0e9" stroke-width="34.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<rect x="867.67" y="756.67" width="69.33" height="34.67" rx="0" fill="#ae77c0" stroke="#73838e" stroke-width="0.8"/>
+<line x1="869.67" y1="758.67" x2="935.00" y2="789.33" stroke="#6d428c" stroke-width="1.5"/>
+<line x1="935.00" y1="758.67" x2="869.67" y2="789.33" stroke="#6d428c" stroke-width="1.5"/>
+<rect x="867.67" y="618.00" width="69.33" height="34.67" rx="0" fill="#ae77c0" stroke="#73838e" stroke-width="0.8"/>
+<line x1="869.67" y1="620.00" x2="935.00" y2="650.67" stroke="#6d428c" stroke-width="1.5"/>
+<line x1="935.00" y1="620.00" x2="869.67" y2="650.67" stroke="#6d428c" stroke-width="1.5"/>
+<rect x="867.67" y="479.33" width="69.33" height="34.67" rx="0" fill="#ae77c0" stroke="#73838e" stroke-width="0.8"/>
+<line x1="869.67" y1="481.33" x2="935.00" y2="512.00" stroke="#6d428c" stroke-width="1.5"/>
+<line x1="935.00" y1="481.33" x2="869.67" y2="512.00" stroke="#6d428c" stroke-width="1.5"/>
+<polyline points="720.33,410.00 547.00,410.00" fill="none" stroke="#81909b" stroke-width="36.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="720.33,410.00 547.00,410.00" fill="none" stroke="#c4c0e9" stroke-width="34.67" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<rect x="321.67" y="522.67" width="52.00" height="121.33" rx="0" fill="#d2a370" stroke="#73838e" stroke-width="0.8"/>
+<line x1="321.67" y1="583.33" x2="373.67" y2="583.33" stroke="#7d572f" stroke-width="2"/>
+<circle cx="347.67" cy="583.33" r="3.00" fill="#7d572f" stroke="none" stroke-width="1"/>
+<circle cx="711.67" cy="1086.00" r="17.33" fill="#67b7b5" stroke="#7d969f" stroke-width="0.8"/>
+<circle cx="1041.00" cy="774.00" r="17.33" fill="#67b7b5" stroke="#7d969f" stroke-width="0.8"/>
+<circle cx="1041.00" cy="635.33" r="17.33" fill="#67b7b5" stroke="#7d969f" stroke-width="0.8"/>
+<circle cx="1041.00" cy="496.67" r="17.33" fill="#67b7b5" stroke="#7d969f" stroke-width="0.8"/>
+<circle cx="633.67" cy="254.00" r="17.33" fill="#67b7b5" stroke="#7d969f" stroke-width="0.8"/>
+<rect x="573.00" y="618.00" width="104.00" height="104.00" rx="0" fill="#e6b925" stroke="#73838e" stroke-width="0.8"/>
+<rect x="573.00" y="618.00" width="8.00" height="12.00" rx="0" fill="#fff" stroke="none" stroke-width="1"/>
+<rect x="573.00" y="630.00" width="8.00" height="12.00" rx="0" fill="#203044" stroke="none" stroke-width="1"/>
+<rect x="573.00" y="642.00" width="8.00" height="12.00" rx="0" fill="#fff" stroke="none" stroke-width="1"/>
+<rect x="573.00" y="654.00" width="8.00" height="12.00" rx="0" fill="#203044" stroke="none" stroke-width="1"/>
+<rect x="573.00" y="666.00" width="8.00" height="12.00" rx="0" fill="#fff" stroke="none" stroke-width="1"/>
+<rect x="573.00" y="678.00" width="8.00" height="12.00" rx="0" fill="#203044" stroke="none" stroke-width="1"/>
+<rect x="573.00" y="690.00" width="8.00" height="12.00" rx="0" fill="#fff" stroke="none" stroke-width="1"/>
+<rect x="573.00" y="702.00" width="8.00" height="12.00" rx="0" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="625.00" y="675.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">CROWN</text>
+<rect x="781.00" y="1034.00" width="34.67" height="104.00" rx="0" fill="#3388c3" stroke="#73838e" stroke-width="0.8"/>
+<text x="798.33" y="1091.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">CP0</text>
+<rect x="256.67" y="210.67" width="43.33" height="86.67" rx="0" fill="#3388c3" stroke="#73838e" stroke-width="0.8"/>
+<text x="278.33" y="259.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">CP1</text>
+<rect x="729.00" y="912.67" width="34.67" height="69.33" rx="0" fill="#3388c3" stroke="#73838e" stroke-width="0.8"/>
+<text x="746.33" y="952.33" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">CP2</text>
+<rect x="313.00" y="756.67" width="69.33" height="34.67" rx="0" fill="#3388c3" stroke="#73838e" stroke-width="0.8"/>
+<text x="347.67" y="779.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">CP3</text>
+<circle cx="711.67" cy="1086.00" r="13.00" fill="#f3b62e" stroke="#7d969f" stroke-width="0.8"/>
+<text x="711.67" y="1079.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">UP1 / REC</text>
+<circle cx="902.33" cy="566.00" r="13.00" fill="#f3b62e" stroke="#7d969f" stroke-width="0.8"/>
+<text x="902.33" y="559.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">UP2</text>
+<polyline points="711.67,1086.00 711.67,947.33" fill="none" stroke="#8973ad" stroke-width="2.00" stroke-linejoin="round" stroke-linecap="round" opacity="1" stroke-dasharray="6 5"/>
+<line x1="711.67" y1="1086.00" x2="711.67" y2="947.33" stroke="#8973ad" stroke-width="2"/>
+<path d="M715.1,954.5 L711.7,947.3 L708.2,954.5" fill="none" stroke="#8973ad" stroke-width="2"/>
+<polyline points="902.33,566.00 763.67,566.00" fill="none" stroke="#8973ad" stroke-width="2.00" stroke-linejoin="round" stroke-linecap="round" opacity="1" stroke-dasharray="6 5"/>
+<line x1="902.33" y1="566.00" x2="763.67" y2="566.00" stroke="#8973ad" stroke-width="2"/>
+<path d="M770.9,562.5 L763.7,566.0 L770.9,569.5" fill="none" stroke="#8973ad" stroke-width="2"/>
+<circle cx="505.40" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="519.27" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="533.13" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="547.00" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="560.87" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="574.73" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="588.60" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="602.47" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="616.33" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="630.20" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="644.07" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="657.93" cy="1155.33" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="505.40" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="519.27" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="533.13" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="547.00" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="560.87" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="574.73" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="588.60" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="602.47" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="616.33" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="630.20" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="644.07" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="657.93" cy="1139.73" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="505.40" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="519.27" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="533.13" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="547.00" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="560.87" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="574.73" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="588.60" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="602.47" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="616.33" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="630.20" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="644.07" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="657.93" cy="1124.13" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="505.40" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="519.27" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="533.13" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="547.00" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="560.87" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="574.73" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="588.60" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="602.47" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="616.33" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="630.20" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="644.07" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="657.93" cy="1108.53" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="505.40" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="519.27" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="533.13" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="547.00" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="560.87" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="574.73" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="588.60" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="602.47" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="616.33" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="630.20" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="644.07" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<circle cx="657.93" cy="1092.93" r="3.47" fill="#398a71" stroke="#203044" stroke-width="0.8"/>
+<line x1="813.93" y1="1086.00" x2="857.27" y2="1086.00" stroke="#416776" stroke-width="2"/>
+<path d="M850.1,1089.5 L857.3,1086.0 L850.1,1082.5" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="1041.00" y1="879.73" x2="1041.00" y2="836.40" stroke="#416776" stroke-width="2"/>
+<path d="M1044.5,843.6 L1041.0,836.4 L1037.5,843.6" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="1041.00" y1="463.73" x2="1041.00" y2="420.40" stroke="#416776" stroke-width="2"/>
+<path d="M1044.5,427.6 L1041.0,420.4 L1037.5,427.6" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="834.73" y1="254.00" x2="791.40" y2="254.00" stroke="#416776" stroke-width="2"/>
+<path d="M798.6,250.5 L791.4,254.0 L798.6,257.5" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="418.73" y1="254.00" x2="375.40" y2="254.00" stroke="#416776" stroke-width="2"/>
+<path d="M382.6,250.5 L375.4,254.0 L382.6,257.5" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="209.00" y1="626.67" x2="209.00" y2="670.00" stroke="#416776" stroke-width="2"/>
+<path d="M205.5,662.8 L209.0,670.0 L212.5,662.8" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="581.67" y1="947.33" x2="625.00" y2="947.33" stroke="#416776" stroke-width="2"/>
+<path d="M617.8,950.8 L625.0,947.3 L617.8,943.9" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="902.33" y1="657.87" x2="902.33" y2="614.53" stroke="#416776" stroke-width="2"/>
+<path d="M905.8,621.7 L902.3,614.5 L898.9,621.7" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="612.87" y1="392.67" x2="569.53" y2="392.67" stroke="#416776" stroke-width="2"/>
+<path d="M576.7,389.2 L569.5,392.7 L576.7,396.1" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="347.67" y1="598.93" x2="347.67" y2="642.27" stroke="#416776" stroke-width="2"/>
+<path d="M344.2,635.1 L347.7,642.3 L351.1,635.1" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="553.93" y1="808.67" x2="597.27" y2="808.67" stroke="#416776" stroke-width="2"/>
+<path d="M590.1,812.1 L597.3,808.7 L590.1,805.2" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="763.67" y1="685.60" x2="763.67" y2="642.27" stroke="#416776" stroke-width="2"/>
+<path d="M767.1,649.5 L763.7,642.3 L760.2,649.5" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="640.60" y1="531.33" x2="597.27" y2="531.33" stroke="#416776" stroke-width="2"/>
+<path d="M604.5,527.9 L597.3,531.3 L604.5,534.8" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="486.33" y1="571.20" x2="486.33" y2="614.53" stroke="#416776" stroke-width="2"/>
+<path d="M482.9,607.3 L486.3,614.5 L489.8,607.3" fill="none" stroke="#416776" stroke-width="2"/>
+<line x1="526.20" y1="670.00" x2="569.53" y2="670.00" stroke="#416776" stroke-width="2"/>
+<path d="M562.3,673.5 L569.5,670.0 L562.3,666.5" fill="none" stroke="#416776" stroke-width="2"/>
+<g opacity="0.20">
+<line x1="105.00" y1="150.00" x2="105.00" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="191.67" y1="150.00" x2="191.67" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="278.33" y1="150.00" x2="278.33" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="365.00" y1="150.00" x2="365.00" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="451.67" y1="150.00" x2="451.67" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="538.33" y1="150.00" x2="538.33" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="625.00" y1="150.00" x2="625.00" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="711.67" y1="150.00" x2="711.67" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="798.33" y1="150.00" x2="798.33" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="885.00" y1="150.00" x2="885.00" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="971.67" y1="150.00" x2="971.67" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="1058.33" y1="150.00" x2="1058.33" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="1145.00" y1="150.00" x2="1145.00" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="1190.00" x2="1145.00" y2="1190.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="1103.33" x2="1145.00" y2="1103.33" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="1016.67" x2="1145.00" y2="1016.67" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="930.00" x2="1145.00" y2="930.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="843.33" x2="1145.00" y2="843.33" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="756.67" x2="1145.00" y2="756.67" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="670.00" x2="1145.00" y2="670.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="583.33" x2="1145.00" y2="583.33" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="496.67" x2="1145.00" y2="496.67" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="410.00" x2="1145.00" y2="410.00" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="323.33" x2="1145.00" y2="323.33" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="236.67" x2="1145.00" y2="236.67" stroke="#5e7789" stroke-width="0.7"/>
+<line x1="105.00" y1="150.00" x2="1145.00" y2="150.00" stroke="#5e7789" stroke-width="0.7"/>
+</g>
+<text x="105.00" y="1212.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">0</text>
+<text x="278.33" y="1212.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">20</text>
+<text x="451.67" y="1212.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">40</text>
+<text x="625.00" y="1212.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">60</text>
+<text x="798.33" y="1212.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">80</text>
+<text x="971.67" y="1212.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">100</text>
+<text x="1145.00" y="1212.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">120</text>
+<text x="95.00" y="1194.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">0</text>
+<text x="95.00" y="1020.67" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">20</text>
+<text x="95.00" y="847.33" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">40</text>
+<text x="95.00" y="674.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">60</text>
+<text x="95.00" y="500.67" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">80</text>
+<text x="95.00" y="327.33" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">100</text>
+<text x="95.00" y="154.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">120</text>
+<circle cx="642.33" cy="1164.00" r="16.00" fill="#203044" stroke="#fff" stroke-width="3"/>
+<text x="642.33" y="1169.00" font-size="16" fill="#fff" text-anchor="middle" font-weight="700">1</text>
+<circle cx="1119.00" cy="644.00" r="16.00" fill="#203044" stroke="#fff" stroke-width="3"/>
+<text x="1119.00" y="649.00" font-size="16" fill="#fff" text-anchor="middle" font-weight="700">2</text>
+<circle cx="512.33" cy="176.00" r="16.00" fill="#203044" stroke="#fff" stroke-width="3"/>
+<text x="512.33" y="181.00" font-size="16" fill="#fff" text-anchor="middle" font-weight="700">3</text>
+<circle cx="131.00" cy="826.00" r="16.00" fill="#203044" stroke="#fff" stroke-width="3"/>
+<text x="131.00" y="831.00" font-size="16" fill="#fff" text-anchor="middle" font-weight="700">4</text>
+<circle cx="989.00" cy="644.00" r="16.00" fill="#203044" stroke="#fff" stroke-width="3"/>
+<text x="989.00" y="649.00" font-size="16" fill="#fff" text-anchor="middle" font-weight="700">5</text>
+<circle cx="564.33" cy="323.33" r="16.00" fill="#203044" stroke="#fff" stroke-width="3"/>
+<text x="564.33" y="328.33" font-size="16" fill="#fff" text-anchor="middle" font-weight="700">6</text>
+<circle cx="668.33" cy="453.33" r="16.00" fill="#203044" stroke="#fff" stroke-width="3"/>
+<text x="668.33" y="458.33" font-size="16" fill="#fff" text-anchor="middle" font-weight="700">7</text>
+<circle cx="495.00" cy="886.67" r="16.00" fill="#203044" stroke="#fff" stroke-width="3"/>
+<text x="495.00" y="891.67" font-size="16" fill="#fff" text-anchor="middle" font-weight="700">8</text>
+<line x1="105.00" y1="1245.00" x2="278.33" y2="1245.00" stroke="#203044" stroke-width="5"/>
+<line x1="105.00" y1="1240.00" x2="105.00" y2="1250.00" stroke="#203044" stroke-width="2"/>
+<line x1="278.33" y1="1240.00" x2="278.33" y2="1250.00" stroke="#203044" stroke-width="2"/>
+<text x="290.33" y="1250.00" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">20 m  |  grid 10 m  |  top view 1 m = 8.67 px</text>
+<text x="1145.00" y="1250.00" font-size="14" fill="#596d7d" text-anchor="end" font-weight="400">x →   z ↑</text>
+<text x="65.00" y="1295.00" font-size="18" fill="#203044" text-anchor="start" font-weight="700">TRUE SPIRAL / height versus distance from start (m)</text>
+<line x1="95.00" y1="1442.00" x2="1135.00" y2="1442.00" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1447.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">0.0 m</text>
+<line x1="95.00" y1="1389.50" x2="1135.00" y2="1389.50" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1394.50" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">12.0 m</text>
+<line x1="95.00" y1="1337.00" x2="1135.00" y2="1337.00" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1342.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">24.0 m</text>
+<line x1="95.00" y1="1442.00" x2="1135.00" y2="1442.00" stroke="#203044" stroke-width="1"/>
+<polyline points="95.0,1442.0 171.0,1434.3 308.7,1420.4 446.4,1406.5 561.2,1394.9 676.0,1383.3 767.8,1374.1 859.6,1364.8 928.4,1357.9 997.3,1350.9 1043.2,1346.3 1089.1,1341.6 1112.0,1339.3 1135.0,1337.0" fill="none" stroke="#3388c3" stroke-width="3"/>
+<text x="95.00" y="1462.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">0</text>
+<text x="355.00" y="1462.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">181</text>
+<text x="615.00" y="1462.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">362</text>
+<text x="875.00" y="1462.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">544</text>
+<text x="1135.00" y="1462.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">725</text>
+<line x1="434.97" y1="1332.00" x2="434.97" y2="1442.00" stroke="#96afc1" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="434.97" y="1315.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700">CP1</text>
+<line x1="650.14" y1="1332.00" x2="650.14" y2="1442.00" stroke="#96afc1" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="650.14" y="1331.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700">CP2</text>
+<line x1="922.70" y1="1332.00" x2="922.70" y2="1442.00" stroke="#96afc1" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="922.70" y="1315.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700">CP3</text>
+<line x1="1135.00" y1="1332.00" x2="1135.00" y2="1442.00" stroke="#96afc1" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="1135.00" y="1331.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700">crown 24</text>
+<text x="1135.00" y="1482.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">distance m; vertical scale exaggerated</text>
+<text x="65.00" y="1512.00" font-size="18" fill="#203044" text-anchor="start" font-weight="700">UP1 / REC launch / height above launch deck (m)</text>
+<line x1="95.00" y1="1659.00" x2="1135.00" y2="1659.00" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1664.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">0.0 m</text>
+<line x1="95.00" y1="1606.50" x2="1135.00" y2="1606.50" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1611.50" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">8.5 m</text>
+<line x1="95.00" y1="1554.00" x2="1135.00" y2="1554.00" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1559.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">17.0 m</text>
+<line x1="95.00" y1="1659.00" x2="1135.00" y2="1659.00" stroke="#203044" stroke-width="1"/>
+<polyline points="95.0,1659.0 127.5,1649.2 160.0,1639.8 192.5,1631.0 225.0,1622.6 257.5,1614.7 290.0,1607.3 322.5,1600.4 355.0,1593.9 387.5,1588.0 420.0,1582.5 452.5,1577.5 485.0,1573.0 517.5,1568.9 550.0,1565.4 582.5,1562.3 615.0,1559.7 647.5,1557.6 680.0,1556.0 712.5,1554.8 745.0,1554.2 777.5,1554.0 810.0,1554.3 842.5,1555.1 875.0,1556.4 907.5,1558.1 940.0,1560.3 972.5,1563.0 1005.0,1566.2 1037.5,1569.9 1070.0,1574.1 1102.5,1578.7 1135.0,1583.8" fill="none" stroke="#3388c3" stroke-width="3"/>
+<text x="95.00" y="1679.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">0</text>
+<text x="355.00" y="1679.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">4</text>
+<text x="615.00" y="1679.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">8</text>
+<text x="875.00" y="1679.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">12</text>
+<text x="1135.00" y="1679.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">16</text>
+<line x1="95.00" y1="1549.00" x2="95.00" y2="1659.00" stroke="#96afc1" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="95.00" y="1532.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700">launch</text>
+<line x1="1135.00" y1="1549.00" x2="1135.00" y2="1659.00" stroke="#96afc1" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="1135.00" y="1548.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700">land +12.2</text>
+<text x="1135.00" y="1699.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">distance m; vertical scale exaggerated</text>
+<text x="65.00" y="1729.00" font-size="18" fill="#203044" text-anchor="start" font-weight="700">UP2 launch / height above launch deck (m)</text>
+<line x1="95.00" y1="1876.00" x2="1135.00" y2="1876.00" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1881.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">0.0 m</text>
+<line x1="95.00" y1="1823.50" x2="1135.00" y2="1823.50" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1828.50" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">6.9 m</text>
+<line x1="95.00" y1="1771.00" x2="1135.00" y2="1771.00" stroke="#d1d9df" stroke-width="1"/>
+<text x="86.00" y="1776.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">13.7 m</text>
+<line x1="95.00" y1="1876.00" x2="1135.00" y2="1876.00" stroke="#203044" stroke-width="1"/>
+<polyline points="95.0,1876.0 127.5,1865.1 160.0,1854.8 192.5,1845.1 225.0,1836.0 257.5,1827.5 290.0,1819.6 322.5,1812.2 355.0,1805.5 387.5,1799.4 420.0,1793.9 452.5,1788.9 485.0,1784.6 517.5,1780.9 550.0,1777.7 582.5,1775.2 615.0,1773.2 647.5,1771.9 680.0,1771.2 712.5,1771.0 745.0,1771.4 777.5,1772.5 810.0,1774.1 842.5,1776.4 875.0,1779.2 907.5,1782.6 940.0,1786.7 972.5,1791.3 1005.0,1796.5 1037.5,1802.3 1070.0,1808.7 1102.5,1815.8 1135.0,1823.4" fill="none" stroke="#3388c3" stroke-width="3"/>
+<text x="95.00" y="1896.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">0</text>
+<text x="355.00" y="1896.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">4</text>
+<text x="615.00" y="1896.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">8</text>
+<text x="875.00" y="1896.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">12</text>
+<text x="1135.00" y="1896.00" font-size="12" fill="#596d7d" text-anchor="middle" font-weight="400">16</text>
+<line x1="95.00" y1="1766.00" x2="95.00" y2="1876.00" stroke="#96afc1" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="95.00" y="1749.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700">launch</text>
+<line x1="1135.00" y1="1766.00" x2="1135.00" y2="1876.00" stroke="#96afc1" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="1135.00" y="1765.00" font-size="13" fill="#203044" text-anchor="middle" font-weight="700">land +6.9</text>
+<text x="1135.00" y="1916.00" font-size="12" fill="#596d7d" text-anchor="end" font-weight="400">distance m; vertical scale exaggerated</text>
+<text x="65.00" y="1946.00" font-size="18" fill="#203044" text-anchor="start" font-weight="700">DISTANCE &amp; TIME / estimates, not playtest results</text>
+<rect x="65.00" y="1962.00" width="8.00" height="36.00" rx="3" fill="#237e77" stroke="none" stroke-width="1"/>
+<text x="86.00" y="1974.00" font-size="17" fill="#203044" text-anchor="start" font-weight="700">Full spiral  ·  725 m  ·  119–133 s</text>
+<text x="86.00" y="1996.00" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">725 ÷ 6.8 m/s + 12–26 s obstacle / queue allowance. 725 m horizontal, +24 m; 3.31% mean grade.</text>
+<rect x="65.00" y="2014.90" width="8.00" height="36.00" rx="3" fill="#7251a1" stroke="none" stroke-width="1"/>
+<text x="86.00" y="2026.90" font-size="17" fill="#203044" text-anchor="start" font-weight="700">Upper cut only  ·  533 m  ·  95–109 s</text>
+<text x="86.00" y="2048.90" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">533 ÷ 6.8 m/s + 17–31 s obstacle / queue allowance. Use the late pad to recover one upper turn.</text>
+<text x="65.00" y="2083.80" font-size="15" fill="#596d7d" text-anchor="start" font-weight="400">Jump envelope: g = 20 m/s²; vᵧ = 7.5 m/s → apex 1.41 m; flight 0.75 s; 6.00 m at 8 m/s. Drawn jump gaps: 3 m; allow</text>
+<text x="65.00" y="2104.05" font-size="15" fill="#596d7d" text-anchor="start" font-weight="400">0.4 m centre clearance on each edge. No mandatory jump relies on dive.</text>
+<text x="65.00" y="2134.30" font-size="15" fill="#596d7d" text-anchor="start" font-weight="400">60 spots are drawn at true bean diameter 0.8 m. Collider sizes and movement sweeps are in metres. All controls,</text>
+<text x="65.00" y="2154.55" font-size="15" fill="#596d7d" text-anchor="start" font-weight="400">timings, friction, grouping and respawn rules are proposed Level-panel data.</text>
+<text x="1250.00" y="155.00" font-size="17" fill="#203044" text-anchor="start" font-weight="700">NUMBERED PLAY SPACES</text>
+<circle cx="1262.00" cy="178.00" r="12.00" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="1262.00" y="183.00" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">1</text>
+<text x="1284.00" y="183.00" font-size="18" fill="#203044" text-anchor="start" font-weight="700">Apron &amp; first turn</text>
+<text x="1284.00" y="205.00" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Spiral ramp · Start apron · Start grid · CP0</text>
+<text x="1284.00" y="223.90" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Respawn here after a fall; 3 s penalty.</text>
+<text x="1284.00" y="242.80" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Continuous ascending deck; 12 m width in this section.</text>
+<circle cx="1262.00" cy="271.70" r="12.00" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="1262.00" y="276.70" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">2</text>
+<text x="1284.00" y="276.70" font-size="18" fill="#203044" text-anchor="start" font-weight="700">Hammer edge</text>
+<text x="1284.00" y="298.70" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Spiral ramp · Outer hammers</text>
+<text x="1284.00" y="317.60" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">4 m sweep; 3 m inner passing edge. 4 s / 5 s cycles.</text>
+<text x="1284.00" y="336.50" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Continuous ascending deck; 10 m width in this section.</text>
+<circle cx="1262.00" cy="365.40" r="12.00" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="1262.00" y="370.40" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">3</text>
+<text x="1284.00" y="370.40" font-size="18" fill="#203044" text-anchor="start" font-weight="700">Hollow gallery</text>
+<text x="1284.00" y="392.40" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Spiral ramp · Hollow bay H1 · H1 inner ledge · CP1</text>
+<text x="1284.00" y="411.30" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">12 m long void; remaining 4 m inner ledge is walkable.</text>
+<text x="1284.00" y="430.20" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Respawn here after a fall; 3 s penalty.</text>
+<circle cx="1262.00" cy="459.10" r="12.00" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="1262.00" y="464.10" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">4</text>
+<text x="1284.00" y="464.10" font-size="18" fill="#203044" text-anchor="start" font-weight="700">Piston turn</text>
+<text x="1284.00" y="486.10" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Spiral ramp · West pushers · Reverse conveyor · CP2</text>
+<text x="1284.00" y="505.00" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Respawn here after a fall; 3 s penalty.</text>
+<text x="1284.00" y="523.90" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">3 m lateral stroke; 3 m shoulder during extension.</text>
+<circle cx="1262.00" cy="552.80" r="12.00" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="1262.00" y="557.80" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">5</text>
+<text x="1284.00" y="557.80" font-size="18" fill="#203044" text-anchor="start" font-weight="700">Tile switchback</text>
+<text x="1284.00" y="579.80" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Spiral ramp · Trap staircase</text>
+<text x="1284.00" y="598.70" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Whole width; 1 s warning, then opens for 2 s. Routes below catch</text>
+<text x="1284.00" y="617.60" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">falls.</text>
+<text x="1284.00" y="636.50" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Continuous ascending deck; 8 m width in this section.</text>
+<circle cx="1262.00" cy="665.40" r="12.00" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="1262.00" y="670.40" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">6</text>
+<text x="1284.00" y="670.40" font-size="18" fill="#203044" text-anchor="start" font-weight="700">Balance ledge</text>
+<text x="1284.00" y="692.40" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Spiral ramp · Hollow bay H2 · H2 inner ledge · Upper seesaw · CP3</text>
+<text x="1284.00" y="711.30" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">12 m long cutout; 4 m lower-edge ledge remains.</text>
+<text x="1284.00" y="730.20" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Respawn here after a fall; 3 s penalty.</text>
+<circle cx="1262.00" cy="759.10" r="12.00" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="1262.00" y="764.10" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">7</text>
+<text x="1284.00" y="764.10" font-size="18" fill="#203044" text-anchor="start" font-weight="700">Crown approach</text>
+<text x="1284.00" y="786.10" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Spiral ramp · Crown sweepers · Crown jump · Crown finish</text>
+<text x="1284.00" y="805.00" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">3 m gap, +0.10 m rise; 9 m approach + 8 m landing.</text>
+<text x="1284.00" y="823.90" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">5 m diameter; jump 0.5 m bar or wait for opening.</text>
+<circle cx="1262.00" cy="852.80" r="12.00" fill="#203044" stroke="none" stroke-width="1"/>
+<text x="1262.00" y="857.80" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">8</text>
+<text x="1284.00" y="857.80" font-size="18" fill="#203044" text-anchor="start" font-weight="700">Up / down links</text>
+<text x="1284.00" y="879.80" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Catch chute · Catch landing · Shortcut pad · Shortcut landing ·</text>
+<text x="1284.00" y="898.70" font-size="14" fill="#203044" text-anchor="start" font-weight="400">Launch trajectory</text>
+<text x="1284.00" y="917.60" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">UP1: RECOVERY ONLY after saving CP2 and then falling. Target 16 m away</text>
+<text x="1284.00" y="936.50" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">/ +12.2 m; launch (horizontal 8, vertical 26.1) m/s (NEW).</text>
+<text x="1284.00" y="955.40" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">UP1: Ø5 m receiving deck; missed shot falls to catch or CP.</text>
+<text x="1250.00" y="997.30" font-size="17" fill="#203044" text-anchor="start" font-weight="700">KEY / ONLY SYMBOLS USED HERE</text>
+<rect x="1250.00" y="1014.30" width="18.00" height="14.00" rx="2" fill="#f3dfaf" stroke="#203044" stroke-width="0.7"/>
+<text x="1276.00" y="1027.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Normal deck / ramp</text>
+<circle cx="1554.00" cy="1021.30" r="6.00" fill="#398a71" stroke="#203044" stroke-width="0.7"/>
+<text x="1571.00" y="1027.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Start spot (0.8 m bean)</text>
+<rect x="1250.00" y="1041.30" width="18.00" height="14.00" rx="2" fill="#3388c3" stroke="#203044" stroke-width="0.7"/>
+<text x="1276.00" y="1054.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Checkpoint / respawn pad</text>
+<circle cx="1554.00" cy="1048.30" r="8.00" fill="none" stroke="#e46b50" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="1546.00" y1="1048.30" x2="1562.00" y2="1048.30" stroke="#e46b50" stroke-width="2"/>
+<text x="1571.00" y="1054.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Hammer + swept reach</text>
+<rect x="1250.00" y="1068.30" width="18.00" height="14.00" rx="2" fill="#354656" stroke="#203044" stroke-width="0.7"/>
+<text x="1276.00" y="1081.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Open bay / gap</text>
+<rect x="1545.00" y="1068.30" width="18.00" height="14.00" rx="2" fill="#c4c0e9" stroke="#203044" stroke-width="0.7"/>
+<text x="1571.00" y="1081.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Raised or narrow deck</text>
+<circle cx="1259.00" cy="1102.30" r="8.00" fill="none" stroke="#e46b50" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="1251.00" y1="1102.30" x2="1267.00" y2="1102.30" stroke="#e46b50" stroke-width="2"/>
+<text x="1276.00" y="1108.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Piston + stroke</text>
+<rect x="1545.00" y="1095.30" width="18.00" height="14.00" rx="2" fill="#edba56" stroke="#203044" stroke-width="0.7"/>
+<text x="1571.00" y="1108.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Conveyor lane</text>
+<rect x="1250.00" y="1122.30" width="18.00" height="14.00" rx="2" fill="#ae77c0" stroke="#203044" stroke-width="0.7"/>
+<line x1="1252.00" y1="1124.30" x2="1266.00" y2="1134.30" stroke="#203044" stroke-width="1"/>
+<line x1="1266.00" y1="1124.30" x2="1252.00" y2="1134.30" stroke="#203044" stroke-width="1"/>
+<text x="1276.00" y="1135.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Dropping trap tile</text>
+<rect x="1545.00" y="1122.30" width="18.00" height="14.00" rx="2" fill="#d2a370" stroke="#203044" stroke-width="0.7"/>
+<text x="1571.00" y="1135.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Tilting seesaw</text>
+<circle cx="1259.00" cy="1156.30" r="8.00" fill="none" stroke="#de5b6a" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="1251.00" y1="1156.30" x2="1267.00" y2="1156.30" stroke="#de5b6a" stroke-width="2"/>
+<text x="1276.00" y="1162.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Spinner + swept radius</text>
+<rect x="1545.00" y="1149.30" width="18.00" height="14.00" rx="2" fill="#e6b925" stroke="#203044" stroke-width="0.7"/>
+<text x="1571.00" y="1162.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Finish</text>
+<line x1="1250.00" y1="1183.30" x2="1268.00" y2="1183.30" stroke="#67b7b5" stroke-width="2" stroke-dasharray="4 3"/>
+<text x="1276.00" y="1189.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Lower catch / return chute</text>
+<rect x="1545.00" y="1176.30" width="18.00" height="14.00" rx="2" fill="#f3b62e" stroke="#203044" stroke-width="0.7"/>
+<text x="1571.00" y="1189.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Launch pad</text>
+<line x1="1250.00" y1="1210.30" x2="1268.00" y2="1210.30" stroke="#8973ad" stroke-width="2" stroke-dasharray="4 3"/>
+<text x="1276.00" y="1216.30" font-size="13" fill="#203044" text-anchor="start" font-weight="400">Directed launch (air)</text>
+<text x="1250.00" y="1258.30" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Arrows = travel. Dashed purple = directed launch. Dashed teal = lower</text>
+<text x="1250.00" y="1277.20" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">return, below the ramp. Hazard outlines show motion reach, not solid</text>
+<text x="1250.00" y="1296.10" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">floor.</text>
+<text x="1250.00" y="1330.00" font-size="17" fill="#203044" text-anchor="start" font-weight="700">ROUND &amp; RECOVERY</text>
+<text x="1250.00" y="1356.00" font-size="16" fill="#596d7d" text-anchor="start" font-weight="400">Race: 150 s cap; first N qualify. Chutes return beans downhill;</text>
+<text x="1250.00" y="1377.60" font-size="16" fill="#596d7d" text-anchor="start" font-weight="400">out-of-bounds = latest CP + 3 s. No death.</text>
+<text x="1250.00" y="1417.20" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">Existing models are reuse candidates, not proof that the proposed</text>
+<text x="1250.00" y="1436.10" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">behaviour exists. Exact IDs, sizes, groups and NEW work are in the</text>
+<text x="1250.00" y="1455.00" font-size="14" fill="#596d7d" text-anchor="start" font-weight="400">matching assets table.</text>
+<line x1="65.00" y1="2200.00" x2="1830.00" y2="2200.00" stroke="#bac7cf" stroke-width="1"/>
+<text x="65.00" y="2223.00" font-size="13" fill="#596d7d" text-anchor="start" font-weight="400">PLANNING ONLY  •  Shared geometry data generates drawing, zone list, legend and needs table.</text>
+<text x="1830.00" y="2223.00" font-size="13" fill="#596d7d" text-anchor="end" font-weight="400">D-spiral-pyramid</text>
+</svg>

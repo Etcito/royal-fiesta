@@ -16,6 +16,12 @@ const MAX_SECONDS = 120
 const FRAME_MS = 16
 const MAX_DT_S = 0.1
 const PIPELINE_WAIT_MS = 10000
+// The GPU client gives a job 295 s; every wait below ends well inside it, so a stall finishes the op with
+// an error naming the step instead of a page timeout with no output.
+const QUEUE_TIMEOUT_MS = 120000
+const SETUP_TIMEOUT_MS = 180000
+const READY_TIMEOUT_MS = 30000
+const CAPTURE_TIMEOUT_MS = 20000
 
 export interface ZoneLobbyCaptureInput {
   relay: string
@@ -145,6 +151,27 @@ function delay(ms: number): Promise<void> {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
+// ---- phases ----------------------------------------------------------------------------------------------
+
+// window.__nmcGpuProgress is read by the GPU client bridge and named when a job times out.
+const phases = new Map<string, string>()
+function publishPhase(name: string, phase: string): void {
+  phases.set(name, phase)
+  ;(window as Window & { __nmcGpuProgress?: string }).__nmcGpuProgress = [...phases].map(([n, p]) => `${n}: ${p}`).join('; ')
+}
+
+// Refuses with the step's name when it does not settle in time.
+async function bounded<T>(name: string, step: string, ms: number, work: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      try { refuse('zone', `zoneLobbyCapture.${name}`, `${step} did not finish within ${ms / 1000} s`) } catch (error) { reject(error) }
+    }, ms)
+  })
+  try { return await Promise.race([work, timeout]) }
+  finally { clearTimeout(timer) }
+}
+
 // ---- zoneLobbyCapture / zoneLobbyPair ---------------------------------------------------------------------
 
 // One browser peer: join the room, play it on real time, capture one RAA frame.
@@ -152,8 +179,11 @@ async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Pro
   const canvas = makeCanvas(input.width, input.height)
   const realNow = performance.now.bind(performance)
   let lobby: ZoneLobby | null = null
+  const phase = (p: string) => publishPhase(input.name, p)
+  phase('dispatched')
+  let mounting: Promise<ZoneLobby> | undefined
   try {
-    lobby = await mountZoneLobby({
+    mounting = mountZoneLobby({
       canvas,
       width: input.width,
       height: input.height,
@@ -162,13 +192,17 @@ async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Pro
       localSeats: input.seatsPerPeer,
       courseId: input.course,
       name: input.name,
+      queueTimeoutMs: QUEUE_TIMEOUT_MS,
+      onPhase: phase,
     })
+    lobby = await bounded(input.name, 'joining the zone room', SETUP_TIMEOUT_MS, mounting)
     // The match runs against real network peers, so the clock is the page's: setTimeout between
     // frames (requestAnimationFrame rarely fires in the GPU client browser) and the measured dt.
     const joined = lobby
     const started = realNow()
     let last = started
     let first = true
+    phase('ticking')
     do {
       await delay(FRAME_MS)
       const now = realNow()
@@ -178,9 +212,12 @@ async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Pro
       // The first frame creates the near characters and starts their animation load.
       if (first) {
         first = false
-        await joined.ready()
+        phase('loading animations')
+        await bounded(input.name, 'animation loading', READY_TIMEOUT_MS, joined.ready())
+        phase('ticking')
       }
     } while (realNow() - started < input.seconds * 1000)
+    phase(`rendering (tick ${joined.info.tick})`)
     joined.render()
     const deadline = realNow() + PIPELINE_WAIT_MS
     while (pendingPipelines() > 0) {
@@ -188,7 +225,8 @@ async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Pro
       await delay(10)
     }
     joined.render()
-    const png = await joined.capture()
+    phase('capturing')
+    const png = await bounded(input.name, 'the RAA capture', CAPTURE_TIMEOUT_MS, joined.capture())
     if (png === null || png.length === 0) refuse('render', 'raa', 'the zone lobby capture returned no PNG bytes; the RAA port must read the canvas back')
     const info = joined.info
     return {
@@ -200,6 +238,11 @@ async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Pro
       far: info.far,
       captures: [{ name: 'zone-lobby', width: input.width, height: input.height, mime: 'image/png', base64: base64Of(png) }],
     }
+  } catch (error) {
+    phase(`failed: ${error instanceof Error ? error.message : String(error)}`)
+    // A join that outlived its bound still owns a socket and a scene: dispose it when it settles.
+    if (lobby === null) void mounting?.then(late => late.dispose(), () => {})
+    throw error
   } finally {
     try { lobby?.dispose() } finally { canvas.remove() }
   }
@@ -213,7 +256,10 @@ function opFailure(op: string, error: unknown): never {
 
 async function zoneLobbyCapture(raw: unknown): Promise<OpEnvelope<ZoneLobbyCaptureOutput>> {
   const input = validate(raw)
-  const adapter = await prelude()
+  phases.clear()
+  publishPhase('page', 'checking RAA and the GPU adapter')
+  const adapter = await bounded('page', 'the RAA check', READY_TIMEOUT_MS, prelude())
+  phases.clear()
   try { return { json: await runLobby(input, adapter), files: [] } }
   catch (error) { return opFailure('zoneLobbyCapture', error) }
 }
@@ -230,7 +276,10 @@ async function zoneLobbyPair(raw: unknown): Promise<OpEnvelope<ZoneLobbyPairOutp
   if (!Array.isArray(o.peers) || o.peers.length !== 2) refuse('ops', `${op}.input.peers`, 'pass exactly two zoneLobbyCapture inputs')
   const peers = o.peers.map(validate)
   if (peers[0].name === peers[1].name) refuse('ops', `${op}.input.peers`, `both peers are named '${peers[0].name}'; give each a distinct name`)
-  const adapter = await prelude()
+  phases.clear()
+  publishPhase('page', 'checking RAA and the GPU adapter')
+  const adapter = await bounded('page', 'the RAA check', READY_TIMEOUT_MS, prelude())
+  phases.clear()
   // Both join concurrently; a failure of one is reported only after the other has settled and cleaned up.
   const settled = await Promise.allSettled(peers.map(input => runLobby(input, adapter)))
   const failed = settled.findIndex(result => result.status === 'rejected')

@@ -42,6 +42,8 @@ export interface ZoneLobbyOptions {
   courseId: string
   name: string
   queueTimeoutMs?: number
+  /** Called at each setup step (loading, connecting, queued, matched, scene, match). */
+  onPhase?: (phase: string) => void
 }
 
 export interface ZoneLobby {
@@ -110,8 +112,12 @@ async function queueRoom(client: ZoneRelayClient, players: number, payload: Zone
 
 export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLobby> {
   const timeoutMs = checkOptions(options)
+  const phase = options.onPhase ?? (() => {})
+  phase('loading course')
   const { course, zones } = await loadCourse(options.courseId)
+  phase('loading content')
   const content = await zoneContent('sprint')
+  phase('loading physics')
   const R = await initRapier()
   const client = new ZoneRelayClient(options.relayUrl, globalZoneWsFactory())
   const payload: ZoneQueuePayload = {
@@ -134,15 +140,20 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
   }
 
   try {
+    phase('connecting to relay')
     await client.connect()
+    phase(`queued for a room of ${options.players}`)
     await queueRoom(client, options.players, payload, timeoutMs)
     const { localPeer, roster, measurements } = client.room()
+    phase(`matched peer ${localPeer} of ${roster.peers.length}`)
     const seats = roster.peers.find(peer => peer.peer === localPeer)!.seats
     const transport = new ZoneRelayTransport(client, localPeer, roster.peers.length, () => performance.now())
+    phase('mounting scene')
     const view = scene = await mountZoneNetScene({
       ...content, canvas: options.canvas, width: options.width, height: options.height,
       course, seatCount: roster.seatCount, firstLocalSeat: seats[0],
     })
+    phase('creating match')
     const local = match = createZoneMatch(R, {
       localPeer, roster, course, zones, profile: PROFILES.sprint,
       kind: course.kind === 'survival' ? 'survival' : 'race',

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import test from 'node:test'
 import { deflateSync } from 'node:zlib'
-import { SCREENS } from '../../packages/game/src/screens/nav.ts'
+import { OFFLINE_SCREENS, ONLINE_ONLY_SCREENS, SCREENS } from '../../packages/game/src/screens/nav.ts'
 import { buildScreensRecord, type ScreensRecord } from '../uiTourRecord.ts'
 
 // PNG writer modelled on apps/headless/test/gpuRecord.test.ts (8-bit RGB, filter 0).
@@ -48,7 +48,7 @@ const ADAPTER = { vendor: 'nvidia', architecture: 'ampere', description: 'NVIDIA
 // Fixture-free: the op output and every PNG live in memory; nothing is read from disk.
 function tour(): { raw: Record<string, unknown>; pngs: Map<string, Uint8Array> } {
   const pngs = new Map<string, Uint8Array>()
-  const captures = SCREENS.map((screen, i) => {
+  const captures = OFFLINE_SCREENS.map((screen, i) => {
     const png = makePng(SIZE, SIZE, i + 1)
     pngs.set(screen, png)
     return {
@@ -70,13 +70,15 @@ function refused(fn: () => unknown, re: RegExp): void {
   assert.throws(fn, (e: unknown) => re.test((e as Error).message))
 }
 
-test('an in-memory uiTour output becomes one entry per SCREENS id, with the adapter facts', () => {
+test('an in-memory uiTour output becomes one entry per offline SCREENS id, with the adapter facts', () => {
   const { raw, pngs } = tour()
   const rec: ScreensRecord = buildScreensRecord(raw, pngs)
   assert.equal(rec.format, 'royal-fiesta.ui-screens')
   assert.equal(rec.renderer, 'raa')
   assert.deepEqual(rec.adapter, ADAPTER)
-  assert.deepEqual(rec.screens.map(s => s.screen), [...SCREENS])
+  assert.deepEqual(rec.screens.map(s => s.screen), [...OFFLINE_SCREENS])
+  assert.deepEqual(rec.onlineOnly, [...ONLINE_ONLY_SCREENS])
+  assert.deepEqual([...OFFLINE_SCREENS, ...ONLINE_ONLY_SCREENS].sort(), [...SCREENS].sort())
   const loading = rec.screens.find(s => s.screen === 'loading')
   assert.ok(loading)
   assert.equal(loading.capture, 'out/ui/loading.png')
@@ -86,6 +88,14 @@ test('an in-memory uiTour output becomes one entry per SCREENS id, with the adap
   assert.equal(loading.inputs.length, 1)
   const hub = rec.screens.find(s => s.screen === 'hub')
   assert.deepEqual(hub?.inputs[0], { kind: 'click', target: 'act-play', x: 12.5, y: 8, events: ['pointerdown', 'click'] })
+})
+
+test('an online-only screen is not required and a capture of one is refused', () => {
+  const { raw, pngs } = tour()
+  assert.ok(!(raw.captures as { screen: string }[]).some(c => (ONLINE_ONLY_SCREENS as readonly string[]).includes(c.screen)))
+  const withQueue = structuredClone(raw) as { captures: { screen: string }[] }
+  withQueue.captures.push({ ...withQueue.captures[0], screen: 'queue' })
+  refused(() => buildScreensRecord(withQueue, pngs), /screen 'queue': is online-only/)
 })
 
 test('a missing screen is refused and named', () => {
@@ -110,10 +120,10 @@ test('a screen-id mismatch is refused and names the screen', () => {
 test('empty inputs are refused and name the screen', () => {
   const { raw, pngs } = tour()
   const empty = structuredClone(raw) as { captures: { screen: string; inputs: unknown[] }[] }
-  const queue = empty.captures.find(c => c.screen === 'queue')
-  assert.ok(queue)
-  queue.inputs = []
-  refused(() => buildScreensRecord(empty, pngs), /screen 'queue': has no inputs/)
+  const countdown = empty.captures.find(c => c.screen === 'countdown')
+  assert.ok(countdown)
+  countdown.inputs = []
+  refused(() => buildScreensRecord(empty, pngs), /screen 'countdown': has no inputs/)
 })
 
 test('a missing PNG and a stale sha256 are refused and name the screen', () => {

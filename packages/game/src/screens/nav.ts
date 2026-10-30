@@ -8,6 +8,11 @@ export const SCREENS = Object.freeze([
 ] as const)
 export type Screen = typeof SCREENS[number]
 
+// Screens only an online session reaches (the online lobby): the offline UI tour cannot capture them.
+// Single source of truth: the tour record requires exactly the other SCREENS ids and lists these as not captured.
+export const ONLINE_ONLY_SCREENS = Object.freeze(['queue', 'lobbyChoice', 'lobbyLive'] as const satisfies readonly Screen[])
+export const OFFLINE_SCREENS: readonly Screen[] = Object.freeze(SCREENS.filter(s => !(ONLINE_ONLY_SCREENS as readonly Screen[]).includes(s)))
+
 // Screens the game itself moves between (with 'game' events).
 export const GAME_SCREENS = Object.freeze([
   'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium', 'lobbyChoice', 'lobbyLive',

@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { decodePng, unwrapOp } from '../apps/headless/src/gpuRecord.ts'
-import { SCREENS, type Screen } from '../packages/game/src/screens/nav.ts'
+import { OFFLINE_SCREENS, ONLINE_ONLY_SCREENS, SCREENS, type Screen } from '../packages/game/src/screens/nav.ts'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
 
 const AREA = 'ui-tour'
@@ -38,6 +38,8 @@ export interface ScreensRecord {
   renderer: 'raa'
   adapter: AdapterFacts
   screens: ScreenEntry[]
+  // Online-only screens (nav.ts): listed, not captured, not faked.
+  onlineOnly: Screen[]
 }
 
 function fail(path: string, reason: string): never {
@@ -134,6 +136,9 @@ export function buildScreensRecord(raw: unknown, pngs: ReadonlyMap<string, Uint8
     if (typeof screen !== 'string' || !(SCREENS as readonly string[]).includes(screen)) {
       fail(`screen ${JSON.stringify(screen)}`, `is not a SCREENS id (${SCREENS.join(', ')}); the tour captured an unknown screen`)
     }
+    if ((ONLINE_ONLY_SCREENS as readonly string[]).includes(screen)) {
+      fail(`screen '${screen}'`, 'is online-only (ONLINE_ONLY_SCREENS in nav.ts); the offline tour cannot reach it, do not capture it')
+    }
     if (byScreen.has(screen)) fail(`screen '${screen}'`, 'appears twice; the tour captures each screen once')
     if (c.file !== `${screen}.png`) fail(`screen '${screen}'`, `reports file ${JSON.stringify(c.file)}, not '${screen}.png'; the capture file is named after the screen`)
     const inputs = parseInputs(c.inputs, screen)
@@ -150,11 +155,12 @@ export function buildScreensRecord(raw: unknown, pngs: ReadonlyMap<string, Uint8
     const size = decodeCapture(bytes, c.width as number, c.height as number, screen, capture)
     byScreen.set(screen, { screen: screen as Screen, inputs, capture, sha256: hash, width: size.width, height: size.height })
   })
-  const missing = SCREENS.filter(s => !byScreen.has(s))
+  const missing = OFFLINE_SCREENS.filter(s => !byScreen.has(s))
   if (missing.length > 0) fail(`screen '${missing[0]}'`, `has no capture; the tour must reach and capture ${missing.join(', ')}`)
   const record: ScreensRecord = {
     format: FORMAT, version: 1, renderer: 'raa', adapter,
-    screens: SCREENS.map(s => byScreen.get(s) as ScreenEntry),
+    screens: OFFLINE_SCREENS.map(s => byScreen.get(s) as ScreenEntry),
+    onlineOnly: [...ONLINE_ONLY_SCREENS],
   }
   assertSafe(record)
   return record

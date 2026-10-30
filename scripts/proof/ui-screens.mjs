@@ -48,6 +48,14 @@ function screenIds() {
   return ids
 }
 
+// The ids of `export const ONLINE_ONLY_SCREENS = Object.freeze([...])` in nav.ts: the offline tour cannot capture them.
+function onlineOnlyIds() {
+  const match = readFileSync(NAV, 'utf8').match(/export\s+const\s+ONLINE_ONLY_SCREENS\s*=\s*Object\.freeze\s*\(\s*\[([\s\S]*?)\]/)
+  const ids = [...(match?.[1] ?? '').matchAll(/(['"])([^'"]+)\1/g)].map((m) => m[2])
+  if (!match || !ids.length) throw fail(NAV, 'has no `export const ONLINE_ONLY_SCREENS = Object.freeze([...])` string array', 'keep the ONLINE_ONLY_SCREENS export as a frozen string array')
+  return ids
+}
+
 // Validates every ui/*.ui.json with uaa; returns id -> UiAsset and the problems.
 async function collectAssets() {
   const mod = await uaa()
@@ -128,7 +136,8 @@ async function checkScreens() {
 }
 
 function checkEvidence() {
-  const ids = screenIds()
+  const online = onlineOnlyIds()
+  const ids = screenIds().filter((id) => !online.includes(id))
   const { json } = readJson(EVIDENCE, 'record one capture per SCREENS id (12 screens plus the round HUD)')
   const entries = Array.isArray(json) ? json : (json && (json.entries ?? json.captures ?? json.screens))
   if (!Array.isArray(entries)) throw fail(EVIDENCE, 'has no capture entries array', 'write a JSON array or {"entries":[...]} of capture records')

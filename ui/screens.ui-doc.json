@@ -16,9 +16,6 @@
     "bar.track",
     "icon.back",
     "icon.settings",
-    "icon.timer",
-    "icon.alive",
-    "icon.qualified",
     "icon.medal",
     "panel.hud"
   ],
@@ -2755,30 +2752,13 @@
               },
               "children": [
                 {
-                  "id": "hud-timer-icon",
-                  "type": "icon",
-                  "asset": "icon.timer",
-                  "rect": {
-                    "anchorMin": [0, 0],
-                    "anchorMax": [0, 0],
-                    "offsetMin": [12, 12],
-                    "offsetMax": [60, 60]
-                  },
-                  "landscape": {
-                    "anchorMin": [0, 0],
-                    "anchorMax": [0, 0],
-                    "offsetMin": [12, 16],
-                    "offsetMax": [60, 64]
-                  }
-                },
-                {
                   "id": "hud-timer-label",
                   "type": "label",
                   "text": "1:30",
                   "font": { "family": "Fredoka", "weight": 700 },
                   "size": 40,
                   "color": "#ffffff",
-                  "align": "left",
+                  "align": "center",
                   "outline": {
                     "width": 4,
                     "color": "#7a1f8c"
@@ -2786,13 +2766,13 @@
                   "rect": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [68, 10],
-                    "offsetMax": [328, 60]
+                    "offsetMin": [12, 8],
+                    "offsetMax": [328, 62]
                   },
                   "landscape": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [68, 8],
+                    "offsetMin": [12, 8],
                     "offsetMax": [196, 72]
                   }
                 },
@@ -2835,20 +2815,28 @@
               },
               "children": [
                 {
-                  "id": "hud-qualified-icon",
-                  "type": "icon",
-                  "asset": "icon.qualified",
+                  "id": "hud-qualified-label",
+                  "type": "label",
+                  "text": "Qualified",
+                  "font": { "family": "Fredoka", "weight": 700 },
+                  "size": 24,
+                  "color": "#ffffff",
+                  "align": "center",
+                  "outline": {
+                    "width": 4,
+                    "color": "#7a1f8c"
+                  },
                   "rect": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [12, 24],
-                    "offsetMax": [68, 80]
+                    "offsetMin": [8, 10],
+                    "offsetMax": [164, 40]
                   },
                   "landscape": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [12, 12],
-                    "offsetMax": [68, 68]
+                    "offsetMin": [14, 22],
+                    "offsetMax": [118, 58]
                   }
                 },
                 {
@@ -2861,14 +2849,14 @@
                   "rect": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [80, 12],
-                    "offsetMax": [160, 92]
+                    "offsetMin": [56, 40],
+                    "offsetMax": [116, 100]
                   },
                   "landscape": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [96, 4],
-                    "offsetMax": [168, 76]
+                    "offsetMin": [120, 6],
+                    "offsetMax": [184, 74]
                   }
                 }
               ]
@@ -2891,20 +2879,28 @@
               },
               "children": [
                 {
-                  "id": "hud-alive-icon",
-                  "type": "icon",
-                  "asset": "icon.alive",
+                  "id": "hud-alive-label",
+                  "type": "label",
+                  "text": "Alive",
+                  "font": { "family": "Fredoka", "weight": 700 },
+                  "size": 24,
+                  "color": "#ffffff",
+                  "align": "center",
+                  "outline": {
+                    "width": 4,
+                    "color": "#7a1f8c"
+                  },
                   "rect": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [12, 24],
-                    "offsetMax": [68, 80]
+                    "offsetMin": [8, 10],
+                    "offsetMax": [164, 40]
                   },
                   "landscape": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [12, 12],
-                    "offsetMax": [68, 68]
+                    "offsetMin": [14, 22],
+                    "offsetMax": [118, 58]
                   }
                 },
                 {
@@ -2917,14 +2913,14 @@
                   "rect": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [80, 12],
-                    "offsetMax": [160, 92]
+                    "offsetMin": [56, 40],
+                    "offsetMax": [116, 100]
                   },
                   "landscape": {
                     "anchorMin": [0, 0],
                     "anchorMax": [0, 0],
-                    "offsetMin": [96, 4],
-                    "offsetMax": [168, 76]
+                    "offsetMin": [120, 6],
+                    "offsetMax": [184, 74]
                   }
                 }
               ]

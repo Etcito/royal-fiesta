@@ -19,9 +19,9 @@ test('upload creates no draw pipelines and palette instances share graph materia
   }
   const frame = new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
   const meshed = new Map([['test.asset', { assetId: 'test.asset', data: {
-    materials: [{ name: 'plain', key: 'a'.repeat(64), body: 'return MaterialFull(vec3f(1.0), 0.0, 0.5, vec3f(0.0), 0.0);', helpers: [], constants: [], fields: ['base_color', 'metallic', 'roughness', 'emissive', 'height'] }],
+    materials: [{ name: 'player', key: 'a'.repeat(64), body: 'return MaterialFull(vec3f(1.0), 0.0, 0.5, vec3f(0.0), 0.0);', helpers: [], constants: [], fields: ['base_color', 'metallic', 'roughness', 'emissive', 'height'] }],
     groups: [{ group: 'test', parts: [{ name: 'part', partId: 'part', frame, meshes: [{
-      material: 'plain' as string | null, positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      material: 'player' as string | null, positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
       normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]), uvs: null, indices: new Uint32Array([0, 1, 2]),
     }] }] }],
   } }]])

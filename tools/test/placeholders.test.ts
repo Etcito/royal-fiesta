@@ -31,7 +31,7 @@ async function loadAssets(): Promise<Map<string, { asset: GameAsset; source: Gam
 test('buildContent equals the files on disk', async () => {
   const authored = readAuthored(root)
   const built = await buildContent(authored)
-  const disk = [...filesIn('assets', '.json'), ...filesIn('courses', '.json')].sort()
+  const disk = [...filesIn('assets', '.json'), ...filesIn('courses', '.course.json')].sort()
   const builtKeys = [...built.keys()]
   assert.deepEqual([...builtKeys, ...authored.files].sort(), disk)
   for (const f of authored.files) {

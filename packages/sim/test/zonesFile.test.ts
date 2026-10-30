@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { CONTROL_NO_CELL, ZONE_DEFAULTS } from '@gamesaloon/rollback/zones'
 import { isRefusal } from '../src/refusal.ts'
@@ -183,6 +184,75 @@ test('loadZonesFile refuses a missing sidecar', async () => {
       `[zones] courses/${COURSE.id}.zones.json: missing; add the sidecar (zone mode needs it, full-mesh mode does not)`,
   )
 })
+
+type CoursePoint = [number, number, number]
+interface CourseBox { center: CoursePoint; half: CoursePoint }
+interface SidecarCourse {
+  id: string
+  obstacles: { id: string; t: CoursePoint; motion: { kind: string } }[]
+  spawns: { t: CoursePoint }[]
+  checkpoints: (CourseBox & { respawn: { t: CoursePoint } })[]
+  finish: CourseBox | null
+}
+
+async function readRepoText(path: string): Promise<string> {
+  return readFile(new URL(`../../../${path}`, import.meta.url), 'utf8')
+}
+
+for (const courseId of ['race-sprint', 'obstacle-gallery']) {
+  test(`${courseId} sidecar covers the course with margin and useful cell spacing`, async () => {
+    const source: SidecarCourse = JSON.parse(await readRepoText(`courses/${courseId}.course.json`))
+    const course = {
+      id: source.id,
+      obstacles: source.obstacles.map(({ id, motion }) => ({ id, motion: { kind: motion.kind } })),
+    }
+    const zones = await loadZonesFile(courseId, course, readRepoText)
+    assert.equal(zones.format, ZONES_FORMAT)
+    assert.equal(zones.version, ZONES_VERSION)
+    assert.equal(zones.course, courseId)
+    assert.deepEqual(zones.parts, {})
+    assert.equal(zones.tuning.gridCols, zones.grid.cols)
+
+    const { grid } = zones
+    function covers(x: number, z: number, label: string): void {
+      assert.notEqual(cellOf(grid, x, z), CONTROL_NO_CELL, label)
+      assert.ok(x >= grid.origin[0] + grid.cell[0], `${label}: left margin`)
+      assert.ok(x <= grid.origin[0] + (grid.cols - 1) * grid.cell[0], `${label}: right margin`)
+      assert.ok(z >= grid.origin[1] + grid.cell[1], `${label}: back margin`)
+      assert.ok(z <= grid.origin[1] + (grid.rows - 1) * grid.cell[1], `${label}: front margin`)
+    }
+
+    function coversBox(box: CourseBox, label: string): void {
+      for (const x of [box.center[0] - box.half[0], box.center[0] + box.half[0]]) {
+        for (const z of [box.center[2] - box.half[2], box.center[2] + box.half[2]]) {
+          covers(x, z, label)
+        }
+      }
+    }
+
+    for (const obstacle of source.obstacles) covers(obstacle.t[0], obstacle.t[2], obstacle.id)
+    const spawnCells = new Set<number>()
+    for (const spawn of source.spawns) {
+      covers(spawn.t[0], spawn.t[2], 'spawn')
+      spawnCells.add(cellOf(grid, spawn.t[0], spawn.t[2]))
+    }
+    assert.ok(spawnCells.size > 1, 'start spawns span more than one cell')
+    for (const checkpoint of source.checkpoints) {
+      coversBox(checkpoint, 'checkpoint')
+      covers(checkpoint.respawn.t[0], checkpoint.respawn.t[2], 'checkpoint respawn')
+    }
+    if (source.finish) coversBox(source.finish, 'finish')
+    const positions = [...source.obstacles, ...source.spawns].map(({ t }) => t[2])
+    assert.ok(Math.max(...positions) - Math.min(...positions) >= 3 * grid.cell[1],
+      'course length spans several cells')
+
+    if (courseId === 'obstacle-gallery') {
+      const seesaws = course.obstacles.filter(({ motion }) => motion.kind === 'seesaw')
+      assert.ok(seesaws.length > 0, 'gallery has seesaws')
+      for (const seesaw of seesaws) assert.equal(partMode(zones, seesaw), 'physics', seesaw.id)
+    }
+  })
+}
 
 const GRID = {
   origin: [-8, -4] as [number, number],

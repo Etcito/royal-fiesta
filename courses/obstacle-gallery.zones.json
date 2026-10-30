@@ -8,12 +8,7 @@
     "cols": 32,
     "rows": 36
   },
-  "parts": {
-    "seesaw-1": "physics",
-    "seesaw-2": "physics",
-    "seesaw-3": "physics",
-    "seesaw-4": "physics"
-  },
+  "parts": {},
   "tuning": {
     "gridCols": 32
   }

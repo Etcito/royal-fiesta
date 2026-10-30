@@ -1,0 +1,179 @@
+import { SnapReader } from '@gamesaloon/rollback'
+import type { DomainFactory, DomainSim, DomainSpec } from '@gamesaloon/rollback/zones'
+import { RapierDomainFactory } from '@gamesaloon/rollback-rapier'
+import type {
+  DomainEntityBuilder, DomainJointBuilder, KinematicPart, RapierDomainHooks, RapierModule,
+} from '@gamesaloon/rollback-rapier'
+import { CHAR } from '../character/constants.ts'
+import { CharacterSystem, characterBody } from '../character/system.ts'
+import type { ResolvedCourse } from '../course.ts'
+import { G, groups } from '../groups.ts'
+import type { PlayerInput } from '../input.ts'
+import { roundTicks } from '../match/rules.ts'
+import type { MatchProfile } from '../match/setup.ts'
+import { refuse } from '../refusal.ts'
+import { GRAVITY_Y, readBlob } from '../world.ts'
+import { cellOf } from './cells.ts'
+import { FiestaDomain } from './fiestaDomain.ts'
+import type { FiestaDomainConfig } from './fiestaDomain.ts'
+import { MatchLedger } from './ledger.ts'
+import type { MatchLedgerConfig } from './ledger.ts'
+import { partMode } from './zonesFile.ts'
+import type { ZonesFile } from './zonesFile.ts'
+
+export interface FiestaDomainFactoryConfig {
+  readonly course: ResolvedCourse
+  readonly zones: ZonesFile
+  readonly profile: MatchProfile
+  /** Round plan kind: a race respawns falls, a survival round eliminates them. */
+  readonly kind: 'race' | 'survival'
+  /** Roster seats; every domain gets its own subset in spec.seats. */
+  readonly seatCount: number
+  /** Roster-indexed spawn index into course.spawns; defaults to the seat id modulo the spawn count. */
+  readonly spawnIndices?: readonly number[]
+}
+
+const CHARACTER_KIND = 1
+const NO_PARAMS = new Uint8Array(0)
+const NO_PARTS: readonly KinematicPart[] = []
+// Shadow proxies stand in for another domain's characters, so they collide like one.
+const PROXY_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING | G.CHAR)
+const GRAVITY = { x: 0, y: GRAVITY_Y, z: 0 }
+
+/**
+ * Domains for the fiesta: the global ledger, or a FiestaDomain around a RapierDomainSim.
+ * FiestaDomain owns the ObstacleSystem and the CharacterSystem, so the Rapier hooks only
+ * supply the seat bodies and the shadow proxies.
+ */
+export function createFiestaDomainFactory(
+  R: RapierModule,
+  config: FiestaDomainFactoryConfig,
+): DomainFactory<PlayerInput> {
+  const schedule: MatchLedgerConfig = {
+    seatCount: config.seatCount,
+    kind: config.kind,
+    introTicks: config.profile.introTicks,
+    roundTicks: roundTicks(config.course, config.profile),
+  }
+  const domainConfig = (placeSeats: boolean): FiestaDomainConfig => ({
+    course: config.course,
+    zones: config.zones,
+    schedule,
+    spawnIndices: config.spawnIndices,
+    placeSeats,
+  })
+  // Consumes the seat blocks of sources that this domain does not keep.
+  const sink = new CharacterSystem({ playerCount: 1 })
+
+  const buildEntity: DomainEntityBuilder = (kind) => {
+    if (kind !== CHARACTER_KIND) {
+      refuse('fiestaDomainFactory', `buildEntity(${kind})`, 'unknown entity kind; a domain holds characters only')
+    }
+    return characterBody(R, 0)
+  }
+  const buildJoint: DomainJointBuilder = () => {
+    refuse('fiestaDomainFactory', 'buildJoint', 'joints are not part of V1; rebuild the world without them')
+  }
+  const hooks: RapierDomainHooks<PlayerInput> = {
+    // FiestaDomain loads the course through its own WorldCtx and poses the kinematic
+    // parts at the creation tick. Loading here again would add a second set of bodies.
+    buildStatic() {},
+    spawnSeat(world, seat) {
+      // The entity id is a pure function of the seat, so it survives merge and split.
+      world.adopt(seat + 1, CHARACTER_KIND, NO_PARAMS, seat)
+    },
+    applyInput() {},
+    events() {},
+    buildEntity,
+    buildJoint,
+    cellOf(x, z) { return cellOf(config.zones.grid, x, z) },
+    // ObstacleSystem poses every kinematic part by tick; the world must not pose them too.
+    kinematicParts() { return NO_PARTS },
+    buildProxy() {
+      return {
+        body: R.RigidBodyDesc.kinematicPositionBased(),
+        colliders: [R.ColliderDesc.capsule(CHAR.halfHeight, CHAR.radius)
+          .setDensity(0)
+          .setFriction(0)
+          .setFrictionCombineRule(R.CoefficientCombineRule.Min)
+          .setRestitution(0)
+          .setCollisionGroups(PROXY_GROUPS)],
+      }
+    },
+  }
+  const rapier = new RapierDomainFactory(R, hooks, { gravity: GRAVITY })
+
+  function create(spec: DomainSpec, tick: number): DomainSim<PlayerInput> {
+    if (spec.kind === 'global') return new MatchLedger(spec, tick, schedule)
+    return new FiestaDomain(rapier.create(spec, tick), domainConfig(true))
+  }
+
+  function rebuild(spec: DomainSpec, tick: number, sources: SnapReader[]): DomainSim<PlayerInput> {
+    if (spec.kind === 'global') {
+      // The ledger exports its full state, so a handoff keeps the round results.
+      const ledger = new MatchLedger(spec, tick, schedule)
+      for (let i = 0; i < sources.length; i++) ledger.restore(sources[i])
+      return ledger
+    }
+    const inner: SnapReader[] = []
+    for (let i = 0; i < sources.length; i++) inner.push(new SnapReader(readBlob(sources[i])))
+    const domain = new FiestaDomain(rapier.rebuild(spec, tick, inner), domainConfig(false))
+    applyTrailers(domain, spec, sources, config, sink)
+    return domain
+  }
+
+  function reset(spec: DomainSpec, tick: number): DomainSim<PlayerInput> {
+    return create(spec, tick)
+  }
+
+  return { create, rebuild, reset }
+}
+
+/** The inner blob is consumed above; each source reader now sits at its FiestaDomain trailer. */
+function applyTrailers(
+  domain: FiestaDomain,
+  spec: DomainSpec,
+  sources: readonly SnapReader[],
+  config: FiestaDomainFactoryConfig,
+  sink: CharacterSystem,
+): void {
+  const keptSeats = new Set<number>()
+  const keptSeesaws = new Set<number>()
+  for (let s = 0; s < sources.length; s++) {
+    const r = sources[s]
+    const seatCount = r.u16()
+    for (let i = 0; i < seatCount; i++) {
+      const seat = r.u16()
+      // Sources merge first-wins, like the entity stream they came from.
+      if (spec.seats.includes(seat) && !keptSeats.has(seat)) {
+        domain.readSeat(r, seat)
+        keptSeats.add(seat)
+      } else {
+        sink.readPlayer(r, 0)
+        r.u8()
+        r.i16()
+      }
+    }
+    const seesawCount = r.u16()
+    for (let i = 0; i < seesawCount; i++) {
+      const index = r.u16()
+      const angle = r.f64()
+      const prevAngle = r.f64()
+      const angVel = r.f64()
+      if (keptSeesaws.has(index) || !ownedSeesaw(config, spec, index)) continue
+      domain.obstacles.setSeesawState(index, angle, prevAngle, angVel)
+      keptSeesaws.add(index)
+    }
+  }
+  // The creation tick's pose must use the see-saw angles restored above.
+  domain.obstacles.placeKinematic(domain.ctx, domain.tick)
+}
+
+function ownedSeesaw(config: FiestaDomainFactoryConfig, spec: DomainSpec, index: number): boolean {
+  const obstacle = config.course.obstacles[index]
+  if (obstacle === undefined) {
+    refuse('fiestaDomainFactory', `seesaws/${index}`, 'missing course obstacle; rebuild with the same course')
+  }
+  return obstacle.motion.kind === 'seesaw' && partMode(config.zones, obstacle) === 'physics' &&
+    spec.cells.includes(cellOf(config.zones.grid, obstacle.t.x, obstacle.t.z))
+}

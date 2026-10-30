@@ -13,6 +13,8 @@ import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/dr
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
+import { armClip } from './cameraOcclusion.ts'
+import type { ArmClip } from './cameraOcclusion.ts'
 import { PALETTE, seatTint } from './palette.ts'
 import type { CameraPose, QuatT, RenderPort, SkinnedAssetT, SkinRigT, Vec3T } from './port.ts'
 
@@ -42,7 +44,7 @@ export type CostumeSet = Partial<Record<CostumeSlot, CostumeSpec | null>>
 export interface SceneViewOptions {
   port: RenderPort; viewport: number; localPlayer: number; assets: (name: string) => PrimsAsset; bean: PrimsAsset
   // Replaces followCamera while the camera frames the local player (not the podium).
-  camera?: (focus: { x: number; y: number; z: number }, frameDtS: number) => CameraPose
+  camera?: (focus: { x: number; y: number; z: number }, frameDtS: number, clip: ArmClip) => CameraPose
   // The content's character asset (GameContent.character()); the bean when absent.
   character?: PrimsAsset
   // Course decor and environment, swapped on every course change. Default NO_DRESSING.
@@ -85,6 +87,7 @@ function observeSteps(sim: MatchSim, observer: StepObserver): () => void {
 }
 // Pose layout in the obstacle buffers: t xyz then r xyzw.
 const OB = 7
+const NO_CLIP: ArmClip = (_from, _dir, maxLen) => maxLen
 
 function interpolatePose(prev: Float64Array, cur: Float64Array, b: number, alpha: number,
   t: [number, number, number], r: [number, number, number, number]): void {
@@ -267,6 +270,9 @@ export class SceneView {
   private tick = -1
   private obPrev = new Float64Array(0)
   private obCur = new Float64Array(0)
+  // Obstacle world poses of the frame being drawn (the camera's spring arm tests against them).
+  private obDrawn = new Float64Array(0)
+  private obClip: ArmClip | null = null
   private chPrev = new Float64Array(0)
   private chCur = new Float64Array(0)
   private facing = new Float64Array(0)
@@ -407,6 +413,8 @@ export class SceneView {
     for (let i = 0; i < this.obstacles.length; i++) {
       const b = i * OB
       interpolatePose(prev, cur, b, alpha, t, r)
+      for (let k = 0; k < 3; k++) this.obDrawn[b + k] = t[k]
+      for (let k = 0; k < 4; k++) this.obDrawn[b + 3 + k] = r[k]
       const s = this.course!.obstacles[i].s
       port.setTransform(this.obstacles[i], t, r, [s.x, s.y, s.z])
     }
@@ -474,7 +482,7 @@ export class SceneView {
     }
     if (camPos !== null) {
       const hook = this.opts.camera
-      this.cam = hook !== undefined && onLocal ? hook(camPos, frameDtS) : followCamera(this.cam, camPos, camFacing, frameDtS)
+      this.cam = hook !== undefined && onLocal ? hook(camPos, frameDtS, this.obClip ?? NO_CLIP) : followCamera(this.cam, camPos, camFacing, frameDtS)
       port.setCamera(this.opts.viewport, this.cam)
     }
   }
@@ -549,6 +557,8 @@ export class SceneView {
     }
     this.obPrev = new Float64Array(n * OB)
     this.obCur = new Float64Array(n * OB)
+    this.obDrawn = new Float64Array(n * OB)
+    this.obClip = course === null ? null : armClip(course, this.obDrawn)
     const port = this.port as RenderPort & { setPartFilter?: (instance: number, parts: readonly string[] | null) => void }
     for (let i = 0; i < sim.mechanismItemCount(); i++) {
       const item = sim.mechanismItem(i)

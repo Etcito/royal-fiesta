@@ -319,7 +319,7 @@ class MatchPresenter {
     orbit.reset(0)
     this.scene = new SceneView({
       port: ports[0], viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
-      character: content.character(), dressing: content.dressing(), camera: focus => orbit.pose(focus),
+      character: content.character(), dressing: content.dressing(), camera: (focus, dt, clip) => orbit.pose(focus, dt, clip),
       loadingPaint: !this.c.prepared, skinned: skinnedCharacterOf(content),
     })
   }
@@ -431,7 +431,7 @@ class LocalPresenter {
       this.scenes.push(new SceneView({
         port: ports[0], viewport: k, localPlayer: k, assets: name => content.assets(name), bean: content.character(),
         character: content.character(), dressing: content.dressing(),
-        camera: k === 0 ? focus => orbit.pose(focus) : undefined,
+        camera: k === 0 ? (focus, dt, clip) => orbit.pose(focus, dt, clip) : undefined,
         loadingPaint: !this.c.prepared, skinned: skinnedCharacterOf(content),
       }))
     }

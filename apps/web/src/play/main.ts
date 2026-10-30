@@ -191,7 +191,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameI
       hubView.setVisible(match === null)
       if (match !== null) {
         scene = new SceneView({
-          port, viewport: 0, localPlayer: seat, assets: ctx.assets, bean: ctx.bean, camera: focus => orbit.pose(focus), skinned: ctx.skinned,
+          port, viewport: 0, localPlayer: seat, assets: ctx.assets, bean: ctx.bean, camera: (focus, dt, clip) => orbit.pose(focus, dt, clip), skinned: ctx.skinned,
         })
         names = Array.from({ length: 8 }, (_, p) => (p === seat ? q.name : `Bean ${p + 1}`))
         show([])

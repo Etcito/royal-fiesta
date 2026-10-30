@@ -103,7 +103,7 @@ export class SplitScreenLayout {
         const scene = new SceneView({
           port, viewport: 0, localPlayer: seats[i], assets: options.assets, bean: options.bean,
           character: options.character ?? options.bean, skinned: options.skinned, dressing: options.dressing,
-          camera: focus => orbit.pose(focus),
+          camera: (focus, dt, clip) => orbit.pose(focus, dt, clip),
         })
         const far = new FarRenderer({
           port, bean: options.bean, feed: options.feed,

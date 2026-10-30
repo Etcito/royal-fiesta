@@ -3,7 +3,9 @@ import test from 'node:test'
 import { stickToWorld } from '../src/client/cameraBasis.ts'
 import { followCamera } from '../src/render/camera.ts'
 import { DEFAULT_PITCH, ORBIT_DISTANCE, OrbitCamera, PITCH_MAX, PITCH_MIN } from '../src/render/orbitCamera.ts'
+import { armClip } from '../src/render/cameraOcclusion.ts'
 import type { CameraPose, Vec3T } from '../src/render/port.ts'
+import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 
 const EPS = 1e-9
 
@@ -161,4 +163,27 @@ test('a positive look step turns right for 8 start yaws: mouse dx > 0 and right 
     }
   }
   assert.equal(wrong, 0)
+})
+
+test('spring arm: a wall behind the player shortens the arm, eases back out, a wall past the arm changes nothing', () => {
+  // One static obstacle whose cuboid is a wall at z = -3 (yaw 0 puts the eye behind the player, at -z).
+  const course = {
+    obstacles: [{ colliders: [{ shape: 'cuboid', half: { x: 5, y: 5, z: 0.5 }, t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 } }] }],
+  } as unknown as ResolvedCourse
+  const poses = new Float64Array([0, 0, -3.5, 0, 0, 0, 1])
+  const clip = armClip(course, poses)
+  const cam = new OrbitCamera()
+  cam.reset(0)
+  const free = cam.pose({ x: 0, y: 0, z: 0 })
+  near(dist(free), ORBIT_DISTANCE, 'no clip: full arm')
+  const hit = cam.pose({ x: 0, y: 0, z: 0 }, 0, clip)
+  assert.ok(dist(hit) < ORBIT_DISTANCE - 1 && dist(hit) >= 0.5, 'the arm stops short of the wall')
+  assert.ok(hit.eye[2] > -3, 'the eye stays in front of the wall face (z = -3)')
+  const after = cam.pose({ x: 0, y: 0, z: 0 }, 0.01, armClip(course, new Float64Array([0, 0, -30, 0, 0, 0, 1])))
+  assert.ok(dist(after) > dist(hit) && dist(after) < ORBIT_DISTANCE, 'the arm eases out, not a pop')
+  for (let i = 0; i < 100; i++) cam.pose({ x: 0, y: 0, z: 0 }, 0.05, armClip(course, new Float64Array([0, 0, -30, 0, 0, 0, 1])))
+  near(dist(cam.pose({ x: 0, y: 0, z: 0 }, 0, armClip(course, new Float64Array([0, 0, -30, 0, 0, 0, 1])))), ORBIT_DISTANCE, 'free again: full arm')
+  cam.reset(0)
+  const inside = cam.pose({ x: 0, y: 0, z: -3.5 }, 0, clip)
+  near(dist(inside), ORBIT_DISTANCE, 'a start inside a collider keeps the full arm')
 })

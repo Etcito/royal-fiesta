@@ -1,5 +1,6 @@
 import { cameraBasis, yawTurn } from '../client/cameraBasis.ts'
 import type { Planar, PlanarBasis } from '../client/cameraBasis.ts'
+import type { ArmClip } from './cameraOcclusion.ts'
 import type { CameraPose } from './port.ts'
 
 // View-side third-person orbit camera: a local client value, never in the sim snapshot.
@@ -13,6 +14,11 @@ export const TARGET_HEIGHT = 1.2
 export const MOUSE_RAD_PER_PX = 0.0005
 export const STICK_RAD_S = 0.6
 export const STICK_DEADZONE = 0.15
+// Spring arm: the eye stops CAMERA_RADIUS short of an obstacle on the way back from the target (never
+// closer than MIN_ARM), snaps in at once and eases back out at ARM_RECOVER_M_S so a passing wall does not pop.
+export const CAMERA_RADIUS = 0.3
+export const MIN_ARM = 0.5
+export const ARM_RECOVER_M_S = 12
 
 const TAU = Math.PI * 2
 const ORIGIN = { x: 0, y: 0, z: 0 }
@@ -40,10 +46,13 @@ function dead(v: number): number {
 export class OrbitCamera {
   yaw = 0
   pitch = DEFAULT_PITCH
+  // Current arm length (target to eye); below ORBIT_DISTANCE while an obstacle shortens it.
+  private arm = ORBIT_DISTANCE
 
   reset(yaw = 0): void {
     this.yaw = wrapYaw(yaw)
     this.pitch = DEFAULT_PITCH
+    this.arm = ORBIT_DISTANCE
   }
 
   // Screen basis on XZ of the current pose; pass basis() to stickToWorld for movement.
@@ -74,16 +83,26 @@ export class OrbitCamera {
     this.pitch = clampPitch(this.pitch + (invertY ? -y : y) * k)
   }
 
-  // Direct pose, no smoothing: the eye sits on a sphere of ORBIT_DISTANCE around the target.
-  pose(focus: { x: number; y: number; z: number }): CameraPose {
+  // The eye sits on a sphere of ORBIT_DISTANCE around the target; with `clip` (obstacle test) the arm
+  // shortens to stop short of geometry between the target and the eye. basis() never clips: the
+  // movement frame depends on the view direction only.
+  pose(focus: { x: number; y: number; z: number }, dtS = 0, clip?: ArmClip): CameraPose {
     const fx = Math.sin(this.yaw)
     const fz = Math.cos(this.yaw)
-    const h = Math.cos(this.pitch) * ORBIT_DISTANCE
-    const v = Math.sin(this.pitch) * ORBIT_DISTANCE
+    const ch = Math.cos(this.pitch)
+    const sv = Math.sin(this.pitch)
     const tx = focus.x
     const ty = focus.y + TARGET_HEIGHT
     const tz = focus.z
-    return { eye: [tx - fx * h, ty + v, tz - fz * h], target: [tx, ty, tz], fovYDeg: 60, near: 0.1, far: 500 }
+    let len = ORBIT_DISTANCE
+    if (clip !== undefined) {
+      const free = clip([tx, ty, tz], [-fx * ch, sv, -fz * ch], ORBIT_DISTANCE, CAMERA_RADIUS)
+      const want = Math.max(MIN_ARM, free)
+      const grown = this.arm + (Number.isFinite(dtS) && dtS > 0 ? ARM_RECOVER_M_S * dtS : 0)
+      this.arm = want < this.arm ? want : Math.min(want, grown)
+      len = this.arm
+    } else this.arm = ORBIT_DISTANCE
+    return { eye: [tx - fx * ch * len, ty + sv * len, tz - fz * ch * len], target: [tx, ty, tz], fovYDeg: 60, near: 0.1, far: 500 }
   }
 
   // amountRad > 0 rotates the forward toward screen-right; a zero turn keeps yaw bit-exact.

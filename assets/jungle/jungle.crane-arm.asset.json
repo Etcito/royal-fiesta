@@ -1,0 +1,972 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "jungle.crane-arm",
+  "name": "jungle-crane-arm",
+  "category": "obstacle",
+  "world": "jungle",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "jungle-crane-arm",
+    "root": [
+      "jungle_crane_arm"
+    ],
+    "nodes": {
+      "jungle_crane_arm": {
+        "id": "jungle_crane_arm",
+        "name": "jungle-crane-arm",
+        "kind": "group",
+        "children": [
+          "foot",
+          "mast",
+          "pulley",
+          "arm",
+          "platform",
+          "collider_0",
+          "collider_1",
+          "collider_2",
+          "collider_3",
+          "collider_4"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "jungle.crane-arm",
+          "category": "obstacle",
+          "world": "jungle"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "foot": {
+        "id": "foot",
+        "name": "foot",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            0.25,
+            0
+          ]
+        },
+        "round": 0.06,
+        "material": "stone",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.55,
+                0,
+                0
+              ],
+              [
+                -0.55,
+                0,
+                0
+              ],
+              [
+                0,
+                0.25,
+                0
+              ],
+              [
+                0,
+                -0.25,
+                0
+              ],
+              [
+                0,
+                0,
+                0.55
+              ],
+              [
+                0,
+                0,
+                -0.55
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "mast": {
+        "id": "mast",
+        "name": "mast",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            2,
+            0
+          ]
+        },
+        "round": 0.08,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.25,
+                0,
+                0
+              ],
+              [
+                -0.25,
+                0,
+                0
+              ],
+              [
+                0,
+                1.5,
+                0
+              ],
+              [
+                0,
+                -1.5,
+                0
+              ],
+              [
+                0,
+                0,
+                0.25
+              ],
+              [
+                0,
+                0,
+                -0.25
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "pulley": {
+        "id": "pulley",
+        "name": "pulley",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            0,
+            3.15,
+            0.35
+          ]
+        },
+        "round": 0.05,
+        "material": "rope",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.18,
+                0,
+                0
+              ],
+              [
+                -0.18,
+                0,
+                0
+              ],
+              [
+                0,
+                0.18,
+                0
+              ],
+              [
+                0,
+                -0.18,
+                0
+              ],
+              [
+                0,
+                0,
+                0.06
+              ],
+              [
+                0,
+                0,
+                -0.06
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "arm": {
+        "id": "arm",
+        "name": "arm",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            2.5,
+            3.725,
+            0
+          ]
+        },
+        "round": 0.06,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                2.5,
+                0,
+                0
+              ],
+              [
+                -2.5,
+                0,
+                0
+              ],
+              [
+                0,
+                0.175,
+                0
+              ],
+              [
+                0,
+                -0.175,
+                0
+              ],
+              [
+                0,
+                0,
+                0.3
+              ],
+              [
+                0,
+                0,
+                -0.3
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "platform": {
+        "id": "platform",
+        "name": "platform",
+        "kind": "paramesh",
+        "transform": {
+          "position": [
+            5,
+            3.35,
+            0
+          ]
+        },
+        "round": 0.05,
+        "material": "wood",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.8,
+                0,
+                0
+              ],
+              [
+                -0.8,
+                0,
+                0
+              ],
+              [
+                0,
+                0.1,
+                0
+              ],
+              [
+                0,
+                -0.1,
+                0
+              ],
+              [
+                0,
+                0,
+                0.8
+              ],
+              [
+                0,
+                0,
+                -0.8
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            0.25,
+            0
+          ]
+        },
+        "round": 0.06,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.55,
+                0,
+                0
+              ],
+              [
+                -0.55,
+                0,
+                0
+              ],
+              [
+                0,
+                0.25,
+                0
+              ],
+              [
+                0,
+                -0.25,
+                0
+              ],
+              [
+                0,
+                0,
+                0.55
+              ],
+              [
+                0,
+                0,
+                -0.55
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_1": {
+        "id": "collider_1",
+        "name": "collider_1",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            2,
+            0
+          ]
+        },
+        "round": 0.08,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.25,
+                0,
+                0
+              ],
+              [
+                -0.25,
+                0,
+                0
+              ],
+              [
+                0,
+                1.5,
+                0
+              ],
+              [
+                0,
+                -1.5,
+                0
+              ],
+              [
+                0,
+                0,
+                0.25
+              ],
+              [
+                0,
+                0,
+                -0.25
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_2": {
+        "id": "collider_2",
+        "name": "collider_2",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            3.15,
+            0.35
+          ]
+        },
+        "round": 0.05,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.18,
+                0,
+                0
+              ],
+              [
+                -0.18,
+                0,
+                0
+              ],
+              [
+                0,
+                0.18,
+                0
+              ],
+              [
+                0,
+                -0.18,
+                0
+              ],
+              [
+                0,
+                0,
+                0.06
+              ],
+              [
+                0,
+                0,
+                -0.06
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_3": {
+        "id": "collider_3",
+        "name": "collider_3",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            2.5,
+            3.725,
+            0
+          ]
+        },
+        "round": 0.06,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                2.5,
+                0,
+                0
+              ],
+              [
+                -2.5,
+                0,
+                0
+              ],
+              [
+                0,
+                0.175,
+                0
+              ],
+              [
+                0,
+                -0.175,
+                0
+              ],
+              [
+                0,
+                0,
+                0.3
+              ],
+              [
+                0,
+                0,
+                -0.3
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_4": {
+        "id": "collider_4",
+        "name": "collider_4",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            5,
+            3.35,
+            0
+          ]
+        },
+        "round": 0.05,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.8,
+                0,
+                0
+              ],
+              [
+                -0.8,
+                0,
+                0
+              ],
+              [
+                0,
+                0.1,
+                0
+              ],
+              [
+                0,
+                -0.1,
+                0
+              ],
+              [
+                0,
+                0,
+                0.8
+              ],
+              [
+                0,
+                0,
+                -0.8
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      }
+    },
+    "materials": {
+      "wood": {
+        "name": "wood",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#8a5a2e",
+                "in.roughness": 0.7
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "rope": {
+        "name": "rope",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#c9a36a",
+                "in.roughness": 0.85
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "stone": {
+        "name": "stone",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#6b6b5a",
+                "in.roughness": 0.9
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "halfExtents": [
+        0.55,
+        0.25,
+        0.55
+      ],
+      "t": [
+        0,
+        0.25,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cuboid",
+      "halfExtents": [
+        0.25,
+        1.5,
+        0.25
+      ],
+      "t": [
+        0,
+        2,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cuboid",
+      "halfExtents": [
+        0.18,
+        0.18,
+        0.06
+      ],
+      "t": [
+        0,
+        3.15,
+        0.35
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cuboid",
+      "halfExtents": [
+        2.5,
+        0.175,
+        0.3
+      ],
+      "t": [
+        2.5,
+        3.725,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "shape": "cuboid",
+      "halfExtents": [
+        0.8,
+        0.1,
+        0.8
+      ],
+      "t": [
+        5,
+        3.35,
+        0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "physics": {
+    "bodies": [
+      {
+        "id": "mast",
+        "type": "fixed",
+        "colliders": [
+          0,
+          1,
+          2
+        ],
+        "parts": [
+          "foot",
+          "mast",
+          "pulley",
+          "collider_0",
+          "collider_1",
+          "collider_2"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.8,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "arm",
+        "type": "dynamic",
+        "colliders": [
+          3,
+          4
+        ],
+        "parts": [
+          "arm",
+          "platform",
+          "collider_3",
+          "collider_4"
+        ],
+        "t": [
+          0,
+          0,
+          0
+        ],
+        "r": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "density": 400,
+        "friction": 0.8,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.1,
+        "gravityScale": 1,
+        "ccd": true,
+        "surface": "normal"
+      }
+    ],
+    "joints": [
+      {
+        "id": "pivot",
+        "kind": "hinge",
+        "a": "mast",
+        "b": "arm",
+        "anchorA": [
+          0,
+          3.5,
+          0
+        ],
+        "anchorB": [
+          0,
+          3.5,
+          0
+        ],
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "limitsDeg": [
+          0,
+          90
+        ],
+        "limitsM": null,
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0,
+        "motor": {
+          "mode": "target",
+          "targetDeg": 0,
+          "stiffness": 25000,
+          "damping": 5000,
+          "maxForce": 120000,
+          "enabled": true
+        }
+      }
+    ]
+  },
+  "anchors": {},
+  "bounds": {
+    "min": [
+      -0.55,
+      0,
+      -0.8
+    ],
+    "max": [
+      5.8,
+      3.9,
+      0.8
+    ]
+  },
+  "hash": "6262366365c6390130c05414d8efce4b2886ee0ef20e7858ebe11220371d5db4"
+}

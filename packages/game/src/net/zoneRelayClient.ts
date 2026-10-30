@@ -55,6 +55,9 @@ export class ZoneRelayClient {
   private seatFns: ((ev: ZoneSeatEvent) => void)[] = []
   private closeFns: (() => void)[] = []
   badFrames = 0
+  /** Why the socket closed: the close code and the last unsolicited relay error ('rate limited', ...), or null while open. */
+  closeCause: string | null = null
+  private lastError: string | null = null
   foreignMatches = 0
 
   constructor(url: string, ws: ZoneWsFactory) { this.url = url; this.factory = ws }
@@ -84,7 +87,11 @@ export class ZoneRelayClient {
           resolve()
         }
         ws.onerror = () => fail('socket error before open')
-        ws.onclose = e => { fail(`socket closed before open (code ${e.code} ${e.reason})`); this.handleClose() }
+        ws.onclose = e => {
+          fail(`socket closed before open (code ${e.code} ${e.reason})`)
+          this.closeCause = `code ${e.code}${e.reason ? ` ${e.reason}` : ''}${this.lastError ? `, relay error '${this.lastError}'` : ''}`
+          this.handleClose()
+        }
         ws.onmessage = e => this.handleFrame(e.data)
       } catch (e) { clearTimeout(timer); settled = true; reject(e) }
     })
@@ -161,6 +168,7 @@ export class ZoneRelayClient {
     const m = parseZoneServerMsg(data)
     if (!m) { this.badFrames++; return }
     const p = this.pending
+    if (!p && m.t === 'error') this.lastError = m.reason
     if (p) {
       if (m.t === 'error') {
         this.pending = null

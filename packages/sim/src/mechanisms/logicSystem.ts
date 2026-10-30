@@ -260,7 +260,8 @@ export class MechLogicSystem implements SimSystem<unknown> {
     }
   }
 
-  restore(r: SnapReader, ctx: WorldCtx<unknown>): void {
+  // handoff: the snapshot comes from a domain with other seats, so the per-seat lever press counters are not read.
+  restore(r: SnapReader, ctx: WorldCtx<unknown>, handoff = false): void {
     this.#configure(r.i32(), ctx.playerCount)
     this.#loadTick = r.u32()
     const n = r.u32()
@@ -280,10 +281,28 @@ export class MechLogicSystem implements SimSystem<unknown> {
       state.dir = r.u8() === 0 ? -1 : 1
       state.localTick = r.u32()
     }
+    if (handoff) return
     for (let i = 0; i < this.#press.length; i++) {
       this.#press[i] = r.u16()
       this.#pending[i] = r.u8()
     }
+  }
+
+  // Poses every animated body where its animation stands between steps: a free track at
+  // (tick - loadTick), a linked one at its playback tick. Zone domains call it after load and handoff,
+  // because a fresh body sits at its rest pose and preStep only schedules the next one.
+  placeAnimations(ctx: WorldCtx<unknown>, mech: MechanismSystem): void {
+    const m = this.#spec
+    if (m === null) return
+    for (let i = 0; i < m.animations.length; i++) {
+      const a = m.animations[i], state = this.#animations[i]
+      const tick = state === null ? ctx.tick - this.#loadTick : state.localTick
+      const out = trackPose(a, tick, this.#pose), rest = this.#rests[i]
+      add3(rest.t, out.t, out.t)
+      quatMul(out.r, rest.r, out.r)
+      mech.setKinematicTarget(a.target, out)
+    }
+    mech.placeKinematic(ctx)
   }
 }
 

@@ -174,9 +174,10 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
       if (current) {
         // Keep the old session acknowledging traffic throughout settlement and intermission.
         ticks = current.match.frame(dtS, own ? neutral : out => sample(current, out))
-        const ledger = current.match.ledger
-        const result = ledger.result
-        if (!own && ledger.over && result && current.match.stats.confirmedTick[0] >= result.endTick) {
+        // A rejoining local peer holds no ledger until its next boundary; the result waits for it.
+        const ledger = current.match.currentLedger
+        const result = ledger?.result
+        if (!own && ledger !== null && ledger.over && result && current.match.stats.confirmedTick[0] >= result.endTick) {
           own = roundResultOf(plan, result, current.seatOf)
           remember(r, cfg.localPeer, own)
           rt.sendResult(recipients, encodeRoundResult(own))

@@ -106,6 +106,9 @@ function seedSeat(domain: FiestaDomain, seat: number, mode: number, knockbacks: 
   w.i32(domain.tick - 1)
   w.u8(0) // frozen
   w.u8(status === PlayerStatus.alive ? 0 : 1)
+  w.i16(-1) // ground item
+  w.i16(-1) // ground body
+  w.i16(-1) // grab lever
   w.u8(status)
   w.i16(0) // checkpoint reached
   domain.readSeat(new SnapReader(w.bytes()), seat)
@@ -207,6 +210,29 @@ test('a rebuilt live seat keeps falling and colliding like the source', t => {
   }
   assert.deepEqual(rebuilt.state(0).pos, source.state(0).pos)
 })
+
+test('a seat no source carries (its replicas were lost) is rebuilt at its spawn, live, on every replica', t => {
+  const a = track(t, factory.create(left, 0))
+  for (let tick = 0; tick < 20; tick++) a.step([{ ...neutralInput(), moveX: -1 }], noShadows)
+  // The export of `right` never arrives: seat 1 has no body in any source.
+  const merged = track(t, factory.rebuild(together, a.tick, [exported(a)]))
+  const again = track(t, factory.rebuild(together, a.tick, [exported(a)]))
+  const fresh = track(t, factory.create(together, a.tick))
+  assert.deepEqual(merged.seats, [0, 1])
+  assert.deepEqual(seatState(merged, 0), seatState(a, 0))
+  assert.deepEqual(merged.state(1).pos, fresh.state(1).pos)
+  assert.equal(merged.status(1), PlayerStatus.alive)
+  const body = (domain: FiestaDomain) => domain.inner.world.sim.body(domain.inner.world.bodyOf(2))
+  assert.equal(body(merged).gravityScale(), body(fresh).gravityScale())
+  assert.equal(body(merged).collider(0).collisionGroups(), body(fresh).collider(0).collisionGroups())
+  assert.equal(again.hash(), merged.hash())
+  for (let i = 0; i < 10; i++) {
+    merged.step([neutralInput(), neutralInput()], noShadows)
+    again.step([neutralInput(), neutralInput()], noShadows)
+  }
+  assert.equal(again.hash(), merged.hash())
+})
+
 
 test('a zero-length shadow reader is skipped without changing the simulation', t => {
   const a = track(t, factory.create(left, 0))

@@ -1,6 +1,6 @@
-import { SnapReader } from '@gamesaloon/rollback'
+import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { DomainFactory, DomainSim, DomainSpec } from '@gamesaloon/rollback/zones'
-import { RapierDomainFactory } from '@gamesaloon/rollback-rapier'
+import { mergeEntityStreams, RapierDomainFactory } from '@gamesaloon/rollback-rapier'
 import type {
   DomainEntityBuilder, DomainJointBuilder, KinematicPart, RapierDomainHooks, RapierModule,
 } from '@gamesaloon/rollback-rapier'
@@ -115,11 +115,37 @@ export function createFiestaDomainFactory(
       for (let i = 0; i < sources.length; i++) ledger.restore(sources[i])
       return ledger
     }
-    const inner: SnapReader[] = []
-    for (let i = 0; i < sources.length; i++) inner.push(new SnapReader(readBlob(sources[i])))
+    const blobs: Uint8Array[] = []
+    for (let i = 0; i < sources.length; i++) blobs.push(readBlob(sources[i]))
+    const fresh = freshSeats(spec, tick, blobs)
+    if (fresh !== null) {
+      blobs.push(readBlob(fresh))
+      sources = [...sources, fresh]
+    }
+    const inner = blobs.map(blob => new SnapReader(blob))
     const domain = new FiestaDomain(rapier.rebuild(spec, tick, inner), domainConfig(false))
     applyTrailers(domain, spec, sources, config, sink)
     return domain
+  }
+
+  /**
+   * A seat in no source export: its old domain's replicas were all lost (planEpoch builds the domain from the other
+   * sources), or it had no domain last epoch. Every replica lacks the same exports, so each one adds the same source
+   * last (sources merge first-wins): those seats created at their spawn, alive.
+   */
+  function freshSeats(spec: DomainSpec, tick: number, blobs: readonly Uint8Array[]): SnapReader | null {
+    const carried = new Set<number>()
+    for (const e of mergeEntityStreams(blobs.map(blob => new SnapReader(blob))).entities) carried.add(e.owner)
+    const seats = spec.seats.filter(seat => !carried.has(seat))
+    if (seats.length === 0) return null
+    const domain = new FiestaDomain(rapier.create({ ...spec, kind: 'seat', seats, cells: [] }, tick), domainConfig(true))
+    const w = new SnapWriter()
+    try {
+      domain.exportEntities(w)
+    } finally {
+      domain.inner.world.sim.free()
+    }
+    return new SnapReader(w.bytes().slice())
   }
 
   function reset(spec: DomainSpec, tick: number): DomainSim<PlayerInput> {
@@ -139,6 +165,7 @@ function applyTrailers(
 ): void {
   const keptSeats = new Set<number>()
   const keptSeesaws = new Set<number>()
+  let mechanisms: [SnapReader, SnapReader, SnapReader] | null = null
   for (let s = 0; s < sources.length; s++) {
     const r = sources[s]
     const seatCount = r.u16()
@@ -164,7 +191,13 @@ function applyTrailers(
       domain.obstacles.setSeesawState(index, angle, prevAngle, angVel)
       keptSeesaws.add(index)
     }
+    // Mechanism state is course-wide, not per seat: the first source's copy is kept, like the entity stream.
+    const logic = new SnapReader(readBlob(r))
+    const mech = new SnapReader(readBlob(r))
+    const dynamic = new SnapReader(readBlob(r))
+    if (mechanisms === null) mechanisms = [logic, mech, dynamic]
   }
+  if (mechanisms !== null) domain.adoptMechanisms(mechanisms[0], mechanisms[1], mechanisms[2])
   // The creation tick's pose must use the see-saw angles restored above.
   domain.obstacles.placeKinematic(domain.ctx, domain.tick)
 }

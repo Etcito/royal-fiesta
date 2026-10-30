@@ -3,15 +3,19 @@
   "version": 0,
   "course": "race-bean-dash",
   "grid": {
-    "origin": [-12, -8],
-    "cell": [2, 2],
-    "cols": 12,
-    "rows": 67
+    "origin": [
+      -14,
+      -10
+    ],
+    "cell": [
+      2,
+      2
+    ],
+    "cols": 15,
+    "rows": 69
   },
-  "parts": {
-    "seesaw-1": "physics"
-  },
+  "parts": {},
   "tuning": {
-    "gridCols": 12
+    "gridCols": 15
   }
 }

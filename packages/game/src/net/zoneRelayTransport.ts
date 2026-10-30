@@ -4,8 +4,15 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import type { ZoneRelayClient } from './zoneRelayClient.ts'
 import { MAX_ZONE_PEERS, RELAY_BIN_RATE_PER_SEC, RELAY_MAX_BIN_BYTES, ZONE_BIN_IN_HEADER } from './zoneRelayProtocol.ts'
 
-/** Packet byte 0: bit 0 is the channel (0 fast, 1 reliable); bit 1 marks one part of a packet split across frames. */
+/**
+ * Packet byte 0: bit 0 is the channel (0 fast, 1 reliable); bit 1 marks one part of a packet split across frames;
+ * bit 2 marks a batch: consecutive small packets for the same peers, each as u8 reliable, u16 length, bytes.
+ */
 const PART_FLAG = 2
+const BATCH_FLAG = 4
+const BATCH_ENTRY_HEADER = 3
+/** Most payload bytes of one batch frame (the relay cap minus the relay header). */
+const BATCH_MAX_BYTES = RELAY_MAX_BIN_BYTES - ZONE_BIN_IN_HEADER
 /** Part header: flags, u16 part index, u16 part count. */
 export const ZONE_PART_HEADER = 5
 /** Largest packet sent as one frame: the relay cap minus the relay header and the flags byte. */
@@ -19,13 +26,16 @@ export interface ZoneRelayTransportStats {
   frames: number; bytesOut: number; maxFrameBytes: number; droppedFast: number; deferredReliable: number
 }
 interface Packet { peer: number; ch: NetChannel; data: Uint8Array }
-interface Pending { lo: number; hi: number; payload: Uint8Array }
+interface Pending { lo: number; hi: number; payload: Uint8Array; fast: boolean; counted?: boolean }
+interface Batch { lo: number; hi: number; entries: Uint8Array[]; size: number; reliable: boolean }
 interface Assembly { reliable: boolean; count: number; next: number; size: number; chunks: Uint8Array[] }
 
 /**
- * One masked binary frame per packet, with a shared rolling one-second budget. A packet larger than one relay frame
- * goes as consecutive part frames (one budget slot each) and is rebuilt per sender; the relay keeps each sender's
- * frames in order, so a sender's parts arrive contiguous.
+ * Masked binary frames with a shared rolling one-second budget. Small packets for the same peers, sent one after the
+ * other, travel together in one batch frame that flush() emits (the relay counts frames, and a 60-seat match sends
+ * thousands of tiny packets per second; a catch-up burst would otherwise trip its per-socket frame limit). A packet
+ * larger than one relay frame goes as consecutive part frames (one budget slot each) and is rebuilt per sender; the
+ * relay keeps each sender's frames in order, so a sender's parts arrive contiguous.
  */
 export class ZoneRelayTransport implements GroupTransport {
   readonly stats: ZoneRelayTransportStats = { frames: 0, bytesOut: 0, maxFrameBytes: 0, droppedFast: 0, deferredReliable: 0 }
@@ -38,10 +48,13 @@ export class ZoneRelayTransport implements GroupTransport {
   private allClosed = false
   private inbox: Packet[] = []
   private pending: Pending[] = []
+  private batch: Batch | null = null
+  private readonly batching: boolean
   private sentAt: number[] = []
   private assembling: (Assembly | null)[]
 
-  constructor(client: ZoneRelayClient, selfPeer: number, peerCount: number, now: () => number) {
+  constructor(client: ZoneRelayClient, selfPeer: number, peerCount: number, now: () => number, options: { batch?: boolean } = {}) {
+    this.batching = options.batch !== false
     if (!Number.isInteger(peerCount) || peerCount < 2 || peerCount > MAX_ZONE_PEERS) {
       refuse('relay', 'peerCount', `${peerCount} is outside 2..${MAX_ZONE_PEERS}; pass the zone peer count`)
     }
@@ -61,7 +74,7 @@ export class ZoneRelayTransport implements GroupTransport {
         this.assembling[ev.seat] = null
       }
     })
-    client.onClose(() => { this.allClosed = true; this.pending = [] })
+    client.onClose(() => { this.allClosed = true; this.pending = []; this.batch = null })
   }
 
   send(peer: number, ch: NetChannel, data: Uint8Array): void { this.sendMany([peer], ch, data) }
@@ -74,24 +87,74 @@ export class ZoneRelayTransport implements GroupTransport {
       else hi |= 1 << (peer - 32)
     }
     if ((lo | hi) === 0) return
+    if (this.allClosed) return
+    if (this.batching && data.byteLength + BATCH_ENTRY_HEADER + 1 <= BATCH_MAX_BYTES) {
+      this.enqueue(lo >>> 0, hi >>> 0, ch, data)
+      return
+    }
+    // A packet of its own: what was queued before it goes out first, then it, in order.
+    this.closeBatch()
     const frames = this.split(ch, data)
     // Older reliable packets always get the first available budget slots.
-    this.flush()
-    if (this.allClosed) return
+    this.drainPending()
     const t = this.now()
     let budget = this.budget(t)
     // A fast packet goes whole or not at all: a lone part could never be rebuilt.
     if (ch === 'fast' && budget < frames.length) { this.stats.droppedFast++; return }
     for (const payload of frames) {
-      const packet = { lo: lo >>> 0, hi: hi >>> 0, payload }
-      if (budget === 0) { this.pending.push(packet); this.stats.deferredReliable++; continue }
+      const packet: Pending = { lo: lo >>> 0, hi: hi >>> 0, payload, fast: false }
+      if (budget === 0) { packet.counted = true; this.pending.push(packet); this.stats.deferredReliable++; continue }
       this.emit(packet, t)
       budget--
     }
   }
 
-  /** Call once per page/bot frame to release deferred reliable packets in order. */
+  /** Call once per page/bot frame, after the frame's sends: emits the open batch and releases deferred packets in order. */
   flush(): void {
+    if (this.allClosed) { this.pending = []; this.batch = null; return }
+    this.closeBatch()
+    this.drainPending()
+  }
+
+  private enqueue(lo: number, hi: number, ch: NetChannel, data: Uint8Array): void {
+    let batch = this.batch
+    const need = BATCH_ENTRY_HEADER + data.byteLength
+    if (batch !== null && (batch.lo !== lo || batch.hi !== hi || batch.size + need > BATCH_MAX_BYTES)) {
+      this.closeBatch()
+      batch = null
+    }
+    if (batch === null) batch = this.batch = { lo, hi, entries: [], size: 1, reliable: false }
+    const entry = new Uint8Array(need)
+    entry[0] = ch === 'reliable' ? 1 : 0
+    entry[1] = data.byteLength & 0xff
+    entry[2] = data.byteLength >>> 8
+    entry.set(data, BATCH_ENTRY_HEADER)
+    batch.entries.push(entry)
+    batch.size += need
+    if (ch === 'reliable') batch.reliable = true
+  }
+
+  /** Turns the open batch into one queued frame: a lone packet keeps the plain single-packet layout. */
+  private closeBatch(): void {
+    const batch = this.batch
+    if (batch === null) return
+    this.batch = null
+    let payload: Uint8Array
+    if (batch.entries.length === 1) {
+      const entry = batch.entries[0]
+      payload = new Uint8Array(entry.byteLength - BATCH_ENTRY_HEADER + 1)
+      payload[0] = entry[0]
+      payload.set(entry.subarray(BATCH_ENTRY_HEADER), 1)
+    } else {
+      payload = new Uint8Array(batch.size)
+      payload[0] = BATCH_FLAG
+      let off = 1
+      for (const entry of batch.entries) { payload.set(entry, off); off += entry.byteLength }
+    }
+    this.pending.push({ lo: batch.lo, hi: batch.hi, payload, fast: !batch.reliable })
+  }
+
+  private drainPending(): void {
     if (this.allClosed) { this.pending = []; return }
     const t = this.now()
     let budget = this.budget(t)
@@ -104,7 +167,14 @@ export class ZoneRelayTransport implements GroupTransport {
         else packet.hi &= ~(1 << (peer - 32))
       }
       if ((packet.lo | packet.hi) === 0) { this.pending.shift(); continue }
-      if (budget === 0) break
+      if (budget === 0) {
+        // Out of budget: fast frames are lost, reliable ones wait for the next window, in order.
+        const kept = this.pending.filter(p => !p.fast)
+        this.stats.droppedFast += this.pending.length - kept.length
+        for (const p of kept) if (!p.counted) { p.counted = true; this.stats.deferredReliable++ }
+        this.pending = kept
+        break
+      }
       this.emit(packet, t)
       this.pending.shift()
       budget--
@@ -152,9 +222,26 @@ export class ZoneRelayTransport implements GroupTransport {
 
   private receive(sender: number, payload: Uint8Array): void {
     if (!Number.isInteger(sender) || sender < 0 || sender >= this.peerCount || sender === this.selfPeer
-      || payload.byteLength < 1 || payload[0] > (PART_FLAG | 1)) { this.malformed++; return }
+      || payload.byteLength < 1 || (payload[0] > PART_FLAG + 1 && payload[0] !== BATCH_FLAG)) { this.malformed++; return }
     const flags = payload[0], reliable = (flags & 1) === 1
     const open = this.assembling[sender]
+    if (flags === BATCH_FLAG) {
+      if (open) { this.assembling[sender] = null; this.malformed++ }
+      const packets: Packet[] = []
+      let at = 1
+      while (at < payload.byteLength) {
+        const length = at + BATCH_ENTRY_HEADER <= payload.byteLength ? payload[at + 1] | (payload[at + 2] << 8) : -1
+        if (length < 0 || payload[at] > 1 || at + BATCH_ENTRY_HEADER + length > payload.byteLength) {
+          this.malformed++
+          return
+        }
+        packets.push({ peer: sender, ch: payload[at] === 1 ? 'reliable' : 'fast',
+          data: new Uint8Array(payload.subarray(at + BATCH_ENTRY_HEADER, at + BATCH_ENTRY_HEADER + length)) })
+        at += BATCH_ENTRY_HEADER + length
+      }
+      for (const packet of packets) this.inbox.push(packet)
+      return
+    }
     if ((flags & PART_FLAG) === 0) {
       // A sender's parts are contiguous; a whole packet inside them means the split packet is broken.
       if (open) { this.assembling[sender] = null; this.malformed++ }

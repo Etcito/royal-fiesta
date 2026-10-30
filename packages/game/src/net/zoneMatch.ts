@@ -45,6 +45,11 @@ export interface ZoneMatch {
   readonly stats: ZoneStats
   /** Current domain 0; read again after a frame because recovery can replace it. */
   readonly ledger: MatchLedger
+  /**
+   * Domain 0, or null while the local peer rejoins: a peer its others dropped replicates no domain until the boundary
+   * after the snapshot it adopts, and it plays on from there.
+   */
+  readonly currentLedger: MatchLedger | null
   /** Borrowed list of current local physics domains, ascending id; each exposes characters and seats. */
   readonly domains: readonly FiestaDomain[]
   confirmedHash(domain: number, tick: number): number | undefined
@@ -212,6 +217,10 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
       } finally {
         sampleInputs = undefined
       }
+    },
+    get currentLedger() {
+      const sim = session.domain(0)?.sim
+      return sim instanceof MatchLedger ? sim : null
     },
     get ledger() {
       const sim = session.domain(0)?.sim

@@ -245,12 +245,6 @@ for (const courseId of ['race-sprint', 'obstacle-gallery']) {
     const positions = [...source.obstacles, ...source.spawns].map(({ t }) => t[2])
     assert.ok(Math.max(...positions) - Math.min(...positions) >= 3 * grid.cell[1],
       'course length spans several cells')
-
-    if (courseId === 'obstacle-gallery') {
-      const seesaws = course.obstacles.filter(({ motion }) => motion.kind === 'seesaw')
-      assert.ok(seesaws.length > 0, 'gallery has seesaws')
-      for (const seesaw of seesaws) assert.equal(partMode(zones, seesaw), 'physics', seesaw.id)
-    }
   })
 }
 

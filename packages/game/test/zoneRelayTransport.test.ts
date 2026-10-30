@@ -107,22 +107,26 @@ test('send encodes a reliable packet with one destination bit and copies data', 
   const data = new Uint8Array([7, 8, 9])
   tr.send(3, 'reliable', data)
   data.fill(0)
+  assert.equal(ws.binary.length, 0, 'a send waits for the frame flush')
+  tr.flush()
   assert.deepEqual(ws.binary, [new Uint8Array([0x5a, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1, 7, 8, 9])])
   assert.deepEqual(tr.stats, { frames: 1, bytesOut: 14, maxFrameBytes: 14, droppedFast: 0, deferredReliable: 0 })
 })
 
 test('sendMany emits exactly one fast frame across both mask words', async () => {
   const { client, ws } = await connected()
-  const tr: GroupTransport = new ZoneRelayTransport(client, 0, 64, () => 123)
+  const tr = new ZoneRelayTransport(client, 0, 64, () => 123)
   assert.equal(tr.now(), 123)
   assert.ok(tr.sendMany)
   ws.server({ t: 'player_left', seat: 2 })
   const data = new Uint8Array([42])
   tr.sendMany([0, 1, 1, 2, 40, 63], 'fast', data)
   data.fill(0)
+  tr.flush()
   assert.deepEqual(ws.binary, [new Uint8Array([0x5a, 0, 2, 0, 0, 0, 0, 1, 0, 128, 0, 42])])
   tr.sendMany([0, 2], 'reliable', data)
   tr.sendMany([], 'fast', data)
+  tr.flush()
   assert.equal(ws.binary.length, 1, 'an empty mask must not become a broadcast')
 })
 
@@ -166,7 +170,7 @@ test('player_left closes its peer and socket close closes every peer', async () 
 test('rate guard drops fast and defers reliable until the next window flush', async () => {
   const { client, ws } = await connected()
   let now = 0
-  const tr = new ZoneRelayTransport(client, 0, 2, () => now)
+  const tr = new ZoneRelayTransport(client, 0, 2, () => now, { batch: false })
   assert.equal(RELAY_BIN_RATE_PER_SEC, 2000)
   for (let i = 0; i < 2000; i++) tr.send(1, 'fast', new Uint8Array([i & 255]))
   assert.equal(ws.binary.length, 2000)
@@ -259,7 +263,7 @@ test('60 seats over 17 peers: every zone packet size up to the worst case leaves
 test('split fast packets are dropped whole over budget; split reliable parts defer in order', async () => {
   const a = await connected(), b = await connected()
   let now = 0
-  const tx = new ZoneRelayTransport(a.client, 0, 2, () => now)
+  const tx = new ZoneRelayTransport(a.client, 0, 2, () => now, { batch: false })
   const rx = new ZoneRelayTransport(b.client, 1, 2, () => now)
   for (let i = 0; i < RELAY_BIN_RATE_PER_SEC - 1; i++) tx.send(1, 'fast', new Uint8Array([i & 255]))
   const big = bytes(2 * RELAY_MAX_BIN_BYTES, 3)
@@ -296,4 +300,41 @@ test('broken part sequences are counted malformed and never delivered', async ()
   part(1, 3, 0, 2); part(1, 3, 1, 2)
   rx.drain(out)
   assert.deepEqual(out, [{ peer: 1, ch: 'reliable', data: new Uint8Array([9, 9]) }])
+})
+
+test('small packets for the same peers travel in one batch frame, in order, and arrive as separate packets', async () => {
+  const a = await connected(), b = await connected()
+  const tx = new ZoneRelayTransport(a.client, 0, 3, () => 0)
+  const rx = new ZoneRelayTransport(b.client, 1, 3, () => 0)
+  const sent: Uint8Array[] = []
+  for (let i = 0; i < 100; i++) {
+    const data = bytes(1 + (i % 40), i)
+    sent.push(data)
+    tx.send(1, i % 7 === 0 ? 'reliable' : 'fast', data)
+  }
+  tx.send(2, 'fast', new Uint8Array([9]))
+  tx.send(1, 'fast', new Uint8Array([10]))
+  assert.equal(a.ws.binary.length, 0)
+  tx.flush()
+  assert.equal(a.ws.binary.length, 3, 'one batch for peer 1, one frame for peer 2, one for peer 1 again')
+  relay(a.ws, 0, 0, b.ws)
+  const out: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
+  rx.drain(out)
+  assert.equal(rx.malformed, 0)
+  assert.equal(out.length, 102, 'the fake relay hands peer 1 every frame; the mask is the relay job')
+  for (let i = 0; i < 100; i++) {
+    assert.ok(Buffer.from(out[i].data).equals(Buffer.from(sent[i])), `packet ${i}`)
+    assert.equal(out[i].ch, i % 7 === 0 ? 'reliable' : 'fast')
+  }
+})
+
+test('a truncated batch frame is counted malformed and delivers nothing', async () => {
+  const { client, ws } = await connected()
+  const rx = new ZoneRelayTransport(client, 0, 4, () => 0)
+  ws.frame(new Uint8Array([0x5a, 1, 4, 5, 1, 2]).buffer)
+  ws.frame(new Uint8Array([0x5a, 1, 4, 1, 0, 9, 0]).buffer)
+  const out: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
+  rx.drain(out)
+  assert.equal(out.length, 0)
+  assert.equal(rx.malformed, 2)
 })

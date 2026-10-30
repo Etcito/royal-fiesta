@@ -9,6 +9,8 @@ import type { ResolvedCourse } from '../course.ts'
 import type { PlayerInput } from '../input.ts'
 import { PlayerStatus } from '../match/roundSystem.ts'
 import type { PlayerStatusValue } from '../match/roundSystem.ts'
+import { MechLogicSystem } from '../mechanisms/logicSystem.ts'
+import { MechanismSystem } from '../mechanisms/system.ts'
 import { ObstacleSystem } from '../obstacles/system.ts'
 import { refuse } from '../refusal.ts'
 import { writeBlob } from '../world.ts'
@@ -40,6 +42,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   readonly inner: RapierDomainSim<PlayerInput>
   readonly characters: CharacterSystem
   readonly obstacles: ObstacleSystem
+  readonly mechanisms: MechanismSystem
+  readonly mechLogic: MechLogicSystem
   readonly ctx: WorldCtx<PlayerInput>
   readonly #config: FiestaDomainConfig
   readonly #seats: readonly number[]
@@ -64,6 +68,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.#checkpoint = new Int16Array(n)
     this.characters = new CharacterSystem({ playerCount: n, externalBodies: true })
     this.obstacles = new ObstacleSystem([config.course])
+    this.mechanisms = new MechanismSystem([config.course])
+    this.mechLogic = new MechLogicSystem([config.course])
     const domain = this
     this.ctx = {
       R: inner.world.sim.R,
@@ -73,12 +79,11 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       playerCount: n,
       get resimulating() { return inner.resimulating },
       system<S extends SimSystem<PlayerInput>>(name: string): S {
-        const system: SimSystem<PlayerInput> | undefined = name === 'obstacles'
-          ? domain.obstacles : name === 'characters' ? domain.characters : undefined
-        if (system === undefined) refuse('fiestaDomain', `system/${name}`, 'unknown system; use obstacles or characters')
+        const system = domain.#system(name)
+        if (system === undefined) refuse('fiestaDomain', `system/${name}`, 'unknown system; use obstacles, mechanisms, mechLogic or characters')
         return system as S
       },
-      hasSystem(name: string): boolean { return name === 'obstacles' || name === 'characters' },
+      hasSystem(name: string): boolean { return domain.#system(name) !== undefined },
     }
     this.#indexSeats()
     this.#bindBodies()
@@ -86,8 +91,11 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     // All domain-local obstacle clocks have the same origin, including rebuilt worlds.
     this.#stepTick = 0
     this.obstacles.load(this.ctx, 0)
+    this.mechanisms.load(this.ctx, 0)
+    this.mechLogic.load(this.ctx, 0)
     this.#stepTick = -1
     this.obstacles.placeKinematic(this.ctx, this.tick)
+    this.placeMechanisms()
     this.characters.init(this.ctx)
     for (let p = 0; p < n; p++) {
       const seat = this.#seats[p]
@@ -109,6 +117,29 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       if (o.motion.kind === 'seesaw' && partMode(config.zones, o) === 'physics' &&
           inner.spec.cells.includes(cellOf(config.zones.grid, o.t.x, o.t.z))) this.#seesaws.push(i)
     }
+  }
+
+  #system(name: string): SimSystem<PlayerInput> | undefined {
+    switch (name) {
+      case 'obstacles': return this.obstacles
+      case 'mechanisms': return this.mechanisms as SimSystem<unknown> as SimSystem<PlayerInput>
+      case 'mechLogic': return this.mechLogic as SimSystem<unknown> as SimSystem<PlayerInput>
+      case 'characters': return this.characters
+      default: return undefined
+    }
+  }
+
+  /** Poses every animated mechanism body where its animation is at this tick (creation and handoff). */
+  placeMechanisms(): void {
+    this.mechLogic.placeAnimations(this.ctx, this.mechanisms)
+  }
+
+  /** Handoff: takes the mechanism and logic state of a source domain (the bodies were just created here). */
+  adoptMechanisms(logic: SnapReader, mechanisms: SnapReader, dynamic: SnapReader): void {
+    this.mechLogic.restore(logic, this.ctx, true)
+    this.mechanisms.restore(mechanisms, this.ctx, true)
+    this.mechanisms.importDynamic(this.ctx, dynamic)
+    this.placeMechanisms()
   }
 
   get tick(): number { return this.inner.tick }
@@ -156,11 +187,15 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     try {
       this.#bindBodies()
       this.obstacles.preStep(this.ctx, inputs)
+      this.mechLogic.preStep(this.ctx, inputs)
+      this.mechanisms.preStep(this.ctx, inputs)
       const schedule = this.#config.schedule
       const frozen = this.#stepTick < schedule.introTicks || this.#stepTick > schedule.introTicks + schedule.roundTicks
       for (let p = 0; p < this.#seats.length; p++) this.characters.freeze(p, frozen)
       this.characters.preStep(this.ctx, inputs)
       this.inner.step(inputs, shadows)
+      this.mechLogic.postStep(this.ctx)
+      this.mechanisms.postStep(this.ctx)
       this.characters.postStep(this.ctx)
       if (!frozen) this.#seatRules()
     } finally {
@@ -209,6 +244,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   snapshot(w: SnapWriter): void {
     this.inner.snapshot(w)
     this.obstacles.snapshot(w)
+    this.mechLogic.snapshot(w)
+    this.mechanisms.snapshot(w)
     this.characters.snapshot(w)
     for (let p = 0; p < this.#seats.length; p++) this.#writeStatus(w, p)
   }
@@ -216,6 +253,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   restore(r: SnapReader): void {
     this.inner.restore(r)
     this.obstacles.restore(r, this.ctx)
+    this.mechLogic.restore(r, this.ctx)
+    this.mechanisms.restore(r, this.ctx)
     this.characters.restore(r, this.ctx)
     for (let p = 0; p < this.#seats.length; p++) this.#readStatus(r, p)
     this.#indexSeats()
@@ -226,7 +265,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   hash(): number { return this.inner.hash() }
 
   /** Blob(inner export), u16 seats, (u16 seat, player, u8 status, i16 checkpoint),
-   * u16 seesaws, (u16 obstacle index, f64 angle, f64 prevAngle, f64 angVel).
+   * u16 seesaws, (u16 obstacle index, f64 angle, f64 prevAngle, f64 angVel),
+   * Blob(mechLogic snapshot), Blob(mechanisms snapshot), Blob(dynamic mechanism bodies).
    * A negative checkpoint encodes the original spawn as -1 - spawnIndex.
    */
   exportEntities(w: SnapWriter): void {
@@ -248,6 +288,18 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       w.f64(state.prevAngle)
       w.f64(state.angVel)
     }
+    this.#writer.reset()
+    this.mechLogic.snapshot(this.#writer)
+    const logic = this.#writer.bytes().slice()
+    this.#writer.reset()
+    this.mechanisms.snapshot(this.#writer)
+    const mechanisms = this.#writer.bytes().slice()
+    this.#writer.reset()
+    this.mechanisms.exportDynamic(this.ctx, this.#writer)
+    const dynamic = this.#writer.bytes().slice()
+    writeBlob(w, logic)
+    writeBlob(w, mechanisms)
+    writeBlob(w, dynamic)
   }
 
   #writeStatus(w: SnapWriter, p: number): void {

@@ -62,7 +62,7 @@ export interface ZoneMatchBotOptions {
   farSink?: FarSink
 }
 
-export type ZoneMatchBotStopReason = 'running' | 'done' | 'deadline' | 'stopped'
+export type ZoneMatchBotStopReason = 'running' | 'done' | 'deadline' | 'stopped' | 'closed'
 
 export interface ZoneMatchBot {
   frame(dtS: number): void
@@ -332,7 +332,14 @@ export async function runZoneMatchBot(options: ZoneMatchBotOptions): Promise<Zon
   }
 
   noteRound()
-  if (client !== null) client.onClose(() => stop())
+  if (client !== null) client.onClose(() => {
+    // The relay dropped this peer before the match ended: a failure, never a clean exit.
+    if (!stopped && reason === 'running') {
+      console.log(`[zone-match ${options.name}] relay socket closed mid-match (${client?.closeCause ?? 'no cause'})`)
+      reason = 'closed'
+    }
+    stop()
+  })
 
   options.signal?.addEventListener('abort', stop, { once: true })
   if (full.done) {
@@ -425,7 +432,7 @@ async function runCli(argv: string[]): Promise<number> {
     console.log(`[zone-match ${args.name}] matched peer ${bot.localPeer} of ${args.players}, seats ${bot.seats.join(',')}`)
     await bot.done
     if (controller.signal.aborted) return 0
-    if (bot.reason === 'deadline') return 1
+    if (bot.reason === 'deadline' || bot.reason === 'closed') return 1
     const report = bot.full.report
     return report.desyncs === 0 && report.resultMismatches === 0 ? 0 : 1
   } catch (error) {

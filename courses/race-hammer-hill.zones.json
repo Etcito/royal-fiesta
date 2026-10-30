@@ -3,15 +3,19 @@
   "version": 0,
   "course": "race-hammer-hill",
   "grid": {
-    "origin": [-12, -8],
-    "cell": [2, 2],
-    "cols": 12,
-    "rows": 72
+    "origin": [
+      -14,
+      -10
+    ],
+    "cell": [
+      2,
+      2
+    ],
+    "cols": 15,
+    "rows": 75
   },
-  "parts": {
-    "seesaw-1": "physics"
-  },
+  "parts": {},
   "tuning": {
-    "gridCols": 12
+    "gridCols": 15
   }
 }

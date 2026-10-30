@@ -3,13 +3,19 @@
   "version": 0,
   "course": "obstacle-gallery",
   "grid": {
-    "origin": [-32, -4],
-    "cell": [2, 2],
-    "cols": 32,
-    "rows": 36
+    "origin": [
+      -32,
+      -2
+    ],
+    "cell": [
+      2,
+      2
+    ],
+    "cols": 33,
+    "rows": 34
   },
   "parts": {},
   "tuning": {
-    "gridCols": 32
+    "gridCols": 33
   }
 }

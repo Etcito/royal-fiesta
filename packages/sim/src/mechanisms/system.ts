@@ -454,6 +454,59 @@ export class MechanismSystem implements SimSystem<unknown> {
     this.#kinPending[flat] = true
   }
 
+  // Zone handoff: the pose and velocities of every dynamic body (a switch plate under load, a crane arm),
+  // which a rebuilt world would otherwise start at rest. Joint anchors are not state: load() recreates them.
+  exportDynamic(ctx: WorldCtx<unknown>, w: SnapWriter): void {
+    let count = 0
+    for (let i = 0; i < this.#bodies.length; i++) if (ctx.physics.body(this.#bodies[i]).isDynamic()) count++
+    w.u16(count)
+    for (let i = 0; i < this.#bodies.length; i++) {
+      const rb = ctx.physics.body(this.#bodies[i])
+      if (!rb.isDynamic()) continue
+      const t = rb.translation(), q = rb.rotation(), v = rb.linvel(), a = rb.angvel()
+      w.u16(i)
+      w.f64(t.x); w.f64(t.y); w.f64(t.z)
+      w.f64(q.x); w.f64(q.y); w.f64(q.z); w.f64(q.w)
+      w.f64(v.x); w.f64(v.y); w.f64(v.z)
+      w.f64(a.x); w.f64(a.y); w.f64(a.z)
+    }
+  }
+
+  importDynamic(ctx: WorldCtx<unknown>, r: SnapReader): void {
+    const count = r.u16()
+    for (let k = 0; k < count; k++) {
+      const i = r.u16()
+      if (i >= this.#bodies.length) {
+        refuse('mechanisms', 'handoff/dynamic', `body ${i} of ${this.#bodies.length}; hand off between domains of the same course`)
+      }
+      const rb = ctx.physics.body(this.#bodies[i])
+      const t = { x: r.f64(), y: r.f64(), z: r.f64() }
+      const q = { x: r.f64(), y: r.f64(), z: r.f64(), w: r.f64() }
+      const v = { x: r.f64(), y: r.f64(), z: r.f64() }
+      const a = { x: r.f64(), y: r.f64(), z: r.f64() }
+      rb.setTranslation(t, true)
+      rb.setRotation(q, true)
+      rb.setLinvel(v, true)
+      rb.setAngvel(a, true)
+    }
+  }
+
+  // Teleports every body with a pending kinematic target onto it and clears the target
+  // (zone domains: a rebuilt world holds fresh bodies at their rest poses).
+  placeKinematic(ctx: WorldCtx<unknown>): void {
+    for (let i = 0; i < this.#bodies.length; i++) {
+      if (!this.#kinPending[i]) continue
+      this.#kinPending[i] = false
+      const rb = ctx.physics.body(this.#bodies[i])
+      if (!rb.isKinematic()) continue
+      const p = this.#kinTarget[i]
+      rb.setTranslation({ x: p.t.x, y: p.t.y, z: p.t.z }, true)
+      rb.setRotation({ x: p.r.x, y: p.r.y, z: p.r.z, w: p.r.w }, true)
+      rb.setNextKinematicTranslation({ x: p.t.x, y: p.t.y, z: p.t.z })
+      rb.setNextKinematicRotation({ x: p.r.x, y: p.r.y, z: p.r.z, w: p.r.w })
+    }
+  }
+
   // The character system (M2) calls grabHandle every tick a player holds the lever, and
   // releaseHandle when they let go: like addLoad, the grab lasts the next preStep only.
   grabHandle(ctx: WorldCtx<unknown>, lever: number, player: number): void {
@@ -646,7 +699,10 @@ export class MechanismSystem implements SimSystem<unknown> {
   }
 
   // Never touches Rapier: the world is replaced after the systems restore.
-  restore(r: SnapReader, _ctx: WorldCtx<unknown>): void {
+  // keepBodies: a zone handoff into a rebuilt world. The bodies and joints were just created by
+  // load() in that world, so only the logical state (motors, kinematic targets, events) is taken
+  // from the snapshot, never its body ids.
+  restore(r: SnapReader, ctx: WorldCtx<unknown>, keepBodies = false): void {
     const courseIndex = r.i32()
     const bodyCount = r.u32()
     const bodies: BodyId[] = []
@@ -704,6 +760,25 @@ export class MechanismSystem implements SimSystem<unknown> {
       const z = r.f64()
       const strength = r.f64()
       events.push({ tick, kind, source, x, y, z, strength })
+    }
+    if (keepBodies) {
+      if (courseIndex !== this.#courseIndex || bodyCount !== this.#bodies.length || jointCount !== this.#jointHandles.length) {
+        refuse('mechanisms', 'snapshot/keepBodies', `snapshot has course ${courseIndex}, ${bodyCount} bodies, ${jointCount} joints; this world has course ${this.#courseIndex}, ${this.#bodies.length} bodies, ${this.#jointHandles.length} joints; hand off between domains of the same course`)
+      }
+      for (let i = 0; i < jointCount; i++) {
+        this.#motors[i] = motors[i]
+        applyMotor(ctx, this.#jointHandles[i], this.#jointKinds[i], motors[i])
+      }
+      this.#kinPending = kinPending
+      this.#kinTarget = kinTarget
+      this.#loads = loads
+      this.#head = head
+      this.#count = count
+      this.#events = []
+      for (let k = 0; k < count; k++) this.#events[(head + k) % MECH_EVENT_RING] = events[k]
+      this.#mapDirty = true
+      this.#speedDirty = true
+      return
     }
     let spec: MechanismSpec | null = null
     let items: readonly MechItem[] = []

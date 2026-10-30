@@ -1,0 +1,21 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "ice-slide-gates",
+  "grid": {
+    "origin": [
+      -12,
+      -12
+    ],
+    "cell": [
+      2,
+      2
+    ],
+    "cols": 13,
+    "rows": 34
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 13
+  }
+}

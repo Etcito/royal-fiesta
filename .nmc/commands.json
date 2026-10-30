@@ -55,7 +55,7 @@
   },
   {
     "name": "rf-judge-m4-ice-slide-gates",
-    "command": "node --experimental-strip-types tools/iceSlideCapture.ts",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m4 --item 1",
     "timeout_s": 1800,
     "after": [
       "rf-tests"

@@ -5,13 +5,14 @@ import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import type { ProfileName } from '@royal-fiesta/sim/course'
-import { refuse } from '@royal-fiesta/sim/refusal'
 import { loadMamaFacade, meshHasParts, meshRequestOf } from '../sdf/mamaApi.ts'
 import type { MamaFacade, MeshedAsset } from '../sdf/mamaApi.ts'
 import { idbStore, MeshCache, meshCacheKey, memoryStore } from '../sdf/meshCache.ts'
 import { poolSize } from '../sdf/meshPool.ts'
 import type { MeshPool } from '../sdf/meshPool.ts'
 import { fetchMeshFile, meshFileStats } from '../sdf/meshFile.ts'
+import { fetchServerMesh } from '../sdf/serverMesh.ts'
+import { assetSet } from './assetSet.ts'
 import { browserContentIndex, browserContentRoot, browserGameAssets, loadV1Courses } from './v1Data.ts'
 
 /** An asset still meshing this many seconds after its worker started is left out like a refused one; the load goes on. */
@@ -108,7 +109,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   const fileBefore = { ...meshFileStats }
   const meshed = new Map<string, MeshedAsset>()
   const failed = new Map<string, string>()
-  const source = new Map<string, 'miss' | 'memory' | 'idb' | 'file'>()
+  const source = new Map<string, 'miss' | 'memory' | 'idb' | 'file' | 'server'>()
   let done = 0
   // The loading label names what is still being meshed, not the last asset finished: a cold load waits on its
   // slowest asset, and a label stuck on one id looked like that asset was rebuilt for minutes.
@@ -131,10 +132,17 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       continue
     }
     const meshPath = meshPaths.get(a.id)
-    const load = async (): Promise<{ value: MeshedAsset; from: 'file' | 'miss' }> => {
+    const load = async (): Promise<{ value: MeshedAsset; from: 'file' | 'server' | 'miss' }> => {
       if (meshPath !== undefined) {
         const file = await fetchMeshFile(root + meshPath, key, a)
         if (file !== null && meshHasParts(file, request.parts)) return { value: file, from: 'file' }
+      }
+      const server = await fetchServerMesh(browserContentRoot(), key, () => {
+        onProgress({ phase: 'meshing', done, total: assets.length, label: 'Building meshes on the server' })
+      })
+      if (server !== null) {
+        if (server.assetId !== a.id || server.hash !== a.hash || server.mesher !== a.mesher.output) throw new Error('server mesh does not match asset')
+        if (meshHasParts(server, request.parts)) return { value: server, from: 'server' }
       }
       const known = knownFailure(key)
       if (known !== null) throw new Error(known)

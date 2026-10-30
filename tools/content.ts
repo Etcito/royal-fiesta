@@ -107,14 +107,31 @@ export async function validateContent(index: ContentIndex, dir = contentDir()): 
   }
 }
 
-// Copies only; the content:pack CLI validates first (validateContent).
-export function packContent(out: string, dir = contentDir()): ContentIndex {
+// Copies only; the content:pack CLI validates first (validateContent). meshKeys limits the baked server meshes to one
+// load set (MeshBaker.keys); every cached mesh when absent. The cache is shared by every worktree and MAMA pin, so an
+// unfiltered pack can outgrow a page upload.
+export function packContent(out: string, dir = contentDir(), meshKeys?: ReadonlySet<string>): ContentIndex {
   const index = buildContentIndex(dir)
   const files = [...index.assets.flatMap(a => a.mesh === undefined ? [a.path] : [a.path, a.mesh]), ...index.courses.map(c => c.path), ...index.audio.map(p => p.path)]
   for (const path of files) {
     const target = join(out, path)
     mkdirSync(dirname(target), { recursive: true })
     cpSync(join(dir, path), target)
+  }
+  // Baked successes are directly addressable by the same key on a static content host; a server refusal is
+  // published as <key>.failed, so the page leaves the asset out instead of meshing it again in the browser.
+  const meshes = meshCacheDir()
+  if (existsSync(meshes)) {
+    mkdirSync(join(out, 'meshes'), { recursive: true })
+    for (const name of readdirSync(meshes)) {
+      if (meshKeys !== undefined && !meshKeys.has(name.replace(/\.(mesh|failed)$/, ''))) continue
+      // Gzipped (a third of the size; apps/web/src/sdf/serverMesh.ts inflates it) so a load's meshes fit a page upload.
+      if (/^[a-f0-9]{64}\.mesh$/.test(name)) writeFileSync(join(out, 'meshes', name.slice(0, -5)), gzipSync(readFileSync(join(meshes, name))))
+      if (/^[a-f0-9]{64}\.failed$/.test(name)) {
+        const reason = readFileSync(join(meshes, name), 'utf8').replace(/(^|[\s('"=])(?:[A-Za-z]:)?[\\/][^\s:)'"]+/g, '$1<path>')
+        writeFileSync(join(out, 'meshes', name), reason)
+      }
+    }
   }
   mkdirSync(out, { recursive: true })
   writeFileSync(join(out, 'index.json'), JSON.stringify(index, null, 2) + '\n')

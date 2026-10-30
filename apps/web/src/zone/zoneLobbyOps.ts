@@ -46,6 +46,8 @@ interface ZoneLobbyCaptureOutput {
   ticks: number
   near: number
   far: number
+  /** Session counters at the end of play; confirmed is the last confirmed tick of each local domain. */
+  session: { frames: number; stallFrames: number; desyncs: number; malformed: number; lostPeers: number[]; confirmed: Record<number, number> }
   captures: CaptureOut[]
 }
 
@@ -179,6 +181,12 @@ async function bounded<T>(name: string, step: string, ms: number, work: Promise<
   finally { clearTimeout(timer) }
 }
 
+function sessionOf(lobby: ZoneLobby): ZoneLobbyCaptureOutput['session'] {
+  const s = lobby.stats
+  return { frames: s.frames, stallFrames: s.stallFrames, desyncs: s.desyncs, malformed: s.malformed,
+    lostPeers: s.lostPeers.slice(), confirmed: { ...s.confirmedTick } }
+}
+
 // ---- zoneLobbyCapture / zoneLobbyPair ---------------------------------------------------------------------
 
 // One browser peer: join the room, play it on real time, capture one RAA frame.
@@ -231,6 +239,7 @@ async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Pro
       ticks: info.tick,
       near: info.near,
       far: info.far,
+      session: sessionOf(joined),
       captures: [{ name: 'zone-lobby', width: input.width, height: input.height, mime: 'image/png', base64: base64Of(png) }],
     }
   } catch (error) {

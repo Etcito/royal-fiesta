@@ -59,6 +59,8 @@ export interface ZoneLobby {
     near: number
     far: number
   }
+  /** The match's session counters: a stalled room is named by them (stalls, lost peers, desyncs, confirmed ticks). */
+  readonly stats: ZoneMatch['stats']
   dispose(): void
 }
 
@@ -183,6 +185,7 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
     updateInfo()
     return {
       info,
+      stats: local.stats,
       frame(dtS) {
         if (disposed) return
         const alpha = local.frame(dtS, sample)

@@ -193,7 +193,7 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
   const peers: number[] = []
   const images = outputs.map((out, i) => {
     const m = out.matched as Record<string, unknown> | undefined
-    stage = `validate ${names[i]} (matched peers ${m?.peers}, localPeer ${m?.localPeer}, ticks ${out.ticks}, near ${out.near}, far ${out.far})`
+    stage = `validate ${names[i]} (matched peers ${m?.peers}, localPeer ${m?.localPeer}, ticks ${out.ticks}, near ${out.near}, far ${out.far}, session ${JSON.stringify(out.session)})`
     assert(out.renderer === 'raa', 'RAA renderer required')
     const adapter = out.adapter as Record<string, unknown> | undefined
     assert(adapter && adapter.software === false, 'hardware adapter required')
@@ -225,7 +225,7 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
     }
     assert(ended && offset === png.length, 'missing PNG end or trailing data')
     const report = [`zone gate ${names[i]} adapter: ${JSON.stringify(adapter)}`,
-      `zone gate ${names[i]}: peers ${matched.peers}, localPeer ${matched.localPeer}, ticks ${out.ticks}, near ${out.near}, far ${out.far}`]
+      `zone gate ${names[i]}: peers ${matched.peers}, localPeer ${matched.localPeer}, ticks ${out.ticks}, near ${out.near}, far ${out.far}, session ${JSON.stringify(out.session)}`]
     diagnostics.push(...report)
     report.forEach(line => console.log(line))
     return png

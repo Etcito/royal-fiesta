@@ -19,6 +19,7 @@ import { encodeFiestaEvents } from './ledger.ts'
 import type { FiestaEvent, MatchLedgerConfig } from './ledger.ts'
 import { partMode } from './zonesFile.ts'
 import type { ZonesFile } from './zonesFile.ts'
+import { seatSpawn } from './seatSpawn.ts'
 
 export interface FiestaDomainConfig {
   readonly course: ResolvedCourse
@@ -90,12 +91,14 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.characters.init(this.ctx)
     for (let p = 0; p < n; p++) {
       const seat = this.#seats[p]
-      const spawn = config.spawnIndices?.[seat] ?? seat % config.course.spawns.length
-      if (!Number.isInteger(spawn) || spawn < 0 || spawn >= config.course.spawns.length) {
+      // A seat past the course's spawns starts in a row behind them (seatSpawn), never inside another seat.
+      const spawn = config.spawnIndices?.[seat] ?? seat
+      if (!Number.isInteger(spawn) || spawn < 0 ||
+          (config.spawnIndices !== undefined && spawn >= config.course.spawns.length)) {
         refuse('fiestaDomain', `spawns/${seat}`, 'missing spawn; provide a course spawn for every seat')
       }
       this.#checkpoint[p] = -1 - spawn
-      if (config.placeSeats !== false) this.characters.place(this.ctx, p, config.course.spawns[spawn])
+      if (config.placeSeats !== false) this.characters.place(this.ctx, p, seatSpawn(config.course, spawn))
       this.#states.push({ seat, status: PlayerStatus.alive, pos: { x: 0, y: 0, z: 0 },
         vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 0 }, mode: 0,
         grounded: false, groundObstacle: -1, knockbacks: 0, teleportTick: 0 })
@@ -185,7 +188,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       } else if (pos.y < course.killPlaneY) {
         if (this.#config.schedule.kind === 'race') {
           const c = this.#checkpoint[p]
-          this.characters.place(this.ctx, p, c >= 0 ? course.checkpoints[c].respawn : course.spawns[-1 - c])
+          this.characters.place(this.ctx, p, c >= 0 ? course.checkpoints[c].respawn : seatSpawn(course, -1 - c))
           this.#emit(p, 'fall')
         } else {
           this.#status[p] = PlayerStatus.eliminated

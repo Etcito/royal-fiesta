@@ -206,6 +206,54 @@ test('zoneBot: a browser-style peer plays past tick 600 with six bots while its 
   }
 })
 
+// The two-Chrome gate's room: six 2-seat bot peers, then two 1-seat browser peers, joined in that order (14 seats on
+// a course of 8 spawns). Seats 8..13 used to start inside seats 0..5, so the browsers' seats (12 and 13) raced from
+// inside a bot and could finish alone; every peer, the last joiner (peer 7) too, must replicate its own seats.
+test('zoneBot: eight peers in join order each replicate a domain holding their own seats, on distinct starts', { timeout: 300000 }, async () => {
+  const seats = [2, 2, 2, 2, 2, 2, 1, 1]
+  const loopback = new ZoneLoopback(seats.length, { seed: 5, rttMs: 60, jitterMs: 5, loss: 0 })
+  let next = 0
+  const roster: Roster = {
+    seatCount: 14,
+    peers: seats.map((count, peer) => ({ peer, seats: Array.from({ length: count }, () => next++) })),
+    live: seats.map(() => true),
+  }
+  const peerMeasurements: Record<number, ZoneBotMeasurements> = {}
+  for (let p = 0; p < seats.length; p++) peerMeasurements[p] = { ...DEFAULT_MEASUREMENTS }
+  const peers: ZoneBot[] = []
+  try {
+    for (let peer = 0; peer < seats.length; peer++) {
+      peers.push(await runZoneBot({
+        course: 'race-sprint', name: `loopback-${peer}`, seats: seats[peer], seconds: 60, drive: 'manual',
+        net: { transport: loopback.transport(peer), roster, localPeer: peer, measurements: peerMeasurements },
+      }))
+    }
+    const starts = new Set<string>()
+    for (const peer of peers) {
+      for (const seat of peer.seats) {
+        const pos = peer.match.domains.find(domain => domain.seats.includes(seat))!.state(seat).pos
+        starts.add(`${pos.x.toFixed(2)},${pos.z.toFixed(2)}`)
+      }
+    }
+    assert.equal(starts.size, 14, `14 seats start on ${starts.size} distinct ground positions`)
+    const homeless = new Array<number>(seats.length).fill(0)
+    for (let f = 0; f < 400; f++) {
+      loopback.advance(1000 * DT)
+      for (const peer of peers) {
+        peer.frame(DT)
+        const domains = peer.match.domains
+        if (!peer.seats.every(seat => domains.some(domain => domain.seats.includes(seat)))) homeless[peer.localPeer]++
+      }
+    }
+    for (const peer of peers) {
+      assert.ok(peer.match.stats.tick >= 390, `peer ${peer.localPeer}: tick ${peer.match.stats.tick}`)
+      assert.equal(homeless[peer.localPeer], 0, `peer ${peer.localPeer}: own seat in no local domain on ${homeless[peer.localPeer]} frames`)
+    }
+  } finally {
+    for (const peer of peers) peer.stop()
+  }
+})
+
 test('zoneBot: relay queue tuning is tuningHash(mergeZoneTuning(zones)) for the course', async () => {
   const sidecar = JSON.parse(readFileSync(new URL('../../../courses/race-sprint.zones.json', import.meta.url), 'utf8')) as unknown
   const zones = parseZonesFile(sidecar, 'courses/race-sprint.zones.json', { id: 'race-sprint', obstacles: [] })

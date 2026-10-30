@@ -12,6 +12,7 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import { cellOf, clampedCellOf } from '@royal-fiesta/sim/zones/cells'
 import { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { createFiestaDomainFactory } from '@royal-fiesta/sim/zones/fiestaDomainFactory'
+import { seatSpawn } from '@royal-fiesta/sim/zones/seatSpawn'
 import { MatchLedger } from '@royal-fiesta/sim/zones/ledger'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { takeoverInput } from './takeoverBot.ts'
@@ -99,11 +100,11 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
       spareSlots: m.spareSlots, cell: CONTROL_NO_CELL }
     fields[p.peer] = word
     for (const seat of p.seats) {
-      const index = cfg.spawnIndices?.[seat] ?? seat % cfg.course.spawns.length
-      const spawn = cfg.course.spawns[index]
-      if (!Number.isInteger(index) || !spawn) {
+      const index = cfg.spawnIndices?.[seat] ?? seat
+      if (!Number.isInteger(index) || index < 0 || (cfg.spawnIndices !== undefined && !cfg.course.spawns[index])) {
         refuse('zones', `createZoneMatch.spawnIndices/${seat}`, 'missing spawn; supply a course spawn index for every seat')
       }
+      const spawn = seatSpawn(cfg.course, index)
       word.cell = cellOf(cfg.zones.grid, spawn.t.x, spawn.t.z)
       controls[seat] = packControl(word)
     }

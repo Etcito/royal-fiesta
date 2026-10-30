@@ -29,7 +29,7 @@ export interface FiestaDomainFactoryConfig {
   readonly kind: 'race' | 'survival'
   /** Roster seats; every domain gets its own subset in spec.seats. */
   readonly seatCount: number
-  /** Roster-indexed spawn index into course.spawns; defaults to the seat id modulo the spawn count. */
+  /** Roster-indexed spawn index into course.spawns; defaults to the seat id (seatSpawn: rows behind past the spawns). */
   readonly spawnIndices?: readonly number[]
 }
 

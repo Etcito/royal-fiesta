@@ -133,9 +133,14 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   const failed = new Map<string, string>()
   const source = new Map<string, 'miss' | 'memory' | 'idb' | 'file'>()
   let done = 0
+  // The loading label names what is still being meshed, not the last asset finished: a cold load waits on its
+  // slowest asset, and a label stuck on one id looked like that asset was rebuilt for minutes.
+  const pending = new Set<string>(assets.map(a => a.id))
   const step = (id: string): void => {
     done++
-    onProgress({ phase: 'meshing', done, total: assets.length, label: id })
+    pending.delete(id)
+    const next = pending.values().next()
+    onProgress({ phase: 'meshing', done, total: assets.length, label: next.done === true ? id : `Meshing ${next.value} (${pending.size} left)` })
   }
   const misses: Promise<void>[] = []
   for (const a of assets) {

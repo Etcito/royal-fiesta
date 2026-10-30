@@ -191,21 +191,109 @@ test('rate guard drops fast and defers reliable until the next window flush', as
   assert.equal(ws.binary.length, 2002, 'deferred packets are sent only once')
 })
 
-test('oversized packets are refused, including header bytes in the cap', async () => {
-  const { client, ws } = await connected()
-  const tr = new ZoneRelayTransport(client, 0, 2, () => 0)
-  for (const length of [RELAY_MAX_BIN_BYTES + 1, RELAY_MAX_BIN_BYTES - 10]) {
-    assert.throws(() => tr.send(1, 'reliable', new Uint8Array(length)), (e: unknown) => {
-      assert.ok(isRefusal(e))
-      assert.match(e.message, /relay/)
-      assert.ok(e.message.includes(String(length + 11)))
-      assert.ok(e.message.includes(String(RELAY_MAX_BIN_BYTES)))
-      return true
-    })
+/** Delivers each frame the sender's socket emitted to the receiver as the relay would (sender id in the out header). */
+function relay(from: FakeWs, start: number, sender: number, to: FakeWs): void {
+  for (const f of from.binary.slice(start)) {
+    const out = new Uint8Array(2 + f.byteLength - 10)
+    out[0] = 0x5a; out[1] = sender
+    out.set(f.subarray(10), 2)
+    to.frame(out.buffer)
   }
-  assert.equal(ws.binary.length, 0)
-  assert.equal(tr.stats.frames, 0)
-  tr.send(1, 'reliable', new Uint8Array(RELAY_MAX_BIN_BYTES - 11))
-  assert.equal(ws.binary.length, 1)
-  assert.equal(ws.binary[0].byteLength, RELAY_MAX_BIN_BYTES)
+}
+function bytes(n: number, seed: number): Uint8Array {
+  const b = new Uint8Array(n)
+  for (let i = 0; i < n; i++) b[i] = (i * 31 + seed) & 255
+  return b
+}
+
+test('a packet at the cap is one frame; a larger one splits into frames at or under the cap and is rebuilt', async () => {
+  const a = await connected(), b = await connected()
+  const tx = new ZoneRelayTransport(a.client, 0, 2, () => 0)
+  const rx = new ZoneRelayTransport(b.client, 1, 2, () => 0)
+  tx.send(1, 'reliable', new Uint8Array(RELAY_MAX_BIN_BYTES - 11))
+  assert.equal(a.ws.binary.length, 1)
+  assert.equal(a.ws.binary[0].byteLength, RELAY_MAX_BIN_BYTES)
+  // 20256 and 23148 are the SHADOW sizes the 60-seat gate refused (frames of 20267 and 23159 bytes); 16 MiB is the
+  // largest domain snapshot.
+  const sizes = [RELAY_MAX_BIN_BYTES - 10, 20256, 23148, 3 * RELAY_MAX_BIN_BYTES, 16 * 1024 * 1024]
+  const sent = sizes.map((n, k) => bytes(n, k))
+  for (const data of sent) tx.send(1, 'reliable', data)
+  for (const f of a.ws.binary) assert.ok(f.byteLength <= RELAY_MAX_BIN_BYTES, `frame of ${f.byteLength} bytes`)
+  assert.ok(tx.stats.maxFrameBytes <= RELAY_MAX_BIN_BYTES)
+  assert.equal(tx.stats.deferredReliable, 0)
+  relay(a.ws, 0, 0, b.ws)
+  const out: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
+  rx.drain(out)
+  assert.equal(rx.malformed, 0)
+  assert.equal(out.length, 1 + sent.length)
+  for (let k = 0; k < sent.length; k++) {
+    assert.equal(out[k + 1].peer, 0)
+    assert.equal(out[k + 1].ch, 'reliable')
+    assert.ok(Buffer.from(out[k + 1].data).equals(Buffer.from(sent[k])), `packet ${sizes[k]} rebuilt`)
+  }
+})
+
+test('60 seats over 17 peers: every zone packet size up to the worst case leaves frames at or under the cap', async () => {
+  // Gate shape: 14 peers x 4 seats, one 2-seat and two 1-seat peers. A SHADOW batch is MAX_WIRE_TICKS (64) payloads
+  // of up to 0xFFFF bytes each, the largest message ZoneSession emits apart from snapshots.
+  const seats = [...Array(14).fill(4), 2, 1, 1]
+  assert.equal(seats.reduce((x, y) => x + y, 0), 60)
+  const a = await connected(), b = await connected()
+  let now = 0
+  const tx = new ZoneRelayTransport(a.client, 3, seats.length, () => now)
+  const rx = new ZoneRelayTransport(b.client, 16, seats.length, () => now)
+  const worst = 12 + 64 * (2 + 0xffff)
+  const sent = [worst, 64 * (2 + 60 * 80), 23148].map((n, k) => bytes(n, k + 7))
+  for (const data of sent) tx.sendMany([0, 16, 15], 'reliable', data)
+  for (const f of a.ws.binary) assert.ok(f.byteLength <= RELAY_MAX_BIN_BYTES, `frame of ${f.byteLength} bytes`)
+  now = 5000
+  tx.flush()
+  relay(a.ws, 0, 3, b.ws)
+  const out: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
+  rx.drain(out)
+  assert.equal(rx.malformed, 0)
+  assert.deepEqual(out.map(p => p.data.byteLength), sent.map(d => d.byteLength))
+  for (let k = 0; k < sent.length; k++) assert.ok(Buffer.from(out[k].data).equals(Buffer.from(sent[k])))
+})
+
+test('split fast packets are dropped whole over budget; split reliable parts defer in order', async () => {
+  const a = await connected(), b = await connected()
+  let now = 0
+  const tx = new ZoneRelayTransport(a.client, 0, 2, () => now)
+  const rx = new ZoneRelayTransport(b.client, 1, 2, () => now)
+  for (let i = 0; i < RELAY_BIN_RATE_PER_SEC - 1; i++) tx.send(1, 'fast', new Uint8Array([i & 255]))
+  const big = bytes(2 * RELAY_MAX_BIN_BYTES, 3)
+  tx.send(1, 'fast', big)
+  assert.equal(tx.stats.droppedFast, 1)
+  assert.equal(a.ws.binary.length, RELAY_BIN_RATE_PER_SEC - 1)
+  tx.send(1, 'reliable', big)
+  assert.equal(a.ws.binary.length, RELAY_BIN_RATE_PER_SEC)
+  assert.equal(tx.stats.deferredReliable, 2)
+  now = 1000
+  tx.flush()
+  assert.equal(a.ws.binary.length, RELAY_BIN_RATE_PER_SEC + 2)
+  relay(a.ws, 0, 0, b.ws)
+  const out: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
+  rx.drain(out)
+  assert.equal(rx.malformed, 0)
+  assert.equal(out.length, RELAY_BIN_RATE_PER_SEC)
+  assert.ok(Buffer.from(out[out.length - 1].data).equals(Buffer.from(big)))
+})
+
+test('broken part sequences are counted malformed and never delivered', async () => {
+  const { client, ws } = await connected()
+  const rx = new ZoneRelayTransport(client, 0, 4, () => 0)
+  const part = (sender: number, flags: number, index: number, count: number) =>
+    ws.frame(new Uint8Array([0x5a, sender, flags, index, 0, count, 0, 9]).buffer)
+  part(1, 3, 1, 2) // no part 0
+  part(2, 3, 0, 2); part(2, 2, 1, 2) // channel changes
+  part(3, 3, 0, 3); part(3, 3, 2, 3) // part skipped
+  part(1, 3, 0, 0) // zero count
+  const out: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
+  rx.drain(out)
+  assert.deepEqual(out, [])
+  assert.equal(rx.malformed, 4)
+  part(1, 3, 0, 2); part(1, 3, 1, 2)
+  rx.drain(out)
+  assert.deepEqual(out, [{ peer: 1, ch: 'reliable', data: new Uint8Array([9, 9]) }])
 })

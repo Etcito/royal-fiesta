@@ -1,7 +1,7 @@
 # GPU ops
 
 The GPU client accepts only op names in `apps/web/public/nmc.gpu.json`:
-`{"page":"game.html","ops":["controlsProbe","gameCapture","roundCapture","frameTiming","zoneCapture"]}`.
+`{"page":"game.html","ops":["controlsProbe","gameCapture","roundCapture","frameTiming","zoneCapture","zoneLobbyCapture"]}`.
 game.html registers these ops on every load. The input schemas, examples and output shapes the
 declaration used to hold live here, unchanged.
 
@@ -511,3 +511,85 @@ One zoned match on game.html (`peers` machines x `seatsPerPeer` local seats) wit
 ### Output
 
 { json: { renderer: 'raa', adapter: { vendor, architecture, description, software }, near, far, captures: [{ name: 'zone-view', width: 1280, height: 720, mime: 'image/png', base64 }] }, files: [] }
+
+## zoneLobbyCapture
+
+Page for manual runs: `game.html?mode=ops`.
+
+One browser peer joins a real relay zone room (`players` machines x `seatsPerPeer` local seats, every local seat on a takeover bot) and plays `seconds` on the real clock, then captures once as one 1280x720 RAA PNG. `matched` is the room (`peers`, `seats`, `localPeer`), `ticks` the final match tick, and `near`/`far` the drawn player counts: the local peer's domain characters through SceneView and the local FarFeed seats through FarRenderer. The relay URL is never echoed. Refuses when RAA is unavailable and never captures with the null port.
+
+### Input schema
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "relay",
+    "players",
+    "seatsPerPeer",
+    "course",
+    "seconds",
+    "name",
+    "width",
+    "height"
+  ],
+  "properties": {
+    "relay": {
+      "type": "string",
+      "pattern": "^wss?://\\S+$",
+      "description": "zone relay URL, never echoed in the output"
+    },
+    "players": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 64
+    },
+    "seatsPerPeer": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "course": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,40}$",
+      "description": "match course id with a courses/<courseId>.zones.json sidecar"
+    },
+    "seconds": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 120,
+      "description": "real seconds played before the capture"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,32}$"
+    },
+    "width": {
+      "const": 1280
+    },
+    "height": {
+      "const": 720
+    }
+  }
+}
+```
+
+### Example
+
+```json
+{
+  "relay": "ws://127.0.0.1:8787",
+  "players": 4,
+  "seatsPerPeer": 2,
+  "course": "race-sprint",
+  "seconds": 20,
+  "name": "zone-lobby",
+  "width": 1280,
+  "height": 720
+}
+```
+
+### Output
+
+{ json: { renderer: 'raa', adapter: { vendor, architecture, description, software }, matched: { peers, seats, localPeer }, ticks, near, far, captures: [{ name: 'zone-lobby', width: 1280, height: 720, mime: 'image/png', base64 }] }, files: [] }

@@ -69,4 +69,22 @@ test('upload creates no draw pipelines and palette instances share graph materia
   for (const tint of PALETTE) fallbackPort.createInstance(fallback, tint)
   assert.equal(calls.meshes, meshes + 1)
   assert.equal(calls.surfaces, 3)
+
+  // A part mixing the player colour with other materials (the penguin body) splits into two meshes:
+  // the player piece takes the tint, the rest keeps its own colours.
+  const data = meshed.get('test.asset')!.data
+  const [only] = data.groups[0].parts[0].meshes
+  data.materials.push({ ...data.materials[0], name: 'belly', key: 'b'.repeat(64) })
+  data.groups[0].parts[0].meshes = [{ ...only, material: 'player' }, { ...only, material: 'belly' }]
+  const mixedPort = exports.make()
+  mixedPort.engine = engine
+  mixedPort.target = {}
+  const mixed = mixedPort.registerAsset('test', { id: 'test.asset' })
+  const before = { meshes: calls.meshes, instances: calls.instances, tints: calls.tints.length }
+  mixedPort.createInstance(mixed, PALETTE[0])
+  assert.equal(calls.meshes, before.meshes + 2, 'the player piece and the rest are two meshes')
+  assert.equal(calls.instances, before.instances + 2)
+  assert.equal(calls.tints.length, before.tints + 1, 'only the player piece is tinted')
+  mixedPort.createInstance(mixed, PALETTE[1])
+  assert.equal(calls.meshes, before.meshes + 2, 'the split meshes are shared by every colour')
 })

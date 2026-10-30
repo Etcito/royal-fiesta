@@ -27,8 +27,9 @@ interface PayloadPart { partId: string; name: string; frame: Float64Array; meshe
 interface PayloadGroup { group: string; parts: PayloadPart[] }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
-// key = the raa-sdfm part name (group/partId when two parts share a name); joints = 1 + max joint of a skinned part.
-interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tintable: boolean }
+// key = the raa-sdfm part name (group/partId when two parts share a name); joints = 1 + max joint of a skinned part;
+// player[i] = sub-mesh i takes the player colour.
+interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tintable: boolean; player: boolean[] }
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
 interface Uploaded { assetId: string; parts: PartUpload[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
 interface SkinSlot { instance: number; part: PartUpload }
@@ -186,7 +187,7 @@ class SdfRenderPort implements SkinnedRenderPort {
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
-        parts.push({ name: part.name, key, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r, tintable: built.tintable })
+        parts.push({ name: part.name, key, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r, tintable: built.tintable, player: built.player })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
@@ -351,17 +352,42 @@ class SdfRenderPort implements SkinnedRenderPort {
 
   // Graphs share their original meshes. Material-less parts used a white standard surface
   // for tint before; keep that surface and geometry shared by every tint colour too.
+  // RAA tints a whole instance, so a part mixing player and other materials (the penguin's grey body
+  // with its belly, beak and eyes) splits into a tinted player piece and an untinted rest.
   private tintableParts(uploaded: Uploaded): PartUpload[] {
     if (uploaded.tintedParts !== undefined) return uploaded.tintedParts
     const engine = this.need()
-    uploaded.tintedParts = uploaded.parts.map(part => {
-      if (part.subMeshes.every(sub => sub.material !== undefined)) return part
-      this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
-      const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? this.whiteSurface! }))
-      const desc = { ...part.desc, subMeshes }
-      return { ...part, desc, subMeshes, mesh: engine.addMesh(desc) }
+    const white = () => this.white(engine)
+    uploaded.tintedParts = uploaded.parts.flatMap((part): PartUpload[] => {
+      if (part.player.every(Boolean)) {
+        if (part.subMeshes.every(sub => sub.material !== undefined)) return [part]
+        const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? white() }))
+        const desc = { ...part.desc, subMeshes }
+        return [{ ...part, desc, subMeshes, mesh: engine.addMesh(desc) }]
+      }
+      if (!part.player.some(Boolean)) return [part]
+      return [piece(part, true), piece(part, false)]
     })
     return uploaded.tintedParts
+
+    // The sub-meshes of one colour class, re-indexed into their own mesh over the part's vertex streams.
+    function piece(part: PartUpload, player: boolean): PartUpload {
+      const kept = part.subMeshes.filter((_, i) => part.player[i] === player)
+      const indices = new Uint32Array(kept.reduce((n, sub) => n + sub.count, 0))
+      const subMeshes: SubMeshDesc[] = []
+      let first = 0
+      for (const sub of kept) {
+        indices.set(part.desc.indices.subarray(sub.first, sub.first + sub.count), first)
+        subMeshes.push({ first, count: sub.count, material: sub.material ?? white() })
+        first += sub.count
+      }
+      const desc: MeshDesc = { ...part.desc, indices, subMeshes }
+      return { ...part, desc, subMeshes, mesh: engine.addMesh(desc), tintable: player, player: subMeshes.map(() => player) }
+    }
+  }
+
+  private white(engine: Engine): number {
+    return this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
   }
 }
 
@@ -443,7 +469,7 @@ const PLAYER_MATERIAL = /^player/i
 function takesPlayerColour(material: string | null): boolean { return material === null || PLAYER_MATERIAL.test(material) }
 
 // One MeshDesc per part: MAMA meshes concatenated, one sub-mesh per material, first use first.
-function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, assetId: string): { desc: MeshDesc; subMeshes: SubMeshDesc[]; tintable: boolean } {
+function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, assetId: string): { desc: MeshDesc; subMeshes: SubMeshDesc[]; tintable: boolean; player: boolean[] } {
   const byMaterial = new Map<string | null, PayloadMesh[]>()
   for (const mesh of part.meshes) {
     const list = byMaterial.get(mesh.material)
@@ -485,7 +511,8 @@ function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, asset
   }
   const desc: MeshDesc = { positions, normals, indices, subMeshes }
   if (uvs !== null) desc.uvs = uvs
-  return { desc, subMeshes, tintable: [...byMaterial.keys()].every(takesPlayerColour) }
+  const player = [...byMaterial.keys()].map(takesPlayerColour)
+  return { desc, subMeshes, tintable: player.every(Boolean), player }
 }
 
 // Translation and rotation of a column-major 4x4 MAMA part frame; a frame scale is not carried.

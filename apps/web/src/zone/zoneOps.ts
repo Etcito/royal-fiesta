@@ -199,6 +199,9 @@ async function zoneCapture(raw: unknown): Promise<OpEnvelope<ZoneCaptureOutput>>
     clockInstalled = true
     for (frame = 1; frame <= frames; frame++) {
       view.frame(DT)
+      // The first frame creates the near characters and starts their animation load: without it the
+      // capture shows them in the rig's rest pose.
+      if (frame === 1) await view.ready()
       if (frame % 60 === 0) await yieldTask()
     }
     view.render()

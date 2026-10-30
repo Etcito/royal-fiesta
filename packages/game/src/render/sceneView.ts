@@ -260,6 +260,7 @@ export class SceneView {
   // Bumped whenever the instances go, so a driver that resolves late is disposed instead of adopted.
   private animGen = 0
   private animError: unknown = null
+  private animLoading: Promise<void> = Promise.resolve()
   // Per character: the pose last submitted to the port, so a frame never resubmits an unchanged tick.
   private posed: (CharacterPose | undefined)[] = []
   private readonly observed: CharacterObservation[] = []
@@ -315,6 +316,11 @@ export class SceneView {
   // Why the characters draw at rest: the animation brick or graph failed to load (null otherwise).
   get animationError(): unknown {
     return this.animError
+  }
+
+  /** Settles once the last requested animation load finished (loaded, failed or superseded). */
+  animationReady(): Promise<void> {
+    return this.animLoading
   }
 
   get camera(): CameraPose | null {
@@ -532,7 +538,7 @@ export class SceneView {
     // The SDF Modeler rig extension (bindings, smooth) is not part of the S16 rig the graph reads.
     const { bindings: _b, smooth: _s, ...rig } = skinned.skin.rig as SkinnedAssetT['rig'] & { bindings?: unknown; smooth?: unknown }
     const clips = (skinned.skin.clips ?? []).map(clip => JSON.stringify(clip))
-    import('../anim/driver.ts').then(m => m.AnimDriver.load(skinned.graph, JSON.stringify(rig), clips)).then(driver => {
+    this.animLoading = import('../anim/driver.ts').then(m => m.AnimDriver.load(skinned.graph, JSON.stringify(rig), clips)).then(driver => {
       if (gen === this.animGen) this.anim = driver
       else driver.dispose()
     }, (error: unknown) => {

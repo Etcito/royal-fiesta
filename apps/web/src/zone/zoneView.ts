@@ -79,6 +79,8 @@ export interface ZoneView {
   /** Steps every peer one page frame; also updates the near scene and the far feed. */
   frame(dtS: number): void
   render(): void
+  /** Settles once the near characters' animation finished loading (they draw at rest until then). */
+  ready(): Promise<void>
   capture(): Promise<Uint8Array | null>
   dispose(): void
 }
@@ -374,6 +376,7 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
   return {
     frame,
     render: () => port.render(),
+    ready: () => scene.animationReady(),
     capture: () => port.capture(),
     dispose() {
       if (disposed) return

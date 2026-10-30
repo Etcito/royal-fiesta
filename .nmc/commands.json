@@ -1,24 +1,8 @@
 [
   {
-    "name": "mech-manifest-tests",
-    "command": "node --experimental-strip-types --test --test-concurrency=1 packages/game/test/mechanismsJson.test.ts packages/game/test/gameManifest.test.ts packages/game/test/courseV1.test.ts tools/test/placeholders.test.ts packages/game/test/mechLab.test.ts",
-    "timeout_s": 120
-  },
-  {
-    "name": "game-asset-tests",
-    "command": "node --experimental-strip-types --test packages/game/test/gameAsset.test.ts",
-    "timeout_s": 60,
-    "after": [
-      "mech-manifest-tests"
-    ]
-  },
-  {
     "name": "sdf-port-typecheck",
     "command": "npm run typecheck",
-    "timeout_s": 120,
-    "after": [
-      "game-asset-tests"
-    ]
+    "timeout_s": 120
   },
   {
     "name": "sdf-port-build",
@@ -45,20 +29,12 @@
     ]
   },
   {
-    "name": "mechanisms-physics-l12",
-    "command": "node --experimental-strip-types --test --test-concurrency=1 packages/sim/test/mechanisms.test.ts packages/sim/test/mechanismsL12.test.ts",
-    "timeout_s": 60,
-    "after": [
-      "candy-assets-proof"
-    ]
-  },
-  {
     "name": "rf-tests",
     "command": "npm run test",
     "timeout_s": 900,
     "after": [
       "sdf-port-build",
-      "mechanisms-physics-l12"
+      "candy-assets-proof"
     ]
   },
   {
@@ -70,12 +46,35 @@
     ]
   },
   {
-    "name": "scene-view-tests",
-    "command": "node --experimental-strip-types --test packages/game/test/sceneView.test.ts",
-    "timeout_s": 60,
+    "name": "rf-judge-m3",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m3",
+    "timeout_s": 3000,
     "after": [
-      "rf-judge-m2",
-      "mech-manifest-tests"
+      "rf-tests"
+    ]
+  },
+  {
+    "name": "rf-judge-m3-split",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m3 --item 0",
+    "timeout_s": 1800,
+    "after": [
+      "rf-tests"
+    ]
+  },
+  {
+    "name": "rf-judge-m3-touch",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m3 --item 1",
+    "timeout_s": 1800,
+    "after": [
+      "rf-tests"
+    ]
+  },
+  {
+    "name": "rf-judge-m3-remap",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m3 --item 2",
+    "timeout_s": 1800,
+    "after": [
+      "rf-tests"
     ]
   }
 ]

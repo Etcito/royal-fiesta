@@ -7,10 +7,12 @@ import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import { padControls } from '@royal-fiesta/game/client/padMap'
 import type { PadMapStore } from '@royal-fiesta/game/client/padMap'
 import type { DeviceId } from '@royal-fiesta/game/client/seats'
+import { PadMenu } from './padMenu.ts'
 import { PointerLook } from './look.ts'
 
 export type UiEvent =
-  | { k: 'back' }
+  // pad: where a pad-made back came from (start = pause button, b = cancel button); keys carry none.
+  | { k: 'back'; pad?: 'start' | 'b' }
   | { k: 'focus'; dir: -1 | 1 }
   | { k: 'adjust'; dir: -1 | 1 }
   | { k: 'select' }
@@ -45,8 +47,8 @@ export class GameInput {
   private readonly overlay: HTMLElement
   private readonly held = new Set<string>()
   private queue: UiEvent[] = []
-  private padStart = false
-  private padSelect = false
+  private readonly padMenu = new PadMenu()
+  private readonly now: () => number
   private readonly onKeyDown: (e: KeyboardEvent) => void
   private readonly onKeyUp: (e: KeyboardEvent) => void
   private readonly onBlur: () => void
@@ -57,7 +59,8 @@ export class GameInput {
   // Pointer lock on the element the callback returns (the stage canvas); inert without one.
   readonly look: PointerLook
 
-  constructor(eventTarget: Window, overlay: HTMLElement, lockTarget?: () => Element | null) {
+  constructor(eventTarget: Window, overlay: HTMLElement, lockTarget?: () => Element | null, now: () => number = () => performance.now()) {
+    this.now = now
     this.target = eventTarget
     this.overlay = overlay
     this.look = new PointerLook(eventTarget, lockTarget ?? (() => null))
@@ -93,20 +96,10 @@ export class GameInput {
   // also selects; start (9) always means back. Both are edges.
   controls(bindings: KeyBindings = DEFAULT_BINDINGS, menu = false): RawControls {
     const c = controlsFromKeys(this.held, bindings)
+    // Every connected pad drives the menus, seated or not (no seat exists before the first press).
+    this.padMenu.update(allPads(), this.now(), menu, this.queue)
     const pad = firstPad()
-    if (pad === null) {
-      this.padStart = false
-      this.padSelect = false
-      return c
-    }
-    padMove(pad, c)
-    const b = (i: number) => pad.buttons[i]?.pressed === true
-    const start = b(PAD_START)
-    if (start && !this.padStart) this.queue.push({ k: 'back' })
-    this.padStart = start
-    const select = b(PAD_JUMP)
-    if (menu && select && !this.padSelect) this.queue.push({ k: 'select' })
-    this.padSelect = select
+    if (pad !== null) padMove(pad, c)
     return c
   }
 
@@ -315,6 +308,11 @@ function padLook(pad: Pad): { x: number; y: number } {
     x: Math.abs(x) > STICK_DEADZONE ? x : 0,
     y: Math.abs(y) > STICK_DEADZONE ? y : 0
   }
+}
+
+function allPads(): readonly (Gamepad | null)[] {
+  if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') return []
+  return navigator.getGamepads()
 }
 
 function firstPad(): Gamepad | null {

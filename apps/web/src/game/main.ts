@@ -1324,11 +1324,14 @@ class App {
     const events = this.input.takeEvents()
     // The remap screen reads the keys itself: they must not also move the uaa settings menu.
     if (this.remap === null) {
-      // Local seats own pads: GameInput's first-pad Start-as-back would pause the hub when a pad joins.
-      if (this.mode?.seated !== undefined && !events.some(ev => ev.k === 'key' && ev.code === 'Escape')) {
-        for (let i = events.length - 1; i >= 0; i--) {
-          if (events[i].k === 'back') events.splice(i, 1)
-        }
+      // Local seats own pads: a pad's Start-as-back would pause the hub when a pad joins (seated pads pause
+      // below), and a pad's B (cancel) must not pause a match or the hub. Both still go back in every menu.
+      const seatedMode = this.mode?.seated !== undefined
+      const inGame = PLAYING.includes(nav.screen) || nav.screen === 'result'
+      for (let i = events.length - 1; i >= 0; i--) {
+        const ev = events[i]
+        if (ev.k !== 'back') continue
+        if ((ev.pad === 'start' && seatedMode) || (ev.pad === 'b' && inGame)) events.splice(i, 1)
       }
       for (const ev of events) this.onEvent(ev)
     }
@@ -1352,7 +1355,9 @@ class App {
     if (mode !== null && nav.live && mode.seated !== undefined) {
       for (let i = 0; i < deviceCount; i++) {
         const poll = this.devicePolls[i]
-        if (poll.device !== 'keyboard' && poll.pausePressed && mode.seated(poll.device)) {
+        // In the pause and settings menus any pad's Start resumes/goes back, seated or not (menus come before seats).
+        const menuScreen = nav.screen === 'pause' || nav.screen === 'settings'
+        if (poll.device !== 'keyboard' && poll.pausePressed && (menuScreen || mode.seated(poll.device))) {
           this.run(nav.dispatch({ kind: 'back' }))
           break
         }

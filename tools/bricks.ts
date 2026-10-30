@@ -181,17 +181,21 @@ function mamaSibling(root: string): string | null {
 export function mamaSource(root: string = repoRoot()): MamaSource {
   const pins = readPins().MAMA
   const link = join(root, '.bricks', 'MAMA')
+  let broken = false
   try {
     const stats = lstatSync(link)
     if (stats.isSymbolicLink()) {
-      let dir: string
+      let dir: string | null = null
       try {
         dir = realpathSync(link)
       } catch {
-        return { kind: 'absent', reason: `${link} is a broken symlink; run npm run bricks -- fetch mama` }
+        // A dangling or unreadable link (e.g. made on another host) falls through to the siblings.
+        broken = true
       }
-      const commit = readGitHead(dir)
-      return { kind: 'sibling', dir, commit, matchesPin: commit !== null && commit === pins.commit }
+      if (dir !== null) {
+        const commit = readGitHead(dir)
+        return { kind: 'sibling', dir, commit, matchesPin: commit !== null && commit === pins.commit }
+      }
     }
     if (stats.isDirectory()) {
       const commit = readGitHead(link)
@@ -207,6 +211,7 @@ export function mamaSource(root: string = repoRoot()): MamaSource {
     const commit = readGitHead(sibling)
     return { kind: 'sibling', dir: sibling, commit, matchesPin: commit !== null && commit === pins.commit }
   }
+  if (broken) return { kind: 'absent', reason: `${link} is a broken symlink and there is no $RF_BRICKS_DIR/MAMA or ../MAMA; run npm run bricks -- fetch mama` }
   return { kind: 'absent', reason: `no .bricks/MAMA, no $RF_BRICKS_DIR/MAMA or ../MAMA; clone ${pins.repo} next to this repository or run npm run bricks -- fetch mama` }
 }
 

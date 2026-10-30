@@ -69,7 +69,7 @@ Any milestone that needs a newer MAMA, uaa or raa may update its pin.
 resolves MAMA in this order (S15):
 
 1. `.bricks/MAMA` exists: a symlink is a sibling, a directory is a clone. The commit is read from its
-   `.git` files, without spawning git;
+   `.git` files, without spawning git. A broken or unreadable symlink falls through to step 2;
 2. else a sibling at `$RF_BRICKS_DIR/MAMA`, then `../MAMA` (kind sibling; its HEAD is compared with
    the pin);
 3. else absent, with a reason.

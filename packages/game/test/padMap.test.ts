@@ -10,6 +10,7 @@ import {
   parsePadMap
 } from '../src/client/padMap.ts'
 import type { PadLike, PadMap } from '../src/client/padMap.ts'
+import { listenFor, pressed, remapRows, startRemap } from '../src/screens/padRemap.ts'
 
 const sample = (): PadMap => ({
   v: 1,
@@ -201,4 +202,61 @@ test('a throwing storage falls back to memory with one warning', (t) => {
   assert.equal(warnings.length, 1, warnings.join(' | '))
   assert.match(warnings[0]!, /storage failed/)
   assert.match(warnings[0]!, /quota/)
+})
+
+test('remap: startRemap copies the map and listens for nothing', () => {
+  const s = startRemap(DEFAULT_PAD_MAP, 'pad-a')
+  assert.equal(s.pad, 'pad-a')
+  assert.equal(s.action, null)
+  assert.deepEqual(s.map, DEFAULT_PAD_MAP)
+  assert.notEqual(s.map, DEFAULT_PAD_MAP)
+  assert.notEqual(s.map.buttons, DEFAULT_PAD_MAP.buttons)
+  s.map.buttons.jump = 7
+  assert.equal(DEFAULT_PAD_MAP.buttons.jump, 0)
+})
+
+test('remap: listenFor marks the Jump row and pressed assigns the button', () => {
+  let s = startRemap(DEFAULT_PAD_MAP, 'pad-a')
+  s = listenFor(s, 'jump')
+  assert.equal(s.action, 'jump')
+  const rows = remapRows(s)
+  assert.equal(rows.find((row) => row.action === 'jump')?.listening, true)
+  assert.equal(rows.filter((row) => row.listening).length, 1)
+  const before = s
+  s = pressed(s, 3)
+  assert.equal(s.action, null)
+  assert.equal(s.map.buttons.jump, 3)
+  assert.equal(before.map.buttons.jump, 0)
+  assert.deepEqual(remapRows(s).map((row) => row.listening), [false, false, false, false])
+})
+
+test('remap: pressing a button held by another action swaps them', () => {
+  let s = startRemap(DEFAULT_PAD_MAP, 'pad-a')
+  s = pressed(listenFor(s, 'jump'), 3)
+  assert.equal(s.map.buttons.jump, 3)
+  assert.equal(s.map.buttons.dive, 1)
+  s = pressed(listenFor(s, 'dive'), 3)
+  assert.equal(s.map.buttons.dive, 3)
+  assert.equal(s.map.buttons.jump, 1)
+  assert.equal(s.action, null)
+  const held = new Set([s.map.buttons.jump, s.map.buttons.dive, s.map.buttons.grab])
+  assert.equal(held.size, 3)
+})
+
+test('remap: pressed while not listening changes nothing', () => {
+  const s = startRemap(DEFAULT_PAD_MAP, 'pad-a')
+  const next = pressed(s, 5)
+  assert.notEqual(next, s)
+  assert.equal(next.action, null)
+  assert.deepEqual(next.map, DEFAULT_PAD_MAP)
+  assert.deepEqual(s.map, DEFAULT_PAD_MAP)
+})
+
+test('remap: rows are jump, dive, grab, pause in order with labels', () => {
+  const rows = remapRows(startRemap(DEFAULT_PAD_MAP, 'pad-a'))
+  assert.deepEqual(rows.map((row) => row.action), ['jump', 'dive', 'grab', 'pause'])
+  assert.deepEqual(rows.map((row) => row.label), ['Jump', 'Dive', 'Grab', 'Pause'])
+  assert.deepEqual(rows.map((row) => row.button), [0, 1, 2, 9])
+  assert.deepEqual(rows.map((row) => row.listening), [false, false, false, false])
+  assert.equal(rows.some((row) => row.action === 'join'), false)
 })

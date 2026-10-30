@@ -1,0 +1,30 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "neon.wall-block",
+  "name": "Neon Wall Block",
+  "category": "obstacle",
+  "world": "neon",
+  "mesher": {"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Neon Wall Block",
+    "root": ["neon_wall_block"],
+    "nodes": {
+      "neon_wall_block": {"id":"neon_wall_block","name":"Neon Wall Block","kind":"group","children":["wall_panel","glowing_band","collider_0"],"asset":{"game":"royal-fiesta","id":"neon.wall-block","category":"obstacle","world":"neon"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
+      "wall_panel": {"id":"wall_panel","name":"wall_panel","kind":"paramesh","transform":{"position":[0,0,0]},"material":"neon_dark","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.5,0,0],[-0.5,0,0],[0,1,0],[0,-1,0],[0,0,5],[0,0,-5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "glowing_band": {"id":"glowing_band","name":"glowing_band","kind":"paramesh","transform":{"position":[0,0.2,0]},"material":"neon_magenta","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.52,0,0],[-0.52,0,0],[0,0.09,0],[0,-0.09,0],[0,0,5.02],[0,0,-5.02]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "collider_0": {"id":"collider_0","name":"collider_0","kind":"paramesh","visible":false,"transform":{"position":[0,0,0]},"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.5,0,0],[-0.5,0,0],[0,1,0],[0,-1,0],[0,0,5],[0,0,-5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true}
+    },
+    "materials": {
+      "neon_dark": {"name":"neon_dark","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#14121f","in.roughness":0.25}}],"links":[]}},
+      "neon_magenta": {"name":"neon_magenta","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#ff2bd6","in.roughness":0.25,"in.emissive":"#ff2bd6"}}],"links":[]}}
+    }
+  },
+  "collision": [{"shape":"cuboid","t":[0,0,0],"r":[0,0,0,1],"halfExtents":[0.5,1,5]}],
+  "anchors": {},
+  "bounds": {"min":[-0.52,-1,-5.02],"max":[0.52,1,5.02]},
+  "hash": "094c469c3b5e7fbeac96c4ad64ffa28f9ceceef0b6259ba0ef16f6d4e35ca54b"
+}

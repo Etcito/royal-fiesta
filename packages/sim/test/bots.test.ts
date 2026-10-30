@@ -22,6 +22,8 @@ import { PROFILES } from '../src/match/setup.ts'
 import type { MatchSetup } from '../src/match/setup.ts'
 import { motionPose } from '../src/obstacles/motion.ts'
 import { ObstacleSystem } from '../src/obstacles/system.ts'
+import { MechLogicSystem } from '../src/mechanisms/logicSystem.ts'
+import { MechanismSystem } from '../src/mechanisms/system.ts'
 import { isRefusal } from '../src/refusal.ts'
 import { quatAxisAngle, quatMul, v3 } from '../src/vec.ts'
 import type { Pose, Quat, Vec3 } from '../src/vec.ts'
@@ -798,10 +800,14 @@ function candyMatch(course: ResolvedCourse, behaviour: BotBehaviour, seed: numbe
   }
   const bots = new BotSystem(setup, [behaviour])
   const obs = new ObstacleSystem([course])
+  const mechLogic = new MechLogicSystem([course])
+  const mechanisms = new MechanismSystem([course])
   const chars = new CharacterSystem({ playerCount: PLAYERS })
   const round = new RoundSystem(setup)
-  const world = new FiestaWorld<PlayerInput>(R, { playerCount: PLAYERS, systems: [bots, obs, chars, round] })
+  const world = new FiestaWorld<PlayerInput>(R, { playerCount: PLAYERS, systems: [bots, obs, mechLogic, mechanisms, chars, round] })
   obs.load(world.ctx, 0)
+  mechanisms.load(world.ctx, 0)
+  mechLogic.load(world.ctx, 0)
   const cap = roundTicks(course, PROFILES.standard)
   round.begin(world.ctx, planRound(0, PLAYERS), 0, [0, 1, 2, 3], [0, 1, 2, 3], cap)
   bots.resetForRound(world.ctx)

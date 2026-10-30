@@ -1,6 +1,7 @@
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { BodyId, RapierModule } from '@gamesaloon/rollback-rapier'
 import { surfaceOf } from '../course.ts'
+import { dhypot3 } from '../detmath.ts'
 import type { BodyRef } from '../mechanismSpec.ts'
 import type { MechanismSystem } from '../mechanisms/system.ts'
 import type { Motion, SpawnPoint, Surface } from '../course.ts'
@@ -456,7 +457,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
           const spec = levers[lever]
           if (!mechanisms.bodyPose(ctx, spec.handle, scratchHandle)) continue
           const h = scratchHandle.t
-          if (Math.hypot(h.x - t.x, h.y - t.y, h.z - t.z) > spec.grabRange) continue
+          if (dhypot3(h.x - t.x, h.y - t.y, h.z - t.z) > spec.grabRange) continue
           this.#grabTarget[p] = -1
           this.#grabLever[p] = lever
           this.#grabTicks[p] = 0

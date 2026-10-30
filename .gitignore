@@ -33,3 +33,5 @@ apps/web/public/images/
 
 # the pinned UI logo source is tracked (tools/uiLogo.ts, allowed by tools/guard.ts)
 !/ui/logo.*.png
+# rendered by haa from audio/*.haa.json for the owner to listen to: the .haa.json patch is the source, the render never goes to git
+audio/*.wav

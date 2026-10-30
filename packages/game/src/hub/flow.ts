@@ -110,7 +110,18 @@ export class PlayFlow {
   /** The lobby's members share the hub (presence over the lobby socket); no private hub room. */
   get sharedHub(): boolean { return this.lobbyMode && this.d.hubCode === 'new' }
 
-  /** Answers the lobby choice (state 'choosing'). */
+  /**
+   * Explicit request to watch instead of play (a spectate button; never asked of the player): enters the
+   * lobby again with `spectate: true`. Only while waiting in a lobby; the server seats the player as a spectator.
+   */
+  watchLobby(): void {
+    const client = this.matchClient
+    if (!client || client.matched || this.current !== 'queued') return
+    this.lobbyTracker.entered(this.d.now())
+    client.lobbyAgain(this.d.partySize, { g: 'royal-fiesta', v: 1, name: this.d.name, c: this.d.colour }, true)
+  }
+
+  /** Answers a lobby choice (state 'choosing': only an older server asks; the flow answers it by itself at once). */
   pick(p: LobbyPick): void {
     const client = this.matchClient
     if (this.current !== 'choosing' || !client) return

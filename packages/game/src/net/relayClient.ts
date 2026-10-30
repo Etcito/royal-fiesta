@@ -144,9 +144,9 @@ export class RelayClient {
   }
 
   /** Enters again while lobby() is still pending (the watched lobby closed, or a pick lost a race). */
-  lobbyAgain(seats: number, payload: FiestaQueuePayload): void {
+  lobbyAgain(seats: number, payload: FiestaQueuePayload, spectate = false): void {
     this.checkSeats(seats)
-    this.send(this.lobbyEnterMsg(seats, payload))
+    this.send(this.lobbyEnterMsg(seats, payload, spectate))
   }
 
   lobbyPick(action: LobbyPick, id: string | null): void { this.send({ t: 'lobby_pick', action, id }) }
@@ -170,8 +170,9 @@ export class RelayClient {
     this.send({ t: 'lobby_presence', a })
   }
 
-  private lobbyEnterMsg(seats: number, payload: FiestaQueuePayload): RelayClientMsg {
-    return { t: 'lobby_enter', game: LOBBY_GAME, seats, cadence: true, payload }
+  // No `choice`: the server seats the player at once. `spectate` is sent only on an explicit request.
+  private lobbyEnterMsg(seats: number, payload: FiestaQueuePayload, spectate = false): RelayClientMsg {
+    return { t: 'lobby_enter', game: LOBBY_GAME, seats, cadence: true, payload, ...(spectate ? { spectate: true } : {}) }
   }
 
   private checkSeats(seats: number): void {

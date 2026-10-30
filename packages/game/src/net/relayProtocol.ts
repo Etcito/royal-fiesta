@@ -26,7 +26,7 @@ export type RelayActBody = Record<string, unknown> | unknown[]
 // GameSaloon timed lobbies (gamesaloon docs/lobby.md): extension messages on the same socket.
 export const LOBBY_GAME = 'royal-fiesta'
 export const LOBBY_SERVER_TYPES = ['lobby_choice', 'lobby_state', 'lobby_watch', 'lobby_act', 'lobby_closed', 'lobby_left', 'lobby_error', 'lobby_presence'] as const
-export type RelayLobbyEnter = { t: 'lobby_enter'; game: string; seats: number; cadence: boolean; payload: object | null }
+export type RelayLobbyEnter = { t: 'lobby_enter'; game: string; seats: number; cadence: boolean; payload: object | null; spectate?: boolean; choice?: boolean }
 export type RelayLobbyPick = { t: 'lobby_pick'; action: LobbyPick; id: string | null }
 export type RelayLobbyLeave = { t: 'lobby_leave' }
 // Shared hub presence (gamesaloon docs/lobby.md "Shared hub presence"): this client's hub avatar state.

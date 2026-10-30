@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { LOBBY_CHOICE_MS, LOBBY_FALLBACK_MS, LocalCountdown, LobbyTracker, botsLine, cleanName, displayName, lobbyLines } from '../src/hub/lobby.ts'
+import { LOBBY_FALLBACK_MS, LocalCountdown, LobbyTracker, botsLine, cleanName, displayName, lobbyLines } from '../src/hub/lobby.ts'
 import { parseRelayServerMsg } from '../src/net/relayProtocol.ts'
 
 const A = { g: 'royal-fiesta', v: 1, name: 'Ann', c: 0 }
@@ -23,18 +23,18 @@ test('player in a lobby: countdown from the server, names, never reset by a late
   assert.deepEqual(lobbyLines(t, 21_000), ['Lobby 2/4 - round starts in 40 s', 'Ann, Bob', '6 bots will fill the empty places'])
 })
 
-test('choice on a waiting lobby: join, spectate or new; unanswered it joins', () => {
+test('choice from an older server: answered at once with the default, no card', () => {
   const t = new LobbyTracker()
   t.entered(0)
   t.apply(choice('waiting', ['join', 'spectate']), 0)
   assert.equal(t.view.stage, 'choosing')
   assert.deepEqual(t.view.offer!.actions, ['join', 'spectate', 'new'])
-  assert.equal(t.choiceDue(LOBBY_CHOICE_MS - 1), false)
-  assert.equal(t.choiceDue(LOBBY_CHOICE_MS), true)
+  assert.equal(t.choiceDue(0), true)
+  assert.deepEqual(lobbyLines(t, 0), ['Joining a lobby...'])
   assert.equal(t.defaultPick(), 'join')
   assert.equal(t.pick('join'), 'L1')
   // Answered: no default any more.
-  assert.equal(t.choiceDue(LOBBY_CHOICE_MS * 2), false)
+  assert.equal(t.choiceDue(1_000_000), false)
 })
 
 test('choice: a joinable lobby is offered before a round that is on', () => {

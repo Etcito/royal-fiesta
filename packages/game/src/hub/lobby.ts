@@ -1,11 +1,10 @@
 // The client side of GameSaloon's timed lobbies (gamesaloon docs/lobby.md): pure, no socket, no clock.
-// The server runs the wait and starts the round; this tracks what to show (countdown, players, the
-// join / spectate / new choice) and picks a default when the player does not answer the choice.
+// The server runs the wait and starts the round; this tracks what to show (players, the
+// countdown). The server seats an entering player at once, so there is no choice to show; only a server
+// that still asks (lobby_choice, older than gamesaloon's auto-join) is answered, immediately, with the default.
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { NET_PLAYERS } from '../net/tuning.ts'
 
-/** How long the choice screen waits for an answer before taking the default. */
-export const LOBBY_CHOICE_MS = 10_000
 /** A server that never answers lobby_enter has no lobbies: the client falls back to the exact-size queue. */
 export const LOBBY_FALLBACK_MS = 3000
 /** The local (offline) hub's wait before its round starts by itself. */
@@ -134,7 +133,7 @@ export class LobbyTracker {
         }
         this.v = {
           stage: 'choosing', id: first.id, phase: first.phase, names: offer.names, seats: first.seats,
-          startsAt: first.phase === 'waiting' ? now + first.startsInMs : null, offer, choiceAt: now + LOBBY_CHOICE_MS,
+          startsAt: first.phase === 'waiting' ? now + first.startsInMs : null, offer, choiceAt: now,
           you: null, members: [],
         }
         return { kind: 'none' }
@@ -228,11 +227,8 @@ export function lobbyLines(t: LobbyTracker, now: number): string[] {
   switch (v.stage) {
     case 'entering': return ['Joining a lobby...']
     case 'choosing': {
-      const o = v.offer!
-      const auto = Math.max(0, Math.ceil(((v.choiceAt ?? now) - now) / 1000))
-      return o.phase === 'waiting'
-        ? [`A lobby is open: ${o.players}/${o.seats} players, round in ${left ?? 0} s`, who, `Joining it in ${auto} s`]
-        : [`A round is being played: ${who}`, `New lobby in ${auto} s`]
+      // An older server asked; the default is sent at once, so this is a moment's status, never a card.
+      return ['Joining a lobby...']
     }
     case 'player':
       return [`Lobby ${v.names.length}/${v.seats} - round starts in ${left ?? 0} s`, who, ...watchers(v), botsLine(v.names.length)]

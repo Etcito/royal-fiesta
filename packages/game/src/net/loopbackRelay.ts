@@ -148,7 +148,7 @@ export class LoopbackRelay {
     if (t === 'create') {
       const code = this.newCode()
       if (!code) return this.error(c.id, 'server full')
-      this.seat(this.makeRoom(code, (m.players as number | undefined) ?? 2, !!m.cadence), 0, c, m.payload)
+      this.seatRoom(this.makeRoom(code, (m.players as number | undefined) ?? 2, !!m.cadence), 0, c, m.payload)
       return this.send(c.id, { t: 'room', code })
     }
     if (t === 'join') {
@@ -156,7 +156,7 @@ export class LoopbackRelay {
       if (!room) return this.error(c.id, 'room not found')
       const free = room.seats.indexOf(null)
       if (free < 0 || room.started) return this.error(c.id, 'room full')
-      this.seat(room, free, c, m.payload)
+      this.seatRoom(room, free, c, m.payload)
       if (room.seats.includes(null)) return this.send(c.id, { t: 'waiting', seat: free, players: room.players })
       this.startRoom(room)
     }
@@ -209,7 +209,7 @@ export class LoopbackRelay {
     this.rooms.set(code, room)
     return room
   }
-  private seat(room: Room, i: number, c: Client, payload: unknown): void {
+  private seatRoom(room: Room, i: number, c: Client, payload: unknown): void {
     room.seats[i] = c.id
     room.payloads[i] = payload ?? null
     c.room = room.code
@@ -321,6 +321,13 @@ export class LoopbackRelay {
       this.lobbyLeave(c.id, now)
       const open = [...this.lobbies.values()].filter((l) => l.key === want.key).sort((a, b) => a.openedAt - b.openedAt)
       if (!open.length) return this.openLobby(c.id, want, now)
+      if (m.choice !== true) {
+        // gamesaloon service.ts: no question. Spectate only on request; else the oldest waiting lobby with a free seat, else a new one.
+        const joinable = open.find((l) => l.phase === 'waiting' && l.members.length < l.seats)
+        if (m.spectate === true) return this.seat(c.id, joinable ?? open[0], want, 'spectate', now)
+        if (!joinable) return this.openLobby(c.id, want, now)
+        return this.seat(c.id, joinable, want, 'join', now)
+      }
       this.lobbyWants.set(c.id, want)
       return this.send(c.id, { t: 'lobby_choice', lobbies: open.map((l) => this.lobbySummary(l, now)) })
     }
@@ -329,23 +336,24 @@ export class LoopbackRelay {
     if (m.action === 'new') { this.lobbyWants.delete(c.id); return this.openLobby(c.id, want, now) }
     const l = this.lobbies.get(String(m.id))
     if (!l) return this.send(c.id, { t: 'lobby_error', reason: 'unknown_lobby' })
-    if (m.action === 'join') {
-      if (l.phase !== 'waiting' || l.members.length >= l.seats) return this.send(c.id, { t: 'lobby_error', reason: 'lobby_closed' })
-      this.lobbyWants.delete(c.id)
-      l.members.push({ id: c.id, payload: want.payload })
-      if (!l.keys.has(c.id)) l.keys.set(c.id, l.nextKey++)
-      this.lobbyOf.set(c.id, l.id)
-      this.publishLobby(l, now)
-      return this.startDueLobbies(now)
-    }
-    if (m.action !== 'spectate') return this.dropInvalid(c)
+    if (m.action === 'join' && (l.phase !== 'waiting' || l.members.length >= l.seats)) return this.send(c.id, { t: 'lobby_error', reason: 'lobby_closed' })
+    if (m.action !== 'join' && m.action !== 'spectate') return this.dropInvalid(c)
     this.lobbyWants.delete(c.id)
-    l.spectators.add(c.id)
-    l.specPayloads.set(c.id, want.payload)
-    if (!l.keys.has(c.id)) l.keys.set(c.id, l.nextKey++)
-    this.lobbyOf.set(c.id, l.id)
+    this.seat(c.id, l, want, m.action, now)
+  }
+  // Seats a client in lobby l as a player or a spectator (the shared tail of lobby_enter and lobby_pick).
+  private seat(id: number, l: Lobby, want: LobbyWant, as: 'join' | 'spectate', now: number): void {
+    if (as === 'join') {
+      l.members.push({ id, payload: want.payload })
+    } else {
+      l.spectators.add(id)
+      l.specPayloads.set(id, want.payload)
+    }
+    if (!l.keys.has(id)) l.keys.set(id, l.nextKey++)
+    this.lobbyOf.set(id, l.id)
     this.publishLobby(l, now)
-    if (l.phase === 'playing') this.lobbyWatch(c.id, l)
+    if (as === 'join') return this.startDueLobbies(now)
+    if (l.phase === 'playing') this.lobbyWatch(id, l)
   }
   // gamesaloon service.ts presenceFrom: to the other unseated members of the lobby that send presence too.
   private presenceFrom(c: Client, m: Obj): void {

@@ -866,9 +866,8 @@ class OnlineMode implements Mode {
         this.names = this.roundNames()
       }
     }
-    // Waiting in or watching a lobby keeps the walkable hub; only the choice is a menu.
+    // Entering, waiting in or watching a lobby keeps the walkable hub: the player is never asked join or spectate.
     let screen: GameScreen = 'hub'
-    if (flow.state === 'choosing') screen = flow.lobby.view.offer?.actions.includes('join') ? 'lobbyChoice' : 'lobbyLive'
     if (match !== null) {
       const v = match.sim.phase(this.presenter.view)
       this.presenter.draw(match.sim, match.session.smoother, 1, f.dt, v.phase >= Phase.podium ? v.podium : null)

@@ -342,7 +342,7 @@ async function lobbyClient(w: World, name: string, colour: number): Promise<Clie
   return c
 }
 
-test('lobby: the first player opens a lobby by itself, the next one gets the choice and joins by default; the round starts at the end of the wait with both', async () => {
+test('lobby: the first player opens a lobby by itself, the next one is put in it at once, no question; the round starts at the end of the wait with both', async () => {
   const w = new World(21, { waitMs: 20_000 })
   try {
     const a = await lobbyClient(w, 'Ann', 0)
@@ -352,14 +352,15 @@ test('lobby: the first player opens a lobby by itself, the next one gets the cho
     assert.equal(a.socks[0].sent[0].t, 'lobby_enter')
     assert.equal(a.socks.length, 1)
     const b = await lobbyClient(w, 'Bob', 1)
-    await w.until(() => b.flow.state === 'choosing', 1000)
-    assert.deepEqual(b.flow.lobby.view.offer!.actions, ['join', 'spectate', 'new'])
-    // Unanswered for 10 s: Bob joins; Ann sees 2/4 and the same end time.
-    await w.until(() => b.flow.lobby.view.stage === 'player', 11_000)
+    // No choice card: Bob is in Ann's lobby as soon as the server answers; Ann sees 2/4 and the same end time.
+    await w.until(() => b.flow.lobby.view.stage === 'player', 1000)
+    assert.ok(!b.events.some(e => e.state === 'choosing'))
+    assert.ok(!b.socks[0].sent.some(s => s.t === 'lobby_pick'))
+    assert.equal(b.flow.lobby.view.id, a.flow.lobby.view.id)
     await w.until(() => a.flow.lobby.view.names.length === 2, 1000)
     assert.ok(Math.abs(a.flow.lobby.view.startsAt! - b.flow.lobby.view.startsAt!) < 50)
     // Nobody else comes: the round starts with 2 humans (bots fill the other 6).
-    await w.until(() => a.flow.state === 'match' && b.flow.state === 'match', 12_000)
+    await w.until(() => a.flow.state === 'match' && b.flow.state === 'match', 20_000)
     assert.ok(w.ms >= 20_000)
     const seats = [a, b].map(c => c.events.find(e => e.state === 'match')!.detail.seat).sort()
     assert.deepEqual(seats, [0, 1])
@@ -389,9 +390,10 @@ test('lobby: arriving during a round offers spectate or new; spectating shows th
     const a = await lobbyClient(w, 'Ann', 0)
     await w.until(() => a.flow.state === 'match', 3000)
     const b = await lobbyClient(w, 'Bob', 1)
-    await w.until(() => b.flow.state === 'choosing', 1000)
-    assert.deepEqual(b.flow.lobby.view.offer!.actions, ['spectate', 'new'])
-    b.flow.pick('spectate')
+    // The lobby is playing: Bob lands in a new empty lobby (no card); watching is his explicit request.
+    await w.until(() => b.flow.state === 'queued' && b.flow.lobby.view.stage === 'player', 1000)
+    assert.notEqual(b.flow.lobby.view.id, a.flow.lobby.view.id)
+    b.flow.watchLobby()
     await w.until(() => b.flow.state === 'watching' && b.flow.lobby.view.phase === 'playing', 1000)
     assert.equal(b.flow.match, null, 'a spectator runs no rollback session')
     // Ann leaves: the round ends, Bob looks again and, with no lobby left, opens his own.
@@ -420,8 +422,6 @@ test('lobby: one shared hub; every member is drawn with its name, colour and mov
     const a = await lobbyClient(w, 'Bean', 2)
     await w.until(() => a.flow.lobby.view.stage === 'player', 1000)
     const b = await lobbyClient(w, 'Bob', 5)
-    await w.until(() => b.flow.state === 'choosing', 1000)
-    b.flow.pick('join')
     await w.until(() => b.flow.lobby.view.stage === 'player', 1000)
     // Both see the other once its first states arrived (one render delay later).
     await w.until(() => a.flow.remotes(w.ms).length === 1 && b.flow.remotes(w.ms).length === 1, 2000)
@@ -446,8 +446,8 @@ test('lobby: one shared hub; every member is drawn with its name, colour and mov
     assert.ok(!a.socks[0].sent.some(m => m.t === 'create' || m.t === 'act'))
     // A third client spectates: drawn apart in both hubs.
     const c = await lobbyClient(w, 'Cid', 1)
-    await w.until(() => c.flow.state === 'choosing', 1000)
-    c.flow.pick('spectate')
+    await w.until(() => c.flow.state === 'queued', 1000)
+    c.flow.watchLobby()
     await w.until(() => a.flow.remotes(w.ms).length === 2 && c.flow.remotes(w.ms).length === 2, 2000)
     const cid = a.flow.remotes(w.ms).find(r => r.name === 'Cid')!
     assert.equal(cid.spectator, true)

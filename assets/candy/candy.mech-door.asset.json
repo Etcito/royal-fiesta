@@ -54,7 +54,10 @@
         "children": [
           "frame_left",
           "frame_right",
-          "frame_header"
+          "frame_header",
+          "collider_0",
+          "collider_1",
+          "collider_2"
         ],
         "gameCollision": false
       },
@@ -250,6 +253,195 @@
         },
         "gameCollision": false
       },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            -2.4,
+            1.75,
+            0
+          ]
+        },
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.2,
+                0,
+                0
+              ],
+              [
+                -0.2,
+                0,
+                0
+              ],
+              [
+                0,
+                1.75,
+                0
+              ],
+              [
+                0,
+                -1.75,
+                0
+              ],
+              [
+                0,
+                0,
+                0.3
+              ],
+              [
+                0,
+                0,
+                -0.3
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_1": {
+        "id": "collider_1",
+        "name": "collider_1",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            2.4,
+            1.75,
+            0
+          ]
+        },
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.2,
+                0,
+                0
+              ],
+              [
+                -0.2,
+                0,
+                0
+              ],
+              [
+                0,
+                1.75,
+                0
+              ],
+              [
+                0,
+                -1.75,
+                0
+              ],
+              [
+                0,
+                0,
+                0.3
+              ],
+              [
+                0,
+                0,
+                -0.3
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_2": {
+        "id": "collider_2",
+        "name": "collider_2",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            3.3,
+            0
+          ]
+        },
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                2.6,
+                0,
+                0
+              ],
+              [
+                -2.6,
+                0,
+                0
+              ],
+              [
+                0,
+                0.2,
+                0
+              ],
+              [
+                0,
+                -0.2,
+                0
+              ],
+              [
+                0,
+                0,
+                0.3
+              ],
+              [
+                0,
+                0,
+                -0.3
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
       "leaf": {
         "id": "leaf",
         "name": "leaf",
@@ -259,7 +451,8 @@
           "leaf_border",
           "leaf_panel",
           "leaf_zigzag",
-          "leaf_grip"
+          "leaf_grip",
+          "collider_3"
         ],
         "gameCollision": false
       },
@@ -495,6 +688,69 @@
           }
         },
         "gameCollision": false
+      },
+      "collider_3": {
+        "id": "collider_3",
+        "name": "collider_3",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            1.53,
+            0
+          ]
+        },
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                2,
+                0,
+                0
+              ],
+              [
+                -2,
+                0,
+                0
+              ],
+              [
+                0,
+                1.45,
+                0
+              ],
+              [
+                0,
+                -1.45,
+                0
+              ],
+              [
+                0,
+                0,
+                0.18
+              ],
+              [
+                0,
+                0,
+                -0.18
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
       }
     },
     "materials": {
@@ -874,5 +1130,5 @@
       0.3
     ]
   },
-  "hash": "d9da2642ad3ec847a66169e081465b8fdb72a8ab51aac98602d1dcf5dc3e4758"
+  "hash": "43200ad7731a932f7d8651f38007618af54fe1d39ae70363fd0cf2c798ea5ac3"
 }

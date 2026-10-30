@@ -53,7 +53,8 @@
         "rigid": true,
         "children": [
           "base_plinth",
-          "base_socket"
+          "base_socket",
+          "collider_0"
         ],
         "gameCollision": false
       },
@@ -184,6 +185,69 @@
         },
         "gameCollision": false
       },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            0.25,
+            0
+          ]
+        },
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [
+                0.5,
+                0,
+                0
+              ],
+              [
+                -0.5,
+                0,
+                0
+              ],
+              [
+                0,
+                0.25,
+                0
+              ],
+              [
+                0,
+                -0.25,
+                0
+              ],
+              [
+                0,
+                0,
+                0.45
+              ],
+              [
+                0,
+                0,
+                -0.45
+              ]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
       "handle": {
         "id": "handle",
         "name": "handle",
@@ -191,7 +255,9 @@
         "rigid": true,
         "children": [
           "handle_stick",
-          "handle_grip"
+          "handle_grip",
+          "collider_1",
+          "collider_2"
         ],
         "gameCollision": false
       },
@@ -321,6 +387,41 @@
           }
         },
         "gameCollision": false
+      },
+      "collider_1": {
+        "id": "collider_1",
+        "name": "collider_1",
+        "kind": "capsule",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            1.1,
+            0
+          ]
+        },
+        "params": {
+          "height": 1.2,
+          "radius": 0.09
+        },
+        "gameCollision": true
+      },
+      "collider_2": {
+        "id": "collider_2",
+        "name": "collider_2",
+        "kind": "sphere",
+        "visible": false,
+        "transform": {
+          "position": [
+            0,
+            1.7,
+            0
+          ]
+        },
+        "params": {
+          "radius": 0.23
+        },
+        "gameCollision": true
       }
     },
     "materials": {
@@ -550,5 +651,5 @@
       0.45
     ]
   },
-  "hash": "7f31412c193f3d24a932d151c24651a243bb2e0fe8ebf0d044c12dd49c6feeac"
+  "hash": "243e4459eff2970d34d66b0839573240b86d258077ec90eafc91d1fe30f1d004"
 }

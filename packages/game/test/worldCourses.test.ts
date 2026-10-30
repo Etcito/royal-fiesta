@@ -10,6 +10,7 @@ import { PROFILES } from '../../sim/src/match/setup.ts'
 import { DEFAULT_BUDGET } from '../../sim/src/mechanismSpec.ts'
 import type { MechanismSpec } from '../../sim/src/mechanismSpec.ts'
 import { isRefusal } from '../../sim/src/refusal.ts'
+import { pose } from '../../sim/src/vec.ts'
 import { loadCourseV1 } from '../src/courseV1.ts'
 import type { CourseV1, GameAssetResolver } from '../src/courseV1.ts'
 import { assetFilePath, parseGameAsset } from '../src/gameAsset.ts'
@@ -176,10 +177,24 @@ for (const id of IDS) {
         courseIndex, players, players, PROFILES.sprint.timeCapS! * 60 - match.tick)
       const signals = [...new Set([...waits, ...pulls])]
       const seen = new Set<string>()
+      // The start-grid showcase must still run on the counter's real links.
+      const showcase = id === 'neon-piston-alley'
+        ? [['laser-a', 'beams', -2], ['laser-b', 'beams', -2], ['piston-1', 'block', 0.5]] as const
+        : []
+      const moved = new Set<string>()
+      const current = pose()
       const maxTicks = PROFILES.sprint.introTicks + PROFILES.sprint.timeCapS! * 60 + 2
       while (!rounds.over && match.tick < maxTicks) {
         match.step(inputs)
         for (const s of signals) if (!seen.has(s) && match.signal(s)) seen.add(s)
+        for (const [itemId, bodyId, travel] of showcase) {
+          if (moved.has(itemId)) continue
+          const item = m.items.findIndex(i => i.id === itemId)
+          const body = m.items[item].bodies.findIndex(b => b.id === bodyId)
+          assert.ok(match.mechanismBodyPose({ item, body }, current))
+          const dy = current.t.y - m.items[item].bodies[body].rest.t.y
+          if (travel < 0 ? dy < travel : dy > travel) moved.add(itemId)
+        }
       }
       assert.ok(rounds.over, `${id} round ends within the sprint cap`)
       const round = rounds.result()
@@ -191,6 +206,7 @@ for (const id of IDS) {
       assert.deepEqual([...round.qualified].sort((a, b) => a - b), players, `${id} qualifies every player once`)
       assert.deepEqual(round.eliminated, [], `${id} eliminates none`)
       for (const s of signals) assert.ok(seen.has(s), `${id} signal '${s}' is on during the round`)
+      for (const [itemId] of showcase) assert.ok(moved.has(itemId), `${itemId} moves on its counter link`)
     } finally {
       match.free()
     }

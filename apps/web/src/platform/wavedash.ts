@@ -8,6 +8,9 @@ export interface WavedashSdk {
   init(config?: { debug?: boolean }): unknown
   updateLoadProgressZeroToOne?(progress: number): void
   getLaunchParams?(): unknown
+  // docs.wavedash.com/sdk/players: the signed-in player's display name (sync), and the profile object.
+  getUsername?(): unknown
+  getUser?(): unknown
 }
 
 export interface PageGlobal {
@@ -140,4 +143,35 @@ export class BootStages {
   }
 
   get current(): string { return this.stage }
+}
+
+// --- player name ---
+
+/**
+ * The signed-in player's Wavedash display name (Wavedash.getUsername(), else getUser().username), for the name tag
+ * the other players see; null off Wavedash or when the SDK has none. Only the public display name is read: never the
+ * user id, avatar or anything else. Control characters are dropped and it is cut to 24 characters. Never throws.
+ */
+export function wavedashUsername(g: PageGlobal = globalThis as PageGlobal): string | null {
+  const sdk = wavedashSdk(g)
+  if (sdk === null) return null
+  let raw: unknown = null
+  try {
+    if (typeof sdk.getUsername === 'function') raw = sdk.getUsername.call(sdk)
+    if ((typeof raw !== 'string' || raw.trim() === '') && typeof sdk.getUser === 'function') {
+      const user = sdk.getUser.call(sdk)
+      raw = typeof user === 'object' && user !== null ? (user as { username?: unknown }).username : null
+    }
+  } catch (e) {
+    console.warn('[wavedash] no player name:', e)
+    return null
+  }
+  if (typeof raw !== 'string') return null
+  let name = ''
+  for (const ch of raw) {
+    const c = ch.codePointAt(0)!
+    if (c >= 0x20 && c !== 0x7f) name += ch
+  }
+  name = [...name.trim()].slice(0, 24).join('').trim()
+  return name.length > 0 ? name : null
 }

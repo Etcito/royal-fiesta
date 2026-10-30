@@ -37,6 +37,8 @@ export interface FlowDeps {
    * 'lobby': enter a GameSaloon timed lobby as soon as the hub is up and after every round (no pad, no
    * key); the server starts the round after its wait with whoever is there. A server without lobbies
    * falls back to the exact-size queue. 'pad' (default): the green pad queues for exactly partySize.
+   * With 'lobby' and hubCode 'new', the hub is shared by the lobby: no private hub room; every member of the
+   * lobby (players and spectators) is drawn from the lobby's presence stream (gamesaloon docs/lobby.md).
    */
   matchmaking?: 'lobby' | 'pad'
 }
@@ -88,6 +90,8 @@ export class PlayFlow {
   private cancelling = false
   private readonly lobbyTracker = new LobbyTracker()
   private fallingBack = false
+  // The lobby this client last took its shared-hub place in (its presence key picks the spawn).
+  private placedIn: string | null = null
   droppedActs = 0
 
   constructor(d: FlowDeps) { this.d = d }
@@ -103,6 +107,8 @@ export class PlayFlow {
   /** The lobby being waited in, watched or offered (matchmaking 'lobby'). */
   get lobby(): LobbyTracker { return this.lobbyTracker }
   private get lobbyMode(): boolean { return this.d.matchmaking === 'lobby' }
+  /** The lobby's members share the hub (presence over the lobby socket); no private hub room. */
+  get sharedHub(): boolean { return this.lobbyMode && this.d.hubCode === 'new' }
 
   /** Answers the lobby choice (state 'choosing'). */
   pick(p: LobbyPick): void {
@@ -122,6 +128,14 @@ export class PlayFlow {
       }
       if (decodeHubAct({ k: 'hi', v: 1, name: d.name, c: d.colour }) === null) {
         throw new RefusalError('hub', 'hello', 'expected a name of 1..24 characters and a colour in 0..7; choose a valid hub identity')
+      }
+      if (this.sharedHub) {
+        // The lobby socket carries the hub: the walkable plaza now, the others once the lobby lists them.
+        this.hubWorld = new HubWorld(d.R, d.plaza, this.hubSeat)
+        if (d.pilot) this.hubPilot = new HubPilot(d.plaza, this.hubSeat, d.partySize)
+        this.transition('hub', { seat: this.hubSeat, shared: true })
+        void this.queue()
+        return
       }
       const client = this.hubClient = new RelayClient(d.relayUrl, url => this.hubSocket(url))
       client.onClose(() => {
@@ -246,6 +260,9 @@ export class PlayFlow {
       if (this.active(client)) this.fail(new RefusalError('hub', d.relayUrl, 'match socket closed; reconnect and queue again'))
     })
     this.queueRequested = this.cancelling = false
+    // A new lobby entry: the shared hub fills again from the next lobby's roster.
+    this.buffer.clear()
+    this.placedIn = null
     try {
       this.transition('queued')
       this.lastState = -Infinity
@@ -284,12 +301,33 @@ export class PlayFlow {
     if (!this.active(client) || client.matched) return
     try {
       const step = this.lobbyTracker.apply(msg, this.d.now())
+      if (this.sharedHub) this.sharedPresence(msg)
       if (step.kind === 'fail') throw new RefusalError('hub', 'lobby', `${step.reason}: the GameSaloon lobby refused; reload to try again`)
       if (step.kind === 'reenter') client.lobbyAgain(this.d.partySize, { g: 'royal-fiesta', v: 1, name: this.d.name, c: this.d.colour })
       const stage = this.lobbyTracker.view.stage
       const next: FlowState = stage === 'choosing' ? 'choosing' : stage === 'spectator' ? 'watching' : 'queued'
       if (next !== this.current) this.transition(next, { lobby: this.lobbyTracker.view.id ?? '' })
     } catch (e) { this.fail(e) }
+  }
+
+  // Shared hub: the roster names, colours and removes the others; their presence moves them.
+  private sharedPresence(msg: LobbyServerMsg): void {
+    const v = this.lobbyTracker.view
+    if (msg.t === 'lobby_presence') {
+      if (msg.id !== v.id || msg.from === v.you || !this.buffer.has(msg.from)) return
+      const st = decodeHubAct(msg.a)
+      if (st === null || st.k !== 'st') { this.droppedActs++; return }
+      this.buffer.push(msg.from, st, this.d.now())
+      return
+    }
+    if (v.stage !== 'player' && v.stage !== 'spectator') { this.buffer.clear(); return }
+    if (msg.t !== 'lobby_state') return
+    this.buffer.roster(v.members.filter(m => m.k !== v.you))
+    // Each member arrives on its own spawn (by presence key), so a full lobby does not stand in one spot.
+    if (v.you !== null && v.id !== this.placedIn && this.hubWorld) {
+      this.placedIn = v.id
+      this.hubWorld.respawn(v.you)
+    }
   }
 
   // The choice's default once unanswered, and the fallback to the queue when the server has no lobbies.
@@ -324,6 +362,7 @@ export class PlayFlow {
 
   private broadcast(now: number): void {
     const inMatch = this.current === 'match' || this.current === 'podium' || this.current === 'returning'
+    if (this.sharedHub) return this.broadcastShared(now, inMatch)
     const period = 1000 / (inMatch ? HUB_MATCH_RATE_HZ : HUB_RATE_HZ)
     if (now - this.lastState < period) return
     // Whole periods: frame quantisation would otherwise lower 5 Hz to 60/13 Hz.
@@ -331,6 +370,19 @@ export class PlayFlow {
     if (this.helloPending || now - this.lastHello >= HUB_HELLO_EVERY_MS) this.hello(now)
     const st = this.hub.state(this.char)
     if (this.sendAct(encodeState(st.pos, st.facing, st.mode, this.hub.emote(now), this.current === 'queued', inMatch, this.seq))) this.seq++
+  }
+
+  // Shared hub: the avatar state at the hub's cadence on the lobby socket while a member of a lobby; nothing
+  // in a round (that socket is a rollback peer) nor while choosing (no lobby yet). Names come from the roster.
+  private broadcastShared(now: number, inMatch: boolean): void {
+    const client = this.matchClient
+    const stage = this.lobbyTracker.view.stage
+    if (inMatch || !client || client.matched || (stage !== 'player' && stage !== 'spectator')) return
+    const period = 1000 / HUB_RATE_HZ
+    if (now - this.lastState < period) return
+    this.lastState = now - this.lastState < 2 * period ? this.lastState + period : now
+    const st = this.hub.state(this.char)
+    try { client.presence(encodeState(st.pos, st.facing, st.mode, this.hub.emote(now), false, false, this.seq++)) } catch (e) { this.fail(e) }
   }
 
   private hello(now: number): void {

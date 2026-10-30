@@ -14,6 +14,7 @@ import type { CourseEntry } from '../src/courseSet.ts'
 import { PlayFlow } from '../src/hub/flow.ts'
 import type { FlowEvent, FlowState } from '../src/hub/flow.ts'
 import { HUB_MAX_ACTS_PER_MIN, HUB_RATE_HZ, HUB_MATCH_RATE_HZ } from '../src/hub/protocol.ts'
+import { lobbyLines } from '../src/hub/lobby.ts'
 import { LoopbackRelay } from '../src/net/loopbackRelay.ts'
 import type { WsFactory, WsLike } from '../src/net/ws.ts'
 
@@ -347,7 +348,9 @@ test('lobby: the first player opens a lobby by itself, the next one gets the cho
     const a = await lobbyClient(w, 'Ann', 0)
     await w.until(() => a.flow.lobby.view.stage === 'player', 1000)
     assert.equal(a.flow.state, 'queued')
-    assert.equal(a.socks[1].sent[0].t, 'lobby_enter')
+    // The shared hub: no private hub room, the lobby socket is the only one.
+    assert.equal(a.socks[0].sent[0].t, 'lobby_enter')
+    assert.equal(a.socks.length, 1)
     const b = await lobbyClient(w, 'Bob', 1)
     await w.until(() => b.flow.state === 'choosing', 1000)
     assert.deepEqual(b.flow.lobby.view.offer!.actions, ['join', 'spectate', 'new'])
@@ -406,7 +409,53 @@ test('lobby: a server without lobbies falls back to the exact-size queue', async
     void a.flow.start()
     void b.flow.start()
     await w.until(() => a.flow.state === 'match' && b.flow.state === 'match', 5000)
-    assert.deepEqual(a.socks[1].sent.map(s => s.t).slice(0, 2), ['lobby_enter', 'queue'])
+    assert.deepEqual(a.socks[0].sent.map(s => s.t).slice(0, 2), ['lobby_enter', 'queue'])
     assert.ok(w.ms >= 3000)
+  } finally { w.close() }
+})
+
+test('lobby: one shared hub; every member is drawn with its name, colour and moves, a spectator apart, a leaver removed', async () => {
+  const w = new World(25, { waitMs: 60_000 })
+  try {
+    const a = await lobbyClient(w, 'Bean', 2)
+    await w.until(() => a.flow.lobby.view.stage === 'player', 1000)
+    const b = await lobbyClient(w, 'Bob', 5)
+    await w.until(() => b.flow.state === 'choosing', 1000)
+    b.flow.pick('join')
+    await w.until(() => b.flow.lobby.view.stage === 'player', 1000)
+    // Both see the other once its first states arrived (one render delay later).
+    await w.until(() => a.flow.remotes(w.ms).length === 1 && b.flow.remotes(w.ms).length === 1, 2000)
+    const seenByA = a.flow.remotes(w.ms)[0], seenByB = b.flow.remotes(w.ms)[0]
+    assert.deepEqual([seenByA.name, seenByA.colour, seenByA.spectator], ['Bob', 5, false])
+    // The default name is told apart by arrival order.
+    assert.deepEqual([seenByB.name, seenByB.colour], ['Bean 1', 2])
+    assert.deepEqual(a.flow.lobby.view.names, ['Bean 1', 'Bob'])
+    assert.ok(lobbyLines(a.flow.lobby, w.ms).includes('6 bots will fill the empty places'))
+    // Each arrives on its own spawn; Bob walking is seen by Ann.
+    const x0 = seenByA.pos.x, z0 = seenByA.pos.z
+    assert.ok(Math.hypot(x0 - seenByB.pos.x, z0 - seenByB.pos.z) > 0.5, 'members do not share one spawn')
+    const fwd: RawControls = { ...emptyControls(), forward: true }
+    for (let i = 0; i < 90; i++) await w.step(c => (c === b ? fwd : null))
+    for (let i = 0; i < 30; i++) await w.step()
+    const moved = a.flow.remotes(w.ms)[0]
+    assert.ok(Math.hypot(moved.pos.x - x0, moved.pos.z - z0) > 1, 'Bob walking is seen in Ann\'s hub')
+    // Presence keeps the hub cadence (5 Hz) on the lobby socket; no hub room, no hello.
+    const pres = a.socks[0].sent.filter(m => m.t === 'lobby_presence')
+    const gaps = pres.slice(1).map((m, i) => m.ms - pres[i].ms)
+    assert.ok(gaps.length > 5 && gaps.every(g => Math.abs(g - 1000 / HUB_RATE_HZ) <= FRAME_MS + 1e-6))
+    assert.ok(!a.socks[0].sent.some(m => m.t === 'create' || m.t === 'act'))
+    // A third client spectates: drawn apart in both hubs.
+    const c = await lobbyClient(w, 'Cid', 1)
+    await w.until(() => c.flow.state === 'choosing', 1000)
+    c.flow.pick('spectate')
+    await w.until(() => a.flow.remotes(w.ms).length === 2 && c.flow.remotes(w.ms).length === 2, 2000)
+    const cid = a.flow.remotes(w.ms).find(r => r.name === 'Cid')!
+    assert.equal(cid.spectator, true)
+    assert.deepEqual(a.flow.lobby.view.members.map(m => [m.name, m.role]), [['Bean 1', 'player'], ['Bob', 'player'], ['Cid', 'spectator']])
+    // Bob leaves: gone from Ann's hub and Cid's.
+    b.flow.close()
+    await w.until(() => a.flow.remotes(w.ms).length === 1 && c.flow.remotes(w.ms).length === 1, 2000)
+    assert.equal(a.flow.remotes(w.ms)[0].name, 'Cid')
+    assertClean(w)
   } finally { w.close() }
 })

@@ -16,15 +16,33 @@ import { motionPose } from '@royal-fiesta/sim/obstacles/motion'
 import { add3, pose, quatConj, quatMul, quatRotate, sub3 } from '@royal-fiesta/sim/vec'
 import type { Vec3 } from '@royal-fiesta/sim/vec'
 
-const POOL = 4
 const TAU = Math.PI * 2
+// A remote bean grows in when it arrives and shrinks out when it leaves, over this long.
+const POP_MS = 350
+// Spectators of the lobby are drawn smaller than its players.
+const SPECTATOR_SCALE = 0.72
+// Name tags sit this far above a bean's origin (its feet).
+export const TAG_HEIGHT = 2.1
+// Character modes (sim character/constants CharMode) the view poses.
+const MODE_AIR = 1
+const MODE_DIVE = 2
+const MODE_DIVE_RECOVER = 3
+const MODE_STUNNED = 4
 // Emote ids from S9: 0 none, 1 wave, 2 dance, 3 cheer, 4 laugh.
 const WAVE = 1
 const DANCE = 2
 const CHEER = 3
 const LAUGH = 4
 
-interface Slot { inst: number; colour: number }
+// One remote bean, keyed by its hub seat or lobby presence key. gone >= 0: leaving since then (shrinking out).
+interface Slot {
+  inst: number; colour: number; born: number; gone: number
+  pos: Vec3; yaw: number; mode: number; emote: number; spectator: boolean; name: string
+  speed: number; stride: number; seen: boolean
+}
+
+/** A name tag the page draws over the canvas: world point above the bean, its text and role. */
+export interface HubTag { key: number; name: string; spectator: boolean; local: boolean; pos: Vec3; scale: number }
 
 export interface HubViewOptions {
   // The player page's orbit camera frames the local bean; without it, followCamera (proof pages).
@@ -52,7 +70,11 @@ export class HubView {
   private mechanisms: number[] = []
   private localBean = -1
   private localColour = -1
-  private slots: Slot[] = []
+  private slots = new Map<number, Slot>()
+  private readonly localPrev = { x: 0, z: 0, set: false }
+  private localSpeed = 0
+  private localStride = 0
+  private localPos: Vec3 = { x: 0, y: 0, z: 0 }
   private cam: CameraPose | null = null
   private visible = true
   private clock = 0
@@ -74,7 +96,6 @@ export class HubView {
     for (const item of plaza.mechanisms?.items ?? []) {
       this.mechanisms.push(this.create(this.asset(item.asset, assets(item.asset)), null, true))
     }
-    for (let k = 0; k < POOL; k++) this.slots.push({ inst: this.create(this.beanAsset, PALETTE[k], false), colour: k })
     this.dress(true)
   }
 
@@ -132,28 +153,98 @@ export class HubView {
       this.localBean = this.create(this.beanAsset, PALETTE[lc], true)
       this.localColour = lc
     }
-    this.draw(this.localBean, local.pos, Math.atan2(local.facing.x, local.facing.z), localEmote)
+    const ms = this.clock * 1000
+    if (this.localPrev.set && dtS > 0) this.localSpeed = Math.hypot(local.pos.x - this.localPrev.x, local.pos.z - this.localPrev.z) / dtS
+    this.localPrev.x = local.pos.x
+    this.localPrev.z = local.pos.z
+    this.localPrev.set = true
+    this.localStride += this.localSpeed * dtS
+    this.localPos = local.pos
+    this.draw(this.localBean, local.pos, Math.atan2(local.facing.x, local.facing.z), localEmote, local.mode, this.localSpeed, this.localStride, 1)
 
-    for (let k = 0; k < POOL; k++) {
-      const slot = this.slots[k]
-      if (k >= remotes.length) {
-        this.show(slot.inst, false)
-        continue
-      }
-      const r = remotes[k]
+    // Every remote has its own bean, as many as the lobby holds; a new one grows in, a leaver shrinks out.
+    for (const slot of this.slots.values()) slot.seen = false
+    for (const r of remotes) {
       const colour = r.colour % 8
-      if (colour !== slot.colour) {
+      let slot = this.slots.get(r.seat)
+      if (slot !== undefined && slot.gone >= 0) {
+        // Back before it finished leaving: grow from where it is.
+        slot.born = ms - POP_MS * this.popOf(slot, ms)
+        slot.gone = -1
+      }
+      if (slot === undefined) {
+        slot = {
+          inst: this.create(this.beanAsset, PALETTE[colour], true), colour, born: ms, gone: -1,
+          pos: { x: r.pos.x, y: r.pos.y, z: r.pos.z }, yaw: r.yaw, mode: r.mode, emote: r.emote, spectator: r.spectator, name: r.name,
+          speed: 0, stride: 0, seen: true,
+        }
+        this.slots.set(r.seat, slot)
+      } else if (colour !== slot.colour) {
         // The port has no per-instance tint change: recreate the instance with the new tint.
         this.destroy(slot.inst)
-        slot.inst = this.create(this.beanAsset, PALETTE[colour], false)
+        slot.inst = this.create(this.beanAsset, PALETTE[colour], true)
         slot.colour = colour
       }
+      if (dtS > 0) slot.speed = slot.speed * 0.7 + 0.3 * Math.hypot(r.pos.x - slot.pos.x, r.pos.z - slot.pos.z) / dtS
+      slot.stride += slot.speed * dtS
+      slot.pos.x = r.pos.x
+      slot.pos.y = r.pos.y
+      slot.pos.z = r.pos.z
+      slot.yaw = r.yaw
+      slot.mode = r.mode
+      slot.emote = r.emote
+      slot.spectator = r.spectator
+      slot.name = r.name
+      slot.seen = true
+    }
+    for (const [key, slot] of this.slots) {
+      if (!slot.seen && slot.gone < 0) slot.gone = ms
+      const pop = this.popOf(slot, ms)
+      if (slot.gone >= 0 && pop <= 0) {
+        this.destroy(slot.inst)
+        this.slots.delete(key)
+        continue
+      }
       this.show(slot.inst, true)
-      this.draw(slot.inst, r.pos, r.yaw, r.emote)
+      const scale = pop * (slot.spectator ? SPECTATOR_SCALE : 1)
+      this.draw(slot.inst, slot.pos, slot.yaw, slot.emote, slot.mode, slot.speed, slot.stride, scale)
     }
 
     this.cam = this.orbit !== null ? this.orbit.pose(local.pos) : followCamera(this.cam, local.pos, local.facing, dtS)
     port.setCamera(this.viewport, this.cam)
+  }
+
+  /**
+   * Name tags for the beans drawn now: the local one (localName) and every remote, at TAG_HEIGHT above the
+   * feet. The page projects them with `camera` and draws them over the canvas.
+   */
+  tags(localName: string | null): HubTag[] {
+    const out: HubTag[] = []
+    if (!this.visible) return out
+    const ms = this.clock * 1000
+    if (localName !== null && this.localBean >= 0) {
+      out.push({ key: -1, name: localName, spectator: false, local: true, pos: { x: this.localPos.x, y: this.localPos.y + TAG_HEIGHT, z: this.localPos.z }, scale: 1 })
+    }
+    for (const [key, slot] of this.slots) {
+      const scale = this.popOf(slot, ms) * (slot.spectator ? SPECTATOR_SCALE : 1)
+      out.push({ key, name: slot.name, spectator: slot.spectator, local: false, pos: { x: slot.pos.x, y: slot.pos.y + TAG_HEIGHT * scale, z: slot.pos.z }, scale })
+    }
+    return out
+  }
+
+  /** Remote beans currently drawn (arriving and leaving ones included). */
+  get remoteCount(): number { return this.slots.size }
+
+  // 0..1: how far a remote has grown in (or, leaving, how much is left), eased.
+  private popOf(slot: Slot, ms: number): number {
+    const t = slot.gone >= 0 ? 1 - (ms - slot.gone) / POP_MS : (ms - slot.born) / POP_MS
+    if (t <= 0) return 0
+    if (t >= 1) return 1
+    // easeOutBack while growing (a small overshoot), plain ease while leaving.
+    if (slot.gone >= 0) return t * t * (3 - 2 * t)
+    const c = 1.70158
+    const u = t - 1
+    return 1 + (c + 1) * u * u * u + c * u * u
   }
 
   // Hides every HubView instance while a match is shown in the same port; true restores them.
@@ -170,34 +261,45 @@ export class HubView {
     for (const inst of [...this.shown.keys()]) this.destroy(inst)
     this.obstacles = []
     this.mechanisms = []
-    this.slots = []
+    this.slots.clear()
     this.localBean = -1
     this.localColour = -1
   }
 
-  // Drawn transform = base pose (pos, yaw) plus the view-side emote offset.
-  private draw(inst: number, pos: Vec3, yaw: number, emote: number): void {
+  // Drawn transform = base pose (pos, yaw) plus the view-side motion: a walk bob and lean from the planar
+  // speed, the dive (lying forward) and its recovery, a stretch in the air, a stun wobble, the emote offset,
+  // all scaled by `scale` (arrival, departure, spectator).
+  private draw(inst: number, pos: Vec3, yaw: number, emote: number, mode = 0, speed = 0, stride = 0, scale = 1): void {
     const t = this.clock
     let y = pos.y
     let a = yaw
     let roll = 0
+    let pitch = 0
     let s: Vec3T = [1, 1, 1]
-    if (emote === WAVE) roll = 0.2 * Math.sin(TAU * 2 * t)
+    const walk = Math.min(1, speed / 6)
+    if (mode === MODE_DIVE) pitch = 1.25
+    else if (mode === MODE_DIVE_RECOVER) pitch = 0.6
+    else if (mode === MODE_AIR) s = [0.94, 1.1, 0.94]
+    else if (mode === MODE_STUNNED) roll = 0.35 * Math.sin(TAU * 3 * t)
+    else if (walk > 0.05) {
+      // Two bobs per stride metre-ish: a hop and a sway, leaning into the walk.
+      y += 0.08 * walk * Math.abs(Math.sin(stride * 2.2))
+      roll = 0.09 * walk * Math.sin(stride * 2.2)
+      pitch = 0.16 * walk
+    }
+    if (emote === WAVE) roll += 0.2 * Math.sin(TAU * 2 * t)
     else if (emote === DANCE) a += TAU * 2 * t
     else if (emote === CHEER) y += 0.4 * Math.abs(Math.sin(TAU * 3 * t))
     else if (emote === LAUGH) {
       const b = Math.sin(TAU * 4 * t)
       s = [1 - 0.08 * b, 1 + 0.15 * b, 1 - 0.08 * b]
     }
-    // yaw about Y, then a local roll about the bean's forward (Z) axis.
-    const hy = a / 2
-    const hr = roll / 2
-    const cy = Math.cos(hy)
-    const sy = Math.sin(hy)
-    const cr = Math.cos(hr)
-    const sr = Math.sin(hr)
-    const r: QuatT = [sy * sr, sy * cr, cy * sr, cy * cr]
-    this.port.setTransform(inst, [pos.x, y, pos.z], r, s)
+    // yaw about Y, then a local pitch about the bean's right (X) axis (positive leans forward), then a roll about Z.
+    const qy: QuatT = [0, Math.sin(a / 2), 0, Math.cos(a / 2)]
+    const qp: QuatT = [Math.sin(pitch / 2), 0, 0, Math.cos(pitch / 2)]
+    const qr: QuatT = [0, 0, Math.sin(roll / 2), Math.cos(roll / 2)]
+    const r = mulQ(mulQ(qy, qp), qr)
+    this.port.setTransform(inst, [pos.x, y, pos.z], r, [s[0] * scale, s[1] * scale, s[2] * scale])
   }
 
   // Hub entry enters the plaza dressing; hub exit leaves it.
@@ -234,4 +336,13 @@ export class HubView {
     this.shown.set(inst, on)
     if (this.visible) this.port.setVisible(inst, on)
   }
+}
+
+function mulQ(a: QuatT, b: QuatT): QuatT {
+  return [
+    a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+    a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+    a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+    a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+  ]
 }

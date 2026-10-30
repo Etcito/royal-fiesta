@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { LOBBY_CHOICE_MS, LOBBY_FALLBACK_MS, LocalCountdown, LobbyTracker, lobbyLines } from '../src/hub/lobby.ts'
+import { LOBBY_CHOICE_MS, LOBBY_FALLBACK_MS, LocalCountdown, LobbyTracker, botsLine, cleanName, displayName, lobbyLines } from '../src/hub/lobby.ts'
 import { parseRelayServerMsg } from '../src/net/relayProtocol.ts'
 
 const A = { g: 'royal-fiesta', v: 1, name: 'Ann', c: 0 }
@@ -20,7 +20,7 @@ test('player in a lobby: countdown from the server, names, never reset by a late
   // Bob arrives 20 s later: the server's remaining time keeps the same end.
   t.apply({ t: 'lobby_state', id: 'L1', phase: 'waiting', role: 'player', seat: 0, players: [A, B], seats: 4, startsInMs: 40_000, waitMs: 60_000 }, 21_000)
   assert.equal(t.secondsLeft(21_000), 40)
-  assert.deepEqual(lobbyLines(t, 21_000), ['Lobby 2/4 - round starts in 40 s', 'Ann, Bob', 'Bots fill the empty places'])
+  assert.deepEqual(lobbyLines(t, 21_000), ['Lobby 2/4 - round starts in 40 s', 'Ann, Bob', '6 bots will fill the empty places'])
 })
 
 test('choice on a waiting lobby: join, spectate or new; unanswered it joins', () => {
@@ -109,4 +109,41 @@ test('protocol copy parses the lobby messages and rejects malformed ones', () =>
   assert.ok(ok({ t: 'lobby_closed', id: 'L1', reason: 'ended' }))
   assert.equal(ok({ t: 'lobby_state', id: 'L1', phase: 'later', role: 'player', seat: 0, players: [], seats: 4, startsInMs: 1, waitMs: 1 }), null)
   assert.equal(ok({ t: 'lobby_closed', id: 'L1', reason: 'why' }), null)
+})
+
+test('shared hub roster: the presence key, players then spectators, default names told apart by arrival', () => {
+  const t = new LobbyTracker()
+  t.entered(0)
+  const bean = { g: 'royal-fiesta', v: 1, name: 'Bean', c: 3 }
+  t.apply({
+    t: 'lobby_state', id: 'L1', phase: 'waiting', role: 'player', seat: 1, players: [bean, B], seats: 4, startsInMs: 30_000, waitMs: 60_000,
+    you: 1, members: [{ k: 0, role: 'player', p: bean }, { k: 1, role: 'player', p: B }, { k: 3, role: 'spectator', p: { name: 'Bean' } }, { k: 'x', role: 'player', p: A }],
+  }, 0)
+  assert.equal(t.view.you, 1)
+  assert.deepEqual(t.view.members, [
+    { k: 0, role: 'player', name: 'Bean 1', colour: 3 },
+    { k: 1, role: 'player', name: 'Bob', colour: 1 },
+    { k: 3, role: 'spectator', name: 'Bean 4', colour: 3 },
+  ])
+  assert.deepEqual(t.view.names, ['Bean 1', 'Bob'])
+  assert.deepEqual(lobbyLines(t, 0), ['Lobby 2/4 - round starts in 30 s', 'Bean 1, Bob', 'Watching: Bean 4', '6 bots will fill the empty places'])
+  // A presence frame changes nothing in the view.
+  assert.deepEqual(t.apply({ t: 'lobby_presence', id: 'L1', from: 0, a: { k: 'st' } }, 0), { kind: 'none' })
+  assert.equal(t.view.members.length, 3)
+  // An older server (no roster): the payload names, as before.
+  t.apply({ t: 'lobby_state', id: 'L1', phase: 'waiting', role: 'player', seat: 0, players: [A], seats: 4, startsInMs: 1, waitMs: 1 }, 0)
+  assert.deepEqual([t.view.you, t.view.members, t.view.names], [null, [], ['Ann']])
+})
+
+test('names: control characters dropped, 24 characters, the default and an empty name become Bean <n>; bot count', () => {
+  assert.equal(displayName({ name: 'Zo\u0007e\n ' }, 0), 'Zoe')
+  assert.equal(displayName({ name: 'x'.repeat(40) }, 0), 'x'.repeat(24))
+  assert.equal(displayName({ name: '   ' }, 4), 'Bean 5')
+  assert.equal(displayName(null, 1), 'Bean 2')
+  assert.equal(cleanName(' Kev\u0000in '), 'Kevin')
+  assert.equal(botsLine(1), '7 bots will fill the empty places')
+  assert.equal(botsLine(7), '1 bot will fill the empty places')
+  assert.equal(botsLine(8), 'No bots: every place is a player')
+  assert.deepEqual(parseRelayServerMsg('{"t":"lobby_presence","id":"L1","from":2,"a":{"k":"st"}}'), { t: 'lobby_presence', id: 'L1', from: 2, a: { k: 'st' } })
+  assert.equal(parseRelayServerMsg('{"t":"lobby_presence","id":"L1","from":-1,"a":{}}'), null)
 })

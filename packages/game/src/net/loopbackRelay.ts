@@ -12,10 +12,14 @@ const SEQUENCE_MAX = 1_000_000
 // The hub also knows resume, which the game's copy leaves out.
 const CLIENT_TYPES: readonly unknown[] = ['create', 'join', 'act', 'bye', 'queue', 'unqueue', 'resume', 'ping']
 // GameSaloon's lobby extension (gamesaloon src/lobby, docs/lobby.md), present only with opts.lobby.
-const LOBBY_TYPES: readonly unknown[] = ['lobby_enter', 'lobby_pick', 'lobby_leave']
+const LOBBY_TYPES: readonly unknown[] = ['lobby_enter', 'lobby_pick', 'lobby_leave', 'lobby_presence']
+// gamesaloon messages.ts MAX_PRESENCE_STATE: a presence state is a pose, not content.
+const MAX_PRESENCE_STATE = 256
 interface Lobby {
   id: string; key: string; seats: number; cadence: boolean; phase: 'waiting' | 'playing'; openedAt: number; startsAt: number
   members: { id: number; payload: unknown }[]; spectators: Set<number>; room: string | null; seed: number
+  // Presence keys (arrival order, never reused) and the spectators' payloads, as gamesaloon lobby.ts.
+  keys: Map<number, number>; nextKey: number; specPayloads: Map<number, unknown>
 }
 interface LobbyWant { key: string; game: string; seats: number; cadence: boolean; payload: unknown }
 
@@ -69,6 +73,8 @@ export class LoopbackRelay {
   private lobbyOf = new Map<number, string>()
   private lobbyWants = new Map<number, LobbyWant>()
   private lobbySeq = 0
+  // Sockets that sent lobby_presence: only they receive the others'.
+  private presence = new Set<number>()
 
   /** opts.lobby turns on the GameSaloon lobby extension (waitMs default 60000, minPlayers default 1). */
   constructor(opts?: { seed?: number; lobby?: { waitMs?: number; minPlayers?: number } }) {
@@ -245,7 +251,7 @@ export class LoopbackRelay {
   }
   private disconnect(id: number): void {
     const c = this.clients.get(id)
-    if (c) { this.clients.delete(id); this.cleanup(c); this.lobbyLeave(id, this.now()) }
+    if (c) { this.clients.delete(id); this.cleanup(c); this.lobbyLeave(id, this.now()); this.presence.delete(id) }
   }
   // A disconnect holds a started seat for the grace (dropped); a bye, or any leave before matched, ends it (left).
   private cleanup(c: Client, graceful = false): void {
@@ -306,6 +312,7 @@ export class LoopbackRelay {
       this.lobbyLeave(c.id, now)
       return this.send(c.id, { t: 'lobby_left' })
     }
+    if (m.t === 'lobby_presence') return this.presenceFrom(c, m)
     if (c.room !== null) return this.send(c.id, { t: 'lobby_error', reason: 'in_session' })
     if (m.t === 'lobby_enter') {
       const seats = m.seats
@@ -326,6 +333,7 @@ export class LoopbackRelay {
       if (l.phase !== 'waiting' || l.members.length >= l.seats) return this.send(c.id, { t: 'lobby_error', reason: 'lobby_closed' })
       this.lobbyWants.delete(c.id)
       l.members.push({ id: c.id, payload: want.payload })
+      if (!l.keys.has(c.id)) l.keys.set(c.id, l.nextKey++)
       this.lobbyOf.set(c.id, l.id)
       this.publishLobby(l, now)
       return this.startDueLobbies(now)
@@ -333,14 +341,32 @@ export class LoopbackRelay {
     if (m.action !== 'spectate') return this.dropInvalid(c)
     this.lobbyWants.delete(c.id)
     l.spectators.add(c.id)
+    l.specPayloads.set(c.id, want.payload)
+    if (!l.keys.has(c.id)) l.keys.set(c.id, l.nextKey++)
     this.lobbyOf.set(c.id, l.id)
-    this.lobbyStateTo(c.id, l, now)
+    this.publishLobby(l, now)
     if (l.phase === 'playing') this.lobbyWatch(c.id, l)
+  }
+  // gamesaloon service.ts presenceFrom: to the other unseated members of the lobby that send presence too.
+  private presenceFrom(c: Client, m: Obj): void {
+    const a = m.a
+    if (!isObj(a) || Object.keys(a).length > 16 || JSON.stringify(a).length > MAX_PRESENCE_STATE) return this.dropInvalid(c)
+    const lid = this.lobbyOf.get(c.id)
+    const l = lid === undefined ? undefined : this.lobbies.get(lid)
+    if (!l || c.room !== null) return
+    this.presence.add(c.id)
+    const from = l.keys.get(c.id)
+    if (from === undefined) return
+    for (const id of [...l.members.map((e) => e.id), ...l.spectators]) {
+      if (id === c.id || !this.presence.has(id) || this.clients.get(id)?.room != null) continue
+      this.send(id, { t: 'lobby_presence', id: l.id, from, a })
+    }
   }
   private openLobby(id: number, want: LobbyWant, now: number): void {
     const l: Lobby = {
       id: `L${++this.lobbySeq}`, key: want.key, seats: want.seats, cadence: want.cadence, phase: 'waiting', openedAt: now,
       startsAt: now + this.lobbyOpts!.waitMs, members: [{ id, payload: want.payload }], spectators: new Set(), room: null, seed: 0,
+      keys: new Map([[id, 0]]), nextKey: 1, specPayloads: new Map(),
     }
     this.lobbies.set(l.id, l)
     this.lobbyOf.set(id, l.id)
@@ -361,10 +387,16 @@ export class LoopbackRelay {
       t: 'lobby_state', id: l.id, phase: l.phase, role: seat >= 0 ? 'player' : 'spectator', seat,
       players: l.members.map((e) => e.payload), seats: l.seats,
       startsInMs: l.phase === 'waiting' ? Math.max(0, l.startsAt - now) : 0, waitMs: this.lobbyOpts!.waitMs,
+      you: l.keys.get(id) ?? -1, members: this.roster(l),
     })
   }
+  private roster(l: Lobby): Obj[] {
+    const specs = [...l.spectators].map((w) => ({ k: l.keys.get(w) ?? -1, role: 'spectator', p: l.specPayloads.get(w) ?? null })).sort((a, b) => a.k - b.k)
+    return [...l.members.map((e) => ({ k: l.keys.get(e.id) ?? -1, role: 'player', p: e.payload })), ...specs]
+  }
+  // Once the round is on, its players are in the round: only the spectators hear of the lobby.
   private publishLobby(l: Lobby, now: number): void {
-    for (const e of l.members) this.lobbyStateTo(e.id, l, now)
+    if (l.phase === 'waiting') for (const e of l.members) this.lobbyStateTo(e.id, l, now)
     for (const w of l.spectators) this.lobbyStateTo(w, l, now)
   }
   // No act log is kept here: a spectator joining a playing round gets replay:false (no catch-up).
@@ -376,9 +408,10 @@ export class LoopbackRelay {
     const l = lid === undefined ? undefined : this.lobbies.get(lid)
     this.lobbyOf.delete(id)
     if (!l) return
-    l.spectators.delete(id)
-    if (l.phase !== 'waiting') return
+    if (l.spectators.delete(id)) { l.specPayloads.delete(id); l.keys.delete(id) }
+    if (l.phase !== 'waiting') return this.publishLobby(l, now)
     l.members = l.members.filter((e) => e.id !== id)
+    l.keys.delete(id)
     if (l.members.length) return this.publishLobby(l, now)
     this.closeLobby(l)
     for (const w of l.spectators) this.send(w, { t: 'lobby_closed', id: l.id, reason: 'empty' })

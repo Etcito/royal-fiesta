@@ -1,7 +1,7 @@
 // The Wavedash loader contract (apps/web/src/platform/wavedash.ts): the shell keeps the frame hidden until init().
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { BootStages, onWavedashOrigin, wavedashProgress, wavedashReady } from '../src/platform/wavedash.ts'
+import { BootStages, onWavedashOrigin, wavedashProgress, wavedashReady, wavedashUsername } from '../src/platform/wavedash.ts'
 import { probeLine, probeWanted } from '../src/platform/probe.ts'
 import { bootFraction } from '../src/content/loading.ts'
 
@@ -114,4 +114,17 @@ test('bootFraction rises through the content phases and stays below the renderer
   for (let i = 1; i < order.length; i++) assert.ok(order[i] >= order[i - 1], `${order}`)
   assert.equal(order[0], 0.05)
   assert.equal(order.at(-1), 0.85)
+})
+
+test('player name: getUsername(), else getUser().username, cleaned; null off Wavedash or on a failing SDK; never the user id', () => {
+  const init = () => true
+  assert.equal(wavedashUsername({}), null)
+  let idRead = false
+  const sdk = { init, getUsername: () => '  Kev\u0007in  ', getUserId: () => { idRead = true; return 'u-123' } }
+  assert.equal(wavedashUsername({ Wavedash: sdk }), 'Kevin')
+  assert.equal(idRead, false)
+  assert.equal(wavedashUsername({ Wavedash: { init, getUsername: () => null, getUser: () => ({ username: 'Ann', id: 'u-9' }) } }), 'Ann')
+  assert.equal(wavedashUsername({ Wavedash: { init, getUser: () => ({ username: 'y'.repeat(40) }) } }), 'y'.repeat(24))
+  assert.equal(wavedashUsername({ Wavedash: { init, getUsername: () => '' } }), null)
+  assert.equal(wavedashUsername({ Wavedash: { init, getUsername: () => { throw new Error('not signed in') } } }), null)
 })

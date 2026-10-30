@@ -23,7 +23,7 @@ import type { GameContent } from '@royal-fiesta/game/content'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import { HubWorld } from '@royal-fiesta/game/hub/hubWorld'
 import { QueuePad } from '@royal-fiesta/game/hub/queuePad'
-import { LOCAL_LOBBY_WAIT_S, LocalCountdown, lobbyLines } from '@royal-fiesta/game/hub/lobby'
+import { DEFAULT_NAME, LOCAL_LOBBY_WAIT_S, LocalCountdown, cleanName, lobbyLines } from '@royal-fiesta/game/hub/lobby'
 import type { LobbyPick } from '@royal-fiesta/game/hub/lobby'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
 import { netSetup } from '@royal-fiesta/game/net/tuning'
@@ -55,7 +55,7 @@ import type { ClientCell } from '../client/canvases.ts'
 import { hudValues } from '../client/hud.ts'
 import type { HudValues } from '../client/hud.ts'
 import { bootFraction, mountLoading } from '../content/loading.ts'
-import { BootStages, wavedashProgress, wavedashReady } from '../platform/wavedash.ts'
+import { BootStages, wavedashProgress, wavedashReady, wavedashUsername } from '../platform/wavedash.ts'
 import { probeWanted, runProbe } from '../platform/probe.ts'
 import { pickContent } from '../content/source.ts'
 import { GameInput, InputDevices } from '../input/input.ts'
@@ -64,6 +64,7 @@ import { mountPadRemap } from '../input/padRemapScreen.ts'
 import { mountTouchControls } from '../input/touch.ts'
 import type { ListenerPose } from '@royal-fiesta/game/audio/emitters'
 import { HubView } from '../play/hubView.ts'
+import { NameTags } from '../play/nameTags.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
 import { SoundDriver } from '../play/sound.ts'
 import { widgetsOf } from '../ui/screenMap.ts'
@@ -754,6 +755,14 @@ class LocalMode implements Mode {
   }
 }
 
+// The name the other players see: ?name= when given, else the Wavedash display name, else the default (the lobby then
+// shows 'Bean <n>' by arrival order). Only a display name, never an account id.
+function onlineName(queryName: string): string {
+  const own = queryName !== DEFAULT_NAME ? queryName : (wavedashUsername() ?? DEFAULT_NAME)
+  const name = cleanName(own)
+  return name.length > 0 ? name : DEFAULT_NAME
+}
+
 // One relay client (?server=): this page's bean in the online hub (PlayFlow), its matches and podiums.
 // PlayFlow enters a GameSaloon lobby by itself and returns to the hub after each round, so the queue and leave commands
 // only explain that; a paused page sends no move (the match cannot pause for the others).
@@ -771,14 +780,18 @@ class OnlineMode implements Mode {
   private readonly local = emptyChar()
   private readonly cv = emptyCharView()
   private readonly moved = emptyControls()
+  // The shared hub: every lobby member's name over its bean.
+  private readonly tags: NameTags | null
+  private readonly name: string
 
   constructor(c: ModeCtx, server: string) {
     this.c = c
     const { R, content, ports } = c.loaded
     const q = c.q
-    this.names = playerNames(0, q.name)
+    this.name = onlineName(q.name)
+    this.names = playerNames(0, this.name)
     this.flow = new PlayFlow({
-      R, relayUrl: server, ws: globalWsFactory(), hubCode: q.hub, name: q.name, colour: q.colour,
+      R, relayUrl: server, ws: globalWsFactory(), hubCode: q.hub, name: this.name, colour: q.colour,
       courses: content.playlist(), plaza: content.hub(), partySize: q.party, now: () => performance.now(), pilot: false,
       // GameSaloon timed lobbies: the hub enters one by itself; no pad, no key.
       matchmaking: 'lobby',
@@ -792,7 +805,22 @@ class OnlineMode implements Mode {
       orbit: c.orbit, character: content.character(), dressing: content.dressing(),
     })
     this.presenter = new MatchPresenter(c)
+    const canvas = c.loaded.canvases[0]
+    this.tags = typeof document === 'undefined' || canvas === undefined ? null : new NameTags(canvas)
     void this.flow.start()
+  }
+
+  // This client as the lobby shows it ('Bean 2' for a default name), else its own name.
+  private shownName(): string {
+    const v = this.flow.lobby.view
+    return v.members.find(m => m.k === v.you)?.name ?? this.name
+  }
+
+  // The round's names: the lobby's players in seat order (the server seats them in lobby order), bots after them.
+  private roundNames(): string[] {
+    const players = this.flow.lobby.view.members.filter(m => m.role === 'player')
+    if (players.length === 0) return playerNames(this.seat, this.name)
+    return Array.from({ length: PLAYERS }, (_, p) => (p < players.length ? players[p].name : `Bot ${p + 1}`))
   }
 
   sim(): MatchSim | null {
@@ -835,7 +863,7 @@ class OnlineMode implements Mode {
       } else {
         this.hubView.setVisible(false)
         this.presenter.begin(this.seat)
-        this.names = playerNames(this.seat, this.c.q.name)
+        this.names = this.roundNames()
       }
     }
     // Waiting in or watching a lobby keeps the walkable hub; only the choice is a menu.
@@ -848,6 +876,8 @@ class OnlineMode implements Mode {
     } else if (inHub(flow.state)) {
       this.hubView.update(flow.hub.state(this.local), this.c.q.colour, flow.remotes(now), flow.hub.tick, f.dt, flow.hub.emote(now))
     }
+    if (match === null && inHub(flow.state)) this.tags?.update(this.hubView.camera, this.hubView.tags(this.shownName()))
+    else this.tags?.update(null, [])
     renderFrame(this.c.loaded.ports[0], () => this.c.loaded.ports[0].render())
     return screen
   }
@@ -857,7 +887,7 @@ class OnlineMode implements Mode {
     const state = flow.state
     if (this.presenter.places !== null) return [...podiumLines(this.presenter.places, this.names), this.note]
     const lines: string[] = []
-    if (flow.hubCode !== null) lines.push(`Hub ${flow.hubCode} - ${this.c.q.name}`)
+    if (flow.hubCode !== null) lines.push(`Hub ${flow.hubCode} - ${this.name}`)
     if (state === 'connecting') lines.push('Connecting...')
     else if (state === 'hub') lines.push('Joining a lobby...')
     else if (state === 'queued' || state === 'choosing' || state === 'watching') lines.push(...lobbyLines(flow.lobby, performance.now()))
@@ -871,6 +901,7 @@ class OnlineMode implements Mode {
     this.flow.close()
     this.presenter.dispose()
     this.hubView.dispose()
+    this.tags?.dispose()
   }
 }
 

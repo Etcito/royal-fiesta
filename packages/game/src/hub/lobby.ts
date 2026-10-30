@@ -2,6 +2,7 @@
 // The server runs the wait and starts the round; this tracks what to show (countdown, players, the
 // join / spectate / new choice) and picks a default when the player does not answer the choice.
 import { refuse } from '@royal-fiesta/sim/refusal'
+import { NET_PLAYERS } from '../net/tuning.ts'
 
 /** How long the choice screen waits for an answer before taking the default. */
 export const LOBBY_CHOICE_MS = 10_000
@@ -17,12 +18,17 @@ export interface LobbyOffer { id: string; phase: LobbyPhase; players: number; se
 
 export type LobbyServerMsg =
   | { t: 'lobby_choice'; lobbies: { id: string; phase: LobbyPhase; players: number; seats: number; startsInMs: number; actions: string[]; names: unknown[] }[] }
-  | { t: 'lobby_state'; id: string; phase: LobbyPhase; role: 'player' | 'spectator'; seat: number; players: unknown[]; seats: number; startsInMs: number; waitMs: number }
+  | { t: 'lobby_state'; id: string; phase: LobbyPhase; role: 'player' | 'spectator'; seat: number; players: unknown[]; seats: number; startsInMs: number; waitMs: number; you?: number; members?: unknown[] }
   | { t: 'lobby_watch'; id: string; session: string; seed: number; players: number; opps: unknown[]; replay: boolean }
   | { t: 'lobby_act'; id: string; a: unknown; n: number; from: number }
   | { t: 'lobby_closed'; id: string; reason: 'ended' | 'empty' }
   | { t: 'lobby_left' }
   | { t: 'lobby_error'; reason: string }
+  // Shared hub presence: a lobby member's hub avatar state (gamesaloon docs/lobby.md).
+  | { t: 'lobby_presence'; id: string; from: number; a: unknown }
+
+/** One lobby member as the hub draws it: its presence key, role, display name and colour. */
+export interface LobbyMember { k: number; role: 'player' | 'spectator'; name: string; colour: number }
 
 export type LobbyStage = 'entering' | 'choosing' | 'player' | 'spectator'
 
@@ -38,6 +44,10 @@ export interface LobbyView {
   offer: LobbyOffer | null
   /** Local clock (ms) when the default choice is taken. */
   choiceAt: number | null
+  /** This client's presence key in the lobby (null before a lobby_state that carries one: an older server). */
+  you: number | null
+  /** Everyone in the lobby, players then spectators (empty from an older server). */
+  members: LobbyMember[]
 }
 
 /** What the flow must do after a message. */
@@ -48,6 +58,42 @@ function nameOf(p: unknown): string {
   return typeof n === 'string' && n.length > 0 ? n.slice(0, 24) : '?'
 }
 
+/** The name every client of the game uses when the player has none of its own (no ?name=, no platform name). */
+export const DEFAULT_NAME = 'Bean'
+
+/**
+ * The name shown for a lobby member: its own name, or 'Bean <n>' by arrival order when it kept the default
+ * (or sent none), so two players are never both 'Bean'. Control characters are dropped; 24 characters at most.
+ */
+export function displayName(p: unknown, key: number): string {
+  const raw = typeof p === 'object' && p !== null ? (p as { name?: unknown }).name : undefined
+  const n = typeof raw === 'string' ? cleanName(raw) : ''
+  return n.length > 0 && n !== DEFAULT_NAME ? n : `${DEFAULT_NAME} ${key + 1}`
+}
+
+/** A name fit for a name tag: no control characters, trimmed, at most 24 characters. */
+export function cleanName(raw: string): string {
+  let out = ''
+  for (const ch of raw) {
+    const c = ch.codePointAt(0)!
+    if (c >= 0x20 && c !== 0x7f) out += ch
+  }
+  return [...out.trim()].slice(0, 24).join('').trim()
+}
+
+function membersOf(raw: unknown[] | undefined): LobbyMember[] {
+  const out: LobbyMember[] = []
+  for (const m of raw ?? []) {
+    if (typeof m !== 'object' || m === null) continue
+    const { k, role, p } = m as { k?: unknown; role?: unknown; p?: unknown }
+    if (typeof k !== 'number' || !Number.isInteger(k) || k < 0 || (role !== 'player' && role !== 'spectator')) continue
+    const c = typeof p === 'object' && p !== null ? (p as { c?: unknown }).c : undefined
+    const colour = typeof c === 'number' && Number.isInteger(c) && c >= 0 && c <= 7 ? c : k % 8
+    out.push({ k, role, name: displayName(p, k), colour })
+  }
+  return out
+}
+
 const PICKS: readonly string[] = ['join', 'spectate', 'new']
 
 export class LobbyTracker {
@@ -56,7 +102,7 @@ export class LobbyTracker {
   private enteredAt = 0
 
   static empty(): LobbyView {
-    return { stage: 'entering', id: null, phase: 'waiting', names: [], seats: 0, startsAt: null, offer: null, choiceAt: null }
+    return { stage: 'entering', id: null, phase: 'waiting', names: [], seats: 0, startsAt: null, offer: null, choiceAt: null, you: null, members: [] }
   }
 
   get view(): Readonly<LobbyView> { return this.v }
@@ -89,19 +135,26 @@ export class LobbyTracker {
         this.v = {
           stage: 'choosing', id: first.id, phase: first.phase, names: offer.names, seats: first.seats,
           startsAt: first.phase === 'waiting' ? now + first.startsInMs : null, offer, choiceAt: now + LOBBY_CHOICE_MS,
+          you: null, members: [],
         }
         return { kind: 'none' }
       }
-      case 'lobby_state':
+      case 'lobby_state': {
+        const members = membersOf(m.members)
+        const you = typeof m.you === 'number' && Number.isInteger(m.you) && m.you >= 0 ? m.you : null
+        // With a roster, players are named as the hub names them ('Bean 1', 'Bean 2' for default names).
+        const names = members.length ? members.filter((e) => e.role === 'player').map((e) => e.name) : m.players.map(nameOf)
         this.v = {
-          stage: m.role, id: m.id, phase: m.phase, names: m.players.map(nameOf), seats: m.seats,
-          startsAt: m.phase === 'waiting' ? now + m.startsInMs : null, offer: null, choiceAt: null,
+          stage: m.role, id: m.id, phase: m.phase, names, seats: m.seats,
+          startsAt: m.phase === 'waiting' ? now + m.startsInMs : null, offer: null, choiceAt: null, you, members,
         }
         return { kind: 'none' }
+      }
       case 'lobby_watch':
-        if (m.id === v.id) this.v = { ...v, phase: 'playing', startsAt: null, names: m.opps.map(nameOf) }
+        if (m.id === v.id) this.v = { ...v, phase: 'playing', startsAt: null, names: v.members.length ? v.names : m.opps.map(nameOf) }
         return { kind: 'none' }
       case 'lobby_act':
+      case 'lobby_presence':
       case 'lobby_left':
         return { kind: 'none' }
       case 'lobby_closed':
@@ -182,10 +235,21 @@ export function lobbyLines(t: LobbyTracker, now: number): string[] {
         : [`A round is being played: ${who}`, `New lobby in ${auto} s`]
     }
     case 'player':
-      return [`Lobby ${v.names.length}/${v.seats} - round starts in ${left ?? 0} s`, who, 'Bots fill the empty places']
+      return [`Lobby ${v.names.length}/${v.seats} - round starts in ${left ?? 0} s`, who, ...watchers(v), botsLine(v.names.length)]
     case 'spectator':
       return v.phase === 'waiting'
-        ? [`Spectating a lobby: ${v.names.length}/${v.seats} - round in ${left ?? 0} s`, who]
-        : [`Spectating a round: ${who}`, 'You play in the next lobby when it ends']
+        ? [`Spectating a lobby: ${v.names.length}/${v.seats} - round in ${left ?? 0} s`, who, ...watchers(v)]
+        : [`Spectating a round: ${who}`, ...watchers(v), 'You play in the next lobby when it ends']
   }
+}
+
+/** The round always has NET_PLAYERS beans: bots take the places the humans leave. */
+export function botsLine(humans: number): string {
+  const bots = Math.max(0, NET_PLAYERS - humans)
+  return bots === 0 ? 'No bots: every place is a player' : `${bots} bot${bots === 1 ? '' : 's'} will fill the empty places`
+}
+
+function watchers(v: LobbyView): string[] {
+  const w = v.members.filter((e) => e.role === 'spectator').map((e) => e.name)
+  return w.length ? [`Watching: ${w.join(', ')}`] : []
 }

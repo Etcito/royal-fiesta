@@ -161,6 +161,15 @@ export class RelayClient {
 
   onLobby(fn: (m: LobbyServerMsg) => void): void { this.lobbyFns.push(fn) }
 
+  /**
+   * Shared hub presence: this client's hub avatar state to the other members of its lobby (gamesaloon
+   * docs/lobby.md). Fire and forget; nothing is sent on a closed socket or once the round has matched.
+   */
+  presence(a: object): void {
+    if (!this.open || this.matchedMsg) return
+    this.send({ t: 'lobby_presence', a })
+  }
+
   private lobbyEnterMsg(seats: number, payload: FiestaQueuePayload): RelayClientMsg {
     return { t: 'lobby_enter', game: LOBBY_GAME, seats, cadence: true, payload }
   }

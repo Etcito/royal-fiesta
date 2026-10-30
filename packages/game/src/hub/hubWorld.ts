@@ -17,7 +17,8 @@ import { EMOTE_MS, EMOTES } from './protocol.ts'
 export class HubWorld {
   readonly #world: FiestaWorld<PlayerInput>
   readonly #chars: CharacterSystem
-  readonly #spawn: SpawnPoint
+  #spawn: SpawnPoint
+  readonly #spawns: readonly SpawnPoint[]
   readonly #killY: number
   readonly #pad: Box
   readonly #inputs: PlayerInput[] = []
@@ -40,6 +41,7 @@ export class HubWorld {
     }
     this.#pad = plaza.queuePad
     this.#spawn = plaza.spawns[spawn]
+    this.#spawns = plaza.spawns
     this.#killY = plaza.killPlaneY
     const obstacles = new ObstacleSystem([plaza])
     const mechLogic = new MechLogicSystem([plaza])
@@ -68,6 +70,13 @@ export class HubWorld {
 
   state(out: CharState): CharState {
     return this.#chars.state(this.#world.ctx, 0, out)
+  }
+
+  /** Puts the bean on a plaza spawn (any integer, wrapped onto the plaza's spawns): its place in a shared hub. Falls back there too. */
+  respawn(spawn: number): void {
+    const n = this.#spawns.length
+    this.#spawn = this.#spawns[((spawn % n) + n) % n]
+    this.#chars.place(this.#world.ctx, 0, this.#spawn)
   }
 
   onQueuePad(): boolean {

@@ -2,7 +2,8 @@ import type { Vec3 } from '@royal-fiesta/sim/vec'
 import { stateToPose } from './protocol.ts'
 import type { HubHello, HubState } from './protocol.ts'
 
-export interface RemoteView { seat: number; name: string; colour: number; pos: Vec3; yaw: number; mode: number; emote: number; queued: boolean; inMatch: boolean; stale: boolean }
+// seat: the hub room seat, or the lobby presence key (shared hub). spectator: watching the lobby, not a player of its round.
+export interface RemoteView { seat: number; name: string; colour: number; pos: Vec3; yaw: number; mode: number; emote: number; queued: boolean; inMatch: boolean; stale: boolean; spectator: boolean }
 
 const RENDER_DELAY_MS = 300
 const MAX_EXTRAP_MS = 200
@@ -10,7 +11,7 @@ const RING = 16
 const TAU = Math.PI * 2
 
 interface Entry { st: HubState; recvMs: number }
-interface Seat { name: string; colour: number; ring: Entry[]; lastSeq: number }
+interface Seat { name: string; colour: number; ring: Entry[]; lastSeq: number; spectator: boolean }
 
 type Pose = { pos: Vec3; yaw: number }
 
@@ -40,10 +41,34 @@ export class RemoteBuffer {
   private seat(seat: number): Seat {
     let s = this.seats.get(seat)
     if (!s) {
-      s = { name: `Bean ${seat + 1}`, colour: seat % 8, ring: [], lastSeq: -1 }
+      s = { name: `Bean ${seat + 1}`, colour: seat % 8, ring: [], lastSeq: -1, spectator: false }
       this.seats.set(seat, s)
     }
     return s
+  }
+
+  /**
+   * The shared hub's roster (the lobby's members, this client excluded): names, colours and roles come from
+   * the lobby, and every other seat is removed (that member left the lobby).
+   */
+  roster(members: readonly { k: number; role: 'player' | 'spectator'; name: string; colour: number }[]): void {
+    const keep = new Set<number>()
+    for (const m of members) {
+      keep.add(m.k)
+      const s = this.seat(m.k)
+      s.name = m.name
+      s.colour = m.colour
+      s.spectator = m.role === 'spectator'
+    }
+    for (const k of [...this.seats.keys()]) if (!keep.has(k)) this.seats.delete(k)
+  }
+
+  clear(): void {
+    this.seats.clear()
+  }
+
+  has(seat: number): boolean {
+    return this.seats.has(seat)
   }
 
   push(seat: number, msg: HubHello | HubState, recvMs: number): void {
@@ -75,12 +100,12 @@ export class RemoteBuffer {
       const newest = ring[ring.length - 1]
       if (newest.st.x === 1) continue
       const v = this.view(ring, renderMs)
-      out.push({ seat, name: s.name, colour: s.colour, ...v })
+      out.push({ seat, name: s.name, colour: s.colour, spectator: s.spectator, ...v })
     }
     return out
   }
 
-  private view(ring: Entry[], renderMs: number): Omit<RemoteView, 'seat' | 'name' | 'colour'> {
+  private view(ring: Entry[], renderMs: number): Omit<RemoteView, 'seat' | 'name' | 'colour' | 'spectator'> {
     const n = ring.length
     const newest = ring[n - 1]
     let src = newest.st

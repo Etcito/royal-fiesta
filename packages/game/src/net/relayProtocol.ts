@@ -25,10 +25,12 @@ export type RelayActBody = Record<string, unknown> | unknown[]
 
 // GameSaloon timed lobbies (gamesaloon docs/lobby.md): extension messages on the same socket.
 export const LOBBY_GAME = 'royal-fiesta'
-export const LOBBY_SERVER_TYPES = ['lobby_choice', 'lobby_state', 'lobby_watch', 'lobby_act', 'lobby_closed', 'lobby_left', 'lobby_error'] as const
+export const LOBBY_SERVER_TYPES = ['lobby_choice', 'lobby_state', 'lobby_watch', 'lobby_act', 'lobby_closed', 'lobby_left', 'lobby_error', 'lobby_presence'] as const
 export type RelayLobbyEnter = { t: 'lobby_enter'; game: string; seats: number; cadence: boolean; payload: object | null }
 export type RelayLobbyPick = { t: 'lobby_pick'; action: LobbyPick; id: string | null }
 export type RelayLobbyLeave = { t: 'lobby_leave' }
+// Shared hub presence (gamesaloon docs/lobby.md "Shared hub presence"): this client's hub avatar state.
+export type RelayLobbyPresence = { t: 'lobby_presence'; a: object }
 
 export type RelayCreate = { t: 'create'; players?: number; cadence?: boolean; payload?: object | null }
 export type RelayJoin = { t: 'join'; code: string; payload?: object | null }
@@ -38,7 +40,7 @@ export type RelayAct = { t: 'act'; a: object | unknown[]; n?: number }
 export type RelayBye = { t: 'bye' }
 export type RelayPing = { t: 'ping' }
 export type RelayClientMsg = RelayCreate | RelayJoin | RelayQueue | RelayUnqueue | RelayAct | RelayBye | RelayPing
-  | RelayLobbyEnter | RelayLobbyPick | RelayLobbyLeave
+  | RelayLobbyEnter | RelayLobbyPick | RelayLobbyLeave | RelayLobbyPresence
 
 export type RelayRoom = { t: 'room'; code: string }
 export type RelayWaiting = { t: 'waiting'; seat: number; players: number }
@@ -103,6 +105,7 @@ function valid(m: Obj): boolean {
       return typeof m.id === 'string' && typeof m.session === 'string' && typeof m.seed === 'number' && isInt(m.players)
         && Array.isArray(m.opps) && typeof m.replay === 'boolean'
     case 'lobby_act': return typeof m.id === 'string' && isInt(m.n) && isInt(m.from)
+    case 'lobby_presence': return typeof m.id === 'string' && isInt(m.from) && m.from >= 0 && isObj(m.a)
     case 'lobby_closed': return typeof m.id === 'string' && (m.reason === 'ended' || m.reason === 'empty')
     case 'lobby_error': return typeof m.reason === 'string'
     case 'lobby_left':

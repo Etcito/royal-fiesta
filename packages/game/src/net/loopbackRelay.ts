@@ -253,7 +253,8 @@ export class LoopbackRelay {
   }
   private unseat(id: number | null): void {
     const c = id === null ? undefined : this.clients.get(id)
-    if (c) { c.room = null; c.cadence = false }
+    // The send budget belongs to the seat: a fresh (or returning) connection starts a new window.
+    if (c) { c.room = null; c.cadence = false; c.times = [] }
   }
   private dropFromWaitLists(id: number): void {
     for (const [key, list] of this.waitLists) {

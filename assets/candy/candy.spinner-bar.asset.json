@@ -70,7 +70,14 @@
               [0, 0, 0.4],
               [0, 0, -0.4]
             ],
-            "pointRadii": [1, 1, 0, 0, 1, 1],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
             "edgeRadii": {}
           }
         },
@@ -682,11 +689,10 @@
   },
   "collision": [
     {
-      "shape": "cylinder",
+      "shape": "cuboid",
       "t": [0, 0.6, 0],
       "r": [0, 0, 0, 1],
-      "radius": 0.4,
-      "halfHeight": 0.6
+      "halfExtents": [0.4, 0.6, 0.4]
     },
     {
       "shape": "cuboid",
@@ -742,5 +748,5 @@
     "min": [-4, 0, -0.88],
     "max": [4, 1.63, 0.88]
   },
-  "hash": "12f699c5bb0a41ba5e18cb296cf83b8cea246b55304c693643d9df168c64448e"
+  "hash": "bb0c2a7bd998fab080820fd7be9d378d5a7ad6f8fb60f25a56ae2abbbca61e00"
 }

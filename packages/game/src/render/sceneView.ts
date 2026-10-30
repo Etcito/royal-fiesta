@@ -6,7 +6,7 @@ import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
-import type { BodyRef, BodySpec } from '@royal-fiesta/sim/mechanismSpec'
+import type { BodyRef } from '@royal-fiesta/sim/mechanismSpec'
 import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
@@ -105,10 +105,14 @@ function interpolatePose(prev: Float64Array, cur: Float64Array, b: number, alpha
 interface MechanismInstance {
   instance: number
   ref: BodyRef
-  rest: BodySpec['rest']
-  // rest^-1 * itemPose, with rest already in world space.
-  t: Vec3T
-  r: QuatT
+  // The item placement from the sim, so a static (fixed) body draws at the asset's item pose.
+  itemT: Vec3T
+  itemR: QuatT
+  // The body rest pose: world for course items, item-local in a bare spec.
+  restT: Vec3T
+  restR: QuatT
+  restInvR: QuatT
+  fixed: boolean
   s: Vec3T
   prev: Float64Array
   cur: Float64Array
@@ -401,10 +405,15 @@ export class SceneView {
       port.setTransform(this.obstacles[i], t, r, [s.x, s.y, s.z])
     }
     for (const body of this.mechanisms) {
+      if (body.fixed) {
+        port.setTransform(body.instance, body.itemT, body.itemR, body.s)
+        continue
+      }
       interpolatePose(body.prev, body.cur, 0, alpha, t, r)
-      const offset = quatRotate(r, body.t)
-      port.setTransform(body.instance, [t[0] + offset[0], t[1] + offset[1], t[2] + offset[2]],
-        quatMul(r, body.r), body.s)
+      // The item placement carries the asset; the body pose only adds its motion since rest.
+      port.setTransform(body.instance,
+        [body.itemT[0] + t[0] - body.restT[0], body.itemT[1] + t[1] - body.restT[1], body.itemT[2] + t[2] - body.restT[2]],
+        quatMul(r, body.restInvR), body.s)
     }
 
     const c = this.view
@@ -542,11 +551,12 @@ export class SceneView {
         const body = item.bodies[b]
         const instance = port.createInstance(asset, null)
         const rest = body.rest
-        const inverse = conjugate([rest.r.x, rest.r.y, rest.r.z, rest.r.w])
         this.mechanisms.push({
-          instance, ref: { item: i, body: b }, rest,
-          t: quatRotate(inverse, [item.t.x - rest.t.x, item.t.y - rest.t.y, item.t.z - rest.t.z]),
-          r: quatMul(inverse, [item.r.x, item.r.y, item.r.z, item.r.w]),
+          instance, ref: { item: i, body: b },
+          itemT: [item.t.x, item.t.y, item.t.z], itemR: [item.r.x, item.r.y, item.r.z, item.r.w],
+          restT: [rest.t.x, rest.t.y, rest.t.z], restR: [rest.r.x, rest.r.y, rest.r.z, rest.r.w],
+          restInvR: conjugate([rest.r.x, rest.r.y, rest.r.z, rest.r.w]),
+          fixed: body.type === 'fixed',
           s: [item.s.x, item.s.y, item.s.z], prev: new Float64Array(OB), cur: new Float64Array(OB),
         })
         if (typeof port.setPartFilter === 'function') port.setPartFilter(instance, body.parts ?? null)
@@ -635,8 +645,8 @@ export class SceneView {
     }
     for (const body of this.mechanisms) {
       if (keep) [body.prev, body.cur] = [body.cur, body.prev]
-      const p = sim.mechanismBodyPose(body.ref, q) ? q : body.rest
-      body.cur.set([p.t.x, p.t.y, p.t.z, p.r.x, p.r.y, p.r.z, p.r.w])
+      if (sim.mechanismBodyPose(body.ref, q)) body.cur.set([q.t.x, q.t.y, q.t.z, q.r.x, q.r.y, q.r.z, q.r.w])
+      else body.cur.set([body.restT[0], body.restT[1], body.restT[2], body.restR[0], body.restR[1], body.restR[2], body.restR[3]])
       if (!keep) body.prev.set(body.cur)
     }
   }

@@ -59,10 +59,9 @@
     "colliders": [
       {
         "node": null,
-        "shape": "cylinder",
+        "shape": "cuboid",
         "params": {
-          "halfHeight": 0.6,
-          "radius": 0.4
+          "halfExtents": [0.4, 0.6, 0.4]
         },
         "t": [0, 0.6, 0],
         "r": [0, 0, 0, 1]

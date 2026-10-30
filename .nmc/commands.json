@@ -1,39 +1,39 @@
 [
   {
-    "name": "zone-bricks",
-    "command": "npm run bricks -- check",
-    "timeout_s": 60
-  },
-  {
-    "name": "zone-view-build",
+    "name": "zone-gate-build",
     "command": "npm run build",
-    "timeout_s": 900,
-    "after": [
-      "zone-bricks"
-    ]
+    "timeout_s": 900
   },
   {
-    "name": "zone-typecheck",
+    "name": "zone-gate-typecheck",
     "command": "npm run typecheck",
     "timeout_s": 120,
     "after": [
-      "zone-view-build"
+      "zone-gate-build"
     ]
   },
   {
-    "name": "zone-view-capture",
-    "command": "env NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/zoneCapture.ts",
-    "timeout_s": 1800,
+    "name": "zone-gate-chrome",
+    "command": "env NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/zoneGate.ts",
+    "timeout_s": 2400,
     "after": [
-      "zone-typecheck"
+      "zone-gate-typecheck"
     ]
   },
   {
-    "name": "zone-view-judge",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/m4/zone-view.png --description \"Royal Fiesta course with nearby players at full detail and distant players drawn as lighter far figures\" --min-score 6",
+    "name": "zone-gate-judge-a",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/m6/zone-chrome-a.png --description \"Two Chrome players in the same Royal Fiesta zone match, characters moving on the course with other racers visible\" --min-score 6",
     "timeout_s": 600,
     "after": [
-      "zone-view-capture"
+      "zone-gate-chrome"
+    ]
+  },
+  {
+    "name": "zone-gate-judge-b",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/m6/zone-chrome-b.png --description \"Two Chrome players in the same Royal Fiesta zone match, characters moving on the course with other racers visible\" --min-score 6",
+    "timeout_s": 600,
+    "after": [
+      "zone-gate-chrome"
     ]
   }
 ]

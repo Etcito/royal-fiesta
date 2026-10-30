@@ -3,6 +3,7 @@ import { CONTROL_BITS, CONTROL_NO_CELL, MAX_PEERS, packControl, unpackControl, Z
 import type { DomainFactory, DomainSim, FarSink, GroupTransport, Roster, ZoneStats } from '@gamesaloon/rollback/zones'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
+import { CharMode } from '@royal-fiesta/sim/character/constants'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { decodeInput, inputCodec } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
@@ -181,8 +182,16 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
       const domain = seatDomain(seat)
       // A live seat always reports a cell: CONTROL_NO_CELL takes it out of every domain, and then no replica
       // simulates it, so it could never report a cell again. Off the grid it stays in the nearest edge cell.
+      // A parked seat (finished or out) sits off the course with no collisions: it keeps the cell it left the race
+      // in, so parking never moves it to the park origin's edge cell and splits it into a domain of its own.
       if (domain !== undefined) {
-        const pos = domain.state(seat).pos
+        const state = domain.state(seat)
+        if (state.mode === CharMode.parked) {
+          localFields.cell = localCells[i]
+          words[i] = packControl(localFields)
+          continue
+        }
+        const pos = state.pos
         const cell = clampedCellOf(cfg.zones.grid, pos.x, pos.z)
         if (cell !== CONTROL_NO_CELL) localCells[i] = cell
       }

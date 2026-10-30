@@ -16,8 +16,9 @@ const exec = promisify(execFile)
 // A GPU render may run up to the server's job limit (5 minutes, owner rule); the client waits that long
 // on top of NMC_GPU_WAIT_S, the time a job may queue for a GPU client (another card's render holds the project's slot).
 const RENDER_LIMIT_MS = 300_000
-// Capture mid-race: the validation needs 600 ticks, and a sprint racer finishes (and parks) from about tick 700.
-const CAPTURE_TICK = 640
+// Capture mid-race at the first tick the validation accepts (600): race-sprint racers finish (and park off the
+// course) from about tick 480, and nearly all have finished by tick 640.
+const CAPTURE_TICK = 600
 // The profile the zone page loads (apps/web/src/zone/zoneOps.ts content.load).
 const ZONE_PROFILE = 'sprint'
 const secrets = Object.entries(process.env)

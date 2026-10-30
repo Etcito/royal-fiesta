@@ -5,6 +5,7 @@
     "gameCapture",
     "roundCapture",
     "frameTiming",
-    "uiTour"
+    "uiTour",
+    "zoneCapture"
   ]
 }

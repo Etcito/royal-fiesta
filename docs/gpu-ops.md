@@ -1,7 +1,7 @@
 # GPU ops
 
 The GPU client accepts only op names in `apps/web/public/nmc.gpu.json`:
-`{"page":"game.html","ops":["controlsProbe","gameCapture","roundCapture","frameTiming"]}`.
+`{"page":"game.html","ops":["controlsProbe","gameCapture","roundCapture","frameTiming","zoneCapture"]}`.
 game.html registers these ops on every load. The input schemas, examples and output shapes the
 declaration used to hold live here, unchanged.
 
@@ -442,3 +442,72 @@ Page for manual runs: `play.html?mode=ops`.
 ### Output
 
 { captures: [{ name: 'hub-loop-<name>', width: 1920, height: 1080, mime: 'image/png', base64 }], adapter: { vendor, architecture, description, software }, renderer: 'raa', events }
+
+## zoneCapture
+
+Page for manual runs: `game.html?mode=ops`.
+
+One zoned match on game.html (`peers` machines x `seatsPerPeer` local seats) with the seats spread along the course path, stepped `seconds` at a virtual 1/60 s clock and captured once as one 1280x720 RAA PNG. `near` and `far` are the player counts drawn: the local peer's domain characters through SceneView and the local FarFeed seats through FarRenderer. Refuses when RAA is unavailable and never captures with the null port.
+
+### Input schema
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "width",
+    "height",
+    "peers",
+    "seatsPerPeer",
+    "course",
+    "seconds"
+  ],
+  "properties": {
+    "width": {
+      "const": 1280
+    },
+    "height": {
+      "const": 720
+    },
+    "peers": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 8
+    },
+    "seatsPerPeer": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2
+    },
+    "course": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,40}$",
+      "description": "match course id with a courses/<courseId>.zones.json sidecar"
+    },
+    "seconds": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 120,
+      "description": "sim seconds stepped before the capture (at least one 1/60 s frame)"
+    }
+  }
+}
+```
+
+### Example
+
+```json
+{
+  "width": 1280,
+  "height": 720,
+  "peers": 4,
+  "seatsPerPeer": 2,
+  "course": "race-sprint",
+  "seconds": 30
+}
+```
+
+### Output
+
+{ json: { renderer: 'raa', adapter: { vendor, architecture, description, software }, near, far, captures: [{ name: 'zone-view', width: 1280, height: 720, mime: 'image/png', base64 }] }, files: [] }

@@ -37,6 +37,15 @@ Mesh rules:
 - `connect` resolves when every channel to every member is open; after `timeoutMs` (15000) it refuses and lists the missing peers.
 - Game data never goes through the rooms server.
 
+## Timed lobbies (GameSaloon)
+
+game.html and play.html use `PlayFlow` with `matchmaking: 'lobby'` (gamesaloon `docs/lobby.md`). As soon as the hub is up, and again after each round, the match socket sends `{t:'lobby_enter', game:'royal-fiesta', seats:?party, cadence:true, payload:{g, v, name, c}}`. No pad and no key are needed.
+- `lobby_state` (player): the hub overlay shows `Lobby n/4 - round starts in s`. The server starts the round after its wait (`LOBBY_WAIT_MS`, 60 s) or when the lobby is full. Players get the usual `matched`, with `players` = the number of humans (1-4). `netSetup`, `RelayTransport` and `createNetMatch` use `matched.players`, and bots take the other places of the 8.
+- `lobby_choice`: screen `lobbyChoice` (join / spectate / new) or `lobbyLive` (spectate / new). Unanswered for `LOBBY_CHOICE_MS` (10 s), the client picks join on a waiting lobby, else new.
+- Spectating (`lobby_state` with role spectator, then `lobby_watch` and `lobby_act`): the client is never a rollback peer. It runs no session and shows the round's players and status in the hub overlay. `lobby_closed` makes it enter again.
+- A server without lobbies answers nothing. After `LOBBY_FALLBACK_MS` (3 s) the client sends the exact-size `queue` on the same socket.
+- `LoopbackRelay({ lobby: { waitMs } })` mirrors the lobby extension for tests (`packages/game/test/flow.test.ts`, the `lobby:` tests). Pure logic: `packages/game/src/hub/lobby.ts`.
+
 ## The 8-seat refusal
 
 `RelayClient.queue(8, ...)` throws before sending anything (a `RefusalError` message, verbatim):

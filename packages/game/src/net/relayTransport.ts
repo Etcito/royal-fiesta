@@ -44,8 +44,9 @@ export class RelayTransport implements NetTransport {
   private allClosed = false
 
   constructor(client: RelayClient, selfPeer: number, peerCount: number, now: () => number, opts: { flushEveryFrames?: number; maxActBytes?: number; maxActsPerSec?: number; maxActsPerMin?: number } = {}) {
-    if (!Number.isInteger(peerCount) || peerCount < 2 || peerCount > 4) {
-      throw new RefusalError('relay', 'peerCount', `${peerCount} is outside 2..4; the GameSaloon relay seats at most 4 players`)
+    // 1 peer: a lobby round that started with one player (the rest are bots); nothing is sent.
+    if (!Number.isInteger(peerCount) || peerCount < 1 || peerCount > 4) {
+      throw new RefusalError('relay', 'peerCount', `${peerCount} is outside 1..4; the GameSaloon relay seats at most 4 players`)
     }
     if (!Number.isInteger(selfPeer) || selfPeer < 0 || selfPeer >= peerCount) {
       throw new RefusalError('relay', 'selfPeer', `${selfPeer} is outside 0..${peerCount - 1}; pass the relay seat (matched.youAre)`)

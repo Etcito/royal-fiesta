@@ -1,7 +1,8 @@
 // GameSaloon relay client: one socket, request/reply over the relay protocol (gamesaloon src/relay/hub.ts).
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import type { WsFactory, WsLike } from './ws.ts'
-import { RELAY_MAX_PLAYERS, parseRelayServerMsg } from './relayProtocol.ts'
+import { LOBBY_GAME, RELAY_MAX_PLAYERS, parseRelayServerMsg } from './relayProtocol.ts'
+import type { LobbyPick, LobbyServerMsg } from '../hub/lobby.ts'
 import type { RelayClientMsg, RelayMatched, RelayServerMsg } from './relayProtocol.ts'
 
 export interface FiestaQueuePayload { g: 'royal-fiesta'; v: 1; name: string; c: number }
@@ -31,6 +32,7 @@ export class RelayClient {
   private actFns: ((a: unknown, from: number, n: number) => void)[] = []
   private seatFns: ((ev: SeatEvent) => void)[] = []
   private closeFns: (() => void)[] = []
+  private lobbyFns: ((m: LobbyServerMsg) => void)[] = []
   private matchedMsg: RelayMatched | null = null
   private mySeat = -1
   private roomPlayers = 0
@@ -128,6 +130,45 @@ export class RelayClient {
     })
   }
 
+  /**
+   * Enters a GameSaloon timed lobby of `seats` (1..4) seats; resolves on the round's `matched`, whose
+   * `players` may be fewer than `seats` (the game fills with bots). Lobby messages go to onLobby.
+   */
+  lobby(seats: number, payload: FiestaQueuePayload): Promise<RelayMatched> {
+    this.checkSeats(seats)
+    return this.request<RelayMatched>(this.lobbyEnterMsg(seats, payload), (m, done) => {
+      if (m.t !== 'matched') return false
+      done(m)
+      return true
+    })
+  }
+
+  /** Enters again while lobby() is still pending (the watched lobby closed, or a pick lost a race). */
+  lobbyAgain(seats: number, payload: FiestaQueuePayload): void {
+    this.checkSeats(seats)
+    this.send(this.lobbyEnterMsg(seats, payload))
+  }
+
+  lobbyPick(action: LobbyPick, id: string | null): void { this.send({ t: 'lobby_pick', action, id }) }
+
+  /** Stops waiting for a lobby round without telling the server (it never answered: no lobby support). */
+  abandonLobby(): void {
+    if (this.pending?.t !== 'lobby_enter') return
+    const p = this.pending
+    this.pending = null
+    p.reject(new RefusalError('relay', 'lobby_enter', 'abandoned: the server has no lobbies'))
+  }
+
+  onLobby(fn: (m: LobbyServerMsg) => void): void { this.lobbyFns.push(fn) }
+
+  private lobbyEnterMsg(seats: number, payload: FiestaQueuePayload): RelayClientMsg {
+    return { t: 'lobby_enter', game: LOBBY_GAME, seats, cadence: true, payload }
+  }
+
+  private checkSeats(seats: number): void {
+    if (!Number.isInteger(seats) || seats < 1 || seats > RELAY_MAX_PLAYERS) throw new RefusalError('relay', 'lobby.seats', QUEUE_REFUSAL)
+  }
+
   unqueue(): Promise<void> {
     // A pending queue ends here: the server drops us from its wait list.
     if (this.pending?.t === 'queue') {
@@ -195,6 +236,10 @@ export class RelayClient {
         return
       }
       if (p.on(m) && this.pending === p) this.pending = null
+    }
+    if (m.t.startsWith('lobby_')) {
+      for (const fn of this.lobbyFns) fn(m as LobbyServerMsg)
+      return
     }
     switch (m.t) {
       case 'act':

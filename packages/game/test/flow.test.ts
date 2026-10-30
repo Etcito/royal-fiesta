@@ -52,13 +52,13 @@ class World {
   logSeen = 0
   readonly relay: LoopbackRelay
   readonly clients: Client[] = []
-  constructor(seed: number) {
-    this.relay = new LoopbackRelay({ seed })
+  constructor(seed: number, lobby?: { waitMs?: number }) {
+    this.relay = new LoopbackRelay({ seed, lobby })
     // A plain swap: mock.method would record every call, and Rapier reads the clock too.
     performance.now = () => this.ms
   }
 
-  add(name: string, colour: number, hubCode: string | 'new', partySize: 2 | 3 | 4, pilot: boolean): Client {
+  add(name: string, colour: number, hubCode: string | 'new', partySize: 2 | 3 | 4, pilot: boolean, matchmaking?: 'lobby' | 'pad'): Client {
     const inner = this.relay.factory()
     const c: Client = { flow: null as unknown as PlayFlow, socks: [], events: [] }
     const ws: WsFactory = url => {
@@ -77,7 +77,7 @@ class World {
     }
     c.flow = new PlayFlow({
       R, relayUrl: 'loopback://relay', ws, hubCode, name, colour, courses, plaza, partySize,
-      now: () => this.ms, pilot, log: ev => c.events.push(ev),
+      now: () => this.ms, pilot, log: ev => c.events.push(ev), matchmaking,
     })
     this.clients.push(c)
     return c
@@ -330,5 +330,83 @@ test('4 clients held in the hub for 3 virtual minutes stay within the budget and
     w.close()
     for (const c of clients) assert.equal(c.socks[0].sent.at(-1)!.t, 'bye')
     assertClean(w)
+  } finally { w.close() }
+})
+
+// GameSaloon timed lobbies (matchmaking: lobby): no pad, no key; the server starts the round after its wait.
+async function lobbyClient(w: World, name: string, colour: number): Promise<Client> {
+  const c = w.add(name, colour, 'new', 4, false, 'lobby')
+  void c.flow.start()
+  await w.until(() => c.flow.state !== 'connecting' && c.flow.state !== 'hub', 2000)
+  return c
+}
+
+test('lobby: the first player opens a lobby by itself, the next one gets the choice and joins by default; the round starts at the end of the wait with both', async () => {
+  const w = new World(21, { waitMs: 20_000 })
+  try {
+    const a = await lobbyClient(w, 'Ann', 0)
+    await w.until(() => a.flow.lobby.view.stage === 'player', 1000)
+    assert.equal(a.flow.state, 'queued')
+    assert.equal(a.socks[1].sent[0].t, 'lobby_enter')
+    const b = await lobbyClient(w, 'Bob', 1)
+    await w.until(() => b.flow.state === 'choosing', 1000)
+    assert.deepEqual(b.flow.lobby.view.offer!.actions, ['join', 'spectate', 'new'])
+    // Unanswered for 10 s: Bob joins; Ann sees 2/4 and the same end time.
+    await w.until(() => b.flow.lobby.view.stage === 'player', 11_000)
+    await w.until(() => a.flow.lobby.view.names.length === 2, 1000)
+    assert.ok(Math.abs(a.flow.lobby.view.startsAt! - b.flow.lobby.view.startsAt!) < 50)
+    // Nobody else comes: the round starts with 2 humans (bots fill the other 6).
+    await w.until(() => a.flow.state === 'match' && b.flow.state === 'match', 12_000)
+    assert.ok(w.ms >= 20_000)
+    const seats = [a, b].map(c => c.events.find(e => e.state === 'match')!.detail.seat).sort()
+    assert.deepEqual(seats, [0, 1])
+    for (let i = 0; i < 120; i++) await w.step()
+    assertClean(w)
+  } finally { w.close() }
+})
+
+test('lobby: a lone player starts alone after the wait, with bots, and the round runs', async () => {
+  const w = new World(22, { waitMs: 2000 })
+  try {
+    const a = await lobbyClient(w, 'Ann', 0)
+    await w.until(() => a.flow.state === 'match', 4000)
+    const tick0 = a.flow.match!.session.stats.confirmedTick
+    for (let i = 0; i < 180; i++) await w.step()
+    assert.ok(a.flow.match!.session.stats.confirmedTick > tick0 + 100, 'a one-peer round advances')
+    // The match plays to its podium, the hub comes back (nobody to wait for) and enters a lobby again.
+    await w.until(() => a.events.filter(e => e.state === 'hub').length === 2, 900_000)
+    await w.until(() => a.flow.state === 'queued' && a.flow.lobby.view.stage === 'player', 2000)
+    assertClean(w)
+  } finally { w.close() }
+})
+
+test('lobby: arriving during a round offers spectate or new; spectating shows the round, its end enters again', async () => {
+  const w = new World(23, { waitMs: 1000 })
+  try {
+    const a = await lobbyClient(w, 'Ann', 0)
+    await w.until(() => a.flow.state === 'match', 3000)
+    const b = await lobbyClient(w, 'Bob', 1)
+    await w.until(() => b.flow.state === 'choosing', 1000)
+    assert.deepEqual(b.flow.lobby.view.offer!.actions, ['spectate', 'new'])
+    b.flow.pick('spectate')
+    await w.until(() => b.flow.state === 'watching' && b.flow.lobby.view.phase === 'playing', 1000)
+    assert.equal(b.flow.match, null, 'a spectator runs no rollback session')
+    // Ann leaves: the round ends, Bob looks again and, with no lobby left, opens his own.
+    a.flow.close()
+    await w.until(() => b.flow.state === 'queued' && b.flow.lobby.view.stage === 'player', 2000)
+    await w.until(() => b.flow.state === 'match', 3000)
+  } finally { w.close() }
+})
+
+test('lobby: a server without lobbies falls back to the exact-size queue', async () => {
+  const w = new World(24)
+  try {
+    const a = w.add('Ann', 0, 'new', 2, false, 'lobby')
+    const b = w.add('Bob', 1, 'new', 2, false, 'lobby')
+    void a.flow.start()
+    void b.flow.start()
+    await w.until(() => a.flow.state === 'match' && b.flow.state === 'match', 5000)
+    assert.deepEqual(a.socks[1].sent.map(s => s.t).slice(0, 2), ['lobby_enter', 'queue'])
+    assert.ok(w.ms >= 3000)
   } finally { w.close() }
 })

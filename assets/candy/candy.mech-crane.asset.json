@@ -13,11 +13,15 @@
     "name": "candy-mech-crane",
     "root": ["candy_mech_crane"],
     "nodes": {
-      "candy_mech_crane": {"id":"candy_mech_crane","name":"candy-mech-crane","kind":"group","children":["base","mast","arm","hook"],"asset":{"game":"royal-fiesta","id":"candy.mech-crane","category":"obstacle","world":"candy"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
+      "candy_mech_crane": {"id":"candy_mech_crane","name":"candy-mech-crane","kind":"group","children":["base","mast","arm","hook","collider_0","collider_1","collider_2","collider_3"],"asset":{"game":"royal-fiesta","id":"candy.mech-crane","category":"obstacle","world":"candy"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
       "base": {"id":"base","name":"base","kind":"paramesh","transform":{"position":[0,0.2,0]},"round":0.1,"material":"candy-pink","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1,0,0],[-1,0,0],[0,0.2,0],[0,-0.2,0],[0,0,1],[0,0,-1]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
       "mast": {"id":"mast","name":"mast","kind":"paramesh","transform":{"position":[0,2.6,0]},"round":0.1,"material":"candy-blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.3,0,0],[-0.3,0,0],[0,2.2,0],[0,-2.2,0],[0,0,0.3],[0,0,-0.3]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
       "arm": {"id":"arm","name":"arm","kind":"paramesh","transform":{"position":[2.5,4.8,0]},"round":0.1,"material":"candy-yellow","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[2.5,0,0],[-2.5,0,0],[0,0.22,0],[0,-0.22,0],[0,0,0.3],[0,0,-0.3]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "hook": {"id":"hook","name":"hook","kind":"paramesh","transform":{"position":[5,2.5,0]},"round":0.14,"material":"candy-pink","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.32,0,0],[-0.32,0,0],[0,0.3,0],[0,-0.3,0],[0,0,0.32],[0,0,-0.32]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false}
+      "hook": {"id":"hook","name":"hook","kind":"paramesh","transform":{"position":[5,2.5,0]},"round":0.14,"material":"candy-pink","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.32,0,0],[-0.32,0,0],[0,0.3,0],[0,-0.3,0],[0,0,0.32],[0,0,-0.32]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "collider_0": {"id":"collider_0","name":"collider_0","kind":"paramesh","visible":false,"transform":{"position":[0,0.2,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.08,0,0],[-1.08,0,0],[0,0.28,0],[0,-0.28,0],[0,0,1.08],[0,0,-1.08]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
+      "collider_1": {"id":"collider_1","name":"collider_1","kind":"paramesh","visible":false,"transform":{"position":[0,2.6,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.38,0,0],[-0.38,0,0],[0,2.28,0],[0,-2.28,0],[0,0,0.38],[0,0,-0.38]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
+      "collider_2": {"id":"collider_2","name":"collider_2","kind":"paramesh","visible":false,"transform":{"position":[2.5,4.8,0]},"round":0.1,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[2.5,0,0],[-2.5,0,0],[0,0.22,0],[0,-0.22,0],[0,0,0.3],[0,0,-0.3]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
+      "collider_3": {"id":"collider_3","name":"collider_3","kind":"paramesh","visible":false,"transform":{"position":[5,2.5,0]},"round":0.14,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.46,0,0],[-0.46,0,0],[0,0.44,0],[0,-0.44,0],[0,0,0.46],[0,0,-0.46]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true}
     },
     "materials": {
       "candy-pink": {"name":"candy-pink","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#f0287f","in.roughness":0.12}}],"links":[]}},
@@ -29,20 +33,20 @@
   "collision": [
     {"shape":"roundCuboid","halfExtents":[1,0.2,1],"borderRadius":0.08,"t":[0,0.2,0],"r":[0,0,0,1]},
     {"shape":"roundCuboid","halfExtents":[0.3,2.2,0.3],"borderRadius":0.08,"t":[0,2.6,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","halfExtents":[2.4,0.12,0.2],"borderRadius":0.1,"t":[2.5,0,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","halfExtents":[0.32,0.3,0.32],"borderRadius":0.14,"t":[0,0,0],"r":[0,0,0,1]}
+    {"shape":"roundCuboid","halfExtents":[2.4,0.12,0.2],"borderRadius":0.1,"t":[2.5,4.8,0],"r":[0,0,0,1]},
+    {"shape":"roundCuboid","halfExtents":[0.32,0.3,0.32],"borderRadius":0.14,"t":[5,2.5,0],"r":[0,0,0,1]}
   ],
   "physics": {
     "bodies": [
-      {"id":"base","type":"fixed","colliders":[0,1],"parts":["base","mast"],"t":[0,0,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"normal"},
-      {"id":"arm","type":"kinematic","colliders":[2],"parts":["arm"],"t":[0,4.8,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"normal"},
-      {"id":"hook","type":"dynamic","colliders":[3],"parts":["hook"],"t":[5,2.5,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0.1,"angularDamping":0.2,"gravityScale":1,"ccd":true,"surface":"normal"}
+      {"id":"base","type":"fixed","colliders":[0,1],"parts":["base","mast","collider_0","collider_1"],"t":[0,0,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"normal"},
+      {"id":"arm","type":"kinematic","colliders":[2],"parts":["arm","collider_2"],"t":[0,0,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"normal"},
+      {"id":"hook","type":"dynamic","colliders":[3],"parts":["hook","collider_3"],"t":[0,0,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0.1,"angularDamping":0.2,"gravityScale":1,"ccd":true,"surface":"normal"}
     ],
     "joints": [
-      {"id":"rope","kind":"rope","a":"arm","b":"hook","anchorA":[5,0,0],"anchorB":[0,0.3,0],"axis":[0,1,0],"limitsDeg":null,"limitsM":null,"stiffness":0,"damping":0,"lengthM":2,"motor":null}
+      {"id":"rope","kind":"rope","a":"arm","b":"hook","anchorA":[5,4.8,0],"anchorB":[5,2.8,0],"axis":[0,1,0],"limitsDeg":null,"limitsM":null,"stiffness":0,"damping":0,"lengthM":2,"motor":null}
     ]
   },
   "anchors": {},
   "bounds": {"min":[-1,0,-1],"max":[5.32,5.02,1]},
-  "hash": "e8f0e5a5c250617a528a0a88fb1ec65891716134c8d8ea40865957fd857cb42b"
+  "hash": "40fadd6fc8d6d2436026519f43eb2d0ef0e90442fc6b0648559ecc2b4aa27728"
 }

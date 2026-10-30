@@ -13,11 +13,15 @@
     "name": "candy-mech-spring-pad",
     "root": ["candy_mech_spring_pad"],
     "nodes": {
-      "candy_mech_spring_pad": {"id":"candy_mech_spring_pad","name":"candy-mech-spring-pad","kind":"group","children":["base","guide","platform","platform_top"],"asset":{"game":"royal-fiesta","id":"candy.mech-spring-pad","category":"obstacle","world":"candy"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
+      "candy_mech_spring_pad": {"id":"candy_mech_spring_pad","name":"candy-mech-spring-pad","kind":"group","children":["base","guide","platform","platform_top","collider_0","collider_1","collider_2","collider_3"],"asset":{"game":"royal-fiesta","id":"candy.mech-spring-pad","category":"obstacle","world":"candy"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
       "base": {"id":"base","name":"base","kind":"paramesh","transform":{"position":[0,0.15,0]},"round":0.1,"material":"candy-blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.5,0,0],[-1.5,0,0],[0,0.15,0],[0,-0.15,0],[0,0,1.5],[0,0,-1.5]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
       "guide": {"id":"guide","name":"guide","kind":"paramesh","transform":{"position":[0,0.45,0]},"round":0.06,"material":"candy-yellow","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.15,0,0],[-0.15,0,0],[0,0.2,0],[0,-0.2,0],[0,0,0.15],[0,0,-0.15]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
       "platform": {"id":"platform","name":"platform","kind":"paramesh","transform":{"position":[0,1.2,0]},"round":0.08,"material":"candy-pink","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.4,0,0],[-1.4,0,0],[0,0.12,0],[0,-0.12,0],[0,0,1.4],[0,0,-1.4]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "platform_top": {"id":"platform_top","name":"platform_top","kind":"paramesh","transform":{"position":[0,1.365,0]},"round":0.04,"material":"candy-yellow","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.12,0,0],[-1.12,0,0],[0,0.035,0],[0,-0.035,0],[0,0,1.12],[0,0,-1.12]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false}
+      "platform_top": {"id":"platform_top","name":"platform_top","kind":"paramesh","transform":{"position":[0,1.365,0]},"round":0.04,"material":"candy-yellow","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.12,0,0],[-1.12,0,0],[0,0.035,0],[0,-0.035,0],[0,0,1.12],[0,0,-1.12]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
+      "collider_0": {"id":"collider_0","name":"collider_0","kind":"paramesh","visible":false,"transform":{"position":[0,0.15,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.58,0,0],[-1.58,0,0],[0,0.23,0],[0,-0.23,0],[0,0,1.58],[0,0,-1.58]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
+      "collider_1": {"id":"collider_1","name":"collider_1","kind":"paramesh","visible":false,"transform":{"position":[0,0.45,0]},"round":0.06,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.21,0,0],[-0.21,0,0],[0,0.26,0],[0,-0.26,0],[0,0,0.21],[0,0,-0.21]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
+      "collider_2": {"id":"collider_2","name":"collider_2","kind":"paramesh","visible":false,"transform":{"position":[0,1.2,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.48,0,0],[-1.48,0,0],[0,0.2,0],[0,-0.2,0],[0,0,1.48],[0,0,-1.48]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
+      "collider_3": {"id":"collider_3","name":"collider_3","kind":"paramesh","visible":false,"transform":{"position":[0,1.365,0]},"round":0.04,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.16,0,0],[-1.16,0,0],[0,0.075,0],[0,-0.075,0],[0,0,1.16],[0,0,-1.16]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true}
     },
     "materials": {
       "candy-pink": {"name":"candy-pink","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#f0287f","in.roughness":0.12}}],"links":[]}},
@@ -29,20 +33,20 @@
   "collision": [
     {"shape":"roundCuboid","halfExtents":[1.5,0.15,1.5],"borderRadius":0.08,"t":[0,0.15,0],"r":[0,0,0,1]},
     {"shape":"roundCuboid","halfExtents":[0.15,0.2,0.15],"borderRadius":0.06,"t":[0,0.45,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","halfExtents":[1.4,0.12,1.4],"borderRadius":0.08,"t":[0,0,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","halfExtents":[1.12,0.035,1.12],"borderRadius":0.04,"t":[0,0.165,0],"r":[0,0,0,1]}
+    {"shape":"roundCuboid","halfExtents":[1.4,0.12,1.4],"borderRadius":0.08,"t":[0,1.2,0],"r":[0,0,0,1]},
+    {"shape":"roundCuboid","halfExtents":[1.12,0.035,1.12],"borderRadius":0.04,"t":[0,1.365,0],"r":[0,0,0,1]}
   ],
   "physics": {
     "bodies": [
-      {"id":"base","type":"fixed","colliders":[0,1],"parts":["base","guide"],"t":[0,0,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"normal"},
-      {"id":"platform","type":"dynamic","colliders":[2,3],"parts":["platform","platform_top"],"t":[0,1.2,0],"r":[0,0,0,1],"density":20,"friction":1,"restitution":0.15,"linearDamping":0.05,"angularDamping":0.2,"gravityScale":1,"ccd":true,"surface":"rubber"}
+      {"id":"base","type":"fixed","colliders":[0,1],"parts":["base","guide","collider_0","collider_1"],"t":[0,0,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"normal"},
+      {"id":"platform","type":"dynamic","colliders":[2,3],"parts":["platform","platform_top","collider_2","collider_3"],"t":[0,0,0],"r":[0,0,0,1],"density":20,"friction":1,"restitution":0.15,"linearDamping":0.05,"angularDamping":0.2,"gravityScale":1,"ccd":true,"surface":"rubber"}
     ],
     "joints": [
-      {"id":"spring","kind":"spring","a":"base","b":"platform","anchorA":[0,0.3,0],"anchorB":[0,-0.2,0],"axis":[0,1,0],"limitsDeg":null,"limitsM":null,"stiffness":4000,"damping":200,"lengthM":0,"motor":null},
-      {"id":"travel","kind":"slider","a":"base","b":"platform","anchorA":[0,1.2,0],"anchorB":[0,0,0],"axis":[0,1,0],"limitsDeg":null,"limitsM":[-0.4,0.2],"stiffness":0,"damping":0,"lengthM":0,"motor":null}
+      {"id":"spring","kind":"spring","a":"base","b":"platform","anchorA":[0,0.3,0],"anchorB":[0,1,0],"axis":[0,1,0],"limitsDeg":null,"limitsM":null,"stiffness":4000,"damping":200,"lengthM":0,"motor":null},
+      {"id":"travel","kind":"slider","a":"base","b":"platform","anchorA":[0,1.2,0],"anchorB":[0,1.2,0],"axis":[0,1,0],"limitsDeg":null,"limitsM":[-0.4,0.2],"stiffness":0,"damping":0,"lengthM":0,"motor":null}
     ]
   },
   "anchors": {},
   "bounds": {"min":[-1.5,0,-1.5],"max":[1.5,1.4,1.5]},
-  "hash": "772c6d8c893c20255319e23455ff1b2eb286a7dc03e250a9b25e0485a19f2a97"
+  "hash": "e41286db5328a50f8edb5a642901bbc787cbc80ba75024f82245bbc9829c93d9"
 }

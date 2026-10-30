@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Royal Fiesta - Zone view</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #1b0f2e; }
+      #zone { display: block; width: 100%; height: 100%; }
+      #hud { position: fixed; left: 12px; bottom: 12px; color: #fff; font: 12px system-ui, sans-serif; opacity: 0.8; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="zone"></canvas>
+    <div id="hud"></div>
+    <script type="module">
+      import { parseQuery } from '/src/client/query.ts'
+      import { pickContent } from '/src/content/source.ts'
+      import { skinnedCharacterOf } from '/src/content/providers/sdf.ts'
+      import { mountZoneView } from '/src/zone/zoneView.ts'
+
+      const canvas = document.querySelector('#zone')
+      const hud = document.querySelector('#hud')
+
+      function fit(canvas) {
+        const dpr = window.devicePixelRatio || 1
+        canvas.width = Math.max(1, Math.floor(window.innerWidth * dpr))
+        canvas.height = Math.max(1, Math.floor(window.innerHeight * dpr))
+      }
+
+      function message(e) {
+        return e instanceof Error ? e.message : String(e)
+      }
+
+      async function main() {
+        const params = new URLSearchParams(window.location.search)
+        const q = parseQuery(window.location.search)
+        // The in-page client count is the number of machines; an unqualified page shows four peers so
+        // seats of the other peers arrive through the far stream.
+        const peers = params.has('clients') ? q.clients : 4
+        const seats = Number(params.get('seats') ?? 2)
+        const course = params.get('course') ?? undefined
+        const spread = params.get('spread') !== '0'
+        // ?content= adds the content provider's skinned character and course environment, as game.html does.
+        // The fixture assets stay the geometry: the RAA port draws prims, not SDF meshes.
+        let skinned
+        let dressing
+        if (params.has('content')) {
+          try {
+            const content = pickContent(params)
+            await content.load(q.profile, () => {})
+            skinned = skinnedCharacterOf(content)
+            dressing = content.dressing()
+          } catch (e) {
+            console.warn('[zone] content unavailable; using fixture assets', e)
+          }
+        }
+        fit(canvas)
+        const view = await mountZoneView({
+          canvas, peers, seatsPerPeer: seats, seed: q.seed, profile: q.profile, courseId: course, spreadSpawns: spread,
+          skinned, dressing,
+        })
+        window.zoneView = view
+        hud.textContent = `zone match: ${peers} peers x ${seats} seats`
+        let last = performance.now()
+        const tick = now => {
+          const dt = Math.min(0.1, Math.max(0, now - last) / 1000)
+          last = now
+          view.frame(dt)
+          view.render()
+          requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      }
+
+      void main().catch(e => {
+        console.error(e)
+        if (hud !== null) hud.textContent = message(e)
+      })
+    </script>
+  </body>
+</html>

@@ -1,39 +1,7 @@
 [
   {
-    "name": "zone-gate-build",
-    "command": "npm run build",
-    "timeout_s": 900
-  },
-  {
-    "name": "zone-gate-typecheck",
-    "command": "npm run typecheck",
-    "timeout_s": 120,
-    "after": [
-      "zone-gate-build"
-    ]
-  },
-  {
-    "name": "zone-gate-chrome",
-    "command": "env NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/zoneGate.ts",
-    "timeout_s": 2400,
-    "after": [
-      "zone-gate-typecheck"
-    ]
-  },
-  {
-    "name": "zone-gate-judge-a",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/m6/zone-chrome-a.png --description \"Two Chrome players in the same Royal Fiesta zone match, characters moving on the course with other racers visible\" --min-score 6",
-    "timeout_s": 600,
-    "after": [
-      "zone-gate-chrome"
-    ]
-  },
-  {
-    "name": "zone-gate-judge-b",
-    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/m6/zone-chrome-b.png --description \"Two Chrome players in the same Royal Fiesta zone match, characters moving on the course with other racers visible\" --min-score 6",
-    "timeout_s": 600,
-    "after": [
-      "zone-gate-chrome"
-    ]
+    "name": "zone-60-run",
+    "command": "node --experimental-strip-types tools/zoneMatchRun.ts",
+    "timeout_s": 3600
   }
 ]

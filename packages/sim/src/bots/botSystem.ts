@@ -21,7 +21,8 @@ import { bindBehaviour } from './behaviour.ts'
 import type { BotBehaviour } from './behaviour.ts'
 import { newMemory, raceBrain, rollSkill, survivalBrain } from './brain.ts'
 import type { BotSkill, BrainInput, BrainMemory } from './brain.ts'
-import { courseCapabilities } from './courseRead.ts'
+import { courseCapabilities, readLevers, signalIndex } from './courseRead.ts'
+import type { ReadLever } from './courseRead.ts'
 import { updateRoute } from './routes.ts'
 import type { RoutePlan } from './routes.ts'
 
@@ -30,6 +31,8 @@ const KNEE = 0.4
 const AHEAD_DIST = 1.2
 const AHEAD_MAX_NY = 0.6
 const HAZARD_RADIUS = 1.6
+// mechanisms/bodies.ts groups fixed bodies as STATIC and dynamic/kinematic bodies as
+// MOVING, so both queries below include dynamic and kinematic mechanism colliders.
 const PROBE_GROUPS = groups(G.PROBE, G.STATIC | G.MOVING)
 const HAZARD_GROUPS = groups(G.PROBE, G.MOVING)
 const ROT_ID = { x: 0, y: 0, z: 0, w: 1 }
@@ -86,6 +89,31 @@ export class BotSystem implements SimSystem<PlayerInput> {
   readonly #last: Int32Array
   // Hazard query scratch, valid only inside one preStep.
   #hazard = false
+  // Callback scratch, refreshed before the bot loop; never snapshotted.
+  #ctx: WorldCtx<PlayerInput> | null = null
+  #course: ResolvedCourse | null = null
+  #levers: readonly ReadLever[] = []
+
+  // Bound once per system, reading the current bot from scratchState.
+  readonly #signalOn = (id: string): boolean => {
+    const ctx = this.#ctx
+    const course = this.#course
+    return ctx !== null && course !== null && ctx.hasSystem('mechLogic') &&
+      signalIndex(course, id) >= 0 && ctx.system<MechLogicSystem>('mechLogic').signal(id)
+  }
+
+  readonly #leverNear = (id: string): boolean => {
+    const ctx = this.#ctx
+    if (ctx === null || !ctx.hasSystem('mechanisms')) return false
+    for (const lever of this.#levers) {
+      if (lever.id !== id) continue
+      if (!ctx.system<MechanismSystem>('mechanisms').bodyPose(ctx, lever.handle, scratchHandle)) return false
+      const dx = scratchHandle.t.x - scratchState.pos.x
+      const dz = scratchHandle.t.z - scratchState.pos.z
+      return Math.sqrt(dx * dx + dz * dz) <= lever.grabRange - 0.1
+    }
+    return false
+  }
 
   constructor(setup: MatchSetup, behaviours: readonly BotBehaviour[] = []) {
     const n = setup.playerCount
@@ -183,9 +211,9 @@ export class BotSystem implements SimSystem<PlayerInput> {
     const course = obstacles.courses[ci]
     const survival = course.kind === 'survival'
     const chars = ctx.system<CharacterSystem>('characters')
-    const logic = ctx.hasSystem('mechLogic') ? ctx.system<MechLogicSystem>('mechLogic') : null
-    const mechanisms = ctx.hasSystem('mechanisms') ? ctx.system<MechanismSystem>('mechanisms') : null
-    const levers = course.mechanisms?.levers ?? []
+    this.#ctx = ctx
+    this.#course = course
+    this.#levers = readLevers(course)
     const caps = courseCapabilities(course)
     // Bind every profile to the course before a single bot input is written: a useLever
     // profile on a leverless course refuses the tick without half-stepping the others.
@@ -207,14 +235,8 @@ export class BotSystem implements SimSystem<PlayerInput> {
         mode: st.mode,
         obstacleAhead: this.#obstacleAhead(ctx, st),
         hazardNear: this.#hazardNear(ctx, st),
-        signalOn: logic === null ? undefined : (id: string) => logic.signal(id),
-        leverNear: mechanisms === null ? undefined : (id: string) => {
-          const lever = levers.find(l => l.id === id)
-          if (lever === undefined || !mechanisms.bodyPose(ctx, lever.handle, scratchHandle)) return false
-          const hx = scratchHandle.t.x - st.pos.x
-          const hz = scratchHandle.t.z - st.pos.z
-          return Math.sqrt(hx * hx + hz * hz) <= lever.grabRange
-        },
+        signalOn: this.#signalOn,
+        leverNear: this.#leverNear,
       }
       const beh = this.#behaviour[p]
       if (beh !== null) {

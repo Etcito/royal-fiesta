@@ -1,0 +1,24 @@
+[bot 2] [zone-bot gate-bot-2] matched peer 1 of 8, seats 2,3
+[bot 0] [zone-bot gate-bot-0] matched peer 0 of 8, seats 0,1
+[bot 3] [zone-bot gate-bot-3] matched peer 2 of 8, seats 4,5
+[bot 5] [zone-bot gate-bot-5] matched peer 5 of 8, seats 10,11
+[bot 4] [zone-bot gate-bot-4] matched peer 3 of 8, seats 6,7
+[bot 1] [zone-bot gate-bot-1] matched peer 4 of 8, seats 8,9
+[bot 2] [zone-bot gate-bot-2] tick 294 domains 1
+[bot 0] [zone-bot gate-bot-0] tick 294 domains 1
+[bot 3] [zone-bot gate-bot-3] tick 297 domains 1
+[bot 5] [zone-bot gate-bot-5] tick 294 domains 1
+[bot 4] [zone-bot gate-bot-4] tick 296 domains 1
+[bot 1] [zone-bot gate-bot-1] tick 294 domains 1
+[bot 2] [zone-bot gate-bot-2] tick 595 domains 3
+[bot 0] [zone-bot gate-bot-0] tick 595 domains 2
+[bot 3] [zone-bot gate-bot-3] tick 597 domains 1
+[bot 5] [zone-bot gate-bot-5] tick 594 domains 1
+[bot 4] [zone-bot gate-bot-4] tick 596 domains 1
+[bot 1] [zone-bot gate-bot-1] tick 594 domains 1
+[bot 1] exit code=0 signal=null requestedStop=true
+[bot 0] exit code=0 signal=null requestedStop=true
+[bot 2] exit code=0 signal=null requestedStop=true
+[bot 5] exit code=0 signal=null requestedStop=true
+[bot 4] exit code=0 signal=null requestedStop=true
+[bot 3] exit code=0 signal=null requestedStop=true

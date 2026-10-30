@@ -1,0 +1,4 @@
+zone gate chrome-a adapter: {"vendor":"nvidia","architecture":"ampere","description":"","software":false}
+zone gate chrome-a: peers 8, localPeer 6, ticks 600, near 9, far 1, session {"frames":481,"stallFrames":13,"desyncs":0,"malformed":0,"lostPeers":[],"confirmed":{"0":595,"1":599,"4":599}}
+zone gate chrome-b adapter: {"vendor":"nvidia","architecture":"ampere","description":"","software":false}
+zone gate chrome-b: peers 8, localPeer 7, ticks 600, near 9, far 2, session {"frames":481,"stallFrames":15,"desyncs":0,"malformed":0,"lostPeers":[],"confirmed":{"0":595,"1":599}}

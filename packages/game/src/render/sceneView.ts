@@ -413,7 +413,7 @@ export class SceneView {
       // The item placement carries the asset; the body pose only adds its motion since rest.
       port.setTransform(body.instance,
         [body.itemT[0] + t[0] - body.restT[0], body.itemT[1] + t[1] - body.restT[1], body.itemT[2] + t[2] - body.restT[2]],
-        quatMul(r, body.restInvR), body.s)
+        quatMul(quatMul(r, body.restInvR), body.itemR), body.s)
     }
 
     const c = this.view

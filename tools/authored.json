@@ -35,6 +35,7 @@
     "assets/common/costume.propeller-hat.asset.json",
     "assets/common/penguin.body.asset.json",
     "assets/neon/neon.floor-tile.asset.json",
+    "assets/neon/neon.piston-block.asset.json",
     "assets/neon/neon.wall-block.asset.json",
     "courses/hub-plaza.course.json",
     "courses/mech-lab.course.json",

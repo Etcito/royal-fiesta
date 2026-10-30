@@ -74,6 +74,12 @@ export function serveDir(dist: string): Server {
       }
       return
     }
+    if (path === '/rf-build.json' && !existsSync(join(base, 'rf-build.json'))) {
+      // A dev server has no build stamp (wavedash.ts writes one into a built upload): answer an empty one, a 404 is a console error.
+      res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' })
+      res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ commit: null, builtAt: 'dev' }))
+      return
+    }
     const live = path.startsWith('/content/')
     const requestBase = live ? contentDir() : base
     if (live) path = path.slice('/content'.length)

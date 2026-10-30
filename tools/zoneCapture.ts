@@ -12,7 +12,8 @@ import { MeshBaker } from './meshBake.ts'
 import { leakScan } from './guard.ts'
 
 const exec = promisify(execFile)
-// A GPU render may run up to the server's job limit (5 minutes, owner rule); the client waits that long.
+// A GPU render may run up to the server's job limit (5 minutes, owner rule); the client waits that long
+// on top of NMC_GPU_WAIT_S, the time a job may queue for a GPU client (another card's render holds the project's slot).
 const RENDER_LIMIT_MS = 300_000
 const input = {
   width: 1280, height: 720, peers: 8, seatsPerPeer: 2, course: 'race-sprint',
@@ -45,7 +46,7 @@ function json(file: string, value: unknown): void {
 
 async function main(): Promise<void> {
   const wait = Number(process.env.NMC_GPU_WAIT_S ?? 45)
-  assert(Number.isInteger(wait) && wait > 0 && wait <= 60, 'wait must be 1..60 seconds')
+  assert(Number.isInteger(wait) && wait > 0 && wait <= 900, 'wait must be 1..900 seconds')
   stage = 'wait for NMC_GPU_CLIENT; server-managed Chrome is required'
   const deadline = Date.now() + wait * 1000
   while (!process.env.NMC_GPU_CLIENT || !existsSync(process.env.NMC_GPU_CLIENT)) {
@@ -53,11 +54,22 @@ async function main(): Promise<void> {
     await new Promise(done => setTimeout(done, Math.min(250, deadline - Date.now())))
   }
   const clientPath = process.env.NMC_GPU_CLIENT
+  const limitMs = wait * 1000 + RENDER_LIMIT_MS
   const client = async (...args: string[]): Promise<string> => {
     // Never inherit stdio: client diagnostics can contain credentials or host paths.
-    return (await exec(process.execPath, [clientPath, ...args], {
-      timeout: RENDER_LIMIT_MS, killSignal: 'SIGKILL', maxBuffer: 32 * 1024 * 1024,
-    })).stdout
+    try {
+      return (await exec(process.execPath, [clientPath, ...args], {
+        timeout: limitMs, killSignal: 'SIGKILL', maxBuffer: 32 * 1024 * 1024,
+      })).stdout
+    } catch (error) {
+      const e = error as { killed?: boolean; stderr?: unknown }
+      if (!e?.killed) throw error
+      // Killed at the limit: say what the job was doing (its last status line), not the stage's guess.
+      const status = String(e.stderr ?? '').trim().split('\n').pop()!.replace(/^GPU job \w+: /, '')
+      throw new Error(/waiting for a GPU client/.test(status)
+        ? `no GPU client took the job within ${limitMs / 1000} s (NMC_GPU_WAIT_S=${wait} + render limit)`
+        : `GPU client call did not finish within ${limitMs / 1000} s; last status: ${status || 'none'}`)
+    }
   }
   const publish = async (dir: string): Promise<string> => {
     const result = JSON.parse(await client('publish', dir))

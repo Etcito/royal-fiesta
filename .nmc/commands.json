@@ -6,8 +6,8 @@
   },
   {
     "name": "zone-capture",
-    "command": "env NMC_GPU_WAIT_S=60 node --experimental-strip-types tools/zoneCapture.ts",
-    "timeout_s": 900,
+    "command": "env NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/zoneCapture.ts",
+    "timeout_s": 1800,
     "after": ["zone-build"]
   },
   {

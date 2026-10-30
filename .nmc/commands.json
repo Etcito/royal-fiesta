@@ -3,5 +3,26 @@
     "name": "zone-60-run",
     "command": "node --experimental-strip-types tools/zoneMatchRun.ts",
     "timeout_s": 3600
+  },
+  {
+    "name": "split-gate-build",
+    "command": "npm run build",
+    "timeout_s": 900
+  },
+  {
+    "name": "split-gate-chrome",
+    "command": "env NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/splitGate.ts",
+    "timeout_s": 2400,
+    "after": [
+      "split-gate-build"
+    ]
+  },
+  {
+    "name": "split-gate-judge",
+    "command": "python3 \"$NMC_JUDGE_CLIENT\" out/m7/split-chrome-a.png --description \"Royal Fiesta split-screen with two player views of a crowded zone match\" --min-score 6",
+    "timeout_s": 600,
+    "after": [
+      "split-gate-chrome"
+    ]
   }
 ]

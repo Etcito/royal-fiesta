@@ -63,7 +63,7 @@
   },
   {
     "name": "mech-manifest-tests",
-    "command": "node --experimental-strip-types --test packages/game/test/mechanismsJson.test.ts packages/game/test/gameManifest.test.ts",
+    "command": "node --experimental-strip-types --test --test-concurrency=1 packages/game/test/mechanismsJson.test.ts packages/game/test/gameManifest.test.ts packages/game/test/courseV1.test.ts tools/test/placeholders.test.ts packages/game/test/mechLab.test.ts",
     "timeout_s": 120
   },
   {

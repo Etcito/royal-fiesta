@@ -6,49 +6,653 @@
   "name": "candy-mech-piston",
   "category": "obstacle",
   "world": "candy",
-  "mesher": {"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
   "document": {
     "format": "sdfm",
     "version": 2,
     "name": "candy-mech-piston",
-    "root": ["candy_mech_piston"],
+    "root": [
+      "candy_mech_piston"
+    ],
     "nodes": {
-      "candy_mech_piston": {"id":"candy_mech_piston","name":"candy-mech-piston","kind":"group","children":["base","sleeve_left","sleeve_right","block","block_cap","collider_0","collider_1","collider_2","collider_3","collider_4"],"asset":{"game":"royal-fiesta","id":"candy.mech-piston","category":"obstacle","world":"candy"},"mesher":{"output":"paramesh","params":{"fieldResolution":16,"subdivisions":4,"transitionLoops":1}},"gameCollision":false},
-      "base": {"id":"base","name":"base","kind":"paramesh","transform":{"position":[0,0.15,0]},"round":0.1,"material":"candy-blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.2,0,0],[-1.2,0,0],[0,0.15,0],[0,-0.15,0],[0,0,1.1],[0,0,-1.1]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "sleeve_left": {"id":"sleeve_left","name":"sleeve_left","kind":"paramesh","transform":{"position":[-1,0.95,0]},"round":0.1,"material":"candy-blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.18,0,0],[-0.18,0,0],[0,0.65,0],[0,-0.65,0],[0,0,0.85],[0,0,-0.85]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "sleeve_right": {"id":"sleeve_right","name":"sleeve_right","kind":"paramesh","transform":{"position":[1,0.95,0]},"round":0.1,"material":"candy-blue","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.18,0,0],[-0.18,0,0],[0,0.65,0],[0,-0.65,0],[0,0,0.85],[0,0,-0.85]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "block": {"id":"block","name":"block","kind":"paramesh","transform":{"position":[0,1.2,0]},"round":0.1,"material":"candy-yellow","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.6,0,0],[-0.6,0,0],[0,0.75,0],[0,-0.75,0],[0,0,0.6],[0,0,-0.6]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "block_cap": {"id":"block_cap","name":"block_cap","kind":"paramesh","transform":{"position":[0,2.1,0]},"round":0.1,"material":"candy-pink","paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.1,0,0],[-1.1,0,0],[0,0.15,0],[0,-0.15,0],[0,0,1],[0,0,-1]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":false},
-      "collider_0": {"id":"collider_0","name":"collider_0","kind":"paramesh","visible":false,"transform":{"position":[0,0.15,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.28,0,0],[-1.28,0,0],[0,0.23,0],[0,-0.23,0],[0,0,1.18],[0,0,-1.18]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
-      "collider_1": {"id":"collider_1","name":"collider_1","kind":"paramesh","visible":false,"transform":{"position":[-1,0.95,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.26,0,0],[-0.26,0,0],[0,0.73,0],[0,-0.73,0],[0,0,0.93],[0,0,-0.93]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
-      "collider_2": {"id":"collider_2","name":"collider_2","kind":"paramesh","visible":false,"transform":{"position":[1,0.95,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.26,0,0],[-0.26,0,0],[0,0.73,0],[0,-0.73,0],[0,0,0.93],[0,0,-0.93]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
-      "collider_3": {"id":"collider_3","name":"collider_3","kind":"paramesh","visible":false,"transform":{"position":[0,1.2,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[0.68,0,0],[-0.68,0,0],[0,0.83,0],[0,-0.83,0],[0,0,0.68],[0,0,-0.68]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true},
-      "collider_4": {"id":"collider_4","name":"collider_4","kind":"paramesh","visible":false,"transform":{"position":[0,2.1,0]},"round":0.08,"paramesh":{"shape":{"format":"paramesh.shape","version":1,"shape":"cube","radius":0,"points":[[1.18,0,0],[-1.18,0,0],[0,0.23,0],[0,-0.23,0],[0,0,1.08],[0,0,-1.08]],"pointRadii":[null,null,null,null,null,null],"edgeRadii":{}}},"gameCollision":true}
+      "candy_mech_piston": {
+        "id": "candy_mech_piston",
+        "name": "candy-mech-piston",
+        "kind": "group",
+        "children": [
+          "base",
+          "sleeve_left",
+          "sleeve_right",
+          "block",
+          "block_cap",
+          "collider_0",
+          "collider_1",
+          "collider_2",
+          "collider_3",
+          "collider_4"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.mech-piston",
+          "category": "obstacle",
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [0, 1, 2],
+                "parts": [
+                  "base",
+                  "sleeve_left",
+                  "sleeve_right",
+                  "collider_0",
+                  "collider_1",
+                  "collider_2"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "block",
+                "type": "kinematic",
+                "colliders": [3, 4],
+                "parts": [
+                  "block",
+                  "block_cap",
+                  "collider_3",
+                  "collider_4"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": [
+              {
+                "id": "slide",
+                "kind": "slider",
+                "a": "base",
+                "b": "block",
+                "anchorA": [0, 1.2, 0],
+                "anchorB": [0, 1.2, 0],
+                "axis": [0, 1, 0],
+                "limitsDeg": null,
+                "limitsM": [0, 1.5],
+                "stiffness": 0,
+                "damping": 0,
+                "lengthM": 0,
+                "motor": null
+              }
+            ]
+          }
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "base": {
+        "id": "base",
+        "name": "base",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.15, 0]
+        },
+        "round": 0.1,
+        "material": "candy-blue",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.2, 0, 0],
+              [-1.2, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 1.1],
+              [0, 0, -1.1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "sleeve_left": {
+        "id": "sleeve_left",
+        "name": "sleeve_left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-1, 0.95, 0]
+        },
+        "round": 0.1,
+        "material": "candy-blue",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.18, 0, 0],
+              [-0.18, 0, 0],
+              [0, 0.65, 0],
+              [0, -0.65, 0],
+              [0, 0, 0.85],
+              [0, 0, -0.85]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "sleeve_right": {
+        "id": "sleeve_right",
+        "name": "sleeve_right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [1, 0.95, 0]
+        },
+        "round": 0.1,
+        "material": "candy-blue",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.18, 0, 0],
+              [-0.18, 0, 0],
+              [0, 0.65, 0],
+              [0, -0.65, 0],
+              [0, 0, 0.85],
+              [0, 0, -0.85]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "block": {
+        "id": "block",
+        "name": "block",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 1.2, 0]
+        },
+        "round": 0.1,
+        "material": "candy-yellow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.6, 0, 0],
+              [-0.6, 0, 0],
+              [0, 0.75, 0],
+              [0, -0.75, 0],
+              [0, 0, 0.6],
+              [0, 0, -0.6]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "block_cap": {
+        "id": "block_cap",
+        "name": "block_cap",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 2.1, 0]
+        },
+        "round": 0.1,
+        "material": "candy-pink",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.1, 0, 0],
+              [-1.1, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 1],
+              [0, 0, -1]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, 0.15, 0]
+        },
+        "round": 0.08,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.28, 0, 0],
+              [-1.28, 0, 0],
+              [0, 0.23, 0],
+              [0, -0.23, 0],
+              [0, 0, 1.18],
+              [0, 0, -1.18]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_1": {
+        "id": "collider_1",
+        "name": "collider_1",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [-1, 0.95, 0]
+        },
+        "round": 0.08,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.26, 0, 0],
+              [-0.26, 0, 0],
+              [0, 0.73, 0],
+              [0, -0.73, 0],
+              [0, 0, 0.93],
+              [0, 0, -0.93]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_2": {
+        "id": "collider_2",
+        "name": "collider_2",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [1, 0.95, 0]
+        },
+        "round": 0.08,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.26, 0, 0],
+              [-0.26, 0, 0],
+              [0, 0.73, 0],
+              [0, -0.73, 0],
+              [0, 0, 0.93],
+              [0, 0, -0.93]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_3": {
+        "id": "collider_3",
+        "name": "collider_3",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, 1.2, 0]
+        },
+        "round": 0.08,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.68, 0, 0],
+              [-0.68, 0, 0],
+              [0, 0.83, 0],
+              [0, -0.83, 0],
+              [0, 0, 0.68],
+              [0, 0, -0.68]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      },
+      "collider_4": {
+        "id": "collider_4",
+        "name": "collider_4",
+        "kind": "paramesh",
+        "visible": false,
+        "transform": {
+          "position": [0, 2.1, 0]
+        },
+        "round": 0.08,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.18, 0, 0],
+              [-1.18, 0, 0],
+              [0, 0.23, 0],
+              [0, -0.23, 0],
+              [0, 0, 1.08],
+              [0, 0, -1.08]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true
+      }
     },
     "materials": {
-      "candy-pink": {"name":"candy-pink","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#f0287f","in.roughness":0.12}}],"links":[]}},
-      "candy-yellow": {"name":"candy-yellow","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#ffc93c","in.roughness":0.12}}],"links":[]}},
-      "candy-blue": {"name":"candy-blue","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#3fa9f5","in.roughness":0.12}}],"links":[]}},
-      "candy-white": {"name":"candy-white","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#ffffff","in.roughness":0.12}}],"links":[]}}
+      "candy-pink": {
+        "name": "candy-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      }
     }
   },
   "collision": [
-    {"shape":"roundCuboid","halfExtents":[1.2,0.15,1.1],"borderRadius":0.08,"t":[0,0.15,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","halfExtents":[0.18,0.65,0.85],"borderRadius":0.08,"t":[-1,0.95,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","halfExtents":[0.18,0.65,0.85],"borderRadius":0.08,"t":[1,0.95,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","halfExtents":[0.6,0.75,0.6],"borderRadius":0.08,"t":[0,1.2,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","halfExtents":[1.1,0.15,1],"borderRadius":0.08,"t":[0,2.1,0],"r":[0,0,0,1]}
+    {
+      "shape": "roundCuboid",
+      "t": [0, 0.15, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [1.2, 0.15, 1.1],
+      "borderRadius": 0.08
+    },
+    {
+      "shape": "roundCuboid",
+      "t": [-1, 0.95, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.18, 0.65, 0.85],
+      "borderRadius": 0.08
+    },
+    {
+      "shape": "roundCuboid",
+      "t": [1, 0.95, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.18, 0.65, 0.85],
+      "borderRadius": 0.08
+    },
+    {
+      "shape": "roundCuboid",
+      "t": [0, 1.2, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.6, 0.75, 0.6],
+      "borderRadius": 0.08
+    },
+    {
+      "shape": "roundCuboid",
+      "t": [0, 2.1, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [1.1, 0.15, 1],
+      "borderRadius": 0.08
+    }
   ],
   "physics": {
     "bodies": [
-      {"id":"base","type":"fixed","colliders":[0,1,2],"parts":["base","sleeve_left","sleeve_right","collider_0","collider_1","collider_2"],"t":[0,0,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"normal"},
-      {"id":"block","type":"kinematic","colliders":[3,4],"parts":["block","block_cap","collider_3","collider_4"],"t":[0,0,0],"r":[0,0,0,1],"density":400,"friction":0.6,"restitution":0,"linearDamping":0,"angularDamping":0.05,"gravityScale":1,"ccd":false,"surface":"normal"}
+      {
+        "id": "base",
+        "type": "fixed",
+        "colliders": [0, 1, 2],
+        "parts": [
+          "base",
+          "sleeve_left",
+          "sleeve_right",
+          "collider_0",
+          "collider_1",
+          "collider_2"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "block",
+        "type": "kinematic",
+        "colliders": [3, 4],
+        "parts": [
+          "block",
+          "block_cap",
+          "collider_3",
+          "collider_4"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
     ],
     "joints": [
-      {"id":"slide","kind":"slider","a":"base","b":"block","anchorA":[0,1.2,0],"anchorB":[0,1.2,0],"axis":[0,1,0],"limitsDeg":null,"limitsM":[0,1.5],"stiffness":0,"damping":0,"lengthM":0,"motor":null}
+      {
+        "id": "slide",
+        "kind": "slider",
+        "a": "base",
+        "b": "block",
+        "anchorA": [0, 1.2, 0],
+        "anchorB": [0, 1.2, 0],
+        "axis": [0, 1, 0],
+        "limitsDeg": null,
+        "limitsM": [0, 1.5],
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0,
+        "motor": null
+      }
     ]
   },
   "anchors": {},
-  "bounds": {"min":[-1.2,0,-1.1],"max":[1.2,2.25,1.1]},
-  "hash": "6f103201689fcfb61020e9ac9d7f8ec0003164ae5620974badb9da4baee3816b"
+  "bounds": {
+    "min": [-1.2, 0, -1.1],
+    "max": [1.2, 2.25, 1.1]
+  },
+  "hash": "27cfa7eec8cc6c85333c7efbfae3cd08ebb330390ff281764ec0cfffcad9415c"
 }

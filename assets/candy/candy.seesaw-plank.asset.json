@@ -42,7 +42,83 @@
           "game": "royal-fiesta",
           "id": "candy.seesaw-plank",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [],
+                "parts": [],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "plank",
+                "type": "dynamic",
+                "colliders": [0],
+                "parts": [
+                  "collider_plank",
+                  "plank",
+                  "rim_r",
+                  "rim_l",
+                  "rim_f",
+                  "rim_b",
+                  "zigzag"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": [
+              {
+                "id": "pivot",
+                "kind": "hinge",
+                "a": "base",
+                "b": "plank",
+                "anchorA": [0, 0, 0],
+                "anchorB": [0, 0, 0],
+                "axis": [1, 0, 0],
+                "limitsDeg": [-20, 20],
+                "limitsM": null,
+                "stiffness": 0,
+                "damping": 0,
+                "lengthM": 0,
+                "motor": null
+              },
+              {
+                "id": "centre",
+                "kind": "spring",
+                "a": "base",
+                "b": "plank",
+                "anchorA": [0, 0, 3.95],
+                "anchorB": [0, 0, 3.95],
+                "axis": [1, 0, 0],
+                "limitsDeg": null,
+                "limitsM": null,
+                "stiffness": 1500,
+                "damping": 2000,
+                "lengthM": 0,
+                "motor": null
+              }
+            ]
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -605,5 +681,5 @@
     "min": [-1.98, -0.68, -4.06],
     "max": [1.98, 0.33, 4.06]
   },
-  "hash": "38af47a2b2b4767c456b68705828c6e37cad0e513d3afc6c5b4570a615dc2604"
+  "hash": "1660dbe4d66475f842d949c5fd673a95d685c52b9cf7ea42a1a405c4deaa7d93"
 }

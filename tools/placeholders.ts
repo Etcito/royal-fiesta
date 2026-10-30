@@ -9,7 +9,7 @@ import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { TICK_RATE } from '@gamesaloon/rollback-rapier'
 import { migrateCourseV0 } from '../packages/game/src/courseV1.ts'
-import { assetFilePath, sdfmText } from '../packages/game/src/gameAsset.ts'
+import { assetDocumentText, assetFilePath, assetFileText } from '../packages/game/src/gameAsset.ts'
 import type { AssetCategory, World } from '../packages/game/src/gameAsset.ts'
 import { collidersOf, parsePrims, PRIM_CAPS } from '../packages/game/src/prims.ts'
 import type { PrimMaterial, PrimNode, PrimsAsset } from '../packages/game/src/prims.ts'
@@ -225,7 +225,7 @@ function assetFile(prims: PrimsAsset, id: string, category: AssetCategory, world
   return {
     format: 'sdfm.game-asset', version: 1, game: 'royal-fiesta', id, name: prims.name, category, world,
     mesher: { ...MESHER }, document, collision: collidersOf(prims, path).map(flatCollider), anchors,
-    bounds: boundsOf(prims, path), hash: createHash('sha256').update(sdfmText(document)).digest('hex'),
+    bounds: boundsOf(prims, path), hash: createHash('sha256').update(assetDocumentText(document)).digest('hex'),
   }
 }
 
@@ -296,11 +296,11 @@ export async function buildContent(authored?: Authored): Promise<Map<string, str
     const prims = parsePrims(await readJson(root, path), path)
     primsByName.set(name, prims)
     const asset = name === 'bean' ? assetFile(prims, 'penguin.body', 'character', 'common', path) : assetFile(prims, `candy.${name}`, 'obstacle', 'candy', path)
-    files.push([assetFilePath(asset.world as World, asset.id as string), text(asset)])
+    files.push([assetFilePath(asset.world as World, asset.id as string), assetFileText(asset)])
   }
   const wall = primsByName.get('wall-block')
   if (!wall) refuse('asset', 'fixtures/assets/wall-block.prims.json', 'missing; the podium block takes its white material')
-  files.push([assetFilePath('candy', BLOCK_ID), text(assetFile(podiumBlock(wall), BLOCK_ID, 'obstacle', 'candy', 'tools/placeholders.ts#podium-block'))])
+  files.push([assetFilePath('candy', BLOCK_ID), assetFileText(assetFile(podiumBlock(wall), BLOCK_ID, 'obstacle', 'candy', 'tools/placeholders.ts#podium-block'))])
 
   const v0: Obj[] = []
   for (const f of (await readdir(join(root, 'fixtures/courses'))).filter(f => f.endsWith('.course.json')).sort()) {

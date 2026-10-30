@@ -34,7 +34,79 @@
           "game": "royal-fiesta",
           "id": "candy.mech-seesaw",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [0, 1],
+                "parts": [
+                  "base"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "plank",
+                "type": "dynamic",
+                "colliders": [2],
+                "parts": [
+                  "plank"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 80,
+                "friction": 0.8,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": [
+              {
+                "id": "pivot",
+                "kind": "hinge",
+                "a": "base",
+                "b": "plank",
+                "anchorA": [0, 1.2, 0],
+                "anchorB": [0, 1.2, 0],
+                "axis": [1, 0, 0],
+                "limitsDeg": [-20, 20],
+                "limitsM": null,
+                "stiffness": 0,
+                "damping": 0,
+                "lengthM": 0,
+                "motor": null
+              },
+              {
+                "id": "centre",
+                "kind": "spring",
+                "a": "base",
+                "b": "plank",
+                "anchorA": [0, 1.2, 2.2],
+                "anchorB": [0, 1.2, 2.2],
+                "axis": [1, 0, 0],
+                "limitsDeg": null,
+                "limitsM": null,
+                "stiffness": 800,
+                "damping": 120,
+                "lengthM": 0,
+                "motor": null
+              }
+            ]
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -790,5 +862,5 @@
     "min": [-1.5, 0, -3],
     "max": [1.5, 1.4, 3]
   },
-  "hash": "df7a45c4f2ebfe9e89768f79709d4e683b46dc1c450ce29ff422248eda52d56a"
+  "hash": "eaf120eb19bdda85da1008b79e5ec43a600558932e1193985fae3edfeca77c65"
 }

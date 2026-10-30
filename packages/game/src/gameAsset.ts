@@ -222,6 +222,102 @@ export function sdfmText(value: unknown): string {
   return write(value, '') + '\n'
 }
 
+type Json = Record<string, unknown>
+const isJsonObject = (v: unknown): v is Json => v !== null && typeof v === 'object' && !Array.isArray(v)
+// MAMA roundNumber: numbers are written rounded to 1e-6 (-0 as 0); a subtree MAMA writes exactly keeps its number.
+function roundNumber(x: number): number {
+  if (!Number.isFinite(x)) return x
+  const scaled = x * 1e6
+  const r = Number.isFinite(scaled) && Math.abs(scaled) < 2 ** 53 ? Math.round(scaled) / 1e6 : x
+  return r === 0 ? 0 : r
+}
+const numberText = (x: number, exact: boolean): string => (!Number.isFinite(x) ? 'null' : exact ? (x === 0 ? '0' : String(x)) : String(roundNumber(x)))
+
+// The MAMA `format` layout: 2-space indent in insertion key order, number-only arrays on one line, `null` for a
+// non-finite number. `exactAt(path)` names the subtrees written with their exact numbers, `jsonAt(path)` the ones written
+// as plain JSON.stringify(v, null, 2) re-indented (MAMA Exact json: a node's rig and clips).
+function formatJson(v: unknown, pad: string, path: readonly string[], exact: boolean,
+  exactAt: (p: readonly string[]) => boolean, jsonAt: (p: readonly string[]) => boolean): string {
+  if (typeof v === 'number') return numberText(v, exact)
+  if (typeof v === 'string' || typeof v === 'boolean' || v === null || v === undefined) return JSON.stringify(v ?? null)
+  const inner = pad + '  '
+  if (Array.isArray(v)) {
+    if (v.length === 0) return '[]'
+    if (v.every((x) => typeof x === 'number')) return `[${v.map((x) => numberText(x, exact)).join(', ')}]`
+    return `[\n${v.map((x, i) => inner + formatJson(x, inner, [...path, String(i)], exact, exactAt, jsonAt)).join(',\n')}\n${pad}]`
+  }
+  if (isJsonObject(v)) {
+    const ks = Object.keys(v).filter((k) => v[k] !== undefined)
+    if (ks.length === 0) return '{}'
+    const field = (k: string): string => {
+      const p = [...path, k]
+      if (jsonAt(p)) return JSON.stringify(v[k], null, 2).replace(/\n/g, '\n' + inner)
+      return formatJson(v[k], inner, p, exact || exactAt(p), exactAt, jsonAt)
+    }
+    return `{\n${ks.map((k) => `${inner}${JSON.stringify(k)}: ${field(k)}`).join(',\n')}\n${pad}}`
+  }
+  return 'null'
+}
+
+/**
+ * The document text SDF Modeler saves (MAMA serializeDocument layout) for a document already in its canonical key order:
+ * numbers rounded to 1e-6 except the subtrees MAMA writes exactly (a Paramesh shape's cage corners, the surfaces and
+ * drawings maps), a node's rig and clips as plain JSON.stringify(v, null, 2). The asset hash is the sha256 of this text.
+ */
+export function assetDocumentText(document: unknown): string {
+  const exactAt = (p: readonly string[]): boolean =>
+    (p.length === 1 && (p[0] === 'surfaces' || p[0] === 'drawings')) ||
+    (p.length === 5 && p[0] === 'nodes' && p[2] === 'paramesh' && p[3] === 'shape' && p[4] === 'cage')
+  const jsonAt = (p: readonly string[]): boolean => p.length === 3 && p[0] === 'nodes' && (p[2] === 'rig' || p[2] === 'clips')
+  return formatJson(document, '', [], false, exactAt, jsonAt) + '\n'
+}
+
+const ASSET_FILE_KEYS = ['format', 'version', 'game', 'id', 'name', 'category', 'world', 'mesher', 'document', 'collision', 'physics', 'anchors', 'bounds', 'hash'] as const
+const COLLIDER_KEY_ORDER = ['shape', 't', 'r', 'halfExtents', 'borderRadius', 'radius', 'halfHeight']
+
+/**
+ * The asset file text SDF Modeler writes (MAMA serializeAssetFile, the canonical form of every assets/<world>/*.asset.json):
+ * keys format ... hash in that order (physics only when present, world null when unset), the mesher as output then
+ * params with sorted params, each collider as shape, t, r, then its size keys, anchors as {t, r}, bounds as {min, max},
+ * the document as assetDocumentText, numbers rounded to 1e-6, trailing newline. Every asset writer uses it, and the guard
+ * refuses an asset file whose text is not exactly this text of its own parsed content.
+ */
+export function assetFileText(asset: unknown): string {
+  if (!isJsonObject(asset)) throw new Error('an asset file is a JSON object')
+  const a = asset
+  const mesher = (m: unknown): unknown => {
+    if (!isJsonObject(m)) return m ?? null
+    const out: Json = {}
+    if (m.output !== undefined) out.output = m.output
+    if (isJsonObject(m.params)) out.params = Object.fromEntries(Object.keys(m.params).sort().filter((k) => (m.params as Json)[k] !== undefined).map((k) => [k, (m.params as Json)[k]]))
+    else if (m.params !== undefined) out.params = m.params
+    for (const [k, x] of Object.entries(m)) if (k !== 'output' && k !== 'params' && x !== undefined) out[k] = x
+    return out
+  }
+  const collider = (c: unknown): unknown => {
+    if (!isJsonObject(c)) return c
+    const out: Json = {}
+    for (const k of COLLIDER_KEY_ORDER) if (c[k] !== undefined) out[k] = c[k]
+    for (const [k, x] of Object.entries(c)) if (!(k in out) && x !== undefined) out[k] = x
+    return out
+  }
+  const value: Json = {
+    format: a.format, version: a.version, game: a.game, id: a.id, name: a.name, category: a.category,
+    world: a.world ?? null,
+    mesher: mesher(a.mesher),
+    document: null,
+    collision: Array.isArray(a.collision) ? a.collision.map(collider) : a.collision,
+    physics: a.physics,
+    anchors: isJsonObject(a.anchors) ? Object.fromEntries(Object.entries(a.anchors).map(([k, x]) => [k, isJsonObject(x) ? { t: x.t, r: x.r } : x])) : a.anchors,
+    bounds: isJsonObject(a.bounds) ? { min: a.bounds.min, max: a.bounds.max } : a.bounds,
+    hash: a.hash,
+  }
+  const doc = assetDocumentText(a.document).replace(/\n$/, '').split('\n').map((line, i) => (i === 0 ? line : '  ' + line)).join('\n')
+  const lines = ASSET_FILE_KEYS.filter((k) => value[k] !== undefined)
+    .map((k) => `  ${JSON.stringify(k)}: ${k === 'document' ? doc : formatJson(value[k], '  ', [], false, () => false, () => false)}`)
+  return `{\n${lines.join(',\n')}\n}\n`
+}
+
 export async function parseGameAsset(json: unknown, path: string): Promise<GameAsset> {
   const o = obj(json, path, '')
   keys(o, TOP_KEYS, ['physics'], path, '')

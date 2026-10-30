@@ -34,7 +34,64 @@
           "game": "royal-fiesta",
           "id": "candy.mech-lever",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [0],
+                "parts": [
+                  "base"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "handle",
+                "type": "dynamic",
+                "colliders": [1, 2],
+                "parts": [
+                  "handle"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": [
+              {
+                "id": "pivot",
+                "kind": "hinge",
+                "a": "base",
+                "b": "handle",
+                "anchorA": [0, 0.5, 0],
+                "anchorB": [0, 0.5, 0],
+                "axis": [1, 0, 0],
+                "limitsDeg": [-40, 40],
+                "limitsM": null,
+                "stiffness": 0,
+                "damping": 0,
+                "lengthM": 0,
+                "motor": null
+              }
+            ]
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -63,11 +120,7 @@
         "name": "base_plinth",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            0,
-            0.2,
-            0
-          ]
+          "position": [0, 0.2, 0]
         },
         "round": 0.12,
         "material": "candy-blue",
@@ -78,36 +131,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.5,
-                0,
-                0
-              ],
-              [
-                -0.5,
-                0,
-                0
-              ],
-              [
-                0,
-                0.2,
-                0
-              ],
-              [
-                0,
-                -0.2,
-                0
-              ],
-              [
-                0,
-                0,
-                0.45
-              ],
-              [
-                0,
-                0,
-                -0.45
-              ]
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.2, 0],
+              [0, -0.2, 0],
+              [0, 0, 0.45],
+              [0, 0, -0.45]
             ],
             "pointRadii": [
               null,
@@ -127,11 +156,7 @@
         "name": "base_socket",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            0,
-            0.4,
-            0
-          ]
+          "position": [0, 0.4, 0]
         },
         "material": "candy-yellow",
         "paramesh": {
@@ -141,36 +166,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [
-                0.25,
-                0,
-                0
-              ],
-              [
-                -0.25,
-                0,
-                0
-              ],
-              [
-                0,
-                0.25,
-                0
-              ],
-              [
-                0,
-                -0.25,
-                0
-              ],
-              [
-                0,
-                0,
-                0.25
-              ],
-              [
-                0,
-                0,
-                -0.25
-              ]
+              [0.25, 0, 0],
+              [-0.25, 0, 0],
+              [0, 0.25, 0],
+              [0, -0.25, 0],
+              [0, 0, 0.25],
+              [0, 0, -0.25]
             ],
             "pointRadii": [
               null,
@@ -191,11 +192,7 @@
         "kind": "paramesh",
         "visible": false,
         "transform": {
-          "position": [
-            0,
-            0.25,
-            0
-          ]
+          "position": [0, 0.25, 0]
         },
         "paramesh": {
           "shape": {
@@ -204,36 +201,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.5,
-                0,
-                0
-              ],
-              [
-                -0.5,
-                0,
-                0
-              ],
-              [
-                0,
-                0.25,
-                0
-              ],
-              [
-                0,
-                -0.25,
-                0
-              ],
-              [
-                0,
-                0,
-                0.45
-              ],
-              [
-                0,
-                0,
-                -0.45
-              ]
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.25, 0],
+              [0, -0.25, 0],
+              [0, 0, 0.45],
+              [0, 0, -0.45]
             ],
             "pointRadii": [
               null,
@@ -266,11 +239,7 @@
         "name": "handle_stick",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            0,
-            1.1,
-            0
-          ]
+          "position": [0, 1.1, 0]
         },
         "round": 0.08,
         "material": "candy-white",
@@ -281,36 +250,12 @@
             "shape": "cube",
             "radius": 0,
             "points": [
-              [
-                0.09,
-                0,
-                0
-              ],
-              [
-                -0.09,
-                0,
-                0
-              ],
-              [
-                0,
-                0.6,
-                0
-              ],
-              [
-                0,
-                -0.6,
-                0
-              ],
-              [
-                0,
-                0,
-                0.09
-              ],
-              [
-                0,
-                0,
-                -0.09
-              ]
+              [0.09, 0, 0],
+              [-0.09, 0, 0],
+              [0, 0.6, 0],
+              [0, -0.6, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
             ],
             "pointRadii": [
               null,
@@ -330,11 +275,7 @@
         "name": "handle_grip",
         "kind": "paramesh",
         "transform": {
-          "position": [
-            0,
-            1.7,
-            0
-          ]
+          "position": [0, 1.7, 0]
         },
         "material": "candy-pink",
         "paramesh": {
@@ -344,36 +285,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [
-                0.23,
-                0,
-                0
-              ],
-              [
-                -0.23,
-                0,
-                0
-              ],
-              [
-                0,
-                0.23,
-                0
-              ],
-              [
-                0,
-                -0.23,
-                0
-              ],
-              [
-                0,
-                0,
-                0.23
-              ],
-              [
-                0,
-                0,
-                -0.23
-              ]
+              [0.23, 0, 0],
+              [-0.23, 0, 0],
+              [0, 0.23, 0],
+              [0, -0.23, 0],
+              [0, 0, 0.23],
+              [0, 0, -0.23]
             ],
             "pointRadii": [
               null,
@@ -394,11 +311,7 @@
         "kind": "capsule",
         "visible": false,
         "transform": {
-          "position": [
-            0,
-            1.1,
-            0
-          ]
+          "position": [0, 1.1, 0]
         },
         "params": {
           "height": 1.2,
@@ -412,11 +325,7 @@
         "kind": "sphere",
         "visible": false,
         "transform": {
-          "position": [
-            0,
-            1.7,
-            0
-          ]
+          "position": [0, 1.7, 0]
         },
         "params": {
           "radius": 0.23
@@ -494,53 +403,22 @@
   "collision": [
     {
       "shape": "cuboid",
-      "halfExtents": [
-        0.5,
-        0.25,
-        0.45
-      ],
-      "t": [
-        0,
-        0.25,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 0.25, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.5, 0.25, 0.45]
     },
     {
       "shape": "capsule",
+      "t": [0, 1.1, 0],
+      "r": [0, 0, 0, 1],
       "radius": 0.09,
-      "halfHeight": 0.51,
-      "t": [
-        0,
-        1.1,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "halfHeight": 0.51
     },
     {
       "shape": "ball",
-      "radius": 0.23,
-      "t": [
-        0,
-        1.7,
-        0
-      ],
-      "r": [
-        0,
-        0,
-        0,
-        1
-      ]
+      "t": [0, 1.7, 0],
+      "r": [0, 0, 0, 1],
+      "radius": 0.23
     }
   ],
   "physics": {
@@ -548,23 +426,12 @@
       {
         "id": "base",
         "type": "fixed",
-        "colliders": [
-          0
-        ],
+        "colliders": [0],
         "parts": [
           "base"
         ],
-        "t": [
-          0,
-          0,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
         "density": 400,
         "friction": 0.6,
         "restitution": 0,
@@ -577,24 +444,12 @@
       {
         "id": "handle",
         "type": "dynamic",
-        "colliders": [
-          1,
-          2
-        ],
+        "colliders": [1, 2],
         "parts": [
           "handle"
         ],
-        "t": [
-          0,
-          0,
-          0
-        ],
-        "r": [
-          0,
-          0,
-          0,
-          1
-        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
         "density": 400,
         "friction": 0.6,
         "restitution": 0,
@@ -611,25 +466,10 @@
         "kind": "hinge",
         "a": "base",
         "b": "handle",
-        "anchorA": [
-          0,
-          0.5,
-          0
-        ],
-        "anchorB": [
-          0,
-          0.5,
-          0
-        ],
-        "axis": [
-          1,
-          0,
-          0
-        ],
-        "limitsDeg": [
-          -40,
-          40
-        ],
+        "anchorA": [0, 0.5, 0],
+        "anchorB": [0, 0.5, 0],
+        "axis": [1, 0, 0],
+        "limitsDeg": [-40, 40],
         "limitsM": null,
         "stiffness": 0,
         "damping": 0,
@@ -640,16 +480,8 @@
   },
   "anchors": {},
   "bounds": {
-    "min": [
-      -0.5,
-      0,
-      -0.45
-    ],
-    "max": [
-      0.5,
-      1.93,
-      0.45
-    ]
+    "min": [-0.5, 0, -0.45],
+    "max": [0.5, 1.93, 0.45]
   },
-  "hash": "243e4459eff2970d34d66b0839573240b86d258077ec90eafc91d1fe30f1d004"
+  "hash": "7153ddfe0b7e6d0d01be474501304f451846bd858e08334303bd99f2c94012c8"
 }

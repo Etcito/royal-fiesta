@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { sdfmText } from '../packages/game/src/gameAsset.ts'
+import { assetDocumentText, assetFileText } from '../packages/game/src/gameAsset.ts'
 
 export type GuardRule =
   | 'binary-ext'
@@ -280,9 +280,18 @@ function modelerAssetViolations(file: string, decoded: string): GuardViolation[]
   if (bad.length > 0) {
     out.push({ path: file, rule: 'asset-not-modeler-valid', detail: `node ids and shape names must match ${NODE_ID}: ${[...new Set(bad)].slice(0, 3).join(', ')}` })
   }
-  const hash = createHash('sha256').update(sdfmText(doc)).digest('hex')
+  const hash = createHash('sha256').update(assetDocumentText(doc)).digest('hex')
   if (asset.hash !== hash) {
     out.push({ path: file, rule: 'asset-not-modeler-valid', detail: 'hash is not the sha256 of the document text SDF Modeler saves; save the asset again from SDF Modeler' })
+  }
+  // The modeler's text is the canonical form: any other layout (compact clips, unrounded numbers, another key order)
+  // would come back as a pure formatting diff on the next modeler save, so it is refused at commit time.
+  const canonical = assetFileText(asset)
+  if (canonical !== decoded) {
+    const a = decoded.split('\n'), b = canonical.split('\n')
+    let line = 0
+    while (line < a.length && a[line] === b[line]) line++
+    out.push({ path: file, rule: 'asset-not-modeler-valid', detail: `text is not the canonical SDF Modeler serialization of its own content (first difference at line ${line + 1}); save the asset again from SDF Modeler or write it with assetFileText` })
   }
   return out
 }

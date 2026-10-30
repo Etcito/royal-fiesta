@@ -229,7 +229,7 @@
         "name": "lumps-a-1",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, -2.8000000000000003]
+          "position": [-4.2, 0, -2.8]
         },
         "smooth": 0.14,
         "children": [
@@ -330,7 +330,7 @@
         "name": "lumps-a-2",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, -1.4000000000000004]
+          "position": [-4.2, 0, -1.4]
         },
         "smooth": 0.14,
         "children": [
@@ -431,7 +431,7 @@
         "name": "lumps-a-3",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, -8.881784197001252e-16]
+          "position": [-4.2, 0, 0]
         },
         "smooth": 0.14,
         "children": [
@@ -532,7 +532,7 @@
         "name": "lumps-a-4",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, 1.3999999999999995]
+          "position": [-4.2, 0, 1.4]
         },
         "smooth": 0.14,
         "children": [
@@ -734,7 +734,7 @@
         "name": "lumps-a-6",
         "kind": "group",
         "transform": {
-          "position": [-4.2, 0, 4.199999999999998]
+          "position": [-4.2, 0, 4.2]
         },
         "smooth": 0.14,
         "children": [
@@ -959,7 +959,7 @@
         "name": "lumps-b-2",
         "kind": "group",
         "transform": {
-          "position": [-3.5, 0, -0.7000000000000002]
+          "position": [-3.5, 0, -0.7]
         },
         "smooth": 0.14,
         "children": [
@@ -1021,7 +1021,7 @@
         "name": "lumps-b-3",
         "kind": "group",
         "transform": {
-          "position": [-3.5, 0, 0.6999999999999993]
+          "position": [-3.5, 0, 0.7]
         },
         "smooth": 0.14,
         "children": [
@@ -1083,7 +1083,7 @@
         "name": "lumps-b-4",
         "kind": "group",
         "transform": {
-          "position": [-3.5, 0, 2.0999999999999996]
+          "position": [-3.5, 0, 2.1]
         },
         "smooth": 0.14,
         "children": [
@@ -2418,5 +2418,5 @@
     "min": [-6.16, -0.63, -6.16],
     "max": [6.16, 0.78, 6.16]
   },
-  "hash": "093bf33b36f5ba74ba16ea4a2750e879c8b6b5c4ee3783c11bfc0d28fcc3fac0"
+  "hash": "b05600f4cbd3d41f1441f951b40ac57928acec6887bf28ffbfdc168965647166"
 }

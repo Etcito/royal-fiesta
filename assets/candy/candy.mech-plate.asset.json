@@ -34,7 +34,79 @@
           "game": "royal-fiesta",
           "id": "candy.mech-plate",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [0, 1, 2, 3],
+                "parts": [
+                  "base"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "plate",
+                "type": "dynamic",
+                "colliders": [4],
+                "parts": [
+                  "plate"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 20,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": [
+              {
+                "id": "travel",
+                "kind": "slider",
+                "a": "base",
+                "b": "plate",
+                "anchorA": [0, -0.08, 0],
+                "anchorB": [0, -0.08, 0],
+                "axis": [0, 1, 0],
+                "limitsDeg": null,
+                "limitsM": [-0.1, 0],
+                "stiffness": 0,
+                "damping": 0,
+                "lengthM": 0,
+                "motor": null
+              },
+              {
+                "id": "return",
+                "kind": "spring",
+                "a": "base",
+                "b": "plate",
+                "anchorA": [0, -0.08, 0],
+                "anchorB": [0, -0.08, 0],
+                "axis": [1, 0, 0],
+                "limitsDeg": null,
+                "limitsM": null,
+                "stiffness": 3000,
+                "damping": 150,
+                "lengthM": 0,
+                "motor": null
+              }
+            ]
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -748,5 +820,5 @@
     "min": [-1, -0.28, -1],
     "max": [1, 0, 1]
   },
-  "hash": "e44d8bd443dadc7de604437ad86203a22cccf522d7bcb5aade8c2c200830d6b6"
+  "hash": "4455cca57c6414068721c8fc5c69c08c8bb3e92c3d98afc07dbdeae9103af601"
 }

@@ -45,7 +45,58 @@
           "game": "royal-fiesta",
           "id": "candy.rotating-door",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [],
+                "parts": [],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "door",
+                "type": "kinematic",
+                "colliders": [0, 1],
+                "parts": [
+                  "collider_door_x",
+                  "collider_door_z",
+                  "frame_x",
+                  "frame_z",
+                  "panel_x",
+                  "panel_z",
+                  "zigzag_x",
+                  "zigzag_z",
+                  "hub",
+                  "hub_ring_lo",
+                  "hub_ring_hi",
+                  "base",
+                  "cap"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": []
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -795,5 +846,5 @@
     "min": [-3, 0, -3],
     "max": [3, 3.68, 3]
   },
-  "hash": "26382de3462989ba1ad3402f7028e3a751becc0dc44086b6c22b39bf02992c48"
+  "hash": "3ff21af8d03d50393e22b1b04114ab6d2e807c33c42dc09ce095846d46406f4e"
 }

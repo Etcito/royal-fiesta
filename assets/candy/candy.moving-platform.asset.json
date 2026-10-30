@@ -38,7 +38,51 @@
           "game": "royal-fiesta",
           "id": "candy.moving-platform",
           "category": "obstacle",
-          "world": "candy"
+          "world": "candy",
+          "physics": {
+            "bodies": [
+              {
+                "id": "base",
+                "type": "fixed",
+                "colliders": [],
+                "parts": [],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              },
+              {
+                "id": "platform",
+                "type": "kinematic",
+                "colliders": [0],
+                "parts": [
+                  "collider",
+                  "rim_low",
+                  "base",
+                  "rim_top",
+                  "pad",
+                  "zigzag"
+                ],
+                "t": [0, 0, 0],
+                "r": [0, 0, 0, 1],
+                "density": 400,
+                "friction": 0.6,
+                "restitution": 0,
+                "linearDamping": 0,
+                "angularDamping": 0.05,
+                "gravityScale": 1,
+                "ccd": false,
+                "surface": "normal"
+              }
+            ],
+            "joints": []
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -744,5 +788,5 @@
     "min": [-2.12, -0.68, -2.12],
     "max": [2.12, 0.56, 2.12]
   },
-  "hash": "cad9fa839f1b64d6e6ae5fea0274c4283603666cb66102aa887f2cc34739a7bd"
+  "hash": "dc66e21921d78a8af12fdf6ca7d55602dd03fb390508c9516ba29489c3da7a19"
 }

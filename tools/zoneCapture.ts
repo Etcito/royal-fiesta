@@ -2,15 +2,18 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { availableParallelism, tmpdir } from 'node:os'
 import { isAbsolute, join, win32 } from 'node:path'
 import { promisify } from 'node:util'
 import { decodePng, unwrapOp } from '../apps/headless/src/gpuRecord.ts'
 import type { ZoneCaptureInput } from '../apps/web/src/zone/zoneOps.ts'
 import { packContent } from './content.ts'
+import { MeshBaker } from './meshBake.ts'
 import { leakScan } from './guard.ts'
 
 const exec = promisify(execFile)
+// A GPU render may run up to the server's job limit (5 minutes, owner rule); the client waits that long.
+const RENDER_LIMIT_MS = 300_000
 const input = {
   width: 1280, height: 720, peers: 8, seatsPerPeer: 2, course: 'race-sprint',
   // Three epochs allow assignment and FAR delivery while retaining the spread spawns.
@@ -53,7 +56,7 @@ async function main(): Promise<void> {
   const client = async (...args: string[]): Promise<string> => {
     // Never inherit stdio: client diagnostics can contain credentials or host paths.
     return (await exec(process.execPath, [clientPath, ...args], {
-      timeout: 60000, killSignal: 'SIGKILL', maxBuffer: 32 * 1024 * 1024,
+      timeout: RENDER_LIMIT_MS, killSignal: 'SIGKILL', maxBuffer: 32 * 1024 * 1024,
     })).stdout
   }
   const publish = async (dir: string): Promise<string> => {
@@ -86,6 +89,13 @@ async function main(): Promise<void> {
   const manifestFile = join(dist, 'nmc.gpu.json')
   const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'))
   assert(manifest.page === 'game.html' && Array.isArray(manifest.ops) && manifest.ops.includes('zoneCapture'))
+  // The page answers content/meshes/<key> from the pack; a missing mesh makes the browser run MAMA itself
+  // for every asset, which outlasts a render. Mesh on the server first (cached in .cache/meshes).
+  stage = 'bake meshes on the server'
+  // A fresh checkout has no mesh cache: spread the assets over the run's cores (bounded for memory).
+  process.env.RF_MESH_JOBS ??= String(Math.min(8, Number(process.env.NMC_CPUS) || Math.max(1, availableParallelism() - 1)))
+  await new MeshBaker().scan()
+  stage = 'prepare built game page'
   packContent(join(dist, 'content'))
   // Adapt the required transport name without changing any source page or declared source op.
   const script = 'zone-capture-transport.js'

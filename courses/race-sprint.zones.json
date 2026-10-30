@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "race-sprint",
+  "grid": {
+    "origin": [-8, -4],
+    "cell": [2, 2],
+    "cols": 8,
+    "rows": 30
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 8
+  }
+}

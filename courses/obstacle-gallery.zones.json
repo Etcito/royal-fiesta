@@ -1,0 +1,20 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "obstacle-gallery",
+  "grid": {
+    "origin": [-32, -4],
+    "cell": [2, 2],
+    "cols": 32,
+    "rows": 36
+  },
+  "parts": {
+    "seesaw-1": "physics",
+    "seesaw-2": "physics",
+    "seesaw-3": "physics",
+    "seesaw-4": "physics"
+  },
+  "tuning": {
+    "gridCols": 32
+  }
+}

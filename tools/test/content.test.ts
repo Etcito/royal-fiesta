@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { buildContentIndex, contentDir, contentPath, packContent } from '../content.ts'
+import { buildContentIndex, contentDir, contentPath, packContent, profileAssetIds } from '../content.ts'
 
 test('index lists sorted stems and worlds, preserves document hashes and packs every byte', () => {
   const dir = mkdtempSync(join(tmpdir(), 'rf-content-'))
@@ -56,12 +56,21 @@ test('content pack includes baked meshes at extensionless cache-key URLs', () =>
     process.env.RF_MESH_CACHE_DIR = join(dir, 'cache')
     const key = 'a'.repeat(64)
     writeFileSync(join(dir, 'cache', key + '.mesh'), new Uint8Array([1, 2, 3]))
-    writeFileSync(join(dir, 'cache', key + '.failed'), 'refused')
+    const failed = 'b'.repeat(64)
+    writeFileSync(join(dir, 'cache', failed + '.failed'), 'refused at /opt/mama/dist/a.js')
     packContent(join(dir, 'out'), dir)
     assert.deepEqual(readFileSync(join(dir, 'out/meshes', key)), Buffer.from([1, 2, 3]))
+    assert.equal(readFileSync(join(dir, 'out/meshes', failed + '.failed'), 'utf8'), 'refused at <path>')
   } finally {
     if (saved === undefined) delete process.env.RF_MESH_CACHE_DIR
     else process.env.RF_MESH_CACHE_DIR = saved
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test('the sprint load set is what the page meshes: playlist, hub, podium and character, not every asset', async () => {
+  const ids = await profileAssetIds('sprint')
+  assert.ok(ids.includes('penguin.body') && ids.includes('candy.checkpoint-gate'))
+  assert.ok(!ids.includes('costume.fish-scarf'))
+  assert.deepEqual(ids, [...ids].sort())
 })

@@ -30,7 +30,11 @@ export class MeshBaker {
   private readonly reported = new Set<string>()
   readonly dir: string
   readonly cache: string
-  constructor(dir = contentDir(), cache = meshCacheDir()) { this.dir = dir; this.cache = cache }
+  // Asset ids to mesh (a page's load set, see profileAssetIds); every asset when absent.
+  readonly only: ReadonlySet<string> | undefined
+  constructor(dir = contentDir(), cache = meshCacheDir(), only?: Iterable<string>) {
+    this.dir = dir; this.cache = cache; this.only = only === undefined ? undefined : new Set(only)
+  }
   scan(): Promise<void> {
     this.running ??= this.bake().finally(() => { this.running = null })
     return this.running
@@ -43,6 +47,7 @@ export class MeshBaker {
     const queue: { asset: GameAsset; key: string }[] = []
     mkdirSync(this.cache, { recursive: true })
     for (const entry of buildContentIndex(this.dir).assets) {
+      if (this.only !== undefined && !this.only.has(entry.id)) continue
       const asset = await parseGameAsset(JSON.parse(readFileSync(join(this.dir, entry.path), 'utf8')), entry.path)
       const key = await meshCacheKey(asset, mama, raa, async bytes => createHash('sha256').update(bytes).digest('hex'))
       queue.push({ asset, key })

@@ -7,7 +7,7 @@ import { isAbsolute, join, win32 } from 'node:path'
 import { promisify } from 'node:util'
 import { decodePng, unwrapOp } from '../apps/headless/src/gpuRecord.ts'
 import type { ZoneCaptureInput } from '../apps/web/src/zone/zoneOps.ts'
-import { packContent } from './content.ts'
+import { packContent, profileAssetIds } from './content.ts'
 import { MeshBaker } from './meshBake.ts'
 import { leakScan } from './guard.ts'
 
@@ -15,6 +15,8 @@ const exec = promisify(execFile)
 // A GPU render may run up to the server's job limit (5 minutes, owner rule); the client waits that long
 // on top of NMC_GPU_WAIT_S, the time a job may queue for a GPU client (another card's render holds the project's slot).
 const RENDER_LIMIT_MS = 300_000
+// The profile the zone page loads (apps/web/src/zone/zoneOps.ts content.load).
+const ZONE_PROFILE = 'sprint'
 const input = {
   width: 1280, height: 720, peers: 8, seatsPerPeer: 2, course: 'race-sprint',
   // Three epochs allow assignment and FAR delivery while retaining the spread spawns.
@@ -102,11 +104,12 @@ async function main(): Promise<void> {
   const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'))
   assert(manifest.page === 'game.html' && Array.isArray(manifest.ops) && manifest.ops.includes('zoneCapture'))
   // The page answers content/meshes/<key> from the pack; a missing mesh makes the browser run MAMA itself
-  // for every asset, which outlasts a render. Mesh on the server first (cached for every worktree, see meshCacheDir).
+  // for every asset, which outlasts a render. Mesh on the server first, only the assets the page's load meshes
+  // (cached by content key for every worktree, see meshCacheDir; a refusal is cached and published as .failed).
   stage = 'bake meshes on the server'
   // A fresh checkout has no mesh cache: spread the assets over the run's cores (bounded for memory).
   process.env.RF_MESH_JOBS ??= String(Math.min(8, Number(process.env.NMC_CPUS) || Math.max(1, availableParallelism() - 1)))
-  await new MeshBaker().scan()
+  await new MeshBaker(undefined, undefined, await profileAssetIds(ZONE_PROFILE)).scan()
   stage = 'prepare built game page'
   packContent(join(dist, 'content'))
   // Adapt the required transport name without changing any source page or declared source op.

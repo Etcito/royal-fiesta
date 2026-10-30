@@ -37,6 +37,11 @@ test('missing service falls back, explicit server refusal does not', async () =>
   const refused: typeof fetch = async () => new Response('bad geometry', { status: 422 })
   await assert.rejects(fetchServerMesh('/', 'key', () => {}, refused), /bad geometry/)
 })
+test('a refusal published on a static host is a refusal, not a local mesh', async () => {
+  const published: typeof fetch = async url => String(url).endsWith('.failed')
+    ? new Response('NotManifold', { status: 200 }) : new Response('', { status: 404 })
+  await assert.rejects(fetchServerMesh('content', 'key', () => {}, published), /NotManifold/)
+})
 test('server wait has a deadline', async () => {
   const busy: typeof fetch = async () => new Response('', { status: 202 })
   await assert.rejects(fetchServerMesh('/', 'key', () => {}, busy, 1), /timed out/)

@@ -2,6 +2,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import type { ProfileName } from '@royal-fiesta/sim/course'
 import { repoRoot } from './bricks.ts'
 
 export interface ContentIndex {
@@ -54,6 +55,19 @@ export function buildContentIndex(dir = contentDir()): ContentIndex {
   return { assets, courses }
 }
 
+// The asset ids a page's SDF load of this profile meshes (apps/web/src/content/sdfLoad.ts), read from disk.
+export async function profileAssetIds(profile: ProfileName, dir = contentDir()): Promise<string[]> {
+  const { assetSet } = await import('../apps/web/src/content/assetSet.ts')
+  const { loadV1Courses } = await import('../apps/web/src/content/v1Data.ts')
+  const index = buildContentIndex(dir)
+  const read = async (url: string | URL | Request): Promise<Response> => {
+    const path = String(url).replace(/^disk:\/\//, '')
+    return new Response(path === 'index.json' ? JSON.stringify(index) : readFileSync(join(dir, path), 'utf8'))
+  }
+  const { courses, byId } = await loadV1Courses(() => {}, { root: 'disk://', fetch: read as typeof fetch })
+  return assetSet(courses, byId, profile)
+}
+
 export function packContent(out: string, dir = contentDir()): ContentIndex {
   const index = buildContentIndex(dir)
   for (const { path } of [...index.assets, ...index.courses]) {
@@ -61,12 +75,17 @@ export function packContent(out: string, dir = contentDir()): ContentIndex {
     mkdirSync(dirname(target), { recursive: true })
     cpSync(join(dir, path), target)
   }
-  // Baked successes are directly addressable by the same key on a static content host.
+  // Baked successes are directly addressable by the same key on a static content host; a server refusal is
+  // published as <key>.failed, so the page leaves the asset out instead of meshing it again in the browser.
   const meshes = meshCacheDir()
   if (existsSync(meshes)) {
     mkdirSync(join(out, 'meshes'), { recursive: true })
     for (const name of readdirSync(meshes)) {
       if (/^[a-f0-9]{64}\.mesh$/.test(name)) cpSync(join(meshes, name), join(out, 'meshes', name.slice(0, -5)))
+      if (/^[a-f0-9]{64}\.failed$/.test(name)) {
+        const reason = readFileSync(join(meshes, name), 'utf8').replace(/(^|[\s('"=])(?:[A-Za-z]:)?[\\/][^\s:)'"]+/g, '$1<path>')
+        writeFileSync(join(out, 'meshes', name), reason)
+      }
     }
   }
   mkdirSync(out, { recursive: true })

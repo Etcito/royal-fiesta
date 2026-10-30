@@ -13,7 +13,7 @@ export async function fetchServerMesh(root: string, key: string, waiting: () => 
       if (!started) return null
       throw new Error('mesh server became unavailable while building meshes')
     }
-    if (response.status === 404) return null
+    if (response.status === 404) return publishedFailure(url, fetcher)
     if (response.status === 422) throw new Error(await response.text())
     if (response.status === 200) {
       try { return decodeMesh(new Uint8Array(await response.arrayBuffer())) } catch { return null }
@@ -28,4 +28,13 @@ export async function fetchServerMesh(root: string, key: string, waiting: () => 
     if (Date.now() >= deadline) throw new Error('timed out waiting for meshes on the server')
     await new Promise(resolve => setTimeout(resolve, Math.min(1000, deadline - Date.now())))
   }
+}
+
+// A static content host cannot answer 422: a mesh the server refused is published as <key>.failed.
+async function publishedFailure(url: string, fetcher: typeof globalThis.fetch): Promise<null> {
+  let response: Response
+  try { response = await fetcher(url + '.failed', { cache: 'no-store', signal: AbortSignal.timeout(10000) }) }
+  catch { return null }
+  if (response.status === 200) throw new Error(await response.text())
+  return null
 }

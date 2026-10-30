@@ -55,3 +55,15 @@ test('baker persists an asset timeout and never retries the failed key', async (
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+test('baker meshes only the asset ids it is given', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rf-bake-'))
+  try {
+    mkdirSync(join(dir, 'assets/candy'), { recursive: true })
+    mkdirSync(join(dir, 'courses'))
+    copyFileSync(join(contentDir(), 'assets/candy/candy.cloud.asset.json'), join(dir, 'assets/candy/candy.cloud.asset.json'))
+    const cache = join(dir, 'cache')
+    await new MeshBaker(dir, cache, ['candy.banner']).scan()
+    assert.deepEqual(readdirSync(cache), [])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})

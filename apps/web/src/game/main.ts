@@ -10,7 +10,7 @@ import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { basisFromFacing } from '@royal-fiesta/game/client/cameraBasis'
 import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
-import { controlsToInput, emptyControls } from '@royal-fiesta/game/client/inputMap'
+import { controlsToInput, emptyControls, mergeControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import { LocalMatch } from '@royal-fiesta/game/client/localMatch'
 import { localPadMapStore } from '@royal-fiesta/game/client/padMap'
@@ -998,6 +998,7 @@ class App {
   private readonly sound = new SoundDriver()
   private readonly orbit = new OrbitCamera()
   private readonly world = neutralInput()
+  private readonly touchScratch = emptyControls()
   // Mobile touch controls and the settings screen's controller remap (both draw on their own canvas).
   private readonly touchRoot: HTMLElement
   private readonly touchOn: boolean
@@ -1373,6 +1374,11 @@ class App {
     } else if (this.input.look.locked) this.input.look.release()
     // Menus read the same keys, so the bean only moves while the game has the controls.
     const controls = this.input.controls(s, !playing)
+    // The hub walks on this move: the virtual stick and buttons count like the keys and the first pad.
+    if (playing && this.touch !== null && this.touch.active) {
+      this.touch.read(this.touchScratch)
+      mergeControls(controls, this.touchScratch)
+    }
     if (playing) controlsToInput(controls, this.orbit.ground(), this.world)
     else Object.assign(this.world, neutralInput())
     if (mode !== null && nav.live) {

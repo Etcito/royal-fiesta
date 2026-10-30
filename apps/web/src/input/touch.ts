@@ -96,7 +96,9 @@ export function mountTouchControls(root: HTMLElement): { readonly active: boolea
       button.held++
     }
     event.preventDefault()
-    canvas.setPointerCapture?.(event.pointerId)
+    // Capture is a convenience: a tap that already ended (or a synthetic pointer) throws InvalidPointerId,
+    // which must never reach the game's error screen.
+    try { canvas.setPointerCapture?.(event.pointerId) } catch { /* no capture, the stick still tracks moves on the canvas */ }
     draw()
   }
 

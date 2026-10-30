@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { Server } from 'node:http'
+import { networkInterfaces } from 'node:os'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { buildContentIndex, contentDir } from './content.ts'
@@ -15,6 +16,8 @@ import { repoRoot } from './bricks.ts'
 // - RF_PLAY_DIST=<dir> serves <dir> instead of apps/web/dist.
 
 const HOST = '127.0.0.1'
+// The server binds every interface so a phone on the same network can open it (RF_PLAY_HOST=127.0.0.1 keeps it local).
+const BIND = process.env.RF_PLAY_HOST ?? '0.0.0.0'
 const DEFAULT_PORT = 5173
 
 const TYPES: Record<string, string> = {
@@ -105,7 +108,7 @@ function listen(server: Server, port: number): Promise<string | null> {
         ? `[bricks] port ${port}: in use; stop the other server`
         : `[bricks] port ${port}: ${error.message}; choose another port with --port`)
     })
-    server.listen(port, HOST, () => resolveListen(null))
+    server.listen(port, BIND, () => resolveListen(null))
   })
 }
 
@@ -171,6 +174,13 @@ export async function play(opts: { check: boolean; port?: number }): Promise<num
     return 1
   }
   console.log(`play: http://localhost:${port}/game.html`)
+  if (BIND !== '127.0.0.1') {
+    for (const list of Object.values(networkInterfaces())) {
+      for (const net of list ?? []) {
+        if (net.family === 'IPv4' && !net.internal) console.log(`play (phone, same network): http://${net.address}:${port}/game.html`)
+      }
+    }
+  }
 
   if (opts.check) {
     try {

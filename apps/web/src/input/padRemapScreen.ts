@@ -74,10 +74,8 @@ export function mountPadRemap(
       }
       context.font = 'bold 22px system-ui'
       context.fillStyle = row?.listening ? ACCENT : '#ffffff'
-      if (row?.listening) {
-        context.fillText(`Press a button for ${row.label}...`, 20, y + ROW_HEIGHT / 2)
-      } else if (row) {
-        context.fillText(row.label, 20, y + ROW_HEIGHT / 2)
+      if (row) {
+        context.fillText(row.listening ? `Press a button for ${row.label}...` : row.label, 20, y + ROW_HEIGHT / 2)
         const name = BUTTON_NAMES[row.button]
         context.textAlign = 'right'
         context.fillText(`Button ${row.button}${name ? ` [${name}]` : ''}`, PANEL_WIDTH - 20, y + ROW_HEIGHT / 2)

@@ -84,7 +84,7 @@ export function exposeAddress(port: number): Promise<string> {
 export async function startZoneGateRelay(): Promise<ZoneGateRelay> {
   const dir = relayDir()
   process.env.GAMESALOON_DIR = dir
-  const server = await startGameSaloon({ env: { HOST: '0.0.0.0', RELAY_GAMES: 'royal-fiesta:64' }, timeoutMs: 20000 })
+  const server = await startGameSaloon({ env: { HOST: '0.0.0.0', RELAY_GAMES: 'royal-fiesta:64', RELAY_BIN_RATE_PER_SEC: '8000' }, timeoutMs: 20000 })
   return {
     localUrl: `ws://127.0.0.1:${server.port}/ws`,
     logs: server.logs,

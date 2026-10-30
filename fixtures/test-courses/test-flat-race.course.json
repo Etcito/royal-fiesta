@@ -1,0 +1,315 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 0,
+  "id": "test-flat-race",
+  "name": "Test Flat Race",
+  "kind": "race",
+  "profiles": [
+    "standard",
+    "sprint"
+  ],
+  "assetsManifest": null,
+  "timeLimitS": 30,
+  "killPlaneY": -12,
+  "spawns": [
+    {
+      "t": [
+        -9.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -8.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -7.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -6.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -5.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -4.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -3.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -2.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -1.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -0.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        0.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        1.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        2.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        3.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        4.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        5.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        6.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        7.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        8.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        9.5,
+        1,
+        1
+      ],
+      "yawDeg": 0
+    }
+  ],
+  "checkpoints": [],
+  "finish": {
+    "center": [
+      0,
+      1.5,
+      55
+    ],
+    "half": [
+      30,
+      2,
+      1
+    ]
+  },
+  "path": [
+    {
+      "p": [
+        0,
+        1,
+        8
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        20
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        32
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        44
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        56
+      ],
+      "jump": false,
+      "dive": false
+    }
+  ],
+  "regions": [
+    {
+      "id": 0,
+      "center": [
+        0,
+        2,
+        10
+      ],
+      "half": [
+        32,
+        10,
+        16
+      ],
+      "adjacent": [
+        1
+      ]
+    },
+    {
+      "id": 1,
+      "center": [
+        0,
+        2,
+        38
+      ],
+      "half": [
+        32,
+        10,
+        12
+      ],
+      "adjacent": [
+        0,
+        2
+      ]
+    },
+    {
+      "id": 2,
+      "center": [
+        0,
+        2,
+        58
+      ],
+      "half": [
+        32,
+        10,
+        8
+      ],
+      "adjacent": [
+        1
+      ]
+    }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "floor",
+      "asset": "floor-tile",
+      "t": [
+        0,
+        -0.5,
+        30
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        6,
+        1,
+        7
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    }
+  ]
+}

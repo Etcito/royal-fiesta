@@ -181,6 +181,16 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
           own = roundResultOf(plan, result, current.seatOf)
           remember(r, cfg.localPeer, own)
           rt.sendResult(recipients, encodeRoundResult(own))
+        } else if (!own && ledger === null) {
+          // A peer that replicates no global domain holds no ledger, so it adopts (and passes on) the result of the
+          // first peer that has one; every peer settles on results from all open peers, so it must send one too.
+          const received = results.get(r)
+          const adopted = received === undefined ? undefined : peers.map(peer => received.get(peer)).find(value => value !== undefined)
+          if (adopted !== undefined) {
+            own = adopted
+            remember(r, cfg.localPeer, own)
+            rt.sendResult(recipients, encodeRoundResult(own))
+          }
         }
       } else {
         rt.drain(scratch)

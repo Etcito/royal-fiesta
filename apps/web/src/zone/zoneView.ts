@@ -27,6 +27,7 @@ import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import { motionPose } from '@royal-fiesta/sim/obstacles/motion'
 import { refuse } from '@royal-fiesta/sim/refusal'
+import type { BodyRef, MechEvent } from '@royal-fiesta/sim/mechanismSpec'
 import type { Pose } from '@royal-fiesta/sim/vec'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
@@ -244,6 +245,21 @@ class DomainSceneSim {
     const domain = this.reference
     if (domain === null) return motionPose(this.courseData.obstacles[i], 0, 0, out)
     return domain.obstacles.pose(i, domain.tick, out)
+  }
+
+  mechanismBodyPose(ref: BodyRef, out: Pose): boolean {
+    const domain = this.reference
+    return domain !== null && domain.mechanisms.bodyPose(domain.ctx, ref, out)
+  }
+
+  mechanismEvents(fromTick: number, out: MechEvent[]): number {
+    const domain = this.reference
+    return domain === null ? 0 : domain.mechanisms.events(fromTick, out)
+  }
+
+  signal(id: string): boolean {
+    const domain = this.reference
+    return domain !== null && domain.mechLogic.signal(id)
   }
 
   // SceneView wraps step() to observe each simulation tick; the zone session steps its own domains.

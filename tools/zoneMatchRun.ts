@@ -12,6 +12,8 @@ import type { ZoneGateRelay } from './zoneGateRelay.ts'
 // A small helper reads NMC_CPUS, but this is not a sweep: all 15 peers belong to ONE match and
 // must run concurrently, so the sandbox CPU cap does not apply here.
 async function main(): Promise<number> {
+  // The gate checks netcode and domains only: it plays the dedicated flat test courses, never the shipped levels.
+  process.env.ZONE_COURSES_DIR ??= 'fixtures/test-courses'
   const root = repoRoot()
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
   const lines: string[] = []
@@ -27,7 +29,7 @@ async function main(): Promise<number> {
       '--peers', '15',
       '--seats', '4',
       '--players', '15',
-      '--course', 'race-sprint',
+      '--course', 'test-flat-race',
       '--seconds', '1800',
     ]
     code = await new Promise<number>((resolveExit, reject) => {

@@ -11,6 +11,12 @@ import { MAX_ZONE_PEERS, RELAY_BIN_RATE_PER_SEC, RELAY_MAX_BIN_BYTES, ZONE_BIN_I
 const PART_FLAG = 2
 const BATCH_FLAG = 4
 const BATCH_ENTRY_HEADER = 3
+/**
+ * Frames the client sends per rolling second. The relay refuses a socket at RELAY_BIN_RATE_PER_SEC frames in one of its
+ * windows, counted on arrival: a busy process delivers a late burst on top of the next window's frames, so the sender
+ * keeps well under the cap.
+ */
+export const ZONE_FRAME_BUDGET_PER_SEC = Math.floor(RELAY_BIN_RATE_PER_SEC * 0.6)
 /** Most payload bytes of one batch frame (the relay cap minus the relay header). */
 const BATCH_MAX_BYTES = RELAY_MAX_BIN_BYTES - ZONE_BIN_IN_HEADER
 /** Part header: flags, u16 part index, u16 part count. */
@@ -48,7 +54,7 @@ export class ZoneRelayTransport implements GroupTransport {
   private allClosed = false
   private inbox: Packet[] = []
   private pending: Pending[] = []
-  private batch: Batch | null = null
+  private batches: Batch[] = []
   private readonly batching: boolean
   private sentAt: number[] = []
   private assembling: (Assembly | null)[]
@@ -74,7 +80,7 @@ export class ZoneRelayTransport implements GroupTransport {
         this.assembling[ev.seat] = null
       }
     })
-    client.onClose(() => { this.allClosed = true; this.pending = []; this.batch = null })
+    client.onClose(() => { this.allClosed = true; this.pending = []; this.batches = [] })
   }
 
   send(peer: number, ch: NetChannel, data: Uint8Array): void { this.sendMany([peer], ch, data) }
@@ -93,7 +99,7 @@ export class ZoneRelayTransport implements GroupTransport {
       return
     }
     // A packet of its own: what was queued before it goes out first, then it, in order.
-    this.closeBatch()
+    this.closeBatches()
     const frames = this.split(ch, data)
     // Older reliable packets always get the first available budget slots.
     this.drainPending()
@@ -111,19 +117,27 @@ export class ZoneRelayTransport implements GroupTransport {
 
   /** Call once per page/bot frame, after the frame's sends: emits the open batch and releases deferred packets in order. */
   flush(): void {
-    if (this.allClosed) { this.pending = []; this.batch = null; return }
-    this.closeBatch()
+    if (this.allClosed) { this.pending = []; this.batches = []; return }
+    this.closeBatches()
     this.drainPending()
   }
 
   private enqueue(lo: number, hi: number, ch: NetChannel, data: Uint8Array): void {
-    let batch = this.batch
     const need = BATCH_ENTRY_HEADER + data.byteLength
-    if (batch !== null && (batch.lo !== lo || batch.hi !== hi || batch.size + need > BATCH_MAX_BYTES)) {
-      this.closeBatch()
-      batch = null
+    // Per receiver the order of packets is kept: a packet joins the last batch that shares a receiver with it, and only
+    // when that batch is for exactly the same peers; batches for disjoint peers are free to reorder.
+    let batch: Batch | undefined
+    for (let i = this.batches.length - 1; i >= 0; i--) {
+      const other = this.batches[i]
+      if ((other.lo & lo) !== 0 || (other.hi & hi) !== 0) {
+        if (other.lo === lo && other.hi === hi && other.size + need <= BATCH_MAX_BYTES) batch = other
+        break
+      }
     }
-    if (batch === null) batch = this.batch = { lo, hi, entries: [], size: 1, reliable: false }
+    if (batch === undefined) {
+      batch = { lo, hi, entries: [], size: 1, reliable: false }
+      this.batches.push(batch)
+    }
     const entry = new Uint8Array(need)
     entry[0] = ch === 'reliable' ? 1 : 0
     entry[1] = data.byteLength & 0xff
@@ -134,11 +148,14 @@ export class ZoneRelayTransport implements GroupTransport {
     if (ch === 'reliable') batch.reliable = true
   }
 
-  /** Turns the open batch into one queued frame: a lone packet keeps the plain single-packet layout. */
-  private closeBatch(): void {
-    const batch = this.batch
-    if (batch === null) return
-    this.batch = null
+  /** Turns the open batches into queued frames, in order: a lone packet keeps the plain single-packet layout. */
+  private closeBatches(): void {
+    const batches = this.batches
+    this.batches = []
+    for (const batch of batches) this.closeBatch(batch)
+  }
+
+  private closeBatch(batch: Batch): void {
     let payload: Uint8Array
     if (batch.entries.length === 1) {
       const entry = batch.entries[0]
@@ -276,7 +293,7 @@ export class ZoneRelayTransport implements GroupTransport {
     let expired = 0
     while (expired < this.sentAt.length && t - this.sentAt[expired] >= 1000) expired++
     if (expired > 0) this.sentAt.splice(0, expired)
-    return Math.max(0, RELAY_BIN_RATE_PER_SEC - this.sentAt.length)
+    return Math.max(0, ZONE_FRAME_BUDGET_PER_SEC - this.sentAt.length)
   }
 
   private emit(packet: Pending, t: number): void {

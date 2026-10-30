@@ -6,7 +6,7 @@ import { parseZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
 import { ZoneRelayClient, type ZoneWsLike } from '../src/net/zoneRelayClient.ts'
 import { RELAY_BIN_RATE_PER_SEC, RELAY_MAX_BIN_BYTES, type ZoneQueuePayload } from '../src/net/zoneRelayProtocol.ts'
-import { ZoneRelayTransport } from '../src/net/zoneRelayTransport.ts'
+import { ZONE_FRAME_BUDGET_PER_SEC, ZoneRelayTransport } from '../src/net/zoneRelayTransport.ts'
 import { mergeZoneTuning } from '../src/net/zoneTuning.ts'
 
 // The test plays the server; retain frames as passed so copying bugs remain visible.
@@ -172,27 +172,28 @@ test('rate guard drops fast and defers reliable until the next window flush', as
   let now = 0
   const tr = new ZoneRelayTransport(client, 0, 2, () => now, { batch: false })
   assert.equal(RELAY_BIN_RATE_PER_SEC, 2000)
-  for (let i = 0; i < 2000; i++) tr.send(1, 'fast', new Uint8Array([i & 255]))
-  assert.equal(ws.binary.length, 2000)
+  assert.equal(ZONE_FRAME_BUDGET_PER_SEC, 1200)
+  for (let i = 0; i < ZONE_FRAME_BUDGET_PER_SEC; i++) tr.send(1, 'fast', new Uint8Array([i & 255]))
+  assert.equal(ws.binary.length, ZONE_FRAME_BUDGET_PER_SEC)
   tr.send(1, 'fast', new Uint8Array([99]))
   const data = new Uint8Array([11])
   tr.send(1, 'reliable', data)
   data[0] = 12
   tr.send(1, 'reliable', data)
   data.fill(0)
-  assert.equal(ws.binary.length, 2000)
+  assert.equal(ws.binary.length, ZONE_FRAME_BUDGET_PER_SEC)
   assert.equal(tr.stats.droppedFast, 1)
   assert.equal(tr.stats.deferredReliable, 2)
   now = 999
   tr.flush()
-  assert.equal(ws.binary.length, 2000)
+  assert.equal(ws.binary.length, ZONE_FRAME_BUDGET_PER_SEC)
   now = 1000
-  assert.equal(ws.binary.length, 2000, 'clock advancement alone does not send')
+  assert.equal(ws.binary.length, ZONE_FRAME_BUDGET_PER_SEC, 'clock advancement alone does not send')
   tr.flush()
-  assert.deepEqual(ws.binary.slice(2000).map(f => [...f.subarray(10)]), [[1, 11], [1, 12]])
-  assert.equal(tr.stats.frames, 2002)
+  assert.deepEqual(ws.binary.slice(ZONE_FRAME_BUDGET_PER_SEC).map(f => [...f.subarray(10)]), [[1, 11], [1, 12]])
+  assert.equal(tr.stats.frames, ZONE_FRAME_BUDGET_PER_SEC + 2)
   tr.flush()
-  assert.equal(ws.binary.length, 2002, 'deferred packets are sent only once')
+  assert.equal(ws.binary.length, ZONE_FRAME_BUDGET_PER_SEC + 2, 'deferred packets are sent only once')
 })
 
 /** Delivers each frame the sender's socket emitted to the receiver as the relay would (sender id in the out header). */
@@ -265,22 +266,22 @@ test('split fast packets are dropped whole over budget; split reliable parts def
   let now = 0
   const tx = new ZoneRelayTransport(a.client, 0, 2, () => now, { batch: false })
   const rx = new ZoneRelayTransport(b.client, 1, 2, () => now)
-  for (let i = 0; i < RELAY_BIN_RATE_PER_SEC - 1; i++) tx.send(1, 'fast', new Uint8Array([i & 255]))
+  for (let i = 0; i < ZONE_FRAME_BUDGET_PER_SEC - 1; i++) tx.send(1, 'fast', new Uint8Array([i & 255]))
   const big = bytes(2 * RELAY_MAX_BIN_BYTES, 3)
   tx.send(1, 'fast', big)
   assert.equal(tx.stats.droppedFast, 1)
-  assert.equal(a.ws.binary.length, RELAY_BIN_RATE_PER_SEC - 1)
+  assert.equal(a.ws.binary.length, ZONE_FRAME_BUDGET_PER_SEC - 1)
   tx.send(1, 'reliable', big)
-  assert.equal(a.ws.binary.length, RELAY_BIN_RATE_PER_SEC)
+  assert.equal(a.ws.binary.length, ZONE_FRAME_BUDGET_PER_SEC)
   assert.equal(tx.stats.deferredReliable, 2)
   now = 1000
   tx.flush()
-  assert.equal(a.ws.binary.length, RELAY_BIN_RATE_PER_SEC + 2)
+  assert.equal(a.ws.binary.length, ZONE_FRAME_BUDGET_PER_SEC + 2)
   relay(a.ws, 0, 0, b.ws)
   const out: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
   rx.drain(out)
   assert.equal(rx.malformed, 0)
-  assert.equal(out.length, RELAY_BIN_RATE_PER_SEC)
+  assert.equal(out.length, ZONE_FRAME_BUDGET_PER_SEC)
   assert.ok(Buffer.from(out[out.length - 1].data).equals(Buffer.from(big)))
 })
 
@@ -316,7 +317,7 @@ test('small packets for the same peers travel in one batch frame, in order, and 
   tx.send(1, 'fast', new Uint8Array([10]))
   assert.equal(a.ws.binary.length, 0)
   tx.flush()
-  assert.equal(a.ws.binary.length, 3, 'one batch for peer 1, one frame for peer 2, one for peer 1 again')
+  assert.equal(a.ws.binary.length, 2, 'one batch for peer 1 (its later packet joins it past the peer 2 frame), one frame for peer 2')
   relay(a.ws, 0, 0, b.ws)
   const out: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
   rx.drain(out)
@@ -326,6 +327,7 @@ test('small packets for the same peers travel in one batch frame, in order, and 
     assert.ok(Buffer.from(out[i].data).equals(Buffer.from(sent[i])), `packet ${i}`)
     assert.equal(out[i].ch, i % 7 === 0 ? 'reliable' : 'fast')
   }
+  assert.deepEqual([out[100].data[0], out[101].data[0]], [10, 9], 'peer 1 packets first, then the peer 2 frame')
 })
 
 test('a truncated batch frame is counted malformed and delivers nothing', async () => {
@@ -337,4 +339,24 @@ test('a truncated batch frame is counted malformed and delivers nothing', async 
   rx.drain(out)
   assert.equal(out.length, 0)
   assert.equal(rx.malformed, 2)
+})
+
+test('batching keeps per-receiver order across interleaved masks and merges only exact-mask neighbours', async () => {
+  const a = await connected(), b = await connected()
+  const tx = new ZoneRelayTransport(a.client, 0, 4, () => 0)
+  // peers 1 and 2 alone, then both, interleaved: [1] x, [2] y, [1] z merge (disjoint masks do not separate them),
+  // but [1,2] w stays after both and [1] v after w.
+  tx.send(1, 'fast', new Uint8Array([1]))
+  tx.send(2, 'fast', new Uint8Array([2]))
+  tx.send(1, 'fast', new Uint8Array([3]))
+  tx.sendMany([1, 2], 'fast', new Uint8Array([4]))
+  tx.send(1, 'fast', new Uint8Array([5]))
+  tx.flush()
+  assert.equal(a.ws.binary.length, 4, 'peer 1 batch, peer 2 frame, the pair frame, peer 1 again')
+  const rx1 = new ZoneRelayTransport(b.client, 1, 4, () => 0)
+  relay(a.ws, 0, 0, b.ws)
+  const out1: { peer: number; ch: 'fast' | 'reliable'; data: Uint8Array }[] = []
+  rx1.drain(out1)
+  // The fake relay delivers every frame to everyone; the order of the bytes each receiver would get is what counts.
+  assert.deepEqual(out1.map(p => p.data[0]), [1, 3, 2, 4, 5])
 })

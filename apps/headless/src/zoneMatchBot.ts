@@ -75,7 +75,8 @@ export interface ZoneMatchBot {
 }
 
 const PROFILE: ProfileName = 'sprint'
-const COURSES_DIR = 'fixtures/courses'
+// ZONE_COURSES_DIR picks another course folder (the gates use fixtures/test-courses: flat, wide, no mechanisms).
+const COURSES_DIR = process.env.ZONE_COURSES_DIR ?? 'fixtures/courses'
 const BOT_MEASUREMENTS: ZoneMatchBotMeasurements = { cpuMs: 4, bandwidthKbps: 4096, latencyMs: 30, spareSlots: 3 }
 const POST_DONE_MS = 2000
 
@@ -121,7 +122,7 @@ async function sprintZones(courses: readonly ResolvedCourse[]): Promise<Map<stri
   ]
   for (const index of indices) {
     const course = courses[index]
-    zones.set(course.id, await loadZonesFile(course.id, course, readRepoText))
+    zones.set(course.id, await loadZonesFile(course.id, course, path => readRepoText(path.replace(/^courses\//, `${COURSES_DIR}/`))))
   }
   return zones
 }

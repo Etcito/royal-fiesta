@@ -1,0 +1,70 @@
+{
+  "job_id": "b4d3001b93ce12cf7b10b78160cce497",
+  "client_id": "08906386e86999c05c82aa90",
+  "result": {
+    "renderer": "raa",
+    "adapter": {
+      "software": false
+    },
+    "width": 1280,
+    "height": 960,
+    "captures": [
+      {
+        "name": "candy.mech-seesaw-rest.png",
+        "asset": "candy.mech-seesaw",
+        "pose": "rest",
+        "parts": [
+          [
+            "base"
+          ],
+          [
+            "plank"
+          ]
+        ],
+        "triangles": 1920
+      },
+      {
+        "name": "candy.mech-seesaw-limit.png",
+        "asset": "candy.mech-seesaw",
+        "pose": "limit",
+        "parts": [
+          [
+            "base"
+          ],
+          [
+            "plank"
+          ]
+        ],
+        "triangles": 1920
+      },
+      {
+        "name": "candy.mech-plate-rest.png",
+        "asset": "candy.mech-plate",
+        "pose": "rest",
+        "parts": [
+          [
+            "base"
+          ],
+          [
+            "plate"
+          ]
+        ],
+        "triangles": 1516
+      },
+      {
+        "name": "candy.mech-plate-limit.png",
+        "asset": "candy.mech-plate",
+        "pose": "limit",
+        "parts": [
+          [
+            "base"
+          ],
+          [
+            "plate"
+          ]
+        ],
+        "triangles": 1516
+      }
+    ]
+  }
+}

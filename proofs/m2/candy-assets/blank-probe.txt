@@ -1,0 +1,3 @@
+{"job_id":"951171a9b43d59c5a5e50a7544a6f156","client_id":"08906386e86999c05c82aa90","output":"/root/nmc/worktrees/81/6029/out/candy-assets-probe"}
+GPU job 951171a9b43d59c5a5e50a7544a6f156: running
+done

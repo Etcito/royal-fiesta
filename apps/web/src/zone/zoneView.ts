@@ -32,7 +32,7 @@ import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { browserAssetResolver, browserCourses, preloadAssets } from '../client/sources.ts'
-import { createRaaPort } from '../render/raaPort.ts'
+import { zoneContent } from './zoneContent.ts'
 
 const ZONE_PREFIX = '../../../../'
 const SIDECARS = import.meta.glob<string>('../../../../courses/*.zones.json', {
@@ -64,14 +64,14 @@ export interface ZoneViewOptions {
   height?: number
   /** Fixture asset lookup; defaults to preloadAssets of the chosen course. */
   assets?: (name: string) => PrimsAsset
-  /** The character asset for SceneView; the unskinned bean when absent. */
+  /** The full normal-match character asset for SceneView. */
   character?: PrimsAsset
   /** The asset FarRenderer draws (and SceneView's fallback); assets('bean') when absent. */
   bean?: PrimsAsset
-  /** Only a skinning port uses this; the RAA port keeps the rigid character. */
+  /** Normal-match skin and animation graph for the near characters. */
   skinned?: SkinnedCharacter
   dressing?: CourseDressing
-  /** Builds and initialises the render port, e.g. GameContent.createPort; a plain RAA port when absent. */
+  /** Builds the render port; normal SDF match content is loaded when absent. */
   createPort?: (target: RenderTarget) => Promise<RenderPort>
 }
 
@@ -122,22 +122,27 @@ function readSidecar(course: ResolvedCourse): Promise<ZonesFile> {
   })
 }
 
-// Spawn points spread along the course path: the first seat starts at the start and the last one near
-// the end, so the near graph splits into several domains instead of one pack on the start platform.
+// Keep distinct lanes within each peer's pack. Sampling walkable path nodes avoids
+// spawning in the gaps, while skipping jump nodes keeps the capture on platforms.
 function spreadAlongPath(course: ResolvedCourse, seats: number): ResolvedCourse {
-  const path = course.path
+  const path = course.path.filter(node => !node.jump)
   if (path.length === 0) return course
+  const lanes = 4
   const spawns: SpawnPoint[] = []
   for (let seat = 0; seat < seats; seat++) {
-    const at = seats <= 1 ? 0 : Math.round(seat * (path.length - 1) / (seats - 1))
-    const node = path[at]
-    const ahead = path[Math.min(path.length - 1, at + 1)]
+    const row = Math.floor(seat / lanes)
+    const node = path[Math.min(row, path.length - 1)]
+    const ahead = path[Math.min(row + 1, path.length - 1)]
     const dx = ahead.p.x - node.p.x
     const dz = ahead.p.z - node.p.z
     const len = Math.hypot(dx, dz)
+    const fx = len > 0 ? dx / len : 0
+    const fz = len > 0 ? dz / len : 1
+    const count = Math.min(lanes, seats - row * lanes)
+    const lane = (seat % lanes - (count - 1) / 2) * 1.5
     spawns.push({
-      t: { x: node.p.x, y: node.p.y, z: node.p.z },
-      facing: len > 0 ? { x: dx / len, z: dz / len } : { x: 0, z: 1 },
+      t: { x: node.p.x + lane * fz, y: node.p.y, z: node.p.z - lane * fx },
+      facing: { x: fx, z: fz },
     })
   }
   return { ...course, spawns }
@@ -245,6 +250,9 @@ class DomainSceneSim {
 
 export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView> {
   checkOptions(options)
+  if (options.createPort === undefined) {
+    options = { ...options, ...await zoneContent(options.profile ?? 'sprint') }
+  }
   const peers = options.peers ?? 4
   const seatsPerPeer = options.seatsPerPeer ?? 2
   const localPeer = options.localPeer ?? 0
@@ -277,13 +285,7 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
   const width = Math.max(1, options.width ?? options.canvas.width)
   const height = Math.max(1, options.height ?? options.canvas.height)
   const target: RenderTarget = { canvas: options.canvas, width, height, viewports: [{ x: 0, y: 0, width, height }] }
-  let port: RenderPort
-  if (options.createPort !== undefined) {
-    port = await options.createPort(target)
-  } else {
-    port = await createRaaPort()
-    await port.init(target)
-  }
+  const port = await options.createPort!(target)
 
   const loopback = new ZoneLoopback(peers, {
     seed,
@@ -343,7 +345,13 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
   orbit.reset(0)
   const scene = new SceneView({
     port, viewport: 0, localPlayer: roster.peers[localPeer].seats[0], assets, bean,
-    character, skinned: options.skinned, dressing: options.dressing, camera: focus => orbit.pose(focus),
+    character, skinned: options.skinned, dressing: options.dressing,
+    // An overview along the course keeps the whole foreground pack and downstream FAR rows visible.
+    camera: focus => spread ? {
+      eye: [course.path[0].p.x, course.path[0].p.y + 5, course.path[0].p.z - 9],
+      target: [course.path[0].p.x, course.path[0].p.y, course.path[0].p.z + 12],
+      fovYDeg: 52, near: 0.1, far: 500,
+    } : orbit.pose(focus),
   })
   const far = new FarRenderer({
     port, bean, feed, holdsLocalSeat: seat => adapter.holdsSeat(seat),

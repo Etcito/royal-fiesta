@@ -1,4 +1,5 @@
 [
   ".nmc/commands.json",
-  ".nmc/artifacts.json"
+  ".nmc/artifacts.json",
+  "out/m4/zone-view.png"
 ]

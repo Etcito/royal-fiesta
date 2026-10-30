@@ -15,8 +15,7 @@
     <div id="hud"></div>
     <script type="module">
       import { parseQuery } from '/src/client/query.ts'
-      import { pickContent } from '/src/content/source.ts'
-      import { skinnedCharacterOf } from '/src/content/providers/sdf.ts'
+      import { zoneContent } from '/src/zone/zoneContent.ts'
       import { mountZoneView } from '/src/zone/zoneView.ts'
 
       const canvas = document.querySelector('#zone')
@@ -41,24 +40,11 @@
         const seats = Number(params.get('seats') ?? 2)
         const course = params.get('course') ?? undefined
         const spread = params.get('spread') !== '0'
-        // ?content= adds the content provider's skinned character and course environment, as game.html does.
-        // The fixture assets stay the geometry: the RAA port draws prims, not SDF meshes.
-        let skinned
-        let dressing
-        if (params.has('content')) {
-          try {
-            const content = pickContent(params)
-            await content.load(q.profile, () => {})
-            skinned = skinnedCharacterOf(content)
-            dressing = content.dressing()
-          } catch (e) {
-            console.warn('[zone] content unavailable; using fixture assets', e)
-          }
-        }
+        const content = await zoneContent(q.profile)
         fit(canvas)
         const view = await mountZoneView({
           canvas, peers, seatsPerPeer: seats, seed: q.seed, profile: q.profile, courseId: course, spreadSpawns: spread,
-          skinned, dressing,
+          ...content,
         })
         window.zoneView = view
         hud.textContent = `zone match: ${peers} peers x ${seats} seats`

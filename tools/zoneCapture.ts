@@ -19,8 +19,8 @@ const RENDER_LIMIT_MS = 300_000
 const ZONE_PROFILE = 'sprint'
 const input = {
   width: 1280, height: 720, peers: 8, seatsPerPeer: 2, course: 'race-sprint',
-  // Three epochs allow assignment and FAR delivery while retaining the spread spawns.
-  seconds: 3,
+  // One epoch establishes the domains and FAR stream before bots converge on the path.
+  seconds: 1.2,
 } satisfies ZoneCaptureInput
 const secrets = Object.entries(process.env)
   .filter(([key, value]) => /TOKEN|SECRET|PASSWORD|API_KEY/.test(key) && value)

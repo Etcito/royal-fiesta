@@ -253,7 +253,8 @@ export async function main(argv: string[]): Promise<number> {
         return refuse(AREA, label, 'could not start; fix the command or the client script')
       }
       if (result.code !== 0) {
-        console.error(`[judge] ${name} ${label} exited with ${result.code}; stopping`)
+        // stdout, so a runner that keeps only the stdout tail still shows the failing step.
+        console.log(`[judge] ${name} step ${i + 1}/${commands.length} '${label}' failed: exited with ${result.code}; stopping`)
         return 1
       }
       if (label === 'publish') pageRef = pageRefOf(result.stdout)
@@ -262,7 +263,7 @@ export async function main(argv: string[]): Promise<number> {
     return 0
   } catch (e) {
     if (!isRefusal(e)) throw e
-    console.error(e.message)
+    console.log(`[judge] failed: ${e.message}`)
     return 1
   }
 }

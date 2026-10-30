@@ -55,6 +55,25 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   }
 }
 
+// A frame between uploads lets a loading screen paint; a timer bounds the wait, since requestAnimationFrame
+// fires rarely or never in the GPU client browser (an off-screen cross-origin frame).
+const UPLOAD_YIELD_MS = 50
+function paintOrTimer(): Promise<void> {
+  return new Promise<void>(resolve => {
+    let frame: number | null = null
+    let settled = false
+    const done = (): void => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      if (frame !== null) cancelAnimationFrame(frame)
+      resolve()
+    }
+    const timer = setTimeout(done, UPLOAD_YIELD_MS)
+    if (typeof requestAnimationFrame === 'function') frame = requestAnimationFrame(done)
+  })
+}
+
 class SdfRenderPort implements SkinnedRenderPort {
   readonly kind = 'raa' as const
   private readonly meshed: ReadonlyMap<string, MeshedAsset>
@@ -103,7 +122,7 @@ class SdfRenderPort implements SkinnedRenderPort {
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i]
       onProgress({ phase: 'upload', done: i, total: ids.length, label: `Uploading ${id}` })
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      await paintOrTimer()
       const start = performance.now()
       this.registerAsset(id, { id } as PrimsAsset)
       const end = performance.now()

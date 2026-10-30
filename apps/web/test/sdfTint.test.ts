@@ -39,6 +39,7 @@ test('upload creates no draw pipelines and palette instances share graph materia
   runInNewContext(compiled, {
     exports, meshed, Float32Array, Float64Array, Uint32Array, performance,
     requestAnimationFrame: (callback: (time: number) => void) => callback(0),
+    cancelAnimationFrame: () => {}, setTimeout, clearTimeout,
     require(id: string): unknown {
       if (id === './materialProgram.ts') return { materialProgram }
       if (id === '@royal-fiesta/game/render/roundLoad') return { roundStep: (_name: string, fn: () => unknown) => fn() }

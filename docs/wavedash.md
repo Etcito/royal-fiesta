@@ -123,7 +123,8 @@ frame; `?probe=0` still turns it off), runs `apps/web/src/platform/probe.ts` nex
   parameter keys;
 - `headers`: the page's own CSP, COEP, COOP, CORP and Permissions-Policy response headers;
 - `storage`: localStorage and indexedDB.open;
-- `websocket`: `wss://echo.websocket.events` (open, echo, or error);
+- `websocket-1`, `websocket-2`: `wss://echo.websocket.events` and `wss://ws.postman-echo.com/raw` (open, echo, or
+  error). The first did not answer anywhere on 2026-10-30, so only the second tells whether the frame allows sockets;
 - `webrtc`: ICE gathering with `stun:stun.l.google.com:19302` (an `srflx` candidate means STUN is reachable);
 - `fetch-cors` (`https://api.github.com/zen`) and `fetch-no-cors` (`https://www.google.com/favicon.ico`, which COEP
   blocks unless the host sends CORP);

@@ -6,7 +6,8 @@
 // With the probe on, Wavedash.init() is called at once so the panel is visible even if the boot stalls.
 import { wavedashReady, wavedashSdk } from './wavedash.ts'
 
-export const PROBE_WS = 'wss://echo.websocket.events'
+// Two public echo servers: echo.websocket.events did not answer on 2026-10-30, ws.postman-echo.com did (101).
+export const PROBE_WS: readonly string[] = ['wss://echo.websocket.events', 'wss://ws.postman-echo.com/raw']
 export const PROBE_STUN = 'stun:stun.l.google.com:19302'
 export const PROBE_CORS = 'https://api.github.com/zen'
 export const PROBE_NO_CORS = 'https://www.google.com/favicon.ico'
@@ -85,18 +86,18 @@ async function storageProbe(): Promise<ProbeResult> {
   return out
 }
 
-function wsProbe(): Promise<ProbeResult> {
+function wsProbe(url: string): Promise<ProbeResult> {
   const t0 = performance.now()
   return new Promise(resolve => {
     let ws: WebSocket
     const done = (r: ProbeResult): void => {
       clearTimeout(timer)
       try { ws.close() } catch { /* already closed */ }
-      resolve({ url: PROBE_WS, ms: Math.round(performance.now() - t0), ...r })
+      resolve({ url, ms: Math.round(performance.now() - t0), ...r })
     }
     const timer = setTimeout(() => done({ result: 'no answer in 8 s', readyState: ws?.readyState }), ITEM_MS)
     try {
-      ws = new WebSocket(PROBE_WS)
+      ws = new WebSocket(url)
     } catch (e) {
       done({ result: 'blocked (constructor threw)', error: messageOf(e) })
       return
@@ -182,8 +183,10 @@ export async function runProbe(): Promise<Record<string, ProbeResult>> {
   report('env', envProbe())
   report('headers', await headersProbe())
   report('storage', await storageProbe())
-  const [ws, rtc, cors, noCors] = await Promise.all([wsProbe(), rtcProbe(), fetchProbe(PROBE_CORS, 'cors'), fetchProbe(PROBE_NO_CORS, 'no-cors')])
-  report('websocket', ws)
+  const [ws, rtc, cors, noCors] = await Promise.all([
+    Promise.all(PROBE_WS.map(wsProbe)), rtcProbe(), fetchProbe(PROBE_CORS, 'cors'), fetchProbe(PROBE_NO_CORS, 'no-cors'),
+  ])
+  ws.forEach((r, i) => report(`websocket-${i + 1}`, r))
   report('webrtc', rtc)
   report('fetch-cors', cors)
   report('fetch-no-cors', noCors)

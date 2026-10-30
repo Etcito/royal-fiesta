@@ -718,7 +718,7 @@ class LocalDriver implements Driver {
 // controls (S26) mount on a div over the canvas and are composited onto the capture.
 class LocalSeatsDriver implements Driver {
   private readonly port: RenderPort
-  private readonly local: LocalMatch
+  private readonly run: LocalMatch
   private readonly pilots: Pilot[]
   private readonly views: SceneView[]
   private readonly vs = emptyViewState()
@@ -733,7 +733,7 @@ class LocalSeatsDriver implements Driver {
     this.width = canvas.width
     this.height = canvas.height
     const courses = botSetup(content, course).courses
-    this.local = new LocalMatch({ R, seats, seed: SEED, profile: 'sprint', courses })
+    this.run = new LocalMatch({ R, seats, seed: SEED, profile: 'sprint', courses })
     this.pilots = Array.from({ length: seats }, (_, k) => new Pilot(k, SEED))
     this.views = Array.from({ length: seats }, (_, k) => new SceneView({
       port, viewport: k, localPlayer: k, assets: name => content.assets(name), bean: content.character(),
@@ -753,13 +753,13 @@ class LocalSeatsDriver implements Driver {
   }
 
   playing(): boolean {
-    return this.local.sim.phase(this.vs).phase === Phase.playing
+    return this.run.sim.phase(this.vs).phase === Phase.playing
   }
 
   enqueue(): void {}
 
   frame(dt: number): Stage {
-    const m = this.local
+    const m = this.run
     const alpha = m.frame(dt, (seat, out) => { this.pilots[seat].sample(m.sim, out) })
     for (const view of this.views) view.update(m.sim, null, alpha, dt)
     if (this.views.length === 3) {
@@ -790,7 +790,7 @@ class LocalSeatsDriver implements Driver {
     this.touch?.dispose()
     this.overlay?.remove()
     for (const view of this.views) view.dispose()
-    this.local.dispose()
+    this.run.dispose()
   }
 }
 
@@ -985,7 +985,7 @@ function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Mome
   const height = int(op, 'input.height', o.height, 64, 2160)
   if (o.reload !== undefined && typeof o.reload !== 'boolean') refuse('ops', `${op}.input.reload`, `is ${JSON.stringify(o.reload)}; pass true or false`)
   let local: GameCaptureInput['local']
-  if (o.local !== undefined) local = int(op, 'input.local', o.local, 1, 4) as 1 | 2 | 3 | 4
+  if (o['local'] !== undefined) local = int(op, 'input["local"]', o['local'], 1, 4) as 1 | 2 | 3 | 4
   if (o.touch !== undefined && typeof o.touch !== 'boolean') refuse('ops', `${op}.input.touch`, `is ${JSON.stringify(o.touch)}; pass true or false`)
   const touch = o.touch === true
   let net: GameCaptureInput['net']
@@ -1116,13 +1116,13 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
   let clockInstalled = false
   let failed = false
   try {
-    if (input.local !== undefined) {
+    if (input['local'] !== undefined) {
       // One canvas split into local seats (S26), its pixel viewports at dpr 1 (a capture is backing pixels).
       const canvas = makeCanvas(input.width, input.height)
       canvases.push(canvas)
-      const viewports = pixelViewports(splitLayout(input.local, input.local === 3), input.width, input.height, 1)
+      const viewports = pixelViewports(splitLayout(input['local'], input['local'] === 3), input.width, input.height, 1)
       ports.push(await makePort(content, canvas, viewports))
-      driver = new LocalSeatsDriver(R, content, canvas, ports[0], input.local, course, input.touch === true, note)
+      driver = new LocalSeatsDriver(R, content, canvas, ports[0], input['local'], course, input.touch === true, note)
     } else {
       for (const cell of plan.cells) {
         const canvas = makeCanvas(cell.canvasWidth, cell.canvasHeight)

@@ -15,7 +15,7 @@ import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import { LocalMatch } from '@royal-fiesta/game/client/localMatch'
 import { localPadMapStore } from '@royal-fiesta/game/client/padMap'
 import type { PadMapStore } from '@royal-fiesta/game/client/padMap'
-import { SeatTable } from '@royal-fiesta/game/client/seats'
+import { MAX_LOCAL_SEATS, SeatTable } from '@royal-fiesta/game/client/seats'
 import type { DeviceId } from '@royal-fiesta/game/client/seats'
 import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
 import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
@@ -56,6 +56,8 @@ import { mountLoading } from '../content/loading.ts'
 import { pickContent } from '../content/source.ts'
 import { GameInput, InputDevices } from '../input/input.ts'
 import type { DevicePoll, UiEvent } from '../input/input.ts'
+import { mountPadRemap } from '../input/padRemapScreen.ts'
+import { mountTouchControls } from '../input/touch.ts'
 import type { ListenerPose } from '@royal-fiesta/game/audio/emitters'
 import { HubView } from '../play/hubView.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
@@ -76,6 +78,7 @@ interface Query {
   colour: number
   party: 2 | 3 | 4
   clients: number
+  touch: 0 | 1
 }
 
 type Look = { dx: number; dy: number; rx: number; ry: number }
@@ -110,10 +113,23 @@ function parseQuery(search: string): Query {
   const colour = intParam(q, 'colour', Math.floor(Math.random() * 8), 0, 7)
   const party = intParam(q, 'party', 4, 2, 4) as 2 | 3 | 4
   const clients = intParam(q, 'clients', 1, 1, 4)
+  const touch = intParam(q, 'touch', 0, 0, 1) as 0 | 1
   if (course !== null && server !== null) refuse('query', 'course', 'plays in-page with bots; drop ?server= or ?course=')
   if (clients > 1 && server !== null) refuse('query', 'clients', `${clients} in-page clients use a LoopbackRelay; drop ?server= or ?clients=`)
   if (clients > 1 && course !== null) refuse('query', 'clients', `?course= plays one client with bots; drop ?clients= or ?course=`)
-  return { course, server, hub, name, colour, party, clients }
+  return { course, server, hub, name, colour, party, clients, touch }
+}
+
+// A coarse pointer (a phone or tablet) uses the on-screen controls; ?touch=1 asks for them on any device.
+function touchWanted(search: string): boolean {
+  if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true
+  return new URLSearchParams(search).get('touch') === '1'
+}
+
+function requiredElement<T extends Element>(selector: string): T {
+  const found = document.querySelector<T>(selector)
+  if (found === null) throw new Error(`game.html needs ${selector}`)
+  return found
 }
 
 // PlayFlow applies controlsToInput with the character facing, so the camera-relative world move w is
@@ -252,6 +268,8 @@ interface Mode {
 
 interface ModeCtx {
   loaded: Loaded; q: Query; orbit: OrbitCamera; prepared?: boolean
+  // Touch controls drive seat 0 and hold it: the local table then has room for one seat only.
+  touch: boolean
   // Local play's S26 canvas layout (App.setLayout): one cell per seat, plus the overview cell at 3.
   setLayout: (seats: number) => void
 }
@@ -479,7 +497,7 @@ class LocalMode implements Mode {
   private hub: HubWorld
   private pad = new QueuePad(1)
   private hubAcc = 0
-  private readonly seats = new SeatTable()
+  private readonly seats: SeatTable
   private match: LocalRun | null = null
   private prepared: LocalRun | null = null
   private readonly hubLayer: SceneLayer
@@ -492,7 +510,9 @@ class LocalMode implements Mode {
   constructor(c: ModeCtx) {
     this.c = c
     const { R, content, ports } = c.loaded
-    this.seats.join('keyboard')
+    // Touch holds seat 0 and leaves no room to join, so the layout stays at one seat.
+    this.seats = new SeatTable(c.touch ? 1 : MAX_LOCAL_SEATS)
+    this.seats.join(c.touch ? 'touch' : 'keyboard')
     this.names = playerNames(0, c.q.name)
     this.hub = new HubWorld(R, content.hub(), 0)
     this.hubLayer = new SceneLayer(ports[0])
@@ -976,6 +996,16 @@ class App {
   private readonly sound = new SoundDriver()
   private readonly orbit = new OrbitCamera()
   private readonly world = neutralInput()
+  // Mobile touch controls and the settings screen's controller remap (both draw on their own canvas).
+  private readonly touchRoot: HTMLElement
+  private readonly touchOn: boolean
+  private readonly touch: ReturnType<typeof mountTouchControls> | null
+  private readonly remapRoot: HTMLElement
+  private readonly remapButton: HTMLButtonElement
+  private remap: { close(): void } | null = null
+  private remapHeld = false
+  private readonly onOpenRemap = (): void => this.openRemap()
+  private readonly onRemapClose = (): void => this.remapClosed()
 
   constructor(views: HTMLElement, screens: HTMLElement, host: UaaHost, search: string, env: AppEnv) {
     this.views = views
@@ -986,11 +1016,21 @@ class App {
     const saved = loadSettings(env.store)
     this.settings = saved.settings
     this.settingsError = saved.error
+    // A coarse pointer or ?touch=1 mounts the virtual joystick and buttons over #views; seat 0 is touch.
+    this.touchRoot = requiredElement<HTMLElement>('#touch')
+    this.touchOn = touchWanted(search)
+    this.touch = this.touchOn ? mountTouchControls(this.touchRoot) : null
+    this.touchRoot.hidden = true
+    this.remapRoot = requiredElement<HTMLElement>('#remap')
+    this.remapButton = requiredElement<HTMLButtonElement>('#open-remap')
+    this.remapButton.hidden = true
+    this.remapButton.addEventListener('click', this.onOpenRemap)
+    this.remapRoot.addEventListener('rf-remap-close', this.onRemapClose)
     // Clicking the (single) game canvas locks the pointer for the mouse look.
     this.input = new GameInput(window, screens, () => (this.loaded?.canvases.length === 1 ? this.loaded.canvases[0] : null))
     // Every device is polled once per frame; key events bubble from the focused element to the body.
     this.padStore = localPadMapStore(env.padStorage)
-    this.devices = new InputDevices(document.body, () => navigator.getGamepads?.() ?? [], this.padStore, null)
+    this.devices = new InputDevices(document.body, () => navigator.getGamepads?.() ?? [], this.padStore, this.touch)
     // The local canvas follows #views when it is resized (S26): the CSS size and DPR reach port.resize.
     this.viewsObserver = new ResizeObserver(() => this.resizeViews())
     this.viewsObserver.observe(this.views)
@@ -1029,6 +1069,44 @@ class App {
     else this.activate(c.cmd)
   }
 
+  // The settings screen's 'Controller...' button opens the canvas remap over #screens; its close event
+  // comes back through the #remap root. The key that opened it must not reach the uaa menu.
+  private openRemap(): void {
+    if (this.disposed || this.remap !== null || this.nav.screen !== 'settings') return
+    this.rebinding = null
+    this.pendingRebind = null
+    this.input.takeEvents()
+    this.remap = mountPadRemap(this.remapRoot, this.padStore, () => navigator.getGamepads?.() ?? [])
+  }
+
+  private remapClosed(): void {
+    this.remap = null
+    this.input.takeEvents()
+  }
+
+  private closeRemap(): void {
+    const remap = this.remap
+    if (remap === null) return
+    this.remap = null
+    remap.close()
+  }
+
+  // Pad button 3 pressed on a device that holds a local seat, as an edge (one true per press).
+  private padRemapPressed(mode: Mode | null): boolean {
+    let held = false
+    for (const pad of navigator.getGamepads?.() ?? []) {
+      if (pad === null || pad.connected === false) continue
+      if (mode?.seated?.(`pad:${pad.index}`) !== true) continue
+      if (pad.buttons[3]?.pressed === true) {
+        held = true
+        break
+      }
+    }
+    const pressed = held && !this.remapHeld
+    this.remapHeld = held
+    return pressed
+  }
+
   // Before an op builds its own views: frame loop, mode, RAA ports, uaa host, input and sound released, page emptied.
   dispose(): void {
     if (this.disposed) return
@@ -1043,6 +1121,11 @@ class App {
     this.preparedLocal = null
     this.viewsObserver.disconnect()
     this.cells = []
+    this.closeRemap()
+    this.remapButton.removeEventListener('click', this.onOpenRemap)
+    this.remapRoot.removeEventListener('rf-remap-close', this.onRemapClose)
+    this.remapButton.hidden = true
+    this.touch?.dispose()
     this.devices.dispose()
     this.input.dispose()
     void this.sound.close()
@@ -1104,7 +1187,7 @@ class App {
       this.loaded = { R, content, ports, canvases, course }
       this.resizeViews()
       if (q.server === null && q.clients === 1) {
-        this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit, setLayout: seats => this.setLayout(seats) })
+        this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) })
         await this.preparedLocal.ready()
       }
       this.run(this.nav.dispatch({ kind: 'loaded' }))
@@ -1200,7 +1283,7 @@ class App {
     const q = this.query
     if (loaded === null || q === null) return this.fail(refusal('game', 'start', 'the content is not loaded; retry the load'))
     this.stopMode()
-    const c: ModeCtx = { loaded, q, orbit: this.orbit, setLayout: seats => this.setLayout(seats) }
+    const c: ModeCtx = { loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) }
     try {
       if (q.server !== null) this.mode = new OnlineMode(c, q.server)
       else if (q.clients > 1) this.mode = new InPageMode(c)
@@ -1237,13 +1320,16 @@ class App {
   private frame(dt: number): void {
     const nav = this.nav
     const events = this.input.takeEvents()
-    // Local seats own pads: GameInput's first-pad Start-as-back would pause the hub when a pad joins.
-    if (this.mode?.seated !== undefined && !events.some(ev => ev.k === 'key' && ev.code === 'Escape')) {
-      for (let i = events.length - 1; i >= 0; i--) {
-        if (events[i].k === 'back') events.splice(i, 1)
+    // The remap screen reads the keys itself: they must not also move the uaa settings menu.
+    if (this.remap === null) {
+      // Local seats own pads: GameInput's first-pad Start-as-back would pause the hub when a pad joins.
+      if (this.mode?.seated !== undefined && !events.some(ev => ev.k === 'key' && ev.code === 'Escape')) {
+        for (let i = events.length - 1; i >= 0; i--) {
+          if (events[i].k === 'back') events.splice(i, 1)
+        }
       }
+      for (const ev of events) this.onEvent(ev)
     }
-    for (const ev of events) this.onEvent(ev)
     this.hover()
     if (this.pendingRebind !== null) {
       // Armed after the batch, so the Enter that chose the row is not taken as the new key.
@@ -1255,7 +1341,11 @@ class App {
     // One poll per device: keyboard, every connected pad, then touch.
     this.devices.bindings = this.settings
     const deviceCount = this.devices.poll(this.devicePolls)
+    // Pads drive the remap while it is open; their join edges must not reach the local seat table.
+    if (this.remap !== null) for (let i = 0; i < deviceCount; i++) this.devicePolls[i].joinPressed = false
     const mode = this.mode
+    // Pad button 3 (Y) on a seated pad opens the remap from the settings screen, like #open-remap.
+    if (this.padRemapPressed(mode) && nav.screen === 'settings' && this.remap === null) this.openRemap()
     // A seated pad's pause/start button is the same back as Escape (the keyboard's Escape is GameInput's).
     if (mode !== null && nav.live && mode.seated !== undefined) {
       for (let i = 0; i < deviceCount; i++) {
@@ -1299,6 +1389,10 @@ class App {
   // Presents nav's screen through the uaa host, with the round HUD on the HUD screens, then renders it.
   private draw(): void {
     const nav = this.nav
+    // The remap belongs to the settings screen; #touch takes the pointer only where the game does.
+    if (this.remap !== null && nav.screen !== 'settings') this.closeRemap()
+    this.touchRoot.hidden = this.touch === null || !(nav.live && PLAYING.includes(nav.screen))
+    this.remapButton.hidden = !(nav.screen === 'settings' && this.remap === null)
     const mode = this.mode
     const hud = mode === null || !HUD_SCREENS.includes(nav.screen) ? null : mode.hud()
     const values = hud === null ? null : hudValues(hud.view, hud.names, hud.seat, this.roundTicks(hud.view))

@@ -18,6 +18,7 @@ export interface ZoneLaunchOptions {
 
 export interface ZoneLaunch {
   done: Promise<number[]>
+  logs: string[]
   stop(): void
 }
 
@@ -45,6 +46,7 @@ export function launchZoneBots(options: ZoneLaunchOptions): ZoneLaunch {
   const root = fileURLToPath(new URL('../../../', import.meta.url))
   const script = 'apps/headless/src/zoneBot.ts'
   // All bots belong to ONE match and must run concurrently: the NMC_CPUS sweep cap does not apply.
+  const logs: string[] = []
   const children = Array.from({ length: options.peers }, (_, i) => {
     const child = spawn(process.execPath, ['--experimental-strip-types', script,
       '--relay', options.relay, '--players', String(options.players), '--seats', String(options.seats),
@@ -52,18 +54,30 @@ export function launchZoneBots(options: ZoneLaunchOptions): ZoneLaunch {
       '--name', `${options.namePrefix ?? 'zone-bot'}-${i}`,
     ], { cwd: root, env: process.env, stdio: ['ignore', 'pipe', 'pipe'] })
     for (const [stream, output] of [[child.stdout, process.stdout], [child.stderr, process.stderr]] as const) {
-      createInterface({ input: stream!, crlfDelay: Infinity }).on('line', line => output.write(`[bot ${i}] ${line}\n`))
+      createInterface({ input: stream!, crlfDelay: Infinity }).on('line', line => {
+        const message = `[bot ${i}] ${line}`
+        logs.push(message)
+        output.write(`${message}\n`)
+      })
     }
     return child
   })
   const exited = children.map(() => false)
   const exits = children.map((child, i) => new Promise<number>(resolve => {
     child.once('error', error => {
-      process.stderr.write(`[bot ${i}] ${error.message}\n`)
+      const message = `[bot ${i}] ${error.message}`
+      logs.push(message)
+      process.stderr.write(`${message}\n`)
       exited[i] = true
       resolve(1)
     })
-    child.once('close', code => { exited[i] = true; resolve(code ?? 1) })
+    child.once('close', (code, signal) => {
+      const message = `[bot ${i}] exit code=${code} signal=${signal} requestedStop=${stopping}`
+      logs.push(message)
+      process.stdout.write(`${message}\n`)
+      exited[i] = true
+      resolve(code ?? 1)
+    })
   }))
   let killTimer: ReturnType<typeof setTimeout> | undefined
   let stopping = false
@@ -77,7 +91,7 @@ export function launchZoneBots(options: ZoneLaunchOptions): ZoneLaunch {
     }, 3000)
     killTimer.unref()
   }
-  return { done, stop }
+  return { done, logs, stop }
 }
 
 async function runCli(): Promise<number> {

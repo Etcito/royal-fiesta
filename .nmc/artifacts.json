@@ -1,4 +1,9 @@
 [
   ".nmc/commands.json",
-  ".nmc/artifacts.json"
+  ".nmc/artifacts.json",
+  "out/m6/zone-chrome-a.png",
+  "out/m6/zone-chrome-b.png",
+  "out/m6/zone-gate.log",
+  "out/m6/zone-bots.log",
+  "out/m6/zone-relay.log"
 ]

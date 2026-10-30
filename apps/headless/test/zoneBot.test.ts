@@ -34,6 +34,7 @@ function measurements(): Record<number, ZoneBotMeasurements> {
 // Stands in for the browser/Node WebSocket so the relay queue path can be driven without a server.
 class QueueSocket {
   static instances: QueueSocket[] = []
+  static queued: (() => void) | null = null
   readonly url: string
   readonly sent: string[] = []
   readyState = 0
@@ -52,6 +53,7 @@ class QueueSocket {
     this.sent.push(data)
     const message = JSON.parse(data) as { t?: string; payload?: Record<string, unknown> }
     if (message.t !== 'queue' || message.payload === undefined) return
+    if (QueueSocket.queued) { QueueSocket.queued(); return }
     const payload = message.payload
     const matched = {
       t: 'matched', seed: 7, hostStarts: true, youAre: 0, token: 'never-printed',
@@ -158,6 +160,28 @@ test('zoneBot: relay queue tuning is tuningHash(mergeZoneTuning(zones)) for the 
     assert.equal(queued.payload.tuning, expected)
   } finally {
     bot?.stop()
+    globals.WebSocket = original
+  }
+})
+
+
+test('zoneBot: cancellation closes a socket waiting for the rest of the room', async () => {
+  const globals = globalThis as unknown as { WebSocket?: unknown }
+  const original = globals.WebSocket
+  const controller = new AbortController()
+  QueueSocket.instances = []
+  globals.WebSocket = QueueSocket
+  QueueSocket.queued = () => controller.abort()
+  try {
+    await assert.rejects(runZoneBot({
+      course: 'race-sprint', name: 'waiting-bot', seats: 2, seconds: 30,
+      drive: 'timer', signal: controller.signal,
+      net: { url: 'ws://zone.test/ws', players: 8 },
+    }), error => error === controller.signal.reason)
+    assert.equal(QueueSocket.instances.length, 1)
+    assert.equal(QueueSocket.instances[0].readyState, 3)
+  } finally {
+    QueueSocket.queued = null
     globals.WebSocket = original
   }
 })

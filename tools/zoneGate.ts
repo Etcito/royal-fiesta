@@ -21,6 +21,7 @@ const ZONE_PROFILE = 'sprint'
 const secrets = Object.entries(process.env)
   .filter(([key, value]) => /TOKEN|SECRET|PASSWORD|API_KEY/.test(key) && value)
   .map(([, value]) => value!)
+const diagnostics: string[] = []
 let stage = 'validate GPU wait'
 let scratch: string | undefined
 let relay: Awaited<ReturnType<typeof startZoneGateRelay>> | undefined
@@ -99,26 +100,35 @@ async function main(): Promise<void> {
   writeFileSync(join(probe, 'index.html'), `<script>
 window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
   let socket, timer, settled=false;
-  const finish=(open)=>{
+  const finish=(open,reason)=>{
     if(settled)return; settled=true; clearTimeout(timer);
+    document.removeEventListener('securitypolicyviolation',blocked);
     if(socket)try{socket.close()}catch{}
-    resolve({json:{open},files:[]});
+    resolve({json:{open,reason},files:[]});
   };
-  timer=setTimeout(()=>finish(false),10000);
+  const blocked=(event)=>{
+    if(event.effectiveDirective==='connect-src')finish(false,'connect-src policy');
+  };
+  document.addEventListener('securitypolicyviolation',blocked);
+  timer=setTimeout(()=>finish(false,'timeout'),10000);
   try{
     socket=new WebSocket(input.relay);
-    socket.onopen=()=>finish(true);
-    socket.onerror=socket.onclose=()=>finish(false);
-  }catch{finish(false)}
+    socket.onopen=()=>finish(true,'open');
+    socket.onerror=()=>setTimeout(()=>finish(false,'socket error'),0);
+    socket.onclose=()=>setTimeout(()=>finish(false,'socket closed'),0);
+  }catch(error){finish(false,error?.name==='SecurityError'?'SecurityError':'constructor error')}
 })}};
 </script>`)
-  const reachable = unwrapOp(await render(await publish(probe), { relay: await relay.expose() }, 'probe-result'), 'open').out
+  // Register the live address before publication/loading can snapshot the page's connect-src policy.
+  const probeRelay = await relay.expose()
+  const reachable = unwrapOp(await render(await publish(probe), { relay: probeRelay }, 'probe-result'), 'open').out
   if (reachable.open !== true) {
     console.error("zone gate: the GPU client cannot reach the card's relay; stopping (no Linux Chrome fallback)")
-    throw new Error('relay reachability probe did not open')
+    // Only fixed labels leave the probe: never print browser messages or blocked URLs.
+    const reasons = ['connect-src policy', 'timeout', 'socket error', 'socket closed', 'SecurityError', 'constructor error']
+    const reason = reasons.includes(String(reachable.reason)) ? reachable.reason : 'unknown'
+    throw new Error(`nomorechat host fault: supported NMC_EXPOSE_URL relay reachability probe did not open (${reason})`)
   }
-  stage = 'start six bot peers'
-  bots = startGateBots(relay.localUrl, { peers: 6, seatsPerPeer: 2, players: 8, course: 'race-sprint', seconds: 600 })
 
   stage = 'prepare built game page'
   const dist = 'apps/web/dist/'
@@ -157,12 +167,15 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
     : html.replace('</body>', `<script type="module" src="./${script}"></script></body>`))
   json(manifestFile, { ...manifest, ops: [...new Set([...manifest.ops, 'render'])] })
   stage = 'publish game page'
+  // Both Chrome addresses must be live before either page is published or loaded.
+  const browserRelays = [await relay.expose(), await relay.expose()]
   const ref = await publish(dist)
+  stage = 'start six bot peers'
+  bots = startGateBots(relay.localUrl, { peers: 6, seatsPerPeer: 2, players: 8, course: 'race-sprint', seconds: 600 })
   stage = 'two Chrome zone captures'
   const names = ['chrome-a', 'chrome-b'] as const
-  const gate = relay
-  const jobs = names.map(async name => render(ref, {
-    relay: await gate.expose(), players: 8, seatsPerPeer: 1, course: 'race-sprint',
+  const jobs = names.map(async (name, i) => render(ref, {
+    relay: browserRelays[i], players: 8, seatsPerPeer: 1, course: 'race-sprint',
     seconds: 20, name, width: 1280, height: 720,
   } satisfies ZoneLobbyCaptureInput, name))
   // Keep scratch and the relay alive even if one of the concurrent jobs fails first.
@@ -203,8 +216,10 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
       if (kind === 'IEND') { assert(length === 0); ended = true; break }
     }
     assert(ended && offset === png.length, 'missing PNG end or trailing data')
-    console.log(`zone gate ${names[i]} adapter: ${JSON.stringify(adapter)}`)
-    console.log(`zone gate ${names[i]}: peers ${matched.peers}, localPeer ${matched.localPeer}, ticks ${out.ticks}, near ${out.near}, far ${out.far}`)
+    const report = [`zone gate ${names[i]} adapter: ${JSON.stringify(adapter)}`,
+      `zone gate ${names[i]}: peers ${matched.peers}, localPeer ${matched.localPeer}, ticks ${out.ticks}, near ${out.near}, far ${out.far}`]
+    diagnostics.push(...report)
+    report.forEach(line => console.log(line))
     return png
   })
   stage = 'distinct Chrome peers'
@@ -227,12 +242,14 @@ function cause(error: unknown): string {
     .replace(/[A-Za-z]:[\\/][^\s:)'"]*/g, '<path>')
     .replace(/(^|[\s('"=])\/[^\s:)'"]+/g, '$1<path>')
     .replace(/\b(Bearer|token)\s+\S+/gi, '$1 <redacted>')
-  return text.length > 4000 ? `${text.slice(0, 4000)}...` : text
+  return text
 }
 
 function failed(at: string, error: unknown): void {
   console.error(`zone gate failed: ${at}`)
-  console.error(cause(error))
+  const detail = cause(error)
+  console.error(detail)
+  diagnostics.push(`zone gate failed: ${at}`, detail)
   process.exitCode = 1
 }
 
@@ -244,11 +261,19 @@ finally {
       bots.stop()
       const codes = await bots.done
       codes.forEach((code, peer) => {
-        if (code !== 0) console.error(`zone gate: bot ${peer} exited non-zero (${code}); includes requested shutdown`)
+        if (code !== 0) failed(`bot ${peer}`, new Error(`exit code ${code}; see bot log for cause and shutdown signal`))
       })
     }
   } catch (error) { failed('stop bots', error) }
   try { await relay?.stop() } catch (error) { failed('stop relay', error) }
+  try {
+    mkdirSync('out/m6', { recursive: true })
+    // Redact each line separately to preserve every diagnostic, not just a 4 KB tail.
+    for (const [name, lines] of [['zone-gate', diagnostics], ['zone-bots', bots?.logs ?? []],
+      ['zone-relay', relay?.logs ?? []]] as const) {
+      writeFileSync(`out/m6/${name}.log`, lines.map(line => cause(new Error(line))).join('\n') + '\n')
+    }
+  } catch (error) { failed('save diagnostics', error) }
   try { if (scratch) rmSync(scratch, { recursive: true, force: true }) }
   catch (error) { failed('remove scratch', error) }
 }

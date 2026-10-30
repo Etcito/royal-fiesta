@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs'
 import { Agent, request as httpRequest } from 'node:http'
-import { networkInterfaces } from 'node:os'
 import { dirname, join } from 'node:path'
 import { launchZoneBots } from '../apps/headless/src/zoneLaunch.ts'
 import type { ZoneLaunch } from '../apps/headless/src/zoneLaunch.ts'
@@ -10,6 +9,7 @@ import { repoRoot } from './bricks.ts'
 
 export interface ZoneGateRelay {
   localUrl: string
+  logs: string[]
   port: number
   /** One fresh address for the GPU browser; each browser connection gets its own exposed listener. */
   expose(): Promise<string>
@@ -40,11 +40,14 @@ function relayDir(): string {
 
 // The card sandbox has loopback only. The harness exposes one of its ports to the GPU browser
 // (bridge.py's --expose: POST NMC_EXPOSE_URL/<port> gives the host-side address the page connects to).
-function exposeAddress(port: number): Promise<string> {
-  const base = process.env.NMC_EXPOSE_URL!.replace(/\/+$/, '')
+export function exposeAddress(port: number): Promise<string> {
+  if (!process.env.NMC_EXPOSE_URL) {
+    refuse('zone-gate', 'NMC_EXPOSE_URL', 'missing supported GPU exposure route; nomorechat must supply it')
+  }
+  const base = process.env.NMC_EXPOSE_URL.replace(/\/+$/, '')
   let url: URL
   try { url = new URL(`${base}/${port}`) } catch {
-    refuse('zone-gate', 'NMC_EXPOSE_URL', `is not a URL (${base}); fix it or set RF_GATE_RELAY_HOST`)
+    refuse('zone-gate', 'NMC_EXPOSE_URL', 'is not a URL; fix the nomorechat exposure route')
   }
   return new Promise((resolve, reject) => {
     const req = httpRequest(url, { method: 'POST', agent: new Agent(), timeout: 15000 }, res => {
@@ -78,26 +81,15 @@ function exposeAddress(port: number): Promise<string> {
   })
 }
 
-async function browserAddress(port: number): Promise<string> {
-  const override = process.env.RF_GATE_RELAY_HOST
-  if (override) return `${override}:${port}`
-  if (process.env.NMC_EXPOSE_URL) return exposeAddress(port)
-  for (const infos of Object.values(networkInterfaces())) {
-    for (const info of infos ?? []) {
-      if (info.family === 'IPv4' && !info.internal) return `${info.address}:${port}`
-    }
-  }
-  refuse('zone-gate', 'RF_GATE_RELAY_HOST', 'no address the GPU client browser can reach; set RF_GATE_RELAY_HOST')
-}
-
 export async function startZoneGateRelay(): Promise<ZoneGateRelay> {
   const dir = relayDir()
   process.env.GAMESALOON_DIR = dir
   const server = await startGameSaloon({ env: { HOST: '0.0.0.0', RELAY_GAMES: 'royal-fiesta:64' }, timeoutMs: 20000 })
   return {
     localUrl: `ws://127.0.0.1:${server.port}/ws`,
+    logs: server.logs,
     port: server.port,
-    expose: async () => `ws://${await browserAddress(server.port)}/ws`,
+    expose: async () => `ws://${await exposeAddress(server.port)}/ws`,
     stop: () => server.stop(),
   }
 }

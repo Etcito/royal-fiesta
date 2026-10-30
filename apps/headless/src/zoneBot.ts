@@ -51,6 +51,7 @@ export interface ZoneBotOptions {
   seats: number
   seconds: number
   drive: 'timer' | 'manual'
+  signal?: AbortSignal
   net: ZoneBotRelayNet | ZoneBotLocalNet
 }
 
@@ -146,9 +147,11 @@ function queuePayload(options: ZoneBotOptions, course: ResolvedCourse, zones: Zo
 
 export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
   checkOptions(options)
+  options.signal?.throwIfAborted()
   const R = await rapierModule()
   const course = pickCourse(await sprintCourses(), options.course)
   const zones = await loadZonesFile(course.id, course, readRepoText)
+  options.signal?.throwIfAborted()
   const kind = course.kind === 'survival' ? 'survival' : 'race'
 
   let client: ZoneRelayClient | null = null
@@ -157,11 +160,15 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
   let roster: Roster
   let localPeer: number
   let measurements: Readonly<Record<number, ZoneBotMeasurements>>
+  const cancel = (): void => { client?.close() }
+  options.signal?.addEventListener('abort', cancel, { once: true })
   try {
     if ('url' in options.net) {
       client = new ZoneRelayClient(options.net.url, globalZoneWsFactory())
       await client.connect()
+      options.signal?.throwIfAborted()
       await client.queue(options.net.players, queuePayload(options, course, zones))
+      options.signal?.throwIfAborted()
       const room = client.room()
       roster = room.roster
       localPeer = room.localPeer
@@ -176,7 +183,10 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
     }
   } catch (error) {
     client?.close()
+    options.signal?.throwIfAborted()
     throw error
+  } finally {
+    options.signal?.removeEventListener('abort', cancel)
   }
 
   const owner = roster.peers.find(peer => peer.peer === localPeer)
@@ -217,6 +227,7 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
   function stop(): void {
     if (stopped) return
     stopped = true
+    options.signal?.removeEventListener('abort', stop)
     if (timer !== null) {
       clearInterval(timer)
       timer = null
@@ -242,7 +253,8 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
 
   if (client !== null) client.onClose(() => stop())
 
-  if (options.seconds <= 0) stop()
+  options.signal?.addEventListener('abort', stop, { once: true })
+  if (options.seconds <= 0 || options.signal?.aborted) stop()
   else if (options.drive === 'timer') {
     let last = performance.now()
     timer = setInterval(() => {
@@ -302,6 +314,10 @@ function parseCli(argv: string[]): CliArgs {
 
 async function runCli(argv: string[]): Promise<number> {
   let bot: ZoneBot | null = null
+  const controller = new AbortController()
+  const stop = (): void => { controller.abort(); bot?.stop() }
+  process.on('SIGTERM', stop)
+  process.on('SIGINT', stop)
   try {
     const args = parseCli(argv)
     bot = await runZoneBot({
@@ -310,6 +326,7 @@ async function runCli(argv: string[]): Promise<number> {
       seats: args.seats,
       seconds: args.seconds,
       drive: 'timer',
+      signal: controller.signal,
       net: { url: args.relay, players: args.players },
     })
     console.log(`[zone-bot ${args.name}] matched peer ${bot.localPeer} of ${args.players}, seats ${bot.seats.join(',')}`)
@@ -326,9 +343,13 @@ async function runCli(argv: string[]): Promise<number> {
     return 0
   } catch (error) {
     bot?.stop()
+    if (controller.signal.aborted && error === controller.signal.reason) return 0
     if (!isRefusal(error)) throw error
     console.error(error.message)
     return 1
+  } finally {
+    process.off('SIGTERM', stop)
+    process.off('SIGINT', stop)
   }
 }
 

@@ -1,0 +1,86 @@
+{
+  "page": "game",
+  "op": "gameCapture",
+  "items": [
+    {
+      "prefix": "candy-seesaw-run-",
+      "input": {
+        "content": "sdf",
+        "course": "candy-seesaw-run",
+        "flow": "match",
+        "clients": 1,
+        "width": 1920,
+        "height": 1080,
+        "captureAt": [
+          "playing"
+        ]
+      },
+      "judge": [
+        {
+          "capture": "playing",
+          "description": "A bright candy-themed 3D obstacle course with pastel seesaws and doors, penguin characters running"
+        }
+      ]
+    },
+    {
+      "prefix": "ice-slide-gates-",
+      "input": {
+        "content": "sdf",
+        "course": "ice-slide-gates",
+        "flow": "match",
+        "clients": 1,
+        "width": 1920,
+        "height": 1080,
+        "captureAt": [
+          "playing"
+        ]
+      },
+      "judge": [
+        {
+          "capture": "playing",
+          "description": "An icy blue 3D obstacle course with frozen floating platforms and sliding gates, penguin characters running"
+        }
+      ]
+    },
+    {
+      "prefix": "jungle-crane-crossing-",
+      "input": {
+        "content": "sdf",
+        "course": "jungle-crane-crossing",
+        "flow": "match",
+        "clients": 1,
+        "width": 1920,
+        "height": 1080,
+        "captureAt": [
+          "playing"
+        ]
+      },
+      "judge": [
+        {
+          "capture": "playing",
+          "description": "A green jungle 3D obstacle course with a wooden crane arm and a hanging vine bridge, penguin characters crossing"
+        }
+      ]
+    },
+    {
+      "prefix": "neon-piston-alley-",
+      "input": {
+        "content": "sdf",
+        "course": "neon-piston-alley",
+        "flow": "match",
+        "clients": 1,
+        "width": 1920,
+        "height": 1080,
+        "captureAt": [
+          "playing"
+        ]
+      },
+      "judge": [
+        {
+          "capture": "playing",
+          "description": "A dark neon-lit 3D obstacle course with glowing pistons and laser doors, penguin characters running"
+        }
+      ]
+    }
+  ]
+}

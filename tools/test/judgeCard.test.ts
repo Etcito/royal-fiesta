@@ -200,10 +200,11 @@ test('command cards keep the dependency chain', () => {
   const cards = JSON.parse(readFileSync(new URL('../../.nmc/commands.json', import.meta.url), 'utf8'))
   assert.deepEqual(cards.map((c: { name: string }) => c.name), [
     'sdf-port-typecheck', 'sdf-port-build', 'candy-content-pack', 'candy-assets-proof',
-    'rf-tests', 'rf-judge-m3', 'rf-judge-m3-split', 'rf-judge-m3-touch', 'rf-judge-m3-remap',
-    'rf-verify-m3-remap-boot',
+    'rf-tests', 'rf-judge-m3', 'rf-judge-m4-candy-seesaw-run', 'rf-judge-m4-ice-slide-gates',
+    'rf-judge-m4-jungle-crane-crossing', 'rf-judge-m4-neon-piston-alley',
   ])
-  assert.equal(cards.at(-1).command, 'node --experimental-strip-types tools/judgeCard.ts m3 --item 2')
+  assert.equal(cards.length, 10)
+  assert.equal(cards.at(-1).command, 'node --experimental-strip-types tools/judgeCard.ts m4 --item 3')
   assert.equal(cards[0].after, undefined)
   assert.deepEqual(cards[1].after, ['sdf-port-typecheck'])
   assert.deepEqual(cards[2].after, ['sdf-port-build'])

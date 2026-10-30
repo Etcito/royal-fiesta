@@ -37,6 +37,16 @@ const WAVE = 1
 const DANCE = 2
 const CHEER = 3
 const LAUGH = 4
+// The hub world's step (PlayFlow STEP_S) and the most ticks one frame steps it (its catch-up cap).
+export const HUB_STEP_S = 1 / 60
+const MAX_STRIDE_TICKS = 8
+// A remote that moves further than this between two frames teleported (respawn): no walking for that jump.
+const TELEPORT_M = 2
+
+/** The walk phase in metres walked: a remote's stride grows by the distance its drawn position covered. */
+export function walkStride(stride: number, movedM: number): number {
+  return movedM > 0 && movedM < TELEPORT_M ? stride + movedM : stride
+}
 
 // One remote bean, keyed by its hub seat or lobby presence key. gone >= 0: leaving since then (shrinking out).
 interface Slot {
@@ -76,6 +86,8 @@ export class HubView {
   private localColour = -1
   private slots = new Map<number, Slot>()
   private localStride = 0
+  // The hub tick the local stride last advanced to (-1 before the first update).
+  private localTick = -1
   private localPos: Vec3 = { x: 0, y: 0, z: 0 }
   private cam: CameraPose | null = null
   private visible = true
@@ -191,8 +203,13 @@ export class HubView {
     // The walk (lean, bob) reads the sim's planar velocity, not the drawn displacement over the frame: the hub
     // steps at 60 Hz, so on a faster display most frames carry 0 ticks and the next 1 (or 0 then 2 at 60 Hz with
     // jitter), and a per-frame speed flipped the lean and bob on and off ~120 times a second (own bean vibrating).
+    // The stride (the phase of the hop and sway) is metres walked, advanced per hub tick, never per drawn frame
+    // or by the frame's dt: the same bean seen as a remote advances by the metres its drawn position covers, so
+    // both windows swing it at the same rate whatever their display rate (walkStride).
     const localSpeed = Math.hypot(local.vel.x, local.vel.z)
-    this.localStride += localSpeed * dtS
+    const ticks = this.localTick < 0 || tick < this.localTick ? 0 : Math.min(MAX_STRIDE_TICKS, tick - this.localTick)
+    this.localTick = tick
+    this.localStride += localSpeed * ticks * HUB_STEP_S
     this.localPos = local.pos
     this.draw(this.localBean, local.pos, Math.atan2(local.facing.x, local.facing.z), localEmote, local.mode, localSpeed, this.localStride, 1)
 
@@ -219,8 +236,9 @@ export class HubView {
         slot.inst = this.create(this.beanAsset, PALETTE[colour], true)
         slot.colour = colour
       }
-      if (dtS > 0) slot.speed = slot.speed * 0.7 + 0.3 * Math.hypot(r.pos.x - slot.pos.x, r.pos.z - slot.pos.z) / dtS
-      slot.stride += slot.speed * dtS
+      const moved = Math.hypot(r.pos.x - slot.pos.x, r.pos.z - slot.pos.z)
+      if (dtS > 0) slot.speed = slot.speed * 0.7 + 0.3 * moved / dtS
+      slot.stride = walkStride(slot.stride, moved)
       slot.pos.x = r.pos.x
       slot.pos.y = r.pos.y
       slot.pos.z = r.pos.z

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { tuningHash } from '@gamesaloon/rollback/zones'
-import type { GroupTransport, Roster } from '@gamesaloon/rollback/zones'
+import type { FarSink, GroupTransport, Roster } from '@gamesaloon/rollback/zones'
 import { matchCourses } from '@royal-fiesta/game/courseSet'
 import type { CourseEntry } from '@royal-fiesta/game/courseSet'
 import { takeoverInput } from '@royal-fiesta/game/net/takeoverBot'
@@ -53,6 +53,8 @@ export interface ZoneBotOptions {
   drive: 'timer' | 'manual'
   signal?: AbortSignal
   net: ZoneBotRelayNet | ZoneBotLocalNet
+  /** Receives the FAR rows of the seats outside the local domains, as the browser scene does. */
+  farSink?: FarSink
 }
 
 export interface ZoneBot {
@@ -203,6 +205,7 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
     profile: PROFILES.sprint,
     kind,
     measurements,
+    farSink: options.farSink,
   }, transport)
 
   const memories = seats.map(() => newMemory())

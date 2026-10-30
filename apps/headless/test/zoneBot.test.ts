@@ -2,9 +2,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { tuningHash, type Roster } from '@gamesaloon/rollback/zones'
+import { FarFeed } from '@royal-fiesta/game/net/farFeed'
 import { ZoneLoopback } from '@royal-fiesta/game/net/zoneLoopback'
 import { mergeZoneTuning } from '@royal-fiesta/game/net/zoneTuning'
 import { parseZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
+import { countNearFar, playLobby } from '../../web/src/zone/zoneLobbyPlay.ts'
 import { runZoneBot } from '../src/zoneBot.ts'
 import type { ZoneBot, ZoneBotMeasurements } from '../src/zoneBot.ts'
 
@@ -131,6 +133,76 @@ test('zoneBot: three loopback bots drive their seats and confirm the global doma
       `no tick has a confirmed global-domain hash on all ${PEERS} peers up to tick ${topTick}`)
   } finally {
     for (const bot of bots) bot.stop()
+  }
+})
+
+// The two-Chrome gate's shape: bot peers first, the browser peer last, so bots produce every domain. The browser's
+// animation load (here 5 s, past lostAfterMs) runs while it plays: it once stopped framing for the load, the others
+// dropped it, and the whole room froze at the next epoch boundary with the browser's seat in no local domain.
+test('zoneBot: a browser-style peer plays past tick 600 with six bots while its animations load', { timeout: 300000 }, async () => {
+  const seats = [2, 1, 1, 1, 1, 1, 1]
+  const browser = seats.length - 1
+  const loopback = new ZoneLoopback(seats.length, { seed: 3, rttMs: 60, jitterMs: 5, loss: 0 })
+  let next = 0
+  const roster: Roster = {
+    seatCount: 8,
+    peers: seats.map((count, peer) => ({ peer, seats: Array.from({ length: count }, () => next++) })),
+    live: seats.map(() => true),
+  }
+  const peerMeasurements: Record<number, ZoneBotMeasurements> = {}
+  for (let p = 0; p < seats.length; p++) peerMeasurements[p] = { ...DEFAULT_MEASUREMENTS }
+  const feed = new FarFeed()
+  const peers: ZoneBot[] = []
+  const stepMs = 1000 * DT
+  let waiters: { at: number; resolve: () => void }[] = []
+  const at = (ms: number) => new Promise<void>(resolve => waiters.push({ at: loopback.now() + ms, resolve }))
+  let pumping = true
+  try {
+    for (let peer = 0; peer < seats.length; peer++) {
+      peers.push(await runZoneBot({
+        course: 'race-sprint', name: `loopback-${peer}`, seats: seats[peer], seconds: 60, drive: 'manual',
+        net: { transport: loopback.transport(peer), roster, localPeer: peer, measurements: peerMeasurements },
+        ...(peer === browser ? { farSink: feed } : {}),
+      }))
+    }
+    const page = peers[browser]
+    // The network and the bots run on their own, as the real ones do while the page awaits.
+    const pump = (async () => {
+      while (pumping) {
+        loopback.advance(stepMs)
+        for (let p = 0; p < browser; p++) peers[p].frame(DT)
+        const now = loopback.now()
+        const due = waiters.filter(w => w.at <= now)
+        waiters = waiters.filter(w => w.at > now)
+        for (const w of due) w.resolve()
+        await new Promise(resolve => setImmediate(resolve))
+      }
+    })()
+    let homeless = 0
+    const target = {
+      info: { get tick() { return page.match.stats.tick } },
+      frame(dtS: number) {
+        page.frame(dtS)
+        if (!page.match.domains.some(domain => domain.seats.includes(page.seats[0]))) homeless++
+      },
+    }
+    await playLobby(target, { seconds: 60, captureTick: 600, frameMs: 16, maxDtS: 0.1, load: () => at(5000) },
+      { now: () => loopback.now(), wait: at })
+    // What the gate reads at its capture: 8 seats share one domain here, so the other racers are near, not far.
+    const { near, far } = countNearFar(page.match, feed, page.match.stats.tick)
+    // Let the bots reach the browser's tick (they predict up to 16 ticks past its inputs).
+    for (let k = 0; k < 600 && peers.some(peer => peer.match.stats.tick < 600); k++) await at(stepMs)
+    pumping = false
+    await pump
+    for (const peer of peers) {
+      assert.ok(peer.match.stats.tick >= 600, `peer ${peer.localPeer}: tick ${peer.match.stats.tick}, 600 required`)
+    }
+    assert.equal(homeless, 0, `the browser seat was in no local domain on ${homeless} frames`)
+    assert.ok(near >= 1, `browser peer: near ${near}, its own seat must be near`)
+    assert.ok(near + far >= 3, `browser peer: near ${near} + far ${far}, other racers must be visible`)
+  } finally {
+    pumping = false
+    for (const peer of peers) peer.stop()
   }
 })
 

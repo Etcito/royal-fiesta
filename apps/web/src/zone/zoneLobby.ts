@@ -9,7 +9,6 @@ import type { ZoneQueuePayload } from '@royal-fiesta/game/net/zoneRelayProtocol'
 import { ZoneRelayTransport } from '@royal-fiesta/game/net/zoneRelayTransport'
 import { mergeZoneTuning } from '@royal-fiesta/game/net/zoneTuning'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
-import { CharMode } from '@royal-fiesta/sim/character/constants'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
@@ -18,6 +17,7 @@ import type { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { browserCourses } from '../client/sources.ts'
 import { zoneContent } from './zoneContent.ts'
+import { countNearFar } from './zoneLobbyPlay.ts'
 import { mountZoneNetScene } from './zoneNetScene.ts'
 import type { ZoneNetScene } from './zoneNetScene.ts'
 
@@ -173,23 +173,11 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
 
     const info = { peers: roster.peers.length, seats: roster.seatCount, localPeer, tick: 0, near: 0, far: 0 }
     const nearDomains = new Map<number, FiestaDomain>()
-    const holdsLocalSeat = (seat: number): boolean => nearDomains.has(seat)
     function updateInfo(): void {
       info.tick = local.stats.tick
-      nearDomains.clear()
-      // Match the scene adapter: the last local domain holding a seat supplies its pose.
-      for (const domain of local.domains) {
-        for (const seat of domain.seats) nearDomains.set(seat, domain)
-      }
-      info.near = 0
-      for (const [seat, domain] of nearDomains) {
-        if (domain.state(seat).mode !== CharMode.parked) info.near++
-      }
-      info.far = 0
-      for (const entry of view.feed.read(info.tick, holdsLocalSeat)) {
-        if (Number.isFinite(entry.x) && Number.isFinite(entry.y) &&
-            Number.isFinite(entry.z) && Number.isFinite(entry.yaw)) info.far++
-      }
+      const counts = countNearFar(local, view.feed, info.tick, nearDomains)
+      info.near = counts.near
+      info.far = counts.far
     }
     view.update(local, 0, 0)
     updateInfo()

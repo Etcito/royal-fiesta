@@ -8,6 +8,7 @@ import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import { mountZoneLobby } from './zoneLobby.ts'
 import type { ZoneLobby } from './zoneLobby.ts'
+import { playLobby } from './zoneLobbyPlay.ts'
 
 const WIDTH = 1280
 const HEIGHT = 720
@@ -17,7 +18,7 @@ const FRAME_MS = 16
 const MAX_DT_S = 0.1
 const PIPELINE_WAIT_MS = 10000
 // The GPU client gives a job 295 s; every wait below ends inside it (RAA check 30 + join 150 + play
-// ~20 + animations 30 + pipelines 10 + capture 20 = 260 s), so a stall finishes the op with an error
+// ~20 with animations loading meanwhile, at most 30 + pipelines 10 + capture 20 = 240 s), so a stall finishes the op with an error
 // naming the step instead of a page timeout with no output.
 const QUEUE_TIMEOUT_MS = 100000
 const SETUP_TIMEOUT_MS = 150000
@@ -203,26 +204,14 @@ async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Pro
     })
     lobby = await bounded(input.name, 'joining the zone room', SETUP_TIMEOUT_MS, mounting)
     // The match runs against real network peers, so the clock is the page's: setTimeout between
-    // frames (requestAnimationFrame rarely fires in the GPU client browser) and the measured dt.
+    // frames (requestAnimationFrame rarely fires in the GPU client browser) and the measured dt. It keeps
+    // ticking while the near characters' animations load, or the other peers drop this silent one.
     const joined = lobby
-    const started = realNow()
-    let last = started
-    let first = true
-    phase('ticking')
-    do {
-      await delay(FRAME_MS)
-      const now = realNow()
-      const dt = Math.min(MAX_DT_S, Math.max(0, (now - last) / 1000))
-      last = now
-      joined.frame(dt)
-      // The first frame creates the near characters and starts their animation load.
-      if (first) {
-        first = false
-        phase('loading animations')
-        await bounded(input.name, 'animation loading', READY_TIMEOUT_MS, joined.ready())
-        phase('ticking')
-      }
-    } while (realNow() - started < input.seconds * 1000 && !(joined.info.tick >= (input.captureTick ?? Infinity)))
+    await playLobby(joined, {
+      seconds: input.seconds, captureTick: input.captureTick, frameMs: FRAME_MS, maxDtS: MAX_DT_S,
+      load: () => bounded(input.name, 'animation loading', READY_TIMEOUT_MS, joined.ready()),
+      onPhase: phase,
+    }, { now: realNow, wait: delay })
     phase(`rendering (tick ${joined.info.tick})`)
     joined.render()
     const deadline = realNow() + PIPELINE_WAIT_MS

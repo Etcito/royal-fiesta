@@ -260,9 +260,11 @@ export class PlayFlow {
       if (this.active(client)) this.fail(new RefusalError('hub', d.relayUrl, 'match socket closed; reconnect and queue again'))
     })
     this.queueRequested = this.cancelling = false
-    // A new lobby entry: the shared hub fills again from the next lobby's roster.
-    this.buffer.clear()
-    this.placedIn = null
+    // A new lobby entry: the shared hub fills again from the next lobby's roster (a hub room keeps its seats).
+    if (this.sharedHub) {
+      this.buffer.clear()
+      this.placedIn = null
+    }
     try {
       this.transition('queued')
       this.lastState = -Infinity

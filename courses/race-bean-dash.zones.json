@@ -1,0 +1,17 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "race-bean-dash",
+  "grid": {
+    "origin": [-12, -8],
+    "cell": [2, 2],
+    "cols": 12,
+    "rows": 67
+  },
+  "parts": {
+    "seesaw-1": "physics"
+  },
+  "tuning": {
+    "gridCols": 12
+  }
+}

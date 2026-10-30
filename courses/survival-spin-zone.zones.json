@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "survival-spin-zone",
+  "grid": {
+    "origin": [-18, -18],
+    "cell": [2, 2],
+    "cols": 18,
+    "rows": 18
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 18
+  }
+}

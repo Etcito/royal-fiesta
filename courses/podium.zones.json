@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "podium",
+  "grid": {
+    "origin": [-8, -1004],
+    "cell": [2, 2],
+    "cols": 8,
+    "rows": 5
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 8
+  }
+}

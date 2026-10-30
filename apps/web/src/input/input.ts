@@ -4,6 +4,9 @@
 // camera's yawTurn, where > 0 turns right. Keys, left stick, mouse and right stick share that sign.
 import { emptyControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
+import { padControls } from '@royal-fiesta/game/client/padMap'
+import type { PadMapStore } from '@royal-fiesta/game/client/padMap'
+import type { DeviceId } from '@royal-fiesta/game/client/seats'
 import { PointerLook } from './look.ts'
 
 export type UiEvent =
@@ -135,6 +138,123 @@ export class GameInput {
   }
 }
 
+// One polled device per frame. controls is reused in place once out has grown; the
+// join/pause flags are press edges (true for exactly one poll after the press).
+export interface DevicePoll {
+  device: DeviceId
+  controls: RawControls
+  joinPressed: boolean
+  pausePressed: boolean
+}
+
+interface Edges {
+  join: boolean
+  pause: boolean
+}
+
+// Per-device polling for local split screen. Keyboard keys are held by this class, pads
+// read their stored map, and touch delegates to the virtual controls. Edge state is kept
+// per device id; a pad that leaves pads() loses its state.
+export class InputDevices {
+  bindings: KeyBindings = DEFAULT_BINDINGS
+  private readonly target: HTMLElement
+  private readonly pads: () => readonly (Gamepad | null)[]
+  private readonly maps: PadMapStore
+  private readonly touch: { active: boolean; read(out: RawControls): void } | null
+  private readonly held = new Set<string>()
+  private readonly edges = new Map<string, Edges>()
+  private joinQueued = false
+  private pauseQueued = false
+  private readonly onKeyDown: (e: KeyboardEvent) => void
+  private readonly onKeyUp: (e: KeyboardEvent) => void
+  private readonly onBlur: () => void
+
+  constructor(
+    target: HTMLElement,
+    pads: () => readonly (Gamepad | null)[],
+    maps: PadMapStore,
+    touch: { active: boolean; read(out: RawControls): void } | null
+  ) {
+    this.target = target
+    this.pads = pads
+    this.maps = maps
+    this.touch = touch
+    this.onKeyDown = e => {
+      if (!this.held.has(e.code)) {
+        if (e.code === 'Enter' || e.code === 'NumpadEnter') this.joinQueued = true
+        if (e.code === 'Escape') this.pauseQueued = true
+      }
+      this.held.add(e.code)
+    }
+    this.onKeyUp = e => { this.held.delete(e.code) }
+    this.onBlur = () => { this.held.clear() }
+    target.addEventListener('keydown', this.onKeyDown)
+    target.addEventListener('keyup', this.onKeyUp)
+    target.addEventListener('blur', this.onBlur)
+  }
+
+  poll(out: DevicePoll[]): number {
+    let n = 0
+    const keyboard = slot(out, n++)
+    keyboard.device = 'keyboard'
+    controlsFromKeys(this.held, this.bindings, keyboard.controls)
+    keyboard.joinPressed = this.joinQueued
+    keyboard.pausePressed = this.pauseQueued
+    this.joinQueued = false
+    this.pauseQueued = false
+
+    const present = new Set<string>()
+    for (const pad of this.pads()) {
+      if (pad === null || pad.connected === false) continue
+      const device: DeviceId = `pad:${pad.index}`
+      present.add(device)
+      const map = this.maps.get(pad.id)
+      const entry = slot(out, n++)
+      entry.device = device
+      padControls(pad, map, entry.controls)
+      const edges = this.edges.get(device) ?? { join: false, pause: false }
+      const join = pad.buttons[map.buttons.join]?.pressed === true
+      const pause = pad.buttons[map.buttons.pause]?.pressed === true
+      entry.joinPressed = join && !edges.join
+      entry.pausePressed = pause && !edges.pause
+      edges.join = join
+      edges.pause = pause
+      this.edges.set(device, edges)
+    }
+    for (const device of this.edges.keys()) {
+      if (!present.has(device)) this.edges.delete(device)
+    }
+
+    if (this.touch !== null && this.touch.active) {
+      const entry = slot(out, n++)
+      entry.device = 'touch'
+      this.touch.read(entry.controls)
+      entry.joinPressed = false
+      entry.pausePressed = false
+    }
+    return n
+  }
+
+  dispose(): void {
+    this.target.removeEventListener('keydown', this.onKeyDown)
+    this.target.removeEventListener('keyup', this.onKeyUp)
+    this.target.removeEventListener('blur', this.onBlur)
+    this.held.clear()
+    this.edges.clear()
+    this.joinQueued = false
+    this.pauseQueued = false
+  }
+}
+
+function slot(out: DevicePoll[], index: number): DevicePoll {
+  let entry = out[index]
+  if (entry === undefined) {
+    entry = { device: 'keyboard', controls: emptyControls(), joinPressed: false, pausePressed: false }
+    out[index] = entry
+  }
+  return entry
+}
+
 function keyEvent(code: string, shift: boolean): UiEvent | null {
   switch (code) {
     case 'Escape': return { k: 'back' }
@@ -151,8 +271,9 @@ function keyEvent(code: string, shift: boolean): UiEvent | null {
 }
 
 // Held keys through the bindings. Arrows always work; ZQSD's Z and Q work unless rebound elsewhere.
-function controlsFromKeys(held: ReadonlySet<string>, b: KeyBindings): RawControls {
-  const c = emptyControls()
+// out lets InputDevices reuse one controls object across polls.
+function controlsFromKeys(held: ReadonlySet<string>, b: KeyBindings, out: RawControls = emptyControls()): RawControls {
+  const c = out
   const alternate = (code: string, action: KeyAction): boolean =>
     held.has(code) && !KEY_ACTIONS.some(other => other !== action && b.keys[other] === code)
   c.forward = held.has(b.keys.forward) || held.has('ArrowUp') || alternate('KeyZ', 'forward')
@@ -162,6 +283,8 @@ function controlsFromKeys(held: ReadonlySet<string>, b: KeyBindings): RawControl
   c.jump = held.has(b.keys.jump)
   c.dive = held.has(b.keys.dive)
   c.grab = held.has(b.keys.grab)
+  c.stickX = 0
+  c.stickY = 0
   return c
 }
 

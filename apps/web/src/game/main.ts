@@ -12,6 +12,8 @@ import { basisFromFacing } from '@royal-fiesta/game/client/cameraBasis'
 import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
 import { controlsToInput, emptyControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
+import { pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
+import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
 import type { GameContent } from '@royal-fiesta/game/content'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import { HubWorld } from '@royal-fiesta/game/hub/hubWorld'
@@ -21,7 +23,7 @@ import { netSetup } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
-import type { RenderPort } from '@royal-fiesta/game/render/port'
+import type { RenderPort, Viewport } from '@royal-fiesta/game/render/port'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
@@ -198,6 +200,17 @@ function mountCanvas(root: HTMLElement, cell: ClientCell): HTMLCanvasElement {
   canvas.dataset.client = String(cell.client)
   root.appendChild(canvas)
   return canvas
+}
+
+// The backing (canvas.width/height) size the S26 pixel viewports cover: their union's far edge.
+function backingSize(viewports: readonly Viewport[]): { width: number; height: number } {
+  let width = 0
+  let height = 0
+  for (const v of viewports) {
+    width = Math.max(width, v.x + v.width)
+    height = Math.max(height, v.y + v.height)
+  }
+  return { width, height }
 }
 
 // What the app hands a running mode each page frame. world is the camera-relative move (controlsToInput
@@ -749,6 +762,10 @@ class App {
   private hudRound = -2
   private hudRoundTicks = 0
   private size = ''
+  // The local path's S26 split cells and the #views size they were last resized for.
+  private cells: SplitCell[] = []
+  private viewsSizeKey = ''
+  private readonly viewsObserver: ResizeObserver
   private pointer: { x: number; y: number } | null = null
   private readonly views: HTMLElement
   private readonly screens: HTMLElement
@@ -771,6 +788,9 @@ class App {
     this.settingsError = saved.error
     // Clicking the (single) game canvas locks the pointer for the mouse look.
     this.input = new GameInput(window, screens, () => (this.loaded?.canvases.length === 1 ? this.loaded.canvases[0] : null))
+    // The local canvas follows #views when it is resized (S26): the CSS size and DPR reach port.resize.
+    this.viewsObserver = new ResizeObserver(() => this.resizeViews())
+    this.viewsObserver.observe(this.views)
   }
 
   // ?course= skips the title: the load lands in the hub, which starts the round.
@@ -818,6 +838,8 @@ class App {
     this.stopMode()
     this.preparedLocal?.dispose()
     this.preparedLocal = null
+    this.viewsObserver.disconnect()
+    this.cells = []
     this.input.dispose()
     void this.sound.close()
     for (const port of this.loaded?.ports ?? []) port.dispose()
@@ -860,7 +882,7 @@ class App {
       const picked = q.course === null ? null : content.course(q.course)
       const course = picked !== null && picked.kind === 'hub' ? null : picked
       this.loadingOverlay.show('Creating renderer')
-      const { ports, canvases } = await this.mountPorts(content, q.clients)
+      const { ports, canvases } = await this.mountPorts(content, q)
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.
         for (const port of ports) port.dispose()
@@ -876,6 +898,7 @@ class App {
         } else this.loadingOverlay.hide()
       }, content.report())
       this.loaded = { R, content, ports, canvases, course }
+      this.resizeViews()
       if (q.server === null && q.clients === 1) {
         this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit })
         await this.preparedLocal.ready()
@@ -888,10 +911,13 @@ class App {
     }
   }
 
-  // One canvas and port per client; content.createPort already inits the port on its canvas.
-  private async mountPorts(content: GameContent, clients: number): Promise<{ ports: RenderPort[]; canvases: HTMLCanvasElement[] }> {
+  // One canvas and port per client; content.createPort already inits the port on its canvas. Local play
+  // (no relay, one client) instead mounts one canvas split into seats by S26's splitLayout.
+  private async mountPorts(content: GameContent, q: Query): Promise<{ ports: RenderPort[]; canvases: HTMLCanvasElement[] }> {
     this.views.replaceChildren()
-    const plan = planCanvases(Math.max(1, Math.floor(window.innerWidth)), Math.max(1, Math.floor(window.innerHeight)), clients)
+    if (q.server === null && q.clients === 1) return this.mountLocalPort(content)
+    this.cells = []
+    const plan = planCanvases(Math.max(1, Math.floor(window.innerWidth)), Math.max(1, Math.floor(window.innerHeight)), q.clients)
     this.views.style.gridTemplateColumns = `repeat(${plan.cols}, 1fr)`
     this.views.style.gridTemplateRows = `repeat(${plan.rows}, 1fr)`
     const ports: RenderPort[] = []
@@ -908,6 +934,61 @@ class App {
       throw e
     }
     return { ports, canvases }
+  }
+
+  // Local play's one canvas in a 1x1 #views grid. Its render target is splitLayout(1, false) through
+  // pixelViewports, so the backing size is round(css x min(dpr, DPR_CAP)); setLayout grows the seats later.
+  private async mountLocalPort(content: GameContent): Promise<{ ports: RenderPort[]; canvases: HTMLCanvasElement[] }> {
+    this.cells = splitLayout(1, false)
+    this.views.style.gridTemplateColumns = '1fr'
+    this.views.style.gridTemplateRows = '1fr'
+    const size = this.viewsSize()
+    const viewports = pixelViewports(this.cells, size.cssW, size.cssH, size.dpr)
+    const backing = backingSize(viewports)
+    const canvas = document.createElement('canvas')
+    canvas.width = backing.width
+    canvas.height = backing.height
+    canvas.dataset.client = '0'
+    this.views.appendChild(canvas)
+    this.viewsSizeKey = size.key
+    try {
+      const port = await content.createPort({ canvas, width: backing.width, height: backing.height, viewports })
+      return { ports: [port], canvases: [canvas] }
+    } catch (e) {
+      this.views.replaceChildren()
+      throw e
+    }
+  }
+
+  // #views in CSS pixels and the device pixel ratio; key changes drive one resize.
+  private viewsSize(): { cssW: number; cssH: number; dpr: number; key: string } {
+    const cssW = Math.max(1, this.views.clientWidth)
+    const cssH = Math.max(1, this.views.clientHeight)
+    const dpr = window.devicePixelRatio || 1
+    return { cssW, cssH, dpr, key: `${cssW}x${cssH}@${dpr}` }
+  }
+
+  // S26: the local canvas's split cells for a seat count (3 seats add the overview cell, seat -1).
+  // The next step drives this for 2..4 seats; local play starts with one.
+  private setLayout(seats: number): void {
+    this.cells = splitLayout(seats, seats === 3)
+    this.viewsSizeKey = ''
+    this.resizeViews()
+  }
+
+  // A #views size change (ResizeObserver, or setLayout) resizes the local canvas through the sdf port's
+  // resize, in backing pixels. A port without resize (non-sdf content) keeps its initial size.
+  private resizeViews(): void {
+    const loaded = this.loaded
+    if (loaded === null || loaded.canvases.length !== 1 || this.cells.length === 0) return
+    const size = this.viewsSize()
+    if (size.key === this.viewsSizeKey) return
+    this.viewsSizeKey = size.key
+    const viewports = pixelViewports(this.cells, size.cssW, size.cssH, size.dpr)
+    const backing = backingSize(viewports)
+    const port = loaded.ports[0] as { resize?: (cssW: number, cssH: number, dpr: number, viewports: Viewport[]) => void }
+    if (typeof port.resize !== 'function') return
+    port.resize(backing.width, backing.height, 1, viewports)
   }
 
   private startMode(): void {

@@ -6,7 +6,8 @@
     <title>Royal Fiesta</title>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #1b0f2e; }
-      /* One canvas per client (client/canvases.ts): the grid columns and rows are set from the client count. */
+      /* #views holds the game canvas(es): local play mounts one canvas split into seats (S26), while the
+         client page keeps one canvas per client; the grid columns and rows are set from that count. */
       #views { position: fixed; inset: 0; display: grid; }
       #views canvas { width: 100%; height: 100%; min-width: 0; min-height: 0; display: block; }
       /* canvas#ui (the uaa screens and HUD, styled by uaaHost.ts) sits over the views; the game takes clicks on menus only. */

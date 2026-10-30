@@ -24,14 +24,13 @@
       "candy-yellow": {"name":"candy-yellow","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#ffc93c","in.roughness":0.12}}],"links":[]}},
       "candy-blue": {"name":"candy-blue","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#3fa9f5","in.roughness":0.12}}],"links":[]}},
       "candy-white": {"name":"candy-white","graph":{"nodes":[{"id":"out","type":"material.output","params":{"in.base_color":"#ffffff","in.roughness":0.12}}],"links":[]}}
-    },
-    "shapes": {}
+    }
   },
   "collision": [
-    {"shape":"roundCuboid","half":[1,0.2,1],"border":0.08,"t":[0,0.2,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","half":[0.3,2.2,0.3],"border":0.08,"t":[0,2.6,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","half":[2.4,0.12,0.2],"border":0.1,"t":[2.5,0,0],"r":[0,0,0,1]},
-    {"shape":"roundCuboid","half":[0.32,0.3,0.32],"border":0.14,"t":[0,0,0],"r":[0,0,0,1]}
+    {"shape":"roundCuboid","halfExtents":[1,0.2,1],"borderRadius":0.08,"t":[0,0.2,0],"r":[0,0,0,1]},
+    {"shape":"roundCuboid","halfExtents":[0.3,2.2,0.3],"borderRadius":0.08,"t":[0,2.6,0],"r":[0,0,0,1]},
+    {"shape":"roundCuboid","halfExtents":[2.4,0.12,0.2],"borderRadius":0.1,"t":[2.5,0,0],"r":[0,0,0,1]},
+    {"shape":"roundCuboid","halfExtents":[0.32,0.3,0.32],"borderRadius":0.14,"t":[0,0,0],"r":[0,0,0,1]}
   ],
   "physics": {
     "bodies": [
@@ -44,6 +43,6 @@
     ]
   },
   "anchors": {},
-  "bounds": {"min":[-1.1,-0.1,-1.1],"max":[5.5,5.15,1.1]},
-  "hash": "6ce95de04a57722ea3099aa8212fd4739b2a608b0cbce6f46faade7736a0a873"
+  "bounds": {"min":[-1,0,-1],"max":[5.32,5.02,1]},
+  "hash": "e8f0e5a5c250617a528a0a88fb1ec65891716134c8d8ea40865957fd857cb42b"
 }

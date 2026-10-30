@@ -200,7 +200,7 @@ test('command cards keep the dependency chain', () => {
   const cards = JSON.parse(readFileSync(new URL('../../.nmc/commands.json', import.meta.url), 'utf8'))
   assert.deepEqual(cards.map((c: { name: string }) => c.name), [
     'sdf-port-typecheck', 'sdf-port-build', 'candy-content-pack', 'candy-assets-proof',
-    'rf-tests', 'rf-judge-m3', 'rf-judge-m4-candy-seesaw-run', 'rf-judge-m4-ice-slide-gates',
+    'rf-tests', 'rf-judge-m3', 'rf-judge-m4-candy', 'rf-judge-m4-ice-slide-gates',
     'rf-judge-m4-jungle-crane-crossing', 'rf-judge-m4-neon-piston-alley',
   ])
   assert.equal(cards.length, 10)

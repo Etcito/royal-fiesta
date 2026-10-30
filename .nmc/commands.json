@@ -46,7 +46,7 @@
     ]
   },
   {
-    "name": "rf-judge-m4-candy-seesaw-run",
+    "name": "rf-judge-m4-candy",
     "command": "node --experimental-strip-types tools/judgeCard.ts m4 --item 0",
     "timeout_s": 1800,
     "after": [

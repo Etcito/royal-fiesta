@@ -80,6 +80,7 @@ export async function packWavedash(opts: { outDir: string }): Promise<{ files: s
     format: 'royal-fiesta.build',
     version: 1,
     commit: gitCommit(root),
+    builtAt: new Date().toISOString().slice(0, 16).replace('T', ' ') + 'Z',
     entry: ENTRY,
     raa: raaVersion(root),
     mama: mamaStamp(root),

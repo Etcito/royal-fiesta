@@ -58,7 +58,7 @@ test('packWavedash writes the documented layout and manifest, entry game.html', 
 
     const stampText = readFileSync(join(out, 'upload', 'rf-build.json'), 'utf8')
     const stamp = JSON.parse(stampText) as Record<string, unknown>
-    assert.deepEqual(Object.keys(stamp), ['format', 'version', 'commit', 'entry', 'raa', 'mama', 'defaultServer'])
+    assert.deepEqual(Object.keys(stamp), ['format', 'version', 'commit', 'builtAt', 'entry', 'raa', 'mama', 'defaultServer'])
     assert.equal(stamp.format, 'royal-fiesta.build')
     assert.equal(stamp.version, 1)
     assert.equal(stamp.entry, 'game.html')

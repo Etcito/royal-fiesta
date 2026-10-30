@@ -2,7 +2,7 @@ The playable game is `apps/web/game.html`. Navigation is the state machine in `p
 
 | id | Screen | Reached by (UI) | Leave with | What it does |
 |---|---|---|---|---|
-| `title` | Title / main menu | A finished load; Escape from credits, settings, or error | Play (vs bots), Play online, Settings, Credits | Starts a game, opens settings, or shows credits. |
+| `title` | Title / main menu | A finished load; Escape from credits, settings, or error | Play (vs bots), Play online, Settings, Credits (a build with a baked relay, VITE_RF_SERVER, has no separate Play online: Play goes to the online lobby) | Starts a game, opens settings, or shows credits. |
 | `hub` | Lobby hub | Play on title | Nothing to press: the round starts by itself. WASD to walk, 1–4 to emote; Escape opens pause | A walkable 3D plaza. Offline: a countdown (`?wait=` seconds, default 60) starts the round with bots; Enter or the green pad start it early. Online: the hub enters a GameSaloon lobby by itself and shows its countdown and players (or the round being spectated) in the overlay; the server starts the round when its wait ends, with whoever is there plus bots. |
 | `queue` | Matchmaking queue | Queue from the hub (in-page piloted clients and the exact-size queue only) | Escape cancels back to the hub | Shows players found n/8. |
 | `lobbyChoice` | A lobby is open | Online, arriving while a lobby waits for players | No longer shown (the player is put in a lobby at once); kept in the navigation model for older servers. Was: Join this lobby, Spectate, New lobby | Shows the lobby's players, its countdown and the time left before the default. |

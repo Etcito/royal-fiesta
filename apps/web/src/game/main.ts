@@ -27,7 +27,7 @@ import { DEFAULT_NAME, LOCAL_LOBBY_WAIT_S, LocalCountdown, cleanName, lobbyLines
 import type { LobbyPick } from '@royal-fiesta/game/hub/lobby'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
 import { netSetup } from '@royal-fiesta/game/net/tuning'
-import { globalWsFactory } from '@royal-fiesta/game/net/ws'
+import { globalWsFactory, type WsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import type { CameraPose, RenderPort, Viewport } from '@royal-fiesta/game/render/port'
@@ -779,6 +779,85 @@ function onlineName(queryName: string): string {
 // One relay client (?server=): this page's bean in the online hub (PlayFlow), its matches and podiums.
 // PlayFlow enters a GameSaloon lobby by itself and returns to the hub after each round, so the queue and leave commands
 // only explain that; a paused page sends no move (the match cannot pause for the others).
+// Always-visible, discreet diagnostics line (bottom-left): build, relay host, lobby, own key, members, socket status.
+// Also logged with console.info('[lobby]'). Hidden later by step 3.
+function bakedOrNull(): string | null {
+  try { return defaultRelay() } catch { return null }
+}
+
+function relayHost(url: string | null): string {
+  if (url === null) return 'none'
+  try { return new URL(url).host } catch { return 'invalid' }
+}
+
+class LobbyDiag {
+  private static inst: LobbyDiag | null = null
+  static get(): LobbyDiag {
+    return (LobbyDiag.inst ??= new LobbyDiag())
+  }
+
+  private readonly el: HTMLElement | null
+  private build = 'build ?'
+  private relay = 'none'
+  private conn = 'idle'
+  private lobby = ''
+  private last = ''
+
+  private constructor() {
+    if (typeof document === 'undefined') {
+      this.el = null
+      return
+    }
+    const el = document.createElement('div')
+    el.id = 'lobby-diag'
+    el.style.cssText = 'position:fixed;left:6px;bottom:4px;z-index:9999;font:10px/1.3 monospace;color:#fff;opacity:.55;'
+      + 'background:rgba(0,0,0,.35);padding:1px 4px;border-radius:3px;pointer-events:none;max-width:96vw;white-space:pre-wrap'
+    document.body.appendChild(el)
+    this.el = el
+    void fetch('rf-build.json').then(r => (r.ok ? r.json() : null)).then((s: { commit?: string | null; builtAt?: string } | null) => {
+      this.build = s === null ? 'build dev' : `build ${(s.commit ?? 'nogit').slice(0, 7)} ${s.builtAt ?? ''}`
+      this.render()
+    }, () => { this.build = 'build dev'; this.render() })
+    this.render()
+  }
+
+  setRelay(host: string): void { this.relay = host; this.render() }
+  setConn(s: string): void { this.conn = s; this.render() }
+  setLobby(s: string): void { this.lobby = s; this.render() }
+
+  private render(): void {
+    const text = `${this.build} | relay ${this.relay} | ${this.conn}${this.lobby ? ` | ${this.lobby}` : ''}`
+    if (this.el !== null) this.el.textContent = text
+    if (text !== this.last) {
+      this.last = text
+      console.info('[lobby]', text)
+    }
+  }
+}
+
+// Wraps the socket factory so the diagnostics line shows open/closed with the close code.
+function diagWs(inner: WsFactory): WsFactory {
+  return url => {
+    const ws = inner(url)
+    const d = LobbyDiag.get()
+    let wasOpen = false
+    const poll = setInterval(() => {
+      if (ws.readyState === 1 && !wasOpen) { wasOpen = true; d.setConn('open') }
+      if (ws.readyState === 3) clearInterval(poll)
+    }, 100)
+    // The client assigns onclose right after creation; wrap it on the next microtask.
+    queueMicrotask(() => {
+      const clientHandler = ws.onclose
+      ws.onclose = e => {
+        clearInterval(poll)
+        d.setConn(`closed code ${e.code}${e.reason ? ` ${e.reason}` : ''}${wasOpen ? '' : ' (before open)'}`)
+        clientHandler?.(e)
+      }
+    })
+    return ws
+  }
+}
+
 class OnlineMode implements Mode {
   failure: string | null = null
   readonly finished = false
@@ -804,7 +883,7 @@ class OnlineMode implements Mode {
     this.name = onlineName(q.name)
     this.names = playerNames(0, this.name)
     this.flow = new PlayFlow({
-      R, relayUrl: server, ws: globalWsFactory(), hubCode: q.hub, name: this.name, colour: q.colour,
+      R, relayUrl: server, ws: diagWs(globalWsFactory()), hubCode: q.hub, name: this.name, colour: q.colour,
       courses: content.playlist(), plaza: content.hub(), partySize: q.party, now: () => performance.now(), pilot: false,
       // GameSaloon timed lobbies: the hub enters one by itself; no pad, no key.
       matchmaking: 'lobby',
@@ -812,8 +891,11 @@ class OnlineMode implements Mode {
         if (ev.state === 'match' && typeof ev.detail.seat === 'number') this.seat = ev.detail.seat
         if (ev.state === 'failed') this.failure = String(ev.detail.message ?? 'the relay connection failed')
         console.info('[game]', ev.state, ev.detail)
+        if (ev.state === 'failed') LobbyDiag.get().setConn(`failed: ${this.failure}`)
       },
     })
+    LobbyDiag.get().setRelay(relayHost(server))
+    LobbyDiag.get().setConn('connecting')
     this.hubView = new HubView(ports[0], 0, name => content.assets(name), content.character(), content.hub(), {
       orbit: c.orbit, character: content.character(), dressing: content.dressing(),
     })
@@ -840,6 +922,13 @@ class OnlineMode implements Mode {
     return this.flow.match?.sim ?? null
   }
 
+  // Lobby id, own presence key, player count and member names for the diagnostics line.
+  private diag(): void {
+    const v = this.flow.lobby.view
+    const names = v.members.map(m => m.name).join(',')
+    LobbyDiag.get().setLobby(`lobby ${v.id ?? '-'} you ${v.you ?? '-'} n=${v.members.length || v.names.length} [${names || v.names.join(',')}] ${this.flow.state}`)
+  }
+
   hud(): HudState | null {
     return this.flow.match === null ? null : { view: this.presenter.view, names: this.names, seat: this.seat }
   }
@@ -863,6 +952,7 @@ class OnlineMode implements Mode {
     let facing: Planar = { x: 0, z: 1 }
     if (flow.match !== null) facing = flow.match.sim.character(this.seat, this.cv).facing
     else if (inHub(before)) facing = flow.hub.state(this.local).facing
+    this.diag()
     flow.frame(f.dt, f.paused ? null : inCharacterFrame(f.world, facing, this.moved), f.paused ? 0 : f.emote)
     const match = flow.match
     const sim = match?.sim ?? null
@@ -1084,6 +1174,12 @@ class App {
     this.host = host
     this.search = search
     this.env = env
+    try {
+      this.nav.onlineOnly = defaultRelay() !== null
+    } catch {
+      this.nav.onlineOnly = true // a malformed baked relay: Play refuses with that message, it never plays offline
+    }
+    LobbyDiag.get().setRelay(this.nav.onlineOnly ? relayHost(bakedOrNull()) : 'none')
     const saved = loadSettings(env.store)
     this.settings = saved.settings
     this.settingsError = saved.error
@@ -1421,7 +1517,7 @@ class App {
       return this.fail(refusal('query', 'server', 'Play online needs a relay; pass ?server=wss://host/... or choose Play to play with bots'))
     }
     this.pendingRelay = this.query?.server === null ? relay : null
-    this.run(this.nav.dispatch({ kind: 'action', action: 'play' }))
+    this.run(this.nav.enterHub())
   }
 
   // The build default relay armed by Play online, consumed by the next startMode.

@@ -118,6 +118,22 @@ test('actions list the buttons of the current screen', () => {
   assert.deepEqual(navAt(play, { kind: 'game', screen: 'round' }).actions(), [])
 })
 
+test('onlineOnly (a baked relay): Play is Play online, no separate button, retry stays online', () => {
+  const nav = new Nav()
+  nav.onlineOnly = true
+  assert.deepEqual(nav.actions(), ['play', 'settings', 'credits'])
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'playOnline' }), [])
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'play' }), ['startOnline'])
+  assert.deepEqual(nav.enterHub(), ['startHub'])
+  assert.equal(nav.screen, 'hub')
+  nav.dispatch({ kind: 'error', message: 'x' })
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'retry' }), ['startOnline'])
+  const boot = new Nav()
+  boot.onlineOnly = true
+  boot.dispatch({ kind: 'load', next: 'hub' })
+  assert.deepEqual(boot.dispatch({ kind: 'loaded' }), ['startOnline'])
+})
+
 const progress = (phase: LoadProgress['phase'], done: number, total: number, label: string): NavEvent =>
   ({ kind: 'progress', progress: { phase, done, total, label } })
 

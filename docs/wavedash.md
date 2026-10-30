@@ -146,9 +146,11 @@ the frame can carry:
   ends up in the built JavaScript, so it is a public relay URL and no token belongs in it. A malformed value (not
   ws:// or wss://) is refused when Play online is chosen.
   - Order: an explicit `?server=` first, then the build default. An explicit `?server=` keeps its behaviour (the
-    whole page is online: `parseQuery` then `OnlineMode`). The build default feeds ONLY the title's Play online (the
-    online lobby flow, PlayFlow with `matchmaking: 'lobby'`): the page still boots in-page, Play stays offline with
-    bots, and leaving the online hub returns to the title where Play is offline again.
+    whole page is online: `parseQuery` then `OnlineMode`). With a build default, the title's Play IS the online lobby
+    flow (PlayFlow with `matchmaking: 'lobby'`) and the separate Play online button is not shown (`Nav.onlineOnly`);
+    retry after a failure stays online. Such a build never falls back to the in-page loopback hub. Without a build
+    default, Play stays offline with bots. A discreet bottom-left line shows build (rf-build.json commit and
+    builtAt), relay host, socket status, lobby id, own key, members; also logged as `[lobby]`.
   - With neither, Play online shows the refusal "Play online needs a relay; pass ?server=wss://host/... or choose
     Play to play with bots" and does not hang.
   - `rf-build.json` records only `defaultServer` (a boolean: a default relay was set), never the URL.

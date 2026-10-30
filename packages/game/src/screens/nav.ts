@@ -91,6 +91,8 @@ export class Nav {
   inMatch = false
   error: string | null = null
   lastStart: StartEffect | null = null
+  // A build with a baked relay: Play IS Play online (the lobby), and the separate button is not offered.
+  onlineOnly = false
   // The latest progress of the running load (null before its first report).
   progress: LoadProgress | null = null
   // The target of a running or failed load; null once content is loaded.
@@ -105,6 +107,7 @@ export class Nav {
     n.inMatch = this.inMatch
     n.error = this.error
     n.lastStart = this.lastStart
+    n.onlineOnly = this.onlineOnly
     n.progress = this.progress === null ? null : { ...this.progress }
     n.loadNext = this.loadNext
     return n
@@ -113,7 +116,7 @@ export class Nav {
   // A stable identity of the whole state, for exploration and tests.
   key(): string {
     return JSON.stringify([this.screen, this.resumeTo, this.settingsFrom, this.live,
-      this.inMatch, this.error, this.lastStart, this.progress, this.loadNext])
+      this.inMatch, this.error, this.lastStart, this.progress, this.loadNext, this.onlineOnly])
   }
 
   // False while a load runs or after it failed: nothing may start without content.
@@ -124,7 +127,8 @@ export class Nav {
   actions(): readonly Action[] {
     // A failed load offers no play button: retry reloads instead.
     if (this.screen === 'title' && !this.contentReady()) return ['retry', 'settings', 'credits']
-    return BUTTONS[this.screen] ?? []
+    const buttons = BUTTONS[this.screen] ?? []
+    return this.onlineOnly && this.screen === 'title' ? buttons.filter(a => a !== 'playOnline') : buttons
   }
 
   dispatch(ev: NavEvent): Effect[] {
@@ -203,7 +207,7 @@ export class Nav {
   private action(a: Action): Effect[] {
     switch (a) {
       case 'play':
-        return this.start(Effect.startHub)
+        return this.start(this.onlineOnly ? Effect.startOnline : Effect.startHub)
       case 'playOnline':
         return this.start(Effect.startOnline)
       case 'settings':
@@ -248,9 +252,18 @@ export class Nav {
     const next = this.loadNext
     this.loadNext = null
     this.progress = null
-    if (next === 'hub') return this.start(Effect.startHub)
+    if (next === 'hub') return this.start(this.onlineOnly ? Effect.startOnline : Effect.startHub)
     this.screen = 'title'
     return []
+  }
+
+  // Enters the hub screen for a start the app already armed (the online start), WITHOUT replacing lastStart: a
+  // retry after an online failure must go online again, never fall back to the in-page loopback hub.
+  enterHub(): Effect[] {
+    const last = this.lastStart
+    const fx = this.start(Effect.startHub)
+    this.lastStart = last
+    return fx
   }
 
   private start(fx: StartEffect): Effect[] {

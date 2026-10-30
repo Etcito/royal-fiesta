@@ -177,10 +177,13 @@ for (const id of IDS) {
         courseIndex, players, players, PROFILES.sprint.timeCapS! * 60 - match.tick)
       const signals = [...new Set([...waits, ...pulls])]
       const seen = new Set<string>()
-      // The start-grid showcase must still run on the counter's real links.
+      // The start-grid showcase must still run on its real mechanisms: the counter's links on
+      // neon-piston-alley and a seesaw tilting under the pack on candy-seesaw-run.
       const showcase = id === 'neon-piston-alley'
         ? [['laser-a', 'beams', -2], ['laser-b', 'beams', -2], ['piston-1', 'block', 0.5]] as const
-        : []
+        : id === 'candy-seesaw-run'
+          ? [['seesaw-1', 'plank', 0.02]] as const
+          : []
       const moved = new Set<string>()
       const current = pose()
       const maxTicks = PROFILES.sprint.introTicks + PROFILES.sprint.timeCapS! * 60 + 2
@@ -206,7 +209,7 @@ for (const id of IDS) {
       assert.deepEqual([...round.qualified].sort((a, b) => a - b), players, `${id} qualifies every player once`)
       assert.deepEqual(round.eliminated, [], `${id} eliminates none`)
       for (const s of signals) assert.ok(seen.has(s), `${id} signal '${s}' is on during the round`)
-      for (const [itemId] of showcase) assert.ok(moved.has(itemId), `${itemId} moves on its counter link`)
+      for (const [itemId] of showcase) assert.ok(moved.has(itemId), `${itemId} moves on its real mechanism`)
     } finally {
       match.free()
     }

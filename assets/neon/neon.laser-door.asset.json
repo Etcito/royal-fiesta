@@ -1,0 +1,593 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "neon.laser-door",
+  "name": "Neon Laser Door",
+  "category": "obstacle",
+  "world": "neon",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Neon Laser Door",
+    "root": [
+      "neon_laser_door"
+    ],
+    "nodes": {
+      "neon_laser_door": {
+        "id": "neon_laser_door",
+        "name": "Neon Laser Door",
+        "kind": "group",
+        "children": [
+          "frame",
+          "beams"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "neon.laser-door",
+          "category": "obstacle",
+          "world": "neon"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "frame": {
+        "id": "frame",
+        "name": "frame",
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "pillar_left",
+          "lens_left_0",
+          "lens_left_1",
+          "lens_left_2",
+          "pillar_right",
+          "lens_right_0",
+          "lens_right_1",
+          "lens_right_2",
+          "collider_0",
+          "collider_1"
+        ],
+        "gameCollision": false
+      },
+      "beams": {
+        "id": "beams",
+        "name": "beams",
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "laser_0",
+          "laser_1",
+          "laser_2",
+          "collider_2"
+        ],
+        "gameCollision": false
+      },
+      "pillar_left": {
+        "id": "pillar_left",
+        "name": "pillar_left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-2, 1.2, 0]
+        },
+        "material": "neon_gunmetal",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.175, 0, 0],
+              [-0.175, 0, 0],
+              [0, 1.2, 0],
+              [0, -1.2, 0],
+              [0, 0, 0.175],
+              [0, 0, -0.175]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lens_left_0": {
+        "id": "lens_left_0",
+        "name": "lens_left_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-1.815, 0.5, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.035, 0, 0],
+              [-0.035, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lens_left_1": {
+        "id": "lens_left_1",
+        "name": "lens_left_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-1.815, 1.1, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.035, 0, 0],
+              [-0.035, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lens_left_2": {
+        "id": "lens_left_2",
+        "name": "lens_left_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-1.815, 1.7, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.035, 0, 0],
+              [-0.035, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "pillar_right": {
+        "id": "pillar_right",
+        "name": "pillar_right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [2, 1.2, 0]
+        },
+        "material": "neon_gunmetal",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.175, 0, 0],
+              [-0.175, 0, 0],
+              [0, 1.2, 0],
+              [0, -1.2, 0],
+              [0, 0, 0.175],
+              [0, 0, -0.175]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lens_right_0": {
+        "id": "lens_right_0",
+        "name": "lens_right_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [1.815, 0.5, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.035, 0, 0],
+              [-0.035, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lens_right_1": {
+        "id": "lens_right_1",
+        "name": "lens_right_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [1.815, 1.1, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.035, 0, 0],
+              [-0.035, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "lens_right_2": {
+        "id": "lens_right_2",
+        "name": "lens_right_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [1.815, 1.7, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.035, 0, 0],
+              [-0.035, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "laser_0": {
+        "id": "laser_0",
+        "name": "laser_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.5, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.8, 0, 0],
+              [-1.8, 0, 0],
+              [0, 0.04, 0],
+              [0, -0.04, 0],
+              [0, 0, 0.04],
+              [0, 0, -0.04]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "laser_1": {
+        "id": "laser_1",
+        "name": "laser_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 1.1, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.8, 0, 0],
+              [-1.8, 0, 0],
+              [0, 0.04, 0],
+              [0, -0.04, 0],
+              [0, 0, 0.04],
+              [0, 0, -0.04]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "laser_2": {
+        "id": "laser_2",
+        "name": "laser_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 1.7, 0]
+        },
+        "material": "laser_red",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.8, 0, 0],
+              [-1.8, 0, 0],
+              [0, 0.04, 0],
+              [0, -0.04, 0],
+              [0, 0, 0.04],
+              [0, 0, -0.04]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "collider_0": {
+        "id": "collider_0",
+        "name": "collider_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-2, 1.2, 0]
+        },
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.175, 0, 0],
+              [-0.175, 0, 0],
+              [0, 1.2, 0],
+              [0, -1.2, 0],
+              [0, 0, 0.175],
+              [0, 0, -0.175]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true,
+        "visible": false
+      },
+      "collider_1": {
+        "id": "collider_1",
+        "name": "collider_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [2, 1.2, 0]
+        },
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.175, 0, 0],
+              [-0.175, 0, 0],
+              [0, 1.2, 0],
+              [0, -1.2, 0],
+              [0, 0, 0.175],
+              [0, 0, -0.175]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true,
+        "visible": false
+      },
+      "collider_2": {
+        "id": "collider_2",
+        "name": "collider_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 1.1, 0]
+        },
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [1.825, 0, 0],
+              [-1.825, 0, 0],
+              [0, 1.1, 0],
+              [0, -1.1, 0],
+              [0, 0, 0.04],
+              [0, 0, -0.04]
+            ],
+            "pointRadii": [null, null, null, null, null, null],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": true,
+        "visible": false
+      }
+    },
+    "materials": {
+      "neon_gunmetal": {
+        "name": "neon_gunmetal",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#1b1a26",
+                "in.roughness": 0.3
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "laser_red": {
+        "name": "laser_red",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff2b5e",
+                "in.roughness": 0.2,
+                "in.emissive": "#ff2b5e"
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "halfExtents": [0.175, 1.2, 0.175],
+      "t": [-2, 1.2, 0],
+      "r": [0, 0, 0, 1]
+    },
+    {
+      "shape": "cuboid",
+      "halfExtents": [0.175, 1.2, 0.175],
+      "t": [2, 1.2, 0],
+      "r": [0, 0, 0, 1]
+    },
+    {
+      "shape": "cuboid",
+      "halfExtents": [1.825, 1.1, 0.04],
+      "t": [0, 1.1, 0],
+      "r": [0, 0, 0, 1]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [-2.175, 0, -0.175],
+    "max": [2.175, 2.4, 0.175]
+  },
+  "hash": "f5fec2ac5e280b2a477bf589d2e90bd2cbbab43aec71ccbd6295ff9fb3db3746",
+  "physics": {
+    "bodies": [
+      {
+        "id": "frame",
+        "type": "fixed",
+        "colliders": [0, 1],
+        "parts": [
+          "frame"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      },
+      {
+        "id": "beams",
+        "type": "kinematic",
+        "colliders": [2],
+        "parts": [
+          "beams"
+        ],
+        "t": [0, 0, 0],
+        "r": [0, 0, 0, 1],
+        "density": 400,
+        "friction": 0.6,
+        "restitution": 0,
+        "linearDamping": 0,
+        "angularDamping": 0.05,
+        "gravityScale": 1,
+        "ccd": false,
+        "surface": "normal"
+      }
+    ],
+    "joints": [
+      {
+        "id": "drop",
+        "kind": "slider",
+        "a": "frame",
+        "b": "beams",
+        "anchorA": [0, 0, 0],
+        "anchorB": [0, 0, 0],
+        "axis": [0, 1, 0],
+        "limitsDeg": null,
+        "limitsM": [-2.2, 0],
+        "stiffness": 0,
+        "damping": 0,
+        "lengthM": 0,
+        "motor": null
+      }
+    ]
+  }
+}

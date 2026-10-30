@@ -36,19 +36,15 @@ interface OpFile { name: string; blob: Blob }
 
 type Act = { key: TourKey } | { click: string } | { dom: string }
 // A leg gives its inputs on the settled previous screen and waits for `until`, or the host to enter `to`.
-// holdS: once settled, `to` must hold for this much game time with no transition.
-// queuedS: `to` must come at least this much game time after the last leg's inputs (the Enter that queued).
-interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; holdS?: number; queuedS?: number; until?: 'remap-open' | 'remap-closed'; name?: string }
-
-// LocalMode's QUEUE_S (main.ts): the offline queue's game time before the match starts.
-const QUEUE_S = 3
+interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; until?: 'remap-open' | 'remap-closed'; name?: string }
 
 // docs/screens.md 'Reached by': the boot load is refused (bootGame), so Retry on the error screen enters
 // 'loading' with a real click; that load lands on title; menus by their buttons; Escape goes back; Play goes to
-// the hub, Escape pauses it, Enter queues. The queue is captured within its QUEUE_S window, then checked:
-// Escape cancels it back to the hub, where no match starts; Enter queues again and the match starts only after
-// QUEUE_S. The offline sprint match then runs by itself to its podium (round 0 is a race the idle player cannot
-// qualify in, so round 1 is spectated).
+// the hub, Escape pauses it. The offline hub has no queue screen: it counts down by itself ('Round starts in N s',
+// ?wait= seconds, 60 by default) and Enter starts the round at once, so the tour presses Enter and the match
+// follows with its countdown. The offline sprint match then runs by itself to its podium (round 0 is a race the
+// idle player cannot qualify in, so round 1 is spectated). Screens the offline App never shows (the online
+// queue, lobbyChoice, lobbyLive) are not in this tour.
 const TOUR: readonly Leg[] = [
   { acts: [], to: 'error', capture: false, timeoutS: 20 },
   { acts: [{ click: 'act-retry' }], to: 'loading', capture: true, timeoutS: 10 },
@@ -65,10 +61,7 @@ const TOUR: readonly Leg[] = [
   { acts: [{ click: 'act-play' }], to: 'hub', capture: true, timeoutS: 30 },
   { acts: [{ key: 'Escape' }], to: 'pause', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'hub', capture: false, timeoutS: 10 },
-  { acts: [{ key: 'Enter' }], to: 'queue', capture: true, timeoutS: 10 },
-  { acts: [{ key: 'Escape' }], to: 'hub', capture: false, timeoutS: 10, holdS: QUEUE_S + 1 },
-  { acts: [{ key: 'Enter' }], to: 'queue', capture: false, timeoutS: 10 },
-  { acts: [], to: 'countdown', capture: true, timeoutS: 30, queuedS: QUEUE_S },
+  { acts: [{ key: 'Enter' }], to: 'countdown', capture: true, timeoutS: 30 },
   { acts: [], to: 'round', capture: true, timeoutS: 15 },
   { acts: [], to: 'result', capture: true, timeoutS: 60 },
   { acts: [], to: 'spectate', capture: true, timeoutS: 60 },
@@ -214,34 +207,27 @@ class Tour {
   readonly transitions: TourTransition[] = []
   readonly captures: TourCapture[] = []
   readonly files: OpFile[] = []
-  // performance.now() and the stepped game time of each transition, by index.
+  // performance.now() and of each transition, by index.
   private readonly at: number[] = []
-  private readonly gameAt: number[] = []
-  private gameS = 0
-  // The game time when the last leg with inputs gave them.
-  private actedS = 0
   private readonly t0 = performance.now()
   // The real inputs since the previous capture.
   private inputs: TourInput[] = []
   // The inputs that reached the previous capture. A screen the game moves to by itself (the match screens
-  // after the Enter that queued) was reached by them, so its capture records them again.
+  // after the Enter that started the round) was reached by them, so its capture records them again.
   private reachedBy: TourInput[] = []
 
   onScreen(e: UaaScreenChange): void {
     const now = performance.now()
     this.at.push(now)
-    this.gameAt.push(this.gameS)
     this.transitions.push({ t: Math.round(now - this.t0) / 1000, from: e.from, to: e.to })
   }
 
   // Inputs on the settled screen, then frames until the host enters leg.to, then its settled frames.
   async leg(g: TourGame, leg: Leg): Promise<void> {
     const seen = this.transitions.length
-    if (leg.acts.length > 0) this.actedS = this.gameS
     for (const act of leg.acts) this.inputs.push('key' in act ? press(g, act.key) : 'dom' in act ? domClick(g, act.dom) : click(g, act.click))
     const deadline = performance.now() + leg.timeoutS * 1000
     let entered = -1
-    let index = -1
     while (entered < 0) {
       if (performance.now() > deadline) this.timeout(g, leg, seen)
       await sleep(FRAME_MS)
@@ -251,10 +237,9 @@ class Tour {
         if (open === (leg.until === 'remap-open')) entered = performance.now()
         continue
       }
-      index = this.transitions.findIndex((t, i) => i >= seen && t.to === leg.to)
+      const index = this.transitions.findIndex((t, i) => i >= seen && t.to === leg.to)
       if (index >= 0) entered = this.at[index]
     }
-    if (leg.queuedS !== undefined) this.checkQueued(leg, leg.queuedS, index)
     // Game time stands still while the enter anims (uaa time is performance.now) play out.
     const settleMs = SETTLE_MS.get(leg.to) ?? 0
     let settled = 0
@@ -267,7 +252,6 @@ class Tour {
     const hostScreen = g.host.currentScreen()
     const screen = leg.name ?? hostScreen
     if (hostScreen !== leg.to) refuse('ops', `uiTour.${leg.to}`, `the host left '${leg.to}' for '${hostScreen}' before it settled; inspect the transitions`)
-    if (leg.holdS !== undefined) await this.hold(g, leg, leg.holdS)
     if (!leg.capture) return
     const shot = await capturePng(g)
     const blob = shot.blob
@@ -283,33 +267,7 @@ class Tour {
   }
 
   private step(g: TourGame, dtS: number): void {
-    this.gameS += dtS
     g.step(dtS)
-  }
-
-  // No transition at all while `to` holds for holdS of game time (after Escape on 'queue': no match starts).
-  private async hold(g: TourGame, leg: Leg, holdS: number): Promise<void> {
-    const seen = this.transitions.length
-    const until = this.gameS + holdS
-    while (this.gameS < until) {
-      await sleep(FRAME_MS)
-      this.step(g, DT)
-      if (this.transitions.length > seen) {
-        const went = this.transitions.slice(seen).map(t => `${t.from ?? '-'} -> ${t.to}`).join(', ')
-        refuse('ops', `uiTour.${leg.to}.hold`, `'${leg.to}' after ${describe(leg.acts)} did not hold for ${holdS} s of game time: ${went}`)
-      }
-    }
-  }
-
-  // The host enters a screen once the previous one's exit anim is done, so transition index comes at or after
-  // the mode's change: the game time from the Enter that queued to it bounds the queue's time from above. A
-  // match that started early (without the queue) shows as less than queuedS.
-  private checkQueued(leg: Leg, queuedS: number, index: number): void {
-    if (!this.transitions.slice(0, index).some(t => t.to === 'queue')) refuse('ops', `uiTour.${leg.to}.queue`, `the host entered '${leg.to}' without passing through 'queue'`)
-    const s = this.gameAt[index] - this.actedS
-    if (s < queuedS - 1e-6) {
-      refuse('ops', `uiTour.${leg.to}.queue`, `'${leg.to}' came ${s.toFixed(3)} s of game time after the Enter that queued, before the ${queuedS} s queue`)
-    }
   }
 
   private timeout(g: TourGame, leg: Leg, seen: number): never {

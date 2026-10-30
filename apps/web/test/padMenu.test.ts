@@ -14,7 +14,7 @@ function pad(index: number, buttons = 17, axes = 4): MenuPad {
   }
 }
 const press = (p: MenuPad, i: number, on = true) => { (p.buttons as { pressed: boolean }[])[i].pressed = on }
-function step(m: PadMenu, pads: MenuPad[], now: number, menu = true): UiEvent[] {
+function step(m: PadMenu, pads: (MenuPad | null)[], now: number, menu = true): UiEvent[] {
   const out: UiEvent[] = []
   m.update(pads, now, menu, out)
   return out

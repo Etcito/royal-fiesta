@@ -18,8 +18,8 @@ import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { browserCourses } from '../client/sources.ts'
 import { zoneContent } from './zoneContent.ts'
 import { countNearFar } from './zoneLobbyPlay.ts'
-import { mountZoneNetScene } from './zoneNetScene.ts'
-import type { ZoneNetScene } from './zoneNetScene.ts'
+import { prepareZoneNetScene } from './zoneNetScene.ts'
+import type { PreparedZoneNetScene, ZoneNetScene } from './zoneNetScene.ts'
 
 const ZONE_PREFIX = '../../../../'
 const SIDECARS = import.meta.glob<string>('../../../../courses/*.zones.json', {
@@ -128,6 +128,7 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
     tuning: tuningHash(mergeZoneTuning(zones)),
     m: { cpuMs: 4, bandwidthKbps: 4096, latencyMs: 30, spareSlots: 3 },
   }
+  let prepared: PreparedZoneNetScene | undefined
   let scene: ZoneNetScene | undefined
   let match: ZoneMatch | undefined
   let disposed = false
@@ -136,12 +137,20 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
     disposed = true
     try { client.bye() } finally {
       try { match?.dispose() } finally {
-        try { scene?.dispose() } finally { client.close() }
+        try { scene?.dispose() } finally {
+          try { prepared?.dispose() } finally { client.close() }
+        }
       }
     }
   }
 
   try {
+    // Everything slow happens before queueing: the bots start simulating the moment the room fills, and a peer
+    // silent for lostAfterMs while its scene mounts is dropped by some peers and not others.
+    phase('mounting scene')
+    const ready = prepared = await prepareZoneNetScene({
+      ...content, canvas: options.canvas, width: options.width, height: options.height, course,
+    })
     phase('connecting to relay')
     await client.connect()
     phase(`queued for a room of ${options.players}`)
@@ -150,11 +159,7 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
     phase(`matched peer ${localPeer} of ${roster.peers.length}`)
     const seats = roster.peers.find(peer => peer.peer === localPeer)!.seats
     const transport = new ZoneRelayTransport(client, localPeer, roster.peers.length, () => performance.now())
-    phase('mounting scene')
-    const view = scene = await mountZoneNetScene({
-      ...content, canvas: options.canvas, width: options.width, height: options.height,
-      course, seatCount: roster.seatCount, firstLocalSeat: seats[0],
-    })
+    const view = scene = ready.attach(roster.seatCount, seats[0])
     phase('creating match')
     const local = match = createZoneMatch(R, {
       localPeer, roster, course, zones, profile: PROFILES.sprint,

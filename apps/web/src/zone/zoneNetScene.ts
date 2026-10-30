@@ -28,10 +28,6 @@ export interface ZoneNetSceneOptions {
   height?: number
   /** The resolved course the networked match plays. */
   course: ResolvedCourse
-  /** All seats of the networked match; seats in local domains are drawn near. */
-  seatCount: number
-  /** First seat this machine owns; the camera follows it. */
-  firstLocalSeat: number
   /** Builds the render port, normally zoneContent('sprint').createPort. */
   createPort: (target: RenderTarget) => Promise<RenderPort>
   /** Fixture asset lookup; defaults to preloadAssets([course], browserAssetResolver()). */
@@ -43,6 +39,17 @@ export interface ZoneNetSceneOptions {
   /** Normal-match skin and animation graph for the near characters. */
   skinned?: SkinnedCharacter
   dressing?: CourseDressing
+}
+
+/** A scene whose assets and render port are ready; attach() then builds the rest synchronously. */
+export interface PreparedZoneNetScene {
+  /**
+   * seatCount: all seats of the networked match (seats in local domains are drawn near); firstLocalSeat: the first
+   * seat this machine owns, which the camera follows. Call once, after the room is matched.
+   */
+  attach(seatCount: number, firstLocalSeat: number): ZoneNetScene
+  /** Releases the port when the scene is never attached. */
+  dispose(): void
 }
 
 export interface ZoneNetScene {
@@ -149,9 +156,12 @@ class DomainSceneSim {
   step(_inputs: readonly PlayerInput[]): void {}
 }
 
-export async function mountZoneNetScene(options: ZoneNetSceneOptions): Promise<ZoneNetScene> {
-  const seatCount = options.seatCount
-  const localSeat = options.firstLocalSeat
+/**
+ * Loads the assets and creates the render port, the slow part of mounting (RAA engine creation is serialized per
+ * page). A zone peer runs it before it queues: once the room is matched the other peers are already simulating, and
+ * a peer that sends nothing for lostAfterMs (3 s) is dropped by some of them and not by others.
+ */
+export async function prepareZoneNetScene(options: ZoneNetSceneOptions): Promise<PreparedZoneNetScene> {
   const assets = options.assets ?? await preloadAssets([options.course], browserAssetResolver())
   const bean = options.bean ?? assets('bean')
   const character = options.character ?? bean
@@ -162,7 +172,23 @@ export async function mountZoneNetScene(options: ZoneNetSceneOptions): Promise<Z
     canvas: options.canvas, width, height, viewports: [{ x: 0, y: 0, width, height }],
   }
   const port = await options.createPort(target)
+  let attached = false
+  return {
+    attach(seatCount, firstLocalSeat) {
+      if (attached) throw new Error('[zone] prepareZoneNetScene: attach() was already called')
+      attached = true
+      return attachScene(options, port, assets, bean, character, seatCount, firstLocalSeat)
+    },
+    dispose() {
+      if (attached) return
+      attached = true
+      port.dispose()
+    },
+  }
+}
 
+function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (name: string) => PrimsAsset,
+  bean: PrimsAsset, character: PrimsAsset, seatCount: number, localSeat: number): ZoneNetScene {
   const feed = new FarFeed()
   const adapter = new DomainSceneSim(options.course, seatCount)
   const orbit = new OrbitCamera()

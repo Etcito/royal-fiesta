@@ -6,7 +6,8 @@ import { roundStep, renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import { loadRaa } from '@etcito/raa'
 import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
 import { materialProgram } from './materialProgram.ts'
-import type { SdfmCompiledMaterial, SdfmMappedMaterial } from '@etcito/raa-sdfm'
+import type { SdfmCompiledMaterial, SdfmMappedMaterial, SdfmNormalVolume } from '@etcito/raa-sdfm'
+import { checkNormalVolume, volumeInstanceParams, volumeMaterial, volumeStandardMaterial, volumeSurfaceAttributes, volumeTexture } from '@etcito/raa-sdfm'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { CameraPose, QuatT, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
@@ -33,17 +34,34 @@ type SdfEngine = Engine & {
 
 const AREA = 'sdf'
 const WHERE = 'sdf-port'
+
+/**
+ * How Paramesh surfaces get their shading normal: 'pixel' (default) samples the part's normal volume per fragment (the
+ * SDF gradient, whatever the mesh density); 'vertex' keeps the interpolated vertex normals. `?normals=vertex` in the
+ * page address picks 'vertex' (comparison, or a device that cannot afford the texture taps).
+ */
+export type NormalsMode = 'pixel' | 'vertex'
+export function normalsMode(search: string = typeof location === 'undefined' ? '' : location.search): NormalsMode {
+  return new URLSearchParams(search).get('normals') === 'vertex' ? 'vertex' : 'pixel'
+}
+/** `?normalsDebug`: Paramesh surfaces show the normal lighting receives (0.5 + n / 2), in either mode. */
+function normalsDebug(search: string = typeof location === 'undefined' ? '' : location.search): boolean {
+  return new URLSearchParams(search).has('normalsDebug')
+}
 const MAX_INSTANCES = 4096
 const MAX_MATERIALS = 1024
 
 // The payload of apps/web/src/sdf/mama/worker.ts: MAMA parts with per-material meshes.
 interface PayloadMesh { material: string | null; positions: Float32Array; normals: Float32Array; uvs: Float32Array | null; indices: Uint32Array }
-interface PayloadPart { partId: string; name: string; frame: Float64Array; meshes: PayloadMesh[] }
+// normalVolume: MAMA's per-pixel normal volume of a Paramesh part (absent in meshes made before it, or for other meshers).
+interface PayloadPart { partId: string; name: string; frame: Float64Array; meshes: PayloadMesh[]; normalVolume?: unknown }
 interface PayloadGroup { group: string; parts: PayloadPart[] }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
 // key = the raa-sdfm part name (group/partId when two parts share a name); joints = 1 + max joint of a skinned part.
-interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint }
+// subMeshes keep `material` absent for MAMA's no-material faces (tintableParts fills them); volume = the 16
+// setInstanceParams floats of a part shaded with its normal volume (its desc then carries the rest-frame streams).
+interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint; volume?: number[] }
 // graph: a material of the part holds input.player_color; multiply: a part with no SDF material (white fallback).
 type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
@@ -90,6 +108,11 @@ class SdfRenderPort implements ResizablePort {
   // RAA instances given a player colour; a later untinted instance with a reused id clears it.
   private readonly tinted = new Set<number>()
   private whiteSurface: number | null = null
+  // The volume-normal twins of the white tint surface and of RAA's default surface (no MAMA material).
+  private volumeWhite: number | null = null
+  private volumeDefault: number | null = null
+  private readonly normals: NormalsMode = normalsMode()
+  private readonly debugNormals = normalsDebug()
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
   constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map()) {
@@ -159,27 +182,41 @@ class SdfRenderPort implements ResizablePort {
   private upload(id: string, meshed: MeshedAsset): Uploaded {
     const payload = payloadOf(id, meshed)
     const engine = this.need()
+    // Per-pixel normals: each part's volume becomes a texture; a part whose volume is missing, malformed or does not
+    // fit the atlas keeps its vertex normals.
+    const textures = new Map<PayloadPart, number[]>()
+    if (this.normals === 'pixel' || this.debugNormals) {
+      for (const group of payload.groups) for (const part of group.parts) {
+        if (part.normalVolume === undefined || part.meshes.length === 0) continue
+        try {
+          const volume: SdfmNormalVolume = checkNormalVolume(part.normalVolume)
+          const params = volumeInstanceParams(volume, engine.addTexture(volumeTexture(volume)), { debug: this.debugNormals })
+          // Debug of the vertex mode: the wrapped functions run with the volume off (the mesh normal).
+          if (this.normals === 'vertex') params[12] = 0
+          textures.set(part, params)
+        } catch (e) {
+          console.warn(`[sdf-port] ${id}#part:${part.name}: vertex normals (${messageOf(e)})`)
+        }
+      }
+    }
     const handles = new Map<string, number>()
+    // The same surfaces with the volume normal (volumeMaterial wraps each function), for the parts in `textures`.
+    const volumeHandles = new Map<string, number>()
     const graph = new Set<string>()
     for (const compiled of payload.materials) {
       const mapped = mapCompiled(compiled, id)
-      const known = this.functions.get(mapped.functionName)
-      if (known !== undefined && known !== mapped.wgsl) refuse(AREA, WHERE, `material program hash collision: ${mapped.functionName}`)
-      if (known === undefined) {
-        try {
-          engine.addMaterialFunction(mapped.functionName, mapped.wgsl)
-        } catch (e) {
-          if (raaCode(e) !== 'material.fn_duplicate') throw e
-        }
-        this.functions.set(mapped.functionName, mapped.wgsl)
-      }
+      this.addFunction(mapped.functionName, mapped.wgsl)
       const base = engine.addSurfaceMaterial({ ...mapped.desc })
       handles.set(compiled.name, base)
+      if (textures.size > 0) {
+        const wrapped = this.volumeFunction(mapped.functionName, mapped.wgsl)
+        volumeHandles.set(compiled.name, wrapped === null ? base : engine.addSurfaceMaterial({ ...mapped.desc, function: wrapped }))
+      }
       if (usesPlayerColour(compiled, mapped)) graph.add(compiled.name)
     }
     // An asset that uses the node puts its fixed materials in graph mode too: a tinted part may mix
     // them with a player-colour material, and in multiply mode the beak and feet would take the tint.
-    if (graph.size > 0) for (const handle of handles.values()) engine.setMaterialTintMode(handle, 'graph')
+    if (graph.size > 0) for (const handle of new Set([...handles.values(), ...volumeHandles.values()])) engine.setMaterialTintMode(handle, 'graph')
     const parts: PartUpload[] = []
     const keys = new Set<string>()
     const emptyParts: string[] = []
@@ -189,16 +226,55 @@ class SdfRenderPort implements ResizablePort {
           emptyParts.push(part.name)
           continue
         }
-        const built = partMesh(part, handles, graph, id)
-        const mesh = engine.addMesh(built.desc)
+        const volume = textures.get(part)
+        const built = partMesh(part, volume === undefined ? handles : volumeHandles, graph, id)
+        let desc = built.desc
+        if (volume !== undefined) {
+          // The rest-frame streams the volume lookup reads; MAMA's no-material faces take the default surface's twin.
+          this.volumeDefault ??= this.volumeSurface({})
+          desc = { ...desc, ...volumeSurfaceAttributes(desc.positions, desc.normals), subMeshes: built.subMeshes.map(sub => ({ ...sub, material: sub.material ?? this.volumeDefault! })) }
+        }
+        const mesh = engine.addMesh(desc)
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
-        parts.push({ name: part.name, key, mesh, desc: built.desc, subMeshes: built.subMeshes, t, r, tint: built.tint })
+        parts.push({ name: part.name, key, mesh, desc, subMeshes: built.subMeshes, t, r, tint: built.tint, ...(volume !== undefined ? { volume } : {}) })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
     return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}) }
+  }
+
+  // Registers a material function once per name (a name is the hash of its code).
+  private addFunction(name: string, wgsl: string): void {
+    const known = this.functions.get(name)
+    if (known !== undefined && known !== wgsl) refuse(AREA, WHERE, `material program hash collision: ${name}`)
+    if (known !== undefined) return
+    try {
+      this.need().addMaterialFunction(name, wgsl)
+    } catch (e) {
+      if (raaCode(e) !== 'material.fn_duplicate') throw e
+    }
+    this.functions.set(name, wgsl)
+  }
+
+  // The volume-normal twin of a registered function, or null when RAA refuses it (the base then keeps vertex normals).
+  private volumeFunction(name: string, wgsl: string): string | null {
+    try {
+      const wrapped = volumeMaterial(name, wgsl)
+      this.addFunction(wrapped.functionName, wrapped.wgsl)
+      return wrapped.functionName
+    } catch (e) {
+      console.warn(`[sdf-port] ${name}: vertex normals (${messageOf(e)})`)
+      return null
+    }
+  }
+
+  // A surface of the wrapped standard function (the record's own values): `desc` as for addSurfaceMaterial.
+  private volumeSurface(desc: { color?: [number, number, number]; roughness?: number }): number {
+    const standard = volumeStandardMaterial()
+    this.addFunction(standard.functionName, standard.wgsl)
+    return this.need().addSurfaceMaterial({ ...desc, function: standard.functionName })
   }
 
   // The rigid upload stays as is; skinned parts get a second mesh with the S18 joint/weight streams.
@@ -254,6 +330,7 @@ class SdfRenderPort implements ResizablePort {
     for (const part of parts) {
       const node = engine.addNode(root, part.t, part.r)
       const instance = engine.addMeshInstance(node, part.mesh)
+      if (part.volume !== undefined) engine.setInstanceParams(instance, part.volume)
       if (tint !== null && part.tint !== 'none') {
         engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
         this.tinted.add(instance)
@@ -399,8 +476,10 @@ class SdfRenderPort implements ResizablePort {
     const engine = this.need()
     uploaded.tintedParts = uploaded.parts.map(part => {
       if (part.tint !== 'multiply') return part
-      this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
-      const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? this.whiteSurface! }))
+      let white: number
+      if (part.volume !== undefined) white = this.volumeWhite ??= this.volumeSurface({ color: [1, 1, 1], roughness: 0.6 })
+      else white = this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
+      const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? white }))
       const desc = { ...part.desc, subMeshes }
       return { ...part, desc, subMeshes, mesh: engine.addMesh(desc) }
     })

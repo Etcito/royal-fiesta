@@ -16,10 +16,11 @@ const MAX_SECONDS = 120
 const FRAME_MS = 16
 const MAX_DT_S = 0.1
 const PIPELINE_WAIT_MS = 10000
-// The GPU client gives a job 295 s; every wait below ends well inside it, so a stall finishes the op with
-// an error naming the step instead of a page timeout with no output.
-const QUEUE_TIMEOUT_MS = 120000
-const SETUP_TIMEOUT_MS = 180000
+// The GPU client gives a job 295 s; every wait below ends inside it (RAA check 30 + join 150 + play
+// ~20 + animations 30 + pipelines 10 + capture 20 = 260 s), so a stall finishes the op with an error
+// naming the step instead of a page timeout with no output.
+const QUEUE_TIMEOUT_MS = 100000
+const SETUP_TIMEOUT_MS = 150000
 const READY_TIMEOUT_MS = 30000
 const CAPTURE_TIMEOUT_MS = 20000
 

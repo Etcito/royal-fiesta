@@ -145,11 +145,10 @@ function delay(ms: number): Promise<void> {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
-// ---- zoneLobbyCapture -------------------------------------------------------------------------------------
+// ---- zoneLobbyCapture / zoneLobbyPair ---------------------------------------------------------------------
 
-async function zoneLobbyCapture(raw: unknown): Promise<OpEnvelope<ZoneLobbyCaptureOutput>> {
-  const input = validate(raw)
-  const adapter = await prelude()
+// One browser peer: join the room, play it on real time, capture one RAA frame.
+async function runLobby(input: ZoneLobbyCaptureInput, adapter: AdapterInfo): Promise<ZoneLobbyCaptureOutput> {
   const canvas = makeCanvas(input.width, input.height)
   const realNow = performance.now.bind(performance)
   let lobby: ZoneLobby | null = null
@@ -193,32 +192,65 @@ async function zoneLobbyCapture(raw: unknown): Promise<OpEnvelope<ZoneLobbyCaptu
     if (png === null || png.length === 0) refuse('render', 'raa', 'the zone lobby capture returned no PNG bytes; the RAA port must read the canvas back')
     const info = joined.info
     return {
-      json: {
-        renderer: 'raa',
-        adapter,
-        matched: { peers: info.peers, seats: info.seats, localPeer: info.localPeer },
-        ticks: info.tick,
-        near: info.near,
-        far: info.far,
-        captures: [{ name: 'zone-lobby', width: input.width, height: input.height, mime: 'image/png', base64: base64Of(png) }],
-      },
-      files: [],
+      renderer: 'raa',
+      adapter,
+      matched: { peers: info.peers, seats: info.seats, localPeer: info.localPeer },
+      ticks: info.tick,
+      near: info.near,
+      far: info.far,
+      captures: [{ name: 'zone-lobby', width: input.width, height: input.height, mime: 'image/png', base64: base64Of(png) }],
     }
-  } catch (error) {
-    // mountZoneLobby already refuses with the text of its cause; keep it verbatim.
-    if (isRefusal(error)) throw error
-    return refuse('ops', 'zoneLobbyCapture', error instanceof Error ? error.message : String(error))
   } finally {
     try { lobby?.dispose() } finally { canvas.remove() }
   }
 }
 
-type ZoneLobbyOps = { zoneLobbyCapture(input: unknown): Promise<OpEnvelope<ZoneLobbyCaptureOutput>> }
+function opFailure(op: string, error: unknown): never {
+  // mountZoneLobby already refuses with the text of its cause; keep it verbatim.
+  if (isRefusal(error)) throw error
+  return refuse('ops', op, error instanceof Error ? error.message : String(error))
+}
 
-// window.nmcGpu.ops.zoneLobbyCapture, next to the game page's ops. Registering has no side effect.
+async function zoneLobbyCapture(raw: unknown): Promise<OpEnvelope<ZoneLobbyCaptureOutput>> {
+  const input = validate(raw)
+  const adapter = await prelude()
+  try { return { json: await runLobby(input, adapter), files: [] } }
+  catch (error) { return opFailure('zoneLobbyCapture', error) }
+}
+
+export interface ZoneLobbyPairInput { peers: [ZoneLobbyCaptureInput, ZoneLobbyCaptureInput] }
+interface ZoneLobbyPairOutput { runs: ZoneLobbyCaptureOutput[] }
+
+// Two browser peers of the same room in one GPU job: the GPU broker runs one job per project at a time,
+// so two separate capture jobs never overlap and a room that needs both of them never fills.
+async function zoneLobbyPair(raw: unknown): Promise<OpEnvelope<ZoneLobbyPairOutput>> {
+  const op = 'zoneLobbyPair'
+  const o = obj(op, 'input', raw)
+  onlyKeys(op, 'input', o, ['peers'])
+  if (!Array.isArray(o.peers) || o.peers.length !== 2) refuse('ops', `${op}.input.peers`, 'pass exactly two zoneLobbyCapture inputs')
+  const peers = o.peers.map(validate)
+  if (peers[0].name === peers[1].name) refuse('ops', `${op}.input.peers`, `both peers are named '${peers[0].name}'; give each a distinct name`)
+  const adapter = await prelude()
+  // Both join concurrently; a failure of one is reported only after the other has settled and cleaned up.
+  const settled = await Promise.allSettled(peers.map(input => runLobby(input, adapter)))
+  const failed = settled.findIndex(result => result.status === 'rejected')
+  if (failed >= 0) {
+    const reason = (settled[failed] as PromiseRejectedResult).reason
+    return opFailure(`${op}.${peers[failed].name}`, reason)
+  }
+  return { json: { runs: settled.map(result => (result as PromiseFulfilledResult<ZoneLobbyCaptureOutput>).value) }, files: [] }
+}
+
+type ZoneLobbyOps = {
+  zoneLobbyCapture(input: unknown): Promise<OpEnvelope<ZoneLobbyCaptureOutput>>
+  zoneLobbyPair(input: unknown): Promise<OpEnvelope<ZoneLobbyPairOutput>>
+}
+
+// window.nmcGpu.ops.zoneLobbyCapture and zoneLobbyPair, next to the game page's ops. Registering has no side effect.
 export function installZoneLobbyOps(): void {
   const gpu = window.nmcGpu
   if (gpu === undefined) refuse('ops', 'installZoneLobbyOps', 'window.nmcGpu is missing; install the base GPU ops first')
   const ops = gpu.ops as unknown as ZoneLobbyOps
   ops.zoneLobbyCapture = zoneLobbyCapture
+  ops.zoneLobbyPair = zoneLobbyPair
 }

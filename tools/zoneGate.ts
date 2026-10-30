@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { isAbsolute, join, win32 } from 'node:path'
 import { promisify } from 'node:util'
 import { decodePng, unwrapOp } from '../apps/headless/src/gpuRecord.ts'
-import type { ZoneLobbyCaptureInput } from '../apps/web/src/zone/zoneLobbyOps.ts'
+import type { ZoneLobbyCaptureInput, ZoneLobbyPairInput } from '../apps/web/src/zone/zoneLobbyOps.ts'
 import { startGateBots, startZoneGateRelay } from './zoneGateRelay.ts'
 import { packContent, profileAssetIds } from './content.ts'
 import { MeshBaker } from './meshBake.ts'
@@ -26,6 +26,8 @@ let stage = 'validate GPU wait'
 let scratch: string | undefined
 let relay: Awaited<ReturnType<typeof startZoneGateRelay>> | undefined
 let bots: ReturnType<typeof startGateBots> | undefined
+// The first failure, printed again as the very last line (after the bots' and relay's shutdown lines).
+let failure: string | undefined
 
 function publicData(value: unknown): void {
   const text = JSON.stringify(value)
@@ -141,7 +143,7 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
     stage = 'prepare built game page'
   }
   const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'))
-  assert(manifest.page === 'game.html' && Array.isArray(manifest.ops) && manifest.ops.includes('zoneLobbyCapture'))
+  assert(manifest.page === 'game.html' && Array.isArray(manifest.ops) && manifest.ops.includes('zoneLobbyPair'))
   // The page answers content/meshes/<key> from the pack; a missing mesh makes the browser run MAMA itself
   // for every asset, which outlasts a render. Mesh on the server first, only the assets the page's load meshes
   // (cached by content key for every worktree, see meshCacheDir; a refusal is cached and published as .failed).
@@ -158,7 +160,7 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
   // Adapt the required transport name without changing any source page or declared source op.
   const script = 'zone-gate-transport.js'
   writeFileSync(join(dist, script),
-    'document.addEventListener("DOMContentLoaded",()=>{window.nmcGpu.ops.render=(input)=>window.nmcGpu.ops.zoneLobbyCapture(input)},{once:true});\n')
+    'document.addEventListener("DOMContentLoaded",()=>{window.nmcGpu.ops.render=(input)=>window.nmcGpu.ops.zoneLobbyPair(input)},{once:true});\n')
   const page = join(dist, 'game.html')
   const html = readFileSync(page, 'utf8').replace(
     /<script\b[^>]*\bsrc\s*=\s*(["'])(?:\.\/)?zone-capture-transport\.js\1[^>]*>\s*<\/script\s*>/gi, '')
@@ -172,20 +174,23 @@ window.nmcGpu={ops:{render:async(input)=>new Promise(resolve=>{
   const ref = await publish(dist)
   stage = 'start six bot peers'
   bots = startGateBots(relay.localUrl, { peers: 6, seatsPerPeer: 2, players: 8, course: 'race-sprint', seconds: 600 })
-  stage = 'two Chrome zone captures'
+  // The GPU broker runs one job per project at a time: two capture jobs would run one after the other and
+  // the first would wait alone for a room that needs both. Both Chrome peers join from one job.
+  stage = 'two Chrome zone captures (one GPU job, two peers)'
   const names = ['chrome-a', 'chrome-b'] as const
-  const jobs = names.map(async (name, i) => render(ref, {
-    relay: browserRelays[i], players: 8, seatsPerPeer: 1, course: 'race-sprint',
-    seconds: 20, name, width: 1280, height: 720,
-  } satisfies ZoneLobbyCaptureInput, name))
-  // Keep scratch and the relay alive even if one of the concurrent jobs fails first.
-  let results: Awaited<(typeof jobs)[number]>[]
-  try { results = await Promise.all(jobs) }
-  finally { await Promise.allSettled(jobs) }
-  const outputs = results.map(result => unwrapOp(result, 'captures').out)
+  const pair = await render(ref, {
+    peers: names.map((name, i) => ({
+      relay: browserRelays[i], players: 8, seatsPerPeer: 1, course: 'race-sprint',
+      seconds: 20, name, width: 1280, height: 720,
+    } satisfies ZoneLobbyCaptureInput)) as ZoneLobbyPairInput['peers'],
+  } satisfies ZoneLobbyPairInput, 'chrome-pair')
+  const runs = unwrapOp(pair, 'runs').out.runs
+  assert(Array.isArray(runs) && runs.length === 2, 'two Chrome runs required')
+  const outputs = runs as Record<string, any>[]
   const peers: number[] = []
   const images = outputs.map((out, i) => {
-    stage = `validate ${names[i]}`
+    const m = out.matched as Record<string, unknown> | undefined
+    stage = `validate ${names[i]} (matched peers ${m?.peers}, localPeer ${m?.localPeer}, ticks ${out.ticks}, near ${out.near}, far ${out.far})`
     assert(out.renderer === 'raa', 'RAA renderer required')
     const adapter = out.adapter as Record<string, unknown> | undefined
     assert(adapter && adapter.software === false, 'hardware adapter required')
@@ -245,9 +250,19 @@ function cause(error: unknown): string {
   return text
 }
 
+// One line: where it failed, the refusal or assertion, and the GPU job's last status when there was a job.
+function summary(at: string, detail: string): string {
+  const lines = detail.split('\n').map(line => line.trim()).filter(Boolean)
+  const job = lines.filter(line => /^GPU job \w+: /.test(line)).pop()?.replace(/^GPU job (\w+): /, 'GPU job $1 ')
+  const reason = (lines.find(line => /^(Error: |\w*Error\b)/.test(line) && !/^Error: Command failed/.test(line))
+    ?? lines.find(line => !/^(Command failed|GPU job )/.test(line)) ?? lines[0] ?? 'no detail').split(' | ')[0]
+  return `zone gate FAILED at ${at}: ${reason}${job ? ` (last status: ${job})` : ''}`
+}
+
 function failed(at: string, error: unknown): void {
   console.error(`zone gate failed: ${at}`)
   const detail = cause(error)
+  failure ??= summary(at, detail)
   console.error(detail)
   diagnostics.push(`zone gate failed: ${at}`, detail)
   process.exitCode = 1
@@ -276,4 +291,5 @@ finally {
   } catch (error) { failed('save diagnostics', error) }
   try { if (scratch) rmSync(scratch, { recursive: true, force: true }) }
   catch (error) { failed('remove scratch', error) }
+  if (failure) console.error(failure)
 }

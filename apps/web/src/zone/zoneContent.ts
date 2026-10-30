@@ -8,11 +8,29 @@ import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { loadSdfContent } from '../content/sdfLoad.ts'
 import { createSdfPort } from '../sdf/sdfPort.ts'
 
-export async function zoneContent(profile: ProfileName) {
+// One load per profile for the page: two lobbies of one GPU job (zoneLobbyPair) share it.
+const loads = new Map<ProfileName, ReturnType<typeof loadZoneContent>>()
+
+async function loadZoneContent(profile: ProfileName) {
   const content = pickContent(new URLSearchParams({ content: 'sdf' }))
   await content.load(profile, () => {})
   // The second load reuses the normal content's memory mesh cache.
   const loaded = await loadSdfContent(profile, () => {})
+  return { content, loaded }
+}
+
+export function zoneContent(profile: ProfileName) {
+  let load = loads.get(profile)
+  if (load === undefined) {
+    load = loadZoneContent(profile)
+    loads.set(profile, load)
+    // A failed load is not cached: the next lobby retries it.
+    load.catch(() => { if (loads.get(profile) === load) loads.delete(profile) })
+  }
+  return load.then(({ content, loaded }) => zoneContentOf(content, loaded))
+}
+
+function zoneContentOf(content: ReturnType<typeof pickContent>, loaded: Awaited<ReturnType<typeof loadSdfContent>>) {
   const id = 'zone.far-bean'
   const data = farFigureMesh()
   loaded.meshed.set(id, { assetId: id, hash: '', mesher: 'paramesh', parts: 1,

@@ -75,8 +75,6 @@ export class HubView {
   private localBean = -1
   private localColour = -1
   private slots = new Map<number, Slot>()
-  private readonly localPrev = { x: 0, z: 0, set: false }
-  private localSpeed = 0
   private localStride = 0
   private localPos: Vec3 = { x: 0, y: 0, z: 0 }
   private cam: CameraPose | null = null
@@ -190,13 +188,13 @@ export class HubView {
       this.localColour = lc
     }
     const ms = this.clock * 1000
-    if (this.localPrev.set && dtS > 0) this.localSpeed = Math.hypot(local.pos.x - this.localPrev.x, local.pos.z - this.localPrev.z) / dtS
-    this.localPrev.x = local.pos.x
-    this.localPrev.z = local.pos.z
-    this.localPrev.set = true
-    this.localStride += this.localSpeed * dtS
+    // The walk (lean, bob) reads the sim's planar velocity, not the drawn displacement over the frame: the hub
+    // steps at 60 Hz, so on a faster display most frames carry 0 ticks and the next 1 (or 0 then 2 at 60 Hz with
+    // jitter), and a per-frame speed flipped the lean and bob on and off ~120 times a second (own bean vibrating).
+    const localSpeed = Math.hypot(local.vel.x, local.vel.z)
+    this.localStride += localSpeed * dtS
     this.localPos = local.pos
-    this.draw(this.localBean, local.pos, Math.atan2(local.facing.x, local.facing.z), localEmote, local.mode, this.localSpeed, this.localStride, 1)
+    this.draw(this.localBean, local.pos, Math.atan2(local.facing.x, local.facing.z), localEmote, local.mode, localSpeed, this.localStride, 1)
 
     // Every remote has its own bean, as many as the lobby holds; a new one grows in, a leaver shrinks out.
     for (const slot of this.slots.values()) slot.seen = false

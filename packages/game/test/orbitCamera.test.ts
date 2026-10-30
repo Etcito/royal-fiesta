@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { stickToWorld } from '../src/client/cameraBasis.ts'
 import { followCamera } from '../src/render/camera.ts'
-import { DEFAULT_PITCH, ORBIT_DISTANCE, OrbitCamera, PITCH_MAX, PITCH_MIN } from '../src/render/orbitCamera.ts'
+import { ARM_HOLD_S, DEFAULT_PITCH, ORBIT_DISTANCE, OrbitCamera, PITCH_MAX, PITCH_MIN } from '../src/render/orbitCamera.ts'
 import { armClip } from '../src/render/cameraOcclusion.ts'
 import type { CameraPose, Vec3T } from '../src/render/port.ts'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
@@ -179,13 +179,36 @@ test('spring arm: a wall behind the player shortens the arm, eases back out, a w
   const hit = cam.pose({ x: 0, y: 0, z: 0 }, 0, clip)
   assert.ok(dist(hit) < ORBIT_DISTANCE - 1 && dist(hit) >= 0.5, 'the arm stops short of the wall')
   assert.ok(hit.eye[2] > -3, 'the eye stays in front of the wall face (z = -3)')
-  const after = cam.pose({ x: 0, y: 0, z: 0 }, 0.01, armClip(course, new Float64Array([0, 0, -30, 0, 0, 0, 1])))
-  assert.ok(dist(after) > dist(hit) && dist(after) < ORBIT_DISTANCE, 'the arm eases out, not a pop')
+  const away = armClip(course, new Float64Array([0, 0, -30, 0, 0, 0, 1]))
+  near(dist(cam.pose({ x: 0, y: 0, z: 0 }, ARM_HOLD_S / 2, away)), dist(hit), 'the arm holds while the wall was just there')
+  cam.ground()
+  cam.basis()
+  near(dist(cam.pose({ x: 0, y: 0, z: 0 }, 0, away)), dist(hit), 'basis()/ground() never reset the arm')
+  const after = cam.pose({ x: 0, y: 0, z: 0 }, ARM_HOLD_S, away)
+  const later = cam.pose({ x: 0, y: 0, z: 0 }, 0.01, away)
+  assert.ok(dist(later) > dist(after) - EPS && dist(later) > dist(hit) && dist(later) < ORBIT_DISTANCE, 'the arm eases out after the hold, not a pop')
   for (let i = 0; i < 100; i++) cam.pose({ x: 0, y: 0, z: 0 }, 0.05, armClip(course, new Float64Array([0, 0, -30, 0, 0, 0, 1])))
   near(dist(cam.pose({ x: 0, y: 0, z: 0 }, 0, armClip(course, new Float64Array([0, 0, -30, 0, 0, 0, 1])))), ORBIT_DISTANCE, 'free again: full arm')
   cam.reset(0)
   const inside = cam.pose({ x: 0, y: 0, z: -3.5 }, 0, clip)
   near(dist(inside), ORBIT_DISTANCE, 'a start inside a collider keeps the full arm')
+})
+
+test('spring arm: a ray grazing an edge (hit, miss, hit...) every other frame keeps a steady arm', () => {
+  const course = {
+    obstacles: [{ colliders: [{ shape: 'cuboid', half: { x: 5, y: 5, z: 0.5 }, t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 } }] }],
+  } as unknown as ResolvedCourse
+  const hitClip = armClip(course, new Float64Array([0, 0, -3.5, 0, 0, 0, 1]))
+  const missClip = armClip(course, new Float64Array([0, 0, -30, 0, 0, 0, 1]))
+  const cam = new OrbitCamera()
+  cam.reset(0)
+  const arms: number[] = []
+  for (let i = 0; i < 120; i++) {
+    cam.ground()
+    arms.push(dist(cam.pose({ x: 0, y: 0, z: 0 }, 1 / 60, i % 2 === 0 ? hitClip : missClip)))
+  }
+  const span = Math.max(...arms) - Math.min(...arms)
+  assert.ok(span < 1e-6, `the arm stays put (span ${span} m)`)
 })
 
 test('spring arm: a posed mechanism body shortens the arm like an obstacle, and moves with its pose', () => {

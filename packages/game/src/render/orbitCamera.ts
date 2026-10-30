@@ -16,9 +16,12 @@ export const STICK_RAD_S = 0.6
 export const STICK_DEADZONE = 0.15
 // Spring arm: the eye stops CAMERA_RADIUS short of an obstacle on the way back from the target (never
 // closer than MIN_ARM), snaps in at once and eases back out at ARM_RECOVER_M_S so a passing wall does not pop.
+// It only eases out once nothing shortened it for ARM_HOLD_S: a ray grazing an edge (hit, miss, hit...) as the
+// player moves would otherwise pump the eye in and out every frame, which reads as the player vibrating.
 export const CAMERA_RADIUS = 0.3
 export const MIN_ARM = 0.5
 export const ARM_RECOVER_M_S = 12
+export const ARM_HOLD_S = 0.4
 
 const TAU = Math.PI * 2
 const ORIGIN = { x: 0, y: 0, z: 0 }
@@ -48,16 +51,21 @@ export class OrbitCamera {
   pitch = DEFAULT_PITCH
   // Current arm length (target to eye); below ORBIT_DISTANCE while an obstacle shortens it.
   private arm = ORBIT_DISTANCE
+  // Seconds left before the arm may ease back out (ARM_HOLD_S after the last shortening).
+  private hold = 0
 
   reset(yaw = 0): void {
     this.yaw = wrapYaw(yaw)
     this.pitch = DEFAULT_PITCH
     this.arm = ORBIT_DISTANCE
+    this.hold = 0
   }
 
-  // Screen basis on XZ of the current pose; pass basis() to stickToWorld for movement.
+  // Screen basis on XZ of the current pose; pass basis() to stickToWorld for movement. It reads the view
+  // direction only and never touches the arm: the page asks for it every frame (movement, mouse turns), and
+  // resetting the arm there removed the ease-out, so the eye popped between full and clipped each frame.
   basis(): PlanarBasis {
-    const p = this.pose(ORIGIN)
+    const p = this.at(ORIGIN, ORBIT_DISTANCE)
     return cameraBasis(p.eye, p.target)
   }
 
@@ -91,17 +99,35 @@ export class OrbitCamera {
     const fz = Math.cos(this.yaw)
     const ch = Math.cos(this.pitch)
     const sv = Math.sin(this.pitch)
+    if (clip === undefined) {
+      this.arm = ORBIT_DISTANCE
+      this.hold = 0
+      return this.at(focus, ORBIT_DISTANCE)
+    }
+    const free = clip([focus.x, focus.y + TARGET_HEIGHT, focus.z], [-fx * ch, sv, -fz * ch], ORBIT_DISTANCE, CAMERA_RADIUS)
+    const want = Math.max(MIN_ARM, free)
+    const dt = Number.isFinite(dtS) && dtS > 0 ? dtS : 0
+    // An obstacle at or inside the current arm (the same hit as last frame included) restarts the hold.
+    if (want <= this.arm) {
+      this.arm = want
+      this.hold = ARM_HOLD_S
+    } else if (this.hold > 0) {
+      this.hold -= dt
+    } else {
+      this.arm = Math.min(want, this.arm + ARM_RECOVER_M_S * dt)
+    }
+    return this.at(focus, this.arm)
+  }
+
+  // The pose with the eye `len` back from the target along the current yaw and pitch.
+  private at(focus: { x: number; y: number; z: number }, len: number): CameraPose {
+    const fx = Math.sin(this.yaw)
+    const fz = Math.cos(this.yaw)
+    const ch = Math.cos(this.pitch)
+    const sv = Math.sin(this.pitch)
     const tx = focus.x
     const ty = focus.y + TARGET_HEIGHT
     const tz = focus.z
-    let len = ORBIT_DISTANCE
-    if (clip !== undefined) {
-      const free = clip([tx, ty, tz], [-fx * ch, sv, -fz * ch], ORBIT_DISTANCE, CAMERA_RADIUS)
-      const want = Math.max(MIN_ARM, free)
-      const grown = this.arm + (Number.isFinite(dtS) && dtS > 0 ? ARM_RECOVER_M_S * dtS : 0)
-      this.arm = want < this.arm ? want : Math.min(want, grown)
-      len = this.arm
-    } else this.arm = ORBIT_DISTANCE
     return { eye: [tx - fx * ch * len, ty + sv * len, tz - fz * ch * len], target: [tx, ty, tz], fovYDeg: 60, near: 0.1, far: 500 }
   }
 

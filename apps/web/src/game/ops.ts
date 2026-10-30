@@ -48,8 +48,8 @@ import { HubView } from '../play/hubView.ts'
 import { InPageHubLoop } from '../play/inpageHub.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
-import { uiTour } from './uiTour.ts'
-import type { BootGame, UiTourOutput } from './uiTour.ts'
+import { uiTour, tourScreens, TOUR_SCREENS } from './uiTour.ts'
+import type { BootGame, TourDeps, UiTourOutput } from './uiTour.ts'
 
 export interface ControlCase { name: string; input: 'KeyD' | 'ArrowRight' | 'stickRight' | 'KeyA' | 'ArrowLeft' | 'stickLeft' | 'mouseRight' | 'rightStickRight'; holdMs: number }
 export interface ControlsProbeInput { width: 1280; height: 720; content: ContentId; course: string; cases: ControlCase[] }
@@ -958,11 +958,11 @@ class MultiDriver implements Driver {
 type MomentKind = 'loading' | 'hub' | 'match' | 'podium' | 'back-in-hub'
 interface Moment { name: string; kind: MomentKind; frames: number; clock: 'stage' | 'playing' }
 const RANK: Record<MomentKind, number> = { loading: 0, hub: 1, match: 2, podium: 3, 'back-in-hub': 4 }
-const FLOW_MOMENTS: Record<GameCaptureInput['flow'], readonly MomentKind[]> = {
+const FLOW_MOMENTS: Record<GameCaptureInput['flow'], readonly string[]> = {
   hub: ['loading', 'hub'],
   match: ['loading', 'match', 'podium'],
   podium: ['loading', 'podium'],
-  tour: ['loading', 'hub', 'match', 'podium', 'back-in-hub'],
+  tour: [...new Set(['loading', 'hub', 'match', 'podium', 'back-in-hub', ...TOUR_SCREENS])],
 }
 // Frames a stage is shown before its capture: hub (with every remote), podium, back in the hub.
 const SETTLE: Record<'hub' | 'podium' | 'back-in-hub', number> = { hub: 120, podium: 60, 'back-in-hub': 120 }
@@ -971,7 +971,7 @@ const MAX_FRAMES = 60 * 900
 // The original clock: the multi-client run replaces performance.now with its virtual clock.
 const realNow = performance.now.bind(performance)
 
-function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Moment[] } {
+function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Moment[]; screens: string[] } {
   const op = 'gameCapture'
   const o = obj(op, 'input', raw)
   onlyKeys(op, 'input', o, ['content', 'course', 'flow', 'clients', 'width', 'height', 'captureAt', 'reload', 'net', 'local', 'touch'])
@@ -1008,8 +1008,18 @@ function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Mome
   if (!Array.isArray(o.captureAt) || o.captureAt.length < 1 || o.captureAt.length > 16) refuse('ops', `${op}.input.captureAt`, 'is not an array of 1..16 moment names')
   const allowed = FLOW_MOMENTS[flow]
   const moments: Moment[] = []
+  // Shared names retain the legacy flow meaning unless a tour-only name selects the screen runner.
+  const flowNames = ['loading', 'hub', 'match', 'podium', 'back-in-hub']
+  const screenMode = flow === 'tour' && o.captureAt.some(name => typeof name === 'string' && TOUR_SCREENS.includes(name) && !flowNames.includes(name))
+  const screens: string[] = []
   for (let i = 0; i < o.captureAt.length; i++) {
     const name: unknown = o.captureAt[i]
+    if (screenMode) {
+      if (typeof name !== 'string' || !TOUR_SCREENS.includes(name)) refuse('ops', `${op}.input.captureAt/${i}`, 'tour screen names and flow moments cannot be mixed; request only tour screens or only flow moments')
+      if (screens.includes(name)) refuse('ops', `${op}.input.captureAt/${i}`, `${name} is repeated; request each screen once`)
+      screens.push(name)
+      continue
+    }
     // playing and playing+<s>s count from the first frame the match sim is in Phase.playing; match-<s>s counts
     // from the match stage, as it always has.
     const s = typeof name === 'string' ? /^match-(\d+(?:\.\d+)?)s$/.exec(name) : null
@@ -1035,7 +1045,7 @@ function validateCapture(raw: unknown): { input: GameCaptureInput; moments: Mome
     }
     moments.push({ name, kind, frames, clock })
   }
-  return { input: { content, course, flow, clients, width, height, captureAt: o.captureAt as string[], reload: o.reload === true, net, local, touch }, moments }
+  return { input: { content, course, flow, clients, width, height, captureAt: o.captureAt as string[], reload: o.reload === true, net, local, touch }, moments, screens }
 }
 
 // The loading screen is DOM and cannot be read back, so its capture is a 2D drawing of the same progress.
@@ -1203,8 +1213,35 @@ async function playFlow(run: Run, content: GameContent, course: ResolvedCourse |
   }
 }
 
-async function gameCapture(raw: unknown): Promise<OpResult<GameCaptureOutput>> {
-  const { input, moments } = validateCapture(raw)
+async function gameCapture(raw: unknown, deps: TourDeps): Promise<OpResult<GameCaptureOutput>> {
+  const { input, moments, screens } = validateCapture(raw)
+  if (screens.length > 0) {
+    const tour = await tourScreens(screens, deps)
+    const captures: SizedCapture[] = []
+    const files: OpFile[] = []
+    for (const file of tour.files) {
+      const image = await createImageBitmap(file.blob)
+      const canvas = document.createElement('canvas')
+      canvas.width = input.width
+      canvas.height = input.height
+      const ctx = canvas.getContext('2d')
+      if (ctx === null) refuse('ops', 'gameCapture.tour', 'no 2D canvas context to size the tour capture')
+      ctx.drawImage(image, 0, 0, input.width, input.height)
+      image.close()
+      const png = await pngBlob(canvas, 'gameCapture.tour')
+      const rec = await record(file.name.slice(0, -4), png, files)
+      captures.push({ ...rec, width: input.width, height: input.height })
+    }
+    return {
+      json: {
+        renderer: 'raa', adapter: tour.json.adapter, software: tour.json.software, pageRef: pageRef(),
+        captures, frameTiming: null, content: input.content, courses: [],
+        events: tour.json.transitions.map(t => ({ t: t.t, what: `${t.from ?? '-'} -> ${t.to}` })),
+        report: {}, reports: [],
+      },
+      files,
+    }
+  }
   const { R, adapter } = await prelude()
   const t0 = realNow()
   const events: GameEvent[] = []
@@ -1262,6 +1299,11 @@ export function installGameOps(teardown: () => void, bootGame: BootGame): void {
   const { roundCapture } = gpu.ops
   gpu.ops.roundCapture = input => (prepare(), roundCapture(input))
   gpu.ops.controlsProbe = input => (prepare(), controlsProbe(input))
-  gpu.ops.gameCapture = input => (prepare(), gameCapture(input))
+  gpu.ops.gameCapture = input => {
+    const { screens } = validateCapture(input)
+    if (screens.length > 0) take()
+    else prepare()
+    return gameCapture(input, { boot: bootGame, adapter: adapterInfo })
+  }
   gpu.ops.uiTour = input => (take(), uiTour(input, { boot: bootGame, adapter: adapterInfo }))
 }

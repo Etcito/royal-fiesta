@@ -34,11 +34,11 @@ export interface UiTourOutput {
 }
 interface OpFile { name: string; blob: Blob }
 
-type Act = { key: TourKey } | { click: string }
-// A leg gives its inputs on the settled previous screen and waits for the host to enter `to`.
+type Act = { key: TourKey } | { click: string } | { dom: string }
+// A leg gives its inputs on the settled previous screen and waits for `until`, or the host to enter `to`.
 // holdS: once settled, `to` must hold for this much game time with no transition.
 // queuedS: `to` must come at least this much game time after the last leg's inputs (the Enter that queued).
-interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; holdS?: number; queuedS?: number }
+interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; holdS?: number; queuedS?: number; until?: 'remap-open' | 'remap-closed'; name?: string }
 
 // LocalMode's QUEUE_S (main.ts): the offline queue's game time before the match starts.
 const QUEUE_S = 3
@@ -54,6 +54,9 @@ const TOUR: readonly Leg[] = [
   { acts: [{ click: 'act-retry' }], to: 'loading', capture: true, timeoutS: 10 },
   { acts: [], to: 'title', capture: false, timeoutS: 120 },
   { acts: [{ click: 'act-settings' }], to: 'settings', capture: true, timeoutS: 10 },
+  { acts: [{ dom: '#open-remap' }], to: 'settings', until: 'remap-open', capture: false, timeoutS: 10 },
+  { acts: [{ key: 'Enter' }], to: 'settings', until: 'remap-open', name: 'settings-controls', capture: true, timeoutS: 10 },
+  { acts: [{ key: 'Escape' }, { key: 'Escape' }], to: 'settings', until: 'remap-closed', capture: false, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: true, timeoutS: 10 },
   { acts: [{ click: 'act-credits' }], to: 'credits', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
@@ -71,6 +74,8 @@ const TOUR: readonly Leg[] = [
   { acts: [], to: 'spectate', capture: true, timeoutS: 60 },
   { acts: [], to: 'podium', capture: true, timeoutS: 120 },
 ]
+
+export const TOUR_SCREENS: readonly string[] = TOUR.filter(leg => leg.capture).map(leg => leg.name ?? leg.to)
 
 const FRAME_MS = 16
 // Game time per frame: real time on short screens, 3 ticks while a round plays (up to its 20 s sprint cap).
@@ -123,16 +128,29 @@ function press(g: TourGame, key: TourKey): TourInput {
 function click(g: TourGame, target: string): TourInput {
   const r = g.host.widgetRect(target)
   if (r === null) refuse('ops', `uiTour.click.${target}`, `widget '${target}' is hidden or not on screen '${g.host.currentScreen()}'; fix the tour leg or the ui doc`)
-  const on = g.host.currentScreen()
   const x = r.x + r.w / 2
   const y = r.y + r.h / 2
   const box = g.ui.getBoundingClientRect()
-  const at = { clientX: box.left + x, clientY: box.top + y, bubbles: true, cancelable: true, view: window }
+  return clickAt(g, g.ui, target, x, y, box.left + x, box.top + y)
+}
+
+function domClick(g: TourGame, selector: string): TourInput {
+  const element = document.querySelector(selector)
+  if (element === null) refuse('ops', `uiTour.dom.${selector}`, 'the DOM target is missing')
+  const box = element.getBoundingClientRect()
+  const x = box.left + box.width / 2
+  const y = box.top + box.height / 2
+  return clickAt(g, element, selector, x, y, x, y)
+}
+
+function clickAt(g: TourGame, element: Element, target: string, x: number, y: number, clientX: number, clientY: number): TourInput {
+  const on = g.host.currentScreen()
+  const at = { clientX, clientY, bubbles: true, cancelable: true, view: window }
   const pointer: PointerEventInit = { ...at, pointerId: 1, pointerType: 'mouse', isPrimary: true }
   const events: string[] = []
   const fire = (e: MouseEvent): void => {
     events.push(e.type)
-    g.ui.dispatchEvent(e)
+    element.dispatchEvent(e)
   }
   fire(new PointerEvent('pointermove', { ...pointer, buttons: 0 }))
   fire(new PointerEvent('pointerdown', { ...pointer, button: 0, buttons: 1 }))
@@ -154,6 +172,8 @@ async function capturePng(g: TourGame): Promise<{ blob: Blob | null; width: numb
   // to spoil the next WebGPU read in the same task.
   const uiShot = createImageBitmap(ui)
   const views = Array.from(g.views.querySelectorAll('canvas'), view => ({ rect: view.getBoundingClientRect(), shot: createImageBitmap(view) }))
+  const overlays = ['canvas.rf-remap', 'canvas.rf-touch'].flatMap(selector =>
+    Array.from(document.querySelectorAll<HTMLCanvasElement>(selector), canvas => ({ rect: canvas.getBoundingClientRect(), shot: createImageBitmap(canvas) })))
   const out = document.createElement('canvas')
   out.width = ui.width
   out.height = ui.height
@@ -175,13 +195,19 @@ async function capturePng(g: TourGame): Promise<{ blob: Blob | null; width: numb
   ctx.drawImage(bitmap, 0, 0)
   flush()
   bitmap.close()
+  for (const { rect: r, shot } of overlays) {
+    const overlay = await shot
+    ctx.drawImage(overlay, (r.left - box.left) * sx, (r.top - box.top) * sy, r.width * sx, r.height * sy)
+    flush()
+    overlay.close()
+  }
   const blob = await new Promise<Blob | null>(resolve => out.toBlob(resolve, 'image/png'))
   return { blob, width: out.width, height: out.height }
 }
 
 function describe(acts: readonly Act[]): string {
   if (acts.length === 0) return 'no input'
-  return acts.map(a => ('key' in a ? `key ${a.key}` : `a click on ${a.click}`)).join(', ')
+  return acts.map(a => ('key' in a ? `key ${a.key}` : `a click on ${'dom' in a ? a.dom : a.click}`)).join(', ')
 }
 
 class Tour {
@@ -212,7 +238,7 @@ class Tour {
   async leg(g: TourGame, leg: Leg): Promise<void> {
     const seen = this.transitions.length
     if (leg.acts.length > 0) this.actedS = this.gameS
-    for (const act of leg.acts) this.inputs.push('key' in act ? press(g, act.key) : click(g, act.click))
+    for (const act of leg.acts) this.inputs.push('key' in act ? press(g, act.key) : 'dom' in act ? domClick(g, act.dom) : click(g, act.click))
     const deadline = performance.now() + leg.timeoutS * 1000
     let entered = -1
     let index = -1
@@ -220,6 +246,11 @@ class Tour {
       if (performance.now() > deadline) this.timeout(g, leg, seen)
       await sleep(FRAME_MS)
       this.step(g, FAST.includes(g.host.currentScreen()) ? FAST_DT : DT)
+      if (leg.until !== undefined) {
+        const open = document.querySelector('canvas.rf-remap') !== null
+        if (open === (leg.until === 'remap-open')) entered = performance.now()
+        continue
+      }
       index = this.transitions.findIndex((t, i) => i >= seen && t.to === leg.to)
       if (index >= 0) entered = this.at[index]
     }
@@ -233,8 +264,9 @@ class Tour {
       this.step(g, 0)
       if (now - entered >= settleMs && ++settled === SETTLED_FRAMES) break
     }
-    const screen = g.host.currentScreen()
-    if (screen !== leg.to) refuse('ops', `uiTour.${leg.to}`, `the host left '${leg.to}' for '${screen}' before it settled; inspect the transitions`)
+    const hostScreen = g.host.currentScreen()
+    const screen = leg.name ?? hostScreen
+    if (hostScreen !== leg.to) refuse('ops', `uiTour.${leg.to}`, `the host left '${leg.to}' for '${hostScreen}' before it settled; inspect the transitions`)
     if (leg.holdS !== undefined) await this.hold(g, leg, leg.holdS)
     if (!leg.capture) return
     const shot = await capturePng(g)
@@ -289,6 +321,17 @@ class Tour {
 
 export async function uiTour(raw: unknown, deps: TourDeps): Promise<{ json: UiTourOutput; files: OpFile[] }> {
   validate(raw)
+  return runTour(deps)
+}
+
+export async function tourScreens(names: readonly string[], deps: TourDeps): Promise<{ json: UiTourOutput; files: OpFile[] }> {
+  if (names.length === 0 || names.some(name => !TOUR_SCREENS.includes(name)) || new Set(names).size !== names.length) {
+    refuse('ops', 'tourScreens.names', 'pass unique tour capture screen names')
+  }
+  return runTour(deps, names)
+}
+
+async function runTour(deps: TourDeps, names?: readonly string[]): Promise<{ json: UiTourOutput; files: OpFile[] }> {
   const status = await raaStatus()
   if (!status.available) refuse('render', 'raa', status.reason)
   const adapter = await deps.adapter()
@@ -296,11 +339,25 @@ export async function uiTour(raw: unknown, deps: TourDeps): Promise<{ json: UiTo
     refuse('gpu', 'adapter', `'${adapter.vendor} ${adapter.architecture} ${adapter.description}' is a software or fallback adapter; a capture on it is evidence of nothing, run the op in the GPU client`)
   }
   const tour = new Tour()
-  const game = await deps.boot(e => tour.onScreen(e))
+  const pad = {
+    id: 'Tour Pad (STANDARD GAMEPAD)', index: 0, connected: true, mapping: 'standard', timestamp: 0,
+    axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
+    vibrationActuator: null,
+  } as unknown as Gamepad
+  const own = Object.getOwnPropertyDescriptor(navigator, 'getGamepads')
+  Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] })
+  let game: TourGame | undefined
   try {
-    for (const leg of TOUR) await tour.leg(game, leg)
+    game = await deps.boot(e => tour.onScreen(e))
+    const last = names === undefined ? TOUR.length - 1 : Math.max(...names.map(name => TOUR.findIndex(leg => leg.capture && (leg.name ?? leg.to) === name)))
+    for (const leg of TOUR.slice(0, last + 1)) {
+      await tour.leg(game, { ...leg, capture: leg.capture && (names === undefined || names.includes(leg.name ?? leg.to)) })
+    }
   } finally {
-    game.dispose()
+    try { game?.dispose() } finally {
+      if (own) Object.defineProperty(navigator, 'getGamepads', own)
+      else Reflect.deleteProperty(navigator, 'getGamepads')
+    }
   }
   return {
     json: { renderer: 'raa', adapter, software: adapter.software, captures: tour.captures, transitions: tour.transitions },

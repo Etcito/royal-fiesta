@@ -10,3 +10,9 @@ export const PALETTE: readonly (readonly [number, number, number])[] = [
 ]
 
 export const PALETTE_NAMES: readonly string[] = ['pink', 'sky', 'yellow', 'green', 'purple', 'orange', 'teal', 'white']
+
+/** The tint of one seat. Seats beyond the palette (zoned matches exceed 8) wrap through it. */
+export function seatTint(seat: number): readonly [number, number, number] {
+  const n = PALETTE.length
+  return PALETTE[((Math.trunc(seat) % n) + n) % n]
+}

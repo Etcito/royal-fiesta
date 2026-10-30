@@ -135,10 +135,26 @@ async function main(): Promise<void> {
   console.log('zone capture saved to out/m4/zone-view.png')
 }
 
+// The cause of a failure (the GPU client's answer, the page's exception), with secrets, URLs and
+// absolute paths redacted so the log never carries credentials, page references or host paths.
+function cause(error: unknown): string {
+  const e = error as { message?: unknown; stderr?: unknown; stdout?: unknown }
+  let text = [e?.message, e?.stderr, e?.stdout]
+    .filter((v): v is string | Buffer => typeof v === 'string' || Buffer.isBuffer(v))
+    .map(String).join('\n').trim() || String(error)
+  for (const secret of secrets) text = text.split(secret).join('<redacted>')
+  text = text
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s)'"]*/gi, '<url>')
+    .replace(/[A-Za-z]:[\\/][^\s:)'"]*/g, '<path>')
+    .replace(/(^|[\s('"=])\/[^\s:)'"]+/g, '$1<path>')
+    .replace(/\b(Bearer|token)\s+\S+/gi, '$1 <redacted>')
+  return text.length > 4000 ? `${text.slice(0, 4000)}...` : text
+}
+
 try { await main() }
-catch {
-  // Fixed stage names deliberately exclude raw client errors, tokens and absolute paths.
+catch (error) {
   console.error(`zone capture failed: ${stage}`)
+  console.error(cause(error))
   process.exitCode = 1
 } finally {
   if (scratch) rmSync(scratch, { recursive: true, force: true })

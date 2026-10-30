@@ -12,7 +12,7 @@ import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/dr
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
-import { PALETTE } from './palette.ts'
+import { seatTint } from './palette.ts'
 import type { CameraPose, RenderPort, SkinnedAssetT, SkinRigT } from './port.ts'
 
 // Visual IK inputs, read from this tick's sim state only: the capsule's foot contact while grounded, the
@@ -515,7 +515,7 @@ export class SceneView {
 
   private createBeans(players: number): void {
     for (let p = 0; p < players; p++) {
-      this.beans.push(this.port.createInstance(this.beanAsset, PALETTE[p]))
+      this.beans.push(this.port.createInstance(this.beanAsset, seatTint(p)))
       this.beanShown.push(true)
     }
     this.chPrev = new Float64Array(players * 3)

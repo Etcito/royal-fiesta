@@ -57,17 +57,6 @@
         ],
         "gameCollision": false
       },
-      "handle": {
-        "id": "handle",
-        "name": "handle",
-        "kind": "group",
-        "rigid": true,
-        "children": [
-          "handle_stick",
-          "handle_grip"
-        ],
-        "gameCollision": false
-      },
       "base_plinth": {
         "id": "base_plinth",
         "name": "base_plinth",
@@ -193,6 +182,17 @@
             "edgeRadii": {}
           }
         },
+        "gameCollision": false
+      },
+      "handle": {
+        "id": "handle",
+        "name": "handle",
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "handle_stick",
+          "handle_grip"
+        ],
         "gameCollision": false
       },
       "handle_stick": {
@@ -388,13 +388,12 @@
           "links": []
         }
       }
-    },
-    "shapes": {}
+    }
   },
   "collision": [
     {
       "shape": "cuboid",
-      "half": [
+      "halfExtents": [
         0.5,
         0.25,
         0.45
@@ -551,5 +550,5 @@
       0.45
     ]
   },
-  "hash": "8a39f998687f82c7f6783d51be64d62a9d896c290185a643bb55208252c39328"
+  "hash": "7f31412c193f3d24a932d151c24651a243bb2e0fe8ebf0d044c12dd49c6feeac"
 }

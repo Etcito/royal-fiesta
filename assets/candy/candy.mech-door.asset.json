@@ -58,19 +58,6 @@
         ],
         "gameCollision": false
       },
-      "leaf": {
-        "id": "leaf",
-        "name": "leaf",
-        "kind": "group",
-        "rigid": true,
-        "children": [
-          "leaf_border",
-          "leaf_panel",
-          "leaf_zigzag",
-          "leaf_grip"
-        ],
-        "gameCollision": false
-      },
       "frame_left": {
         "id": "frame_left",
         "name": "frame_left",
@@ -261,6 +248,19 @@
             "edgeRadii": {}
           }
         },
+        "gameCollision": false
+      },
+      "leaf": {
+        "id": "leaf",
+        "name": "leaf",
+        "kind": "group",
+        "rigid": true,
+        "children": [
+          "leaf_border",
+          "leaf_panel",
+          "leaf_zigzag",
+          "leaf_grip"
+        ],
         "gameCollision": false
       },
       "leaf_border": {
@@ -683,7 +683,7 @@
   "collision": [
     {
       "shape": "cuboid",
-      "half": [
+      "halfExtents": [
         0.2,
         1.75,
         0.3
@@ -702,7 +702,7 @@
     },
     {
       "shape": "cuboid",
-      "half": [
+      "halfExtents": [
         0.2,
         1.75,
         0.3
@@ -721,7 +721,7 @@
     },
     {
       "shape": "cuboid",
-      "half": [
+      "halfExtents": [
         2.6,
         0.2,
         0.3
@@ -740,7 +740,7 @@
     },
     {
       "shape": "cuboid",
-      "half": [
+      "halfExtents": [
         2,
         1.45,
         0.18
@@ -874,5 +874,5 @@
       0.3
     ]
   },
-  "hash": "b0addcd1e7a3d0eb1163643a4c3137f1b8efc3e2fc5bb3c133f00145fc817252"
+  "hash": "d9da2642ad3ec847a66169e081465b8fdb72a8ab51aac98602d1dcf5dc3e4758"
 }

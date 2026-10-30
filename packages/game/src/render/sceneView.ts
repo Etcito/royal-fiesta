@@ -105,10 +105,10 @@ function interpolatePose(prev: Float64Array, cur: Float64Array, b: number, alpha
 interface MechanismInstance {
   instance: number
   ref: BodyRef
-  // The item placement from the sim, so a static (fixed) body draws at the asset's item pose.
-  itemT: Vec3T
-  itemR: QuatT
-  // The body rest pose: world for course items, item-local in a bare spec.
+  // Where the whole asset draws at rest: the item's `place` (course items, whose t/r are identity) or its pose.
+  placeT: Vec3T
+  placeR: QuatT
+  // The body rest in world space (item pose * body rest), the frame the sim reports body poses in.
   restT: Vec3T
   restR: QuatT
   restInvR: QuatT
@@ -406,14 +406,14 @@ export class SceneView {
     }
     for (const body of this.mechanisms) {
       if (body.fixed) {
-        port.setTransform(body.instance, body.itemT, body.itemR, body.s)
+        port.setTransform(body.instance, body.placeT, body.placeR, body.s)
         continue
       }
       interpolatePose(body.prev, body.cur, 0, alpha, t, r)
-      // The item placement carries the asset; the body pose only adds its motion since rest.
-      port.setTransform(body.instance,
-        [body.itemT[0] + t[0] - body.restT[0], body.itemT[1] + t[1] - body.restT[1], body.itemT[2] + t[2] - body.restT[2]],
-        quatMul(quatMul(r, body.restInvR), body.itemR), body.s)
+      // The placement carries the asset; the body's motion since rest (pose * inverse world rest) moves it.
+      const motion = quatMul(r, body.restInvR)
+      const arm = quatRotate(motion, [body.placeT[0] - body.restT[0], body.placeT[1] - body.restT[1], body.placeT[2] - body.restT[2]])
+      port.setTransform(body.instance, [t[0] + arm[0], t[1] + arm[1], t[2] + arm[2]], quatMul(motion, body.placeR), body.s)
     }
 
     const c = this.view
@@ -550,12 +550,14 @@ export class SceneView {
       for (let b = 0; b < item.bodies.length; b++) {
         const body = item.bodies[b]
         const instance = port.createInstance(asset, null)
-        const rest = body.rest
+        const itemR: QuatT = [item.r.x, item.r.y, item.r.z, item.r.w]
+        const local = quatRotate(itemR, [body.rest.t.x, body.rest.t.y, body.rest.t.z])
+        const restR = quatMul(itemR, [body.rest.r.x, body.rest.r.y, body.rest.r.z, body.rest.r.w])
+        const place = item.place ?? item
         this.mechanisms.push({
           instance, ref: { item: i, body: b },
-          itemT: [item.t.x, item.t.y, item.t.z], itemR: [item.r.x, item.r.y, item.r.z, item.r.w],
-          restT: [rest.t.x, rest.t.y, rest.t.z], restR: [rest.r.x, rest.r.y, rest.r.z, rest.r.w],
-          restInvR: conjugate([rest.r.x, rest.r.y, rest.r.z, rest.r.w]),
+          placeT: [place.t.x, place.t.y, place.t.z], placeR: [place.r.x, place.r.y, place.r.z, place.r.w],
+          restT: [item.t.x + local[0], item.t.y + local[1], item.t.z + local[2]], restR, restInvR: conjugate(restR),
           fixed: body.type === 'fixed',
           s: [item.s.x, item.s.y, item.s.z], prev: new Float64Array(OB), cur: new Float64Array(OB),
         })

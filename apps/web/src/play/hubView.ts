@@ -96,8 +96,10 @@ export class HubView {
     const m = this.plaza.mechanisms
     if (m != null) for (let i = 0; i < this.mechanisms.length; i++) {
       const item = m.items[i]
-      let t = item.t
-      let r = item.r
+      // Course v1 items keep identity t/r with world body rests; `place` is where their asset draws.
+      const place = item.place ?? item
+      let t = place.t
+      let r = place.r
       for (let a = 0; a < m.animations.length; a++) {
         const anim = m.animations[a]
         if (anim.target.item !== i || animationKind(m, a) !== 'tick') continue
@@ -110,11 +112,13 @@ export class HubView {
         trackPose(anim, tick, q)
         add3(rest.t, q.t, q.t)
         quatMul(q.r, rest.r, q.r)
-        // Body world pose * inverse body rest gives the whole asset's item pose.
-        quatConj(body.rest.r, rest.r)
+        // The motion since the world rest (body world pose * inverse world rest) moves the placement.
+        sub3(place.t, rest.t, rest.t)
+        quatConj(rest.r, rest.r)
         quatMul(q.r, rest.r, q.r)
-        quatRotate(q.r, body.rest.t, rest.t)
-        sub3(q.t, rest.t, q.t)
+        quatRotate(q.r, rest.t, rest.t)
+        add3(q.t, rest.t, q.t)
+        quatMul(q.r, place.r, q.r)
         t = q.t
         r = q.r
         break

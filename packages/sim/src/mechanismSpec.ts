@@ -58,6 +58,9 @@ export interface MechItem {
   t: Vec3
   r: Quat
   s: Vec3
+  // Where the whole asset is drawn when t/r are identity because the body rests are already world poses
+  // (course v1 items). The sim ignores it; the renderer places the asset here. Absent: the item pose.
+  place?: { t: Vec3; r: Quat }
   bodies: BodySpec[]
   joints: JointSpec[]
 }

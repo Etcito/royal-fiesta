@@ -359,9 +359,10 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
       const k = items.length
       const item = itemOf({ id: o.id, asset: aid, t: o.t, r: o.r, s: o.s }, resolved[i].asset, `${path}#/obstacles/${i}`)
       // itemOf bakes the item pose into each body rest; the sim composes item.t/item.r on top, so
-      // store identity here and the body rest stays the world pose.
+      // store identity here and the body rest stays the world pose. `place` keeps the obstacle placement
+      // so the renderer still draws the asset where the course puts it.
       items.push({
-        ...item, t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 },
+        ...item, t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 }, place: { t: item.t, r: item.r },
         joints: item.joints.map(j => ({ ...j, a: { ...j.a, item: k }, b: { ...j.b, item: k } })),
       })
     } else {

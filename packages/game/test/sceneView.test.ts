@@ -9,7 +9,7 @@ import { createMatchSim } from '@royal-fiesta/sim/match/matchSim'
 import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
 import { emptyMechanisms } from '@royal-fiesta/sim/mechanismSpec'
 import type { BodySpec } from '@royal-fiesta/sim/mechanismSpec'
-import { pose, v3 } from '@royal-fiesta/sim/vec'
+import { add3, pose, quatConj, quatMul, quatNormalize, quatRotate, sub3, v3 } from '@royal-fiesta/sim/vec'
 import { fixtureResolver } from '../src/assets.ts'
 import type { CourseDressing } from '../src/content.ts'
 import { matchCourses } from '../src/courseSet.ts'
@@ -302,6 +302,9 @@ test('SceneView creates two mechanism bodies and interpolates finite dynamic pos
     assert.equal(port.visibility.get(fixed), false, 'the fallback draws the whole asset only on body 0')
     const item = sim.mechanismItem(0)
     const rest = item.bodies[0].rest
+    // The sim reports world poses: the body's world rest is the item pose times its rest.
+    const worldRestT = add3(item.t, quatRotate(item.r, rest.t, v3(0, 0, 0)), v3(0, 0, 0))
+    const worldRestInvR = quatConj(quatMul(item.r, rest.r, pose().r), pose().r)
     const bodyPose = pose()
     const firstY = port.transforms.get(dynamic)!.t[1]
     const calls = port.calls.setTransform
@@ -311,8 +314,13 @@ test('SceneView creates two mechanism bodies and interpolates finite dynamic pos
       view.update(sim, null, 1, 1 / 60)
       assert.ok(sim.mechanismBodyPose({ item: 0, body: 0 }, bodyPose))
       const current = [...port.transforms.get(dynamic)!.t]
-      closeVector(current, [item.t.x + bodyPose.t.x - rest.t.x, item.t.y + bodyPose.t.y - rest.t.y, item.t.z + bodyPose.t.z - rest.t.z])
-      closeVector(port.transforms.get(dynamic)!.r, [item.r.x, item.r.y, item.r.z, item.r.w])
+      // The item placement moved by the body's motion since its world rest.
+      // SceneView draws the normalised body rotation (Rapier reports f32 quaternions).
+      const motion = quatMul(quatNormalize(bodyPose.r, pose().r), worldRestInvR, pose().r)
+      const at = add3(bodyPose.t, quatRotate(motion, sub3(item.t, worldRestT, v3(0, 0, 0)), v3(0, 0, 0)), v3(0, 0, 0))
+      closeVector(current, [at.x, at.y, at.z])
+      const r = quatMul(motion, item.r, pose().r)
+      closeVector(port.transforms.get(dynamic)!.r, [r.x, r.y, r.z, r.w])
       assert.deepEqual(port.transforms.get(dynamic)!.s, [2, 3, 4])
       view.update(sim, null, 0.5, 0)
       closeVector(port.transforms.get(dynamic)!.t, previous.map((v, k) => (v + current[k]) / 2))
@@ -328,6 +336,39 @@ test('SceneView creates two mechanism bodies and interpolates finite dynamic pos
     assert.equal(view.mechanismInstanceCount, 0)
     assert.equal(port.render().instances, 0)
     assert.deepEqual(port.destroyed.slice(-2), port.created.slice(0, 2).reverse())
+    sim.free()
+  }
+})
+
+// Course v1 items: identity item pose, world body rests, the obstacle placement in `place`.
+test('SceneView draws course items at their place, not at the identity item pose', async () => {
+  const list = mechanismCourses()
+  const item = list[0].mechanisms!.items[0]
+  const place = { t: item.t, r: item.r }
+  list[0].mechanisms!.items[0] = {
+    ...item, t: v3(0, 0, 0), r: pose().r, place,
+    bodies: item.bodies.map(body => ({
+      ...body,
+      rest: { t: add3(place.t, quatRotate(place.r, body.rest.t, v3(0, 0, 0)), v3(0, 0, 0)), r: quatMul(place.r, body.rest.r, pose().r) },
+    })),
+  }
+  const { sim, port, view, inputs } = await mechanismScene(new MechanismRecordingPort(), list)
+  try {
+    const [dynamic, fixed] = port.created
+    const rest = sim.mechanismItem(0).bodies[0].rest
+    const bodyPose = pose()
+    for (let i = 0; i < 10; i++) {
+      sim.step(inputs)
+      view.update(sim, null, 1, 1 / 60)
+    }
+    assert.ok(sim.mechanismBodyPose({ item: 0, body: 0 }, bodyPose))
+    assert.ok(bodyPose.t.y < rest.t.y, 'the dynamic body falls')
+    closeVector(port.transforms.get(dynamic)!.t, [place.t.x + bodyPose.t.x - rest.t.x, place.t.y + bodyPose.t.y - rest.t.y, place.t.z + bodyPose.t.z - rest.t.z])
+    closeVector(port.transforms.get(dynamic)!.r, [place.r.x, place.r.y, place.r.z, place.r.w])
+    closeVector(port.transforms.get(fixed)!.t, [place.t.x, place.t.y, place.t.z])
+    closeVector(port.transforms.get(fixed)!.r, [place.r.x, place.r.y, place.r.z, place.r.w])
+  } finally {
+    view.dispose()
     sim.free()
   }
 })

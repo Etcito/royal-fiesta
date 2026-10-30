@@ -12,10 +12,10 @@ const proof = join(root, 'proofs/m2/candy-assets')
 const inputDir = join(root, 'out/candy-assets-inputs')
 
 // Each individual step is bounded. The card runner owns the longer, sequential workflow.
-async function run(command: string, args: string[], label: string): Promise<string> {
+async function run(command: string, args: string[], label: string, timeout = 60000): Promise<string> {
   console.log(`[candy-assets] ${label}`)
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd: root, timeout: 60000, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(command, args, { cwd: root, timeout, stdio: ['ignore', 'pipe', 'pipe'] })
     let stdout = ''
     let stderr = ''
     child.stdout.on('data', (b: Buffer) => { stdout += b.toString(); process.stdout.write(b) })
@@ -33,10 +33,12 @@ async function main(): Promise<void> {
   const gpu = process.env.NMC_GPU_CLIENT
   const judge = process.env.NMC_JUDGE_CLIENT
   if (!gpu || !judge) throw new Error('Run on the programmatic card with NMC_GPU_CLIENT and NMC_JUDGE_CLIENT')
-  if (!existsSync(join(root, 'apps/web/dist/candy-assets.html'))) {
-    throw new Error('Build first with npm run build; candy-assets.html must be in apps/web/dist')
-  }
   mkdirSync(proof, { recursive: true })
+  // A re-run of this one command (programmatic retry, fix-card quick check) does not run sdf-port-build first.
+  if (!existsSync(join(root, 'apps/web/dist/candy-assets.html'))) await run('npm', ['run', 'build'], 'web-build', 600000)
+  if (!existsSync(join(root, 'apps/web/dist/candy-assets.html'))) {
+    throw new Error('npm run build did not produce apps/web/dist/candy-assets.html')
+  }
   mkdirSync(inputDir, { recursive: true })
   // Keep the retained course pack check unchanged and publish those exact validated content inputs.
   await run('npm', ['run', 'content:pack', '--', '/tmp/rf-pack-mechlab'], 'mechlab-content-pack')

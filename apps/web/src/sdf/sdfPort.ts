@@ -2,9 +2,9 @@
 // MAMA workers already produced (one mesh per part, split by material) and the graph materials
 // compiled by @etcito/raa-sdfm's mapMaterial. RAA applies per-instance tint after the graph.
 import { roundStep, renderFrame } from '@royal-fiesta/game/render/roundLoad'
-import { loadRaa } from '@etcito/raa'
 import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
 import { materialProgram } from './materialProgram.ts'
+import { createRaaEngine } from '../render/raaEngine.ts'
 import type { SdfmCompiledMaterial, SdfmMappedMaterial } from '@etcito/raa-sdfm'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
@@ -107,8 +107,7 @@ class SdfRenderPort implements SkinnedRenderPort {
     }
     if (!(target.canvas instanceof HTMLCanvasElement)) refuse(AREA, WHERE, `${p}: pass an HTMLCanvasElement as the target canvas`)
     installShaderCache()
-    const raa = await loadRaa()
-    this.engine = await raa.createEngine(target.canvas, { maxInstances: MAX_INSTANCES, maxMaterials: MAX_MATERIALS })
+    this.engine = await createRaaEngine(target.canvas, { maxInstances: MAX_INSTANCES, maxMaterials: MAX_MATERIALS })
     this.engine.resize(target.width, target.height)
     this.engine.setLight(DEFAULT_LIGHT)
     this.engine.setAmbient(DEFAULT_AMBIENT)

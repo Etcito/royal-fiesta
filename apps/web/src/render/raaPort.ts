@@ -1,10 +1,10 @@
 import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from './courseEnvironment.ts'
-import { loadRaa } from '@etcito/raa'
 import type { AssetInfo, Engine } from '@etcito/raa'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { CameraPose, QuatT, RenderPort, RenderStats, RenderTarget, Vec3T } from '@royal-fiesta/game/render/port'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { raaStatus } from './raaStatus.ts'
+import { createRaaEngine } from './raaEngine.ts'
 
 const AREA = 'render'
 const WHERE = 'raa'
@@ -38,8 +38,7 @@ class RaaRenderPort implements RenderPort {
       refuse(AREA, WHERE, `${p}: the viewport must cover the whole ${target.width}x${target.height} canvas`)
     }
     if (!(target.canvas instanceof HTMLCanvasElement)) refuse(AREA, WHERE, `${p}: pass an HTMLCanvasElement as the target canvas`)
-    const raa = await loadRaa()
-    this.engine = await raa.createEngine(target.canvas, { maxInstances: 4096 })
+    this.engine = await createRaaEngine(target.canvas, { maxInstances: 4096 })
     this.engine.resize(target.width, target.height)
     this.engine.setLight(DEFAULT_LIGHT)
     this.engine.setAmbient(DEFAULT_AMBIENT)

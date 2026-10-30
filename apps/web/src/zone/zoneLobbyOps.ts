@@ -166,7 +166,9 @@ async function bounded<T>(name: string, step: string, ms: number, work: Promise<
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
-      try { refuse('zone', `zoneLobbyCapture.${name}`, `${step} did not finish within ${ms / 1000} s`) } catch (error) { reject(error) }
+      // Name the phase it stalled in: the GPU client reports progress only when the whole job times out.
+      const at = phases.get(name) ?? 'no phase published'
+      try { refuse('zone', `zoneLobbyCapture.${name}`, `${step} did not finish within ${ms / 1000} s (stalled at: ${at})`) } catch (error) { reject(error) }
     }, ms)
   })
   try { return await Promise.race([work, timeout]) }

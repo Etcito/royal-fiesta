@@ -201,7 +201,9 @@ test('command cards keep the dependency chain', () => {
   assert.deepEqual(cards.map((c: { name: string }) => c.name), [
     'sdf-port-typecheck', 'sdf-port-build', 'candy-content-pack', 'candy-assets-proof',
     'rf-tests', 'rf-judge-m3', 'rf-judge-m3-split', 'rf-judge-m3-touch', 'rf-judge-m3-remap',
+    'rf-verify-m3-remap-boot',
   ])
+  assert.equal(cards.at(-1).command, 'node --experimental-strip-types tools/judgeCard.ts m3 --item 2')
   assert.equal(cards[0].after, undefined)
   assert.deepEqual(cards[1].after, ['sdf-port-typecheck'])
   assert.deepEqual(cards[2].after, ['sdf-port-build'])

@@ -1,8 +1,11 @@
 // Layout math of game.html's local canvas (S26): the split cells and the DPR-capped pixel viewports
-// main.ts hands port.resize. main.ts itself imports vite-only modules, so this checks the DOM-free
-// splitLayout module it uses.
+// main.ts hands port.resize. Layout tests use the DOM-free splitLayout module; the boot regression
+// evaluates main.ts with fake browser/render dependencies because its imports include Vite-only modules.
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
+import { runInNewContext } from 'node:vm'
+import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 import { DPR_CAP, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
 
 interface Rect { x: number; y: number; width: number; height: number }
@@ -57,4 +60,61 @@ test('pixelViewports: a resize from 1280x720 to 844x390 at dpr 3 backs at 1688x7
   const rects = pixelViewports(cells, 844, 390, 3)
   assert.equal(rects.length, 4)
   assertCovers(rects, 1688, 780)
+})
+
+test('local boot finishes pipeline warmup without animation callbacks, before title', async () => {
+  // Evaluate the real readiness method with a fake port: the GPU host can withhold rAF even
+  // after compilation finishes. The tour's own App steps cannot resolve that callback.
+  const source = readFileSync(new URL('../src/game/main.ts', import.meta.url), 'utf8')
+  const compiled = transpileModule(source + '\nexports.ready = LocalMode.prototype.ready\n', {
+    compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
+  }).outputText
+  const exports = {} as { ready(this: unknown): Promise<void> }
+  let pending = 1
+  let animationRequests = 0
+  runInNewContext(compiled, {
+    exports, URLSearchParams, performance, setTimeout,
+    window: { location: { search: '?mode=ops' } },
+    requestAnimationFrame: () => { animationRequests++; return 1 },
+    require(id: string): unknown {
+      if (id === '../render/asyncPipelines.ts') return { pendingPipelines: () => pending }
+      if (id === '../content/roundOverlay.ts') return { roundOverlay: () => ({ hide() {} }) }
+      if (id === './ops.ts') return { installGameOps() {} }
+      if (id.endsWith('.json?raw')) return { default: '{"screens":[]}' }
+      return {}
+    },
+  })
+  const calls: string[] = []
+  const port = {
+    render() { assert.equal(pending, 0); calls.push('render') },
+    async capture() { calls.push('capture'); return new Uint8Array([1]) },
+  }
+  const local = {
+    c: { loaded: { ports: [port] }, q: { colour: 0 } },
+    prepared: { match: {} }, match: null,
+    presenter: { draw() { calls.push('draw round') } },
+    hubLayer: { setVisible(on: boolean) { calls.push(`hub ${on}`) } },
+    matchLayer: { setVisible(on: boolean) { calls.push(`round ${on}`) } },
+    hub: { tick: 0, state() { return {} }, emote() { return 0 } },
+    hubView: { update() { calls.push('draw hub') } },
+    local: {},
+  }
+  const ready = exports.ready.call(local)
+  assert.deepEqual(calls, [], 'must still wait for compilation')
+  // GPU compilation completes independently of animation frames.
+  pending = 0
+  let deadline: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      ready,
+      new Promise<never>((_, reject) => {
+        deadline = setTimeout(() => reject(new Error('boot still waits for an animation callback after compilation')), 200)
+      }),
+    ])
+  } finally { clearTimeout(deadline) }
+  assert.equal(animationRequests, 0)
+  assert.deepEqual(calls, [
+    'hub false', 'round true', 'draw round', 'render', 'capture',
+    'round false', 'hub true', 'draw hub', 'render', 'capture',
+  ], 'load can enter title only after the prepared round and hub have rendered and read back')
 })

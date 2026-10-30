@@ -603,7 +603,9 @@ class LocalMode implements Mode {
   // course once those pipelines exist, and read it back to finish GPU work before Play.
   async ready(): Promise<void> {
     const { ports } = this.c.loaded
-    while (pendingPipelines() > 0) await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    // Compilation completes independently of presentation. In the GPU host rAF may never fire;
+    // uiTour steps the App itself, so waiting for an animation callback would strand it on loading.
+    while (pendingPipelines() > 0) await new Promise<void>(resolve => setTimeout(resolve, 10))
     this.hubLayer.setVisible(false)
     this.matchLayer.setVisible(true)
     const run = this.prepared ?? this.match

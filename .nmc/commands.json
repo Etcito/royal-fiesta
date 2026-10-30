@@ -68,5 +68,10 @@
     "after": [
       "rf-tests"
     ]
+  },
+  {
+    "name": "rf-verify-m3-remap-boot",
+    "command": "node --experimental-strip-types tools/judgeCard.ts m3 --item 2",
+    "timeout_s": 1800
   }
 ]

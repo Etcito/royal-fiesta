@@ -1,6 +1,7 @@
 import { regionOf } from '../course.ts'
 import type { Box, CourseKind, MotionKind, ObstacleSpec, ResolvedCourse } from '../course.ts'
 import { dsin, TAU } from '../detmath.ts'
+import type { BodyRef, LeverSpec } from '../mechanismSpec.ts'
 import { isKinematic, smoothstep01, triangleWave } from '../obstacles/motion.ts'
 import type { Vec3 } from '../vec.ts'
 import { BOT_ACTIONS } from './behaviour.ts'
@@ -9,9 +10,13 @@ import type { BotAction } from './behaviour.ts'
 // Pure read-only view of an S2 ResolvedCourse for bot predicates. Every read returns fresh
 // copies, so callers can never mutate the course, and equal inputs give deep-equal outputs.
 
-export interface ReadPathNode { index: number; p: Vec3; jump: boolean; dive: boolean; region: number }
+export interface ReadPathNode {
+  index: number; p: Vec3; jump: boolean; dive: boolean; region: number; wait?: string; pull?: string
+}
 export interface ReadRegion { id: number; center: Vec3; half: Vec3; adjacent: number[] }
 export interface CourseNav { id: string; kind: CourseKind; path: ReadPathNode[]; regions: ReadRegion[]; finish: Box | null }
+// handle is copied from the lever; rest is the handle body's rest position, in world space.
+export interface ReadLever { index: number; id: string; handle: BodyRef; grabRange: number; rest: Vec3 }
 
 // tickDriven: obstaclePhase is a pure function of the tick (the see-saw integrates loads).
 export interface MechanismInfo {
@@ -31,7 +36,7 @@ export interface MotionPhase {
 }
 
 export interface CourseCapabilities {
-  id: string; levers: readonly never[]; hasLevers: false; hasPath: boolean; hasRegions: boolean
+  id: string; levers: readonly string[]; hasLevers: boolean; hasPath: boolean; hasRegions: boolean
   hasFinish: boolean; motionKinds: MotionKind[]; actions: BotAction[]
 }
 
@@ -48,7 +53,12 @@ export function readNavigation(c: ResolvedCourse): CourseNav {
   return {
     id: c.id,
     kind: c.kind,
-    path: c.path.map((n, index) => ({ index, p: vec(n.p), jump: n.jump, dive: n.dive, region: regionOf(c, n.p) })),
+    path: c.path.map((n, index) => {
+      const read: ReadPathNode = { index, p: vec(n.p), jump: n.jump, dive: n.dive, region: regionOf(c, n.p) }
+      if (n.wait !== undefined) read.wait = n.wait
+      if (n.pull !== undefined) read.pull = n.pull
+      return read
+    }),
     regions: c.regions.map(r => ({ id: r.id, center: vec(r.box.center), half: vec(r.box.half), adjacent: r.adjacent.slice() })),
     finish: c.finish === null ? null : { center: vec(c.finish.center), half: vec(c.finish.half) },
   }
@@ -103,6 +113,32 @@ export function readMechanisms(c: ResolvedCourse): MechanismInfo[] {
   }))
 }
 
+// One entry per LeverSpec; the rest position comes from the handle body, which the loader
+// has already placed in world space through the item pose.
+export function readLevers(c: ResolvedCourse): ReadLever[] {
+  const mechanisms = c.mechanisms
+  if (!mechanisms) return []
+  return mechanisms.levers.map((l, index) => leverRead(mechanisms, l, index))
+}
+
+function leverRead(mechanisms: NonNullable<ResolvedCourse['mechanisms']>, l: LeverSpec, index: number): ReadLever {
+  const rest = mechanisms.items[l.handle.item]?.bodies[l.handle.body]?.rest.t
+  return {
+    index, id: l.id, handle: { item: l.handle.item, body: l.handle.body },
+    grabRange: l.grabRange, rest: rest === undefined ? { x: 0, y: 0, z: 0 } : vec(rest),
+  }
+}
+
+// The lever with this id, or null when the course has no mechanisms or no such lever.
+export function leverByPull(c: ResolvedCourse, id: string): ReadLever | null {
+  return readLevers(c).find(l => l.id === id) ?? null
+}
+
+// Index of a signal id in mechanisms.signals (switches, then levers, then logic); -1 if absent.
+export function signalIndex(c: ResolvedCourse, id: string): number {
+  return c.mechanisms?.signals.indexOf(id) ?? -1
+}
+
 // Phase of an obstacle at round-local tick L (ObstacleSystem.localTick), using the same
 // expressions as motionPose so the value reproduces the simulated pose bit for bit.
 export function obstaclePhase(o: ObstacleSpec, localTick: number): MotionPhase {
@@ -148,12 +184,15 @@ export function phaseInWindow(o: ObstacleSpec, localTick: number, from: number, 
   return ph.cycleTick !== null && ph.cycleTick >= from && ph.cycleTick <= to
 }
 
-// Capabilities for bindBehaviour: S2 courses have no levers, so useLever is never offered.
+// Capabilities for bindBehaviour: useLever is offered only when the course has a lever.
 export function courseCapabilities(c: ResolvedCourse): CourseCapabilities {
   const kinds: MotionKind[] = []
   for (const o of c.obstacles) if (!kinds.includes(o.motion.kind)) kinds.push(o.motion.kind)
+  const levers = c.mechanisms?.levers ?? []
+  const hasLevers = levers.length > 0
   return {
-    id: c.id, levers: [], hasLevers: false, hasPath: c.path.length > 0, hasRegions: c.regions.length > 0,
-    hasFinish: c.finish !== null, motionKinds: kinds, actions: BOT_ACTIONS.filter(a => a !== 'useLever'),
+    id: c.id, levers: levers.map(l => l.id), hasLevers, hasPath: c.path.length > 0, hasRegions: c.regions.length > 0,
+    hasFinish: c.finish !== null, motionKinds: kinds,
+    actions: hasLevers ? BOT_ACTIONS.slice() : BOT_ACTIONS.filter(a => a !== 'useLever'),
   }
 }

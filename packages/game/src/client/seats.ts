@@ -58,3 +58,29 @@ export class SeatTable {
     return -1
   }
 }
+
+const ACTIVITY_STICK = 0.15
+
+export interface UsedControls { left: boolean; right: boolean; forward: boolean; back: boolean; stickX: number; stickY: number; jump: boolean; dive: boolean; grab: boolean }
+
+// A device that is being used: a held direction or action, or a stick past its deadzone.
+export function controlsActive(c: UsedControls): boolean {
+  return c.left || c.right || c.forward || c.back || c.jump || c.dive || c.grab
+    || Math.abs(c.stickX) + Math.abs(c.stickY) > ACTIVITY_STICK
+}
+
+export interface SeatClaim {
+  device: DeviceId
+  joinPressed: boolean
+  controls: UsedControls
+}
+
+// Seats go in join order and nothing is seated beforehand. A join press takes the next free seat;
+// while the table is still empty, the first device that is used at all (walking the hub with a pad or
+// the keyboard) takes P1, so the player who touches a controller first is P1 and a lone pad plays alone.
+export function claimSeats(table: SeatTable, polls: readonly SeatClaim[], count: number, canActivate: boolean): void {
+  for (let i = 0; i < count; i++) {
+    const poll = polls[i]
+    if (poll.joinPressed || (canActivate && table.seats.length === 0 && controlsActive(poll.controls))) table.join(poll.device)
+  }
+}

@@ -15,7 +15,7 @@ import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import { LocalMatch } from '@royal-fiesta/game/client/localMatch'
 import { localPadMapStore } from '@royal-fiesta/game/client/padMap'
 import type { PadMapStore } from '@royal-fiesta/game/client/padMap'
-import { MAX_LOCAL_SEATS, SeatTable } from '@royal-fiesta/game/client/seats'
+import { MAX_LOCAL_SEATS, SeatTable, claimSeats } from '@royal-fiesta/game/client/seats'
 import type { DeviceId } from '@royal-fiesta/game/client/seats'
 import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
 import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
@@ -487,8 +487,8 @@ class LocalPresenter {
 }
 
 // The in-page game: the local hub (HubWorld + queue pad), then a match against bots on the local-play
-// LocalMatch (no peers, so no rollback), its podium, and the hub again. Keyboard holds seat 0; in the hub
-// a pad's join button takes the next seat, and each seat drives its own player.
+// LocalMatch (no peers, so no rollback), its podium, and the hub again. The first device pressed or used holds seat 0; in the hub
+// another device's join button takes the next seat, and each seat drives its own player.
 class LocalMode implements Mode {
   failure: string | null = null
   private readonly c: ModeCtx
@@ -512,7 +512,8 @@ class LocalMode implements Mode {
     const { R, content, ports } = c.loaded
     // Touch holds seat 0 and leaves no room to join, so the layout stays at one seat.
     this.seats = new SeatTable(c.touch ? 1 : MAX_LOCAL_SEATS)
-    this.seats.join(c.touch ? 'touch' : 'keyboard')
+    // Touch is the only device on a touch screen. Elsewhere nothing is seated: the first device pressed or used is P1.
+    if (c.touch) this.seats.join('touch')
     this.names = playerNames(0, c.q.name)
     this.hub = new HubWorld(R, content.hub(), 0)
     this.hubLayer = new SceneLayer(ports[0])
@@ -547,6 +548,8 @@ class LocalMode implements Mode {
 
   enqueue(): void {
     if (this.match !== null) return
+    // ?course= starts a round before any device was used: the keyboard takes P1 then.
+    if (this.seats.seats.length === 0) this.seats.join('keyboard')
     const count = this.seats.seats.length
     if (count === 1 && this.prepared !== null) {
       // The prepared 1-seat match is already stepped past its intro and warmed.
@@ -651,7 +654,7 @@ class LocalMode implements Mode {
     const m = this.match
     if (m === null) {
       return [
-        seatLine(this.seats.seats),
+        this.seats.seats.length === 0 ? 'Press any button to take P1' : seatLine(this.seats.seats),
         'Press Start/Enter on another controller to join - walk onto the green pad or press Enter to play',
       ]
     }
@@ -674,10 +677,7 @@ class LocalMode implements Mode {
   private frameHub(f: FrameIn): GameScreen {
     const now = performance.now()
     // A device's join button takes the next free seat while the hub is live; a match freezes the seats.
-    for (let i = 0; i < f.deviceCount; i++) {
-      const poll = f.devices[i]
-      if (poll.joinPressed) this.seats.join(poll.device)
-    }
+    claimSeats(this.seats, f.devices, f.deviceCount, !f.paused)
     if (f.emote !== 0) this.hub.setEmote(f.emote, now)
     if (!f.paused) {
       this.hubAcc = Math.min(this.hubAcc + f.dt, 8 * STEP_S)

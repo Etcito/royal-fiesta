@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
-import { MAX_LOCAL_SEATS, SeatTable } from '../src/client/seats.ts'
+import { MAX_LOCAL_SEATS, SeatTable, claimSeats } from '../src/client/seats.ts'
 import type { DeviceId } from '../src/client/seats.ts'
 
 const devices: DeviceId[] = ['keyboard', 'pad:0', 'pad:1', 'touch']
@@ -78,4 +78,30 @@ test('SeatTable: a max outside 1..4 is refused and the message names the fix', (
     assert.match(refusal.reason, /pass a max between 1 and 4/i)
   }
   assert.equal(new SeatTable(4).join('keyboard')?.index, 0)
+})
+
+const idle = { left: false, right: false, forward: false, back: false, stickX: 0, stickY: 0, jump: false, dive: false, grab: false }
+const poll = (device: DeviceId, over: Partial<typeof idle> = {}, joinPressed = false) => ({ device, joinPressed, controls: { ...idle, ...over } })
+
+test('claimSeats: a lone pad that is used takes P1 and nothing else is seated', () => {
+  const t = new SeatTable()
+  claimSeats(t, [poll('keyboard'), poll('pad:0', { stickX: 0.9 })], 2, true)
+  assert.deepEqual(t.seats.map(s => s.device), ['pad:0'])
+})
+
+test('claimSeats: the first join press is P1, the next device pressed is P2', () => {
+  const t = new SeatTable()
+  claimSeats(t, [poll('keyboard'), poll('pad:0', {}, true)], 2, true)
+  claimSeats(t, [poll('keyboard', {}, true), poll('pad:0')], 2, true)
+  assert.deepEqual(t.seats.map(s => s.device), ['pad:0', 'keyboard'])
+})
+
+test('claimSeats: stick drift or a paused frame seats nobody, and use after P1 does not seat a second device', () => {
+  const t = new SeatTable()
+  claimSeats(t, [poll('pad:0', { stickX: 0.05 })], 1, true)
+  claimSeats(t, [poll('keyboard', { forward: true })], 1, false)
+  assert.equal(t.seats.length, 0)
+  claimSeats(t, [poll('keyboard', { forward: true })], 1, true)
+  claimSeats(t, [poll('pad:0', { stickX: 1 })], 1, true)
+  assert.deepEqual(t.seats.map(s => s.device), ['keyboard'])
 })

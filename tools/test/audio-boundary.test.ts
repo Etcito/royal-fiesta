@@ -7,7 +7,17 @@ import { repoRoot } from '../bricks.ts'
 // Only the game's audio context module may create Web Audio objects. Everything else reaches
 // sound through GameAudio, so the sim and the apps never depend on a browser audio stack.
 const ALLOWED = 'packages/game/src/audio/context.ts'
-const FORBIDDEN = [/AudioContext/, /new Audio\(/]
+// The legacy HAA v0.1 pack (docs/audio.md §4: M2 deletes pack/) still value-imports @etcito/haa.
+// Until that lands it is the one exception to the value-import rule; naming a type such as
+// BaseAudioContext is fine, creating a context is not.
+const LEGACY_PACK = 'packages/game/src/audio/pack/'
+// Creating a Web Audio context is the forbidden act. `new AudioContext(` and
+// `new OfflineAudioContext(` both count; merely naming the type `BaseAudioContext` does not.
+const CONTEXT_CREATION = [/new\s+(Offline)?AudioContext\s*\(/, /new Audio\(/]
+// A value import of the HAA engine. `import type` stays allowed: the sound family modules need
+// BankEntry and Arrangement types from @etcito/haa-spatial/*. This also catches the
+// @etcito/haa-spatial subpaths because the pattern has no closing quote.
+const HAA_VALUE_IMPORT = /^\s*import\s+(?!type\b)[^;]*from\s+['"]@etcito\/haa/m
 
 function walk(dir: string, out: string[]): void {
   for (const name of readdirSync(dir)) {
@@ -47,11 +57,18 @@ test('only packages/game/src/audio/context.ts touches the Web Audio API', () => 
     if (rel === ALLOWED) continue
     scanned++
     const text = readFileSync(file, 'utf8')
-    for (const pattern of FORBIDDEN) {
-      if (pattern.test(text)) offenders.push(`${rel}: ${pattern.source}`)
+    for (const pattern of CONTEXT_CREATION) {
+      if (pattern.test(text)) offenders.push(`${rel}: creates a Web Audio context (${pattern.source})`)
+    }
+    if (rel.startsWith('packages/game/src') && !rel.startsWith(LEGACY_PACK) && HAA_VALUE_IMPORT.test(text)) {
+      offenders.push(`${rel}: value-imports @etcito/haa (only \`import type\` is allowed outside ${ALLOWED})`)
     }
   }
   assert.ok(scanned > 20, `only ${scanned} sources scanned`)
-  assert.deepEqual(offenders, [], `Web Audio outside ${ALLOWED}; route the sound through GameAudio`)
+  assert.deepEqual(
+    offenders,
+    [],
+    `audio boundary rules broken outside ${ALLOWED} (no context creation; no haa value imports):\n${offenders.join('\n')}`,
+  )
   assert.match(readFileSync(join(root, ALLOWED), 'utf8'), /new AudioContext\(\)/)
 })

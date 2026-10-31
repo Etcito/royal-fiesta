@@ -5,11 +5,12 @@ import { Rng, SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { initRapier, RapierWorldSim } from '@gamesaloon/rollback-rapier'
 import { CarryKind, CharMode } from '../src/character/constants.ts'
 import { legacyLevel } from '../src/course.ts'
-import type { FeatureSpec, HomeSpec, LevelSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
+import type { Checkpoint, FeatureSpec, HomeSpec, LevelSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
 import { bankFeature } from '../src/features/bank.ts'
 import { captureZoneFeature } from '../src/features/capture.ts'
 import { carryItemFeature } from '../src/features/carry.ts'
 import { collectibleFeature } from '../src/features/collectibles.ts'
+import { crownFeature } from '../src/features/crown.ts'
 import { ballFeature, goalFeature } from '../src/features/football.ts'
 import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureSeats } from '../src/features/feature.ts'
 import { tailSetFeature } from '../src/features/tails.ts'
@@ -17,6 +18,7 @@ import { G, groups } from '../src/groups.ts'
 import { neutralInput } from '../src/input.ts'
 import type { PlayerInput } from '../src/input.ts'
 import { PlayerStatus } from '../src/match/roundSystem.ts'
+import { respawnSlot } from '../src/season/respawn.ts'
 import { v3 } from '../src/vec.ts'
 import type { Vec3 } from '../src/vec.ts'
 
@@ -100,6 +102,10 @@ export interface HarnessOptions {
   count?: number
   /** Feature rng seed; defaults to 1. */
   seed?: number
+  /** Course checkpoints (the crown needs CP1). */
+  checkpoints?: Checkpoint[]
+  /** Level overrides applied after the legacy derivation and homes. */
+  level?: Partial<LevelSpec>
 }
 
 export interface Harness {
@@ -129,10 +135,10 @@ export async function harness(t: TestContext, options: HarnessOptions = {}): Pro
   const seats = new StubSeats(options.count ?? 2), events: Harness['events'] = [], sounds: string[] = []
   const base: ResolvedCourse = {
     id: 'football-test', name: 'Football', kind: 'race', profiles: ['standard'], timeLimitS: 60,
-    killPlaneY: -12, spawns: [], checkpoints: [], finish: null, path: [], regions: [],
+    killPlaneY: -12, spawns: [], checkpoints: options.checkpoints ?? [], finish: null, path: [], regions: [],
     queuePad: null, obstacles: [], contentHash: 0, features: [],
   }
-  const level: LevelSpec = { ...legacyLevel(base), homes: options.homes ?? [] }
+  const level: LevelSpec = { ...legacyLevel(base), homes: options.homes ?? [], ...options.level }
   const specs: FeatureSpec[] = options.withBall === false ? [] : [
     { id: 'ball', kind: 'ball', params: { spawn, radius: options.radius ?? 0.5,
       mass: options.mass ?? 5, resetS: options.resetS ?? 30 } },
@@ -159,6 +165,7 @@ export async function harness(t: TestContext, options: HarnessOptions = {}): Pro
       : spec.kind === 'bank' ? bankFeature(spec, path)
       : spec.kind === 'tailSet' ? tailSetFeature(spec, path)
       : spec.kind === 'carryItem' ? carryItemFeature(spec, path)
+      : spec.kind === 'crown' ? crownFeature(spec, path)
       : collectibleFeature(spec, path)
     const before = physics.ids().length
     feature.init(ctx)
@@ -877,6 +884,154 @@ test('QB1: tails restore at tick 60 of 120 reproduces the snapshot bytes exactly
   assert.deepEqual(b.snapshot(), checkpoint)
 
   for (let tick = 60; tick < 120; tick++) { drive(a, tick); drive(b, tick) }
+  assert.deepEqual(b.snapshot(), a.snapshot())
+  assert.deepEqual(b.physics.takeSnapshot(), a.physics.takeSnapshot())
+
+  const c = await harness(t, options), d = await harness(t, options)
+  for (let tick = 0; tick < 120; tick++) { drive(c, tick); drive(d, tick) }
+  assert.deepEqual(d.snapshot(), c.snapshot())
+  assert.deepEqual(c.snapshot(), a.snapshot())
+})
+
+// Crown cases: one crown event per valid grabber with the crossing sub-tick,
+// the CP1 fresh attempt after cap + overtime, and the checkpoint requirement.
+
+function crownCheck(t: [number, number, number], grabRangeM = 1): FeatureSpec {
+  return { id: 'crown', kind: 'crown', params: { t, grabRangeM } }
+}
+
+function crownCp1(): Checkpoint {
+  return { box: { center: v3(0, 2, 0), half: v3(2, 2, 2) },
+    respawn: { t: v3(0, 2, 0), facing: { x: 0, z: 1 } } }
+}
+
+test('crown: a grab crossing into grabRangeM emits one crown with the distance sub-tick', async t => {
+  const h = await harness(t, {
+    withBall: false, checkpoints: [crownCp1()], extraFeatures: [crownCheck([0, 2, 0])],
+  })
+  h.seats.positions[0] = v3(3, 2, 0)
+  h.step()
+  assert.equal(h.events.length, 0, 'out of range emits nothing')
+
+  h.seats.positions[0] = v3(0.75, 2, 0)
+  h.seats.inputs[0].grab = true
+  h.step()
+  const sub = Math.round(65535 * (3 - 1) / (3 - 0.75))
+  assert.deepEqual(h.events, [{ kind: 'crown', seat: 20, a: sub, b: 0 }])
+  assert.deepEqual(h.sounds, ['obj.crown'])
+  assert.equal(h.draw()[0].tint, 4, 'the taken crown is highlighted')
+
+  for (let i = 0; i < 5; i++) h.step()
+  assert.equal(h.events.length, 1, 'a held grab in range emits nothing more')
+  h.seats.positions[0] = v3(9, 2, 0)
+  h.step()
+  h.seats.positions[0] = v3(0, 2, 0)
+  h.step()
+  assert.equal(h.events.length, 1, 'leaving and re-entering range emits nothing more')
+  assert.equal(h.sounds.length, 1, 'one crown sound')
+})
+
+test('crown: two seats entering range on the same tick both emit with their sub-ticks', async t => {
+  const h = await harness(t, {
+    withBall: false, checkpoints: [crownCp1()], extraFeatures: [crownCheck([0, 2, 0])],
+  })
+  h.seats.positions = [v3(0, 2, 5), v3(0, 2, 6)]
+  h.step()
+  h.seats.positions = [v3(0, 2, 0.5), v3(0, 2, 1)]
+  h.seats.inputs[0].grab = true
+  h.seats.inputs[1].grab = true
+  h.step()
+  assert.deepEqual(h.events, [
+    { kind: 'crown', seat: 20, a: Math.round(65535 * (5 - 1) / (5 - 0.5)), b: 0 },
+    { kind: 'crown', seat: 21, a: Math.round(65535 * (6 - 1) / (6 - 1)), b: 0 },
+  ])
+  assert.deepEqual(h.sounds, ['obj.crown'])
+  assert.equal(h.draw()[0].tint, 4)
+  h.step()
+  assert.equal(h.events.length, 2, 'the next tick emits nothing more')
+})
+
+test('crown: a protected seat or a seat not holding grab emits nothing', async t => {
+  const h = await harness(t, {
+    withBall: false, checkpoints: [crownCp1()], extraFeatures: [crownCheck([0, 2, 0])],
+  })
+  h.seats.positions[0] = v3(3, 2, 0)
+  h.step()
+  h.seats.positions[0] = v3(0.5, 2, 0)
+  h.seats.inputs[0].grab = true
+  h.seats.protectedFlags[0] = true
+  h.step()
+  assert.equal(h.events.length, 0, 'protected')
+
+  h.seats.protectedFlags[0] = false
+  h.seats.inputs[0].grab = false
+  h.step()
+  assert.equal(h.events.length, 0, 'not holding grab')
+
+  h.seats.inputs[0].grab = true
+  h.step()
+  assert.deepEqual(h.events, [{ kind: 'crown', seat: 20, a: 0, b: 0 }])
+  assert.deepEqual(h.sounds, ['obj.crown'])
+})
+
+test('crown: after the cap and overtime every alive seat returns to CP1, then repeats', async t => {
+  const cp1 = crownCp1()
+  const respawn = { mode: 'checkpoint' as const, waitTicks: 0, protectTicks: 0, slots: 4, spacingM: 1.2 }
+  const h = await harness(t, {
+    withBall: false, count: 3, checkpoints: [cp1], extraFeatures: [crownCheck([0, 2, 0])],
+    level: { timeCapTicks: 10, overtimeTicks: 5, respawn },
+  })
+  h.seats.statuses[1] = PlayerStatus.eliminated
+  const slot = (k: number): SpawnPoint =>
+    respawnSlot(cp1.respawn, k, respawn, { t: v3(0, 0, 0), facing: { x: 0, z: 1 } })
+
+  for (let i = 0; i < 14; i++) h.step()
+  assert.equal(h.seats.teleports.length, 0, 'nothing before cap + overtime')
+  h.step()
+  assert.equal(h.physics.tick, 15)
+  const fresh = [{ seat: 0, at: slot(0) }, { seat: 2, at: slot(1) }]
+  assert.deepEqual(h.seats.teleports, fresh, 'alive seats go to ordered CP1 slots')
+
+  while (h.physics.tick < 614) h.step()
+  assert.equal(h.seats.teleports.length, 2, 'no reset before the repeat period')
+  h.step()
+  assert.equal(h.physics.tick, 615)
+  assert.deepEqual(h.seats.teleports.slice(2), fresh, 'the repeat teleports to CP1 again')
+})
+
+test('crown: a course without a checkpoint is refused at init', async t => {
+  await assert.rejects(
+    harness(t, { withBall: false, extraFeatures: [crownCheck([0, 2, 0])] }),
+    (error: unknown) => {
+      const refusal = error as { name: string; area: string; path: string; message: string }
+      assert.equal(refusal.name, 'RefusalError')
+      assert.equal(refusal.area, 'feature')
+      assert.equal(refusal.path, 'football-test#/features/0')
+      assert.match(refusal.message, /CP1/)
+      return true
+    })
+})
+
+test('QB1: crown restores at tick 60 of 120 and reproduces the snapshot bytes exactly', async t => {
+  const options: HarnessOptions = {
+    withBall: false, checkpoints: [crownCp1()], extraFeatures: [crownCheck([0, 2, 0])],
+  }
+  const a = await harness(t, options), b = await harness(t, options)
+  const drive = (h: Harness, tick: number) => {
+    h.seats.positions[0] = v3(Math.sin(tick / 9) * 1.5, 2, tick < 60 ? 1.5 : 0.5)
+    h.seats.positions[1] = v3(8, 2, (tick % 4) * 0.25)
+    h.seats.inputs[0].grab = tick >= 70
+    h.step()
+  }
+  for (let tick = 0; tick < 60; tick++) drive(a, tick)
+  assert.equal(a.events.length, 0, 'no grab before the checkpoint')
+  const checkpoint = a.snapshot()
+  b.physics.restoreSnapshot(a.physics.takeSnapshot())
+  b.restore(checkpoint)
+  assert.deepEqual(b.snapshot(), checkpoint)
+
+  for (let tick = 60; tick < 120; tick++) { drive(a, tick); drive(b, tick) }
+  assert.ok(a.events.length > 0, 'the grab after the checkpoint fires')
   assert.deepEqual(b.snapshot(), a.snapshot())
   assert.deepEqual(b.physics.takeSnapshot(), a.physics.takeSnapshot())
 

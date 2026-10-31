@@ -1,0 +1,27 @@
+{
+  "haa": 1, "id": "ui.back", "title": "Descending two-note blip",
+  "inputs": [], "master": 1.18796,
+  "graph": {
+    "duration": 0.22, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"high","type":"oscillator","x":520,"y":40,"label":"First upper blip","params":{"frequency":784,"wave":"sine","level":0.65}},
+      {"id":"high-env","type":"curve","x":760,"y":40,"label":"high-env","params":{"amount":1},"curve":[[0,0],[0.018182,1],[0.113636,0.65],[0.386364,0],[1,0]]},
+      {"id":"high-amp","type":"gain","x":40,"y":200,"label":"First upper blip envelope","params":{"gain":0}},
+      {"id":"low","type":"oscillator","x":280,"y":200,"label":"Second lower blip","params":{"frequency":523.25,"wave":"sine","level":0.65}},
+      {"id":"low-env","type":"curve","x":520,"y":200,"label":"low-env","params":{"amount":1},"curve":[[0,0],[0.386364,0],[0.409091,1],[0.568182,0.65],[0.931818,0],[1,0]]},
+      {"id":"low-amp","type":"gain","x":760,"y":200,"label":"Second lower blip envelope","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"take","to":"high","target":"frequency","amount":9.408},
+      {"id":"c2","from":"high","to":"high-amp","target":"audio","amount":1},
+      {"id":"c3","from":"high-env","to":"high-amp","target":"gain","amount":1},
+      {"id":"c4","from":"high-amp","to":"out","target":"audio","amount":1},
+      {"id":"c5","from":"take","to":"low","target":"frequency","amount":6.279},
+      {"id":"c6","from":"low","to":"low-amp","target":"audio","amount":1},
+      {"id":"c7","from":"low-env","to":"low-amp","target":"gain","amount":1},
+      {"id":"c8","from":"low-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

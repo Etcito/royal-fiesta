@@ -1,0 +1,20 @@
+{
+  "haa": 1, "id": "ui.hover", "title": "Very light cursor tick",
+  "inputs": [], "master": 2.176056,
+  "graph": {
+    "duration": 0.06, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"tick","type":"oscillator","x":520,"y":40,"label":"Tiny rounded hover tick","params":{"frequency":1650,"wave":"sine","level":0.55}},
+      {"id":"tick-env","type":"curve","x":760,"y":40,"label":"tick-env","params":{"amount":1},"curve":[[0,0],[0.033333,1],[0.1,0.3],[0.25,0.04],[0.5,0],[1,0]]},
+      {"id":"tick-amp","type":"gain","x":40,"y":200,"label":"Tiny rounded hover tick envelope","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"take","to":"tick","target":"frequency","amount":19.8},
+      {"id":"c2","from":"tick","to":"tick-amp","target":"audio","amount":1},
+      {"id":"c3","from":"tick-env","to":"tick-amp","target":"gain","amount":1},
+      {"id":"c4","from":"tick-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

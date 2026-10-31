@@ -1,0 +1,29 @@
+{
+  "haa": 1, "id": "ui.error", "title": "Dull gentle double buzz",
+  "inputs": [], "master": 1.180489,
+  "graph": {
+    "duration": 0.28, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"buzz","type":"oscillator","x":520,"y":40,"label":"Rounded low double buzz","params":{"frequency":155,"wave":"triangle","level":0.7}},
+      {"id":"buzz-env","type":"curve","x":760,"y":40,"label":"buzz-env","params":{"amount":1},"curve":[[0,0],[0.028571,1],[0.196429,0.85],[0.339286,0],[0.482143,0],[0.510714,1],[0.696429,0.85],[0.875,0],[1,0]]},
+      {"id":"buzz-amp","type":"gain","x":40,"y":200,"label":"Rounded low double buzz envelope","params":{"gain":0}},
+      {"id":"body","type":"oscillator","x":280,"y":200,"label":"Soft second harmonic","params":{"frequency":310,"wave":"sine","level":0.12}},
+      {"id":"body-env","type":"curve","x":520,"y":200,"label":"body-env","params":{"amount":1},"curve":[[0,0],[0.028571,1],[0.196429,0.85],[0.339286,0],[0.482143,0],[0.510714,1],[0.696429,0.85],[0.875,0],[1,0]]},
+      {"id":"body-amp","type":"gain","x":760,"y":200,"label":"Soft second harmonic envelope","params":{"gain":0}},
+      {"id":"muffle","type":"filter","x":40,"y":360,"label":"Remove buzzer edge","params":{"mode":"lowpass","cutoff":850,"resonance":0.6}}
+    ],
+    "connections": [
+      {"id":"c1","from":"take","to":"buzz","target":"frequency","amount":1.86},
+      {"id":"c2","from":"buzz","to":"buzz-amp","target":"audio","amount":1},
+      {"id":"c3","from":"buzz-env","to":"buzz-amp","target":"gain","amount":1},
+      {"id":"c4","from":"buzz-amp","to":"muffle","target":"audio","amount":1},
+      {"id":"c5","from":"take","to":"body","target":"frequency","amount":3.72},
+      {"id":"c6","from":"body","to":"body-amp","target":"audio","amount":1},
+      {"id":"c7","from":"body-env","to":"body-amp","target":"gain","amount":1},
+      {"id":"c8","from":"body-amp","to":"muffle","target":"audio","amount":1},
+      {"id":"c9","from":"muffle","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

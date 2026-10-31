@@ -1,0 +1,20 @@
+{
+  "haa": 1, "id": "flow.count-tick", "title": "Clean 3-2-1 countdown beep",
+  "inputs": [], "master": 1.185785,
+  "graph": {
+    "duration": 0.16, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"beep","type":"oscillator","x":520,"y":40,"label":"Clean steady countdown sine","params":{"frequency":880,"wave":"sine","level":0.65}},
+      {"id":"beep-env","type":"curve","x":760,"y":40,"label":"beep-env","params":{"amount":1},"curve":[[0,0],[0.03125,1],[0.5625,1],[0.78125,0.55],[0.9375,0],[1,0]]},
+      {"id":"beep-amp","type":"gain","x":40,"y":200,"label":"Clean steady countdown sine envelope","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"take","to":"beep","target":"frequency","amount":4},
+      {"id":"c2","from":"beep","to":"beep-amp","target":"audio","amount":1},
+      {"id":"c3","from":"beep-env","to":"beep-amp","target":"gain","amount":1},
+      {"id":"c4","from":"beep-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

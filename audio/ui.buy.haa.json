@@ -1,0 +1,42 @@
+{
+  "haa": 1, "id": "ui.buy", "title": "Cash-register sparkle",
+  "inputs": [], "master": 0.960829,
+  "graph": {
+    "duration": 0.32, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"latch","type":"noise","x":520,"y":40,"label":"Register latch","params":{"color":"pink","level":0.28,"width":0}},
+      {"id":"latch-filter","type":"filter","x":760,"y":40,"label":"Register latch softened spectrum","params":{"mode":"bandpass","cutoff":2100,"resonance":0.7}},
+      {"id":"latch-env","type":"curve","x":40,"y":200,"label":"latch-env","params":{"amount":1},"curve":[[0,0],[0.00625,1],[0.05,0.3],[0.125,0],[1,0]]},
+      {"id":"latch-amp","type":"gain","x":280,"y":200,"label":"latch-amp","params":{"gain":0}},
+      {"id":"bell-a","type":"oscillator","x":520,"y":200,"label":"First register chime","params":{"frequency":1318.51,"wave":"sine","level":0.5}},
+      {"id":"bell-a-env","type":"curve","x":760,"y":200,"label":"bell-a-env","params":{"amount":1},"curve":[[0,0],[0.028125,1],[0.125,0.65],[0.5625,0],[1,0]]},
+      {"id":"bell-a-amp","type":"gain","x":40,"y":360,"label":"First register chime envelope","params":{"gain":0}},
+      {"id":"bell-b","type":"oscillator","x":280,"y":360,"label":"Bright register answer","params":{"frequency":2093,"wave":"sine","level":0.5}},
+      {"id":"bell-b-env","type":"curve","x":520,"y":360,"label":"bell-b-env","params":{"amount":1},"curve":[[0,0],[0.21875,0],[0.23125,1],[0.34375,0.7],[0.9375,0],[1,0]]},
+      {"id":"bell-b-amp","type":"gain","x":760,"y":360,"label":"Bright register answer envelope","params":{"gain":0}},
+      {"id":"sparkle","type":"oscillator","x":40,"y":520,"label":"Quiet upper bell partial","params":{"frequency":3139.5,"wave":"sine","level":0.12}},
+      {"id":"sparkle-env","type":"curve","x":280,"y":520,"label":"sparkle-env","params":{"amount":1},"curve":[[0,0],[0.225,0],[0.24375,1],[0.40625,0.3],[0.828125,0],[1,0]]},
+      {"id":"sparkle-amp","type":"gain","x":520,"y":520,"label":"Quiet upper bell partial envelope","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"latch","to":"latch-filter","target":"audio","amount":1},
+      {"id":"c2","from":"latch-filter","to":"latch-amp","target":"audio","amount":1},
+      {"id":"c3","from":"latch-env","to":"latch-amp","target":"gain","amount":1},
+      {"id":"c4","from":"latch-amp","to":"out","target":"audio","amount":1},
+      {"id":"c5","from":"take","to":"bell-a","target":"frequency","amount":15.82212},
+      {"id":"c6","from":"bell-a","to":"bell-a-amp","target":"audio","amount":1},
+      {"id":"c7","from":"bell-a-env","to":"bell-a-amp","target":"gain","amount":1},
+      {"id":"c8","from":"bell-a-amp","to":"out","target":"audio","amount":1},
+      {"id":"c9","from":"take","to":"bell-b","target":"frequency","amount":25.116},
+      {"id":"c10","from":"bell-b","to":"bell-b-amp","target":"audio","amount":1},
+      {"id":"c11","from":"bell-b-env","to":"bell-b-amp","target":"gain","amount":1},
+      {"id":"c12","from":"bell-b-amp","to":"out","target":"audio","amount":1},
+      {"id":"c13","from":"take","to":"sparkle","target":"frequency","amount":37.674},
+      {"id":"c14","from":"sparkle","to":"sparkle-amp","target":"audio","amount":1},
+      {"id":"c15","from":"sparkle-env","to":"sparkle-amp","target":"gain","amount":1},
+      {"id":"c16","from":"sparkle-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

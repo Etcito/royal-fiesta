@@ -1,0 +1,27 @@
+{
+  "haa": 1, "id": "flow.vote-confirm", "title": "Affirmative two-note rise",
+  "inputs": [], "master": 1.187346,
+  "graph": {
+    "duration": 0.25, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"first","type":"oscillator","x":520,"y":40,"label":"Affirmative first note","params":{"frequency":659.25,"wave":"sine","level":0.65}},
+      {"id":"first-env","type":"curve","x":760,"y":40,"label":"first-env","params":{"amount":1},"curve":[[0,0],[0.02,1],[0.16,0.75],[0.4,0],[1,0]]},
+      {"id":"first-amp","type":"gain","x":40,"y":200,"label":"Affirmative first note envelope","params":{"gain":0}},
+      {"id":"answer","type":"oscillator","x":280,"y":200,"label":"Upward perfect-fifth answer","params":{"frequency":987.77,"wave":"sine","level":0.65}},
+      {"id":"answer-env","type":"curve","x":520,"y":200,"label":"answer-env","params":{"amount":1},"curve":[[0,0],[0.38,0],[0.4,1],[0.56,0.8],[0.94,0],[1,0]]},
+      {"id":"answer-amp","type":"gain","x":760,"y":200,"label":"Upward perfect-fifth answer envelope","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"take","to":"first","target":"frequency","amount":7.9110000000000005},
+      {"id":"c2","from":"first","to":"first-amp","target":"audio","amount":1},
+      {"id":"c3","from":"first-env","to":"first-amp","target":"gain","amount":1},
+      {"id":"c4","from":"first-amp","to":"out","target":"audio","amount":1},
+      {"id":"c5","from":"take","to":"answer","target":"frequency","amount":11.85324},
+      {"id":"c6","from":"answer","to":"answer-amp","target":"audio","amount":1},
+      {"id":"c7","from":"answer-env","to":"answer-amp","target":"gain","amount":1},
+      {"id":"c8","from":"answer-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

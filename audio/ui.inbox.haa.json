@@ -1,0 +1,27 @@
+{
+  "haa": 1, "id": "ui.inbox", "title": "Warm mail ding",
+  "inputs": [], "master": 1.040809,
+  "graph": {
+    "duration": 0.3, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"ding","type":"oscillator","x":520,"y":40,"label":"Warm bell fundamental","params":{"frequency":1046.5,"wave":"sine","level":0.6}},
+      {"id":"ding-env","type":"curve","x":760,"y":40,"label":"ding-env","params":{"amount":1},"curve":[[0,0],[0.016667,1],[0.116667,0.85],[0.433333,0.35],[0.933333,0],[1,0]]},
+      {"id":"ding-amp","type":"gain","x":40,"y":200,"label":"Warm bell fundamental envelope","params":{"gain":0}},
+      {"id":"partial","type":"oscillator","x":280,"y":200,"label":"Soft mail bell partial","params":{"frequency":2616.25,"wave":"sine","level":0.16}},
+      {"id":"partial-env","type":"curve","x":520,"y":200,"label":"partial-env","params":{"amount":1},"curve":[[0,0],[0.016667,1],[0.083333,0.5],[0.4,0],[1,0]]},
+      {"id":"partial-amp","type":"gain","x":760,"y":200,"label":"Soft mail bell partial envelope","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"take","to":"ding","target":"frequency","amount":12.558},
+      {"id":"c2","from":"ding","to":"ding-amp","target":"audio","amount":1},
+      {"id":"c3","from":"ding-env","to":"ding-amp","target":"gain","amount":1},
+      {"id":"c4","from":"ding-amp","to":"out","target":"audio","amount":1},
+      {"id":"c5","from":"take","to":"partial","target":"frequency","amount":31.395},
+      {"id":"c6","from":"partial","to":"partial-amp","target":"audio","amount":1},
+      {"id":"c7","from":"partial-env","to":"partial-amp","target":"gain","amount":1},
+      {"id":"c8","from":"partial-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

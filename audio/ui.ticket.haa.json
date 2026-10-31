@@ -1,0 +1,35 @@
+{
+  "haa": 1, "id": "ui.ticket", "title": "Paper-ticket punch and chime",
+  "inputs": [], "master": 1.475364,
+  "graph": {
+    "duration": 0.27, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"paper","type":"noise","x":520,"y":40,"label":"Short fibrous paper punch","params":{"color":"pink","level":0.8,"width":0}},
+      {"id":"paper-filter","type":"filter","x":760,"y":40,"label":"Short fibrous paper punch softened spectrum","params":{"mode":"bandpass","cutoff":2400,"resonance":0.7}},
+      {"id":"paper-env","type":"curve","x":40,"y":200,"label":"paper-env","params":{"amount":1},"curve":[[0,0],[0.011111,1],[0.044444,0.55],[0.074074,0.8],[0.148148,0],[1,0]]},
+      {"id":"paper-amp","type":"gain","x":280,"y":200,"label":"paper-amp","params":{"gain":0}},
+      {"id":"punch","type":"oscillator","x":520,"y":200,"label":"Muted punch body","params":{"frequency":240,"wave":"sine","level":0.4}},
+      {"id":"punch-env","type":"curve","x":760,"y":200,"label":"punch-env","params":{"amount":1},"curve":[[0,0],[0.011111,1],[0.074074,0.35],[0.185185,0],[1,0]]},
+      {"id":"punch-amp","type":"gain","x":40,"y":360,"label":"Muted punch body envelope","params":{"gain":0}},
+      {"id":"chime","type":"oscillator","x":280,"y":360,"label":"Ticket reward chime","params":{"frequency":1760,"wave":"sine","level":0.5}},
+      {"id":"chime-env","type":"curve","x":520,"y":360,"label":"chime-env","params":{"amount":1},"curve":[[0,0],[0.148148,0],[0.166667,1],[0.296296,0.7],[0.925926,0],[1,0]]},
+      {"id":"chime-amp","type":"gain","x":760,"y":360,"label":"Ticket reward chime envelope","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"paper","to":"paper-filter","target":"audio","amount":1},
+      {"id":"c2","from":"paper-filter","to":"paper-amp","target":"audio","amount":1},
+      {"id":"c3","from":"paper-env","to":"paper-amp","target":"gain","amount":1},
+      {"id":"c4","from":"paper-amp","to":"out","target":"audio","amount":1},
+      {"id":"c5","from":"take","to":"punch","target":"frequency","amount":2.88},
+      {"id":"c6","from":"punch","to":"punch-amp","target":"audio","amount":1},
+      {"id":"c7","from":"punch-env","to":"punch-amp","target":"gain","amount":1},
+      {"id":"c8","from":"punch-amp","to":"out","target":"audio","amount":1},
+      {"id":"c9","from":"take","to":"chime","target":"frequency","amount":21.12},
+      {"id":"c10","from":"chime","to":"chime-amp","target":"audio","amount":1},
+      {"id":"c11","from":"chime-env","to":"chime-amp","target":"gain","amount":1},
+      {"id":"c12","from":"chime-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

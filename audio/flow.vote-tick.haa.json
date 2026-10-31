@@ -1,0 +1,28 @@
+{
+  "haa": 1, "id": "flow.vote-tick", "title": "Clock tick",
+  "inputs": [], "master": 1.939089,
+  "graph": {
+    "duration": 0.09, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"clock","type":"oscillator","x":520,"y":40,"label":"Clock escapement ping","params":{"frequency":2300,"wave":"sine","level":0.55}},
+      {"id":"clock-env","type":"curve","x":760,"y":40,"label":"clock-env","params":{"amount":1},"curve":[[0,0],[0.016667,1],[0.077778,0.5],[0.277778,0.08],[0.611111,0],[1,0]]},
+      {"id":"clock-amp","type":"gain","x":40,"y":200,"label":"Clock escapement ping envelope","params":{"gain":0}},
+      {"id":"contact","type":"noise","x":280,"y":200,"label":"Dry escapement contact","params":{"color":"pink","level":0.45,"width":0}},
+      {"id":"contact-filter","type":"filter","x":520,"y":200,"label":"Dry escapement contact softened spectrum","params":{"mode":"bandpass","cutoff":3200,"resonance":0.7}},
+      {"id":"contact-env","type":"curve","x":760,"y":200,"label":"contact-env","params":{"amount":1},"curve":[[0,0],[0.011111,1],[0.088889,0.25],[0.255556,0],[1,0]]},
+      {"id":"contact-amp","type":"gain","x":40,"y":360,"label":"contact-amp","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"take","to":"clock","target":"frequency","amount":27.6},
+      {"id":"c2","from":"clock","to":"clock-amp","target":"audio","amount":1},
+      {"id":"c3","from":"clock-env","to":"clock-amp","target":"gain","amount":1},
+      {"id":"c4","from":"clock-amp","to":"out","target":"audio","amount":1},
+      {"id":"c5","from":"contact","to":"contact-filter","target":"audio","amount":1},
+      {"id":"c6","from":"contact-filter","to":"contact-amp","target":"audio","amount":1},
+      {"id":"c7","from":"contact-env","to":"contact-amp","target":"gain","amount":1},
+      {"id":"c8","from":"contact-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

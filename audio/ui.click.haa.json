@@ -1,0 +1,22 @@
+{
+  "haa": 1, "id": "ui.click", "title": "Soft candy pop",
+  "inputs": [], "master": 1.124697,
+  "graph": {
+    "duration": 0.12, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded take: subtle tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Centered UI output","params":{"gain":1}},
+      {"id":"pop","type":"oscillator","x":520,"y":40,"label":"Rounded sugar bubble","params":{"frequency":440,"wave":"sine","level":0.7}},
+      {"id":"pop-env","type":"curve","x":760,"y":40,"label":"pop-env","params":{"amount":1},"curve":[[0,0],[0.033333,1],[0.125,0.8],[0.375,0.22],[0.833333,0],[1,0]]},
+      {"id":"pop-amp","type":"gain","x":40,"y":200,"label":"Rounded sugar bubble envelope","params":{"gain":0}},
+      {"id":"pop-bend","type":"curve","x":280,"y":200,"label":"Quick downward candy pop","params":{"amount":1},"curve":[[0,1],[0.15,0.3],[0.541667,0],[1,0]]}
+    ],
+    "connections": [
+      {"id":"c1","from":"take","to":"pop","target":"frequency","amount":5.28},
+      {"id":"c2","from":"pop","to":"pop-amp","target":"audio","amount":1},
+      {"id":"c3","from":"pop-env","to":"pop-amp","target":"gain","amount":1},
+      {"id":"c4","from":"pop-amp","to":"out","target":"audio","amount":1},
+      {"id":"c5","from":"pop-bend","to":"pop","target":"frequency","amount":850}
+    ]
+  }
+}

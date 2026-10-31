@@ -49,8 +49,11 @@ interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; unt
 // votes with a real ArrowRight and Enter, then follows the show: the world loads before the countdown, round 0
 // is a race the idle player cannot qualify in, so it is spectated from round 1 on. The next vote is played with
 // the pad (d-pad right, then A); the remaining votes expire to their first candidate and the show ends on its
-// podium and end screen, whose Continue returns to the start menu. The offline queue, lobbyChoice, lobbyLive
-// are not in this tour.
+// podium and end screen, whose Continue returns to the start menu. The start menu's Shop button opens the shop,
+// whose Commission button opens the commission form; Escape returns to the shop. Four ArrowDowns there walk the
+// shop focus from its item rows to the Inbox button on the button row, and Enter opens the inbox, whose Escape
+// returns to the shop and whose second Escape returns to the start menu. Every leg waits on the host's screen
+// events. The offline queue, lobbyChoice, lobbyLive are not in this tour.
 const TOUR: readonly Leg[] = [
   { acts: [], to: 'error', capture: false, timeoutS: 20 },
   { acts: [{ click: 'act-retry' }], to: 'loading', capture: true, timeoutS: 10 },
@@ -87,6 +90,14 @@ const TOUR: readonly Leg[] = [
   { acts: [], to: 'endScreen', capture: true, timeoutS: 60 },
   // Continue waits for the winner reveal, then leaves the finished show for the start menu.
   { acts: [{ waitMs: 4500 }, { key: 'Enter' }], to: 'start', capture: false, timeoutS: 60 },
+  // The shop opens from the start menu; the commission form opens from the shop.
+  { acts: [{ click: 'act-shop' }], to: 'shop', capture: true, timeoutS: 10 },
+  { acts: [{ click: 'act-commission' }], to: 'commission', capture: true, timeoutS: 10 },
+  { acts: [{ key: 'Escape' }], to: 'shop', capture: false, timeoutS: 10 },
+  // Four ArrowDowns take the shop focus to its Inbox button on the button row; Enter opens the inbox.
+  { acts: [{ key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'Enter' }], to: 'inbox', capture: true, timeoutS: 10 },
+  { acts: [{ key: 'Escape' }], to: 'shop', capture: false, timeoutS: 10 },
+  { acts: [{ key: 'Escape' }], to: 'start', capture: false, timeoutS: 10 },
 ]
 
 export const TOUR_SCREENS: readonly string[] = TOUR.filter(leg => leg.capture).map(leg => leg.name ?? leg.to)

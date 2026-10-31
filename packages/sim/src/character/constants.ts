@@ -38,6 +38,15 @@ export const CHAR = {
   groundMinNy: 0.6,
   parkOrigin,
   parkStep: 5,
+  slide: {
+    friction: { normal: 0.35, ice: 0.02, mud: 1.2, rubber: 0.35 } as Readonly<Record<Surface, number>>,
+  },
+  swim: {
+    maxSpeed: 5,
+    drag: 2.5,
+    strokeImpulse: 3,
+    strokeCooldownTicks: 18,
+  },
 } as const
 
 export const CharMode = {
@@ -49,9 +58,21 @@ export const CharMode = {
   grabbing: 5,
   frozen: 6,
   parked: 7,
+  slide: 8,
+  swim: 9,
 } as const
 
-export type CharModeValue = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+export type CharModeValue = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+export const CarryKind = {
+  none: 0,
+  object: 1,
+  player: 2,
+  tail: 3,
+  crown: 4,
+} as const
+
+export type CarryKindValue = 0 | 1 | 2 | 3 | 4
 
 export const SURFACE_TUNING: Readonly<Record<Surface, { accel: number; brake: number; maxRun: number; bounce: number }>> = {
   normal: { accel: 1, brake: 1, maxRun: 1, bounce: 0 },

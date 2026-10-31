@@ -1,6 +1,6 @@
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { BodyId, RapierModule } from '@gamesaloon/rollback-rapier'
-import { surfaceOf } from '../course.ts'
+import { SURFACES, surfaceOf } from '../course.ts'
 import { dhypot3 } from '../detmath.ts'
 import type { BodyRef } from '../mechanismSpec.ts'
 import type { MechanismSystem } from '../mechanisms/system.ts'
@@ -14,7 +14,7 @@ import { refuse } from '../refusal.ts'
 import { pose } from '../vec.ts'
 import type { Vec3 } from '../vec.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
-import { CHAR, CharMode, SURFACE_TUNING } from './constants.ts'
+import { CHAR, CarryKind, CharMode, SURFACE_TUNING } from './constants.ts'
 import { approach2, turnFacing } from './controller.ts'
 
 export interface CharacterOptions {
@@ -40,6 +40,10 @@ export interface CharState {
   knockbacks: number
   teleportTick: number
   protectedUntil?: number
+  slideSpeed?: number
+  carry?: number
+  carryId?: number
+  strokeTimer?: number
 }
 
 const CHAR_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING | G.CHAR)
@@ -115,8 +119,14 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   readonly #teleportTick: Int32Array
   // Tick at which respawn protection ends; -1 never protects.
   readonly #protectedUntil: Int32Array
+  readonly #slideSpeed: Float64Array
+  readonly #carry: Uint8Array
+  readonly #carryId: Int16Array
+  readonly #strokeTimer: Uint8Array
   readonly #frozen: Uint8Array
   readonly #parked: Uint8Array
+  // Configuration, never snapshotted.
+  #surfaceFriction: Record<Surface, number> = { ...CHAR.slide.friction }
   // Consumed within the tick it is used, so never snapshotted.
   readonly #override: Int32Array
   // Velocity set before the physics step, read by the bumps in the same tick: Rapier's contact
@@ -159,6 +169,10 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#knockbacks = new Uint16Array(n)
     this.#teleportTick = new Int32Array(n)
     this.#protectedUntil = new Int32Array(n)
+    this.#slideSpeed = new Float64Array(n)
+    this.#carry = new Uint8Array(n)
+    this.#carryId = new Int16Array(n)
+    this.#strokeTimer = new Uint8Array(n)
     this.#frozen = new Uint8Array(n)
     this.#parked = new Uint8Array(n)
     this.#override = new Int32Array(n)
@@ -216,6 +230,10 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#grabLever[p] = -1
     this.#teleportTick[p] = -1
     this.#protectedUntil[p] = -1
+    this.#slideSpeed[p] = 0
+    this.#carry[p] = CarryKind.none
+    this.#carryId[p] = -1
+    this.#strokeTimer[p] = 0
     this.#frozen[p] = 0
     this.#parked[p] = 1
     this.#override[p] = NO_OVERRIDE
@@ -292,6 +310,70 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#protectedUntil[p] = untilTick
   }
 
+  setCarry(p: number, kind: number, id: number): void {
+    this.#check(p, 'setCarry')
+    if (!Number.isInteger(kind) || kind < CarryKind.none || kind > CarryKind.crown) {
+      refuse('characters', `setCarry(${p})/kind`,
+        `got ${kind}; pass a CarryKind value ${CarryKind.none}..${CarryKind.crown}`)
+    }
+    if (!Number.isInteger(id) || id < -1 || id > 32767) {
+      refuse('characters', `setCarry(${p})/id`, `got ${id}; pass an integer in -1..32767`)
+    }
+    this.#carry[p] = kind
+    this.#carryId[p] = id
+  }
+
+  setSurfaceFriction(table: Readonly<Partial<Record<Surface, number>>>): void {
+    const next: Record<Surface, number> = { normal: 0, ice: 0, mud: 0, rubber: 0 }
+    for (const surface of SURFACES) {
+      const value = table[surface]
+      if (typeof value !== 'number') {
+        refuse('characters', `setSurfaceFriction/${surface}`,
+          `missing ${surface}; pass all of ${SURFACES.join(', ')}`)
+      }
+      if (!Number.isFinite(value) || value < 0) {
+        refuse('characters', `setSurfaceFriction/${surface}`, `got ${value}; pass a finite, non-negative friction`)
+      }
+      next[surface] = value
+    }
+    this.#surfaceFriction = next
+  }
+
+  // The swim volume calls this between preStep and the physics step. Until the swim task, preStep
+  // still re-derives the mode on the next tick; this only changes the mode and the body velocity now.
+  setSwim(ctx: WorldCtx<PlayerInput>, p: number, inside: boolean, drag: number, buoyancy: number): void {
+    this.#check(p, 'setSwim')
+    if (this.#parked[p] !== 0) return
+    const mode = this.#mode[p]
+    if (this.#frozen[p] !== 0 || mode === CharMode.frozen || mode === CharMode.stunned) return
+    if (!inside) {
+      this.#mode[p] = CharMode.air
+      return
+    }
+    this.#mode[p] = CharMode.swim
+    const d = drag > 0 ? drag : CHAR.swim.drag
+    const rb = ctx.physics.body(this.#bodies[p])
+    const v = rb.linvel()
+    const k = Math.max(0, 1 - d * ctx.dt)
+    scratchV.x = v.x * k
+    scratchV.y = v.y + buoyancy * ctx.dt
+    scratchV.z = v.z * k
+    rb.setLinvel(scratchV, true)
+  }
+
+  // The same effect as a bump in #onManifold, for a feature such as a rolling log.
+  knock(ctx: WorldCtx<PlayerInput>, p: number, v: Vec3): void {
+    this.#check(p, 'knock')
+    if (this.#parked[p] !== 0 || ctx.tick < this.#protectedUntil[p]) return
+    scratchV.x = v.x
+    scratchV.y = v.y
+    scratchV.z = v.z
+    ctx.physics.body(this.#bodies[p]).setLinvel(scratchV, true)
+    this.#mode[p] = CharMode.stunned
+    this.#timer[p] = CHAR.stunTicks
+    this.#knockbacks[p]++
+  }
+
   isParked(p: number): boolean {
     this.#check(p, 'isParked')
     return this.#parked[p] !== 0
@@ -324,6 +406,10 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     out.knockbacks = this.#knockbacks[p]
     out.teleportTick = this.#teleportTick[p]
     out.protectedUntil = this.#protectedUntil[p]
+    out.slideSpeed = this.#slideSpeed[p]
+    out.carry = this.#carry[p]
+    out.carryId = this.#carryId[p]
+    out.strokeTimer = this.#strokeTimer[p]
     return out
   }
 
@@ -520,7 +606,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         timer = 0
       }
 
-      if ((mode === CharMode.ground || mode === CharMode.air) && !protectedNow &&
+      if ((mode === CharMode.ground || mode === CharMode.air) && !protectedNow && this.#carry[p] === CarryKind.none &&
           (pressed & GRAB_BIT) !== 0 && this.#grabCooldown[p] === 0 && mechanisms !== null) {
         const levers = mechanisms.spec()?.levers ?? []
         for (let lever = 0; lever < levers.length; lever++) {
@@ -590,6 +676,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       } else {
         const mode = this.#mode[p]
         if ((mode !== CharMode.ground && mode !== CharMode.air) || this.#grabCooldown[p] > 0) continue
+        if (this.#carry[p] !== CarryKind.none) continue
         if ((this.#prevButtons[p] & GRAB_BIT) === 0) continue
         q = this.#nearestInCone(p, ctx.tick)
         if (q < 0) continue
@@ -784,6 +871,10 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     w.i16(this.#groundBody[p])
     w.i16(this.#grabLever[p])
     w.i32(this.#protectedUntil[p])
+    w.f64(this.#slideSpeed[p])
+    w.u8(this.#carry[p])
+    w.i16(this.#carryId[p])
+    w.u8(this.#strokeTimer[p])
   }
 
   readPlayer(r: SnapReader, p: number): void {
@@ -809,6 +900,10 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#groundBody[p] = r.i16()
     this.#grabLever[p] = r.i16()
     this.#protectedUntil[p] = r.i32()
+    this.#slideSpeed[p] = r.f64()
+    this.#carry[p] = r.u8()
+    this.#carryId[p] = r.i16()
+    this.#strokeTimer[p] = r.u8()
     // Consumed within a tick, so never snapshotted: a restored player has no pending override.
     this.#override[p] = NO_OVERRIDE
   }

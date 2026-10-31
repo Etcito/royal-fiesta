@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { FIXED_DT, initRapier } from '@gamesaloon/rollback-rapier'
 import type { BodyId, RapierModule } from '@gamesaloon/rollback-rapier'
-import { CHAR, CharMode } from '../src/character/constants.ts'
+import { CHAR, CarryKind, CharMode } from '../src/character/constants.ts'
 import { approach2, turnFacing } from '../src/character/controller.ts'
 import { CharacterSystem, characterBody } from '../src/character/system.ts'
 import type { CharState } from '../src/character/system.ts'
@@ -618,5 +618,103 @@ describe('system', () => {
     assert.equal(state({ world: b, chars: fresh }, 0).protectedUntil, 100)
     a.world.free()
     b.free()
+  })
+})
+
+describe('M4 state', () => {
+  it('setCarry shows in state() and refuses an out-of-range kind or id', () => {
+    const r = rig()
+    r.chars.setCarry(0, CarryKind.object, 7)
+    const s = state(r)
+    assert.equal(s.carry, CarryKind.object)
+    assert.equal(s.carryId, 7)
+    assert.throws(() => r.chars.setCarry(0, CarryKind.crown + 1, 1), /kind/)
+    assert.throws(() => r.chars.setCarry(0, CarryKind.object, 32768), /id/)
+    assert.equal(state(r).carry, CarryKind.object)
+    assert.equal(state(r).carryId, 7)
+    r.world.free()
+  })
+
+  it('knock stuns, sets the velocity and counts one knockback', () => {
+    const r = rig()
+    stepN(r, 30, NEUTRAL)
+    r.chars.knock(r.world.ctx, 0, v3(3, 4, 5))
+    const s = state(r)
+    assert.equal(s.mode, CharMode.stunned)
+    assert.equal(s.knockbacks, 1)
+    assert.deepEqual([s.vel.x, s.vel.y, s.vel.z], [3, 4, 5])
+    r.world.free()
+  })
+
+  it('setSwim(true) enters swim with buoyancy and drag; setSwim(false) returns to air', () => {
+    const r = rig()
+    stepN(r, 30, FORWARD)
+    const before = state(r)
+    const drag = 3
+    const buoyancy = 5
+    r.chars.setSwim(r.world.ctx, 0, true, drag, buoyancy)
+    const swim = state(r)
+    assert.equal(swim.mode, CharMode.swim)
+    assert.ok(Math.abs(swim.vel.y - (before.vel.y + buoyancy * FIXED_DT)) <= 1e-6, `vy ${before.vel.y} -> ${swim.vel.y}`)
+    const k = Math.max(0, 1 - drag * FIXED_DT)
+    assert.ok(Math.abs(swim.vel.x - before.vel.x * k) <= 1e-6, `vx ${before.vel.x} -> ${swim.vel.x}`)
+    assert.ok(Math.abs(swim.vel.z - before.vel.z * k) <= 1e-6, `vz ${before.vel.z} -> ${swim.vel.z}`)
+    r.chars.setSwim(r.world.ctx, 0, false, drag, buoyancy)
+    assert.equal(state(r).mode, CharMode.air)
+    r.world.free()
+  })
+
+  it('a carrying player holding grab within range starts no grab', () => {
+    const r = grabRig()
+    r.chars.setCarry(0, CarryKind.object, 1)
+    for (let t = 0; t < 30; t++) {
+      r.world.step([GRABBER, NEUTRAL])
+      assert.notEqual(state(r, 0).mode, CharMode.grabbing, `grabbed at tick ${t}`)
+    }
+    r.world.free()
+  })
+
+  it('setSurfaceFriction refuses a missing surface, a negative and a non-finite value', () => {
+    const r = rig()
+    assert.throws(() => r.chars.setSurfaceFriction({ ice: 0.1 }), /missing normal/)
+    assert.throws(() => r.chars.setSurfaceFriction({ normal: -0.1, ice: 0.1, mud: 1, rubber: 0.3 }), /non-negative/)
+    assert.throws(() => r.chars.setSurfaceFriction({ normal: Number.NaN, ice: 0.1, mud: 1, rubber: 0.3 }), /non-negative/)
+    r.world.free()
+  })
+
+  it('writePlayer -> readPlayer round-trips slideSpeed, carry, carryId and strokeTimer byte for byte', () => {
+    const w = new SnapWriter()
+    w.u8(CharMode.swim)
+    w.i32(17)
+    w.u8(2)
+    w.u8(3)
+    w.u8(5)
+    w.u8(1)
+    w.u8(0xff)
+    w.u16(9)
+    w.u16(11)
+    w.f64(0.25)
+    w.f64(-0.75)
+    w.u8(1)
+    w.i16(3)
+    w.u16(4)
+    w.i32(55)
+    w.u8(0)
+    w.u8(0)
+    w.i16(1)
+    w.i16(2)
+    w.i16(3)
+    w.i32(88)
+    w.f64(6.5)
+    w.u8(CarryKind.object)
+    w.i16(7)
+    w.u8(4)
+    const bytes = w.bytes().slice()
+
+    const fresh = new CharacterSystem({ playerCount: 1 })
+    fresh.readPlayer(new SnapReader(bytes), 0)
+    const out = new SnapWriter()
+    fresh.writePlayer(out, 0)
+    assert.deepEqual(out.bytes().slice(), bytes)
   })
 })

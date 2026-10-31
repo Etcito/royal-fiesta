@@ -201,5 +201,26 @@
     "command": "npm run round:run -- --course feat-crown --dir fixtures/test-courses --seats 12 --peers 2 --profile season",
     "timeout_s": 1800,
     "after": ["s3-m6-feat-crown-6"]
+  },
+  {
+    "name": "s3-m7-tour-build",
+    "command": "npm run build",
+    "timeout_s": 900
+  },
+  {
+    "name": "s3-m7-tour",
+    "command": "env NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/flowTour.ts",
+    "timeout_s": 1800,
+    "after": [
+      "s3-m7-tour-build"
+    ]
+  },
+  {
+    "name": "s3-m7-judge-tour",
+    "command": "node --experimental-strip-types tools/judgeLoop.ts s3-m7-judge-tour out/s3/m7/tour.png --description \"Royal Fiesta party game screens: map vote, 3-2-1-GO, round HUD, results with points, elimination grid, end screen with gold/silver/bronze crowns, start screen with a penguin and cosmetic bins\" --min-score 6",
+    "timeout_s": 900,
+    "after": [
+      "s3-m7-tour"
+    ]
   }
 ]

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { MOTION_KINDS } from '@royal-fiesta/sim/course'
+import { MOTION_KINDS, legacyLevel } from '@royal-fiesta/sim/course'
 import type { ColliderSpec } from '@royal-fiesta/sim/course'
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
 import { fixtureResolver } from '../src/assets.ts'
@@ -325,6 +325,8 @@ test('every invalid v1 course fixture refuses with file#pointer and a fix', asyn
   ]))
   const pointers: Record<string, string> = {
     'assets-manifest-v1.course.json': '#/assetsManifest',
+    'bad-level-group.course.json': '#/level/groups/1/members/0',
+    'bad-level-route.course.json': '#/level/route/stages/2',
     'decor-unknown-asset.course.json': '#/decor/0/asset',
     'podium-moving-obstacle.course.json': '#/obstacles/0/motion',
     'podium-without-spots.course.json': '#/podium/spots',
@@ -473,4 +475,121 @@ test('physics obstacles refuse a colliders override and a motion; mechanism refu
   const notItem = mechCourse()
   ;(notItem.sounds as Record<string, unknown>[])[0].item = 'a'
   await refused(loadCourseV1(notItem, p, assets), 'course', `${p}#/sounds/0/item`, ['use item null and a world t'])
+})
+
+// ---- S13 level block and S19 features ----
+
+// The shipped asset files, as the game reads them: courses/ carries the real v1 asset ids.
+const shippedCache = new Map<string, Promise<ResolvedGameAsset>>()
+const shipped: GameAssetResolver = {
+  resolve(id: string): Promise<ResolvedGameAsset> {
+    let pending = shippedCache.get(id)
+    if (pending === undefined) {
+      pending = (async () => {
+        const path = assetFilePath(id.slice(0, id.indexOf('.')) as World, id)
+        const json = readJson(path)
+        return { asset: await parseGameAsset(json, path), source: { path, json } }
+      })()
+      shippedCache.set(id, pending)
+    }
+    return pending
+  },
+}
+
+function levelBlock(over: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    season: null, map: null, kind: 'race', finalRule: null, stages: ['R1'], capacity: 60, usual: [], quota: null,
+    timeCapS: 60, overtimeS: 0,
+    respawn: { mode: 'checkpoint', waitS: 3, protectS: 1, slots: 12, spacingM: 1.2 },
+    route: { ordered: true, laps: 1, stages: [] },
+    teams: null, homes: [],
+    groups: [{ id: 'ice-main', role: 'floor', friction: 0.1, surface: 'ice', members: ['a'] }],
+    grab: { players: true, objects: true },
+    ...over,
+  }
+}
+
+test('candy-seesaw-run still loads with a legacy level and no features', async () => {
+  const path = 'courses/candy-seesaw-run.course.json'
+  const c = await loadCourseV1(readJson(path), path, shipped)
+  assert.ok(c.sim)
+  assert.equal(c.sim.kind, 'race')
+  assert.deepEqual(c.sim.features, [])
+  assert.deepEqual(c.sim.level, legacyLevel(c.sim))
+  assert.equal(c.sim.level.kind, 'race')
+  assert.equal(c.sim.level.timeCapTicks, 7200)
+  assert.deepEqual(c.sim.level.route.stages, [0, 1, 2])
+  assert.equal(c.sim.level.respawn.mode, 'checkpoint')
+  assert.deepEqual(c.sim.level.grab, { players: true, objects: true })
+  assert.ok(c.sim.obstacles.length > 0)
+})
+
+test('a level block applies group friction and surface and lands on the sim course', async () => {
+  const assets = resolverOf(await basics())
+  const json = v1Course('t-level', [obstacle('a', 'candy.block')], {
+    decor: [{ id: 'flower-1', asset: 'candy.flower', t: [3, 0, 1], r: [0, 0, 0, 1], s: [1, 1, 1] }],
+    features: [{ id: 'spark', kind: 'marker', t: [0, 1, 0] }],
+    level: levelBlock({
+      groups: [
+        { id: 'ice-main', role: 'floor', friction: 0.1, surface: 'ice', members: ['a'] },
+        { id: 'deco-main', role: 'decor', friction: null, surface: null, members: ['spark', 'flower-1'] },
+      ],
+    }),
+  })
+  const c = await loadCourseV1(json, coursePath('t-level'), assets)
+  assert.ok(c.sim)
+  assert.equal(c.sim.obstacles[0].friction, 0.1)
+  assert.equal(c.sim.obstacles[0].surface, 'ice')
+  assert.deepEqual(c.sim.features, [{ id: 'spark', kind: 'marker', params: { t: [0, 1, 0] } }])
+  assert.deepEqual(c.sim.level, {
+    season: null, map: null, kind: 'race', finalRule: null, stages: ['R1'], capacity: 60, usual: [], quota: null,
+    timeCapTicks: 3600, overtimeTicks: 0,
+    respawn: { mode: 'checkpoint', waitTicks: 180, protectTicks: 60, slots: 12, spacingM: 1.2 },
+    route: { ordered: true, laps: 1, stages: [] },
+    teams: null, homes: [],
+    groups: [
+      { id: 'ice-main', role: 'floor', friction: 0.1, surface: 'ice', members: ['a'] },
+      { id: 'deco-main', role: 'decor', friction: null, surface: null, members: ['spark', 'flower-1'] },
+    ],
+    grab: { players: true, objects: true },
+  })
+})
+
+test('a bad level block is refused through loadCourseV1', async () => {
+  const assets = resolverOf(await basics())
+  const p = coursePath('t-level-bad')
+  const load = (level: Record<string, unknown>): Promise<unknown> =>
+    loadCourseV1(v1Course('t-level-bad', [obstacle('a', 'candy.block')], { level }), p, assets)
+  await refused(load(levelBlock({ route: { ordered: true, laps: 1, stages: [0] } })), 'course', `${p}#/level/route/stages`)
+  await refused(load(levelBlock({ respawn: { mode: 'none', waitS: 0, protectS: 0, slots: 12, spacingM: 1 } })), 'course', `${p}#/level/respawn/mode`)
+  await refused(load(levelBlock({ groups: [{ id: 'g', role: 'floor', friction: null, surface: null, members: ['ghost'] }] })), 'course', `${p}#/level/groups/0/members/0`)
+})
+
+test('the invalid level fixtures refuse through loadCourseV1', async () => {
+  const assets = resolverOf([await gameAsset('candy.floor-tile', 'obstacle', [{ shape: 'cuboid', half: [1, 0.1, 1] }])])
+  const dir = 'fixtures/courses-v1/invalid/'
+  const cases = [
+    ['bad-level-route.course.json', '#/level/route/stages/2'],
+    ['bad-level-group.course.json', '#/level/groups/1/members/0'],
+  ] as const
+  for (const [file, pointer] of cases) {
+    const where = dir + file
+    await refused(loadCourseV1(readJson(where), where, assets), 'course', `${where}${pointer}`)
+  }
+})
+
+test('contentHash differs when only the level block changes or only the features change', async () => {
+  const assets = resolverOf(await basics())
+  const p = coursePath('t-level-hash')
+  const load = (level: Record<string, unknown>, features: unknown[]) =>
+    loadCourseV1(v1Course('t-level-hash', [obstacle('a', 'candy.block')], { level, features }), p, assets)
+  const marker = [{ id: 'm-1', kind: 'marker', t: [0, 1, 0] }]
+  const base = await load(levelBlock(), marker)
+  const otherLevel = await load(levelBlock({ capacity: 40 }), marker)
+  assert.equal(otherLevel.sim?.level?.capacity, 40)
+  assert.notEqual(otherLevel.contentHash, base.contentHash)
+  const otherFeature = await load(levelBlock(), [{ id: 'm-1', kind: 'marker', t: [0, 2, 0] }])
+  assert.deepEqual(otherFeature.sim?.features, [{ id: 'm-1', kind: 'marker', params: { t: [0, 2, 0] } }])
+  assert.notEqual(otherFeature.contentHash, base.contentHash)
+  assert.equal((await load(levelBlock(), marker)).contentHash, base.contentHash)
 })

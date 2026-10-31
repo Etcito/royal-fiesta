@@ -2,8 +2,8 @@
 // The sim course is built by the v0 loader on a v0-shaped copy with explicit colliders (the course
 // override or the asset's raw collision), so every conversion stays identical (rule 1.5).
 import { fnv1a32 } from '@gamesaloon/rollback'
-import { SURFACES } from '@royal-fiesta/sim/course'
-import type { MotionKind, ObstacleSpec, PathNode, ResolvedCourse, Surface } from '@royal-fiesta/sim/course'
+import { legacyLevel, SURFACES } from '@royal-fiesta/sim/course'
+import type { FeatureSpec, LevelSpec, MotionKind, ObstacleSpec, PathNode, ResolvedCourse, Surface } from '@royal-fiesta/sim/course'
 import { emptyMechanisms } from '@royal-fiesta/sim/mechanismSpec'
 import type { MechanismSpec, MechItem, SoundSpec } from '@royal-fiesta/sim/mechanismSpec'
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
@@ -12,6 +12,7 @@ import type { PodiumLayout } from './content.ts'
 import { canonicalJson, loadCourse } from './course.ts'
 import { ASSET_ID_RE } from './gameAsset.ts'
 import type { GameAsset, GameAssetSource, World } from './gameAsset.ts'
+import { applyGroups, parseFeatureList, parseLevelBlock } from './levelBlock.ts'
 import { itemOf, parseCourseMechanisms, parseCourseSounds } from './mechanismsJson.ts'
 import type { PrimsAsset } from './prims.ts'
 import type { QuatT, Vec3T } from './render/port.ts'
@@ -67,7 +68,7 @@ export const V0_ASSET_MAP: Readonly<Record<string, string>> = Object.freeze({
 const KINDS: readonly CourseKindV1[] = ['race', 'survival', 'hub', 'podium', 'gallery']
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const S2_KEYS = ['format', 'version', 'id', 'name', 'kind', 'profiles', 'timeLimitS', 'killPlaneY', 'spawns', 'checkpoints', 'finish', 'path', 'regions', 'queuePad', 'obstacles']
-const S13_KEYS = [...S2_KEYS, 'world', 'decor', 'environment', 'podium', 'mechanisms', 'sounds']
+const S13_KEYS = [...S2_KEYS, 'world', 'decor', 'environment', 'podium', 'mechanisms', 'sounds', 'level', 'features']
 const ENV_KEYS = ['sky', 'sun', 'fog', 'post']
 
 type Obj = Record<string, unknown>
@@ -280,6 +281,16 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
     return d
   })
   const env = environment(v1.environment, path)
+  // S19 features first, so S13 groups may name feature and decor ids as members.
+  const features: FeatureSpec[] = v1.features === undefined ? [] : parseFeatureList(v1.features, path)
+  const level: LevelSpec | null = v1.level === undefined ? null : parseLevelBlock(v1.level, path, {
+    kind,
+    checkpoints: Array.isArray(v1.checkpoints) ? v1.checkpoints : [],
+    obstacles: obstacles.map(o => ({ id: o.id })),
+    finish: v1.finish ?? null,
+    features,
+    decor,
+  })
 
   let podium: PodiumSpec | null = null
   if (kind === 'podium') {
@@ -318,7 +329,8 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
   }
   for (let i = 0; i < decor.length; i++) await resolveAsset(assets, decor[i].asset, path, `#/decor/${i}/asset`)
 
-  // canonicalJson(v1) includes the S13 `mechanisms` and `sounds` blocks, so the hash covers them.
+  // canonicalJson(v1) includes the S13 `mechanisms`, `sounds`, `level` and `features` blocks, so the hash
+  // covers them.
   const enc = new TextEncoder()
   let hash = fnv1a32(enc.encode(canonicalJson(v1)))
   for (let i = 0; i < resolved.length; i++) {
@@ -384,10 +396,12 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
   })
   // `mechanisms` null and `sounds` [] are left out (they read as none), so a course without physics keeps
   // exactly the sim course it had before mechanisms existed.
+  const simLevel = level ?? legacyLevel(c)
+  if (kind !== 'podium') applyGroups(simLevel, simObstacles)
   const sim: ResolvedCourse | null = kind === 'podium'
     ? null
     : {
-        ...c, path: simPath, obstacles: simObstacles, contentHash,
+        ...c, path: simPath, obstacles: simObstacles, contentHash, level: simLevel, features,
         ...(mechanisms === null ? {} : { mechanisms }), ...(sounds.length === 0 ? {} : { sounds }),
       }
 

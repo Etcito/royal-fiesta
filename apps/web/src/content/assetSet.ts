@@ -8,10 +8,12 @@ export const PODIUM_ID = 'podium'
 export const CHARACTER_ID = 'penguin.body'
 
 // The playlist for the profile, the hub and the podium, plus the character and wardrobe, sorted.
-export function assetSet(courses: readonly CourseV1[], byId: ReadonlyMap<string, CourseV1>, profile: ProfileName): string[] {
+export function assetSet(courses: readonly CourseV1[], byId: ReadonlyMap<string, CourseV1>, _profile: ProfileName): string[] {
   const ids = new Set<string>([CHARACTER_ID, ...LOCAL_COSMETICS.map(item => item.id)])
   for (const c of courses) {
-    if ((c.kind === 'race' || c.kind === 'survival') && c.sim !== null && c.sim.profiles.includes(profile)) {
+    // Every race and survival course, whatever timing profiles it lists: the show plans its rounds from all of
+    // them (browserCourses(null)), so each must be meshed or its round has no world.
+    if ((c.kind === 'race' || c.kind === 'survival') && c.sim !== null) {
       for (const id of c.assetIds) ids.add(id)
     }
   }

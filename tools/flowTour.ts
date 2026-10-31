@@ -50,8 +50,16 @@ async function main(): Promise<void> {
   }
   writeFileSync(manifestPath, JSON.stringify({ ...manifest, ops: [...new Set([...manifest.ops, 'render'])] }))
   // The build does not pack the relative content URLs used by the game page.
-  const { packContent } = await import('./content.ts')
-  packContent(join(dist, 'content'))
+  // The page answers content/meshes/<key> from the pack; a missing mesh makes the browser run MAMA itself for
+  // every asset of every course (minutes per run). Mesh on the server first, cached by content key outside the
+  // checkout (meshCacheDir, shared by every worktree), and pack only this load's meshes.
+  const { packContent, profileAssetIds } = await import('./content.ts')
+  const { MeshBaker } = await import('./meshBake.ts')
+  const { availableParallelism } = await import('node:os')
+  process.env.RF_MESH_JOBS ??= String(Math.min(8, Number(process.env.NMC_CPUS) || Math.max(1, availableParallelism() - 1)))
+  const baker = new MeshBaker(undefined, undefined, await profileAssetIds('sprint'))
+  await baker.scan()
+  packContent(join(dist, 'content'), undefined, baker.keys)
   const published = JSON.parse(await run('publish', dist))
   pageErrors(published)
   assert(typeof published.page_ref === 'string' && published.page_ref.length, 'publish returned no page_ref')

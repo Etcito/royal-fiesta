@@ -2,7 +2,7 @@
 // Browser data sources: fixtures bundled by Vite, the asset store reached through fetch at call time.
 import { fixtureResolver, storeResolver } from '@royal-fiesta/game/assets'
 import type { AssetResolver } from '@royal-fiesta/game/assets'
-import { matchCourses } from '@royal-fiesta/game/courseSet'
+import { matchCourses, resolveCourses } from '@royal-fiesta/game/courseSet'
 import type { CourseEntry } from '@royal-fiesta/game/courseSet'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
@@ -95,7 +95,9 @@ function routedResolver(entries: readonly CourseEntry[]): AssetResolver {
   }
 }
 
-export async function browserCourses(profile: ProfileName): Promise<ResolvedCourse[]> {
+// profile null: every race and survival course, whatever timing profiles it lists (the zone show plans its
+// rounds by course index, so a course's profile tags must not shrink its map pool).
+export async function browserCourses(profile: ProfileName | null): Promise<ResolvedCourse[]> {
   // Load order is part of determinism: code-unit order by path.
   const paths = [...files.keys()].filter(p => COURSE_FILE.test(p)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
   const entries: CourseEntry[] = []
@@ -108,7 +110,8 @@ export async function browserCourses(profile: ProfileName): Promise<ResolvedCour
     }
     entries.push({ path: paths[i], json })
   }
-  return matchCourses(entries, routedResolver(entries), profile)
+  if (profile !== null) return matchCourses(entries, routedResolver(entries), profile)
+  return (await resolveCourses(entries, routedResolver(entries))).filter(c => c.kind === 'race' || c.kind === 'survival')
 }
 
 export async function preloadAssets(courses: readonly ResolvedCourse[], resolver: AssetResolver): Promise<(name: string) => PrimsAsset> {

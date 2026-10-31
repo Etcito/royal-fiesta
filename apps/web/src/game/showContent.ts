@@ -37,7 +37,10 @@ export async function loadShowContent(profile: ProfileName): Promise<ShowContent
     if (key.startsWith(ZONE_PREFIX)) sidecarText.set(key.slice(ZONE_PREFIX.length), sidecars[key])
   }
 
-  const loaded = await browserCourses(profile)
+  // Every sidecar course is a candidate map, not only those tagged for the match's timing profile: with the
+  // sprint-tagged pair alone, one is the final map and every other round had one candidate, so the match
+  // played it at once and the show never reached a vote (card 6404).
+  const loaded = await browserCourses(null)
   const courses: ResolvedCourse[] = []
   for (let i = 0; i < loaded.length; i++) {
     const course = loaded[i]

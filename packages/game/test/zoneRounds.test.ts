@@ -13,6 +13,7 @@ import type { LedgerResult } from '@royal-fiesta/sim/zones/ledger'
 import {
   decodeRoundResult, encodeRoundResult, nextAlive, newShow, roundCandidates, showMaps, planZoneRound, roundResultOf, roundRoster, sameRoundResult,
 } from '../src/net/zoneRounds.ts'
+import type { ZoneRoundResult } from '../src/net/zoneRounds.ts'
 
 // Minimal fixture courses; levelOf supplies their legacy levels.
 const COURSES = [
@@ -131,7 +132,29 @@ test('roundRoster densely renumbers alive room seats and drops the peer with non
   for (const p of roster.peers) assert.ok(p.seats.length >= 1 && p.seats.length <= 4)
 })
 
-test('round results map through seatOf, survive a round trip, and fail closed on truncation', () => {
+const utf8Length = (value: string): number => new TextEncoder().encode(value).length
+
+function fixtureResult(overrides: Partial<ZoneRoundResult> = {}): ZoneRoundResult {
+  return {
+    index: 1,
+    map: 'second',
+    course: 'survival-a',
+    kind: 'survival',
+    final: false,
+    playoff: false,
+    endTick: 4242,
+    reason: 'timeCap',
+    ranking: [4, 1, 3],
+    qualified: [4, 1],
+    eliminated: [3],
+    points: [3, 2, 0],
+    teamScores: [],
+    champion: -1,
+    ...overrides,
+  }
+}
+
+test('round results map ranking, seats, points and champion through seatOf', () => {
   const { seatOf } = roundRoster({
     seatCount: 5,
     peers: [
@@ -146,35 +169,63 @@ test('round results map through seatOf, survive a round trip, and fail closed on
   const plan = planZoneRound(COURSES, show, seats(40), null, new Rng(5))
   const ledger: LedgerResult = {
     endTick: 4242, qualified: [2, 0], eliminated: [1], reason: 'timeCap',
-    ranking: [2, 0, 1], points: [3, 2, 0], teamScores: [], playoff: null, champion: -1,
+    ranking: [2, 0, 1], points: [3, 2, 0], teamScores: [], playoff: null, champion: 2,
   }
   const result = roundResultOf(plan, ledger, seatOf)
   assert.equal(result.index, 1)
+  assert.equal(result.map, plan.map)
   assert.equal(result.course, plan.course.id)
   assert.equal(result.kind, 'survival')
   assert.equal(result.final, false)
+  assert.equal(result.playoff, false)
   assert.equal(result.endTick, 4242)
   assert.equal(result.reason, 'timeCap')
+  assert.deepEqual(result.ranking, [4, 1, 3])
   assert.deepEqual(result.qualified, [4, 1])
   assert.deepEqual(result.eliminated, [3])
+  assert.deepEqual(result.points, [3, 2, 0])
+  assert.deepEqual(result.teamScores, [])
+  assert.equal(result.champion, 4)
+})
 
-  const bytes = encodeRoundResult(result)
-  const decoded = decodeRoundResult(bytes)
+test('round results survive an encode/decode round trip', () => {
+  const result = fixtureResult({
+    index: 3, map: 'crown', course: 'crown-confection', kind: 'final', final: true, playoff: true,
+    endTick: -12, reason: 'crown', ranking: [4, 1, 3, 6], qualified: [4, 1], eliminated: [3, 6],
+    points: [5, 3, 1, 0], teamScores: [12, 9], champion: 4,
+  })
+  const decoded = decodeRoundResult(encodeRoundResult(result))
   assert.ok(decoded)
-  assert.deepEqual(decoded, result)
   assert.ok(sameRoundResult(result, decoded))
-  assert.equal(sameRoundResult(result, { ...result, endTick: result.endTick + 1 }), false)
+  assert.deepEqual(decoded, result)
+})
 
+test('every truncated round result decodes to null', () => {
+  const bytes = encodeRoundResult(fixtureResult())
   for (let n = 0; n < bytes.length; n++) {
     assert.equal(decodeRoundResult(bytes.subarray(0, n)), null, `truncated at ${n}`)
   }
-  const kindAt = 2 + bytes[1]
+})
+
+test('an unknown kind or reason byte decodes to null', () => {
+  const result = fixtureResult()
+  const bytes = encodeRoundResult(result)
+  const kindAt = 3 + utf8Length(result.map) + utf8Length(result.course)
+  const reasonAt = kindAt + 7
   const badKind = bytes.slice()
-  badKind[kindAt] = 9
+  badKind[kindAt] = 7
   assert.equal(decodeRoundResult(badKind), null)
   const badReason = bytes.slice()
-  badReason[kindAt + 6] = 9
+  badReason[reasonAt] = 9
   assert.equal(decodeRoundResult(badReason), null)
+})
+
+test('sameRoundResult detects a changed points entry', () => {
+  const result = fixtureResult()
+  assert.ok(sameRoundResult(result, { ...result }))
+  assert.equal(sameRoundResult(result, { ...result, points: [4, 2, 0] }), false)
+  assert.equal(sameRoundResult(result, { ...result, teamScores: [1] }), false)
+  assert.equal(sameRoundResult(result, { ...result, champion: 0 }), false)
 })
 
 test('nextAlive returns the qualified room seats ascending without touching the result', () => {

@@ -44,13 +44,19 @@ export interface RoundRoster {
 
 export interface ZoneRoundResult {
   readonly index: number
+  readonly map: string
   readonly course: string
   readonly kind: RoundKind
   readonly final: boolean
+  readonly playoff: boolean
   readonly endTick: number
   readonly reason: LedgerReason
+  readonly ranking: number[]
   readonly qualified: number[]
   readonly eliminated: number[]
+  readonly points: number[]
+  readonly teamScores: number[]
+  readonly champion: number
 }
 
 export interface ShowState {
@@ -154,13 +160,19 @@ export function roundRoster(room: Roster, alive: readonly number[]): RoundRoster
 export function roundResultOf(plan: ZoneRoundPlan, result: LedgerResult, seatOf: readonly number[]): ZoneRoundResult {
   return {
     index: plan.index,
+    map: plan.map,
     course: plan.course.id,
     kind: plan.kind,
     final: plan.final,
+    playoff: plan.playoff,
     endTick: result.endTick,
     reason: result.reason,
+    ranking: mapSeats(result.ranking, seatOf),
     qualified: mapSeats(result.qualified, seatOf),
     eliminated: mapSeats(result.eliminated, seatOf),
+    points: [...result.points],
+    teamScores: [...result.teamScores],
+    champion: result.champion < 0 ? -1 : seatOf[result.champion],
   }
 }
 
@@ -173,20 +185,21 @@ export function encodeRoundResult(result: ZoneRoundResult): Uint8Array {
   if (!Number.isInteger(result.index) || result.index < 0 || result.index > 0xff) {
     refuse('zones', 'encodeRoundResult.index', 'expected a u8 round index; pass the plan index')
   }
-  const course = utf8.encode(result.course)
-  if (course.length > 0xff) {
-    refuse('zones', 'encodeRoundResult.course', 'course id longer than 255 UTF-8 bytes; use a short course id')
-  }
   const w = new SnapWriter()
   w.u8(result.index)
-  w.u8(course.length)
-  for (let i = 0; i < course.length; i++) w.u8(course[i])
+  writeString(w, result.map, 'map')
+  writeString(w, result.course, 'course')
   w.u8(KINDS.indexOf(result.kind))
   w.bool(result.final)
+  w.bool(result.playoff)
   w.i32(result.endTick)
   w.u8(REASONS.indexOf(result.reason))
+  writeSeats(w, result.ranking)
   writeSeats(w, result.qualified)
   writeSeats(w, result.eliminated)
+  writeI32List(w, result.points, 'points')
+  writeI32List(w, result.teamScores, 'teamScores')
+  w.i32(result.champion)
   return w.bytes()
 }
 
@@ -195,37 +208,66 @@ export function decodeRoundResult(bytes: Uint8Array): ZoneRoundResult | null {
   try {
     const r = new SnapReader(bytes)
     const index = r.u8()
-    const courseLength = r.u8()
-    if (r.remaining < courseLength) return null
-    const courseBytes = new Uint8Array(courseLength)
-    for (let i = 0; i < courseLength; i++) courseBytes[i] = r.u8()
-    const course = decodeUtf8.decode(courseBytes)
+    const map = readString(r)
+    if (map === null) return null
+    const course = readString(r)
+    if (course === null) return null
     const kind = r.u8()
     if (kind >= KINDS.length) return null
     const final = r.bool()
+    const playoff = r.bool()
     const endTick = r.i32()
     const reason = r.u8()
     if (reason >= REASONS.length) return null
+    const ranking = readSeats(r)
+    if (ranking === null) return null
     const qualified = readSeats(r)
     if (qualified === null) return null
     const eliminated = readSeats(r)
     if (eliminated === null) return null
-    return { index, course, kind: KINDS[kind], final, endTick, reason: REASONS[reason], qualified, eliminated }
+    const points = readI32List(r)
+    if (points === null) return null
+    const teamScores = readI32List(r)
+    if (teamScores === null) return null
+    const champion = r.i32()
+    return {
+      index, map, course, kind: KINDS[kind], final, playoff, endTick, reason: REASONS[reason],
+      ranking, qualified, eliminated, points, teamScores, champion,
+    }
   } catch {
     return null
   }
 }
 
 export function sameRoundResult(a: ZoneRoundResult, b: ZoneRoundResult): boolean {
-  return a.index === b.index && a.course === b.course && a.kind === b.kind && a.final === b.final &&
-    a.endTick === b.endTick && a.reason === b.reason &&
-    sameSeats(a.qualified, b.qualified) && sameSeats(a.eliminated, b.eliminated)
+  return a.index === b.index && a.map === b.map && a.course === b.course && a.kind === b.kind &&
+    a.final === b.final && a.playoff === b.playoff && a.endTick === b.endTick && a.reason === b.reason &&
+    sameI32(a.ranking, b.ranking) && sameI32(a.qualified, b.qualified) && sameI32(a.eliminated, b.eliminated) &&
+    sameI32(a.points, b.points) && sameI32(a.teamScores, b.teamScores) && a.champion === b.champion
 }
 
 function mapSeats(seats: readonly number[], seatOf: readonly number[]): number[] {
   const out: number[] = []
   for (let i = 0; i < seats.length; i++) out.push(seatOf[seats[i]])
   return out
+}
+
+function writeString(w: SnapWriter, value: string, field: string): void {
+  const bytes = utf8.encode(value)
+  if (bytes.length > 0xff) {
+    refuse('zones', `encodeRoundResult.${field}`, `${field} longer than 255 UTF-8 bytes; use a short id`)
+  }
+  w.u8(bytes.length)
+  for (let i = 0; i < bytes.length; i++) w.u8(bytes[i])
+}
+
+function readString(r: SnapReader): string | null {
+  if (r.remaining < 1) return null
+  const length = r.u8()
+  if (r.remaining < length) return null
+  const bytes = new Uint8Array(length)
+  for (let i = 0; i < length; i++) bytes[i] = r.u8()
+  return decodeUtf8.decode(bytes)
 }
 
 function writeSeats(w: SnapWriter, seats: readonly number[]): void {
@@ -242,7 +284,24 @@ function readSeats(r: SnapReader): number[] | null {
   return seats
 }
 
-function sameSeats(a: readonly number[], b: readonly number[]): boolean {
+function writeI32List(w: SnapWriter, values: readonly number[], field: string): void {
+  if (values.length > 0xffff) {
+    refuse('zones', `encodeRoundResult.${field}`, `${field} longer than 65535 entries; shorten the round`)
+  }
+  w.u16(values.length)
+  for (let i = 0; i < values.length; i++) w.i32(values[i])
+}
+
+function readI32List(r: SnapReader): number[] | null {
+  if (r.remaining < 2) return null
+  const count = r.u16()
+  if (r.remaining < count * 4) return null
+  const values: number[] = []
+  for (let i = 0; i < count; i++) values.push(r.i32())
+  return values
+}
+
+function sameI32(a: readonly number[], b: readonly number[]): boolean {
   if (a.length !== b.length) return false
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
   return true

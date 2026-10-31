@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "feat-hex",
+  "grid": {
+    "origin": [-40, -40],
+    "cell": [8, 8],
+    "cols": 10,
+    "rows": 10
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 10
+  }
+}

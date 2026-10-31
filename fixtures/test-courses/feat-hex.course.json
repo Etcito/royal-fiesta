@@ -1,0 +1,79 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "candy",
+  "id": "feat-hex",
+  "name": "Fixture Hex Floor",
+  "kind": "survival",
+  "profiles": ["standard", "sprint"],
+  "timeLimitS": 90,
+  "killPlaneY": -20,
+  "spawns": [
+    { "t": [0, 1.2, 0], "yawDeg": 0 },
+    { "t": [-4.763, 1.2, 2.75], "yawDeg": 0 },
+    { "t": [0, 1.2, 5.5], "yawDeg": 0 },
+    { "t": [4.763, 1.2, 2.75], "yawDeg": 0 },
+    { "t": [4.763, 1.2, -2.75], "yawDeg": 0 },
+    { "t": [0, 1.2, -5.5], "yawDeg": 0 },
+    { "t": [-4.763, 1.2, -2.75], "yawDeg": 0 },
+    { "t": [0, 1.2, 11], "yawDeg": 0 }
+  ],
+  "checkpoints": [],
+  "finish": null,
+  "path": [
+    { "p": [0, 1.2, 0], "jump": false, "dive": false },
+    { "p": [0, 1.2, 11], "jump": false, "dive": false },
+    { "p": [0, -4.625, -5.5], "jump": false, "dive": false },
+    { "p": [0, -4.625, 5.5], "jump": false, "dive": false },
+    { "p": [0, -10.625, 0], "jump": false, "dive": false },
+    { "p": [0, -10.625, 11], "jump": false, "dive": false }
+  ],
+  "regions": [],
+  "queuePad": null,
+  "obstacles": [],
+  "decor": [],
+  "environment": null,
+  "podium": null,
+  "level": {
+    "season": null,
+    "map": null,
+    "kind": "survival",
+    "finalRule": null,
+    "stages": ["R1"],
+    "capacity": 60,
+    "usual": [60],
+    "quota": null,
+    "timeCapS": 90,
+    "overtimeS": 30,
+    "respawn": { "mode": "none", "waitS": 0, "protectS": 0, "slots": 12, "spacingM": 1.2 },
+    "route": { "ordered": false, "laps": 1, "stages": [] },
+    "teams": null,
+    "homes": [],
+    "groups": [
+      {
+        "id": "hex-floor",
+        "role": "floor",
+        "friction": null,
+        "surface": null,
+        "members": ["hex-main"]
+      }
+    ],
+    "grab": { "players": false, "objects": false }
+  },
+  "features": [
+    {
+      "id": "hex-main",
+      "kind": "hexField",
+      "origin": [0, 0, 0],
+      "layers": 3,
+      "layerSpacingM": 6,
+      "rings": 6,
+      "flatM": 5.5,
+      "pointM": 6.4,
+      "thickM": 0.35,
+      "warnS": 0.6,
+      "decayS": 1.0,
+      "scaleWithEntrants": true
+    }
+  ]
+}

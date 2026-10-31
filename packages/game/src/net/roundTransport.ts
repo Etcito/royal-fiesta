@@ -3,6 +3,7 @@ import type { GroupTransport } from '@gamesaloon/rollback/zones'
 
 interface Packet { peer: number; ch: NetChannel; data: Uint8Array }
 type ResultListener = (peer: number, round: number, payload: Uint8Array) => void
+type VoteListener = (peer: number, round: number, choice: number) => void
 
 /** Keeps successive round sessions isolated while sharing one relay room. */
 export class RoundTransport implements GroupTransport {
@@ -15,6 +16,7 @@ export class RoundTransport implements GroupTransport {
   private scratch: Packet[] = []
   private pending: Packet[] = []
   private resultListeners: ResultListener[] = []
+  private voteListeners: VoteListener[] = []
 
   constructor(base: GroupTransport, round = 0) {
     this.base = base
@@ -26,6 +28,9 @@ export class RoundTransport implements GroupTransport {
   /** Listeners run synchronously during drain; copy the payload to retain it. */
   onResult(fn: ResultListener): void { this.resultListeners.push(fn) }
 
+  /** Listeners run synchronously during drain. */
+  onVote(fn: VoteListener): void { this.voteListeners.push(fn) }
+
   send(peer: number, ch: NetChannel, data: Uint8Array): void { this.sendMany([peer], ch, data) }
 
   sendMany(peers: readonly number[], ch: NetChannel, data: Uint8Array): void {
@@ -34,6 +39,10 @@ export class RoundTransport implements GroupTransport {
 
   sendResult(peers: readonly number[], payload: Uint8Array): void {
     this.sendFrame(peers, 'reliable', 1, payload)
+  }
+
+  sendVote(peers: readonly number[], choice: number): void {
+    this.sendFrame(peers, 'reliable', 2, new Uint8Array([choice]))
   }
 
   drain(out: Packet[]): void {
@@ -51,13 +60,21 @@ export class RoundTransport implements GroupTransport {
     this.base.drain(this.scratch)
     for (const packet of this.scratch) {
       const data = packet.data
-      if (data.length < 2 || (data[0] !== 0 && data[0] !== 1)) {
+      if (data.length < 2 || (data[0] !== 0 && data[0] !== 1 && data[0] !== 2)) {
         this.malformed++
         continue
       }
       if (data[0] === 1) {
         const payload = data.subarray(2)
         for (const listener of this.resultListeners) listener(packet.peer, data[1], payload)
+        continue
+      }
+      if (data[0] === 2) {
+        if (data.length !== 3) {
+          this.malformed++
+          continue
+        }
+        for (const listener of this.voteListeners) listener(packet.peer, data[1], data[2])
         continue
       }
       const delta = (data[1] - this.round) & 0xff

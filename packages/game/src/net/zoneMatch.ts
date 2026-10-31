@@ -9,9 +9,11 @@ import { decodeInput, inputCodec } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import type { MatchProfile } from '@royal-fiesta/sim/match/setup'
 import { refuse } from '@royal-fiesta/sim/refusal'
+import type { RoundKind } from '@royal-fiesta/sim/season/kinds'
 import { cellOf, clampedCellOf } from '@royal-fiesta/sim/zones/cells'
 import { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { createFiestaDomainFactory } from '@royal-fiesta/sim/zones/fiestaDomainFactory'
+import type { FiestaDomainFactoryConfig } from '@royal-fiesta/sim/zones/fiestaDomainFactory'
 import { seatSpawn } from '@royal-fiesta/sim/zones/seatSpawn'
 import { MatchLedger } from '@royal-fiesta/sim/zones/ledger'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
@@ -26,7 +28,8 @@ export interface ZoneMatchConfig {
   /** Required: loadZonesFile refuses a missing sidecar before constructing the match. */
   readonly zones: ZonesFile
   readonly profile: MatchProfile
-  readonly kind: 'race' | 'survival'
+  readonly kind: RoundKind
+  readonly slot?: FiestaDomainFactoryConfig['slot']
   /** Peer-indexed room measurements, identical on every peer for epoch-0 assignment. */
   readonly measurements: Readonly<Record<number, {
     readonly cpuMs: number
@@ -119,7 +122,7 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
   const localCells = localSeats.map(seat => unpackControl(controls[seat], { ...localFields }).cell)
   const recipe = createFiestaDomainFactory(R, {
     course: cfg.course, zones: cfg.zones, profile: cfg.profile, kind: cfg.kind,
-    seatCount: cfg.roster.seatCount, spawnIndices: cfg.spawnIndices,
+    seatCount: cfg.roster.seatCount, spawnIndices: cfg.spawnIndices, slot: cfg.slot,
   })
   // DomainSim has no disposal hook. Retain worlds, including rebuild temporaries, until match disposal.
   const worlds: FiestaDomain[] = []

@@ -516,6 +516,275 @@
           }
         }
       }
+    },
+    "tileField": {
+      "tiles": {
+        "type": "list",
+        "items": {
+          "type": "object",
+          "fields": {
+            "t": {
+              "type": "vec3"
+            },
+            "size": {
+              "type": "vec3"
+            }
+          }
+        }
+      },
+      "warnS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      },
+      "decayS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      },
+      "mode": {
+        "type": "enum",
+        "enum": [
+          "reset",
+          "permanent"
+        ]
+      },
+      "resetS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      }
+    },
+    "hexField": {
+      "origin": {
+        "type": "vec3"
+      },
+      "layers": {
+        "type": "integer",
+        "min": 1,
+        "max": 4
+      },
+      "layerSpacingM": {
+        "type": "number",
+        "min": 0.05,
+        "max": 100
+      },
+      "rings": {
+        "type": "integer",
+        "min": 1,
+        "max": 8
+      },
+      "flatM": {
+        "type": "number",
+        "min": 0.05,
+        "max": 100
+      },
+      "pointM": {
+        "type": "number",
+        "min": 0.05,
+        "max": 100
+      },
+      "thickM": {
+        "type": "number",
+        "min": 0.05,
+        "max": 100
+      },
+      "warnS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      },
+      "decayS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      },
+      "scaleWithEntrants": {
+        "type": "boolean"
+      }
+    },
+    "memoryTiles": {
+      "origin": {
+        "type": "vec3"
+      },
+      "cols": {
+        "type": "integer",
+        "min": 1,
+        "max": 512
+      },
+      "rows": {
+        "type": "integer",
+        "min": 1,
+        "max": 512
+      },
+      "cellM": {
+        "type": "number",
+        "min": 0.2,
+        "max": 100
+      },
+      "symbols": {
+        "type": "integer",
+        "min": 2,
+        "max": 6
+      },
+      "cycles": {
+        "type": "integer",
+        "min": 1,
+        "max": 20
+      },
+      "revealS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      },
+      "hideS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      },
+      "choiceS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      },
+      "penaltyS": {
+        "type": "number",
+        "min": 0,
+        "max": 600
+      }
+    },
+    "annulus": {
+      "center": {
+        "type": "vec3"
+      },
+      "innerM": {
+        "type": "number",
+        "min": 0,
+        "max": 1000
+      },
+      "outerM": {
+        "type": "number",
+        "min": 0,
+        "max": 1000
+      },
+      "thickM": {
+        "type": "number",
+        "min": 0.05,
+        "max": 10
+      },
+      "speedDegS": {
+        "type": "number",
+        "min": -360,
+        "max": 360
+      },
+      "segments": {
+        "type": "integer",
+        "min": 6,
+        "max": 48
+      }
+    },
+    "sweep": {
+      "center": {
+        "type": "vec3"
+      },
+      "lengthM": {
+        "type": "number",
+        "min": 0.01,
+        "max": 1000
+      },
+      "telegraphS": {
+        "type": "number",
+        "min": 0,
+        "max": 3600
+      },
+      "pattern": {
+        "type": "enum",
+        "enum": [
+          "laser",
+          "block",
+          "bars"
+        ]
+      },
+      "heightM": {
+        "type": "number",
+        "min": 0.001,
+        "max": 1000
+      },
+      "gapM": {
+        "type": "number",
+        "min": 0,
+        "max": 1000
+      },
+      "phases": {
+        "type": "list",
+        "items": {
+          "type": "object",
+          "fields": {
+            "atS": {
+              "type": "number",
+              "min": 0,
+              "max": 86400
+            },
+            "pattern": {
+              "type": "enum",
+              "enum": [
+                "laser",
+                "block",
+                "bars"
+              ]
+            },
+            "heightM": {
+              "type": "number",
+              "min": 0.001,
+              "max": 1000
+            },
+            "gapM": {
+              "type": "number",
+              "min": 0,
+              "max": 1000
+            },
+            "speedDegS": {
+              "type": "number",
+              "min": -3600,
+              "max": 3600
+            },
+            "speedMps": {
+              "type": "number",
+              "min": 0,
+              "max": 100
+            }
+          }
+        }
+      }
+    },
+    "risingKill": {
+      "startY": {
+        "type": "number"
+      },
+      "endY": {
+        "type": "number"
+      },
+      "startS": {
+        "type": "number",
+        "min": 0
+      },
+      "riseMps": {
+        "type": "number",
+        "min": 0.01,
+        "max": 5
+      },
+      "clock": {
+        "type": "object",
+        "fields": {
+          "t": {
+            "type": "vec3"
+          }
+        }
+      },
+      "halfM": {
+        "type": "number",
+        "min": 0.1
+      }
     }
   },
   "play": {

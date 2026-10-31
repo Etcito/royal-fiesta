@@ -24,6 +24,7 @@ export function contentDir(root = repoRoot()): string {
 // cache in the git common dir: a fresh worktree reuses the meshes another one baked instead of meshing cold.
 export function meshCacheDir(root = repoRoot()): string {
   if (process.env.RF_MESH_CACHE_DIR) return resolve(process.env.RF_MESH_CACHE_DIR)
+  if (process.env.RF_CACHE_DIR) return join(resolve(process.env.RF_CACHE_DIR), 'meshes')   // one root shared by every clone
   const common = gitCommonDir(root)
   return common === null ? join(root, '.cache', 'meshes') : join(common, 'rf-cache', 'meshes')
 }

@@ -5,6 +5,7 @@ import type { ListenerPose } from '@royal-fiesta/game/audio/emitters'
 import { newModeBotMemory, modeBotInput } from '@royal-fiesta/game/net/modeBots'
 import { createZoneFullMatch } from '@royal-fiesta/game/net/zoneFullMatch'
 import type { ZoneFullMatch, ZoneFullRound } from '@royal-fiesta/game/net/zoneFullMatch'
+import type { ZoneRoundResult } from '@royal-fiesta/game/net/zoneRounds'
 import { ZoneLoopback } from '@royal-fiesta/game/net/zoneLoopback'
 import type { Action, GameScreen } from '@royal-fiesta/game/screens/nav'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
@@ -111,6 +112,7 @@ export class ShowMode {
   get failure(): string | null { return this.error }
   get finished(): boolean { return this.current?.finished ?? false }
   get models(): ShowFrame | null { return this.current }
+  results(): ZoneRoundResult[] { return this.full?.show.rounds ?? [] }
   screen(): GameScreen { return this.current?.screen ?? 'vote' }
   cues(): string[] { const sounds = this.sounds; this.sounds = []; return sounds }
 

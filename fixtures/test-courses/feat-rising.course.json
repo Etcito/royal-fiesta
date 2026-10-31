@@ -1,0 +1,520 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "candy",
+  "id": "feat-rising",
+  "name": "Feature Rising",
+  "kind": "survival",
+  "profiles": [
+    "standard",
+    "sprint"
+  ],
+  "timeLimitS": 60,
+  "killPlaneY": -12,
+  "spawns": [
+    {
+      "t": [
+        -3.5,
+        1,
+        -4
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -2.5,
+        1,
+        -4
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -1.5,
+        1,
+        -4
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -0.5,
+        1,
+        -4
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        0.5,
+        1,
+        -4
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        1.5,
+        1,
+        -4
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        2.5,
+        1,
+        -4
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        3.5,
+        1,
+        -4
+      ],
+      "yawDeg": 0
+    }
+  ],
+  "checkpoints": [],
+  "finish": null,
+  "path": [
+    {
+      "p": [
+        0,
+        1,
+        -4
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1,
+        2
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1.1,
+        6.5
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        1.8,
+        9.5
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        2.4,
+        13
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        3.1,
+        16.5
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        3.9,
+        21.5
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        4.6,
+        25
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        5.4,
+        30
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        6.1,
+        34
+      ],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [
+        0,
+        6.9,
+        38.5
+      ],
+      "jump": false,
+      "dive": false
+    }
+  ],
+  "regions": [
+    {
+      "id": 0,
+      "center": [
+        0,
+        3,
+        17
+      ],
+      "half": [
+        12,
+        10,
+        30
+      ],
+      "adjacent": []
+    }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "floor-0",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        -0.5,
+        -4
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1.4,
+        1,
+        2.2
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "floor-1",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        1.0,
+        13.0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1.0,
+        1,
+        0.5
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "floor-2",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        2.5,
+        21.5
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1.0,
+        1,
+        0.5
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "floor-3",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        4.0,
+        30.0
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1.0,
+        1,
+        0.5
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "floor-4",
+      "asset": "candy.floor-tile",
+      "t": [
+        0,
+        5.5,
+        38.5
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        1.0,
+        1,
+        0.5
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ramp-0",
+      "asset": "candy.floor-tile",
+      "t": [
+        0.0,
+        0.290427,
+        8.94696
+      ],
+      "r": [
+        -0.201066,
+        0,
+        0,
+        0.979578
+      ],
+      "s": [
+        0.8,
+        1,
+        0.380789
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ramp-1",
+      "asset": "candy.floor-tile",
+      "t": [
+        0.0,
+        1.790427,
+        17.44696
+      ],
+      "r": [
+        -0.201066,
+        0,
+        0,
+        0.979578
+      ],
+      "s": [
+        0.8,
+        1,
+        0.380789
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ramp-2",
+      "asset": "candy.floor-tile",
+      "t": [
+        0.0,
+        3.290427,
+        25.94696
+      ],
+      "r": [
+        -0.201066,
+        0,
+        0,
+        0.979578
+      ],
+      "s": [
+        0.8,
+        1,
+        0.380789
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    },
+    {
+      "id": "ramp-3",
+      "asset": "candy.floor-tile",
+      "t": [
+        0.0,
+        4.790427,
+        34.44696
+      ],
+      "r": [
+        -0.201066,
+        0,
+        0,
+        0.979578
+      ],
+      "s": [
+        0.8,
+        1,
+        0.380789
+      ],
+      "friction": 0.5,
+      "motion": {
+        "kind": "static"
+      },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": null,
+  "level": {
+    "season": null,
+    "map": null,
+    "kind": "survival",
+    "finalRule": null,
+    "stages": [
+      "R1"
+    ],
+    "capacity": 60,
+    "usual": [
+      60
+    ],
+    "quota": null,
+    "timeCapS": 60,
+    "overtimeS": 30,
+    "respawn": {
+      "mode": "none",
+      "waitS": 0,
+      "protectS": 0,
+      "slots": 1,
+      "spacingM": 1.2
+    },
+    "route": {
+      "ordered": true,
+      "laps": 1,
+      "stages": []
+    },
+    "teams": null,
+    "homes": [],
+    "groups": [
+      {
+        "id": "floor-main",
+        "role": "floor",
+        "friction": 0.5,
+        "surface": "normal",
+        "members": [
+          "floor-0",
+          "floor-1",
+          "floor-2",
+          "floor-3",
+          "floor-4",
+          "ramp-0",
+          "ramp-1",
+          "ramp-2",
+          "ramp-3"
+        ]
+      }
+    ],
+    "grab": {
+      "players": false,
+      "objects": false
+    }
+  },
+  "features": [
+    {
+      "id": "rise",
+      "kind": "risingKill",
+      "startY": -1,
+      "endY": 6,
+      "startS": 8,
+      "riseMps": 0.12,
+      "clock": {
+        "t": [
+          0,
+          9,
+          0
+        ]
+      }
+    },
+    {
+      "id": "laser-p1",
+      "kind": "sweep",
+      "pattern": "laser",
+      "center": [
+        0,
+        1.5,
+        13
+      ],
+      "lengthM": 5,
+      "heightM": 0.5,
+      "gapM": 1.5,
+      "speedDegS": 70,
+      "telegraphS": 1,
+      "phases": [
+        {
+          "atS": 0
+        }
+      ]
+    }
+  ]
+}

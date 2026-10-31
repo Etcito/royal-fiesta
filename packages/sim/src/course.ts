@@ -1,5 +1,7 @@
 import type { Vec3, Quat } from './vec.ts'
 import type { MechanismSpec, SoundSpec } from './mechanismSpec.ts'
+import { SEASON_SEATS, STAGE_IDS } from './season/kinds.ts'
+import type { FinalRule, RoundKind, StageId } from './season/kinds.ts'
 
 // ResolvedCourse is plain data produced by game/course; colliders are already
 // scaled by `s` and expressed in the obstacle's local frame; contentHash is
@@ -53,6 +55,59 @@ export interface Checkpoint { box: Box; respawn: SpawnPoint }
 export interface PathNode { p: Vec3; jump: boolean; dive: boolean; wait?: string; pull?: string }
 export interface Region { id: number; box: Box; adjacent: number[] }
 
+export interface RespawnSpec {
+  mode: 'checkpoint' | 'home' | 'none'
+  waitTicks: number
+  protectTicks: number
+  slots: number
+  spacingM: number
+}
+
+export interface RouteSpec {
+  ordered: boolean
+  laps: number
+  stages: number[]
+}
+
+export interface HomeSpec {
+  team: number
+  box: Box
+  respawn: SpawnPoint[]
+}
+
+export interface GroupSpec {
+  id: string
+  role: 'floor' | 'wall' | 'hazard' | 'mover' | 'objective' | 'respawn' | 'route' | 'decor'
+  friction: number | null
+  surface: Surface | null
+  members: string[]
+}
+
+export interface LevelSpec {
+  season: string | null
+  map: string | null
+  kind: RoundKind
+  finalRule: FinalRule | null
+  stages: StageId[]
+  capacity: number
+  usual: number[]
+  quota: number | null
+  timeCapTicks: number
+  overtimeTicks: number
+  respawn: RespawnSpec
+  route: RouteSpec
+  teams: { count: 2; maxPerTeam: number } | null
+  homes: HomeSpec[]
+  groups: GroupSpec[]
+  grab: { players: boolean; objects: boolean }
+}
+
+export interface FeatureSpec {
+  id: string
+  kind: string
+  params: Readonly<Record<string, unknown>>
+}
+
 export interface ResolvedCourse {
   id: string
   name: string
@@ -70,6 +125,44 @@ export interface ResolvedCourse {
   contentHash: number
   mechanisms?: MechanismSpec | null
   sounds?: SoundSpec[]
+  level?: LevelSpec
+  features?: FeatureSpec[]
+}
+
+export function legacyLevel(c: Pick<ResolvedCourse, 'kind' | 'timeLimitS' | 'checkpoints'>): LevelSpec {
+  const survival = c.kind === 'survival'
+  return {
+    season: null,
+    map: null,
+    kind: survival ? 'survival' : 'race',
+    finalRule: survival ? 'lastStanding' : null,
+    stages: [...STAGE_IDS],
+    capacity: SEASON_SEATS,
+    usual: [],
+    quota: null,
+    timeCapTicks: Math.round(c.timeLimitS * 60),
+    overtimeTicks: 0,
+    respawn: {
+      mode: survival ? 'none' : 'checkpoint',
+      waitTicks: 0,
+      protectTicks: 0,
+      slots: 1,
+      spacingM: 0,
+    },
+    route: {
+      ordered: false,
+      laps: 1,
+      stages: c.checkpoints.map((_, index) => index),
+    },
+    teams: null,
+    homes: [],
+    groups: [],
+    grab: { players: !survival, objects: true },
+  }
+}
+
+export function levelOf(c: Pick<ResolvedCourse, 'kind' | 'timeLimitS' | 'checkpoints' | 'level'>): LevelSpec {
+  return c.level ?? legacyLevel(c)
 }
 
 export function inBox(b: Box, p: Vec3): boolean {

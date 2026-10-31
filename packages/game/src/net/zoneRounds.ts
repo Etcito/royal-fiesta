@@ -5,12 +5,11 @@ import type { Rng } from '@gamesaloon/rollback'
 import type { Roster } from '@gamesaloon/rollback/zones'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { coursePool, pickCourse, planRound } from '@royal-fiesta/sim/match/rules'
-import type { RoundReason } from '@royal-fiesta/sim/match/roundSystem'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import type { LedgerResult } from '@royal-fiesta/sim/zones/ledger'
+import type { LedgerReason, LedgerResult } from '@royal-fiesta/sim/zones/ledger'
 
 const KINDS = ['race', 'survival'] as const
-const REASONS: readonly RoundReason[] = ['target', 'timeCap', 'lastStanding', 'allFell']
+const REASONS: readonly LedgerReason[] = ['target', 'timeCap', 'lastStanding', 'allFell', 'overtime', 'teamWin', 'score', 'crown', 'playoff']
 const utf8 = new TextEncoder()
 const decodeUtf8 = new TextDecoder()
 
@@ -36,7 +35,7 @@ export interface ZoneRoundResult {
   readonly kind: 'race' | 'survival'
   readonly final: boolean
   readonly endTick: number
-  readonly reason: RoundReason
+  readonly reason: LedgerReason
   readonly qualified: number[]
   readonly eliminated: number[]
 }

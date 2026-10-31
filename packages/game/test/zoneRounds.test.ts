@@ -89,7 +89,10 @@ test('round results map through seatOf, survive a round trip, and fail closed on
     live: [true, true, true],
   }, [1, 3, 4])
   const plan = planZoneRound(COURSES, 1, seats(40), -1, new Rng(5))
-  const ledger: LedgerResult = { endTick: 4242, qualified: [2, 0], eliminated: [1], reason: 'timeCap' }
+  const ledger: LedgerResult = {
+    endTick: 4242, qualified: [2, 0], eliminated: [1], reason: 'timeCap',
+    ranking: [2, 0, 1], points: [3, 2, 0], teamScores: [], playoff: null, champion: -1,
+  }
   const result = roundResultOf(plan, ledger, seatOf)
   assert.equal(result.index, 1)
   assert.equal(result.course, plan.course.id)

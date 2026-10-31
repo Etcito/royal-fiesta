@@ -9,7 +9,7 @@ import { CharacterSystem, characterBody } from '../character/system.ts'
 import type { ResolvedCourse } from '../course.ts'
 import { G, groups } from '../groups.ts'
 import type { PlayerInput } from '../input.ts'
-import { roundTicks } from '../match/rules.ts'
+import { planRound, roundTicks } from '../match/rules.ts'
 import type { MatchProfile } from '../match/setup.ts'
 import { refuse } from '../refusal.ts'
 import { GRAVITY_Y, readBlob } from '../world.ts'
@@ -49,9 +49,19 @@ export function createFiestaDomainFactory(
   R: RapierModule,
   config: FiestaDomainFactoryConfig,
 ): DomainFactory<PlayerInput> {
+  const plan = planRound(0, config.seatCount)
   const schedule: MatchLedgerConfig = {
     seatCount: config.seatCount,
     kind: config.kind,
+    final: plan.final,
+    finalRule: plan.final && config.kind === 'survival' ? 'lastStanding' : null,
+    target: plan.target,
+    playoff: false,
+    overtimeTicks: 0,
+    seed: 0,
+    roundIndex: 0,
+    teams: null,
+    openingRanks: null,
     introTicks: config.profile.introTicks,
     roundTicks: roundTicks(config.course, config.profile),
   }

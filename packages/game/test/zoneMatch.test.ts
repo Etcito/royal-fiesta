@@ -80,6 +80,11 @@ function copyResult(result: LedgerResult): LedgerResult {
     qualified: [...result.qualified],
     eliminated: [...result.eliminated],
     reason: result.reason,
+    ranking: [...result.ranking],
+    points: [...result.points],
+    teamScores: [...result.teamScores],
+    playoff: result.playoff === null ? null : [...result.playoff],
+    champion: result.champion,
   }
 }
 

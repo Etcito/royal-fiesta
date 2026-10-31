@@ -109,6 +109,7 @@ export function rankRound(
 export function resolveRound(
   kind: RoundKind, finalRule: FinalRule | null, target: number,
   records: readonly SeatRecord[], teamScores: readonly number[], seed: number, roundIndex: number,
+  playoffRound = false,
 ): RoundOutcome {
   const ranking = rankRound(kind, finalRule, records, seed, roundIndex, teamScores)
   // Resolution retains its RoundOutcome signature; invalid input uses the throwing convention.
@@ -164,6 +165,19 @@ export function resolveRound(
     }
   } else {
     qualified = ranking.slice(0, Math.max(0, target))
+  }
+  // A playoff that ties again would replay the same dispute: settle it by the
+  // season tie order (opening rank, then seed order) instead of replaying.
+  if (playoffRound && playoff !== null) {
+    const disputed: SeatRecord[] = (playoff as number[]).map(seat => bySeat.get(seat)!)
+    const places = disputed.map(r => ranking.indexOf(r.seat)).sort((a, b) => a - b)
+    const opening = (r: SeatRecord): number => r.openingRank > 0 ? r.openingRank : Number.MAX_SAFE_INTEGER
+    disputed.sort((a, b) => opening(a) - opening(b) ||
+      seedOrder(seed, roundIndex, a.seat) - seedOrder(seed, roundIndex, b.seat) || a.seat - b.seat)
+    disputed.forEach((r, i) => { ranking[places[i]] = r.seat })
+    const open = Math.max(0, (kind === 'final' ? 1 : target) - qualified.length)
+    qualified = [...qualified, ...disputed.slice(0, open).map(r => r.seat)]
+    playoff = null
   }
   if (kind === 'final' && qualified.length === 1 && playoff === null) champion = qualified[0]
   const retained = new Set([...qualified, ...(playoff ?? [])])

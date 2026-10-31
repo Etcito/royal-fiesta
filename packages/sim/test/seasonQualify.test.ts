@@ -363,3 +363,40 @@ describe('seed context and irrelevant arguments', () => {
     })
   }
 })
+
+describe('season qualify: a playoff that ties again is settled, never replayed', () => {
+  const tied = [0, 1, 2, 3, 4, 5].map(id => seat(id, { openingRank: 6 - id }))
+
+  for (const finalRule of ['lastStanding', 'crown'] as const) {
+    it(`gives one champion for a fully tied 6-seat ${finalRule} final`, () => {
+      const first = resolveRound('final', finalRule, 1, tied, [], 7, 4)
+      assert.equal(first.playoff?.length, 6)
+      assert.equal(first.champion, -1)
+      for (const order of [tied, [...tied].reverse()]) {
+        const replay = resolveRound('final', finalRule, 1, order, [], 7, 5, true)
+        assert.equal(replay.playoff, null)
+        assert.deepEqual(replay.qualified, [5])
+        assert.equal(replay.champion, 5)
+        assert.equal(replay.ranking[0], 5)
+        assert.deepEqual(replay.eliminated, [...replay.ranking.slice(1)])
+        assert.equal(new Set(replay.ranking).size, 6)
+      }
+    })
+  }
+
+  it('uses seed order when opening ranks tie too', () => {
+    const even = [0, 1, 2, 3, 4, 5].map(id => seat(id))
+    const replay = resolveRound('final', 'lastStanding', 1, even, [], 7, 5, true)
+    const expected = [...even].sort((a, b) => seedOrder(7, 5, a.seat) - seedOrder(7, 5, b.seat) || a.seat - b.seat)[0].seat
+    assert.equal(replay.champion, expected)
+    assert.equal(replay.playoff, null)
+  })
+
+  it('fills the open survival places from a repeated exit tie', () => {
+    const exits = [0, 1, 2].map(id => seat(id, { status: PlayerStatus.out, outTick: 50, outSub: 3, openingRank: id + 1 }))
+    const replay = resolveRound('survival', null, 2, exits, [], 1, 3, true)
+    assert.equal(replay.playoff, null)
+    assert.deepEqual(replay.qualified, [0, 1])
+    assert.deepEqual(replay.eliminated, [2])
+  })
+})

@@ -243,7 +243,7 @@ export class MatchLedger implements DomainSim<PlayerInput> {
     if (this.#over) return
     const config = this.#config
     const outcome = resolveRound(this.#roundKind(), config.finalRule, config.target,
-      this.#records, this.#teamScores, config.seed, config.roundIndex)
+      this.#records, this.#teamScores, config.seed, config.roundIndex, config.playoff)
     const qualified = new Set(outcome.qualified)
     const points = outcome.ranking.map((seat, index) => roundPoints(
       config.kind === 'team' && this.#records[seat].team === outcome.teamWinner ? 1 : index + 1,

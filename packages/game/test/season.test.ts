@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { parseSeason, playableMaps, schedMaps, seasonFloorProblems } from '../src/season.ts'
@@ -123,4 +124,21 @@ test('playable and scheduled maps preserve roster order and filter status and lo
   })))
   assert.deepEqual(schedMaps(s, []), [])
   assert.deepEqual(s, season())
+})
+
+test('committed courses/season.json holds all 18 planned maps and meets the floor', () => {
+  const file = new URL('../../../courses/season.json', import.meta.url)
+  const season = parseSeason(JSON.parse(readFileSync(file, 'utf8')), 'courses/season.json')
+  assert.equal(season.maps.length, 18)
+  assert.deepEqual(season.maps.map(m => m.id), ['A', 'B', 'C1', 'C2', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'])
+  for (const map of season.maps) {
+    assert.equal(map.status, 'planned')
+    assert.equal(map.reason, null)
+  }
+  const finals = season.maps.filter(m => m.finalRule !== null).length
+  const races = season.maps.filter(m => m.kind === 'race').length
+  const survivalOrScore = season.maps.filter(m => ['survival', 'collection', 'hunt', 'logic'].includes(m.kind)).length
+  const teams = season.maps.filter(m => m.kind === 'team').length
+  assert.deepEqual({ finals, races, survivalOrScore, teams }, { finals: 2, races: 7, survivalOrScore: 7, teams: 3 })
+  assert.deepEqual(seasonFloorProblems(season), [])
 })

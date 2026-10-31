@@ -1,0 +1,608 @@
+{
+  "format": "royal-fiesta.season",
+  "version": 0,
+  "id": "s1-sugarcloud-showdown",
+  "name": "Sugarcloud Showdown",
+  "world": "candy",
+  "plans": {
+    "default": [
+      60,
+      40,
+      24,
+      12,
+      6,
+      1
+    ],
+    "long": [
+      60,
+      48,
+      36,
+      24,
+      12,
+      6,
+      1
+    ]
+  },
+  "rules": {
+    "maxTeamRoundsPerShow": 1,
+    "finalReservedFirst": true,
+    "noBackToBack": [
+      [
+        "H",
+        "I"
+      ],
+      [
+        "D",
+        "G"
+      ]
+    ],
+    "cutMaps": [
+      "E",
+      "P"
+    ],
+    "floor": {
+      "final": 2,
+      "race": 4,
+      "survivalOrScore": 3,
+      "team": 1
+    }
+  },
+  "maps": [
+    {
+      "id": "A",
+      "slug": "big-ball-borough",
+      "name": "Big Ball Borough",
+      "course": "s1-a-big-ball-borough",
+      "kind": "team",
+      "finalRule": null,
+      "family": "football",
+      "stages": [
+        "R3"
+      ],
+      "capacity": 60,
+      "usual": [
+        24
+      ],
+      "teams": {
+        "count": 2,
+        "maxPerTeam": 30,
+        "usualPerTeam": 12
+      },
+      "timeCapS": 120,
+      "overtimeS": 20,
+      "plan": "docs/level-plans/A-football.svg",
+      "assets": "docs/level-plans/A-football-assets.md",
+      "files": {
+        "course": "courses/s1-a-big-ball-borough.course.json",
+        "zones": "courses/s1-a-big-ball-borough.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "B",
+      "slug": "butterfly-freeway",
+      "name": "Butterfly Freeway",
+      "course": "s1-b-butterfly-freeway",
+      "kind": "race",
+      "finalRule": null,
+      "family": "slide",
+      "stages": [
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "capacity": 60,
+      "usual": [
+        60,
+        40,
+        24
+      ],
+      "teams": null,
+      "timeCapS": 150,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/B-belly-slide.svg",
+      "assets": "docs/level-plans/B-belly-slide-assets.md",
+      "files": {
+        "course": "courses/s1-b-butterfly-freeway.course.json",
+        "zones": "courses/s1-b-butterfly-freeway.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "C1",
+      "slug": "diamond-citadel",
+      "name": "Diamond Citadel",
+      "course": "s1-c1-diamond-citadel",
+      "kind": "race",
+      "finalRule": null,
+      "family": "open-routes-gauntlet",
+      "stages": [
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        60,
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 150,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/C1-castle-gauntlet.svg",
+      "assets": "docs/level-plans/C1-castle-gauntlet-assets.md",
+      "files": {
+        "course": "courses/s1-c1-diamond-citadel.course.json",
+        "zones": "courses/s1-c1-diamond-citadel.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "C2",
+      "slug": "tidal-relay",
+      "name": "Tidal Relay",
+      "course": "s1-c2-tidal-relay",
+      "kind": "race",
+      "finalRule": null,
+      "family": "ring-climb",
+      "stages": [
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        60,
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 150,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/C2-wipeout-rings.svg",
+      "assets": "docs/level-plans/C2-wipeout-rings-assets.md",
+      "files": {
+        "course": "courses/s1-c2-tidal-relay.course.json",
+        "zones": "courses/s1-c2-tidal-relay.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "D",
+      "slug": "spiral-of-mischief",
+      "name": "Spiral of Mischief",
+      "course": "s1-d-spiral-of-mischief",
+      "kind": "race",
+      "finalRule": null,
+      "family": "spiral-climb",
+      "stages": [
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 150,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/D-spiral-pyramid.svg",
+      "assets": "docs/level-plans/D-spiral-pyramid-assets.md",
+      "files": {
+        "course": "courses/s1-d-spiral-of-mischief.course.json",
+        "zones": "courses/s1-d-spiral-of-mischief.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "E",
+      "slug": "sugar-sprint",
+      "name": "Sugar Sprint",
+      "course": "s1-e-sugar-sprint",
+      "kind": "race",
+      "finalRule": null,
+      "family": "sprint",
+      "stages": [
+        "R1",
+        "R2"
+      ],
+      "capacity": 60,
+      "usual": [
+        60,
+        40
+      ],
+      "teams": null,
+      "timeCapS": 60,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/E-sugar-sprint.svg",
+      "assets": "docs/level-plans/E-sugar-sprint-assets.md",
+      "files": {
+        "course": "courses/s1-e-sugar-sprint.course.json",
+        "zones": "courses/s1-e-sugar-sprint.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "F",
+      "slug": "taffy-circuit",
+      "name": "Taffy Circuit",
+      "course": "s1-f-taffy-circuit",
+      "kind": "race",
+      "finalRule": null,
+      "family": "loop",
+      "stages": [
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "capacity": 60,
+      "usual": [
+        60,
+        40,
+        24
+      ],
+      "teams": null,
+      "timeCapS": 150,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/F-taffy-circuit.svg",
+      "assets": "docs/level-plans/F-taffy-circuit-assets.md",
+      "files": {
+        "course": "courses/s1-f-taffy-circuit.course.json",
+        "zones": "courses/s1-f-taffy-circuit.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "G",
+      "slug": "cloudstack-tower",
+      "name": "Cloudstack Tower",
+      "course": "s1-g-cloudstack-tower",
+      "kind": "race",
+      "finalRule": null,
+      "family": "vertical-tower",
+      "stages": [
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 150,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/G-cloud-tower.svg",
+      "assets": "docs/level-plans/G-cloud-tower-assets.md",
+      "files": {
+        "course": "courses/s1-g-cloudstack-tower.course.json",
+        "zones": "courses/s1-g-cloudstack-tower.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "H",
+      "slug": "wafer-wipeout",
+      "name": "Wafer Wipeout",
+      "course": "s1-h-wafer-wipeout",
+      "kind": "survival",
+      "finalRule": null,
+      "family": "falling-tiles",
+      "stages": [
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 120,
+      "overtimeS": 30,
+      "plan": "docs/level-plans/H-wafer-wipeout.svg",
+      "assets": "docs/level-plans/H-wafer-wipeout-assets.md",
+      "files": {
+        "course": "courses/s1-h-wafer-wipeout.course.json",
+        "zones": "courses/s1-h-wafer-wipeout.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "I",
+      "slug": "honeycomb-heights",
+      "name": "Honeycomb Heights",
+      "course": "s1-i-honeycomb-heights",
+      "kind": "survival",
+      "finalRule": "lastStanding",
+      "family": "layered-hex",
+      "stages": [
+        "R3",
+        "R4",
+        "final"
+      ],
+      "capacity": 60,
+      "usual": [
+        24,
+        12,
+        6
+      ],
+      "teams": null,
+      "timeCapS": 150,
+      "overtimeS": 30,
+      "plan": "docs/level-plans/I-honeycomb-heights.svg",
+      "assets": "docs/level-plans/I-honeycomb-heights-assets.md",
+      "files": {
+        "course": "courses/s1-i-honeycomb-heights.course.json",
+        "zones": "courses/s1-i-honeycomb-heights.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "J",
+      "slug": "syrup-summit",
+      "name": "Syrup Summit",
+      "course": "s1-j-syrup-summit",
+      "kind": "survival",
+      "finalRule": null,
+      "family": "rising-slime",
+      "stages": [
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 120,
+      "overtimeS": 30,
+      "plan": "docs/level-plans/J-syrup-summit.svg",
+      "assets": "docs/level-plans/J-syrup-summit-assets.md",
+      "files": {
+        "course": "courses/s1-j-syrup-summit.course.json",
+        "zones": "courses/s1-j-syrup-summit.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "K",
+      "slug": "candy-orbit",
+      "name": "Candy Orbit",
+      "course": "s1-k-candy-orbit",
+      "kind": "survival",
+      "finalRule": null,
+      "family": "spinning-rings-sweeps",
+      "stages": [
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 120,
+      "overtimeS": 30,
+      "plan": "docs/level-plans/K-candy-orbit.svg",
+      "assets": "docs/level-plans/K-candy-orbit-assets.md",
+      "files": {
+        "course": "courses/s1-k-candy-orbit.course.json",
+        "zones": "courses/s1-k-candy-orbit.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "L",
+      "slug": "bonbon-bank",
+      "name": "Bonbon Bank",
+      "course": "s1-l-bonbon-bank",
+      "kind": "team",
+      "finalRule": null,
+      "family": "carry-scramble",
+      "stages": [
+        "R3"
+      ],
+      "capacity": 60,
+      "usual": [
+        24
+      ],
+      "teams": {
+        "count": 2,
+        "maxPerTeam": 30,
+        "usualPerTeam": 12
+      },
+      "timeCapS": 120,
+      "overtimeS": 20,
+      "plan": "docs/level-plans/L-bonbon-bank.svg",
+      "assets": "docs/level-plans/L-bonbon-bank-assets.md",
+      "files": {
+        "course": "courses/s1-l-bonbon-bank.course.json",
+        "zones": "courses/s1-l-bonbon-bank.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "M",
+      "slug": "gummy-grounds",
+      "name": "Gummy Grounds",
+      "course": "s1-m-gummy-grounds",
+      "kind": "team",
+      "finalRule": null,
+      "family": "capture-hold",
+      "stages": [
+        "R3"
+      ],
+      "capacity": 60,
+      "usual": [
+        24
+      ],
+      "teams": {
+        "count": 2,
+        "maxPerTeam": 30,
+        "usualPerTeam": 12
+      },
+      "timeCapS": 120,
+      "overtimeS": 20,
+      "plan": "docs/level-plans/M-gummy-grounds.svg",
+      "assets": "docs/level-plans/M-gummy-grounds-assets.md",
+      "files": {
+        "course": "courses/s1-m-gummy-grounds.course.json",
+        "zones": "courses/s1-m-gummy-grounds.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "N",
+      "slug": "sweet-vaults",
+      "name": "Sweet Vaults",
+      "course": "s1-n-sweet-vaults",
+      "kind": "collection",
+      "finalRule": null,
+      "family": "treasure",
+      "stages": [
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 120,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/N-sweet-vaults.svg",
+      "assets": "docs/level-plans/N-sweet-vaults-assets.md",
+      "files": {
+        "course": "courses/s1-n-sweet-vaults.course.json",
+        "zones": "courses/s1-n-sweet-vaults.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "O",
+      "slug": "ribbon-runners",
+      "name": "Ribbon Runners",
+      "course": "s1-o-ribbon-runners",
+      "kind": "hunt",
+      "finalRule": null,
+      "family": "tail-tag",
+      "stages": [
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 90,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/O-ribbon-runners.svg",
+      "assets": "docs/level-plans/O-ribbon-runners-assets.md",
+      "files": {
+        "course": "courses/s1-o-ribbon-runners.course.json",
+        "zones": "courses/s1-o-ribbon-runners.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "P",
+      "slug": "sugar-signals",
+      "name": "Sugar Signals",
+      "course": "s1-p-sugar-signals",
+      "kind": "logic",
+      "finalRule": null,
+      "family": "hidden-tiles-matching",
+      "stages": [
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "capacity": 60,
+      "usual": [
+        40,
+        24,
+        12
+      ],
+      "teams": null,
+      "timeCapS": 60,
+      "overtimeS": 0,
+      "plan": "docs/level-plans/P-sugar-signals.svg",
+      "assets": "docs/level-plans/P-sugar-signals-assets.md",
+      "files": {
+        "course": "courses/s1-p-sugar-signals.course.json",
+        "zones": "courses/s1-p-sugar-signals.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    },
+    {
+      "id": "Q",
+      "slug": "crown-confection",
+      "name": "Crown Confection",
+      "course": "s1-q-crown-confection",
+      "kind": "final",
+      "finalRule": "crown",
+      "family": "crown-grab",
+      "stages": [
+        "final"
+      ],
+      "capacity": 60,
+      "usual": [
+        6
+      ],
+      "teams": null,
+      "timeCapS": 90,
+      "overtimeS": 30,
+      "plan": "docs/level-plans/Q-crown-confection.svg",
+      "assets": "docs/level-plans/Q-crown-confection-assets.md",
+      "files": {
+        "course": "courses/s1-q-crown-confection.course.json",
+        "zones": "courses/s1-q-crown-confection.zones.json"
+      },
+      "status": "planned",
+      "reason": null
+    }
+  ]
+}

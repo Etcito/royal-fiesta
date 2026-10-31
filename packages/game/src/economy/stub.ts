@@ -41,7 +41,10 @@ function catalogItem(item: CatalogItem): CatalogItem {
 
 export function createEconomyStub(seed?: {
   catalog?: CatalogItem[]; me?: Partial<Me>
-}): EconomyPort & { grant(kind: 'qualify' | 'win'): void } {
+}): EconomyPort & {
+  grant(kind: 'qualify' | 'win'): void
+  connect(playerId: string): EconomyPort & { grant(kind: 'qualify' | 'win'): void }
+} {
   const items = (seed?.catalog ?? DEFAULT_CATALOG).map(catalogItem)
   for (const item of items) {
     if (item.price.tickets !== undefined && item.price.tickets !== RARITY_TICKETS[item.rarity]) {
@@ -65,81 +68,88 @@ export function createEconomyStub(seed?: {
   local.coins = seed?.me?.coins ?? 0
   local.tickets = seed?.me?.tickets ?? 0
   local.owned = new Set(seed?.me?.owned ?? [])
-  const me = (): Me => ({
-    playerId: local.playerId, coins: local.coins, tickets: local.tickets,
-    owned: [...local.owned], inboxUnread: local.inbox.filter(entry => !entry.claimed).length,
-  })
+  function portFor(p: Player): EconomyPort & { grant(kind: 'qualify' | 'win'): void } {
+    const me = (): Me => ({
+      playerId: p.playerId, coins: p.coins, tickets: p.tickets,
+      owned: [...p.owned], inboxUnread: p.inbox.filter(entry => !entry.claimed).length,
+    })
+
+    return {
+      async catalog() { return { drop: 'offline', items: items.map(catalogItem) } },
+      async me() { return me() },
+      async buy(itemId, currency) {
+        const item = items.find(candidate => candidate.id === itemId)
+        if (!item) refuse('unknown_item', `unknown item: ${itemId}`)
+        const price = item.price[currency]
+        if (price === undefined) refuse('no_price', `${itemId} has no price in ${currency}`)
+        if (p.owned.has(itemId)) refuse('already_owned', `already own ${itemId}`)
+        if (item.sold >= item.editionCap) refuse('sold_out', `${itemId} is sold out`)
+        if (p[currency] < price) refuse('insufficient_funds', `not enough ${currency}`)
+        p[currency] -= price
+        item.sold++
+        p.owned.add(itemId)
+        return { ...me(), remaining: item.editionCap - item.sold }
+      },
+      grant(kind) {
+        if (kind === 'qualify') p.coins += COINS_PER_QUALIFY
+        else if (kind === 'win') p.tickets++
+      },
+      async commission(slot, rarity, description) {
+        const reason = checkDescription(description, BANNED)
+        if (reason) refuse('description_refused', reason)
+        const price = RARITY_TICKETS[rarity]
+        if (p.tickets < price) refuse('insufficient_funds', 'not enough tickets')
+        const entry: Commission = { id: nextId('commission'), playerId: p.playerId,
+          slot, rarity, description: description.trim(), status: 'pending',
+          createdAt: new Date(Date.now()).toISOString() }
+        p.tickets -= price
+        allCommissions.push(entry)
+        return { ...entry }
+      },
+      async commissions() {
+        return allCommissions.filter(entry => entry.playerId === p.playerId)
+          .map(entry => ({ ...entry }))
+      },
+      async queue() {
+        return allCommissions.map(({ playerId: _playerId, ...entry }) => entry)
+      },
+      async inbox() {
+        return p.inbox.map(entry => ({ ...entry, sender: { ...entry.sender } }))
+      },
+      async claim(id) {
+        const entry = p.inbox.find(candidate => candidate.id === id)
+        if (!entry) refuse('not_found', `inbox entry not found: ${id}`)
+        if (entry.claimed) refuse('already_claimed', `already claimed ${id}`)
+        if (entry.item !== null) {
+          if (p.owned.has(entry.item)) refuse('already_owned', `already own ${entry.item}`)
+          p.owned.add(entry.item)
+        }
+        entry.claimed = true
+        return me()
+      },
+      async gift(to, itemId, message) {
+        if (to === p.playerId) refuse('self_gift', 'cannot gift to yourself')
+        if (!p.owned.has(itemId)) refuse('not_owned', `do not own ${itemId}`)
+        if (players.get(to)?.blocked.has(p.playerId)) {
+          refuse('blocked', 'recipient has blocked the sender')
+        }
+        const now = Date.now()
+        const recent = p.gifts.filter(date => date > now - GIFT_LIMIT.windowMs)
+        if (recent.length >= GIFT_LIMIT.count) refuse('rate_limited', 'gift limit reached')
+        const entry: InboxEntry = { id: nextId('gift'), item: itemId,
+          sender: { kind: 'player', id: p.playerId }, message,
+          date: new Date(now).toISOString(), claimed: false }
+        p.owned.delete(itemId)
+        player(to).inbox.push(entry)
+        p.gifts = [...recent, now]
+      },
+      async block(id) { p.blocked.add(id) },
+      async unblock(id) { p.blocked.delete(id) },
+    }
+  }
 
   return {
-    async catalog() { return { drop: 'offline', items: items.map(catalogItem) } },
-    async me() { return me() },
-    async buy(itemId, currency) {
-      const item = items.find(candidate => candidate.id === itemId)
-      if (!item) refuse('unknown_item', `unknown item: ${itemId}`)
-      const price = item.price[currency]
-      if (price === undefined) refuse('no_price', `${itemId} has no price in ${currency}`)
-      if (local.owned.has(itemId)) refuse('already_owned', `already own ${itemId}`)
-      if (item.sold >= item.editionCap) refuse('sold_out', `${itemId} is sold out`)
-      if (local[currency] < price) refuse('insufficient_funds', `not enough ${currency}`)
-      local[currency] -= price
-      item.sold++
-      local.owned.add(itemId)
-      return { ...me(), remaining: item.editionCap - item.sold }
-    },
-    grant(kind) {
-      if (kind === 'qualify') local.coins += COINS_PER_QUALIFY
-      else if (kind === 'win') local.tickets++
-    },
-    async commission(slot, rarity, description) {
-      const reason = checkDescription(description, BANNED)
-      if (reason) refuse('description_refused', reason)
-      const price = RARITY_TICKETS[rarity]
-      if (local.tickets < price) refuse('insufficient_funds', 'not enough tickets')
-      const entry: Commission = { id: nextId('commission'), playerId: local.playerId,
-        slot, rarity, description: description.trim(), status: 'pending',
-        createdAt: new Date(Date.now()).toISOString() }
-      local.tickets -= price
-      allCommissions.push(entry)
-      return { ...entry }
-    },
-    async commissions() {
-      return allCommissions.filter(entry => entry.playerId === local.playerId)
-        .map(entry => ({ ...entry }))
-    },
-    async queue() {
-      return allCommissions.map(({ playerId: _playerId, ...entry }) => entry)
-    },
-    async inbox() {
-      return local.inbox.map(entry => ({ ...entry, sender: { ...entry.sender } }))
-    },
-    async claim(id) {
-      const entry = local.inbox.find(candidate => candidate.id === id)
-      if (!entry) refuse('not_found', `inbox entry not found: ${id}`)
-      if (entry.claimed) refuse('already_claimed', `already claimed ${id}`)
-      if (entry.item !== null) {
-        if (local.owned.has(entry.item)) refuse('already_owned', `already own ${entry.item}`)
-        local.owned.add(entry.item)
-      }
-      entry.claimed = true
-      return me()
-    },
-    async gift(to, itemId, message) {
-      if (to === local.playerId) refuse('self_gift', 'cannot gift to yourself')
-      if (!local.owned.has(itemId)) refuse('not_owned', `do not own ${itemId}`)
-      if (players.get(to)?.blocked.has(local.playerId)) {
-        refuse('blocked', 'recipient has blocked the sender')
-      }
-      const now = Date.now()
-      const recent = local.gifts.filter(date => date > now - GIFT_LIMIT.windowMs)
-      if (recent.length >= GIFT_LIMIT.count) refuse('rate_limited', 'gift limit reached')
-      const entry: InboxEntry = { id: nextId('gift'), item: itemId,
-        sender: { kind: 'player', id: local.playerId }, message,
-        date: new Date(now).toISOString(), claimed: false }
-      local.owned.delete(itemId)
-      player(to).inbox.push(entry)
-      local.gifts = [...recent, now]
-    },
-    async block(id) { local.blocked.add(id) },
-    async unblock(id) { local.blocked.delete(id) },
+    ...portFor(local),
+    connect(playerId: string) { return portFor(player(playerId)) },
   }
 }

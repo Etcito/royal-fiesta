@@ -222,5 +222,10 @@
     "after": [
       "s3-m7-tour"
     ]
+  },
+  {
+    "name": "s3-m9-shop-loopback",
+    "command": "env RF_REQUIRE_GAMESALOON=1 node --experimental-strip-types --test apps/headless/test/shopLoopback.test.ts",
+    "timeout_s": 600
   }
 ]

@@ -76,8 +76,9 @@ function rig(gainInput = false, ready = Promise.resolve()) {
   const made: ReturnType<typeof fakePlayer>[] = []
   const initialInputs: (Record<string, number | string> | undefined)[] = []
   // The test-only seam: no AudioWorklet, no wasm, just a player whose node joins the fake graph.
-  const makePlayer = (async (_ctx: unknown, options: { inputs?: Record<string, number | string> }) => {
+  const makePlayer = (async (_ctx: unknown, options: { inputs?: Record<string, number | string>; output: FakeNode }) => {
     const p = fakePlayer(gainInput)
+    p.node.connect(options.output)
     made.push(p)
     initialInputs.push(options.inputs)
     await ready
@@ -121,9 +122,9 @@ test('a near emitter gets a higher gain than a far one', async () => {
   audio.apply([start('far', 0, 0, 32)], 1)
   await waitFor(() => r.made.length === 2, 'the far player')
 
-  audio.setListener({ x: 0, y: 0, z: 0, fx: 0, fz: 1 })
-  const near = r.ctx.gains[1].gain.value
-  const far = r.ctx.gains[2].gain.value
+  audio.setListeners([{ x: 0, y: 0, z: 0, fx: 0, fz: 1 }])
+  const near = r.ctx.gains[0].gain.value
+  const far = r.ctx.gains[1].gain.value
   assert.ok(near > far, `near ${near} should be louder than far ${far}`)
   assert.ok(Math.abs(near - 1) < 1e-9, 'inside ref the gain is 1')
   assert.ok(Math.abs(far - 1 / 16) < 1e-9, 'at 32 m with ref 2 and rolloff 1 the gain is 1/16')
@@ -134,7 +135,7 @@ test('an emitter on the listener right pans right', async () => {
   const audio = audioOf(r)
   audio.apply([start('right', 3, 0, 0)], 1)
   await waitFor(() => r.made.length === 1, 'the right player')
-  audio.setListener({ x: 0, y: 0, z: 0, fx: 0, fz: 1 })
+  audio.setListeners([{ x: 0, y: 0, z: 0, fx: 0, fz: 1 }])
   assert.ok(r.ctx.panners[0].pan.value > 0, 'facing +Z puts +X on the right')
 })
 
@@ -185,8 +186,8 @@ test('impact strength reaches the declared gain before playback and every restar
   assert.equal(out[0].strength, 0.2)
   assert.equal(out[0].gain, 0.6, 'course gain remains the spatial emitter gain')
   assert.deepEqual(r.initialInputs, [{ gain: 0.2 }])
-  audio.setListener({ x: 0, y: 0, z: 0, fx: 0, fz: 1 })
-  assert.equal(r.ctx.gains[1].gain.value, 0.6)
+  audio.setListeners([{ x: 0, y: 0, z: 0, fx: 0, fz: 1 }])
+  assert.equal(r.ctx.gains[0].gain.value, 0.6)
 
   for (const strength of [1, 0]) {
     event = { ...event, tick: event.tick + 1, strength }
@@ -232,5 +233,89 @@ test('pending triggers use the latest strength across fetch and player creation'
   release()
   await waitFor(() => r.made[0].restarts() === 1, 'the pending impact')
   assert.deepEqual(r.made[0].calls, [['set', 'gain', 0.8], ['restart']])
+  audio.dispose()
+})
+
+test('each player feeds a gain and panner into the sfx bus and disconnects on stop', async () => {
+  const r = rig()
+  const audio = audioOf(r)
+  const cmd = start('loop', 0, 0, 1)
+  audio.apply([cmd], 1)
+  await waitFor(() => r.ctx.panners.length === 1 && r.made.length === 1, 'the chain')
+  assert.deepEqual([...r.made[0].node.outs], [r.ctx.gains[0]])
+  assert.deepEqual([...r.ctx.gains[0].outs], [r.ctx.panners[0]])
+  assert.deepEqual([...r.ctx.panners[0].outs], [r.ctx.destination])
+  audio.apply([{ ...cmd, kind: 'stop' }], 1)
+  assert.equal(r.made[0].disposals(), 1)
+  assert.equal(r.ctx.gains[0].outs.size, 0)
+  assert.equal(r.ctx.panners[0].outs.size, 0)
+})
+
+test('two listeners use the nearer listener gain and pan, recomputed on moves and triggers', async () => {
+  const r = rig()
+  const audio = audioOf(r)
+  audio.setListeners([
+    { x: 0, y: 0, z: 0, fx: 0, fz: 1 },
+    { x: 12, y: 0, z: 0, fx: 0, fz: 1 },
+  ])
+  const cmd = { ...start('loop', 8, 0, 0), gain: 0.6 }
+  audio.apply([cmd], 1)
+  await waitFor(() => r.made.length === 1, 'the spatial player')
+  assert.equal(r.ctx.gains[0].gain.value, 0.3)
+  assert.equal(r.ctx.panners[0].pan.value, -1)
+  audio.apply([{ ...cmd, kind: 'move', x: 2 }], 1)
+  assert.equal(r.ctx.gains[0].gain.value, 0.6)
+  assert.equal(r.ctx.panners[0].pan.value, 1)
+  audio.apply([{ ...cmd, kind: 'trigger', x: 16 }], 1)
+  assert.equal(r.ctx.gains[0].gain.value, 0.3)
+  assert.equal(r.ctx.panners[0].pan.value, 1)
+  audio.setListeners([{ x: 18, y: 0, z: 0, fx: 0, fz: 1 }])
+  assert.equal(r.ctx.gains[0].gain.value, 0.6)
+  assert.equal(r.ctx.panners[0].pan.value, -1)
+  audio.setListeners([])
+  assert.equal(r.ctx.gains[0].gain.value, 0.6)
+  assert.equal(r.ctx.panners[0].pan.value, 0)
+  audio.dispose()
+})
+
+test('a declared course-loop rate starts at one', async () => {
+  const r = rig()
+  const patches = new Map([['tap', 'data:text/plain,' + encodeURIComponent(JSON.stringify({
+    haa: 1, inputs: [{ name: 'rate', kind: 'continuous', min: 0, max: 1, default: 0 }],
+  }))]])
+  const audio = audioOf(r, patches)
+  audio.apply([start('motor', 0, 0, 0)], 1)
+  await waitFor(() => r.made.length === 1, 'the motor')
+  assert.deepEqual(r.initialInputs, [{ rate: 1 }])
+  audio.dispose()
+})
+
+test('a pending player uses the latest emitter and listener positions when ready', async () => {
+  let release!: () => void
+  const r = rig(false, new Promise<void>(resolve => { release = resolve }))
+  const audio = audioOf(r)
+  const cmd = start('moving', 0, 0, 1)
+  audio.apply([cmd], 1)
+  await waitFor(() => r.made.length === 1, 'pending player')
+  audio.apply([{ ...cmd, kind: 'move', x: 8, z: 0 }], 1)
+  audio.setListeners([{ x: 12, y: 0, z: 0, fx: 0, fz: 1 }])
+  release()
+  await waitFor(() => r.ctx.gains[0].gain.value === 0.5, 'updated spatial gain')
+  assert.equal(r.ctx.panners[0].pan.value, -1)
+  audio.dispose()
+})
+
+test('stopping during player creation disposes the stale player and its chain', async () => {
+  let release!: () => void
+  const r = rig(false, new Promise<void>(resolve => { release = resolve }))
+  const audio = audioOf(r)
+  const cmd = start('stale', 0, 0, 1)
+  audio.apply([cmd], 1)
+  await waitFor(() => r.made.length === 1, 'pending player')
+  audio.apply([{ ...cmd, kind: 'stop' }], 1)
+  release()
+  await waitFor(() => r.made[0].disposals() === 1, 'stale disposal')
+  assert.equal(r.ctx.gains[0].outs.size, 0)
+  assert.equal(r.ctx.panners[0].outs.size, 0)
   audio.dispose()
 })

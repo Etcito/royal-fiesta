@@ -5,11 +5,11 @@ import type { EmitterCommand, ListenerPose } from './emitters.ts'
 
 /**
  * The view's course audio: it applies the commands of the course's sound emitters to the spatial
- * scene. Implemented in apps/web (haa 0.2.0); this package only names the shape, so no haa import.
+ * mix. Implemented in apps/web (haa 0.2.0); this package only names the shape, so no haa import.
  */
 export interface CourseAudio {
   apply(cmds: readonly EmitterCommand[], n: number): void
-  setListener(l: ListenerPose): void
+  setListeners(ls: readonly ListenerPose[]): void
   dispose(): void
 }
 

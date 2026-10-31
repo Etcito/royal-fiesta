@@ -94,7 +94,7 @@ export class SoundDriver {
     if (this.#courseAudio === null || this.#emitters === null) return
     const n = this.#emitters.frame(sim, sim.tick, this.#commands)
     this.#courseAudio.apply(this.#commands, n)
-    this.#courseAudio.setListener(listener ?? this.#listenerOf(sim))
+    this.#courseAudio.setListeners([listener ?? this.#listenerOf(sim)])
   }
 
   /** Frees the course audio and stops the game's sounds; the engine stays open until close(). */

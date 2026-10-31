@@ -1,30 +1,30 @@
 // The course's spatial sounds, on haa 0.2.0. Only apps/web resolves that version (packages/game
 // stays on 0.1.1), so the implementation lives here and packages/game only names CourseAudio.
 //
-// One spatial scene per page. A `start` fetches the patch text once per patch id, creates a
-// HaaPlayer into the scene and adds an emitter with the sound's falloff. `move` follows the item,
-// `trigger` moves the sound and restarts its player (creating it on the first event), `stop` frees
-// the emitter and its player. A missing patch is warned once and skipped; at most 32 are active.
-import { createPlayer, createSpatialScene } from '@etcito/haa-spatial'
-import type { HaaPatch, HaaPlayer, SpatialEmitter, SpatialScene } from '@etcito/haa-spatial'
+// Each player feeds its own gain and stereo panner into the sfx bus. Spatial values follow
+// the nearest local listener. Patches are fetched once per id; at most 32 sounds are active.
+import { createPlayer } from '@etcito/haa-spatial'
+import type { HaaPatch, HaaPlayer } from '@etcito/haa-spatial'
+import { spatialFor, type ListenerPose as MixListenerPose } from '@royal-fiesta/game/audio/mix/listeners'
 import type { CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { EmitterCommand, ListenerPose } from '@royal-fiesta/game/audio/emitters'
 
 /** Course sounds per course are capped at 32 (MECH_CAPS.maxSounds); the active set matches it. */
 const MAX_ACTIVE = 32
-/** The contract's falloff: inverse distance from `ref`, silent beyond `max`. */
-const ROLLOFF = 1
 /** The player factory; `makePlayer` is a test-only seam, the default is haa's createPlayer. */
 type PlayerFactory = typeof createPlayer
 
 interface ActiveSound {
   readonly player: HaaPlayer
-  readonly emitter: SpatialEmitter
+  readonly gain: GainNode
+  readonly panner: StereoPannerNode
+  cmd: EmitterCommand
 }
 
 /** A start still fetching its patch; `again` means a trigger arrived while it was pending. */
 interface PendingSound {
   readonly version: number
+  cmd: EmitterCommand
   again: boolean
   strength?: number
 }
@@ -34,7 +34,7 @@ function messageOf(error: unknown): string {
 }
 
 /**
- * The course audio over one context: a single spatial scene whose output is `output`.
+ * The course audio over one context: `output` is the sfx bus input.
  * `patches` maps patch ids to the URL of the patch text; `module` is the compiled haa wasm and
  * `processorUrl` the haa 0.2.0 worklet bundle. `makePlayer` is test-only.
  *
@@ -50,7 +50,7 @@ export function createCourseAudio(
   output: AudioNode,
   makePlayer: PlayerFactory = createPlayer,
 ): CourseAudio {
-  const scene: SpatialScene = createSpatialScene(ctx, output)
+  let listeners: readonly MixListenerPose[] = []
   const active = new Map<string, ActiveSound>()
   const pending = new Map<string, PendingSound>()
   const texts = new Map<string, Promise<string>>()
@@ -97,7 +97,8 @@ export function createCourseAudio(
     const sound = active.get(id)
     if (sound === undefined) return
     active.delete(id)
-    sound.emitter.dispose()
+    sound.gain.disconnect()
+    sound.panner.disconnect()
     sound.player.dispose()
   }
 
@@ -116,28 +117,56 @@ export function createCourseAudio(
   async function spawn(cmd: EmitterCommand, entry: PendingSound): Promise<void> {
     const text = patchText(cmd.patch)
     if (text === null) return
+    let gain: GainNode | undefined
+    let panner: StereoPannerNode | undefined
     try {
       const patch = await text
       if (disposed || versions.get(cmd.id) !== entry.version) return
-      const hasGain = (JSON.parse(patch) as HaaPatch).inputs?.some((input) => input.name === 'gain') ?? false
-      const inputs: Record<string, number> = hasGain ? { gain: entry.strength ?? 1 } : {}
-      const player = await makePlayer(ctx, { module, processorUrl, patch, inputs, output: scene.output })
+      const declared = (JSON.parse(patch) as HaaPatch).inputs ?? []
+      const inputs: Record<string, number> = {}
+      if (declared.some(input => input.name === 'gain')) inputs.gain = entry.strength ?? 1
+      if (declared.some(input => input.name === 'rate')) inputs.rate = 1
+      gain = ctx.createGain()
+      panner = ctx.createStereoPanner()
+      updateSpatial({ gain, panner, cmd: entry.cmd })
+      gain.connect(panner)
+      panner.connect(output)
+      const player = await makePlayer(ctx, { module, processorUrl, patch, inputs, output: gain })
       // A stop, or a newer start, may have landed while this one was awaiting.
       if (disposed || versions.get(cmd.id) !== entry.version) {
         player.dispose()
+        gain.disconnect()
+        panner.disconnect()
         return
       }
-      const emitter = scene.addEmitter(cmd.id, player, { ref: cmd.ref, max: cmd.max, rolloff: ROLLOFF })
-      emitter.setGain(cmd.gain)
-      emitter.setPosition(cmd.x, cmd.y, cmd.z)
-      active.set(cmd.id, { player, emitter })
+      const sound = { player, gain, panner, cmd: entry.cmd }
+      updateSpatial(sound)
+      active.set(cmd.id, sound)
       if (entry.again) {
         setStrength(player, entry.strength)
         player.restart()
       }
     } catch (error) {
+      gain?.disconnect()
+      panner?.disconnect()
       warn(`${cmd.id} is off: ${messageOf(error)}`)
     }
+  }
+
+  function updateSpatial(sound: Pick<ActiveSound, 'gain' | 'panner' | 'cmd'>): void {
+    const spatial = spatialFor(sound.cmd, listeners, sound.cmd)
+    sound.gain.gain.value = spatial.gain * sound.cmd.gain
+    sound.panner.pan.value = spatial.pan
+  }
+
+  function move(cmd: EmitterCommand): void {
+    const sound = active.get(cmd.id)
+    if (sound) {
+      sound.cmd = { ...cmd }
+      updateSpatial(sound)
+    }
+    const entry = pending.get(cmd.id)
+    if (entry) entry.cmd = { ...cmd }
   }
 
   function setStrength(player: HaaPlayer, strength: number | undefined): void {
@@ -145,7 +174,7 @@ export function createCourseAudio(
   }
 
   function schedule(cmd: EmitterCommand, restartWhenReady: boolean): void {
-    const entry: PendingSound = { version: versions.get(cmd.id) ?? bump(cmd.id), again: restartWhenReady, strength: cmd.strength }
+    const entry: PendingSound = { cmd: { ...cmd }, version: versions.get(cmd.id) ?? bump(cmd.id), again: restartWhenReady, strength: cmd.strength }
     pending.set(cmd.id, entry)
     void spawn({ ...cmd }, entry).finally(() => {
       if (pending.get(cmd.id) === entry) pending.delete(cmd.id)
@@ -167,12 +196,12 @@ export function createCourseAudio(
             stop(cmd.id)
             break
           case 'move':
-            active.get(cmd.id)?.emitter.setPosition(cmd.x, cmd.y, cmd.z)
+            move(cmd)
             break
           case 'trigger': {
+            move(cmd)
             const sound = active.get(cmd.id)
             if (sound !== undefined) {
-              sound.emitter.setPosition(cmd.x, cmd.y, cmd.z)
               setStrength(sound.player, cmd.strength)
               sound.player.restart()
               break
@@ -190,16 +219,15 @@ export function createCourseAudio(
         }
       }
     },
-    setListener(l: ListenerPose): void {
+    setListeners(ls: readonly ListenerPose[]): void {
       if (disposed) return
-      scene.setListener(l)
-      scene.update()
+      listeners = ls.map(l => ({ pos: { x: l.x, y: l.y, z: l.z }, forward: { x: l.fx, y: 0, z: l.fz } }))
+      for (const sound of active.values()) updateSpatial(sound)
     },
     dispose(): void {
       if (disposed) return
       disposed = true
       for (const id of [...active.keys()]) stop(id)
-      scene.dispose()
     },
   }
 }

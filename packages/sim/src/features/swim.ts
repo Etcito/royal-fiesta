@@ -39,8 +39,10 @@ export const swimVolumeFeature: FeatureFactory = (spec, path) => {
       for (let i = 0; i < inside.length; i++) w.u8(inside[i])
     },
     restore(r, ctx) {
-      inside = new Uint8Array(r.u16())
-      for (let i = 0; i < inside.length; i++) inside[i] = r.u8()
+      const saved = new Uint8Array(r.u16())
+      for (let i = 0; i < saved.length; i++) saved[i] = r.u8()
+      inside = new Uint8Array(ctx.seats.count)
+      inside.set(saved.subarray(0, Math.min(saved.length, inside.length)))
       mapSeats(ctx)
     },
     draw(out) {

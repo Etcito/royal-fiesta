@@ -527,6 +527,55 @@ test('swimVolume: setSwim while inside and false on exit, and botTarget only whi
   assert.equal(feature.botTarget?.(0, seats.positions[0], out), false)
 })
 
+function swimInsideStates(feature: CourseFeature): number[] {
+  const reader = new SnapReader(snapshotBytes(feature))
+  const count = reader.u16()
+  const states: number[] = []
+  for (let i = 0; i < count; i++) states.push(reader.u8())
+  assert.equal(reader.remaining, 0, 'swim snapshot consumes exactly its state')
+  return states
+}
+
+function swimRig(count: number, insideSeats: number[]): { seats: StubSeats; ctx: TestCtx; feature: CourseFeature } {
+  const inside = new Set(insideSeats)
+  const seats = new StubSeats(Array.from({ length: count }, (_, i) => inside.has(i) ? v3(0, 0, 0) : v3(10, 0, 0)))
+  const s = spec('swimVolume', { center: [0, 0, 0], half: [2, 2, 2], drag: 3, buoyancy: 22 })
+  const ctx = context(seats, courseOf([s]))
+  const feature = swimVolumeFeature(s, PATH)
+  feature.init(ctx)
+  step(feature, ctx, 0)
+  return { seats, ctx, feature }
+}
+
+test('swimVolume: restore resizes the per-seat state between 8 and 60 seats', () => {
+  const source = swimRig(8, [0, 1, 2])
+  assert.deepEqual(swimInsideStates(source.feature), [1, 1, 1, 0, 0, 0, 0, 0])
+  const saved = snapshotBytes(source.feature)
+
+  const grown = swimRig(60, [0, 1, 2])
+  grown.feature.restore(new SnapReader(saved), grown.ctx)
+  const grownStates = swimInsideStates(grown.feature)
+  assert.equal(grownStates.length, 60, 'the restored state covers every live seat')
+  assert.deepEqual(grownStates.slice(0, 8), [1, 1, 1, 0, 0, 0, 0, 0])
+  assert.ok(grownStates.slice(8).every(state => state === 0), 'seats past the snapshot start outside')
+  grown.seats.calls.setSwim.length = 0
+  step(grown.feature, grown.ctx, 1)
+  assert.deepEqual(grown.seats.calls.setSwim.map(call => call.seat), [0, 1, 2])
+  const out = v3(0, 0, 0)
+  assert.equal(grown.feature.botTarget?.(0, grown.seats.positions[0], out), true)
+  assert.equal(grown.feature.botTarget?.(59, grown.seats.positions[59], out), false)
+
+  const largeSource = swimRig(60, [3, 4])
+  const largeSaved = snapshotBytes(largeSource.feature)
+  assert.equal(swimInsideStates(largeSource.feature).length, 60)
+  const small = swimRig(8, [3, 4])
+  small.feature.restore(new SnapReader(largeSaved), small.ctx)
+  assert.deepEqual(swimInsideStates(small.feature), [0, 0, 0, 1, 1, 0, 0, 0])
+  small.seats.calls.setSwim.length = 0
+  step(small.feature, small.ctx, 1)
+  assert.deepEqual(small.seats.calls.setSwim.map(call => call.seat), [3, 4])
+})
+
 function logSpec(overrides: Record<string, unknown> = {}): FeatureSpec {
   return spec('rollingLog', {
     from: [0, 1, 0], to: [0, 1, 8], radius: 2, length: 2, speed: 2, periodS: 16, ...overrides,

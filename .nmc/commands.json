@@ -159,5 +159,47 @@
     "name": "s3-m5-feat-rising",
     "command": "npm run round:run -- --course feat-rising --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
     "timeout_s": 1800
+  },
+  {
+    "name": "s3-m6-feat-football",
+    "command": "npm run round:run -- --course feat-football --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m6-feat-bank",
+    "command": "npm run round:run -- --course feat-bank --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m6-feat-capture",
+    "command": "npm run round:run -- --course feat-capture --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m6-feat-collect",
+    "command": "npm run round:run -- --course feat-collect --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m6-feat-tails",
+    "command": "npm run round:run -- --course feat-tails --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m6-feat-crown-2",
+    "command": "npm run round:run -- --course feat-crown --dir fixtures/test-courses --seats 2 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m6-feat-crown-6",
+    "command": "npm run round:run -- --course feat-crown --dir fixtures/test-courses --seats 6 --peers 2 --profile season",
+    "timeout_s": 1800,
+    "after": ["s3-m6-feat-crown-2"]
+  },
+  {
+    "name": "s3-m6-feat-crown",
+    "command": "npm run round:run -- --course feat-crown --dir fixtures/test-courses --seats 12 --peers 2 --profile season",
+    "timeout_s": 1800,
+    "after": ["s3-m6-feat-crown-6"]
   }
 ]

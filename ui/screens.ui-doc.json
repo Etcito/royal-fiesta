@@ -4690,6 +4690,446 @@
           }
         }
       ]
+    },
+    {
+      "id": "elimShow",
+      "enter": {
+        "kind": "fade",
+        "duration": 200
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Eliminated",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 52,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-336, -112],
+            "offsetMax": [336, -40]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-480, -76],
+            "offsetMax": [480, -16]
+          }
+        },
+        {
+          "id": "elim-counter",
+          "type": "label",
+          "text": "60 \u2192 40",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 72,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-336, -204],
+            "offsetMax": [336, -116]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-480, -156],
+            "offsetMax": [480, -72]
+          }
+        },
+        {
+          "id": "elim-now",
+          "type": "badge",
+          "asset": "badge.round",
+          "text": {
+            "count": "40"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-80, -320],
+            "offsetMax": [80, -160]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-64, -300],
+            "offsetMax": [64, -172]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Enter skip",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-336, 32],
+            "offsetMax": [336, 80]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-600, 16],
+            "offsetMax": [600, 56]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "Round 2",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 32,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-336, 88],
+            "offsetMax": [336, 136]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-440, 60],
+            "offsetMax": [440, 104]
+          }
+        }
+      ]
+    },
+    {
+      "id": "endScreen",
+      "enter": {
+        "kind": "fade",
+        "duration": 200
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Champion",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 52,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-336, -104],
+            "offsetMax": [336, -32]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-480, -72],
+            "offsetMax": [480, -12]
+          }
+        },
+        {
+          "id": "end-winner",
+          "type": "label",
+          "text": "Bean 1",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 76,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-336, -224],
+            "offsetMax": [336, -116]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-480, -176],
+            "offsetMax": [480, -84]
+          }
+        },
+        {
+          "id": "end-ticket",
+          "type": "label",
+          "text": "Golden ticket!",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 40,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-240, -300],
+            "offsetMax": [240, -232]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-300, -252],
+            "offsetMax": [300, -192]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 350
+            }
+          }
+        },
+        {
+          "id": "crown-0",
+          "type": "icon",
+          "asset": "icon.medal",
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-250, -512],
+            "offsetMax": [-90, -352]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-300, -360],
+            "offsetMax": [-180, -230]
+          }
+        },
+        {
+          "id": "crown-1",
+          "type": "icon",
+          "asset": "icon.medal",
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-80, -512],
+            "offsetMax": [80, -352]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-60, -360],
+            "offsetMax": [60, -230]
+          }
+        },
+        {
+          "id": "crown-2",
+          "type": "icon",
+          "asset": "icon.medal",
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [90, -512],
+            "offsetMax": [250, -352]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [180, -360],
+            "offsetMax": [300, -230]
+          }
+        },
+        {
+          "id": "crown-name-0",
+          "type": "label",
+          "text": "1st",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 32,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-250, -560],
+            "offsetMax": [-90, -512]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-310, -400],
+            "offsetMax": [-170, -356]
+          }
+        },
+        {
+          "id": "crown-name-1",
+          "type": "label",
+          "text": "2nd",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 32,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-80, -560],
+            "offsetMax": [80, -512]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-70, -400],
+            "offsetMax": [70, -356]
+          }
+        },
+        {
+          "id": "crown-name-2",
+          "type": "label",
+          "text": "3rd",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 32,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [90, -560],
+            "offsetMax": [250, -512]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [170, -400],
+            "offsetMax": [310, -356]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-336, 204],
+            "offsetMax": [336, 252]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-440, 176],
+            "offsetMax": [440, 220]
+          }
+        },
+        {
+          "id": "act-confirm",
+          "type": "button",
+          "asset": "button.primary",
+          "text": {
+            "label": "Continue"
+          },
+          "action": "confirm",
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-200, 80],
+            "offsetMax": [200, 180]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-200, 52],
+            "offsetMax": [200, 152]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Esc back to start",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 24,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 4,
+            "color": "#7a1f8c"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-336, 20],
+            "offsetMax": [336, 68]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-600, 8],
+            "offsetMax": [600, 48]
+          }
+        }
+      ]
     }
   ]
 }

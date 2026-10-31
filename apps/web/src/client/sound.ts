@@ -2,10 +2,14 @@
 // context suspended until then). The manifest is read relative to the page. A failure is logged once
 // and the game carries on silently. This module is pure logic: the engine opener, the fetch and the
 // console are passed in, so the wiring is testable headless (apps/web/test/clientSound.test.ts).
-import type { BrowserSound } from '@royal-fiesta/game/audio/context'
+import { setMixFactory, type BrowserSound } from '@royal-fiesta/game/audio/context'
 import { newMatchSample, sampleMatch, type MatchSample } from '@royal-fiesta/game/audio/events'
 import { GameAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
+
+import { createMixGraph } from '../audio/mixGraph.ts'
+
+setMixFactory(createMixGraph)
 
 export interface SoundDeps {
   /** The manifest as an absolute URL (audio/manifest.json relative to the page). */
@@ -23,7 +27,7 @@ export interface RfAudioDebug {
   readonly state: string
   /** True once the manifest has been read and parsed. */
   readonly loaded: boolean
-  /** Number of sound families listed by the manifest. */
+  /** Number of sounds listed by the manifest. */
   readonly familiesLoaded: number
 }
 
@@ -77,7 +81,7 @@ export class ClientSound {
     try {
       if (m.status === 'rejected') throw m.reason
       if (e.status === 'rejected') throw e.reason
-      const families = familiesOf(m.value)
+      const families = soundsOf(m.value)
       this.#loaded = true
       this.#families = families
       this.#sound = e.value
@@ -102,7 +106,7 @@ export class ClientSound {
   }
 
   get state(): string {
-    return this.#sound?.audio.ctx.state ?? 'none'
+    return this.#sound?.ctx.state ?? 'none'
   }
 
   get loaded(): boolean {
@@ -130,11 +134,11 @@ export class ClientSound {
   }
 }
 
-// The manifest's family list: a bake without it cannot play, so it counts as a failed load.
-function familiesOf(json: unknown): number {
-  const families = (json as { families?: unknown } | null)?.families
-  if (!Array.isArray(families)) throw new Error('audio manifest has no families list')
-  return families.length
+// The manifest's sounds list: a bake without it cannot play, so it counts as a failed load.
+function soundsOf(json: unknown): number {
+  const sounds = (json as { sounds?: unknown } | null)?.sounds
+  if (!Array.isArray(sounds)) throw new Error('audio manifest has no sounds list')
+  return sounds.length
 }
 
 async function closeQuietly(sound: BrowserSound): Promise<void> {

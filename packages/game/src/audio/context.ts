@@ -1,111 +1,249 @@
-// The only module of the game that touches the Web Audio API. tools/test/audio-boundary.test.ts
-// fails if AudioContext or `new Audio(` appears anywhere else in the sources.
-import { createAudio, type HaaAudio } from '@etcito/haa'
+// The only game module that constructs a browser audio context or value-imports HAA.
+import { createPlayer, type HaaPlayer } from '@etcito/haa-spatial'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import type { LoopPort, SoundPort } from './gameAudio'
-import { CROWD_BED_ID, CROWD_PROCESSOR, FIESTA_MIX_ID } from './ids'
-import { CROWD_PARAMS } from './pack/crowdModel'
-import { registerRoyalFiesta, ROYAL_FIESTA_FAMILIES } from './pack/index'
-import type { Vec3 } from './events'
+import { SOUNDS, type Bus } from './catalog.ts'
+import type { LoopPort, SoundPort } from './gameAudio.ts'
+import type { Vec3 } from './events.ts'
+import { spatialFor, type ListenerPose } from './mix/listeners.ts'
+import { DUCK_RULES } from './mix/ducking.ts'
+import type { BusVolumes } from './mix/volumes.ts'
+
+export interface MixPort {
+  input(bus: Bus): AudioNode
+  setVolumes(v: BusVolumes): void
+  duck(id: string): void
+  dispose(): void
+}
+
+let mixFactory: ((ctx: BaseAudioContext) => MixPort) | undefined
+export function setMixFactory(f: (ctx: BaseAudioContext) => MixPort): void { mixFactory = f }
 
 export interface BrowserAudioOptions {
-  /** HAA's bake manifest (audio/manifest.json, written by `npm run audio:bake`), as an absolute URL. */
   manifestUrl: string
-  /** HAA's prebuilt worklet bundle (@etcito/haa/worklet, baked next to the manifest). */
   processorUrl: string
-  /** The crowd bed worklet module (apps/web/src/audio/fiestaWorklet.ts, bundled), as a URL. */
-  crowdProcessorUrl: string
-  /** Listener count of the spatial model: 1 for the local player's view. */
+  /** Kept for existing callers; HAA now supplies the crowd patch. */
+  crowdProcessorUrl?: string
   maxListeners?: 1 | 2 | 3 | 4
 }
 
-/** The sound of one browser page: the HAA engine plus the game's SoundPort over it. */
 export interface BrowserSound {
-  readonly audio: HaaAudio
-  /** The one context the page's sound lives on (the engine, the crowd bed and the course audio share it). */
   readonly ctx: BaseAudioContext
-  /** Where other sound graphs attach: the context destination. */
+  readonly mix: MixPort
   readonly output: AudioNode
   readonly port: SoundPort
+  readonly soundsLoaded: number
   close(): Promise<void>
 }
 
-// HAA's 'ambience' bus sits at -1 dB in the fiesta mix (mix.ts). The crowd bed skips HAA's bus chain
-// (its compressor and ducks), so it takes that level as a plain gain.
-const CROWD_GAIN = 10 ** (-1 / 20)
-const CROWD_FADE_MARGIN_MS = 50
+interface ManifestSound {
+  id: string
+  bus: Bus
+  mode: 'oneshot' | 'loop'
+  files: string[]
+  patch: string | null
+}
 
-/**
- * The crowd bed: an AudioWorklet node running the pack's CrowdModel. HAA's prebuilt worklet does not
- * know the game's bed, so the bed is a worklet of its own, connected straight to the output.
- */
-class CrowdBed {
-  readonly #ctx: BaseAudioContext
-  readonly #node: AudioWorkletNode
-  readonly #gain: GainNode
+async function read(url: string | URL): Promise<Response> {
+  const response = await fetch(url)
+  if (!response.ok) refuse('audio', String(url), `HTTP ${response.status}`)
+  return response
+}
 
-  constructor(ctx: BaseAudioContext) {
-    this.#ctx = ctx
-    this.#node = new AudioWorkletNode(ctx, CROWD_PROCESSOR, { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] })
-    this.#gain = ctx.createGain()
-    this.#gain.gain.value = CROWD_GAIN
-    // The bed is raw (its peaks reach about 3 before HAA's bus compressor), so a limiter stands in for that compressor.
-    const limiter = ctx.createDynamicsCompressor()
-    limiter.threshold.value = -3
-    limiter.knee.value = 0
-    limiter.ratio.value = 20
-    limiter.attack.value = 0.003
-    limiter.release.value = 0.1
-    this.#node.connect(this.#gain).connect(limiter).connect(ctx.destination)
-  }
-
-  setParam(name: string, value: number): void {
-    const index = CROWD_PARAMS.indexOf(name as (typeof CROWD_PARAMS)[number])
-    if (index < 0) refuse('audio', 'crowd', `unknown crowd bed parameter ${name}; the bed has ${CROWD_PARAMS.join(', ')}`)
-    this.#node.port.postMessage({ index, value })
-  }
-
-  stop(fadeSec = 0): void {
-    const now = this.#ctx.currentTime
-    const g = this.#gain.gain
-    g.cancelScheduledValues(now)
-    g.setValueAtTime(g.value, now)
-    g.linearRampToValueAtTime(0, now + Math.max(0, fadeSec))
-    setTimeout(() => {
-      this.#node.disconnect()
-      this.#gain.disconnect()
-    }, Math.max(0, fadeSec) * 1000 + CROWD_FADE_MARGIN_MS)
+/** Deterministic shuffle bags, with no adjacent repeat across bag boundaries. */
+function variants(id: string, files: string[]): () => string {
+  let seed = 2166136261
+  for (const c of id) seed = Math.imul(seed ^ c.charCodeAt(0), 16777619) >>> 0
+  let bag: string[] = []
+  let last: string | undefined
+  return () => {
+    if (!bag.length) {
+      bag = [...new Set(files)]
+      for (let i = bag.length - 1; i > 0; i--) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+        const j = seed % (i + 1)
+        ;[bag[i], bag[j]] = [bag[j], bag[i]]
+      }
+      if (bag.length > 1 && bag[bag.length - 1] === last) {
+        ;[bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]]
+      }
+    }
+    last = bag.pop()!
+    return last
   }
 }
 
-/**
- * Creates the HAA engine on a fresh AudioContext with the Royal Fiesta pack and mix, and the crowd
- * worklet. Call it from a user gesture: browsers start an AudioContext suspended otherwise.
- */
 export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserSound> {
-  registerRoyalFiesta()
+  if (!mixFactory) refuse('audio', 'mix', 'no mix factory registered')
   const ctx = new AudioContext()
-  const audio = await createAudio(ctx, {
-    manifestUrl: o.manifestUrl,
-    processorUrl: o.processorUrl,
-    mix: FIESTA_MIX_ID,
-    maxListeners: o.maxListeners ?? 1,
-    families: ROYAL_FIESTA_FAMILIES.map((family) => family.id),
-  })
-  await audio.ready()
-  await ctx.audioWorklet.addModule(o.crowdProcessorUrl)
-  await ctx.resume()
+  let mix: MixPort
+  let entries: ManifestSound[]
+  let module: WebAssembly.Module
+  const pageBase = document.baseURI
+  const manifestUrl = new URL(o.manifestUrl, pageBase)
+  try {
+    mix = mixFactory(ctx)
+    const manifest = await (await read(manifestUrl)).json()
+    if (manifest.format !== 'royal-fiesta.audio' || manifest.version !== 1 || !Array.isArray(manifest.sounds)) {
+      refuse('audio', o.manifestUrl, 'expected an S17 sounds manifest')
+    }
+    entries = manifest.sounds
+    module = await WebAssembly.compile(await (await read(new URL('haa.wasm', manifestUrl))).arrayBuffer())
+    await ctx.resume()
+  } catch (error) {
+    mix!?.dispose()
+    await ctx.close()
+    throw error
+  }
+  const sounds = new Map(entries.map(entry => [entry.id, entry]))
+  const definitions = new Map(SOUNDS.map(def => [def.id, def]))
+  const picks = new Map(entries.map(entry => [entry.id, variants(entry.id, entry.files)]))
+  const buffers = new Map<string, Promise<AudioBuffer>>()
+  const patches = new Map<string, Promise<string>>()
+  let listeners: ListenerPose[] = []
+  let closed = false
+  const shots = new Set<() => void>()
+  const loops = new Set<() => void>()
+  function buffer(file: string): Promise<AudioBuffer> {
+    let pending = buffers.get(file)
+    if (!pending) {
+      pending = read(new URL(file, manifestUrl)).then(r => r.arrayBuffer()).then(bytes => ctx.decodeAudioData(bytes))
+      buffers.set(file, pending)
+    }
+    return pending
+  }
+  function routing(id: string, bus: Bus, strength = 1, initial?: Vec3) {
+    const gain = ctx.createGain()
+    const pan = ctx.createStereoPanner()
+    const fade = ctx.createGain()
+    gain.connect(pan).connect(fade).connect(mix.input(bus))
+    let pos = initial
+    const update = () => {
+      const spatial = definitions.get(id)?.spatial && pos
+        ? spatialFor(pos, listeners, { ref: 2, max: 40 }) : { gain: 1, pan: 0 }
+      gain.gain.value = strength * spatial.gain
+      pan.pan.value = spatial.pan
+    }
+    update()
+    return { gain, fade, update, move(p: Vec3) { pos = p; update() },
+      dispose() { gain.disconnect(); pan.disconnect(); fade.disconnect() } }
+  }
+  const spatialUpdates = new Set<() => void>()
   const port: SoundPort = {
-    play: (id: string, options?: { pos?: Vec3; strength?: number }) => audio.play(id, options),
-    startLoop: (id: string): LoopPort | null => {
-      const bed = id === CROWD_BED_ID ? new CrowdBed(ctx) : audio.startBed(id)
-      return bed === null ? null : {
-        set: (name, value) => bed.setParam(name, value),
-        move: () => {},
-        stop: fadeS => bed.stop(fadeS),
+    play(id, options = {}) {
+      const def = sounds.get(id)
+      if (closed || !def || def.mode !== 'oneshot' || !def.files.length) return
+      const file = picks.get(id)!()
+      // Start loading the entire variant set on its first use; share in-flight decodes.
+      const ready = Promise.all(def.files.map(buffer))
+      let cancelled = false
+      let source: AudioBufferSourceNode | undefined
+      let route: ReturnType<typeof routing> | undefined
+      const dispose = () => {
+        cancelled = true
+        source?.stop()
+        source?.disconnect()
+        route?.dispose()
+        shots.delete(dispose)
+      }
+      shots.add(dispose)
+      if (shots.size > 48) shots.values().next().value!()
+      void ready.then(async () => {
+        const decoded = await buffer(file)
+        if (cancelled || closed) return
+        route = routing(id, def.bus, options.strength ?? 1, options.pos)
+        source = ctx.createBufferSource()
+        source.buffer = decoded
+        if (id.startsWith('move.step.')) source.playbackRate.value = 0.92 + 0.16 * (options.strength ?? 1)
+        source.connect(route.gain)
+        source.onended = () => { source?.disconnect(); route?.dispose(); shots.delete(dispose) }
+        source.start()
+        mix.duck(id)
+      }).catch(error => { dispose(); console.warn(`sound ${id} failed`, error) })
+    },
+    startLoop(id, options = {}): LoopPort | null {
+      const def = sounds.get(id)
+      if (closed || !def || def.mode !== 'loop') return null
+      const route = routing(id, def.bus, 1, options.pos)
+      spatialUpdates.add(route.update)
+      let player: HaaPlayer | undefined
+      let source: AudioBufferSourceNode | undefined
+      let stopped = false
+      let disposed = false
+      let duckTimer: ReturnType<typeof setInterval> | undefined
+      let fadeTimer: ReturnType<typeof setTimeout> | undefined
+      const inputs = new Map<string, number>()
+      const dispose = () => {
+        if (disposed) return
+        disposed = stopped = true
+        clearInterval(duckTimer)
+        clearTimeout(fadeTimer)
+        player?.dispose()
+        source?.stop()
+        source?.disconnect()
+        route.dispose()
+        spatialUpdates.delete(route.update)
+        loops.delete(dispose)
+      }
+      loops.add(dispose)
+      const start = async () => {
+        if (def.patch) {
+          let patch = patches.get(def.patch)
+          if (!patch) {
+            patch = read(new URL(def.patch, pageBase)).then(r => r.text())
+            patches.set(def.patch, patch)
+          }
+          const text = await patch
+          if (stopped) return
+          player = await createPlayer(ctx, { module, processorUrl: o.processorUrl, patch: text, output: route.gain })
+          if (stopped) { player.dispose(); return }
+          for (const [name, value] of inputs) player.set(name, value)
+        } else {
+          if (!def.files.length) throw new Error(`loop ${id} has no patch or WAV`)
+          const decoded = await buffer(def.files[0])
+          if (stopped) return
+          source = ctx.createBufferSource()
+          source.buffer = decoded
+          source.loop = true
+          source.connect(route.gain)
+          source.start()
+        }
+        mix.duck(id)
+        if (DUCK_RULES.some(rule => rule.trigger(id))) duckTimer = setInterval(() => mix.duck(id), 250)
+      }
+      void start().catch(error => { dispose(); console.warn(`loop ${id} failed`, error) })
+      return {
+        set(name, value) { if (!stopped) { inputs.set(name, value); player?.set(name, value) } },
+        move(pos) { if (!stopped) route.move(pos) },
+        stop(fadeS = 0) {
+          if (stopped) return
+          stopped = true
+          clearInterval(duckTimer)
+          const duration = Math.max(0, fadeS)
+          if (!duration) { dispose(); return }
+          const now = ctx.currentTime
+          route.fade.gain.cancelScheduledValues(now)
+          route.fade.gain.setValueAtTime(route.fade.gain.value, now)
+          route.fade.gain.linearRampToValueAtTime(0, now + duration)
+          fadeTimer = setTimeout(dispose, duration * 1000)
+        },
       }
     },
-    setListeners: () => {},
+    setListeners(ls) {
+      listeners = ls.slice(0, o.maxListeners ?? 4).map(l => ({
+        pos: { x: l.x, y: l.y, z: l.z }, forward: { x: l.fx, y: 0, z: l.fz },
+      }))
+      for (const update of spatialUpdates) update()
+    },
   }
-  return { audio, ctx, output: ctx.destination, port, close: () => audio.close() }
+  return {
+    ctx, mix, output: mix.input('sfx'), port, soundsLoaded: entries.length,
+    async close() {
+      if (closed) return
+      closed = true
+      for (const dispose of shots) dispose()
+      for (const dispose of loops) dispose()
+      mix.dispose()
+      await ctx.close()
+    },
+  }
 }

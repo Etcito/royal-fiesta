@@ -106,7 +106,7 @@ class Annulus implements CourseFeature {
 
   preStep(ctx: FeatureCtx): void {
     if (ctx.overtime) this.#overtimeTicks = (this.#overtimeTicks + 1) >>> 0
-    this.#poseAt(ctx.roundTick + 1 + this.#overtimeTicks / 2)
+    this.#poseAt(ctx.roundTick + this.#overtimeTicks / 2)
     for (let j = 0; j < this.#segments; j++) {
       const p = this.#t[j]
       const q = this.#r[j]
@@ -115,12 +115,10 @@ class Annulus implements CourseFeature {
       rb.setNextKinematicRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
     }
     this.#carry(ctx)
-    ctx.sound('mech.motor', this.#center, 0.5)
+    ctx.soundLoop(`${this.id}:motor`, 'mech.motor', this.#center, 0.5, 1)
   }
 
-  postStep(ctx: FeatureCtx): void {
-    this.#poseAt(ctx.roundTick + 1 + this.#overtimeTicks / 2)
-  }
+  postStep(_ctx: FeatureCtx): void {}
 
   snapshot(w: SnapWriter): void {
     w.u32(this.#overtimeTicks)

@@ -1,0 +1,73 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "id": "bad-level-route",
+  "name": "Invalid bad-level-route",
+  "world": "candy",
+  "kind": "race",
+  "profiles": ["standard", "sprint"],
+  "timeLimitS": 60,
+  "killPlaneY": -12,
+  "spawns": [
+    { "t": [-3.5, 1, 1], "yawDeg": 0 },
+    { "t": [-2.5, 1, 1], "yawDeg": 0 },
+    { "t": [-1.5, 1, 1], "yawDeg": 0 },
+    { "t": [-0.5, 1, 1], "yawDeg": 0 },
+    { "t": [0.5, 1, 1], "yawDeg": 0 },
+    { "t": [1.5, 1, 1], "yawDeg": 0 },
+    { "t": [2.5, 1, 1], "yawDeg": 0 },
+    { "t": [3.5, 1, 1], "yawDeg": 0 }
+  ],
+  "checkpoints": [
+    { "center": [0, 1.5, 20], "half": [5, 2, 1], "respawn": { "t": [0, 1, 20], "yawDeg": 0 } },
+    { "center": [0, 1.5, 34], "half": [5, 2, 1], "respawn": { "t": [0, 1, 34], "yawDeg": 0 } },
+    { "center": [0, 1.5, 48], "half": [5, 2, 1], "respawn": { "t": [0, 1, 48], "yawDeg": 0 } }
+  ],
+  "finish": { "center": [0, 1.5, 52], "half": [4, 2, 1] },
+  "path": [],
+  "regions": [],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "floor-start",
+      "asset": "candy.floor-tile",
+      "t": [0, -0.5, 9],
+      "r": [0, 0, 0, 1],
+      "s": [1, 1, 2.2],
+      "friction": 0.5,
+      "motion": { "kind": "static" },
+      "colliders": null
+    },
+    {
+      "id": "floor-mid",
+      "asset": "candy.floor-tile",
+      "t": [0, -0.5, 30],
+      "r": [0, 0, 0, 1],
+      "s": [1, 1, 1],
+      "friction": 0.5,
+      "motion": { "kind": "static" },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": null,
+  "level": {
+    "season": null,
+    "map": null,
+    "kind": "race",
+    "finalRule": null,
+    "stages": ["R1", "R2"],
+    "capacity": 60,
+    "usual": [60, 40],
+    "quota": null,
+    "timeCapS": 60,
+    "overtimeS": 0,
+    "respawn": { "mode": "checkpoint", "waitS": 3, "protectS": 1, "slots": 12, "spacingM": 1.2 },
+    "route": { "ordered": true, "laps": 2, "stages": [0, 2, 1] },
+    "teams": null,
+    "homes": [],
+    "groups": [],
+    "grab": { "players": true, "objects": true }
+  }
+}

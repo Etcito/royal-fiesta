@@ -15,6 +15,8 @@ export const GraphMode = {
 /** The character state the mapping observes (one tick). */
 export interface CharObservation {
   mode: number
+  slideSpeed?: number
+  carryId?: number
   carry?: number
   strokeTimer?: number
   vel: { readonly x: number; readonly y: number; readonly z: number }

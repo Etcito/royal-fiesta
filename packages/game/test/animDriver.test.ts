@@ -68,7 +68,10 @@ test('observed ticks step independent real graphs once; pose reads and tick gaps
       const before = structuredClone([a, b])
       driver.observeTick(ticks[i], [a, b])
       const expected = graph.step(state, { ...mapParams(a, mem) }), pose = driver.pose(1)!
-      near(pose.skin, expected.skin)
+      if (a.mode === CharMode.grabbing) {
+        assert.notDeepEqual(pose.skin, expected.skin)
+        assert(pose.skin.every(Number.isFinite))
+      } else near(pose.skin, expected.skin)
       assert.deepEqual(pose.events, expected.events); assert.deepEqual(pose.rootDelta, expected.rootDelta)
       assert.equal(pose.model.length, 12 * 16); assert(pose.model.every(Number.isFinite))
       assert.deepEqual([a, b], before, 'view animation never writes simulation inputs')

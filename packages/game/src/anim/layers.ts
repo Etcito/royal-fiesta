@@ -1,6 +1,7 @@
 // Pose-layer registration (1.13). Layers are view-side pose corrections applied after the graph
 // step, one instance per character; they never read frame time.
 import type { CharObservation } from './params.ts'
+import { ACTION_LAYER } from './actionPoses.ts'
 import { WALK_LAYER } from './walkCycle.ts'
 
 export interface PoseLayer {
@@ -16,5 +17,4 @@ export interface PoseLayerInstance {
   reset(): void
 }
 
-// M4 appends ACTION_LAYER here.
-export const POSE_LAYERS: readonly PoseLayer[] = [WALK_LAYER]
+export const POSE_LAYERS: readonly PoseLayer[] = [WALK_LAYER, ACTION_LAYER]

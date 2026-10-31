@@ -1,5 +1,6 @@
 // Procedural walk cycle for the penguin rig (view-side only: sin/cos, no frame time). Every
 // stepWalk call is one sim tick; the pose is a pure function of that state.
+import { CharMode } from '@royal-fiesta/sim/character/constants'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { PoseLayer, PoseLayerInstance } from './layers.ts'
 import { GraphMode, graphMode, type CharObservation } from './params.ts'
@@ -177,6 +178,7 @@ class WalkLayer implements WalkLayerInstance {
     stepWalk(this.walk, obs.vel, obs.grounded)
     this.contact = walkPose(this.walk).footDown
     const locomotion = graphMode(obs.mode) === GraphMode.locomotion && obs.grounded
+      && obs.mode !== CharMode.swim && (obs.carry ?? 0) === 0
     this.ramp = Math.max(0, Math.min(WEIGHT_TICKS, this.ramp + (locomotion ? 1 : -1)))
   }
 

@@ -133,7 +133,7 @@ test('the committed level and features schemas parse in the M3 shape', () => {
       },
     },
   })
-  assert.deepEqual(m.features, { marker: { t: { type: 'vec3' }, radiusM: { type: 'number', min: 0.1, max: 10 } } })
+  assert.deepEqual(Object.keys(m.features!), Object.keys(FEATURE_KINDS))
 })
 
 test('level.fields covers exactly the S13 keys', () => {

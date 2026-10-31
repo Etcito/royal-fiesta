@@ -30,6 +30,14 @@ export interface FeatureSeats {
   teleport(i: number, at: SpawnPoint): void
   kill(i: number): void
   setCarry(i: number, kind: number, id: number): void
+  /** CarryKind of the seat. */
+  carry(i: number): number
+  /** Unit planar facing, with y = 0. */
+  facing(i: number, out: Vec3): Vec3
+  /** Set swim mode and apply immediate drag and buoyancy. */
+  setSwim(i: number, inside: boolean, drag: number, buoyancy: number): void
+  /** Set velocity and stun, as an obstacle bump. */
+  knock(i: number, v: Vec3): void
 }
 
 export interface FeatureCtx {
@@ -39,6 +47,8 @@ export interface FeatureCtx {
   readonly roundTick: number
   readonly entrants: number
   readonly overtime: boolean
+  /** Team behind on score; -1 when none or tied (until M6, always -1). */
+  readonly trailingTeam: number
   readonly course: ResolvedCourse
   readonly seats: FeatureSeats
   readonly rng: Rng

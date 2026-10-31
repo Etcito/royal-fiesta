@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Rng, SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { RapierModule, RapierWorldSim } from '@gamesaloon/rollback-rapier'
+import { initRapier } from '@gamesaloon/rollback-rapier'
+import { CarryKind } from '../src/character/constants.ts'
 import type { FeatureSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
 import type { PlayerInput } from '../src/input.ts'
 import { neutralInput } from '../src/input.ts'
@@ -9,6 +11,10 @@ import type { Vec3 } from '../src/vec.ts'
 import { createFeatures, FEATURE_KINDS } from '../src/features/catalog.ts'
 import type { FeatureCtx, FeatureDraw, FeatureSeats } from '../src/features/feature.ts'
 import type { FiestaEventKind } from '../src/zones/ledger.ts'
+import { PROFILES } from '../src/match/setup.ts'
+import { FiestaDomain } from '../src/zones/fiestaDomain.ts'
+import { createFiestaDomainFactory } from '../src/zones/fiestaDomainFactory.ts'
+import { parseZonesFile, ZONES_FORMAT, ZONES_VERSION } from '../src/zones/zonesFile.ts'
 
 const COURSE_PATH = 'courses/test.course.json'
 
@@ -73,6 +79,10 @@ class StubSeats implements FeatureSeats {
   teleport(_i: number, _at: SpawnPoint): void {}
   kill(_i: number): void {}
   setCarry(_i: number, _kind: number, _id: number): void {}
+  carry(_i: number): number { return 0 }
+  facing(_i: number, out: Vec3): Vec3 { out.x = 0; out.y = 0; out.z = 1; return out }
+  setSwim(_i: number, _inside: boolean, _drag: number, _buoyancy: number): void {}
+  knock(_i: number, _v: Vec3): void {}
 }
 
 interface StubCtx extends FeatureCtx {
@@ -90,6 +100,7 @@ function context(seats: FeatureSeats, tick: number, courseValue: ResolvedCourse)
     roundTick: tick,
     entrants: seats.count,
     overtime: false,
+    trailingTeam: -1,
     course: courseValue,
     seats,
     rng: new Rng(1),
@@ -105,6 +116,33 @@ function snapshotBytes(feature: { snapshot(w: SnapWriter): void }): Uint8Array {
   feature.snapshot(w)
   return w.bytes().slice()
 }
+
+test('a domain feature can set carry through its seats without refusal', async t => {
+  const R = await initRapier()
+  const c = course([marker('carry-stub')])
+  c.spawns.push({ t: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 } })
+  const zones = parseZonesFile({ format: ZONES_FORMAT, version: ZONES_VERSION, course: c.id,
+    grid: { origin: [-10, -10], cell: [20, 20], cols: 1, rows: 1 }, parts: {}, tuning: {},
+  }, 'inline.zones', c)
+  const factory = createFiestaDomainFactory(R, {
+    course: c, zones, profile: { ...PROFILES.sprint, introTicks: 0 }, kind: 'race', seatCount: 1,
+  })
+  const domain = factory.create({ id: 1, kind: 'seat', seats: [0], cells: [0], replicas: [0] }, 0)
+  assert.ok(domain instanceof FiestaDomain)
+  t.after(() => domain.inner.world.sim.free())
+  const stub = t.mock.method(domain.features[0], 'preStep', (ctx: FeatureCtx) => {
+    assert.equal(ctx.trailingTeam, -1)
+    assert.equal(ctx.seats.carry(0), CarryKind.none)
+    ctx.seats.setCarry(0, CarryKind.object, 7)
+    assert.equal(ctx.seats.carry(0), CarryKind.object)
+  })
+  domain.step([neutralInput()], {
+    count: 0, fromDomain() { throw new Error('no link') }, reader() { throw new Error('no link') },
+  })
+  assert.equal(stub.mock.callCount(), 1)
+  assert.equal(domain.state(0).carry, CarryKind.object)
+  assert.equal(domain.state(0).carryId, 7)
+})
 
 test('FEATURE_KINDS registers only the marker test kind in M3', () => {
   assert.deepEqual(Object.keys(FEATURE_KINDS), ['marker'])

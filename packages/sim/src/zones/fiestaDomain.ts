@@ -254,10 +254,19 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       },
       teleport(i: number, at: SpawnPoint) { domain.characters.place(domain.ctx, i, at) },
       kill(i: number) { domain.#killSeat(i) },
-      setCarry() {
-        refuse('fiestaDomain', 'features/seats/setCarry',
-          'M4 carry: seat carry arrives with the M4 carry module; features cannot carry yet')
+      setCarry(i: number, kind: number, id: number) { domain.characters.setCarry(i, kind, id) },
+      carry(i: number) { return domain.#charState(i).carry ?? 0 },
+      facing(i: number, out) {
+        const s = domain.#charState(i)
+        out.x = s.facing.x
+        out.y = 0
+        out.z = s.facing.z
+        return out
       },
+      setSwim(i: number, inside: boolean, drag: number, buoyancy: number) {
+        domain.characters.setSwim(domain.ctx, i, inside, drag, buoyancy)
+      },
+      knock(i: number, v) { domain.characters.knock(domain.ctx, i, v) },
     }
   }
 
@@ -273,6 +282,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
         const schedule = domain.#config.schedule
         return domain.#featureNow() > schedule.introTicks + schedule.roundTicks
       },
+      trailingTeam: -1,
       get course() { return domain.#config.course },
       get seats() { return domain.#featureSeats },
       get rng() { return rng },

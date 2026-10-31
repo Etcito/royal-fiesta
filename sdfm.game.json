@@ -92,6 +92,245 @@
       }
     }
   },
+  "level": {
+    "groupRoles": [
+      "floor",
+      "wall",
+      "hazard",
+      "mover",
+      "objective",
+      "respawn",
+      "route",
+      "decor"
+    ],
+    "fields": {
+      "season": {
+        "type": "string"
+      },
+      "map": {
+        "type": "string"
+      },
+      "kind": {
+        "type": "enum",
+        "enum": [
+          "race",
+          "survival",
+          "team",
+          "collection",
+          "hunt",
+          "logic",
+          "final"
+        ]
+      },
+      "finalRule": {
+        "type": "enum",
+        "enum": [
+          "crown",
+          "lastStanding"
+        ]
+      },
+      "stages": {
+        "type": "list",
+        "items": {
+          "type": "enum",
+          "enum": [
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "final"
+          ]
+        }
+      },
+      "capacity": {
+        "type": "integer",
+        "min": 1,
+        "max": 60
+      },
+      "usual": {
+        "type": "list",
+        "items": {
+          "type": "integer"
+        }
+      },
+      "quota": {
+        "type": "object",
+        "fields": {
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "timeCapS": {
+        "type": "number",
+        "min": 0
+      },
+      "overtimeS": {
+        "type": "number",
+        "min": 0
+      },
+      "respawn": {
+        "type": "object",
+        "fields": {
+          "mode": {
+            "type": "enum",
+            "enum": [
+              "checkpoint",
+              "home",
+              "none"
+            ]
+          },
+          "waitS": {
+            "type": "number"
+          },
+          "protectS": {
+            "type": "number"
+          },
+          "slots": {
+            "type": "integer",
+            "min": 1,
+            "max": 12
+          },
+          "spacingM": {
+            "type": "number"
+          }
+        }
+      },
+      "route": {
+        "type": "object",
+        "fields": {
+          "ordered": {
+            "type": "boolean"
+          },
+          "laps": {
+            "type": "integer",
+            "min": 1
+          },
+          "stages": {
+            "type": "list",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "teams": {
+        "type": "object",
+        "fields": {
+          "count": {
+            "type": "integer",
+            "min": 2,
+            "max": 2
+          },
+          "maxPerTeam": {
+            "type": "integer",
+            "min": 1,
+            "max": 30
+          }
+        }
+      },
+      "homes": {
+        "type": "list",
+        "items": {
+          "type": "object",
+          "fields": {
+            "team": {
+              "type": "integer",
+              "min": 0,
+              "max": 1
+            },
+            "center": {
+              "type": "vec3"
+            },
+            "half": {
+              "type": "vec3"
+            },
+            "respawn": {
+              "type": "list",
+              "items": {
+                "type": "object",
+                "fields": {
+                  "t": {
+                    "type": "vec3"
+                  },
+                  "yawDeg": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "groups": {
+        "type": "list",
+        "items": {
+          "type": "object",
+          "fields": {
+            "id": {
+              "type": "string"
+            },
+            "role": {
+              "type": "enum",
+              "enum": [
+                "floor",
+                "wall",
+                "hazard",
+                "mover",
+                "objective",
+                "respawn",
+                "route",
+                "decor"
+              ]
+            },
+            "friction": {
+              "type": "number",
+              "min": 0,
+              "max": 2
+            },
+            "surface": {
+              "type": "enum",
+              "enum": [
+                "normal",
+                "ice",
+                "mud",
+                "rubber"
+              ]
+            },
+            "members": {
+              "type": "list",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "grab": {
+        "type": "object",
+        "fields": {
+          "players": {
+            "type": "boolean"
+          },
+          "objects": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "features": {
+    "marker": {
+      "t": {
+        "type": "vec3"
+      },
+      "radiusM": {
+        "type": "number",
+        "min": 0.1,
+        "max": 10
+      }
+    }
+  },
   "play": {
     "dev": "http://localhost:5173/game.html?course={id}"
   }

@@ -10,6 +10,16 @@ import type { JointKind, LinkTarget } from '@royal-fiesta/sim/mechanismSpec'
 import type { World } from './gameAsset.ts'
 
 export type FieldType = 'number' | 'integer' | 'boolean' | 'string' | 'vec3' | 'quat' | { enum: readonly string[] } | { readonly [k: string]: FieldType }
+
+// S13/S19 M3 amendment: the level-panel schema shape.
+export type FieldSchemaType = 'number' | 'integer' | 'boolean' | 'string' | 'vec3' | 'enum' | 'list' | 'object'
+export type FieldSchema =
+  | { type: 'number' | 'integer'; min?: number; max?: number }
+  | { type: 'boolean' | 'string' | 'vec3' }
+  | { type: 'enum'; enum: string[] }
+  | { type: 'list'; items: FieldSchema }
+  | { type: 'object'; fields: Record<string, FieldSchema> }
+
 export interface GameManifest {
   format: 'sdfm.game'
   version: 1
@@ -23,6 +33,8 @@ export interface GameManifest {
   motions: Record<MotionKind, Record<string, FieldType>>
   play: { dev: string }
   mechanisms?: ManifestMechanisms
+  level?: { groupRoles: string[]; fields: Record<string, FieldSchema> }
+  features?: Record<string, Record<string, FieldSchema>>
 }
 
 // S14: the S12/S13 mechanism schemas declared to sdfm.
@@ -33,9 +45,10 @@ const LINK_TARGETS: readonly LinkTarget['kind'][] = ['motor', 'door', 'spring', 
 
 const TOP_KEYS = ['format', 'version', 'id', 'name', 'folders', 'worlds', 'courseFormat', 'courseVersion', 'markers', 'motions', 'play']
 const FOLDER_KEYS = ['assets', 'courses', 'ui']
-const OPTIONAL_TOP = ['mechanisms']
+const OPTIONAL_TOP = ['mechanisms', 'level', 'features']
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const SCALARS = ['number', 'integer', 'boolean', 'string', 'vec3', 'quat']
+const FIELD_SCHEMA_TYPES: readonly FieldSchemaType[] = ['number', 'integer', 'boolean', 'string', 'vec3', 'enum', 'list', 'object']
 const MARKERS = ['spawn', 'checkpoint', 'finish', 'killPlane', 'queuePad', 'podiumSpot']
 // JSON.parse keeps these as own keys; copying them onto a plain object would touch the prototype.
 const FORBIDDEN_KEYS = ['__proto__', 'constructor', 'prototype']
@@ -110,6 +123,87 @@ function schemaTable(v: unknown, path: string, ptr: string): Record<string, Reco
   return out
 }
 
+function number(v: unknown, path: string, ptr: string): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) fail(path, ptr, 'must be a finite number; provide a number')
+  return v
+}
+
+function strings(v: unknown, path: string, ptr: string): string[] {
+  if (!Array.isArray(v)) fail(path, ptr, 'must be an array; list the values')
+  return v.map((x, i) => {
+    text(x, path, `${ptr}/${i}`)
+    if (v.indexOf(x) !== i) fail(path, `${ptr}/${i}`, `duplicate value '${String(x)}'; list each value once`)
+    return x as string
+  })
+}
+
+function fieldSchema(v: unknown, path: string, ptr: string): FieldSchema {
+  const o = obj(v, path, ptr)
+  const type = o.type
+  if (typeof type !== 'string' || !(FIELD_SCHEMA_TYPES as readonly string[]).includes(type)) {
+    fail(path, `${ptr}/type`, `unknown field type '${String(type)}'; use one of ${FIELD_SCHEMA_TYPES.join(', ')}`)
+  }
+  switch (type) {
+    case 'enum': {
+      exactKeys(o, ['type', 'enum'], path, ptr)
+      const values = o.enum
+      if (!Array.isArray(values)) fail(path, `${ptr}/enum`, 'must be an array of values; list at least one value')
+      if (values.length === 0) fail(path, `${ptr}/enum`, 'enum is empty; list at least one value')
+      values.forEach((e, i) => {
+        text(e, path, `${ptr}/enum/${i}`)
+        if (values.indexOf(e) !== i) fail(path, `${ptr}/enum/${i}`, `duplicate enum value '${e}'; list each value once`)
+      })
+      return { type: 'enum', enum: [...values] as string[] }
+    }
+    case 'list':
+      exactKeys(o, ['type', 'items'], path, ptr)
+      return { type: 'list', items: fieldSchema(o.items, path, `${ptr}/items`) }
+    case 'object': {
+      exactKeys(o, ['type', 'fields'], path, ptr)
+      const schema = obj(o.fields, path, `${ptr}/fields`)
+      const fields: Record<string, FieldSchema> = {}
+      for (const [k, s] of Object.entries(schema)) fields[k] = fieldSchema(s, path, `${ptr}/fields/${escapePointer(k)}`)
+      return { type: 'object', fields }
+    }
+    case 'number':
+    case 'integer': {
+      exactKeys(o, ['type'], path, ptr, ['min', 'max'])
+      const out: { type: 'number' | 'integer'; min?: number; max?: number } = { type }
+      if (Object.hasOwn(o, 'min')) out.min = number(o.min, path, `${ptr}/min`)
+      if (Object.hasOwn(o, 'max')) out.max = number(o.max, path, `${ptr}/max`)
+      if (out.min !== undefined && out.max !== undefined && out.min > out.max) {
+        fail(path, `${ptr}/min`, `min ${out.min} is greater than max ${out.max}; swap them or widen the range`)
+      }
+      return out
+    }
+    default:
+      exactKeys(o, ['type'], path, ptr)
+      return { type: type as 'boolean' | 'string' | 'vec3' }
+  }
+}
+
+function levelSchema(v: unknown, path: string): { groupRoles: string[]; fields: Record<string, FieldSchema> } {
+  const o = obj(v, path, '/level')
+  exactKeys(o, ['groupRoles', 'fields'], path, '/level')
+  const schema = obj(o.fields, path, '/level/fields')
+  const fields: Record<string, FieldSchema> = {}
+  for (const [k, s] of Object.entries(schema)) fields[k] = fieldSchema(s, path, `/level/fields/${escapePointer(k)}`)
+  return { groupRoles: strings(o.groupRoles, path, '/level/groupRoles'), fields }
+}
+
+function featureSchemas(v: unknown, path: string): Record<string, Record<string, FieldSchema>> {
+  const o = obj(v, path, '/features')
+  const out: Record<string, Record<string, FieldSchema>> = {}
+  for (const [kind, params] of Object.entries(o)) {
+    const ptr = `/features/${escapePointer(kind)}`
+    const schema = obj(params, path, ptr)
+    const fields: Record<string, FieldSchema> = {}
+    for (const [k, s] of Object.entries(schema)) fields[k] = fieldSchema(s, path, `${ptr}/${escapePointer(k)}`)
+    out[kind] = fields
+  }
+  return out
+}
+
 export function parseGameManifest(json: unknown, path: string): GameManifest {
   const m = obj(json, path, '')
   exactKeys(m, TOP_KEYS, path, '', OPTIONAL_TOP)
@@ -145,6 +239,8 @@ export function parseGameManifest(json: unknown, path: string): GameManifest {
     motions: schemaTable(m.motions, path, '/motions') as Record<MotionKind, Record<string, FieldType>>,
     play: { dev },
     ...(Object.hasOwn(m, 'mechanisms') ? { mechanisms: mechanismsOf(m.mechanisms, path) } : {}),
+    ...(Object.hasOwn(m, 'level') ? { level: levelSchema(m.level, path) } : {}),
+    ...(Object.hasOwn(m, 'features') ? { features: featureSchemas(m.features, path) } : {}),
   }
 }
 

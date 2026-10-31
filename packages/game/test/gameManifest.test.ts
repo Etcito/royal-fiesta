@@ -2,7 +2,15 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
+import { FEATURE_KINDS } from '@royal-fiesta/sim/features/catalog'
+import { ROUND_KINDS, STAGE_IDS } from '@royal-fiesta/sim/season/kinds'
 import { manifestCoverage, parseGameManifest } from '../src/gameManifest.ts'
+
+const S13_KEYS = [
+  'season', 'map', 'kind', 'finalRule', 'stages', 'capacity', 'usual', 'quota',
+  'timeCapS', 'overtimeS', 'respawn', 'route', 'teams', 'homes', 'groups', 'grab',
+]
+const GROUP_ROLES = ['floor', 'wall', 'hazard', 'mover', 'objective', 'respawn', 'route', 'decor']
 
 const PATH = 'sdfm.game.json'
 const read = (): Record<string, any> => JSON.parse(readFileSync(new URL('../../../sdfm.game.json', import.meta.url), 'utf8'))
@@ -99,4 +107,57 @@ test('an unknown mechanism preset refuses at its pointer', () => {
   const json = read()
   json.mechanisms = { version: 1, jointKinds: [], linkTargets: [], presets: ['seesaw', 'trampoline'] }
   refusesAt(json, `[manifest] ${PATH}#/mechanisms/presets/1`)
+})
+
+test('the committed level and features schemas parse in the M3 shape', () => {
+  const m = parseGameManifest(read(), PATH)
+  assert.ok(m.level)
+  assert.deepEqual(m.level.groupRoles, GROUP_ROLES)
+  assert.deepEqual(m.level.fields.kind, { type: 'enum', enum: [...ROUND_KINDS] })
+  assert.deepEqual(m.level.fields.finalRule, { type: 'enum', enum: ['crown', 'lastStanding'] })
+  assert.deepEqual(m.level.fields.stages, { type: 'list', items: { type: 'enum', enum: [...STAGE_IDS] } })
+  assert.deepEqual(m.level.fields.capacity, { type: 'integer', min: 1, max: 60 })
+  assert.deepEqual(m.level.fields.timeCapS, { type: 'number', min: 0 })
+  assert.deepEqual(m.level.fields.homes, {
+    type: 'list',
+    items: {
+      type: 'object',
+      fields: {
+        team: { type: 'integer', min: 0, max: 1 },
+        center: { type: 'vec3' },
+        half: { type: 'vec3' },
+        respawn: {
+          type: 'list',
+          items: { type: 'object', fields: { t: { type: 'vec3' }, yawDeg: { type: 'number' } } },
+        },
+      },
+    },
+  })
+  assert.deepEqual(m.features, { marker: { t: { type: 'vec3' }, radiusM: { type: 'number', min: 0.1, max: 10 } } })
+})
+
+test('level.fields covers exactly the S13 keys', () => {
+  const m = parseGameManifest(read(), PATH)
+  assert.deepEqual(Object.keys(m.level!.fields).sort(), [...S13_KEYS].sort())
+})
+
+test('features keys equal Object.keys(FEATURE_KINDS)', () => {
+  const m = parseGameManifest(read(), PATH)
+  assert.deepEqual(Object.keys(m.features!).sort(), Object.keys(FEATURE_KINDS).sort())
+})
+
+test('level and feature schemas refuse an enum without values, a list without items and min > max', () => {
+  const cases: [(j: Record<string, any>) => void, string][] = [
+    [j => { j.level.fields.kind = { type: 'enum' } }, '#/level/fields/kind/enum'],
+    [j => { j.level.fields.kind = { type: 'enum', enum: [] } }, '#/level/fields/kind/enum'],
+    [j => { j.level.fields.stages = { type: 'list' } }, '#/level/fields/stages/items'],
+    [j => { j.level.fields.capacity = { type: 'integer', min: 61, max: 60 } }, '#/level/fields/capacity/min'],
+    [j => { j.features.marker.radiusM = { type: 'number', min: 10, max: 0.1 } }, '#/features/marker/radiusM/min'],
+    [j => { j.level.fields.grab = { type: 'object', fields: { players: { type: 'list' } } } }, '#/level/fields/grab/fields/players/items'],
+  ]
+  for (const [edit, ptr] of cases) {
+    const json = read()
+    edit(json)
+    refusesAt(json, `[manifest] ${PATH}${ptr}`)
+  }
 })

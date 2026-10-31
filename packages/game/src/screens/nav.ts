@@ -5,7 +5,7 @@ import type { LoadProgress } from '../content.ts'
 export const SCREENS = Object.freeze([
   'title', 'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium',
   'pause', 'settings', 'credits', 'error', 'loading', 'lobbyChoice', 'lobbyLive',
-  'start', 'vote', 'elimShow', 'endScreen',
+  'start', 'vote', 'elimShow', 'endScreen', 'shop', 'inbox', 'commission',
 ] as const)
 export type Screen = typeof SCREENS[number]
 
@@ -23,13 +23,17 @@ export type GameScreen = typeof GAME_SCREENS[number]
 
 export const ACTIONS = Object.freeze([
   'play', 'playOnline', 'settings', 'credits', 'queue', 'toHub', 'resume', 'leave', 'retry',
-  'join', 'spectate', 'newLobby', 'shop', 'up', 'down', 'left', 'right', 'confirm',
+  'join', 'spectate', 'newLobby', 'shop', 'inbox', 'commission', 'up', 'down', 'left', 'right', 'confirm',
 ] as const)
 export type Action = typeof ACTIONS[number]
 
 // Screens whose keys and pad events go to the screen model (the show flow) instead of uaa focus.
 export const FLOW_SCREENS = Object.freeze(['start', 'vote', 'elimShow'] as const satisfies readonly Screen[])
 export type FlowScreen = typeof FLOW_SCREENS[number]
+
+// Economy screens: their keys and pad events go to their screen model instead of uaa focus.
+export const ECONOMY_SCREENS = Object.freeze(['shop', 'inbox', 'commission'] as const satisfies readonly Screen[])
+export type EconomyScreen = typeof ECONOMY_SCREENS[number]
 
 // The flow action of a UI input event: focus -> up/down, adjust -> left/right, select -> confirm.
 // Keyboard arrows/Enter and the pad d-pad/stick/A produce these UiEvents in apps/web/src/input/input.ts.
@@ -66,8 +70,12 @@ export const Effect = Object.freeze({
   pickDefault: 'pickDefault',
   // Run GameContent.load and report it with progress, then loaded or error.
   load: 'load',
-  // Open the shop from the start screen: a no-op in the app until M9 wires the shop.
+  // Open the shop from the start screen (and from the hub in a later card): the economy screens read
+  // their catalogue through the screen model.
   openShop: 'openShop',
+  // Open the inbox (from start, the shop or the badge) and the commission form (from the shop).
+  openInbox: 'openInbox',
+  openCommission: 'openCommission',
 } as const)
 export type Effect = typeof Effect[keyof typeof Effect]
 
@@ -95,7 +103,10 @@ const BUTTONS: Readonly<Partial<Record<Screen, readonly Action[]>>> = Object.fre
   // A player arriving while a lobby waits (lobbyChoice) or plays its round (lobbyLive).
   lobbyChoice: ['join', 'spectate', 'newLobby'],
   lobbyLive: ['spectate', 'newLobby'],
-  start: ['play', 'shop'],
+  start: ['play', 'shop', 'inbox'],
+  shop: ['inbox', 'commission'],
+  inbox: [],
+  commission: [],
   vote: [],
   elimShow: [],
   endScreen: ['confirm'],
@@ -116,6 +127,8 @@ export class Nav {
   // The game screen pause returns to.
   resumeTo: GameScreen = 'hub'
   settingsFrom: 'title' | 'pause' = 'title'
+  // The screen the inbox returns to (the inbox is reached from start, the shop or the badge).
+  inboxFrom: 'start' | 'shop' = 'start'
   // A hub or match session is running.
   live = false
   inMatch = false
@@ -133,6 +146,7 @@ export class Nav {
     n.screen = this.screen
     n.resumeTo = this.resumeTo
     n.settingsFrom = this.settingsFrom
+    n.inboxFrom = this.inboxFrom
     n.live = this.live
     n.inMatch = this.inMatch
     n.error = this.error
@@ -145,7 +159,7 @@ export class Nav {
 
   // A stable identity of the whole state, for exploration and tests.
   key(): string {
-    return JSON.stringify([this.screen, this.resumeTo, this.settingsFrom, this.live,
+    return JSON.stringify([this.screen, this.resumeTo, this.settingsFrom, this.inboxFrom, this.live,
       this.inMatch, this.error, this.lastStart, this.progress, this.loadNext, this.onlineOnly])
   }
 
@@ -222,6 +236,15 @@ export class Nav {
       case 'start':
         this.screen = 'title'
         return []
+      case 'shop':
+        this.screen = 'start'
+        return []
+      case 'inbox':
+        this.screen = this.inboxFrom
+        return []
+      case 'commission':
+        this.screen = 'shop'
+        return []
       case 'endScreen':
         return this.leaveEndScreen()
       case 'pause':
@@ -249,7 +272,18 @@ export class Nav {
         }
         return this.start(this.onlineOnly ? Effect.startOnline : Effect.startHub)
       case 'shop':
+        if (this.screen !== 'start') return []
+        this.screen = 'shop'
         return [Effect.openShop]
+      case 'inbox':
+        if (this.screen !== 'start' && this.screen !== 'shop') return []
+        this.inboxFrom = this.screen
+        this.screen = 'inbox'
+        return [Effect.openInbox]
+      case 'commission':
+        if (this.screen !== 'shop') return []
+        this.screen = 'commission'
+        return [Effect.openCommission]
       case 'confirm':
         return this.screen === 'endScreen' ? this.leaveEndScreen() : []
       case 'playOnline':

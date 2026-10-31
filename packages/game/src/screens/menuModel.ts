@@ -70,6 +70,8 @@ const LABELS: Readonly<Record<Action, string>> = Object.freeze({
   spectate: 'Spectate',
   newLobby: 'New lobby',
   shop: 'Shop',
+  inbox: 'Inbox',
+  commission: 'Commission',
   up: 'Up',
   down: 'Down',
   left: 'Left',
@@ -97,6 +99,9 @@ const TITLES: Readonly<Record<Screen, string>> = Object.freeze({
   vote: 'Vote for the next round',
   elimShow: 'Eliminated',
   endScreen: 'Champion',
+  shop: 'Shop',
+  inbox: 'Inbox',
+  commission: 'Commission',
 })
 
 // vote and elimShow are HUD-like (no back button; back pauses the match).
@@ -171,6 +176,9 @@ export function menuModel(screen: Screen, actions: readonly Action[], ctx: MenuC
     case 'lobbyLive':
     case 'result':
     case 'podium':
+    case 'shop':
+    case 'inbox':
+    case 'commission':
       lines.push(...ctx.info)
       break
   }

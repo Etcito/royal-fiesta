@@ -3,7 +3,10 @@ The playable game is `apps/web/game.html`. Navigation is the state machine in `p
 | id | Screen | Reached by (UI) | Leave with | What it does |
 |---|---|---|---|---|
 | `title` | Title / main menu | A finished load; Escape from credits, settings, or error | Play (goes to the start screen), Play online, Settings, Credits (a build with a baked relay, VITE_RF_SERVER, has no separate Play online) | Play goes to the start screen; Play online, Settings and Credits open their screens. |
-| `start` | Start menu | Play on title | Play to the lobby (or online in a baked-relay build), Shop (M9), Escape back to title | The pre-game menu: the own penguin with its worn cosmetics, 3 bins of OWNED items only, the palette, the inbox badge and the candy background. |
+| `start` | Start menu | Play on title | Play to the lobby (or online in a baked-relay build), Shop or Inbox, Escape back to title | The pre-game menu: the own penguin with its worn cosmetics, 3 bins of OWNED items only, the palette, the inbox badge and the candy background. |
+| `shop` | Shop | Shop on start | Escape back to start | The catalogue in slots, with each item's price and owned state; Inbox and Commission open their screens. |
+| `inbox` | Inbox | Inbox on start, the inbox badge, or Inbox on the shop | Escape back to where the inbox was opened (start or the shop) | The player's inbox entries, with claimable items. |
+| `commission` | Commission | Commission on the shop | Escape back to the shop | The commission form: slot, rarity, description and its ticket cost. |
 | `hub` | Lobby hub | Play on start | Nothing to press: the round starts by itself. WASD to walk, 1–4 to emote; Escape opens pause | A walkable 3D plaza. Offline: the lobby starts the zone show (vote → load → countdown → round → …); `?course=` keeps the single V1 match; a `?wait=` countdown (default 60 s) starts it, and Enter or the green pad start it early. Online: the hub enters a GameSaloon lobby by itself and shows its countdown and players (or the round being spectated) in the overlay; the server starts the round when its wait ends, with whoever is there plus bots. |
 | `queue` | Matchmaking queue | Queue from the hub (in-page piloted clients and the exact-size queue only) | Escape cancels back to the hub | Shows players found n/8. |
 | `lobbyChoice` | A lobby is open | Online, arriving while a lobby waits for players | No longer shown (the player is put in a lobby at once); kept in the navigation model for older servers. Was: Join this lobby, Spectate, New lobby | Shows the lobby's players, its countdown and the time left before the default. |
@@ -31,6 +34,10 @@ The offline show runs in this order:
 The vote picks the next level; that level loads while the vote is up, and the match is held (frozen) until the world is ready and 3-2-1-GO runs. Results, `elimShow`, the podium and the end screen hold it too.
 
 Keyboard and gamepad: arrows / d-pad / stick move, Enter / A confirm, Esc / Start pause.
+
+## Economy screens
+
+The shop, inbox and commission screens are driven by their screen model: keyboard arrows and Enter, or the pad d-pad and A. The inbox is also reached from the shop by keyboard and pad.
 
 ## Loading
 

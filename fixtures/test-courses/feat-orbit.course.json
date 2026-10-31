@@ -1,0 +1,137 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "candy",
+  "id": "feat-orbit",
+  "name": "Fixture Orbit",
+  "kind": "survival",
+  "profiles": ["standard", "sprint"],
+  "timeLimitS": 60,
+  "killPlaneY": -8,
+  "spawns": [
+    { "t": [0, 1, 11.6], "yawDeg": 180 },
+    { "t": [8.202, 1, 8.202], "yawDeg": -135 },
+    { "t": [11.6, 1, 0], "yawDeg": -90 },
+    { "t": [8.202, 1, -8.202], "yawDeg": -45 },
+    { "t": [0, 1, -11.6], "yawDeg": 0 },
+    { "t": [-8.202, 1, -8.202], "yawDeg": 45 },
+    { "t": [-11.6, 1, 0], "yawDeg": 90 },
+    { "t": [-8.202, 1, 8.202], "yawDeg": 135 }
+  ],
+  "checkpoints": [],
+  "finish": null,
+  "path": [
+    { "p": [0, 0.2, 11.6], "jump": false, "dive": false },
+    { "p": [8.202, 0.2, 8.202], "jump": false, "dive": false },
+    { "p": [11.6, 0.2, 0], "jump": false, "dive": false },
+    { "p": [8.202, 0.2, -8.202], "jump": false, "dive": false },
+    { "p": [0, 0.2, -11.6], "jump": false, "dive": false },
+    { "p": [-8.202, 0.2, -8.202], "jump": false, "dive": false },
+    { "p": [-11.6, 0.2, 0], "jump": false, "dive": false },
+    { "p": [-8.202, 0.2, 8.202], "jump": false, "dive": false },
+    { "p": [0, 0.2, 6.5], "jump": false, "dive": false },
+    { "p": [4.596, 0.2, 4.596], "jump": false, "dive": false },
+    { "p": [6.5, 0.2, 0], "jump": false, "dive": false },
+    { "p": [4.596, 0.2, -4.596], "jump": false, "dive": false },
+    { "p": [0, 0.2, -6.5], "jump": false, "dive": false },
+    { "p": [-4.596, 0.2, -4.596], "jump": false, "dive": false },
+    { "p": [-6.5, 0.2, 0], "jump": false, "dive": false },
+    { "p": [-4.596, 0.2, 4.596], "jump": false, "dive": false }
+  ],
+  "regions": [
+    { "id": 0, "center": [0, 2, 0], "half": [16, 12, 16], "adjacent": [] }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "disc",
+      "asset": "candy.floor-disc",
+      "t": [0, -0.1333, 0],
+      "r": [0, 0, 0, 1],
+      "s": [0.6667, 0.6667, 0.6667],
+      "friction": 0.6,
+      "motion": { "kind": "static" },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": null,
+  "level": {
+    "season": null,
+    "map": null,
+    "kind": "survival",
+    "finalRule": null,
+    "stages": ["R1"],
+    "capacity": 60,
+    "usual": [60],
+    "quota": null,
+    "timeCapS": 60,
+    "overtimeS": 30,
+    "respawn": { "mode": "none", "waitS": 0, "protectS": 0, "slots": 12, "spacingM": 1.2 },
+    "route": { "ordered": true, "laps": 1, "stages": [] },
+    "teams": null,
+    "homes": [],
+    "groups": [
+      {
+        "id": "center-disc",
+        "role": "floor",
+        "friction": 0.6,
+        "surface": "normal",
+        "members": ["disc"]
+      },
+      {
+        "id": "orbit-rings",
+        "role": "floor",
+        "friction": null,
+        "surface": null,
+        "members": ["ring-in", "ring-out"]
+      },
+      {
+        "id": "orbit-bars",
+        "role": "hazard",
+        "friction": null,
+        "surface": null,
+        "members": ["bars"]
+      }
+    ],
+    "grab": { "players": false, "objects": true }
+  },
+  "features": [
+    {
+      "id": "ring-in",
+      "kind": "annulus",
+      "center": [0, 0, 0],
+      "innerM": 4,
+      "outerM": 9,
+      "thickM": 0.4,
+      "speedDegS": 30,
+      "segments": 16
+    },
+    {
+      "id": "ring-out",
+      "kind": "annulus",
+      "center": [0, 0, 0],
+      "innerM": 9.2,
+      "outerM": 14,
+      "thickM": 0.4,
+      "speedDegS": -20,
+      "segments": 24
+    },
+    {
+      "id": "bars",
+      "kind": "sweep",
+      "pattern": "bars",
+      "center": [0, 0, 0],
+      "lengthM": 14,
+      "heightM": 0.6,
+      "gapM": 1.8,
+      "speedDegS": 60,
+      "telegraphS": 1,
+      "phases": [
+        { "atS": 0 },
+        { "atS": 20, "speedDegS": 90 }
+      ]
+    }
+  ]
+}

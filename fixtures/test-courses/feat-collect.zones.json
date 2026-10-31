@@ -1,0 +1,21 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "feat-collect",
+  "grid": {
+    "origin": [
+      -20,
+      -15
+    ],
+    "cell": [
+      40,
+      30
+    ],
+    "cols": 1,
+    "rows": 1
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 1
+  }
+}

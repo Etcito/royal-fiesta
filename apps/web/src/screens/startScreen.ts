@@ -60,6 +60,7 @@ function present(host: UaaHost, model: StartScreenModel): void {
     buttons: [
       { label: focused('Play', model.focus === 'play'), cmd: { k: 'action', action: 'play' } },
       { label: focused('Shop', model.focus === 'shop'), cmd: { k: 'action', action: 'shop' } },
+      { label: 'Inbox', cmd: { k: 'action', action: 'inbox' } },
       { label: 'Back', cmd: { k: 'back' } },
     ],
   }

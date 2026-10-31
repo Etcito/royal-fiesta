@@ -6,6 +6,7 @@
     "roundCapture",
     "frameTiming",
     "uiTour",
+    "flowTour",
     "zoneCapture",
     "zoneLobbyCapture",
     "zoneLobbyPair",

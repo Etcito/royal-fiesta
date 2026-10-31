@@ -1,8 +1,9 @@
 // GPU op uiTour (game.html): boots the real game App, as the page does, and walks the 'Reached by' column
-// of docs/screens.md with real input only: KeyboardEvents on window and pointer/mouse clicks on canvas#ui at
-// the centre of host.widgetRect(id). It never calls nav or App methods; it only steps the App's frames (the
-// GPU client's requestAnimationFrame is unreliable) and waits for the host's screen callback. Each screen is
-// captured after two settled frames, as the RAA views and canvas#ui composited in the task that drew them.
+// of docs/screens.md with real input only: KeyboardEvents on window, synthetic standard-pad button frames and
+// pointer/mouse clicks on canvas#ui at the centre of host.widgetRect(id). It never calls nav or App methods; it
+// only steps the App's frames (the GPU client's requestAnimationFrame is unreliable) and waits for the host's
+// screen callback. Each screen is captured after two settled frames, as the RAA views and canvas#ui composited
+// in the task that drew them.
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { AdapterInfo } from '../nmc/ops.ts'
 import { raaStatus } from '../render/raaStatus.ts'
@@ -34,21 +35,28 @@ export interface UiTourOutput {
 }
 interface OpFile { name: string; blob: Blob }
 
-type Act = { key: TourKey } | { click: string } | { dom: string }
+type Act = { key: TourKey } | { click: string } | { dom: string } | { waitMs: number } | { pad: number } | { padVote: number }
 // A leg gives its inputs on the settled previous screen and waits for `until`, or the host to enter `to`.
-interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; until?: 'remap-open' | 'remap-closed'; name?: string }
+// current: the host is already on `to`; give the leg's inputs there, settle and capture in place (the first
+// vote, whose model mounts after ShowMode has built its matches, so the tour waits before voting).
+interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; until?: 'remap-open' | 'remap-closed'; name?: string; current?: boolean }
 
 // docs/screens.md 'Reached by': the boot load is refused (bootGame), so Retry on the error screen enters
-// 'loading' with a real click; that load lands on title; menus by their buttons; Escape goes back; Play goes to
-// the hub, Escape pauses it. The offline hub has no queue screen: it counts down by itself ('Round starts in N s',
-// ?wait= seconds, 60 by default) and Enter starts the round at once, so the tour presses Enter and the match
-// follows with its countdown. The offline sprint match then runs by itself to its podium (round 0 is a race the
-// idle player cannot qualify in, so round 1 is spectated). Screens the offline App never shows (the online
-// queue, lobbyChoice, lobbyLive) are not in this tour.
+// 'loading' with a real click; that load lands on the offline page's start screen (the app opens the wardrobe
+// itself), so the tour goes back to title, walks the menus by their buttons (Escape goes back), and Play on
+// title opens the start screen again. There four ArrowDowns reach its Play (3 bins, the palette, then Play) and
+// Enter runs the hub, where Escape pauses it. Enter in the hub starts the offline show on its vote; the tour
+// votes with a real ArrowRight and Enter, then follows the show: the world loads before the countdown, round 0
+// is a race the idle player cannot qualify in, so it is spectated from round 1 on. The next vote is played with
+// the pad (d-pad right, then A); the remaining votes expire to their first candidate and the show ends on its
+// podium and end screen, whose Continue returns to the start menu. The offline queue, lobbyChoice, lobbyLive
+// are not in this tour.
 const TOUR: readonly Leg[] = [
   { acts: [], to: 'error', capture: false, timeoutS: 20 },
   { acts: [{ click: 'act-retry' }], to: 'loading', capture: true, timeoutS: 10 },
-  { acts: [], to: 'title', capture: false, timeoutS: 120 },
+  // The successful load opens the offline page's wardrobe start by itself; Escape goes back to the title.
+  { acts: [], to: 'start', capture: false, timeoutS: 120 },
+  { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
   { acts: [{ click: 'act-settings' }], to: 'settings', capture: true, timeoutS: 10 },
   // Captured idle, as opened: Enter there would start listening and hide the focused row's button.
   { acts: [{ dom: '#open-remap' }], to: 'settings', until: 'remap-open', name: 'settings-controls', capture: true, timeoutS: 10 },
@@ -58,24 +66,41 @@ const TOUR: readonly Leg[] = [
   { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
   { acts: [{ click: 'act-play-online' }], to: 'error', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
-  { acts: [{ click: 'act-play' }], to: 'hub', capture: true, timeoutS: 30 },
+  // Title Play opens the start screen; four ArrowDowns move bins -> palette -> Play, Enter runs the hub.
+  { acts: [{ click: 'act-play' }], to: 'start', capture: true, timeoutS: 30 },
+  { acts: [{ key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'Enter' }], to: 'hub', capture: true, timeoutS: 30 },
   { acts: [{ key: 'Escape' }], to: 'pause', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'hub', capture: false, timeoutS: 10 },
-  { acts: [{ key: 'Enter' }], to: 'countdown', capture: true, timeoutS: 30 },
-  { acts: [], to: 'round', capture: true, timeoutS: 15 },
-  { acts: [], to: 'result', capture: true, timeoutS: 60 },
-  { acts: [], to: 'spectate', capture: true, timeoutS: 60 },
-  { acts: [], to: 'podium', capture: true, timeoutS: 120 },
+  // Enter queues: the offline lobby's show starts on its vote, which ShowMode fills in a moment later.
+  { acts: [{ key: 'Enter' }], to: 'vote', capture: false, timeoutS: 30 },
+  { acts: [{ waitMs: 1200 }, { key: 'ArrowRight' }, { key: 'Enter' }], to: 'vote', current: true, capture: true, timeoutS: 10 },
+  { acts: [], to: 'countdown', capture: true, timeoutS: 120 },
+  { acts: [], to: 'round', capture: true, timeoutS: 120 },
+  { acts: [], to: 'result', capture: true, timeoutS: 180 },
+  { acts: [], to: 'elimShow', capture: true, timeoutS: 60 },
+  // The next vote is voted with the real pad path (d-pad right, then A); the idle player is out after
+  // round 0, so the following round is spectated.
+  { acts: [], to: 'vote', capture: false, timeoutS: 120 },
+  { acts: [{ padVote: 20000 }], to: 'spectate', capture: true, timeoutS: 180 },
+  // The remaining votes expire to their first candidate; the show ends on its podium and end screen.
+  { acts: [], to: 'podium', capture: true, timeoutS: 300 },
+  { acts: [], to: 'endScreen', capture: true, timeoutS: 60 },
+  // Continue waits for the winner reveal, then leaves the finished show for the start menu.
+  { acts: [{ waitMs: 4500 }, { key: 'Enter' }], to: 'start', capture: false, timeoutS: 60 },
 ]
 
 export const TOUR_SCREENS: readonly string[] = TOUR.filter(leg => leg.capture).map(leg => leg.name ?? leg.to)
 
+// The M7 flow captures the GPU card renders: every new show screen, all of them tour captures.
+export const FLOW_TOUR_SCREENS: readonly string[] = ['start', 'vote', 'countdown', 'round', 'result', 'elimShow', 'endScreen']
+
 const FRAME_MS = 16
-// Game time per frame: real time on short screens, 3 ticks while a round plays (up to its 20 s sprint cap).
-// Each is short enough that a screen of the match outlasts the 150 ms exit anim of the one before it.
+// Game time per frame: real time on short screens, 3 ticks while game time must run (a round plays, a vote or
+// the elimination show counts down, the podium hands over). Each is short enough that a screen of the show
+// outlasts the 150 ms exit anim of the one before it.
 const DT = 1 / 60
 const FAST_DT = 3 / 60
-const FAST: readonly string[] = ['round', 'spectate']
+const FAST: readonly string[] = ['round', 'spectate', 'vote', 'elimShow', 'podium']
 const SETTLED_FRAMES = 2
 
 // The longest enter anim of each screen (screen.enter and every widget's anim.enter), in ms.
@@ -200,7 +225,14 @@ async function capturePng(g: TourGame): Promise<{ blob: Blob | null; width: numb
 
 function describe(acts: readonly Act[]): string {
   if (acts.length === 0) return 'no input'
-  return acts.map(a => ('key' in a ? `key ${a.key}` : `a click on ${'dom' in a ? a.dom : a.click}`)).join(', ')
+  return acts.map(a => {
+    if ('key' in a) return `key ${a.key}`
+    if ('click' in a) return `a click on ${a.click}`
+    if ('dom' in a) return `a click on ${a.dom}`
+    if ('pad' in a) return `a pad button ${a.pad} frame`
+    if ('padVote' in a) return 'a pad vote (d-pad right, then A)'
+    return `a ${a.waitMs} ms wait`
+  }).join(', ')
 }
 
 class Tour {
@@ -215,6 +247,12 @@ class Tour {
   // The inputs that reached the previous capture. A screen the game moves to by itself (the match screens
   // after the Enter that started the round) was reached by them, so its capture records them again.
   private reachedBy: TourInput[] = []
+  // The synthetic standard pad the page polls; the flow's next vote is given through it.
+  private readonly pad: Gamepad
+
+  constructor(pad: Gamepad) {
+    this.pad = pad
+  }
 
   onScreen(e: UaaScreenChange): void {
     const now = performance.now()
@@ -225,7 +263,13 @@ class Tour {
   // Inputs on the settled screen, then frames until the host enters leg.to, then its settled frames.
   async leg(g: TourGame, leg: Leg): Promise<void> {
     const seen = this.transitions.length
-    for (const act of leg.acts) this.inputs.push('key' in act ? press(g, act.key) : 'dom' in act ? domClick(g, act.dom) : click(g, act.click))
+    for (const act of leg.acts) await this.act(g, act)
+    // A current leg gives its inputs on the screen it names, which is already up (the first vote: its model
+    // mounts after ShowMode has built its matches).
+    if (leg.current === true) {
+      await this.finish(g, leg, performance.now())
+      return
+    }
     const deadline = performance.now() + leg.timeoutS * 1000
     let entered = -1
     while (entered < 0) {
@@ -240,7 +284,11 @@ class Tour {
       const index = this.transitions.findIndex((t, i) => i >= seen && t.to === leg.to)
       if (index >= 0) entered = this.at[index]
     }
-    // Game time stands still while the enter anims (uaa time is performance.now) play out.
+    await this.finish(g, leg, entered)
+  }
+
+  // Game time stands still while the enter anims (uaa time is performance.now) play out.
+  private async finish(g: TourGame, leg: Leg, entered: number): Promise<void> {
     const settleMs = SETTLE_MS.get(leg.to) ?? 0
     let settled = 0
     for (;;) {
@@ -264,6 +312,51 @@ class Tour {
     this.captures.push({ screen, file, inputs, width: shot.width, height: shot.height, sha256: await sha256Hex(bytes), bytes: bytes.length })
     this.reachedBy = inputs
     this.inputs = []
+  }
+
+  private async act(g: TourGame, act: Act): Promise<void> {
+    if ('waitMs' in act) return this.wait(g, act.waitMs)
+    if ('padVote' in act) return this.padVote(g, act.padVote)
+    if ('pad' in act) return this.padFrame(g, act.pad)
+    this.inputs.push('key' in act ? press(g, act.key) : 'dom' in act ? domClick(g, act.dom) : click(g, act.click))
+  }
+
+  // Advance this much game time in real-time steps: the wait reaches a screen's own timer (the vote, the end
+  // reveal) without fast-forwarding it.
+  private async wait(g: TourGame, ms: number): Promise<void> {
+    let left = ms
+    while (left > 0) {
+      await sleep(FRAME_MS)
+      this.step(g, DT)
+      left -= DT * 1000
+    }
+  }
+
+  // One pad button pressed for exactly one frame, then released for one frame: the page polls pads per frame.
+  private padFrame(g: TourGame, button: number): void {
+    const b = this.pad.buttons[button] as { pressed: boolean; touched: boolean; value: number }
+    b.pressed = true
+    b.touched = true
+    b.value = 1
+    this.step(g, DT)
+    b.pressed = false
+    b.touched = false
+    b.value = 0
+    this.step(g, DT)
+  }
+
+  // The vote model mounts one intermission after its screen, so keep giving the pad vote (d-pad right, then A)
+  // until the vote screen leaves, by the vote or by its timer.
+  private async padVote(g: TourGame, timeoutMs: number): Promise<void> {
+    const deadline = performance.now() + timeoutMs
+    while (g.host.currentScreen() === 'vote' && performance.now() < deadline) {
+      this.padFrame(g, 15)
+      this.padFrame(g, 0)
+      for (let i = 0; i < 6; i++) {
+        await sleep(FRAME_MS)
+        this.step(g, FAST_DT)
+      }
+    }
   }
 
   private step(g: TourGame, dtS: number): void {
@@ -296,12 +389,12 @@ async function runTour(deps: TourDeps, names?: readonly string[]): Promise<{ jso
   if (adapter.software) {
     refuse('gpu', 'adapter', `'${adapter.vendor} ${adapter.architecture} ${adapter.description}' is a software or fallback adapter; a capture on it is evidence of nothing, run the op in the GPU client`)
   }
-  const tour = new Tour()
   const pad = {
     id: 'Tour Pad (STANDARD GAMEPAD)', index: 0, connected: true, mapping: 'standard', timestamp: 0,
     axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
     vibrationActuator: null,
   } as unknown as Gamepad
+  const tour = new Tour(pad)
   const own = Object.getOwnPropertyDescriptor(navigator, 'getGamepads')
   Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] })
   let game: TourGame | undefined

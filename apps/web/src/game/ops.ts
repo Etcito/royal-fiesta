@@ -54,8 +54,8 @@ import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { installZoneLobbyOps } from '../zone/zoneLobbyOps.ts'
 import { installSplitOps } from '../zone/splitOps.ts'
 import { installZoneOps } from '../zone/zoneOps.ts'
-import { uiTour, tourScreens, TOUR_SCREENS } from './uiTour.ts'
-import type { BootGame, TourDeps, UiTourOutput } from './uiTour.ts'
+import { uiTour, tourScreens, FLOW_TOUR_SCREENS, TOUR_SCREENS } from './uiTour.ts'
+import type { BootGame, TourCapture, TourDeps, UiTourOutput } from './uiTour.ts'
 
 export interface ControlCase { name: string; input: 'KeyD' | 'ArrowRight' | 'stickRight' | 'KeyA' | 'ArrowLeft' | 'stickLeft' | 'mouseRight' | 'rightStickRight'; holdMs: number }
 export interface ControlsProbeInput { width: 1280; height: 720; content: ContentId; course: string; cases: ControlCase[] }
@@ -1199,16 +1199,58 @@ async function gameCapture(raw: unknown, deps: TourDeps): Promise<OpResult<GameC
   }
 }
 
+// The M7 flow-tour card's size: the show screens are captured at 1920x1080, like the other capture ops.
+const FLOW_TOUR_WIDTH = 1920
+const FLOW_TOUR_HEIGHT = 1080
+
+// flowTour takes only its capture size, at exactly the card's resolution.
+function validateFlowTour(raw: unknown): { width: number; height: number } {
+  const o = obj('flowTour', 'input', raw)
+  onlyKeys('flowTour', 'input', o, ['width', 'height'])
+  if (o.width !== FLOW_TOUR_WIDTH || o.height !== FLOW_TOUR_HEIGHT) {
+    refuse('ops', 'flowTour.input',
+      `is ${JSON.stringify(o.width)}x${JSON.stringify(o.height)}; flow tour captures are ${FLOW_TOUR_WIDTH}x${FLOW_TOUR_HEIGHT}; pass {"width":${FLOW_TOUR_WIDTH},"height":${FLOW_TOUR_HEIGHT}}`)
+  }
+  return { width: FLOW_TOUR_WIDTH, height: FLOW_TOUR_HEIGHT }
+}
+
+// The show screens only, through the same tour and tourScreens runner as gameCapture's tour path: each tour
+// capture is drawn into a canvas of the declared size, so the proof is 1920x1080 whatever the page viewport.
+async function flowTour(raw: unknown, deps: TourDeps): Promise<OpResult<UiTourOutput>> {
+  const { width, height } = validateFlowTour(raw)
+  const tour = await tourScreens(FLOW_TOUR_SCREENS, deps)
+  const captures: TourCapture[] = []
+  const files: OpFile[] = []
+  for (const file of tour.files) {
+    const screen = file.name.slice(0, -4)
+    const source = tour.json.captures.find(c => c.file === file.name)
+    if (source === undefined) refuse('ops', `flowTour.${screen}`, 'the tour produced a file without its capture record')
+    const image = await createImageBitmap(file.blob)
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (ctx === null) refuse('ops', 'flowTour.capture', 'no 2D canvas context to size the flow capture; run the op in a browser with canvas 2D')
+    ctx.drawImage(image, 0, 0, width, height)
+    image.close()
+    const png = await pngBlob(canvas, 'flowTour.capture')
+    files.push({ name: file.name, blob: new Blob([png as Uint8Array<ArrayBuffer>], { type: 'image/png' }) })
+    captures.push({ ...source, width, height, sha256: await sha256Hex(png), bytes: png.length })
+  }
+  return { json: { ...tour.json, captures }, files }
+}
+
 type GameOps = {
   controlsProbe(input: unknown): Promise<OpResult<ControlsOutput>>
   gameCapture(input: unknown): Promise<OpResult<GameCaptureOutput>>
   uiTour(input: unknown): Promise<OpResult<UiTourOutput>>
+  flowTour(input: unknown): Promise<OpResult<UiTourOutput>>
 }
 
-// window.nmcGpu.ops.controlsProbe / gameCapture / uiTour, next to the client page's ops. Registering has no
-// side effect: the first op call runs teardown (the page's App) first; every op but uiTour (the real App,
-// on the core adapter) also prefers the compatibility adapter. bootGame starts the App for uiTour.
-// The game page registers no frameTiming op (frame timing is a client-page op).
+// window.nmcGpu.ops.controlsProbe / gameCapture / uiTour / flowTour, next to the client page's ops. Registering
+// has no side effect: the first op call runs teardown (the page's App) first; every op but uiTour and flowTour
+// (the real App, on the core adapter) also prefers the compatibility adapter. bootGame starts the App for the
+// tours. The game page registers no frameTiming op (frame timing is a client-page op).
 export function installGameOps(teardown: () => void, bootGame: BootGame): void {
   installNmcOps()
   const gpu = window.nmcGpu as NonNullable<Window['nmcGpu']> & { ops: GameOps }
@@ -1235,6 +1277,7 @@ export function installGameOps(teardown: () => void, bootGame: BootGame): void {
     return gameCapture(input, { boot: bootGame, adapter: adapterInfo })
   }
   gpu.ops.uiTour = input => (take(), uiTour(input, { boot: bootGame, adapter: adapterInfo }))
+  gpu.ops.flowTour = input => (take(), flowTour(input, { boot: bootGame, adapter: adapterInfo }))
   installZoneOps()
   installZoneLobbyOps()
   installSplitOps()

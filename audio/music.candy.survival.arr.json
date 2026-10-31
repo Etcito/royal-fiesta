@@ -1,0 +1,199 @@
+{
+  "format": "haa.arrangement", "version": 0, "id": "music.candy.survival",
+  "bpm": 132, "beatsPerBar": 4, "loop": true, "seed": 132017,
+  "instruments": [
+    {"id":"pad","patch":"audio/inst.pad.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.22},
+    {"id":"bass","patch":"audio/inst.bass.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.045},
+    {"id":"lead","patch":"audio/inst.lead.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.065},
+    {"id":"pluck","patch":"audio/inst.pluck.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.12},
+    {"id":"kick","patch":"audio/inst.kick.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.06},
+    {"id":"snare","patch":"audio/inst.snare.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.08},
+    {"id":"hat","patch":"audio/inst.hat.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.025},
+    {"id":"perc","patch":"audio/inst.perc.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.07}
+  ],
+  "sections": [
+    {"id": "intro", "bars": 4, "tracks": [
+      {"instrument": "pad", "gain": 0.24, "pan": -0.18, "notes": [
+        {"beat":0,"len":3.7,"note":57,"vel":0.42}, {"beat":0,"len":3.7,"note":60,"vel":0.42}, {"beat":0,"len":3.7,"note":64,"vel":0.42},
+        {"beat":4,"len":3.7,"note":53,"vel":0.42}, {"beat":4,"len":3.7,"note":57,"vel":0.42}, {"beat":4,"len":3.7,"note":60,"vel":0.42},
+        {"beat":8,"len":3.7,"note":62,"vel":0.42}, {"beat":8,"len":3.7,"note":65,"vel":0.42}, {"beat":8,"len":3.7,"note":69,"vel":0.42},
+        {"beat":12,"len":3.7,"note":52,"vel":0.42}, {"beat":12,"len":3.7,"note":56,"vel":0.42}, {"beat":12,"len":3.7,"note":59,"vel":0.42}
+      ]},
+      {"instrument": "bass", "gain": 0.66, "pan": 0, "notes": [
+        {"beat":0,"len":0.19,"note":45,"vel":0.83}, {"beat":0.75,"len":0.19,"note":45,"vel":0.68}, {"beat":1.5,"len":0.19,"note":45,"vel":0.83}, {"beat":2,"len":0.19,"note":57,"vel":0.68}, {"beat":2.75,"len":0.19,"note":45,"vel":0.83}, {"beat":3.5,"len":0.19,"note":52,"vel":0.68},
+        {"beat":4,"len":0.19,"note":41,"vel":0.83}, {"beat":4.75,"len":0.19,"note":41,"vel":0.68}, {"beat":5.5,"len":0.19,"note":41,"vel":0.83}, {"beat":6,"len":0.19,"note":53,"vel":0.68}, {"beat":6.75,"len":0.19,"note":41,"vel":0.83}, {"beat":7.5,"len":0.19,"note":48,"vel":0.68},
+        {"beat":8,"len":0.19,"note":50,"vel":0.83}, {"beat":8.75,"len":0.19,"note":50,"vel":0.68}, {"beat":9.5,"len":0.19,"note":50,"vel":0.83}, {"beat":10,"len":0.19,"note":62,"vel":0.68}, {"beat":10.75,"len":0.19,"note":50,"vel":0.83}, {"beat":11.5,"len":0.19,"note":57,"vel":0.68},
+        {"beat":12,"len":0.19,"note":40,"vel":0.83}, {"beat":12.75,"len":0.19,"note":40,"vel":0.68}, {"beat":13.5,"len":0.19,"note":40,"vel":0.83}, {"beat":14,"len":0.19,"note":52,"vel":0.68}, {"beat":14.75,"len":0.19,"note":40,"vel":0.83}, {"beat":15.5,"len":0.19,"note":47,"vel":0.68}
+      ]},
+      {"instrument": "lead", "gain": 0.54, "pan": 0.12, "notes": [
+        {"beat":10.5,"len":0.45,"note":81,"vel":0.52},
+        {"beat":14.5,"len":0.45,"note":71,"vel":0.52}
+      ]},
+      {"instrument": "pluck", "gain": 0.5, "pan": -0.38, "notes": [
+        {"beat":0.25,"len":0.18,"note":69,"vel":0.512}, {"beat":0.75,"len":0.18,"note":76,"vel":0.4}, {"beat":1.25,"len":0.18,"note":72,"vel":0.512}, {"beat":1.75,"len":0.18,"note":81,"vel":0.4}, {"beat":2.25,"len":0.18,"note":76,"vel":0.512}, {"beat":2.75,"len":0.18,"note":72,"vel":0.4}, {"beat":3.25,"len":0.18,"note":81,"vel":0.512}, {"beat":3.75,"len":0.18,"note":76,"vel":0.4},
+        {"beat":4.25,"len":0.18,"note":65,"vel":0.512}, {"beat":4.75,"len":0.18,"note":72,"vel":0.4}, {"beat":5.25,"len":0.18,"note":69,"vel":0.512}, {"beat":5.75,"len":0.18,"note":77,"vel":0.4}, {"beat":6.25,"len":0.18,"note":72,"vel":0.512}, {"beat":6.75,"len":0.18,"note":69,"vel":0.4}, {"beat":7.25,"len":0.18,"note":77,"vel":0.512}, {"beat":7.75,"len":0.18,"note":72,"vel":0.4},
+        {"beat":8.25,"len":0.18,"note":74,"vel":0.512}, {"beat":8.75,"len":0.18,"note":81,"vel":0.4}, {"beat":9.25,"len":0.18,"note":77,"vel":0.512}, {"beat":9.75,"len":0.18,"note":86,"vel":0.4}, {"beat":10.25,"len":0.18,"note":81,"vel":0.512}, {"beat":10.75,"len":0.18,"note":77,"vel":0.4}, {"beat":11.25,"len":0.18,"note":86,"vel":0.512}, {"beat":11.75,"len":0.18,"note":81,"vel":0.4},
+        {"beat":12.25,"len":0.18,"note":64,"vel":0.512}, {"beat":12.75,"len":0.18,"note":71,"vel":0.4}, {"beat":13.25,"len":0.18,"note":68,"vel":0.512}, {"beat":13.75,"len":0.18,"note":76,"vel":0.4}, {"beat":14.25,"len":0.18,"note":71,"vel":0.512}, {"beat":14.75,"len":0.18,"note":68,"vel":0.4}, {"beat":15.25,"len":0.18,"note":76,"vel":0.512}, {"beat":15.75,"len":0.18,"note":71,"vel":0.4}
+      ]},
+      {"instrument": "kick", "gain": 0.72, "pan": 0, "notes": [
+        {"beat":0,"len":0.42,"note":36,"vel":0.94}, {"beat":1.5,"len":0.42,"note":36,"vel":0.84}, {"beat":2,"len":0.42,"note":36,"vel":0.84}, {"beat":3,"len":0.42,"note":36,"vel":0.84},
+        {"beat":4,"len":0.42,"note":36,"vel":0.94}, {"beat":5.5,"len":0.42,"note":36,"vel":0.84}, {"beat":6,"len":0.42,"note":36,"vel":0.84}, {"beat":7,"len":0.42,"note":36,"vel":0.84},
+        {"beat":8,"len":0.42,"note":36,"vel":0.94}, {"beat":9.5,"len":0.42,"note":36,"vel":0.84}, {"beat":10,"len":0.42,"note":36,"vel":0.84}, {"beat":11,"len":0.42,"note":36,"vel":0.84},
+        {"beat":12,"len":0.42,"note":36,"vel":0.94}, {"beat":13.5,"len":0.42,"note":36,"vel":0.84}, {"beat":14,"len":0.42,"note":36,"vel":0.84}, {"beat":15,"len":0.42,"note":36,"vel":0.84}
+      ]},
+      {"instrument": "snare", "gain": 0.42, "pan": 0.08, "notes": [
+        {"beat":9,"len":0.32,"note":38,"vel":0.7}, {"beat":11,"len":0.32,"note":38,"vel":0.7},
+        {"beat":13,"len":0.32,"note":38,"vel":0.7}, {"beat":15,"len":0.32,"note":38,"vel":0.7}
+      ]},
+      {"instrument": "hat", "gain": 0.25, "pan": 0.32, "notes": [
+        {"beat":0,"len":0.095,"note":42,"vel":0.64}, {"beat":0.5,"len":0.095,"note":42,"vel":0.38}, {"beat":1,"len":0.095,"note":42,"vel":0.64}, {"beat":1.5,"len":0.095,"note":42,"vel":0.38}, {"beat":2,"len":0.095,"note":42,"vel":0.64}, {"beat":2.5,"len":0.095,"note":42,"vel":0.38}, {"beat":3,"len":0.095,"note":42,"vel":0.64}, {"beat":3.5,"len":0.095,"note":42,"vel":0.38},
+        {"beat":4,"len":0.095,"note":42,"vel":0.64}, {"beat":4.5,"len":0.095,"note":42,"vel":0.38}, {"beat":5,"len":0.095,"note":42,"vel":0.64}, {"beat":5.5,"len":0.095,"note":42,"vel":0.38}, {"beat":6,"len":0.095,"note":42,"vel":0.64}, {"beat":6.5,"len":0.095,"note":42,"vel":0.38}, {"beat":7,"len":0.095,"note":42,"vel":0.64}, {"beat":7.5,"len":0.095,"note":42,"vel":0.38},
+        {"beat":8,"len":0.095,"note":42,"vel":0.64}, {"beat":8.25,"len":0.095,"note":42,"vel":0.38}, {"beat":8.5,"len":0.095,"note":42,"vel":0.38}, {"beat":8.75,"len":0.095,"note":42,"vel":0.38}, {"beat":9,"len":0.095,"note":42,"vel":0.64}, {"beat":9.25,"len":0.095,"note":42,"vel":0.38}, {"beat":9.5,"len":0.095,"note":42,"vel":0.38}, {"beat":9.75,"len":0.095,"note":42,"vel":0.38}, {"beat":10,"len":0.095,"note":42,"vel":0.64}, {"beat":10.25,"len":0.095,"note":42,"vel":0.38}, {"beat":10.5,"len":0.095,"note":42,"vel":0.38}, {"beat":10.75,"len":0.095,"note":42,"vel":0.38}, {"beat":11,"len":0.095,"note":42,"vel":0.64}, {"beat":11.25,"len":0.095,"note":42,"vel":0.38}, {"beat":11.5,"len":0.095,"note":42,"vel":0.38}, {"beat":11.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":12,"len":0.095,"note":42,"vel":0.64}, {"beat":12.25,"len":0.095,"note":42,"vel":0.38}, {"beat":12.5,"len":0.095,"note":42,"vel":0.38}, {"beat":12.75,"len":0.095,"note":42,"vel":0.38}, {"beat":13,"len":0.095,"note":42,"vel":0.64}, {"beat":13.25,"len":0.095,"note":42,"vel":0.38}, {"beat":13.5,"len":0.095,"note":42,"vel":0.38}, {"beat":13.75,"len":0.095,"note":42,"vel":0.38}, {"beat":14,"len":0.095,"note":42,"vel":0.64}, {"beat":14.25,"len":0.095,"note":42,"vel":0.38}, {"beat":14.5,"len":0.095,"note":42,"vel":0.38}, {"beat":14.75,"len":0.095,"note":42,"vel":0.38}, {"beat":15,"len":0.095,"note":42,"vel":0.64}, {"beat":15.25,"len":0.095,"note":42,"vel":0.38}, {"beat":15.5,"len":0.095,"note":42,"vel":0.38}, {"beat":15.75,"len":0.095,"note":42,"vel":0.38}
+      ]},
+      {"instrument": "perc", "gain": 0.28, "pan": -0.3, "notes": [
+      ]}
+    ]},
+    {"id": "a", "bars": 4, "tracks": [
+      {"instrument": "pad", "gain": 0.24, "pan": -0.18, "notes": [
+        {"beat":0,"len":3.7,"note":57,"vel":0.48}, {"beat":0,"len":3.7,"note":60,"vel":0.48}, {"beat":0,"len":3.7,"note":64,"vel":0.48},
+        {"beat":4,"len":3.7,"note":53,"vel":0.48}, {"beat":4,"len":3.7,"note":57,"vel":0.48}, {"beat":4,"len":3.7,"note":60,"vel":0.48},
+        {"beat":8,"len":3.7,"note":62,"vel":0.48}, {"beat":8,"len":3.7,"note":65,"vel":0.48}, {"beat":8,"len":3.7,"note":69,"vel":0.48},
+        {"beat":12,"len":3.7,"note":52,"vel":0.48}, {"beat":12,"len":3.7,"note":56,"vel":0.48}, {"beat":12,"len":3.7,"note":59,"vel":0.48}
+      ]},
+      {"instrument": "bass", "gain": 0.66, "pan": 0, "notes": [
+        {"beat":0,"len":0.19,"note":45,"vel":0.83}, {"beat":0.75,"len":0.19,"note":45,"vel":0.68}, {"beat":1.5,"len":0.19,"note":45,"vel":0.83}, {"beat":2,"len":0.19,"note":57,"vel":0.68}, {"beat":2.75,"len":0.19,"note":45,"vel":0.83}, {"beat":3.5,"len":0.19,"note":52,"vel":0.68},
+        {"beat":4,"len":0.19,"note":41,"vel":0.83}, {"beat":4.75,"len":0.19,"note":41,"vel":0.68}, {"beat":5.5,"len":0.19,"note":41,"vel":0.83}, {"beat":6,"len":0.19,"note":53,"vel":0.68}, {"beat":6.75,"len":0.19,"note":41,"vel":0.83}, {"beat":7.5,"len":0.19,"note":48,"vel":0.68},
+        {"beat":8,"len":0.19,"note":50,"vel":0.83}, {"beat":8.75,"len":0.19,"note":50,"vel":0.68}, {"beat":9.5,"len":0.19,"note":50,"vel":0.83}, {"beat":10,"len":0.19,"note":62,"vel":0.68}, {"beat":10.75,"len":0.19,"note":50,"vel":0.83}, {"beat":11.5,"len":0.19,"note":57,"vel":0.68},
+        {"beat":12,"len":0.19,"note":40,"vel":0.83}, {"beat":12.75,"len":0.19,"note":40,"vel":0.68}, {"beat":13.5,"len":0.19,"note":40,"vel":0.83}, {"beat":14,"len":0.19,"note":52,"vel":0.68}, {"beat":14.75,"len":0.19,"note":40,"vel":0.83}, {"beat":15.5,"len":0.19,"note":47,"vel":0.68}
+      ]},
+      {"instrument": "lead", "gain": 0.54, "pan": 0.12, "notes": [
+        {"beat":0.5,"len":0.24,"note":69,"vel":0.66}, {"beat":1.5,"len":0.24,"note":72,"vel":0.685}, {"beat":2.25,"len":0.24,"note":76,"vel":0.7100000000000001}, {"beat":3.25,"len":0.24,"note":81,"vel":0.7350000000000001},
+        {"beat":4.5,"len":0.24,"note":65,"vel":0.66}, {"beat":5.5,"len":0.24,"note":69,"vel":0.685}, {"beat":6.25,"len":0.24,"note":72,"vel":0.7100000000000001}, {"beat":7.25,"len":0.24,"note":77,"vel":0.7350000000000001},
+        {"beat":8.5,"len":0.24,"note":74,"vel":0.66}, {"beat":9.5,"len":0.24,"note":77,"vel":0.685}, {"beat":10.25,"len":0.24,"note":81,"vel":0.7100000000000001}, {"beat":11.25,"len":0.24,"note":86,"vel":0.7350000000000001},
+        {"beat":12.5,"len":0.24,"note":64,"vel":0.66}, {"beat":13.5,"len":0.24,"note":68,"vel":0.685}, {"beat":14.25,"len":0.24,"note":71,"vel":0.7100000000000001}, {"beat":15.25,"len":0.24,"note":76,"vel":0.7350000000000001}
+      ]},
+      {"instrument": "pluck", "gain": 0.5, "pan": -0.38, "notes": [
+        {"beat":0.25,"len":0.18,"note":69,"vel":0.64}, {"beat":0.75,"len":0.18,"note":76,"vel":0.5}, {"beat":1.25,"len":0.18,"note":72,"vel":0.64}, {"beat":1.75,"len":0.18,"note":81,"vel":0.5}, {"beat":2.25,"len":0.18,"note":76,"vel":0.64}, {"beat":2.75,"len":0.18,"note":72,"vel":0.5}, {"beat":3.25,"len":0.18,"note":81,"vel":0.64}, {"beat":3.75,"len":0.18,"note":76,"vel":0.5},
+        {"beat":4.25,"len":0.18,"note":65,"vel":0.64}, {"beat":4.75,"len":0.18,"note":72,"vel":0.5}, {"beat":5.25,"len":0.18,"note":69,"vel":0.64}, {"beat":5.75,"len":0.18,"note":77,"vel":0.5}, {"beat":6.25,"len":0.18,"note":72,"vel":0.64}, {"beat":6.75,"len":0.18,"note":69,"vel":0.5}, {"beat":7.25,"len":0.18,"note":77,"vel":0.64}, {"beat":7.75,"len":0.18,"note":72,"vel":0.5},
+        {"beat":8.25,"len":0.18,"note":74,"vel":0.64}, {"beat":8.75,"len":0.18,"note":81,"vel":0.5}, {"beat":9.25,"len":0.18,"note":77,"vel":0.64}, {"beat":9.75,"len":0.18,"note":86,"vel":0.5}, {"beat":10.25,"len":0.18,"note":81,"vel":0.64}, {"beat":10.75,"len":0.18,"note":77,"vel":0.5}, {"beat":11.25,"len":0.18,"note":86,"vel":0.64}, {"beat":11.75,"len":0.18,"note":81,"vel":0.5},
+        {"beat":12.25,"len":0.18,"note":64,"vel":0.64}, {"beat":12.75,"len":0.18,"note":71,"vel":0.5}, {"beat":13.25,"len":0.18,"note":68,"vel":0.64}, {"beat":13.75,"len":0.18,"note":76,"vel":0.5}, {"beat":14.25,"len":0.18,"note":71,"vel":0.64}, {"beat":14.75,"len":0.18,"note":68,"vel":0.5}, {"beat":15.25,"len":0.18,"note":76,"vel":0.64}, {"beat":15.75,"len":0.18,"note":71,"vel":0.5}
+      ]},
+      {"instrument": "kick", "gain": 0.72, "pan": 0, "notes": [
+        {"beat":0,"len":0.42,"note":36,"vel":0.94}, {"beat":1.5,"len":0.42,"note":36,"vel":0.84}, {"beat":2,"len":0.42,"note":36,"vel":0.84}, {"beat":3,"len":0.42,"note":36,"vel":0.84},
+        {"beat":4,"len":0.42,"note":36,"vel":0.94}, {"beat":5.5,"len":0.42,"note":36,"vel":0.84}, {"beat":6,"len":0.42,"note":36,"vel":0.84}, {"beat":7,"len":0.42,"note":36,"vel":0.84},
+        {"beat":8,"len":0.42,"note":36,"vel":0.94}, {"beat":9.5,"len":0.42,"note":36,"vel":0.84}, {"beat":10,"len":0.42,"note":36,"vel":0.84}, {"beat":11,"len":0.42,"note":36,"vel":0.84},
+        {"beat":12,"len":0.42,"note":36,"vel":0.94}, {"beat":13.5,"len":0.42,"note":36,"vel":0.84}, {"beat":14,"len":0.42,"note":36,"vel":0.84}, {"beat":15,"len":0.42,"note":36,"vel":0.84}
+      ]},
+      {"instrument": "snare", "gain": 0.42, "pan": 0.08, "notes": [
+        {"beat":1,"len":0.32,"note":38,"vel":0.7}, {"beat":3,"len":0.32,"note":38,"vel":0.7},
+        {"beat":5,"len":0.32,"note":38,"vel":0.7}, {"beat":7,"len":0.32,"note":38,"vel":0.7},
+        {"beat":9,"len":0.32,"note":38,"vel":0.7}, {"beat":11,"len":0.32,"note":38,"vel":0.7},
+        {"beat":13,"len":0.32,"note":38,"vel":0.7}, {"beat":15,"len":0.32,"note":38,"vel":0.7}
+      ]},
+      {"instrument": "hat", "gain": 0.25, "pan": 0.32, "notes": [
+        {"beat":0,"len":0.095,"note":42,"vel":0.64}, {"beat":0.25,"len":0.095,"note":42,"vel":0.38}, {"beat":0.5,"len":0.095,"note":42,"vel":0.38}, {"beat":0.75,"len":0.095,"note":42,"vel":0.38}, {"beat":1,"len":0.095,"note":42,"vel":0.64}, {"beat":1.25,"len":0.095,"note":42,"vel":0.38}, {"beat":1.5,"len":0.095,"note":42,"vel":0.38}, {"beat":1.75,"len":0.095,"note":42,"vel":0.38}, {"beat":2,"len":0.095,"note":42,"vel":0.64}, {"beat":2.25,"len":0.095,"note":42,"vel":0.38}, {"beat":2.5,"len":0.095,"note":42,"vel":0.38}, {"beat":2.75,"len":0.095,"note":42,"vel":0.38}, {"beat":3,"len":0.095,"note":42,"vel":0.64}, {"beat":3.25,"len":0.095,"note":42,"vel":0.38}, {"beat":3.5,"len":0.095,"note":42,"vel":0.38}, {"beat":3.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":4,"len":0.095,"note":42,"vel":0.64}, {"beat":4.25,"len":0.095,"note":42,"vel":0.38}, {"beat":4.5,"len":0.095,"note":42,"vel":0.38}, {"beat":4.75,"len":0.095,"note":42,"vel":0.38}, {"beat":5,"len":0.095,"note":42,"vel":0.64}, {"beat":5.25,"len":0.095,"note":42,"vel":0.38}, {"beat":5.5,"len":0.095,"note":42,"vel":0.38}, {"beat":5.75,"len":0.095,"note":42,"vel":0.38}, {"beat":6,"len":0.095,"note":42,"vel":0.64}, {"beat":6.25,"len":0.095,"note":42,"vel":0.38}, {"beat":6.5,"len":0.095,"note":42,"vel":0.38}, {"beat":6.75,"len":0.095,"note":42,"vel":0.38}, {"beat":7,"len":0.095,"note":42,"vel":0.64}, {"beat":7.25,"len":0.095,"note":42,"vel":0.38}, {"beat":7.5,"len":0.095,"note":42,"vel":0.38}, {"beat":7.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":8,"len":0.095,"note":42,"vel":0.64}, {"beat":8.25,"len":0.095,"note":42,"vel":0.38}, {"beat":8.5,"len":0.095,"note":42,"vel":0.38}, {"beat":8.75,"len":0.095,"note":42,"vel":0.38}, {"beat":9,"len":0.095,"note":42,"vel":0.64}, {"beat":9.25,"len":0.095,"note":42,"vel":0.38}, {"beat":9.5,"len":0.095,"note":42,"vel":0.38}, {"beat":9.75,"len":0.095,"note":42,"vel":0.38}, {"beat":10,"len":0.095,"note":42,"vel":0.64}, {"beat":10.25,"len":0.095,"note":42,"vel":0.38}, {"beat":10.5,"len":0.095,"note":42,"vel":0.38}, {"beat":10.75,"len":0.095,"note":42,"vel":0.38}, {"beat":11,"len":0.095,"note":42,"vel":0.64}, {"beat":11.25,"len":0.095,"note":42,"vel":0.38}, {"beat":11.5,"len":0.095,"note":42,"vel":0.38}, {"beat":11.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":12,"len":0.095,"note":42,"vel":0.64}, {"beat":12.25,"len":0.095,"note":42,"vel":0.38}, {"beat":12.5,"len":0.095,"note":42,"vel":0.38}, {"beat":12.75,"len":0.095,"note":42,"vel":0.38}, {"beat":13,"len":0.095,"note":42,"vel":0.64}, {"beat":13.25,"len":0.095,"note":42,"vel":0.38}, {"beat":13.5,"len":0.095,"note":42,"vel":0.38}, {"beat":13.75,"len":0.095,"note":42,"vel":0.38}, {"beat":14,"len":0.095,"note":42,"vel":0.64}, {"beat":14.25,"len":0.095,"note":42,"vel":0.38}, {"beat":14.5,"len":0.095,"note":42,"vel":0.38}, {"beat":14.75,"len":0.095,"note":42,"vel":0.38}, {"beat":15,"len":0.095,"note":42,"vel":0.64}, {"beat":15.25,"len":0.095,"note":42,"vel":0.38}, {"beat":15.5,"len":0.095,"note":42,"vel":0.38}, {"beat":15.75,"len":0.095,"note":42,"vel":0.38}
+      ]},
+      {"instrument": "perc", "gain": 0.28, "pan": -0.3, "notes": [
+      ]}
+    ]},
+    {"id": "b", "bars": 4, "tracks": [
+      {"instrument": "pad", "gain": 0.24, "pan": -0.18, "notes": [
+        {"beat":0,"len":3.7,"note":62,"vel":0.48}, {"beat":0,"len":3.7,"note":65,"vel":0.48}, {"beat":0,"len":3.7,"note":69,"vel":0.48},
+        {"beat":4,"len":3.7,"note":57,"vel":0.48}, {"beat":4,"len":3.7,"note":60,"vel":0.48}, {"beat":4,"len":3.7,"note":64,"vel":0.48},
+        {"beat":8,"len":3.7,"note":53,"vel":0.48}, {"beat":8,"len":3.7,"note":57,"vel":0.48}, {"beat":8,"len":3.7,"note":60,"vel":0.48},
+        {"beat":12,"len":3.7,"note":52,"vel":0.48}, {"beat":12,"len":3.7,"note":56,"vel":0.48}, {"beat":12,"len":3.7,"note":59,"vel":0.48}
+      ]},
+      {"instrument": "bass", "gain": 0.66, "pan": 0, "notes": [
+        {"beat":0,"len":0.19,"note":50,"vel":0.83}, {"beat":0.75,"len":0.19,"note":50,"vel":0.68}, {"beat":1.5,"len":0.19,"note":50,"vel":0.83}, {"beat":2,"len":0.19,"note":62,"vel":0.68}, {"beat":2.75,"len":0.19,"note":50,"vel":0.83}, {"beat":3.5,"len":0.19,"note":57,"vel":0.68},
+        {"beat":4,"len":0.19,"note":45,"vel":0.83}, {"beat":4.75,"len":0.19,"note":45,"vel":0.68}, {"beat":5.5,"len":0.19,"note":45,"vel":0.83}, {"beat":6,"len":0.19,"note":57,"vel":0.68}, {"beat":6.75,"len":0.19,"note":45,"vel":0.83}, {"beat":7.5,"len":0.19,"note":52,"vel":0.68},
+        {"beat":8,"len":0.19,"note":41,"vel":0.83}, {"beat":8.75,"len":0.19,"note":41,"vel":0.68}, {"beat":9.5,"len":0.19,"note":41,"vel":0.83}, {"beat":10,"len":0.19,"note":53,"vel":0.68}, {"beat":10.75,"len":0.19,"note":41,"vel":0.83}, {"beat":11.5,"len":0.19,"note":48,"vel":0.68},
+        {"beat":12,"len":0.19,"note":40,"vel":0.83}, {"beat":12.75,"len":0.19,"note":40,"vel":0.68}, {"beat":13.5,"len":0.19,"note":40,"vel":0.83}, {"beat":14,"len":0.19,"note":52,"vel":0.68}, {"beat":14.75,"len":0.19,"note":40,"vel":0.83}, {"beat":15.5,"len":0.19,"note":47,"vel":0.68}
+      ]},
+      {"instrument": "lead", "gain": 0.54, "pan": 0.12, "notes": [
+        {"beat":0.5,"len":0.35,"note":86,"vel":0.66}, {"beat":1.5,"len":0.35,"note":89,"vel":0.685}, {"beat":2.25,"len":0.35,"note":93,"vel":0.7100000000000001}, {"beat":3.25,"len":0.35,"note":98,"vel":0.7350000000000001},
+        {"beat":4.5,"len":0.35,"note":69,"vel":0.66}, {"beat":5.5,"len":0.35,"note":72,"vel":0.685}, {"beat":6.25,"len":0.35,"note":76,"vel":0.7100000000000001}, {"beat":7.25,"len":0.35,"note":81,"vel":0.7350000000000001},
+        {"beat":8.5,"len":0.35,"note":77,"vel":0.66}, {"beat":9.5,"len":0.35,"note":81,"vel":0.685}, {"beat":10.25,"len":0.35,"note":84,"vel":0.7100000000000001}, {"beat":11.25,"len":0.35,"note":89,"vel":0.7350000000000001},
+        {"beat":12.5,"len":0.35,"note":64,"vel":0.66}, {"beat":13.5,"len":0.35,"note":68,"vel":0.685}, {"beat":14.25,"len":0.35,"note":71,"vel":0.7100000000000001}, {"beat":15.25,"len":0.35,"note":76,"vel":0.7350000000000001}
+      ]},
+      {"instrument": "pluck", "gain": 0.5, "pan": -0.38, "notes": [
+        {"beat":0.25,"len":0.18,"note":74,"vel":0.64}, {"beat":0.75,"len":0.18,"note":81,"vel":0.5}, {"beat":1.25,"len":0.18,"note":77,"vel":0.64}, {"beat":1.75,"len":0.18,"note":86,"vel":0.5}, {"beat":2.25,"len":0.18,"note":81,"vel":0.64}, {"beat":2.75,"len":0.18,"note":77,"vel":0.5}, {"beat":3.25,"len":0.18,"note":86,"vel":0.64}, {"beat":3.75,"len":0.18,"note":81,"vel":0.5},
+        {"beat":4.25,"len":0.18,"note":69,"vel":0.64}, {"beat":4.75,"len":0.18,"note":76,"vel":0.5}, {"beat":5.25,"len":0.18,"note":72,"vel":0.64}, {"beat":5.75,"len":0.18,"note":81,"vel":0.5}, {"beat":6.25,"len":0.18,"note":76,"vel":0.64}, {"beat":6.75,"len":0.18,"note":72,"vel":0.5}, {"beat":7.25,"len":0.18,"note":81,"vel":0.64}, {"beat":7.75,"len":0.18,"note":76,"vel":0.5},
+        {"beat":8.25,"len":0.18,"note":65,"vel":0.64}, {"beat":8.75,"len":0.18,"note":72,"vel":0.5}, {"beat":9.25,"len":0.18,"note":69,"vel":0.64}, {"beat":9.75,"len":0.18,"note":77,"vel":0.5}, {"beat":10.25,"len":0.18,"note":72,"vel":0.64}, {"beat":10.75,"len":0.18,"note":69,"vel":0.5}, {"beat":11.25,"len":0.18,"note":77,"vel":0.64}, {"beat":11.75,"len":0.18,"note":72,"vel":0.5},
+        {"beat":12.25,"len":0.18,"note":64,"vel":0.64}, {"beat":12.75,"len":0.18,"note":71,"vel":0.5}, {"beat":13.25,"len":0.18,"note":68,"vel":0.64}, {"beat":13.75,"len":0.18,"note":76,"vel":0.5}, {"beat":14.25,"len":0.18,"note":71,"vel":0.64}, {"beat":14.75,"len":0.18,"note":68,"vel":0.5}, {"beat":15.25,"len":0.18,"note":76,"vel":0.64}, {"beat":15.75,"len":0.18,"note":71,"vel":0.5}
+      ]},
+      {"instrument": "kick", "gain": 0.72, "pan": 0, "notes": [
+        {"beat":0,"len":0.42,"note":36,"vel":0.94}, {"beat":1.5,"len":0.42,"note":36,"vel":0.84}, {"beat":2,"len":0.42,"note":36,"vel":0.84}, {"beat":3,"len":0.42,"note":36,"vel":0.84},
+        {"beat":4,"len":0.42,"note":36,"vel":0.94}, {"beat":5.5,"len":0.42,"note":36,"vel":0.84}, {"beat":6,"len":0.42,"note":36,"vel":0.84}, {"beat":7,"len":0.42,"note":36,"vel":0.84},
+        {"beat":8,"len":0.42,"note":36,"vel":0.94}, {"beat":9.5,"len":0.42,"note":36,"vel":0.84}, {"beat":10,"len":0.42,"note":36,"vel":0.84}, {"beat":11,"len":0.42,"note":36,"vel":0.84},
+        {"beat":12,"len":0.42,"note":36,"vel":0.94}, {"beat":13.5,"len":0.42,"note":36,"vel":0.84}, {"beat":14,"len":0.42,"note":36,"vel":0.84}, {"beat":15,"len":0.42,"note":36,"vel":0.84}
+      ]},
+      {"instrument": "snare", "gain": 0.42, "pan": 0.08, "notes": [
+        {"beat":1,"len":0.32,"note":38,"vel":0.7}, {"beat":3,"len":0.32,"note":38,"vel":0.7},
+        {"beat":5,"len":0.32,"note":38,"vel":0.7}, {"beat":7,"len":0.32,"note":38,"vel":0.7},
+        {"beat":9,"len":0.32,"note":38,"vel":0.7}, {"beat":11,"len":0.32,"note":38,"vel":0.7},
+        {"beat":13,"len":0.32,"note":38,"vel":0.7}, {"beat":15,"len":0.32,"note":38,"vel":0.7}
+      ]},
+      {"instrument": "hat", "gain": 0.25, "pan": 0.32, "notes": [
+        {"beat":0,"len":0.095,"note":42,"vel":0.64}, {"beat":0.25,"len":0.095,"note":42,"vel":0.38}, {"beat":0.5,"len":0.095,"note":42,"vel":0.38}, {"beat":0.75,"len":0.095,"note":42,"vel":0.38}, {"beat":1,"len":0.095,"note":42,"vel":0.64}, {"beat":1.25,"len":0.095,"note":42,"vel":0.38}, {"beat":1.5,"len":0.095,"note":42,"vel":0.38}, {"beat":1.75,"len":0.095,"note":42,"vel":0.38}, {"beat":2,"len":0.095,"note":42,"vel":0.64}, {"beat":2.25,"len":0.095,"note":42,"vel":0.38}, {"beat":2.5,"len":0.095,"note":42,"vel":0.38}, {"beat":2.75,"len":0.095,"note":42,"vel":0.38}, {"beat":3,"len":0.095,"note":42,"vel":0.64}, {"beat":3.25,"len":0.095,"note":42,"vel":0.38}, {"beat":3.5,"len":0.095,"note":42,"vel":0.38}, {"beat":3.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":4,"len":0.095,"note":42,"vel":0.64}, {"beat":4.25,"len":0.095,"note":42,"vel":0.38}, {"beat":4.5,"len":0.095,"note":42,"vel":0.38}, {"beat":4.75,"len":0.095,"note":42,"vel":0.38}, {"beat":5,"len":0.095,"note":42,"vel":0.64}, {"beat":5.25,"len":0.095,"note":42,"vel":0.38}, {"beat":5.5,"len":0.095,"note":42,"vel":0.38}, {"beat":5.75,"len":0.095,"note":42,"vel":0.38}, {"beat":6,"len":0.095,"note":42,"vel":0.64}, {"beat":6.25,"len":0.095,"note":42,"vel":0.38}, {"beat":6.5,"len":0.095,"note":42,"vel":0.38}, {"beat":6.75,"len":0.095,"note":42,"vel":0.38}, {"beat":7,"len":0.095,"note":42,"vel":0.64}, {"beat":7.25,"len":0.095,"note":42,"vel":0.38}, {"beat":7.5,"len":0.095,"note":42,"vel":0.38}, {"beat":7.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":8,"len":0.095,"note":42,"vel":0.64}, {"beat":8.25,"len":0.095,"note":42,"vel":0.38}, {"beat":8.5,"len":0.095,"note":42,"vel":0.38}, {"beat":8.75,"len":0.095,"note":42,"vel":0.38}, {"beat":9,"len":0.095,"note":42,"vel":0.64}, {"beat":9.25,"len":0.095,"note":42,"vel":0.38}, {"beat":9.5,"len":0.095,"note":42,"vel":0.38}, {"beat":9.75,"len":0.095,"note":42,"vel":0.38}, {"beat":10,"len":0.095,"note":42,"vel":0.64}, {"beat":10.25,"len":0.095,"note":42,"vel":0.38}, {"beat":10.5,"len":0.095,"note":42,"vel":0.38}, {"beat":10.75,"len":0.095,"note":42,"vel":0.38}, {"beat":11,"len":0.095,"note":42,"vel":0.64}, {"beat":11.25,"len":0.095,"note":42,"vel":0.38}, {"beat":11.5,"len":0.095,"note":42,"vel":0.38}, {"beat":11.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":12,"len":0.095,"note":42,"vel":0.64}, {"beat":12.25,"len":0.095,"note":42,"vel":0.38}, {"beat":12.5,"len":0.095,"note":42,"vel":0.38}, {"beat":12.75,"len":0.095,"note":42,"vel":0.38}, {"beat":13,"len":0.095,"note":42,"vel":0.64}, {"beat":13.25,"len":0.095,"note":42,"vel":0.38}, {"beat":13.5,"len":0.095,"note":42,"vel":0.38}, {"beat":13.75,"len":0.095,"note":42,"vel":0.38}, {"beat":14,"len":0.095,"note":42,"vel":0.64}, {"beat":14.25,"len":0.095,"note":42,"vel":0.38}, {"beat":14.5,"len":0.095,"note":42,"vel":0.38}, {"beat":14.75,"len":0.095,"note":42,"vel":0.38}, {"beat":15,"len":0.095,"note":42,"vel":0.64}, {"beat":15.25,"len":0.095,"note":42,"vel":0.38}, {"beat":15.5,"len":0.095,"note":42,"vel":0.38}, {"beat":15.75,"len":0.095,"note":42,"vel":0.38}
+      ]},
+      {"instrument": "perc", "gain": 0.28, "pan": -0.3, "notes": [
+        {"beat":0.75,"len":0.18,"note":76,"vel":0.55}, {"beat":2.75,"len":0.18,"note":76,"vel":0.55},
+        {"beat":4.75,"len":0.18,"note":76,"vel":0.55}, {"beat":6.75,"len":0.18,"note":76,"vel":0.55},
+        {"beat":8.75,"len":0.18,"note":76,"vel":0.55}, {"beat":10.75,"len":0.18,"note":76,"vel":0.55},
+        {"beat":12.75,"len":0.18,"note":76,"vel":0.55}, {"beat":14.75,"len":0.18,"note":76,"vel":0.55}, {"beat":14.5,"len":0.2,"note":60,"vel":0.55}, {"beat":14.75,"len":0.2,"note":60,"vel":0.615}, {"beat":15,"len":0.2,"note":41,"vel":0.68}, {"beat":15.25,"len":0.2,"note":40,"vel":0.7450000000000001}, {"beat":15.5,"len":0.2,"note":39,"vel":0.81}
+      ]}
+    ]},
+    {"id": "break", "bars": 4, "tracks": [
+      {"instrument": "pad", "gain": 0.24, "pan": -0.18, "notes": [
+        {"beat":0,"len":3.7,"note":57,"vel":0.48}, {"beat":0,"len":3.7,"note":60,"vel":0.48}, {"beat":0,"len":3.7,"note":64,"vel":0.48},
+        {"beat":4,"len":3.7,"note":53,"vel":0.48}, {"beat":4,"len":3.7,"note":57,"vel":0.48}, {"beat":4,"len":3.7,"note":60,"vel":0.48},
+        {"beat":8,"len":3.7,"note":62,"vel":0.48}, {"beat":8,"len":3.7,"note":65,"vel":0.48}, {"beat":8,"len":3.7,"note":69,"vel":0.48},
+        {"beat":12,"len":3.7,"note":52,"vel":0.48}, {"beat":12,"len":3.7,"note":56,"vel":0.48}, {"beat":12,"len":3.7,"note":59,"vel":0.48}
+      ]},
+      {"instrument": "bass", "gain": 0.66, "pan": 0, "notes": [
+        {"beat":0,"len":0.19,"note":45,"vel":0.83}, {"beat":1.5,"len":0.19,"note":45,"vel":0.83}, {"beat":2.75,"len":0.19,"note":45,"vel":0.83},
+        {"beat":4,"len":0.19,"note":41,"vel":0.83}, {"beat":5.5,"len":0.19,"note":41,"vel":0.83}, {"beat":6.75,"len":0.19,"note":41,"vel":0.83},
+        {"beat":8,"len":0.19,"note":50,"vel":0.83}, {"beat":9.5,"len":0.19,"note":50,"vel":0.83}, {"beat":10.75,"len":0.19,"note":50,"vel":0.83},
+        {"beat":12,"len":0.19,"note":40,"vel":0.83}, {"beat":12.75,"len":0.19,"note":40,"vel":0.68}, {"beat":13.5,"len":0.19,"note":40,"vel":0.83}, {"beat":14,"len":0.19,"note":52,"vel":0.68}, {"beat":14.75,"len":0.19,"note":40,"vel":0.83}, {"beat":15.5,"len":0.19,"note":47,"vel":0.68}
+      ]},
+      {"instrument": "lead", "gain": 0.54, "pan": 0.12, "notes": [
+        {"beat":0.5,"len":0.18,"note":57,"vel":0.45}, {"beat":1.5,"len":0.18,"note":59,"vel":0.45}, {"beat":2.5,"len":0.18,"note":60,"vel":0.45}, {"beat":3.25,"len":0.18,"note":64,"vel":0.45},
+        {"beat":4.5,"len":0.18,"note":57,"vel":0.53}, {"beat":5.5,"len":0.18,"note":59,"vel":0.53}, {"beat":6.5,"len":0.18,"note":60,"vel":0.53}, {"beat":7.25,"len":0.18,"note":64,"vel":0.53},
+        {"beat":8.5,"len":0.18,"note":57,"vel":0.61}, {"beat":9.5,"len":0.18,"note":59,"vel":0.61}, {"beat":10.5,"len":0.18,"note":60,"vel":0.61}, {"beat":11.25,"len":0.18,"note":64,"vel":0.61},
+        {"beat":12.5,"len":0.18,"note":69,"vel":0.69}, {"beat":13.5,"len":0.18,"note":71,"vel":0.69}, {"beat":14.5,"len":0.18,"note":72,"vel":0.69}, {"beat":15.25,"len":0.18,"note":76,"vel":0.69}
+      ]},
+      {"instrument": "pluck", "gain": 0.5, "pan": -0.38, "notes": [
+        {"beat":0.25,"len":0.18,"note":69,"vel":0.64}, {"beat":1.25,"len":0.18,"note":72,"vel":0.64}, {"beat":2.25,"len":0.18,"note":76,"vel":0.64}, {"beat":3.25,"len":0.18,"note":81,"vel":0.64},
+        {"beat":4.25,"len":0.18,"note":65,"vel":0.64}, {"beat":5.25,"len":0.18,"note":69,"vel":0.64}, {"beat":6.25,"len":0.18,"note":72,"vel":0.64}, {"beat":7.25,"len":0.18,"note":77,"vel":0.64},
+        {"beat":8.25,"len":0.18,"note":74,"vel":0.64}, {"beat":9.25,"len":0.18,"note":77,"vel":0.64}, {"beat":10.25,"len":0.18,"note":81,"vel":0.64}, {"beat":11.25,"len":0.18,"note":86,"vel":0.64},
+        {"beat":12.25,"len":0.18,"note":64,"vel":0.64}, {"beat":13.25,"len":0.18,"note":68,"vel":0.64}, {"beat":14.25,"len":0.18,"note":71,"vel":0.64}, {"beat":15.25,"len":0.18,"note":76,"vel":0.64}
+      ]},
+      {"instrument": "kick", "gain": 0.72, "pan": 0, "notes": [
+        {"beat":0,"len":0.42,"note":36,"vel":0.94},
+        {"beat":4,"len":0.42,"note":36,"vel":0.94},
+        {"beat":8,"len":0.42,"note":36,"vel":0.94},
+        {"beat":12,"len":0.42,"note":36,"vel":0.94}, {"beat":13.5,"len":0.42,"note":36,"vel":0.84}, {"beat":14,"len":0.42,"note":36,"vel":0.84}, {"beat":15,"len":0.42,"note":36,"vel":0.84}
+      ]},
+      {"instrument": "snare", "gain": 0.42, "pan": 0.08, "notes": [
+        {"beat":13,"len":0.32,"note":38,"vel":0.7}, {"beat":15,"len":0.32,"note":38,"vel":0.7}
+      ]},
+      {"instrument": "hat", "gain": 0.25, "pan": 0.32, "notes": [
+        {"beat":0,"len":0.095,"note":42,"vel":0.64}, {"beat":0.25,"len":0.095,"note":42,"vel":0.38}, {"beat":0.5,"len":0.095,"note":42,"vel":0.38}, {"beat":0.75,"len":0.095,"note":42,"vel":0.38}, {"beat":1,"len":0.095,"note":42,"vel":0.64}, {"beat":1.25,"len":0.095,"note":42,"vel":0.38}, {"beat":1.5,"len":0.095,"note":42,"vel":0.38}, {"beat":1.75,"len":0.095,"note":42,"vel":0.38}, {"beat":2,"len":0.095,"note":42,"vel":0.64}, {"beat":2.25,"len":0.095,"note":42,"vel":0.38}, {"beat":2.5,"len":0.095,"note":42,"vel":0.38}, {"beat":2.75,"len":0.095,"note":42,"vel":0.38}, {"beat":3,"len":0.095,"note":42,"vel":0.64}, {"beat":3.25,"len":0.095,"note":42,"vel":0.38}, {"beat":3.5,"len":0.095,"note":42,"vel":0.38}, {"beat":3.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":4,"len":0.095,"note":42,"vel":0.64}, {"beat":4.25,"len":0.095,"note":42,"vel":0.38}, {"beat":4.5,"len":0.095,"note":42,"vel":0.38}, {"beat":4.75,"len":0.095,"note":42,"vel":0.38}, {"beat":5,"len":0.095,"note":42,"vel":0.64}, {"beat":5.25,"len":0.095,"note":42,"vel":0.38}, {"beat":5.5,"len":0.095,"note":42,"vel":0.38}, {"beat":5.75,"len":0.095,"note":42,"vel":0.38}, {"beat":6,"len":0.095,"note":42,"vel":0.64}, {"beat":6.25,"len":0.095,"note":42,"vel":0.38}, {"beat":6.5,"len":0.095,"note":42,"vel":0.38}, {"beat":6.75,"len":0.095,"note":42,"vel":0.38}, {"beat":7,"len":0.095,"note":42,"vel":0.64}, {"beat":7.25,"len":0.095,"note":42,"vel":0.38}, {"beat":7.5,"len":0.095,"note":42,"vel":0.38}, {"beat":7.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":8,"len":0.095,"note":42,"vel":0.64}, {"beat":8.25,"len":0.095,"note":42,"vel":0.38}, {"beat":8.5,"len":0.095,"note":42,"vel":0.38}, {"beat":8.75,"len":0.095,"note":42,"vel":0.38}, {"beat":9,"len":0.095,"note":42,"vel":0.64}, {"beat":9.25,"len":0.095,"note":42,"vel":0.38}, {"beat":9.5,"len":0.095,"note":42,"vel":0.38}, {"beat":9.75,"len":0.095,"note":42,"vel":0.38}, {"beat":10,"len":0.095,"note":42,"vel":0.64}, {"beat":10.25,"len":0.095,"note":42,"vel":0.38}, {"beat":10.5,"len":0.095,"note":42,"vel":0.38}, {"beat":10.75,"len":0.095,"note":42,"vel":0.38}, {"beat":11,"len":0.095,"note":42,"vel":0.64}, {"beat":11.25,"len":0.095,"note":42,"vel":0.38}, {"beat":11.5,"len":0.095,"note":42,"vel":0.38}, {"beat":11.75,"len":0.095,"note":42,"vel":0.38},
+        {"beat":12,"len":0.095,"note":42,"vel":0.64}, {"beat":12.25,"len":0.095,"note":42,"vel":0.38}, {"beat":12.5,"len":0.095,"note":42,"vel":0.38}, {"beat":12.75,"len":0.095,"note":42,"vel":0.38}, {"beat":13,"len":0.095,"note":42,"vel":0.64}, {"beat":13.25,"len":0.095,"note":42,"vel":0.38}, {"beat":13.5,"len":0.095,"note":42,"vel":0.38}, {"beat":13.75,"len":0.095,"note":42,"vel":0.38}, {"beat":14,"len":0.095,"note":42,"vel":0.64}, {"beat":14.25,"len":0.095,"note":42,"vel":0.38}, {"beat":14.5,"len":0.095,"note":42,"vel":0.38}, {"beat":14.75,"len":0.095,"note":42,"vel":0.38}, {"beat":15,"len":0.095,"note":42,"vel":0.64}, {"beat":15.25,"len":0.095,"note":42,"vel":0.38}, {"beat":15.5,"len":0.095,"note":42,"vel":0.38}, {"beat":15.75,"len":0.095,"note":42,"vel":0.38}
+      ]},
+      {"instrument": "perc", "gain": 0.28, "pan": -0.3, "notes": [
+        {"beat":14.5,"len":0.2,"note":60,"vel":0.55}, {"beat":14.75,"len":0.2,"note":60,"vel":0.615}, {"beat":15,"len":0.2,"note":41,"vel":0.68}, {"beat":15.25,"len":0.2,"note":40,"vel":0.7450000000000001}, {"beat":15.5,"len":0.2,"note":39,"vel":0.81}
+      ]}
+    ]}
+  ],
+  "order": ["intro","a","a","b","a","b","break","a"]
+}

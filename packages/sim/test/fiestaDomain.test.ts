@@ -109,6 +109,7 @@ function seedSeat(domain: FiestaDomain, seat: number, mode: number, knockbacks: 
   w.i16(-1) // ground item
   w.i16(-1) // ground body
   w.i16(-1) // grab lever
+  w.i32(-1) // protectedUntil
   w.u8(status)
   w.i16(0) // checkpoint reached
   domain.readSeat(new SnapReader(w.bytes()), seat)

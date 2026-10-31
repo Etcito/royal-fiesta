@@ -554,4 +554,69 @@ describe('system', () => {
     roundTrip(() => rig(), (t) => [t === 30 ? DIVE : NEUTRAL], 35, CharMode.dive)
     roundTrip(grabRig, () => [GRABBER, FORWARD], 10, CharMode.grabbing)
   })
+
+  it('protection: overlapping characters do not push each other until it ends', () => {
+    const r = rig(2)
+    r.chars.place(r.world.ctx, 0, { t: v3(0, 0, 0), facing: { x: 0, z: 1 } })
+    r.chars.place(r.world.ctx, 1, { t: v3(0.3, 0, 0), facing: { x: 0, z: 1 } })
+    r.chars.setProtected(0, 60)
+    assert.equal(state(r, 0).protectedUntil, 60)
+    const gap = (): number => dist2(state(r, 0).pos.x, state(r, 0).pos.z, state(r, 1).pos.x, state(r, 1).pos.z)
+    for (let t = 0; t < 60; t++) {
+      r.world.step([NEUTRAL, NEUTRAL])
+      assert.ok(gap() <= 0.32, `tick ${t}: protected characters pushed to ${gap()}`)
+    }
+    let separated = false
+    for (let t = 0; t < 120 && !separated; t++) {
+      r.world.step([NEUTRAL, NEUTRAL])
+      separated = gap() >= 0.7
+    }
+    assert.ok(separated, `after protection the characters still overlap at ${gap()}`)
+    r.world.free()
+  })
+
+  it('protection: a protected character can neither be grabbed nor grab', () => {
+    const targetProtected = grabRig()
+    targetProtected.chars.setProtected(1, 60)
+    for (let t = 0; t < 60; t++) {
+      targetProtected.world.step([GRABBER, NEUTRAL])
+      assert.notEqual(state(targetProtected, 0).mode, CharMode.grabbing, `grabbed a protected target at tick ${t}`)
+    }
+    targetProtected.world.free()
+
+    const grabberProtected = grabRig()
+    grabberProtected.chars.setProtected(0, 60)
+    for (let t = 0; t < 60; t++) {
+      grabberProtected.world.step([GRABBER, NEUTRAL])
+      assert.notEqual(state(grabberProtected, 0).mode, CharMode.grabbing, `protected character grabbed at tick ${t}`)
+    }
+    grabberProtected.world.free()
+  })
+
+  it('snapshot round-trip with an active protection reruns identically', () => {
+    const players = 2
+    const script = (t: number): PlayerInput[] => [
+      input({ moveX: t % 3 === 0 ? 1 : 0, moveZ: 1 }),
+      input({ moveZ: t % 2 === 0 ? 1 : 0, jump: t % 11 === 0 }),
+    ]
+    const a = rig(players)
+    a.chars.setProtected(0, 100)
+    a.chars.setProtected(1, 40)
+    for (let t = 0; t < 20; t++) a.world.step(script(t))
+    const bytes = a.world.takeSnapshotBytes()
+    const fresh = new CharacterSystem({ playerCount: players })
+    const b = new FiestaWorld<PlayerInput>(R, { playerCount: players, systems: [groundSystem(), fresh] })
+    b.restoreSnapshotBytes(bytes)
+    assert.equal(b.stateHash(), a.world.stateHash())
+    assert.equal(state({ world: b, chars: fresh }, 0).protectedUntil, 100)
+    // Runs past the end of both protections so the group restore is rerun too.
+    for (let t = 20; t < 140; t++) {
+      a.world.step(script(t))
+      b.step(script(t))
+    }
+    assert.equal(b.stateHash(), a.world.stateHash())
+    assert.equal(state({ world: b, chars: fresh }, 0).protectedUntil, 100)
+    a.world.free()
+    b.free()
+  })
 })

@@ -39,9 +39,12 @@ export interface CharState {
   grabLever?: number
   knockbacks: number
   teleportTick: number
+  protectedUntil?: number
 }
 
 const CHAR_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING | G.CHAR)
+// Respawn protection is non-blocking: no character-character contact until it ends.
+const PROTECTED_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING)
 const PROBE_GROUPS = groups(G.PROBE, G.STATIC | G.MOVING)
 const STAND = CHAR.halfHeight + CHAR.radius
 const NO_OVERRIDE = -1
@@ -110,6 +113,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   readonly #groundObstacle: Int16Array
   readonly #knockbacks: Uint16Array
   readonly #teleportTick: Int32Array
+  // Tick at which respawn protection ends; -1 never protects.
+  readonly #protectedUntil: Int32Array
   readonly #frozen: Uint8Array
   readonly #parked: Uint8Array
   // Consumed within the tick it is used, so never snapshotted.
@@ -153,6 +158,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#groundObstacle = new Int16Array(n)
     this.#knockbacks = new Uint16Array(n)
     this.#teleportTick = new Int32Array(n)
+    this.#protectedUntil = new Int32Array(n)
     this.#frozen = new Uint8Array(n)
     this.#parked = new Uint8Array(n)
     this.#override = new Int32Array(n)
@@ -209,6 +215,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#groundBody[p] = -1
     this.#grabLever[p] = -1
     this.#teleportTick[p] = -1
+    this.#protectedUntil[p] = -1
     this.#frozen[p] = 0
     this.#parked[p] = 1
     this.#override[p] = NO_OVERRIDE
@@ -225,7 +232,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     rb.setTranslation({ x, y, z }, true)
     rb.setLinvel({ x: 0, y: 0, z: 0 }, true)
     rb.setGravityScale(live ? 1 : 0, true)
-    rb.collider(0).setCollisionGroups(live ? CHAR_GROUPS : 0)
+    rb.collider(0).setCollisionGroups(live ? this.#liveGroups(ctx, p) : 0)
     this.#grounded[p] = 0
     this.#groundObstacle[p] = -1
     this.#groundItem[p] = -1
@@ -254,7 +261,11 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     const live = this.#parked[p] === 0
     const rb = ctx.physics.body(this.#bodies[p])
     rb.setGravityScale(live ? 1 : 0, true)
-    rb.collider(0).setCollisionGroups(live ? CHAR_GROUPS : 0)
+    rb.collider(0).setCollisionGroups(live ? this.#liveGroups(ctx, p) : 0)
+  }
+
+  #liveGroups(ctx: WorldCtx<PlayerInput>, p: number): number {
+    return ctx.tick < this.#protectedUntil[p] ? PROTECTED_GROUPS : CHAR_GROUPS
   }
 
   park(ctx: WorldCtx<PlayerInput>, p: number): void {
@@ -274,6 +285,11 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#check(p, 'override')
     // Bits 19-31 are ignored on decode, so masking keeps the code non-negative.
     this.#override[p] = code & 0x7ffff
+  }
+
+  setProtected(p: number, untilTick: number): void {
+    this.#check(p, 'setProtected')
+    this.#protectedUntil[p] = untilTick
   }
 
   isParked(p: number): boolean {
@@ -307,6 +323,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     out.grabLever = this.#grabLever[p]
     out.knockbacks = this.#knockbacks[p]
     out.teleportTick = this.#teleportTick[p]
+    out.protectedUntil = this.#protectedUntil[p]
     return out
   }
 
@@ -359,6 +376,11 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       }
 
       const rb = ctx.physics.body(this.#bodies[p])
+      const protectedNow = ctx.tick < this.#protectedUntil[p]
+      // Restores the normal groups on the first tick at or past the protection end.
+      const collider = rb.collider(0)
+      const wantGroups = protectedNow ? PROTECTED_GROUPS : CHAR_GROUPS
+      if (collider.collisionGroups() !== wantGroups) collider.setCollisionGroups(wantGroups)
       const t = rb.translation()
       const v = rb.linvel()
       let vy = v.y
@@ -434,7 +456,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
           timer = CHAR.diveRecoverTicks
         }
       } else if (mode === CharMode.grabbing) {
-        if ((buttons & GRAB_BIT) === 0 || ++this.#grabTicks[p] >= CHAR.grabMaxTicks) mode = free
+        if (protectedNow || (buttons & GRAB_BIT) === 0 || ++this.#grabTicks[p] >= CHAR.grabMaxTicks) mode = free
       } else {
         mode = free
       }
@@ -498,7 +520,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         timer = 0
       }
 
-      if ((mode === CharMode.ground || mode === CharMode.air) &&
+      if ((mode === CharMode.ground || mode === CharMode.air) && !protectedNow &&
           (pressed & GRAB_BIT) !== 0 && this.#grabCooldown[p] === 0 && mechanisms !== null) {
         const levers = mechanisms.spec()?.levers ?? []
         for (let lever = 0; lever < levers.length; lever++) {
@@ -551,11 +573,16 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.readPositions(ctx, pos)
     for (let p = 0; p < this.playerCount; p++) {
       if (this.#parked[p] !== 0) continue
+      // Protection blocks the grab in both directions: never a target, never a grabber.
+      if (ctx.tick < this.#protectedUntil[p]) {
+        if (this.#grabTarget[p] >= 0 || this.#grabLever[p] >= 0) this.#release(ctx, p)
+        continue
+      }
       let q = this.#grabTarget[p]
       if (this.#grabLever[p] >= 0) {
         this.#scaleHorizontal(ctx, p, CHAR.grabSlow)
       } else if (q >= 0) {
-        if (this.#parked[q] !== 0 || this.#dist(p, q) > CHAR.grabRange) {
+        if (this.#parked[q] !== 0 || ctx.tick < this.#protectedUntil[q] || this.#dist(p, q) > CHAR.grabRange) {
           this.#release(ctx, p)
           this.#mode[p] = this.#grounded[p] !== 0 ? CharMode.ground : CharMode.air
           continue
@@ -564,7 +591,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         const mode = this.#mode[p]
         if ((mode !== CharMode.ground && mode !== CharMode.air) || this.#grabCooldown[p] > 0) continue
         if ((this.#prevButtons[p] & GRAB_BIT) === 0) continue
-        q = this.#nearestInCone(p)
+        q = this.#nearestInCone(p, ctx.tick)
         if (q < 0) continue
         this.#grabTarget[p] = q
         this.#grabTicks[p] = 0
@@ -585,13 +612,13 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     return Math.sqrt(dx * dx + dy * dy + dz * dz)
   }
 
-  // Nearest other non-parked player within grabRange and the facing cone; ties go to the lower index.
-  #nearestInCone(p: number): number {
+  // Nearest other non-parked, unprotected player within grabRange and the facing cone; ties go to the lower index.
+  #nearestInCone(p: number, tick: number): number {
     const pos = this.#pos
     let best = -1
     let bestD: number = CHAR.grabRange
     for (let q = 0; q < this.playerCount; q++) {
-      if (q === p || this.#parked[q] !== 0) continue
+      if (q === p || this.#parked[q] !== 0 || tick < this.#protectedUntil[q]) continue
       const d = this.#dist(p, q)
       if (d > bestD || (best >= 0 && d === bestD)) continue
       const dx = pos[q * 3] - pos[p * 3]
@@ -756,6 +783,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     w.i16(this.#groundItem[p])
     w.i16(this.#groundBody[p])
     w.i16(this.#grabLever[p])
+    w.i32(this.#protectedUntil[p])
   }
 
   readPlayer(r: SnapReader, p: number): void {
@@ -780,6 +808,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#groundItem[p] = r.i16()
     this.#groundBody[p] = r.i16()
     this.#grabLever[p] = r.i16()
+    this.#protectedUntil[p] = r.i32()
     // Consumed within a tick, so never snapshotted: a restored player has no pending override.
     this.#override[p] = NO_OVERRIDE
   }

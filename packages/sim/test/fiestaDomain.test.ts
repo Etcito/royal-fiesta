@@ -5,18 +5,22 @@ import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { DomainSpec, ShadowView } from '@gamesaloon/rollback/zones'
 import { initRapier, mergeEntityStreams } from '@gamesaloon/rollback-rapier'
 import { CharMode } from '../src/character/constants.ts'
-import type { Motion, ObstacleSpec, ResolvedCourse } from '../src/course.ts'
-import { inBox, levelOf } from '../src/course.ts'
+import type { Checkpoint, LevelSpec, Motion, ObstacleSpec, ResolvedCourse } from '../src/course.ts'
+import { inBox, legacyLevel, levelOf } from '../src/course.ts'
+import type { FeatureDraw } from '../src/features/feature.ts'
 import { neutralInput } from '../src/input.ts'
 import { PlayerStatus } from '../src/match/roundSystem.ts'
 import { PROFILES } from '../src/match/setup.ts'
 import { motionPose } from '../src/obstacles/motion.ts'
+import type { RoundKind } from '../src/season/kinds.ts'
+import { respawnSlot } from '../src/season/respawn.ts'
 import { pose, quatIdentity, v3 } from '../src/vec.ts'
 import type { Vec3 } from '../src/vec.ts'
 import { readBlob } from '../src/world.ts'
 import { cellOf } from '../src/zones/cells.ts'
 import { FiestaDomain } from '../src/zones/fiestaDomain.ts'
 import { createFiestaDomainFactory } from '../src/zones/fiestaDomainFactory.ts'
+import type { FiestaDomainFactoryConfig } from '../src/zones/fiestaDomainFactory.ts'
 import { decodeFiestaEvents } from '../src/zones/ledger.ts'
 import type { FiestaEvent } from '../src/zones/ledger.ts'
 import { parseZonesFile, ZONES_FORMAT, ZONES_VERSION } from '../src/zones/zonesFile.ts'
@@ -403,4 +407,167 @@ test('survival falls eliminate with a crossing sub-tick and stay parked', t => {
   domain.step([neutralInput(), neutralInput()], noShadows)
   assert.equal(domain.state(0).mode, CharMode.parked)
   assert.deepEqual(eventsOf(domain), [])
+})
+
+// Explicit level courses: legacyLevel supplies every scalar, then the case overrides its fields.
+function levelCourse(fields: Partial<ResolvedCourse>, level: Partial<LevelSpec>): ResolvedCourse {
+  const base: ResolvedCourse = {
+    id: 'level-course', name: 'level-course', kind: 'race', profiles: ['sprint'],
+    timeLimitS: 60, killPlaneY: -10, contentHash: 1,
+    spawns: [-6, 6, -3, 3].map(x => ({ t: v3(x, 0, 1), facing: { x: 0, z: 1 } })),
+    checkpoints: [], finish: null,
+    path: [{ p: v3(0, 0, 15), jump: false, dive: false }],
+    regions: [], queuePad: null, obstacles: [],
+    ...fields,
+  }
+  return { ...base, level: { ...legacyLevel(base), ...level } }
+}
+
+function gate(z: number): Checkpoint {
+  return {
+    box: { center: v3(0, 1, z), half: v3(12, 3, 1) },
+    respawn: { t: v3(0, 0, z), facing: { x: 0, z: 1 } },
+  }
+}
+
+function levelFactory(courseValue: ResolvedCourse, kind: RoundKind) {
+  const slot: NonNullable<FiestaDomainFactoryConfig['slot']> = {
+    kind, final: false, finalRule: null, target: 2, playoff: false,
+    roundIndex: 0, seed: 1234, teams: null, overtimeTicks: 0,
+  }
+  return createFiestaDomainFactory(R, {
+    course: courseValue, zones, profile: { ...PROFILES.sprint, introTicks: 0 },
+    kind, slot, seatCount: 4,
+  })
+}
+
+const routeCourse = levelCourse({
+  id: 'level-route',
+  obstacles: [obstacle('floor', v3(0, -0.5, 12), v3(15, 0.5, 18), { kind: 'static' })],
+  checkpoints: [gate(6), gate(10), gate(14)],
+  finish: { center: v3(0, 1, 20), half: v3(12, 3, 1) },
+}, {
+  route: { ordered: true, laps: 1, stages: [0, 1, 2] },
+  respawn: { mode: 'checkpoint', waitTicks: 0, protectTicks: 0, slots: 12, spacingM: 1.2 },
+})
+
+const respawnCourse = levelCourse({
+  id: 'level-respawn',
+  obstacles: [obstacle('floor', v3(0, -0.5, 8), v3(15, 0.5, 18), { kind: 'static' })],
+  checkpoints: [gate(6), gate(10)],
+  finish: { center: v3(0, 1, 15), half: v3(12, 3, 1) },
+}, {
+  route: { ordered: true, laps: 1, stages: [0, 1] },
+  respawn: { mode: 'checkpoint', waitTicks: 180, protectTicks: 60, slots: 12, spacingM: 1.2 },
+})
+
+const survivalCourse = levelCourse({
+  id: 'level-survival', kind: 'survival',
+  obstacles: [obstacle('floor', v3(0, -0.5, 8), v3(15, 0.5, 18), { kind: 'static' })],
+}, {
+  kind: 'survival', finalRule: 'lastStanding',
+  route: { ordered: true, laps: 1, stages: [] },
+  respawn: { mode: 'none', waitTicks: 0, protectTicks: 0, slots: 1, spacingM: 0 },
+})
+
+const markerCourse = levelCourse({
+  id: 'level-marker',
+  obstacles: [obstacle('floor', v3(0, -0.5, 8), v3(15, 0.5, 18), { kind: 'static' })],
+  features: [{ id: 'm', kind: 'marker', params: { t: [-6, 0, 1], radiusM: 1 } }],
+}, {
+  route: { ordered: true, laps: 1, stages: [] },
+  respawn: { mode: 'checkpoint', waitTicks: 0, protectTicks: 0, slots: 1, spacingM: 0 },
+})
+
+test('an ordered three-stage route ignores checkpoint 2 until stage 1 is crossed', t => {
+  const domain = track(t, levelFactory(routeCourse, 'race').create(left, 0))
+  assert.deepEqual(placeAndStep(domain, 6).filter(event => event.kind === 'gate')
+    .map(event => [event.a, event.b]), [[0, 0]])
+  assert.deepEqual(placeAndStep(domain, 14).filter(event => event.kind === 'gate'), [])
+  assert.deepEqual(placeAndStep(domain, 10).filter(event => event.kind === 'gate')
+    .map(event => [event.a, event.b]), [[1, 0]])
+  assert.deepEqual(placeAndStep(domain, 14).filter(event => event.kind === 'gate')
+    .map(event => [event.a, event.b]), [[2, 0]])
+})
+
+test('a fall waits 180 ticks, spreads two seats on checkpoint slots and protects 60', t => {
+  const domain = track(t, levelFactory(respawnCourse, 'race').create(together, 0))
+  assert.equal(placeAndStep(domain, 6).filter(event => event.kind === 'gate').length, 2)
+  const fallTick = domain.tick
+  const falls = placeAndStep(domain, 6, -20).filter(event => event.kind === 'fall')
+  assert.equal(falls.length, 2)
+  assert.ok(falls.every(event => event.a >= 0 && event.a <= 65535))
+  for (const seat of [0, 1]) {
+    assert.equal(domain.state(seat).mode, CharMode.parked)
+    assert.equal(domain.status(seat), PlayerStatus.alive)
+  }
+  const due = fallTick + 180
+  while (domain.tick < due) {
+    domain.step([neutralInput(), neutralInput()], noShadows)
+    for (const seat of [0, 1]) assert.equal(domain.state(seat).mode, CharMode.parked)
+  }
+  assert.equal(domain.tick, due)
+  domain.step([neutralInput(), neutralInput()], noShadows)
+  const level = respawnCourse.level
+  assert.ok(level)
+  const slots: Vec3[] = []
+  const scratch = { t: v3(0, 0, 0), facing: { x: 0, z: 1 } }
+  for (let i = 0; i < level.respawn.slots; i++) {
+    respawnSlot(respawnCourse.checkpoints[0].respawn, i, level.respawn, scratch)
+    slots.push({ x: scratch.t.x, y: scratch.t.y, z: scratch.t.z })
+  }
+  const slotOf = (pos: Vec3) => slots.findIndex(slot =>
+    Math.abs(slot.x - pos.x) < 1e-3 && Math.abs(slot.z - pos.z) < 1e-3)
+  const first = slotOf(domain.state(0).pos)
+  const second = slotOf(domain.state(1).pos)
+  assert.ok(first >= 0, 'seat 0 landed on a checkpoint respawn slot')
+  assert.ok(second >= 0, 'seat 1 landed on a checkpoint respawn slot')
+  assert.notEqual(first, second)
+  assert.equal(domain.state(0).protectedUntil, due + 60)
+  assert.equal(domain.state(1).protectedUntil, due + 60)
+})
+
+test('a survival kill-plane fall eliminates with a crossing sub-tick', t => {
+  const domain = track(t, levelFactory(survivalCourse, 'survival').create(left, 0))
+  const events = placeAndStep(domain, 1, -20)
+  assert.deepEqual(events.map(event => event.kind), ['eliminate'])
+  assert.ok(events[0].a >= 0 && events[0].a <= 65535)
+  assert.equal(domain.status(0), PlayerStatus.eliminated)
+})
+
+test('a rebuilt domain keeps the marker touch state from the exported trailer', t => {
+  const factoryFor = levelFactory(markerCourse, 'race')
+  const source = track(t, factoryFor.create(together, 0))
+  source.step([neutralInput(), neutralInput()], noShadows)
+  const markerState = (domain: FiestaDomain): [number, number] => {
+    const w = new SnapWriter()
+    domain.snapshot(w)
+    const reader = new SnapReader(w.bytes().slice(-8))
+    return [reader.u32(), reader.i32()]
+  }
+  assert.deepEqual(markerState(source), [1, 0])
+  for (let p = 0; p < source.seats.length; p++) {
+    source.characters.place(source.ctx, p, { t: v3(100 + p, 0, 100), facing: { x: 0, z: 1 } })
+  }
+  const rebuilt = track(t, factoryFor.rebuild(together, source.tick, [exported(source)]))
+  source.step([neutralInput(), neutralInput()], noShadows)
+  rebuilt.step([neutralInput(), neutralInput()], noShadows)
+  assert.deepEqual(markerState(rebuilt), [0, 0])
+  assert.deepEqual(markerState(rebuilt), markerState(source))
+})
+
+test('drawFeatures appends and returns the marker draw', t => {
+  const domain = track(t, levelFactory(markerCourse, 'race').create(together, 0))
+  const draws: FeatureDraw[] = []
+  assert.equal(domain.drawFeatures(draws), 1)
+  assert.equal(draws.length, 1)
+  assert.equal(draws[0].asset, 'candy.floor-disc')
+  assert.deepEqual(draws[0].t, { x: -6, y: 0, z: 1 })
+  assert.deepEqual(draws[0].s, { x: 1, y: 0.1, z: 1 })
+  assert.equal(draws[0].visible, true)
+  assert.equal(draws[0].tint, 0)
+  domain.step([neutralInput(), neutralInput()], noShadows)
+  const touched: FeatureDraw[] = []
+  assert.equal(domain.drawFeatures(touched), 1)
+  assert.equal(touched[0].tint, 4)
 })

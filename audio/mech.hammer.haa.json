@@ -1,0 +1,43 @@
+{
+  "haa": 1,
+  "id": "mech.hammer",
+  "title": "Heavy hammer swing whoosh into a rubbery thud",
+  "inputs": [{"name":"gain","kind":"continuous","unit":"","min":0,"max":1,"default":1,"smooth":0,"curve":"lin"}],
+  "master": 0.6814,
+  "graph": {
+    "duration": 0.8, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded material variation","params":{"rate":5,"depth":1,"smooth":0.7}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Mechanism output","params":{"gain":1}},
+      {"id":"strength","type":"input","x":520,"y":40,"label":"Course event strength","params":{"name":"gain"}},
+      {"id":"strength-amp","type":"gain","x":760,"y":40,"label":"Scale complete sound by event strength","params":{"gain":0}},
+      {"id":"swing-env","type":"curve","x":40,"y":200,"label":"Swing gathers speed before impact","params":{"amount":1},"curve":[[0,0],[0.09999999999999999,0.12],[0.25,0.45],[0.425,1],[0.5125,0.7],[0.5499999999999999,0],[1,0]]},
+      {"id":"air","type":"noise","x":280,"y":200,"label":"Seeded heavy swing air","params":{"color":"pink","level":1,"width":0}},
+      {"id":"air-body","type":"filter","x":520,"y":200,"label":"air-body","params":{"cutoff":1100,"resonance":0.7,"mode":"bandpass"}},
+      {"id":"whoosh","type":"gain","x":760,"y":200,"label":"whoosh","params":{"gain":0}},
+      {"id":"hit-env","type":"curve","x":40,"y":360,"label":"Broad heavy impact and decay","params":{"amount":1},"curve":[[0,0],[0.5375,0],[0.54625,1],[0.5874999999999999,0.85],[0.6875,0.5],[0.8375,0.16],[0.99375,0],[1,0]]},
+      {"id":"head","type":"oscillator","x":280,"y":360,"label":"Heavy hammer head","params":{"frequency":68,"wave":"sine","level":0.85}},
+      {"id":"bend","type":"curve","x":520,"y":360,"label":"Impact pitch drops into weight","params":{"amount":1},"curve":[[0,0],[0.5375,0],[0.54625,1],[0.65,0.2],[0.7999999999999999,0],[1,0]]},
+      {"id":"head-amp","type":"gain","x":760,"y":360,"label":"head-amp","params":{"gain":0}},
+      {"id":"impact-body","type":"filter","x":40,"y":520,"label":"impact-body","params":{"cutoff":430,"resonance":1,"mode":"lowpass"}},
+      {"id":"impact-amp","type":"gain","x":280,"y":520,"label":"impact-amp","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"strength-strength-amp-gain","from":"strength","to":"strength-amp","target":"gain","amount":1},
+      {"id":"strength-amp-out-audio","from":"strength-amp","to":"out","target":"audio","amount":1},
+      {"id":"air-air-body-audio","from":"air","to":"air-body","target":"audio","amount":1},
+      {"id":"variation-air-body-cutoff","from":"variation","to":"air-body","target":"cutoff","amount":180},
+      {"id":"air-body-whoosh-audio","from":"air-body","to":"whoosh","target":"audio","amount":1},
+      {"id":"swing-env-whoosh-gain","from":"swing-env","to":"whoosh","target":"gain","amount":1},
+      {"id":"whoosh-strength-amp-audio","from":"whoosh","to":"strength-amp","target":"audio","amount":1},
+      {"id":"bend-head-frequency","from":"bend","to":"head","target":"frequency","amount":100},
+      {"id":"head-head-amp-audio","from":"head","to":"head-amp","target":"audio","amount":1},
+      {"id":"hit-env-head-amp-gain","from":"hit-env","to":"head-amp","target":"gain","amount":1},
+      {"id":"head-amp-strength-amp-audio","from":"head-amp","to":"strength-amp","target":"audio","amount":1},
+      {"id":"air-impact-body-audio","from":"air","to":"impact-body","target":"audio","amount":1},
+      {"id":"impact-body-impact-amp-audio","from":"impact-body","to":"impact-amp","target":"audio","amount":1},
+      {"id":"hit-env-impact-amp-gain","from":"hit-env","to":"impact-amp","target":"gain","amount":1},
+      {"id":"impact-amp-strength-amp-audio","from":"impact-amp","to":"strength-amp","target":"audio","amount":1}
+    ]
+  }
+}

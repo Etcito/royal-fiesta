@@ -1,0 +1,46 @@
+{
+  "haa": 1,
+  "id": "mech.log",
+  "title": "Rolling log rumble pass with uneven wooden knots",
+  "inputs": [{"name":"gain","kind":"continuous","unit":"","min":0,"max":1,"default":1,"smooth":0,"curve":"lin"}],
+  "master": 0.89771,
+  "graph": {
+    "duration": 1, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded material variation","params":{"rate":5,"depth":1,"smooth":0.7}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Mechanism output","params":{"gain":1}},
+      {"id":"strength","type":"input","x":520,"y":40,"label":"Course event strength","params":{"name":"gain"}},
+      {"id":"strength-amp","type":"gain","x":760,"y":40,"label":"Scale complete sound by event strength","params":{"gain":0}},
+      {"id":"pass-env","type":"curve","x":40,"y":200,"label":"Log approaches then rolls away","params":{"amount":1},"curve":[[0,0],[0.12,0.3],[0.3,0.8],[0.48,1],[0.63,0.85],[0.82,0.4],[0.995,0],[1,0]]},
+      {"id":"rumble","type":"noise","x":280,"y":200,"label":"Seeded rolling surface","params":{"color":"brown","level":1,"width":0}},
+      {"id":"log-body","type":"filter","x":520,"y":200,"label":"log-body","params":{"cutoff":450,"resonance":0.9,"mode":"lowpass"}},
+      {"id":"rotation","type":"lfo","x":760,"y":200,"label":"Uneven log rotation","params":{"rate":9,"depth":1,"wave":"sine"}},
+      {"id":"roughness","type":"gain","x":40,"y":360,"label":"Rolling pulse without silence","params":{"gain":0.7}},
+      {"id":"rumble-amp","type":"gain","x":280,"y":360,"label":"rumble-amp","params":{"gain":0}},
+      {"id":"weight","type":"oscillator","x":520,"y":360,"label":"Log weight","params":{"frequency":58,"wave":"sine","level":0.25}},
+      {"id":"weight-amp","type":"gain","x":760,"y":360,"label":"weight-amp","params":{"gain":0}},
+      {"id":"knots-env","type":"curve","x":40,"y":520,"label":"Wooden knots contact the ground","params":{"amount":1},"curve":[[0,0],[0.15,0],[0.162,0.35],[0.21,0],[0.33,0],[0.342,0.65],[0.41,0],[0.53,0],[0.542,0.8],[0.61,0],[0.73,0],[0.742,0.4],[0.81,0],[1,0]]},
+      {"id":"knock","type":"oscillator","x":280,"y":520,"label":"Dull rolling knot knocks","params":{"frequency":156,"wave":"triangle","level":0.5}},
+      {"id":"knots-amp","type":"gain","x":520,"y":520,"label":"knots-amp","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"strength-strength-amp-gain","from":"strength","to":"strength-amp","target":"gain","amount":1},
+      {"id":"strength-amp-out-audio","from":"strength-amp","to":"out","target":"audio","amount":1},
+      {"id":"rumble-log-body-audio","from":"rumble","to":"log-body","target":"audio","amount":1},
+      {"id":"variation-log-body-cutoff","from":"variation","to":"log-body","target":"cutoff","amount":100},
+      {"id":"log-body-roughness-audio","from":"log-body","to":"roughness","target":"audio","amount":1},
+      {"id":"rotation-roughness-gain","from":"rotation","to":"roughness","target":"gain","amount":0.25},
+      {"id":"roughness-rumble-amp-audio","from":"roughness","to":"rumble-amp","target":"audio","amount":1},
+      {"id":"pass-env-rumble-amp-gain","from":"pass-env","to":"rumble-amp","target":"gain","amount":1},
+      {"id":"rumble-amp-strength-amp-audio","from":"rumble-amp","to":"strength-amp","target":"audio","amount":1},
+      {"id":"variation-weight-frequency","from":"variation","to":"weight","target":"frequency","amount":8},
+      {"id":"weight-weight-amp-audio","from":"weight","to":"weight-amp","target":"audio","amount":1},
+      {"id":"pass-env-weight-amp-gain","from":"pass-env","to":"weight-amp","target":"gain","amount":1},
+      {"id":"weight-amp-strength-amp-audio","from":"weight-amp","to":"strength-amp","target":"audio","amount":1},
+      {"id":"variation-knock-frequency","from":"variation","to":"knock","target":"frequency","amount":20},
+      {"id":"knock-knots-amp-audio","from":"knock","to":"knots-amp","target":"audio","amount":1},
+      {"id":"knots-env-knots-amp-gain","from":"knots-env","to":"knots-amp","target":"gain","amount":1},
+      {"id":"knots-amp-strength-amp-audio","from":"knots-amp","to":"strength-amp","target":"audio","amount":1}
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "haa": 1,
+  "id": "mech.switch",
+  "title": "Candy pressure plate: warm tick and latch clack",
+  "inputs": [],
+  "master": 0.73647,
+  "graph": {
+    "duration": 0.22, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded material variation","params":{"rate":5,"depth":1,"smooth":0.7}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Mechanism output","params":{"gain":1}},
+      {"id":"tick-env","type":"curve","x":520,"y":40,"label":"Pressure plate first contact","params":{"amount":1},"curve":[[0,0],[0.013636363636363637,1],[0.08181818181818182,0.65],[0.25,0.12],[0.40909090909090906,0],[1,0]]},
+      {"id":"clack-env","type":"curve","x":760,"y":40,"label":"Lower candy latch follows the tick","params":{"amount":1},"curve":[[0,0],[0.21363636363636362,0],[0.2272727272727273,1],[0.31818181818181823,0.65],[0.5454545454545454,0.22],[0.9090909090909092,0],[1,0]]},
+      {"id":"tick","type":"oscillator","x":40,"y":200,"label":"Warm sugar shell tick","params":{"frequency":1250,"wave":"triangle","level":0.6}},
+      {"id":"tick-amp","type":"gain","x":280,"y":200,"label":"tick-amp","params":{"gain":0}},
+      {"id":"clack","type":"oscillator","x":520,"y":200,"label":"Hollow candy plate body","params":{"frequency":560,"wave":"sine","level":0.65}},
+      {"id":"clack-amp","type":"gain","x":760,"y":200,"label":"clack-amp","params":{"gain":0}},
+      {"id":"contact","type":"noise","x":40,"y":360,"label":"Seeded plastic contact","params":{"color":"pink","level":0.7,"width":0}},
+      {"id":"shell","type":"filter","x":280,"y":360,"label":"shell","params":{"cutoff":2100,"resonance":0.9,"mode":"bandpass"}},
+      {"id":"contact-amp","type":"gain","x":520,"y":360,"label":"contact-amp","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"variation-tick-frequency","from":"variation","to":"tick","target":"frequency","amount":70},
+      {"id":"tick-tick-amp-audio","from":"tick","to":"tick-amp","target":"audio","amount":1},
+      {"id":"tick-env-tick-amp-gain","from":"tick-env","to":"tick-amp","target":"gain","amount":1},
+      {"id":"tick-amp-out-audio","from":"tick-amp","to":"out","target":"audio","amount":1},
+      {"id":"variation-clack-frequency","from":"variation","to":"clack","target":"frequency","amount":35},
+      {"id":"clack-clack-amp-audio","from":"clack","to":"clack-amp","target":"audio","amount":1},
+      {"id":"clack-env-clack-amp-gain","from":"clack-env","to":"clack-amp","target":"gain","amount":1},
+      {"id":"clack-amp-out-audio","from":"clack-amp","to":"out","target":"audio","amount":1},
+      {"id":"contact-shell-audio","from":"contact","to":"shell","target":"audio","amount":1},
+      {"id":"shell-contact-amp-audio","from":"shell","to":"contact-amp","target":"audio","amount":1},
+      {"id":"tick-env-contact-amp-gain","from":"tick-env","to":"contact-amp","target":"gain","amount":1},
+      {"id":"clack-env-contact-amp-gain","from":"clack-env","to":"contact-amp","target":"gain","amount":0.7},
+      {"id":"contact-amp-out-audio","from":"contact-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

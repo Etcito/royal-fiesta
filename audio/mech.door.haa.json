@@ -1,0 +1,47 @@
+{
+  "haa": 1,
+  "id": "mech.door",
+  "title": "Heavy sliding door with a cushioned stop thunk",
+  "inputs": [{"name":"gain","kind":"continuous","unit":"","min":0,"max":1,"default":1,"smooth":0,"curve":"lin"}],
+  "master": 0.7195,
+  "graph": {
+    "duration": 0.8, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded material variation","params":{"rate":5,"depth":1,"smooth":0.7}},
+      {"id":"out","type":"output","x":280,"y":40,"label":"Mechanism output","params":{"gain":1}},
+      {"id":"strength","type":"input","x":520,"y":40,"label":"Course event strength","params":{"name":"gain"}},
+      {"id":"strength-amp","type":"gain","x":760,"y":40,"label":"Scale complete sound by event strength","params":{"gain":0}},
+      {"id":"slide-env","type":"curve","x":40,"y":200,"label":"Door accelerates and slows along its track","params":{"amount":1},"curve":[[0,0],[0.0625,0.3],[0.19999999999999998,0.75],[0.5,1],[0.7124999999999999,0.6],[0.8125,0],[1,0]]},
+      {"id":"track","type":"noise","x":280,"y":200,"label":"Seeded track friction","params":{"color":"pink","level":1,"width":0}},
+      {"id":"track-body","type":"filter","x":520,"y":200,"label":"track-body","params":{"cutoff":780,"resonance":0.85,"mode":"lowpass"}},
+      {"id":"slide-amp","type":"gain","x":760,"y":200,"label":"slide-amp","params":{"gain":0}},
+      {"id":"hinge","type":"oscillator","x":40,"y":360,"label":"Low door frame flex","params":{"frequency":145,"wave":"triangle","level":0.22}},
+      {"id":"hinge-amp","type":"gain","x":280,"y":360,"label":"hinge-amp","params":{"gain":0}},
+      {"id":"stop-env","type":"curve","x":520,"y":360,"label":"Door meets its rubber stop","params":{"amount":1},"curve":[[0,0],[0.7875,0],[0.7975,1],[0.8375,0.8],[0.9125,0.3],[0.99375,0],[1,0]]},
+      {"id":"stop","type":"oscillator","x":760,"y":360,"label":"Stop thunk","params":{"frequency":92,"wave":"sine","level":0.8}},
+      {"id":"stop-bend","type":"curve","x":40,"y":520,"label":"Stop pitch settles","params":{"amount":1},"curve":[[0,0],[0.7875,0],[0.7975,1],[0.8999999999999999,0],[1,0]]},
+      {"id":"stop-amp","type":"gain","x":280,"y":520,"label":"stop-amp","params":{"gain":0}},
+      {"id":"stop-contact","type":"gain","x":520,"y":520,"label":"stop-contact","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"strength-strength-amp-gain","from":"strength","to":"strength-amp","target":"gain","amount":1},
+      {"id":"strength-amp-out-audio","from":"strength-amp","to":"out","target":"audio","amount":1},
+      {"id":"track-track-body-audio","from":"track","to":"track-body","target":"audio","amount":1},
+      {"id":"variation-track-body-cutoff","from":"variation","to":"track-body","target":"cutoff","amount":220},
+      {"id":"track-body-slide-amp-audio","from":"track-body","to":"slide-amp","target":"audio","amount":1},
+      {"id":"slide-env-slide-amp-gain","from":"slide-env","to":"slide-amp","target":"gain","amount":1},
+      {"id":"slide-amp-strength-amp-audio","from":"slide-amp","to":"strength-amp","target":"audio","amount":1},
+      {"id":"variation-hinge-frequency","from":"variation","to":"hinge","target":"frequency","amount":32},
+      {"id":"hinge-hinge-amp-audio","from":"hinge","to":"hinge-amp","target":"audio","amount":1},
+      {"id":"slide-env-hinge-amp-gain","from":"slide-env","to":"hinge-amp","target":"gain","amount":1},
+      {"id":"hinge-amp-strength-amp-audio","from":"hinge-amp","to":"strength-amp","target":"audio","amount":1},
+      {"id":"stop-bend-stop-frequency","from":"stop-bend","to":"stop","target":"frequency","amount":70},
+      {"id":"stop-stop-amp-audio","from":"stop","to":"stop-amp","target":"audio","amount":1},
+      {"id":"stop-env-stop-amp-gain","from":"stop-env","to":"stop-amp","target":"gain","amount":1},
+      {"id":"stop-amp-strength-amp-audio","from":"stop-amp","to":"strength-amp","target":"audio","amount":1},
+      {"id":"track-body-stop-contact-audio","from":"track-body","to":"stop-contact","target":"audio","amount":1},
+      {"id":"stop-env-stop-contact-gain","from":"stop-env","to":"stop-contact","target":"gain","amount":1},
+      {"id":"stop-contact-strength-amp-audio","from":"stop-contact","to":"strength-amp","target":"audio","amount":1}
+    ]
+  }
+}

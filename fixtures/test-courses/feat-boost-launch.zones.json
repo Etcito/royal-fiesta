@@ -1,0 +1,21 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "feat-boost-launch",
+  "grid": {
+    "origin": [
+      -10,
+      -2
+    ],
+    "cell": [
+      2,
+      2
+    ],
+    "cols": 10,
+    "rows": 32
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 10
+  }
+}

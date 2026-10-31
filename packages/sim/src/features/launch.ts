@@ -177,10 +177,20 @@ export const catchVolumeFeature: FeatureFactory = (spec, path) => {
   const stage = intParam(spec, path, 'respawnStage', 0, 1_000_000)
   let checkpoint = -1
   let inside = new Uint8Array(0)
+  let seatIds: number[] = []
   const scratch: Vec3 = { x: 0, y: 0, z: 0 }
 
   const scan = (ctx: FeatureCtx): void => {
-    for (let i = 0; i < inside.length; i++) {
+    // Zone slots can shrink, reorder, or be reused without a count change.
+    const previous = new Map(seatIds.map((id, i) => [id, inside[i]]))
+    seatIds = []
+    inside = new Uint8Array(ctx.seats.count)
+    for (let i = 0; i < ctx.seats.count; i++) {
+      const id = ctx.seats.seat(i)
+      seatIds.push(id)
+      inside[i] = previous.get(id) ?? 0
+    }
+    for (let i = 0; i < ctx.seats.count; i++) {
       const now = inBox(box, ctx.seats.pos(i, scratch)) ? 1 : 0
       if (now === 1 && inside[i] === 0 && checkpoint >= 0 && ctx.seats.status(i) === PlayerStatus.alive) {
         ctx.seats.teleport(i, ctx.course.checkpoints[checkpoint].respawn)
@@ -194,6 +204,7 @@ export const catchVolumeFeature: FeatureFactory = (spec, path) => {
     kind: 'catchVolume',
     init(ctx) {
       inside = new Uint8Array(ctx.seats.count)
+      seatIds = Array.from({ length: ctx.seats.count }, (_, i) => ctx.seats.seat(i))
       const stages = levelOf(ctx.course).route.stages
       for (let c = 0; c < ctx.course.checkpoints.length; c++) {
         if ((stages[c] ?? -1) === stage) {
@@ -210,12 +221,13 @@ export const catchVolumeFeature: FeatureFactory = (spec, path) => {
     postStep(ctx) { scan(ctx) },
     snapshot(w: SnapWriter) {
       w.u16(inside.length)
-      for (let i = 0; i < inside.length; i++) w.u8(inside[i])
+      for (let i = 0; i < inside.length; i++) { w.u16(seatIds[i]); w.u8(inside[i]) }
     },
     restore(r: SnapReader) {
       const n = r.u16()
       inside = new Uint8Array(n)
-      for (let i = 0; i < n; i++) inside[i] = r.u8()
+      seatIds = []
+      for (let i = 0; i < n; i++) { seatIds.push(r.u16()); inside[i] = r.u8() }
     },
     draw(out: FeatureDraw[]) {
       out.push({

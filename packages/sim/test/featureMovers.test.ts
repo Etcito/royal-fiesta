@@ -449,6 +449,47 @@ test('catchVolume: an entering seat is teleported to the respawn of its stage', 
   assert.deepEqual(seats.calls.teleport, [{ seat: 0, at: cps[1].respawn }])
 })
 
+test('catchVolume: zone membership changes remain deterministic across restore', () => {
+  const s = spec('catchVolume', { center: [0, 0, 0], half: [2, 1, 2], respawnStage: 0 })
+  // A respawn inside the volume keeps occupancy set, exposing slot reuse bugs.
+  const course = courseOf([s], [cp(v3(0, 0, 0))], [0])
+  const members = (ids: number[]): StubSeats => {
+    const seats = new StubSeats(ids.map(() => v3(0, 0, 0)))
+    seats.seat = i => ids[i]
+    return seats
+  }
+  const original = catchVolumeFeature(s, PATH)
+  const initial = context(members([10, 20]), course)
+  original.init(initial)
+  original.preStep(initial)
+  assert.equal(initial.seats.calls.teleport.length, 2)
+  const saved = snapshotBytes(original)
+  const restored = catchVolumeFeature(s, PATH)
+  restored.init(initial)
+  restored.restore(new SnapReader(saved), initial)
+
+  for (const feature of [original, restored]) {
+    // Seat 10 leaves; seat 30 enters its slot without changing the count.
+    const replaced = context(members([30, 20]), course, 1)
+    feature.preStep(replaced)
+    assert.deepEqual(replaced.seats.calls.teleport.map(c => replaced.seats.seat(c.seat)), [30])
+    // Shrink between pre/post, then grow and reorder surviving seats.
+    const shrunk = context(members([20]), course, 1)
+    feature.postStep(shrunk)
+    assert.equal(shrunk.seats.calls.teleport.length, 0)
+    const grown = context(members([40, 20, 50]), course, 2)
+    feature.preStep(grown)
+    assert.deepEqual(grown.seats.calls.teleport.map(c => grown.seats.seat(c.seat)), [40, 50])
+    grown.seats.positions[1] = v3(10, 0, 0)
+    feature.postStep(grown)
+    grown.seats.positions[1] = v3(0, 0, 0)
+    feature.preStep(grown)
+    assert.deepEqual(grown.seats.calls.teleport.map(c => grown.seats.seat(c.seat)), [40, 50, 20])
+    feature.postStep(context(members([]), course, 3))
+  }
+  assert.deepEqual(snapshotBytes(original), snapshotBytes(restored))
+})
+
 test('catchVolume: a missing stage is refused at init', () => {
   const cps = [cp(v3(1, 2, 3)), cp(v3(4, 5, 6))]
   const s = spec('catchVolume', { center: [0, 0, 0], half: [2, 1, 2], respawnStage: 5 })

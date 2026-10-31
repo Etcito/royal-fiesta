@@ -5,9 +5,10 @@ import { Rng, SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { initRapier, RapierWorldSim } from '@gamesaloon/rollback-rapier'
 import { CharMode } from '../src/character/constants.ts'
 import { legacyLevel } from '../src/course.ts'
-import type { HomeSpec, LevelSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
+import type { FeatureSpec, HomeSpec, LevelSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
+import { collectibleFeature } from '../src/features/collectibles.ts'
 import { ballFeature, goalFeature } from '../src/features/football.ts'
-import type { CourseFeature, FeatureCtx, FeatureSeats } from '../src/features/feature.ts'
+import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureSeats } from '../src/features/feature.ts'
 import { G, groups } from '../src/groups.ts'
 import { neutralInput } from '../src/input.ts'
 import { PlayerStatus } from '../src/match/roundSystem.ts'
@@ -31,8 +32,9 @@ export class StubSeats implements FeatureSeats {
   ids = [-1, -1]
   inputs = [neutralInput(), neutralInput()]
   protectedFlags = [false, false]
+  seatIds = [20, 21]
   teleports: Teleport[] = []
-  seat(i: number) { return i + 20 }
+  seat(i: number) { return this.seatIds[i] }
   pos(i: number, out: Vec3) { return Object.assign(out, this.positions[i]) }
   vel(i: number, out: Vec3) { return Object.assign(out, this.velocities[i]) }
   facing(i: number, out: Vec3) { return Object.assign(out, this.directions[i]) }
@@ -68,6 +70,12 @@ export interface HarnessOptions {
   resetS?: number
   goals?: GoalCase[]
   homes?: HomeSpec[]
+  /** Extra feature specs after the ball and goals (collectible, bank, ...). */
+  extraFeatures?: FeatureSpec[]
+  /** false builds a course with no ball/goals, for the other objective cases. */
+  withBall?: boolean
+  /** Overrides ctx.roundTick; defaults to the physics tick. */
+  roundTick?: () => number
 }
 
 export interface Harness {
@@ -78,6 +86,7 @@ export interface Harness {
   ctx: FeatureCtx
   features: CourseFeature[]
   ball(): ReturnType<RapierWorldSim['body']>
+  draw(): FeatureDraw[]
   snapshot(): Uint8Array[]
   restore(bytes: Uint8Array[]): void
   step(): void
@@ -100,28 +109,41 @@ export async function harness(t: TestContext, options: HarnessOptions = {}): Pro
     queuePad: null, obstacles: [], contentHash: 0, features: [],
   }
   const level: LevelSpec = { ...legacyLevel(base), homes: options.homes ?? [] }
-  const course: ResolvedCourse = { ...base, level, features: [
+  const specs: FeatureSpec[] = options.withBall === false ? [] : [
     { id: 'ball', kind: 'ball', params: { spawn, radius: options.radius ?? 0.5,
       mass: options.mass ?? 5, resetS: options.resetS ?? 30 } },
     ...goals.map((goal, index) => ({ id: `goal-${index}`, kind: 'goal',
       params: { team: goal.team, center: goal.center, half: goal.half } })),
-  ] }
+  ]
+  specs.push(...(options.extraFeatures ?? []))
+  const course: ResolvedCourse = { ...base, level, features: specs }
+  const roundTick = options.roundTick ?? (() => physics.tick)
   const ctx: FeatureCtx = {
     R, physics, seats, course, rng: new Rng(1), get tick() { return physics.tick },
-    get roundTick() { return physics.tick }, entrants: 2, overtime: false, trailingTeam: -1,
+    get roundTick() { return roundTick() }, entrants: 2, overtime: false, trailingTeam: -1,
     soundLoop() {},
     emit(kind, seat, a, b) { events.push({ kind, seat, a, b }) },
     sound(id) { sounds.push(id) },
   }
-  const features = course.features!.map((spec, index) =>
-    spec.kind === 'goal'
-      ? goalFeature(spec, `football-test#/features/${index}`)
-      : ballFeature(spec, `football-test#/features/${index}`))
-  for (const feature of features) feature.init(ctx)
-  const ballId = physics.ids().at(-1)!
+  const features: CourseFeature[] = []
+  let ballId = -1
+  for (const [index, spec] of specs.entries()) {
+    const path = `football-test#/features/${index}`
+    const feature = spec.kind === 'goal' ? goalFeature(spec, path)
+      : spec.kind === 'ball' ? ballFeature(spec, path) : collectibleFeature(spec, path)
+    const before = physics.ids().length
+    feature.init(ctx)
+    if (spec.kind === 'ball') ballId = physics.ids()[before] ?? -1
+    features.push(feature)
+  }
   return {
     physics, seats, events, sounds, ctx, features,
     ball: () => physics.body(ballId),
+    draw() {
+      const out: FeatureDraw[] = []
+      for (const feature of features) feature.draw(out)
+      return out
+    },
     snapshot: () => features.map(feature => {
       const w = new SnapWriter()
       feature.snapshot(w)
@@ -209,6 +231,107 @@ test('QB1: restore at tick 60 of 120 reproduces the snapshot bytes exactly', asy
     if (tick === 45) ball.setTranslation(v3(10, 2, 0), true)
     else ball.setTranslation(v3(Math.sin(tick / 9) * 3, 2, Math.cos(tick / 11) * 3), true)
     ball.setLinvel(v3(0.5, 0, -0.25), true)
+    h.step()
+  }
+  for (let tick = 0; tick < 60; tick++) drive(a, tick)
+  const checkpoint = a.snapshot()
+  b.physics.restoreSnapshot(a.physics.takeSnapshot())
+  b.restore(checkpoint)
+  assert.deepEqual(b.snapshot(), checkpoint)
+
+  for (let tick = 60; tick < 120; tick++) { drive(a, tick); drive(b, tick) }
+  assert.deepEqual(b.snapshot(), a.snapshot())
+  assert.deepEqual(b.physics.takeSnapshot(), a.physics.takeSnapshot())
+
+  const c = await harness(t, options), d = await harness(t, options)
+  for (let tick = 0; tick < 120; tick++) { drive(c, tick); drive(d, tick) }
+  assert.deepEqual(d.snapshot(), c.snapshot())
+  assert.deepEqual(c.snapshot(), a.snapshot())
+})
+
+// Collectible cases: one spot per pickup, nearest available seat, regenS gate.
+
+function collectibleCheck(params: { spots: [number, number, number][]; value?: number; regenS?: number }): FeatureSpec {
+  return { id: 'pickup', kind: 'collectible', params: {
+    spots: params.spots, value: params.value ?? 5, regenS: params.regenS ?? 1 } }
+}
+
+test('collectible: a seat on a spot scores once, hides the spot, then it returns after regenS', async t => {
+  const h = await harness(t, {
+    withBall: false,
+    extraFeatures: [collectibleCheck({ spots: [[0, 2, 0]], value: 7, regenS: 0.1 })],
+  })
+  assert.equal(h.draw()[0].visible, true, 'available at the start')
+  h.seats.positions = [v3(0, 2, 0), v3(20, 2, 0)]
+  h.step()
+  assert.deepEqual(h.events, [{ kind: 'score', seat: 20, a: 7, b: 0 }])
+  assert.deepEqual(h.sounds, ['obj.pickup'])
+  assert.equal(h.draw()[0].visible, false, 'hidden while regenerating')
+
+  h.seats.positions[0] = v3(10, 2, 10)
+  for (let i = 0; i < 5; i++) h.step()
+  assert.equal(h.draw()[0].visible, false, 'still hidden one tick before regenS')
+  h.step()
+  assert.equal(h.draw()[0].visible, true, 'back at regenS')
+  assert.equal(h.events.length, 1, 'no second pickup away from the spot')
+})
+
+test('collectible: on equal distance the lower room seat takes the spot', async t => {
+  const h = await harness(t, {
+    withBall: false,
+    extraFeatures: [collectibleCheck({ spots: [[1, 2, 0]], value: 3 })],
+  })
+  h.seats.seatIds = [21, 20]
+  h.seats.positions = [v3(0.5, 2, 0), v3(1.5, 2, 0)]
+  h.step()
+  assert.deepEqual(h.events, [{ kind: 'score', seat: 20, a: 3, b: 0 }])
+})
+
+test('collectible: no pickup before roundTick 0', async t => {
+  let roundTick = -1
+  const h = await harness(t, {
+    withBall: false,
+    roundTick: () => roundTick,
+    extraFeatures: [collectibleCheck({ spots: [[0, 2, 0]], value: 4 })],
+  })
+  h.seats.positions[0] = v3(0, 2, 0)
+  for (let i = 0; i < 5; i++) h.step()
+  assert.equal(h.events.length, 0, 'the intro emits nothing')
+  roundTick = 0
+  h.step()
+  assert.deepEqual(h.events, [{ kind: 'score', seat: 20, a: 4, b: 0 }])
+})
+
+test('collectible: botTarget takes the nearest available spot and is false when none is', async t => {
+  const h = await harness(t, {
+    withBall: false,
+    extraFeatures: [collectibleCheck({ spots: [[0, 2, 0], [10, 2, 0]], value: 2, regenS: 2 })],
+  })
+  const out = v3(0, 0, 0)
+  assert.equal(h.features[0].botTarget!(20, v3(1, 2, 0), out), true)
+  near(out, v3(0, 2, 0), 'nearest ')
+
+  h.seats.positions = [v3(0, 2, 0), v3(30, 2, 0)]
+  h.step()
+  assert.equal(h.events.length, 1)
+  assert.equal(h.features[0].botTarget!(20, v3(1, 2, 0), out), true)
+  near(out, v3(10, 2, 0), 'the other spot ')
+
+  h.seats.positions[0] = v3(10, 2, 0)
+  h.step()
+  assert.equal(h.events.length, 2)
+  assert.equal(h.features[0].botTarget!(20, v3(1, 2, 0), out), false, 'all spots wait for regen')
+})
+
+test('QB1: collectibles restore at tick 60 of 120 reproduces the snapshot bytes exactly', async t => {
+  const options: HarnessOptions = {
+    withBall: false,
+    extraFeatures: [collectibleCheck({ spots: [[0, 2, 0], [3, 2, 0], [0, 2, 3]], value: 5, regenS: 0.5 })],
+  }
+  const a = await harness(t, options), b = await harness(t, options)
+  const drive = (h: Harness, tick: number) => {
+    h.seats.positions[0] = v3(Math.sin(tick / 7) * 3, 2, Math.cos(tick / 11) * 3)
+    h.seats.positions[1] = v3(20 + (tick % 5), 2, 0)
     h.step()
   }
   for (let tick = 0; tick < 60; tick++) drive(a, tick)

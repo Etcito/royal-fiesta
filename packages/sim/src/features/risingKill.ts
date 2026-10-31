@@ -13,6 +13,14 @@ const WARN_S = 3
 const BOT_REACH_M = 15
 const BOT_REACH2 = BOT_REACH_M * BOT_REACH_M
 
+/**
+ * Feature loop sounds land with the features-core sound amendment; until then the
+ * slime is emitted through the one-shot channel. Both signatures are stable.
+ */
+type LoopCtx = FeatureCtx & {
+  soundLoop?: (key: string, id: string, pos: Vec3, strength: number, rate: number) => void
+}
+
 /** y(t) = startY + riseMps * (max(0, t - startS) + overtimeS), clamped at endY. */
 export function killHeight(
   startY: number, endY: number, startS: number, riseMps: number, roundTick: number, overtimeTicks: number,
@@ -125,7 +133,12 @@ class RisingKill implements CourseFeature {
       this.#soundPos.x = this.#clock.x
       this.#soundPos.y = this.#killY
       this.#soundPos.z = this.#clock.z
-      ctx.sound('mech.slime', this.#soundPos, 1)
+      const loop = ctx as LoopCtx
+      if (typeof loop.soundLoop === 'function') {
+        loop.soundLoop.call(ctx, `${this.id}:slime`, 'mech.slime', this.#soundPos, 1, 1)
+      } else {
+        ctx.sound('mech.slime', this.#soundPos, 1)
+      }
     }
     const killY = this.#killY
     for (const i of orderedSeatIndices(ctx.seats)) {

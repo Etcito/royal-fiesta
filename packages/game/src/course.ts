@@ -1,5 +1,5 @@
 import { fnv1a32 } from '@gamesaloon/rollback'
-import { MAX_COLLIDERS_PER_OBSTACLE, MAX_OBSTACLES } from '@royal-fiesta/sim/course'
+import { legacyLevel, MAX_COLLIDERS_PER_OBSTACLE, MAX_OBSTACLES } from '@royal-fiesta/sim/course'
 import type { Box, Checkpoint, ColliderSpec, CourseKind, Motion, ObstacleSpec, PathNode, ProfileName, Region, ResolvedCourse, SpawnPoint } from '@royal-fiesta/sim/course'
 import { degToRad, v3, yawFacing } from '@royal-fiesta/sim/vec'
 import type { Quat, Vec3 } from '@royal-fiesta/sim/vec'
@@ -311,5 +311,5 @@ export async function loadCourse(json: unknown, path: string, assets: AssetResol
     bytes[3] = (assetHash >>> 24) & 255
     hash = fnv1a32(bytes, hash)
   }
-  return { id, name, kind, profiles, timeLimitS, killPlaneY, spawns, checkpoints, finish, path: pathNodes, regions, queuePad, obstacles, contentHash: hash >>> 0 }
+  return { id, name, kind, profiles, timeLimitS, killPlaneY, spawns, checkpoints, finish, path: pathNodes, regions, queuePad, obstacles, contentHash: hash >>> 0, level: legacyLevel({ kind, timeLimitS, checkpoints }), features: [] }
 }

@@ -3,6 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { advanceCursor, nextSlot } from '@royal-fiesta/sim/season/plan'
 import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
+import { splitTeams } from '@royal-fiesta/sim/season/teams'
 import { levelOf } from '@royal-fiesta/sim/course'
 import { parseSeason } from '../src/season.ts'
 import { Rng } from '@gamesaloon/rollback'
@@ -90,13 +91,16 @@ test('showMaps uses built, loaded season maps and season cut rules', () => {
   assert.deepEqual(showMaps([], season), [])
 })
 
-test('teams follow opening-rank snake order, indexed by dense round seat', () => {
+test('teams come from splitTeams, indexed by dense round seat', () => {
   const team: SchedMap = { ...MAPS[0], id: 'team', kind: 'team', team: true }
-  const show = newShow([team, MAPS[4]], 10, 3, [8, 4, 1])
+  const seed = 3
+  const show = newShow([team, MAPS[4]], 10, seed, [8, 4, 1])
   show.openingRanks.set([8, 0, 2, 7, 3, 0, 6, 4, 5, 1])
-  const plan = planZoneRound(COURSES, show, [9, 8, 7, 6, 4, 3, 2, 0], null, new Rng(3))
-  // Ranked room seats: 9,2,4,7,8,6,3,0; snake: 0,1,1,0,0,1,1,0.
-  assert.deepEqual([...plan.teams!], [0, 1, 1, 1, 1, 0, 0, 0])
+  const alive = [9, 8, 7, 6, 4, 3, 2, 0]
+  const plan = planZoneRound(COURSES, show, alive, null, new Rng(seed))
+  assert.deepEqual(plan.teams, splitTeams([...alive].sort((a, b) => a - b), seed, show.cursor.roundIndex))
+  assert.equal([...plan.teams!].filter(team => team === 0).length, 4)
+  assert.equal([...plan.teams!].filter(team => team === 1).length, 4)
 })
 
 test('votes choose the majority map and missing courses are refused before commit', () => {

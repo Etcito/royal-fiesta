@@ -11,6 +11,7 @@ import { DEFAULT_PLAN, newCursor, nextSlot } from '@royal-fiesta/sim/season/plan
 import type { RoundSlot, ShowCursor } from '@royal-fiesta/sim/season/plan'
 import { candidates, commitMap, newSchedule, resolveVote } from '@royal-fiesta/sim/season/scheduler'
 import type { SchedMap, ShowSchedule } from '@royal-fiesta/sim/season/scheduler'
+import { splitTeams } from '@royal-fiesta/sim/season/teams'
 import { schedMaps } from '../season.ts'
 import type { SeasonData } from '../season.ts'
 import { refuse } from '@royal-fiesta/sim/refusal'
@@ -116,14 +117,8 @@ export function planZoneRound(
   if (!map || !Number.isInteger(map.course) || !courses[map.course]) {
     refuse('zones', 'planZoneRound.courses', `missing course index for map ${id}; load its course before planning`)
   }
-  const teams = map.team ? new Uint8Array(alive.length) : null
-  if (teams) {
-    // Teams are indexed by dense round seat, matching roundRoster's ascending room seats.
-    const roomSeats = [...alive].sort((a, b) => a - b)
-    const ranked = roomSeats.map((seat, index) => ({ seat, index }))
-      .sort((a, b) => show.openingRanks[a.seat] - show.openingRanks[b.seat] || a.seat - b.seat)
-    for (let rank = 0; rank < ranked.length; rank++) teams[ranked[rank].index] = Math.floor((rank + 1) / 2) % 2
-  }
+  const roomSeats = [...alive].sort((a, b) => a - b)
+  const teams = map.team ? splitTeams(roomSeats, seed, show.cursor.roundIndex) : null
   show.schedule = commitMap(show.schedule, map)
   return { index: show.cursor.roundIndex, slot, kind: slot.final ? 'final' : map.kind,
     final: slot.final, finalRule: map.finalRule, target: slot.target, playoff: slot.playoff,

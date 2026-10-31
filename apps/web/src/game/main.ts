@@ -20,6 +20,9 @@ import type { DeviceId } from '@royal-fiesta/game/client/seats'
 import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
 import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
 import type { GameContent } from '@royal-fiesta/game/content'
+import type { GameAsset } from '@royal-fiesta/game/gameAsset'
+import { LOCAL_COSMETICS, LOCAL_OWNED, startScreen, startStep } from '@royal-fiesta/game/flow/startScreen'
+import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import { HubWorld } from '@royal-fiesta/game/hub/hubWorld'
 import { QueuePad } from '@royal-fiesta/game/hub/queuePad'
@@ -30,15 +33,16 @@ import { netSetup } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory, type WsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
-import type { CameraPose, RenderPort, Viewport } from '@royal-fiesta/game/render/port'
+import type { CameraPose, RenderPort, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
+import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { menuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
-import { Effect, Nav } from '@royal-fiesta/game/screens/nav'
-import type { GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
+import { Effect, FLOW_SCREENS, Nav, flowAction } from '@royal-fiesta/game/screens/nav'
+import type { Action, GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
 import { SETTINGS_ROWS, adjust, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
 import type { KeyAction, Settings, SettingsStore } from '@royal-fiesta/game/screens/settings'
 import type { CharState } from '@royal-fiesta/sim/character/system'
@@ -77,8 +81,10 @@ import { installGameOps } from './ops.ts'
 import { NetDiag } from './netDiag.ts'
 import { NetPump } from './netPump.ts'
 import { communityBase, listCommunityLevels, loadCommunityPack } from '../content/community.ts'
-import { installContentOverlay } from '../content/v1Data.ts'
+import { browserGameAssets, installContentOverlay } from '../content/v1Data.ts'
 import { mountCommunityPanel } from './communityPanel.ts'
+import { mountStartScreen } from '../screens/startScreen.ts'
+import type { StartArt, StartScreenView } from '../screens/startScreen.ts'
 import type { TourGame } from './uiTour.ts'
 
 interface Query {
@@ -1137,6 +1143,50 @@ function refusal(area: string, where: string, what: string): string {
   }
 }
 
+// The wardrobe the start screen keeps: the body colour and the item worn in each bin slot.
+const WARDROBE_KEY = 'rf.wardrobe'
+
+interface Wardrobe { colour: number; worn: Record<string, string> }
+
+function readWardrobe(store: SettingsStore, fallbackColour: number): Wardrobe {
+  const raw = store.getItem(WARDROBE_KEY)
+  if (raw === null) return { colour: fallbackColour, worn: {} }
+  try {
+    const data = JSON.parse(raw) as { colour?: unknown; worn?: unknown }
+    const colour = typeof data.colour === 'number' && Number.isInteger(data.colour) ? data.colour : fallbackColour
+    const worn: Record<string, string> = {}
+    if (typeof data.worn === 'object' && data.worn !== null) {
+      for (const [slot, item] of Object.entries(data.worn)) if (typeof item === 'string') worn[slot] = item
+    }
+    return { colour, worn }
+  } catch {
+    return { colour: fallbackColour, worn: {} }
+  }
+}
+
+// The hub's S13 environment, read through the same dressing the hub view uses: a recorder port takes the
+// environment and ignores the decor instances, so the start layer only gets the lighting.
+function hubEnvironment(content: GameContent): Readonly<Record<string, unknown>> | null {
+  let environment: Readonly<Record<string, unknown>> | null = null
+  let handle = 1
+  const recorder = {
+    setEnvironment: (env: Readonly<Record<string, unknown>> | null): void => { environment = env },
+    registerAsset: (): number => handle++,
+    createInstance: (): number => handle++,
+    setTransform: (): void => {},
+    destroyInstance: (): void => {},
+  } as unknown as RenderPort
+  const dressing = content.dressing()
+  try {
+    dressing.enter(recorder, content.hub().id)
+    dressing.leave(recorder)
+  } catch (e) {
+    console.warn('[start] hub environment unavailable:', messageOf(e))
+    return null
+  }
+  return environment
+}
+
 // The page: Nav drives every screen; its effects start and stop modes and the load. The uaa host draws
 // the screen nav is on and reports its button presses back as menu commands.
 class App {
@@ -1174,6 +1224,9 @@ class App {
   private readonly devices: InputDevices
   private readonly devicePolls: DevicePoll[] = []
   private readonly sound = new SoundDriver()
+  private startModel: StartScreenModel | null = null
+  private startArt: StartArt | null = null
+  private startView: StartScreenView | null = null
   private readonly orbit = new OrbitCamera()
   private readonly world = neutralInput()
   private readonly touchScratch = emptyControls()
@@ -1314,6 +1367,10 @@ class App {
     this.stopLoop?.()
     this.stopLoop = null
     this.stopMode()
+    this.startView?.unmount()
+    this.startView = null
+    this.startModel = null
+    this.startArt = null
     this.preparedLocal?.dispose()
     this.preparedLocal = null
     this.viewsObserver.disconnect()
@@ -1411,7 +1468,17 @@ class App {
         this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) })
         await this.preparedLocal.ready()
       }
+      try {
+        await this.prepareStart(this.loaded)
+      } catch (e) {
+        console.warn('[start] view unavailable:', messageOf(e))
+      }
       this.run(this.nav.dispatch({ kind: 'loaded' }))
+      // The offline page opens on the wardrobe start screen; ?course=, ?community=, ?clients= and the relay
+      // keep their V1 paths.
+      if (q.server === null && q.clients === 1 && q.course === null && q.community === null) {
+        this.run(this.nav.dispatch({ kind: 'action', action: 'play' }))
+      }
       if (this.roundLoading === null) this.loadingOverlay.hide()
       // R3: the title is up, so the Wavedash shell may show the game now.
       boot.done()
@@ -1500,6 +1567,72 @@ class App {
     const port = loaded.ports[0] as { resize?: (cssW: number, cssH: number, dpr: number, viewports: Viewport[]) => void }
     if (typeof port.resize !== 'function') return
     port.resize(backing.width, backing.height, 1, viewports)
+  }
+
+  // Builds the flow-web start screen from the loaded content: the penguin on its own layer of the stage
+  // port, its local costume mounts and the hub environment, with the wardrobe read from the settings store.
+  private async prepareStart(loaded: Loaded): Promise<void> {
+    const port = loaded.ports[0]
+    if (port === undefined) return
+    const content = loaded.content
+    let owned: readonly string[] = []
+    try {
+      owned = await LOCAL_OWNED.owned()
+    } catch (e) {
+      console.warn('[start] wardrobe unavailable:', messageOf(e))
+    }
+    const model = startScreen(owned, LOCAL_COSMETICS, 0, readWardrobe(this.env.store, this.query?.colour ?? 0))
+    const art = await this.buildStartArt(content, port)
+    if (this.disposed || this.loaded !== loaded) return
+    this.startModel = model
+    this.startArt = art
+  }
+
+  // StartArt: the character, its local cosmetics mounted on the body anchors (mountedBounds' rule), the
+  // hub's S13 environment, and a SceneLayer over the stage port so hiding the screen restores the port.
+  private async buildStartArt(content: GameContent, stage: RenderPort): Promise<StartArt> {
+    const layer = new SceneLayer(stage)
+    const character = content.character()
+    const resolver = browserGameAssets()
+    let body: GameAsset | null = null
+    try {
+      body = (await resolver.resolve(character.id)).asset
+    } catch (e) {
+      console.warn('[start] character anchors unavailable:', messageOf(e))
+    }
+    const mounts = new Map<string, Vec3T>()
+    for (const item of LOCAL_COSMETICS) {
+      try {
+        if (body === null) continue
+        const costume = (await resolver.resolve(item.id)).asset
+        const names = Object.keys(costume.anchors)
+        if (names.length !== 1) continue
+        const bodyAnchor = body.anchors[names[0]]
+        const costumeAnchor = costume.anchors[names[0]]
+        if (bodyAnchor === undefined || costumeAnchor === undefined) continue
+        mounts.set(item.id, [
+          bodyAnchor.t.x - costumeAnchor.t.x,
+          bodyAnchor.t.y - costumeAnchor.t.y,
+          bodyAnchor.t.z - costumeAnchor.t.z,
+        ])
+      } catch {
+        // A costume the asset store does not carry is skipped by the renderer's mount lookup.
+      }
+    }
+    return {
+      port: layer.port,
+      character,
+      skinned: skinnedCharacterOf(content),
+      costume: (id: string): PrimsAsset | null => {
+        try {
+          return content.assets(id)
+        } catch {
+          return null
+        }
+      },
+      mounts,
+      environment: hubEnvironment(content),
+    }
   }
 
   private startMode(): void {
@@ -1635,6 +1768,42 @@ class App {
     this.draw()
   }
 
+  // Persists the wardrobe after a wear or colour change.
+  private saveWardrobe(model: StartScreenModel): void {
+    const worn: Record<string, string> = {}
+    for (const bin of model.bins) if (bin.selected >= 0) worn[bin.slot] = bin.items[bin.selected]
+    try {
+      this.env.store.setItem(WARDROBE_KEY, JSON.stringify({ colour: model.colour, worn }))
+    } catch (e) {
+      console.warn('[start] wardrobe not saved:', messageOf(e))
+    }
+  }
+
+  // One start-screen flow action: startStep names the new model and effect, and the renderer gets both.
+  private startAction(action: Action, base?: StartScreenModel): void {
+    const model = base ?? this.startModel
+    if (model === null) {
+      if (action === 'play' || action === 'shop') this.run(this.nav.dispatch({ kind: 'action', action }))
+      return
+    }
+    const step = startStep(model, action)
+    this.startModel = step.model
+    this.startView?.update(step.model, { action, effect: step.effect })
+    if (step.effect === 'wear') this.saveWardrobe(step.model)
+    else if (step.effect === 'play') this.run(this.nav.dispatch({ kind: 'action', action: 'play' }))
+    else if (step.effect === 'shop') this.run(this.nav.dispatch({ kind: 'action', action: 'shop' }))
+  }
+
+  // A uaa start-screen button: focus it, then confirm it, so its step and cue are the same as a key's.
+  private startButton(action: 'play' | 'shop'): void {
+    const model = this.startModel
+    if (model === null) {
+      this.run(this.nav.dispatch({ kind: 'action', action }))
+      return
+    }
+    this.startAction('confirm', model.focus === action ? model : { ...model, focus: action })
+  }
+
   // Presents nav's screen through the uaa host, with the round HUD on the HUD screens, then renders it.
   private draw(): void {
     const nav = this.nav
@@ -1643,6 +1812,25 @@ class App {
     this.touchRoot.hidden = this.touch === null || !(nav.live && PLAYING.includes(nav.screen))
     this.remapButton.hidden = !(nav.screen === 'settings' && this.remap === null)
     this.community?.setVisible(nav.screen === 'title')
+    // The start screen draws its own penguin layer and presents its own menu; nav still owns leaving it.
+    if (nav.screen === 'start') {
+      if (this.startView === null && this.startArt !== null && this.startModel !== null) {
+        this.startView = mountStartScreen(this.host, this.startModel, {
+          cue: id => this.sound.cue(id), stage: this.loaded?.ports[0], character: this.startArt.character, localSeat: 0,
+        }, this.startArt)
+      }
+      if (this.startView !== null && this.startModel !== null) {
+        this.touchRoot.hidden = true
+        this.remapButton.hidden = true
+        this.screens.style.pointerEvents = 'auto'
+        this.startView.setVisible(true)
+        this.startView.update(this.startModel, null)
+        this.resize()
+        this.host.frame(performance.now())
+        return
+      }
+    }
+    this.startView?.setVisible(false)
     const mode = this.mode
     const hud = mode === null || !HUD_SCREENS.includes(nav.screen) ? null : mode.hud()
     const values = hud === null ? null : hudValues(hud.view, hud.names, hud.seat, this.roundTicks(hud.view))
@@ -1698,6 +1886,34 @@ class App {
       return
     }
     const host = this.host
+    // Flow screens take keys and pad events as nav actions (flowAction), not as uaa focus. Start runs
+    // startStep; vote and elimShow's models are driven by the show flow. Without a start model the start
+    // menu falls back to the standard uaa focus path.
+    if (this.nav.screen === 'start' && this.startModel !== null) {
+      if (ev.k === 'back') {
+        this.run(this.nav.dispatch({ kind: 'back' }))
+        return
+      }
+      const action = flowAction(ev)
+      if (action !== null) {
+        this.startAction(action)
+        return
+      }
+      if (ev.k === 'click') {
+        host.input({ kind: 'pointer', phase: 'move', x: ev.x, y: ev.y })
+        host.input({ kind: 'pointer', phase: 'down', x: ev.x, y: ev.y })
+        host.input({ kind: 'pointer', phase: 'up', x: ev.x, y: ev.y })
+      }
+      return
+    }
+    if (this.nav.screen !== 'start' && (FLOW_SCREENS as readonly Screen[]).includes(this.nav.screen)) {
+      if (ev.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
+      else {
+        const action = flowAction(ev)
+        if (action !== null) this.run(this.nav.dispatch({ kind: 'action', action }))
+      }
+      return
+    }
     if (ev.k === 'back') host.input({ kind: 'back' })
     else if (ev.k === 'emote') this.emote = ev.id
     else if (ev.k === 'focus') host.input({ kind: 'nav', dir: ev.dir < 0 ? 'up' : 'down' })
@@ -1725,6 +1941,10 @@ class App {
   }
 
   private activate(cmd: MenuCmd): void {
+    if (cmd.k === 'action' && this.nav.screen === 'start' && (cmd.action === 'play' || cmd.action === 'shop')) {
+      this.startButton(cmd.action)
+      return
+    }
     if (cmd.k === 'action') this.run(this.nav.dispatch({ kind: 'action', action: cmd.action }))
     else if (cmd.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
     else {

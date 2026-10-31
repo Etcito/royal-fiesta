@@ -6,7 +6,7 @@ import type { DomainSpec, ShadowView } from '@gamesaloon/rollback/zones'
 import { initRapier, mergeEntityStreams } from '@gamesaloon/rollback-rapier'
 import { CharMode } from '../src/character/constants.ts'
 import type { Motion, ObstacleSpec, ResolvedCourse } from '../src/course.ts'
-import { inBox } from '../src/course.ts'
+import { inBox, levelOf } from '../src/course.ts'
 import { neutralInput } from '../src/input.ts'
 import { PlayerStatus } from '../src/match/roundSystem.ts'
 import { PROFILES } from '../src/match/setup.ts'
@@ -112,6 +112,12 @@ function seedSeat(domain: FiestaDomain, seat: number, mode: number, knockbacks: 
   w.i32(-1) // protectedUntil
   w.u8(status)
   w.i16(0) // checkpoint reached
+  w.i16(0) // route stage
+  w.u8(0) // lap
+  w.u8(status === PlayerStatus.qualified ? 1 : 0) // finished
+  w.i32(-1) // waitUntil
+  w.i32(-1) // protectUntil
+  w.f64(domain.state(seat).pos.y) // prevY
   domain.readSeat(new SnapReader(w.bytes()), seat)
 }
 
@@ -308,6 +314,93 @@ test('crossing the finish emits exactly one finish event through the ledger code
     assert.equal(r.remaining, 0)
   }
   assert.ok(crossingTick >= 0, 'the seat crossed the finish')
-  assert.deepEqual(events, [{ kind: 'finish', seat: 0, tick: crossingTick, a: 0, b: 0 }])
+  const finishes = events.filter(event => event.kind === 'finish')
+  assert.equal(finishes.length, 1)
+  assert.ok(finishes[0].a > 0 && finishes[0].a <= 65535)
+  assert.deepEqual(finishes[0], { kind: 'finish', seat: 0, tick: crossingTick, a: finishes[0].a, b: 0 })
+  assert.deepEqual(events.filter(event => event.kind === 'progress'),
+    [{ kind: 'progress', seat: 0, tick: 0, a: 0, b: 0 }])
   assert.equal(domain.status(0), PlayerStatus.qualified)
+})
+
+function seasonDomain(t: TestContext, mode: 'checkpoint' | 'none' = 'checkpoint') {
+  const level = levelOf(course)
+  const seasonal: ResolvedCourse = { ...course, obstacles: [],
+    checkpoints: [course.checkpoints[0], {
+      box: { center: v3(0, 1, 10), half: v3(12, 3, 1) },
+      respawn: { t: v3(0, 0, 10), facing: { x: 0, z: 1 } },
+    }],
+    level: { ...level, route: { ordered: true, laps: 2, stages: [0, 1] },
+      respawn: { mode, waitTicks: 180, protectTicks: 60, slots: 12, spacingM: 1.2 } },
+  }
+  const f = createFiestaDomainFactory(R, { course: seasonal, zones,
+    profile: { ...PROFILES.sprint, introTicks: 0 }, kind: mode === 'none' ? 'survival' : 'race', seatCount: 4 })
+  return { domain: track(t, f.create(together, 0)), factory: f }
+}
+
+function eventsOf(domain: FiestaDomain): FiestaEvent[] {
+  const w = new SnapWriter()
+  domain.events(w)
+  const events: FiestaEvent[] = []
+  decodeFiestaEvents(new SnapReader(w.bytes()), { kind: 'fall', seat: -1, tick: -1, a: 0, b: 0 },
+    event => events.push({ ...event }))
+  return events
+}
+
+function placeAndStep(domain: FiestaDomain, z: number, y = 0): FiestaEvent[] {
+  for (let p = 0; p < domain.seats.length; p++) {
+    domain.characters.place(domain.ctx, p, { t: v3(p * 4, y, z), facing: { x: 0, z: 1 } })
+  }
+  domain.step(domain.seats.map(() => neutralInput()), noShadows)
+  return eventsOf(domain)
+}
+
+test('season route refuses skipped stages and counts laps before finishing', t => {
+  const { domain } = seasonDomain(t)
+  assert.equal(placeAndStep(domain, 10).filter(e => e.kind === 'gate').length, 0)
+  assert.equal(placeAndStep(domain, 15).filter(e => e.kind === 'finish').length, 0)
+  assert.deepEqual(placeAndStep(domain, 6).filter(e => e.kind === 'gate').map(e => [e.a, e.b]), [[0, 0], [0, 0]])
+  placeAndStep(domain, 10)
+  assert.deepEqual(placeAndStep(domain, 15).map(e => [e.kind, e.a, e.b]), [['gate', -1, 1], ['gate', -1, 1]])
+  placeAndStep(domain, 6)
+  placeAndStep(domain, 10)
+  assert.deepEqual(placeAndStep(domain, 15).map(e => [e.kind, e.b]), [['finish', 1], ['finish', 1]])
+  assert.equal(domain.status(0), PlayerStatus.qualified)
+})
+
+test('delayed checkpoint respawns spread seats, protect them and survive rollback and handoff', t => {
+  const { domain, factory: f } = seasonDomain(t)
+  placeAndStep(domain, 6)
+  const falls = placeAndStep(domain, 6, -20)
+  assert.equal(falls.filter(e => e.kind === 'fall').length, 2)
+  assert.ok(falls.every(e => e.a > 0 && e.a < 65535))
+  const due = domain.tick - 1 + 180
+  const w = new SnapWriter()
+  domain.snapshot(w)
+  const saved = w.bytes().slice()
+  const rebuilt = track(t, f.rebuild(together, domain.tick, [exported(domain)]))
+  const run = (d: FiestaDomain) => {
+    while (d.tick < due) d.step(d.seats.map(() => neutralInput()), noShadows)
+    assert.equal(d.state(0).mode, CharMode.parked)
+    d.step(d.seats.map(() => neutralInput()), noShadows)
+    assert.equal(d.state(0).protectedUntil, due + 60)
+    assert.equal(d.state(1).protectedUntil, due + 60)
+    assert.equal(Math.abs(d.state(0).pos.x - d.state(1).pos.x).toFixed(1), '1.2')
+    return d.seats.map(seat => seatState(d, seat))
+  }
+  const expected = run(domain)
+  assert.deepEqual(run(rebuilt), expected)
+  domain.restore(new SnapReader(saved))
+  assert.deepEqual(run(domain), expected)
+})
+
+test('survival falls eliminate with a crossing sub-tick and stay parked', t => {
+  const { domain } = seasonDomain(t, 'none')
+  const events = placeAndStep(domain, 1, -20)
+  assert.deepEqual(events.map(e => e.kind), ['eliminate', 'eliminate'])
+  assert.ok(events.every(e => e.a > 0 && e.a < 65535))
+  assert.equal(domain.status(0), PlayerStatus.eliminated)
+  domain.step([neutralInput(), neutralInput()], noShadows)
+  assert.equal(domain.state(0).mode, CharMode.parked)
+  assert.deepEqual(eventsOf(domain), [])
 })

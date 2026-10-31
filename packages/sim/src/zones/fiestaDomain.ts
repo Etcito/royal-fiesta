@@ -4,8 +4,8 @@ import { mergeEntityStreams } from '@gamesaloon/rollback-rapier'
 import type { BodyId, RapierDomainSim } from '@gamesaloon/rollback-rapier'
 import { CharacterSystem } from '../character/system.ts'
 import type { CharState } from '../character/system.ts'
-import { inBox } from '../course.ts'
-import type { ResolvedCourse } from '../course.ts'
+import { inBox, levelOf } from '../course.ts'
+import type { LevelSpec, ResolvedCourse, SpawnPoint } from '../course.ts'
 import type { PlayerInput } from '../input.ts'
 import { PlayerStatus } from '../match/roundSystem.ts'
 import type { PlayerStatusValue } from '../match/roundSystem.ts'
@@ -13,6 +13,10 @@ import { MechLogicSystem } from '../mechanisms/logicSystem.ts'
 import { MechanismSystem } from '../mechanisms/system.ts'
 import { ObstacleSystem } from '../obstacles/system.ts'
 import { refuse } from '../refusal.ts'
+import { finishCrossed, gateCrossed, newRouteState, readRoute, routeDistanceMm, subTick, writeRoute } from '../season/route.ts'
+import type { RouteState } from '../season/route.ts'
+import { dueRespawn, newRespawnState, nextSlot, readRespawn, respawnSlot, scheduleRespawn, writeRespawn } from '../season/respawn.ts'
+import type { RespawnState } from '../season/respawn.ts'
 import { writeBlob } from '../world.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
 import { cellOf } from './cells.ts'
@@ -51,6 +55,12 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   readonly #bodies: BodyId[] = []
   readonly #status: Uint8Array
   readonly #checkpoint: Int16Array
+  readonly #level: LevelSpec
+  readonly #route: RouteState
+  readonly #respawn: RespawnState
+  readonly #prevY: Float64Array
+  readonly #before: Float64Array
+  readonly #spawn: SpawnPoint = { t: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 } }
   readonly #states: SeatState[] = []
   readonly #eventPool: FiestaEvent[] = []
   readonly #events: FiestaEvent[] = []
@@ -66,6 +76,12 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     const n = this.#seats.length
     this.#status = new Uint8Array(n).fill(PlayerStatus.alive)
     this.#checkpoint = new Int16Array(n)
+    this.#level = levelOf(config.course)
+    this.#route = newRouteState(n)
+    // Spawn anchors follow checkpoint and home anchors, one per roster seat.
+    this.#respawn = newRespawnState(n, config.course.checkpoints.length + this.#level.homes.length + config.schedule.seatCount)
+    this.#prevY = new Float64Array(n)
+    this.#before = new Float64Array(n * 3)
     this.characters = new CharacterSystem({ playerCount: n, externalBodies: true })
     this.obstacles = new ObstacleSystem([config.course])
     this.mechanisms = new MechanismSystem([config.course])
@@ -110,7 +126,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       this.#states.push({ seat, status: PlayerStatus.alive, pos: { x: 0, y: 0, z: 0 },
         vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 0 }, mode: 0,
         grounded: false, groundObstacle: -1, knockbacks: 0, teleportTick: 0 })
-      this.#eventPool.push({ kind: 'fall', seat, tick: 0, a: 0, b: 0 })
+      this.#prevY[p] = this.characters.state(this.ctx, p, this.#states[p]).pos.y
     }
     for (let i = 0; i < config.course.obstacles.length; i++) {
       const o = config.course.obstacles[i]
@@ -190,8 +206,14 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       this.mechLogic.preStep(this.ctx, inputs)
       this.mechanisms.preStep(this.ctx, inputs)
       const schedule = this.#config.schedule
-      const frozen = this.#stepTick < schedule.introTicks || this.#stepTick > schedule.introTicks + schedule.roundTicks
-      for (let p = 0; p < this.#seats.length; p++) this.characters.freeze(p, frozen)
+      const frozen = this.#stepTick < schedule.introTicks || this.#stepTick > schedule.introTicks + schedule.roundTicks + schedule.overtimeTicks
+      for (let p = 0; p < this.#seats.length; p++) {
+        this.characters.freeze(p, frozen)
+        const pos = this.characters.state(this.ctx, p, this.#states[p]).pos
+        this.#before[p * 3] = pos.x
+        this.#before[p * 3 + 1] = pos.y
+        this.#before[p * 3 + 2] = pos.z
+      }
       this.characters.preStep(this.ctx, inputs)
       this.inner.step(inputs, shadows)
       this.mechLogic.postStep(this.ctx)
@@ -205,41 +227,101 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
 
   #seatRules(): void {
     const course = this.#config.course
+    const { route, respawn } = this.#level
+    const lastStage = route.stages.length ? route.stages[route.stages.length - 1] : -1
     for (let p = 0; p < this.#seats.length; p++) {
       if (this.#status[p] !== PlayerStatus.alive) continue
+      if (this.#respawn.waitUntil[p] >= 0) {
+        if (dueRespawn(this.#respawn, p, this.#stepTick)) this.#placeRespawn(p)
+        continue
+      }
       const pos = this.characters.state(this.ctx, p, this.#states[p]).pos
-      if (this.#config.schedule.kind === 'race') {
-        for (let c = course.checkpoints.length - 1; c > Math.max(-1, this.#checkpoint[p]); c--) {
-          if (inBox(course.checkpoints[c].box, pos)) {
-            this.#checkpoint[p] = c
-            break
-          }
+      for (let c = 0; c < course.checkpoints.length; c++) {
+        if (inBox(course.checkpoints[c].box, pos) && gateCrossed(route, this.#route, p, c)) {
+          this.#checkpoint[p] = c
+          this.#emit(p, 'gate', this.#route.stage[p], this.#route.lap[p])
         }
       }
       if (course.finish !== null && inBox(course.finish, pos)) {
-        this.#status[p] = PlayerStatus.qualified
-        this.#emit(p, 'finish')
-        this.characters.park(this.ctx, p)
-      } else if (pos.y < course.killPlaneY) {
-        if (this.#config.schedule.kind === 'race') {
-          const c = this.#checkpoint[p]
-          this.characters.place(this.ctx, p, c >= 0 ? course.checkpoints[c].respawn : seatSpawn(course, -1 - c))
-          this.#emit(p, 'fall')
-        } else {
-          this.#status[p] = PlayerStatus.eliminated
-          this.#emit(p, 'eliminate')
+        const result = finishCrossed(route, this.#route, p, lastStage)
+        if (result === 'lap') this.#emit(p, 'gate', this.#route.stage[p], this.#route.lap[p])
+        if (result === 'finish') {
+          // The latest entry across the three slabs is entry into the box.
+          let crossing = 0
+          const axes = ['x', 'y', 'z'] as const
+          for (let i = 0; i < axes.length; i++) {
+            const axis = axes[i]
+            const prev = this.#before[p * 3 + i]
+            const lo = course.finish.center[axis] - course.finish.half[axis]
+            const hi = course.finish.center[axis] + course.finish.half[axis]
+            if (prev < lo) crossing = Math.max(crossing, subTick(prev, pos[axis], lo))
+            else if (prev > hi) crossing = Math.max(crossing, subTick(prev, pos[axis], hi))
+          }
+          this.#status[p] = PlayerStatus.qualified
+          this.#emit(p, 'finish', crossing, this.#route.lap[p])
           this.characters.park(this.ctx, p)
+          continue
         }
+      }
+      if (pos.y < course.killPlaneY) {
+        const crossing = subTick(this.#prevY[p], pos.y, course.killPlaneY)
+        if (respawn.mode === 'none') {
+          this.#status[p] = PlayerStatus.eliminated
+          this.#emit(p, 'eliminate', crossing)
+          this.characters.park(this.ctx, p)
+        } else {
+          this.#emit(p, 'fall', crossing)
+          this.characters.park(this.ctx, p)
+          scheduleRespawn(respawn, this.#respawn, p, this.#stepTick)
+          if (dueRespawn(this.#respawn, p, this.#stepTick)) this.#placeRespawn(p)
+        }
+        continue
+      }
+      this.#prevY[p] = pos.y
+    }
+    const schedule = this.#config.schedule
+    if ((schedule.kind === 'race' || schedule.kind === 'final') &&
+        (this.#stepTick - schedule.introTicks) % 30 === 0) {
+      for (let p = 0; p < this.#seats.length; p++) {
+        if (this.#status[p] !== PlayerStatus.alive) continue
+        const pos = this.characters.state(this.ctx, p, this.#states[p]).pos
+        this.#emit(p, 'progress', routeDistanceMm(course, route, this.#route.stage[p], pos))
       }
     }
   }
 
-  #emit(p: number, kind: FiestaEvent['kind']): void {
-    const event = this.#eventPool[p]
+  #placeRespawn(p: number): void {
+    const course = this.#config.course
+    const { respawn, homes } = this.#level
+    const c = this.#checkpoint[p]
+    const seat = this.#seats[p]
+    let base = c >= 0 ? course.checkpoints[c].respawn : seatSpawn(course, -1 - c)
+    let anchor = c >= 0 ? c : course.checkpoints.length + homes.length + seat
+    if (respawn.mode === 'home') {
+      const team = this.#config.schedule.teams?.[seat]
+      const home = homes.findIndex(h => h.team === team)
+      if (home >= 0) {
+        anchor = course.checkpoints.length + home
+        base = homes[home].respawn[0]
+      }
+    }
+    const slot = nextSlot(this.#respawn, anchor, respawn)
+    // Legacy immediate recovery retains the exact checkpoint/spawn placement.
+    this.characters.place(this.ctx, p, respawn.waitTicks === 0 ? base : respawnSlot(base, slot, respawn, this.#spawn))
+    this.#respawn.waitUntil[p] = -1
+    this.#respawn.protectUntil[p] = this.#stepTick + respawn.protectTicks
+    this.characters.setProtected(p, this.#respawn.protectUntil[p])
+    this.#prevY[p] = this.characters.state(this.ctx, p, this.#states[p]).pos.y
+  }
+
+  #emit(p: number, kind: FiestaEvent['kind'], a = 0, b = 0): void {
+    const index = this.#events.length
+    const event = this.#eventPool[index] ?? (this.#eventPool[index] = { kind, seat: 0, tick: 0, a: 0, b: 0 })
     event.kind = kind
+    event.seat = this.#seats[p]
     event.tick = this.#stepTick
-    event.a = 0
-    event.b = 0
+    event.a = a
+    event.b = b
     this.#events.push(event)
   }
 
@@ -249,7 +331,13 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.mechLogic.snapshot(w)
     this.mechanisms.snapshot(w)
     this.characters.snapshot(w)
-    for (let p = 0; p < this.#seats.length; p++) this.#writeStatus(w, p)
+    for (let p = 0; p < this.#seats.length; p++) {
+      w.u8(this.#status[p])
+      w.i16(this.#checkpoint[p])
+      w.f64(this.#prevY[p])
+    }
+    writeRoute(w, this.#route)
+    writeRespawn(w, this.#respawn)
   }
 
   restore(r: SnapReader): void {
@@ -258,7 +346,13 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.mechLogic.restore(r, this.ctx)
     this.mechanisms.restore(r, this.ctx)
     this.characters.restore(r, this.ctx)
-    for (let p = 0; p < this.#seats.length; p++) this.#readStatus(r, p)
+    for (let p = 0; p < this.#seats.length; p++) {
+      this.#status[p] = r.u8()
+      this.#checkpoint[p] = r.i16()
+      this.#prevY[p] = r.f64()
+    }
+    readRoute(r, this.#route)
+    readRespawn(r, this.#respawn)
     this.#indexSeats()
     this.#bindBodies()
     this.#events.length = 0
@@ -266,7 +360,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
 
   hash(): number { return this.inner.hash() }
 
-  /** Blob(inner export), u16 seats, (u16 seat, player, u8 status, i16 checkpoint),
+  /** Blob(inner export), u16 seats, (u16 seat, player, u8 status, i16 checkpoint,
+   * i16 stage, u8 lap, u8 finished, i32 waitUntil, i32 protectUntil, f64 prevY),
    * u16 seesaws, (u16 obstacle index, f64 angle, f64 prevAngle, f64 angVel),
    * Blob(mechLogic snapshot), Blob(mechanisms snapshot), Blob(dynamic mechanism bodies).
    * A negative checkpoint encodes the original spawn as -1 - spawnIndex.
@@ -307,11 +402,23 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   #writeStatus(w: SnapWriter, p: number): void {
     w.u8(this.#status[p])
     w.i16(this.#checkpoint[p])
+    w.i16(this.#route.stage[p])
+    w.u8(this.#route.lap[p])
+    w.u8(this.#route.finished[p])
+    w.i32(this.#respawn.waitUntil[p])
+    w.i32(this.#respawn.protectUntil[p])
+    w.f64(this.#prevY[p])
   }
 
   #readStatus(r: SnapReader, p: number): void {
     this.#status[p] = r.u8()
     this.#checkpoint[p] = r.i16()
+    this.#route.stage[p] = r.i16()
+    this.#route.lap[p] = r.u8()
+    this.#route.finished[p] = r.u8()
+    this.#respawn.waitUntil[p] = r.i32()
+    this.#respawn.protectUntil[p] = r.i32()
+    this.#prevY[p] = r.f64()
   }
 
   /** Factory handoffs read the seat id first, then restore this seat's trailer block. */

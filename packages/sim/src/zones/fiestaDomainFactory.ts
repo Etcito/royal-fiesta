@@ -204,6 +204,12 @@ function applyTrailers(
         sink.readPlayer(r, 0)
         r.u8()
         r.i16()
+        r.i16() // route stage
+        r.u8() // lap
+        r.u8() // finished
+        r.i32() // waitUntil
+        r.i32() // protectUntil
+        r.f64() // prevY
       }
     }
     const seesawCount = r.u16()

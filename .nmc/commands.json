@@ -73,5 +73,38 @@
     "name": "s3-m3-show",
     "command": "npm run round:run -- --course test-flat-race --dir fixtures/test-courses --seats 60 --peers 2 --profile season --show",
     "timeout_s": 3600
+  },
+  {
+    "name": "s3-m4-feat-slide",
+    "command": "npm run round:run -- --course feat-slide --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m4-feat-carry",
+    "command": "npm run round:run -- --course feat-carry --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m4-feat-boost-launch",
+    "command": "npm run round:run -- --course feat-boost-launch --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m4-feat-logs-doors",
+    "command": "npm run round:run -- --course feat-logs-doors --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m4-action-sheet",
+    "command": "node --experimental-strip-types tools/actionSheet.ts out/s3/m4/action-poses.png",
+    "timeout_s": 300
+  },
+  {
+    "name": "s3-m4-judge-action",
+    "command": "node --experimental-strip-types tools/judgeLoop.ts s3-m4-judge-action out/s3/m4/action-poses.png --description \"seven labelled panels of a cartoon penguin in action poses: belly-down slide with flippers swept back, a butterfly stroke of both flippers at three phases, a swimming stroke, grabbing with flippers forward, carrying with flippers holding in front; clear distinct silhouettes, no T pose\" --min-score 6",
+    "timeout_s": 900,
+    "after": [
+      "s3-m4-action-sheet"
+    ]
   }
 ]

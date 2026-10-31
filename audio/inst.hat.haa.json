@@ -1,0 +1,16 @@
+{"haa":1,"id":"inst.hat","title":"Short sparkling closed hat","inputs":[{"name":"note","kind":"continuous","unit":"MIDI","min":0,"max":127,"default":60,"smooth":0,"curve":"lin"},{"name":"vel","kind":"continuous","unit":"","min":0,"max":1,"default":0.8,"smooth":0,"curve":"lin"}],"master":0.65,"graph":{"duration":16,"loop":false,"mode":"live","nodes":[
+{"id":"note","type":"input","x":40,"y":40,"label":"note","params":{"name":"note"}},
+{"id":"vel","type":"input","x":260,"y":40,"label":"vel","params":{"name":"vel"}},
+{"id":"velocity","type":"gain","x":480,"y":40,"label":"velocity","params":{"gain":0}},
+{"id":"out","type":"output","x":700,"y":40,"label":"out","params":{"gain":1}},
+{"id":"metal","type":"noise","x":40,"y":180,"label":"metal","params":{"color":"white","level":0.65,"width":0.25}},
+{"id":"metal-filter","type":"filter","x":260,"y":180,"label":"metal-filter","params":{"cutoff":6000,"resonance":0.7,"mode":"highpass"}},
+{"id":"metal-env","type":"envelope","x":480,"y":180,"label":"Voice-start attack / decay","params":{"attack":0.001,"decay":0.075,"sustain":0,"hold":8,"release":0.1,"clock":"patch"}},
+{"id":"metal-amp","type":"gain","x":700,"y":180,"label":"metal-amp","params":{"gain":0}}],"connections":[
+{"id":"c1","from":"vel","to":"velocity","target":"gain","amount":1},
+{"id":"c2","from":"velocity","to":"out","target":"audio","amount":1},
+{"id":"c3","from":"metal","to":"metal-filter","target":"audio","amount":1},
+{"id":"c4","from":"vel","to":"metal-filter","target":"cutoff","amount":3500},
+{"id":"c5","from":"metal-filter","to":"metal-amp","target":"audio","amount":1},
+{"id":"c6","from":"metal-env","to":"metal-amp","target":"gain","amount":1},
+{"id":"c7","from":"metal-amp","to":"velocity","target":"audio","amount":1}],"performance":null}}

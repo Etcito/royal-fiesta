@@ -258,7 +258,9 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
         // A rejoining local peer holds no ledger until its next boundary; the result waits for it.
         const ledger = current.match.currentLedger
         const result = ledger?.result
-        if (!own && ledger !== null && ledger.over && result && current.match.stats.confirmedTick[0] >= result.endTick) {
+        // Snapshot ticks name the state BEFORE a step. The step at endTick
+        // produces the result, so confirmation must include state endTick + 1.
+        if (!own && ledger !== null && ledger.over && result && current.match.stats.confirmedTick[0] > result.endTick) {
           own = roundResultOf(plan, result, current.seatOf)
           remember(r, cfg.localPeer, own)
           rt.sendResult(recipients, encodeRoundResult(own))

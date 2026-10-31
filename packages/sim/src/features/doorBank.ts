@@ -1,3 +1,4 @@
+import { orderedSeatIndices } from './seatState.ts'
 import { CHAR, CharMode } from '../character/constants.ts'
 import { G, groups } from '../groups.ts'
 import { PlayerStatus } from '../match/roundSystem.ts'
@@ -82,7 +83,7 @@ export const doorBankFeature: FeatureFactory = (spec, path) => {
       tick = ctx.tick
       dt = ctx.physics.dt
       const margin = CHAR.radius + 0.1
-      for (let i = 0; i < ctx.seats.count; i++) {
+      for (const i of orderedSeatIndices(ctx.seats)) {
         if (ctx.seats.status(i) !== PlayerStatus.alive || ctx.seats.protectedNow(i)) continue
         ctx.seats.pos(i, pos)
         ctx.seats.vel(i, vel)
@@ -127,7 +128,8 @@ export const doorBankFeature: FeatureFactory = (spec, path) => {
         door.open = r.u8() !== 0
         door.revealed = r.u8() !== 0
         door.openTick = r.i32()
-        ctx.physics.body(door.body).collider(0).setEnabled(!door.open)
+        const collider = ctx.physics.body(door.body).collider(0)
+        if (collider.isEnabled() === door.open) collider.setEnabled(!door.open)
       }
     },
     draw(out) {

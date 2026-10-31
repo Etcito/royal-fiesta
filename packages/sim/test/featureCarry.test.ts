@@ -223,3 +223,47 @@ test('QB1: restore tick 60 of 180 reproduces exact snapshot bytes and poses afte
   assert.deepEqual(b.physics.takeSnapshot(), a.physics.takeSnapshot())
   assert.deepEqual(b.draw(), a.draw())
 })
+
+test('pickup conflicts use room seat order even when domain slots are reversed', async t => {
+  const h = await harness(t)
+  h.seats.seat = i => 21 - i
+  h.seats.positions[1] = { ...h.seats.positions[0] }
+  h.seats.inputs.forEach(input => { input.grab = true })
+  h.pre()
+  assert.deepEqual(h.seats.calls, [[1, CarryKind.object, 0]])
+})
+
+test('restored holder and held-grab edge follow room identity after slot reorder', async t => {
+  const h = await harness(t)
+  h.seats.inputs[0].grab = true
+  h.pre()
+  const saved = h.bytes()
+  for (const values of [h.seats.positions, h.seats.velocities, h.seats.directions, h.seats.modes,
+    h.seats.statuses, h.seats.teams, h.seats.carries, h.seats.ids, h.seats.inputs, h.seats.protected]) values.reverse()
+  h.seats.seat = i => 21 - i
+  h.feature.restore(new SnapReader(saved), h.ctx)
+  h.seats.positions[1] = v3(4, 2, 0)
+  h.pre()
+  near(h.draw()[0].t, v3(4, 2.25, 0.55))
+  assert.equal(h.seats.carry(1), CarryKind.object)
+  assert.deepEqual(h.sounds, ['move.carry'], 'held grab does not pick up again or release')
+  h.seats.inputs[1].grab = false
+  h.pre()
+  assert.deepEqual(h.seats.calls.at(-1), [1, CarryKind.none, -1])
+})
+
+test('restore preserves sleeping and spinning carry bodies exactly', async t => {
+  const h = await harness(t)
+  const id = h.physics.ids().at(-1)!
+  const body = h.physics.body(id)
+  body.setAngvel(v3(1, 2, 3), true)
+  h.step()
+  for (const sleeping of [false, true]) {
+    if (sleeping) h.physics.body(id).sleep()
+    const feature = h.bytes(), physics = h.physics.takeSnapshot()
+    h.physics.restoreSnapshot(physics)
+    h.feature.restore(new SnapReader(feature), h.ctx)
+    assert.deepEqual(h.bytes(), feature)
+    assert.deepEqual(h.physics.takeSnapshot(), physics)
+  }
+})

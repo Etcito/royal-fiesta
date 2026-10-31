@@ -115,3 +115,90 @@ for (const voteMs of [0, 300]) test(`zoneFullMatch: every peer reports the same 
     for (const match of matches) match.dispose()
   }
 })
+
+test('zoneFullMatch: final-step late input rolls back before any peer publishes', async t => {
+  const { SnapReader, SnapWriter } = await import('@gamesaloon/rollback')
+  const { MatchLedger, encodeFiestaEvents } = await import('@royal-fiesta/sim/zones/ledger')
+  const { decodeRoundResult } = await import('../src/net/zoneRounds.ts')
+  const entries = []
+  for (const id of ['race-sprint', 'survival-sprint']) {
+    const path = `fixtures/courses/${id}.course.json`
+    entries.push({ path, json: JSON.parse(await read(path)) as unknown })
+  }
+  const courses = await matchCourses(entries, fixtureResolver(read), 'sprint')
+  const zones = new Map<string, ZonesFile>()
+  for (const course of courses) zones.set(course.id, await loadZonesFile(course.id, course, read))
+  const roster: Roster = {
+    seatCount: 4, peers: [{ peer: 0, seats: [0, 1] }, { peer: 1, seats: [2] }, { peer: 2, seats: [3] }],
+    live: [true, true, true],
+  }
+  const net = new ZoneLoopback(3, { seed: 1, rttMs: 0, jitterMs: 0, loss: 0 })
+  const measurements = Object.fromEntries(roster.peers.map(({ peer }) =>
+    [peer, { cpuMs: 4, bandwidthKbps: 4096, latencyMs: 0, spareSlots: 3 }]))
+  const published: ReturnType<typeof decodeRoundResult>[][] = [[], [], []]
+  const matches: ZoneFullMatch[] = []
+  const endTick = 3780
+  let confirmed = endTick
+  const ledgers = roster.peers.map(() => new MatchLedger({
+    id: 0, kind: 'global', seats: [], cells: [], replicas: [0, 1, 2],
+  }, endTick, {
+    seatCount: 4, kind: 'race', final: false, finalRule: null, target: 2, playoff: false,
+    introTicks: 0, roundTicks: endTick, overtimeTicks: 0, seed: 7, roundIndex: 0,
+    teams: null, openingRanks: null,
+  }))
+  const before = new SnapWriter()
+  ledgers[0].snapshot(before)
+  // The late movement input changes the distance-to-gate shadow on the cap
+  // step. Peer 1 first predicts the opposite ordering, then replays that step.
+  const stepFinal = (ledger: InstanceType<typeof MatchLedger>, lateInputArrived: boolean) => {
+    const w = new SnapWriter()
+    encodeFiestaEvents(w, [0, 1, 2, 3].map(seat => ({
+      kind: 'progress' as const, seat, tick: endTick,
+      a: seat === 3 && lateInputArrived ? 0 : (seat + 1) * 1000, b: 0,
+    })))
+    ledger.step([], { count: 1, fromDomain: () => 1, reader: () => new SnapReader(w.bytes()) })
+  }
+  for (let p = 0; p < 3; p++) {
+    const transport = net.transport(p)
+    const send = transport.send.bind(transport)
+    transport.send = (to, ch, data) => {
+      if (data[0] === 1) published[p].push(decodeRoundResult(data.subarray(2)))
+      send(to, ch, data)
+    }
+    transport.sendMany = (peers, ch, data) => { for (const to of peers) transport.send(to, ch, data) }
+    const full = createZoneFullMatch(R, {
+      localPeer: p, roster, seed: 7, courses, season: showMaps(courses), voteMs: 0,
+      plan: [4, 2, 1], zones, measurements,
+    }, transport)
+    matches.push(full)
+    t.after(() => full.dispose())
+    const match = full.round!.match
+    const frame = match.frame.bind(match)
+    // Isolate the publication boundary while using real ledger rollback and
+    // result transport. Confirmation advances only when the late step is replayed.
+    Object.defineProperty(match, 'currentLedger', { get: () => ledgers[p] })
+    match.frame = (dt, sample) => {
+      const ticks = frame(dt, sample)
+      match.stats.confirmedTick[0] = confirmed
+      return ticks
+    }
+    stepFinal(ledgers[p], p !== 1)
+  }
+  assert.notDeepEqual(ledgers[0].result, ledgers[1].result, 'late input affects the speculative result')
+  for (const full of matches) full.frame(0, () => {})
+  assert.deepEqual(published, [[], [], []], 'confirmedTick == endTick must not publish')
+  ledgers[1].restore(new SnapReader(before.bytes()))
+  stepFinal(ledgers[1], true)
+  assert.deepEqual(ledgers[0].result, ledgers[1].result, 'rollback corrects the final step')
+  confirmed = endTick + 1
+  for (const full of matches) full.frame(0, () => {})
+  net.advance(1)
+  for (const full of matches) full.frame(0, () => {})
+  for (let p = 0; p < matches.length; p++) {
+    assert.equal(published[p].length, 2, 'one result sent to each other peer')
+    assert.deepEqual(published[p], published[0])
+    assert.equal(matches[p].report.resultMismatches, 0)
+    assert.equal(matches[p].report.rounds.length, 1)
+    assert.deepEqual(matches[p].report.rounds, matches[0].report.rounds)
+  }
+})

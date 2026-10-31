@@ -111,5 +111,28 @@
     "name": "s3-m4-action-build",
     "command": "npm run build",
     "timeout_s": 600
+  },
+  {
+    "name": "s3-m4-determinism-tests",
+    "command": "node --experimental-strip-types --test --test-concurrency=3 packages/sim/test/seatState.test.ts packages/sim/test/featureCarry.test.ts packages/sim/test/featureMovers.test.ts packages/sim/test/features.test.ts packages/sim/test/fiestaDomain.test.ts packages/sim/test/purity.test.ts packages/game/test/zoneFullMatch.test.ts",
+    "timeout_s": 300
+  },
+  {
+    "name": "s3-m4-determinism-typecheck",
+    "command": "npm run typecheck",
+    "timeout_s": 300,
+    "after": ["s3-m4-determinism-tests"]
+  },
+  {
+    "name": "s3-m4-determinism-guard",
+    "command": "npm run guard",
+    "timeout_s": 300,
+    "after": ["s3-m4-determinism-typecheck"]
+  },
+  {
+    "name": "s3-m4-determinism-build",
+    "command": "npm run build",
+    "timeout_s": 600,
+    "after": ["s3-m4-determinism-guard"]
   }
 ]

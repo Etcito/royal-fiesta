@@ -8,6 +8,7 @@ import { refuse } from '../refusal.ts'
 import { v3, quatIdentity } from '../vec.ts'
 import type { Vec3 } from '../vec.ts'
 import type { CourseFeature, FeatureSeats } from './feature.ts'
+import { SeatState, orderedSeatIndices } from './seatState.ts'
 import { boxParam, listParam, objOf, stringParam, ticksParam, vec3Of } from './params.ts'
 
 export const CARRY_KIND = 'carryItem'
@@ -17,6 +18,10 @@ export interface CarryRules {
   dropOnFall: true
   resetTicks: number
   protectedHomes: boolean
+}
+
+function sameVector(a: Vec3, b: Vec3): boolean {
+  return a.x === b.x && a.y === b.y && a.z === b.z
 }
 
 function dist2(a: Vec3, b: Vec3): number {
@@ -47,7 +52,7 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
   }
   let physics: RapierWorldSim
   let seats: FeatureSeats
-  let prevGrab = new Uint8Array(0)
+  const state = new SeatState(() => ({ prevGrab: 0 }))
   const zero = v3(0, 0, 0), pos = v3(0, 0, 0), facing = v3(0, 0, 0), vel = v3(0, 0, 0)
   const hand = (i: number): Vec3 => {
     seats.pos(i, pos)
@@ -63,7 +68,7 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
     init(ctx) {
       physics = ctx.physics
       seats = ctx.seats
-      prevGrab = new Uint8Array(seats.count)
+      state.sync(seats)
       for (const item of items) {
         const p = item.spawn
         item.holder = -1
@@ -76,9 +81,15 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
       }
     },
     preStep(ctx) {
+      state.sync(seats)
       for (const item of items) {
-        const i = item.holder
-        if (i < 0) continue
+        if (item.holder < 0) continue
+        const i = state.ids.indexOf(item.holder)
+        if (i < 0) {
+          item.holder = -1
+          item.lastTouchTick = ctx.tick
+          continue
+        }
         const body = physics.body(item.body)
         const fallen = seats.status(i) !== PlayerStatus.alive || seats.mode(i) === CharMode.parked
         if (fallen || seats.mode(i) === CharMode.stunned || !seats.input(i).grab) {
@@ -94,15 +105,15 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
       for (const item of items) {
         if (item.holder < 0) continue
         const body = physics.body(item.body)
-        item.lastHand = hand(item.holder)
+        item.lastHand = hand(state.ids.indexOf(item.holder))
         body.setTranslation(item.lastHand, true)
         body.setLinvel(zero, true)
         item.lastTouchTick = ctx.tick
       }
-      for (let i = 0; i < seats.count; i++) {
+      for (const i of orderedSeatIndices(seats)) {
         const grab = seats.input(i).grab
-        const pressed = grab && !prevGrab[i]
-        prevGrab[i] = grab ? 1 : 0
+        const pressed = grab && !state.rows[i].prevGrab
+        state.rows[i].prevGrab = grab ? 1 : 0
         if (!pressed || seats.status(i) !== PlayerStatus.alive || seats.protectedNow(i) ||
             seats.carry(i) !== CarryKind.none ||
             (seats.mode(i) !== CharMode.ground && seats.mode(i) !== CharMode.air)) continue
@@ -118,7 +129,7 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
         }
         if (best < 0) continue
         const item = items[best]
-        item.holder = i
+        item.holder = seats.seat(i)
         item.lastTouchTick = ctx.tick
         seats.setCarry(i, CarryKind.object, best)
         const body = physics.body(item.body)
@@ -142,15 +153,16 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
     snapshot(w) {
       for (const item of items) {
         const body = physics.body(item.body)
-        const p = body.translation(), q = body.rotation(), v = body.linvel()
+        const p = body.translation(), q = body.rotation(), v = body.linvel(), a = body.angvel()
         w.i16(item.holder); w.i32(item.lastTouchTick)
         w.f64(p.x); w.f64(p.y); w.f64(p.z)
         w.f64(q.x); w.f64(q.y); w.f64(q.z); w.f64(q.w)
         w.f64(v.x); w.f64(v.y); w.f64(v.z)
+        w.f64(a.x); w.f64(a.y); w.f64(a.z)
+        w.u8(body.isSleeping() ? 1 : 0)
         w.f64(item.lastHand.x); w.f64(item.lastHand.y); w.f64(item.lastHand.z)
       }
-      w.u16(prevGrab.length)
-      for (const grab of prevGrab) w.u8(grab)
+      state.snapshot(w, (w, row) => w.u8(row.prevGrab))
     },
     restore(r, ctx) {
       physics = ctx.physics
@@ -158,13 +170,21 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
       for (const item of items) {
         item.holder = r.i16(); item.lastTouchTick = r.i32()
         const body = physics.body(item.body)
-        body.setTranslation(v3(r.f64(), r.f64(), r.f64()), true)
-        body.setRotation({ x: r.f64(), y: r.f64(), z: r.f64(), w: r.f64() }, true)
-        body.setLinvel(v3(r.f64(), r.f64(), r.f64()), true)
+        const p = v3(r.f64(), r.f64(), r.f64())
+        const q = { x: r.f64(), y: r.f64(), z: r.f64(), w: r.f64() }
+        const v = v3(r.f64(), r.f64(), r.f64()), a = v3(r.f64(), r.f64(), r.f64())
+        const sleeping = r.u8() !== 0
+        // Domain rollback already restored Rapier. Reapplying a rotation can
+        // renormalize it; waking a sleeping body also changes future steps.
+        if (!sameVector(body.translation(), p)) body.setTranslation(p, false)
+        const rotation = body.rotation()
+        if (!sameVector(rotation, q) || rotation.w !== q.w) body.setRotation(q, false)
+        if (!sameVector(body.linvel(), v)) body.setLinvel(v, false)
+        if (!sameVector(body.angvel(), a)) body.setAngvel(a, false)
+        if (sleeping !== body.isSleeping()) { if (sleeping) body.sleep(); else body.wakeUp() }
         item.lastHand = v3(r.f64(), r.f64(), r.f64())
       }
-      prevGrab = new Uint8Array(r.u16())
-      for (let i = 0; i < prevGrab.length; i++) prevGrab[i] = r.u8()
+      state.restore(r, seats, r => ({ prevGrab: r.u8() }))
     },
     draw(out) {
       for (const item of items) {
@@ -194,7 +214,7 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
         const d = dist2(position, p)
         if (d < bestD) { best = p; bestD = d }
       }
-      if (items.some(item => item.holder === i)) {
+      if (items.some(item => item.holder === seat)) {
         for (const home of homes) if (home.team === null || home.team === seats.team(i)) consider(home.center)
       } else {
         for (const item of items) if (item.holder < 0) consider(physics.body(item.body).translation())

@@ -7,6 +7,7 @@ import { PlayerStatus } from '../match/roundSystem.ts'
 import { degToRad, quatAxisAngle, quatIdentity, v3 } from '../vec.ts'
 import type { Vec3 } from '../vec.ts'
 import type { FeatureCtx, FeatureDraw, FeatureFactory } from './feature.ts'
+import { SeatState } from './seatState.ts'
 import { boxParam, enumParam, numParam, ticksParam } from './params.ts'
 
 const BOT_RANGE2 = 25 * 25
@@ -29,19 +30,8 @@ export const boostLaneFeature: FeatureFactory = (spec, path) => {
   const vel: Vec3 = { x: 0, y: 0, z: 0 }
   const next: Vec3 = { x: 0, y: 0, z: 0 }
   const planar = { x: 0, z: 0 }
-  let boostUntil = new Int32Array(0)
-  let readyAt = new Int32Array(0)
-  let seatIds: number[] = []
+  const state = new SeatState(() => ({ boostUntil: 0, readyAt: 0 }))
   let tick = 0
-
-  const resize = (ctx: FeatureCtx): void => {
-    const n = ctx.seats.count
-    if (boostUntil.length === n && readyAt.length === n && seatIds.length === n) return
-    boostUntil = new Int32Array(n)
-    readyAt = new Int32Array(n)
-    seatIds = []
-    for (let i = 0; i < n; i++) seatIds.push(ctx.seats.seat(i))
-  }
 
   const toLocal = (p: Vec3, out: Vec3): Vec3 => {
     const dx = p.x - box.center.x
@@ -66,18 +56,18 @@ export const boostLaneFeature: FeatureFactory = (spec, path) => {
 
   const step = (ctx: FeatureCtx): void => {
     tick = ctx.tick
-    resize(ctx)
-    for (let i = 0; i < boostUntil.length; i++) {
+    state.sync(ctx.seats)
+    for (let i = 0; i < state.rows.length; i++) {
       if (ctx.seats.status(i) !== PlayerStatus.alive) continue
       const mode = ctx.seats.mode(i)
       if (mode === CharMode.parked) continue
       const p = ctx.seats.pos(i, pos)
-      if (inside(p) && eligible(ctx, i) && tick >= readyAt[i]) {
-        boostUntil[i] = tick + duration
-        readyAt[i] = tick + duration + recharge
+      if (inside(p) && eligible(ctx, i) && tick >= state.rows[i].readyAt) {
+        state.rows[i].boostUntil = tick + duration
+        state.rows[i].readyAt = tick + duration + recharge
         ctx.sound('mech.boost', { x: p.x, y: p.y, z: p.z }, 1)
       }
-      if (tick < boostUntil[i] && boostedMode(mode)) {
+      if (tick < state.rows[i].boostUntil && boostedMode(mode)) {
         const input = ctx.seats.input(i)
         const len = Math.sqrt(input.moveX * input.moveX + input.moveZ * input.moveZ)
         if (!(len > 0)) continue
@@ -94,8 +84,8 @@ export const boostLaneFeature: FeatureFactory = (spec, path) => {
   }
 
   const anyBoosted = (): boolean => {
-    for (let i = 0; i < boostUntil.length; i++) {
-      if (boostUntil[i] > tick) return true
+    for (let i = 0; i < state.rows.length; i++) {
+      if (state.rows[i].boostUntil > tick) return true
     }
     return false
   }
@@ -105,30 +95,18 @@ export const boostLaneFeature: FeatureFactory = (spec, path) => {
     kind: 'boostLane',
     init(ctx) {
       tick = ctx.tick
-      resize(ctx)
+      state.sync(ctx.seats)
     },
     preStep(ctx) {
       step(ctx)
     },
     postStep(_ctx) {},
     snapshot(w: SnapWriter) {
-      w.u16(boostUntil.length)
-      for (let i = 0; i < boostUntil.length; i++) {
-        w.i32(boostUntil[i])
-        w.i32(readyAt[i])
-      }
+      state.snapshot(w, (w, row) => { w.i32(row.boostUntil); w.i32(row.readyAt) })
     },
     restore(r: SnapReader, ctx: FeatureCtx) {
-      const n = r.u16()
-      boostUntil = new Int32Array(n)
-      readyAt = new Int32Array(n)
-      for (let i = 0; i < n; i++) {
-        boostUntil[i] = r.i32()
-        readyAt[i] = r.i32()
-      }
+      state.restore(r, ctx.seats, r => ({ boostUntil: r.i32(), readyAt: r.i32() }))
       tick = ctx.tick
-      seatIds = []
-      for (let i = 0; i < ctx.seats.count; i++) seatIds.push(ctx.seats.seat(i))
     },
     draw(out: FeatureDraw[]) {
       out.push({
@@ -141,7 +119,7 @@ export const boostLaneFeature: FeatureFactory = (spec, path) => {
       })
     },
     botTarget(seat: number, p: Vec3, out: Vec3): boolean {
-      const i = seatIds.indexOf(seat)
+      const i = state.ids.indexOf(seat)
       if (i < 0) return false
       const dx = p.x - box.center.x
       const dy = p.y - box.center.y

@@ -12,6 +12,7 @@ import { PlayerStatus } from '../src/match/roundSystem.ts'
 import { v3 } from '../src/vec.ts'
 import type { Vec3 } from '../src/vec.ts'
 import { GRAVITY_Y } from '../src/world.ts'
+import { carryItemFeature } from '../src/features/carry.ts'
 import { boostLaneFeature } from '../src/features/boostLane.ts'
 import { doorBankFeature } from '../src/features/doorBank.ts'
 import { catchVolumeFeature, launchPadFeature } from '../src/features/launch.ts'
@@ -40,6 +41,7 @@ class StubSeats implements FeatureSeats {
   readonly velocities: Vec3[]
   readonly modes: number[]
   readonly statuses: number[]
+  readonly carries: number[]
   readonly teams: number[]
   readonly inputs: PlayerInput[]
   readonly protectedSeats: boolean[]
@@ -53,6 +55,7 @@ class StubSeats implements FeatureSeats {
     this.modes = positions.map(() => CharMode.ground as number)
     this.statuses = positions.map(() => PlayerStatus.alive as number)
     this.teams = positions.map(() => 0)
+    this.carries = positions.map(() => 0)
     this.inputs = positions.map(() => neutralInput())
     this.protectedSeats = positions.map(() => false)
   }
@@ -92,8 +95,8 @@ class StubSeats implements FeatureSeats {
     this.calls.teleport.push({ seat: i, at: { t: { ...at.t }, facing: { ...at.facing } } })
   }
   kill(i: number): void { this.statuses[i] = PlayerStatus.out }
-  setCarry(_i: number, _kind: number, _id: number): void {}
-  carry(_i: number): number { return 0 }
+  setCarry(i: number, kind: number, _id: number): void { this.carries[i] = kind }
+  carry(i: number): number { return this.carries[i] }
   facing(_i: number, out: Vec3): Vec3 { out.x = 0; out.y = 0; out.z = 1; return out }
   setSwim(i: number, inside: boolean, drag: number, buoyancy: number): void {
     this.calls.setSwim.push({ seat: i, inside, drag, buoyancy })
@@ -242,6 +245,7 @@ interface SeatState {
   modes: number[]
   statuses: number[]
   teams: number[]
+  carries: number[]
   inputs: PlayerInput[]
   protectedSeats: boolean[]
 }
@@ -253,6 +257,7 @@ function seatState(seats: StubSeats): SeatState {
     modes: [...seats.modes],
     statuses: [...seats.statuses],
     teams: [...seats.teams],
+    carries: [...seats.carries],
     inputs: seats.inputs.map(i => ({ ...i })),
     protectedSeats: [...seats.protectedSeats],
   }
@@ -264,6 +269,7 @@ function applySeatState(seats: StubSeats, state: SeatState): void {
   seats.modes.splice(0, seats.modes.length, ...state.modes)
   seats.statuses.splice(0, seats.statuses.length, ...state.statuses)
   seats.teams.splice(0, seats.teams.length, ...state.teams)
+  seats.carries.splice(0, seats.carries.length, ...state.carries)
   seats.inputs.splice(0, seats.inputs.length, ...state.inputs.map(i => ({ ...i })))
   seats.protectedSeats.splice(0, seats.protectedSeats.length, ...state.protectedSeats)
 }
@@ -531,7 +537,10 @@ function swimInsideStates(feature: CourseFeature): number[] {
   const reader = new SnapReader(snapshotBytes(feature))
   const count = reader.u16()
   const states: number[] = []
-  for (let i = 0; i < count; i++) states.push(reader.u8())
+  for (let i = 0; i < count; i++) {
+    assert.equal(reader.u16(), i, 'swim state retains the room seat identity')
+    states.push(reader.u8())
+  }
   assert.equal(reader.remaining, 0, 'swim snapshot consumes exactly its state')
   return states
 }
@@ -942,5 +951,88 @@ test('snapshot -> restore is identical per feature (QB1)', () => {
       afterA.knock.length + soundsA.length
     assert.ok(recorded > 0, `${entry.name}: continuation has recorded calls`)
     assert.deepEqual(snapshotBytes(featureA), snapshotBytes(featureB), `${entry.name}: final snapshot bytes`)
+  }
+})
+
+const restoreCases: [FeatureFactory, FeatureSpec][] = [
+  [boostLaneFeature, spec('boostLane', BOOST_PARAMS())],
+  [launchPadFeature, spec('launchPad', {
+    center: [0, 0, 0], half: [2, 2, 2], target: [0, 0, 12], apexM: 3, recoverOnly: true,
+  })],
+  [catchVolumeFeature, spec('catchVolume', { center: [0, 0, 0], half: [2, 2, 2], respawnStage: 0 })],
+  [swimVolumeFeature, spec('swimVolume', { center: [0, 0, 0], half: [2, 2, 2], drag: 3, buoyancy: 22 })],
+  [rollingLogFeature, logSpec({ from: [0, 0, 0], to: [0, 0, 8], radius: 1, speed: 5, periodS: 8 })],
+  [doorBankFeature, bankSpec('doors')],
+  [carryItemFeature, spec('carryItem', { asset: 'candy.ball', spawns: [[0, 0, 0.5]], resetS: 1,
+    homes: [{ center: [0, 0, 20], half: [2, 2, 2], team: null }] })],
+]
+
+for (const [factory, s] of restoreCases) test(`${s.kind}: 60 seats restore across three peer sizes and replay every tick`, t => {
+  const course = courseOf([s], [cp(v3(0, 0, 0))], [0])
+  const makeSeats = (n: number) => new StubSeats(Array.from({ length: n }, () => v3(0, 0, 0)))
+  const peer = (n: number) => {
+    const physics = new WorldSim(R, { gravity: v3(0, GRAVITY_Y, 0) })
+    t.after(() => physics.free())
+    const ctx = new TestCtx(R, physics, makeSeats(n), course)
+    const feature = factory(s, PATH)
+    feature.init(ctx)
+    return { ctx, feature }
+  }
+  const drive = (p: ReturnType<typeof peer>, tick: number) => {
+    const seats = p.ctx.seats
+    for (let i = 0; i < seats.count; i++) {
+      // Includes held grabs, exits, recovery, launch flight and high-index seats.
+      const id = seats.seat(i)
+      seats.positions[i] = tick % 24 < 12 ? v3(0, 0, 0) : v3((id % 4) * 4, 1, 10)
+      seats.inputs[i] = { ...neutralInput(), moveZ: 1, grab: tick % 30 < 20 }
+      seats.protectedSeats[i] = tick % 40 === 0
+      seats.modes[i] = tick % 24 < 12 ? CharMode.ground : CharMode.dive
+      seats.velocities[i] = v3(0, 0, 7)
+    }
+    p.ctx.tick = tick
+    p.feature.preStep(p.ctx)
+    p.ctx.physics.step()
+    p.feature.postStep(p.ctx)
+  }
+  const source = peer(60)
+  for (let tick = 0; tick < 40; tick++) drive(source, tick)
+  const snapshot = snapshotBytes(source.feature)
+  const physics = source.ctx.physics.takeSnapshot()
+  const peers = [8, 20, 60].map(n => {
+    const p = peer(n)
+    const seats = makeSeats(60)
+    applySeatState(seats, seatState(source.ctx.seats))
+    p.ctx.physics.restoreSnapshot(physics)
+    p.ctx = new TestCtx(R, p.ctx.physics, seats, course, 39)
+    const reader = new SnapReader(snapshot)
+    p.feature.restore(reader, p.ctx)
+    assert.equal(reader.remaining, 0)
+    assert.deepEqual(snapshotBytes(p.feature), snapshot, `initial size ${n}: exact round trip`)
+    return p
+  })
+  source.ctx.sounds.length = 0
+  for (const calls of Object.values(source.ctx.seats.calls)) calls.length = 0
+  peers.push(source) // Compare restored peers with uninterrupted simulation too.
+  for (let tick = 40; tick < 100; tick++) {
+    // A new domain may contain fewer seats, then expand or reorder without
+    // reconstructing its features. Restore must use identities and current count.
+    if (tick === 60 || tick === 70 || tick === 80) {
+      const n = tick === 60 ? 8 : 60
+      const saved = snapshotBytes(peers[0].feature)
+      for (const p of peers) {
+        const seats = makeSeats(n)
+        seats.seat = i => tick === 60 ? i + 52 : tick === 80 ? 59 - i : i
+        p.ctx = new TestCtx(R, p.ctx.physics, seats, course, tick - 1)
+        p.feature.restore(new SnapReader(saved), p.ctx)
+      }
+    }
+    for (const p of peers) drive(p, tick)
+    for (const p of peers.slice(1)) {
+      assert.deepEqual(snapshotBytes(p.feature), snapshotBytes(peers[0].feature), `first divergent tick ${tick}`)
+      assert.deepEqual(seatState(p.ctx.seats), seatState(peers[0].ctx.seats), `seat effects at ${tick}`)
+      assert.deepEqual(p.ctx.seats.calls, peers[0].ctx.seats.calls, `feature calls at ${tick}`)
+      assert.deepEqual(p.ctx.sounds, peers[0].ctx.sounds, `sounds at ${tick}`)
+      assert.deepEqual(p.ctx.physics.takeSnapshot(), peers[0].ctx.physics.takeSnapshot(), `physics at ${tick}`)
+    }
   }
 })

@@ -1,4 +1,6 @@
+import { orderedSeatIndices } from './seatState.ts'
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
+import type { RapierWorldSim } from '@gamesaloon/rollback-rapier'
 import { CHAR, CharMode } from '../character/constants.ts'
 import { HALF_PI, datan2 } from '../detmath.ts'
 import { G, groups } from '../groups.ts'
@@ -10,7 +12,7 @@ import type { Pose, Quat, Vec3 } from '../vec.ts'
 import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureFactory } from './feature.ts'
 import { numParam, vec3Param } from './params.ts'
 
-const STATE_VERSION = 1
+const STATE_VERSION = 2
 const COLLIDE_WITH = G.CHAR | G.PROBE | G.DEBRIS
 const Y_AXIS: Vec3 = v3(0, 1, 0)
 const Y_TO_X: Quat = quatAxisAngle(v3(0, 0, 1), -HALF_PI, quatIdentity())
@@ -27,6 +29,7 @@ class RollingLog implements CourseFeature {
   readonly #roll: Quat = quatIdentity()
   readonly #seatPos: Vec3 = v3(0, 0, 0)
   #body = -1
+  #physics!: RapierWorldSim
   constructor(spec: FeatureSpec, path: string) {
     this.id = spec.id
     const from = vec3Param(spec, path, 'from')
@@ -99,16 +102,8 @@ class RollingLog implements CourseFeature {
     this.#vel.y = vy
     this.#vel.z = vz
   }
-  #place(ctx: FeatureCtx, tick: number): void {
-    this.#poseAt(tick)
-    const p = this.#pose
-    const rb = ctx.physics.body(this.#body)
-    rb.setTranslation({ x: p.t.x, y: p.t.y, z: p.t.z }, true)
-    rb.setRotation({ x: p.r.x, y: p.r.y, z: p.r.z, w: p.r.w }, true)
-    rb.setNextKinematicTranslation({ x: p.t.x, y: p.t.y, z: p.t.z })
-    rb.setNextKinematicRotation({ x: p.r.x, y: p.r.y, z: p.r.z, w: p.r.w })
-  }
   init(ctx: FeatureCtx): void {
+    this.#physics = ctx.physics
     this.#poseAt(0)
     const p = this.#pose
     const desc = ctx.R.RigidBodyDesc.kinematicPositionBased()
@@ -133,7 +128,7 @@ class RollingLog implements CourseFeature {
     const half = this.#length / 2
     const reach = this.#radius + CHAR.radius + 0.05
     const reach2 = reach * reach
-    for (let i = 0; i < ctx.seats.count; i++) {
+    for (const i of orderedSeatIndices(ctx.seats)) {
       if (ctx.seats.status(i) !== PlayerStatus.alive) continue
       if (ctx.seats.protectedNow(i)) continue
       if (ctx.seats.mode(i) === CharMode.stunned) continue
@@ -172,10 +167,33 @@ class RollingLog implements CourseFeature {
   }
   snapshot(w: SnapWriter): void {
     w.u8(STATE_VERSION)
+    const p = this.#pose
+    w.f64(p.t.x); w.f64(p.t.y); w.f64(p.t.z)
+    w.f64(p.r.x); w.f64(p.r.y); w.f64(p.r.z); w.f64(p.r.w)
+    const body = this.#physics.body(this.#body)
+    const t = body.translation(), r = body.rotation()
+    w.f64(t.x); w.f64(t.y); w.f64(t.z)
+    w.f64(r.x); w.f64(r.y); w.f64(r.z); w.f64(r.w)
   }
   restore(r: SnapReader, ctx: FeatureCtx): void {
     r.u8()
-    this.#place(ctx, ctx.tick)
+    this.#pose.t = v3(r.f64(), r.f64(), r.f64())
+    this.#pose.r = { x: r.f64(), y: r.f64(), z: r.f64(), w: r.f64() }
+    const t = v3(r.f64(), r.f64(), r.f64())
+    const q = { x: r.f64(), y: r.f64(), z: r.f64(), w: r.f64() }
+    this.#physics = ctx.physics
+    const body = ctx.physics.body(this.#body)
+    const currentT = body.translation(), currentQ = body.rotation()
+    // A rebuild needs the transferred pose. On rollback Rapier already restored
+    // it exactly; do not renormalize the rotation or overwrite its next pose.
+    if (currentT.x !== t.x || currentT.y !== t.y || currentT.z !== t.z) {
+      body.setTranslation(t, false)
+      body.setNextKinematicTranslation(t)
+    }
+    if (currentQ.x !== q.x || currentQ.y !== q.y || currentQ.z !== q.z || currentQ.w !== q.w) {
+      body.setRotation(q, false)
+      body.setNextKinematicRotation(q)
+    }
   }
 
   draw(out: FeatureDraw[]): void {

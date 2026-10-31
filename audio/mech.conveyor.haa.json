@@ -1,0 +1,29 @@
+{
+  "haa":1,"id":"mech.conveyor","title":"Belt rollers and rattle",
+  "inputs":[{"name":"rate","kind":"continuous","unit":"","min":0,"max":1,"default":0.6,"smooth":0.04,"curve":"lin"}],"master":0.65,
+  "graph":{"duration":3,"loop":true,"mode":"live",
+    "nodes":[
+      {"id":"rate","type":"input","x":40,"y":40,"label":"rate","params":{"name":"rate"}},
+      {"id":"cycle","type":"lfo","x":280,"y":40,"label":"cycle","params":{"rate":0.3,"depth":1,"wave":"sine"}},
+      {"id":"tone","type":"oscillator","x":520,"y":40,"label":"tone","params":{"frequency":85,"wave":"triangle","level":0.22}},
+      {"id":"overtone","type":"oscillator","x":760,"y":40,"label":"overtone","params":{"frequency":180,"wave":"sine","level":0.06}},
+      {"id":"air","type":"noise","x":40,"y":180,"label":"air","params":{"color":"white","level":0.42,"width":0.15}},
+      {"id":"housing","type":"filter","x":280,"y":180,"label":"housing","params":{"cutoff":2600,"resonance":0.65,"mode":"lowpass"}},
+      {"id":"pulse","type":"gain","x":520,"y":180,"label":"pulse","params":{"gain":0.55}},
+      {"id":"level","type":"gain","x":760,"y":180,"label":"level","params":{"gain":0}},
+      {"id":"out","type":"output","x":40,"y":320,"label":"out","params":{"gain":1}}
+    ],"connections":[
+      {"id":"c1","from":"rate","to":"cycle","target":"rate","amount":25},
+      {"id":"c2","from":"rate","to":"tone","target":"frequency","amount":180},
+      {"id":"c3","from":"rate","to":"overtone","target":"frequency","amount":280},
+      {"id":"c4","from":"tone","to":"housing","target":"audio","amount":1},
+      {"id":"c5","from":"overtone","to":"housing","target":"audio","amount":1},
+      {"id":"c6","from":"air","to":"housing","target":"audio","amount":1},
+      {"id":"c7","from":"cycle","to":"pulse","target":"gain","amount":0.25},
+      {"id":"c8","from":"housing","to":"pulse","target":"audio","amount":1},
+      {"id":"c9","from":"cycle","to":"housing","target":"cutoff","amount":250},
+      {"id":"c10","from":"rate","to":"level","target":"gain","amount":1},
+      {"id":"c11","from":"pulse","to":"level","target":"audio","amount":1},
+      {"id":"c12","from":"level","to":"out","target":"audio","amount":1}
+    ]}
+}

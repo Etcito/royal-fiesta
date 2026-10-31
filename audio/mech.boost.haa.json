@@ -1,0 +1,33 @@
+{
+  "haa":1,"id":"mech.boost","title":"Rising boost zip",
+  "inputs":[],"master":0.65,
+  "graph":{"duration":0.48,"loop":false,"mode":"timeline",
+    "nodes":[
+      {"id":"variation","type":"random","x":40,"y":40,"label":"variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"pitch","type":"curve","x":280,"y":40,"label":"pitch","params":{"amount":1},"curve":[[0,0],[0.65,0.55],[1,1]]},
+      {"id":"body","type":"oscillator","x":520,"y":40,"label":"body","params":{"frequency":240,"wave":"triangle","level":0.65}},
+      {"id":"resonance","type":"oscillator","x":760,"y":40,"label":"resonance","params":{"frequency":650.4,"wave":"sine","level":0.12}},
+      {"id":"body-envelope","type":"curve","x":40,"y":180,"label":"body-envelope","params":{"amount":1},"curve":[[0,0],[0.08,0.4],[0.58,0.75],[0.78,0.5],[0.98,0],[1,0]]},
+      {"id":"body-gain","type":"gain","x":280,"y":180,"label":"body-gain","params":{"gain":0}},
+      {"id":"texture","type":"noise","x":520,"y":180,"label":"texture","params":{"color":"white","level":0.65,"width":0.2}},
+      {"id":"texture-filter","type":"filter","x":760,"y":180,"label":"texture-filter","params":{"cutoff":2600,"resonance":0.65,"mode":"lowpass"}},
+      {"id":"texture-envelope","type":"curve","x":40,"y":320,"label":"texture-envelope","params":{"amount":1},"curve":[[0,0],[0.12,0.3],[0.65,0.65],[0.98,0],[1,0]]},
+      {"id":"texture-gain","type":"gain","x":280,"y":320,"label":"texture-gain","params":{"gain":0}},
+      {"id":"out","type":"output","x":520,"y":320,"label":"out","params":{"gain":0.85}}
+    ],"connections":[
+      {"id":"c1","from":"pitch","to":"body","target":"frequency","amount":1300},
+      {"id":"c2","from":"variation","to":"body","target":"frequency","amount":43.199999999999996},
+      {"id":"c3","from":"pitch","to":"resonance","target":"frequency","amount":2080},
+      {"id":"c4","from":"variation","to":"resonance","target":"frequency","amount":96},
+      {"id":"c5","from":"body-envelope","to":"body-gain","target":"gain","amount":1},
+      {"id":"c6","from":"body","to":"body-gain","target":"audio","amount":1},
+      {"id":"c7","from":"resonance","to":"body-gain","target":"audio","amount":1},
+      {"id":"c8","from":"texture","to":"texture-filter","target":"audio","amount":1},
+      {"id":"c9","from":"variation","to":"texture-filter","target":"cutoff","amount":520},
+      {"id":"c10","from":"pitch","to":"texture-filter","target":"cutoff","amount":3200},
+      {"id":"c11","from":"texture-envelope","to":"texture-gain","target":"gain","amount":1},
+      {"id":"c12","from":"texture-filter","to":"texture-gain","target":"audio","amount":1},
+      {"id":"c13","from":"body-gain","to":"out","target":"audio","amount":1},
+      {"id":"c14","from":"texture-gain","to":"out","target":"audio","amount":1}
+    ]}
+}

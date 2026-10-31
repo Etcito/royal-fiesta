@@ -16,5 +16,42 @@
     "name": "s3-m1-audit-render",
     "command": "node --experimental-strip-types tools/audioAudit.ts out/s3/m1/audit",
     "timeout_s": 600
+  },
+  {
+    "name": "s3-m2-sound-check",
+    "command": "node --experimental-strip-types tools/soundCheck.ts out/s3/m2",
+    "timeout_s": 1200
+  },
+  {
+    "name": "s3-m2-judge-movement",
+    "command": "node --experimental-strip-types tools/judgeLoop.ts s3-m2-judge-movement out/s3/m2/movement.png --description \"labelled spectrogram and waveform rows of cartoon penguin movement sounds: footsteps on six surfaces (candy, ice, jungle, neon, stone, mud) with eight distinct variants each and louder brighter rows at higher speed, jump, soft and hard landings, dive, a belly slide loop that grows with speed, swim splash, hit, stun, wobble, grab, release, carry; every row non-empty with clear transients, no flat, silent or clipped row\" --min-score 6",
+    "timeout_s": 900,
+    "after": [
+      "s3-m2-sound-check"
+    ]
+  },
+  {
+    "name": "s3-m2-judge-world",
+    "command": "node --experimental-strip-types tools/judgeLoop.ts s3-m2-judge-world out/s3/m2/world.png --description \"labelled spectrogram and waveform rows of world and mechanism sounds: one-shots for switch, lever, door, spring, hammer, seesaw, log, tile warn and fall, boost, launch and door break, steady loops for motor, spinner, conveyor, laser and slime that change with rate, and seven objective chimes; every row clearly labelled, distinct and non-silent with clear transients, no flat, silent or clipped row\" --min-score 6",
+    "timeout_s": 900,
+    "after": [
+      "s3-m2-sound-check"
+    ]
+  },
+  {
+    "name": "s3-m2-judge-flow",
+    "command": "node --experimental-strip-types tools/judgeLoop.ts s3-m2-judge-flow out/s3/m2/flow.png --description \"labelled spectrogram and waveform rows of show flow UI sounds: short UI blips, vote and countdown ticks, a strong GO hit, round start, qualify, eliminate, eight different elimination drops, a win fanfare and gold, silver and bronze crown stings of decreasing richness; every row labelled, distinct and non-silent with clear transients, no flat, silent or clipped row\" --min-score 6",
+    "timeout_s": 900,
+    "after": [
+      "s3-m2-sound-check"
+    ]
+  },
+  {
+    "name": "s3-m2-judge-music",
+    "command": "node --experimental-strip-types tools/judgeLoop.ts s3-m2-judge-music out/s3/m2/music.png --description \"labelled spectrogram and waveform rows of music and ambience: 32 music cues with full candy arrangements showing visible beat, bass and melody structure and shorter placeholder loops for ice, jungle and neon, plus four ambience beds and a crowd bed rising with excitement; every row labelled, non-empty and non-silent, no flat or clipped row\" --min-score 6",
+    "timeout_s": 900,
+    "after": [
+      "s3-m2-sound-check"
+    ]
   }
 ]

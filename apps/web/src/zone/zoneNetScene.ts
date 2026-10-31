@@ -18,7 +18,7 @@ import type { PlayerInput } from '@royal-fiesta/sim/input'
 import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import { motionPose } from '@royal-fiesta/sim/obstacles/motion'
-import type { BodyRef, MechEvent } from '@royal-fiesta/sim/mechanismSpec'
+import type { BodyRef, MechEvent, MechItem } from '@royal-fiesta/sim/mechanismSpec'
 import type { Pose } from '@royal-fiesta/sim/vec'
 import type { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { browserAssetResolver, preloadAssets } from '../client/sources.ts'
@@ -151,6 +151,17 @@ class DomainSceneSim {
     const domain = this.reference
     if (domain === null) return motionPose(this.courseData.obstacles[i], 0, 0, out)
     return domain.obstacles.pose(i, domain.tick, out)
+  }
+
+  // SceneView builds one instance per mechanism body from the item list (MatchSim has the same two calls).
+  mechanismItemCount(): number {
+    return this.reference?.mechanisms.spec()?.items.length ?? 0
+  }
+
+  mechanismItem(i: number): MechItem {
+    const item = this.reference?.mechanisms.spec()?.items[i]
+    if (item === undefined) throw new Error(`no mechanism item ${i}; pass a loaded item index`)
+    return item
   }
 
   mechanismBodyPose(ref: BodyRef, out: Pose): boolean {

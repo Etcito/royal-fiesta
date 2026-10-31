@@ -1371,6 +1371,8 @@ class App {
   }
 
   fail(message: string): void {
+    // Whatever the error screen shows is also logged: a run that ends on it names its cause in the log.
+    console.error(`[error-screen] ${message}`)
     this.roundLoading = null
     this.loadingOverlay.hide()
     this.run(this.nav.dispatch({ kind: 'error', message }))

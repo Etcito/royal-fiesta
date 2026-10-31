@@ -241,6 +241,8 @@ export class ShowMode {
   }
 
   private fail(error: unknown): void {
+    // The error screen only shows the message; the stack goes to the log with it.
+    console.error('[show] failed:', error instanceof Error ? (error.stack ?? error.message) : String(error))
     this.error = error instanceof Error ? error.message : String(error)
     this.dispose()
   }

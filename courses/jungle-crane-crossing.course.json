@@ -84,9 +84,9 @@
     "budget": {"dynamicBodies":24,"joints":32}
   },
   "sounds": [
-    {"id":"crank","patch":"jungle-crank","item":"crane","t":[0,0,0],"event":null,"signal":"crane-toggle","gain":1,"refM":2,"maxM":60,"loop":true},
-    {"id":"click-lever-on","patch":"mech-click","item":"lever","t":[0,0,0],"event":"leverOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-lever-off","patch":"mech-click","item":"lever","t":[0,0,0],"event":"leverOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"thud","patch":"mech-thud","item":null,"t":[0,3.45,33],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
+    {"id":"crank","patch":"mech.motor","item":"crane","t":[0,0,0],"event":null,"signal":"crane-toggle","gain":1,"refM":2,"maxM":60,"loop":true},
+    {"id":"click-lever-on","patch":"mech.lever","item":"lever","t":[0,0,0],"event":"leverOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-lever-off","patch":"mech.lever","item":"lever","t":[0,0,0],"event":"leverOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"thud","patch":"mech.hammer","item":null,"t":[0,3.45,33],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
   ]
 }

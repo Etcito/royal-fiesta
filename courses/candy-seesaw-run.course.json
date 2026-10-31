@@ -111,12 +111,12 @@
     "budget": {"dynamicBodies":24,"joints":32}
   },
   "sounds": [
-    {"id":"click-1-on","patch":"mech-click","item":"plate-1","t":[0,0,0],"event":"switchOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-1-off","patch":"mech-click","item":"plate-1","t":[0,0,0],"event":"switchOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-2-on","patch":"mech-click","item":"plate-2","t":[0,0,0],"event":"switchOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-2-off","patch":"mech-click","item":"plate-2","t":[0,0,0],"event":"switchOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"door-1-open","patch":"mech-motor","item":"door-1","t":[0,1.5,0],"event":null,"signal":"door-1-hold","gain":0.7,"refM":2,"maxM":60,"loop":false},
-    {"id":"door-2-open","patch":"mech-motor","item":"door-2","t":[0,1.5,0],"event":null,"signal":"door-2-hold","gain":0.7,"refM":2,"maxM":60,"loop":false},
-    {"id":"thud","patch":"mech-thud","item":null,"t":[0,0,25],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
+    {"id":"click-1-on","patch":"mech.switch","item":"plate-1","t":[0,0,0],"event":"switchOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-1-off","patch":"mech.switch","item":"plate-1","t":[0,0,0],"event":"switchOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-2-on","patch":"mech.switch","item":"plate-2","t":[0,0,0],"event":"switchOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-2-off","patch":"mech.switch","item":"plate-2","t":[0,0,0],"event":"switchOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"door-1-open","patch":"mech.door","item":"door-1","t":[0,1.5,0],"event":null,"signal":"door-1-hold","gain":0.7,"refM":2,"maxM":60,"loop":false},
+    {"id":"door-2-open","patch":"mech.door","item":"door-2","t":[0,1.5,0],"event":null,"signal":"door-2-hold","gain":0.7,"refM":2,"maxM":60,"loop":false},
+    {"id":"thud","patch":"mech.hammer","item":null,"t":[0,0,25],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
   ]
 }

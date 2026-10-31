@@ -103,14 +103,14 @@
     "budget": {"dynamicBodies":24,"joints":32}
   },
   "sounds": [
-    {"id":"piston-1-hum","patch":"neon-hum","item":"piston-1","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
-    {"id":"piston-2-hum","patch":"neon-hum","item":"piston-2","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
-    {"id":"piston-3-hum","patch":"neon-hum","item":"piston-3","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
-    {"id":"piston-4-hum","patch":"neon-hum","item":"piston-4","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
-    {"id":"laser-a-hum","patch":"neon-hum","item":"laser-a","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
-    {"id":"laser-b-hum","patch":"neon-hum","item":"laser-b","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
-    {"id":"click-on","patch":"mech-click","item":null,"t":[0,0,2.5],"event":"switchOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-off","patch":"mech-click","item":null,"t":[0,0,2.5],"event":"switchOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"thud","patch":"mech-thud","item":null,"t":[0,0,25],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
+    {"id":"piston-1-hum","patch":"mech.motor","item":"piston-1","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
+    {"id":"piston-2-hum","patch":"mech.motor","item":"piston-2","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
+    {"id":"piston-3-hum","patch":"mech.motor","item":"piston-3","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
+    {"id":"piston-4-hum","patch":"mech.motor","item":"piston-4","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
+    {"id":"laser-a-hum","patch":"mech.laser","item":"laser-a","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
+    {"id":"laser-b-hum","patch":"mech.laser","item":"laser-b","t":[0,0,0],"event":null,"signal":"piston-counter","gain":0.4,"refM":2,"maxM":35,"loop":true},
+    {"id":"click-on","patch":"mech.switch","item":null,"t":[0,0,2.5],"event":"switchOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-off","patch":"mech.switch","item":null,"t":[0,0,2.5],"event":"switchOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"thud","patch":"mech.hammer","item":null,"t":[0,0,25],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
   ]
 }

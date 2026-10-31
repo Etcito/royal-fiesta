@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-deterministic-compat": "0.21.0",
-    "@etcito/haa": "https://github.com/Etcito/haa/releases/download/v0.1.1/etcito-haa-0.1.1.tgz",
     "@gamesaloon/rollback": "file:../../../gamesaloon-rollback/packages/core",
     "@gamesaloon/rollback-rapier": "file:../../../gamesaloon-rollback/packages/rapier",
     "@royal-fiesta/sim": "*"

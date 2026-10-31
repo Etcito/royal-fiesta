@@ -107,14 +107,14 @@
   "podium": null,
   "mechanisms": {"joints":[],"switches":[{"id":"plate-a","plate":{"item":"plate-a","body":"plate"},"mode":"weight","onKg":50,"offKg":30},{"id":"plate-b","plate":{"item":"plate-b","body":"plate"},"mode":"weight","onKg":50,"offKg":30}],"levers":[],"logic":[{"id":"timer-a","op":"timer","inputs":["plate-a"],"seconds":4},{"id":"timer-b","op":"timer","inputs":["plate-b"],"seconds":4}],"animations":[{"id":"open-a","target":{"item":"gate-a","body":"gate"},"keys":[{"atS":0,"t":[0,0,0],"rDeg":[0,0,0]},{"atS":0.35,"t":[2.2,0,0],"rDeg":[0,0,0]}],"easing":"smooth","loop":"once","autostart":false},{"id":"open-b","target":{"item":"gate-b","body":"gate"},"keys":[{"atS":0,"t":[0,0,0],"rDeg":[0,0,0]},{"atS":0.35,"t":[2.2,0,0],"rDeg":[0,0,0]}],"easing":"smooth","loop":"once","autostart":false}],"links":[{"id":"gate-a","from":"timer-a","to":{"kind":"animation","animation":"open-a","on":"play","off":"reverse"}},{"id":"gate-b","from":"timer-b","to":{"kind":"animation","animation":"open-b","on":"play","off":"reverse"}}],"budget":{"dynamicBodies":24,"joints":32}},
   "sounds": [
-    {"id":"creak-plate-a","patch":"ice-creak","item":"plate-a","t":[0,0,0],"event":"switchOn","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-a-on","patch":"mech-click","item":"plate-a","t":[0,0,0],"event":"switchOn","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-a-off","patch":"mech-click","item":"plate-a","t":[0,0,0],"event":"switchOff","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
-    {"id":"creak-plate-b","patch":"ice-creak","item":"plate-b","t":[0,0,0],"event":"switchOn","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-b-on","patch":"mech-click","item":"plate-b","t":[0,0,0],"event":"switchOn","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-b-off","patch":"mech-click","item":"plate-b","t":[0,0,0],"event":"switchOff","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
-    {"id":"creak-floe-1","patch":"ice-creak","item":"floe-1","t":[0,0,0],"event":"impact","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
-    {"id":"creak-floe-2","patch":"ice-creak","item":"floe-2","t":[0,0,0],"event":"impact","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
-    {"id":"creak-floe-3","patch":"ice-creak","item":"floe-3","t":[0,0,0],"event":"impact","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false}
+    {"id":"creak-plate-a","patch":"mech.tile-warn","item":"plate-a","t":[0,0,0],"event":"switchOn","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-a-on","patch":"mech.switch","item":"plate-a","t":[0,0,0],"event":"switchOn","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-a-off","patch":"mech.switch","item":"plate-a","t":[0,0,0],"event":"switchOff","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
+    {"id":"creak-plate-b","patch":"mech.tile-warn","item":"plate-b","t":[0,0,0],"event":"switchOn","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-b-on","patch":"mech.switch","item":"plate-b","t":[0,0,0],"event":"switchOn","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-b-off","patch":"mech.switch","item":"plate-b","t":[0,0,0],"event":"switchOff","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
+    {"id":"creak-floe-1","patch":"mech.tile-fall","item":"floe-1","t":[0,0,0],"event":"impact","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
+    {"id":"creak-floe-2","patch":"mech.tile-fall","item":"floe-2","t":[0,0,0],"event":"impact","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false},
+    {"id":"creak-floe-3","patch":"mech.tile-fall","item":"floe-3","t":[0,0,0],"event":"impact","signal":null,"gain":0.8,"refM":2,"maxM":60,"loop":false}
   ]
 }

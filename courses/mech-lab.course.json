@@ -85,11 +85,11 @@
   "podium": null,
   "mechanisms": {"joints":[],"switches":[{"id":"plate","plate":{"item":"plate","body":"plate"},"mode":"weight","onKg":50,"offKg":30}],"levers":[{"id":"lever","handle":{"item":"lever","body":"handle"},"joint":"pivot","onDeg":30,"offDeg":10,"grabRangeM":1}],"logic":[{"id":"door-hold","op":"timer","inputs":["plate"],"seconds":4},{"id":"piston-toggle","op":"toggle","inputs":["lever"]}],"animations":[{"id":"piston-move","target":{"item":"piston","body":"block"},"keys":[{"atS":0,"t":[0,0,0],"rDeg":[0,0,0]},{"atS":1,"t":[0,1.5,0],"rDeg":[0,0,0]}],"easing":"linear","loop":"once","autostart":false},{"id":"crane-turn","target":{"item":"crane","body":"arm"},"keys":[{"atS":0,"t":[0,0,0],"rDeg":[0,0,0]},{"atS":1.5,"t":[0,0,0],"rDeg":[0,45,0]},{"atS":3,"t":[0,0,0],"rDeg":[0,90,0]},{"atS":4.5,"t":[0,0,0],"rDeg":[0,135,0]},{"atS":6,"t":[0,0,0],"rDeg":[0,180,0]},{"atS":7.5,"t":[0,0,0],"rDeg":[0,225,0]},{"atS":9,"t":[0,0,0],"rDeg":[0,270,0]},{"atS":10.5,"t":[0,0,0],"rDeg":[0,315,0]},{"atS":12,"t":[0,0,0],"rDeg":[0,360,0]}],"easing":"linear","loop":"loop","autostart":true}],"links":[{"id":"door","from":"door-hold","to":{"kind":"door","joint":"door/hinge","openDeg":90,"closedDeg":0}},{"id":"piston","from":"piston-toggle","to":{"kind":"animation","animation":"piston-move","on":"play","off":"reverse"}}],"budget":{"dynamicBodies":24,"joints":32}},
   "sounds": [
-    {"id":"click-switch-on","patch":"mech-click","item":"plate","t":[0,0,0],"event":"switchOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-switch-off","patch":"mech-click","item":"plate","t":[0,0,0],"event":"switchOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-lever-on","patch":"mech-click","item":"lever","t":[0,0,0],"event":"leverOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"click-lever-off","patch":"mech-click","item":"lever","t":[0,0,0],"event":"leverOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
-    {"id":"motor","patch":"mech-motor","item":"piston","t":[0,0,0],"event":null,"signal":"piston-toggle","gain":1,"refM":2,"maxM":60,"loop":true},
-    {"id":"thud","patch":"mech-thud","item":null,"t":[0,0,23],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
+    {"id":"click-switch-on","patch":"mech.switch","item":"plate","t":[0,0,0],"event":"switchOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-switch-off","patch":"mech.switch","item":"plate","t":[0,0,0],"event":"switchOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-lever-on","patch":"mech.lever","item":"lever","t":[0,0,0],"event":"leverOn","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"click-lever-off","patch":"mech.lever","item":"lever","t":[0,0,0],"event":"leverOff","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false},
+    {"id":"motor","patch":"mech.motor","item":"piston","t":[0,0,0],"event":null,"signal":"piston-toggle","gain":1,"refM":2,"maxM":60,"loop":true},
+    {"id":"thud","patch":"mech.hammer","item":null,"t":[0,0,23],"event":"impact","signal":null,"gain":1,"refM":2,"maxM":60,"loop":false}
   ]
 }

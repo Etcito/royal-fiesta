@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
-import { FIESTA_FAMILIES } from '../../packages/game/src/audio/pack/index.ts'
 import { auditAudio } from '../audioAudit.ts'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
@@ -17,18 +16,12 @@ function patchIds(): string[] {
     .map((name) => name.slice(0, -'.haa.json'.length))
 }
 
-test('the audit renders every pack variant and every patch variant to measured WAVs', async () => {
+test('the audit renders every patch variant to measured WAVs', async () => {
   const out = mkdtempSync(join(tmpdir(), 'rf-audio-audit-'))
   try {
     const rows = await auditAudio(out, () => {})
-    const packRows = FIESTA_FAMILIES.reduce((count, family) => count + family.variants, 0)
-    assert.equal(rows.length, packRows + 1 + patchIds().length * 3)
+    assert.equal(rows.length, patchIds().length * 3)
 
-    for (const family of FIESTA_FAMILIES) {
-      const variants = rows.filter((row) => row.engine === 'haa-0.1' && row.id === family.id)
-      assert.equal(variants.length, family.variants, `${family.id} has one row per variant`)
-    }
-    assert.equal(rows.filter((row) => row.engine === 'haa-0.1' && row.id === 'crowd').length, 1)
     for (const id of patchIds()) {
       const variants = rows.filter((row) => row.engine === 'haa-0.2' && row.id === id)
       assert.equal(variants.length, 3, `${id} renders variants 0..2`)

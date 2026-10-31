@@ -35,7 +35,6 @@
     "@etcito/uaa": "file:../uaa"
   },
   "devDependencies": {
-    "@etcito/haa": "https://github.com/Etcito/haa/releases/download/v0.1.1/etcito-haa-0.1.1.tgz",
     "@etcito/haa-spatial": "file:../haa/packages/haa",
     "@etcito/raa-assets-tools": "https://github.com/Etcito/raa-assets-tools/releases/download/v0.1.0/raa-assets-tools-0.1.0.tgz",
     "@types/node": "^24",

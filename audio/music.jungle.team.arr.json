@@ -1,0 +1,11 @@
+{
+  "format":"haa.arrangement","version":0,"id":"music.jungle.team",
+  "bpm":120,"beatsPerBar":4,"loop":true,"seed":42104,
+  "instruments":[{"id":"pluck","patch":"audio/inst.pluck.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.1},{"id":"bass","patch":"audio/inst.bass.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.05},{"id":"perc","patch":"audio/inst.perc.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.05}],
+  "sections":[{"id":"a","bars":2,"tracks":[
+    {"instrument":"pluck","gain":0.58,"pan":-0.2,"notes":[{"beat":0,"len":0.3,"note":65,"vel":0.7},{"beat":1.5,"len":0.25,"note":72,"vel":0.55},{"beat":3,"len":0.3,"note":68,"vel":0.65},{"beat":4,"len":0.3,"note":70,"vel":0.7},{"beat":5.5,"len":0.25,"note":77,"vel":0.55},{"beat":6.5,"len":0.4,"note":72,"vel":0.65}]},
+    {"instrument":"bass","gain":0.5,"pan":0.05,"notes":[{"beat":0,"len":0.45,"note":53,"vel":0.7},{"beat":2.75,"len":0.3,"note":60,"vel":0.6},{"beat":4,"len":0.45,"note":58,"vel":0.7},{"beat":6,"len":0.4,"note":60,"vel":0.6}]},
+    {"instrument":"perc","gain":0.68,"pan":0.2,"notes":[{"beat":0,"len":0.25,"note":40,"vel":0.8},{"beat":0.5,"len":0.12,"note":78,"vel":0.5},{"beat":1.5,"len":0.12,"note":78,"vel":0.6},{"beat":2,"len":0.2,"note":60,"vel":0.7},{"beat":3,"len":0.2,"note":43,"vel":0.75},{"beat":3.5,"len":0.12,"note":78,"vel":0.5},{"beat":4,"len":0.25,"note":40,"vel":0.8},{"beat":4.5,"len":0.12,"note":78,"vel":0.5},{"beat":5.5,"len":0.12,"note":78,"vel":0.6},{"beat":6,"len":0.2,"note":60,"vel":0.7},{"beat":7,"len":0.2,"note":45,"vel":0.7},{"beat":2.5,"len":0.12,"note":78,"vel":0.5},{"beat":6.75,"len":0.12,"note":78,"vel":0.55},{"beat":7.5,"len":0.15,"note":60,"vel":0.6}]}
+  ]}],
+  "order":["a"]
+}

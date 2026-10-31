@@ -1,0 +1,11 @@
+{
+  "format":"haa.arrangement","version":0,"id":"music.neon.race",
+  "bpm":128,"beatsPerBar":4,"loop":true,"seed":42202,
+  "instruments":[{"id":"lead","patch":"audio/inst.lead.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.08},{"id":"bass","patch":"audio/inst.bass.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.05},{"id":"hat","patch":"audio/inst.hat.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.025}],
+  "sections":[{"id":"a","bars":2,"tracks":[
+    {"instrument":"lead","gain":0.5,"pan":-0.15,"notes":[{"beat":0,"len":0.65,"note":69,"vel":0.65},{"beat":1,"len":0.65,"note":72,"vel":0.6},{"beat":2,"len":0.65,"note":76,"vel":0.65},{"beat":3,"len":0.65,"note":72,"vel":0.6},{"beat":4,"len":0.65,"note":74,"vel":0.65},{"beat":5,"len":0.65,"note":72,"vel":0.6},{"beat":6,"len":0.65,"note":71,"vel":0.65},{"beat":7,"len":0.65,"note":76,"vel":0.6}]},
+    {"instrument":"bass","gain":0.62,"pan":0,"notes":[{"beat":0,"len":0.42,"note":45,"vel":0.75},{"beat":1,"len":0.42,"note":45,"vel":0.6},{"beat":2,"len":0.42,"note":45,"vel":0.75},{"beat":3,"len":0.42,"note":45,"vel":0.6},{"beat":4,"len":0.42,"note":50,"vel":0.75},{"beat":5,"len":0.42,"note":50,"vel":0.6},{"beat":6,"len":0.42,"note":50,"vel":0.75},{"beat":7,"len":0.42,"note":50,"vel":0.6}]},
+    {"instrument":"hat","gain":0.34,"pan":0.3,"notes":[{"beat":0,"len":0.09,"note":42,"vel":0.58},{"beat":0.5,"len":0.09,"note":42,"vel":0.38},{"beat":1,"len":0.09,"note":42,"vel":0.58},{"beat":1.5,"len":0.09,"note":42,"vel":0.38},{"beat":2,"len":0.09,"note":42,"vel":0.58},{"beat":2.5,"len":0.09,"note":42,"vel":0.38},{"beat":3,"len":0.09,"note":42,"vel":0.58},{"beat":3.5,"len":0.09,"note":42,"vel":0.38},{"beat":4,"len":0.09,"note":42,"vel":0.58},{"beat":4.5,"len":0.09,"note":42,"vel":0.38},{"beat":5,"len":0.09,"note":42,"vel":0.58},{"beat":5.5,"len":0.09,"note":42,"vel":0.38},{"beat":6,"len":0.09,"note":42,"vel":0.58},{"beat":6.5,"len":0.09,"note":42,"vel":0.38},{"beat":7,"len":0.09,"note":42,"vel":0.58},{"beat":7.5,"len":0.09,"note":42,"vel":0.38}]}
+  ]}],
+  "order":["a"]
+}

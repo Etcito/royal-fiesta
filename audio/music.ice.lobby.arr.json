@@ -1,0 +1,10 @@
+{
+  "format":"haa.arrangement","version":0,"id":"music.ice.lobby",
+  "bpm":100,"beatsPerBar":4,"loop":true,"seed":42000,
+  "instruments":[{"id":"pad","patch":"audio/inst.pad.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.24},{"id":"pluck","patch":"audio/inst.pluck.haa.json","noteInput":"note","velocityInput":"vel","releaseS":0.1}],
+  "sections":[{"id":"a","bars":2,"tracks":[
+    {"instrument":"pad","gain":0.38,"pan":-0.25,"notes":[{"beat":0,"len":3.5,"note":74,"vel":0.45},{"beat":0,"len":3.5,"note":81,"vel":0.38},{"beat":4,"len":3.6,"note":79,"vel":0.42}]},
+    {"instrument":"pluck","gain":0.55,"pan":0.3,"notes":[{"beat":0.5,"len":0.35,"note":86,"vel":0.55},{"beat":2.5,"len":0.4,"note":89,"vel":0.5},{"beat":4.5,"len":0.35,"note":81,"vel":0.55},{"beat":6,"len":0.5,"note":88,"vel":0.48}]}
+  ]}],
+  "order":["a"]
+}

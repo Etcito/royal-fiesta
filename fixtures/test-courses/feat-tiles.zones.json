@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "feat-tiles",
+  "grid": {
+    "origin": [-16, -16],
+    "cell": [2, 2],
+    "cols": 16,
+    "rows": 16
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 16
+  }
+}

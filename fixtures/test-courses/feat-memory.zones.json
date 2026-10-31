@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "feat-memory",
+  "grid": {
+    "origin": [-8, -8],
+    "cell": [2, 2],
+    "cols": 8,
+    "rows": 12
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 8
+  }
+}

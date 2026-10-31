@@ -1,0 +1,64 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "candy",
+  "id": "feat-memory",
+  "name": "Feature Memory Tiles",
+  "kind": "survival",
+  "profiles": ["standard", "sprint"],
+  "timeLimitS": 60,
+  "killPlaneY": -8,
+  "spawns": [
+    { "t": [-5.25, 1, -3], "yawDeg": 0 },
+    { "t": [-3.75, 1, -3], "yawDeg": 0 },
+    { "t": [-2.25, 1, -3], "yawDeg": 0 },
+    { "t": [-0.75, 1, -3], "yawDeg": 0 },
+    { "t": [0.75, 1, -3], "yawDeg": 0 },
+    { "t": [2.25, 1, -3], "yawDeg": 0 },
+    { "t": [3.75, 1, -3], "yawDeg": 0 },
+    { "t": [5.25, 1, -3], "yawDeg": 0 }
+  ],
+  "checkpoints": [],
+  "finish": null,
+  "path": [
+    { "p": [-4.5, 1, 1.5], "jump": false, "dive": false },
+    { "p": [-1.5, 1, 4.5], "jump": false, "dive": false },
+    { "p": [1.5, 1, 7.5], "jump": false, "dive": false },
+    { "p": [4.5, 1, 10.5], "jump": false, "dive": false },
+    { "p": [-4.5, 1, 10.5], "jump": false, "dive": false },
+    { "p": [4.5, 1, 1.5], "jump": false, "dive": false }
+  ],
+  "regions": [
+    { "id": 0, "center": [0, 2, 4], "half": [8, 12, 12], "adjacent": [] }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    { "id": "floor-start", "asset": "candy.floor-tile", "t": [0, -0.5, -3], "r": [0, 0, 0, 1], "s": [1.2, 1, 0.6], "friction": 0.5, "motion": { "kind": "static" }, "colliders": null }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": null,
+  "level": {
+    "season": null,
+    "map": null,
+    "kind": "survival",
+    "finalRule": null,
+    "stages": ["R1"],
+    "capacity": 60,
+    "usual": [60],
+    "quota": null,
+    "timeCapS": 60,
+    "overtimeS": 30,
+    "respawn": { "mode": "none", "waitS": 0, "protectS": 0, "slots": 8, "spacingM": 1.2 },
+    "route": { "ordered": true, "laps": 1, "stages": [] },
+    "teams": null,
+    "homes": [],
+    "groups": [
+      { "id": "floor-main", "role": "floor", "friction": 0.5, "surface": "normal", "members": ["floor-start", "memory-grid"] }
+    ],
+    "grab": { "players": false, "objects": false }
+  },
+  "features": [
+    { "id": "memory-grid", "kind": "memoryTiles", "origin": [-4.5, -0.2, 1.5], "cols": 4, "rows": 4, "cellM": 3, "symbols": 3, "cycles": 3, "revealS": 3, "hideS": 2, "choiceS": 4, "penaltyS": 14 }
+  ]
+}

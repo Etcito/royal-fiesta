@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "feat-logs-doors",
+  "grid": {
+    "origin": [-10, -8],
+    "cell": [2, 2],
+    "cols": 10,
+    "rows": 36
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 10
+  }
+}

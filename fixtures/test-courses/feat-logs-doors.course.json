@@ -1,0 +1,204 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "world": "candy",
+  "id": "feat-logs-doors",
+  "name": "Fixture Logs and Doors",
+  "kind": "race",
+  "profiles": ["standard", "sprint"],
+  "timeLimitS": 75,
+  "killPlaneY": -8,
+  "spawns": [
+    { "t": [-5.25, 1, 0], "yawDeg": 0 },
+    { "t": [-3.75, 1, 0], "yawDeg": 0 },
+    { "t": [-2.25, 1, 0], "yawDeg": 0 },
+    { "t": [-0.75, 1, 0], "yawDeg": 0 },
+    { "t": [0.75, 1, 0], "yawDeg": 0 },
+    { "t": [2.25, 1, 0], "yawDeg": 0 },
+    { "t": [3.75, 1, 0], "yawDeg": 0 },
+    { "t": [5.25, 1, 0], "yawDeg": 0 }
+  ],
+  "checkpoints": [
+    {
+      "center": [0, 1.5, 30],
+      "half": [7.5, 2, 0.75],
+      "respawn": { "t": [0, 1, 31], "yawDeg": 0 }
+    },
+    {
+      "center": [0, 1.5, 50],
+      "half": [7.5, 2, 0.75],
+      "respawn": { "t": [0, 1, 51], "yawDeg": 0 }
+    }
+  ],
+  "finish": { "center": [0, 1.5, 62], "half": [7.5, 2, 1] },
+  "path": [
+    { "p": [0, 1, 4], "jump": false, "dive": false },
+    { "p": [0, 1, 12], "jump": false, "dive": false },
+    { "p": [0, 1, 22], "jump": false, "dive": false },
+    { "p": [0, 1, 30], "jump": false, "dive": false },
+    { "p": [0, 1, 38], "jump": false, "dive": false },
+    { "p": [0, 1, 46], "jump": false, "dive": false },
+    { "p": [0, 1, 54], "jump": false, "dive": false },
+    { "p": [0, 1, 62], "jump": false, "dive": false }
+  ],
+  "regions": [
+    { "id": 0, "center": [0, 2, 12], "half": [10, 12, 16], "adjacent": [1] },
+    { "id": 1, "center": [0, 2, 40], "half": [10, 12, 14], "adjacent": [0, 2] },
+    { "id": 2, "center": [0, 2, 58], "half": [10, 12, 6], "adjacent": [1] }
+  ],
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "floor-start",
+      "asset": "candy.floor-tile",
+      "t": [0, -0.5, -4],
+      "r": [0, 0, 0, 1],
+      "s": [1.6, 1, 0.8],
+      "friction": 0.6,
+      "motion": { "kind": "static" },
+      "colliders": null
+    },
+    {
+      "id": "floor-main",
+      "asset": "candy.floor-tile",
+      "t": [0, -0.5, 30],
+      "r": [0, 0, 0, 1],
+      "s": [1.6, 1, 6.4],
+      "friction": 0.6,
+      "motion": { "kind": "static" },
+      "colliders": null
+    },
+    {
+      "id": "wall-left-38",
+      "asset": "candy.wall-block",
+      "t": [-6.9, 1.5, 38],
+      "r": [0, 0, 0, 1],
+      "s": [2.2, 1.5, 0.08],
+      "friction": 0.6,
+      "motion": { "kind": "static" },
+      "colliders": null
+    },
+    {
+      "id": "wall-right-38",
+      "asset": "candy.wall-block",
+      "t": [6.9, 1.5, 38],
+      "r": [0, 0, 0, 1],
+      "s": [2.2, 1.5, 0.08],
+      "friction": 0.6,
+      "motion": { "kind": "static" },
+      "colliders": null
+    },
+    {
+      "id": "wall-left-46",
+      "asset": "candy.wall-block",
+      "t": [-6.9, 1.5, 46],
+      "r": [0, 0, 0, 1],
+      "s": [2.2, 1.5, 0.08],
+      "friction": 0.6,
+      "motion": { "kind": "static" },
+      "colliders": null
+    },
+    {
+      "id": "wall-right-46",
+      "asset": "candy.wall-block",
+      "t": [6.9, 1.5, 46],
+      "r": [0, 0, 0, 1],
+      "s": [2.2, 1.5, 0.08],
+      "friction": 0.6,
+      "motion": { "kind": "static" },
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": null,
+  "level": {
+    "season": null,
+    "map": null,
+    "kind": "race",
+    "finalRule": null,
+    "stages": ["R1"],
+    "capacity": 60,
+    "usual": [60],
+    "quota": null,
+    "timeCapS": 75,
+    "overtimeS": 0,
+    "respawn": { "mode": "checkpoint", "waitS": 1, "protectS": 1, "slots": 12, "spacingM": 1.2 },
+    "route": { "ordered": true, "laps": 1, "stages": [0, 1] },
+    "teams": null,
+    "homes": [],
+    "groups": [
+      {
+        "id": "floor-main",
+        "role": "floor",
+        "friction": 0.6,
+        "surface": "normal",
+        "members": ["floor-start", "floor-main"]
+      },
+      {
+        "id": "walls",
+        "role": "wall",
+        "friction": null,
+        "surface": null,
+        "members": ["wall-left-38", "wall-right-38", "wall-left-46", "wall-right-46"]
+      },
+      {
+        "id": "logs-doors",
+        "role": "mover",
+        "friction": null,
+        "surface": null,
+        "members": ["log-a", "log-b", "door-bank"]
+      }
+    ],
+    "grab": { "players": true, "objects": false }
+  },
+  "features": [
+    {
+      "id": "log-a",
+      "kind": "rollingLog",
+      "from": [-7, 0.6, 16],
+      "to": [7, 0.6, 16],
+      "radius": 0.6,
+      "length": 3,
+      "speed": 4,
+      "periodS": 8,
+      "phaseS": 0
+    },
+    {
+      "id": "log-b",
+      "kind": "rollingLog",
+      "from": [7, 0.6, 26],
+      "to": [-7, 0.6, 26],
+      "radius": 0.6,
+      "length": 3,
+      "speed": 4,
+      "periodS": 8,
+      "phaseS": 4
+    },
+    {
+      "id": "door-bank",
+      "kind": "doorBank",
+      "rows": [
+        {
+          "real": 2,
+          "doors": [
+            { "t": [-4.5, 1.5, 38], "yawDeg": 0, "size": [2.6, 3, 0.4] },
+            { "t": [-1.5, 1.5, 38], "yawDeg": 0, "size": [2.6, 3, 0.4] },
+            { "t": [1.5, 1.5, 38], "yawDeg": 0, "size": [2.6, 3, 0.4] },
+            { "t": [4.5, 1.5, 38], "yawDeg": 0, "size": [2.6, 3, 0.4] }
+          ]
+        },
+        {
+          "real": 2,
+          "doors": [
+            { "t": [-4.5, 1.5, 46], "yawDeg": 0, "size": [2.6, 3, 0.4] },
+            { "t": [-1.5, 1.5, 46], "yawDeg": 0, "size": [2.6, 3, 0.4] },
+            { "t": [1.5, 1.5, 46], "yawDeg": 0, "size": [2.6, 3, 0.4] },
+            { "t": [4.5, 1.5, 46], "yawDeg": 0, "size": [2.6, 3, 0.4] }
+          ]
+        }
+      ],
+      "breakSpeed": 6
+    }
+  ]
+}

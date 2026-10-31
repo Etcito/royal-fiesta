@@ -1,0 +1,43 @@
+{
+  "haa": 1,
+  "id": "move.step.mud",
+  "title": "Wet mud compression and suction squelch",
+  "inputs": [{ "name": "speed", "kind": "continuous", "unit": "m/s", "min": 0, "max": 12, "default": 5, "smooth": 0, "curve": "lin" }],
+  "master": 0.7,
+  "graph": {
+    "duration": 0.3, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"speed","type":"input","x":40,"y":40,"label":"Foot speed in m/s","params":{"name":"speed"}},
+      {"id":"take-pitch","type":"random","x":280,"y":40,"label":"Seeded pitch take","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"take-decay","type":"random","x":520,"y":40,"label":"Seeded decay take","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"take-timing","type":"random","x":760,"y":40,"label":"Seeded contact timing jitter","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"body","type":"oscillator","x":40,"y":200,"label":"Contact body","params":{"frequency":70,"wave":"saw","level":0.22}},
+      {"id":"body-env","type":"envelope","x":280,"y":200,"label":"Contact envelope with varied peak time","params":{"attack":0.018,"decay":0.18,"sustain":0,"hold":0.01,"release":0.01}},
+      {"id":"body-amp","type":"gain","x":520,"y":200,"label":"Shape contact body","params":{"gain":0}},
+      {"id":"texture","type":"noise","x":760,"y":200,"label":"Procedural surface texture","params":{"color":"brown","level":0.9,"width":0}},
+      {"id":"texture-env","type":"curve","x":40,"y":360,"label":"Surface transient and spectral contour","params":{"amount":1},"curve":[[0,0],[0.03,0.25],[0.14,0.8],[0.25,0.3],[0.42,1],[0.58,0.4],[0.7,0.6],[0.86,0.06],[0.96,0],[1,0]]},
+      {"id":"texture-amp","type":"gain","x":280,"y":360,"label":"Shape surface texture","params":{"gain":0}},
+      {"id":"surface-filter","type":"filter","x":520,"y":360,"label":"Speed-dependent surface brightness","params":{"cutoff":420,"resonance":2.2,"mode":"lowpass"}},
+      {"id":"speed-amp","type":"gain","x":760,"y":360,"label":"Speed-dependent contact level","params":{"gain":0.18}},
+      {"id":"out","type":"output","x":40,"y":520,"label":"Mono spatial-ready step","params":{"gain":0.75}}
+    ],
+    "connections": [
+      {"id":"c1","from":"take-pitch","to":"body","target":"frequency","amount":22},
+      {"id":"c2","from":"take-decay","to":"body-env","target":"decay","amount":0.063},
+      {"id":"c3","from":"take-timing","to":"body-env","target":"attack","amount":0.01},
+      {"id":"c4","from":"texture-env","to":"body","target":"frequency","amount":130},
+      {"id":"c5","from":"speed","to":"body","target":"frequency","amount":1.75},
+      {"id":"c6","from":"body","to":"body-amp","target":"audio"},
+      {"id":"c7","from":"body-env","to":"body-amp","target":"gain"},
+      {"id":"c8","from":"texture","to":"texture-amp","target":"audio"},
+      {"id":"c9","from":"texture-env","to":"texture-amp","target":"gain"},
+      {"id":"c10","from":"body-amp","to":"surface-filter","target":"audio"},
+      {"id":"c11","from":"texture-amp","to":"surface-filter","target":"audio"},
+      {"id":"c12","from":"speed","to":"surface-filter","target":"cutoff","amount":95},
+      {"id":"c13","from":"texture-env","to":"surface-filter","target":"cutoff","amount":1900},
+      {"id":"c14","from":"surface-filter","to":"speed-amp","target":"audio"},
+      {"id":"c15","from":"speed","to":"speed-amp","target":"gain","amount":0.065},
+      {"id":"c16","from":"speed-amp","to":"out","target":"audio"}
+    ]
+  }
+}

@@ -853,3 +853,189 @@ describe('M4 slide', () => {
     r.world.free()
   })
 })
+
+describe('M4 swim and determinism', () => {
+  // A test volume registered after the characters, like the swimVolume feature.
+  function heldSwim(chars: CharacterSystem, drag: number, buoyancy: number): SimSystem<PlayerInput> {
+    return {
+      name: 'heldSwim',
+      init() {},
+      preStep(ctx) {
+        for (let p = 0; p < chars.playerCount; p++) chars.setSwim(ctx, p, true, drag, buoyancy)
+      },
+      postStep() {},
+      snapshot() {},
+      restore() {},
+    }
+  }
+
+  function volumeRig(volume: (chars: CharacterSystem) => SimSystem<PlayerInput>, at: Vec3): Rig {
+    const chars = new CharacterSystem({ playerCount: 1 })
+    const world = new FiestaWorld<PlayerInput>(R, {
+      playerCount: 1,
+      systems: [groundSystem(), chars, volume(chars)],
+    })
+    chars.place(world.ctx, 0, { t: at, facing: { x: 0, z: 1 } })
+    return { world, chars }
+  }
+
+  it('held in swim, buoyancy makes it rise and no buoyancy makes it sink', () => {
+    const floats = volumeRig((chars) => heldSwim(chars, 2, 24), v3(0, 10, 0))
+    const floatStart = state(floats).pos.y
+    const risen = stepN(floats, 30, NEUTRAL)
+    assert.equal(risen.mode, CharMode.swim)
+    assert.ok(risen.pos.y > floatStart + 0.2, `rose from ${floatStart} to ${risen.pos.y}`)
+    floats.world.free()
+
+    const sinks = volumeRig((chars) => heldSwim(chars, 2, 0), v3(0, 10, 0))
+    const sinkStart = state(sinks).pos.y
+    const sunk = stepN(sinks, 30, NEUTRAL)
+    assert.equal(sunk.mode, CharMode.swim)
+    assert.ok(sunk.pos.y < sinkStart - 1, `sank from ${sinkStart} to ${sunk.pos.y}`)
+    sinks.world.free()
+  })
+
+  it('a stroke in swim adds the impulse along the facing', () => {
+    // A tiny drag leaves the impulse added in preStep untouched by the volume's setSwim.
+    const r = volumeRig((chars) => heldSwim(chars, 1e-9, 0), v3(0, 10, 0))
+    stepN(r, 5, NEUTRAL)
+    const before = state(r)
+    assert.equal(before.mode, CharMode.swim)
+    const after = stepN(r, 1, JUMP)
+    assert.equal(after.mode, CharMode.swim)
+    const k = 1 - 1e-9 * FIXED_DT
+    assert.ok(Math.abs(after.vel.z - (before.vel.z * k + CHAR.swim.strokeImpulse)) <= 1e-6,
+      `vz ${before.vel.z} -> ${after.vel.z}`)
+    assert.ok(Math.abs(after.vel.x - before.vel.x * k) <= 1e-6, `vx ${before.vel.x} -> ${after.vel.x}`)
+    r.world.free()
+  })
+
+  it('protection: a protected player is neither grabbed nor a grabber, and its groups exclude CHAR', () => {
+    const target = grabRig()
+    target.chars.setProtected(1, 60)
+    const grabber = grabRig()
+    grabber.chars.setProtected(0, 60)
+    for (let t = 0; t < 60; t++) {
+      target.world.step([GRABBER, NEUTRAL])
+      grabber.world.step([GRABBER, NEUTRAL])
+      assert.notEqual(state(target, 0).mode, CharMode.grabbing, `grabbed a protected target at tick ${t}`)
+      assert.notEqual(state(grabber, 0).mode, CharMode.grabbing, `protected player grabbed at tick ${t}`)
+    }
+    target.world.free()
+    grabber.world.free()
+
+    const r = rig(2)
+    const ids = r.world.physics.ids()
+    const colliderGroups = (p: number): number =>
+      r.world.ctx.physics.body(ids[1 + p]).collider(0).collisionGroups()
+    const live = groups(G.CHAR, G.STATIC | G.MOVING | G.CHAR)
+    const shielded = groups(G.CHAR, G.STATIC | G.MOVING)
+    // Ticks 0..3 are protected (protectedUntil 4); the fifth step restores the normal groups.
+    r.chars.setProtected(0, 4)
+    for (let t = 0; t < 4; t++) {
+      r.world.step([NEUTRAL, NEUTRAL])
+      assert.equal(colliderGroups(0), shielded, `tick ${t}`)
+      assert.equal(colliderGroups(0) & G.CHAR, 0, `tick ${t}: CHAR still in the filter`)
+      assert.equal(colliderGroups(1), live, `tick ${t}: unprotected player`)
+    }
+    r.world.step([NEUTRAL, NEUTRAL])
+    assert.equal(colliderGroups(0), live, 'protection over')
+    r.world.free()
+  })
+
+  // QB1: run, dive onto an ice conveyor into slide, strokes, then swim inside a test box.
+  function swimBox(chars: CharacterSystem): SimSystem<PlayerInput> {
+    const center = v3(0, 2, 27)
+    const half = v3(5, 5, 10)
+    const inside = new Uint8Array(chars.playerCount)
+    const pos = new Float64Array(chars.playerCount * 3)
+    return {
+      name: 'swimBox',
+      init() {},
+      preStep(ctx) {
+        chars.readPositions(ctx, pos)
+        for (let p = 0; p < chars.playerCount; p++) {
+          const now = Math.abs(pos[p * 3] - center.x) <= half.x &&
+            Math.abs(pos[p * 3 + 1] - center.y) <= half.y &&
+            Math.abs(pos[p * 3 + 2] - center.z) <= half.z
+          if (now) chars.setSwim(ctx, p, true, 2, 24)
+          else if (inside[p] !== 0) chars.setSwim(ctx, p, false, 0, 0)
+          inside[p] = now ? 1 : 0
+        }
+      },
+      postStep() {},
+      snapshot(w) {
+        w.u16(inside.length)
+        for (let i = 0; i < inside.length; i++) w.u8(inside[i])
+      },
+      restore(r) {
+        const n = r.u16()
+        for (let i = 0; i < n; i++) inside[i] = r.u8()
+      },
+    }
+  }
+
+  function determinismRig(): Rig {
+    const ice = obstacle('ice-conveyor', v3(0, -0.5, 0), { kind: 'conveyor', velocity: v3(0, 0, 4) }, v3(40, 0.5, 40))
+    ice.surface = 'ice'
+    ice.friction = 2
+    const obs = new ObstacleSystem([course([ice])])
+    const loader: SimSystem<PlayerInput> = {
+      name: 'loader',
+      init(ctx) { obs.load(ctx, 0) },
+      preStep() {},
+      postStep() {},
+      snapshot() {},
+      restore() {},
+    }
+    const chars = new CharacterSystem({ playerCount: 1 })
+    const world = new FiestaWorld<PlayerInput>(R, {
+      playerCount: 1,
+      systems: [obs, loader, chars, swimBox(chars)],
+    })
+    chars.place(world.ctx, 0, { t: v3(0, 0, 0), facing: { x: 0, z: 1 } })
+    return { world, chars }
+  }
+
+  it('QB1: a 240-tick scripted run restores its tick-90 snapshot and reruns identically', () => {
+    const script = (t: number): PlayerInput => {
+      if (t === 50) return input({ moveZ: 1, dive: true })
+      if (t === 80 || t === 100 || t === 130 || t === 160 || t === 200) return input({ moveZ: 1, jump: true })
+      return FORWARD
+    }
+    const first = new Map<number, number>()
+    const a = determinismRig()
+    for (let t = 0; t < 90; t++) {
+      a.world.step([script(t)])
+      const s = state(a)
+      if (!first.has(s.mode)) first.set(s.mode, t)
+    }
+    assert.equal(state(a).mode, CharMode.slide, 'the snapshot lands mid-slide')
+    const at90 = a.world.takeSnapshotBytes()
+
+    const b = determinismRig()
+    b.world.restoreSnapshotBytes(at90)
+    assert.deepEqual(b.world.takeSnapshotBytes(), at90, 'restored snapshot bytes')
+
+    const seenA: CharState[] = []
+    const seenB: CharState[] = []
+    for (let t = 90; t < 240; t++) {
+      a.world.step([script(t)])
+      b.world.step([script(t)])
+      seenA.push(state(a))
+      seenB.push(state(b))
+    }
+    for (let i = 0; i < seenA.length; i++) {
+      assert.deepEqual(seenB[i], seenA[i], `tick ${90 + i}`)
+      if (!first.has(seenA[i].mode)) first.set(seenA[i].mode, 90 + i)
+    }
+    for (const mode of [CharMode.dive, CharMode.slide, CharMode.swim]) {
+      assert.ok(first.has(mode), `mode ${mode} never entered`)
+    }
+    assert.ok(first.get(CharMode.slide)! < first.get(CharMode.swim)!, 'slide comes before swim')
+    assert.equal(state(a).mode, CharMode.swim, 'the run ends in swim')
+    assert.deepEqual(b.world.takeSnapshotBytes(), a.world.takeSnapshotBytes(), 'final snapshot bytes')
+    a.world.free()
+    b.world.free()
+  })
+})

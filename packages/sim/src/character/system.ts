@@ -344,8 +344,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#surfaceFriction = next
   }
 
-  // The swim volume calls this between preStep and the physics step. Until the swim task, preStep
-  // still re-derives the mode on the next tick; this only changes the mode and the body velocity now.
+  // The swim volume calls this between preStep and the physics step. The mode then persists in
+  // preStep until setSwim(false), a place or a park, so this also changes the body velocity now.
   setSwim(ctx: WorldCtx<PlayerInput>, p: number, inside: boolean, drag: number, buoyancy: number): void {
     this.#check(p, 'setSwim')
     if (this.#parked[p] !== 0) return
@@ -559,14 +559,16 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         }
       } else if (mode === CharMode.grabbing) {
         if (protectedNow || (buttons & GRAB_BIT) === 0 || ++this.#grabTicks[p] >= CHAR.grabMaxTicks) mode = free
-      } else if (mode !== CharMode.slide) {
-        // Slide persists; the slide block below applies its rules and exits it.
+      } else if (mode !== CharMode.slide && mode !== CharMode.swim) {
+        // Slide persists; the slide block below applies its rules and exits it. Swim persists
+        // until setSwim(false), a place or a park, so the probe never re-derives ground/air here.
         mode = free
       }
 
       const wasSliding = mode === CharMode.slide
       if (wasSliding) this.#slid[p] = 1
       const steer = mode === CharMode.ground || mode === CharMode.air || mode === CharMode.grabbing
+      const swimming = mode === CharMode.swim
       let vx = v.x
       let vz = v.z
       if (frozen) {
@@ -577,6 +579,13 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         const rate = !grounded ? CHAR.airAccel : hasMove ? CHAR.groundAccel * tuning.accel : CHAR.groundBrake * tuning.brake
         const maxRun = CHAR.maxRun * (grounded ? tuning.maxRun : 1)
         approach2(v.x, v.z, base.x + mx * maxRun, base.z + mz * maxRun, rate * dt, scratchH)
+        vx = scratchH.x
+        vz = scratchH.z
+        turnFacing(this.#facingX[p], this.#facingZ[p], mx, mz, CHAR.turnRate * dt, scratchH)
+        this.#facingX[p] = scratchH.x
+        this.#facingZ[p] = scratchH.z
+      } else if (swimming) {
+        approach2(v.x, v.z, mx * CHAR.swim.maxSpeed, mz * CHAR.swim.maxSpeed, CHAR.airAccel * dt, scratchH)
         vx = scratchH.x
         vz = scratchH.z
         turnFacing(this.#facingX[p], this.#facingZ[p], mx, mz, CHAR.turnRate * dt, scratchH)
@@ -601,6 +610,26 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         if (!grounded && this.#coyote[p] > 0) this.#coyote[p]--
         // Riding a platform that turns downward: follow it so the probe keeps contact.
         if (riding && steer && vy > base.y) vy = base.y
+      }
+
+      // A jump press in swim is a stroke along the facing; vy is left to gravity and buoyancy.
+      if (swimming && (pressed & JUMP_BIT) !== 0) {
+        if (this.#strokeTimer[p] === 0) {
+          vx += this.#facingX[p] * CHAR.swim.strokeImpulse
+          vz += this.#facingZ[p] * CHAR.swim.strokeImpulse
+          this.#strokeTimer[p] = CHAR.swim.strokeCooldownTicks
+        }
+        // A press inside the cooldown is consumed, not buffered into a later jump.
+        this.#jumpBuffer[p] = 0
+      }
+      if (swimming) {
+        const speed = Math.sqrt(vx * vx + vz * vz)
+        const cap = CHAR.swim.maxSpeed + CHAR.swim.strokeImpulse
+        if (speed > cap) {
+          const k = cap / speed
+          vx *= k
+          vz *= k
+        }
       }
 
       if (mode === CharMode.slide && grounded) {

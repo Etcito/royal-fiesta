@@ -144,8 +144,10 @@ test('a domain feature can set carry through its seats without refusal', async t
   assert.equal(domain.state(0).carryId, 7)
 })
 
-test('FEATURE_KINDS registers only the marker test kind in M3', () => {
-  assert.deepEqual(Object.keys(FEATURE_KINDS), ['marker'])
+test('FEATURE_KINDS keeps marker first and registers the M4 kinds', () => {
+  assert.deepEqual(Object.keys(FEATURE_KINDS), [
+    'marker', 'boostLane', 'launchPad', 'catchVolume', 'rollingLog', 'doorBank', 'swimVolume', 'carryItem',
+  ])
 })
 
 test('an unknown kind is refused with its path and the known kinds', () => {

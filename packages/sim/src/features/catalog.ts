@@ -2,7 +2,13 @@ import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { FeatureSpec, ResolvedCourse } from '../course.ts'
 import type { Vec3 } from '../vec.ts'
 import { refuse } from '../refusal.ts'
+import { boostLaneFeature } from './boostLane.ts'
+import { CARRY_KIND, carryItemFeature } from './carry.ts'
+import { doorBankFeature } from './doorBank.ts'
 import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureFactory } from './feature.ts'
+import { catchVolumeFeature, launchPadFeature } from './launch.ts'
+import { rollingLogFeature } from './rollingLog.ts'
+import { swimVolumeFeature } from './swim.ts'
 
 const MAX_FEATURES = 32
 
@@ -104,9 +110,16 @@ function markerRadius(spec: FeatureSpec, path: string): number {
   return value
 }
 
-/** Registration file: M3 holds only the test kind; M4..M6 append their factories here. */
+/** Registration file: M3 holds the test kind and M4 kinds are now registered; M5..M6 append theirs here. */
 export const FEATURE_KINDS: Readonly<Record<string, FeatureFactory>> = {
   marker: markerFactory,
+  boostLane: boostLaneFeature,
+  launchPad: launchPadFeature,
+  catchVolume: catchVolumeFeature,
+  rollingLog: rollingLogFeature,
+  doorBank: doorBankFeature,
+  swimVolume: swimVolumeFeature,
+  [CARRY_KIND]: carryItemFeature,
 }
 
 export function createFeatures(course: ResolvedCourse, path: string): CourseFeature[] {

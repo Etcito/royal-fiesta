@@ -3,7 +3,7 @@ import { mkdir, readFile, stat } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import sharp from 'sharp'
-import { walkBones } from '../packages/game/src/anim/walkCycle.ts'
+import { walkBones, applyWalkPose, restPose } from '../packages/game/src/anim/walkCycle.ts'
 import { actionPose } from '../packages/game/src/anim/actionPoses.ts'
 import { CHAR, CharMode, CarryKind } from '@royal-fiesta/sim/character/constants'
 
@@ -85,7 +85,7 @@ function partsFrom(nodes: Record<string, Node>, bindings: Binding[]): Part[] {
   return parts
 }
 
-const WIDTH = 1500, HEIGHT = 600, SCALE = 52, BACKGROUND = [237,239,242,255]
+const WIDTH = 1500, HEIGHT = 600, SCALE = 82, BACKGROUND = [237,239,242,255]
 // Tiny CPU bitmap labels, keeping the entire sheet independent of fonts and SVG renderers.
 const FONT: Record<string, string> = {
   B:'110101110101110', C:'111100100100111', G:'111100101101111', M:'101111111101101', V:'101101101101010', Y:'101101010010010', '7':'111001010010010', '=':'000111000111000', A:'010101111101101', D:'110101101101110', E:'111100110100111', F:'111100110100100', H:'101101111101101',
@@ -104,11 +104,11 @@ function label(pixels: Buffer, text: string, x: number, y: number, size = 3): vo
     x += size*4
   }
 }
-function raster(pixels: Buffer, depth: Float64Array, m: Matrix, color: number[], col: number, row: number, front: boolean): void {
-  const h = front ? 0 : 2, d = front ? 2 : 0, cx = col*375+(front ? 278 : 95), cy = row*300+160
+function raster(pixels: Buffer, depth: Float64Array, m: Matrix, color: number[], col: number, row: number): void {
+  const h = 2, d = 0, cx = col*375+160, cy = row*300+165
   const extent = (axis: number) => Math.hypot(m[axis*4], m[axis*4+1], m[axis*4+2])
-  const left = Math.max(col*375+(front ? 187 : 0), Math.floor(cx+(m[h*4+3]-extent(h))*SCALE))
-  const right = Math.min(col*375+(front ? 375 : 187)-1, Math.ceil(cx+(m[h*4+3]+extent(h))*SCALE))
+  const left = Math.max(col*375+8, Math.floor(cx+(m[h*4+3]-extent(h))*SCALE))
+  const right = Math.min(col*375+366, Math.ceil(cx+(m[h*4+3]+extent(h))*SCALE))
   const top = Math.max(row*300+45, Math.floor(cy-(m[7]+extent(1))*SCALE))
   const bottom = Math.min(row*300+270, Math.ceil(cy-(m[7]-extent(1))*SCALE)), inv = inverse(m)
   const v = [inv[d],inv[4+d],inv[8+d]], a = v.reduce((s,n) => s+n*n,0)
@@ -145,18 +145,19 @@ export async function actionSheet(outPng: string): Promise<{ width: 1500; height
   ]
   for (const [index,panel] of panels.entries()) {
     const col = index % 4, row = Math.floor(index / 4), local = rest.slice()
+    applyWalkPose(local,bones,restPose())
     const rotations = new Float32Array(names.length * 4)
     actionPose(panel.mode,panel.carry,panel.timer,rotations,bones)
+    // At weight 1 ACTION_LAYER replaces the affected local rotations.
     for (const bone of Object.values(bones)) local.set(rotations.subarray(bone*4,bone*4+4),bone*10+3)
     const world = forward(rig.bones,local), skin = world.map((m,i) => mul(m,inverse(restWorld[i])))
     label(pixels,panel.label,col*375+16,row*300+16)
-    label(pixels,'SIDE / X',col*375+52,row*300+280,2)
-    label(pixels,'FRONT / Z',col*375+235,row*300+280,2)
+    label(pixels,'SIDE / X',col*375+140,row*300+280,2)
     for (const part of parts) {
       const blend = Array<number>(16).fill(0)
       for (const b of part.binding) skin[names.indexOf(b.bone)].forEach((v,i) => { blend[i] += v*b.factor })
       const m = mul(blend,part.matrix)
-      raster(pixels,depth,m,part.color,col,row,false); raster(pixels,depth,m,part.color,col,row,true)
+      raster(pixels,depth,m,part.color,col,row)
     }
   }
   await mkdir(dirname(outPng),{ recursive:true })

@@ -106,5 +106,10 @@
     "after": [
       "s3-m4-action-sheet"
     ]
+  },
+  {
+    "name": "s3-m4-action-build",
+    "command": "npm run build",
+    "timeout_s": 600
   }
 ]

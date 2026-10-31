@@ -134,5 +134,30 @@
     "command": "npm run build",
     "timeout_s": 600,
     "after": ["s3-m4-determinism-guard"]
+  },
+  {
+    "name": "s3-m5-feat-tiles",
+    "command": "npm run round:run -- --course feat-tiles --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m5-feat-hex",
+    "command": "npm run round:run -- --course feat-hex --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m5-feat-memory",
+    "command": "npm run round:run -- --course feat-memory --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m5-feat-orbit",
+    "command": "npm run round:run -- --course feat-orbit --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m5-feat-rising",
+    "command": "npm run round:run -- --course feat-rising --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
   }
 ]

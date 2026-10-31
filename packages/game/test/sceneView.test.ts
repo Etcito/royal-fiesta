@@ -5,7 +5,8 @@ import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { neutralInput } from '@royal-fiesta/sim/input'
-import { createMatchSim } from '@royal-fiesta/sim/match/matchSim'
+import { CharMode } from '@royal-fiesta/sim/character/constants'
+import { Phase, createMatchSim } from '@royal-fiesta/sim/match/matchSim'
 import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
 import { emptyMechanisms } from '@royal-fiesta/sim/mechanismSpec'
 import type { BodySpec } from '@royal-fiesta/sim/mechanismSpec'
@@ -18,7 +19,7 @@ import { netSetup } from '../src/net/tuning.ts'
 import type { PrimsAsset } from '../src/prims.ts'
 import { NullRenderPort } from '../src/render/nullPort.ts'
 import type { CameraPose, QuatT, RenderPort, Vec3T } from '../src/render/port.ts'
-import { SceneView } from '../src/render/sceneView.ts'
+import { restPoseSkin, SceneView } from '../src/render/sceneView.ts'
 
 const ROOT = new URL('../../../', import.meta.url)
 const read = async (rel: string) => readFileSync(new URL(rel, ROOT), 'utf8')
@@ -444,3 +445,75 @@ test('SceneView reports zero mechanism instances for a course without mechanisms
     sim.free()
   }
 })
+
+const penguin = JSON.parse(await read('assets/common/penguin.body.asset.json')).document.nodes.penguin
+const skinnedPenguin = {
+  assetId: 'penguin', graph: await read('assets/common/penguin.animgraph.json'),
+  skin: { rig: penguin.rig, clips: penguin.clips, parts: [{ name: 'p', skin: { joints: new Uint16Array(4), weights: new Float32Array([1, 0, 0, 0]) } }] },
+}
+
+function assertFlippersDown(skin: Float32Array): void {
+  for (const name of ['upper.l', 'upper.r']) {
+    const bone = penguin.rig.bones.findIndex((b: { name: string }) => b.name === name)
+    assert.ok(bone >= 0)
+    const matrix = skin.subarray(bone * 16, bone * 16 + 16)
+    assert.equal(matrix.length, 16)
+    assert.ok(matrix.every(Number.isFinite))
+    assert.ok(matrix.some((v, i) => Math.abs(v - (i % 5 === 0 ? 1 : 0)) > 1e-4), `${name} must never draw the T rest pose`)
+  }
+}
+
+for (const scenario of ['walking', 'idle', 'podium'] as const) {
+  test(`skinned penguin never draws a T pose before load or while ${scenario}`, async () => {
+    const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+    const port = new NullRenderPort()
+    await port.init({ canvas: null, width: 64, height: 36, viewports: [{ x: 0, y: 0, width: 64, height: 36 }] })
+    const submitted: { instance: number; skin: Float32Array }[] = []
+    port.setPose = (instance, skin) => { submitted.push({ instance, skin: Float32Array.from(skin) }) }
+    const inputs = Array.from({ length: sim.setup.playerCount }, () => ({ ...neutralInput(), moveZ: scenario === 'walking' ? 1 : 0 }))
+    // Get past the intro before drawing; walking then uses real forward input and velocity.
+    for (let i = 0; i < 180; i++) sim.step(inputs)
+    const character = sim.character.bind(sim)
+    if (scenario !== 'walking') {
+      sim.character = (p, out) => {
+        const c = character(p, out)
+        c.vel = { x: 0, y: 0, z: 0 }
+        c.mode = scenario === 'podium' ? CharMode.frozen : CharMode.ground
+        c.parked = scenario === 'podium' && p > 0
+        return c
+      }
+    }
+    if (scenario === 'podium') {
+      const phase = sim.phase.bind(sim)
+      sim.phase = out => { const state = phase(out); state.phase = Phase.podium; state.podium = [0]; return state }
+    }
+    const view = new SceneView({ port, viewport: 0, localPlayer: 0, bean, assets: n => assets.get(n)!, loadingPaint: false, skinned: skinnedPenguin })
+    try {
+      view.update(sim, null, 1, 0)
+      assert.ok(submitted.length > 0, 'first update submits a fallback before async load')
+      const firstCount = submitted.length
+      const rest = restPoseSkin(penguin.rig)
+      for (const { skin } of submitted) { assert.deepEqual(skin, rest); assertFlippersDown(skin) }
+      view.update(sim, null, 1, 0)
+      assert.equal(submitted.length, firstCount, 'fallback is submitted once')
+      await view.animationReady()
+      assert.equal(view.animationError, null)
+      view.update(sim, null, 1, 0)
+      assert.ok(submitted.length > firstCount, 'driver replaces the fallback')
+      for (let i = 0; i < 30; i++) { sim.step(inputs); view.update(sim, null, 1, 1 / 60) }
+      for (const { skin } of submitted) assertFlippersDown(skin)
+      // Remove a posed character on an already observed tick: pose(id) is undefined.
+      const driver = (view as unknown as { anim: { remove(id: number): void } }).anim
+      driver.remove(0)
+      const before = submitted.length
+      view.update(sim, null, 1, 0)
+      assert.equal(submitted.length, before + 1)
+      assert.deepEqual(submitted.at(-1)!.skin, rest)
+      view.update(sim, null, 1, 0)
+      assert.equal(submitted.length, before + 1)
+    } finally {
+      view.dispose()
+      sim.free()
+    }
+  })
+}

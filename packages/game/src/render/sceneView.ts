@@ -10,6 +10,7 @@ import type { BodyRef } from '@royal-fiesta/sim/mechanismSpec'
 import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
+import { applyWalkPose, restPose, walkBones } from '../anim/walkCycle.ts'
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
@@ -238,6 +239,43 @@ function restBoneModels(bones: readonly RigBoneT[]): { models: Float32Array<Arra
   return { models, index }
 }
 
+// Inverse affine model, including scaled rest bones.
+function inverse4(m: ArrayLike<number>): Float32Array {
+  const cross = (a: number[], b: number[]) =>
+    [a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]]
+  const cols = [0, 4, 8].map(o => [m[o], m[o + 1], m[o + 2]])
+  const rows = [cross(cols[1], cols[2]), cross(cols[2], cols[0]), cross(cols[0], cols[1])]
+  const det = cols[0].reduce((sum, v, i) => sum + v * rows[0][i], 0)
+  const out = new Float32Array(16)
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) out[c * 4 + r] = rows[r][c] / det
+    out[12 + r] = -(out[r]*m[12] + out[4 + r]*m[13] + out[8 + r]*m[14])
+  }
+  out[15] = 1
+  return out
+}
+
+/** Skin the rig's rest locals with the walk idle pose (flippers down). */
+export function restPoseSkin(rig: { bones: readonly { name: string; parent: string | null; rest: { t: number[]; r: number[]; s: number[] } }[] }): Float32Array {
+  const { bones } = rig
+  const local = new Float32Array(bones.length * 10)
+  bones.forEach((bone, i) => local.set([...bone.rest.t, ...bone.rest.r, ...bone.rest.s], i * 10))
+  applyWalkPose(local, walkBones(bones.map(b => b.name)), restPose())
+  const rest = restBoneModels(bones)
+  const model = new Float32Array(bones.length * 16)
+  const skin = new Float32Array(model.length)
+  bones.forEach((bone, i) => {
+    const o = i * 10, m = i * 16
+    const matrix = mat4(Array.from(local.subarray(o, o + 3)), Array.from(local.subarray(o + 3, o + 7)), Array.from(local.subarray(o + 7, o + 10)))
+    const parent = bone.parent === null ? -1 : rest.index.get(bone.parent)!
+    model.set(parent < 0 ? matrix : mul4(model.subarray(parent * 16, parent * 16 + 16), matrix), m)
+    skin.set(mul4(model.subarray(m, m + 16), inverse4(rest.models.subarray(m, m + 16))), m)
+  })
+  return skin
+}
+
+const REST_POSED = Symbol('rest pose submitted')
+
 // The costume's transform in character space: posed bone model * attach frame * costume scale * inverse
 // costume anchor. The attachment offset is the rig's, never a skin matrix (skin already maps rest geometry);
 // scaling in the anchor frame keeps the costume seated while it clears the body mesh.
@@ -295,6 +333,7 @@ export class SceneView {
   // Rig attach points and rest bone models; costumes draw at rest until the graph has a pose.
   private attach: Readonly<Record<string, AttachPointT>> = {}
   private restModels = new Float32Array(0)
+  private restSkin: Float32Array | null = null
   private boneIndex = new Map<string, number>()
   // Per character costume selection; setCostume writes one slot, createBeans materialises the instances.
   private readonly costumeOverrides = new Map<number, CostumeSet | null>()
@@ -305,7 +344,7 @@ export class SceneView {
   private animError: unknown = null
   private animLoading: Promise<void> = Promise.resolve()
   // Per character: the pose last submitted to the port, so a frame never resubmits an unchanged tick.
-  private posed: (CharacterPose | undefined)[] = []
+  private posed: (CharacterPose | typeof REST_POSED | undefined)[] = []
   private readonly observed: CharacterObservation[] = []
   // The sim whose steps feed the graphs, and how to stop observing it.
   private stepSim: MatchSim | null = null
@@ -464,6 +503,9 @@ export class SceneView {
       if (posed !== undefined && posed !== this.posed[p]) {
         port.setPose!(this.beans[p], posed.skin)
         this.posed[p] = posed
+      } else if (posed === undefined && this.restSkin !== null && this.posed[p] !== REST_POSED) {
+        port.setPose!(this.beans[p], this.restSkin)
+        this.posed[p] = REST_POSED
       }
       this.placeCostumes(p, d, fx, fz, posed)
       if (p === local) {
@@ -624,6 +666,13 @@ export class SceneView {
 
   // The brick loads asynchronously (and only for skinned scenes); characters draw at rest meanwhile.
   private loadAnim(skinned: SkinnedCharacter): void {
+    if (this.restSkin === null) {
+      this.restSkin = restPoseSkin(skinned.skin.rig as SkinRigT & Parameters<typeof restPoseSkin>[0])
+      // Costumes use the same posed model as the fallback skin, never the T rest model.
+      for (let m = 0; m < this.restModels.length; m += 16) {
+        this.restModels.set(mul4(this.restSkin.subarray(m, m + 16), this.restModels.subarray(m, m + 16)), m)
+      }
+    }
     const gen = ++this.animGen
     // The SDF Modeler rig extension (bindings, smooth) is not part of the S16 rig the graph reads.
     const { bindings: _b, smooth: _s, ...rig } = skinned.skin.rig as SkinnedAssetT['rig'] & { bindings?: unknown; smooth?: unknown }

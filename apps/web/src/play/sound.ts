@@ -1,10 +1,5 @@
-/// <reference types="vite/client" />
-// The online page's sound: the HAA engine opens on the first user gesture (browsers keep the
-// audio context suspended until then), GameAudio plays the match's sound events and crowd bed,
-// and the course's spatial sounds run on haa 0.2.0 through CourseAudio (play/courseAudio.ts).
-// The game's audio code only sees SoundPort; the Web Audio objects stay in
-// packages/game/src/audio/context.ts.
-import { openBrowserAudio, type BrowserSound } from '@royal-fiesta/game/audio/context'
+// Shared play/game sound driver: opens on a gesture and routes cues and course sounds through the mix.
+import { openBrowserAudio, setMixFactory, type BrowserSound } from '@royal-fiesta/game/audio/context'
 import { CourseEmitters, type EmitterCommand, type ListenerPose } from '@royal-fiesta/game/audio/emitters'
 import { newMatchSample, sampleMatch, type MatchSample } from '@royal-fiesta/game/audio/events'
 import { GameAudio, type CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
@@ -12,15 +7,27 @@ import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { browserAudioPatches } from '../content/v1Data.ts'
 import { createCourseAudio } from './courseAudio.ts'
-// Vite bundles the crowd worklet and returns its URL (dev and build alike).
-import fiestaWorkletUrl from '../audio/fiestaWorklet.ts?worker&url'
-// haa 0.2.0's player bundle and compiled engine. The legacy 0.1.1 worklet the engine bakes next to
-// the manifest registers haa-bed/haa-sampler/haa-mix; 0.2.0 registers haa-player (PLAYER_PROCESSOR),
-// so both modules can live on the one context opened by openBrowserAudio.
-import haaWorkletUrl from '@etcito/haa-spatial/worklet?url'
-import haaWasmUrl from '@etcito/haa-spatial/wasm?url'
+import { AUDIO_SETTINGS_KEY, parseBusVolumes } from '@royal-fiesta/game/audio/mix/volumes'
+import type { SettingsStore } from '@royal-fiesta/game/screens/settings'
+import { createMixGraph } from '../audio/mixGraph.ts'
+
+setMixFactory(createMixGraph)
+
+export interface SoundDeps {
+  target: EventTarget
+  baseUrl: string
+  store: SettingsStore
+  open: typeof openBrowserAudio
+  compileWasm: (url: string) => Promise<WebAssembly.Module>
+  patches: typeof browserAudioPatches
+}
 
 export class SoundDriver {
+  readonly #deps: SoundDeps
+  readonly #gestures = new AbortController()
+  #lastVolumes: string | null | undefined
+  #warnedVolumes = false
+  readonly #menuSample = newMatchSample()
   #opening: Promise<void> | null = null
   #sound: BrowserSound | null = null
   #game: GameAudio | null = null
@@ -35,28 +42,41 @@ export class SoundDriver {
     mode: 0, status: 0, parked: false, teleportTick: 0,
   }
 
-  constructor() {
+  constructor(deps: Partial<SoundDeps> = {}) {
+    this.#deps = {
+      target: deps.target ?? window,
+      baseUrl: deps.baseUrl ?? document.baseURI,
+      store: deps.store ?? localStorage,
+      open: deps.open ?? openBrowserAudio,
+      compileWasm: deps.compileWasm ?? compileWasm,
+      patches: deps.patches ?? browserAudioPatches,
+    }
     const open = (): void => {
       this.open().catch((error: unknown) => console.warn('[sound] off:', messageOf(error)))
     }
-    window.addEventListener('pointerdown', open, { once: true })
-    window.addEventListener('keydown', open, { once: true })
+    for (const type of ['pointerdown', 'keydown']) {
+      this.#deps.target.addEventListener(type, open, { signal: this.#gestures.signal })
+    }
   }
 
   /** Opens the engine once; later calls return the same promise. */
   open(): Promise<void> {
+    this.#gestures.abort()
     this.#opening ??= (async () => {
-      const sound = await openBrowserAudio({
-        manifestUrl: new URL('audio/manifest.json', document.baseURI).href,
-        processorUrl: new URL('audio/haa-processors.js', document.baseURI).href,
-        crowdProcessorUrl: fiestaWorkletUrl,
-        maxListeners: 1,
+      const processorUrl = new URL('audio/haa-processors.js', this.#deps.baseUrl).href
+      const sound = await this.#deps.open({
+        manifestUrl: new URL('audio/manifest.json', this.#deps.baseUrl).href,
+        processorUrl,
+        maxListeners: 4,
       })
       this.#sound = sound
       this.#game = new GameAudio(sound.port)
       try {
-        const [module, patches] = await Promise.all([compileWasm(), browserAudioPatches()])
-        this.setCourseAudio(createCourseAudio(sound.ctx, patches, module, haaWorkletUrl, sound.output))
+        const [module, patches] = await Promise.all([
+          this.#deps.compileWasm(new URL('audio/haa.wasm', this.#deps.baseUrl).href),
+          this.#deps.patches(),
+        ])
+        this.setCourseAudio(createCourseAudio(sound.ctx, patches, module, processorUrl, sound.mix.input('sfx')))
       } catch (error) {
         // The match sounds still play; the course's spatial sounds stay off.
         console.warn('[sound] course audio off:', messageOf(error))
@@ -75,16 +95,20 @@ export class SoundDriver {
     this.#emitters = null
   }
 
-  /** Once per rendered frame: the match's sound events play; no match stops the bed. */
-  frame(sim: MatchSim | null, listener?: ListenerPose): void {
+  /** Once per rendered frame: update volumes, local listeners and the current screen's sounds. */
+  frame(sim: MatchSim | null, listener?: ListenerPose | readonly ListenerPose[]): void {
+    this.#updateVolumes()
     if (this.#game === null) return
+    const listeners = this.#listenersOf(sim, listener)
+    this.#game.setListeners(listeners)
+    this.#courseAudio?.setListeners(listeners)
     if (sim === null) {
-      this.#game.stop()
+      this.#game.observe(this.#menuSample, 'lobby')
       this.#course = null
       this.#emitters = null
       return
     }
-    this.#game.observe(sampleMatch(sim, this.#sample, this.#scratch))
+    this.#game.observe(sampleMatch(sim, this.#sample, this.#scratch), 'match')
     const course = sim.course()
     if (course !== this.#course) {
       this.#course = course
@@ -94,7 +118,6 @@ export class SoundDriver {
     if (this.#courseAudio === null || this.#emitters === null) return
     const n = this.#emitters.frame(sim, sim.tick, this.#commands)
     this.#courseAudio.apply(this.#commands, n)
-    this.#courseAudio.setListeners([listener ?? this.#listenerOf(sim)])
   }
 
   /** Frees the course audio and stops the game's sounds; the engine stays open until close(). */
@@ -104,14 +127,37 @@ export class SoundDriver {
   }
 
   async close(): Promise<void> {
+    this.#gestures.abort()
+    await this.#opening?.catch(() => {})
     this.dispose()
     await this.#sound?.close()
     this.#game = null
     this.#sound = null
   }
 
-  // Player 0 is the local listener by default: its position and horizontal facing.
-  #listenerOf(sim: MatchSim): ListenerPose {
+  #updateVolumes(): void {
+    if (this.#sound === null) return
+    try {
+      const raw = this.#deps.store.getItem(AUDIO_SETTINGS_KEY)
+      if (raw === this.#lastVolumes) return
+      this.#lastVolumes = raw
+      this.#sound.mix.setVolumes(parseBusVolumes(raw === null ? null : JSON.parse(raw)))
+    } catch (error) {
+      this.#sound.mix.setVolumes(parseBusVolumes(null))
+      if (!this.#warnedVolumes) {
+        this.#warnedVolumes = true
+        console.warn('[sound] volume settings ignored:', messageOf(error))
+      }
+    }
+  }
+
+  // Both ports accept emitter poses; context/courseAudio own the mix-pose conversion.
+  #listenersOf(sim: MatchSim | null, listener?: ListenerPose | readonly ListenerPose[]): readonly ListenerPose[] {
+    const supplied = listener === undefined ? [] : Array.isArray(listener)
+      ? listener as readonly ListenerPose[] : [listener as ListenerPose]
+    if (supplied.length > 0) return supplied.slice(0, 4)
+    if (sim === null) return [this.#listener]
+    // Player 0 is the local listener by default: position and horizontal facing.
     const c = sim.character(0, this.#scratch)
     const l = this.#listener
     l.x = c.pos.x
@@ -119,12 +165,12 @@ export class SoundDriver {
     l.z = c.pos.z
     l.fx = c.facing.x
     l.fz = c.facing.z
-    return l
+    return [l]
   }
 }
 
-async function compileWasm(): Promise<WebAssembly.Module> {
-  const response = await fetch(haaWasmUrl)
+async function compileWasm(url: string): Promise<WebAssembly.Module> {
+  const response = await fetch(url)
   if (!response.ok) throw new Error(`HTTP ${response.status} for the haa wasm`)
   return WebAssembly.compile(await response.arrayBuffer())
 }

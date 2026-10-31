@@ -1,4 +1,4 @@
-// game.html entry, the player page (ARCHITECTURE 1.3): screens -> loading -> hub -> match -> podium -> hub.
+// game.html entry: start -> lobby -> offline show -> start; course and network games keep their V1 flow.
 // The hub and its matches run in-page with bots, or on the relay when ?server= is given; ?clients=2..4 runs
 // that many piloted clients over a LoopbackRelay. Content comes from pickContent, input only from GameInput.
 // Every screen and the round HUD are drawn by uaa on canvas#ui, above the RAA views.
@@ -33,6 +33,7 @@ import { netSetup } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory, type WsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
+import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, RenderPort, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
@@ -85,6 +86,13 @@ import { browserGameAssets, installContentOverlay } from '../content/v1Data.ts'
 import { mountCommunityPanel } from './communityPanel.ts'
 import { mountStartScreen } from '../screens/startScreen.ts'
 import type { StartArt, StartScreenView } from '../screens/startScreen.ts'
+import { mountVote } from '../screens/vote.ts'
+import { mountCountdown } from '../screens/countdown.ts'
+import { mountRoundResults } from '../screens/roundResults.ts'
+import { mountElimShow } from '../screens/elimShow.ts'
+import { mountEndScreen } from '../screens/endScreen.ts'
+import { ShowMode } from './showMode.ts'
+import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { TourGame } from './uiTour.ts'
 
 interface Query {
@@ -228,7 +236,7 @@ type FrameLoop = (frame: (dtS: number) => void) => () => void
 // Where the App keeps its settings and what calls its frames: the page's localStorage and rAF loop, or
 // the uiTour op's in-memory store and its own frame steps. beforeLoad runs as each load starts; a throw fails
 // that load as any load failure does (the uiTour op refuses the boot load so it can reach 'loading' with Retry).
-interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void> }
+interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number }
 
 // The page's FrameLoop, on requestAnimationFrame. An op tears the App down before building its own views.
 function loop(frame: (dtS: number) => void): () => void {
@@ -283,7 +291,7 @@ interface Mode {
   sim(): MatchSim | null
   // What the match HUD shows, null outside a match.
   hud(): HudState | null
-  // The podium has been held long enough: the app sends toHub.
+  // The mode has ended: the app returns a show to start, or a V1 match to the hub.
   readonly finished: boolean
   // A refusal the mode cannot recover from: the app shows the error screen.
   readonly failure: string | null
@@ -296,6 +304,53 @@ interface Mode {
   // Local split screen: a device with a seat, and seat 0's sound listener when its camera exists.
   seated?(device: DeviceId): boolean
   listener?(): ListenerPose | null
+}
+
+// The show owns its simulation and canvas; App owns navigation, screen views and sound.
+class ShowAdapter implements Mode {
+  readonly show: ShowMode
+  readonly localName: string
+  private readonly actions: Action[] = []
+  private lastResults: NonNullable<ShowMode['models']>['results'] = null
+  elapsedMs = 0
+  round = 0
+
+  constructor(show: ShowMode, localName: string) {
+    this.show = show
+    this.localName = localName
+  }
+
+  name = (seat: number): string => seat === 0 ? this.localName : `Bot ${seat}`
+  action(action: Action): void { this.actions.push(action) }
+  get finished(): boolean { return this.show.finished }
+  get failure(): string | null { return this.show.failure }
+  sim(): null { return null }
+  hud(): HudState | null { return this.show.hud() }
+  listener(): ListenerPose | null { return this.show.listener() }
+  enqueue(): void {}
+  dequeue(): void {}
+  leaveMatch(): void {}
+  dispose(): void { this.show.dispose() }
+  lines(): string[] {
+    return this.show.models?.endScreen?.podium.map((p, i) => `${PLACES[i]} ${this.name(p.seat)}`) ?? []
+  }
+
+  frame(f: FrameIn): GameScreen {
+    const before = this.show.screen()
+    if (!f.paused) {
+      for (const action of this.actions) this.show.frame(0, action, f.world)
+      this.show.frame(f.dt, null, f.world)
+    }
+    this.actions.length = 0
+    const screen = this.show.screen()
+    this.elapsedMs = screen === before ? this.elapsedMs + (f.paused ? 0 : f.dt * 1000) : 0
+    const results = this.show.models?.results
+    if (results != null && results !== this.lastResults) {
+      this.lastResults = results
+      this.round++
+    }
+    return screen
+  }
 }
 
 interface ModeCtx {
@@ -523,6 +578,7 @@ class LocalPresenter {
 // another device's join button takes the next seat, and each seat drives its own player.
 class LocalMode implements Mode {
   failure: string | null = null
+  showRequested = false
   private readonly c: ModeCtx
   private readonly presenter: LocalPresenter
   private readonly hubView: HubView
@@ -557,7 +613,7 @@ class LocalMode implements Mode {
       orbit: c.orbit, character: content.character(), dressing: content.dressing(),
     })
     this.presenter = new LocalPresenter({ ...c, prepared: true, loaded: { ...c.loaded, ports: [this.matchLayer.port] } })
-    this.prepareMatch()
+    if (!this.startsShow) this.prepareMatch()
     // ?course= goes straight into its round.
     if (c.loaded.course !== null) this.enqueue()
   }
@@ -581,7 +637,15 @@ class LocalMode implements Mode {
     return this.presenter.listener()
   }
 
+  private get startsShow(): boolean {
+    return this.c.q.server === null && this.c.q.clients === 1 && this.c.q.course === null
+  }
+
   enqueue(): void {
+    if (this.startsShow) {
+      this.showRequested = true
+      return
+    }
     if (this.match !== null) return
     // ?course= starts a round before any device was used: the keyboard takes P1 then.
     if (this.seats.seats.length === 0) this.seats.join('keyboard')
@@ -1196,6 +1260,8 @@ class App {
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
+  private showLoad = 0
+  private showView: { screen: Screen; update(): void; unmount(): void } | null = null
   private preparedLocal: LocalMode | null = null
   private readonly loadingOverlay = roundOverlay()
   private roundLoading: string | null = null
@@ -1403,7 +1469,10 @@ class App {
       else if (fx === Effect.pickSpectate) this.mode?.pick?.('spectate')
       else if (fx === Effect.pickNew) this.mode?.pick?.('new')
       else if (fx === Effect.pickDefault) this.mode?.pick?.('default')
-      else if (fx === Effect.leaveMatch) this.mode?.leaveMatch()
+      else if (fx === Effect.leaveMatch) {
+        if (this.mode instanceof ShowAdapter || this.mode === null) this.startMode()
+        else this.mode?.leaveMatch()
+      }
       else if (fx === Effect.leaveGame) this.stopMode()
       // pause and resume: frame() reads the paused state from nav.screen.
     }
@@ -1677,7 +1746,38 @@ class App {
   // The build default relay armed by Play online, consumed by the next startMode.
   private pendingRelay: string | null = null
 
+  private async startShow(): Promise<void> {
+    const loaded = this.loaded
+    const q = this.query
+    if (loaded === null || q === null) return
+    this.stopMode()
+    const load = this.showLoad
+    this.setLayout(1)
+    this.startView?.setVisible(false)
+    this.run(this.nav.dispatch({ kind: 'game', screen: 'vote' }))
+    try {
+      const show = await ShowMode.create({
+        R: loaded.R, content: loaded.content, views: this.views,
+        seats: intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60),
+        seed: Date.now(), localName: q.name,
+      })
+      if (this.disposed || load !== this.showLoad) { show.dispose(); return }
+      if (show.failure !== null) { this.fail(show.failure); return }
+      this.mode = new ShowAdapter(show, q.name)
+      this.hudRound = -2
+    } catch (e) {
+      if (!this.disposed && load === this.showLoad) this.fail(messageOf(e))
+    }
+  }
+
+  private unmountShowView(): void {
+    this.showView?.unmount()
+    this.showView = null
+  }
+
   private stopMode(): void {
+    this.showLoad++
+    this.unmountShowView()
     this.roundLoading = null
     this.loadingOverlay.hide()
     if (this.mode instanceof LocalMode && !this.disposed && this.nav.screen === 'title') {
@@ -1757,7 +1857,11 @@ class App {
       })
       if (mode.failure !== null) return this.fail(mode.failure)
       this.run(nav.dispatch({ kind: 'game', screen }))
-      if (mode.finished) {
+      if (mode instanceof LocalMode && mode.showRequested) void this.startShow()
+      if (mode instanceof ShowAdapter) {
+        for (const cue of mode.show.cues()) this.sound.cue(cue)
+        if (mode.finished && nav.screen === 'endScreen') this.run(nav.dispatch({ kind: 'action', action: 'confirm' }))
+      } else if (mode.finished) {
         // A podium-less single race passes through the podium screen too, to reach toHub.
         this.run(nav.dispatch({ kind: 'game', screen: 'podium' }))
         if (nav.screen === 'podium') this.run(nav.dispatch({ kind: 'action', action: 'toHub' }))
@@ -1804,9 +1908,87 @@ class App {
     this.startAction('confirm', model.focus === action ? model : { ...model, focus: action })
   }
 
+  // Mount once per visible flow screen. Director cues are authoritative; only the crown reveals
+  // originate in a renderer. The round/spectate screens keep the existing HUD drawing path.
+  private drawShow(): boolean {
+    const mode = this.mode
+    const loaded = this.loaded
+    if (!(mode instanceof ShowAdapter) || loaded === null) return false
+    const screen = this.nav.screen
+    const models = mode.show.models
+    if (models === null || models.screen !== screen) return false
+    const stage = loaded.ports[0]
+    const deps = {
+      cue: (id: string): void => { if (id.startsWith('flow.crown-')) this.sound.cue(id) },
+      stage, character: loaded.content.character(), names: mode.name, localSeat: 0,
+    }
+    // The director calls this screen countdown during its load hold. Do not mount the countdown
+    // renderer or draw the legacy sim countdown until worldReady has released that hold.
+    if (screen === 'countdown' && models.countdown === null) {
+      this.host.present(menuModel('loading', [], { settings: this.settings, rebinding: null, error: null, info: [] }))
+      this.host.setLoading(0, 'Loading round…')
+      this.screens.style.pointerEvents = 'none'
+      return true
+    }
+    if (this.showView === null) {
+      if (screen === 'vote' && models.vote !== null) {
+        const view = mountVote(this.host, models.vote, deps)
+        this.showView = { screen, update: () => view.update(mode.show.models!.vote!, null), unmount: () => view.unmount() }
+      } else if (screen === 'countdown' && models.countdown !== null) {
+        const view = mountCountdown(this.host, models.countdown, deps)
+        this.showView = { screen, update: () => view.update(mode.show.models!.countdown!), unmount: () => view.unmount() }
+      } else if (screen === 'result' && models.results !== null) {
+        const model = { round: mode.round, rows: models.results }
+        const view = mountRoundResults(this.host, model, deps)
+        this.showView = { screen, update: () => view.update(model), unmount: () => view.unmount() }
+      } else if (screen === 'elimShow' && models.elimShow !== null) {
+        // elimShowAt mutates its input's lastMs/grid. The director has already stepped its copy;
+        // sharing it would consume every drop before the renderer can start its throw animation.
+        const source = models.elimShow
+        const model: ElimShowModel = {
+          ...source, lastMs: 0,
+          grid: source.grid.map(cell => ({ ...cell, state: cell.state === 'gone' ? 'gone' : 'stay' })),
+          counter: { ...source.counter }, schedule: source.schedule.map(entry => ({ ...entry })),
+        }
+        const view = mountElimShow(this.host, model, deps)
+        this.showView = { screen, update: () => view.update(model, mode.elapsedMs), unmount: () => view.unmount() }
+      } else if (screen === 'endScreen' && models.endScreen !== null) {
+        const view = mountEndScreen(this.host, models.endScreen, deps)
+        this.showView = { screen, update: () => view.update(mode.show.models!.endScreen!, mode.elapsedMs), unmount: () => view.unmount() }
+      } else if (screen === 'podium' && models.endScreen !== null) {
+        const podium = new PodiumStage({
+          port: stage, viewport: 0, bean: deps.character, block: loaded.content.assets('wall-block'), layout: loaded.content.podium(),
+        })
+        // PodiumStage takes palette indices; keep the actual room seats for the name labels.
+        podium.show(models.endScreen.podium.map(p => p.seat % PALETTE.length))
+        let lastMs = mode.elapsedMs
+        this.showView = {
+          screen,
+          update: () => {
+            podium.update((mode.elapsedMs - lastMs) / 1000)
+            lastMs = mode.elapsedMs
+            this.host.present(menuModel('podium', this.nav.actions(), {
+              settings: this.settings, rebinding: null, error: null, info: mode.lines(),
+            }))
+          },
+          unmount: () => podium.dispose(),
+        }
+      }
+    }
+    if (this.showView === null) return false
+    this.showView.update()
+    this.screens.style.pointerEvents = screen === 'endScreen' || screen === 'result' || screen === 'podium' ? 'auto' : 'none'
+    if (screen === 'result' || screen === 'elimShow' || screen === 'podium' || screen === 'endScreen') {
+      loaded.canvases[0].style.display = ''
+      stage.render()
+    }
+    return true
+  }
+
   // Presents nav's screen through the uaa host, with the round HUD on the HUD screens, then renders it.
   private draw(): void {
     const nav = this.nav
+    if (this.showView?.screen !== nav.screen) this.unmountShowView()
     // The remap belongs to the settings screen; #touch takes the pointer only where the game does.
     if (this.remap !== null && nav.screen !== 'settings') this.closeRemap()
     this.touchRoot.hidden = this.touch === null || !(nav.live && PLAYING.includes(nav.screen))
@@ -1831,6 +2013,11 @@ class App {
       }
     }
     this.startView?.setVisible(false)
+    if (this.drawShow()) {
+      this.resize()
+      this.host.frame(performance.now())
+      return
+    }
     const mode = this.mode
     const hud = mode === null || !HUD_SCREENS.includes(nav.screen) ? null : mode.hud()
     const values = hud === null ? null : hudValues(hud.view, hud.names, hud.seat, this.roundTicks(hud.view))
@@ -1906,11 +2093,21 @@ class App {
       }
       return
     }
+    if (this.mode instanceof ShowAdapter && (this.nav.screen === 'result' || this.nav.screen === 'endScreen')) {
+      const action = flowAction(ev)
+      if (action === 'confirm') {
+        this.mode.action(action)
+        return
+      }
+    }
     if (this.nav.screen !== 'start' && (FLOW_SCREENS as readonly Screen[]).includes(this.nav.screen)) {
       if (ev.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
       else {
         const action = flowAction(ev)
-        if (action !== null) this.run(this.nav.dispatch({ kind: 'action', action }))
+        if (action !== null) {
+          if (this.mode instanceof ShowAdapter) this.mode.action(action)
+          else this.run(this.nav.dispatch({ kind: 'action', action }))
+        }
       }
       return
     }
@@ -2015,6 +2212,7 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourG
   const env: AppEnv = {
     store: { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) },
     padStorage: null,
+    showSeats: 8,
     loop: f => {
       frame = f
       return () => { frame = null }

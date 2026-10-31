@@ -19,13 +19,19 @@ const ROOT = new URL('../../../', import.meta.url)
 const read = (rel: string) => readFile(new URL(rel, ROOT), 'utf8')
 const R = await initRapier()
 
-test('zoneFullMatch: every peer reports the same race and survival final', async () => {
+for (const voteMs of [0, 300]) test(`zoneFullMatch: every peer reports the same show (voteMs ${voteMs})`, async () => {
   const entries = []
   for (const id of ['race-sprint', 'survival-sprint']) {
     const path = `fixtures/courses/${id}.course.json`
     entries.push({ path, json: JSON.parse(await read(path)) as unknown })
   }
   const courses = await matchCourses(entries, fixtureResolver(read), 'sprint')
+  const season = showMaps(courses)
+  if (voteMs > 0) {
+    const race = season.find(map => map.kind === 'race')!
+    season.push({ ...race, id: 'race-choice-2' }, { ...race, id: 'race-choice-3' })
+  }
+  const offered: string[][] = []
   const zones = new Map<string, ZonesFile>()
   for (const course of courses) zones.set(course.id, await loadZonesFile(course.id, course, read))
 
@@ -47,12 +53,14 @@ test('zoneFullMatch: every peer reports the same race and survival final', async
   try {
     for (let p = 0; p < 2; p++) {
       matches.push(createZoneFullMatch(R, {
-        localPeer: p, roster, seed: 7, courses, season: showMaps(courses), plan: [4, 2, 1], zones, measurements,
+        localPeer: p, roster, seed: 7, courses, season, voteMs,
+        onVote: (index, candidates) => { if (index === 0) offered[p] = candidates }, plan: [4, 2, 1], zones, measurements,
       }, net.transport(p)))
     }
     for (let frame = 0; frame < 9000 && matches.some(match => !match.done); frame++) {
       net.advance(1000 / 60)
       for (let p = 0; p < matches.length; p++) {
+        if (matches[p].candidates && matches[p].candidates!.length > 1) matches[p].vote(1)
         matches[p].frame(1 / 60, (round, out) => {
           if (roundIndices[p] !== round.plan.index) {
             roundIndices[p] = round.plan.index
@@ -61,6 +69,13 @@ test('zoneFullMatch: every peer reports the same race and survival final', async
           }
           for (let i = 0; i < out.length; i++) {
             const seat = round.localSeats[i]
+            if (round.plan.final) {
+              decodeInput(NEUTRAL_CODE, out[i])
+              // Keep one finalist on the platform; the other walks off to settle lastStanding.
+              // The voting case first reaches the cap, exercising a same-map playoff.
+              if (seat !== 0 && (voteMs === 0 || round.plan.playoff)) out[i].moveZ = 1
+              continue
+            }
             const domain = round.match.domains.find(candidate => candidate.seats.includes(seat))
             if (domain === undefined) decodeInput(NEUTRAL_CODE, out[i])
             else takeoverInput(round.plan.course, memories[round.seatOf[seat]],
@@ -78,14 +93,24 @@ test('zoneFullMatch: every peer reports the same race and survival final', async
     }
     assert.deepStrictEqual(matches[0].report, matches[1].report)
     const { rounds, champion } = matches[0].report
-    assert.equal(rounds.length, 2, 'four seats play a race then the final')
+    assert.equal(rounds.length, voteMs === 0 ? 2 : 3, 'race, final, and an optional playoff')
+    if (voteMs > 0) {
+      assert.equal(rounds[1].reason, 'playoff')
+      assert.equal(rounds[2].playoff, true)
+      assert.equal(rounds[2].map, rounds[1].map)
+    }
+    assert.deepStrictEqual(offered[0], offered[1])
+    assert.equal(rounds[0].map, offered[0][voteMs > 0 ? 1 : 0])
+    assert.deepStrictEqual(Array.from(matches[0].show.openingRanks), Array.from(matches[1].show.openingRanks))
+    rounds[0].ranking.forEach((seat, rank) => assert.equal(matches[0].show.openingRanks[seat], rank + 1))
     assert.equal(rounds[0].kind, 'race')
     assert.equal(rounds[0].course, 'race-sprint')
     const final = rounds[rounds.length - 1]
     assert.equal(final.final, true)
     assert.equal(final.kind, 'final')
     assert.equal(final.course, 'survival-sprint')
-    assert.ok(champion === null || final.qualified.includes(champion))
+    assert.equal(champion, final.champion)
+    assert.ok(champion !== null && final.qualified.includes(champion))
   } finally {
     for (const match of matches) match.dispose()
   }

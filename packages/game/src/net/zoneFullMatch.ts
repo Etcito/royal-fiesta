@@ -4,7 +4,7 @@ import type { GroupTransport, Roster } from '@gamesaloon/rollback/zones'
 import { levelOf } from '@royal-fiesta/sim/course'
 import { advanceCursor, nextSlot } from '@royal-fiesta/sim/season/plan'
 import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
-import type { ResolvedCourse } from '@royal-fiesta/sim/course'
+import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
@@ -14,7 +14,7 @@ import { RoundTransport } from './roundTransport.ts'
 import { createZoneMatch } from './zoneMatch.ts'
 import type { ZoneMatch, ZoneMatchConfig } from './zoneMatch.ts'
 import {
-  decodeRoundResult, encodeRoundResult, nextAlive, newShow, planZoneRound, roundResultOf, roundRoster, sameRoundResult,
+  decodeRoundResult, encodeRoundResult, nextAlive, newShow, planZoneRound, roundCandidates, roundResultOf, roundRoster, sameRoundResult,
 } from './zoneRounds.ts'
 import type { ShowState, ZoneRoundPlan, ZoneRoundResult } from './zoneRounds.ts'
 
@@ -28,6 +28,9 @@ export interface ZoneFullMatchConfig {
   readonly zones: ReadonlyMap<string, ZonesFile>
   readonly measurements: ZoneMatchConfig['measurements']
   readonly farSink?: ZoneMatchConfig['farSink']
+  readonly profile?: ProfileName
+  readonly voteMs?: number
+  readonly onVote?: (round: number, candidates: string[]) => void
   readonly intermissionMs?: number
 }
 
@@ -51,7 +54,9 @@ export interface ZoneFullMatchReport {
 
 export interface ZoneFullMatch {
   readonly show: ShowState
-  /** Null when the local peer has no remaining seats. */
+  readonly candidates: readonly string[] | null
+  vote(choice: number): void
+  /** Null while voting or when the local peer has no seats in this round. */
   readonly round: ZoneFullRound | null
   readonly alive: readonly number[]
   readonly done: boolean
@@ -84,6 +89,30 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
   let done = false
   let disposed = false
   let transportMalformed = 0
+  const votes = new Map<number, Map<number, number>>()
+  let candidates: string[] | null = null
+  let votingAt: number | null = null
+  let playoffPlan: ZoneRoundPlan | null = null
+  let qualifiedBeforePlayoff: number[] = []
+  let openingRecorded = false
+
+  rt.onVote((peer, tag, choice) => {
+    if (disposed || !roomPeers.has(peer)) return
+    const delta = (tag - (r & 0xff)) & 0xff
+    if (delta >= 128 || (delta === 0 && votingAt === null)) return
+    let received = votes.get(r + delta)
+    if (!received) votes.set(r + delta, received = new Map())
+    received.set(peer, choice === 255 ? -1 : choice)
+  })
+
+  function vote(choice: number): void {
+    if (disposed || votingAt === null || !candidates ||
+        !Number.isInteger(choice) || choice < -1 || choice >= candidates.length) return
+    let received = votes.get(r)
+    if (!received) votes.set(r, received = new Map())
+    received.set(cfg.localPeer, choice)
+    rt.sendVote(recipients, choice)
+  }
 
   function remember(index: number, peer: number, result: ZoneRoundResult): void {
     let received = results.get(index)
@@ -113,12 +142,35 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
 
   function finish(): void {
     done = true
-    report.champion = alive.length === 1 ? alive[0] : null
+    report.champion = [...report.rounds].reverse().find(result => result.final && result.champion >= 0)?.champion ??
+      (alive.length === 1 ? alive[0] : null)
   }
 
   function start(): void {
     rt.setRound(r)
-    plan = planZoneRound(cfg.courses, show, alive, null, rng)
+    candidates = playoffPlan ? [playoffPlan.map] : roundCandidates(show, rng)
+    votingAt = rt.now()
+    peers = roundRoster(cfg.roster, alive).roster.peers.map(p => p.peer)
+    own = null
+    settledAt = null
+    cfg.onVote?.(r, [...candidates])
+    if ((cfg.voteMs ?? 5000) === 0 || candidates.length === 1) play(true)
+  }
+
+  function play(headless = false): void {
+    const choices: number[] = []
+    for (const peer of cfg.roster.peers) {
+      if (!cfg.roster.live[peer.peer] || rt.closed(peer.peer)) continue
+      for (const seat of peer.seats) if (alive.includes(seat)) choices.push(votes.get(r)?.get(peer.peer) ?? -1)
+    }
+    const offered = candidates!
+    plan = playoffPlan ?? planZoneRound(cfg.courses, show, alive,
+      { candidates: headless || !choices.some(choice => choice >= 0 && choice < offered.length) ? [offered[0]] : offered,
+        votes: choices }, rng)
+    playoffPlan = null
+    candidates = null
+    votingAt = null
+    votes.delete(r)
     const { roster, seatOf } = roundRoster(cfg.roster, alive)
     peers = roster.peers.map(p => p.peer)
     const received = results.get(r)
@@ -134,7 +186,7 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
     const zones = cfg.zones.get(course.id)
     if (!zones) refuse('zones', 'createZoneFullMatch.zones', `missing sidecar for ${course.id}; load zones for every course`)
     const match = createZoneMatch(R, {
-      localPeer: cfg.localPeer, roster, course, zones, profile: PROFILES.sprint,
+      localPeer: cfg.localPeer, roster, course, zones, profile: PROFILES[cfg.profile ?? 'sprint'],
       kind: plan.kind,
       slot: { kind: plan.kind, final: plan.final, finalRule: plan.finalRule, target: plan.target,
         playoff: plan.playoff, roundIndex: plan.index, seed: cfg.seed, teams: plan.teams,
@@ -146,7 +198,7 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
   }
 
   function settle(): void {
-    if (settledAt !== null || done || (round !== null && own === null)) return
+    if (votingAt !== null || settledAt !== null || done || (round !== null && own === null)) return
     const received = results.get(r)
     for (const peer of peers) {
       if (peer !== cfg.localPeer && !rt.closed(peer) && !received?.has(peer)) return
@@ -159,10 +211,25 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
       report.desyncs += round.match.stats.desyncs
       report.malformed += round.match.stats.malformed
     }
-    alive = nextAlive(result)
-    show.cursor = advanceCursor(show.cursor, plan.slot, alive.length, plan.teams !== null)
+    if (!openingRecorded && plan.kind === 'race') {
+      result.ranking.forEach((seat, rank) => { show.openingRanks[seat] = rank + 1 })
+      openingRecorded = true
+    }
+    if (result.reason === 'playoff') {
+      qualifiedBeforePlayoff.push(...result.qualified)
+      // The wire omits the internal playoff list: disputed seats are neither qualified nor eliminated.
+      alive = result.ranking.filter(seat => !result.qualified.includes(seat) && !result.eliminated.includes(seat))
+      const target = plan.target - result.qualified.length
+      const slot = { ...plan.slot, playoff: true, target, teamAllowed: false }
+      show.cursor = advanceCursor(show.cursor, slot, alive.length, false)
+      playoffPlan = { ...plan, index: show.cursor.roundIndex, slot, playoff: true, target, teams: null }
+    } else {
+      alive = nextAlive({ qualified: [...qualifiedBeforePlayoff, ...result.qualified] })
+      qualifiedBeforePlayoff = []
+      show.cursor = advanceCursor(show.cursor, plan.slot, alive.length, plan.teams !== null)
+    }
     settledAt = rt.now()
-    if (nextSlot(show.cursor) === null) finish()
+    if (!playoffPlan && nextSlot(show.cursor) === null) finish()
   }
 
   if (alive.length <= 1) finish()
@@ -174,6 +241,8 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
 
   return {
     show,
+    vote,
+    get candidates() { return candidates },
     get round() { return round },
     get alive() { return alive },
     get done() { return done },
@@ -209,6 +278,7 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
       }
       report.malformed += rt.malformed - transportMalformed
       transportMalformed = rt.malformed
+      if (votingAt !== null && rt.now() - votingAt >= (cfg.voteMs ?? 5000)) play()
       settle()
       if (!done && settledAt !== null && rt.now() - settledAt >= (cfg.intermissionMs ?? 1500)) {
         current?.match.dispose()
@@ -224,6 +294,7 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
       disposed = true
       round?.match.dispose()
       results.clear()
+      votes.clear()
       scratch.length = 0
     },
   }

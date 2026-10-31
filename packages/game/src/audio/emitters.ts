@@ -36,6 +36,8 @@ export interface EmitterCommand {
   gain: number
   /** Event strength for a patch's declared gain input; absent for non-event commands. */
   strength?: number
+  /** Patch playback rate; omitted means 1. */
+  rate?: number
   ref: number
   max: number
   loop: boolean

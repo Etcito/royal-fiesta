@@ -57,6 +57,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   readonly #featureCtxs: readonly FeatureCtx[]
   readonly #featureSeats: FeatureSeats
   readonly #featureSounds: FeatureSound[] = []
+  readonly #featureLoops = new Map<string, FeatureSound>()
   readonly #neutralInputs: readonly PlayerInput[]
   readonly #seats: readonly number[]
   readonly #entities: number[] = []
@@ -287,8 +288,11 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       get seats() { return domain.#featureSeats },
       get rng() { return rng },
       emit(kind, seat, a, b) { domain.#emitSeat(seat, kind, a, b) },
+      soundLoop(key, id, pos, strength, rate) {
+        domain.#featureLoops.set(key, { key, id, pos: { ...pos }, strength, rate, loop: true })
+      },
       sound(id, pos, strength) {
-        domain.#featureSounds.push({ id, pos: { x: pos.x, y: pos.y, z: pos.z }, strength, loop: false })
+        domain.#featureSounds.push({ id, pos: { x: pos.x, y: pos.y, z: pos.z }, strength, loop: false, key: '', rate: 1 })
       },
     }
   }
@@ -310,13 +314,9 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
 
   drainFeatureSounds(out: FeatureSound[]): number {
     const start = out.length
-    let kept = 0
-    for (let i = 0; i < this.#featureSounds.length; i++) {
-      const sound = this.#featureSounds[i]
-      if (sound.loop) this.#featureSounds[kept++] = sound
-      else out.push(sound)
-    }
-    this.#featureSounds.length = kept
+    out.push(...this.#featureSounds, ...this.#featureLoops.values())
+    this.#featureSounds.length = 0
+    this.#featureLoops.clear()
     return out.length - start
   }
 
@@ -505,6 +505,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   restoreFeatures(r: SnapReader): void {
     for (let i = 0; i < this.features.length; i++) this.features[i].restore(r, this.#featureCtxs[i])
     this.#featureSounds.length = 0
+    this.#featureLoops.clear()
   }
 
   hash(): number { return this.inner.hash() }

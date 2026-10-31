@@ -125,7 +125,7 @@ export function createCourseAudio(
       const declared = (JSON.parse(patch) as HaaPatch).inputs ?? []
       const inputs: Record<string, number> = {}
       if (declared.some(input => input.name === 'gain')) inputs.gain = entry.strength ?? 1
-      if (declared.some(input => input.name === 'rate')) inputs.rate = 1
+      if (declared.some(input => input.name === 'rate')) inputs.rate = entry.cmd.rate ?? 1
       gain = ctx.createGain()
       panner = ctx.createStereoPanner()
       updateSpatial({ gain, panner, cmd: entry.cmd })
@@ -141,6 +141,7 @@ export function createCourseAudio(
       }
       const sound = { player, gain, panner, cmd: entry.cmd }
       updateSpatial(sound)
+      setRate(player, entry.cmd.rate)
       active.set(cmd.id, sound)
       if (entry.again) {
         setStrength(player, entry.strength)
@@ -163,10 +164,15 @@ export function createCourseAudio(
     const sound = active.get(cmd.id)
     if (sound) {
       sound.cmd = { ...cmd }
+      setRate(sound.player, cmd.rate)
       updateSpatial(sound)
     }
     const entry = pending.get(cmd.id)
     if (entry) entry.cmd = { ...cmd }
+  }
+
+  function setRate(player: HaaPlayer, rate: number | undefined): void {
+    if (rate !== undefined && player.info.inputs.some(input => input.name === 'rate')) player.set('rate', rate)
   }
 
   function setStrength(player: HaaPlayer, strength: number | undefined): void {

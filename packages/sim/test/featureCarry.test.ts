@@ -66,6 +66,7 @@ async function harness(t: TestContext, spawns = [[0, 2, 0.5]], resetS = 30, home
   const ctx: FeatureCtx = {
     R, physics, seats, course, rng: new Rng(1), get tick() { return physics.tick },
     get roundTick() { return physics.tick }, entrants: 2, overtime: false, trailingTeam: -1,
+    soundLoop() {},
     emit() { assert.fail('carry emits no events') }, sound(id) { sounds.push(id) },
   }
   const feature = carryItemFeature({ id: 'items', kind: 'carryItem',

@@ -137,6 +137,7 @@ class TestCtx implements FeatureCtx {
   emit(kind: FiestaEventKind, seat: number, a: number, b: number): void {
     this.events.push({ kind, seat, a, b })
   }
+  soundLoop(): void {}
   sound(id: string, pos: Vec3, strength: number): void {
     this.sounds.push({ id, pos: { x: pos.x, y: pos.y, z: pos.z }, strength })
   }

@@ -319,3 +319,23 @@ test('stopping during player creation disposes the stale player and its chain', 
   assert.equal(r.ctx.panners[0].outs.size, 0)
   audio.dispose()
 })
+
+test('laser rate reaches spawn, pending player and live moves', async () => {
+  let release!: () => void
+  const r = rig(false, new Promise<void>(resolve => { release = resolve }))
+  const patches = new Map([['tap', 'data:text/plain,' + encodeURIComponent(JSON.stringify({
+    haa: 1, inputs: [{ name: 'rate', kind: 'continuous', min: 0, max: 2, default: 1 }],
+  }))]])
+  const audio = audioOf(r, patches)
+  const cmd = { ...start('laser', 0, 0, 0), rate: 1.2 }
+  audio.apply([cmd], 1)
+  await waitFor(() => r.made.length === 1, 'pending laser')
+  assert.deepEqual(r.initialInputs, [{ rate: 1.2 }])
+  r.made[0].player.info.inputs.push({ name: 'rate', kind: 'continuous', min: 0, max: 2, default: 1 })
+  audio.apply([{ ...cmd, kind: 'move', rate: 1.5 }], 1)
+  release()
+  await waitFor(() => r.made[0].calls.length > 0, 'pending rate update')
+  audio.apply([{ ...cmd, kind: 'move', rate: 1.7 }], 1)
+  assert.deepEqual(r.made[0].calls, [['set', 'rate', 1.5], ['set', 'rate', 1.7]])
+  audio.dispose()
+})

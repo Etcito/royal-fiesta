@@ -104,6 +104,7 @@ function context(seats: FeatureSeats, tick: number, courseValue: ResolvedCourse)
     course: courseValue,
     seats,
     rng: new Rng(1),
+    soundLoop() {},
     sounds,
     events,
     emit(kind: FiestaEventKind, seat: number, a: number, b: number): void { events.push({ kind, seat, a, b }) },
@@ -266,4 +267,34 @@ test('a no-touch tick reports zero touches and keeps the last touch tick', () =>
   assert.equal(reader.u32(), 0)
   assert.equal(reader.i32(), 10)
   assert.notDeepEqual(bytes, touching)
+})
+
+test('keyed loop drains keep the latest call, expire and preserve one-shots', async t => {
+  const R = await initRapier()
+  const c = course([marker('sound-stub')])
+  c.spawns.push({ t: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 } })
+  const zones = parseZonesFile({ format: ZONES_FORMAT, version: ZONES_VERSION, course: c.id,
+    grid: { origin: [-10, -10], cell: [20, 20], cols: 1, rows: 1 }, parts: {}, tuning: {},
+  }, 'inline.zones', c)
+  const factory = createFiestaDomainFactory(R, {
+    course: c, zones, profile: { ...PROFILES.sprint, introTicks: 0 }, kind: 'race', seatCount: 1,
+  })
+  const domain = factory.create({ id: 1, kind: 'seat', seats: [0], cells: [0], replicas: [0] }, 0)
+  assert.ok(domain instanceof FiestaDomain)
+  t.after(() => domain.inner.world.sim.free())
+  t.mock.method(domain.features[0], 'postStep', () => {})
+  const hook = t.mock.method(domain.features[0], 'preStep', (ctx: FeatureCtx) => {
+    ctx.soundLoop('beam', 'mech.laser', { x: 0, y: 0, z: 0 }, 1, 1)
+    ctx.soundLoop('beam', 'mech.laser', { x: 2, y: 0, z: 0 }, 1, 1.5)
+    ctx.sound('mech.hammer', { x: 1, y: 0, z: 0 }, 0.5)
+  })
+  const shadows = { count: 0, fromDomain() { throw Error('no link') }, reader() { throw Error('no link') } }
+  domain.step([neutralInput()], shadows)
+  const out: import('../src/features/feature.ts').FeatureSound[] = []
+  assert.equal(domain.drainFeatureSounds(out), 2)
+  assert.deepEqual(out.map(s => [s.key, s.loop, s.rate, s.pos.x]), [['', false, 1, 1], ['beam', true, 1.5, 2]])
+  assert.equal(domain.drainFeatureSounds([]), 0)
+  hook.mock.mockImplementation(() => {})
+  domain.step([neutralInput()], shadows)
+  assert.equal(domain.drainFeatureSounds([]), 0)
 })

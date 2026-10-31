@@ -54,6 +54,7 @@ export interface FeatureCtx {
   readonly rng: Rng
   emit(kind: FiestaEventKind, seat: number, a: number, b: number): void
   sound(id: string, pos: Vec3, strength: number): void
+  soundLoop(key: string, id: string, pos: Vec3, strength: number, rate: number): void
 }
 
 export interface FeatureDraw {
@@ -66,6 +67,8 @@ export interface FeatureDraw {
 }
 
 export interface FeatureSound {
+  key: string
+  rate: number
   id: string
   pos: Vec3
   strength: number

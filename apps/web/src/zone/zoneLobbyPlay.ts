@@ -110,11 +110,11 @@ export class ZoneFeatureAudio {
       for (let i = 0; i < n; i++) {
         const sound = this.scratch[i]
         const { x, y, z } = sound.pos
-        const id = `feature:${sound.id}@${x},${y},${z}`
+        const id = sound.loop ? `feature:${sound.key}` : `feature:${sound.id}@${x},${y},${z}`
         const command: EmitterCommand = {
           kind: sound.loop ? (this.loops.has(id) ? 'move' : 'start') : 'trigger',
           id, patch: sound.id, gain: 1, ref: 2, max: 60, loop: sound.loop,
-          strength: sound.strength, x, y, z,
+          strength: sound.strength, rate: sound.rate, x, y, z,
         }
         if (sound.loop) {
           this.seen.add(id)

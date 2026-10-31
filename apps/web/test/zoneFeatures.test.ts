@@ -100,8 +100,8 @@ test('feature sounds retain position and strength and shared split domains drain
   })
   let drains = 0
   let sounds: FeatureSound[] = [
-    { id: 'obj.goal', pos: { x: 1, y: 2, z: 3 }, strength: 0.4, loop: false },
-    { id: 'mech.motor', pos: { x: 4, y: 5, z: 6 }, strength: 0.7, loop: true },
+    { key: '', rate: 1, id: 'obj.goal', pos: { x: 1, y: 2, z: 3 }, strength: 0.4, loop: false },
+    { key: 'motor', rate: 1, id: 'mech.motor', pos: { x: 4, y: 5, z: 6 }, strength: 0.7, loop: true },
   ]
   const domain = { drainFeatureSounds(out: FeatureSound[]) {
     drains++
@@ -155,4 +155,23 @@ test('the disclosed seed is the seed stored in the ledger snapshot', () => {
     if (previous) Object.defineProperty(globalThis, 'document', previous)
     else Reflect.deleteProperty(globalThis, 'document')
   }
+})
+
+test('a moving laser key starts, forwards rate, moves without restarting and stops', () => {
+  const batches: EmitterCommand[][] = []
+  const audio = new ZoneFeatureAudio({
+    apply(commands, n) { batches.push(commands.slice(0, n).map(c => ({ ...c }))) },
+    setListeners() {}, dispose() {},
+  })
+  let sounds: FeatureSound[] = [{ key: 'sweep:laser', id: 'mech.laser', pos: { x: 1, y: 0, z: 0 }, strength: 1, rate: 1, loop: true }]
+  const domain = { drainFeatureSounds(out: FeatureSound[]) { out.push(...sounds); return out.length } } as FiestaDomain
+  audio.frame([domain])
+  sounds = [{ ...sounds[0], pos: { x: 2, y: 0, z: 1 }, rate: 1.5 }]
+  audio.frame([domain])
+  sounds = []
+  audio.frame([domain])
+  assert.deepEqual(batches.map(b => b.map(c => [c.id, c.kind, c.rate])), [
+    [['feature:sweep:laser', 'start', 1]], [['feature:sweep:laser', 'move', 1.5]], [['feature:sweep:laser', 'stop', 1.5]],
+  ])
+  audio.dispose()
 })

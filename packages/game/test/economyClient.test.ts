@@ -6,36 +6,8 @@ import {
   type CatalogItem, type Rarity,
 } from '../src/economy/contract.ts'
 import { createEconomyStub } from '../src/economy/stub.ts'
-
-interface RequestRecord {
-  url: string
-  method: string
-  headers: Record<string, string>
-  body: string | undefined
-}
-
-function fakeFetch(answer: (request: RequestRecord) => Response | Promise<Response>) {
-  const requests: RequestRecord[] = []
-  const fetchImpl = async (
-    input: RequestInfo | URL, init: RequestInit = {},
-  ): Promise<Response> => {
-    const request: RequestRecord = {
-      url: String(input),
-      method: init.method ?? 'GET',
-      headers: (init.headers ?? {}) as Record<string, string>,
-      body: init.body === undefined ? undefined : String(init.body),
-    }
-    requests.push(request)
-    return answer(request)
-  }
-  return { fetchImpl: fetchImpl as typeof fetch, requests }
-}
-
-function clientFor(answer: (request: RequestRecord) => Response | Promise<Response>) {
-  const fake = fakeFetch(answer)
-  const client = createEconomyClient('http://economy.test/api/', () => 'player-token', fake.fetchImpl)
-  return { client, requests: fake.requests }
-}
+import type { WsFactory, WsLike } from '../src/net/ws.ts'
+import { economyCases } from './economyCases.ts'
 
 async function expectRefusal(promise: Promise<unknown>, code: string): Promise<EconomyError> {
   try {
@@ -73,93 +45,6 @@ test('checkDescription refuses a banned word in mixed case and names it', () => 
 test('checkDescription accepts a banned word embedded inside another word', () => {
   assert.equal(checkDescription('assassin training', ['ass']), null)
   assert.equal(checkDescription('the classic grasshopper', ['ass']), null)
-})
-
-test('the client sends the S18 method, path, body and Bearer header per method', async () => {
-  const { client, requests } = clientFor(() => new Response('{}', { status: 200 }))
-  await client.catalog()
-  await client.me()
-  await client.buy('costume.propeller-hat', 'tickets')
-  await client.commission('head', 'rare', 'a lovely hat')
-  await client.commissions()
-  await client.queue()
-  await client.inbox()
-  await client.claim('gift/42')
-  await client.gift('bob', 'costume.propeller-hat', 'enjoy')
-  await client.block('bob')
-  await client.unblock('player two')
-
-  const expected = [
-    ['GET', 'http://economy.test/api/catalog', undefined],
-    ['GET', 'http://economy.test/api/me', undefined],
-    ['POST', 'http://economy.test/api/buy',
-      JSON.stringify({ itemId: 'costume.propeller-hat', currency: 'tickets' })],
-    ['POST', 'http://economy.test/api/commissions',
-      JSON.stringify({ slot: 'head', rarity: 'rare', description: 'a lovely hat' })],
-    ['GET', 'http://economy.test/api/commissions', undefined],
-    ['GET', 'http://economy.test/api/commissions/queue', undefined],
-    ['GET', 'http://economy.test/api/inbox', undefined],
-    ['POST', 'http://economy.test/api/inbox/gift%2F42/claim', undefined],
-    ['POST', 'http://economy.test/api/gifts',
-      JSON.stringify({ to: 'bob', itemId: 'costume.propeller-hat', message: 'enjoy' })],
-    ['POST', 'http://economy.test/api/blocks', JSON.stringify({ player: 'bob' })],
-    ['DELETE', 'http://economy.test/api/blocks/player%20two', undefined],
-  ] as const
-  assert.equal(requests.length, expected.length)
-  for (const [index, [method, url, body]] of expected.entries()) {
-    const request = requests[index]
-    assert.equal(request.method, method, `method of ${url}`)
-    assert.equal(request.url, url)
-    assert.equal(request.body, body, `body of ${url}`)
-    assert.equal(request.headers.Authorization, 'Bearer player-token', `auth of ${url}`)
-  }
-})
-
-test('a 409 sold_out JSON body throws EconomyError sold_out with status 409', async () => {
-  const { client } = clientFor(() => new Response(
-    JSON.stringify({ error: 'sold_out', reason: 'the edition is gone' }), { status: 409 },
-  ))
-  const err = await expectRefusal(client.buy('costume.propeller-hat', 'coins'), 'sold_out')
-  assert.equal(err.status, 409)
-  assert.match(err.message, /edition is gone/)
-})
-
-test('server error bodies map every refusal code with the response status', async () => {
-  const codes = [
-    'unauthorized', 'unknown_item', 'not_found', 'sold_out', 'insufficient_funds',
-    'already_owned', 'not_owned', 'already_claimed', 'no_price', 'invalid',
-    'description_refused', 'self_gift', 'blocked', 'rate_limited',
-  ] as const
-  for (const code of codes) {
-    const status = ECONOMY_ERRORS[code]
-    const { client } = clientFor(() => new Response(
-      JSON.stringify({ error: code, reason: `reason for ${code}` }), { status },
-    ))
-    const err = await expectRefusal(client.buy('costume.propeller-hat', 'coins'), code)
-    assert.equal(err.status, status, `status of ${code}`)
-    assert.match(err.message, new RegExp(`reason for ${code}`))
-  }
-})
-
-test('a non-2xx response with a JSON body maps error to the code and reason', async () => {
-  const { client } = clientFor(() => new Response(
-    JSON.stringify({ error: 'insufficient_funds', reason: 'you need more coins' }), { status: 409 },
-  ))
-  const err = await expectRefusal(client.buy('costume.pineapple-suit', 'coins'), 'insufficient_funds')
-  assert.equal(err.status, 409)
-  assert.match(err.message, /you need more coins/)
-})
-
-test('a 500 text body gives http_500', async () => {
-  const { client } = clientFor(() => new Response('upstream exploded', { status: 500 }))
-  const err = await expectRefusal(client.me(), 'http_500')
-  assert.equal(err.status, 500)
-})
-
-test('a rejected fetch gives code network', async () => {
-  const { client } = clientFor(() => { throw new Error('connection refused') })
-  const err = await expectRefusal(client.catalog(), 'network')
-  assert.equal(err.status, 0)
 })
 
 function catalogItem(id: string, overrides: Partial<CatalogItem> = {}): CatalogItem {
@@ -383,3 +268,252 @@ const STUB_CASES: StubCase[] = [
 ]
 
 for (const { rule, run } of STUB_CASES) test(`stub rule: ${rule}`, run)
+
+for (const rule of economyCases) {
+  if (rule.code === null) continue // The offline stub has grant(), not host round reporting.
+  test(`shared stub rule: ${rule.name}`, async () => {
+    const scenario = rule.setup()
+    const stub = createEconomyStub(scenario.seed)
+    const port = scenario.prepare ? await scenario.prepare(stub) : stub
+    const error = await expectRefusal(scenario.run(port), rule.code!)
+    assert.equal(error.status, ECONOMY_ERRORS[rule.code as keyof typeof ECONOMY_ERRORS])
+  })
+}
+
+type Frame = { t: string; op?: string; [key: string]: unknown }
+const auth = { provider: 'wavedash' as const, token: 'player-token', name: 'Player', game: 'test-game' }
+const wireCommission = {
+  id: 'commission-1', slot: 'head', rarity: 'rare', description: 'a lovely hat',
+  status: 'pending', created_at: 1_700_000_000_000,
+}
+const entry = {
+  id: 'gift/42', item: 'hat', sender: { kind: 'player', id: 'friend' },
+  message: 'enjoy', date: '2026-10-31T00:00:00.000Z', claimed: false,
+}
+const shopItems = ['hat', 'empty', 'negative'].map(id => {
+  const { editionCap, ...item } = catalogItem(id)
+  return { ...item, edition_cap: editionCap }
+})
+function answer(frame: Frame): Frame {
+  switch (frame.t) {
+    case 'eco_shop': return { t: 'eco_shop', drop: 'drop-1', items: shopItems }
+    case 'eco_get': return {
+      t: 'eco_state', coins: 42, balances: { tickets: 7, stars: 9 },
+      cards: { hat: 2, empty: 0, negative: -1, collectible: 1 },
+    }
+    case 'eco_inbox': return { t: 'eco_inbox', entries: [entry], unread: 1 }
+    case 'eco_shop_buy': return { t: 'eco_shop_bought', remaining: 8, applied: true }
+    case 'eco_commission': return { t: 'eco_commissioned', commission: wireCommission, applied: true }
+    case 'eco_commissions': return { t: 'eco_commissions', items: [wireCommission] }
+    case 'eco_queue': return { t: 'eco_queue', items: [wireCommission] }
+    case 'eco_claim': return { t: 'eco_claimed', id: frame.id, item: 'hat', applied: true }
+    case 'eco_gift': return { t: 'eco_gifted', to: frame.to, item: frame.item, applied: true }
+    case 'eco_block': return { t: 'eco_blocked', player: frame.player, blocked: frame.blocked }
+    case 'eco_round': return { t: 'eco_round', applied: true }
+    default: throw new Error(`unexpected frame ${frame.t}`)
+  }
+}
+
+function scriptedWs(script: (frame: Frame) => Frame | undefined = answer, autoOpen = true, autoAuth = true) {
+  const frames: Frame[] = []
+  const urls: string[] = []
+  const receive = (frame: Frame) => socket.onmessage?.({ data: JSON.stringify(frame) })
+  const socket: WsLike & { readyState: number } = {
+    readyState: 0, onopen: null, onmessage: null, onclose: null, onerror: null,
+    send(data) {
+      assert.equal(socket.readyState, 1)
+      const frame = JSON.parse(data) as Frame
+      frames.push(frame)
+      const reply = frame.t === 'auth'
+        ? autoAuth ? { t: 'authed', player_id: 'local', provider: auth.provider, display_name: auth.name } : undefined
+        : script(frame)
+      if (reply) queueMicrotask(() => receive({ ...reply, ...(frame.op ? { op: frame.op } : {}) }))
+    },
+    close() {
+      if (socket.readyState === 3) return
+      socket.readyState = 3
+      socket.onclose?.({ code: 1000, reason: 'closed by fake' })
+    },
+  }
+  const open = () => { socket.readyState = 1; socket.onopen?.() }
+  const factory: WsFactory = url => {
+    urls.push(url)
+    if (autoOpen) queueMicrotask(open)
+    return socket
+  }
+  return { factory, frames, urls, socket, receive, open }
+}
+function clientFor(script?: (frame: Frame) => Frame | undefined) {
+  const fake = scriptedWs(script)
+  return { ...fake, client: createEconomyClient('wss://economy.test/ws', auth, fake.factory) }
+}
+
+const expectedMe = { playerId: 'local', coins: 42, tickets: 7, owned: ['hat'], inboxUnread: 1 }
+
+test('WS methods send auth first and fresh ops, and map gamesaloon replies', async () => {
+  const { client, frames, urls } = clientFor()
+  assert.deepEqual(urls, [], 'connection is lazy')
+  const catalog = await client.catalog()
+  assert.deepEqual(catalog, { drop: 'drop-1', items: ['hat', 'empty', 'negative'].map(id => catalogItem(id)) })
+  assert.deepEqual(await client.me(), expectedMe)
+  assert.deepEqual(await client.buy('hat', 'tickets'), { ...expectedMe, remaining: 8 })
+  const { created_at, ...fields } = wireCommission
+  const publicCommission = { ...fields, createdAt: new Date(created_at).toISOString() }
+  assert.deepEqual(await client.commission('head', 'rare', 'a lovely hat'), { ...publicCommission, playerId: 'local' })
+  assert.deepEqual(await client.commissions(), [{ ...publicCommission, playerId: 'local' }])
+  assert.deepEqual(await client.queue(), [publicCommission])
+  assert.deepEqual(await client.inbox(), [entry])
+  assert.deepEqual(await client.claim('gift/42'), expectedMe)
+  assert.equal(await client.gift('bob', 'hat', 'enjoy'), undefined)
+  assert.equal(await client.block('bob'), undefined)
+  assert.equal(await client.unblock('bob'), undefined)
+  assert.deepEqual(await client.reportRound('match-1', 2, 'wavedash-player', 'win'), { applied: true })
+
+  const meFrames = [{ t: 'eco_get' }, { t: 'eco_inbox' }, { t: 'eco_shop' }]
+  assert.deepEqual(frames.map(({ op: _op, ...frame }) => frame), [
+    { t: 'auth', ...auth }, { t: 'eco_shop' }, ...meFrames,
+    { t: 'eco_shop_buy', item: 'hat', currency: 'tickets' }, ...meFrames,
+    { t: 'eco_commission', slot: 'head', rarity: 'rare', description: 'a lovely hat' },
+    { t: 'eco_commissions' }, { t: 'eco_queue' }, { t: 'eco_inbox' },
+    { t: 'eco_claim', id: 'gift/42' }, ...meFrames,
+    { t: 'eco_gift', to: 'bob', item: 'hat', message: 'enjoy' },
+    { t: 'eco_block', player: 'bob', blocked: true }, { t: 'eco_block', player: 'bob', blocked: false },
+    { t: 'eco_round', match_id: 'match-1', round: 2, player: 'wavedash-player', kind: 'win' },
+  ])
+  assert.deepEqual(urls, ['wss://economy.test/ws'])
+  const ops = frames.slice(1).map(frame => frame.op!)
+  assert.equal(new Set(ops).size, ops.length)
+  for (const [i, op] of ops.entries()) {
+    assert.match(op, /^[A-Za-z0-9_:.-]{1,64}$/)
+    assert.equal(op.split(':')[1], String(i + 1))
+  }
+  client.close()
+})
+
+for (const rule of economyCases) {
+  test(`shared WS rule: ${rule.name}`, async () => {
+    let roundReports = 0
+    const { client } = clientFor(frame => rule.code === null
+      ? { t: 'eco_round', applied: ++roundReports === 1 }
+      : { t: 'error', reason: rule.code })
+    const result = rule.setup().run(client)
+    if (rule.code === null) {
+      assert.deepEqual(await result, { applied: false })
+      assert.equal(roundReports, 2)
+    } else {
+      const error = await expectRefusal(result, rule.code)
+      assert.equal(error.status, ECONOMY_ERRORS[rule.code as keyof typeof ECONOMY_ERRORS])
+    }
+    client.close()
+  })
+}
+
+test('WS errors preserve listed and unknown reasons and normalize protocol refusals', async () => {
+  const mappings = [
+    ...Object.keys(ECONOMY_ERRORS).map(code => [code, code]),
+    ['tx_conflict', 'invalid'], ['bad_message', 'invalid'], ['bad_argument', 'invalid'],
+    ['auth_required', 'unauthorized'], ['auth_failed', 'unauthorized'],
+    ['economy_unavailable', 'economy_unavailable'], ['new_reason', 'new_reason'],
+  ]
+  for (const [reason, code] of mappings) {
+    const { client } = clientFor(() => ({ t: 'error', reason }))
+    const error = await expectRefusal(client.catalog(), code)
+    assert.equal(error.status, ECONOMY_ERRORS[code as keyof typeof ECONOMY_ERRORS] ?? 500)
+    client.close()
+  }
+})
+
+const flush = () => new Promise<void>(resolve => setImmediate(resolve))
+
+test('WS requests wait for authentication and support guest credentials', async () => {
+  const fake = scriptedWs(answer, false, false)
+  const guest = { provider: 'guest' as const, token: 'guest-token-123456', game: 'test-game' }
+  const client = createEconomyClient('wss://economy.test/ws', guest, fake.factory)
+  const result = client.catalog()
+  assert.equal(fake.frames.length, 0)
+  fake.open()
+  await flush()
+  assert.deepEqual(fake.frames, [{ t: 'auth', ...guest }])
+  fake.receive({ t: 'authed', player_id: 'guest-player' })
+  await result
+  assert.equal(fake.frames[1].t, 'eco_shop')
+  client.close()
+})
+
+test('WS auth errors reject every waiting call', async () => {
+  const fake = scriptedWs(answer, true, false)
+  const client = createEconomyClient('wss://economy.test/ws', auth, fake.factory)
+  const checks = [expectRefusal(client.catalog(), 'unauthorized'), expectRefusal(client.me(), 'unauthorized')]
+  await flush()
+  fake.receive({ t: 'error', reason: 'auth_failed' })
+  await Promise.all(checks)
+  assert.equal(fake.frames.length, 1)
+})
+
+test('WS matches concurrent replies by op and ignores pushes and unrelated replies', async () => {
+  const { client, receive, frames } = clientFor(() => undefined)
+  let settled = 0
+  const first = client.inbox().then(value => { settled++; return value })
+  const second = client.inbox().then(value => { settled++; return value })
+  await flush()
+  receive({ t: 'eco_inbox', entries: [entry], unread: 1 })
+  receive({ t: 'error', op: 'unrelated', reason: 'sold_out' })
+  receive({ t: 'eco_state', cards: {}, coins: 0 })
+  await flush()
+  assert.equal(settled, 0)
+  receive({ t: 'eco_inbox', op: frames[2].op, entries: [], unread: 0 })
+  assert.deepEqual(await second, [])
+  assert.equal(settled, 1)
+  receive({ t: 'eco_inbox', op: frames[1].op, entries: [entry], unread: 1 })
+  assert.deepEqual(await first, [entry])
+  client.close()
+})
+
+for (const phase of ['connecting', 'authenticating', 'pending', 'explicit'] as const) {
+  test(`WS close rejects calls with network while ${phase}`, async () => {
+    const fake = scriptedWs(() => undefined, phase !== 'connecting', phase !== 'authenticating')
+    const client = createEconomyClient('wss://economy.test/ws', auth, fake.factory)
+    const checks = [expectRefusal(client.catalog(), 'network'), expectRefusal(client.inbox(), 'network')]
+    await flush()
+    if (phase === 'explicit') client.close()
+    else fake.socket.close()
+    for (const error of await Promise.all(checks)) assert.equal(error.status, 0)
+    await expectRefusal(client.catalog(), 'network')
+    assert.equal(fake.urls.length, 1, 'a closed client never silently replays a mutation')
+    client.close()
+  })
+}
+
+test('WS close before first request stays lazy', async () => {
+  const { client, urls } = clientFor()
+  client.close()
+  await expectRefusal(client.catalog(), 'network')
+  assert.deepEqual(urls, [])
+})
+
+test('WS factory and send failures reject as network errors', async () => {
+  const broken = createEconomyClient('wss://economy.test/ws', auth, () => { throw new Error('cannot connect') })
+  await expectRefusal(broken.catalog(), 'network')
+  for (const duringAuth of [true, false]) {
+    const fake = scriptedWs()
+    const client = createEconomyClient('wss://economy.test/ws', auth, fake.factory)
+    if (!duringAuth) await client.catalog()
+    fake.socket.send = () => { throw new Error('cannot send') }
+    await expectRefusal(client.catalog(), 'network')
+  }
+})
+
+test('WS state defaults absent tickets to zero and maps uncapped editions', async () => {
+  const { client } = clientFor(frame => {
+    if (frame.t === 'eco_get') return { t: 'eco_state', coins: 3, cards: {} }
+    if (frame.t === 'eco_shop') return {
+      t: 'eco_shop', drop: 'uncapped', items: [{ ...shopItems[0], edition_cap: null, remaining: null }],
+    }
+    return answer(frame)
+  })
+  assert.equal((await client.me()).tickets, 0)
+  const { items } = await client.catalog()
+  assert.equal(items[0].editionCap, Infinity)
+  assert.equal(items[0].remaining, Infinity)
+  client.close()
+})

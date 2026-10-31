@@ -3,10 +3,15 @@ import type { FeatureSpec, ResolvedCourse } from '../course.ts'
 import type { Vec3 } from '../vec.ts'
 import { refuse } from '../refusal.ts'
 import { annulusFeature } from './annulus.ts'
+import { bankFeature } from './bank.ts'
 import { boostLaneFeature } from './boostLane.ts'
+import { captureZoneFeature } from './capture.ts'
 import { CARRY_KIND, carryItemFeature } from './carry.ts'
+import { collectibleFeature } from './collectibles.ts'
+import { crownFeature } from './crown.ts'
 import { doorBankFeature } from './doorBank.ts'
 import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureFactory } from './feature.ts'
+import { ballFeature, goalFeature } from './football.ts'
 import { hexFieldFeature } from './hexField.ts'
 import { catchVolumeFeature, launchPadFeature } from './launch.ts'
 import { memoryTilesFeature } from './memoryTiles.ts'
@@ -14,6 +19,7 @@ import { risingKillFeature } from './risingKill.ts'
 import { rollingLogFeature } from './rollingLog.ts'
 import { swimVolumeFeature } from './swim.ts'
 import { sweepFeature } from './sweeps.ts'
+import { tailSetFeature } from './tails.ts'
 import { tileFieldFeature } from './tiles.ts'
 
 const MAX_FEATURES = 32
@@ -116,7 +122,7 @@ function markerRadius(spec: FeatureSpec, path: string): number {
   return value
 }
 
-/** Registration file: M3 holds the test kind, M4 kinds are registered, and M5 kinds are registered; M6 appends theirs here. */
+/** Registration file: M3 holds the test kind, M4 adds boostLane..carryItem, M5 adds tileField..risingKill, and M6 adds ball..crown. */
 export const FEATURE_KINDS: Readonly<Record<string, FeatureFactory>> = {
   marker: markerFactory,
   boostLane: boostLaneFeature,
@@ -132,6 +138,13 @@ export const FEATURE_KINDS: Readonly<Record<string, FeatureFactory>> = {
   annulus: annulusFeature,
   sweep: sweepFeature,
   risingKill: risingKillFeature,
+  ball: ballFeature,
+  goal: goalFeature,
+  collectible: collectibleFeature,
+  bank: bankFeature,
+  captureZone: captureZoneFeature,
+  tailSet: tailSetFeature,
+  crown: crownFeature,
 }
 
 export function createFeatures(course: ResolvedCourse, path: string): CourseFeature[] {

@@ -145,10 +145,11 @@ test('a domain feature can set carry through its seats without refusal', async t
   assert.equal(domain.state(0).carryId, 7)
 })
 
-test('FEATURE_KINDS keeps marker first and registers the M4 and M5 kinds', () => {
+test('FEATURE_KINDS keeps marker first and registers the M4, M5 and M6 kinds', () => {
   assert.deepEqual(Object.keys(FEATURE_KINDS), [
     'marker', 'boostLane', 'launchPad', 'catchVolume', 'rollingLog', 'doorBank', 'swimVolume', 'carryItem',
     'tileField', 'hexField', 'memoryTiles', 'annulus', 'sweep', 'risingKill',
+    'ball', 'goal', 'collectible', 'bank', 'captureZone', 'tailSet', 'crown',
   ])
 })
 

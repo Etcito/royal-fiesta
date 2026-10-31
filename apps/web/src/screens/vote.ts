@@ -35,7 +35,7 @@ const KIND_LABEL: Readonly<Record<RoundKind, string>> = Object.freeze({
   final: 'Final',
 })
 
-const HINT = '\u2190/\u2192 choose \u00b7 Enter vote'
+const HINT = 'Left/Right choose \u00b7 Enter vote'
 
 export function kindLabel(kind: RoundKind): string {
   return KIND_LABEL[kind] ?? kind
@@ -81,8 +81,8 @@ export function voteProps(model: VoteModel): Record<string, WidgetProps> {
     props[card] = { visible: true }
     props[name] = { text: candidate.name, visible: true }
     props[kind] = { text: kindLabel(candidate.kind), visible: true }
-    if (model.chosen === index) props[mark] = { text: '\u2714 Your vote', visible: true }
-    else if (model.focus === index) props[mark] = { text: '\u25bc', visible: true }
+    if (model.chosen === index) props[mark] = { text: 'Your vote', visible: true }
+    else if (model.focus === index) props[mark] = { text: 'v', visible: true }
     else props[mark] = { visible: false }
   }
   props['vote-time-bar'] = { value: clamp01(model.msLeft / VOTE_MS) }

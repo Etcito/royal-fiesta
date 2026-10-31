@@ -70,10 +70,10 @@ const LABELS: Readonly<Record<Action, string>> = Object.freeze({
   spectate: 'Spectate',
   newLobby: 'New lobby',
   shop: 'Shop',
-  up: '\u2191',
-  down: '\u2193',
-  left: '\u2190',
-  right: '\u2192',
+  up: 'Up',
+  down: 'Down',
+  left: 'Left',
+  right: 'Right',
   confirm: 'Continue',
 })
 

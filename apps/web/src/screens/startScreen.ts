@@ -39,13 +39,13 @@ export interface StartScreenView {
   unmount(): void
 }
 
-const HINT = '↑/↓ choose · ←/→ change · Enter select'
+const HINT = 'Up/Down choose · Left/Right change · Enter select'
 const UNIT: Vec3T = [1, 1, 1]
 const ORIGIN: Vec3T = [0, 0, 0]
 const YAW_PER_MS = 0.0002
 
 function focused(label: string, focus: boolean): string {
-  return focus ? `▶ ${label} ◀` : label
+  return focus ? `> ${label} <` : label
 }
 
 function itemName(id: string | undefined): string {

@@ -73,7 +73,7 @@ function present(host: UaaHost, model: ElimShowInput): void {
   }
   host.present(menu)
   host.setHud({
-    'elim-counter': { text: `${model.counter.from} \u2192 ${model.counter.to}`, visible: true },
+    'elim-counter': { text: `${model.counter.from} to ${model.counter.to}`, visible: true },
     'elim-now': { text: { count: String(model.counter.now) }, visible: true },
   })
 }

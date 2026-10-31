@@ -4730,7 +4730,7 @@
         {
           "id": "elim-counter",
           "type": "label",
-          "text": "60 \u2192 40",
+          "text": "60 to 40",
           "font": { "family": "Fredoka", "weight": 700 },
           "size": 72,
           "color": "#ffd23f",

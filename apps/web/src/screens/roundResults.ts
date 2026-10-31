@@ -35,7 +35,7 @@ export interface RoundResultsScreen {
 const TOP = 7
 
 function rowLine(row: ResultRow): string {
-  const mark = row.qualified ? '\u2714' : '\u2716'
+  const mark = row.qualified ? 'In' : 'Out'
   return `${row.rank}. ${row.name}  +${row.points}  (${row.total})  ${mark}`
 }
 

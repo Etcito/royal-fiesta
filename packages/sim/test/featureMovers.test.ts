@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { Rng, SnapReader, SnapWriter } from '@gamesaloon/rollback'
+import { Rng, SnapReader, SnapWriter, fnv1a32 } from '@gamesaloon/rollback'
 import type { RapierModule, RapierWorldSim } from '@gamesaloon/rollback-rapier'
 import { initRapier, RapierWorldSim as WorldSim } from '@gamesaloon/rollback-rapier'
 import { CHAR, CharMode } from '../src/character/constants.ts'
@@ -13,7 +13,9 @@ import { v3 } from '../src/vec.ts'
 import type { Vec3 } from '../src/vec.ts'
 import { GRAVITY_Y } from '../src/world.ts'
 import { boostLaneFeature } from '../src/features/boostLane.ts'
+import { doorBankFeature } from '../src/features/doorBank.ts'
 import { catchVolumeFeature, launchPadFeature } from '../src/features/launch.ts'
+import { rollingLogFeature } from '../src/features/rollingLog.ts'
 import { swimVolumeFeature } from '../src/features/swim.ts'
 import type { CourseFeature, FeatureCtx, FeatureFactory, FeatureSeats } from '../src/features/feature.ts'
 import type { FiestaEventKind } from '../src/zones/ledger.ts'
@@ -117,7 +119,7 @@ class TestCtx implements FeatureCtx {
   readonly events: { kind: FiestaEventKind; seat: number; a: number; b: number }[] = []
 
   constructor(R2: RapierModule, physics: RapierWorldSim, seats: StubSeats, course: ResolvedCourse,
-    tick = 0, trailingTeam = -1) {
+    tick = 0, trailingTeam = -1, rng?: Rng) {
     this.R = R2
     this.physics = physics
     this.tick = tick
@@ -126,7 +128,7 @@ class TestCtx implements FeatureCtx {
     this.trailingTeam = trailingTeam
     this.course = course
     this.seats = seats
-    this.rng = new Rng(42).fork(9)
+    this.rng = rng ?? new Rng(42).fork(9)
   }
 
   emit(kind: FiestaEventKind, seat: number, a: number, b: number): void {
@@ -137,8 +139,12 @@ class TestCtx implements FeatureCtx {
   }
 }
 
-function context(seats: StubSeats, course: ResolvedCourse, tick = 0, trailingTeam = -1): TestCtx {
-  return new TestCtx(R, PHYSICS, seats, course, tick, trailingTeam)
+function context(seats: StubSeats, course: ResolvedCourse, tick = 0, trailingTeam = -1, rng?: Rng): TestCtx {
+  return new TestCtx(R, PHYSICS, seats, course, tick, trailingTeam, rng)
+}
+
+function featureRng(seed: number, id: string): Rng {
+  return new Rng(seed).fork(fnv1a32(new TextEncoder().encode(id)))
 }
 
 function cp(respawn: Vec3, half: Vec3 = v3(1, 1, 1)): Checkpoint {
@@ -172,6 +178,38 @@ function courseOf(features: FeatureSpec[], checkpoints: Checkpoint[] = [], stage
 
 function spec(kind: string, params: Record<string, unknown>): FeatureSpec {
   return { id: kind, kind, params }
+}
+
+interface DoorState { solid: boolean; open: boolean; revealed: boolean; openTick: number }
+
+function doorStates(feature: CourseFeature): DoorState[] {
+  const reader = new SnapReader(snapshotBytes(feature))
+  const out: DoorState[] = []
+  while (reader.remaining > 0) {
+    out.push({
+      solid: reader.u8() !== 0,
+      open: reader.u8() !== 0,
+      revealed: reader.u8() !== 0,
+      openTick: reader.i32(),
+    })
+  }
+  return out
+}
+
+function doorAt(x: number, z = 10): Record<string, unknown> {
+  return { t: [x, 1, z], yawDeg: 0, size: [2, 2, 0.6] }
+}
+
+function bodiesSince(ctx: TestCtx, base: number): number[] {
+  return ctx.physics.ids().slice(base)
+}
+
+function colliderFlags(ctx: TestCtx, base: number): boolean[] {
+  return bodiesSince(ctx, base).map(id => ctx.physics.body(id).collider(0).isEnabled())
+}
+
+function near(actual: number, expected: number, message: string): void {
+  assert.ok(Math.abs(actual - expected) < 1e-6, `${message}: ${actual} vs ${expected}`)
 }
 
 function snapshotBytes(feature: { snapshot(w: SnapWriter): void }): Uint8Array {
@@ -448,6 +486,210 @@ test('swimVolume: setSwim while inside and false on exit, and botTarget only whi
   assert.equal(feature.botTarget?.(0, seats.positions[0], out), false)
 })
 
+function logSpec(overrides: Record<string, unknown> = {}): FeatureSpec {
+  return spec('rollingLog', {
+    from: [0, 1, 0], to: [0, 1, 8], radius: 2, length: 2, speed: 2, periodS: 16, ...overrides,
+  })
+}
+
+function advanceTo(feature: CourseFeature, ctx: TestCtx, tick: number): void {
+  ctx.tick = tick - 1
+  feature.preStep(ctx)
+  ctx.physics.step()
+}
+
+function bodyAngle(body: { rotation(): { w: number } }): number {
+  return 2 * Math.acos(Math.max(-1, Math.min(1, body.rotation().w)))
+}
+
+test('rollingLog: the body pose at 0, a quarter and a half cycle matches from/to and the pauses', () => {
+  const s = logSpec()
+  const seats = new StubSeats([v3(50, 0, 50)])
+  const ctx = context(seats, courseOf([s]), 0, -1, featureRng(1, s.id))
+  const base = ctx.physics.bodyCount
+  const feature = rollingLogFeature(s, PATH)
+  feature.init(ctx)
+  const ids = bodiesSince(ctx, base)
+  assert.equal(ids.length, 1)
+  const body = ctx.physics.body(ids[0])
+
+  assert.deepEqual({ ...body.translation() }, v3(0, 1, 0))
+  near(bodyAngle(body), 0, 'angle at tick 0')
+
+  advanceTo(feature, ctx, 120)
+  assert.deepEqual({ ...body.translation() }, v3(0, 1, 4))
+  near(bodyAngle(body), 4 / 2, 'angle at half the travel')
+
+  advanceTo(feature, ctx, 240)
+  assert.deepEqual({ ...body.translation() }, v3(0, 1, 8))
+  near(bodyAngle(body), 8 / 2, 'angle at the quarter cycle')
+
+  advanceTo(feature, ctx, 360)
+  assert.deepEqual({ ...body.translation() }, v3(0, 1, 8), 'the log pauses at to')
+
+  advanceTo(feature, ctx, 480)
+  assert.deepEqual({ ...body.translation() }, v3(0, 1, 8), 'the pause runs to the half cycle')
+})
+
+test('rollingLog: a seat in the path is knocked up, a protected seat is not', () => {
+  const s = logSpec({ from: [0, 0, 0], to: [0, 0, 8], radius: 1, speed: 5, periodS: 8 })
+  const seats = new StubSeats([v3(0, 0, 1.5), v3(0, 0, 1.5)])
+  seats.protectedSeats[1] = true
+  const ctx = context(seats, courseOf([s]))
+  const feature = rollingLogFeature(s, PATH)
+  feature.init(ctx)
+  step(feature, ctx, 0)
+
+  assert.deepEqual(seats.calls.knock.map(call => call.seat), [0])
+  const v = seats.calls.knock[0].v
+  assert.equal(v.y, CHAR.knockUp)
+  near(v.x, 0, 'no sideways knock')
+  near(v.z, 5 * CHAR.knockGain + CHAR.knockNormal, 'log velocity along the normal')
+  assert.equal(ctx.sounds.length, 1)
+  assert.equal(ctx.sounds[0].id, 'mech.log')
+})
+
+test('rollingLog: a period too short for the speed is refused', () => {
+  const s = logSpec({ to: [0, 1, 10], speed: 5, periodS: 3 })
+  assert.throws(() => rollingLogFeature(s, PATH), (error: unknown) => {
+    const refusal = error as { name: string; area: string; path: string; message: string }
+    assert.equal(refusal.name, 'RefusalError')
+    assert.equal(refusal.area, 'feature')
+    assert.equal(refusal.path, `${PATH}/periodS`)
+    assert.match(refusal.message, /raise periodS or speed/)
+    return true
+  })
+})
+
+function bankSpec(id: string, real: number[] = [2], breakSpeed = 6): FeatureSpec {
+  const doors = [doorAt(0), doorAt(4), doorAt(8), doorAt(12)]
+  return {
+    id,
+    kind: 'doorBank',
+    params: { rows: real.map(count => ({ doors, real: count })), breakSpeed },
+  }
+}
+
+test('doorBank: the seed draws exactly real solid doors per row and ids fork the stream', () => {
+  const rows = [
+    { doors: [doorAt(0), doorAt(4), doorAt(8), doorAt(12), doorAt(16), doorAt(20)], real: 2 },
+    { doors: [doorAt(0), doorAt(4), doorAt(8), doorAt(12), doorAt(16)], real: 1 },
+  ]
+  const draw = (id: string): DoorState[] => {
+    const s: FeatureSpec = { id, kind: 'doorBank', params: { rows, breakSpeed: 6 } }
+    const seats = new StubSeats([v3(0, 1, 0)])
+    const ctx = context(seats, courseOf([s]), 0, -1, featureRng(1, id))
+    const feature = doorBankFeature(s, PATH)
+    feature.init(ctx)
+    return doorStates(feature)
+  }
+  const a = draw('door-a')
+  const b = draw('door-b')
+  const counts = [a.slice(0, 6), a.slice(6)].map(group => group.filter(door => door.solid).length)
+  assert.deepEqual(counts, [2, 1])
+  assert.notDeepEqual(a.map(door => door.solid), b.map(door => door.solid))
+})
+
+test('doorBank: a diving seat opens a breakable panel and disables its collider', () => {
+  const s = bankSpec('doors')
+  const seats = new StubSeats([v3(0, 1, 10)])
+  const ctx = context(seats, courseOf([s]), 0, -1, featureRng(1, s.id))
+  const base = ctx.physics.bodyCount
+  const feature = doorBankFeature(s, PATH)
+  feature.init(ctx)
+  const states = doorStates(feature)
+  const panel = states.findIndex(door => !door.solid)
+  assert.ok(panel >= 0, 'a breakable panel exists')
+
+  seats.positions[0] = v3(panel * 4, 1, 10)
+  seats.modes[0] = CharMode.dive
+  step(feature, ctx, 0)
+
+  assert.equal(doorStates(feature)[panel].open, true)
+  assert.equal(ctx.physics.body(bodiesSince(ctx, base)[panel]).collider(0).isEnabled(), false)
+  assert.deepEqual(ctx.sounds.map(sound => sound.id), ['mech.door-break'])
+})
+
+test('doorBank: a walk at 3 m/s does not open a panel at breakSpeed 6', () => {
+  const s = bankSpec('doors')
+  const seats = new StubSeats([v3(0, 1, 10)])
+  const ctx = context(seats, courseOf([s]), 0, -1, featureRng(1, s.id))
+  const base = ctx.physics.bodyCount
+  const feature = doorBankFeature(s, PATH)
+  feature.init(ctx)
+  const panel = doorStates(feature).findIndex(door => !door.solid)
+  assert.ok(panel >= 0, 'a breakable panel exists')
+
+  seats.positions[0] = v3(panel * 4, 1, 10)
+  seats.velocities[0] = v3(0, 0, 3)
+  step(feature, ctx, 0)
+
+  assert.equal(doorStates(feature)[panel].open, false)
+  assert.equal(ctx.physics.body(bodiesSince(ctx, base)[panel]).collider(0).isEnabled(), true)
+  assert.equal(ctx.sounds.length, 0)
+})
+
+test('doorBank: a solid door never opens and is revealed once', () => {
+  const s = bankSpec('doors')
+  const seats = new StubSeats([v3(0, 1, 10)])
+  const ctx = context(seats, courseOf([s]), 0, -1, featureRng(1, s.id))
+  const base = ctx.physics.bodyCount
+  const feature = doorBankFeature(s, PATH)
+  feature.init(ctx)
+  const solid = doorStates(feature).findIndex(door => door.solid)
+  assert.ok(solid >= 0, 'a solid door exists')
+
+  seats.positions[0] = v3(solid * 4, 1, 10)
+  seats.modes[0] = CharMode.dive
+  step(feature, ctx, 0)
+  const after = doorStates(feature)[solid]
+  assert.equal(after.open, false)
+  assert.equal(after.revealed, true)
+  assert.equal(ctx.physics.body(bodiesSince(ctx, base)[solid]).collider(0).isEnabled(), true)
+  assert.deepEqual(ctx.sounds.map(sound => sound.id), ['mech.door'])
+
+  step(feature, ctx, 1)
+  assert.equal(ctx.sounds.length, 1, 'revealed only once')
+})
+
+test('doorBank: botTarget skips revealed doors and prefers an open door', () => {
+  const s = bankSpec('doorBank')
+  const seats = new StubSeats([v3(0, 1, 0)])
+  const ctx = context(seats, courseOf([s]), 0, -1, featureRng(1, s.id))
+  const feature = doorBankFeature(s, PATH)
+  feature.init(ctx)
+  const states = doorStates(feature)
+  assert.equal(states[0].solid, true)
+  assert.equal(states[3].solid, true)
+  const out = v3(0, 0, 0)
+
+  seats.positions[0] = v3(0, 1, 10)
+  seats.modes[0] = CharMode.dive
+  step(feature, ctx, 0)
+  assert.equal(feature.botTarget?.(0, v3(0, 1, 0), out), true)
+  assert.deepEqual(out, v3(4, 1, 10), 'skips the revealed nearest door')
+
+  seats.positions[0] = v3(8, 1, 10)
+  step(feature, ctx, 1)
+  assert.equal(feature.botTarget?.(0, v3(0, 1, 0), out), true)
+  assert.deepEqual(out, v3(8, 1, 10), 'prefers the open door')
+
+  assert.equal(feature.botTarget?.(0, v3(0, 1, 20), out), false)
+})
+
+test('doorBank: real >= doors is refused', () => {
+  const s = bankSpec('doorBank', [2])
+  const rows = s.params.rows as { doors: unknown[]; real: number }[]
+  rows[0].real = rows[0].doors.length
+  assert.throws(() => doorBankFeature(s, PATH), (error: unknown) => {
+    const refusal = error as { name: string; area: string; path: string }
+    assert.equal(refusal.name, 'RefusalError')
+    assert.equal(refusal.area, 'feature')
+    assert.equal(refusal.path, `${PATH}/rows/0/real`)
+    return true
+  })
+})
+
 interface Plan {
   factory: FeatureFactory
   spec: FeatureSpec
@@ -529,28 +771,68 @@ test('snapshot -> restore is identical per feature (QB1)', () => {
     },
   })
 
+  const logSpecRun = logSpec({ from: [0, 0, 0], to: [0, 0, 8], radius: 1, speed: 5, periodS: 8 })
+  plans.push({
+    name: 'rollingLog',
+    plan: {
+      factory: rollingLogFeature,
+      spec: logSpecRun,
+      course: courseOf([logSpecRun]),
+      makeSeats: () => new StubSeats([v3(0, 0, 8.5)]),
+      evolve: (_tick, seats) => {
+        seats.positions[0] = v3(0, 0, 8.5)
+        seats.velocities[0] = v3(0, 0, 0)
+      },
+    },
+  })
+
+  const bankSpecRun = bankSpec('doorBank')
+  const bankWindows: [number, number, Vec3][] = [
+    [10, 20, v3(0, 1, 10)], [25, 35, v3(4, 1, 10)], [70, 80, v3(8, 1, 10)], [95, 105, v3(12, 1, 10)],
+  ]
+  plans.push({
+    name: 'doorBank',
+    plan: {
+      factory: doorBankFeature,
+      spec: bankSpecRun,
+      course: courseOf([bankSpecRun]),
+      makeSeats: () => new StubSeats([v3(0, 1, 0)]),
+      evolve: (tick, seats) => {
+        const window = bankWindows.find(([from, to]) => tick >= from && tick < to)
+        seats.modes[0] = window ? CharMode.dive : CharMode.ground
+        seats.positions[0] = window ? window[2] : v3(0, 1, 0)
+        seats.velocities[0] = v3(0, 0, 0)
+      },
+    },
+  })
+
   for (const entry of plans) {
     const plan = entry.plan
     const seatsA = plan.makeSeats()
     const ctxA = context(seatsA, plan.course)
+    const baseA = ctxA.physics.bodyCount
     const featureA = plan.factory(plan.spec, PATH)
     featureA.init(ctxA)
     let snap: Uint8Array | null = null
     let markA: CallLog | null = null
     let stateA: SeatState | null = null
+    let soundMarkA = 0
     for (let tick = 0; tick < 120; tick++) {
       if (tick === 60) {
         snap = snapshotBytes(featureA)
         markA = callMark(seatsA)
         stateA = seatState(seatsA)
+        soundMarkA = ctxA.sounds.length
       }
       runTick(featureA, ctxA, plan, tick)
     }
+    const flagsA = colliderFlags(ctxA, baseA)
 
     assert.ok(snap !== null && markA !== null && stateA !== null, `${entry.name}: snapshot at tick 60`)
     const seatsB = plan.makeSeats()
     applySeatState(seatsB, stateA)
     const ctxB = context(seatsB, plan.course, 60)
+    const baseB = ctxB.physics.bodyCount
     const featureB = plan.factory(plan.spec, PATH)
     featureB.init(ctxB)
     const reader = new SnapReader(snap)
@@ -562,8 +844,13 @@ test('snapshot -> restore is identical per feature (QB1)', () => {
     const afterA = callsSince(seatsA, markA)
     const afterB = callsSince(seatsB, markB)
     assert.deepEqual(afterA, afterB, `${entry.name}: recorded calls`)
-    assert.ok(afterA.setVelocity.length + afterA.teleport.length + afterA.setSwim.length > 0,
-      `${entry.name}: continuation has recorded calls`)
+    const soundsA = ctxA.sounds.slice(soundMarkA)
+    const soundsB = ctxB.sounds.slice()
+    assert.deepEqual(soundsA, soundsB, `${entry.name}: recorded sounds`)
+    assert.deepEqual(flagsA, colliderFlags(ctxB, baseB), `${entry.name}: collider enabled flags`)
+    const recorded = afterA.setVelocity.length + afterA.teleport.length + afterA.setSwim.length +
+      afterA.knock.length + soundsA.length
+    assert.ok(recorded > 0, `${entry.name}: continuation has recorded calls`)
     assert.deepEqual(snapshotBytes(featureA), snapshotBytes(featureB), `${entry.name}: final snapshot bytes`)
   }
 })

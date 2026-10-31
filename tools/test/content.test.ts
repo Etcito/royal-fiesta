@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { LOCAL_COSMETICS } from '@royal-fiesta/game/flow/startScreen'
 import { buildContentIndex, contentDir, contentPath, packContent, profileAssetIds, validateContent } from '../content.ts'
 
 test('index lists sorted stems and worlds, preserves document hashes and packs every byte', () => {
@@ -86,6 +87,6 @@ test('strict validation refuses a bad haa header and accepts the shipped content
 test('the sprint load set is what the page meshes: playlist, hub, podium and character, not every asset', async () => {
   const ids = await profileAssetIds('sprint')
   assert.ok(ids.includes('penguin.body') && ids.includes('candy.checkpoint-gate'))
-  assert.ok(!ids.includes('costume.fish-scarf'))
+  for (const { id } of LOCAL_COSMETICS) assert.ok(ids.includes(id), `${id} is in the wardrobe load set`)
   assert.deepEqual(ids, [...ids].sort())
 })

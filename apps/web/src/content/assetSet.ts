@@ -1,14 +1,15 @@
 // The assets an SDF load meshes for a profile. Pure, so the server baker meshes exactly what a page loads.
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
+import { LOCAL_COSMETICS } from '@royal-fiesta/game/flow/startScreen'
 import type { ProfileName } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
 
 export const PODIUM_ID = 'podium'
 export const CHARACTER_ID = 'penguin.body'
 
-// The playlist for the profile, the hub and the podium, plus the character, sorted.
+// The playlist for the profile, the hub and the podium, plus the character and wardrobe, sorted.
 export function assetSet(courses: readonly CourseV1[], byId: ReadonlyMap<string, CourseV1>, profile: ProfileName): string[] {
-  const ids = new Set<string>([CHARACTER_ID])
+  const ids = new Set<string>([CHARACTER_ID, ...LOCAL_COSMETICS.map(item => item.id)])
   for (const c of courses) {
     if ((c.kind === 'race' || c.kind === 'survival') && c.sim !== null && c.sim.profiles.includes(profile)) {
       for (const id of c.assetIds) ids.add(id)

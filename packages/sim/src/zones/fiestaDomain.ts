@@ -110,7 +110,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       this.#states.push({ seat, status: PlayerStatus.alive, pos: { x: 0, y: 0, z: 0 },
         vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 0 }, mode: 0,
         grounded: false, groundObstacle: -1, knockbacks: 0, teleportTick: 0 })
-      this.#eventPool.push({ kind: 'fall', seat, tick: 0 })
+      this.#eventPool.push({ kind: 'fall', seat, tick: 0, a: 0, b: 0 })
     }
     for (let i = 0; i < config.course.obstacles.length; i++) {
       const o = config.course.obstacles[i]
@@ -238,6 +238,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     const event = this.#eventPool[p]
     event.kind = kind
     event.tick = this.#stepTick
+    event.a = 0
+    event.b = 0
     this.#events.push(event)
   }
 

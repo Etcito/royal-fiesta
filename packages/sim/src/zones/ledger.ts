@@ -7,13 +7,18 @@ import { PlayerStatus } from '../match/roundSystem.ts'
 import type { PlayerStatusValue, RoundReason } from '../match/roundSystem.ts'
 import { refuse } from '../refusal.ts'
 
+export type LedgerReason = 'target' | 'timeCap' | 'lastStanding' | 'allFell' | 'overtime' | 'teamWin' | 'score' | 'crown' | 'playoff'
+export type FiestaEventKind = 'finish' | 'fall' | 'eliminate' | 'gate' | 'progress' | 'score' | 'teamScore' | 'possess' | 'match' | 'crown'
+
 export interface FiestaEvent {
-  kind: 'finish' | 'fall' | 'eliminate'
+  kind: FiestaEventKind
   seat: number
   tick: number
+  a: number
+  b: number
 }
 
-const eventKinds = ['finish', 'fall', 'eliminate'] as const
+const eventKinds = ['finish', 'fall', 'eliminate', 'gate', 'progress', 'score', 'teamScore', 'possess', 'match', 'crown'] as const
 const reasons = ['target', 'timeCap', 'lastStanding', 'allFell'] as const
 
 // The implicit event link preserves emission order; it is not sorted by seat or tick.
@@ -24,15 +29,19 @@ export function encodeFiestaEvents(w: SnapWriter, events: readonly FiestaEvent[]
     w.u8(eventKinds.indexOf(event.kind))
     w.u16(event.seat)
     w.i32(event.tick)
+    w.i32(event.a)
+    w.i32(event.b)
   }
 }
 
 /** Reads one entry after the u16 count, into caller-owned storage. */
 export function decodeFiestaEvent(r: SnapReader, out: FiestaEvent): boolean {
-  if (r.remaining < 7) return false
+  if (r.remaining < 15) return false
   const kind = r.u8()
   out.seat = r.u16()
   out.tick = r.i32()
+  out.a = r.i32()
+  out.b = r.i32()
   if (kind >= eventKinds.length) return false
   out.kind = eventKinds[kind]
   return true
@@ -79,7 +88,7 @@ export class MatchLedger implements DomainSim<PlayerInput> {
   readonly #bots: Uint8Array
   readonly #qualified: number[] = []
   readonly #eliminated: number[] = []
-  readonly #event: FiestaEvent = { kind: 'fall', seat: 0, tick: 0 }
+  readonly #event: FiestaEvent = { kind: 'fall', seat: 0, tick: 0, a: 0, b: 0 }
   readonly #visit = (event: FiestaEvent): void => { this.#apply(event) }
   readonly #writer = new SnapWriter()
   readonly #record: { endTick: number; qualified: number[]; eliminated: number[]; reason: RoundReason }
@@ -143,7 +152,7 @@ export class MatchLedger implements DomainSim<PlayerInput> {
       this.#status[seat] = PlayerStatus.eliminated
       this.#eliminated.push(seat)
       this.#alive--
-    } else {
+    } else if (event.kind === 'finish') {
       this.#status[seat] = PlayerStatus.qualified
       this.#qualified.push(seat)
       this.#alive--

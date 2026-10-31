@@ -302,11 +302,11 @@ test('crossing the finish emits exactly one finish event through the ledger code
     const w = new SnapWriter()
     domain.events(w)
     const r = new SnapReader(w.bytes())
-    assert.equal(decodeFiestaEvents(r, { kind: 'fall', seat: -1, tick: -1 },
+    assert.equal(decodeFiestaEvents(r, { kind: 'fall', seat: -1, tick: -1, a: 0, b: 0 },
       event => events.push({ ...event })), true)
     assert.equal(r.remaining, 0)
   }
   assert.ok(crossingTick >= 0, 'the seat crossed the finish')
-  assert.deepEqual(events, [{ kind: 'finish', seat: 0, tick: crossingTick }])
+  assert.deepEqual(events, [{ kind: 'finish', seat: 0, tick: crossingTick, a: 0, b: 0 }])
   assert.equal(domain.status(0), PlayerStatus.qualified)
 })

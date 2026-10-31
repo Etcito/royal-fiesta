@@ -4,6 +4,7 @@ import { CourseEmitters, type EmitterCommand, type ListenerPose } from '@royal-f
 import { newMatchSample, sampleMatch, type MatchSample } from '@royal-fiesta/game/audio/events'
 import { GameAudio, type CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
+import { refuse } from '@royal-fiesta/sim/refusal'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { browserAudioPatches } from '../content/v1Data.ts'
 import { createCourseAudio } from './courseAudio.ts'
@@ -93,6 +94,12 @@ export class SoundDriver {
     this.#courseAudio = audio
     this.#course = null
     this.#emitters = null
+  }
+
+  /** Plays a non-spatial one-shot when the engine is open. */
+  cue(id: string): void {
+    if (!/^[a-z]+(\.[a-z0-9-]+)+$/.test(id)) refuse('audio', 'SoundDriver.cue', `invalid sound id '${id}'`)
+    this.#sound?.port.play(id)
   }
 
   /** Once per rendered frame: update volumes, local listeners and the current screen's sounds. */

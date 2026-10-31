@@ -18,6 +18,7 @@ import { matchCourses } from '@royal-fiesta/game/courseSet'
 import { netSetup } from '@royal-fiesta/game/net/tuning'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { createMatchSim, Phase } from '@royal-fiesta/sim/match/matchSim'
+import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { createMixGraph } from '../src/audio/mixGraph.ts'
 import { SoundDriver } from '../src/play/sound.ts'
 
@@ -204,6 +205,22 @@ const fakeSim = {
 } as unknown as MatchSim
 
 const poses: ListenerPose[] = Array.from({ length: 4 }, (_, i) => ({ x: i * 3, y: i, z: -i, fx: i % 2, fz: 1 - i % 2 }))
+
+test('cues play without a position only while audio is open and refuse malformed ids', async (t) => {
+  const f = fixture()
+  const play = t.mock.method(f.port, 'play')
+  f.driver.cue('flow.count-go')
+  assert.equal(play.mock.callCount(), 0)
+  assert.throws(() => f.driver.cue('bad_id'), RefusalError)
+  await f.driver.open()
+  f.driver.cue('flow.count-go')
+  assert.equal(play.mock.callCount(), 1)
+  assert.deepEqual(play.mock.calls[0].arguments, ['flow.count-go'])
+  assert.throws(() => f.driver.cue('flow.Bad'), RefusalError)
+  await f.driver.close()
+  f.driver.cue('ui.click')
+  assert.equal(play.mock.callCount(), 1)
+})
 
 async function fixtureMatch(): Promise<MatchSim> {
   const entries: { path: string; json: unknown }[] = []

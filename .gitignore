@@ -14,6 +14,10 @@ pkg/
 # the SDF Modeler saves <id>.thumb.webp next to each asset for its asset browser; it renders a missing one again
 *.thumb.webp
 out/
+# Proof captures stay local; only text proof records belong in git.
+proofs/**/*.png
+proofs/**/*.mp3
+proofs/**/*.wav
 .vite/
 .bricks/
 .nmc/*

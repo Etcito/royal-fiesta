@@ -1,5 +1,7 @@
 import { emptyControls, type RawControls } from '../client/inputMap.ts'
 import { RefusalError, refuse } from '@royal-fiesta/sim/refusal'
+import { BUSES, type Bus } from '../audio/catalog.ts'
+import { AUDIO_SETTINGS_KEY, DEFAULT_BUS_VOLUMES, parseBusVolumes, type BusVolumes } from '../audio/mix/volumes.ts'
 
 export const SETTINGS_KEY = 'royal-fiesta.settings'
 
@@ -10,6 +12,7 @@ export type Quality = 'low' | 'medium' | 'high'
 export interface Settings {
   keys: Record<KeyAction, string>
   volume: number
+  buses: BusVolumes
   quality: Quality
   mouseSensitivity: number
   stickSensitivity: number
@@ -24,13 +27,14 @@ export interface SettingsStore {
 export const DEFAULT_SETTINGS: Settings = {
   keys: { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', dive: 'ShiftLeft', grab: 'KeyE' },
   volume: 80,
+  buses: { ...DEFAULT_BUS_VOLUMES },
   quality: 'high',
   mouseSensitivity: 5,
   stickSensitivity: 5,
   invertY: false
 }
 
-export type SettingsRow = { kind: 'volume' } | { kind: 'quality' } | { kind: 'mouseSensitivity' | 'stickSensitivity' | 'invertY' } | { kind: 'key'; action: KeyAction } | { kind: 'reset' }
+export type SettingsRow = { kind: 'volume' } | { kind: 'bus'; bus: Bus } | { kind: 'quality' } | { kind: 'mouseSensitivity' | 'stickSensitivity' | 'invertY' } | { kind: 'key'; action: KeyAction } | { kind: 'reset' }
 
 export const SETTINGS_ROWS: readonly SettingsRow[] = [
   { kind: 'volume' },
@@ -38,12 +42,13 @@ export const SETTINGS_ROWS: readonly SettingsRow[] = [
   { kind: 'mouseSensitivity' },
   { kind: 'stickSensitivity' },
   { kind: 'invertY' },
+  ...BUSES.map(bus => ({ kind: 'bus' as const, bus })),
   ...KEY_ACTIONS.map(action => ({ kind: 'key' as const, action })),
   { kind: 'reset' }
 ]
 
 function copy(settings: Settings): Settings {
-  return { ...settings, keys: { ...settings.keys } }
+  return { ...settings, keys: { ...settings.keys }, buses: { ...settings.buses } }
 }
 
 export function parseSettings(value: unknown): Settings {
@@ -86,14 +91,17 @@ export function parseSettings(value: unknown): Settings {
   }
   if (typeof invertY !== 'boolean') refuse('settings', 'where#/invertY', 'must be a boolean; choose true or false')
   return { keys, volume: data.volume as number, quality: data.quality,
+    buses: Object.hasOwn(data, 'buses') ? parseBusVolumes(data.buses) : { ...DEFAULT_BUS_VOLUMES },
     mouseSensitivity: mouseSensitivity as number, stickSensitivity: stickSensitivity as number, invertY }
 }
 
 export function loadSettings(store: SettingsStore): { settings: Settings; error: string | null } {
   const saved = store.getItem(SETTINGS_KEY)
-  if (saved === null) return { settings: copy(DEFAULT_SETTINGS), error: null }
   try {
-    return { settings: parseSettings(JSON.parse(saved)), error: null }
+    const settings = saved === null ? copy(DEFAULT_SETTINGS) : parseSettings(JSON.parse(saved))
+    const audio = store.getItem(AUDIO_SETTINGS_KEY)
+    if (audio !== null) settings.buses = parseBusVolumes(JSON.parse(audio))
+    return { settings, error: null }
   } catch (error) {
     const message = error instanceof RefusalError
       ? error.message
@@ -104,12 +112,16 @@ export function loadSettings(store: SettingsStore): { settings: Settings; error:
 
 export function saveSettings(store: SettingsStore, settings: Settings): void {
   store.setItem(SETTINGS_KEY, JSON.stringify(settings))
+  store.setItem(AUDIO_SETTINGS_KEY, JSON.stringify(settings.buses))
 }
 
 export function adjust(settings: Settings, row: SettingsRow, dir: number): Settings {
   if (row.kind === 'reset') return copy(DEFAULT_SETTINGS)
   const next = copy(settings)
   if (row.kind === 'volume') next.volume = Math.max(0, Math.min(100, next.volume + Math.sign(dir) * 10))
+  if (row.kind === 'bus') {
+    next.buses[row.bus] = Math.round(Math.max(0, Math.min(1, next.buses[row.bus] + Math.sign(dir) * 0.1)) * 10) / 10
+  }
   if (row.kind === 'mouseSensitivity' || row.kind === 'stickSensitivity') {
     next[row.kind] = Math.max(1, Math.min(10, next[row.kind] + Math.sign(dir)))
   }
@@ -153,6 +165,10 @@ export function controlsFromKeys(held: ReadonlySet<string>, settings: Settings):
 
 export function describeRow(row: SettingsRow, settings: Settings): string {
   if (row.kind === 'volume') return `Volume ${settings.volume}%`
+  if (row.kind === 'bus') {
+    const labels: Record<Bus, string> = { music: 'Music', sfx: 'SFX', ui: 'UI', ambience: 'Ambience', crowd: 'Crowd' }
+    return `${labels[row.bus]} volume ${Math.round(settings.buses[row.bus] * 100)}%`
+  }
   if (row.kind === 'quality') return `Quality ${settings.quality}`
   if (row.kind === 'mouseSensitivity') return `Mouse sensitivity ${settings.mouseSensitivity}`
   if (row.kind === 'stickSensitivity') return `Stick sensitivity ${settings.stickSensitivity}`

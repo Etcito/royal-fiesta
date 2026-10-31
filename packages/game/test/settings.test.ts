@@ -1,21 +1,108 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
+import { BUSES } from '../src/audio/catalog.ts'
+import { AUDIO_SETTINGS_KEY, DEFAULT_BUS_VOLUMES } from '../src/audio/mix/volumes.ts'
 import {
   adjust, controlsFromKeys, DEFAULT_SETTINGS, describeRow, loadSettings, parseSettings, rebind, renderScale,
-  saveSettings, SETTINGS_KEY, SETTINGS_ROWS, type SettingsStore
+  saveSettings, SETTINGS_KEY, SETTINGS_ROWS, KEY_ACTIONS, type SettingsStore
 } from '../src/screens/settings.ts'
 
 class MemoryStore implements SettingsStore {
   value: string | null = null
-  getItem(key: string): string | null { assert.equal(key, SETTINGS_KEY); return this.value }
-  setItem(key: string, value: string): void { assert.equal(key, SETTINGS_KEY); this.value = value }
+  audio: string | null = null
+  getItem(key: string): string | null {
+    assert.ok(key === SETTINGS_KEY || key === AUDIO_SETTINGS_KEY)
+    return key === SETTINGS_KEY ? this.value : this.audio
+  }
+  setItem(key: string, value: string): void {
+    assert.ok(key === SETTINGS_KEY || key === AUDIO_SETTINGS_KEY)
+    if (key === SETTINGS_KEY) this.value = value
+    else this.audio = value
+  }
 }
 
 test('defaults round-trip through the injected store', () => {
   const store = new MemoryStore()
   saveSettings(store, DEFAULT_SETTINGS)
   assert.deepEqual(loadSettings(store), { settings: DEFAULT_SETTINGS, error: null })
+})
+
+test('bus rows follow invert Y in BUSES order and keep the key and reset rows', () => {
+  assert.deepEqual(SETTINGS_ROWS.slice(5, 10), BUSES.map(bus => ({ kind: 'bus', bus })))
+  assert.deepEqual(SETTINGS_ROWS.slice(10), [
+    ...KEY_ACTIONS.map(action => ({ kind: 'key', action })), { kind: 'reset' }
+  ])
+})
+
+test('bus adjustment steps one tenth, rounds and clamps without mutating input', () => {
+  for (const bus of BUSES) {
+    const row = { kind: 'bus', bus } as const
+    const up = adjust(DEFAULT_SETTINGS, row, 2)
+    assert.deepEqual(up.buses, { ...DEFAULT_BUS_VOLUMES, [bus]: 0.9 })
+    assert.equal(adjust(DEFAULT_SETTINGS, row, -2).buses[bus], 0.7)
+    assert.equal(adjust(DEFAULT_SETTINGS, row, 0).buses[bus], 0.8)
+    assert.equal(adjust({ ...DEFAULT_SETTINGS, buses: { ...DEFAULT_BUS_VOLUMES, [bus]: 0.96 } }, row, 1).buses[bus], 1)
+    assert.equal(adjust({ ...DEFAULT_SETTINGS, buses: { ...DEFAULT_BUS_VOLUMES, [bus]: 0.04 } }, row, -1).buses[bus], 0)
+    assert.equal(adjust(up, row, 1).buses[bus], 1)
+    assert.equal(adjust(adjust(up, row, 1), row, 1).buses[bus], 1)
+    assert.equal(adjust({ ...DEFAULT_SETTINGS, buses: { ...DEFAULT_BUS_VOLUMES, [bus]: 0 } }, row, -1).buses[bus], 0)
+    assert.deepEqual(adjust(up, { kind: 'reset' }, 1), DEFAULT_SETTINGS)
+  }
+  assert.deepEqual(DEFAULT_SETTINGS.buses, DEFAULT_BUS_VOLUMES)
+})
+
+test('describeRow labels each bus and shows its volume percentage', () => {
+  assert.deepEqual(SETTINGS_ROWS.slice(5, 10).map(row => describeRow(row, DEFAULT_SETTINGS)), [
+    'Music volume 80%', 'SFX volume 80%', 'UI volume 80%', 'Ambience volume 80%', 'Crowd volume 80%'
+  ])
+  assert.equal(describeRow({ kind: 'bus', bus: 'music' }, adjust(DEFAULT_SETTINGS, { kind: 'bus', bus: 'music' }, -1)), 'Music volume 70%')
+})
+
+test('legacy saves without buses load independent defaults', () => {
+  const store = new MemoryStore()
+  const { buses, ...legacy } = DEFAULT_SETTINGS
+  store.value = JSON.stringify(legacy)
+  const loaded = loadSettings(store)
+  assert.equal(loaded.error, null)
+  assert.deepEqual(loaded.settings.buses, DEFAULT_BUS_VOLUMES)
+  assert.notStrictEqual(loaded.settings.buses, buses)
+  assert.notStrictEqual(DEFAULT_SETTINGS.buses, DEFAULT_BUS_VOLUMES)
+  for (const settings of [
+    loadSettings(new MemoryStore()).settings,
+    adjust(DEFAULT_SETTINGS, { kind: 'reset' }, 1),
+    rebind(DEFAULT_SETTINGS, 'jump', 'KeyJ')
+  ]) {
+    assert.deepEqual(settings.buses, DEFAULT_BUS_VOLUMES)
+    assert.notStrictEqual(settings.buses, DEFAULT_SETTINGS.buses)
+  }
+})
+
+test('parseSettings parses present bus volumes with defaults and clamping', () => {
+  assert.deepEqual(parseSettings({ ...DEFAULT_SETTINGS, buses: { music: 2, sfx: -1, ui: NaN } }).buses,
+    { ...DEFAULT_BUS_VOLUMES, music: 1, sfx: 0 })
+  assert.deepEqual(parseSettings({ ...DEFAULT_SETTINGS, buses: null }).buses, DEFAULT_BUS_VOLUMES)
+})
+
+test('saveSettings writes buses under AUDIO_SETTINGS_KEY as well as the full settings', () => {
+  const store = new MemoryStore()
+  const settings = adjust(DEFAULT_SETTINGS, { kind: 'bus', bus: 'crowd' }, -1)
+  saveSettings(store, settings)
+  assert.deepEqual(JSON.parse(store.value!), settings)
+  assert.deepEqual(JSON.parse(store.audio!), settings.buses)
+  assert.deepEqual(loadSettings(store), { settings, error: null })
+})
+
+test('loadSettings prefers the audio key, including when there is no general settings save', () => {
+  const store = new MemoryStore()
+  store.audio = JSON.stringify({ music: 0.2, crowd: 2 })
+  for (const saved of [null, JSON.stringify({ ...DEFAULT_SETTINGS, volume: 30 })]) {
+    store.value = saved
+    const loaded = loadSettings(store)
+    assert.equal(loaded.error, null)
+    assert.equal(loaded.settings.volume, saved === null ? 80 : 30)
+    assert.deepEqual(loaded.settings.buses, { ...DEFAULT_BUS_VOLUMES, music: 0.2, crowd: 1 })
+  }
 })
 
 test('corrupt JSON returns defaults and a visible refusal message', () => {

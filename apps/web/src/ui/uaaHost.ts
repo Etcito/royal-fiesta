@@ -178,7 +178,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
   let ui: Ui
   try {
     renderer = await createWebGpuRenderer(canvas, { device: device as NonNullable<WebGpuRendererOptions['device']> })
-    renderer = withCapsuleButtons(renderer)
+    renderer = withCapsuleButtons(renderer, () => ui.screen())
     renderer = await withLogo(renderer, canvas, device as unknown as LogoDevice, { ...logo, format: logo.format as 'png' | 'svg' }, document.baseURI)
     const assets = loadAssets(uiAssetTexts())
     try {

@@ -13,10 +13,14 @@ export function capsuleMapping(asset: UiAsset, rect: Rect): AssetMapping {
   return assetMapping(asset.frame, ns, { ...rect, y: rect.y + (rect.h - h) / 2, h }, scale / 1000)
 }
 
-export function mapCapsule(command: AssetCommand): AssetCommand {
+export function mapCapsule(command: AssetCommand, screen = '', landscape = false): AssetCommand {
   const ns = command.asset.nineSlice
   if (command.asset.role !== 'button' || ns === null || ns.t !== 0 || ns.b !== 0) return command
-  const mapping = capsuleMapping(command.asset, command.rect)
+  // Reserve room for Back's focus outline and bounce inside the Settings cushion.
+  // Only the artwork is inset; the document rectangle and pointer target stay intact.
+  const inset = landscape && screen === 'settings' && command.widget === 'back' ? command.rect.h * 0.06 : 0
+  const rect = { ...command.rect, y: command.rect.y + inset, h: command.rect.h - 2 * inset }
+  const mapping = capsuleMapping(command.asset, rect)
   const slots = command.slots.map(s => {
     const { min, max } = s.slot.box
     const scale = mapping.scaleAt([(min[0] + max[0]) / 2, (min[1] + max[1]) / 2])
@@ -26,11 +30,12 @@ export function mapCapsule(command: AssetCommand): AssetCommand {
   return { ...command, mapping, slots }
 }
 
-export function withCapsuleButtons(renderer: UiRenderer): UiRenderer {
+export function withCapsuleButtons(renderer: UiRenderer, screen: () => string = () => ''): UiRenderer {
   return {
     kind: renderer.kind,
     resize: viewport => renderer.resize(viewport),
-    render: list => renderer.render({ ...list, commands: list.commands.map(c => c.kind === 'asset' ? mapCapsule(c) : c) }),
+    render: list => renderer.render({ ...list, commands: list.commands.map(c => c.kind === 'asset'
+      ? mapCapsule(c, screen(), list.viewport.width > list.viewport.height) : c) }),
     destroy: () => renderer.destroy(),
   }
 }

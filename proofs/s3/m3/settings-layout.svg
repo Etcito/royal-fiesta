@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<style>text{font-family:sans-serif;fill:#142940}.heading{font-weight:700;font-size:26px}.note{font-size:18px}</style>
+<rect width="1600" height="1000" fill="#f2f6fa"/>
+<text x="24" y="36" class="heading">Settings: required bounds and focus containment</text>
+<text x="24" y="66" class="note">Geometry diagram from the UI document and production mapping; not a GPU capture.</text>
+<g transform="translate(24 120) scale(0.82)">
+<rect x="0.000" y="0.000" width="360.000" height="640.000" fill="#e3ebf4" stroke="#8091a7"/>
+<rect x="55.000" y="55.000" width="250.000" height="530.000" fill="#fff9ed" stroke="#b16c00" stroke-width="2"/>
+<rect x="63.011" y="65.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="80.500" text-anchor="middle" font-size="9">Volume 80%</text>
+<rect x="63.011" y="91.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="106.500" text-anchor="middle" font-size="9">Quality high</text>
+<rect x="63.011" y="117.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="132.500" text-anchor="middle" font-size="9">Mouse sensitivity 5</text>
+<rect x="63.011" y="143.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="158.500" text-anchor="middle" font-size="9">Stick sensitivity 5</text>
+<rect x="63.011" y="169.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="184.500" text-anchor="middle" font-size="9">Invert Y off</text>
+<rect x="63.011" y="195.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="210.500" text-anchor="middle" font-size="9">Music volume 80%</text>
+<rect x="63.011" y="221.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="236.500" text-anchor="middle" font-size="9">SFX volume 80%</text>
+<rect x="63.011" y="247.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="262.500" text-anchor="middle" font-size="9">UI volume 80%</text>
+<rect x="63.011" y="273.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="288.500" text-anchor="middle" font-size="9">Ambience volume 80%</text>
+<rect x="63.011" y="299.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="314.500" text-anchor="middle" font-size="9">Crowd volume 80%</text>
+<rect x="63.011" y="325.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="340.500" text-anchor="middle" font-size="9">Forward: KeyW</text>
+<rect x="63.011" y="351.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="366.500" text-anchor="middle" font-size="9">Back: KeyS</text>
+<rect x="63.011" y="377.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="392.500" text-anchor="middle" font-size="9">Left: KeyA</text>
+<rect x="63.011" y="403.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="418.500" text-anchor="middle" font-size="9">Right: KeyD</text>
+<rect x="63.011" y="429.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="444.500" text-anchor="middle" font-size="9">Jump: Space</text>
+<rect x="63.011" y="455.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="470.500" text-anchor="middle" font-size="9">Dive: ShiftLeft</text>
+<rect x="63.011" y="481.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="496.500" text-anchor="middle" font-size="9">Grab: KeyE</text>
+<rect x="63.011" y="507.632" width="233.978" height="21.735" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="180.000" y="522.500" text-anchor="middle" font-size="9">Reset to defaults</text>
+<rect x="84.769" y="555.688" width="190.463" height="23.625" fill="#b9efdb" stroke="#087f5b"/>
+<rect x="90.000" y="555.000" width="180.000" height="25.000" fill="none" stroke="#2164bd" stroke-dasharray="4 3"/>
+<text x="180.000" y="571.500" text-anchor="middle" font-size="9">Back</text>
+</g>
+<g transform="translate(345 120) scale(0.95)">
+<rect x="0.000" y="0.000" width="1280.000" height="720.000" fill="#e3ebf4" stroke="#8091a7"/>
+<rect x="130.000" y="100.000" width="1020.000" height="520.000" fill="#fff9ed" stroke="#b16c00" stroke-width="2"/>
+<rect x="134.822" y="101.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="127.000" text-anchor="middle" font-size="13">Volume 80%</text>
+<rect x="134.822" y="153.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="179.000" text-anchor="middle" font-size="13">Quality high</text>
+<rect x="134.822" y="205.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="231.000" text-anchor="middle" font-size="13">Mouse sensitivity 5</text>
+<rect x="134.822" y="257.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="283.000" text-anchor="middle" font-size="13">Stick sensitivity 5</text>
+<rect x="134.822" y="309.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="335.000" text-anchor="middle" font-size="13">Invert Y off</text>
+<rect x="134.822" y="361.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="387.000" text-anchor="middle" font-size="13">Music volume 80%</text>
+<rect x="134.822" y="413.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="439.000" text-anchor="middle" font-size="13">SFX volume 80%</text>
+<rect x="134.822" y="465.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="491.000" text-anchor="middle" font-size="13">UI volume 80%</text>
+<rect x="134.822" y="517.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="385.000" y="543.000" text-anchor="middle" font-size="13">Ambience volume 80%</text>
+<rect x="644.822" y="101.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="127.000" text-anchor="middle" font-size="13">Crowd volume 80%</text>
+<rect x="644.822" y="153.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="179.000" text-anchor="middle" font-size="13">Forward: KeyW</text>
+<rect x="644.822" y="205.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="231.000" text-anchor="middle" font-size="13">Back: KeyS</text>
+<rect x="644.822" y="257.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="283.000" text-anchor="middle" font-size="13">Left: KeyA</text>
+<rect x="644.822" y="309.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="335.000" text-anchor="middle" font-size="13">Right: KeyD</text>
+<rect x="644.822" y="361.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="387.000" text-anchor="middle" font-size="13">Jump: Space</text>
+<rect x="644.822" y="413.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="439.000" text-anchor="middle" font-size="13">Dive: ShiftLeft</text>
+<rect x="644.822" y="465.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="491.000" text-anchor="middle" font-size="13">Grab: KeyE</text>
+<rect x="644.822" y="517.265" width="500.355" height="43.470" fill="#e2e8f6" stroke="#7d8bab"/>
+<text x="895.000" y="543.000" text-anchor="middle" font-size="13">Reset to defaults</text>
+<rect x="772.265" y="578.210" width="295.470" height="41.580" fill="#b9efdb" stroke="#087f5b"/>
+<rect x="780.000" y="574.000" width="280.000" height="50.000" fill="none" stroke="#2164bd" stroke-dasharray="4 3"/>
+<text x="920.000" y="603.000" text-anchor="middle" font-size="13">Back</text>
+</g>
+<text x="24" y="104" class="note">Portrait 360 × 640</text>
+<text x="345" y="104" class="note">Landscape 1280 × 720 — all 18 rows</text>
+<text x="24" y="680" class="note">Blue dashed: Back target</text>
+<text x="24" y="710" class="note">Green: all-state paint envelope</text>
+<text x="24" y="740" class="note">including a 1.08× scale guard.</text>
+<text x="345" y="850" class="heading">Landscape Back: focus envelope at the cushion edge</text>
+<g transform="translate(345 872)">
+<rect x="-23.205" y="6.736" width="886.410" height="66.528" fill="#b9efdb" stroke="#087f5b" stroke-width="2"/>
+<rect x="0.000" y="0.000" width="840.000" height="80.000" fill="none" stroke="#2164bd" stroke-dasharray="6 4" stroke-width="2"/>
+<path d="M 0 73.600 H 840" fill="none" stroke="#b16c00" stroke-width="2"/>
+</g>
+<text x="1210" y="890" class="note">Cushion: y = 620.000 px</text>
+<text x="1210" y="920" class="note">Paint: y ≤ 619.790 px</text>
+<text x="345" y="980" class="note">Document target: [140,214]..[420,264]. Only artwork is inset; pointer and keyboard activation are tested.</text>
+</svg>

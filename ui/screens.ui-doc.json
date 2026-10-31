@@ -1571,8 +1571,8 @@
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [140, 211],
-            "offsetMax": [420, 261]
+            "offsetMin": [140, 214],
+            "offsetMax": [420, 264]
           },
           "anim": {
             "focus": {

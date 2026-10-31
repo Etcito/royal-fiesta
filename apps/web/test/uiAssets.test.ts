@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
-import { assetMapping, layoutScreen, loadUiDoc, parseUiAssetText, type Widget } from '@etcito/uaa'
+import { assetMapping, createFontRegistry, createUi, layoutScreen, loadUiDoc, parseUiAssetText, type AssetCommand, type Widget } from '@etcito/uaa'
+import { DEFAULT_SETTINGS, describeRow, SETTINGS_ROWS } from '@royal-fiesta/game/screens/settings'
 import { containLogo, logoFile } from '../src/ui/logoRenderer.ts'
-import { capsuleMapping } from '../src/ui/buttonMapping.ts'
+import { capsuleMapping, mapCapsule } from '../src/ui/buttonMapping.ts'
 
 const uiDir = new URL('../../../ui/', import.meta.url)
 const assets = new Map(readdirSync(uiDir).filter(n => n.endsWith('.ui.json')).map(n => {
@@ -74,7 +75,12 @@ test('Settings buttons and their focus bounds stay inside the panel cushion in b
       if (w.type !== 'button') continue
       const asset = assets.get(w.asset)!
       const rect = layout.rects.get(w.id)!
-      const mapping = capsuleMapping(asset, rect)
+      const command: AssetCommand = { kind: 'asset', widget: w.id, asset, rect, state: 'normal',
+        list: asset.states.normal, mapping: capsuleMapping(asset, rect),
+        opacity: 1, transform: [1, 0, 0, 1, 0, 0], clip: null, slots: [] }
+      const mapped = mapCapsule(command, screen.id, width > height)
+      assert.deepEqual(mapped.rect, rect, 'painting must preserve the pointer target')
+      const mapping = mapped.mapping
       for (const state of Object.values(asset.states)) for (const p of [state.bounds.min, state.bounds.max]) {
         const point = mapping.toPx(p)
         // Include the focus bounce, not just the unanimated button rectangle.
@@ -83,6 +89,63 @@ test('Settings buttons and their focus bounds stay inside the panel cushion in b
         assert.ok(x >= lo[0] && x <= hi[0] && y >= lo[1] && y <= hi[1], `${w.id}/${width}x${height}: outside cushion`)
       }
     }
+  }
+})
+
+test('Settings Back keeps its required document bounds and only insets its own artwork', () => {
+  const screen = doc.screens.find(s => s.id === 'settings')!
+  const back = screen.widgets.find(w => w.id === 'back')!
+  assert.deepEqual(back.rect.offsetMin, [-180, 470])
+  assert.deepEqual(back.rect.offsetMax, [180, 520])
+  assert.deepEqual(back.landscape!.offsetMin, [140, 214])
+  assert.deepEqual(back.landscape!.offsetMax, [420, 264])
+  const asset = assets.get('button.secondary')!
+  const rect = { x: 780, y: 574, w: 280, h: 50 }
+  const command: AssetCommand = { kind: 'asset', widget: 'back', asset, rect, state: 'focus',
+    list: asset.states.focus, mapping: capsuleMapping(asset, rect),
+    opacity: 1, transform: [1, 0, 0, 1, 0, 0], clip: null, slots: [] }
+  const point = asset.states.focus.bounds.min
+  const original = capsuleMapping(asset, rect).toPx(point)
+  assert.ok(mapCapsule(command, 'settings', true).mapping.toPx(point)[1] < original[1])
+  assert.deepEqual(mapCapsule(command, 'settings', false).mapping.toPx(point), original)
+  assert.deepEqual(mapCapsule(command, 'pause', true).mapping.toPx(point), original)
+  assert.deepEqual(mapCapsule({ ...command, widget: 'row-0' }, 'settings', true).mapping.toPx(point), original)
+})
+
+test('all Settings rows keep their specified labels and portrait/landscape bounds', () => {
+  const screen = doc.screens.find(s => s.id === 'settings')!
+  assert.equal(screen.widgets.filter(w => w.id.startsWith('row-')).length, SETTINGS_ROWS.length)
+  SETTINGS_ROWS.forEach((row, i) => {
+    const w = screen.widgets.find(w => w.id === `row-${i}`)!
+    assert.equal(w.type, 'button')
+    if (w.type !== 'button') return
+    assert.equal(w.action, 'row')
+    assert.equal(w.text!.label, describeRow(row, DEFAULT_SETTINGS))
+    assert.deepEqual(w.rect.offsetMin, [-220, -510 + 52 * i])
+    assert.deepEqual(w.rect.offsetMax, [220, -464 + 52 * i])
+    const k = i % 9, x = i < 9 ? -490 : 20
+    assert.deepEqual(w.landscape!.offsetMin, [x, -260 + 52 * k])
+    assert.deepEqual(w.landscape!.offsetMax, [x + 470, -214 + 52 * k])
+  })
+})
+
+test('Settings Back still focuses and activates at the edge of its full pointer target', () => {
+  for (const [width, height] of [[360, 640], [1280, 720]]) {
+    const ui = createUi({ doc, assets, fonts: createFontRegistry([]), renderer: null,
+      viewport: { width, height, pixelRatio: 1, safeArea: { top: 0, right: 0, bottom: 0, left: 0 } }, nowMs: 0 })
+    try {
+      ui.show('settings', { animate: false })
+      const rect = ui.rectOf('back')!
+      const actions: string[] = []
+      ui.on('action', e => actions.push(e.action))
+      const at = { x: rect.x + rect.w / 2, y: rect.y + rect.h - 0.1 }
+      ui.input({ kind: 'pointer', phase: 'down', ...at })
+      assert.equal(ui.focused(), 'back')
+      ui.input({ kind: 'pointer', phase: 'up', ...at })
+      ui.input({ kind: 'activate', phase: 'down' })
+      ui.input({ kind: 'activate', phase: 'up' })
+      assert.deepEqual(actions, ['back', 'back'])
+    } finally { ui.destroy() }
   }
 })
 

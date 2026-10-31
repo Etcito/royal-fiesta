@@ -20,6 +20,7 @@
     "smoke": "node --experimental-strip-types apps/headless/src/smoke.ts",
     "rf": "node --experimental-strip-types apps/headless/src/cli.ts",
     "zone:bots": "node --experimental-strip-types apps/headless/src/zoneLaunch.ts",
+    "round:run": "node --experimental-strip-types apps/headless/src/roundRun.ts",
     "audio:bake": "node --experimental-strip-types tools/bake-audio.ts",
     "ui:fonts": "node --experimental-strip-types tools/uiFont.ts bundle",
     "web:build": "npm run audio:bake && npm run ui:fonts && npm run build -w @royal-fiesta/web",

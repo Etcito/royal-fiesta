@@ -1,0 +1,32 @@
+{
+  "haa": 1,
+  "id": "move.slide",
+  "title": "Continuous belly friction driven by speed",
+  "inputs": [
+    { "name": "speed", "kind": "continuous", "unit": "m/s", "min": 0, "max": 12, "default": 6, "smooth": 0, "curve": "lin" }
+  ],
+  "master": 0.75,
+  "graph": {
+    "duration": 1,
+    "loop": true,
+    "mode": "live",
+    "nodes": [
+      { "id": "speed", "type": "input", "x": 40, "y": 40, "label": "Slide speed in metres per second", "params": { "name": "speed" } },
+      { "id": "friction", "type": "noise", "x": 40, "y": 200, "label": "Continuous soft surface rub", "params": { "color": "pink", "level": 0.6, "width": 0.08 } },
+      { "id": "grit", "type": "grain", "x": 40, "y": 360, "label": "Uneven belly friction grains", "params": { "wave": "filtered-noise", "frequency": 450, "resonance": 0.65, "rate": 6, "attack": 0.0015, "decay": 0.018, "spread": 5, "jitter": 0.7, "variation": 0.6, "glide": -0.1, "delay": 0, "width": 0.08, "level": 0.3 } },
+      { "id": "surface", "type": "filter", "x": 300, "y": 200, "label": "Faster sliding opens the friction band", "params": { "mode": "lowpass", "cutoff": 320, "resonance": 0.65 } },
+      { "id": "amp", "type": "gain", "x": 560, "y": 200, "label": "Speed level with zero at rest", "params": { "gain": 0 } },
+      { "id": "out", "type": "output", "x": 820, "y": 200, "label": "Continuous slide output", "params": { "gain": 0.8 } }
+    ],
+    "connections": [
+      { "id": "rub", "from": "friction", "to": "surface", "target": "audio" },
+      { "id": "grain-rub", "from": "grit", "to": "surface", "target": "audio" },
+      { "id": "grain-density", "from": "speed", "to": "grit", "target": "rate", "amount": 18 },
+      { "id": "grain-brightness", "from": "speed", "to": "grit", "target": "frequency", "amount": 100 },
+      { "id": "surface-brightness", "from": "speed", "to": "surface", "target": "cutoff", "amount": 300 },
+      { "id": "filtered-rub", "from": "surface", "to": "amp", "target": "audio" },
+      { "id": "speed-level", "from": "speed", "to": "amp", "target": "gain", "amount": 0.08 },
+      { "id": "slide-out", "from": "amp", "to": "out", "target": "audio" }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "haa": 1,
+  "id": "move.swim",
+  "title": "Single belly stroke splash with water droplets",
+  "inputs": [],
+  "master": 0.8,
+  "graph": {
+    "duration": 0.4,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      { "id": "water", "type": "noise", "x": 40, "y": 40, "label": "Seeded stroke splash", "params": { "color": "white", "level": 0.7, "width": 0.18 } },
+      { "id": "sweep", "type": "curve", "x": 40, "y": 200, "label": "Water scooped then released", "params": { "amount": 1 }, "curve": [[0, 0.1], [0.12, 1], [0.34, 0.65], [0.7, 0.1], [1, 0]] },
+      { "id": "splash", "type": "filter", "x": 300, "y": 40, "label": "Watery splash band", "params": { "mode": "bandpass", "cutoff": 650, "resonance": 0.9 } },
+      { "id": "stroke-env", "type": "curve", "x": 300, "y": 200, "label": "One stroke and splash decay", "params": { "amount": 1 }, "curve": [[0, 0], [0.025, 0.65], [0.13, 1], [0.3, 0.6], [0.58, 0.15], [0.85, 0], [1, 0]] },
+      { "id": "splash-amp", "type": "gain", "x": 560, "y": 40, "label": "Stroke splash envelope", "params": { "gain": 0 } },
+      { "id": "droplets", "type": "grain", "x": 300, "y": 360, "label": "Seeded pitched water droplets", "params": { "wave": "sine", "frequency": 760, "rate": 45, "attack": 0.001, "decay": 0.024, "spread": 18, "jitter": 0.85, "variation": 0.65, "glide": 1.4, "delay": 0.035, "width": 0.2, "level": 0.3 } },
+      { "id": "drop-env", "type": "curve", "x": 300, "y": 520, "label": "Droplets after the stroke", "params": { "amount": 1 }, "curve": [[0, 0], [0.1, 0.3], [0.25, 1], [0.5, 0.5], [0.8, 0.15], [0.98, 0], [1, 0]] },
+      { "id": "drop-amp", "type": "gain", "x": 560, "y": 360, "label": "Droplet tail envelope", "params": { "gain": 0 } },
+      { "id": "out", "type": "output", "x": 820, "y": 200, "label": "Swim stroke output", "params": { "gain": 0.85 } }
+    ],
+    "connections": [
+      { "id": "water-band", "from": "water", "to": "splash", "target": "audio" },
+      { "id": "scoop", "from": "sweep", "to": "splash", "target": "cutoff", "amount": 2800 },
+      { "id": "splash-audio", "from": "splash", "to": "splash-amp", "target": "audio" },
+      { "id": "stroke", "from": "stroke-env", "to": "splash-amp", "target": "gain" },
+      { "id": "drops", "from": "droplets", "to": "drop-amp", "target": "audio" },
+      { "id": "drops-decay", "from": "drop-env", "to": "drop-amp", "target": "gain" },
+      { "id": "splash-out", "from": "splash-amp", "to": "out", "target": "audio" },
+      { "id": "drops-out", "from": "drop-amp", "to": "out", "target": "audio" }
+    ]
+  }
+}

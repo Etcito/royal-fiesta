@@ -1,0 +1,27 @@
+{
+  "haa": 1,
+  "id": "move.land.soft",
+  "title": "Soft padded belly flop",
+  "inputs": [],
+  "master": 0.8,
+  "graph": {
+    "duration": 0.25,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      { "id": "padding", "type": "noise", "x": 40, "y": 40, "label": "Seeded padded contact", "params": { "color": "pink", "level": 0.65, "width": 0.1 } },
+      { "id": "muffle", "type": "filter", "x": 300, "y": 40, "label": "Cushioned surface", "params": { "mode": "lowpass", "cutoff": 640, "resonance": 0.65 } },
+      { "id": "body", "type": "grain", "x": 300, "y": 200, "label": "Soft yielding body", "params": { "wave": "sine", "frequency": 115, "rate": 0, "attack": 0.007, "decay": 0.09, "spread": 3, "variation": 0.3, "glide": -0.35, "delay": 0.004, "width": 0, "level": 0.45 } },
+      { "id": "env", "type": "curve", "x": 300, "y": 360, "label": "Rounded padded flop", "params": { "amount": 1 }, "curve": [[0, 0], [0.045, 1], [0.16, 0.7], [0.4, 0.3], [0.7, 0.08], [0.95, 0], [1, 0]] },
+      { "id": "amp", "type": "gain", "x": 560, "y": 200, "label": "Flop decay", "params": { "gain": 0 } },
+      { "id": "out", "type": "output", "x": 820, "y": 200, "label": "Soft landing output", "params": { "gain": 0.8 } }
+    ],
+    "connections": [
+      { "id": "contact", "from": "padding", "to": "muffle", "target": "audio" },
+      { "id": "padded", "from": "muffle", "to": "amp", "target": "audio" },
+      { "id": "body-audio", "from": "body", "to": "amp", "target": "audio" },
+      { "id": "decay", "from": "env", "to": "amp", "target": "gain" },
+      { "id": "flop-out", "from": "amp", "to": "out", "target": "audio" }
+    ]
+  }
+}

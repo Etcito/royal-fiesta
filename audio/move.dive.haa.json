@@ -1,0 +1,35 @@
+{
+  "haa": 1,
+  "id": "move.dive",
+  "title": "Falling air whoosh into a belly flop",
+  "inputs": [],
+  "master": 0.8,
+  "graph": {
+    "duration": 0.5,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      { "id": "air", "type": "noise", "x": 40, "y": 40, "label": "Seeded rushing air", "params": { "color": "white", "level": 0.55, "width": 0.15 } },
+      { "id": "fall", "type": "curve", "x": 40, "y": 200, "label": "Descending whoosh pitch", "params": { "amount": 1 }, "curve": [[0, 1], [0.2, 0.8], [0.45, 0.35], [0.6, 0], [1, 0]] },
+      { "id": "whoosh", "type": "filter", "x": 300, "y": 40, "label": "Falling air band", "params": { "mode": "bandpass", "cutoff": 450, "resonance": 0.85 } },
+      { "id": "air-env", "type": "curve", "x": 300, "y": 200, "label": "Rush into contact", "params": { "amount": 1 }, "curve": [[0, 0], [0.1, 0.3], [0.34, 0.85], [0.52, 1], [0.64, 0], [1, 0]] },
+      { "id": "air-amp", "type": "gain", "x": 560, "y": 40, "label": "Whoosh envelope", "params": { "gain": 0 } },
+      { "id": "belly", "type": "grain", "x": 300, "y": 360, "label": "Delayed rubber belly impact", "params": { "wave": "sine", "frequency": 110, "rate": 0, "attack": 0.002, "decay": 0.08, "spread": 4, "variation": 0.3, "glide": -0.45, "delay": 0.3, "width": 0, "level": 0.8 } },
+      { "id": "slap", "type": "grain", "x": 300, "y": 520, "label": "Broad seeded belly slap", "params": { "wave": "filtered-noise", "frequency": 950, "resonance": 0.7, "rate": 0, "attack": 0.001, "decay": 0.055, "spread": 6, "variation": 0.5, "glide": -0.3, "delay": 0.3, "width": 0.12, "level": 0.6 } },
+      { "id": "tail", "type": "curve", "x": 560, "y": 360, "label": "Belly flop tail taper", "params": { "amount": 1 }, "curve": [[0, 1], [0.7, 1], [0.86, 0.5], [0.98, 0], [1, 0]] },
+      { "id": "amp", "type": "gain", "x": 820, "y": 200, "label": "Dive tail", "params": { "gain": 0 } },
+      { "id": "out", "type": "output", "x": 1080, "y": 200, "label": "Dive output", "params": { "gain": 0.8 } }
+    ],
+    "connections": [
+      { "id": "air-band", "from": "air", "to": "whoosh", "target": "audio" },
+      { "id": "pitch-fall", "from": "fall", "to": "whoosh", "target": "cutoff", "amount": 3400 },
+      { "id": "filtered-air", "from": "whoosh", "to": "air-amp", "target": "audio" },
+      { "id": "rush-envelope", "from": "air-env", "to": "air-amp", "target": "gain" },
+      { "id": "rush", "from": "air-amp", "to": "amp", "target": "audio" },
+      { "id": "belly-flop", "from": "belly", "to": "amp", "target": "audio" },
+      { "id": "belly-slap", "from": "slap", "to": "amp", "target": "audio" },
+      { "id": "tail-decay", "from": "tail", "to": "amp", "target": "gain" },
+      { "id": "dive-out", "from": "amp", "to": "out", "target": "audio" }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "haa": 1,
+  "id": "move.jump",
+  "title": "Springy rising boing and takeoff puff",
+  "inputs": [],
+  "master": 0.75,
+  "graph": {
+    "duration": 0.3,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      { "id": "bend", "type": "curve", "x": 40, "y": 40, "label": "Spring release and rising rebound", "params": { "amount": 1 }, "curve": [[0, 0], [0.07, 0.12], [0.22, 0.72], [0.36, 0.48], [0.56, 0.91], [0.7, 0.78], [1, 1]] },
+      { "id": "variation", "type": "random", "x": 40, "y": 200, "label": "Seeded spring tension", "params": { "rate": 1, "depth": 1, "smooth": 0 } },
+      { "id": "spring", "type": "oscillator", "x": 300, "y": 40, "label": "Elastic boing", "params": { "frequency": 170, "wave": "sine", "level": 0.65 } },
+      { "id": "body-env", "type": "curve", "x": 300, "y": 200, "label": "Rounded spring decay", "params": { "amount": 1 }, "curve": [[0, 0], [0.035, 1], [0.2, 0.8], [0.5, 0.42], [0.8, 0.12], [0.97, 0], [1, 0]] },
+      { "id": "body-amp", "type": "gain", "x": 560, "y": 40, "label": "Spring envelope", "params": { "gain": 0 } },
+      { "id": "air", "type": "noise", "x": 40, "y": 360, "label": "Seeded takeoff air", "params": { "color": "white", "level": 0.42, "width": 0.1 } },
+      { "id": "puff", "type": "filter", "x": 300, "y": 360, "label": "Soft air puff", "params": { "mode": "bandpass", "cutoff": 1800, "resonance": 0.7 } },
+      { "id": "air-env", "type": "curve", "x": 300, "y": 520, "label": "Brief takeoff breath", "params": { "amount": 1 }, "curve": [[0, 0], [0.025, 1], [0.15, 0.65], [0.38, 0], [1, 0]] },
+      { "id": "air-amp", "type": "gain", "x": 560, "y": 360, "label": "Puff envelope", "params": { "gain": 0 } },
+      { "id": "out", "type": "output", "x": 820, "y": 200, "label": "Jump output", "params": { "gain": 0.8 } }
+    ],
+    "connections": [
+      { "id": "rise", "from": "bend", "to": "spring", "target": "frequency", "amount": 390 },
+      { "id": "tension", "from": "variation", "to": "spring", "target": "frequency", "amount": 32 },
+      { "id": "boing", "from": "spring", "to": "body-amp", "target": "audio" },
+      { "id": "spring-decay", "from": "body-env", "to": "body-amp", "target": "gain" },
+      { "id": "air-filter", "from": "air", "to": "puff", "target": "audio" },
+      { "id": "puff-audio", "from": "puff", "to": "air-amp", "target": "audio" },
+      { "id": "puff-decay", "from": "air-env", "to": "air-amp", "target": "gain" },
+      { "id": "spring-out", "from": "body-amp", "to": "out", "target": "audio" },
+      { "id": "puff-out", "from": "air-amp", "to": "out", "target": "audio" }
+    ]
+  }
+}

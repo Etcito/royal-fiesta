@@ -1,0 +1,33 @@
+{
+  "haa": 1,
+  "id": "move.land.hard",
+  "title": "Heavy landing thump with body resonance",
+  "inputs": [],
+  "master": 0.8,
+  "graph": {
+    "duration": 0.35,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      { "id": "thump", "type": "grain", "x": 40, "y": 40, "label": "Seeded heavy low body", "params": { "wave": "sine", "frequency": 95, "rate": 0, "attack": 0.001, "decay": 0.14, "spread": 3, "variation": 0.25, "glide": -0.45, "delay": 0.002, "width": 0, "level": 0.8 } },
+      { "id": "resonance", "type": "grain", "x": 40, "y": 200, "label": "Short hollow body resonance", "params": { "wave": "sine", "frequency": 225, "rate": 0, "attack": 0.002, "decay": 0.11, "spread": 2, "variation": 0.3, "glide": -0.12, "delay": 0.008, "width": 0, "level": 0.24 } },
+      { "id": "contact", "type": "noise", "x": 40, "y": 360, "label": "Seeded hard surface contact", "params": { "color": "pink", "level": 0.65, "width": 0.08 } },
+      { "id": "surface", "type": "filter", "x": 300, "y": 360, "label": "Broad dull impact", "params": { "mode": "lowpass", "cutoff": 1700, "resonance": 0.7 } },
+      { "id": "hit-env", "type": "curve", "x": 300, "y": 520, "label": "Fast contact slap", "params": { "amount": 1 }, "curve": [[0, 0], [0.012, 1], [0.055, 0.7], [0.15, 0.12], [0.33, 0], [1, 0]] },
+      { "id": "hit-amp", "type": "gain", "x": 560, "y": 360, "label": "Contact envelope", "params": { "gain": 0 } },
+      { "id": "tail", "type": "curve", "x": 560, "y": 40, "label": "Body tail taper", "params": { "amount": 1 }, "curve": [[0, 1], [0.4, 1], [0.7, 0.4], [0.97, 0], [1, 0]] },
+      { "id": "amp", "type": "gain", "x": 820, "y": 200, "label": "Landing tail", "params": { "gain": 0 } },
+      { "id": "out", "type": "output", "x": 1080, "y": 200, "label": "Hard landing output", "params": { "gain": 0.8 } }
+    ],
+    "connections": [
+      { "id": "low-thump", "from": "thump", "to": "amp", "target": "audio" },
+      { "id": "body-ring", "from": "resonance", "to": "amp", "target": "audio" },
+      { "id": "surface-contact", "from": "contact", "to": "surface", "target": "audio" },
+      { "id": "contact-audio", "from": "surface", "to": "hit-amp", "target": "audio" },
+      { "id": "contact-decay", "from": "hit-env", "to": "hit-amp", "target": "gain" },
+      { "id": "slap", "from": "hit-amp", "to": "amp", "target": "audio" },
+      { "id": "body-decay", "from": "tail", "to": "amp", "target": "gain" },
+      { "id": "thump-out", "from": "amp", "to": "out", "target": "audio" }
+    ]
+  }
+}

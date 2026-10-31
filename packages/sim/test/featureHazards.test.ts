@@ -3,6 +3,7 @@ import test from 'node:test'
 import { Rng, SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { initRapier, RapierWorldSim } from '@gamesaloon/rollback-rapier'
 import { CharMode } from '../src/character/constants.ts'
+import { legacyLevel } from '../src/course.ts'
 import type { FeatureSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
 import type {
   CourseFeature, FeatureCtx, FeatureDraw, FeatureFactory, FeatureSeats, FeatureSound,
@@ -12,6 +13,7 @@ import { killHeight, risingKillFeature } from '../src/features/risingKill.ts'
 import { sweepFeature } from '../src/features/sweeps.ts'
 import { neutralInput } from '../src/input.ts'
 import { PlayerStatus } from '../src/match/roundSystem.ts'
+import { RefusalError } from '../src/refusal.ts'
 import { v3 } from '../src/vec.ts'
 import type { Vec3 } from '../src/vec.ts'
 
@@ -383,3 +385,123 @@ test('QB1: risingKill snapshot, restore and 120 ticks give identical bytes and p
   }
   assert.deepEqual(snapshotBytes(a.feature), snapshotBytes(b.feature))
 })
+
+function sweepSpec(overrides: Record<string, unknown> = {}): FeatureSpec {
+  return { id: 'sweep', kind: 'sweep', params: {
+    ...params, phases: [{ atS: 0 }, { atS: 2 }], ...overrides,
+  } }
+}
+
+function courseOf(kind: 'survival' | 'race'): ResolvedCourse {
+  const course = hazardCourse(kind)
+  course.level = { ...legacyLevel(course), kind }
+  return course
+}
+
+test('sweep: phase at 2 s telegraphs throughout ticks 120..179 and goes live at 180', async t => {
+  const r = await hazardRig(sweepSpec({ pattern: 'bars' }), sweepFeature, new StubSeats([]), courseOf('survival'))
+  t.after(() => r.physics.free())
+  assert.equal(r.bodies.length, 2)
+  for (let tick = 0; tick <= 240; tick++) {
+    drivePose(r, tick, false)
+    if (tick < 119) continue
+    const live = tick === 119 || tick >= 180
+    for (const id of r.bodies) {
+      assert.equal(r.physics.body(id).collider(0).isEnabled(), live, `collider at tick ${tick}`)
+    }
+    for (const draw of drawsOf(r.feature)) {
+      assert.equal(draw.tint, live ? 0 : 1, `tint at tick ${tick}`)
+      assert.equal(draw.visible, true)
+    }
+  }
+})
+
+test('sweep: rotating bars have tick-derived positions and angles', async t => {
+  const r = await hazardRig(sweepSpec({ pattern: 'bars', phases: [{ atS: 0 }] }),
+    sweepFeature, new StubSeats([]), courseOf('survival'))
+  t.after(() => r.physics.free())
+  for (const [tick, angle] of [[60, 0], [90, Math.PI / 4], [120, Math.PI / 2]]) {
+    drivePose(r, tick, false)
+    const draws = drawsOf(r.feature)
+    assert.equal(draws.length, 2)
+    for (let i = 0; i < 2; i++) {
+      const body = r.physics.body(r.bodies[i])
+      near(angleOf(body.rotation()), angle, `bar ${i} angle at ${tick}`)
+      near(body.translation().x, 5 * Math.cos(angle), `bar ${i} x at ${tick}`)
+      near(body.translation().z, -5 * Math.sin(angle), `bar ${i} z at ${tick}`)
+      near(angleOf(draws[i].r), angle, `draw ${i} angle at ${tick}`)
+    }
+    near(draws[0].t.y + draws[0].s.y / 2, 0.775, 'low bar top')
+    near(draws[1].t.y - draws[1].s.y / 2, 2.275, 'high bar underside')
+  }
+})
+
+for (const kind of ['survival', 'race'] as const) {
+  test(`sweep: laser contact uses the ${kind} level's kill or knock behavior`, async t => {
+    const seats = new StubSeats([v3(5, 0.775, 0)])
+    const r = await hazardRig(sweepSpec(), sweepFeature, seats, courseOf(kind))
+    t.after(() => r.physics.free())
+    driveKill(r, 59, false)
+    assert.deepEqual(seats.kills, [])
+    assert.equal(seats.knocks.length, 0)
+    driveKill(r, 60, false)
+    assert.deepEqual(seats.kills, kind === 'survival' ? [0] : [])
+    assert.equal(seats.knocks.length, kind === 'race' ? 1 : 0)
+    if (kind === 'race') {
+      assert.equal(seats.knocks[0].seat, 0)
+      assert.ok(Math.hypot(seats.knocks[0].v.x, seats.knocks[0].v.z) > 0)
+      assert.equal(seats.status(0), PlayerStatus.alive)
+    }
+  })
+}
+
+for (const { name, overrides, pointer } of [
+  { name: 'laser height 0.9', overrides: { heightM: 0.9 }, pointer: '0/heightM' },
+  { name: 'bars height plus gap 2.0', overrides: { pattern: 'bars', heightM: 0.5, gapM: 1.5 }, pointer: '0/gapM' },
+  { name: 'block gap 1.0', overrides: { pattern: 'block', gapM: 1, speedMps: 2 }, pointer: '0/gapM' },
+  { name: 'equal phase times', overrides: { phases: [{ atS: 0 }, { atS: 2 }, { atS: 2 }] }, pointer: '2/atS' },
+  { name: 'decreasing phase times', overrides: { phases: [{ atS: 0 }, { atS: 2 }, { atS: 1 }] }, pointer: '2/atS' },
+]) {
+  test(`sweep refuses ${name}`, () => {
+    assert.throws(() => sweepFeature(sweepSpec(overrides), PATH), (error: unknown) => {
+      assert.ok(error instanceof RefusalError)
+      assert.equal(error.area, 'feature')
+      assert.equal(error.path, `${PATH}/phases/${pointer}`)
+      return true
+    })
+  })
+}
+
+for (const pattern of ['laser', 'bars', 'block']) {
+  test(`QB1: ${pattern} sweep restores mid-telegraph and replays 120 ticks identically`, async t => {
+    const spec = sweepSpec({ pattern, speedMps: 2 })
+    const course = courseOf('survival')
+    const a = await hazardRig(spec, sweepFeature, new StubSeats([]), course)
+    t.after(() => a.physics.free())
+    for (let tick = 0; tick <= 150; tick++) drivePose(a, tick, tick >= 140)
+    assert.ok(drawsOf(a.feature).every(draw => draw.tint === 1))
+    const saved = snapshotBytes(a.feature)
+    const b = await hazardRig(spec, sweepFeature, new StubSeats([]), course, 150)
+    t.after(() => b.physics.free())
+    b.feature.restore(new SnapReader(saved.slice()), b.ctx)
+    assert.deepEqual(snapshotBytes(b.feature), saved)
+    assert.deepEqual(drawsOf(b.feature), drawsOf(a.feature))
+    assert.deepEqual(bodyPoses(b), bodyPoses(a))
+    for (let tick = 151; tick <= 270; tick++) {
+      for (const r of [a, b]) {
+        r.sounds.length = 0
+        drivePose(r, tick, true)
+        r.feature.postStep(r.ctx)
+      }
+      assert.deepEqual(snapshotBytes(b.feature), snapshotBytes(a.feature), `bytes at ${tick}`)
+      assert.deepEqual(drawsOf(b.feature), drawsOf(a.feature), `draws at ${tick}`)
+      assert.deepEqual(bodyPoses(b), bodyPoses(a), `bodies at ${tick}`)
+      assert.deepEqual(b.sounds, a.sounds, `sounds at ${tick}`)
+      for (let i = 0; i < a.bodies.length; i++) {
+        assert.equal(b.physics.body(b.bodies[i]).collider(0).isEnabled(),
+          a.physics.body(a.bodies[i]).collider(0).isEnabled(), `collider ${i} at ${tick}`)
+      }
+    }
+    assert.ok(drawsOf(a.feature).every(draw => draw.tint === 0))
+  })
+}

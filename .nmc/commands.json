@@ -53,5 +53,25 @@
     "after": [
       "s3-m2-sound-check"
     ]
+  },
+  {
+    "name": "s3-m3-race",
+    "command": "npm run round:run -- --course test-flat-race --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m3-survival",
+    "command": "npm run round:run -- --course test-flat-survival --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m3-team",
+    "command": "npm run round:run -- --course test-flat-team --dir fixtures/test-courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m3-show",
+    "command": "npm run round:run -- --course test-flat-race --dir fixtures/test-courses --seats 60 --peers 2 --profile season --show",
+    "timeout_s": 3600
   }
 ]

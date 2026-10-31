@@ -40,6 +40,14 @@ export const CHAR = {
   parkStep: 5,
   slide: {
     friction: { normal: 0.35, ice: 0.02, mud: 1.2, rubber: 0.35 } as Readonly<Record<Surface, number>>,
+    enterSpeed: 11,
+    exitSpeed: 4,
+    maxSpeed: 16,
+    steerRadS: degToRad(120),
+    bankGain: 0.5,
+    handPush: 6,
+    strokeImpulse: 3,
+    strokeCooldownTicks: 18,
   },
   swim: {
     maxSpeed: 5,

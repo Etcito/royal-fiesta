@@ -7,7 +7,7 @@ import { CHAR, CarryKind, CharMode } from '../src/character/constants.ts'
 import { approach2, turnFacing } from '../src/character/controller.ts'
 import { CharacterSystem, characterBody } from '../src/character/system.ts'
 import type { CharState } from '../src/character/system.ts'
-import type { Motion, ObstacleSpec, ResolvedCourse } from '../src/course.ts'
+import type { Motion, ObstacleSpec, ResolvedCourse, Surface } from '../src/course.ts'
 import { PI, datan2 } from '../src/detmath.ts'
 import { G, groups } from '../src/groups.ts'
 import { decodeInput, inputCode, neutralInput } from '../src/input.ts'
@@ -716,5 +716,140 @@ describe('M4 state', () => {
     const out = new SnapWriter()
     fresh.writePlayer(out, 0)
     assert.deepEqual(out.bytes().slice(), bytes)
+  })
+})
+
+describe('M4 slide', () => {
+  // Writes one player block in exactly writePlayer's order, with slide state seeded.
+  function seedSlide(r: Rig, speed: number, p = 0): void {
+    const w = new SnapWriter()
+    w.u8(CharMode.slide)
+    w.i32(0)
+    w.u8(CHAR.coyoteTicks)
+    w.u8(0)
+    w.u8(0)
+    w.u8(0)
+    w.u8(0xff) // grabTarget -1
+    w.u16(0)
+    w.u16(0)
+    w.f64(0)
+    w.f64(1)
+    w.u8(1) // grounded
+    w.i16(-1)
+    w.u16(0)
+    w.i32(-1)
+    w.u8(0)
+    w.u8(0)
+    w.i16(-1)
+    w.i16(-1)
+    w.i16(-1)
+    w.i32(-1)
+    w.f64(speed)
+    w.u8(CarryKind.none)
+    w.i16(-1)
+    w.u8(0)
+    r.chars.readPlayer(new SnapReader(w.bytes()), p)
+  }
+
+  function surfaceFloor(surface: Surface, friction = 2): ObstacleSpec {
+    const floor = obstacle(`floor-${surface}`, v3(0, -0.5, 0), { kind: 'static' }, v3(20, 0.5, 20))
+    floor.surface = surface
+    floor.friction = friction
+    return floor
+  }
+
+  function slideRig(surface: Surface, speed: number, friction = 2): ObsRig {
+    const r = obsRig([surfaceFloor(surface, friction)], v3(0, 0, 0))
+    stepN(r, 30, NEUTRAL)
+    seedSlide(r, speed)
+    return r
+  }
+
+  it('a grounded dive at run speed lands in slide; a dive from standing lands in diveRecover', () => {
+    // A conveyor adds 4 m/s to the 8 m/s run: the dive carries 12 m/s into the landing.
+    const belt = obstacle('belt', v3(0, -0.5, 0), { kind: 'conveyor', velocity: v3(0, 0, 4) }, v3(20, 0.5, 20))
+    const fast = obsRig([belt], v3(0, 0, -5))
+    const run = stepN(fast, 60, FORWARD)
+    assert.ok(hspeed(run) >= CHAR.slide.enterSpeed, `run speed ${hspeed(run)}`)
+    fast.world.step([input({ moveZ: 1, dive: true })])
+    stepUntil(fast, () => NEUTRAL, (s) => s.mode !== CharMode.dive, 120)
+    assert.equal(state(fast).mode, CharMode.slide)
+    fast.world.free()
+
+    const still = rig()
+    stepN(still, 30, NEUTRAL)
+    stepN(still, 1, DIVE)
+    stepUntil(still, () => NEUTRAL, (s) => s.mode !== CharMode.dive, 120)
+    assert.equal(state(still).mode, CharMode.diveRecover)
+    still.world.free()
+  })
+
+  it('a stroke adds strokeImpulse on ice and the cooldown blocks a second press', () => {
+    const plain = slideRig('ice', 12)
+    stepN(plain, 1, NEUTRAL)
+    const noStroke = state(plain).slideSpeed!
+    plain.world.free()
+
+    const stroke = slideRig('ice', 12)
+    stepN(stroke, 1, JUMP)
+    const afterStroke = state(stroke)
+    assert.equal(afterStroke.mode, CharMode.slide)
+    assert.ok(Math.abs(afterStroke.slideSpeed! - noStroke - CHAR.slide.strokeImpulse) <= 1e-9,
+      `stroke added ${afterStroke.slideSpeed! - noStroke}`)
+    stroke.world.free()
+
+    // Release, then press again inside the cooldown: the second stroke is ignored.
+    const second = slideRig('ice', 12)
+    stepN(second, 1, JUMP)
+    stepN(second, 1, NEUTRAL)
+    stepN(second, 1, JUMP)
+    stepN(second, 1, NEUTRAL)
+    const pressedTwice = state(second).slideSpeed!
+    second.world.free()
+    const once = slideRig('ice', 12)
+    stepN(once, 1, JUMP)
+    stepN(once, 3, NEUTRAL)
+    const pressedOnce = state(once).slideSpeed!
+    once.world.free()
+    assert.ok(Math.abs(pressedTwice - pressedOnce) <= 1e-9,
+      `second press added ${pressedTwice - pressedOnce}`)
+  })
+
+  it('60 ticks of slide from 10 m/s travel ice > normal > mud', () => {
+    const travel = (surface: Surface): number => {
+      const r = slideRig(surface, 10)
+      const before = state(r)
+      const after = stepN(r, 60, NEUTRAL)
+      const d = dist2(before.pos.x, before.pos.z, after.pos.x, after.pos.z)
+      r.world.free()
+      return d
+    }
+    const ice = travel('ice')
+    const normal = travel('normal')
+    const mud = travel('mud')
+    assert.ok(ice > normal && normal > mud, `ice ${ice}, normal ${normal}, mud ${mud}`)
+  })
+
+  it('an obstacle friction 0.1 on normal decelerates less than friction 0.5', () => {
+    const speedAfter = (friction: number): number => {
+      const r = slideRig('normal', 12, friction)
+      const s = stepN(r, 60, NEUTRAL)
+      assert.equal(s.mode, CharMode.slide)
+      const speed = hspeed(s)
+      r.world.free()
+      return speed
+    }
+    const low = speedAfter(0.1)
+    const high = speedAfter(0.5)
+    assert.ok(low > high, `friction 0.1 ${low} m/s, friction 0.5 ${high} m/s`)
+  })
+
+  it('slide ends below exitSpeed', () => {
+    const r = slideRig('normal', 10)
+    let s = state(r)
+    for (let i = 0; i < 300 && s.mode === CharMode.slide; i++) s = stepN(r, 1, NEUTRAL)
+    assert.equal(s.mode, CharMode.ground)
+    assert.ok(s.slideSpeed! < CHAR.slide.exitSpeed, `slideSpeed ${s.slideSpeed}`)
+    r.world.free()
   })
 })

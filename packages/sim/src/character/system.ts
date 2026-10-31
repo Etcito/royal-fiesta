@@ -14,6 +14,7 @@ import { refuse } from '../refusal.ts'
 import { pose } from '../vec.ts'
 import type { Vec3 } from '../vec.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
+import { GRAVITY_Y } from '../world.ts'
 import { CHAR, CarryKind, CharMode, SURFACE_TUNING } from './constants.ts'
 import { approach2, turnFacing } from './controller.ts'
 
@@ -129,6 +130,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   #surfaceFriction: Record<Surface, number> = { ...CHAR.slide.friction }
   // Consumed within the tick it is used, so never snapshotted.
   readonly #override: Int32Array
+  // Set for a player who is in slide this tick, read by the grab pass of the same tick.
+  readonly #slid: Uint8Array
   // Velocity set before the physics step, read by the bumps in the same tick: Rapier's contact
   // solve has already absorbed a hit in linvel by postStep. Never snapshotted.
   readonly #preVel: Float64Array
@@ -176,6 +179,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#frozen = new Uint8Array(n)
     this.#parked = new Uint8Array(n)
     this.#override = new Int32Array(n)
+    this.#slid = new Uint8Array(n)
     this.#preVel = new Float64Array(n * 3)
     this.#pos = new Float64Array(n * 3)
   }
@@ -237,6 +241,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#frozen[p] = 0
     this.#parked[p] = 1
     this.#override[p] = NO_OVERRIDE
+    this.#slid[p] = 0
   }
 
   #check(p: number, what: string): void {
@@ -440,10 +445,12 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     if (scratchRay === null) scratchRay = new ctx.R.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 })
     const ray = scratchRay
     for (let p = 0; p < this.playerCount; p++) {
+      if (this.#strokeTimer[p] > 0) this.#strokeTimer[p]--
       if (this.#parked[p] !== 0) {
         this.#override[p] = NO_OVERRIDE
         continue
       }
+      this.#slid[p] = 0
       const frozen = this.#frozen[p] !== 0
       const ov = this.#override[p]
       this.#override[p] = NO_OVERRIDE
@@ -538,15 +545,27 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       } else if (mode === CharMode.dive) {
         // Only when not rising, so a dive from the ground is not cut on its first tick.
         if (grounded && vy <= 0) {
-          mode = CharMode.diveRecover
-          timer = CHAR.diveRecoverTicks
+          const speed = Math.sqrt(v.x * v.x + v.z * v.z)
+          if (speed >= CHAR.slide.enterSpeed) {
+            this.#slideSpeed[p] = Math.min(speed, CHAR.slide.maxSpeed)
+            this.#facingX[p] = v.x / speed
+            this.#facingZ[p] = v.z / speed
+            mode = CharMode.slide
+            timer = 0
+          } else {
+            mode = CharMode.diveRecover
+            timer = CHAR.diveRecoverTicks
+          }
         }
       } else if (mode === CharMode.grabbing) {
         if (protectedNow || (buttons & GRAB_BIT) === 0 || ++this.#grabTicks[p] >= CHAR.grabMaxTicks) mode = free
-      } else {
+      } else if (mode !== CharMode.slide) {
+        // Slide persists; the slide block below applies its rules and exits it.
         mode = free
       }
 
+      const wasSliding = mode === CharMode.slide
+      if (wasSliding) this.#slid[p] = 1
       const steer = mode === CharMode.ground || mode === CharMode.air || mode === CharMode.grabbing
       let vx = v.x
       let vz = v.z
@@ -584,7 +603,71 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         if (riding && steer && vy > base.y) vy = base.y
       }
 
-      if ((mode === CharMode.ground || mode === CharMode.air) && (pressed & DIVE_BIT) !== 0 && this.#diveUsed[p] === 0) {
+      if (mode === CharMode.slide && grounded) {
+        let slideSpeed = this.#slideSpeed[p]
+        let fx = this.#facingX[p]
+        let fz = this.#facingZ[p]
+        // μ is the capsule's Min combine rule: the lower of the surface table and the ground item.
+        let groundFriction = this.#surfaceFriction[surface]
+        if (this.#groundItem[p] >= 0 && mechanisms !== null) {
+          groundFriction = mechanisms.spec()!.items[this.#groundItem[p]].bodies[this.#groundBody[p]].friction
+        } else if (gi >= 0 && obstacles !== null) {
+          groundFriction = obstacles.spec(gi).friction
+        }
+        const mu = Math.min(this.#surfaceFriction[surface], groundFriction)
+        const ny = hit.normal.y
+        const nx = hit.normal.x
+        const nz = hit.normal.z
+        const gravity = Math.abs(GRAVITY_Y)
+        slideSpeed -= mu * gravity * dt
+        slideSpeed += gravity * ny * (nx * fx + nz * fz) * dt
+        // Banking adds the cross-slope lateral velocity and turns the facing with it.
+        const rx = fz
+        const rz = -fx
+        const bank = CHAR.slide.bankGain * gravity * ny * (nx * rx + nz * rz) * dt
+        const bvx = fx * slideSpeed + rx * bank
+        const bvz = fz * slideSpeed + rz * bank
+        const blen = Math.sqrt(bvx * bvx + bvz * bvz)
+        if (blen > 1e-9) {
+          fx = bvx / blen
+          fz = bvz / blen
+          slideSpeed = blen
+        }
+        if (mlen > 0) {
+          turnFacing(fx, fz, mx, mz, CHAR.slide.steerRadS * dt, scratchH)
+          fx = scratchH.x
+          fz = scratchH.z
+        }
+        if (surface === 'ice' || ny < 0.98) {
+          const along = mx * fx + mz * fz
+          if (along > 0) slideSpeed += CHAR.slide.handPush * along * dt
+        }
+        if ((pressed & JUMP_BIT) !== 0) {
+          if (slideSpeed >= CHAR.slide.enterSpeed && this.#strokeTimer[p] === 0) {
+            slideSpeed += CHAR.slide.strokeImpulse
+            this.#strokeTimer[p] = CHAR.slide.strokeCooldownTicks
+            this.#jumpBuffer[p] = 0
+          } else if (slideSpeed < CHAR.slide.enterSpeed) {
+            vy = CHAR.jumpSpeed + base.y
+            this.#coyote[p] = 0
+            this.#jumpBuffer[p] = 0
+            mode = CharMode.air
+          } else {
+            // A press inside the stroke cooldown is consumed, not buffered into a later jump.
+            this.#jumpBuffer[p] = 0
+          }
+        }
+        if (slideSpeed > CHAR.slide.maxSpeed) slideSpeed = CHAR.slide.maxSpeed
+        vx = fx * slideSpeed + base.x
+        vz = fz * slideSpeed + base.z
+        this.#facingX[p] = fx
+        this.#facingZ[p] = fz
+        this.#slideSpeed[p] = slideSpeed
+        if (mode === CharMode.slide && slideSpeed < CHAR.slide.exitSpeed) mode = CharMode.ground
+      }
+      if (mode === CharMode.slide && !grounded && this.#coyote[p] === 0) mode = CharMode.air
+
+      if (!wasSliding && (mode === CharMode.ground || mode === CharMode.air) && (pressed & DIVE_BIT) !== 0 && this.#diveUsed[p] === 0) {
         const s = Math.max(Math.sqrt(vx * vx + vz * vz), CHAR.diveSpeed)
         vx = this.#facingX[p] * s
         vz = this.#facingZ[p] * s
@@ -606,7 +689,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         timer = 0
       }
 
-      if ((mode === CharMode.ground || mode === CharMode.air) && !protectedNow && this.#carry[p] === CarryKind.none &&
+      if (!wasSliding && (mode === CharMode.ground || mode === CharMode.air) && !protectedNow && this.#carry[p] === CarryKind.none &&
           (pressed & GRAB_BIT) !== 0 && this.#grabCooldown[p] === 0 && mechanisms !== null) {
         const levers = mechanisms.spec()?.levers ?? []
         for (let lever = 0; lever < levers.length; lever++) {
@@ -676,6 +759,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       } else {
         const mode = this.#mode[p]
         if ((mode !== CharMode.ground && mode !== CharMode.air) || this.#grabCooldown[p] > 0) continue
+        if (this.#slid[p] !== 0) continue
         if (this.#carry[p] !== CarryKind.none) continue
         if ((this.#prevButtons[p] & GRAB_BIT) === 0) continue
         q = this.#nearestInCone(p, ctx.tick)

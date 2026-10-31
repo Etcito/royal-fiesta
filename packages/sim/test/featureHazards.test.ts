@@ -2,11 +2,20 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Rng, SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { initRapier, RapierWorldSim } from '@gamesaloon/rollback-rapier'
-import type { FeatureCtx, FeatureDraw, FeatureSeats, FeatureSound } from '../src/features/feature.ts'
-import type { ResolvedCourse } from '../src/course.ts'
-import { PlayerStatus } from '../src/match/roundSystem.ts'
+import { CharMode } from '../src/character/constants.ts'
+import type { FeatureSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
+import type {
+  CourseFeature, FeatureCtx, FeatureDraw, FeatureFactory, FeatureSeats, FeatureSound,
+} from '../src/features/feature.ts'
+import { annulusFeature } from '../src/features/annulus.ts'
+import { killHeight, risingKillFeature } from '../src/features/risingKill.ts'
 import { sweepFeature } from '../src/features/sweeps.ts'
+import { neutralInput } from '../src/input.ts'
+import { PlayerStatus } from '../src/match/roundSystem.ts'
+import { v3 } from '../src/vec.ts'
+import type { Vec3 } from '../src/vec.ts'
 
+const PATH = 'hazards#/features/0'
 const params = { pattern: 'laser', center: [0, 0, 0], lengthM: 10, heightM: 0.775,
   gapM: 1.5, speedDegS: 90, telegraphS: 1, phases: [{ atS: 0 }, { atS: 3 }] }
 
@@ -109,4 +118,268 @@ test('laser contact kills survival seats and knocks race seats; telegraph collid
   r.ctx.course.kind = 'race'
   r.step(60)
   assert.equal(knocked, 1)
+})
+
+class StubSeats implements FeatureSeats {
+  readonly count: number
+  readonly positions: Vec3[]
+  readonly velocities: Vec3[]
+  readonly statuses: number[]
+  readonly grounds: number[]
+  readonly protectedSeats: boolean[]
+  readonly added: { seat: number; v: Vec3 }[] = []
+  readonly knocks: { seat: number; v: Vec3 }[] = []
+  readonly kills: number[] = []
+
+  constructor(positions: Vec3[]) {
+    this.count = positions.length
+    this.positions = positions.map(p => ({ ...p }))
+    this.velocities = positions.map(() => v3(0, 0, 0))
+    this.statuses = positions.map(() => PlayerStatus.alive as number)
+    this.grounds = positions.map(() => -1)
+    this.protectedSeats = positions.map(() => false)
+  }
+
+  seat(i: number): number { return i }
+  pos(i: number, out: Vec3): Vec3 {
+    const p = this.positions[i]
+    out.x = p.x
+    out.y = p.y
+    out.z = p.z
+    return out
+  }
+  vel(i: number, out: Vec3): Vec3 {
+    const v = this.velocities[i]
+    out.x = v.x
+    out.y = v.y
+    out.z = v.z
+    return out
+  }
+  mode(_i: number): number { return CharMode.ground }
+  grounded(i: number): boolean { return this.grounds[i] >= 0 }
+  groundCollider(i: number): number { return this.grounds[i] }
+  status(i: number): number { return this.statuses[i] }
+  team(_i: number): number { return 0 }
+  input(_i: number) { return neutralInput() }
+  protectedNow(i: number): boolean { return this.protectedSeats[i] }
+  setVelocity(i: number, v: Vec3): void { this.velocities[i] = { ...v } }
+  addVelocity(i: number, v: Vec3): void {
+    const c = this.velocities[i]
+    this.velocities[i] = { x: c.x + v.x, y: c.y + v.y, z: c.z + v.z }
+    this.added.push({ seat: i, v: { ...v } })
+  }
+  teleport(i: number, at: SpawnPoint): void {
+    this.positions[i] = { x: at.t.x, y: at.t.y, z: at.t.z }
+  }
+  kill(i: number): void {
+    this.statuses[i] = PlayerStatus.out
+    this.kills.push(i)
+  }
+  setCarry(): void {}
+  carry(_i: number): number { return 0 }
+  facing(_i: number, out: Vec3): Vec3 { out.x = 0; out.y = 0; out.z = 1; return out }
+  setSwim(): void {}
+  knock(i: number, v: Vec3): void {
+    this.velocities[i] = { ...v }
+    this.knocks.push({ seat: i, v: { ...v } })
+  }
+}
+
+type HazardCtx = FeatureCtx & { roundTick: number; overtime: boolean; sounds: FeatureSound[] }
+
+type HazardRig = Awaited<ReturnType<typeof hazardRig>>
+
+async function hazardRig(
+  spec: FeatureSpec, factory: FeatureFactory, seats: StubSeats, course: ResolvedCourse, roundTick = 0,
+) {
+  const R = await initRapier()
+  const physics = new RapierWorldSim(R, { gravity: { x: 0, y: 0, z: 0 } })
+  const sounds: FeatureSound[] = []
+  const ctx: HazardCtx = {
+    R, physics, tick: roundTick, roundTick, overtime: false, entrants: seats.count, trailingTeam: -1,
+    course, seats, rng: new Rng(1), emit() {},
+    sound(id, pos, strength) {
+      sounds.push({ key: '', rate: 1, id, pos: { ...pos }, strength, loop: false })
+    },
+    soundLoop(key, id, pos, strength, rate) {
+      sounds.push({ key, rate, id, pos: { ...pos }, strength, loop: true })
+    },
+    sounds,
+  }
+  const base = physics.bodyCount
+  const feature = factory(spec, PATH)
+  feature.init(ctx)
+  return { physics, ctx, seats, feature, bodies: physics.ids().slice(base), sounds }
+}
+
+function hazardCourse(kind: ResolvedCourse['kind'] = 'survival', path: Vec3[] = []): ResolvedCourse {
+  return {
+    id: 'hazards', name: 'Hazards', kind, profiles: ['standard'], timeLimitS: 60, killPlaneY: -12,
+    spawns: [], checkpoints: [], finish: null,
+    path: path.map(p => ({ p: { ...p }, jump: false, dive: false })),
+    regions: [], queuePad: null, obstacles: [], contentHash: 0,
+  }
+}
+
+function near(actual: number, expected: number, message: string): void {
+  assert.ok(Math.abs(actual - expected) < 1e-6, `${message}: ${actual} vs ${expected}`)
+}
+
+function angleOf(q: { w: number }): number {
+  return 2 * Math.acos(Math.max(-1, Math.min(1, q.w)))
+}
+
+function snapshotBytes(feature: CourseFeature): Uint8Array {
+  const w = new SnapWriter()
+  feature.snapshot(w)
+  return w.bytes().slice()
+}
+
+function drawsOf(feature: CourseFeature): FeatureDraw[] {
+  const out: FeatureDraw[] = []
+  feature.draw(out)
+  return out
+}
+
+function bodyPoses(r: HazardRig): { t: Vec3; q: { x: number; y: number; z: number; w: number } }[] {
+  return r.bodies.map(id => {
+    const body = r.physics.body(id)
+    const t = body.translation()
+    const q = body.rotation()
+    return { t: { x: t.x, y: t.y, z: t.z }, q: { x: q.x, y: q.y, z: q.z, w: q.w } }
+  })
+}
+
+function annulusSpec(): FeatureSpec {
+  return { id: 'ring', kind: 'annulus', params: {
+    center: [0, 0, 0], innerM: 2, outerM: 6, thickM: 0.4, speedDegS: 90, segments: 8,
+  } }
+}
+
+function risingSpec(overrides: Record<string, unknown> = {}): FeatureSpec {
+  return { id: 'slime', kind: 'risingKill', params: {
+    startY: 0, endY: 10, startS: 0, riseMps: 2, clock: { t: [0, 0, 0] }, halfM: 20, ...overrides,
+  } }
+}
+
+function drivePose(r: HazardRig, tick: number, overtime: boolean): void {
+  r.ctx.roundTick = tick
+  r.ctx.overtime = overtime
+  r.feature.preStep(r.ctx)
+  r.physics.step()
+}
+
+function driveKill(r: HazardRig, tick: number, overtime: boolean): void {
+  r.ctx.roundTick = tick
+  r.ctx.overtime = overtime
+  r.feature.preStep(r.ctx)
+  r.feature.postStep(r.ctx)
+}
+
+test('annulus: segment 0 turns 0, 45 and 90 degrees by roundTick 0, 30 and 60', async t => {
+  const r = await hazardRig(annulusSpec(), annulusFeature, new StubSeats([v3(100, 0, 0)]), hazardCourse())
+  t.after(() => r.physics.free())
+  const body = r.physics.body(r.bodies[0])
+  drivePose(r, 0, false)
+  near(angleOf(body.rotation()), 0, 'tick 0')
+  drivePose(r, 30, false)
+  near(angleOf(body.rotation()), Math.PI / 4, 'tick 30')
+  drivePose(r, 60, false)
+  near(angleOf(body.rotation()), Math.PI / 2, 'tick 60')
+})
+
+test('annulus: overtime advances the pose 1.5x per tick', async t => {
+  const normal = await hazardRig(annulusSpec(), annulusFeature, new StubSeats([v3(100, 0, 0)]), hazardCourse())
+  const overtime = await hazardRig(annulusSpec(), annulusFeature, new StubSeats([v3(100, 0, 0)]), hazardCourse())
+  t.after(() => normal.physics.free())
+  t.after(() => overtime.physics.free())
+  for (let tick = 0; tick <= 30; tick++) {
+    drivePose(normal, tick, false)
+    drivePose(overtime, tick, tick > 0)
+  }
+  const slow = angleOf(normal.physics.body(normal.bodies[0]).rotation())
+  const fast = angleOf(overtime.physics.body(overtime.bodies[0]).rotation())
+  near(slow, Math.PI / 4, 'normal pose at tick 30')
+  near(fast, 1.5 * slow, 'overtime pose at tick 30')
+  near(fast, 3 * Math.PI / 8, 'overtime 67.5 degrees')
+})
+
+test('annulus: a grounded seat receives the tangential point velocity omega cross r', async t => {
+  const seats = new StubSeats([v3(0, 0, 4)])
+  const r = await hazardRig(annulusSpec(), annulusFeature, seats, hazardCourse())
+  t.after(() => r.physics.free())
+  seats.grounds[0] = r.physics.body(r.bodies[0]).collider(0).handle
+  r.ctx.roundTick = 0
+  r.feature.preStep(r.ctx)
+
+  assert.equal(seats.added.length, 1)
+  const v = seats.velocities[0]
+  const omega = Math.PI / 2
+  near(Math.hypot(v.x, v.z), omega * 4, 'magnitude rad(speed) * radius')
+  near(v.z * 4, 0, 'radial component')
+  near(v.y, 0, 'planar')
+  assert.ok(v.x > 0)
+})
+
+test('killHeight: waits for startS, rises, clamps at endY and overtime adds riseMps per second', () => {
+  near(killHeight(2, 10, 5, 1.5, 4 * 60, 0), 2, 'before startS')
+  near(killHeight(2, 10, 5, 1.5, 7 * 60, 0), 5, '2 s after startS')
+  near(killHeight(2, 10, 5, 1.5, 10_000, 0), 10, 'clamped at endY')
+  near(killHeight(2, 10, 5, 1.5, 5 * 60, 60), 3.5, '60 overtime ticks add riseMps')
+  near(killHeight(2, 10, 5, 1.5, 0, 60), 3.5, 'overtime counts before startS')
+})
+
+test('risingKill: kills seats below the height, spares ones above and protected seats', async t => {
+  const seats = new StubSeats([v3(0, 0.5, 0), v3(0, 2, 0), v3(0, 0.25, 0)])
+  seats.protectedSeats[2] = true
+  const r = await hazardRig(risingSpec(), risingKillFeature, seats, hazardCourse())
+  t.after(() => r.physics.free())
+  driveKill(r, 30, false)
+
+  assert.deepEqual(seats.kills, [0])
+  assert.equal(seats.statuses[0], PlayerStatus.out)
+  assert.equal(seats.statuses[1], PlayerStatus.alive)
+  assert.equal(seats.statuses[2], PlayerStatus.alive)
+})
+
+test('QB1: annulus snapshot, restore and 120 ticks give identical bytes and poses', async t => {
+  const course = hazardCourse()
+  const a = await hazardRig(annulusSpec(), annulusFeature, new StubSeats([v3(0, 0, 4)]), course)
+  t.after(() => a.physics.free())
+  for (let tick = 0; tick < 60; tick++) drivePose(a, tick, tick >= 30)
+  const saved = snapshotBytes(a.feature)
+
+  const b = await hazardRig(annulusSpec(), annulusFeature, new StubSeats([v3(0, 0, 4)]), course, 60)
+  t.after(() => b.physics.free())
+  b.feature.restore(new SnapReader(saved.slice()), b.ctx)
+  assert.deepEqual(snapshotBytes(b.feature), saved)
+
+  for (let tick = 60; tick < 180; tick++) {
+    drivePose(a, tick, true)
+    drivePose(b, tick, true)
+    assert.deepEqual(drawsOf(a.feature), drawsOf(b.feature), `poses at tick ${tick}`)
+  }
+  assert.deepEqual(snapshotBytes(a.feature), snapshotBytes(b.feature))
+  assert.deepEqual(bodyPoses(a), bodyPoses(b))
+})
+
+test('QB1: risingKill snapshot, restore and 120 ticks give identical bytes and poses', async t => {
+  const spec = risingSpec({ riseMps: 0.1 })
+  const course = hazardCourse('survival', [v3(0, 8, 0), v3(0, 6, 0)])
+  const a = await hazardRig(spec, risingKillFeature, new StubSeats([v3(0, 8, 0)]), course)
+  t.after(() => a.physics.free())
+  for (let tick = 0; tick < 60; tick++) driveKill(a, tick, tick >= 30)
+  const saved = snapshotBytes(a.feature)
+
+  const b = await hazardRig(spec, risingKillFeature, new StubSeats([v3(0, 8, 0)]), course, 60)
+  t.after(() => b.physics.free())
+  b.feature.restore(new SnapReader(saved.slice()), b.ctx)
+  assert.deepEqual(snapshotBytes(b.feature), saved)
+
+  for (let tick = 60; tick < 180; tick++) {
+    driveKill(a, tick, true)
+    driveKill(b, tick, true)
+    assert.deepEqual(drawsOf(a.feature), drawsOf(b.feature), `poses at tick ${tick}`)
+  }
+  assert.deepEqual(snapshotBytes(a.feature), snapshotBytes(b.feature))
 })

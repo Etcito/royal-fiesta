@@ -227,5 +227,49 @@
     "name": "s3-m9-shop-loopback",
     "command": "env RF_REQUIRE_GAMESALOON=1 node --experimental-strip-types --test apps/headless/test/shopLoopback.test.ts",
     "timeout_s": 600
+  },
+  {
+    "name": "s3-m10-map-q-2",
+    "command": "npm run round:run -- --course s1-q-crown-confection --dir courses --seats 2 --peers 2 --profile season --target 1",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m10-map-q-6",
+    "command": "npm run round:run -- --course s1-q-crown-confection --dir courses --seats 6 --peers 2 --profile season --target 1",
+    "timeout_s": 1800,
+    "after": ["s3-m10-map-q-2"]
+  },
+  {
+    "name": "s3-m10-map-q",
+    "command": "npm run round:run -- --course s1-q-crown-confection --dir courses --seats 12 --peers 2 --profile season --target 1",
+    "timeout_s": 1800,
+    "after": ["s3-m10-map-q-6"]
+  },
+  {
+    "name": "s3-m10-map-i-2",
+    "command": "npm run round:run -- --course s1-i-honeycomb-heights --dir courses --seats 2 --peers 2 --profile season --target 1",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m10-map-i-6",
+    "command": "npm run round:run -- --course s1-i-honeycomb-heights --dir courses --seats 6 --peers 2 --profile season --target 1",
+    "timeout_s": 1800,
+    "after": ["s3-m10-map-i-2"]
+  },
+  {
+    "name": "s3-m10-map-i",
+    "command": "npm run round:run -- --course s1-i-honeycomb-heights --dir courses --seats 12 --peers 2 --profile season --target 1",
+    "timeout_s": 1800,
+    "after": ["s3-m10-map-i-6"]
+  },
+  {
+    "name": "s3-m10-map-e",
+    "command": "npm run round:run -- --course s1-e-sugar-sprint --dir courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m10-map-f",
+    "command": "npm run round:run -- --course s1-f-taffy-circuit --dir courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
   }
 ]

@@ -1,6 +1,9 @@
 import { Rng } from '@gamesaloon/rollback'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import type { GroupTransport, Roster } from '@gamesaloon/rollback/zones'
+import { levelOf } from '@royal-fiesta/sim/course'
+import { advanceCursor, nextSlot } from '@royal-fiesta/sim/season/plan'
+import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
@@ -11,15 +14,17 @@ import { RoundTransport } from './roundTransport.ts'
 import { createZoneMatch } from './zoneMatch.ts'
 import type { ZoneMatch, ZoneMatchConfig } from './zoneMatch.ts'
 import {
-  decodeRoundResult, encodeRoundResult, nextAlive, planZoneRound, roundResultOf, roundRoster, sameRoundResult,
+  decodeRoundResult, encodeRoundResult, nextAlive, newShow, planZoneRound, roundResultOf, roundRoster, sameRoundResult,
 } from './zoneRounds.ts'
-import type { ZoneRoundPlan, ZoneRoundResult } from './zoneRounds.ts'
+import type { ShowState, ZoneRoundPlan, ZoneRoundResult } from './zoneRounds.ts'
 
 export interface ZoneFullMatchConfig {
   readonly localPeer: number
   readonly roster: Roster
   readonly seed: number
   readonly courses: readonly ResolvedCourse[]
+  readonly season: readonly SchedMap[]
+  readonly plan?: readonly number[]
   readonly zones: ReadonlyMap<string, ZonesFile>
   readonly measurements: ZoneMatchConfig['measurements']
   readonly farSink?: ZoneMatchConfig['farSink']
@@ -45,6 +50,7 @@ export interface ZoneFullMatchReport {
 }
 
 export interface ZoneFullMatch {
+  readonly show: ShowState
   /** Null when the local peer has no remaining seats. */
   readonly round: ZoneFullRound | null
   readonly alive: readonly number[]
@@ -58,17 +64,17 @@ export interface ZoneFullMatch {
 /** Plays successive zone sessions over one room, retaining the room's peer and seat identities. */
 export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, net: GroupTransport): ZoneFullMatch {
   const rt = new RoundTransport(net)
-  const rng = new Rng(cfg.seed)
+  const show = newShow(cfg.season, cfg.roster.seatCount, cfg.seed, cfg.plan)
+  const rng = new Rng(show.schedule.rngState)
   const recipients = cfg.roster.peers.filter(p => p.peer !== cfg.localPeer).map(p => p.peer)
   const roomPeers = new Set(recipients)
   const scratch: Parameters<GroupTransport['drain']>[0] = []
   const report: ZoneFullMatchReport = {
-    rounds: [], champion: null, desyncs: 0, malformed: 0, resultMismatches: 0,
+    rounds: show.rounds, champion: null, desyncs: 0, malformed: 0, resultMismatches: 0,
   }
   // Result frames bypass the transport's round queue, so retain early results here too.
   const results = new Map<number, Map<number, ZoneRoundResult>>()
   let alive = Array.from({ length: cfg.roster.seatCount }, (_, seat) => seat)
-  let lastCourse = -1
   let r = 0
   let plan: ZoneRoundPlan
   let peers: readonly number[] = []
@@ -112,7 +118,7 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
 
   function start(): void {
     rt.setRound(r)
-    plan = planZoneRound(cfg.courses, r, alive, lastCourse, rng)
+    plan = planZoneRound(cfg.courses, show, alive, null, rng)
     const { roster, seatOf } = roundRoster(cfg.roster, alive)
     peers = roster.peers.map(p => p.peer)
     const received = results.get(r)
@@ -129,7 +135,12 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
     if (!zones) refuse('zones', 'createZoneFullMatch.zones', `missing sidecar for ${course.id}; load zones for every course`)
     const match = createZoneMatch(R, {
       localPeer: cfg.localPeer, roster, course, zones, profile: PROFILES.sprint,
-      kind: plan.kind, measurements: cfg.measurements, farSink: cfg.farSink,
+      kind: plan.kind,
+      slot: { kind: plan.kind, final: plan.final, finalRule: plan.finalRule, target: plan.target,
+        playoff: plan.playoff, roundIndex: plan.index, seed: cfg.seed, teams: plan.teams,
+        overtimeTicks: levelOf(course).overtimeTicks,
+        openingRanks: Uint16Array.from(seatOf, seat => show.openingRanks[seat]) },
+      measurements: cfg.measurements, farSink: cfg.farSink,
     }, rt)
     round = { plan, match, roster, seatOf, localSeats: local.seats }
   }
@@ -149,9 +160,9 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
       report.malformed += round.match.stats.malformed
     }
     alive = nextAlive(result)
-    lastCourse = plan.courseIndex
+    show.cursor = advanceCursor(show.cursor, plan.slot, alive.length, plan.teams !== null)
     settledAt = rt.now()
-    if (plan.final || alive.length <= 1) finish()
+    if (nextSlot(show.cursor) === null) finish()
   }
 
   if (alive.length <= 1) finish()
@@ -162,6 +173,7 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
   }
 
   return {
+    show,
     get round() { return round },
     get alive() { return alive },
     get done() { return done },

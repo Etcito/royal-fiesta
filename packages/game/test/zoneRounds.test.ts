@@ -1,58 +1,111 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
+import { advanceCursor, nextSlot } from '@royal-fiesta/sim/season/plan'
+import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
+import { levelOf } from '@royal-fiesta/sim/course'
+import { parseSeason } from '../src/season.ts'
 import { Rng } from '@gamesaloon/rollback'
 import type { Roster } from '@gamesaloon/rollback/zones'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
 import type { LedgerResult } from '@royal-fiesta/sim/zones/ledger'
 import {
-  decodeRoundResult, encodeRoundResult, nextAlive, planZoneRound, roundResultOf, roundRoster, sameRoundResult,
+  decodeRoundResult, encodeRoundResult, nextAlive, newShow, roundCandidates, showMaps, planZoneRound, roundResultOf, roundRoster, sameRoundResult,
 } from '../src/net/zoneRounds.ts'
 
-// Only the fields coursePool and the result codec read; the real resolver fills the rest.
+// Minimal fixture courses; levelOf supplies their legacy levels.
 const COURSES = [
-  { id: 'race-a', kind: 'race', profiles: ['sprint'] },
-  { id: 'race-b', kind: 'race', profiles: ['sprint'] },
-  { id: 'survival-a', kind: 'survival', profiles: ['sprint'] },
-  { id: 'survival-b', kind: 'survival', profiles: ['sprint'] },
+  { id: 'race-a', kind: 'race', profiles: ['sprint'], timeLimitS: 60, checkpoints: [] },
+  { id: 'race-b', kind: 'race', profiles: ['sprint'], timeLimitS: 60, checkpoints: [] },
+  { id: 'survival-a', kind: 'survival', profiles: ['sprint'], timeLimitS: 60, checkpoints: [] },
+  { id: 'survival-b', kind: 'survival', profiles: ['sprint'], timeLimitS: 60, checkpoints: [] },
 ] as unknown as readonly ResolvedCourse[]
 
 const seats = (n: number): number[] => Array.from({ length: n }, (_, i) => i)
 
-test('planZoneRound follows the 60 -> 40 -> 4 -> 3 round chain', () => {
-  const rng = new Rng(11)
-  const first = planZoneRound(COURSES, 0, seats(60), -1, rng)
-  assert.equal(first.kind, 'race')
-  assert.equal(first.final, false)
-  assert.equal(first.target, 40)
-  assert.ok(first.courseIndex < 2, `race pool was ${first.courseIndex}`)
-  assert.equal(COURSES[first.courseIndex].kind, 'race')
-  assert.ok(COURSES[first.courseIndex].profiles.includes('sprint'))
+const MAPS: SchedMap[] = [
+  { id: 'opening', course: 0, kind: 'race', finalRule: null, stages: ['R1'], team: false, cut: true },
+  { id: 'second', course: 2, kind: 'survival', finalRule: null, stages: ['R2'], team: false, cut: false },
+  { id: 'third', course: 1, kind: 'race', finalRule: null, stages: ['R3'], team: false, cut: true },
+  { id: 'fourth', course: 3, kind: 'survival', finalRule: null, stages: ['R4'], team: false, cut: false },
+  { id: 'crown', course: 2, kind: 'survival', finalRule: 'lastStanding', stages: ['R1', 'R2', 'R3', 'R4', 'final'], team: false, cut: false },
+]
 
-  const second = planZoneRound(COURSES, 1, seats(40), first.courseIndex, rng)
-  assert.equal(second.kind, 'survival')
-  assert.equal(second.final, false)
-  assert.equal(second.target, 26)
-  assert.ok(second.courseIndex >= 2, `survival pool was ${second.courseIndex}`)
-  assert.equal(COURSES[second.courseIndex].kind, 'survival')
-
-  const third = planZoneRound(COURSES, 2, seats(4), second.courseIndex, rng)
-  assert.equal(third.kind, 'race')
-  assert.equal(third.final, false)
-  assert.equal(third.target, 2)
-
-  const fourth = planZoneRound(COURSES, 3, seats(3), third.courseIndex, rng)
-  assert.equal(fourth.kind, 'survival')
-  assert.equal(fourth.final, true)
-  assert.equal(fourth.target, 1)
+test('60-seat season follows 60 -> 40 -> 24 -> 12 -> 6 -> final without repeated maps', () => {
+  const show = newShow(MAPS, 60, 11)
+  const rng = new Rng(show.schedule.rngState)
+  assert.deepEqual(show.rounds, [])
+  assert.deepEqual([...show.openingRanks], seats(60).map(() => 0))
+  for (const target of [40, 24, 12, 6, 1]) {
+    const plan = planZoneRound(COURSES, show, seats(show.cursor.alive), null, rng)
+    assert.equal(plan.target, target)
+    assert.equal(plan.final, target === 1)
+    assert.equal(plan.kind, target === 1 ? 'final' : MAPS.find(map => map.id === plan.map)!.kind)
+    show.cursor = advanceCursor(show.cursor, plan.slot, target, plan.teams !== null)
+  }
+  assert.equal(new Set(show.schedule.used).size, 5)
+  assert.equal(nextSlot(show.cursor), null)
+  assert.deepEqual(roundCandidates(show, rng), [])
 })
 
-test('planZoneRound refuses an empty course pool', () => {
-  const standardOnly = [{ id: 'race-a', kind: 'race', profiles: ['standard'] }] as unknown as readonly ResolvedCourse[]
-  assert.throws(
-    () => planZoneRound(standardOnly, 0, seats(60), -1, new Rng(1)),
-    (e: unknown) => isRefusal(e) && e.area === 'zones' && e.path === 'planZoneRound.courses',
-  )
+test('final is reserved before the opening draw and only offered for the final', () => {
+  const show = newShow(MAPS, 60, 4)
+  const rng = new Rng(show.schedule.rngState)
+  assert.equal(show.schedule.finalMap, 'crown')
+  assert.ok(!roundCandidates(show, rng).includes('crown'))
+  show.cursor = { ...show.cursor, step: 4, alive: 6 }
+  assert.deepEqual(roundCandidates(show, rng), ['crown'])
+  show.cursor = { ...show.cursor, alive: 14 }
+  assert.equal(roundCandidates(show, rng).length, 1)
+})
+
+test('showMaps maps legacy and explicit levels without a season', () => {
+  const maps = showMaps(COURSES)
+  assert.deepEqual(maps[0], { id: 'race-a', course: 0, kind: 'race', finalRule: null,
+    stages: ['R1', 'R2', 'R3', 'R4', 'final'], team: false, cut: true })
+  assert.equal(maps[2].finalRule, 'lastStanding')
+  assert.equal(maps[2].cut, false)
+  const team = { ...COURSES[0], level: { ...levelOf(COURSES[0]), kind: 'team' as const,
+    teams: { count: 2 as const, maxPerTeam: 30 } } }
+  assert.equal(showMaps([team], null)[0].team, true)
+})
+
+test('showMaps uses built, loaded season maps and season cut rules', () => {
+  const season = parseSeason(JSON.parse(readFileSync(new URL('../../../courses/season.json', import.meta.url), 'utf8')), 'season')
+  const selected = season.maps.filter(map => ['A', 'E', 'P', 'Q'].includes(map.id))
+  for (const map of selected) map.status = 'built'
+  const courses = selected.map(map => ({ ...COURSES[0], id: map.course }))
+  const maps = showMaps(courses, season)
+  assert.deepEqual(maps.map(map => map.id), selected.map(map => map.id))
+  for (let i = 0; i < maps.length; i++) {
+    assert.equal(maps[i].course, i)
+    assert.equal(maps[i].team, selected[i].teams !== null)
+    assert.equal(maps[i].cut, season.rules.cutMaps.includes(maps[i].id))
+    assert.equal(maps[i].kind, selected[i].kind)
+    assert.equal(maps[i].finalRule, selected[i].finalRule)
+    assert.deepEqual(maps[i].stages, selected[i].stages)
+  }
+  assert.deepEqual(showMaps([], season), [])
+})
+
+test('teams follow opening-rank snake order, indexed by dense round seat', () => {
+  const team: SchedMap = { ...MAPS[0], id: 'team', kind: 'team', team: true }
+  const show = newShow([team, MAPS[4]], 10, 3, [8, 4, 1])
+  show.openingRanks.set([8, 0, 2, 7, 3, 0, 6, 4, 5, 1])
+  const plan = planZoneRound(COURSES, show, [9, 8, 7, 6, 4, 3, 2, 0], null, new Rng(3))
+  // Ranked room seats: 9,2,4,7,8,6,3,0; snake: 0,1,1,0,0,1,1,0.
+  assert.deepEqual([...plan.teams!], [0, 1, 1, 1, 1, 0, 0, 0])
+})
+
+test('votes choose the majority map and missing courses are refused before commit', () => {
+  const show = newShow(MAPS, 60, 5)
+  const plan = planZoneRound(COURSES, show, seats(60), { candidates: ['opening', 'third'], votes: [1, 1, 0] }, new Rng(5))
+  assert.equal(plan.map, 'third')
+  const broken = newShow([{ ...MAPS[0], course: 99 }, MAPS[4]], 60, 5)
+  assert.throws(() => planZoneRound(COURSES, broken, seats(60), null, new Rng(5)),
+    (e: unknown) => isRefusal(e) && e.path === 'planZoneRound.courses')
+  assert.deepEqual(broken.schedule.used, [])
 })
 
 test('roundRoster densely renumbers alive room seats and drops the peer with none', () => {
@@ -88,7 +141,9 @@ test('round results map through seatOf, survive a round trip, and fail closed on
     ],
     live: [true, true, true],
   }, [1, 3, 4])
-  const plan = planZoneRound(COURSES, 1, seats(40), -1, new Rng(5))
+  const show = newShow(MAPS, 40, 5)
+  show.cursor = { ...show.cursor, step: 1, roundIndex: 1 }
+  const plan = planZoneRound(COURSES, show, seats(40), null, new Rng(5))
   const ledger: LedgerResult = {
     endTick: 4242, qualified: [2, 0], eliminated: [1], reason: 'timeCap',
     ranking: [2, 0, 1], points: [3, 2, 0], teamScores: [], playoff: null, champion: -1,

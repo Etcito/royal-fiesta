@@ -1,21 +1,34 @@
 // Full-match round bookkeeping for zone rooms: the pure plan, roster and result codec helpers.
 // No I/O and no Rapier; the caller owns the room roster, the course set and the ledger.
 import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
-import type { Rng } from '@gamesaloon/rollback'
+import { Rng } from '@gamesaloon/rollback'
 import type { Roster } from '@gamesaloon/rollback/zones'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
-import { coursePool, pickCourse, planRound } from '@royal-fiesta/sim/match/rules'
+import { levelOf } from '@royal-fiesta/sim/course'
+import { ROUND_KINDS } from '@royal-fiesta/sim/season/kinds'
+import type { RoundKind, FinalRule } from '@royal-fiesta/sim/season/kinds'
+import { DEFAULT_PLAN, newCursor, nextSlot } from '@royal-fiesta/sim/season/plan'
+import type { RoundSlot, ShowCursor } from '@royal-fiesta/sim/season/plan'
+import { candidates, commitMap, newSchedule, resolveVote } from '@royal-fiesta/sim/season/scheduler'
+import type { SchedMap, ShowSchedule } from '@royal-fiesta/sim/season/scheduler'
+import { schedMaps } from '../season.ts'
+import type { SeasonData } from '../season.ts'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { LedgerReason, LedgerResult } from '@royal-fiesta/sim/zones/ledger'
 
-const KINDS = ['race', 'survival'] as const
+const KINDS = ROUND_KINDS
 const REASONS: readonly LedgerReason[] = ['target', 'timeCap', 'lastStanding', 'allFell', 'overtime', 'teamWin', 'score', 'crown', 'playoff']
 const utf8 = new TextEncoder()
 const decodeUtf8 = new TextDecoder()
 
 export interface ZoneRoundPlan {
+  readonly slot: RoundSlot
+  readonly map: string
+  readonly finalRule: FinalRule | null
+  readonly playoff: boolean
+  readonly teams: Uint8Array | null
   readonly index: number
-  readonly kind: 'race' | 'survival'
+  readonly kind: RoundKind
   readonly final: boolean
   readonly target: number
   /** Index into the courses passed to planZoneRound. */
@@ -32,7 +45,7 @@ export interface RoundRoster {
 export interface ZoneRoundResult {
   readonly index: number
   readonly course: string
-  readonly kind: 'race' | 'survival'
+  readonly kind: RoundKind
   readonly final: boolean
   readonly endTick: number
   readonly reason: LedgerReason
@@ -40,27 +53,75 @@ export interface ZoneRoundResult {
   readonly eliminated: number[]
 }
 
-/**
- * Plans one full-match round over the alive room seats. The first round is called with lastCourse -1; every later
- * round with the previous round's course index.
- */
+export interface ShowState {
+  cursor: ShowCursor
+  schedule: ShowSchedule
+  rounds: ZoneRoundResult[]
+  openingRanks: Uint16Array
+}
+
+// Keep immutable construction inputs alongside the public, mutable show state.
+const showInputs = new WeakMap<ShowState, { season: readonly SchedMap[]; seed: number }>()
+
+export function newShow(season: readonly SchedMap[], seatCount: number, seed: number, plan: readonly number[] = DEFAULT_PLAN): ShowState {
+  const show: ShowState = {
+    cursor: newCursor(plan, seatCount), schedule: newSchedule(season, new Rng(seed)),
+    rounds: [], openingRanks: new Uint16Array(seatCount),
+  }
+  showInputs.set(show, { season, seed })
+  return show
+}
+
+function inputsOf(show: ShowState): { season: readonly SchedMap[]; seed: number } {
+  const inputs = showInputs.get(show)
+  if (!inputs) refuse('zones', 'show', 'missing season inputs; construct the show with newShow')
+  return inputs
+}
+
+export function showMaps(courses: readonly ResolvedCourse[], season?: SeasonData | null): SchedMap[] {
+  if (season) return schedMaps(season, courses).map(map => ({
+    id: map.id, course: courses.findIndex(course => course.id === map.course),
+    kind: map.kind, finalRule: map.finalRule, stages: map.stages,
+    team: map.teams !== null, cut: season.rules.cutMaps.includes(map.id),
+  }))
+  return courses.map((course, index) => {
+    const level = levelOf(course)
+    return { id: course.id, course: index, kind: level.kind, finalRule: level.finalRule,
+      stages: level.stages, team: level.teams !== null, cut: level.kind === 'race' }
+  })
+}
+
+export function roundCandidates(show: ShowState, rng: Rng): string[] {
+  const slot = nextSlot(show.cursor)
+  if (!slot) return []
+  return candidates(inputsOf(show).season, slot, show.schedule, rng,
+    slot.final || slot.stage === 'cut' || slot.playoff ? 1 : 3)
+}
+
 export function planZoneRound(
-  courses: readonly ResolvedCourse[],
-  index: number,
-  alive: readonly number[],
-  lastCourse: number,
-  rng: Rng,
+  courses: readonly ResolvedCourse[], show: ShowState, alive: readonly number[],
+  vote: { candidates: string[]; votes: readonly number[] } | null, rng: Rng,
 ): ZoneRoundPlan {
-  const plan = planRound(index, alive.length)
-  const pool = coursePool(courses, plan.kind, 'sprint')
-  if (pool.length === 0) {
-    refuse('zones', 'planZoneRound.courses', `no ${plan.kind} sprint course; add one to the playlist`)
+  const slot = nextSlot(show.cursor)
+  if (!slot) refuse('zones', 'planZoneRound', 'show is complete; start a new show before planning')
+  const { season, seed } = inputsOf(show)
+  const id = vote ? resolveVote(vote.candidates, vote.votes, seed, show.cursor.roundIndex) : roundCandidates(show, rng)[0]
+  const map = season.find(map => map.id === id)
+  if (!map || !Number.isInteger(map.course) || !courses[map.course]) {
+    refuse('zones', 'planZoneRound.courses', `missing course index for map ${id}; load its course before planning`)
   }
-  const courseIndex = pickCourse(pool, lastCourse, rng)
-  return {
-    index: plan.index, kind: plan.kind, final: plan.final, target: plan.target,
-    courseIndex, course: courses[courseIndex],
+  const teams = map.team ? new Uint8Array(alive.length) : null
+  if (teams) {
+    // Teams are indexed by dense round seat, matching roundRoster's ascending room seats.
+    const roomSeats = [...alive].sort((a, b) => a - b)
+    const ranked = roomSeats.map((seat, index) => ({ seat, index }))
+      .sort((a, b) => show.openingRanks[a.seat] - show.openingRanks[b.seat] || a.seat - b.seat)
+    for (let rank = 0; rank < ranked.length; rank++) teams[ranked[rank].index] = Math.floor((rank + 1) / 2) % 2
   }
+  show.schedule = commitMap(show.schedule, map)
+  return { index: show.cursor.roundIndex, slot, kind: slot.final ? 'final' : map.kind,
+    final: slot.final, finalRule: map.finalRule, target: slot.target, playoff: slot.playoff,
+    map: map.id, courseIndex: map.course, course: courses[map.course], teams }
 }
 
 /**

@@ -1,3 +1,4 @@
+import { showMaps } from '@royal-fiesta/game/net/zoneRounds'
 // Headless full-match zone peer: 1-4 local seats driven by the course-following takeover bot over a relay or loopback.
 import { realpathSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
@@ -233,6 +234,7 @@ export async function runZoneMatchBot(options: ZoneMatchBotOptions): Promise<Zon
     roster,
     seed,
     courses,
+    season: showMaps(courses),
     zones,
     measurements,
     farSink: options.farSink,

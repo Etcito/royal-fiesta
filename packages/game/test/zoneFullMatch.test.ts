@@ -1,3 +1,4 @@
+import { showMaps } from '../src/net/zoneRounds.ts'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
@@ -46,7 +47,7 @@ test('zoneFullMatch: every peer reports the same race and survival final', async
   try {
     for (let p = 0; p < 2; p++) {
       matches.push(createZoneFullMatch(R, {
-        localPeer: p, roster, seed: 7, courses, zones, measurements,
+        localPeer: p, roster, seed: 7, courses, season: showMaps(courses), plan: [4, 2, 1], zones, measurements,
       }, net.transport(p)))
     }
     for (let frame = 0; frame < 9000 && matches.some(match => !match.done); frame++) {
@@ -82,7 +83,7 @@ test('zoneFullMatch: every peer reports the same race and survival final', async
     assert.equal(rounds[0].course, 'race-sprint')
     const final = rounds[rounds.length - 1]
     assert.equal(final.final, true)
-    assert.equal(final.kind, 'survival')
+    assert.equal(final.kind, 'final')
     assert.equal(final.course, 'survival-sprint')
     assert.ok(champion === null || final.qualified.includes(champion))
   } finally {

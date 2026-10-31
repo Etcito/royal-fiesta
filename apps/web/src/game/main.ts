@@ -21,8 +21,10 @@ import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/
 import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
 import type { GameContent } from '@royal-fiesta/game/content'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
-import { LOCAL_COSMETICS, LOCAL_OWNED, startScreen, startStep } from '@royal-fiesta/game/flow/startScreen'
+import { LOCAL_COSMETICS, startScreen, startStep } from '@royal-fiesta/game/flow/startScreen'
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
+import { economyOwned, rewardOffline } from '@royal-fiesta/game/economy/owned'
+import type { EconomyConfig } from '@royal-fiesta/game/economy/stub'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import { HubWorld } from '@royal-fiesta/game/hub/hubWorld'
 import { QueuePad } from '@royal-fiesta/game/hub/queuePad'
@@ -42,8 +44,8 @@ import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { menuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
-import { Effect, FLOW_SCREENS, Nav, flowAction } from '@royal-fiesta/game/screens/nav'
-import type { Action, GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
+import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, flowAction } from '@royal-fiesta/game/screens/nav'
+import type { Action, EconomyScreen, GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
 import { SETTINGS_ROWS, adjust, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
 import type { KeyAction, Settings, SettingsStore } from '@royal-fiesta/game/screens/settings'
 import type { CharState } from '@royal-fiesta/sim/character/system'
@@ -77,6 +79,9 @@ import type { ScreensDoc, WidgetProps } from '../ui/screenMap.ts'
 import { createUaaHost } from '../ui/uaaHost.ts'
 import type { UaaCommand, UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
 import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
+import economyDocText from '../../../../economy/royal-fiesta.economy.json?raw'
+import { createGameEconomy, economyUrl } from '../platform/economy.ts'
+import type { GameEconomy } from '../platform/economy.ts'
 import { defaultRelay, onlineRelay } from '../platform/relay.ts'
 import { installGameOps } from './ops.ts'
 import { NetDiag } from './netDiag.ts'
@@ -92,6 +97,7 @@ import { mountRoundResults } from '../screens/roundResults.ts'
 import { mountElimShow } from '../screens/elimShow.ts'
 import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
+import { EconomyScreens } from './economyScreens.ts'
 import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { TourGame } from './uiTour.ts'
 
@@ -312,12 +318,15 @@ class ShowAdapter implements Mode {
   readonly localName: string
   private readonly actions: Action[] = []
   private lastResults: NonNullable<ShowMode['models']>['results'] = null
+  private rewardedResults = 0
+  private readonly economy: GameEconomy
   elapsedMs = 0
   round = 0
 
-  constructor(show: ShowMode, localName: string) {
+  constructor(show: ShowMode, localName: string, economy: GameEconomy) {
     this.show = show
     this.localName = localName
+    this.economy = economy
   }
 
   name = (seat: number): string => seat === 0 ? this.localName : `Bot ${seat}`
@@ -342,6 +351,11 @@ class ShowAdapter implements Mode {
       this.show.frame(f.dt, null, f.world)
     }
     this.actions.length = 0
+    const rounds = this.show.results()
+    while (this.rewardedResults < rounds.length) {
+      const latest = rounds[this.rewardedResults++]
+      if (this.economy.stub !== null) rewardOffline(this.economy.stub, latest, [0])
+    }
     const screen = this.show.screen()
     this.elapsedMs = screen === before ? this.elapsedMs + (f.paused ? 0 : f.dt * 1000) : 0
     const results = this.show.models?.results
@@ -1290,6 +1304,9 @@ class App {
   private readonly devices: InputDevices
   private readonly devicePolls: DevicePoll[] = []
   private readonly sound: SoundDriver
+  private readonly economy: GameEconomy
+  private readonly economyScreens: EconomyScreens
+  private economyScreen: EconomyScreen | null = null
   private startModel: StartScreenModel | null = null
   private startArt: StartArt | null = null
   private startView: StartScreenView | null = null
@@ -1316,6 +1333,15 @@ class App {
     this.env = env
     // The App's store (the page's storage, or memory when the frame refuses it), never the bare global.
     this.sound = new SoundDriver({ store: env.store })
+    const config = JSON.parse(economyDocText) as EconomyConfig
+    const name = onlineName(new URLSearchParams(search).get('name') ?? DEFAULT_NAME)
+    // A build without VITE_RF_ECONOMY uses the offline stub.
+    this.economy = createGameEconomy({ url: economyUrl(), store: this.env.store, name, config })
+    this.economyScreens = new EconomyScreens({
+      host: this.host, port: this.economy.port, banned: this.economy.banned,
+      cue: id => this.sound.cue(id),
+      parent: { appendChild: field => this.screens.appendChild(field as HTMLTextAreaElement) },
+    })
     try {
       this.nav.onlineOnly = defaultRelay() !== null
     } catch {
@@ -1437,6 +1463,8 @@ class App {
     this.stopLoop?.()
     this.stopLoop = null
     this.stopMode()
+    this.economyScreens.close()
+    this.economy.close()
     this.startView?.unmount()
     this.startView = null
     this.startModel = null
@@ -1463,8 +1491,20 @@ class App {
 
   private run(effects: readonly Effect[]): void {
     if (this.disposed) return
+    const screen = this.nav.screen
+    if (this.economyScreen !== null && this.economyScreen !== screen) {
+      const from = this.economyScreen
+      this.economyScreens.close()
+      this.economyScreen = null
+      if (screen === 'start' && (from === 'shop' || from === 'inbox')) void this.refreshStart()
+    }
     for (const fx of effects) {
       if (fx === Effect.load) void this.load()
+      else if (fx === Effect.openShop || fx === Effect.openInbox || fx === Effect.openCommission) {
+        const screen = fx === Effect.openShop ? 'shop' : fx === Effect.openInbox ? 'inbox' : 'commission'
+        this.economyScreen = screen
+        void this.economyScreens.open(screen)
+      }
       else if (fx === Effect.startHub) this.startMode()
       else if (fx === Effect.startOnline) this.startOnline()
       else if (fx === Effect.enqueue) this.mode?.enqueue()
@@ -1479,6 +1519,11 @@ class App {
       }
       else if (fx === Effect.leaveGame) this.stopMode()
       // pause and resume: frame() reads the paused state from nav.screen.
+    }
+    // Back from inbox or commission returns to shop without a nav effect.
+    if ((ECONOMY_SCREENS as readonly Screen[]).includes(screen) && this.economyScreen !== screen) {
+      this.economyScreen = screen as EconomyScreen
+      void this.economyScreens.open(this.economyScreen)
     }
   }
 
@@ -1648,17 +1693,35 @@ class App {
     const port = loaded.ports[0]
     if (port === undefined) return
     const content = loaded.content
+    await this.refreshStart()
+    const art = await this.buildStartArt(content, port)
+    if (this.disposed || this.loaded !== loaded) return
+    this.startArt = art
+  }
+
+  private async refreshStart(): Promise<void> {
+    const loaded = this.loaded
+    if (loaded === null) return
     let owned: readonly string[] = []
+    let badge = 0
+    let cosmetics: readonly { id: string; slot: string }[] = LOCAL_COSMETICS
+    const source = economyOwned(this.economy.port)
     try {
-      owned = await LOCAL_OWNED.owned()
+      const [items, unread, catalog] = await Promise.all([
+        source.owned(), source.unread(), this.economy.port.catalog(),
+      ])
+      owned = items
+      badge = unread
+      cosmetics = [...new Map([
+        ...LOCAL_COSMETICS,
+        ...catalog.items.filter(item => item.slot === 'head' || item.slot === 'body' || item.slot === 'bottom'),
+      ].map(item => [item.id, item])).values()]
     } catch (e) {
       console.warn('[start] wardrobe unavailable:', messageOf(e))
     }
-    const model = startScreen(owned, LOCAL_COSMETICS, 0, readWardrobe(this.env.store, this.query?.colour ?? 0))
-    const art = await this.buildStartArt(content, port)
     if (this.disposed || this.loaded !== loaded) return
-    this.startModel = model
-    this.startArt = art
+    this.startModel = startScreen(owned, cosmetics, badge, readWardrobe(this.env.store, this.query?.colour ?? 0))
+    this.startView?.update(this.startModel, null)
   }
 
   // StartArt: the character, its local cosmetics mounted on the body anchors (mountedBounds' rule), the
@@ -1767,7 +1830,7 @@ class App {
       })
       if (this.disposed || load !== this.showLoad) { show.dispose(); return }
       if (show.failure !== null) { this.fail(show.failure); return }
-      this.mode = new ShowAdapter(show, q.name)
+      this.mode = new ShowAdapter(show, q.name, this.economy)
       this.hudRound = -2
     } catch (e) {
       if (!this.disposed && load === this.showLoad) this.fail(messageOf(e))
@@ -2017,6 +2080,13 @@ class App {
       }
     }
     this.startView?.setVisible(false)
+    if ((ECONOMY_SCREENS as readonly Screen[]).includes(nav.screen)) {
+      this.screens.style.pointerEvents = 'auto'
+      this.economyScreens.draw(nav.screen as EconomyScreen)
+      this.resize()
+      this.host.frame(performance.now())
+      return
+    }
     if (this.drawShow()) {
       this.resize()
       this.host.frame(performance.now())
@@ -2077,6 +2147,25 @@ class App {
       return
     }
     const host = this.host
+    if ((ECONOMY_SCREENS as readonly Screen[]).includes(this.nav.screen)) {
+      const screen = this.nav.screen as EconomyScreen
+      if (ev.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
+      else {
+        const action = flowAction(ev)
+        if (action !== null) {
+          void this.economyScreens.action(screen, action).then(open => {
+            if (!this.disposed && this.nav.screen === screen && (open === 'inbox' || open === 'commission')) {
+              this.run(this.nav.dispatch({ kind: 'action', action: open }))
+            }
+          })
+        } else if (ev.k === 'click') {
+          host.input({ kind: 'pointer', phase: 'move', x: ev.x, y: ev.y })
+          host.input({ kind: 'pointer', phase: 'down', x: ev.x, y: ev.y })
+          host.input({ kind: 'pointer', phase: 'up', x: ev.x, y: ev.y })
+        }
+      }
+      return
+    }
     // Flow screens take keys and pad events as nav actions (flowAction), not as uaa focus. Start runs
     // startStep; vote and elimShow's models are driven by the show flow. Without a start model the start
     // menu falls back to the standard uaa focus path.

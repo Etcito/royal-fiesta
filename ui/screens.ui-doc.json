@@ -912,6 +912,593 @@
       ]
     },
     {
+      "id": "shop",
+      "initialFocus": "act-inbox",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-330, -600],
+            "offsetMax": [330, 600]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-520, -340],
+            "offsetMax": [520, 340]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Shop",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -570],
+            "offsetMax": [300, -490]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-480, -320],
+            "offsetMax": [480, -250]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -460], "offsetMax": [300, -410] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -230], "offsetMax": [-10, -190] }
+        },
+        {
+          "id": "line-1",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -390], "offsetMax": [300, -340] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -184], "offsetMax": [-10, -144] }
+        },
+        {
+          "id": "line-2",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -320], "offsetMax": [300, -270] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -138], "offsetMax": [-10, -98] }
+        },
+        {
+          "id": "line-3",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -250], "offsetMax": [300, -200] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -92], "offsetMax": [-10, -52] }
+        },
+        {
+          "id": "line-4",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -180], "offsetMax": [300, -130] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -46], "offsetMax": [-10, -6] }
+        },
+        {
+          "id": "line-5",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -110], "offsetMax": [300, -60] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 0], "offsetMax": [-10, 40] }
+        },
+        {
+          "id": "line-6",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -40], "offsetMax": [300, 10] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 46], "offsetMax": [-10, 86] }
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Up/Down choose - Enter select - Esc back",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 24,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, 350], "offsetMax": [300, 400] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 92], "offsetMax": [490, 124] }
+        },
+        {
+          "id": "act-inbox",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": { "label": "Inbox" },
+          "action": "inbox",
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-200, 120], "offsetMax": [200, 210] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-330, 134], "offsetMax": [-10, 200] },
+          "anim": { "focus": { "kind": "bounce", "duration": 200 }, "press": { "kind": "pop", "duration": 150 } }
+        },
+        {
+          "id": "act-commission",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": { "label": "Commission" },
+          "action": "commission",
+          "rect": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-200, 230], "offsetMax": [200, 320] },
+          "landscape": { "anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [10, 134], "offsetMax": [330, 200] },
+          "anim": { "focus": { "kind": "bounce", "duration": 200 }, "press": { "kind": "pop", "duration": 150 } }
+        },
+        {
+          "id": "back",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back"
+          },
+          "action": "back",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 440],
+            "offsetMax": [200, 540]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 210],
+            "offsetMax": [200, 300]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "inbox",
+      "initialFocus": "back",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-330, -600],
+            "offsetMax": [330, 600]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-520, -340],
+            "offsetMax": [520, 340]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Inbox",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -570],
+            "offsetMax": [300, -490]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-480, -320],
+            "offsetMax": [480, -250]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -460], "offsetMax": [300, -410]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -230], "offsetMax": [-10, -190]}
+        },
+        {
+          "id": "line-1",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -390], "offsetMax": [300, -340]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -184], "offsetMax": [-10, -144]}
+        },
+        {
+          "id": "line-2",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -320], "offsetMax": [300, -270]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -138], "offsetMax": [-10, -98]}
+        },
+        {
+          "id": "line-3",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -250], "offsetMax": [300, -200]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -92], "offsetMax": [-10, -52]}
+        },
+        {
+          "id": "line-4",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -180], "offsetMax": [300, -130]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -46], "offsetMax": [-10, -6]}
+        },
+        {
+          "id": "line-5",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -110], "offsetMax": [300, -60]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 0], "offsetMax": [-10, 40]}
+        },
+        {
+          "id": "inbox-buttons",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 24,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -30], "offsetMax": [300, 20]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 50], "offsetMax": [490, 86]}
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Up/Down choose - C claim - G gift - B block - Esc back",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 24,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, 350], "offsetMax": [300, 400]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 92], "offsetMax": [490, 124]}
+        },
+        {
+          "id": "back",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back"
+          },
+          "action": "back",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 440],
+            "offsetMax": [200, 540]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 210],
+            "offsetMax": [200, 300]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "commission",
+      "initialFocus": "back",
+      "enter": {
+        "kind": "pop",
+        "duration": 300
+      },
+      "exit": {
+        "kind": "fade",
+        "duration": 150
+      },
+      "widgets": [
+        {
+          "id": "card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-330, -600],
+            "offsetMax": [330, 600]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-520, -340],
+            "offsetMax": [520, 340]
+          },
+          "anim": {
+            "enter": {
+              "kind": "pop",
+              "duration": 300
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Commission",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 64,
+          "color": "#ffd23f",
+          "align": "center",
+          "outline": {
+            "width": 6,
+            "color": "#c2187a"
+          },
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-300, -570],
+            "offsetMax": [300, -490]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-480, -320],
+            "offsetMax": [480, -250]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -460], "offsetMax": [300, -410]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -230], "offsetMax": [-10, -190]}
+        },
+        {
+          "id": "line-1",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -390], "offsetMax": [300, -340]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -184], "offsetMax": [-10, -144]}
+        },
+        {
+          "id": "line-2",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-320, -320], "offsetMax": [320, -270]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-500, -138], "offsetMax": [500, -98]}
+        },
+        {
+          "id": "line-3",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -250], "offsetMax": [300, -200]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -92], "offsetMax": [-10, -52]}
+        },
+        {
+          "id": "line-4",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -180], "offsetMax": [300, -130]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, -46], "offsetMax": [-10, -6]}
+        },
+        {
+          "id": "line-5",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -110], "offsetMax": [300, -60]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 0], "offsetMax": [-10, 40]}
+        },
+        {
+          "id": "line-6",
+          "type": "label",
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 28,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, -40], "offsetMax": [300, 10]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 46], "offsetMax": [-10, 86]}
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Up/Down choose - Left/Right change - Enter submit",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 24,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": { "width": 4, "color": "#7a1f8c" },
+          "rect": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-300, 350], "offsetMax": [300, 400]},
+          "landscape": {"anchorMin": [0.5, 0.5], "anchorMax": [0.5, 0.5], "offsetMin": [-490, 92], "offsetMax": [490, 124]}
+        },
+        {
+          "id": "back",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back"
+          },
+          "action": "back",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 440],
+            "offsetMax": [200, 540]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 210],
+            "offsetMax": [200, 300]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        }
+      ]
+    },
+    {
       "id": "settings",
       "initialFocus": "row-0",
       "enter": {
@@ -4229,6 +4816,16 @@
             "offsetMin": [-228, -76],
             "offsetMax": [-178, -44]
           }
+        },
+        {
+          "id": "act-inbox",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": { "label": "Inbox" },
+          "action": "inbox",
+          "rect": { "anchorMin": [1, 0], "anchorMax": [1, 0], "offsetMin": [-168, 64], "offsetMax": [-40, 128] },
+          "landscape": { "anchorMin": [1, 0], "anchorMax": [1, 0], "offsetMin": [-168, 48], "offsetMax": [-40, 112] },
+          "anim": { "focus": { "kind": "bounce", "duration": 200 }, "press": { "kind": "pop", "duration": 150 } }
         },
         {
           "id": "inbox-badge",

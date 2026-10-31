@@ -21,6 +21,12 @@ const CTX: Record<Screen, MenuCtx> = {
   lobbyLive: ctx({ info: ['A round is being played: Ann, Bob', 'New lobby in 8 s'] }),
   start: ctx({ info: ['Season 1'] }), vote: ctx({ info: ['Round 2'] }),
   elimShow: ctx({ info: ['Bean 2'] }), endScreen: ctx({ info: ['Champion: Bean 1'] }),
+  shop: ctx({ info: ['Coins 120', 'Tickets 3', 'Common: none', 'Rare: none', 'Legendary: none',
+    'Epic: none', 'Enter to buy'] }),
+  inbox: ctx({ info: ['From: system', 'Candy crown', 'From: Ann', 'Golden ticket', 'Claimed: 2',
+    'Enter to claim'] }),
+  commission: ctx({ info: ['Tickets: 3', 'Slot: head', 'Rarity: rare', 'Cost: 4 tickets',
+    'Describe the item', '10-280 characters', 'Enter to submit'] }),
 }
 
 function actionsOf(screen: Screen): readonly Action[] {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { Effect, FLOW_SCREENS, Nav, SCREENS, flowAction, navGraph, navStates } from '../src/screens/nav.ts'
+import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, SCREENS, flowAction, navGraph, navStates } from '../src/screens/nav.ts'
 import type { Action, NavEvent, Screen } from '../src/screens/nav.ts'
 import type { LoadProgress } from '../src/content.ts'
 
@@ -113,7 +113,7 @@ test('an invalid event returns [] and leaves the state unchanged', () => {
 
 test('actions list the buttons of the current screen', () => {
   assert.deepEqual(new Nav().actions(), ['play', 'playOnline', 'settings', 'credits'])
-  assert.deepEqual(navAt(play).actions(), ['play', 'shop'])
+  assert.deepEqual(navAt(play).actions(), ['play', 'shop', 'inbox'])
   assert.deepEqual(navAt(play, play).actions(), ['queue'])
   assert.deepEqual(navAt(play, play, back).actions(), ['resume', 'settings', 'leave'])
   assert.deepEqual(navAt(play, play, { kind: 'game', screen: 'round' }).actions(), [])
@@ -247,11 +247,13 @@ test('keyboard and pad UiEvents reach the same flow actions', () => {
   assert.equal(flowAction(clickEvent), null)
 })
 
-test('title Play opens start; shop is openShop; start back returns to title; start Play starts the hub', () => {
+test('title Play opens start; shop opens the shop; start back returns to title; start Play starts the hub', () => {
   const nav = new Nav()
   assert.deepEqual(nav.dispatch(play), [])
   assert.equal(nav.screen, 'start')
   assert.deepEqual(nav.dispatch({ kind: 'action', action: 'shop' }), [Effect.openShop])
+  assert.equal(nav.screen, 'shop')
+  assert.deepEqual(nav.dispatch(back), [])
   assert.equal(nav.screen, 'start')
   assert.deepEqual(nav.dispatch(back), [])
   assert.equal(nav.screen, 'title')
@@ -259,6 +261,45 @@ test('title Play opens start; shop is openShop; start back returns to title; sta
   assert.deepEqual(started.dispatch(play), [Effect.startHub])
   assert.equal(started.screen, 'hub')
   assert.equal(started.live, true)
+})
+
+test('start -> shop -> commission -> back -> shop -> inbox -> back -> shop -> back -> start', () => {
+  const nav = navAt(play)
+  assert.equal(nav.screen, 'start')
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'shop' }), [Effect.openShop])
+  assert.equal(nav.screen, 'shop')
+  assert.deepEqual(nav.actions(), ['inbox', 'commission'])
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'commission' }), [Effect.openCommission])
+  assert.equal(nav.screen, 'commission')
+  assert.deepEqual(nav.actions(), [])
+  assert.deepEqual(nav.dispatch(back), [])
+  assert.equal(nav.screen, 'shop')
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'inbox' }), [Effect.openInbox])
+  assert.equal(nav.screen, 'inbox')
+  assert.equal(nav.inboxFrom, 'shop')
+  assert.deepEqual(nav.actions(), [])
+  assert.deepEqual(nav.dispatch(back), [])
+  assert.equal(nav.screen, 'shop')
+  assert.deepEqual(nav.dispatch(back), [])
+  assert.equal(nav.screen, 'start')
+})
+
+test('start -> inbox -> back -> start', () => {
+  const nav = navAt(play)
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'inbox' }), [Effect.openInbox])
+  assert.equal(nav.screen, 'inbox')
+  assert.equal(nav.inboxFrom, 'start')
+  assert.deepEqual(nav.dispatch(back), [])
+  assert.equal(nav.screen, 'start')
+})
+
+test('navGraph reaches shop, inbox and commission from title', () => {
+  const fromTitle = reachable(navGraph(), 'title')
+  for (const s of ECONOMY_SCREENS) assert.ok(fromTitle.has(s), `${s} unreachable`)
+})
+
+test('ECONOMY_SCREENS are shop, inbox and commission', () => {
+  assert.deepEqual([...ECONOMY_SCREENS], ['shop', 'inbox', 'commission'])
 })
 
 test('vote and elimShow pause on back; endScreen back leaves the game to start', () => {

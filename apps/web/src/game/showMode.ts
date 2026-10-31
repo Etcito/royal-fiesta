@@ -1,7 +1,6 @@
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { MAX_PEERS } from '@gamesaloon/rollback/zones'
 import type { FarSink, Roster } from '@gamesaloon/rollback/zones'
-import type { GameContent } from '@royal-fiesta/game/content'
 import type { ListenerPose } from '@royal-fiesta/game/audio/emitters'
 import { newModeBotMemory, modeBotInput } from '@royal-fiesta/game/net/modeBots'
 import { createZoneFullMatch } from '@royal-fiesta/game/net/zoneFullMatch'
@@ -17,7 +16,7 @@ import type { MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { PlayerStatus } from '@royal-fiesta/sim/match/roundSystem'
 import { roundTicks } from '@royal-fiesta/sim/match/rules'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
-import { skinnedCharacterOf } from '../content/providers/sdf.ts'
+import { zoneContent } from '../zone/zoneContent.ts'
 import { prepareZoneNetScene } from '../zone/zoneNetScene.ts'
 import type { ZoneNetScene } from '../zone/zoneNetScene.ts'
 import { ShowDirector } from './showDirector.ts'
@@ -28,7 +27,6 @@ const SHOW_SEATS_PER_PEER = 4
 
 export interface ShowModeOptions {
   R: RapierModule
-  content: GameContent
   views: HTMLElement
   seats: number
   seed: number
@@ -173,11 +171,12 @@ export class ShowMode {
 
   private async prepare(round: ZoneFullRound): Promise<void> {
     const index = round.plan.index
-    const content = this.options.content
     try {
+      const content = await zoneContent('sprint')
       const prepared = await prepareZoneNetScene({
-        canvas: this.canvas, course: round.plan.course, createPort: target => content.createPort(target),
-        character: content.character(), skinned: skinnedCharacterOf(content), dressing: content.dressing(),
+        canvas: this.canvas, course: round.plan.course, createPort: content.createPort,
+        assets: content.assets, bean: content.bean,
+        character: content.character, skinned: content.skinned, dressing: content.dressing,
       })
       if (this.disposed || this.error !== null || this.index !== index) { prepared.dispose(); return }
       const local = round.seatOf.indexOf(0)

@@ -8,7 +8,6 @@ import { matchCourses } from '@royal-fiesta/game/courseSet'
 import { showMaps } from '@royal-fiesta/game/net/zoneRounds'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
-import type { GameContent } from '@royal-fiesta/game/content'
 import type { ShowContent } from '../src/game/showContent.ts'
 
 // Replace only browser content/render boundaries; transport, full matches and bots are real.
@@ -21,7 +20,7 @@ const hooks = registerHooks({
     if (context.parentURL?.endsWith('/game/showMode.ts')) {
       const stubs: Record<string, string> = {
         './showContent.ts': 'export const loadShowContent = async () => globalThis.__showModeTest.content',
-        '../content/providers/sdf.ts': 'export const skinnedCharacterOf = () => undefined',
+        '../zone/zoneContent.ts': 'export const zoneContent = async () => ({ assets: () => ({}), bean: {}, character: {}, skinned: undefined, dressing: {}, createPort: async () => ({}) })',
         '../zone/zoneNetScene.ts': `export const prepareZoneNetScene = async () => ({
           attach: () => ({ feed: { far() {}, sleep() {} }, update() {}, render() {},
             ready: () => globalThis.__showModeTest.ready(),
@@ -54,8 +53,7 @@ function options(seats = 12) {
     clientWidth: 800, clientHeight: 600, querySelectorAll: () => [stage], appendChild() {},
     ownerDocument: { defaultView: { devicePixelRatio: 1 }, createElement: () => canvas },
   } as unknown as HTMLElement
-  return { R, views, seats, seed: 3, localName: 'Human',
-    content: { character: () => ({}), dressing: () => ({}) } as unknown as GameContent }
+  return { R, views, seats, seed: 3, localName: 'Human' }
 }
 
 test('60-seat show builds 15 peers with at most four seats, preserving human seat 0', async () => {

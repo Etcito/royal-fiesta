@@ -1759,7 +1759,7 @@ class App {
     this.run(this.nav.dispatch({ kind: 'game', screen: 'vote' }))
     try {
       const show = await ShowMode.create({
-        R: loaded.R, content: loaded.content, views: this.views,
+        R: loaded.R, views: this.views,
         seats: intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60),
         seed: Date.now(), localName: q.name,
       })

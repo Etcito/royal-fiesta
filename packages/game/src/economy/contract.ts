@@ -65,8 +65,7 @@ export class EconomyError extends Error {
   }
 }
 
-const DESCRIPTION_MIN = 10
-const DESCRIPTION_MAX = 280
+export const DESCRIPTION_LIMITS = { min: 10, max: 280 } as const
 const WORD_CHAR = '[\\p{L}\\p{M}\\p{N}_]'
 
 function escapeRegExp(text: string): string {
@@ -76,8 +75,8 @@ function escapeRegExp(text: string): string {
 export function checkDescription(text: string, banned: readonly string[]): string | null {
   const trimmed = text.trim()
   const length = [...trimmed].length
-  if (length < DESCRIPTION_MIN || length > DESCRIPTION_MAX) {
-    return `description must be ${DESCRIPTION_MIN} to ${DESCRIPTION_MAX} characters, got ${length}`
+  if (length < DESCRIPTION_LIMITS.min || length > DESCRIPTION_LIMITS.max) {
+    return `description must be ${DESCRIPTION_LIMITS.min} to ${DESCRIPTION_LIMITS.max} characters, got ${length}`
   }
   const lower = trimmed.toLowerCase()
   if (lower.includes('://') || lower.includes('www.')) {

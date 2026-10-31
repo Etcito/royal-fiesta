@@ -2,7 +2,33 @@ import {
   COINS_PER_QUALIFY, ECONOMY_ERRORS, EconomyError, GIFT_LIMIT, RARITY_TICKETS,
   checkDescription,
   type CatalogItem, type Commission, type EconomyPort, type InboxEntry, type Me,
+  type Rarity, type Slot,
 } from './contract.ts'
+
+/** The parts of economy/royal-fiesta.economy.json (gamesaloon game-economy format) the stub reads. */
+export interface EconomyConfig {
+  catalog: {
+    shop: {
+      drop: string
+      slots: Slot[]
+      rarities: Record<string, { price: Record<string, number> }>
+      items: { id: string; name: string; slot: Slot; rarity: Rarity; asset: string;
+        price: { coins?: number; tickets?: number }; edition_cap: number }[]
+      commission: { currency: string }
+    }
+    round_rewards: Record<'qualify' | 'win', { coins?: number; currencies?: Record<string, number> }>
+  }
+  settings: {
+    filter: { banned_words: string[] }
+    gifts: { count: number; window_ms: number }
+  }
+}
+
+type RoundKind = 'qualify' | 'win'
+type StubPort = EconomyPort & {
+  grant(kind: RoundKind): void
+  reportRound(matchId: string, round: number, playerId: string, kind: RoundKind): Promise<{ applied: boolean }>
+}
 
 const BANNED = ['fuck', 'shit', 'asshole', 'nazi', 'porn', 'casino', 'crypto'] as const
 
@@ -40,12 +66,46 @@ function catalogItem(item: CatalogItem): CatalogItem {
 }
 
 export function createEconomyStub(seed?: {
-  catalog?: CatalogItem[]; me?: Partial<Me>
-}): EconomyPort & {
-  grant(kind: 'qualify' | 'win'): void
-  connect(playerId: string): EconomyPort & { grant(kind: 'qualify' | 'win'): void }
+  catalog?: CatalogItem[]; me?: Partial<Me>; config?: EconomyConfig
+}): StubPort & {
+  connect(playerId: string): StubPort
+  slots: Slot[]
+  rarityTickets: Record<Rarity, number>
 } {
-  const items = (seed?.catalog ?? DEFAULT_CATALOG).map(catalogItem)
+  const config = seed?.config
+  const shop = config?.catalog.shop
+  const configCatalog = shop?.items.map((item): CatalogItem => ({
+    id: item.id, name: item.name, slot: item.slot, rarity: item.rarity, asset: item.asset,
+    price: { ...item.price }, editionCap: item.edition_cap, sold: 0, remaining: item.edition_cap,
+  }))
+  const items = (seed?.catalog ?? configCatalog ?? DEFAULT_CATALOG).map(catalogItem)
+  const banned: readonly string[] = config?.settings.filter.banned_words ?? BANNED
+  const giftLimit = config
+    ? { count: config.settings.gifts.count, windowMs: config.settings.gifts.window_ms }
+    : GIFT_LIMIT
+  const commissionCurrency = (shop?.commission.currency ?? 'tickets') as 'coins' | 'tickets'
+  const rarityTickets = { ...RARITY_TICKETS } as Record<Rarity, number>
+  if (shop) {
+    for (const rarity of Object.keys(rarityTickets) as Rarity[]) {
+      const price = shop.rarities[rarity]?.price.tickets
+      if (price !== undefined) rarityTickets[rarity] = price
+    }
+  }
+  const commissionPrice = (rarity: Rarity): number => {
+    if (!shop) return RARITY_TICKETS[rarity]
+    const price = shop.rarities[rarity]?.price[commissionCurrency]
+    if (price === undefined) refuse('no_price', `${rarity} has no price in ${commissionCurrency}`)
+    return price
+  }
+  const rewards = config?.catalog.round_rewards ?? {
+    qualify: { coins: COINS_PER_QUALIFY }, win: { currencies: { tickets: 1 } },
+  }
+  const reported = new Set<string>()
+  const applyReward = (p: Player, kind: RoundKind): void => {
+    const reward = rewards[kind]
+    p.coins += reward.coins ?? 0
+    p.tickets += reward.currencies?.tickets ?? 0
+  }
   for (const item of items) {
     if (item.price.tickets !== undefined && item.price.tickets !== RARITY_TICKETS[item.rarity]) {
       refuse('invalid', `${item.id}: price.tickets must equal RARITY_TICKETS[${item.rarity}]`)
@@ -68,14 +128,14 @@ export function createEconomyStub(seed?: {
   local.coins = seed?.me?.coins ?? 0
   local.tickets = seed?.me?.tickets ?? 0
   local.owned = new Set(seed?.me?.owned ?? [])
-  function portFor(p: Player): EconomyPort & { grant(kind: 'qualify' | 'win'): void } {
+  function portFor(p: Player): StubPort {
     const me = (): Me => ({
       playerId: p.playerId, coins: p.coins, tickets: p.tickets,
       owned: [...p.owned], inboxUnread: p.inbox.filter(entry => !entry.claimed).length,
     })
 
     return {
-      async catalog() { return { drop: 'offline', items: items.map(catalogItem) } },
+      async catalog() { return { drop: shop?.drop ?? 'offline', items: items.map(catalogItem) } },
       async me() { return me() },
       async buy(itemId, currency) {
         const item = items.find(candidate => candidate.id === itemId)
@@ -90,19 +150,23 @@ export function createEconomyStub(seed?: {
         p.owned.add(itemId)
         return { ...me(), remaining: item.editionCap - item.sold }
       },
-      grant(kind) {
-        if (kind === 'qualify') p.coins += COINS_PER_QUALIFY
-        else if (kind === 'win') p.tickets++
+      grant(kind) { applyReward(p, kind) },
+      async reportRound(matchId, round, playerId, kind) {
+        const key = `${matchId}|${round}|${playerId}|${kind}`
+        if (reported.has(key)) return { applied: false }
+        reported.add(key)
+        applyReward(player(playerId), kind)
+        return { applied: true }
       },
       async commission(slot, rarity, description) {
-        const reason = checkDescription(description, BANNED)
+        const reason = checkDescription(description, banned)
         if (reason) refuse('description_refused', reason)
-        const price = RARITY_TICKETS[rarity]
-        if (p.tickets < price) refuse('insufficient_funds', 'not enough tickets')
+        const price = commissionPrice(rarity)
+        if (p[commissionCurrency] < price) refuse('insufficient_funds', `not enough ${commissionCurrency}`)
         const entry: Commission = { id: nextId('commission'), playerId: p.playerId,
           slot, rarity, description: description.trim(), status: 'pending',
           createdAt: new Date(Date.now()).toISOString() }
-        p.tickets -= price
+        p[commissionCurrency] -= price
         allCommissions.push(entry)
         return { ...entry }
       },
@@ -134,8 +198,8 @@ export function createEconomyStub(seed?: {
           refuse('blocked', 'recipient has blocked the sender')
         }
         const now = Date.now()
-        const recent = p.gifts.filter(date => date > now - GIFT_LIMIT.windowMs)
-        if (recent.length >= GIFT_LIMIT.count) refuse('rate_limited', 'gift limit reached')
+        const recent = p.gifts.filter(date => date > now - giftLimit.windowMs)
+        if (recent.length >= giftLimit.count) refuse('rate_limited', 'gift limit reached')
         const entry: InboxEntry = { id: nextId('gift'), item: itemId,
           sender: { kind: 'player', id: p.playerId }, message,
           date: new Date(now).toISOString(), claimed: false }
@@ -151,5 +215,7 @@ export function createEconomyStub(seed?: {
   return {
     ...portFor(local),
     connect(playerId: string) { return portFor(player(playerId)) },
+    slots: [...(shop?.slots ?? ['head', 'body', 'bottom', 'special'])],
+    rarityTickets,
   }
 }

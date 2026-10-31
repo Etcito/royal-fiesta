@@ -1,0 +1,21 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "test-flat-team",
+  "grid": {
+    "origin": [
+      -20,
+      -20
+    ],
+    "cell": [
+      2,
+      2
+    ],
+    "cols": 20,
+    "rows": 20
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 20
+  }
+}

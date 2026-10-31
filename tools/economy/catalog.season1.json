@@ -1,0 +1,145 @@
+{
+  "drop": "s1-drop-1",
+  "items": [
+    {
+      "id": "costume.propeller-hat",
+      "name": "Propeller Hat",
+      "slot": "head",
+      "rarity": "common",
+      "asset": "costume.propeller-hat",
+      "price": {
+        "coins": 30,
+        "tickets": 3
+      },
+      "editionCap": 500
+    },
+    {
+      "id": "costume.jester-hat",
+      "name": "Jester Hat",
+      "slot": "head",
+      "rarity": "rare",
+      "asset": "costume.jester-hat",
+      "price": {
+        "coins": 60
+      },
+      "editionCap": 150
+    },
+    {
+      "id": "costume.golden-crown",
+      "name": "Golden Crown",
+      "slot": "head",
+      "rarity": "legendary",
+      "asset": "costume.golden-crown",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60
+    },
+    {
+      "id": "costume.pineapple-suit",
+      "name": "Pineapple Suit",
+      "slot": "body",
+      "rarity": "common",
+      "asset": "costume.pineapple-suit",
+      "price": {
+        "coins": 30
+      },
+      "editionCap": 500
+    },
+    {
+      "id": "costume.disco-jacket",
+      "name": "Disco Jacket",
+      "slot": "body",
+      "rarity": "rare",
+      "asset": "costume.disco-jacket",
+      "price": {
+        "coins": 60,
+        "tickets": 4
+      },
+      "editionCap": 150
+    },
+    {
+      "id": "costume.dragon-suit",
+      "name": "Dragon Suit",
+      "slot": "body",
+      "rarity": "epic",
+      "asset": "costume.dragon-suit",
+      "price": {
+        "coins": 200,
+        "tickets": 6
+      },
+      "editionCap": 25
+    },
+    {
+      "id": "costume.fish-scarf",
+      "name": "Fish Scarf",
+      "slot": "bottom",
+      "rarity": "common",
+      "asset": "costume.fish-scarf",
+      "price": {
+        "coins": 30,
+        "tickets": 3
+      },
+      "editionCap": 500
+    },
+    {
+      "id": "costume.neon-sneakers",
+      "name": "Neon Sneakers",
+      "slot": "bottom",
+      "rarity": "rare",
+      "asset": "costume.neon-sneakers",
+      "price": {
+        "coins": 60
+      },
+      "editionCap": 150
+    },
+    {
+      "id": "costume.cloud-skirt",
+      "name": "Cloud Skirt",
+      "slot": "bottom",
+      "rarity": "legendary",
+      "asset": "costume.cloud-skirt",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60
+    },
+    {
+      "id": "costume.sparkler-wand",
+      "name": "Sparkler Wand",
+      "slot": "special",
+      "rarity": "common",
+      "asset": "costume.sparkler-wand",
+      "price": {
+        "coins": 30
+      },
+      "editionCap": 500
+    },
+    {
+      "id": "costume.jetpack",
+      "name": "Candy Jetpack",
+      "slot": "special",
+      "rarity": "legendary",
+      "asset": "costume.jetpack",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60
+    },
+    {
+      "id": "costume.ghost-aura",
+      "name": "Ghost Aura",
+      "slot": "special",
+      "rarity": "epic",
+      "asset": "costume.ghost-aura",
+      "price": {
+        "coins": 200,
+        "tickets": 6
+      },
+      "editionCap": 25
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{ "haa": 1, "id": "amb.jungle", "title": "Jungle: insects, birds and leaf rustle",
+  "inputs": [], "master": 2.1,
+  "graph": { "duration": 16, "loop": true, "mode": "live",
+    "nodes": [
+      {"id":"out","type":"output","x":40,"y":40,"label":"Bed output before bus gain","params":{"gain":1}},
+      {"id":"air-space","type":"space","x":280,"y":40,"label":"Wide soft reflections","params":{"size":0.65,"damping":0.7,"mix":0.18,"width":1,"distance":0.25}},
+      {"id":"air","type":"noise","x":520,"y":40,"label":"Independent seeded stereo air","params":{"color":"pink","level":0.44,"width":0.95}},
+      {"id":"air-body","type":"filter","x":760,"y":40,"label":"air-body","params":{"cutoff":2600,"resonance":0.7,"mode":"lowpass"}},
+      {"id":"gust","type":"random","x":1000,"y":40,"label":"gust","params":{"rate":0.16,"depth":1,"smooth":1}},
+      {"id":"breath","type":"gain","x":40,"y":190,"label":"Continuous breeze, no boundary envelope","params":{"gain":0.75}},
+      {"id":"leaf-rustle","type":"grain","x":280,"y":190,"label":"leaf-rustle","params":{"wave":"filtered-noise","frequency":1900,"rate":1.4,"attack":0.04,"decay":0.22,"spread":9,"jitter":1,"variation":0.7,"glide":0,"delay":0.3,"width":0.9,"level":0.12,"resonance":0.6}},
+      {"id":"insect-cloud","type":"grain","x":520,"y":190,"label":"insect-cloud","params":{"wave":"filtered-noise","frequency":4800,"rate":19,"attack":0.003,"decay":0.024,"spread":2,"jitter":1,"variation":0.7,"glide":0,"delay":0.1,"width":0.9,"level":0.12,"resonance":2.5}},
+      {"id":"bird-up","type":"grain","x":760,"y":190,"label":"bird-up","params":{"wave":"sine","frequency":1800,"rate":0.45,"attack":0.018,"decay":0.12,"spread":7,"jitter":1,"variation":0.7,"glide":0.6,"delay":0.8,"width":0.9,"level":0.075}},
+      {"id":"bird-answer","type":"grain","x":1000,"y":190,"label":"bird-answer","params":{"wave":"sine","frequency":2600,"rate":0.3,"attack":0.012,"decay":0.16,"spread":5,"jitter":1,"variation":0.7,"glide":-0.38,"delay":2.1,"width":0.9,"level":0.06}},
+      {"id":"canopy-life","type":"random","x":40,"y":340,"label":"canopy-life","params":{"rate":0.31,"depth":1,"smooth":1}},
+      {"id":"insect-swell","type":"gain","x":280,"y":340,"label":"insect-swell","params":{"gain":0.6}}
+    ],
+    "connections": [
+      {"id":"c1","from":"air-space","to":"out","target":"audio","amount":1},
+      {"id":"c2","from":"air","to":"air-body","target":"audio","amount":1},
+      {"id":"c3","from":"air-body","to":"breath","target":"audio","amount":1},
+      {"id":"c4","from":"gust","to":"breath","target":"gain","amount":0.22},
+      {"id":"c5","from":"gust","to":"air-body","target":"cutoff","amount":728.0000000000001},
+      {"id":"c6","from":"breath","to":"air-space","target":"audio","amount":1},
+      {"id":"c7","from":"insect-cloud","to":"insect-swell","target":"audio","amount":1},
+      {"id":"c8","from":"canopy-life","to":"insect-swell","target":"gain","amount":0.35},
+      {"id":"c9","from":"leaf-rustle","to":"air-space","target":"audio","amount":1},
+      {"id":"c10","from":"insect-swell","to":"air-space","target":"audio","amount":1},
+      {"id":"c11","from":"bird-up","to":"air-space","target":"audio","amount":1},
+      {"id":"c12","from":"bird-answer","to":"air-space","target":"audio","amount":1}
+    ], "performance": null
+  }
+}

@@ -1,0 +1,29 @@
+{ "haa": 1, "id": "amb.ice", "title": "Ice: cold wind and sparse crystalline tinkles",
+  "inputs": [], "master": 2.1,
+  "graph": { "duration": 16, "loop": true, "mode": "live",
+    "nodes": [
+      {"id":"out","type":"output","x":40,"y":40,"label":"Bed output before bus gain","params":{"gain":1}},
+      {"id":"air-space","type":"space","x":280,"y":40,"label":"Wide soft reflections","params":{"size":0.65,"damping":0.7,"mix":0.18,"width":1,"distance":0.25}},
+      {"id":"air","type":"noise","x":520,"y":40,"label":"Independent seeded stereo air","params":{"color":"pink","level":0.55,"width":0.95}},
+      {"id":"air-body","type":"filter","x":760,"y":40,"label":"air-body","params":{"cutoff":1900,"resonance":0.7,"mode":"lowpass"}},
+      {"id":"gust","type":"random","x":1000,"y":40,"label":"gust","params":{"rate":0.16,"depth":1,"smooth":1}},
+      {"id":"breath","type":"gain","x":40,"y":190,"label":"Continuous breeze, no boundary envelope","params":{"gain":0.75}},
+      {"id":"wind-hollow","type":"filter","x":280,"y":190,"label":"wind-hollow","params":{"cutoff":480,"resonance":0.7,"mode":"highpass"}},
+      {"id":"crystals","type":"grain","x":520,"y":190,"label":"crystals","params":{"wave":"sine","frequency":2349.32,"rate":0.24,"attack":0.008,"decay":0.8,"spread":12,"jitter":1,"variation":0.7,"glide":0,"delay":1.8,"width":0.9,"level":0.075}},
+      {"id":"crystal-overtones","type":"grain","x":760,"y":190,"label":"crystal-overtones","params":{"wave":"sine","frequency":4698.64,"rate":0.13,"attack":0.008,"decay":0.38,"spread":9,"jitter":1,"variation":0.7,"glide":0,"delay":3.2,"width":0.9,"level":0.025}},
+      {"id":"wind-edge","type":"random","x":1000,"y":190,"label":"wind-edge","params":{"rate":0.09,"depth":1,"smooth":1}}
+    ],
+    "connections": [
+      {"id":"c1","from":"air-space","to":"out","target":"audio","amount":1},
+      {"id":"c2","from":"air","to":"air-body","target":"audio","amount":1},
+      {"id":"c3","from":"air-body","to":"breath","target":"audio","amount":1},
+      {"id":"c4","from":"gust","to":"breath","target":"gain","amount":0.22},
+      {"id":"c5","from":"gust","to":"air-body","target":"cutoff","amount":532},
+      {"id":"c6","from":"breath","to":"wind-hollow","target":"audio","amount":1},
+      {"id":"c7","from":"wind-hollow","to":"air-space","target":"audio","amount":1},
+      {"id":"c8","from":"wind-edge","to":"wind-hollow","target":"cutoff","amount":160},
+      {"id":"c9","from":"crystals","to":"air-space","target":"audio","amount":1},
+      {"id":"c10","from":"crystal-overtones","to":"air-space","target":"audio","amount":1}
+    ], "performance": null
+  }
+}

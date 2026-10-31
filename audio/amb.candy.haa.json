@@ -1,0 +1,33 @@
+{ "haa": 1, "id": "amb.candy", "title": "Candy fairground: distant chimes and sugary breeze",
+  "inputs": [], "master": 2.1,
+  "graph": { "duration": 16, "loop": true, "mode": "live",
+    "nodes": [
+      {"id":"out","type":"output","x":40,"y":40,"label":"Bed output before bus gain","params":{"gain":1}},
+      {"id":"air-space","type":"space","x":280,"y":40,"label":"Wide soft reflections","params":{"size":0.65,"damping":0.7,"mix":0.18,"width":1,"distance":0.25}},
+      {"id":"air","type":"noise","x":520,"y":40,"label":"Independent seeded stereo air","params":{"color":"pink","level":0.48,"width":0.95}},
+      {"id":"air-body","type":"filter","x":760,"y":40,"label":"air-body","params":{"cutoff":1250,"resonance":0.7,"mode":"lowpass"}},
+      {"id":"gust","type":"random","x":1000,"y":40,"label":"gust","params":{"rate":0.16,"depth":1,"smooth":1}},
+      {"id":"breath","type":"gain","x":40,"y":190,"label":"Continuous breeze, no boundary envelope","params":{"gain":0.75}},
+      {"id":"glass-chimes","type":"grain","x":280,"y":190,"label":"glass-chimes","params":{"wave":"sine","frequency":1568,"rate":0.38,"attack":0.008,"decay":0.7,"spread":7,"jitter":1,"variation":0.7,"glide":0,"delay":1.1,"width":0.9,"level":0.085}},
+      {"id":"tiny-bells","type":"grain","x":520,"y":190,"label":"tiny-bells","params":{"wave":"sine","frequency":3136,"rate":0.23,"attack":0.008,"decay":0.45,"spread":4,"jitter":1,"variation":0.7,"glide":0,"delay":2.3,"width":0.9,"level":0.04}},
+      {"id":"fairground-fifth","type":"oscillator","x":760,"y":190,"label":"fairground-fifth","params":{"frequency":392,"level":0.018,"wave":"triangle"}},
+      {"id":"fairground-root","type":"oscillator","x":1000,"y":190,"label":"fairground-root","params":{"frequency":261.63,"level":0.021,"wave":"triangle"}},
+      {"id":"distant-swirl","type":"random","x":40,"y":340,"label":"distant-swirl","params":{"rate":0.11,"depth":1,"smooth":1}},
+      {"id":"fairground-distance","type":"gain","x":280,"y":340,"label":"fairground-distance","params":{"gain":0.65}}
+    ],
+    "connections": [
+      {"id":"c1","from":"air-space","to":"out","target":"audio","amount":1},
+      {"id":"c2","from":"air","to":"air-body","target":"audio","amount":1},
+      {"id":"c3","from":"air-body","to":"breath","target":"audio","amount":1},
+      {"id":"c4","from":"gust","to":"breath","target":"gain","amount":0.22},
+      {"id":"c5","from":"gust","to":"air-body","target":"cutoff","amount":350.00000000000006},
+      {"id":"c6","from":"breath","to":"air-space","target":"audio","amount":1},
+      {"id":"c7","from":"fairground-root","to":"fairground-distance","target":"audio","amount":1},
+      {"id":"c8","from":"fairground-fifth","to":"fairground-distance","target":"audio","amount":1},
+      {"id":"c9","from":"distant-swirl","to":"fairground-distance","target":"gain","amount":0.3},
+      {"id":"c10","from":"fairground-distance","to":"air-space","target":"audio","amount":1},
+      {"id":"c11","from":"glass-chimes","to":"air-space","target":"audio","amount":1},
+      {"id":"c12","from":"tiny-bells","to":"air-space","target":"audio","amount":1}
+    ], "performance": null
+  }
+}

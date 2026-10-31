@@ -1,0 +1,37 @@
+{ "haa": 1, "id": "amb.neon", "title": "Neon: electric city hum and soft synth shimmer",
+  "inputs": [], "master": 2.1,
+  "graph": { "duration": 16, "loop": true, "mode": "live",
+    "nodes": [
+      {"id":"out","type":"output","x":40,"y":40,"label":"Bed output before bus gain","params":{"gain":1}},
+      {"id":"air-space","type":"space","x":280,"y":40,"label":"Wide soft reflections","params":{"size":0.65,"damping":0.7,"mix":0.18,"width":1,"distance":0.25}},
+      {"id":"air","type":"noise","x":520,"y":40,"label":"Independent seeded stereo air","params":{"color":"brown","level":0.44,"width":0.95}},
+      {"id":"air-body","type":"filter","x":760,"y":40,"label":"air-body","params":{"cutoff":1500,"resonance":0.7,"mode":"lowpass"}},
+      {"id":"gust","type":"random","x":1000,"y":40,"label":"gust","params":{"rate":0.16,"depth":1,"smooth":1}},
+      {"id":"breath","type":"gain","x":40,"y":190,"label":"Continuous breeze, no boundary envelope","params":{"gain":0.75}},
+      {"id":"mains","type":"oscillator","x":280,"y":190,"label":"mains","params":{"frequency":60,"level":0.065,"wave":"sine"}},
+      {"id":"transformer","type":"oscillator","x":520,"y":190,"label":"transformer","params":{"frequency":120.13,"level":0.025,"wave":"triangle"}},
+      {"id":"shimmer-a","type":"oscillator","x":760,"y":190,"label":"shimmer-a","params":{"frequency":523.25,"level":0.025,"wave":"sine"}},
+      {"id":"shimmer-b","type":"oscillator","x":1000,"y":190,"label":"shimmer-b","params":{"frequency":784.6,"level":0.018,"wave":"sine"}},
+      {"id":"voltage-drift","type":"random","x":40,"y":340,"label":"voltage-drift","params":{"rate":0.14,"depth":1,"smooth":1}},
+      {"id":"shimmer-swell","type":"random","x":280,"y":340,"label":"shimmer-swell","params":{"rate":0.23,"depth":1,"smooth":1}},
+      {"id":"shimmer","type":"gain","x":520,"y":340,"label":"shimmer","params":{"gain":0.65}},
+      {"id":"city-sparks","type":"grain","x":760,"y":340,"label":"city-sparks","params":{"wave":"sine","frequency":2093,"rate":0.65,"attack":0.045,"decay":0.65,"spread":5,"jitter":1,"variation":0.7,"glide":0.05,"delay":0.3,"width":0.9,"level":0.028}}
+    ],
+    "connections": [
+      {"id":"c1","from":"air-space","to":"out","target":"audio","amount":1},
+      {"id":"c2","from":"air","to":"air-body","target":"audio","amount":1},
+      {"id":"c3","from":"air-body","to":"breath","target":"audio","amount":1},
+      {"id":"c4","from":"gust","to":"breath","target":"gain","amount":0.22},
+      {"id":"c5","from":"gust","to":"air-body","target":"cutoff","amount":420.00000000000006},
+      {"id":"c6","from":"breath","to":"air-space","target":"audio","amount":1},
+      {"id":"c7","from":"shimmer-a","to":"shimmer","target":"audio","amount":1},
+      {"id":"c8","from":"shimmer-b","to":"shimmer","target":"audio","amount":1},
+      {"id":"c9","from":"shimmer-swell","to":"shimmer","target":"gain","amount":0.3},
+      {"id":"c10","from":"voltage-drift","to":"shimmer-b","target":"frequency","amount":2.5},
+      {"id":"c11","from":"mains","to":"air-space","target":"audio","amount":1},
+      {"id":"c12","from":"transformer","to":"air-space","target":"audio","amount":1},
+      {"id":"c13","from":"shimmer","to":"air-space","target":"audio","amount":1},
+      {"id":"c14","from":"city-sparks","to":"air-space","target":"audio","amount":1}
+    ], "performance": null
+  }
+}

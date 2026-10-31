@@ -1,0 +1,39 @@
+{
+  "haa":1, "id":"flow.elim-drop", "title":"Seeded rubber plop and breathy whoosh for each thrown character",
+  "inputs":[], "master":0.649239,
+  "graph":{
+    "duration":0.4, "loop":false, "mode":"timeline",
+    "nodes":[
+      {"id":"choose-material","type":"curve","x":40,"y":490,"label":"Brief random clock burst before the plop attack","params":{"amount":1},"curve":[[0,1],[0.015,1],[0.0175,0],[1,0]]},
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded pitch and material chosen at the attack, then held","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":260,"y":40,"label":"Sting output","params":{"gain":1}},
+      {"id":"plop","type":"oscillator","x":480,"y":40,"label":"plop","params":{"frequency":400,"wave":"sine","level":0.85}},
+      {"id":"plop-env","type":"curve","x":700,"y":40,"label":"plop-env","params":{"amount":1},"curve":[[0,0],[0.03,1],[0.1625,0.85],[0.475,0.3],[0.85,0],[1,0]]},
+      {"id":"plop-amp","type":"gain","x":920,"y":40,"label":"plop-amp","params":{"gain":0}},
+      {"id":"plop-h2","type":"oscillator","x":40,"y":190,"label":"plop-h2","params":{"frequency":800,"wave":"sine","level":0.187}},
+      {"id":"pitch-drop","type":"curve","x":260,"y":190,"label":"pitch-drop","params":{"amount":1},"curve":[[0,1],[0.1125,0.7],[0.35,0.15],[0.7,0],[1,0]]},
+      {"id":"air","type":"noise","x":480,"y":190,"label":"air","params":{"color":"white","level":0.8,"width":0.4}},
+      {"id":"air-filter","type":"filter","x":700,"y":190,"label":"air-filter","params":{"cutoff":2100,"resonance":0.7,"mode":"bandpass"}},
+      {"id":"air-env","type":"curve","x":920,"y":190,"label":"air-env","params":{"amount":1},"curve":[[0,0],[0.0375,0.85],[0.1375,1],[0.375,0.55],[0.8,0],[1,0]]},
+      {"id":"air-amp","type":"gain","x":40,"y":340,"label":"air-amp","params":{"gain":0}}
+    ],
+    "connections":[
+      {"id":"choose-material-variation-rate","from":"choose-material","to":"variation","target":"rate","amount":2000},
+      {"id":"variation-plop-frequency","from":"variation","to":"plop","target":"frequency","amount":265},
+      {"id":"plop-plop-amp-audio","from":"plop","to":"plop-amp","target":"audio","amount":1},
+      {"id":"plop-env-plop-amp-gain","from":"plop-env","to":"plop-amp","target":"gain","amount":1},
+      {"id":"plop-amp-out-audio","from":"plop-amp","to":"out","target":"audio","amount":1},
+      {"id":"plop-h2-plop-amp-audio","from":"plop-h2","to":"plop-amp","target":"audio","amount":1},
+      {"id":"variation-plop-h2-frequency","from":"variation","to":"plop-h2","target":"frequency","amount":265},
+      {"id":"pitch-drop-plop-frequency","from":"pitch-drop","to":"plop","target":"frequency","amount":260},
+      {"id":"pitch-drop-plop-h2-frequency","from":"pitch-drop","to":"plop-h2","target":"frequency","amount":400},
+      {"id":"air-air-filter-audio","from":"air","to":"air-filter","target":"audio","amount":1},
+      {"id":"air-filter-air-amp-audio","from":"air-filter","to":"air-amp","target":"audio","amount":1},
+      {"id":"air-env-air-amp-gain","from":"air-env","to":"air-amp","target":"gain","amount":1},
+      {"id":"air-amp-out-audio","from":"air-amp","to":"out","target":"audio","amount":1},
+      {"id":"variation-air-filter-cutoff","from":"variation","to":"air-filter","target":"cutoff","amount":1600},
+      {"id":"variation-air-level","from":"variation","to":"air","target":"level","amount":0.18},
+      {"id":"variation-plop-h2-level","from":"variation","to":"plop-h2","target":"level","amount":0.15}
+    ]
+  }
+}

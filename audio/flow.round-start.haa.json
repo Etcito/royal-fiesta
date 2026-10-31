@@ -1,0 +1,43 @@
+{
+  "haa":1, "id":"flow.round-start", "title":"Referee whistle over a brisk snare roll and drum accent",
+  "inputs":[], "master":0.618789,
+  "graph":{
+    "duration":1.2, "loop":false, "mode":"timeline",
+    "nodes":[
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded tuning and material colour held for the whole sting","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":260,"y":40,"label":"Sting output","params":{"gain":1}},
+      {"id":"whistle","type":"oscillator","x":480,"y":40,"label":"whistle","params":{"frequency":2120,"wave":"sine","level":0.55}},
+      {"id":"whistle-env","type":"curve","x":700,"y":40,"label":"whistle-env","params":{"amount":1},"curve":[[0,0],[0.01,1],[0.15,0.85],[0.191667,0],[0.258333,0],[0.275,1],[0.583333,0.8],[0.783333,0],[1,0]]},
+      {"id":"whistle-amp","type":"gain","x":920,"y":40,"label":"whistle-amp","params":{"gain":0}},
+      {"id":"whistle-h2","type":"oscillator","x":40,"y":190,"label":"whistle-h2","params":{"frequency":4240,"wave":"sine","level":0.066}},
+      {"id":"flutter","type":"lfo","x":260,"y":190,"label":"Human whistle flutter","params":{"rate":7.4,"depth":1,"wave":"sine"}},
+      {"id":"whistle-lift","type":"curve","x":480,"y":190,"label":"whistle-lift","params":{"amount":1},"curve":[[0,0],[0.066667,1],[0.191667,0.6],[0.258333,0.6],[0.35,1],[1,0.7]]},
+      {"id":"snare","type":"noise","x":700,"y":190,"label":"snare","params":{"color":"white","level":0.85,"width":0.45}},
+      {"id":"snare-filter","type":"filter","x":920,"y":190,"label":"snare-filter","params":{"cutoff":2800,"resonance":0.7,"mode":"highpass"}},
+      {"id":"snare-env","type":"curve","x":40,"y":340,"label":"snare-env","params":{"amount":1},"curve":[[0,0],[0.008333,0],[0.0125,0.35],[0.035,0],[0.054167,0],[0.058333,0.43],[0.080833,0],[0.1,0],[0.104167,0.52],[0.126667,0],[0.141667,0],[0.145833,0.62],[0.168333,0],[0.179167,0],[0.183333,0.72],[0.205833,0],[0.2125,0],[0.216667,0.85],[0.239167,0],[0.245833,0],[0.25,1],[0.2725,0],[0.291667,0],[0.3,1],[0.333333,0.65],[0.45,0],[1,0]]},
+      {"id":"snare-amp","type":"gain","x":260,"y":340,"label":"snare-amp","params":{"gain":0}},
+      {"id":"drum","type":"oscillator","x":480,"y":340,"label":"drum","params":{"frequency":150,"wave":"triangle","level":0.62}},
+      {"id":"drum-env","type":"curve","x":700,"y":340,"label":"drum-env","params":{"amount":1},"curve":[[0,0],[0.283333,0],[0.295833,1],[0.35,0.55],[0.508333,0],[1,0]]},
+      {"id":"drum-amp","type":"gain","x":920,"y":340,"label":"drum-amp","params":{"gain":0}}
+    ],
+    "connections":[
+      {"id":"variation-whistle-frequency","from":"variation","to":"whistle","target":"frequency","amount":24},
+      {"id":"whistle-whistle-amp-audio","from":"whistle","to":"whistle-amp","target":"audio","amount":1},
+      {"id":"whistle-env-whistle-amp-gain","from":"whistle-env","to":"whistle-amp","target":"gain","amount":1},
+      {"id":"whistle-amp-out-audio","from":"whistle-amp","to":"out","target":"audio","amount":1},
+      {"id":"variation-whistle-h2-frequency","from":"variation","to":"whistle-h2","target":"frequency","amount":48},
+      {"id":"whistle-h2-whistle-amp-audio","from":"whistle-h2","to":"whistle-amp","target":"audio","amount":1},
+      {"id":"flutter-whistle-frequency","from":"flutter","to":"whistle","target":"frequency","amount":18},
+      {"id":"whistle-lift-whistle-frequency","from":"whistle-lift","to":"whistle","target":"frequency","amount":210},
+      {"id":"snare-snare-filter-audio","from":"snare","to":"snare-filter","target":"audio","amount":1},
+      {"id":"snare-filter-snare-amp-audio","from":"snare-filter","to":"snare-amp","target":"audio","amount":1},
+      {"id":"snare-env-snare-amp-gain","from":"snare-env","to":"snare-amp","target":"gain","amount":1},
+      {"id":"snare-amp-out-audio","from":"snare-amp","to":"out","target":"audio","amount":1},
+      {"id":"variation-snare-filter-cutoff","from":"variation","to":"snare-filter","target":"cutoff","amount":350},
+      {"id":"variation-drum-frequency","from":"variation","to":"drum","target":"frequency","amount":15},
+      {"id":"drum-drum-amp-audio","from":"drum","to":"drum-amp","target":"audio","amount":1},
+      {"id":"drum-env-drum-amp-gain","from":"drum-env","to":"drum-amp","target":"gain","amount":1},
+      {"id":"drum-amp-out-audio","from":"drum-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

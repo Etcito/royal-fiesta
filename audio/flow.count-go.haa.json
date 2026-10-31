@@ -1,0 +1,42 @@
+{
+  "haa":1, "id":"flow.count-go", "title":"Bright octave-up GO hit with a punchy drum and sparkling attack",
+  "inputs":[], "master":0.86,
+  "graph":{
+    "duration":0.8, "loop":false, "mode":"timeline",
+    "nodes":[
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded countdown tuning, doubled for GO","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"out","type":"output","x":920,"y":40,"label":"Centered GO output","params":{"gain":1}},
+      {"id":"beep","type":"oscillator","x":260,"y":40,"label":"GO fundamental: one octave above the 880 Hz count","params":{"frequency":1760,"wave":"sine","level":0.72}},
+      {"id":"bright-h2","type":"oscillator","x":260,"y":190,"label":"Bright second harmonic","params":{"frequency":3520,"wave":"sine","level":0.18}},
+      {"id":"bright-h3","type":"oscillator","x":260,"y":340,"label":"Sparkling third harmonic","params":{"frequency":5280,"wave":"sine","level":0.07}},
+      {"id":"hit-env","type":"curve","x":480,"y":40,"label":"Fast confident hit with a ringing tail","params":{"amount":1},"curve":[[0,0],[0.0075,1],[0.15,0.93],[0.4,0.62],[0.75,0.2],[0.975,0],[1,0]]},
+      {"id":"hit-amp","type":"gain","x":700,"y":40,"label":"Tonal hit envelope","params":{"gain":0}},
+      {"id":"drum","type":"oscillator","x":260,"y":490,"label":"Low drum weight below the bright GO","params":{"frequency":110,"wave":"sine","level":0.42}},
+      {"id":"drum-drop","type":"curve","x":480,"y":340,"label":"Short drum pitch drop","params":{"amount":1},"curve":[[0,1],[0.1,0.3],[0.3,0],[1,0]]},
+      {"id":"drum-env","type":"curve","x":480,"y":490,"label":"Rounded drum transient","params":{"amount":1},"curve":[[0,0],[0.01,1],[0.1,0.75],[0.3,0.2],[0.5,0],[1,0]]},
+      {"id":"drum-amp","type":"gain","x":700,"y":490,"label":"Drum envelope","params":{"gain":0}},
+      {"id":"snap","type":"noise","x":260,"y":640,"label":"Airy bright attack","params":{"color":"white","level":0.32,"width":0.35}},
+      {"id":"snap-filter","type":"filter","x":480,"y":640,"label":"High sparkle","params":{"cutoff":4200,"resonance":0.7,"mode":"highpass"}},
+      {"id":"snap-env","type":"curve","x":480,"y":790,"label":"Brief sparkle decay","params":{"amount":1},"curve":[[0,0],[0.005,1],[0.075,0.25],[0.2,0],[1,0]]},
+      {"id":"snap-amp","type":"gain","x":700,"y":640,"label":"Sparkle envelope","params":{"gain":0}}
+    ],
+    "connections":[
+      {"id":"take-beep","from":"take","to":"beep","target":"frequency","amount":8},
+      {"id":"take-h2","from":"take","to":"bright-h2","target":"frequency","amount":16},
+      {"id":"take-h3","from":"take","to":"bright-h3","target":"frequency","amount":24},
+      {"id":"beep-hit","from":"beep","to":"hit-amp","target":"audio","amount":1},
+      {"id":"h2-hit","from":"bright-h2","to":"hit-amp","target":"audio","amount":1},
+      {"id":"h3-hit","from":"bright-h3","to":"hit-amp","target":"audio","amount":1},
+      {"id":"hit-envelope","from":"hit-env","to":"hit-amp","target":"gain","amount":1},
+      {"id":"hit-out","from":"hit-amp","to":"out","target":"audio","amount":1},
+      {"id":"drum-drop","from":"drum-drop","to":"drum","target":"frequency","amount":120},
+      {"id":"drum-audio","from":"drum","to":"drum-amp","target":"audio","amount":1},
+      {"id":"drum-envelope","from":"drum-env","to":"drum-amp","target":"gain","amount":1},
+      {"id":"drum-out","from":"drum-amp","to":"out","target":"audio","amount":1},
+      {"id":"snap-filter","from":"snap","to":"snap-filter","target":"audio","amount":1},
+      {"id":"snap-audio","from":"snap-filter","to":"snap-amp","target":"audio","amount":1},
+      {"id":"snap-envelope","from":"snap-env","to":"snap-amp","target":"gain","amount":1},
+      {"id":"snap-out","from":"snap-amp","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

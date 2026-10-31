@@ -69,6 +69,12 @@ const LABELS: Readonly<Record<Action, string>> = Object.freeze({
   join: 'Join this lobby',
   spectate: 'Spectate',
   newLobby: 'New lobby',
+  shop: 'Shop',
+  up: '\u2191',
+  down: '\u2193',
+  left: '\u2190',
+  right: '\u2192',
+  confirm: 'Continue',
 })
 
 const TITLES: Readonly<Record<Screen, string>> = Object.freeze({
@@ -87,13 +93,19 @@ const TITLES: Readonly<Record<Screen, string>> = Object.freeze({
   loading: 'Loading',
   lobbyChoice: 'A lobby is open',
   lobbyLive: 'A round is on',
+  start: 'Royal Fiesta',
+  vote: 'Vote for the next round',
+  elimShow: 'Eliminated',
+  endScreen: 'Champion',
 })
 
-const OVERLAY: readonly Screen[] = ['hub', 'countdown', 'round', 'spectate']
+// vote and elimShow are HUD-like (no back button; back pauses the match).
+const OVERLAY: readonly Screen[] = ['hub', 'countdown', 'round', 'spectate', 'vote', 'elimShow']
 // Screens without a final 'Back' button (title is the root, the rest are HUDs).
 // Loading has none either: it ends only when the load succeeds or fails.
 // The lobby choice neither: unanswered (or on back) it takes its default by itself.
-const NO_BACK: readonly Screen[] = ['title', 'loading', 'lobbyChoice', 'lobbyLive', ...OVERLAY]
+// The end screen offers Continue; back still leaves the game to the start menu.
+const NO_BACK: readonly Screen[] = ['title', 'loading', 'lobbyChoice', 'lobbyLive', 'endScreen', ...OVERLAY]
 
 function label(screen: Screen, a: Action): string {
   // On the error screen, leave returns to the title.
@@ -151,6 +163,8 @@ export function menuModel(screen: Screen, actions: readonly Action[], ctx: MenuC
     case 'credits':
       lines.push(...CREDITS)
       break
+    case 'start':
+    case 'endScreen':
     case 'loading':
     case 'queue':
     case 'lobbyChoice':

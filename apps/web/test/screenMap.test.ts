@@ -19,6 +19,8 @@ const CTX: Record<Screen, MenuCtx> = {
   error: ctx({ error: 'Connection lost' }), loading: ctx({ info: ['assets 3/10 course.glb'] }),
   lobbyChoice: ctx({ info: ['A lobby is open: 2/4 players, round in 40 s', 'Ann, Bob', 'Joining it in 8 s'] }),
   lobbyLive: ctx({ info: ['A round is being played: Ann, Bob', 'New lobby in 8 s'] }),
+  start: ctx({ info: ['Season 1'] }), vote: ctx({ info: ['Round 2'] }),
+  elimShow: ctx({ info: ['Bean 2'] }), endScreen: ctx({ info: ['Champion: Bean 1'] }),
 }
 
 function actionsOf(screen: Screen): readonly Action[] {

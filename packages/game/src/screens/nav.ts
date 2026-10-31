@@ -5,6 +5,7 @@ import type { LoadProgress } from '../content.ts'
 export const SCREENS = Object.freeze([
   'title', 'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium',
   'pause', 'settings', 'credits', 'error', 'loading', 'lobbyChoice', 'lobbyLive',
+  'start', 'vote', 'elimShow', 'endScreen',
 ] as const)
 export type Screen = typeof SCREENS[number]
 
@@ -16,14 +17,37 @@ export const OFFLINE_SCREENS: readonly Screen[] = Object.freeze(SCREENS.filter(s
 // Screens the game itself moves between (with 'game' events).
 export const GAME_SCREENS = Object.freeze([
   'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium', 'lobbyChoice', 'lobbyLive',
+  'vote', 'elimShow', 'endScreen',
 ] as const)
 export type GameScreen = typeof GAME_SCREENS[number]
 
 export const ACTIONS = Object.freeze([
   'play', 'playOnline', 'settings', 'credits', 'queue', 'toHub', 'resume', 'leave', 'retry',
-  'join', 'spectate', 'newLobby',
+  'join', 'spectate', 'newLobby', 'shop', 'up', 'down', 'left', 'right', 'confirm',
 ] as const)
 export type Action = typeof ACTIONS[number]
+
+// Screens whose keys and pad events go to the screen model (the show flow) instead of uaa focus.
+export const FLOW_SCREENS = Object.freeze(['start', 'vote', 'elimShow'] as const satisfies readonly Screen[])
+export type FlowScreen = typeof FLOW_SCREENS[number]
+
+// The flow action of a UI input event: focus -> up/down, adjust -> left/right, select -> confirm.
+// Keyboard arrows/Enter and the pad d-pad/stick/A produce these UiEvents in apps/web/src/input/input.ts.
+export function flowAction(
+  ev: { k: 'focus' | 'adjust'; dir: -1 | 1 } | { k: 'select' } | { k: string },
+): Action | null {
+  const dir = (ev as { k: string; dir?: -1 | 1 }).dir
+  switch (ev.k) {
+    case 'focus':
+      return dir === -1 ? 'up' : 'down'
+    case 'adjust':
+      return dir === -1 ? 'left' : 'right'
+    case 'select':
+      return 'confirm'
+    default:
+      return null
+  }
+}
 
 export const Effect = Object.freeze({
   startHub: 'startHub',
@@ -42,6 +66,8 @@ export const Effect = Object.freeze({
   pickDefault: 'pickDefault',
   // Run GameContent.load and report it with progress, then loaded or error.
   load: 'load',
+  // Open the shop from the start screen: a no-op in the app until M9 wires the shop.
+  openShop: 'openShop',
 } as const)
 export type Effect = typeof Effect[keyof typeof Effect]
 
@@ -69,13 +95,17 @@ const BUTTONS: Readonly<Partial<Record<Screen, readonly Action[]>>> = Object.fre
   // A player arriving while a lobby waits (lobbyChoice) or plays its round (lobbyLive).
   lobbyChoice: ['join', 'spectate', 'newLobby'],
   lobbyLive: ['spectate', 'newLobby'],
+  start: ['play', 'shop'],
+  vote: [],
+  elimShow: [],
+  endScreen: ['confirm'],
 })
 
 // Game screens outside a match: the hub, the queue and the lobby choice.
 const OUTSIDE_MATCH: readonly Screen[] = ['hub', 'queue', 'lobbyChoice', 'lobbyLive']
 
 // Game screens of a match, where back pauses the game.
-const PAUSABLE: readonly Screen[] = ['countdown', 'round', 'spectate', 'result']
+const PAUSABLE: readonly Screen[] = ['countdown', 'round', 'spectate', 'result', 'vote', 'elimShow']
 
 export function isGameScreen(s: Screen): s is GameScreen {
   return (GAME_SCREENS as readonly Screen[]).includes(s)
@@ -189,6 +219,11 @@ export class Nav {
         return [Effect.pickDefault]
       case 'podium':
         return this.toHub()
+      case 'start':
+        this.screen = 'title'
+        return []
+      case 'endScreen':
+        return this.leaveEndScreen()
       case 'pause':
         this.screen = this.resumeTo
         return [Effect.resume]
@@ -207,7 +242,16 @@ export class Nav {
   private action(a: Action): Effect[] {
     switch (a) {
       case 'play':
+        // Title Play opens the start screen; start's Play runs the existing start (hub, or online).
+        if (this.screen === 'title') {
+          this.screen = 'start'
+          return []
+        }
         return this.start(this.onlineOnly ? Effect.startOnline : Effect.startHub)
+      case 'shop':
+        return [Effect.openShop]
+      case 'confirm':
+        return this.screen === 'endScreen' ? this.leaveEndScreen() : []
       case 'playOnline':
         return this.start(Effect.startOnline)
       case 'settings':
@@ -234,6 +278,12 @@ export class Nav {
       case 'retry':
         if (this.loadNext !== null) return this.load(this.loadNext)
         return this.lastStart === null ? [] : this.start(this.lastStart)
+      // Flow actions belong to the show flow, not to a nav button.
+      case 'up':
+      case 'down':
+      case 'left':
+      case 'right':
+        return []
     }
   }
 
@@ -286,6 +336,15 @@ export class Nav {
     this.inMatch = false
     this.resumeTo = 'hub'
     return [Effect.leaveMatch]
+  }
+
+  // The end screen's Continue (or back) leaves the finished game for the start menu.
+  private leaveEndScreen(): Effect[] {
+    this.screen = 'start'
+    this.live = false
+    this.inMatch = false
+    this.resumeTo = 'hub'
+    return [Effect.leaveGame]
   }
 
   private leave(): Effect[] {

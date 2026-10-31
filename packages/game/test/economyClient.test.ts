@@ -390,6 +390,19 @@ test('WS methods send auth first and fresh ops, and map gamesaloon replies', asy
   client.close()
 })
 
+test('WS sends stay under the gamesaloon relay limit of 20 messages per second, in order', async () => {
+  const { client, frames } = clientFor()
+  const sentAt: number[] = []
+  const send = (frames as Frame[]).push.bind(frames)
+  frames.push = (...items: Frame[]) => { for (const _ of items) sentAt.push(Date.now()); return send(...items) }
+  const started = Date.now()
+  await Promise.all(Array.from({ length: 25 }, (_, i) => client.inbox().then(() => i)))
+  assert.equal(frames.length, 26)
+  assert.equal(sentAt.filter(t => t - started < 1000).length <= 20, true, 'more than 20 frames in the first second')
+  assert.deepEqual(frames.slice(1).map(frame => frame.op!.split(':')[1]), Array.from({ length: 25 }, (_, i) => String(i + 1)))
+  client.close()
+})
+
 for (const rule of economyCases) {
   test(`shared WS rule: ${rule.name}`, async () => {
     let roundReports = 0

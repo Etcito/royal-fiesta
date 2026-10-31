@@ -13,13 +13,18 @@ type ShopItem = Omit<CatalogItem, 'editionCap' | 'remaining'> & {
 type WireCommission = Omit<Commission, 'playerId' | 'createdAt'> & { created_at: number }
 type State = { coins: number; balances?: Record<string, number>; cards: Record<string, number> }
 type Inbox = { entries: InboxEntry[]; unread: number }
-type Pending = { resolve: (reply: unknown) => void; reject: (error: EconomyError) => void }
+type Pending = { resolve: (reply: unknown) => void; reject: (error: EconomyError) => void; sent: string }
 
-function refusal(reason: string): EconomyError {
+// gamesaloon closes a socket past 20 messages per second or 400 per minute (docs/RELAY.md, rate limited);
+// the windows are padded for transit jitter, so the server never counts more than its limit.
+const SEND_LIMITS = [{ windowMs: 1100, max: 20 }, { windowMs: 60_500, max: 400 }] as const
+
+// `sent` names the refused request (type and fields) in the message; the code stays the reason's.
+function refusal(reason: string, sent?: string): EconomyError {
   const code = reason === 'auth_required' || reason === 'auth_failed' ? 'unauthorized'
     : reason === 'tx_conflict' || reason === 'bad_message' || reason === 'bad_argument' ? 'invalid'
     : reason
-  return new EconomyError(code, reason)
+  return new EconomyError(code, sent ? `${reason} (${sent})` : reason)
 }
 
 function network(error: unknown): EconomyError {
@@ -42,6 +47,26 @@ export function createEconomyClient(
   let stopped: EconomyError | undefined
   let playerId: string | undefined
   const pending = new Map<string, Pending>()
+  const sentAt: number[] = []
+  let sendTurn: Promise<void> = Promise.resolve()
+
+  // Sends keep their order and wait until every window has room (the auth message counts too).
+  function paced(): Promise<void> {
+    sendTurn = sendTurn.then(async () => {
+      for (;;) {
+        const now = Date.now()
+        let wait = 0
+        for (const { windowMs, max } of SEND_LIMITS) {
+          if (sentAt.length >= max) wait = Math.max(wait, sentAt[sentAt.length - max] + windowMs - now)
+        }
+        if (wait <= 0) break
+        await new Promise(resolve => setTimeout(resolve, wait))
+      }
+      sentAt.push(Date.now())
+      while (sentAt.length > SEND_LIMITS[1].max) sentAt.shift()
+    })
+    return sendTurn
+  }
 
   function stop(error: EconomyError): void {
     if (stopped) return
@@ -63,6 +88,7 @@ export function createEconomyClient(
         const open = () => {
           if (authSent || stopped) return
           authSent = true
+          sentAt.push(Date.now())
           try { sock.send(JSON.stringify({ t: 'auth', ...auth })) }
           catch (error) { stop(network(error)) }
         }
@@ -89,7 +115,7 @@ export function createEconomyClient(
           const request = pending.get(message.op)
           if (!request) return
           pending.delete(message.op)
-          if (message.t === 'error') request.reject(refusal(message.reason ?? 'unknown_error'))
+          if (message.t === 'error') request.reject(refusal(message.reason ?? 'unknown_error', request.sent))
           else request.resolve(message)
         }
         if (sock.readyState === 1) open()
@@ -101,10 +127,11 @@ export function createEconomyClient(
 
   async function request<T>(t: string, fields: Record<string, unknown> = {}): Promise<T> {
     await connect()
+    await paced()
     if (stopped) throw stopped
     const op = `${prefix}:${++counter}`
     return new Promise<T>((resolve, reject) => {
-      pending.set(op, { resolve: reply => resolve(reply as T), reject })
+      pending.set(op, { resolve: reply => resolve(reply as T), reject, sent: `${t} ${JSON.stringify(fields)}` })
       try { socket!.send(JSON.stringify({ t, ...fields, op })) }
       catch (error) { stop(network(error)) }
     })

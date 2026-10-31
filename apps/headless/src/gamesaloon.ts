@@ -1,7 +1,8 @@
 import { spawn, execFile, execFileSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { Agent, get } from 'node:http'
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { join } from 'node:path'
 import { refuse } from '../../../packages/sim/src/refusal.ts'
@@ -41,18 +42,32 @@ function waitExit(child: ChildProcess): Promise<void> {
   })
 }
 
+const RUNTIME_ENTRIES = ['src', 'examples', 'package.json', 'package-lock.json']
+
+// Content of every copied file, so any change in the brick replaces the copy.
+function contentHash(dir: string): string {
+  const hash = createHash('sha256')
+  const walk = (rel: string): void => {
+    const path = join(dir, rel)
+    if (!existsSync(path)) return
+    if (statSync(path).isDirectory()) { for (const name of readdirSync(path).sort()) walk(join(rel, name)); return }
+    hash.update(`${rel}\0`).update(readFileSync(path)).update('\0')
+  }
+  for (const entry of RUNTIME_ENTRIES) walk(entry)
+  return hash.digest('hex')
+}
+
 // The brick is read-only and may have no install (no node_modules/ws): run a copy
 // of its src/examples under out/ with its own `npm ci --omit=dev` instead of writing there.
 function runtimeDir(dir: string): string {
   if (existsSync(join(dir, 'node_modules', 'ws'))) return dir
-  const lock = readFileSync(join(dir, 'package-lock.json'), 'utf8')
-  const stamp = JSON.stringify({ dir, lock: lock.length, src: readFileSync(join(dir, 'src', 'main.ts'), 'utf8').length })
+  const stamp = JSON.stringify({ dir, content: contentHash(dir) })
   const out = join(repoRoot(), 'out', 'gamesaloon-runtime')
   const stampFile = join(out, '.rf-stamp.json')
   if (existsSync(join(out, 'node_modules', 'ws')) && existsSync(stampFile) && readFileSync(stampFile, 'utf8') === stamp) return out
   rmSync(out, { recursive: true, force: true })
   mkdirSync(out, { recursive: true })
-  for (const entry of ['src', 'examples', 'package.json', 'package-lock.json']) cpSync(join(dir, entry), join(out, entry), { recursive: true })
+  for (const entry of RUNTIME_ENTRIES) cpSync(join(dir, entry), join(out, entry), { recursive: true })
   try {
     execFileSync('npm', ['ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], { cwd: out, stdio: ['ignore', 'pipe', 'pipe'], timeout: 180000 })
   } catch (e) {

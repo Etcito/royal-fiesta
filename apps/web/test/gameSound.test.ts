@@ -20,7 +20,7 @@ import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { createMatchSim, Phase } from '@royal-fiesta/sim/match/matchSim'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { createMixGraph } from '../src/audio/mixGraph.ts'
-import { SoundDriver } from '../src/play/sound.ts'
+import { pageStore, SoundDriver } from '../src/play/sound.ts'
 
 const ROOT = new URL('../../../', import.meta.url)
 const read = (rel: string): Promise<string> => readFile(new URL(rel, ROOT), 'utf8')
@@ -359,4 +359,23 @@ test('volumes update only on storage changes; invalid JSON restores defaults and
   f.driver.frame(null)
   assert.deepEqual(f.volumes.at(-1), DEFAULT_BUS_VOLUMES)
   await f.driver.close()
+})
+
+test('a sandboxed page (localStorage getter throws) builds the driver; volumes live in memory', () => {
+  const refuse = (): Storage => { throw new DOMException("Failed to read the 'localStorage' property from 'Window'", 'SecurityError') }
+  const g = globalThis as { window?: unknown }
+  const had = Object.hasOwn(g, 'window')
+  const prev = g.window
+  g.window = Object.defineProperty(new EventTarget(), 'localStorage', { get: refuse })
+  try {
+    const driver = new SoundDriver({ target: new EventTarget(), baseUrl: 'http://x/' })
+    assert.ok(driver instanceof SoundDriver)
+  } finally {
+    if (had) g.window = prev
+    else delete g.window
+  }
+  const store = pageStore(refuse)
+  assert.equal(store.getItem(AUDIO_SETTINGS_KEY), null)
+  store.setItem(AUDIO_SETTINGS_KEY, '{"music":0.5}')
+  assert.equal(store.getItem(AUDIO_SETTINGS_KEY), '{"music":0.5}')
 })

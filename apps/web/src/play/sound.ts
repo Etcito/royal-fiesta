@@ -23,6 +23,24 @@ export interface SoundDeps {
   patches: typeof browserAudioPatches
 }
 
+// The page's localStorage, read only when a value is read: a sandboxed or third-party frame throws on the
+// localStorage getter itself, and the volumes then live in memory for this visit.
+export function pageStore(storage: () => Storage = () => window.localStorage): SettingsStore {
+  const memory = new Map<string, string>()
+  const page = (): Storage | null => {
+    try { return storage() } catch { return null }
+  }
+  return {
+    getItem: key => {
+      try { return page()?.getItem(key) ?? memory.get(key) ?? null } catch { return memory.get(key) ?? null }
+    },
+    setItem: (key, value) => {
+      memory.set(key, value)
+      try { page()?.setItem(key, value) } catch { /* memory keeps it for this visit */ }
+    },
+  }
+}
+
 export class SoundDriver {
   readonly #deps: SoundDeps
   readonly #gestures = new AbortController()
@@ -47,7 +65,7 @@ export class SoundDriver {
     this.#deps = {
       target: deps.target ?? window,
       baseUrl: deps.baseUrl ?? document.baseURI,
-      store: deps.store ?? localStorage,
+      store: deps.store ?? pageStore(),
       open: deps.open ?? openBrowserAudio,
       compileWasm: deps.compileWasm ?? compileWasm,
       patches: deps.patches ?? browserAudioPatches,

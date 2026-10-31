@@ -1289,7 +1289,7 @@ class App {
   private readonly padStore: PadMapStore
   private readonly devices: InputDevices
   private readonly devicePolls: DevicePoll[] = []
-  private readonly sound = new SoundDriver()
+  private readonly sound: SoundDriver
   private startModel: StartScreenModel | null = null
   private startArt: StartArt | null = null
   private startView: StartScreenView | null = null
@@ -1314,6 +1314,8 @@ class App {
     this.host = host
     this.search = search
     this.env = env
+    // The App's store (the page's storage, or memory when the frame refuses it), never the bare global.
+    this.sound = new SoundDriver({ store: env.store })
     try {
       this.nav.onlineOnly = defaultRelay() !== null
     } catch {

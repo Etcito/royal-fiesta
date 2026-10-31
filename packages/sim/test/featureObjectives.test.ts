@@ -12,8 +12,10 @@ import { carryItemFeature } from '../src/features/carry.ts'
 import { collectibleFeature } from '../src/features/collectibles.ts'
 import { ballFeature, goalFeature } from '../src/features/football.ts'
 import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureSeats } from '../src/features/feature.ts'
+import { tailSetFeature } from '../src/features/tails.ts'
 import { G, groups } from '../src/groups.ts'
 import { neutralInput } from '../src/input.ts'
+import type { PlayerInput } from '../src/input.ts'
 import { PlayerStatus } from '../src/match/roundSystem.ts'
 import { v3 } from '../src/vec.ts'
 import type { Vec3 } from '../src/vec.ts'
@@ -24,19 +26,34 @@ import type { Vec3 } from '../src/vec.ts'
 export interface Teleport { seat: number; at: SpawnPoint }
 
 export class StubSeats implements FeatureSeats {
-  readonly count = 2
-  positions = [v3(0, 2, 0), v3(10, 2, 0)]
-  velocities = [v3(0, 0, 0), v3(0, 0, 0)]
-  directions = [v3(0, 0, 1), v3(0, 0, 1)]
-  modes = [CharMode.ground, CharMode.ground]
-  statuses = [PlayerStatus.alive, PlayerStatus.alive]
-  teams = [0, 1]
-  carries = [0, 0]
-  ids = [-1, -1]
-  inputs = [neutralInput(), neutralInput()]
-  protectedFlags = [false, false]
-  seatIds = [20, 21]
+  readonly count: number
+  positions: Vec3[]
+  velocities: Vec3[]
+  directions: Vec3[]
+  modes: number[]
+  statuses: number[]
+  teams: number[]
+  carries: number[]
+  ids: number[]
+  inputs: PlayerInput[]
+  protectedFlags: boolean[]
+  seatIds: number[]
   teleports: Teleport[] = []
+  constructor(count = 2) {
+    this.count = count
+    const rows = <T>(make: (i: number) => T): T[] => Array.from({ length: count }, (_, i) => make(i))
+    this.positions = rows(i => v3(i * 10, 2, 0))
+    this.velocities = rows(() => v3(0, 0, 0))
+    this.directions = rows(() => v3(0, 0, 1))
+    this.modes = rows(() => CharMode.ground)
+    this.statuses = rows(() => PlayerStatus.alive)
+    this.teams = rows(i => i % 2)
+    this.carries = rows(() => 0)
+    this.ids = rows(() => -1)
+    this.inputs = rows(() => neutralInput())
+    this.protectedFlags = rows(() => false)
+    this.seatIds = rows(i => 20 + i)
+  }
   seat(i: number) { return this.seatIds[i] }
   pos(i: number, out: Vec3) { return Object.assign(out, this.positions[i]) }
   vel(i: number, out: Vec3) { return Object.assign(out, this.velocities[i]) }
@@ -79,6 +96,10 @@ export interface HarnessOptions {
   withBall?: boolean
   /** Overrides ctx.roundTick; defaults to the physics tick. */
   roundTick?: () => number
+  /** Seat count of the stub; defaults to 2. */
+  count?: number
+  /** Feature rng seed; defaults to 1. */
+  seed?: number
 }
 
 export interface Harness {
@@ -105,7 +126,7 @@ export async function harness(t: TestContext, options: HarnessOptions = {}): Pro
     R.ColliderDesc.cuboid(30, 0.5, 30)
       .setCollisionGroups(groups(G.STATIC, G.CHAR | G.MOVING | G.DEBRIS | G.PROBE)),
   ])
-  const seats = new StubSeats(), events: Harness['events'] = [], sounds: string[] = []
+  const seats = new StubSeats(options.count ?? 2), events: Harness['events'] = [], sounds: string[] = []
   const base: ResolvedCourse = {
     id: 'football-test', name: 'Football', kind: 'race', profiles: ['standard'], timeLimitS: 60,
     killPlaneY: -12, spawns: [], checkpoints: [], finish: null, path: [], regions: [],
@@ -122,7 +143,7 @@ export async function harness(t: TestContext, options: HarnessOptions = {}): Pro
   const course: ResolvedCourse = { ...base, level, features: specs }
   const roundTick = options.roundTick ?? (() => physics.tick)
   const ctx: FeatureCtx = {
-    R, physics, seats, course, rng: new Rng(1), get tick() { return physics.tick },
+    R, physics, seats, course, rng: new Rng(options.seed ?? 1), get tick() { return physics.tick },
     get roundTick() { return roundTick() }, entrants: 2, overtime: false, trailingTeam: -1,
     soundLoop() {},
     emit(kind, seat, a, b) { events.push({ kind, seat, a, b }) },
@@ -136,6 +157,7 @@ export async function harness(t: TestContext, options: HarnessOptions = {}): Pro
       : spec.kind === 'ball' ? ballFeature(spec, path)
       : spec.kind === 'captureZone' ? captureZoneFeature(spec, path)
       : spec.kind === 'bank' ? bankFeature(spec, path)
+      : spec.kind === 'tailSet' ? tailSetFeature(spec, path)
       : spec.kind === 'carryItem' ? carryItemFeature(spec, path)
       : collectibleFeature(spec, path)
     const before = physics.ids().length
@@ -677,6 +699,180 @@ test('QB1: banks and carry items restore at tick 60 of 120 reproduces the snapsh
   b.physics.restoreSnapshot(a.physics.takeSnapshot())
   b.seats.carries = [...a.seats.carries]
   b.seats.ids = [...a.seats.ids]
+  b.restore(checkpoint)
+  assert.deepEqual(b.snapshot(), checkpoint)
+
+  for (let tick = 60; tick < 120; tick++) { drive(a, tick); drive(b, tick) }
+  assert.deepEqual(b.snapshot(), a.snapshot())
+  assert.deepEqual(b.physics.takeSnapshot(), a.physics.takeSnapshot())
+
+  const c = await harness(t, options), d = await harness(t, options)
+  for (let tick = 0; tick < 120; tick++) { drive(c, tick); drive(d, tick) }
+  assert.deepEqual(d.snapshot(), c.snapshot())
+  assert.deepEqual(c.snapshot(), a.snapshot())
+})
+
+// Tail cases: half the seats start with a tail, a grab transfers it with an
+// immunity window, a death frees it, the spawn is the free pool, and bots flee
+// or chase depending on possession.
+
+function tailCheck(count: 'half' | number, spawn: [number, number, number] = [0, 2, 0],
+  immunityS = 1): FeatureSpec {
+  return { id: 'tails', kind: 'tailSet', params: { count, spawn, immunityS } }
+}
+
+function holdersOf(h: Harness): number[] {
+  return h.seats.carries.flatMap((kind, i) => kind === CarryKind.tail ? [i] : [])
+}
+
+test('tailSet: half of 4 seats hold a tail from the first round tick, same seed same holders', async t => {
+  const options: HarnessOptions = { withBall: false, count: 4, extraFeatures: [tailCheck('half')] }
+  const a = await harness(t, options), b = await harness(t, options)
+  a.step()
+  b.step()
+  const holders = holdersOf(a)
+  assert.equal(holders.length, 2, 'two of four seats hold a tail')
+  assert.deepEqual(holdersOf(b), holders, 'the same seed picks the same holders')
+  assert.equal(a.events.length, 2)
+  assert.ok(a.events.every(event => event.kind === 'possess' && event.a === 1 && event.b === 0))
+  assert.deepEqual(new Set(a.events.map(event => event.seat)),
+    new Set(holders.map(i => a.seats.seatIds[i])), 'possess 1 for each holder seat')
+  assert.deepEqual(a.sounds, ['obj.tail', 'obj.tail'])
+  for (const i of holders) assert.equal(a.seats.ids[i], 0, 'carryId 0')
+  for (const i of [0, 1, 2, 3].filter(i => !holders.includes(i))) {
+    assert.equal(a.seats.carries[i], CarryKind.none)
+  }
+  a.step()
+  assert.equal(a.events.length, 2, 'the tails are given only once')
+})
+
+test('tailSet: a grab press next to a holder transfers the tail', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [tailCheck(1)] })
+  h.step()
+  const holder = holdersOf(h)[0]
+  const grabber = holder === 0 ? 1 : 0
+  h.events.length = 0
+  h.sounds.length = 0
+  h.seats.positions[holder] = v3(0, 2, 0)
+  h.seats.positions[grabber] = v3(0.5, 2, 0)
+  h.seats.inputs[grabber].grab = true
+  h.step()
+  assert.equal(h.seats.carry(holder), CarryKind.none, 'the old holder loses the tail')
+  assert.equal(h.seats.carry(grabber), CarryKind.tail, 'the new holder carries it')
+  assert.deepEqual(h.events, [
+    { kind: 'possess', seat: h.seats.seatIds[holder], a: 0, b: 0 },
+    { kind: 'possess', seat: h.seats.seatIds[grabber], a: 1, b: 0 },
+  ])
+  assert.deepEqual(h.sounds, ['obj.tail'])
+})
+
+test('tailSet: a grab during immunityS fails and succeeds when it expires', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [tailCheck(1, [0, 2, 0], 1)] })
+  h.step()
+  const first = holdersOf(h)[0]
+  const second = first === 0 ? 1 : 0
+  h.seats.positions[first] = v3(0, 2, 0)
+  h.seats.positions[second] = v3(0.5, 2, 0)
+  h.seats.inputs[second].grab = true
+  h.step()
+  assert.equal(h.seats.carry(second), CarryKind.tail, 'the second seat takes the tail')
+  assert.equal(h.physics.tick, 2)
+
+  h.seats.inputs[first].grab = true
+  h.step()
+  assert.equal(h.seats.carry(first), CarryKind.none, 'the old holder cannot retake it during immunity')
+  assert.equal(h.seats.carry(second), CarryKind.tail)
+
+  while (h.physics.tick < 60) h.step()
+  h.seats.inputs[first].grab = false
+  h.step()
+  assert.equal(h.physics.tick, 61)
+  h.seats.inputs[first].grab = true
+  h.step()
+  assert.equal(h.seats.carry(first), CarryKind.tail, 'the expired immunity allows the grab')
+  assert.equal(h.seats.carry(second), CarryKind.none)
+})
+
+test('tailSet: every 60 round ticks each holder re-emits possess 1', async t => {
+  const h = await harness(t, { withBall: false, count: 4, extraFeatures: [tailCheck('half', [0, 2, 0], 0)] })
+  h.step()
+  const seats = holdersOf(h).map(i => h.seats.seatIds[i])
+  assert.equal(seats.length, 2)
+  h.events.length = 0
+  for (let i = 0; i < 59; i++) h.step()
+  assert.equal(h.events.length, 0, 'nothing on round ticks 1..59')
+  h.step()
+  assert.deepEqual(h.events, seats.map(seat => ({ kind: 'possess', seat, a: 1, b: 0 })))
+  h.events.length = 0
+  for (let i = 0; i < 59; i++) h.step()
+  assert.equal(h.events.length, 0, 'nothing on round ticks 61..119')
+  h.step()
+  assert.deepEqual(h.events, seats.map(seat => ({ kind: 'possess', seat, a: 1, b: 0 })))
+  assert.deepEqual(h.sounds, ['obj.tail', 'obj.tail'], 're-emits make no sound')
+})
+
+test('tailSet: an eliminated holder returns its tail to the free pool', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [tailCheck(1, [0, 2, 0], 0)] })
+  h.step()
+  const holder = holdersOf(h)[0]
+  const other = holder === 0 ? 1 : 0
+  h.events.length = 0
+  h.seats.statuses[holder] = PlayerStatus.eliminated
+  h.step()
+  assert.equal(h.seats.carry(holder), CarryKind.none)
+  assert.equal(h.seats.ids[holder], -1)
+  assert.deepEqual(h.events, [{ kind: 'possess', seat: h.seats.seatIds[holder], a: 0, b: 0 }])
+
+  h.seats.positions[other] = v3(0, 2, 0)
+  h.seats.inputs[other].grab = true
+  h.step()
+  assert.equal(h.seats.carry(other), CarryKind.tail, 'another seat takes the freed tail at the spawn')
+})
+
+test('tailSet: botTarget makes holders flee and non-holders chase', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [tailCheck(1, [20, 2, 0], 0)] })
+  h.step()
+  const holder = holdersOf(h)[0]
+  const chaser = holder === 0 ? 1 : 0
+  const out = v3(0, 0, 0)
+  const tails = featureOf(h, 'tailSet')
+  h.seats.positions[holder] = v3(0, 2, 0)
+  h.seats.positions[chaser] = v3(4, 2, 0)
+
+  assert.equal(tails.botTarget!(h.seats.seatIds[holder], v3(0, 2, 0), out), true)
+  near(out, v3(-6, 2, 0), 'flee away from the chaser ')
+  assert.equal(tails.botTarget!(h.seats.seatIds[chaser], v3(4, 2, 0), out), true)
+  near(out, v3(0, 2, 0), 'chase the holder ')
+
+  h.seats.statuses[holder] = PlayerStatus.eliminated
+  h.step()
+  assert.equal(tails.botTarget!(h.seats.seatIds[chaser], v3(4, 2, 0), out), true)
+  near(out, v3(20, 2, 0), 'chase the freed tail at the spawn ')
+})
+
+test('QB1: tails restore at tick 60 of 120 reproduces the snapshot bytes exactly', async t => {
+  const options: HarnessOptions = {
+    withBall: false, count: 4,
+    extraFeatures: [tailCheck('half', [0, 2, 0], 0.5)],
+  }
+  const a = await harness(t, options), b = await harness(t, options)
+  const drive = (h: Harness, tick: number) => {
+    h.seats.inputs[0].grab = tick % 7 < 3
+    h.seats.inputs[1].grab = tick % 11 < 2
+    h.seats.inputs[2].grab = tick === 30 || tick === 45
+    if (tick === 6) h.seats.statuses[2] = PlayerStatus.eliminated
+    h.seats.positions[0] = v3(Math.sin(tick / 7) * 0.5, 2, 0)
+    h.seats.positions[1] = v3(Math.cos(tick / 9) * 0.5, 2, 0)
+    h.seats.positions[2] = v3(0, 2, 0.5)
+    h.seats.positions[3] = v3(20 + (tick % 5), 2, 0)
+    h.step()
+  }
+  for (let tick = 0; tick < 60; tick++) drive(a, tick)
+  const checkpoint = a.snapshot()
+  b.physics.restoreSnapshot(a.physics.takeSnapshot())
+  b.seats.carries = [...a.seats.carries]
+  b.seats.ids = [...a.seats.ids]
+  b.seats.statuses = [...a.seats.statuses]
   b.restore(checkpoint)
   assert.deepEqual(b.snapshot(), checkpoint)
 

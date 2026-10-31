@@ -1,6 +1,8 @@
 // Procedural walk cycle for the penguin rig (view-side only: sin/cos, no frame time). Every
 // stepWalk call is one sim tick; the pose is a pure function of that state.
 import { refuse } from '@royal-fiesta/sim/refusal'
+import type { PoseLayer, PoseLayerInstance } from './layers.ts'
+import { GraphMode, graphMode, type CharObservation } from './params.ts'
 
 export const WALK = Object.freeze({
   strideM: 0.9, runStrideM: 1.6, walkSpeed: 3, runSpeed: 8, idleBelow: 0.2,
@@ -133,4 +135,80 @@ export function applyWalkPose(local: Float32Array, bones: WalkBones, pose: WalkP
   write(bones.flipperR, qMul(qAxis(1, 0, 0, pose.flipperR), DOWN_R))
   write(bones.legL, qAxis(1, 0, 0, pose.legL))
   write(bones.legR, qAxis(1, 0, 0, pose.legR))
+}
+
+// --- WALK_LAYER: the locomotion pose layer (registration card 1.13) ---
+
+const WEIGHT_TICKS = 6
+
+// Shortest-arc nlerp: the graph clip's rotation blends toward the walk rotation.
+const qNlerp = (a: Quat, b: Quat, t: number): Quat => {
+  const dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]
+  const s = dot < 0 ? -1 : 1
+  return qNorm([
+    a[0] + (s * b[0] - a[0]) * t,
+    a[1] + (s * b[1] - a[1]) * t,
+    a[2] + (s * b[2] - a[2]) * t,
+    a[3] + (s * b[3] - a[3]) * t,
+  ])
+}
+
+export interface WalkLayerInstance extends PoseLayerInstance {
+  readonly footDown: -1 | 0 | 1
+  readonly state: WalkState
+}
+
+interface WalkLayerFactory extends PoseLayer {
+  create(boneNames: readonly string[]): WalkLayerInstance
+}
+
+class WalkLayer implements WalkLayerInstance {
+  private walk: WalkState = newWalkState()
+  private ramp = 0
+  private contact: -1 | 0 | 1 = 0
+  private readonly bones: WalkBones
+
+  constructor(bones: WalkBones) { this.bones = bones }
+
+  get state(): WalkState { return this.walk }
+  get footDown(): -1 | 0 | 1 { return this.contact }
+
+  observe(obs: CharObservation): void {
+    stepWalk(this.walk, obs.vel, obs.grounded)
+    this.contact = walkPose(this.walk).footDown
+    const locomotion = graphMode(obs.mode) === GraphMode.locomotion && obs.grounded
+    this.ramp = Math.max(0, Math.min(WEIGHT_TICKS, this.ramp + (locomotion ? 1 : -1)))
+  }
+
+  apply(local: Float32Array, _obs: CharObservation): void {
+    const w = this.ramp / WEIGHT_TICKS
+    if (w <= 0) return // graph clips (jump/dive/slide) stay untouched
+    const pose = walkPose(this.walk)
+    const read = (bone: number): Quat => {
+      const o = bone * 10 + 3
+      return [local[o], local[o + 1], local[o + 2], local[o + 3]]
+    }
+    const write = (bone: number, q: Quat): void => {
+      const n = qNorm(q), o = bone * 10 + 3
+      local[o] = n[0]; local[o + 1] = n[1]; local[o + 2] = n[2]; local[o + 3] = n[3]
+    }
+    const { root, flipperL, flipperR, legL, legR } = this.bones
+    write(root, qMul(qAxis(0, 0, 1, pose.sway * w), read(root)))
+    local[root * 10 + 1] += pose.bob * w
+    write(flipperL, qNlerp(read(flipperL), qMul(qAxis(1, 0, 0, pose.flipperL), DOWN_L), w))
+    write(flipperR, qNlerp(read(flipperR), qMul(qAxis(1, 0, 0, pose.flipperR), DOWN_R), w))
+    write(legL, qNlerp(read(legL), qAxis(1, 0, 0, pose.legL), w))
+    write(legR, qNlerp(read(legR), qAxis(1, 0, 0, pose.legR), w))
+  }
+
+  reset(): void {
+    this.walk = newWalkState()
+    this.ramp = 0
+    this.contact = 0
+  }
+}
+
+export const WALK_LAYER: WalkLayerFactory = {
+  name: 'walk',
+  create(boneNames) { return new WalkLayer(walkBones(boneNames)) },
 }

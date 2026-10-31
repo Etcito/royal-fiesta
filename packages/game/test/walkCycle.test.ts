@@ -2,9 +2,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
+import { CharMode } from '@royal-fiesta/sim/character/constants'
+import type { CharObservation } from '../src/anim/params.ts'
 import {
-  applyWalkPose, newWalkState, restPose, stepWalk, walkBones, walkPose, WALK,
-  type WalkPose, type WalkState,
+  applyWalkPose, newWalkState, restPose, stepWalk, walkBones, walkPose, WALK, WALK_LAYER,
+  type WalkLayerInstance, type WalkPose, type WalkState,
 } from '../src/anim/walkCycle.ts'
 
 const read = (name: string) => readFileSync(new URL(`../../../assets/common/${name}`, import.meta.url), 'utf8')
@@ -114,4 +116,63 @@ test('walkBones refuses a missing bone', () => {
   const without = names.filter(n => n !== 'head')
   assert.throws(() => walkBones(without), (e: unknown) =>
     e instanceof RefusalError && /\[anim\] walkBones: bone 'head' missing;/.test(e.message))
+})
+
+// (f) Two fresh WALK_LAYER instances fed the same observations write identical locals per tick.
+const observationAt = (t: number): CharObservation => {
+  const grounded = groundedAt(t)
+  return { mode: grounded ? CharMode.ground : CharMode.air, vel: velocity(t), grounded, emote: 0 }
+}
+const airObservation: CharObservation = {
+  mode: CharMode.air, vel: { x: 2, y: 3, z: 1 }, grounded: false, emote: 0,
+}
+const groundObservation: CharObservation = {
+  mode: CharMode.ground, vel: { x: 0, y: 0, z: WALK.walkSpeed }, grounded: true, emote: 0,
+}
+const layerPair = (): [WalkLayerInstance, WalkLayerInstance] =>
+  [WALK_LAYER.create(names), WALK_LAYER.create(names)]
+
+test('WALK_LAYER writes identical local arrays per tick for two fresh instances', () => {
+  const [a, b] = layerPair()
+  for (let t = 0; t < 90; t++) {
+    const obs = observationAt(t)
+    a.observe(obs)
+    b.observe(obs)
+    const la = restLocals(), lb = restLocals()
+    a.apply(la, obs)
+    b.apply(lb, obs)
+    assert.deepEqual(la, lb, `tick ${t}`)
+    assert.equal(a.footDown, b.footDown, `footDown tick ${t}`)
+  }
+})
+
+// (g) At weight 0 the layer leaves the graph's local TRS untouched, including after the air decay.
+test('weight 0 in air leaves the input array unchanged', () => {
+  const layer = WALK_LAYER.create(names)
+  const before = restLocals()
+  layer.observe(airObservation)
+  const local = restLocals()
+  layer.apply(local, airObservation)
+  assert.deepEqual(local, before)
+
+  for (let i = 0; i < 6; i++) layer.observe(groundObservation)
+  const ramped = restLocals()
+  layer.apply(ramped, groundObservation)
+  assert.notDeepEqual(ramped, before)
+  for (let i = 0; i < 6; i++) layer.observe(airObservation)
+  const decayed = restLocals()
+  layer.apply(decayed, airObservation)
+  assert.deepEqual(decayed, before)
+})
+
+// (h) The layer reports exactly the contacts stepWalk found.
+test('WALK_LAYER footDown matches stepWalk', () => {
+  const layer = WALK_LAYER.create(names)
+  const state = newWalkState()
+  for (let t = 0; t < 120; t++) {
+    const obs = observationAt(t)
+    layer.observe(obs)
+    stepWalk(state, obs.vel, obs.grounded)
+    assert.equal(layer.footDown, walkPose(state).footDown, `tick ${t}`)
+  }
 })

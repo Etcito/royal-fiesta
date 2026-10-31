@@ -329,6 +329,193 @@
         "min": 0.1,
         "max": 10
       }
+    },
+    "boostLane": {
+      "center": {
+        "type": "vec3"
+      },
+      "half": {
+        "type": "vec3"
+      },
+      "yawDeg": {
+        "type": "number",
+        "min": -180,
+        "max": 180
+      },
+      "boost": {
+        "type": "number",
+        "min": 0,
+        "max": 10
+      },
+      "durationS": {
+        "type": "number",
+        "min": 0.1,
+        "max": 30
+      },
+      "rechargeS": {
+        "type": "number",
+        "min": 0,
+        "max": 60
+      },
+      "eligibility": {
+        "type": "enum",
+        "enum": [
+          "all",
+          "trailingTeam"
+        ]
+      }
+    },
+    "launchPad": {
+      "center": {
+        "type": "vec3"
+      },
+      "half": {
+        "type": "vec3"
+      },
+      "target": {
+        "type": "vec3"
+      },
+      "apexM": {
+        "type": "number",
+        "min": 0.5,
+        "max": 40
+      },
+      "recoverOnly": {
+        "type": "boolean"
+      }
+    },
+    "catchVolume": {
+      "center": {
+        "type": "vec3"
+      },
+      "half": {
+        "type": "vec3"
+      },
+      "respawnStage": {
+        "type": "integer",
+        "min": 0
+      }
+    },
+    "rollingLog": {
+      "from": {
+        "type": "vec3"
+      },
+      "to": {
+        "type": "vec3"
+      },
+      "radius": {
+        "type": "number",
+        "min": 0.2,
+        "max": 3
+      },
+      "length": {
+        "type": "number",
+        "min": 0.5,
+        "max": 30
+      },
+      "speed": {
+        "type": "number",
+        "min": 0.5,
+        "max": 20
+      },
+      "periodS": {
+        "type": "number",
+        "min": 0.5,
+        "max": 120
+      },
+      "phaseS": {
+        "type": "number",
+        "min": 0
+      }
+    },
+    "doorBank": {
+      "rows": {
+        "type": "list",
+        "items": {
+          "type": "object",
+          "fields": {
+            "doors": {
+              "type": "list",
+              "items": {
+                "type": "object",
+                "fields": {
+                  "t": {
+                    "type": "vec3"
+                  },
+                  "yawDeg": {
+                    "type": "number"
+                  },
+                  "size": {
+                    "type": "vec3"
+                  }
+                }
+              }
+            },
+            "real": {
+              "type": "integer",
+              "min": 1
+            }
+          }
+        }
+      },
+      "breakSpeed": {
+        "type": "number",
+        "min": 1,
+        "max": 20
+      }
+    },
+    "swimVolume": {
+      "center": {
+        "type": "vec3"
+      },
+      "half": {
+        "type": "vec3"
+      },
+      "drag": {
+        "type": "number",
+        "min": 0,
+        "max": 20
+      },
+      "buoyancy": {
+        "type": "number",
+        "min": 0,
+        "max": 60
+      }
+    },
+    "carryItem": {
+      "asset": {
+        "type": "string"
+      },
+      "spawns": {
+        "type": "list",
+        "items": {
+          "type": "vec3"
+        }
+      },
+      "resetS": {
+        "type": "number",
+        "min": 0.1,
+        "max": 120
+      },
+      "homes": {
+        "type": "list",
+        "items": {
+          "type": "object",
+          "fields": {
+            "center": {
+              "type": "vec3"
+            },
+            "half": {
+              "type": "vec3"
+            },
+            "team": {
+              "type": "integer",
+              "min": 0,
+              "max": 1
+            }
+          }
+        }
+      }
     }
   },
   "play": {

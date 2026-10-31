@@ -514,7 +514,7 @@ export class SceneView {
       if (c.parked) continue
       // Matches carry no S9 emote; grounded is every mode but the airborne ones.
       const grounded = c.mode !== CharMode.air && c.mode !== CharMode.dive
-      out.push({ id: p, mode: c.mode, vel: { x: c.vel.x, y: c.vel.y, z: c.vel.z }, grounded, emote: 0, ...ikInputs(c, grounded) })
+      out.push({ id: p, mode: c.mode, vel: { x: c.vel.x, y: c.vel.y, z: c.vel.z }, grounded, surface: 'normal', emote: 0, ...ikInputs(c, grounded) })
     }
     anim.observeTick(tick, out)
   }

@@ -39,7 +39,7 @@ const finiteOut = (out: VisualPose) => {
 async function graphPose(mode: number = CharMode.ground): Promise<CharacterPose> {
   const driver = await AnimDriver.load(graphJson, rigJson, clipsJson)
   try {
-    driver.observeTick(1, [{ id: 1, mode, emote: 0, grounded: mode === CharMode.ground, vel: { x: 1, y: 0, z: 2 } }])
+    driver.observeTick(1, [{ id: 1, mode, emote: 0, surface: 'normal', grounded: mode === CharMode.ground, vel: { x: 1, y: 0, z: 2 } }])
     return driver.pose(1)!
   } finally { driver.dispose() }
 }
@@ -145,7 +145,7 @@ const { ikInputs } = await import('../src/render/sceneView.ts')
 type View = import('@royal-fiesta/sim/match/matchSim').CharacterView
 
 const observe = (id: number, mode: number, extra: Pick<CharacterObservation, 'xf' | 'ik'> = {}): CharacterObservation =>
-  ({ id, mode, emote: 0, grounded: mode !== CharMode.air && mode !== CharMode.dive, vel: { x: 1, y: 0, z: 2 }, ...extra })
+  ({ id, mode, emote: 0, surface: 'normal', grounded: mode !== CharMode.air && mode !== CharMode.dive, vel: { x: 1, y: 0, z: 2 }, ...extra })
 const view = (mode: number, x = 0): View =>
   ({ pos: { x, y: 0.85, z: 0 }, vel: { x: 1, y: 0, z: 2 }, facing: { x: 0, z: 1 }, mode, status: 0, parked: false, teleportTick: 0 })
 const withIk = (v: View) => observe(0, v.mode, ikInputs(v, v.mode !== CharMode.air && v.mode !== CharMode.dive))

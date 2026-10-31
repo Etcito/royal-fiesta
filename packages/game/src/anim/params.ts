@@ -17,6 +17,8 @@ export interface CharObservation {
   mode: number
   vel: { readonly x: number; readonly y: number; readonly z: number }
   grounded: boolean
+  /** Obstacle surface: normal, ice, mud or rubber. */
+  surface: string
   /** S9 emote index: 0 none, 1 wave, 2 dance, 3 cheer, 4 laugh. */
   emote: number
 }

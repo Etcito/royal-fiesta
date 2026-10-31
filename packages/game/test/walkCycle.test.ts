@@ -121,13 +121,13 @@ test('walkBones refuses a missing bone', () => {
 // (f) Two fresh WALK_LAYER instances fed the same observations write identical locals per tick.
 const observationAt = (t: number): CharObservation => {
   const grounded = groundedAt(t)
-  return { mode: grounded ? CharMode.ground : CharMode.air, vel: velocity(t), grounded, emote: 0 }
+  return { mode: grounded ? CharMode.ground : CharMode.air, vel: velocity(t), grounded, emote: 0, surface: 'normal' }
 }
 const airObservation: CharObservation = {
-  mode: CharMode.air, vel: { x: 2, y: 3, z: 1 }, grounded: false, emote: 0,
+  mode: CharMode.air, vel: { x: 2, y: 3, z: 1 }, grounded: false, emote: 0, surface: 'normal',
 }
 const groundObservation: CharObservation = {
-  mode: CharMode.ground, vel: { x: 0, y: 0, z: WALK.walkSpeed }, grounded: true, emote: 0,
+  mode: CharMode.ground, vel: { x: 0, y: 0, z: WALK.walkSpeed }, grounded: true, emote: 0, surface: 'normal',
 }
 const layerPair = (): [WalkLayerInstance, WalkLayerInstance] =>
   [WALK_LAYER.create(names), WALK_LAYER.create(names)]

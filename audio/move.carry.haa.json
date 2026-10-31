@@ -1,0 +1,35 @@
+{
+  "haa": 1,
+  "id": "move.carry",
+  "title": "Pick-up lift whoop",
+  "inputs": [],
+  "master": 0.9,
+  "graph": {
+    "duration": 0.3,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded pitch and texture variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"lift","type":"curve","x":280,"y":40,"label":"Upward pick-up whoop","params":{"amount":1},"curve":[[0,0],[0.16,0.12],[0.55,0.85],[0.8,1],[1,0.9]]},
+      {"id":"whoop","type":"oscillator","x":520,"y":40,"label":"Rounded rising lift","params":{"frequency":125,"wave":"sine","level":0.86}},
+      {"id":"harmonic","type":"oscillator","x":760,"y":40,"label":"Soft lift overtone","params":{"frequency":250,"wave":"sine","level":0.18}},
+      {"id":"lift-amp-env","type":"curve","x":40,"y":180,"label":"Lift swell and release","params":{"amount":1},"curve":[[0,0],[0.035,0.6],[0.16,1],[0.5,0.85],[0.75,0.4],[0.98,0],[1,0]]},
+      {"id":"lift-amp","type":"gain","x":280,"y":180,"label":"Lift swell and release","params":{"gain":0}},
+      {"id":"air","type":"noise","x":520,"y":180,"label":"Seeded contact texture","params":{"color":"pink","level":0.28,"width":0}},
+      {"id":"air-filter","type":"filter","x":760,"y":180,"label":"Rounded contact band","params":{"cutoff":1600,"resonance":0.7,"mode":"lowpass"}},
+      {"id":"out","type":"output","x":40,"y":320,"label":"Pick-up lift whoop","params":{"gain":1}}
+    ],
+    "connections": [
+      {"id":"c1","from":"lift","to":"whoop","target":"frequency","amount":480},
+      {"id":"c2","from":"lift","to":"harmonic","target":"frequency","amount":960},
+      {"id":"c3","from":"variation","to":"whoop","target":"frequency","amount":65},
+      {"id":"c4","from":"variation","to":"harmonic","target":"frequency","amount":130},
+      {"id":"c5","from":"lift-amp-env","to":"lift-amp","target":"gain"},
+      {"id":"c6","from":"whoop","to":"lift-amp","target":"audio"},
+      {"id":"c7","from":"harmonic","to":"lift-amp","target":"audio"},
+      {"id":"c8","from":"air","to":"air-filter","target":"audio"},
+      {"id":"c9","from":"air-filter","to":"lift-amp","target":"audio"},
+      {"id":"c10","from":"lift-amp","to":"out","target":"audio"}
+    ]
+  }
+}

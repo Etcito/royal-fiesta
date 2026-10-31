@@ -1,0 +1,39 @@
+{
+  "haa": 1,
+  "id": "move.hit",
+  "title": "Soft cartoon body bump",
+  "inputs": [],
+  "master": 0.86,
+  "graph": {
+    "duration": 0.3,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded pitch and texture variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"bend","type":"curve","x":280,"y":40,"label":"Squashed body pitch drop","params":{"amount":1},"curve":[[0,1],[0.08,0.5],[0.32,0.12],[1,0]]},
+      {"id":"body","type":"oscillator","x":520,"y":40,"label":"Round body thump","params":{"frequency":75,"wave":"sine","level":0.85}},
+      {"id":"rubber","type":"oscillator","x":760,"y":40,"label":"Rubber overtone","params":{"frequency":155,"wave":"sine","level":0.24}},
+      {"id":"bump-env","type":"curve","x":40,"y":180,"label":"Rounded body decay","params":{"amount":1},"curve":[[0,0],[0.015,1],[0.1,0.86],[0.35,0.35],[0.7,0.05],[0.96,0],[1,0]]},
+      {"id":"bump","type":"gain","x":280,"y":180,"label":"Rounded body decay","params":{"gain":0}},
+      {"id":"contact","type":"noise","x":520,"y":180,"label":"Seeded contact texture","params":{"color":"pink","level":0.55,"width":0}},
+      {"id":"contact-filter","type":"filter","x":760,"y":180,"label":"Rounded contact band","params":{"cutoff":900,"resonance":0.7,"mode":"lowpass"}},
+      {"id":"skin-env","type":"curve","x":40,"y":320,"label":"Soft slap onset","params":{"amount":1},"curve":[[0,0],[0.012,0.9],[0.09,0.4],[0.3,0],[1,0]]},
+      {"id":"skin","type":"gain","x":280,"y":320,"label":"Soft slap onset","params":{"gain":0}},
+      {"id":"out","type":"output","x":520,"y":320,"label":"Soft cartoon body bump","params":{"gain":1}}
+    ],
+    "connections": [
+      {"id":"c1","from":"bend","to":"body","target":"frequency","amount":160},
+      {"id":"c2","from":"variation","to":"body","target":"frequency","amount":28},
+      {"id":"c3","from":"bend","to":"rubber","target":"frequency","amount":250},
+      {"id":"c4","from":"variation","to":"rubber","target":"frequency","amount":43},
+      {"id":"c5","from":"bump-env","to":"bump","target":"gain"},
+      {"id":"c6","from":"body","to":"bump","target":"audio"},
+      {"id":"c7","from":"rubber","to":"bump","target":"audio"},
+      {"id":"c8","from":"bump","to":"out","target":"audio"},
+      {"id":"c9","from":"contact","to":"contact-filter","target":"audio"},
+      {"id":"c10","from":"skin-env","to":"skin","target":"gain"},
+      {"id":"c11","from":"contact-filter","to":"skin","target":"audio"},
+      {"id":"c12","from":"skin","to":"out","target":"audio"}
+    ]
+  }
+}

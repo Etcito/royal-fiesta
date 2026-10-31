@@ -1,0 +1,44 @@
+{
+  "haa": 1,
+  "id": "move.wobble",
+  "title": "Grabbed jelly wobble",
+  "inputs": [],
+  "master": 0.78,
+  "graph": {
+    "duration": 0.6,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded pitch and texture variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"sag","type":"curve","x":280,"y":40,"label":"Jelly pitch sag","params":{"amount":1},"curve":[[0,1],[0.16,0.65],[0.5,0.25],[1,0]]},
+      {"id":"jelly","type":"oscillator","x":520,"y":40,"label":"Soft jelly fundamental","params":{"frequency":85,"wave":"sine","level":0.88}},
+      {"id":"overtone","type":"oscillator","x":760,"y":40,"label":"Jelly overtone","params":{"frequency":173,"wave":"sine","level":0.23}},
+      {"id":"rate-fall","type":"curve","x":40,"y":180,"label":"AM rate 9 to 4 Hz","params":{"amount":1},"curve":[[0,1],[1,0]]},
+      {"id":"depth-fall","type":"curve","x":280,"y":180,"label":"Relaxing AM depth","params":{"amount":1},"curve":[[0,0.36],[0.5,0.22],[1,0.04]]},
+      {"id":"wobble","type":"lfo","x":520,"y":180,"label":"Decelerating jelly AM","params":{"rate":4,"depth":0,"wave":"sine"}},
+      {"id":"pulse","type":"gain","x":760,"y":180,"label":"Jelly amplitude movement","params":{"gain":0.64}},
+      {"id":"decay-env","type":"curve","x":40,"y":320,"label":"Gentle jelly release","params":{"amount":1},"curve":[[0,0],[0.012,1],[0.2,0.86],[0.5,0.5],[0.8,0.14],[0.98,0],[1,0]]},
+      {"id":"decay","type":"gain","x":280,"y":320,"label":"Gentle jelly release","params":{"gain":0}},
+      {"id":"skin","type":"noise","x":520,"y":320,"label":"Seeded contact texture","params":{"color":"pink","level":0.15,"width":0}},
+      {"id":"skin-filter","type":"filter","x":760,"y":320,"label":"Rounded contact band","params":{"cutoff":650,"resonance":0.7,"mode":"lowpass"}},
+      {"id":"out","type":"output","x":40,"y":460,"label":"Grabbed jelly wobble","params":{"gain":1}}
+    ],
+    "connections": [
+      {"id":"c1","from":"sag","to":"jelly","target":"frequency","amount":80},
+      {"id":"c2","from":"sag","to":"overtone","target":"frequency","amount":153},
+      {"id":"c3","from":"variation","to":"jelly","target":"frequency","amount":24},
+      {"id":"c4","from":"variation","to":"overtone","target":"frequency","amount":40},
+      {"id":"c5","from":"rate-fall","to":"wobble","target":"rate","amount":5},
+      {"id":"c6","from":"depth-fall","to":"wobble","target":"depth"},
+      {"id":"c7","from":"wobble","to":"pulse","target":"gain"},
+      {"id":"c8","from":"jelly","to":"pulse","target":"audio"},
+      {"id":"c9","from":"overtone","to":"pulse","target":"audio"},
+      {"id":"c10","from":"wobble","to":"jelly","target":"frequency","amount":16},
+      {"id":"c11","from":"decay-env","to":"decay","target":"gain"},
+      {"id":"c12","from":"pulse","to":"decay","target":"audio"},
+      {"id":"c13","from":"skin","to":"skin-filter","target":"audio"},
+      {"id":"c14","from":"skin-filter","to":"decay","target":"audio"},
+      {"id":"c15","from":"decay","to":"out","target":"audio"}
+    ]
+  }
+}

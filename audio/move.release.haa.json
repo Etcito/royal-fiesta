@@ -1,0 +1,35 @@
+{
+  "haa": 1,
+  "id": "move.release",
+  "title": "Light cloth release pop",
+  "inputs": [],
+  "master": 0.77,
+  "graph": {
+    "duration": 0.2,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded pitch and texture variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"pop-bend","type":"curve","x":280,"y":40,"label":"Small un-snatch pop drop","params":{"amount":1},"curve":[[0,1],[0.1,0.45],[0.4,0],[1,0]]},
+      {"id":"pop","type":"oscillator","x":520,"y":40,"label":"Light rubber pop","params":{"frequency":220,"wave":"sine","level":0.8}},
+      {"id":"release-env","type":"curve","x":760,"y":40,"label":"Quick release decay","params":{"amount":1},"curve":[[0,0],[0.018,1],[0.09,0.7],[0.3,0.2],[0.65,0.025],[0.92,0],[1,0]]},
+      {"id":"release","type":"gain","x":40,"y":180,"label":"Quick release decay","params":{"gain":0}},
+      {"id":"cloth-tail-env","type":"curve","x":280,"y":180,"label":"Light un-snatch breath","params":{"amount":1},"curve":[[0,0],[0.03,0.8],[0.22,0.35],[0.65,0],[1,0]]},
+      {"id":"cloth-tail","type":"gain","x":520,"y":180,"label":"Light un-snatch breath","params":{"gain":0}},
+      {"id":"cloth","type":"noise","x":760,"y":180,"label":"Seeded contact texture","params":{"color":"pink","level":0.55,"width":0}},
+      {"id":"cloth-filter","type":"filter","x":40,"y":320,"label":"Rounded contact band","params":{"cutoff":1800,"resonance":0.7,"mode":"bandpass"}},
+      {"id":"out","type":"output","x":280,"y":320,"label":"Light cloth release pop","params":{"gain":1}}
+    ],
+    "connections": [
+      {"id":"c1","from":"pop-bend","to":"pop","target":"frequency","amount":310},
+      {"id":"c2","from":"variation","to":"pop","target":"frequency","amount":70},
+      {"id":"c3","from":"release-env","to":"release","target":"gain"},
+      {"id":"c4","from":"pop","to":"release","target":"audio"},
+      {"id":"c5","from":"release","to":"out","target":"audio"},
+      {"id":"c6","from":"cloth-tail-env","to":"cloth-tail","target":"gain"},
+      {"id":"c7","from":"cloth","to":"cloth-filter","target":"audio"},
+      {"id":"c8","from":"cloth-filter","to":"cloth-tail","target":"audio"},
+      {"id":"c9","from":"cloth-tail","to":"out","target":"audio"}
+    ]
+  }
+}

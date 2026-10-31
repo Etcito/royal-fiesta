@@ -1,0 +1,44 @@
+{
+  "haa": 1,
+  "id": "move.stun",
+  "title": "Obstacle bonk and dizzy ring",
+  "inputs": [],
+  "master": 0.84,
+  "graph": {
+    "duration": 0.6,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded pitch and texture variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"bonk-bend","type":"curve","x":280,"y":40,"label":"Hollow bonk drop","params":{"amount":1},"curve":[[0,1],[0.06,0.3],[0.2,0],[1,0]]},
+      {"id":"bonk","type":"oscillator","x":520,"y":40,"label":"Hollow obstacle contact","params":{"frequency":130,"wave":"sine","level":0.9}},
+      {"id":"impact-env","type":"curve","x":760,"y":40,"label":"Short padded bonk","params":{"amount":1},"curve":[[0,0],[0.008,1],[0.08,0.65],[0.24,0.04],[0.35,0],[1,0]]},
+      {"id":"impact","type":"gain","x":40,"y":180,"label":"Short padded bonk","params":{"gain":0}},
+      {"id":"knock","type":"noise","x":280,"y":180,"label":"Seeded contact texture","params":{"color":"pink","level":0.4,"width":0}},
+      {"id":"knock-filter","type":"filter","x":520,"y":180,"label":"Rounded contact band","params":{"cutoff":1700,"resonance":0.7,"mode":"lowpass"}},
+      {"id":"ring","type":"oscillator","x":760,"y":180,"label":"Soft dizzy bell","params":{"frequency":1120,"wave":"sine","level":0.35}},
+      {"id":"ring-partial","type":"oscillator","x":40,"y":320,"label":"Inharmonic bell glint","params":{"frequency":1680,"wave":"sine","level":0.13}},
+      {"id":"dizzy","type":"lfo","x":280,"y":320,"label":"Dizzy pitch flutter","params":{"rate":6.5,"depth":1,"wave":"sine"}},
+      {"id":"ringing-env","type":"curve","x":520,"y":320,"label":"Brief delayed ring","params":{"amount":1},"curve":[[0,0],[0.06,0],[0.09,0.8],[0.22,0.65],[0.5,0.3],[0.8,0.08],[0.98,0],[1,0]]},
+      {"id":"ringing","type":"gain","x":760,"y":320,"label":"Brief delayed ring","params":{"gain":0}},
+      {"id":"out","type":"output","x":40,"y":460,"label":"Obstacle bonk and dizzy ring","params":{"gain":1}}
+    ],
+    "connections": [
+      {"id":"c1","from":"bonk-bend","to":"bonk","target":"frequency","amount":260},
+      {"id":"c2","from":"variation","to":"bonk","target":"frequency","amount":32},
+      {"id":"c3","from":"impact-env","to":"impact","target":"gain"},
+      {"id":"c4","from":"bonk","to":"impact","target":"audio"},
+      {"id":"c5","from":"knock","to":"knock-filter","target":"audio"},
+      {"id":"c6","from":"knock-filter","to":"impact","target":"audio"},
+      {"id":"c7","from":"impact","to":"out","target":"audio"},
+      {"id":"c8","from":"variation","to":"ring","target":"frequency","amount":170},
+      {"id":"c9","from":"variation","to":"ring-partial","target":"frequency","amount":220},
+      {"id":"c10","from":"dizzy","to":"ring","target":"frequency","amount":40},
+      {"id":"c11","from":"dizzy","to":"ring-partial","target":"frequency","amount":55},
+      {"id":"c12","from":"ringing-env","to":"ringing","target":"gain"},
+      {"id":"c13","from":"ring","to":"ringing","target":"audio"},
+      {"id":"c14","from":"ring-partial","to":"ringing","target":"audio"},
+      {"id":"c15","from":"ringing","to":"out","target":"audio"}
+    ]
+  }
+}

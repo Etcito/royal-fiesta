@@ -1,0 +1,38 @@
+{
+  "haa": 1,
+  "id": "move.grab",
+  "title": "Cloth snatch and rubber squeak",
+  "inputs": [],
+  "master": 0.72,
+  "graph": {
+    "duration": 0.25,
+    "loop": false,
+    "mode": "timeline",
+    "nodes": [
+      {"id":"variation","type":"random","x":40,"y":40,"label":"Seeded pitch and texture variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"cloth","type":"noise","x":280,"y":40,"label":"Seeded contact texture","params":{"color":"pink","level":0.95,"width":0}},
+      {"id":"cloth-filter","type":"filter","x":520,"y":40,"label":"Rounded contact band","params":{"cutoff":2100,"resonance":0.7,"mode":"bandpass"}},
+      {"id":"snatch-env","type":"curve","x":760,"y":40,"label":"Soft cloth tug","params":{"amount":1},"curve":[[0,0],[0.025,1],[0.16,0.65],[0.4,0.2],[0.72,0],[1,0]]},
+      {"id":"snatch","type":"gain","x":40,"y":180,"label":"Soft cloth tug","params":{"gain":0}},
+      {"id":"squeak-rise","type":"curve","x":280,"y":180,"label":"Rubber stretch bend","params":{"amount":1},"curve":[[0,0],[0.1,0.1],[0.3,1],[0.55,0.65],[1,0.2]]},
+      {"id":"squeak","type":"oscillator","x":520,"y":180,"label":"Small rounded rubber squeak","params":{"frequency":430,"wave":"triangle","level":0.38}},
+      {"id":"body","type":"oscillator","x":760,"y":180,"label":"Padded grip body","params":{"frequency":155,"wave":"sine","level":0.75}},
+      {"id":"grip-env","type":"curve","x":40,"y":320,"label":"Grip and squeak decay","params":{"amount":1},"curve":[[0,0],[0.025,0.9],[0.13,1],[0.32,0.55],[0.65,0.12],[0.95,0],[1,0]]},
+      {"id":"grip","type":"gain","x":280,"y":320,"label":"Grip and squeak decay","params":{"gain":0}},
+      {"id":"out","type":"output","x":520,"y":320,"label":"Cloth snatch and rubber squeak","params":{"gain":1}}
+    ],
+    "connections": [
+      {"id":"c1","from":"cloth","to":"cloth-filter","target":"audio"},
+      {"id":"c2","from":"snatch-env","to":"snatch","target":"gain"},
+      {"id":"c3","from":"cloth-filter","to":"snatch","target":"audio"},
+      {"id":"c4","from":"snatch","to":"out","target":"audio"},
+      {"id":"c5","from":"squeak-rise","to":"squeak","target":"frequency","amount":480},
+      {"id":"c6","from":"variation","to":"squeak","target":"frequency","amount":150},
+      {"id":"c7","from":"variation","to":"body","target":"frequency","amount":45},
+      {"id":"c8","from":"grip-env","to":"grip","target":"gain"},
+      {"id":"c9","from":"squeak","to":"grip","target":"audio"},
+      {"id":"c10","from":"body","to":"grip","target":"audio"},
+      {"id":"c11","from":"grip","to":"out","target":"audio"}
+    ]
+  }
+}

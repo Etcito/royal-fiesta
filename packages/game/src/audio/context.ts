@@ -2,7 +2,7 @@
 // fails if AudioContext or `new Audio(` appears anywhere else in the sources.
 import { createAudio, type HaaAudio } from '@etcito/haa'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import type { BedPort, SoundPort } from './gameAudio'
+import type { LoopPort, SoundPort } from './gameAudio'
 import { CROWD_BED_ID, CROWD_PROCESSOR, FIESTA_MIX_ID } from './ids'
 import { CROWD_PARAMS } from './pack/crowdModel'
 import { registerRoyalFiesta, ROYAL_FIESTA_FAMILIES } from './pack/index'
@@ -39,7 +39,7 @@ const CROWD_FADE_MARGIN_MS = 50
  * The crowd bed: an AudioWorklet node running the pack's CrowdModel. HAA's prebuilt worklet does not
  * know the game's bed, so the bed is a worklet of its own, connected straight to the output.
  */
-class CrowdBed implements BedPort {
+class CrowdBed {
   readonly #ctx: BaseAudioContext
   readonly #node: AudioWorkletNode
   readonly #gain: GainNode
@@ -96,8 +96,16 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
   await ctx.audioWorklet.addModule(o.crowdProcessorUrl)
   await ctx.resume()
   const port: SoundPort = {
-    play: (id: string, options?: { pos?: Vec3 }) => audio.play(id, options),
-    startBed: (id: string): BedPort | null => (id === CROWD_BED_ID ? new CrowdBed(ctx) : audio.startBed(id)),
+    play: (id: string, options?: { pos?: Vec3; strength?: number }) => audio.play(id, options),
+    startLoop: (id: string): LoopPort | null => {
+      const bed = id === CROWD_BED_ID ? new CrowdBed(ctx) : audio.startBed(id)
+      return bed === null ? null : {
+        set: (name, value) => bed.setParam(name, value),
+        move: () => {},
+        stop: fadeS => bed.stop(fadeS),
+      }
+    },
+    setListeners: () => {},
   }
   return { audio, ctx, output: ctx.destination, port, close: () => audio.close() }
 }

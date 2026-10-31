@@ -3,10 +3,12 @@ import test from 'node:test'
 import type { TestContext } from 'node:test'
 import { Rng, SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { initRapier, RapierWorldSim } from '@gamesaloon/rollback-rapier'
-import { CharMode } from '../src/character/constants.ts'
+import { CarryKind, CharMode } from '../src/character/constants.ts'
 import { legacyLevel } from '../src/course.ts'
 import type { FeatureSpec, HomeSpec, LevelSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
+import { bankFeature } from '../src/features/bank.ts'
 import { captureZoneFeature } from '../src/features/capture.ts'
+import { carryItemFeature } from '../src/features/carry.ts'
 import { collectibleFeature } from '../src/features/collectibles.ts'
 import { ballFeature, goalFeature } from '../src/features/football.ts'
 import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureSeats } from '../src/features/feature.ts'
@@ -133,6 +135,8 @@ export async function harness(t: TestContext, options: HarnessOptions = {}): Pro
     const feature = spec.kind === 'goal' ? goalFeature(spec, path)
       : spec.kind === 'ball' ? ballFeature(spec, path)
       : spec.kind === 'captureZone' ? captureZoneFeature(spec, path)
+      : spec.kind === 'bank' ? bankFeature(spec, path)
+      : spec.kind === 'carryItem' ? carryItemFeature(spec, path)
       : collectibleFeature(spec, path)
     const before = physics.ids().length
     feature.init(ctx)
@@ -494,6 +498,185 @@ test('QB1: capture zones restore at tick 60 of 120 reproduces the snapshot bytes
   for (let tick = 0; tick < 60; tick++) drive(a, tick)
   const checkpoint = a.snapshot()
   b.physics.restoreSnapshot(a.physics.takeSnapshot())
+  b.restore(checkpoint)
+  assert.deepEqual(b.snapshot(), checkpoint)
+
+  for (let tick = 60; tick < 120; tick++) { drive(a, tick); drive(b, tick) }
+  assert.deepEqual(b.snapshot(), a.snapshot())
+  assert.deepEqual(b.physics.takeSnapshot(), a.physics.takeSnapshot())
+
+  const c = await harness(t, options), d = await harness(t, options)
+  for (let tick = 0; tick < 120; tick++) { drive(c, tick); drive(d, tick) }
+  assert.deepEqual(d.snapshot(), c.snapshot())
+  assert.deepEqual(c.snapshot(), a.snapshot())
+})
+
+// Bank cases: a carried sweet deposits in the own bank, an enemy grab steals
+// from the exposed bank, carry homes stay protected, and the bank keeps a
+// carrying seat's grab held outside its own bank.
+
+function bankCheck(id: string, team: number | null, center: [number, number, number],
+  half: [number, number, number] = [2, 2, 2]): FeatureSpec {
+  return { id, kind: 'bank', params: { team, center, half } }
+}
+
+function carryCheck(spawns: [number, number, number][],
+  homes: { center: [number, number, number]; half: [number, number, number]; team: number | null }[] = []): FeatureSpec {
+  return { id: 'sweets', kind: 'carryItem', params: { asset: 'candy.ball', spawns, resetS: 30, homes } }
+}
+
+function featureOf(h: Harness, kind: string): CourseFeature {
+  const feature = h.features.find(candidate => candidate.kind === kind)
+  assert.ok(feature, `missing ${kind} feature`)
+  return feature
+}
+
+test('bank: carrying a sweet inside the own bank emits nothing until it is released', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [
+    bankCheck('bank-0', 0, [0, 2, 0]),
+    carryCheck([[6, 2, 0.5]]),
+  ] })
+  h.seats.positions[0] = v3(6, 2, 0)
+  h.seats.inputs[0].grab = true
+  h.step()
+  assert.equal(h.seats.carry(0), CarryKind.object)
+  assert.equal(h.events.length, 0, 'the sweet starts outside the bank')
+
+  h.seats.positions[0] = v3(0, 2, 0)
+  h.step()
+  assert.equal(h.seats.carry(0), CarryKind.object, 'the grab stays held inside the bank')
+  assert.equal(h.events.length, 0, 'a held sweet inside the bank never counts')
+
+  h.seats.inputs[0].grab = false
+  h.step()
+  assert.deepEqual(h.events, [{ kind: 'teamScore', seat: 0, a: 1, b: 0 }])
+  assert.deepEqual(h.sounds, ['move.carry', 'move.release', 'obj.bank'])
+  h.step()
+  assert.equal(h.events.length, 1, 'a sweet resting in the bank counts once')
+})
+
+test('bank: an enemy grab steals a deposited sweet and scores -1 for the owner team', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [
+    bankCheck('bank-0', 0, [0, 2, 0]),
+    carryCheck([[6, 2, 0.5]]),
+  ] })
+  h.seats.positions[0] = v3(6, 2, 0)
+  h.seats.inputs[0].grab = true
+  h.step()
+  h.seats.positions[0] = v3(0, 2, 0)
+  h.step()
+  h.seats.inputs[0].grab = false
+  h.step()
+  assert.deepEqual(h.events, [{ kind: 'teamScore', seat: 0, a: 1, b: 0 }], 'team 0 banks it')
+
+  h.seats.positions[1] = v3(0, 2, 0)
+  h.seats.inputs[1].grab = true
+  h.step()
+  assert.equal(h.seats.carry(1), CarryKind.object, 'an exposed enemy bank does not block the grab')
+  assert.deepEqual(h.events, [
+    { kind: 'teamScore', seat: 0, a: 1, b: 0 },
+    { kind: 'teamScore', seat: 0, a: -1, b: 0 },
+  ])
+  assert.deepEqual(h.sounds, ['move.carry', 'move.release', 'obj.bank', 'move.carry', 'obj.steal'])
+})
+
+test('bank: a protected carry home of the other team still blocks the grab', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [
+    bankCheck('bank-0', 0, [10, 2, 0]),
+    carryCheck([[0, 2, 0.5]], [{ center: [0, 2, 0], half: [2, 2, 2], team: 1 }]),
+  ] })
+  h.seats.positions[0] = v3(0, 2, 0)
+  h.seats.inputs[0].grab = true
+  h.step()
+  assert.equal(h.seats.carry(0), CarryKind.none, 'team 0 cannot grab in the team 1 home')
+  assert.equal(h.events.length, 0)
+
+  h.seats.inputs[0].grab = false
+  h.seats.positions[1] = v3(0, 2, 0)
+  h.seats.inputs[1].grab = true
+  h.step()
+  assert.equal(h.seats.carry(1), CarryKind.object, 'the home team may grab')
+  assert.deepEqual(h.sounds, ['move.carry'])
+})
+
+test('bank: grabCandidates holds a carrying seat grab outside its own bank only', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [
+    bankCheck('bank-0', 0, [0, 2, 0]),
+    bankCheck('bank-1', 1, [20, 2, 0]),
+    bankCheck('bank-null', null, [40, 2, 0]),
+    carryCheck([[10, 2, 0.5]]),
+  ] })
+  const bank = featureOf(h, 'bank')
+  const out: { id: number; dist: number }[] = []
+  const candidates = (at: Vec3): typeof out => {
+    out.length = 0
+    h.seats.positions[0] = at
+    bank.grabCandidates!(at, v3(0, 0, 1), out)
+    return out
+  }
+  h.seats.carries[0] = CarryKind.object
+  assert.deepEqual(candidates(v3(10, 2, 0)), [{ id: -1, dist: 0 }], 'outside every bank')
+  assert.deepEqual(candidates(v3(0, 2, 0)), [], 'inside its own team bank')
+  assert.deepEqual(candidates(v3(40, 2, 0)), [], 'inside a null bank')
+  assert.deepEqual(candidates(v3(20, 2, 0)), [{ id: -1, dist: 0 }],
+    'an enemy bank does not hold the grab')
+  h.seats.carries[0] = CarryKind.none
+  assert.deepEqual(candidates(v3(10, 2, 0)), [], 'not carrying')
+})
+
+test('bank: botTarget of a carrying seat is the nearest own or null bank', async t => {
+  const h = await harness(t, { withBall: false, extraFeatures: [
+    bankCheck('enemy', 1, [0, 2, 0]),
+    bankCheck('own', 0, [6, 2, 0]),
+    bankCheck('neutral', null, [10, 2, 0]),
+    carryCheck([[0, 2, 0.5]]),
+  ] })
+  const out = v3(0, 0, 0)
+  h.seats.carries[0] = CarryKind.object
+  assert.equal(featureOf(h, 'bank').botTarget!(20, v3(0, 2, 0), out), true)
+  near(out, v3(6, 2, 0), 'own bank ')
+
+  const neutral = await harness(t, { withBall: false, extraFeatures: [
+    bankCheck('enemy', 1, [0, 2, 0]),
+    bankCheck('neutral', null, [10, 2, 0]),
+    carryCheck([[0, 2, 0.5]]),
+  ] })
+  neutral.seats.carries[0] = CarryKind.object
+  assert.equal(featureOf(neutral, 'bank').botTarget!(20, v3(0, 2, 0), out), true)
+  near(out, v3(10, 2, 0), 'null bank ')
+
+  const enemyOnly = await harness(t, { withBall: false, extraFeatures: [
+    bankCheck('enemy', 1, [0, 2, 0]),
+    carryCheck([[0, 2, 0.5]]),
+  ] })
+  enemyOnly.seats.carries[0] = CarryKind.object
+  assert.equal(featureOf(enemyOnly, 'bank').botTarget!(20, v3(0, 2, 0), out), false,
+    'an enemy bank is not a carrying target')
+})
+
+test('QB1: banks and carry items restore at tick 60 of 120 reproduces the snapshot bytes exactly', async t => {
+  const options: HarnessOptions = {
+    withBall: false,
+    extraFeatures: [
+      bankCheck('bank-0', 0, [0, 2, 0]),
+      bankCheck('bank-1', 1, [8, 2, 0]),
+      carryCheck([[0, 2, 0.5], [8, 2, 0.5]]),
+    ],
+  }
+  const a = await harness(t, options), b = await harness(t, options)
+  const drive = (h: Harness, tick: number) => {
+    h.seats.inputs[0].grab = tick >= 2 && tick < 80
+    h.seats.positions[0] = tick < 10 || (tick >= 40 && tick < 70) ? v3(0, 2, 0)
+      : tick < 40 ? v3(Math.sin(tick / 7) * 0.5, 2, Math.cos(tick / 9) * 0.5)
+      : v3(8, 2, 0)
+    h.step()
+  }
+  for (let tick = 0; tick < 60; tick++) drive(a, tick)
+  assert.equal(a.seats.carry(0), CarryKind.object, 'the checkpoint holds a carried sweet')
+  const checkpoint = a.snapshot()
+  b.physics.restoreSnapshot(a.physics.takeSnapshot())
+  b.seats.carries = [...a.seats.carries]
+  b.seats.ids = [...a.seats.ids]
   b.restore(checkpoint)
   assert.deepEqual(b.snapshot(), checkpoint)
 

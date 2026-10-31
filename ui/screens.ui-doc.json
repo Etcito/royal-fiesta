@@ -982,14 +982,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -490],
-            "offsetMax": [220, -430]
+            "offsetMin": [-220, -510],
+            "offsetMax": [220, -464]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -250],
-            "offsetMax": [-20, -190]
+            "offsetMin": [-490, -260],
+            "offsetMax": [-20, -214]
           },
           "anim": {
             "focus": {
@@ -1013,14 +1013,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -420],
-            "offsetMax": [220, -360]
+            "offsetMin": [-220, -458],
+            "offsetMax": [220, -412]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -182],
-            "offsetMax": [-20, -122]
+            "offsetMin": [-490, -208],
+            "offsetMax": [-20, -162]
           },
           "anim": {
             "focus": {
@@ -1044,14 +1044,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -350],
-            "offsetMax": [220, -290]
+            "offsetMin": [-220, -406],
+            "offsetMax": [220, -360]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -114],
-            "offsetMax": [-20, -54]
+            "offsetMin": [-490, -156],
+            "offsetMax": [-20, -110]
           },
           "anim": {
             "focus": {
@@ -1075,14 +1075,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -280],
-            "offsetMax": [220, -220]
+            "offsetMin": [-220, -354],
+            "offsetMax": [220, -308]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -46],
-            "offsetMax": [-20, 14]
+            "offsetMin": [-490, -104],
+            "offsetMax": [-20, -58]
           },
           "anim": {
             "focus": {
@@ -1106,14 +1106,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -210],
-            "offsetMax": [220, -150]
+            "offsetMin": [-220, -302],
+            "offsetMax": [220, -256]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 22],
-            "offsetMax": [-20, 82]
+            "offsetMin": [-490, -52],
+            "offsetMax": [-20, -6]
           },
           "anim": {
             "focus": {
@@ -1131,20 +1131,20 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
-            "label": "Forward: KeyW"
+            "label": "Music volume 80%"
           },
           "action": "row",
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -140],
-            "offsetMax": [220, -80]
+            "offsetMin": [-220, -250],
+            "offsetMax": [220, -204]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 90],
-            "offsetMax": [-20, 150]
+            "offsetMin": [-490, 0],
+            "offsetMax": [-20, 46]
           },
           "anim": {
             "focus": {
@@ -1162,20 +1162,20 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
-            "label": "Back: KeyS"
+            "label": "SFX volume 80%"
           },
           "action": "row",
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -70],
-            "offsetMax": [220, -10]
+            "offsetMin": [-220, -198],
+            "offsetMax": [220, -152]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 158],
-            "offsetMax": [-20, 218]
+            "offsetMin": [-490, 52],
+            "offsetMax": [-20, 98]
           },
           "anim": {
             "focus": {
@@ -1193,20 +1193,20 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
-            "label": "Left: KeyA"
+            "label": "UI volume 80%"
           },
           "action": "row",
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 0],
-            "offsetMax": [220, 60]
+            "offsetMin": [-220, -146],
+            "offsetMax": [220, -100]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -250],
-            "offsetMax": [490, -190]
+            "offsetMin": [-490, 104],
+            "offsetMax": [-20, 150]
           },
           "anim": {
             "focus": {
@@ -1224,20 +1224,20 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
-            "label": "Right: KeyD"
+            "label": "Ambience volume 80%"
           },
           "action": "row",
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 70],
-            "offsetMax": [220, 130]
+            "offsetMin": [-220, -94],
+            "offsetMax": [220, -48]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -182],
-            "offsetMax": [490, -122]
+            "offsetMin": [-490, 156],
+            "offsetMax": [-20, 202]
           },
           "anim": {
             "focus": {
@@ -1255,20 +1255,20 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
-            "label": "Jump: Space"
+            "label": "Crowd volume 80%"
           },
           "action": "row",
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 140],
-            "offsetMax": [220, 200]
+            "offsetMin": [-220, -42],
+            "offsetMax": [220, 4]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -114],
-            "offsetMax": [490, -54]
+            "offsetMin": [20, -260],
+            "offsetMax": [490, -214]
           },
           "anim": {
             "focus": {
@@ -1286,20 +1286,20 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
-            "label": "Dive: ShiftLeft"
+            "label": "Forward: KeyW"
           },
           "action": "row",
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 210],
-            "offsetMax": [220, 270]
+            "offsetMin": [-220, 10],
+            "offsetMax": [220, 56]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -46],
-            "offsetMax": [490, 14]
+            "offsetMin": [20, -208],
+            "offsetMax": [490, -162]
           },
           "anim": {
             "focus": {
@@ -1317,20 +1317,20 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
-            "label": "Grab: KeyE"
+            "label": "Back: KeyS"
           },
           "action": "row",
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 280],
-            "offsetMax": [220, 340]
+            "offsetMin": [-220, 62],
+            "offsetMax": [220, 108]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 22],
-            "offsetMax": [490, 82]
+            "offsetMin": [20, -156],
+            "offsetMax": [490, -110]
           },
           "anim": {
             "focus": {
@@ -1348,20 +1348,175 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
+            "label": "Left: KeyA"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-220, 114],
+            "offsetMax": [220, 160]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, -104],
+            "offsetMax": [490, -58]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-13",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Right: KeyD"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-220, 166],
+            "offsetMax": [220, 212]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, -52],
+            "offsetMax": [490, -6]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-14",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Jump: Space"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-220, 218],
+            "offsetMax": [220, 264]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, 0],
+            "offsetMax": [490, 46]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-15",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Dive: ShiftLeft"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-220, 270],
+            "offsetMax": [220, 316]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, 52],
+            "offsetMax": [490, 98]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-16",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Grab: KeyE"
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-220, 322],
+            "offsetMax": [220, 368]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [20, 104],
+            "offsetMax": [490, 150]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "row-17",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
             "label": "Reset to defaults"
           },
           "action": "row",
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 350],
-            "offsetMax": [220, 410]
+            "offsetMin": [-220, 374],
+            "offsetMax": [220, 420]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 90],
-            "offsetMax": [490, 150]
+            "offsetMin": [20, 156],
+            "offsetMax": [490, 202]
           },
           "anim": {
             "focus": {
@@ -1389,14 +1544,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 420],
-            "offsetMax": [220, 454]
+            "offsetMin": [-220, 426],
+            "offsetMax": [220, 456]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 156],
-            "offsetMax": [490, 180]
+            "offsetMin": [-490, 214],
+            "offsetMax": [-20, 238]
           }
         },
         {
@@ -1416,8 +1571,8 @@
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [140, 190],
-            "offsetMax": [420, 250]
+            "offsetMin": [140, 211],
+            "offsetMax": [420, 261]
           },
           "anim": {
             "focus": {

@@ -5,6 +5,7 @@ import { NetSim } from '@gamesaloon/rollback'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { Roster } from '@gamesaloon/rollback/zones'
 import type { CourseDressing } from '@royal-fiesta/game/content'
+import type { CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import { FarFeed } from '@royal-fiesta/game/net/farFeed'
 import { takeoverInput } from '@royal-fiesta/game/net/takeoverBot'
 import { createZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
@@ -34,6 +35,7 @@ import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { browserAssetResolver, browserCourses, preloadAssets } from '../client/sources.ts'
 import { zoneContent } from './zoneContent.ts'
+import { discloseSeed, ZoneFeatures, ZoneFeatureAudio, zoneSlot } from './zoneLobbyPlay.ts'
 
 const ZONE_PREFIX = '../../../../'
 const SIDECARS = import.meta.glob<string>('../../../../courses/*.zones.json', {
@@ -72,11 +74,14 @@ export interface ZoneViewOptions {
   /** Normal-match skin and animation graph for the near characters. */
   skinned?: SkinnedCharacter
   dressing?: CourseDressing
+  /** Receives positional course-feature sounds; omitted sounds are drained and dropped. */
+  courseAudio?: CourseAudio
   /** Builds the render port; normal SDF match content is loaded when absent. */
   createPort?: (target: RenderTarget) => Promise<RenderPort>
 }
 
 export interface ZoneView {
+  readonly seed: number
   /** Steps every peer one page frame; also updates the near scene and the far feed. */
   frame(dtS: number): void
   render(): void
@@ -336,6 +341,7 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
         zones,
         profile: PROFILES[profile],
         kind,
+        slot: zoneSlot(kind, seatCount, seed),
         measurements,
         spawnIndices,
         farSink: peer === localPeer ? feed : undefined,
@@ -359,6 +365,9 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
   }
 
   const adapter = new DomainSceneSim(course, seatCount)
+  const features = new ZoneFeatures(port, assets)
+  const featureAudio = new ZoneFeatureAudio(options.courseAudio)
+  const removeSeed = discloseSeed(options.canvas.parentElement ?? document.body, seed)
   const orbit = new OrbitCamera()
   orbit.reset(0)
   const scene = new SceneView({
@@ -385,11 +394,15 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
     }
     const local = matches[localPeer]
     adapter.refresh(local.domains, local.stats.tick)
+    const domain = domainOf(local, roster.peers[localPeer].seats[0]) ?? undefined
+    features.update(domain)
+    featureAudio.frame([domain])
     scene.update(adapter as unknown as MatchSim, null, alpha, dtS)
     far.update(local.stats.tick)
   }
 
   return {
+    seed,
     frame,
     render: () => port.render(),
     ready: () => scene.animationReady(),
@@ -397,6 +410,9 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
     dispose() {
       if (disposed) return
       disposed = true
+      removeSeed()
+      features.dispose()
+      featureAudio.dispose()
       far.dispose()
       scene.dispose()
       for (let i = 0; i < matches.length; i++) matches[i].dispose()

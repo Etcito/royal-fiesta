@@ -17,7 +17,8 @@ import type { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { browserCourses } from '../client/sources.ts'
 import { zoneContent } from './zoneContent.ts'
-import { countNearFar } from './zoneLobbyPlay.ts'
+import { countNearFar, discloseSeed, ZoneFeatures, ZoneFeatureAudio, zoneSlot } from './zoneLobbyPlay.ts'
+import type { CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import { prepareZoneNetScene } from './zoneNetScene.ts'
 import type { PreparedZoneNetScene, ZoneNetScene } from './zoneNetScene.ts'
 
@@ -41,6 +42,7 @@ export interface ZoneLobbyOptions {
   localSeats: number
   courseId: string
   name: string
+  courseAudio?: CourseAudio
   queueTimeoutMs?: number
   /** Called at each setup step (loading, connecting, queued, matched, scene, match). */
   onPhase?: (phase: string) => void
@@ -55,6 +57,7 @@ export interface ZoneLobby {
     peers: number
     seats: number
     localPeer: number
+    seed: number
     tick: number
     near: number
     far: number
@@ -131,10 +134,16 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
   let prepared: PreparedZoneNetScene | undefined
   let scene: ZoneNetScene | undefined
   let match: ZoneMatch | undefined
+  let features: ZoneFeatures | undefined
+  const featureAudio = new ZoneFeatureAudio(options.courseAudio)
+  let removeSeed: (() => void) | undefined
   let disposed = false
   function dispose(): void {
     if (disposed) return
     disposed = true
+    removeSeed?.()
+    features?.dispose()
+    featureAudio.dispose()
     try { client.bye() } finally {
       try { match?.dispose() } finally {
         try { scene?.dispose() } finally {
@@ -149,23 +158,31 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
     // silent for lostAfterMs while its scene mounts is dropped by some peers and not others.
     phase('mounting scene')
     const ready = prepared = await prepareZoneNetScene({
-      ...content, canvas: options.canvas, width: options.width, height: options.height, course,
+      ...content,
+      createPort: async target => {
+        const port = await content.createPort(target)
+        features = new ZoneFeatures(port, content.assets)
+        return port
+      }, canvas: options.canvas, width: options.width, height: options.height, course,
     })
     phase('connecting to relay')
     await client.connect()
     phase(`queued for a room of ${options.players}`)
     await queueRoom(client, options.players, payload, timeoutMs)
-    const { localPeer, roster, measurements } = client.room()
+    const { localPeer, roster, measurements, seed } = client.room()
     phase(`matched peer ${localPeer} of ${roster.peers.length}`)
     const seats = roster.peers.find(peer => peer.peer === localPeer)!.seats
     const transport = new ZoneRelayTransport(client, localPeer, roster.peers.length, () => performance.now())
     const view = scene = ready.attach(roster.seatCount, seats[0])
+    const kind = course.kind === 'survival' ? 'survival' : 'race'
     phase('creating match')
     const local = match = createZoneMatch(R, {
       localPeer, roster, course, zones, profile: PROFILES.sprint,
-      kind: course.kind === 'survival' ? 'survival' : 'race',
+      kind,
+      slot: zoneSlot(kind, roster.seatCount, seed),
       measurements, farSink: view.feed,
     }, transport)
+    removeSeed = discloseSeed(options.canvas.parentElement ?? document.body, seed)
     const memories = seats.map(() => newMemory())
     let sampleTick = 0
     function sample(out: PlayerInput[]): void {
@@ -178,7 +195,7 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
       sampleTick++
     }
 
-    const info = { peers: roster.peers.length, seats: roster.seatCount, localPeer, tick: 0, near: 0, far: 0 }
+    const info = { peers: roster.peers.length, seats: roster.seatCount, localPeer, seed, tick: 0, near: 0, far: 0 }
     const nearDomains = new Map<number, FiestaDomain>()
     function updateInfo(): void {
       info.tick = local.stats.tick
@@ -186,7 +203,13 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
       info.near = counts.near
       info.far = counts.far
     }
+    function updateFeatures(): void {
+      const domain = local.domains.find(candidate => candidate.seats.includes(seats[0]))
+      features?.update(domain)
+      featureAudio.frame([domain])
+    }
     view.update(local, 0, 0)
+    updateFeatures()
     updateInfo()
     return {
       info,
@@ -196,6 +219,7 @@ export async function mountZoneLobby(options: ZoneLobbyOptions): Promise<ZoneLob
         const alpha = local.frame(dtS, sample)
         transport.flush()
         view.update(local, alpha, dtS)
+        updateFeatures()
         updateInfo()
       },
       render: () => { if (!disposed) view.render() },

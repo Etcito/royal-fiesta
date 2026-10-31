@@ -22,7 +22,8 @@ import type { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { browserCourses } from '../client/sources.ts'
 import { zoneContent } from './zoneContent.ts'
-import { countNearFar } from './zoneLobbyPlay.ts'
+import { countNearFar, discloseSeed, ZoneFeatures, ZoneFeatureAudio, zoneSlot } from './zoneLobbyPlay.ts'
+import type { CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 
 const ZONE_PREFIX = '../../../../'
 const SIDECARS = import.meta.glob<string>('../../../../courses/*.zones.json', {
@@ -49,6 +50,7 @@ export interface SplitViewOptions {
   name: string
   /** 'bots' drives every local seat with takeoverInput; 'devices' reads keyboard and gamepads. */
   drive?: SplitViewDrive
+  courseAudio?: CourseAudio
   queueTimeoutMs?: number
   /** Called at each setup step (loading, connecting, queued, matched, scene, match). */
   onPhase?: (phase: string) => void
@@ -63,6 +65,7 @@ export interface SplitView {
     peers: number
     seats: number
     localPeer: number
+    seed: number
     tick: number
     near: number
     far: number
@@ -144,6 +147,9 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
   }
   const canvases: HTMLCanvasElement[] = []
   const ports: RenderPort[] = []
+  const features: ZoneFeatures[] = []
+  const featureAudio = new ZoneFeatureAudio(options.courseAudio)
+  let removeSeed: (() => void) | undefined
   let layout: SplitScreenLayout | undefined
   let match: ZoneMatch | undefined
   let removeInput: (() => void) | undefined
@@ -151,6 +157,9 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
   function dispose(): void {
     if (disposed) return
     disposed = true
+    removeSeed?.()
+    for (const feature of features) feature.dispose()
+    featureAudio.dispose()
     const remove = removeInput
     removeInput = undefined
     if (remove !== undefined) { try { remove() } catch { /* Keep the cleanup chain going. */ } }
@@ -192,15 +201,16 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
     await client.connect()
     phase(`queued for a room of ${options.players}`)
     await queueRoom(client, options.players, payload, timeoutMs)
-    const { localPeer, roster, measurements } = client.room()
+    const { localPeer, roster, measurements, seed } = client.room()
     phase(`matched peer ${localPeer} of ${roster.peers.length}`)
     const seats = roster.peers.find(peer => peer.peer === localPeer)!.seats
     const transport = new ZoneRelayTransport(client, localPeer, roster.peers.length, () => performance.now())
     const feed = new FarFeed()
+    const kind = course.kind === 'survival' ? 'survival' : 'race'
     phase('creating match')
     const local = match = createZoneMatch(R, {
       localPeer, roster, course, zones, profile: PROFILES.sprint,
-      kind: course.kind === 'survival' ? 'survival' : 'race',
+      kind, slot: zoneSlot(kind, roster.seatCount, seed),
       measurements, farSink: feed,
     }, transport)
     const view = layout = new SplitScreenLayout({
@@ -209,6 +219,18 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
       skinned: content.skinned, dressing: content.dressing,
     })
 
+    for (const port of ports) features.push(new ZoneFeatures(port, content.assets))
+    removeSeed = discloseSeed(options.container, seed)
+    const viewedDomains: (FiestaDomain | undefined)[] = []
+    function updateFeatures(): void {
+      const domains = local.domains
+      for (let i = 0; i < seats.length; i++) {
+        const domain = domains.find(candidate => candidate.seats.includes(seats[i]))
+        viewedDomains[i] = domain
+        features[i].update(domain)
+      }
+      featureAudio.frame(viewedDomains)
+    }
     const memories = seats.map(() => newMemory())
     const held = new Set<string>()
     let devices: LocalSeats | undefined
@@ -263,7 +285,7 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
     }
 
     const info = {
-      peers: roster.peers.length, seats: roster.seatCount, localPeer,
+      peers: roster.peers.length, seats: roster.seatCount, localPeer, seed,
       tick: 0, near: 0, far: 0, viewports: rects.length,
     }
     const nearDomains = new Map<number, FiestaDomain>()
@@ -296,6 +318,7 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
     }
 
     view.update(local, 0, 0)
+    updateFeatures()
     updateInfo()
     return {
       info,
@@ -313,6 +336,7 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
         const alpha = local.frame(dtS, sample)
         transport.flush()
         view.update(local, alpha, dtS)
+        updateFeatures()
         updateInfo()
       },
       render: () => { if (!disposed) view.render() },

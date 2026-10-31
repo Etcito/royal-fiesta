@@ -7,11 +7,13 @@ import type {
 import { CHAR } from '../character/constants.ts'
 import { CharacterSystem, characterBody } from '../character/system.ts'
 import type { ResolvedCourse } from '../course.ts'
+import { levelOf } from '../course.ts'
 import { G, groups } from '../groups.ts'
 import type { PlayerInput } from '../input.ts'
 import { planRound, roundTicks } from '../match/rules.ts'
 import type { MatchProfile } from '../match/setup.ts'
 import { refuse } from '../refusal.ts'
+import type { FinalRule, RoundKind } from '../season/kinds.ts'
 import { GRAVITY_Y, readBlob } from '../world.ts'
 import { cellOf } from './cells.ts'
 import { FiestaDomain } from './fiestaDomain.ts'
@@ -25,8 +27,20 @@ export interface FiestaDomainFactoryConfig {
   readonly course: ResolvedCourse
   readonly zones: ZonesFile
   readonly profile: MatchProfile
-  /** Round plan kind: a race respawns falls, a survival round eliminates them. */
-  readonly kind: 'race' | 'survival'
+  /** Round kind used by the legacy plan when no slot is supplied. */
+  readonly kind: RoundKind
+  readonly slot?: {
+    readonly kind: RoundKind
+    readonly final: boolean
+    readonly finalRule: FinalRule | null
+    readonly target: number
+    readonly playoff: boolean
+    readonly roundIndex: number
+    readonly seed: number
+    readonly teams: Uint8Array | null
+    readonly overtimeTicks: number
+    readonly openingRanks?: Uint16Array | null
+  }
   /** Roster seats; every domain gets its own subset in spec.seats. */
   readonly seatCount: number
   /** Roster-indexed spawn index into course.spawns; defaults to the seat id (seatSpawn: rows behind past the spawns). */
@@ -50,20 +64,21 @@ export function createFiestaDomainFactory(
   config: FiestaDomainFactoryConfig,
 ): DomainFactory<PlayerInput> {
   const plan = planRound(0, config.seatCount)
+  const slot = config.slot
   const schedule: MatchLedgerConfig = {
     seatCount: config.seatCount,
-    kind: config.kind,
-    final: plan.final,
-    finalRule: plan.final && config.kind === 'survival' ? 'lastStanding' : null,
-    target: plan.target,
-    playoff: false,
-    overtimeTicks: 0,
-    seed: 0,
-    roundIndex: 0,
-    teams: null,
-    openingRanks: null,
+    kind: slot ? slot.kind : config.kind,
+    final: slot ? slot.final : plan.final,
+    finalRule: slot ? slot.finalRule : plan.final && config.kind === 'survival' ? 'lastStanding' : null,
+    target: slot ? slot.target : plan.target,
+    playoff: slot ? slot.playoff : false,
+    overtimeTicks: slot ? slot.overtimeTicks : 0,
+    seed: slot ? slot.seed : 0,
+    roundIndex: slot ? slot.roundIndex : 0,
+    teams: slot ? slot.teams : null,
+    openingRanks: slot?.openingRanks ?? null,
     introTicks: config.profile.introTicks,
-    roundTicks: roundTicks(config.course, config.profile),
+    roundTicks: Math.min(levelOf(config.course).timeCapTicks, roundTicks(config.course, config.profile)),
   }
   const domainConfig = (placeSeats: boolean): FiestaDomainConfig => ({
     course: config.course,

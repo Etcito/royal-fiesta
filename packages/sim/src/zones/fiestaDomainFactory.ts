@@ -191,6 +191,7 @@ function applyTrailers(
   const keptSeats = new Set<number>()
   const keptSeesaws = new Set<number>()
   let mechanisms: [SnapReader, SnapReader, SnapReader] | null = null
+  let featureStates: Uint8Array | null = null
   for (let s = 0; s < sources.length; s++) {
     const r = sources[s]
     const seatCount = r.u16()
@@ -226,9 +227,12 @@ function applyTrailers(
     const logic = new SnapReader(readBlob(r))
     const mech = new SnapReader(readBlob(r))
     const dynamic = new SnapReader(readBlob(r))
+    const feature = readBlob(r)
     if (mechanisms === null) mechanisms = [logic, mech, dynamic]
+    if (featureStates === null) featureStates = feature
   }
   if (mechanisms !== null) domain.adoptMechanisms(mechanisms[0], mechanisms[1], mechanisms[2])
+  if (featureStates !== null) domain.restoreFeatures(new SnapReader(featureStates))
   // The creation tick's pose must use the see-saw angles restored above.
   domain.obstacles.placeKinematic(domain.ctx, domain.tick)
 }

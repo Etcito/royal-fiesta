@@ -1,4 +1,4 @@
-import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
+import { Rng, SnapReader, SnapWriter, fnv1a32 } from '@gamesaloon/rollback'
 import type { DomainSim, ShadowView, SleepEvent } from '@gamesaloon/rollback/zones'
 import { mergeEntityStreams } from '@gamesaloon/rollback-rapier'
 import type { BodyId, RapierDomainSim } from '@gamesaloon/rollback-rapier'
@@ -6,6 +6,9 @@ import { CharacterSystem } from '../character/system.ts'
 import type { CharState } from '../character/system.ts'
 import { inBox, levelOf } from '../course.ts'
 import type { LevelSpec, ResolvedCourse, SpawnPoint } from '../course.ts'
+import { createFeatures } from '../features/catalog.ts'
+import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureSeats, FeatureSound } from '../features/feature.ts'
+import { neutralInput } from '../input.ts'
 import type { PlayerInput } from '../input.ts'
 import { PlayerStatus } from '../match/roundSystem.ts'
 import type { PlayerStatusValue } from '../match/roundSystem.ts'
@@ -49,7 +52,12 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   readonly mechanisms: MechanismSystem
   readonly mechLogic: MechLogicSystem
   readonly ctx: WorldCtx<PlayerInput>
+  readonly features: readonly CourseFeature[]
   readonly #config: FiestaDomainConfig
+  readonly #featureCtxs: readonly FeatureCtx[]
+  readonly #featureSeats: FeatureSeats
+  readonly #featureSounds: FeatureSound[] = []
+  readonly #neutralInputs: readonly PlayerInput[]
   readonly #seats: readonly number[]
   readonly #entities: number[] = []
   readonly #bodies: BodyId[] = []
@@ -67,6 +75,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   readonly #seesaws: number[] = []
   readonly #seesaw = { angle: 0, prevAngle: 0, angVel: 0 }
   readonly #writer = new SnapWriter()
+  #inputs: readonly PlayerInput[]
   #stepTick = -1
 
   constructor(inner: RapierDomainSim<PlayerInput>, config: FiestaDomainConfig) {
@@ -76,6 +85,9 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     const n = this.#seats.length
     this.#status = new Uint8Array(n).fill(PlayerStatus.alive)
     this.#checkpoint = new Int16Array(n)
+    this.features = createFeatures(config.course, config.course.id)
+    this.#neutralInputs = Array.from({ length: n }, () => neutralInput())
+    this.#inputs = this.#neutralInputs
     this.#level = levelOf(config.course)
     this.#route = newRouteState(n)
     // Spawn anchors follow checkpoint and home anchors, one per roster seat.
@@ -133,6 +145,14 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       if (o.motion.kind === 'seesaw' && partMode(config.zones, o) === 'physics' &&
           inner.spec.cells.includes(cellOf(config.zones.grid, o.t.x, o.t.z))) this.#seesaws.push(i)
     }
+    this.#featureSeats = this.#createFeatureSeats()
+    const root = new Rng(config.schedule.seed)
+    const ctxs: FeatureCtx[] = []
+    for (let i = 0; i < this.features.length; i++) {
+      ctxs.push(this.#createFeatureCtx(root.fork(fnv1a32(new TextEncoder().encode(this.features[i].id)))))
+    }
+    this.#featureCtxs = ctxs
+    for (let i = 0; i < this.features.length; i++) this.features[i].init(ctxs[i])
   }
 
   #system(name: string): SimSystem<PlayerInput> | undefined {
@@ -187,6 +207,82 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     return p
   }
 
+  #charState(p: number): CharState {
+    return this.characters.state(this.ctx, p, this.#states[p])
+  }
+
+  #featureNow(): number {
+    return this.#stepTick >= 0 ? this.#stepTick : this.inner.tick
+  }
+
+  #createFeatureSeats(): FeatureSeats {
+    const domain = this
+    return {
+      get count() { return domain.#seats.length },
+      seat(i: number) { return domain.#seats[i] },
+      pos(i: number, out) {
+        const s = domain.#charState(i)
+        out.x = s.pos.x
+        out.y = s.pos.y
+        out.z = s.pos.z
+        return out
+      },
+      vel(i: number, out) {
+        const s = domain.#charState(i)
+        out.x = s.vel.x
+        out.y = s.vel.y
+        out.z = s.vel.z
+        return out
+      },
+      mode(i: number) { return domain.#charState(i).mode },
+      grounded(i: number) { return domain.#charState(i).grounded },
+      groundCollider(i: number) { return domain.#charState(i).groundObstacle },
+      status(i: number) { return domain.#status[i] },
+      team(i: number) { return domain.#config.schedule.teams?.[domain.#seats[i]] ?? 0 },
+      input(i: number) { return domain.#inputs[i] },
+      protectedNow(i: number) {
+        const until = domain.#charState(i).protectedUntil ?? -1
+        return until >= 0 && domain.#featureNow() < until
+      },
+      setVelocity(i: number, v) {
+        domain.ctx.physics.body(domain.#bodies[i]).setLinvel({ x: v.x, y: v.y, z: v.z }, true)
+      },
+      addVelocity(i: number, v) {
+        const body = domain.ctx.physics.body(domain.#bodies[i])
+        const cur = body.linvel()
+        body.setLinvel({ x: cur.x + v.x, y: cur.y + v.y, z: cur.z + v.z }, true)
+      },
+      teleport(i: number, at: SpawnPoint) { domain.characters.place(domain.ctx, i, at) },
+      kill(i: number) { domain.#killSeat(i) },
+      setCarry() {
+        refuse('fiestaDomain', 'features/seats/setCarry',
+          'M4 carry: seat carry arrives with the M4 carry module; features cannot carry yet')
+      },
+    }
+  }
+
+  #createFeatureCtx(rng: Rng): FeatureCtx {
+    const domain = this
+    return {
+      get R() { return domain.inner.world.sim.R },
+      get physics() { return domain.inner.world.sim },
+      get tick() { return domain.#featureNow() },
+      get roundTick() { return domain.#featureNow() - domain.#config.schedule.introTicks },
+      get entrants() { return domain.#config.schedule.seatCount },
+      get overtime() {
+        const schedule = domain.#config.schedule
+        return domain.#featureNow() > schedule.introTicks + schedule.roundTicks
+      },
+      get course() { return domain.#config.course },
+      get seats() { return domain.#featureSeats },
+      get rng() { return rng },
+      emit(kind, seat, a, b) { domain.#emitSeat(seat, kind, a, b) },
+      sound(id, pos, strength) {
+        domain.#featureSounds.push({ id, pos: { x: pos.x, y: pos.y, z: pos.z }, strength, loop: false })
+      },
+    }
+  }
+
   /** Without out, returns borrowed scratch, valid until the next query or step. */
   state(seat: number, out?: CharState): CharState {
     const p = this.#player(seat)
@@ -196,9 +292,28 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
 
   status(seat: number): PlayerStatusValue { return this.#status[this.#player(seat)] as PlayerStatusValue }
 
+  drawFeatures(out: FeatureDraw[]): number {
+    const start = out.length
+    for (let i = 0; i < this.features.length; i++) this.features[i].draw(out)
+    return out.length - start
+  }
+
+  drainFeatureSounds(out: FeatureSound[]): number {
+    const start = out.length
+    let kept = 0
+    for (let i = 0; i < this.#featureSounds.length; i++) {
+      const sound = this.#featureSounds[i]
+      if (sound.loop) this.#featureSounds[kept++] = sound
+      else out.push(sound)
+    }
+    this.#featureSounds.length = kept
+    return out.length - start
+  }
+
   step(inputs: readonly PlayerInput[], shadows: ShadowView): void {
     if (inputs.length !== this.#seats.length) refuse('fiestaDomain', 'inputs', 'wrong count; pass inputs in spec.seats order')
     this.#events.length = 0
+    this.#inputs = inputs
     this.#stepTick = this.tick
     try {
       this.#bindBodies()
@@ -215,19 +330,22 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
         this.#before[p * 3 + 2] = pos.z
       }
       this.characters.preStep(this.ctx, inputs)
+      for (let i = 0; i < this.features.length; i++) this.features[i].preStep(this.#featureCtxs[i])
       this.inner.step(inputs, shadows)
       this.mechLogic.postStep(this.ctx)
       this.mechanisms.postStep(this.ctx)
       this.characters.postStep(this.ctx)
+      for (let i = 0; i < this.features.length; i++) this.features[i].postStep(this.#featureCtxs[i])
       if (!frozen) this.#seatRules()
     } finally {
+      this.#inputs = this.#neutralInputs
       this.#stepTick = -1
     }
   }
 
   #seatRules(): void {
     const course = this.#config.course
-    const { route, respawn } = this.#level
+    const { route } = this.#level
     const lastStage = route.stages.length ? route.stages[route.stages.length - 1] : -1
     for (let p = 0; p < this.#seats.length; p++) {
       if (this.#status[p] !== PlayerStatus.alive) continue
@@ -264,17 +382,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
         }
       }
       if (pos.y < course.killPlaneY) {
-        const crossing = subTick(this.#prevY[p], pos.y, course.killPlaneY)
-        if (respawn.mode === 'none') {
-          this.#status[p] = PlayerStatus.eliminated
-          this.#emit(p, 'eliminate', crossing)
-          this.characters.park(this.ctx, p)
-        } else {
-          this.#emit(p, 'fall', crossing)
-          this.characters.park(this.ctx, p)
-          scheduleRespawn(respawn, this.#respawn, p, this.#stepTick)
-          if (dueRespawn(this.#respawn, p, this.#stepTick)) this.#placeRespawn(p)
-        }
+        this.#fall(p, subTick(this.#prevY[p], pos.y, course.killPlaneY))
         continue
       }
       this.#prevY[p] = pos.y
@@ -288,6 +396,26 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
         this.#emit(p, 'progress', routeDistanceMm(course, route, this.#route.stage[p], pos))
       }
     }
+  }
+
+  #fall(p: number, crossing: number): void {
+    const { respawn } = this.#level
+    if (respawn.mode === 'none') {
+      this.#status[p] = PlayerStatus.eliminated
+      this.#emit(p, 'eliminate', crossing)
+      this.characters.park(this.ctx, p)
+      return
+    }
+    this.#emit(p, 'fall', crossing)
+    this.characters.park(this.ctx, p)
+    scheduleRespawn(respawn, this.#respawn, p, this.#stepTick)
+    if (dueRespawn(this.#respawn, p, this.#stepTick)) this.#placeRespawn(p)
+  }
+
+  #killSeat(p: number): void {
+    if (p < 0 || p >= this.#seats.length || this.#status[p] !== PlayerStatus.alive) return
+    const pos = this.#charState(p).pos
+    this.#fall(p, subTick(this.#prevY[p], pos.y, this.#config.course.killPlaneY))
   }
 
   #placeRespawn(p: number): void {
@@ -315,11 +443,15 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   }
 
   #emit(p: number, kind: FiestaEvent['kind'], a = 0, b = 0): void {
+    this.#emitSeat(this.#seats[p], kind, a, b)
+  }
+
+  #emitSeat(seat: number, kind: FiestaEvent['kind'], a = 0, b = 0): void {
     const index = this.#events.length
     const event = this.#eventPool[index] ?? (this.#eventPool[index] = { kind, seat: 0, tick: 0, a: 0, b: 0 })
     event.kind = kind
-    event.seat = this.#seats[p]
-    event.tick = this.#stepTick
+    event.seat = seat
+    event.tick = this.#featureNow()
     event.a = a
     event.b = b
     this.#events.push(event)
@@ -338,6 +470,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     }
     writeRoute(w, this.#route)
     writeRespawn(w, this.#respawn)
+    for (let i = 0; i < this.features.length; i++) this.features[i].snapshot(w)
   }
 
   restore(r: SnapReader): void {
@@ -353,9 +486,15 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     }
     readRoute(r, this.#route)
     readRespawn(r, this.#respawn)
+    this.restoreFeatures(r)
     this.#indexSeats()
     this.#bindBodies()
     this.#events.length = 0
+  }
+
+  restoreFeatures(r: SnapReader): void {
+    for (let i = 0; i < this.features.length; i++) this.features[i].restore(r, this.#featureCtxs[i])
+    this.#featureSounds.length = 0
   }
 
   hash(): number { return this.inner.hash() }
@@ -363,7 +502,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   /** Blob(inner export), u16 seats, (u16 seat, player, u8 status, i16 checkpoint,
    * i16 stage, u8 lap, u8 finished, i32 waitUntil, i32 protectUntil, f64 prevY),
    * u16 seesaws, (u16 obstacle index, f64 angle, f64 prevAngle, f64 angVel),
-   * Blob(mechLogic snapshot), Blob(mechanisms snapshot), Blob(dynamic mechanism bodies).
+   * Blob(mechLogic snapshot), Blob(mechanisms snapshot), Blob(dynamic mechanism bodies),
+   * Blob(course feature states in course features order).
    * A negative checkpoint encodes the original spawn as -1 - spawnIndex.
    */
   exportEntities(w: SnapWriter): void {
@@ -394,9 +534,12 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.#writer.reset()
     this.mechanisms.exportDynamic(this.ctx, this.#writer)
     const dynamic = this.#writer.bytes().slice()
+    this.#writer.reset()
+    for (let i = 0; i < this.features.length; i++) this.features[i].snapshot(this.#writer)
     writeBlob(w, logic)
     writeBlob(w, mechanisms)
     writeBlob(w, dynamic)
+    writeBlob(w, this.#writer.bytes())
   }
 
   #writeStatus(w: SnapWriter, p: number): void {

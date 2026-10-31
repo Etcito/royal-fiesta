@@ -1,0 +1,25 @@
+{
+  "haa": 1, "id": "mech.slime", "title": "Continuous wet slime bubbles",
+  "inputs": [{"name":"rate","kind":"continuous","unit":"","min":0,"max":1,"default":0.6,"smooth":0.08,"curve":"lin"}], "master": 0.8,
+  "graph": {
+    "duration": 2, "loop": true, "mode": "live",
+    "nodes": [
+      {"id":"out","type":"output","x":40,"y":40,"label":"Continuous wet slime bubbles","params":{"gain":0.85}},
+      {"id":"rate","type":"input","x":280,"y":40,"label":"Slime activity","params":{"name":"rate"}},
+      {"id":"deep-bubbles","type":"grain","x":520,"y":40,"label":"deep bubbles","params":{"wave":"sine","frequency":175,"rate":1.5,"attack":0.003,"decay":0.065,"spread":8,"jitter":1,"variation":0.7,"glide":-0.74,"delay":0,"width":0,"level":0.65}},
+      {"id":"little-bloops","type":"grain","x":760,"y":40,"label":"little bloops","params":{"wave":"sine","frequency":490,"rate":0.5,"attack":0.002,"decay":0.032,"spread":10,"jitter":1,"variation":0.8,"glide":-0.65,"delay":0,"width":0,"level":0.36}},
+      {"id":"wet-pops","type":"grain","x":40,"y":200,"label":"wet pops","params":{"wave":"filtered-noise","frequency":1250,"rate":1,"attack":0.001,"decay":0.025,"spread":9,"jitter":1,"variation":0.8,"glide":-0.6,"delay":0,"width":0,"level":0.22}},
+      {"id":"activity-level","type":"gain","x":280,"y":200,"label":"Activity scales bubble level","params":{"gain":0.15}}
+    ],
+    "connections": [
+      {"id":"c1","from":"rate","to":"deep-bubbles","target":"rate","amount":14},
+      {"id":"c2","from":"deep-bubbles","to":"activity-level","target":"audio","amount":1},
+      {"id":"c3","from":"rate","to":"little-bloops","target":"rate","amount":23},
+      {"id":"c4","from":"little-bloops","to":"activity-level","target":"audio","amount":1},
+      {"id":"c5","from":"rate","to":"wet-pops","target":"rate","amount":17},
+      {"id":"c6","from":"wet-pops","to":"activity-level","target":"audio","amount":1},
+      {"id":"c7","from":"rate","to":"activity-level","target":"gain","amount":0.75},
+      {"id":"c8","from":"activity-level","to":"out","target":"audio","amount":1}
+    ]
+  }
+}

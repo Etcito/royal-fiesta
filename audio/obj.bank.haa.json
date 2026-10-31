@@ -1,0 +1,45 @@
+{
+  "haa": 1, "id": "obj.bank", "title": "Three coins into a bright cash-in bell",
+  "inputs": [], "master": 0.8,
+  "graph": {
+    "duration": 0.72, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded shared tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"mix","type":"gain","x":280,"y":40,"label":"Objective balance","params":{"gain":1}},
+      {"id":"finish-env","type":"curve","x":520,"y":40,"label":"finish contour","params":{"amount":1},"curve":[[0,0],[0.002778,1],[0.78,1],[0.98,0],[1,0]]},
+      {"id":"finish","type":"gain","x":760,"y":40,"label":"finish amplitude","params":{"gain":0}},
+      {"id":"out","type":"output","x":40,"y":200,"label":"Three coins into a bright cash-in bell","params":{"gain":0.85}},
+      {"id":"coin-0","type":"grain","x":280,"y":200,"label":"coin 0","params":{"wave":"sine","frequency":1750,"rate":0,"attack":0.001,"decay":0.042,"spread":0.06,"jitter":0.8,"variation":0.3,"glide":-0.08,"delay":0.008,"width":0,"level":0.46}},
+      {"id":"metal-0","type":"grain","x":520,"y":200,"label":"metal 0","params":{"wave":"sine","frequency":3080,"rate":0,"attack":0.001,"decay":0.025,"spread":0.06,"jitter":0.8,"variation":0.3,"glide":0,"delay":0.008,"width":0,"level":0.2}},
+      {"id":"coin-1","type":"grain","x":760,"y":200,"label":"coin 1","params":{"wave":"sine","frequency":1960,"rate":0,"attack":0.001,"decay":0.042,"spread":0.06,"jitter":0.8,"variation":0.3,"glide":-0.08,"delay":0.086,"width":0,"level":0.46}},
+      {"id":"metal-1","type":"grain","x":40,"y":360,"label":"metal 1","params":{"wave":"sine","frequency":3415,"rate":0,"attack":0.001,"decay":0.025,"spread":0.06,"jitter":0.8,"variation":0.3,"glide":0,"delay":0.086,"width":0,"level":0.2}},
+      {"id":"coin-2","type":"grain","x":280,"y":360,"label":"coin 2","params":{"wave":"sine","frequency":2170,"rate":0,"attack":0.001,"decay":0.042,"spread":0.06,"jitter":0.8,"variation":0.3,"glide":-0.08,"delay":0.164,"width":0,"level":0.46}},
+      {"id":"metal-2","type":"grain","x":520,"y":360,"label":"metal 2","params":{"wave":"sine","frequency":3750,"rate":0,"attack":0.001,"decay":0.025,"spread":0.06,"jitter":0.8,"variation":0.3,"glide":0,"delay":0.164,"width":0,"level":0.2}},
+      {"id":"settle","type":"oscillator","x":760,"y":360,"label":"settle voice","params":{"frequency":1318.51,"wave":"sine","level":0.35}},
+      {"id":"settle-amp-env","type":"curve","x":40,"y":520,"label":"settle-amp contour","params":{"amount":1},"curve":[[0,0],[0.326389,0],[0.330556,1],[0.395833,0.55],[0.958333,0]]},
+      {"id":"settle-amp","type":"gain","x":280,"y":520,"label":"settle-amp amplitude","params":{"gain":0}},
+      {"id":"settle-octave","type":"oscillator","x":520,"y":520,"label":"settle-octave voice","params":{"frequency":2637.02,"wave":"sine","level":0.12}},
+      {"id":"settle-octave-amp-env","type":"curve","x":760,"y":520,"label":"settle-octave-amp contour","params":{"amount":1},"curve":[[0,0],[0.326389,0],[0.330556,1],[0.395833,0.55],[0.805556,0]]},
+      {"id":"settle-octave-amp","type":"gain","x":40,"y":680,"label":"settle-octave-amp amplitude","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"mix","to":"finish","target":"audio","amount":1},
+      {"id":"c2","from":"finish-env","to":"finish","target":"gain","amount":1},
+      {"id":"c3","from":"finish","to":"out","target":"audio","amount":1},
+      {"id":"c4","from":"coin-0","to":"mix","target":"audio","amount":1},
+      {"id":"c5","from":"metal-0","to":"mix","target":"audio","amount":1},
+      {"id":"c6","from":"coin-1","to":"mix","target":"audio","amount":1},
+      {"id":"c7","from":"metal-1","to":"mix","target":"audio","amount":1},
+      {"id":"c8","from":"coin-2","to":"mix","target":"audio","amount":1},
+      {"id":"c9","from":"metal-2","to":"mix","target":"audio","amount":1},
+      {"id":"c10","from":"take","to":"settle","target":"frequency","amount":5.274},
+      {"id":"c11","from":"settle","to":"settle-amp","target":"audio","amount":1},
+      {"id":"c12","from":"settle-amp-env","to":"settle-amp","target":"gain","amount":1},
+      {"id":"c13","from":"settle-amp","to":"mix","target":"audio","amount":1},
+      {"id":"c14","from":"take","to":"settle-octave","target":"frequency","amount":10.548},
+      {"id":"c15","from":"settle-octave","to":"settle-octave-amp","target":"audio","amount":1},
+      {"id":"c16","from":"settle-octave-amp-env","to":"settle-octave-amp","target":"gain","amount":1},
+      {"id":"c17","from":"settle-octave-amp","to":"mix","target":"audio","amount":1}
+    ]
+  }
+}

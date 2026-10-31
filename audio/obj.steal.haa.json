@@ -1,0 +1,44 @@
+{
+  "haa": 1, "id": "obj.steal", "title": "Sly sliding swipe and bright wink",
+  "inputs": [], "master": 0.8,
+  "graph": {
+    "duration": 0.42, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded shared tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"mix","type":"gain","x":280,"y":40,"label":"Objective balance","params":{"gain":1}},
+      {"id":"finish-env","type":"curve","x":520,"y":40,"label":"finish contour","params":{"amount":1},"curve":[[0,0],[0.004762,1],[0.78,1],[0.98,0],[1,0]]},
+      {"id":"finish","type":"gain","x":760,"y":40,"label":"finish amplitude","params":{"gain":0}},
+      {"id":"out","type":"output","x":40,"y":200,"label":"Sly sliding swipe and bright wink","params":{"gain":0.85}},
+      {"id":"swoop","type":"curve","x":280,"y":200,"label":"Quick down then up swipe","params":{"amount":1},"curve":[[0,1],[0.285714,0],[0.547619,0.45],[1,0.45]]},
+      {"id":"whistle","type":"oscillator","x":520,"y":200,"label":"whistle voice","params":{"frequency":420,"wave":"sine","level":0.5}},
+      {"id":"whistle-amp-env","type":"curve","x":760,"y":200,"label":"whistle-amp contour","params":{"amount":1},"curve":[[0,0],[0.028571,0.9],[0.214286,1],[0.571429,0],[1,0]]},
+      {"id":"whistle-amp","type":"gain","x":40,"y":360,"label":"whistle-amp amplitude","params":{"gain":0}},
+      {"id":"swipe-air","type":"grain","x":280,"y":360,"label":"swipe air","params":{"wave":"filtered-noise","frequency":2600,"rate":0,"attack":0.001,"decay":0.045,"spread":4,"jitter":0.8,"variation":0.3,"glide":-0.65,"delay":0,"width":0,"level":0.35}},
+      {"id":"wink","type":"oscillator","x":520,"y":360,"label":"wink voice","params":{"frequency":1567.98,"wave":"sine","level":0.32}},
+      {"id":"wink-amp-env","type":"curve","x":760,"y":360,"label":"wink-amp contour","params":{"amount":1},"curve":[[0,0],[0.428571,0],[0.435714,1],[0.547619,0.55],[0.952381,0]]},
+      {"id":"wink-amp","type":"gain","x":40,"y":520,"label":"wink-amp amplitude","params":{"gain":0}},
+      {"id":"wink-harmonic","type":"oscillator","x":280,"y":520,"label":"wink-harmonic voice","params":{"frequency":2351.97,"wave":"sine","level":0.09}},
+      {"id":"wink-harmonic-amp-env","type":"curve","x":520,"y":520,"label":"wink-harmonic-amp contour","params":{"amount":1},"curve":[[0,0],[0.428571,0],[0.435714,1],[0.547619,0.55],[0.857143,0]]},
+      {"id":"wink-harmonic-amp","type":"gain","x":760,"y":520,"label":"wink-harmonic-amp amplitude","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"mix","to":"finish","target":"audio","amount":1},
+      {"id":"c2","from":"finish-env","to":"finish","target":"gain","amount":1},
+      {"id":"c3","from":"finish","to":"out","target":"audio","amount":1},
+      {"id":"c4","from":"take","to":"whistle","target":"frequency","amount":1.68},
+      {"id":"c5","from":"whistle","to":"whistle-amp","target":"audio","amount":1},
+      {"id":"c6","from":"whistle-amp-env","to":"whistle-amp","target":"gain","amount":1},
+      {"id":"c7","from":"whistle-amp","to":"mix","target":"audio","amount":1},
+      {"id":"c8","from":"swoop","to":"whistle","target":"frequency","amount":950},
+      {"id":"c9","from":"swipe-air","to":"mix","target":"audio","amount":1},
+      {"id":"c10","from":"take","to":"wink","target":"frequency","amount":6.272},
+      {"id":"c11","from":"wink","to":"wink-amp","target":"audio","amount":1},
+      {"id":"c12","from":"wink-amp-env","to":"wink-amp","target":"gain","amount":1},
+      {"id":"c13","from":"wink-amp","to":"mix","target":"audio","amount":1},
+      {"id":"c14","from":"take","to":"wink-harmonic","target":"frequency","amount":9.408},
+      {"id":"c15","from":"wink-harmonic","to":"wink-harmonic-amp","target":"audio","amount":1},
+      {"id":"c16","from":"wink-harmonic-amp-env","to":"wink-harmonic-amp","target":"gain","amount":1},
+      {"id":"c17","from":"wink-harmonic-amp","to":"mix","target":"audio","amount":1}
+    ]
+  }
+}

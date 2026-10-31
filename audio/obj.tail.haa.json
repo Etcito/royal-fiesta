@@ -1,0 +1,37 @@
+{
+  "haa": 1, "id": "obj.tail", "title": "Elastic tail flick and possession pip",
+  "inputs": [], "master": 0.8,
+  "graph": {
+    "duration": 0.28, "loop": false, "mode": "timeline",
+    "nodes": [
+      {"id":"take","type":"random","x":40,"y":40,"label":"Seeded shared tuning variation","params":{"rate":0.05,"depth":1,"smooth":0}},
+      {"id":"mix","type":"gain","x":280,"y":40,"label":"Objective balance","params":{"gain":1}},
+      {"id":"finish-env","type":"curve","x":520,"y":40,"label":"finish contour","params":{"amount":1},"curve":[[0,0],[0.007143,1],[0.78,1],[0.98,0],[1,0]]},
+      {"id":"finish","type":"gain","x":760,"y":40,"label":"finish amplitude","params":{"gain":0}},
+      {"id":"out","type":"output","x":40,"y":200,"label":"Elastic tail flick and possession pip","params":{"gain":0.85}},
+      {"id":"flick","type":"curve","x":280,"y":200,"label":"Elastic pitch snap","params":{"amount":1},"curve":[[0,0],[0.125,1],[0.464286,0.15],[1,0]]},
+      {"id":"snap","type":"oscillator","x":520,"y":200,"label":"snap voice","params":{"frequency":340,"wave":"triangle","level":0.5}},
+      {"id":"snap-amp-env","type":"curve","x":760,"y":200,"label":"snap-amp contour","params":{"amount":1},"curve":[[0,0],[0.014286,1],[0.178571,0.75],[0.535714,0],[1,0]]},
+      {"id":"snap-amp","type":"gain","x":40,"y":360,"label":"snap-amp amplitude","params":{"gain":0}},
+      {"id":"ribbon-rustle","type":"grain","x":280,"y":360,"label":"ribbon rustle","params":{"wave":"filtered-noise","frequency":3700,"rate":0,"attack":0.001,"decay":0.017,"spread":0.06,"jitter":0.8,"variation":0.3,"glide":0,"delay":0,"width":0,"level":0.22}},
+      {"id":"pip","type":"oscillator","x":520,"y":360,"label":"pip voice","params":{"frequency":1318.51,"wave":"sine","level":0.28}},
+      {"id":"pip-amp-env","type":"curve","x":760,"y":360,"label":"pip-amp contour","params":{"amount":1},"curve":[[0,0],[0.410714,0],[0.421429,1],[0.589286,0.55],[0.928571,0]]},
+      {"id":"pip-amp","type":"gain","x":40,"y":520,"label":"pip-amp amplitude","params":{"gain":0}}
+    ],
+    "connections": [
+      {"id":"c1","from":"mix","to":"finish","target":"audio","amount":1},
+      {"id":"c2","from":"finish-env","to":"finish","target":"gain","amount":1},
+      {"id":"c3","from":"finish","to":"out","target":"audio","amount":1},
+      {"id":"c4","from":"take","to":"snap","target":"frequency","amount":1.36},
+      {"id":"c5","from":"snap","to":"snap-amp","target":"audio","amount":1},
+      {"id":"c6","from":"snap-amp-env","to":"snap-amp","target":"gain","amount":1},
+      {"id":"c7","from":"snap-amp","to":"mix","target":"audio","amount":1},
+      {"id":"c8","from":"flick","to":"snap","target":"frequency","amount":1750},
+      {"id":"c9","from":"ribbon-rustle","to":"mix","target":"audio","amount":1},
+      {"id":"c10","from":"take","to":"pip","target":"frequency","amount":5.274},
+      {"id":"c11","from":"pip","to":"pip-amp","target":"audio","amount":1},
+      {"id":"c12","from":"pip-amp-env","to":"pip-amp","target":"gain","amount":1},
+      {"id":"c13","from":"pip-amp","to":"mix","target":"audio","amount":1}
+    ]
+  }
+}

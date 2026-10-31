@@ -6,6 +6,7 @@ import { initRapier, RapierWorldSim } from '@gamesaloon/rollback-rapier'
 import { CharMode } from '../src/character/constants.ts'
 import { legacyLevel } from '../src/course.ts'
 import type { FeatureSpec, HomeSpec, LevelSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
+import { captureZoneFeature } from '../src/features/capture.ts'
 import { collectibleFeature } from '../src/features/collectibles.ts'
 import { ballFeature, goalFeature } from '../src/features/football.ts'
 import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureSeats } from '../src/features/feature.ts'
@@ -130,7 +131,9 @@ export async function harness(t: TestContext, options: HarnessOptions = {}): Pro
   for (const [index, spec] of specs.entries()) {
     const path = `football-test#/features/${index}`
     const feature = spec.kind === 'goal' ? goalFeature(spec, path)
-      : spec.kind === 'ball' ? ballFeature(spec, path) : collectibleFeature(spec, path)
+      : spec.kind === 'ball' ? ballFeature(spec, path)
+      : spec.kind === 'captureZone' ? captureZoneFeature(spec, path)
+      : collectibleFeature(spec, path)
     const before = physics.ids().length
     feature.init(ctx)
     if (spec.kind === 'ball') ballId = physics.ids()[before] ?? -1
@@ -332,6 +335,160 @@ test('QB1: collectibles restore at tick 60 of 120 reproduces the snapshot bytes 
   const drive = (h: Harness, tick: number) => {
     h.seats.positions[0] = v3(Math.sin(tick / 7) * 3, 2, Math.cos(tick / 11) * 3)
     h.seats.positions[1] = v3(20 + (tick % 5), 2, 0)
+    h.step()
+  }
+  for (let tick = 0; tick < 60; tick++) drive(a, tick)
+  const checkpoint = a.snapshot()
+  b.physics.restoreSnapshot(a.physics.takeSnapshot())
+  b.restore(checkpoint)
+  assert.deepEqual(b.snapshot(), checkpoint)
+
+  for (let tick = 60; tick < 120; tick++) { drive(a, tick); drive(b, tick) }
+  assert.deepEqual(b.snapshot(), a.snapshot())
+  assert.deepEqual(b.physics.takeSnapshot(), a.physics.takeSnapshot())
+
+  const c = await harness(t, options), d = await harness(t, options)
+  for (let tick = 0; tick < 120; tick++) { drive(c, tick); drive(d, tick) }
+  assert.deepEqual(d.snapshot(), c.snapshot())
+  assert.deepEqual(c.snapshot(), a.snapshot())
+})
+
+// Capture zone cases: captureTicks progress, contests, takeovers, cross-zone bots.
+
+function captureCheck(id: string, center: [number, number, number], half: [number, number, number],
+  captureS = 0.5): FeatureSpec {
+  return { id, kind: 'captureZone', params: { center, half, captureS } }
+}
+
+test('captureZone: two team 0 seats own an empty zone after captureTicks and score every 60 owned ticks', async t => {
+  const h = await harness(t, {
+    withBall: false,
+    extraFeatures: [captureCheck('zone', [0, 2, 0], [2, 2, 2], 0.5)],
+  })
+  h.seats.teams = [0, 0]
+  h.seats.positions = [v3(-1, 2, 0), v3(1, 2, 0)]
+
+  for (let i = 0; i < 29; i++) h.step()
+  assert.equal(h.draw()[0].tint, 0, 'unowned on tick 29')
+  assert.equal(h.events.length, 0)
+  h.step()
+  assert.equal(h.draw()[0].tint, 2, 'owner 0 on the 30th tick')
+  assert.equal(h.events.length, 0, 'the capture itself scores nothing')
+  assert.deepEqual(h.sounds, ['obj.capture'])
+
+  for (let i = 0; i < 58; i++) h.step()
+  assert.equal(h.events.length, 0, 'no zone-second before the 60th owned tick')
+  h.step()
+  assert.deepEqual(h.events, [{ kind: 'teamScore', seat: 0, a: 1, b: 0 }])
+  for (let i = 0; i < 60; i++) h.step()
+  assert.deepEqual(h.events, [
+    { kind: 'teamScore', seat: 0, a: 1, b: 0 },
+    { kind: 'teamScore', seat: 0, a: 1, b: 0 },
+  ])
+  assert.equal(h.sounds.length, 1, 'one capture sound for one capture')
+})
+
+test('captureZone: one seat of each team is contested and leaves progress unchanged', async t => {
+  const h = await harness(t, {
+    withBall: false,
+    extraFeatures: [captureCheck('zone', [0, 2, 0], [2, 2, 2], 1)],
+  })
+  h.seats.positions = [v3(-1, 2, 0), v3(20, 2, 0)]
+
+  for (let i = 0; i < 20; i++) h.step()
+  h.seats.positions[1] = v3(1, 2, 0)
+  for (let i = 0; i < 20; i++) h.step()
+  assert.equal(h.draw()[0].tint, 1, 'contested tint')
+  assert.equal(h.events.length, 0, 'a contest emits nothing')
+
+  h.seats.positions[1] = v3(20, 2, 0)
+  for (let i = 0; i < 39; i++) h.step()
+  assert.equal(h.draw()[0].tint, 0, '20+39 of 60 ticks is not a capture')
+  h.step()
+  assert.equal(h.draw()[0].tint, 2, 'the frozen 20 ticks resume to a capture')
+  assert.equal(h.events.length, 0)
+})
+
+test('captureZone: a team 1 takeover restarts progress for team 1', async t => {
+  const h = await harness(t, {
+    withBall: false,
+    extraFeatures: [captureCheck('zone', [0, 2, 0], [2, 2, 2], 0.5)],
+  })
+  h.seats.teams = [0, 0]
+  h.seats.positions = [v3(-1, 2, 0), v3(1, 2, 0)]
+  for (let i = 0; i < 30; i++) h.step()
+  assert.equal(h.draw()[0].tint, 2, 'team 0 owns the zone')
+
+  h.seats.teams = [1, 1]
+  for (let i = 0; i < 29; i++) h.step()
+  assert.equal(h.draw()[0].tint, 2, 'the takeover needs its own captureTicks')
+  assert.equal(h.events.length, 0, 'team 0 scored no zone-second yet')
+  h.step()
+  assert.equal(h.draw()[0].tint, 3, 'team 1 owns it on the 30th takeover tick')
+  assert.deepEqual(h.sounds, ['obj.capture', 'obj.capture'])
+
+  for (let i = 0; i < 58; i++) h.step()
+  assert.equal(h.events.length, 0, 'the score cadence restarts with the new owner')
+  h.step()
+  assert.deepEqual(h.events, [{ kind: 'teamScore', seat: 1, a: 1, b: 0 }])
+})
+
+test('captureZone: botTarget takes the nearest zone not owned by the seat team from either zone', async t => {
+  const h = await harness(t, {
+    withBall: false,
+    extraFeatures: [
+      captureCheck('zone-a', [0, 2, 0], [2, 2, 2], 0.5),
+      captureCheck('zone-b', [10, 2, 0], [2, 2, 2], 0.5),
+    ],
+  })
+  const out = v3(0, 0, 0)
+  h.seats.teams = [0, 0]
+  h.seats.positions = [v3(20, 2, 0), v3(20, 2, 0)]
+
+  assert.equal(h.features[0].botTarget!(20, v3(1, 2, 0), out), true)
+  near(out, v3(0, 2, 0), 'unowned nearest from zone a ')
+  assert.equal(h.features[1].botTarget!(20, v3(1, 2, 0), out), true)
+  near(out, v3(0, 2, 0), 'unowned nearest from zone b ')
+
+  h.seats.positions = [v3(-1, 2, 0), v3(1, 2, 0)]
+  for (let i = 0; i < 30; i++) h.step()
+  assert.equal(h.draw()[0].tint, 2, 'team 0 owns zone a')
+  h.seats.positions = [v3(20, 2, 0), v3(20, 2, 0)]
+
+  assert.equal(h.features[0].botTarget!(20, v3(1, 2, 0), out), true)
+  near(out, v3(10, 2, 0), 'skip the team 0 zone from zone a ')
+  assert.equal(h.features[1].botTarget!(20, v3(1, 2, 0), out), true)
+  near(out, v3(10, 2, 0), 'skip the team 0 zone from zone b ')
+
+  h.seats.teams = [0, 1]
+  assert.equal(h.features[0].botTarget!(21, v3(1, 2, 0), out), true)
+  near(out, v3(0, 2, 0), 'a team 1 seat takes the nearest unowned zone ')
+
+  h.seats.teams = [0, 0]
+  h.seats.positions = [v3(9, 2, 0), v3(11, 2, 0)]
+  for (let i = 0; i < 30; i++) h.step()
+  assert.equal(h.draw()[1].tint, 2, 'team 0 owns zone b too')
+
+  assert.equal(h.features[0].botTarget!(20, v3(9, 2, 0), out), true)
+  near(out, v3(10, 2, 0), 'all owned: nearest from zone a ')
+  assert.equal(h.features[1].botTarget!(20, v3(1, 2, 0), out), true)
+  near(out, v3(0, 2, 0), 'all owned: nearest from zone b ')
+})
+
+test('QB1: capture zones restore at tick 60 of 120 reproduces the snapshot bytes exactly', async t => {
+  const options: HarnessOptions = {
+    withBall: false,
+    extraFeatures: [
+      captureCheck('zone-a', [0, 2, 0], [2, 2, 2], 0.5),
+      captureCheck('zone-b', [10, 2, 0], [2, 2, 2], 0.5),
+    ],
+  }
+  const a = await harness(t, options), b = await harness(t, options)
+  const drive = (h: Harness, tick: number) => {
+    h.seats.positions[0] = tick < 40 ? v3(1, 2, 0) : tick < 90 ? v3(9, 2, 0) : v3(-1, 2, 0)
+    h.seats.positions[1] = tick < 10 ? v3(20, 2, 0)
+      : tick < 20 ? v3(-1, 2, 0)
+      : tick < 70 ? v3(10, 2, 0) : v3(20, 2, 0)
     h.step()
   }
   for (let tick = 0; tick < 60; tick++) drive(a, tick)

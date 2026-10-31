@@ -15,6 +15,8 @@ export const GraphMode = {
 /** The character state the mapping observes (one tick). */
 export interface CharObservation {
   mode: number
+  carry?: number
+  strokeTimer?: number
   vel: { readonly x: number; readonly y: number; readonly z: number }
   grounded: boolean
   /** Obstacle surface: normal, ice, mud or rubber. */
@@ -45,6 +47,7 @@ export function graphMode(mode: number): number {
   switch (mode) {
     case CharMode.air: return GraphMode.air
     case CharMode.dive: return GraphMode.dive
+    case CharMode.slide: return GraphMode.bellySlide
     case CharMode.diveRecover: return GraphMode.bellySlide
     case CharMode.grabbing: return GraphMode.grab
     default: return GraphMode.locomotion // ground, stunned, frozen, parked

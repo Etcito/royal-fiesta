@@ -3,7 +3,7 @@
 // and the game carries on silently. This module is pure logic: the engine opener, the fetch and the
 // console are passed in, so the wiring is testable headless (apps/web/test/clientSound.test.ts).
 import type { BrowserSound } from '@royal-fiesta/game/audio/context'
-import { sampleMatch, type MatchSample } from '@royal-fiesta/game/audio/events'
+import { newMatchSample, sampleMatch, type MatchSample } from '@royal-fiesta/game/audio/events'
 import { GameAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
 
@@ -40,7 +40,7 @@ export class ClientSound {
   #game: GameAudio | null = null
   #loaded = false
   #families = 0
-  readonly #sample: MatchSample = { phase: 0, roundKind: null, final: false, players: [] }
+  readonly #sample: MatchSample = newMatchSample()
   readonly #scratch: CharacterView = {
     pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 0 },
     mode: 0, status: 0, parked: false, teleportTick: 0,

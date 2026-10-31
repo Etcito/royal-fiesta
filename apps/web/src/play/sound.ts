@@ -6,7 +6,7 @@
 // packages/game/src/audio/context.ts.
 import { openBrowserAudio, type BrowserSound } from '@royal-fiesta/game/audio/context'
 import { CourseEmitters, type EmitterCommand, type ListenerPose } from '@royal-fiesta/game/audio/emitters'
-import { sampleMatch, type MatchSample } from '@royal-fiesta/game/audio/events'
+import { newMatchSample, sampleMatch, type MatchSample } from '@royal-fiesta/game/audio/events'
 import { GameAudio, type CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
@@ -29,7 +29,7 @@ export class SoundDriver {
   #course: ResolvedCourse | null = null
   readonly #commands: EmitterCommand[] = []
   readonly #listener: ListenerPose = { x: 0, y: 0, z: 0, fx: 0, fz: 1 }
-  readonly #sample: MatchSample = { phase: 0, roundKind: null, final: false, players: [] }
+  readonly #sample: MatchSample = newMatchSample()
   readonly #scratch: CharacterView = {
     pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 0 },
     mode: 0, status: 0, parked: false, teleportTick: 0,

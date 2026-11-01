@@ -162,6 +162,7 @@ class Ball implements CourseFeature {
   }
 
   snapshot(w: SnapWriter): void {
+    w.u32(this.#body)
     const body = this.#physics.body(this.#body)
     const p = body.translation(), q = body.rotation(), v = body.linvel(), a = body.angvel()
     w.f64(p.x); w.f64(p.y); w.f64(p.z)
@@ -174,9 +175,11 @@ class Ball implements CourseFeature {
     w.f64(this.#anchor.x); w.f64(this.#anchor.y); w.f64(this.#anchor.z)
   }
 
-  restore(r: SnapReader, ctx: FeatureCtx): void {
+  restore(r: SnapReader, ctx: FeatureCtx, keepBodies = false): void {
     this.#physics = ctx.physics
     this.#seats = ctx.seats
+    const id = r.u32()
+    if (!keepBodies) this.#body = id
     const body = this.#physics.body(this.#body)
     const p = v3(r.f64(), r.f64(), r.f64())
     const q: Quat = { x: r.f64(), y: r.f64(), z: r.f64(), w: r.f64() }

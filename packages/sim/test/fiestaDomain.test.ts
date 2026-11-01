@@ -575,3 +575,54 @@ test('drawFeatures appends and returns the marker draw', t => {
   assert.equal(domain.drawFeatures(touched), 1)
   assert.equal(touched[0].tint, 4)
 })
+
+const bodyFeatureCourse = levelCourse({
+  id: 'level-body-features',
+  obstacles: [obstacle('floor', v3(0, -0.5, 8), v3(15, 0.5, 18), { kind: 'static' })],
+  features: [
+    { id: 'log', kind: 'rollingLog', params: { from: [-4, 0.4, 10], to: [4, 0.4, 10], radius: 0.4, length: 6,
+      speed: 4, periodS: 5, phaseS: 0 } },
+    { id: 'tiles', kind: 'tileField', params: { tiles: [{ t: [-6, 0.2, 1], size: [3, 3, 0.4] },
+      { t: [6, 0.2, 1], size: [3, 3, 0.4] }], warnS: 0.1, decayS: 0.1, mode: 'reset', resetS: 1 } },
+  ],
+}, {
+  route: { ordered: true, laps: 1, stages: [] },
+  respawn: { mode: 'checkpoint', waitTicks: 0, protectTicks: 0, slots: 1, spacingM: 0 },
+})
+
+function bodyPoses(domain: FiestaDomain) {
+  const sim = domain.inner.world.sim
+  return sim.ids().map(id => {
+    const body = sim.body(id)
+    return { id, t: body.translation(), r: body.rotation(),
+      enabled: Array.from({ length: body.numColliders() }, (_, i) => body.collider(i).isEnabled()) }
+  })
+}
+
+// The session's boundary build: factory.rebuild(...).snapshot() is restored into the live domain. A rebuilt
+// world that adopts an exported seat entity allocates its feature bodies under other ids than the live one,
+// so the feature body ids must come from the snapshot (Rapier trapped in TileCells.restore before).
+test('a live domain restored from a rebuilt domain snapshot keeps stepping its feature bodies', t => {
+  const factoryFor = levelFactory(bodyFeatureCourse, 'race')
+  const fieldSpec = spec([], [0, 1])
+  const seat = track(t, factoryFor.create(left, 0))
+  const live = track(t, factoryFor.create(fieldSpec, 0))
+  for (let i = 0; i < 30; i++) {
+    seat.step([neutralInput()], noShadows)
+    live.step([], noShadows)
+  }
+  const rebuilt = track(t, factoryFor.rebuild(fieldSpec, live.tick, [exported(seat), exported(live)]))
+  assert.notDeepEqual(rebuilt.inner.world.sim.ids(), live.inner.world.sim.ids())
+  const w = new SnapWriter()
+  rebuilt.snapshot(w)
+  live.restore(new SnapReader(w.bytes()))
+  live.tick = rebuilt.tick
+  for (let i = 0; i < 90; i++) {
+    rebuilt.step([], noShadows)
+    live.step([], noShadows)
+    assert.equal(live.hash(), rebuilt.hash())
+  }
+  // hash() covers the entities only: compare every body, statics and feature bodies included.
+  assert.deepEqual(bodyPoses(live), bodyPoses(rebuilt))
+  assert.deepEqual(live.drawFeatures([]), rebuilt.drawFeatures([]))
+})

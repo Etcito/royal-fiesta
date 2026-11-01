@@ -114,16 +114,19 @@ export const doorBankFeature: FeatureFactory = (spec, path) => {
     postStep(ctx) { tick = ctx.tick },
     snapshot(w) {
       for (const door of doors) {
+        w.u32(door.body)
         w.u8(door.solid ? 1 : 0)
         w.u8(door.open ? 1 : 0)
         w.u8(door.revealed ? 1 : 0)
         w.i32(door.openTick)
       }
     },
-    restore(r, ctx) {
+    restore(r, ctx, keepBodies) {
       tick = ctx.tick
       dt = ctx.physics.dt
       for (const door of doors) {
+        const id = r.u32()
+        if (!keepBodies) door.body = id
         door.solid = r.u8() !== 0
         door.open = r.u8() !== 0
         door.revealed = r.u8() !== 0

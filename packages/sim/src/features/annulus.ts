@@ -121,10 +121,16 @@ class Annulus implements CourseFeature {
   postStep(_ctx: FeatureCtx): void {}
 
   snapshot(w: SnapWriter): void {
+    for (let j = 0; j < this.#segments; j++) w.u32(this.#bodies[j])
     w.u32(this.#overtimeTicks)
   }
 
-  restore(r: SnapReader, ctx: FeatureCtx): void {
+  restore(r: SnapReader, ctx: FeatureCtx, keepBodies = false): void {
+    for (let j = 0; j < this.#segments; j++) {
+      const id = r.u32()
+      if (!keepBodies) this.#bodies[j] = id
+      this.#colliders[j] = ctx.physics.body(this.#bodies[j]).collider(0).handle
+    }
     this.#overtimeTicks = r.u32()
     this.#poseAt(ctx.roundTick + this.#overtimeTicks / 2)
     for (let j = 0; j < this.#segments; j++) {

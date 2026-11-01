@@ -190,6 +190,7 @@ function doorStates(feature: CourseFeature): DoorState[] {
   const reader = new SnapReader(snapshotBytes(feature))
   const out: DoorState[] = []
   while (reader.remaining > 0) {
+    reader.u32() // body id
     out.push({
       solid: reader.u8() !== 0,
       open: reader.u8() !== 0,
@@ -911,6 +912,7 @@ test('snapshot -> restore is identical per feature (QB1)', () => {
     const seatsA = plan.makeSeats()
     const ctxA = context(seatsA, plan.course)
     const baseA = ctxA.physics.bodyCount
+    const worldBefore = ctxA.physics.takeSnapshot()
     const featureA = plan.factory(plan.spec, PATH)
     featureA.init(ctxA)
     let snap: Uint8Array | null = null
@@ -931,7 +933,10 @@ test('snapshot -> restore is identical per feature (QB1)', () => {
     assert.ok(snap !== null && markA !== null && stateA !== null, `${entry.name}: snapshot at tick 60`)
     const seatsB = plan.makeSeats()
     applySeatState(seatsB, stateA)
-    const ctxB = context(seatsB, plan.course, 60)
+    // B runs in a copy of the world taken before A's init, so its init allocates A's body ids.
+    const physicsB = new WorldSim(R, { gravity: { x: 0, y: GRAVITY_Y, z: 0 } })
+    physicsB.restoreSnapshot(worldBefore)
+    const ctxB = new TestCtx(R, physicsB, seatsB, plan.course, 60)
     const baseB = ctxB.physics.bodyCount
     const featureB = plan.factory(plan.spec, PATH)
     featureB.init(ctxB)
@@ -952,6 +957,7 @@ test('snapshot -> restore is identical per feature (QB1)', () => {
       afterA.knock.length + soundsA.length
     assert.ok(recorded > 0, `${entry.name}: continuation has recorded calls`)
     assert.deepEqual(snapshotBytes(featureA), snapshotBytes(featureB), `${entry.name}: final snapshot bytes`)
+    physicsB.free()
   }
 })
 

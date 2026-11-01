@@ -205,12 +205,17 @@ class Sweep implements CourseFeature {
   }
 
   snapshot(w: SnapWriter): void {
+    for (const part of this.#parts) w.u32(part.body)
     w.u32(this.#overtimeTicks)
     w.u8(this.#active)
     w.f64(this.#effective)
   }
 
-  restore(r: SnapReader, ctx: FeatureCtx): void {
+  restore(r: SnapReader, ctx: FeatureCtx, keepBodies = false): void {
+    for (const part of this.#parts) {
+      const id = r.u32()
+      if (!keepBodies) part.body = id
+    }
     this.#overtimeTicks = r.u32()
     this.#active = r.u8()
     this.#effective = r.f64()

@@ -154,7 +154,7 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
       for (const item of items) {
         const body = physics.body(item.body)
         const p = body.translation(), q = body.rotation(), v = body.linvel(), a = body.angvel()
-        w.i16(item.holder); w.i32(item.lastTouchTick)
+        w.u32(item.body); w.i16(item.holder); w.i32(item.lastTouchTick)
         w.f64(p.x); w.f64(p.y); w.f64(p.z)
         w.f64(q.x); w.f64(q.y); w.f64(q.z); w.f64(q.w)
         w.f64(v.x); w.f64(v.y); w.f64(v.z)
@@ -164,10 +164,12 @@ export function carryItemFeature(spec: FeatureSpec, path: string): CourseFeature
       }
       state.snapshot(w, (w, row) => w.u8(row.prevGrab))
     },
-    restore(r, ctx) {
+    restore(r, ctx, keepBodies) {
       physics = ctx.physics
       seats = ctx.seats
       for (const item of items) {
+        const id = r.u32()
+        if (!keepBodies) item.body = id
         item.holder = r.i16(); item.lastTouchTick = r.i32()
         const body = physics.body(item.body)
         const p = v3(r.f64(), r.f64(), r.f64())

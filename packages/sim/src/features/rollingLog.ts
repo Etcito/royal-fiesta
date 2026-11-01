@@ -167,6 +167,7 @@ class RollingLog implements CourseFeature {
   }
   snapshot(w: SnapWriter): void {
     w.u8(STATE_VERSION)
+    w.u32(this.#body)
     const p = this.#pose
     w.f64(p.t.x); w.f64(p.t.y); w.f64(p.t.z)
     w.f64(p.r.x); w.f64(p.r.y); w.f64(p.r.z); w.f64(p.r.w)
@@ -175,8 +176,10 @@ class RollingLog implements CourseFeature {
     w.f64(t.x); w.f64(t.y); w.f64(t.z)
     w.f64(r.x); w.f64(r.y); w.f64(r.z); w.f64(r.w)
   }
-  restore(r: SnapReader, ctx: FeatureCtx): void {
+  restore(r: SnapReader, ctx: FeatureCtx, keepBodies = false): void {
     r.u8()
+    const id = r.u32()
+    if (!keepBodies) this.#body = id
     this.#pose.t = v3(r.f64(), r.f64(), r.f64())
     this.#pose.r = { x: r.f64(), y: r.f64(), z: r.f64(), w: r.f64() }
     const t = v3(r.f64(), r.f64(), r.f64())

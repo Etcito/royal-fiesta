@@ -38,8 +38,9 @@ published: pushing (R5) is done by the publisher with the Wavedash CLI or the De
 `npm run wavedash` writes `out/wavedash-build/` (untracked):
 
 - `upload/`: the upload_dir. It is a copy of `apps/web/dist` without `nmc.gpu.json` (the GPU-client declaration)
-  and `store/` (a local asset mirror). `game.html` sits at its root next to `assets/`, so its relative `./assets/`
-  URLs stay valid. `index.html`, `play.html` and `client.html` stay as built (boot and proof pages).
+  and `store/` (a local asset mirror), with the baked audio compressed in place (below). `game.html` sits at its
+  root next to `assets/`, so its relative `./assets/` URLs stay valid. `index.html`, `play.html` and
+  `client.html` stay as built (boot and proof pages).
 - `upload/rf-build.json`: the build manifest (below).
 - `wavedash.toml`: the CLI configuration (R6):
 
@@ -51,8 +52,36 @@ published: pushing (R5) is done by the publisher with the Wavedash CLI or the De
   It has no `game_id` and no token: the push run sets `game_id` in its own configuration.
 
 `packWavedash` replaces `upload/` on every run and returns the sorted list of files under `upload/` (forward
-slashes, `rf-build.json` included) and `entry: 'game.html'`. A dist without `game.html` is refused with
+slashes, `rf-build.json` included), `entry: 'game.html'` and the `audio` counts. A dist without `game.html` is
+refused with
 `[bricks] <dist>/game.html: the built game page is missing; run npm run build so apps/web/game.html is built`.
+
+## Audio compression
+
+`packWavedash` compresses `<upload>/audio` after the copy and before it writes `rf-build.json`. The folder must
+hold the S17 `manifest.json` from `npm run audio:bake`; a dist without it is refused with
+`[bricks] <upload>/audio/manifest.json: the baked audio is missing; run npm run audio:bake`.
+
+For every WAV the manifest lists:
+
+- Both formats are encoded with ffmpeg at 48 kHz: MP3 (`libmp3lame`, VBR `-q:a 4`) and Ogg Opus (`libopus`,
+  64 kb/s mono or 96 kb/s stereo, `-vbr on`). The smaller output is kept, so a file becomes `<name>.mp3` or
+  `<name>.ogg` depending on which won. Only the manifest's `files` change, so the browser still loads them by
+  name through `decodeAudioData`.
+- A non-music sound whose decoded left and right samples are identical on every sample is encoded mono; music
+  cues always stay stereo. A non-music sound with differing channels stays stereo and is named in the log.
+- The WAV is deleted from `upload/audio` and `manifest.json` is rewritten with the kept file names; every other
+  manifest field is unchanged.
+- The result is cached under the sound's bake key: `<RF_AUDIO_CACHE_DIR>/compressed/v1/<key>/` when
+  `RF_AUDIO_CACHE_DIR` is set, otherwise `<git common dir>/rf-cache/audio/compressed/v1/<key>/` (next to the
+  bake cache; every worktree of a clone shares it). The key is the one `bakeFileKeys()`
+  (tools/bake-audio.ts) derives for the bake: HAA's built JS and wasm, bake-audio.ts, the sound definition, its
+  bank entries and every source text the bake reads. A cache hit copies the encoded file and runs no ffmpeg.
+- The real encoder refuses when ffmpeg or `libmp3lame`/`libopus` is missing, naming the codec and how to install
+  it; it never falls back to an uncompressed or unrequested format.
+
+The counts (`encoded`, `cached`, `mono`, `stereo`) are in the stamp's `audio` object and in the summary line
+`wavedash: ... audio=encoded:<n> cached:<n> mono:<n> stereo:<n> ...`.
 
 ## Build manifest (`upload/rf-build.json`)
 
@@ -61,9 +90,12 @@ slashes, `rf-build.json` included) and `entry: 'game.html'`. A dist without `gam
   "format": "royal-fiesta.build",
   "version": 1,
   "commit": "<40 hex, or null outside a git checkout>",
+  "builtAt": "<UTC date and minute>",
   "entry": "game.html",
   "raa": "<installed @etcito/raa version, or null>",
-  "mama": { "source": "sibling | cloned | absent", "commit": "<40 hex, or null>" }
+  "mama": { "source": "sibling | cloned | absent", "commit": "<40 hex, or null>" },
+  "defaultServer": false,
+  "audio": { "encoded": 0, "cached": 0, "mono": 0, "stereo": 0 }
 }
 ```
 

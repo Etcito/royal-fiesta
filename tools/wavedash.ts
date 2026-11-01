@@ -3,6 +3,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statS
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { packContent } from './content.ts'
+import { compressAudio } from './audioCompress.ts'
 import { mamaSource, repoRoot } from './bricks.ts'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
 
@@ -58,7 +59,17 @@ function mamaStamp(root: string): { source: 'sibling' | 'cloned' | 'absent'; com
   return { source: source.kind, commit: source.kind === 'absent' ? null : source.commit }
 }
 
-export async function packWavedash(opts: { outDir: string }): Promise<{ files: string[]; entry: 'game.html' }> {
+/** What the audio step did to `<upload>/audio`: encoded WAVs, cache hits, mono and stereo files. */
+export interface PackedAudio {
+  encoded: number
+  cached: number
+  mono: number
+  stereo: number
+}
+
+export async function packWavedash(
+  opts: { outDir: string },
+): Promise<{ files: string[]; entry: 'game.html'; audio: PackedAudio }> {
   const root = repoRoot()
   const dist = resolve(process.env.RF_WAVEDASH_DIST ?? join(root, 'apps', 'web', 'dist'))
   const page = join(dist, ENTRY)
@@ -76,6 +87,17 @@ export async function packWavedash(opts: { outDir: string }): Promise<{ files: s
   // Remove this bundled content when the CDN serves it.
   packContent(join(upload, 'content'))
 
+  // Ship compressed audio, never the baked WAVs: the manifest is the S17 one written by the bake.
+  const audioDir = join(upload, 'audio')
+  const audioManifest = join(audioDir, 'manifest.json')
+  if (!existsSync(audioManifest)) {
+    refuse('bricks', audioManifest, 'the baked audio is missing; run npm run audio:bake')
+  }
+  const compressed = await compressAudio(audioDir)
+  const audio: PackedAudio = {
+    encoded: compressed.encoded, cached: compressed.cached, mono: compressed.mono, stereo: compressed.stereo,
+  }
+
   const stamp = {
     format: 'royal-fiesta.build',
     version: 1,
@@ -86,10 +108,11 @@ export async function packWavedash(opts: { outDir: string }): Promise<{ files: s
     mama: mamaStamp(root),
     // Only whether the build had a default relay (VITE_RF_SERVER, read from the build environment): never its value.
     defaultServer: (process.env.VITE_RF_SERVER ?? '').trim() !== '',
+    audio,
   }
   writeFileSync(join(upload, BUILD_STAMP), `${JSON.stringify(stamp, null, 2)}\n`)
   writeFileSync(join(out, CONFIG_NAME), wavedashToml())
-  return { files: listFiles(upload), entry: ENTRY }
+  return { files: listFiles(upload), entry: ENTRY, audio }
 }
 
 function build(root: string): Promise<number> {
@@ -123,9 +146,11 @@ export async function main(argv: string[]): Promise<number> {
   }
   try {
     const out = resolve(root, outDir)
-    const { files, entry } = await packWavedash({ outDir: out })
+    const { files, entry, audio } = await packWavedash({ outDir: out })
     const rel = (p: string): string => relative(root, p) || '.'
-    console.log(`wavedash: upload_dir=${rel(join(out, UPLOAD_DIR))} files=${files.length} entry=${entry} config=${rel(join(out, CONFIG_NAME))}`)
+    console.log(`wavedash: upload_dir=${rel(join(out, UPLOAD_DIR))} files=${files.length} entry=${entry}` +
+      ` audio=encoded:${audio.encoded} cached:${audio.cached} mono:${audio.mono} stereo:${audio.stereo}` +
+      ` config=${rel(join(out, CONFIG_NAME))}`)
     return 0
   } catch (error) {
     if (!isRefusal(error)) throw error

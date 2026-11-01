@@ -856,6 +856,22 @@
       "warnS": 1,
       "decayS": 2,
       "scaleWithEntrants": true
+    },
+    {
+      "id": "layer-timer",
+      "kind": "risingKill",
+      "startY": -6,
+      "endY": 20,
+      "startS": 105,
+      "riseMps": 0.7,
+      "halfM": 34,
+      "clock": {
+        "t": [
+          0,
+          12,
+          -40
+        ]
+      }
     }
   ]
 }

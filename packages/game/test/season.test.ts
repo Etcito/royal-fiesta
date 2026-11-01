@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { parseSeason, playableMaps, schedMaps, seasonFloorProblems } from '../src/season.ts'
@@ -126,19 +126,36 @@ test('playable and scheduled maps preserve roster order and filter status and lo
   assert.deepEqual(s, season())
 })
 
-test('committed courses/season.json holds all 18 planned maps and meets the floor', () => {
+test('committed courses/season.json: wave-1 maps are built, the rest planned, the floor holds', () => {
   const file = new URL('../../../courses/season.json', import.meta.url)
   const season = parseSeason(JSON.parse(readFileSync(file, 'utf8')), 'courses/season.json')
   assert.equal(season.maps.length, 18)
   assert.deepEqual(season.maps.map(m => m.id), ['A', 'B', 'C1', 'C2', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'])
+  // Wave 1 (M10) passed level_validate and its headless run; no map needed the cut rule.
+  const built = ['E', 'F', 'I', 'Q']
   for (const map of season.maps) {
-    assert.equal(map.status, 'planned')
-    assert.equal(map.reason, null)
+    assert.equal(map.status, built.includes(map.id) ? 'built' : 'planned', map.id)
+    assert.equal(map.reason, null, map.id)
+    if (map.status === 'built') {
+      assert.ok(existsSync(new URL(`../../../${map.files.course}`, import.meta.url)), `${map.id} course file`)
+      assert.ok(existsSync(new URL(`../../../${map.files.zones}`, import.meta.url)), `${map.id} zones file`)
+    }
   }
+  assert.deepEqual(playableMaps(season).map(m => m.id), built)
   const finals = season.maps.filter(m => m.finalRule !== null).length
   const races = season.maps.filter(m => m.kind === 'race').length
   const survivalOrScore = season.maps.filter(m => ['survival', 'collection', 'hunt', 'logic'].includes(m.kind)).length
   const teams = season.maps.filter(m => m.kind === 'team').length
   assert.deepEqual({ finals, races, survivalOrScore, teams }, { finals: 2, races: 7, survivalOrScore: 7, teams: 3 })
   assert.deepEqual(seasonFloorProblems(season), [])
+})
+
+test('the map cut rule: a failed map is cut with one reason and leaves the floor count', () => {
+  const s = season()
+  s.maps[0] = { ...s.maps[0], status: 'cut', reason: 'Round-run failed: the team round did not settle' }
+  assert.deepEqual(playableMaps(s).map(m => m.id), ['B', 'Q'])
+  assert.ok(seasonFloorProblems(s).includes('team: 0 non-cut maps; requires at least 1'))
+  const cut = s.maps[0]
+  assert.equal(cut.reason, 'Round-run failed: the team round did not settle')
+  assert.ok(!cut.reason!.includes('\n'))
 })

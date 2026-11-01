@@ -233,7 +233,7 @@
         "course": "courses/s1-e-sugar-sprint.course.json",
         "zones": "courses/s1-e-sugar-sprint.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     },
     {
@@ -264,7 +264,7 @@
         "course": "courses/s1-f-taffy-circuit.course.json",
         "zones": "courses/s1-f-taffy-circuit.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     },
     {
@@ -357,7 +357,7 @@
         "course": "courses/s1-i-honeycomb-heights.course.json",
         "zones": "courses/s1-i-honeycomb-heights.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     },
     {
@@ -601,7 +601,7 @@
         "course": "courses/s1-q-crown-confection.course.json",
         "zones": "courses/s1-q-crown-confection.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     }
   ]

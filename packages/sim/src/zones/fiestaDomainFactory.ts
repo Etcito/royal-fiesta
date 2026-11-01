@@ -232,7 +232,7 @@ function applyTrailers(
     if (featureStates === null) featureStates = feature
   }
   if (mechanisms !== null) domain.adoptMechanisms(mechanisms[0], mechanisms[1], mechanisms[2])
-  if (featureStates !== null) domain.restoreFeatures(new SnapReader(featureStates))
+  if (featureStates !== null) domain.restoreFeatures(new SnapReader(featureStates), true)
   // The creation tick's pose must use the see-saw angles restored above.
   domain.obstacles.placeKinematic(domain.ctx, domain.tick)
 }

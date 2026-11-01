@@ -82,7 +82,8 @@ export interface CourseFeature {
   preStep(ctx: FeatureCtx): void
   postStep(ctx: FeatureCtx): void
   snapshot(w: SnapWriter): void
-  restore(r: SnapReader, ctx: FeatureCtx): void
+  /** keepBodies: a zone handoff into a rebuilt world; keep the bodies init() created there. */
+  restore(r: SnapReader, ctx: FeatureCtx, keepBodies?: boolean): void
   draw(out: FeatureDraw[]): void
   /** Where a bot of this seat should go now; false leaves the bot goal unchanged. */
   botTarget?(seat: number, pos: Vec3, out: Vec3): boolean

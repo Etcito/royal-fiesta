@@ -70,7 +70,7 @@ export const hexFieldFeature: FeatureFactory = (spec, path) => {
       cells.step(ctx, threshold, warnTicks, -1)
     },
     snapshot(w) { cells.snapshot(w) },
-    restore(r, ctx) { cells.restore(r, ctx) },
+    restore(r, ctx, keepBodies) { cells.restore(r, ctx, keepBodies) },
     draw(out) {
       const start = out.length
       cells.draw(out, 'candy.floor-disc')

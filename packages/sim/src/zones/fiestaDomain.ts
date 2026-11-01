@@ -511,8 +511,8 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.#events.length = 0
   }
 
-  restoreFeatures(r: SnapReader): void {
-    for (let i = 0; i < this.features.length; i++) this.features[i].restore(r, this.#featureCtxs[i])
+  restoreFeatures(r: SnapReader, keepBodies = false): void {
+    for (let i = 0; i < this.features.length; i++) this.features[i].restore(r, this.#featureCtxs[i], keepBodies)
     this.#featureSounds.length = 0
     this.#featureLoops.clear()
   }

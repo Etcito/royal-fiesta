@@ -185,8 +185,8 @@ export const memoryTilesFeature: FeatureFactory = (spec, path) => {
       w.u16(firstCorrectTick.length)
       for (let i = 0; i < firstCorrectTick.length; i++) w.i32(firstCorrectTick[i])
     },
-    restore(r: SnapReader, ctx: FeatureCtx) {
-      cells.restore(r, ctx)
+    restore(r: SnapReader, ctx: FeatureCtx, keepBodies?: boolean) {
+      cells.restore(r, ctx, keepBodies)
       for (let cell = 0; cell < count; cell++) cellSymbols[cell] = r.u8()
       target = r.u8()
       cycle = r.i32()

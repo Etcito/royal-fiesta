@@ -353,6 +353,7 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
     wallMark = now
   }
 
+  let failure: unknown
   try {
     for (const peer of peers) {
       fulls.push(createZoneFullMatch(R, {
@@ -380,8 +381,18 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
     if (!single && !fulls.every(full => full.done)) {
       problems.push(`show: did not finish within ${frames} frames; check the season maps and targets`)
     }
+  } catch (error) {
+    failure = error
+    throw error
   } finally {
-    for (const full of fulls) full.dispose()
+    // A throw from inside Rapier leaves its World borrowed, so freeing it throws too: keep the first error.
+    for (const full of fulls) {
+      try {
+        full.dispose()
+      } catch (error) {
+        if (failure === undefined) throw error
+      }
+    }
   }
 
   const rounds = fulls[0].report.rounds
@@ -456,8 +467,15 @@ async function runCli(argv: string[]): Promise<number> {
     console.log(`[round-run] champion=${report.champion}`)
     return report.ok ? 0 : 1
   } catch (error) {
-    if (!isRefusal(error)) throw error
-    console.error(error.message)
+    if (isRefusal(error)) {
+      console.error(error.message)
+      return 1
+    }
+    // Print our own message and stack first: an uncaught throw from inside a minified
+    // bundle makes Node print the whole bundle line, hiding the error itself.
+    const err = error instanceof Error ? error : new Error(String(error))
+    console.error(`[round-run] error: ${err.message}`)
+    if (err.stack) console.error(err.stack)
     return 1
   }
 }

@@ -155,15 +155,22 @@ export class TileCells {
 
   snapshot(w: SnapWriter): void {
     for (let cell = 0; cell < this.count; cell++) {
+      w.u32(this.body[cell])
       w.u8(this.state[cell])
       w.u16(this.timer[cell])
     }
   }
 
-  restore(r: SnapReader, ctx: FeatureCtx): void {
+  // The body ids travel with the snapshot, like the obstacle and mechanism ids: a domain built by
+  // a rebuild allocates its ids in another order, so the restored world's ids are the snapshot's.
+  // keepBodies: a zone handoff into a rebuilt world whose cells init() just created; only the
+  // tile states are taken from the snapshot, never its body ids.
+  restore(r: SnapReader, ctx: FeatureCtx, keepBodies = false): void {
     this.#physics = ctx.physics
     const map = new Map<number, number>()
     for (let cell = 0; cell < this.count; cell++) {
+      const body = r.u32()
+      if (!keepBodies) this.body[cell] = body
       const state = r.u8()
       this.state[cell] = state
       this.timer[cell] = r.u16()
@@ -243,7 +250,7 @@ export const tileFieldFeature: FeatureFactory = (spec, path) => {
     preStep(_ctx) {},
     postStep(ctx) { cells.step(ctx, decayTicks, warnTicks, resetTicks) },
     snapshot(w) { cells.snapshot(w) },
-    restore(r, ctx) { cells.restore(r, ctx) },
+    restore(r, ctx, keepBodies) { cells.restore(r, ctx, keepBodies) },
     draw(out) { cells.draw(out, 'plan.trap-tile') },
     botTarget(_seat, position, out) { return cells.nearestSolid(position, out) },
   }

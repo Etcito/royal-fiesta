@@ -119,6 +119,7 @@ function snapshotBytes(feature: CourseFeature): Uint8Array {
 
 function cellState(feature: CourseFeature): { state: number; timer: number } {
   const r = new SnapReader(snapshotBytes(feature))
+  r.u32() // body id
   return { state: r.u8(), timer: r.u16() }
 }
 

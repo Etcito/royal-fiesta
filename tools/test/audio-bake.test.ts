@@ -10,8 +10,27 @@ import { bakeAudio, checkRender } from '../bake-audio.ts'
 import type { AudioManifest } from '../bake-audio.ts'
 
 const out = mkdtempSync(join(tmpdir(), 'rf-audio-bake-'))
-const manifest: AudioManifest = await bakeAudio(out, () => {})
-test.after(() => rmSync(out, { recursive: true, force: true }))
+const cache = mkdtempSync(join(tmpdir(), 'rf-audio-cache-'))
+const manifest: AudioManifest = await bakeAudio(out, () => {}, cache)
+test.after(() => {
+  rmSync(out, { recursive: true, force: true })
+  rmSync(cache, { recursive: true, force: true })
+})
+
+test('a second bake with unchanged inputs renders nothing and copies the same bytes from the cache', async () => {
+  const again = mkdtempSync(join(tmpdir(), 'rf-audio-bake-'))
+  try {
+    const lines: string[] = []
+    const second = await bakeAudio(again, (line) => lines.push(line), cache)
+    assert.deepEqual(second, manifest)
+    assert.match(lines.join('\n'), /\(0 rendered, 372 from /)
+    for (const sound of manifest.sounds) {
+      for (const file of sound.files) assert.ok(readFileSync(join(again, file)).equals(readFileSync(join(out, file))), file)
+    }
+  } finally {
+    rmSync(again, { recursive: true, force: true })
+  }
+})
 
 /** Checks the RIFF/FMT header encodeWav writes: PCM, stereo, 48 kHz, 16-bit, and returns the byte size. */
 function wavBytes(path: string): number {

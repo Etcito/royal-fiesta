@@ -28,7 +28,7 @@ export function meshCacheDir(root = repoRoot()): string {
   return common === null ? join(root, '.cache', 'meshes') : join(common, 'rf-cache', 'meshes')
 }
 
-function gitCommonDir(root: string): string | null {
+export function gitCommonDir(root: string): string | null {
   const dotGit = join(root, '.git')
   try {
     if (statSync(dotGit).isDirectory()) return dotGit

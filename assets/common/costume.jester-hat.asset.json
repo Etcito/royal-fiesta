@@ -27,7 +27,7 @@
         "name": "jester_hat",
         "kind": "group",
         "children": [
-          "head",
+          "jester_hat_head",
           "purple_point",
           "gold_point",
           "head_band",
@@ -50,9 +50,9 @@
           }
         }
       },
-      "head": {
-        "id": "head",
-        "name": "head",
+      "jester_hat_head": {
+        "id": "jester_hat_head",
+        "name": "jester_hat_head",
         "kind": "anchor",
         "transform": {
           "position": [0, 0.8, 0]
@@ -264,5 +264,5 @@
     "min": [-0.82, 0.91, -0.37],
     "max": [0.82, 1.78, 0.41]
   },
-  "hash": "82af79d3eae43d7cb017b1b319b3bedadec58c9afb86fdd682f0ea28e6870d51"
+  "hash": "611ec6f334d1d85b1d605946c205ff17c00ad33314bcbe638b134e9ef943851c"
 }

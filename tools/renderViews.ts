@@ -11,6 +11,7 @@ import { decodePng } from '../apps/headless/src/gpuRecord.ts'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
 import { repoRoot } from './bricks.ts'
 import { loadAssetFile, mountedBounds, type AuthoredAsset } from './contentProbe.ts'
+import { sharedNodeIds } from './nodeIds.ts'
 import { fuzzAndBloom, parseLegend, relight } from './viewGrade.ts'
 import { VIEW_YAWS, type ViewName, type ViewsInput } from './viewsRecord.ts'
 
@@ -140,7 +141,7 @@ export function mergeDocuments(body: Obj, costumes: { document: Obj; offset: V3;
   for (const c of costumes) {
     const cn = c.document.nodes as Obj
     const cm = c.document.materials as Obj
-    for (const k of Object.keys(cn)) if (k in nodes) refuse(AREA, `${c.rel}#/document/nodes/${k}`, 'node id also used by the penguin; re-save the costume with unique node ids')
+    for (const k of sharedNodeIds(c.document, { nodes })) refuse(AREA, `${c.rel}#/document/nodes/${k}`, 'node id also used by the penguin; re-save the costume with unique node ids')
     for (const k of Object.keys(cm)) if (k in materials) refuse(AREA, `${c.rel}#/document/materials/${k}`, 'material id also used by the penguin; re-save the costume with unique material ids')
     Object.assign(nodes, cn)
     Object.assign(materials, cm)

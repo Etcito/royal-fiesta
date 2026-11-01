@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { assetDocumentText, assetFileText } from '../packages/game/src/gameAsset.ts'
+import { sharedNodeIds } from './nodeIds.ts'
 
 export type GuardRule =
   | 'binary-ext'
@@ -11,6 +12,7 @@ export type GuardRule =
   | 'too-large'
   | 'asset-outside-fixtures'
   | 'asset-not-modeler-valid'
+  | 'costume-node-id-collision'
   | 'fixture-not-json'
   | 'fixture-too-large'
   | 'public-leak'
@@ -296,6 +298,49 @@ function modelerAssetViolations(file: string, decoded: string): GuardViolation[]
   return out
 }
 
+const PENGUIN_ASSET = 'assets/common/penguin.body.asset.json'
+const COSTUME_ASSET = /^assets\/[a-z]+\/costume\.[a-z0-9.-]+\.asset\.json$/
+
+// Costumes from earlier M13 cards whose collision predates this rule; their own corrective cards hold the fix.
+// Any other costume, or a new colliding id, is refused.
+const KNOWN_COLLISIONS: Record<string, readonly string[]> = {
+  'assets/common/costume.cloud-skirt.asset.json': ['body'],
+  'assets/common/costume.disco-jacket.asset.json': ['anchor_body'],
+  'assets/common/costume.neon-sneakers.asset.json': ['body'],
+}
+
+// A costume is merged into the penguin for the views render, so it may not reuse a penguin document node id.
+// The rule is shared with tools/renderViews.ts and runs on every guard pass, the card check after the commit too.
+export function costumeNodeIdViolations(root: string, files: readonly string[]): GuardViolation[] {
+  const costumes = files.filter((file) => COSTUME_ASSET.test(file))
+  if (costumes.length === 0) return []
+  let body: { document?: unknown }
+  try {
+    body = JSON.parse(readFileSync(path.join(root, PENGUIN_ASSET), 'utf8')) as { document?: unknown }
+  } catch {
+    return []
+  }
+  const out: GuardViolation[] = []
+  for (const file of costumes) {
+    let json: { document?: unknown }
+    try {
+      json = JSON.parse(readFileSync(path.join(root, file), 'utf8')) as { document?: unknown }
+    } catch {
+      continue
+    }
+    const known = new Set(KNOWN_COLLISIONS[file] ?? [])
+    for (const id of sharedNodeIds(json.document, body.document)) {
+      if (known.has(id)) continue
+      out.push({
+        path: file,
+        rule: 'costume-node-id-collision',
+        detail: `node id '${id}' is also used by ${PENGUIN_ASSET}; rename it with a costume prefix`,
+      })
+    }
+  }
+  return out
+}
+
 export function checkPaths(root: string, files: readonly string[]): GuardViolation[] {
   const violations: GuardViolation[] = []
   for (const file of files) {
@@ -338,8 +383,10 @@ function repoRoot(): string {
 
 export function main(argv: string[]): number {
   const root = repoRoot()
-  const files = argv.includes('--staged') ? stagedFiles(root) : trackedFiles(root)
+  const staged = argv.includes('--staged')
+  const files = staged ? stagedFiles(root) : trackedFiles(root)
   const violations = checkPaths(root, files)
+  violations.push(...costumeNodeIdViolations(root, files))
 
   console.log(`guard: ${files.length} files checked, ${violations.length} violations`)
   for (const violation of violations) {

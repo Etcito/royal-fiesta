@@ -43,6 +43,8 @@ export interface RoundRunOptions {
   target?: number
   show?: boolean
   seed?: number
+  /** Print one progress line per simulated second to stderr. */
+  progress?: boolean
 }
 
 export interface RoundRunReport {
@@ -153,6 +155,10 @@ function quotaProblem(meta: RoundMeta | undefined, result: ZoneRoundResult): str
       return result.qualified.length === meta.target ? null
         : `round ${result.index}: ${result.kind} qualified ${result.qualified.length} of target ${meta.target}`
   }
+}
+
+function settledOutcome(rounds: readonly ZoneRoundResult[]): boolean {
+  return rounds.length >= 1 && rounds[rounds.length - 1].reason !== 'playoff'
 }
 
 export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
@@ -295,7 +301,8 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
     if (meta === undefined) {
       problems.push(`round ${index}: no plan was recorded for the round`)
     } else {
-      if (single || first.reason !== 'playoff') {
+      // A playoff result is not an outcome: the game replays the disputed seats next round.
+      if (first.reason !== 'playoff') {
         const quota = quotaProblem(meta, first)
         if (quota !== null) problems.push(quota)
       }
@@ -318,10 +325,27 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
       ` qualified=${first.qualified.length} eliminated=${first.eliminated.length} ${ok ? 'OK' : 'FAIL'}`)
   }
 
+  // A single round may tie into one playoff round, which always settles (season tie order).
   const roundLimit = single
-    ? maxEndTick(sims[0], profileName) + SETTLE_TICKS
+    ? 2 * (maxEndTick(sims[0], profileName) + SETTLE_TICKS)
     : (DEFAULT_PLAN.length + 2) * (Math.max(...sims.map(sim => maxEndTick(sim, profileName))) + SETTLE_TICKS)
   let frames = 0
+  let wallMark = performance.now()
+
+  function progressLine(frame: number): void {
+    const now = performance.now()
+    const counts = [0, 0, 0, 0]
+    const round = fulls[0].round
+    if (round !== null) {
+      for (const domain of round.match.domains) {
+        for (const seat of domain.seats) counts[domain.status(seat)]++
+      }
+    }
+    console.error(`[round-run] frame=${frame} sim=${(frame * DT).toFixed(0)}s rounds=${fulls[0].report.rounds.length}` +
+      ` alive=${counts[PlayerStatus.alive]} qualified=${counts[PlayerStatus.qualified]}` +
+      ` eliminated=${counts[PlayerStatus.eliminated]} wallPerSimS=${(now - wallMark).toFixed(0)}ms`)
+    wallMark = now
+  }
 
   try {
     for (const peer of peers) {
@@ -339,11 +363,12 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
         checkRound(printed)
         printed++
       }
+      if (o.progress === true && (frames + 1) % 60 === 0) progressLine(frames + 1)
       if (single) {
-        if (fulls.every(full => full.report.rounds.length >= 1)) break
+        if (fulls.every(full => settledOutcome(full.report.rounds))) break
       } else if (fulls.every(full => full.done)) break
     }
-    if (single && !fulls.every(full => full.report.rounds.length >= 1)) {
+    if (single && !fulls.every(full => settledOutcome(full.report.rounds))) {
       problems.push(`round 0: did not settle within ${frames} frames; check the course, spawns and target`)
     }
     if (!single && !fulls.every(full => full.done)) {
@@ -369,7 +394,9 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
       }
     }
   }
-  if (single && rounds.length !== 1) problems.push(`round-run: expected one round, got ${rounds.length}`)
+  if (single && (rounds.length === 0 || rounds.slice(0, -1).some(result => result.reason !== 'playoff'))) {
+    problems.push(`round-run: expected one round (plus its playoff), got ${rounds.length}`)
+  }
 
   const last = rounds.length === 0 ? undefined : rounds[rounds.length - 1]
   const reported = fulls[0].report.champion
@@ -396,6 +423,7 @@ async function runCli(argv: string[]): Promise<number> {
       target: { type: 'string' },
       show: { type: 'boolean', default: false },
       seed: { type: 'string' },
+      progress: { type: 'boolean', default: false },
     } })
     if (values.course === undefined || values.course.length === 0) {
       refuse('cli', '--course', `required; ${USAGE}`)
@@ -416,7 +444,7 @@ async function runCli(argv: string[]): Promise<number> {
     const report = await runRound({
       course: values.course, dir: values.dir, seats, peers, profile: values.profile,
       target: values.target === undefined ? undefined : Number(values.target),
-      show: values.show, seed: values.seed === undefined ? undefined : Number(values.seed),
+      show: values.show, progress: values.progress, seed: values.seed === undefined ? undefined : Number(values.seed),
     })
     for (const problem of report.problems) console.error(`[round-run] ${problem}`)
     console.log(`[round-run] champion=${report.champion}`)

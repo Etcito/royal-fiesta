@@ -1,0 +1,273 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "candy.ramp-deck",
+  "name": "Ramp Deck",
+  "category": "obstacle",
+  "world": "candy",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "Ramp Deck",
+    "root": [
+      "candy_ramp_deck"
+    ],
+    "nodes": {
+      "candy_ramp_deck": {
+        "id": "candy_ramp_deck",
+        "name": "Ramp Deck",
+        "kind": "group",
+        "children": [
+          "collider",
+          "slab",
+          "kerb_left",
+          "kerb_right"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "candy.ramp-deck",
+          "category": "obstacle",
+          "world": "candy"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "collider": {
+        "id": "collider",
+        "name": "collider",
+        "kind": "paramesh",
+        "visible": false,
+        "gameCollision": true,
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.5, 0],
+              [0, -0.5, 0],
+              [0, 0, 0.5],
+              [0, 0, -0.5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        }
+      },
+      "slab": {
+        "id": "slab",
+        "name": "slab",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.1, 0]
+        },
+        "round": 0.1,
+        "material": "candy-pink",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.5, 0, 0],
+              [-0.5, 0, 0],
+              [0, 0.4, 0],
+              [0, -0.4, 0],
+              [0, 0, 0.5],
+              [0, 0, -0.5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "kerb_left": {
+        "id": "kerb_left",
+        "name": "kerb-left",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.44, 0.4, 0]
+        },
+        "round": 0.05,
+        "material": "candy-yellow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.06, 0, 0],
+              [-0.06, 0, 0],
+              [0, 0.1, 0],
+              [0, -0.1, 0],
+              [0, 0, 0.5],
+              [0, 0, -0.5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "kerb_right": {
+        "id": "kerb_right",
+        "name": "kerb-right",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.44, 0.4, 0]
+        },
+        "round": 0.05,
+        "material": "candy-yellow",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "cube",
+            "radius": 0,
+            "points": [
+              [0.06, 0, 0],
+              [-0.06, 0, 0],
+              [0, 0.1, 0],
+              [0, -0.1, 0],
+              [0, 0, 0.5],
+              [0, 0, -0.5]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "candy-pink": {
+        "name": "candy-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#f0287f",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-yellow": {
+        "name": "candy-yellow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc93c",
+                "in.roughness": 0.12
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-blue": {
+        "name": "candy-blue",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fa9f5",
+                "in.roughness": 0.22
+              }
+            }
+          ],
+          "links": []
+        }
+      },
+      "candy-white": {
+        "name": "candy-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.18
+              }
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [
+    {
+      "shape": "cuboid",
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1],
+      "halfExtents": [0.5, 0.5, 0.5]
+    }
+  ],
+  "anchors": {},
+  "bounds": {
+    "min": [-0.5, -0.5, -0.5],
+    "max": [0.5, 0.5, 0.5]
+  },
+  "hash": "3c495dfdebf5067cb82b9215526c4da1721e8c749702fa4f6c04575a7d696a25"
+}

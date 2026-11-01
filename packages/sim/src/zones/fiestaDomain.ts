@@ -78,6 +78,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   readonly #writer = new SnapWriter()
   #inputs: readonly PlayerInput[]
   #stepTick = -1
+  #disposed = false
 
   constructor(inner: RapierDomainSim<PlayerInput>, config: FiestaDomainConfig) {
     this.inner = inner
@@ -179,6 +180,14 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.placeMechanisms()
   }
 
+  /** Frees the Rapier world; the session calls it once it will never use this state again. Idempotent. */
+  dispose(): void {
+    if (this.#disposed) return
+    this.#disposed = true
+    this.inner.world.sim.free()
+  }
+
+  get disposed(): boolean { return this.#disposed }
   get tick(): number { return this.inner.tick }
   set tick(tick: number) { this.inner.tick = tick }
   get seats(): readonly number[] { return this.#seats }

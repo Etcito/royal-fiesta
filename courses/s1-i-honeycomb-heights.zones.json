@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "s1-i-honeycomb-heights",
+  "grid": {
+    "origin": [-34, -44],
+    "cell": [2, 2],
+    "cols": 34,
+    "rows": 41
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 34
+  }
+}

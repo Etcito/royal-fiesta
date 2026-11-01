@@ -52,6 +52,7 @@ import { DT, FLOW_MOMENTS, RANK, contentId, int, obj, onlyKeys, str, validateCap
 import type { GameCaptureInput, Moment } from './captureInput.ts'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { installZoneLobbyOps } from '../zone/zoneLobbyOps.ts'
+import { installCheckOps } from './checkOps.ts'
 import { installSplitOps } from '../zone/splitOps.ts'
 import { installZoneOps } from '../zone/zoneOps.ts'
 import { uiTour, tourScreens, FLOW_TOUR_SCREENS, TOUR_SCREENS } from './uiTour.ts'
@@ -1281,4 +1282,5 @@ export function installGameOps(teardown: () => void, bootGame: BootGame): void {
   installZoneOps()
   installZoneLobbyOps()
   installSplitOps()
+  installCheckOps(take, bootGame)
 }

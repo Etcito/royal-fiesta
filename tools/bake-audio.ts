@@ -73,53 +73,20 @@ export interface AudioManifest {
   sounds: AudioManifestSound[]
 }
 
-/** Refuses a render that analyse marks non-finite, silent or clipped; the message names the id. */
-export function checkRender(id: string, render: StereoRender): void {
-  const stats = analyse(render)
-  if (stats.nonFinite > 0) throw new Error(`[audio-bake] ${id}: ${stats.nonFinite} non-finite samples`)
-  if (stats.silent) throw new Error(`[audio-bake] ${id}: silent (peak ${stats.peakDbfs.toFixed(1)} dBFS)`)
-  if (stats.clipped) throw new Error(`[audio-bake] ${id}: clipped (peak ${stats.peakDbfs.toFixed(1)} dBFS)`)
+/** A baked WAV's render-cache key and whether it is a music cue (S17). */
+export interface BakeFileKey {
+  key: string
+  music: boolean
 }
 
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
+interface BakeSources {
+  familyOf(id: string): FamilyRender
+  bakeSet(sound: SoundDef): BankEntry[]
+  source(id: string, path: string): string
 }
 
-/** Bakes every catalog sound into outDir and returns the S17 manifest. Deterministic. */
-export async function bakeAudio(
-  outDir: string, log: (line: string) => void = console.log, cacheDir: string = audioCacheDir(),
-): Promise<AudioManifest> {
-  const root = repoRoot()
-  mkdirSync(outDir, { recursive: true })
-  let module: Awaited<ReturnType<typeof loadModule>> | null = null
-  const engine = engineKey(root)
-  let cached = 0
-  const keyOf = (parts: unknown[]): string =>
-    createHash('sha256').update(engine).update(JSON.stringify(parts)).digest('hex')
-  // A hit copies the cached files; a miss renders them (already checked) and stores them under the key.
-  // The entry is written to a temporary folder and renamed, so a cut bake never leaves a partial entry.
-  const fromCache = (key: string, files: string[]): boolean => {
-    const dir = join(cacheDir, key)
-    if (!files.every((file) => existsSync(join(dir, file)))) return false
-    for (const file of files) copyFileSync(join(dir, file), join(outDir, file))
-    cached += files.length
-    return true
-  }
-  const toCache = (key: string, files: string[]): void => {
-    const dir = join(cacheDir, key)
-    const temp = `${dir}.${process.pid}.tmp`
-    try {
-      mkdirSync(temp, { recursive: true })
-      for (const file of files) copyFileSync(join(outDir, file), join(temp, file))
-      rmSync(dir, { recursive: true, force: true })
-      renameSync(temp, dir)
-    } catch (error) {
-      rmSync(temp, { recursive: true, force: true })
-      log(`[audio-bake] cache not written (${message(error)}): ${dir}`)
-    }
-  }
-  const renderer = async () => (module ??= await loadModule())
-
+/** The family entries and source texts one bake reads; shared by the bake and the key function. */
+function bakeSources(root: string): BakeSources {
   const families = new Map<string, FamilyRender>()
   for (const family of [...MOVEMENT_FAMILIES, ...WORLD_FAMILIES, ...FLOW_FAMILIES, ...BED_FAMILIES]) {
     families.set(family.id, family)
@@ -146,19 +113,105 @@ export async function bakeAudio(
     }
     return entries
   }
+  return { familyOf, bakeSet, source }
+}
+
+function loadCue(id: string, sources: BakeSources): ReturnType<typeof loadArrangement> {
+  try {
+    return loadArrangement(id, (path) => sources.source(id, path))
+  } catch (error) {
+    throw new Error(`[audio-bake] ${id}: ${message(error)}`)
+  }
+}
+
+function keyBuilder(root: string): (parts: unknown[]) => string {
+  const engine = engineKey(root)
+  return (parts) => createHash('sha256').update(engine).update(JSON.stringify(parts)).digest('hex')
+}
+
+/**
+ * The bake key of every WAV `bakeAudio` writes, and whether its sound is a music cue.
+ * `bakeAudio` renders from this same map, so the bake cache and the audio compressor cannot
+ * derive different keys for one file.
+ */
+export function bakeFileKeys(root: string = repoRoot()): Map<string, BakeFileKey> {
+  const keyOf = keyBuilder(root)
+  const sources = bakeSources(root)
+  const keys = new Map<string, BakeFileKey>()
+  for (const sound of SOUNDS) {
+    if (MUSIC_CUE_IDS.includes(sound.id)) {
+      const loaded = loadCue(sound.id, sources)
+      keys.set(`${sound.id}.0.wav`, { key: keyOf([sound, loaded.arrangement, loaded.instruments]), music: true })
+      continue
+    }
+    sources.familyOf(sound.id)
+    if (sound.mode === 'loop') continue
+    const entries = sources.bakeSet(sound)
+    const text = sources.source(sound.id, sound.source)
+    const key = keyOf([sound, entries, text])
+    for (const entry of entries) keys.set(`${sound.id}.${entry.variant}.wav`, { key, music: false })
+  }
+  return keys
+}
+
+/** Refuses a render that analyse marks non-finite, silent or clipped; the message names the id. */
+export function checkRender(id: string, render: StereoRender): void {
+  const stats = analyse(render)
+  if (stats.nonFinite > 0) throw new Error(`[audio-bake] ${id}: ${stats.nonFinite} non-finite samples`)
+  if (stats.silent) throw new Error(`[audio-bake] ${id}: silent (peak ${stats.peakDbfs.toFixed(1)} dBFS)`)
+  if (stats.clipped) throw new Error(`[audio-bake] ${id}: clipped (peak ${stats.peakDbfs.toFixed(1)} dBFS)`)
+}
+
+function message(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+/** Bakes every catalog sound into outDir and returns the S17 manifest. Deterministic. */
+export async function bakeAudio(
+  outDir: string, log: (line: string) => void = console.log, cacheDir: string = audioCacheDir(),
+): Promise<AudioManifest> {
+  const root = repoRoot()
+  mkdirSync(outDir, { recursive: true })
+  let module: Awaited<ReturnType<typeof loadModule>> | null = null
+  const keys = bakeFileKeys(root)
+  const sources = bakeSources(root)
+  const keyOf = (file: string): string => {
+    const baked = keys.get(file)
+    if (!baked) throw new Error(`[audio-bake] ${file}: no bake key`)
+    return baked.key
+  }
+  let cached = 0
+  // A hit copies the cached files; a miss renders them (already checked) and stores them under the key.
+  // The entry is written to a temporary folder and renamed, so a cut bake never leaves a partial entry.
+  const fromCache = (key: string, files: string[]): boolean => {
+    const dir = join(cacheDir, key)
+    if (!files.every((file) => existsSync(join(dir, file)))) return false
+    for (const file of files) copyFileSync(join(dir, file), join(outDir, file))
+    cached += files.length
+    return true
+  }
+  const toCache = (key: string, files: string[]): void => {
+    const dir = join(cacheDir, key)
+    const temp = `${dir}.${process.pid}.tmp`
+    try {
+      mkdirSync(temp, { recursive: true })
+      for (const file of files) copyFileSync(join(outDir, file), join(temp, file))
+      rmSync(dir, { recursive: true, force: true })
+      renameSync(temp, dir)
+    } catch (error) {
+      rmSync(temp, { recursive: true, force: true })
+      log(`[audio-bake] cache not written (${message(error)}): ${dir}`)
+    }
+  }
+  const renderer = async () => (module ??= await loadModule())
 
   const sounds: AudioManifestSound[] = []
   let wavs = 0
   for (const sound of SOUNDS) {
     if (MUSIC_CUE_IDS.includes(sound.id)) {
-      let loaded
-      try {
-        loaded = loadArrangement(sound.id, (path) => source(sound.id, path))
-      } catch (error) {
-        throw new Error(`[audio-bake] ${sound.id}: ${message(error)}`)
-      }
+      const loaded = loadCue(sound.id, sources)
       const file = `${sound.id}.0.wav`
-      const key = keyOf([sound, loaded.arrangement, loaded.instruments])
+      const key = keyOf(file)
       if (!fromCache(key, [file])) {
         let render: StereoRender
         try {
@@ -175,7 +228,7 @@ export async function bakeAudio(
       continue
     }
 
-    familyOf(sound.id)
+    sources.familyOf(sound.id)
     if (sound.mode === 'loop') {
       const patch = `audio/${sound.id}.haa.json`
       if (!existsSync(join(root, patch))) throw new Error(`[audio-bake] ${sound.id}: missing source file ${patch}`)
@@ -184,10 +237,10 @@ export async function bakeAudio(
       continue
     }
 
-    const entries = bakeSet(sound)
-    const text = source(sound.id, sound.source)
+    const entries = sources.bakeSet(sound)
+    const text = sources.source(sound.id, sound.source)
     const files = entries.map((entry) => `${sound.id}.${entry.variant}.wav`)
-    const key = keyOf([sound, entries, text])
+    const key = keyOf(files[0])
     if (!fromCache(key, files)) {
       let renders
       try {

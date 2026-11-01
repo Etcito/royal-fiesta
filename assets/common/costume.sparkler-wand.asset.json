@@ -1,0 +1,414 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.sparkler-wand",
+  "name": "sparkler_wand",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 32,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "sparkler_wand",
+    "root": [
+      "sparkler_wand"
+    ],
+    "nodes": {
+      "sparkler_wand": {
+        "id": "sparkler_wand",
+        "name": "sparkler_wand",
+        "kind": "group",
+        "children": [
+          "anchor_x",
+          "handle",
+          "grip",
+          "pommel",
+          "collar",
+          "star_core",
+          "star_p1",
+          "star_p2",
+          "star_p3",
+          "star_p4",
+          "star_p5",
+          "spark_a",
+          "spark_b",
+          "spark_c",
+          "spark_d",
+          "spark_e",
+          "spark_f",
+          "spark_g",
+          "spark_h"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.sparkler-wand",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 32,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": true
+      },
+      "anchor_x": {
+        "id": "anchor_x",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": false
+      },
+      "handle": {
+        "id": "handle",
+        "name": "handle",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-1.62, 0.62, 0]
+        },
+        "material": "m2",
+        "params": {
+          "height": 0.95,
+          "radius": 0.035
+        },
+        "gameCollision": false
+      },
+      "grip": {
+        "id": "grip",
+        "name": "grip",
+        "kind": "capsule",
+        "transform": {
+          "position": [-1.62, 0.35, 0]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.14,
+          "radius": 0.058
+        },
+        "gameCollision": false
+      },
+      "pommel": {
+        "id": "pommel",
+        "name": "pommel",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.62, 0.145, 0]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "collar": {
+        "id": "collar",
+        "name": "collar",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-1.62, 1.1, 0]
+        },
+        "material": "m1",
+        "params": {
+          "height": 0.05,
+          "radius": 0.055
+        },
+        "gameCollision": false
+      },
+      "star_core": {
+        "id": "star_core",
+        "name": "star_core",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-1.62, 1.2, 0]
+        },
+        "material": "m1",
+        "params": {
+          "radii": [0.11, 0.11, 0.06]
+        },
+        "gameCollision": false
+      },
+      "star_p1": {
+        "id": "star_p1",
+        "name": "star_p1",
+        "kind": "cone",
+        "transform": {
+          "position": [-1.62, 1.33, 0],
+          "scale": [1, 1, 0.6]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.085,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "star_p2": {
+        "id": "star_p2",
+        "name": "star_p2",
+        "kind": "cone",
+        "transform": {
+          "position": [-1.7436, 1.2402, 0],
+          "rotation": [0, 0, 72],
+          "scale": [1, 1, 0.6]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.085,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "star_p3": {
+        "id": "star_p3",
+        "name": "star_p3",
+        "kind": "cone",
+        "transform": {
+          "position": [-1.6964, 1.0948, 0],
+          "rotation": [0, 0, 144],
+          "scale": [1, 1, 0.6]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.085,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "star_p4": {
+        "id": "star_p4",
+        "name": "star_p4",
+        "kind": "cone",
+        "transform": {
+          "position": [-1.5436, 1.0948, 0],
+          "rotation": [0, 0, 216],
+          "scale": [1, 1, 0.6]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.085,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "star_p5": {
+        "id": "star_p5",
+        "name": "star_p5",
+        "kind": "cone",
+        "transform": {
+          "position": [-1.4964, 1.2402, 0],
+          "rotation": [0, 0, 288],
+          "scale": [1, 1, 0.6]
+        },
+        "smooth": 0.015,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.085,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "spark_a": {
+        "id": "spark_a",
+        "name": "spark_a",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.855, 1.524, 0]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.04
+        },
+        "gameCollision": false
+      },
+      "spark_b": {
+        "id": "spark_b",
+        "name": "spark_b",
+        "kind": "roundBox",
+        "transform": {
+          "position": [-1.385, 1.524, 0],
+          "rotation": [0, 0, 45]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.012,
+          "size": [0.07, 0.07, 0.04]
+        },
+        "gameCollision": false
+      },
+      "spark_c": {
+        "id": "spark_c",
+        "name": "spark_c",
+        "kind": "sphere",
+        "transform": {
+          "position": [-2, 1.076, 0]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.03
+        },
+        "gameCollision": false
+      },
+      "spark_d": {
+        "id": "spark_d",
+        "name": "spark_d",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.24, 1.076, 0]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.03
+        },
+        "gameCollision": false
+      },
+      "spark_e": {
+        "id": "spark_e",
+        "name": "spark_e",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.62, 1.65, 0]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.028
+        },
+        "gameCollision": false
+      },
+      "spark_f": {
+        "id": "spark_f",
+        "name": "spark_f",
+        "kind": "roundBox",
+        "transform": {
+          "position": [-1.78, 0.82, 0],
+          "rotation": [0, 0, 45]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.01,
+          "size": [0.05, 0.05, 0.03]
+        },
+        "gameCollision": false
+      },
+      "spark_g": {
+        "id": "spark_g",
+        "name": "spark_g",
+        "kind": "roundBox",
+        "transform": {
+          "position": [-1.46, 0.74, 0],
+          "rotation": [0, 0, 45]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.01,
+          "size": [0.05, 0.05, 0.03]
+        },
+        "gameCollision": false
+      },
+      "spark_h": {
+        "id": "spark_h",
+        "name": "spark_h",
+        "kind": "sphere",
+        "transform": {
+          "position": [-1.8, 0.58, 0]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.022
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "wand-gold",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffd21f",
+                "in.emissive": "#a07800",
+                "in.roughness": 0.3
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m2": {
+        "name": "wand-handle",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#b04cff",
+                "in.emissive": "#401470",
+                "in.roughness": 0.4
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m3": {
+        "name": "wand-spark",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff5ad2",
+                "in.emissive": "#a02680",
+                "in.roughness": 0.3
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-2.03, 0.095, -0.066],
+    "max": [-1.21, 1.678, 0.066]
+  },
+  "hash": "d782e5939c365159da4cf4fb44713ecdfb2804ca32aa785a089ee09e81305766"
+}

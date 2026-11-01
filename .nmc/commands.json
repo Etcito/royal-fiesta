@@ -314,5 +314,7 @@
     "after": [
       "m13-costume-neon-sneakers-render"
     ]
-  }
+  },
+  {"name": "m13-costume-sparkler-wand-render", "command": "node --experimental-strip-types --input-type=module -e \"import { existsSync } from 'node:fs'; const peer = process.cwd() + '-ro-sdfm'; if (!process.env.SDFM_DIR && existsSync(peer + '/bin/sdfm.mjs')) process.env.SDFM_DIR = peer; const { main } = await import('./tools/renderViews.ts'); process.exit(await main(['proofs/m13/views/sparkler-wand.views.input.json']));\"", "timeout_s": 1800},
+  {"name": "m13-costume-sparkler-wand-judge", "command": "python3 $NMC_JUDGE_CLIENT out/m13/sparkler-wand/sparkler-wand-front.png --description \"A cartoon penguin seen from the front holding a slim magic sparkler wand at its side by its right flipper: a thin purple wand with a gold five-point star at the top and small pink and gold spark bits floating around the star.\" --min-score 6", "timeout_s": 300, "after": ["m13-costume-sparkler-wand-render"]}
 ]

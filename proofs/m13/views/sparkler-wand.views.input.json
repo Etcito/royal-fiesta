@@ -1,0 +1,14 @@
+{
+  "format": "royal-fiesta.views-input",
+  "version": 1,
+  "out": "out/m13/sparkler-wand",
+  "width": 1024,
+  "height": 1024,
+  "subjects": [
+    {
+      "name": "sparkler-wand",
+      "assets": ["penguin.body", "costume.sparkler-wand"],
+      "views": ["front"]
+    }
+  ]
+}

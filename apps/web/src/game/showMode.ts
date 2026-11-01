@@ -25,6 +25,8 @@ import type { ShowFrame } from './showDirector.ts'
 import { loadShowContent } from './showContent.ts'
 
 const SHOW_SEATS_PER_PEER = 4
+const DEFAULT_VOTE_MS = 5000
+const DEFAULT_INTERMISSION_MS = 12000
 
 export interface ShowModeOptions {
   R: RapierModule
@@ -32,6 +34,10 @@ export interface ShowModeOptions {
   seats: number
   seed: number
   localName: string
+  /** The vote window of every round; createZoneFullMatch defaults it to 5000 ms. */
+  voteMs?: number
+  /** The wait between rounds; createZoneFullMatch defaults it to 1500 ms, the show to 12000 ms. */
+  intermissionMs?: number
 }
 
 /** Owns the offline transport, simulation and round canvas; the app owns the stage. */
@@ -95,7 +101,9 @@ export class ShowMode {
         mode.fulls.push(createZoneFullMatch(options.R, {
           localPeer: peer, roster,
           seed: options.seed, courses: content.courses, zones: content.zones, season: content.season,
-          profile: 'sprint', voteMs: 5000, intermissionMs: 12000,
+          profile: 'sprint',
+          voteMs: options.voteMs ?? DEFAULT_VOTE_MS,
+          intermissionMs: options.intermissionMs ?? DEFAULT_INTERMISSION_MS,
           farSink: peer === 0 ? farSink : undefined, measurements,
         }, mode.loopback.transport(peer)))
       }

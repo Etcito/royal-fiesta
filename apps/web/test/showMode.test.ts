@@ -11,10 +11,15 @@ import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { ShowContent } from '../src/game/showContent.ts'
 
 // Replace only browser content/render boundaries; transport, full matches and bots are real.
-const browser: { content?: ShowContent; ready: () => Promise<void>; disposed: number } = {
-  ready: () => Promise.resolve(), disposed: 0,
+const browser: {
+  content?: ShowContent; ready: () => Promise<void>; disposed: number
+  configs: { voteMs: number | undefined; intermissionMs: number | undefined }[]
+} = {
+  ready: () => Promise.resolve(), disposed: 0, configs: [],
 }
 Object.assign(globalThis, { __showModeTest: browser })
+// The real full match, wrapped so a test can see the config ShowMode hands it.
+const fullMatch = new URL('../../../packages/game/src/net/zoneFullMatch.ts', import.meta.url).href
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (context.parentURL?.endsWith('/game/showMode.ts')) {
@@ -26,6 +31,11 @@ const hooks = registerHooks({
             ready: () => globalThis.__showModeTest.ready(),
             dispose: () => { globalThis.__showModeTest.disposed++ } }), dispose() {}
         })`,
+        '@royal-fiesta/game/net/zoneFullMatch': `import * as real from ${JSON.stringify(fullMatch)}
+export const createZoneFullMatch = (R, cfg, net) => {
+  globalThis.__showModeTest.configs.push({ voteMs: cfg.voteMs, intermissionMs: cfg.intermissionMs })
+  return real.createZoneFullMatch(R, cfg, net)
+}`,
       }
       if (stubs[specifier]) return { url: `data:text/javascript,${encodeURIComponent(stubs[specifier])}`, shortCircuit: true }
     }
@@ -44,7 +54,11 @@ const entries = await Promise.all(['test-flat-race', 'test-flat-survival'].map(a
 const courses = await matchCourses(entries, fixtureResolver(read), 'sprint')
 const zones = new Map(await Promise.all(courses.map(async course =>
   [course.id, await loadZonesFile(course.id, course, read)] as const)))
-browser.content = { courses, zones, season: showMaps(courses), info: () => ({ name: 'Fixture', kind: 'race' }) }
+// Three eligible race maps, so a non-final vote has the three candidates the plan offers.
+const season = showMaps(courses)
+const race = season.find(map => map.kind === 'race')!
+season.push({ ...race, id: 'race-choice-2' }, { ...race, id: 'race-choice-3' })
+browser.content = { courses, zones, season, info: () => ({ name: 'Fixture', kind: 'race' }) }
 
 function options(seats = 12) {
   const stage = { style: { display: '' } }
@@ -54,6 +68,12 @@ function options(seats = 12) {
     ownerDocument: { defaultView: { devicePixelRatio: 1 }, createElement: () => canvas },
   } as unknown as HTMLElement
   return { R, views, seats, seed: 3, localName: 'Human' }
+}
+
+function neutralInput() {
+  const human = { moveX: 0, moveZ: 0, jump: false, dive: false, grab: false }
+  decodeInput(NEUTRAL_CODE, human)
+  return human
 }
 
 test('60-seat show builds 15 peers with at most four seats, preserving human seat 0', async () => {
@@ -104,4 +124,36 @@ test('default 12-seat show holds for loading then plays to its first result with
     browser.ready = () => Promise.resolve()
   }
   assert.ok(browser.disposed > 0)
+})
+
+test('voteMs and intermissionMs reach createZoneFullMatch, and voteMs sets the stepped vote window', async () => {
+  browser.configs.length = 0
+  const mode = await ShowMode.create({ ...options(), voteMs: 250, intermissionMs: 75 })
+  const human = neutralInput()
+  try {
+    assert.equal(mode.failure, null)
+    assert.equal(mode.screen(), 'vote')
+    const expected = { voteMs: 250, intermissionMs: 75 }
+    assert.deepEqual(browser.configs, [expected, expected, expected])
+    mode.frame(0.1, null, human)
+    mode.frame(0.1, null, human)
+    assert.equal(mode.screen(), 'vote', '200 ms of stepped time is inside the 250 ms vote')
+    mode.frame(0.1, null, human)
+    assert.notEqual(mode.screen(), 'vote', '300 ms of stepped time closes the 250 ms vote')
+  } finally { mode.dispose() }
+})
+
+test('without voteMs or intermissionMs the show keeps 5000 ms and 12000 ms', async () => {
+  browser.configs.length = 0
+  const mode = await ShowMode.create(options())
+  const human = neutralInput()
+  try {
+    assert.equal(mode.failure, null)
+    const expected = { voteMs: 5000, intermissionMs: 12000 }
+    assert.deepEqual(browser.configs, [expected, expected, expected])
+    for (let frame = 0; frame < 49; frame++) mode.frame(0.1, null, human)
+    assert.equal(mode.screen(), 'vote', '4900 ms of stepped time is inside the default vote')
+    mode.frame(0.1, null, human)
+    assert.notEqual(mode.screen(), 'vote', '5000 ms of stepped time closes the default vote')
+  } finally { mode.dispose() }
 })

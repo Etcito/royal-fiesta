@@ -116,6 +116,8 @@ interface Query {
   touch: 0 | 1
   // The local hub's countdown before its round starts by itself (online, the GameSaloon server sets it).
   wait: number
+  // ?test=1: every show timer at its minimum, so UI checks step the phases instead of sleeping in real time.
+  test: boolean
 }
 
 type Look = { dx: number; dy: number; rx: number; ry: number }
@@ -127,6 +129,10 @@ const STEP_S = 1 / 60
 const PLAYERS = 8
 // The podium screen returns to the hub by itself after this, or earlier with its button.
 const PODIUM_HOLD_S = 6
+// ?test=1: createZoneFullMatch plays the first candidate at voteMs 0 (its headless path) and accepts
+// an intermission of 0 ms, so a check steps the show without waiting in real time.
+const TEST_VOTE_MS = 0
+const TEST_INTERMISSION_MS = 0
 
 function intParam(q: URLSearchParams, key: string, def: number, min: number, max: number): number {
   const raw = q.get(key)
@@ -155,13 +161,15 @@ function parseQuery(search: string): Query {
   const party = intParam(q, 'party', 4, 2, 4) as 2 | 3 | 4
   const clients = intParam(q, 'clients', 1, 1, 4)
   const touch = intParam(q, 'touch', 0, 0, 1) as 0 | 1
-  const wait = intParam(q, 'wait', LOCAL_LOBBY_WAIT_S, 1, 600)
+  const test = intParam(q, 'test', 0, 0, 1) === 1
+  // The offline lobby's countdown is a real wait: test mode takes its minimum (LocalCountdown needs > 0).
+  const wait = test ? 1 : intParam(q, 'wait', LOCAL_LOBBY_WAIT_S, 1, 600)
   if (community !== null && (server !== null || course !== null)) refuse('query', 'community', 'plays one level in-page with bots; drop ?server= and ?course=')
   if (community !== null && clients > 1) refuse('query', 'clients', 'a community level plays one client with bots; drop ?clients=')
   if (course !== null && server !== null) refuse('query', 'course', 'plays in-page with bots; drop ?server= or ?course=')
   if (clients > 1 && server !== null) refuse('query', 'clients', `${clients} in-page clients use a LoopbackRelay; drop ?server= or ?clients=`)
   if (clients > 1 && course !== null) refuse('query', 'clients', `?course= plays one client with bots; drop ?clients= or ?course=`)
-  return { course, community, chash, server, hub, name, colour, party, clients, touch, wait }
+  return { course, community, chash, server, hub, name, colour, party, clients, touch, wait, test }
 }
 
 // A coarse pointer (a phone or tablet) uses the on-screen controls; ?touch=1 asks for them on any device.
@@ -320,18 +328,28 @@ class ShowAdapter implements Mode {
   private lastResults: NonNullable<ShowMode['models']>['results'] = null
   private rewardedResults = 0
   private readonly economy: GameEconomy
+  private readonly test: boolean
+  private endConfirmed = false
   elapsedMs = 0
   round = 0
 
-  constructor(show: ShowMode, localName: string, economy: GameEconomy) {
+  constructor(show: ShowMode, localName: string, economy: GameEconomy, test = false) {
     this.show = show
     this.localName = localName
     this.economy = economy
+    this.test = test
   }
 
   name = (seat: number): string => seat === 0 ? this.localName : `Bot ${seat}`
-  action(action: Action): void { this.actions.push(action) }
-  get finished(): boolean { return this.show.finished }
+  action(action: Action): void {
+    // ?test=1: the winner reveal wait is 0, so a confirm on the end screen leaves at once.
+    if (this.test && action === 'confirm' && this.show.models?.screen === 'endScreen') this.endConfirmed = true
+    this.actions.push(action)
+  }
+  get finished(): boolean {
+    if (this.test) return this.endConfirmed || this.show.finished
+    return this.show.finished
+  }
   get failure(): string | null { return this.show.failure }
   sim(): null { return null }
   hud(): HudState | null { return this.show.hud() }
@@ -635,7 +653,7 @@ class LocalMode implements Mode {
   get finished(): boolean {
     const m = this.match
     if (m === null) return false
-    if (this.presenter.onPodium) return this.presenter.podiumS >= PODIUM_HOLD_S
+    if (this.presenter.onPodium) return this.presenter.podiumS >= (this.c.q.test ? 0 : PODIUM_HOLD_S)
     return m.match.done || (this.over(m) && m.order.length === 0)
   }
 
@@ -1827,10 +1845,12 @@ class App {
         R: loaded.R, views: this.views,
         seats: intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60),
         seed: Date.now(), localName: q.name,
+        voteMs: q.test ? TEST_VOTE_MS : undefined,
+        intermissionMs: q.test ? TEST_INTERMISSION_MS : undefined,
       })
       if (this.disposed || load !== this.showLoad) { show.dispose(); return }
       if (show.failure !== null) { this.fail(show.failure); return }
-      this.mode = new ShowAdapter(show, q.name, this.economy)
+      this.mode = new ShowAdapter(show, q.name, this.economy, q.test)
       this.hudRound = -2
     } catch (e) {
       if (!this.disposed && load === this.showLoad) this.fail(messageOf(e))

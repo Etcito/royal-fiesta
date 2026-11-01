@@ -1,0 +1,332 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.ghost-aura",
+  "name": "ghost_aura",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 32,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "ghost_aura",
+    "root": [
+      "ghost_aura"
+    ],
+    "nodes": {
+      "ghost_aura": {
+        "id": "ghost_aura",
+        "name": "ghost_aura",
+        "kind": "group",
+        "children": [
+          "anchor_x",
+          "halo_outer",
+          "halo_inner",
+          "aura_disc",
+          "foot_ring",
+          "wisp_a",
+          "wisp_a_tail",
+          "wisp_b",
+          "wisp_b_tail",
+          "wisp_c",
+          "wisp_c_tail",
+          "wisp_d",
+          "wisp_d_tail",
+          "mote_a",
+          "mote_b",
+          "mote_c"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.ghost-aura",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 32,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "anchor_x": {
+        "id": "anchor_x",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": false
+      },
+      "halo_outer": {
+        "id": "halo_outer",
+        "name": "halo_outer",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.05, -0.5],
+          "rotation": [90, 0, 0]
+        },
+        "material": "m1",
+        "params": {
+          "majorRadius": 1.5,
+          "minorRadius": 0.04
+        },
+        "gameCollision": false
+      },
+      "halo_inner": {
+        "id": "halo_inner",
+        "name": "halo_inner",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.05, -0.45],
+          "rotation": [90, 0, 0]
+        },
+        "material": "m1",
+        "params": {
+          "majorRadius": 1.22,
+          "minorRadius": 0.028
+        },
+        "gameCollision": false
+      },
+      "aura_disc": {
+        "id": "aura_disc",
+        "name": "aura_disc",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.05, -0.62]
+        },
+        "material": "m2",
+        "params": {
+          "radii": [1.2, 1.3, 0.04]
+        },
+        "gameCollision": false
+      },
+      "foot_ring": {
+        "id": "foot_ring",
+        "name": "foot_ring",
+        "kind": "torus",
+        "transform": {
+          "position": [0, -0.99, 0.1]
+        },
+        "material": "m1",
+        "params": {
+          "majorRadius": 0.75,
+          "minorRadius": 0.03
+        },
+        "gameCollision": false
+      },
+      "wisp_a": {
+        "id": "wisp_a",
+        "name": "wisp_a",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-1.05, 0.95, 0.15]
+        },
+        "material": "m2",
+        "params": {
+          "radii": [0.08, 0.09, 0.06]
+        },
+        "gameCollision": false
+      },
+      "wisp_a_tail": {
+        "id": "wisp_a_tail",
+        "name": "wisp_a_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [-1.07, 1.09, 0.15],
+          "rotation": [0, 0, 12]
+        },
+        "material": "m2",
+        "params": {
+          "height": 0.2,
+          "radiusBottom": 0.055,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "wisp_b": {
+        "id": "wisp_b",
+        "name": "wisp_b",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [1.1, 0.7, 0.1]
+        },
+        "material": "m2",
+        "params": {
+          "radii": [0.08, 0.09, 0.06]
+        },
+        "gameCollision": false
+      },
+      "wisp_b_tail": {
+        "id": "wisp_b_tail",
+        "name": "wisp_b_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [1.12, 0.84, 0.1],
+          "rotation": [0, 0, -12]
+        },
+        "material": "m2",
+        "params": {
+          "height": 0.2,
+          "radiusBottom": 0.055,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "wisp_c": {
+        "id": "wisp_c",
+        "name": "wisp_c",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.95, -0.5, 0.25]
+        },
+        "material": "m2",
+        "params": {
+          "radii": [0.08, 0.09, 0.06]
+        },
+        "gameCollision": false
+      },
+      "wisp_c_tail": {
+        "id": "wisp_c_tail",
+        "name": "wisp_c_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.97, -0.36, 0.25],
+          "rotation": [0, 0, 10]
+        },
+        "material": "m2",
+        "params": {
+          "height": 0.2,
+          "radiusBottom": 0.055,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "wisp_d": {
+        "id": "wisp_d",
+        "name": "wisp_d",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [1, -0.7, 0.2]
+        },
+        "material": "m2",
+        "params": {
+          "radii": [0.08, 0.09, 0.06]
+        },
+        "gameCollision": false
+      },
+      "wisp_d_tail": {
+        "id": "wisp_d_tail",
+        "name": "wisp_d_tail",
+        "kind": "cone",
+        "transform": {
+          "position": [1.02, -0.56, 0.2],
+          "rotation": [0, 0, -10]
+        },
+        "material": "m2",
+        "params": {
+          "height": 0.2,
+          "radiusBottom": 0.055,
+          "radiusTop": 0
+        },
+        "gameCollision": false
+      },
+      "mote_a": {
+        "id": "mote_a",
+        "name": "mote_a",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.8, 1.35, 0]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "mote_b": {
+        "id": "mote_b",
+        "name": "mote_b",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.7, 1.5, 0.05]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.04
+        },
+        "gameCollision": false
+      },
+      "mote_c": {
+        "id": "mote_c",
+        "name": "mote_c",
+        "kind": "sphere",
+        "transform": {
+          "position": [1.3, -0.2, 0.2]
+        },
+        "material": "m1",
+        "params": {
+          "radius": 0.045
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "aura-halo",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#d6efff",
+                "in.emissive": "#8cc4f0"
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m2": {
+        "name": "aura-glow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#eaf6ff",
+                "in.emissive": "#6fa6d8",
+                "in.roughness": 0.6
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-1.54, -1.49, -0.68],
+    "max": [1.54, 1.59, 0.88]
+  },
+  "hash": "0452d36e201efbae87f899a48a06d98aefa6b1977c88441b70c968ab113a3d87"
+}

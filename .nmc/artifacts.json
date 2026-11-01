@@ -39,5 +39,6 @@
   "proofs/m20/penguin-ik-grab.png",
   "proofs/m20/render-ik-preview.mjs",
   "proofs/m2/candy-assets/",
-  "proofs/m4/ice-slide-gates.json"
+  "proofs/m4/ice-slide-gates.json",
+  "out/c1-fix/"
 ]

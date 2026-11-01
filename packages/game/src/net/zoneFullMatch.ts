@@ -25,6 +25,8 @@ export interface ZoneFullMatchConfig {
   readonly courses: readonly ResolvedCourse[]
   readonly season: readonly SchedMap[]
   readonly plan?: readonly number[]
+  /** Explicit first round for a standalone course probe; subsequent show slots use the scheduler. */
+  readonly initialRound?: ZoneRoundPlan
   readonly zones: ReadonlyMap<string, ZonesFile>
   readonly measurements: ZoneMatchConfig['measurements']
   readonly farSink?: ZoneMatchConfig['farSink']
@@ -148,7 +150,8 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
 
   function start(): void {
     rt.setRound(r)
-    candidates = playoffPlan ? [playoffPlan.map] : roundCandidates(show, rng)
+    const initial = r === 0 ? cfg.initialRound : undefined
+    candidates = playoffPlan ? [playoffPlan.map] : initial ? [initial.map] : roundCandidates(show, rng)
     votingAt = rt.now()
     peers = roundRoster(cfg.roster, alive).roster.peers.map(p => p.peer)
     own = null
@@ -164,7 +167,7 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
       for (const seat of peer.seats) if (alive.includes(seat)) choices.push(votes.get(r)?.get(peer.peer) ?? -1)
     }
     const offered = candidates!
-    plan = playoffPlan ?? planZoneRound(cfg.courses, show, alive,
+    plan = playoffPlan ?? (r === 0 ? cfg.initialRound : undefined) ?? planZoneRound(cfg.courses, show, alive,
       { candidates: headless || !choices.some(choice => choice >= 0 && choice < offered.length) ? [offered[0]] : offered,
         votes: choices }, rng)
     playoffPlan = null

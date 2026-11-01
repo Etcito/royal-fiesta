@@ -15,7 +15,7 @@ import { createZoneFullMatch } from '@royal-fiesta/game/net/zoneFullMatch'
 import type { ZoneFullMatch, ZoneFullRound } from '@royal-fiesta/game/net/zoneFullMatch'
 import { ZoneLoopback } from '@royal-fiesta/game/net/zoneLoopback'
 import { sameRoundResult, showMaps } from '@royal-fiesta/game/net/zoneRounds'
-import type { ZoneRoundResult } from '@royal-fiesta/game/net/zoneRounds'
+import type { ZoneRoundPlan, ZoneRoundResult } from '@royal-fiesta/game/net/zoneRounds'
 import { parseSeason } from '@royal-fiesta/game/season'
 import type { SeasonData } from '@royal-fiesta/game/season'
 import { levelOf } from '@royal-fiesta/sim/course'
@@ -233,6 +233,16 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
   const singlePlan: readonly number[] = [seatCount, o.target ?? defaultTarget(kind, seatCount)]
   const plan: readonly number[] | undefined = single ? singlePlan : undefined
   const maps: SchedMap[] = single ? probeSeason(sims, singlePlan, seatCount) : showMaps(sims, seasonData)
+  // A two-seat race probe still plays a race for one qualifier. A show would instead
+  // schedule a final, but that map is neither loaded nor requested by this probe.
+  const initialRound: ZoneRoundPlan | undefined = single && kind === 'race' && singlePlan[1] === 1
+    ? {
+      index: 0, map: maps[0].id, courseIndex: 0, course: sims[0], kind,
+      final: false, finalRule: null, target: 1, playoff: false, teams: null,
+      slot: { stage: levelOf(sims[0]).stages[0] ?? 'R1', final: false, target: 1,
+        teamAllowed: false, playoff: false },
+    }
+    : undefined
   if (!single) {
     const index = sims.findIndex(sim => sim.id === o.course)
     if (index < 0 || !maps.some(map => map.course === index)) {
@@ -354,16 +364,21 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
   }
 
   let failure: unknown
+  let activePeer = -1
   try {
     for (const peer of peers) {
+      activePeer = peer.peer
       fulls.push(createZoneFullMatch(R, {
-        localPeer: peer.peer, roster, seed, courses: sims, season: maps, plan, zones,
+        localPeer: peer.peer, roster, seed, courses: sims, season: maps, plan, initialRound, zones,
         profile: profileName, voteMs: 0, measurements,
       }, loopback.transport(peer.peer)))
     }
     for (; frames < roundLimit; frames++) {
       loopback.advance(DT * 1000)
-      for (let peer = 0; peer < fulls.length; peer++) fulls[peer].frame(DT, samples[peer])
+      for (let peer = 0; peer < fulls.length; peer++) {
+        activePeer = peers[peer].peer
+        fulls[peer].frame(DT, samples[peer])
+      }
       let ready = Infinity
       for (const full of fulls) ready = Math.min(ready, full.report.rounds.length)
       while (printed < ready) {
@@ -383,7 +398,7 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
     }
   } catch (error) {
     failure = error
-    throw error
+    throw new Error(`course=${o.course} peer=${activePeer} frame=${frames}`, { cause: error })
   } finally {
     // A throw from inside Rapier leaves its World borrowed, so freeing it throws too: keep the first error.
     for (const full of fulls) {
@@ -473,9 +488,15 @@ async function runCli(argv: string[]): Promise<number> {
     }
     // Print our own message and stack first: an uncaught throw from inside a minified
     // bundle makes Node print the whole bundle line, hiding the error itself.
-    const err = error instanceof Error ? error : new Error(String(error))
-    console.error(`[round-run] error: ${err.message}`)
-    if (err.stack) console.error(err.stack)
+    const seen = new Set<unknown>()
+    let cause: unknown = error
+    while (cause !== undefined && !seen.has(cause)) {
+      seen.add(cause)
+      const err = cause instanceof Error ? cause : new Error(String(cause))
+      console.error(`[round-run] error: ${err.message}`)
+      if (err.stack) console.error(err.stack)
+      cause = err.cause
+    }
     return 1
   }
 }
@@ -490,4 +511,7 @@ function isMain(): boolean {
   }
 }
 
-if (isMain()) process.exitCode = await runCli(process.argv.slice(2))
+if (isMain()) {
+  Error.stackTraceLimit = Infinity
+  process.exitCode = await runCli(process.argv.slice(2))
+}

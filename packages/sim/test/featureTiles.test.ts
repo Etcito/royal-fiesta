@@ -14,7 +14,7 @@ import { GRAVITY_Y } from '../src/world.ts'
 import type { CourseFeature, FeatureCtx, FeatureDraw, FeatureSeats } from '../src/features/feature.ts'
 import { hexFieldFeature, hexLayout } from '../src/features/hexField.ts'
 import { memoryTilesFeature } from '../src/features/memoryTiles.ts'
-import { tileFieldFeature } from '../src/features/tiles.ts'
+import { TileCells, TileState, tileFieldFeature } from '../src/features/tiles.ts'
 
 const R = await initRapier()
 const PATH = 'tiles#/features/0'
@@ -140,6 +140,49 @@ function setup(params: Record<string, unknown> = {}) {
   assert.equal(colliders.length, 1)
   seats.ground = colliders[0].handle
   return { feature, ctx, seats, colliders }
+}
+
+for (const handoff of [false, true]) {
+  test(`tile keys remap colliders after ${handoff ? 'a logical handoff' : 'world replacement'}`, t => {
+    const make = (padding: number) => {
+      const seats = new StubSeats()
+      const ctx = context(seats, courseOf([]))
+      t.after(() => ctx.physics.free())
+      for (let i = 0; i < padding; i++) ctx.physics.createBody(R.RigidBodyDesc.fixed(), [])
+      const cells = new TileCells([0, 4].map(x => ({ t: v3(x, 0, 0), half: v3(1, 0.2, 1) })))
+      cells.build(ctx)
+      return { cells, ctx, seats }
+    }
+    const source = make(3)
+    const receiver = make(0)
+    assert.notDeepEqual(source.cells.body, receiver.cells.body)
+    source.cells.setGone(0)
+    source.cells.state[1] = TileState.warning
+    source.cells.timer[1] = 2
+    const writer = new SnapWriter()
+    source.cells.snapshot(writer)
+    const expectedIds = (handoff ? receiver : source).cells.body.slice()
+    if (!handoff) {
+      // Replace the whole adapter, as well as its Rapier world, to expose cached references.
+      receiver.ctx.physics.free()
+      receiver.ctx.physics = new WorldSim(R, { gravity: v3(0, GRAVITY_Y, 0) })
+      receiver.ctx.physics.restoreSnapshot(source.ctx.physics.takeSnapshot())
+    }
+    receiver.cells.restore(new SnapReader(writer.bytes()), receiver.ctx, handoff)
+    assert.deepEqual(receiver.cells.body, expectedIds)
+    for (let cell = 0; cell < 2; cell++) {
+      const collider = receiver.ctx.physics.body(expectedIds[cell]).collider(0)
+      assert.equal(collider.isEnabled(), cell === 1)
+      receiver.seats.ground = collider.handle
+      assert.equal(receiver.cells.cellUnder(receiver.seats, 0), cell)
+    }
+    receiver.cells.step(receiver.ctx, 60, 30, -1)
+    receiver.cells.step(receiver.ctx, 60, 30, -1)
+    assert.equal(receiver.cells.state[1], TileState.falling)
+    assert.equal(receiver.ctx.physics.body(expectedIds[1]).collider(0).isEnabled(), false)
+    receiver.cells.setSolid(0)
+    assert.equal(receiver.ctx.physics.body(expectedIds[0]).collider(0).isEnabled(), true)
+  })
 }
 
 test('tileField: solid through tick 59, warning at 60, falling at 90, gone at 120', () => {

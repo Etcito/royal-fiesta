@@ -83,10 +83,18 @@ export class TileCells {
     return cell === undefined ? -1 : cell
   }
 
-  #setEnabled(cell: number, enabled: boolean): void {
+  #collider(cell: number) {
     const id = this.body[cell]
-    if (id < 0) return
-    const collider = this.#physics.body(id).collider(0)
+    try {
+      return this.#physics.body(id).collider(0)
+    } catch (cause) {
+      const t = this.centre[cell]
+      throw new Error(`tile=${cell} body=${id} centre=[${t.x},${t.y},${t.z}]: collider lookup failed`, { cause })
+    }
+  }
+
+  #setEnabled(cell: number, enabled: boolean): void {
+    const collider = this.#collider(cell)
     if (collider.isEnabled() !== enabled) collider.setEnabled(enabled)
   }
 
@@ -161,6 +169,8 @@ export class TileCells {
     }
   }
 
+  // The stable tile key is (course feature, cell index); snapshot sections use that order.
+  // Each key maps to the body id in THAT snapshot's world, never a cached Rapier handle.
   // The body ids travel with the snapshot, like the obstacle and mechanism ids: a domain built by
   // a rebuild allocates its ids in another order, so the restored world's ids are the snapshot's.
   // keepBodies: a zone handoff into a rebuilt world whose cells init() just created; only the
@@ -174,7 +184,7 @@ export class TileCells {
       const state = r.u8()
       this.state[cell] = state
       this.timer[cell] = r.u16()
-      const collider = ctx.physics.body(this.body[cell]).collider(0)
+      const collider = this.#collider(cell)
       const enabled = state === TileState.solid || state === TileState.warning
       if (collider.isEnabled() !== enabled) collider.setEnabled(enabled)
       map.set(collider.handle, cell)

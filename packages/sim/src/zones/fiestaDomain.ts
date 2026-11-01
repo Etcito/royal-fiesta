@@ -349,13 +349,27 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
         this.#before[p * 3 + 2] = pos.z
       }
       this.characters.preStep(this.ctx, inputs)
-      for (let i = 0; i < this.features.length; i++) this.features[i].preStep(this.#featureCtxs[i])
+      for (let i = 0; i < this.features.length; i++) {
+        try {
+          this.features[i].preStep(this.#featureCtxs[i])
+        } catch (cause) {
+          throw this.#failure('preStep', cause, i)
+        }
+      }
       this.inner.step(inputs, shadows)
       this.mechLogic.postStep(this.ctx)
       this.mechanisms.postStep(this.ctx)
       this.characters.postStep(this.ctx)
-      for (let i = 0; i < this.features.length; i++) this.features[i].postStep(this.#featureCtxs[i])
+      for (let i = 0; i < this.features.length; i++) {
+        try {
+          this.features[i].postStep(this.#featureCtxs[i])
+        } catch (cause) {
+          throw this.#failure('postStep', cause, i)
+        }
+      }
       if (!frozen) this.#seatRules()
+    } catch (cause) {
+      throw this.#failure('step', cause)
     } finally {
       this.#inputs = this.#neutralInputs
       this.#stepTick = -1
@@ -493,26 +507,44 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   }
 
   restore(r: SnapReader): void {
-    this.inner.restore(r)
-    this.obstacles.restore(r, this.ctx)
-    this.mechLogic.restore(r, this.ctx)
-    this.mechanisms.restore(r, this.ctx)
-    this.characters.restore(r, this.ctx)
-    for (let p = 0; p < this.#seats.length; p++) {
-      this.#status[p] = r.u8()
-      this.#checkpoint[p] = r.i16()
-      this.#prevY[p] = r.f64()
+    // Replace the physics world first. Feature contexts resolve it dynamically, and
+    // restoreFeatures remaps each stable feature/cell key to the incoming world's ids.
+    try {
+      this.inner.restore(r)
+      this.obstacles.restore(r, this.ctx)
+      this.mechLogic.restore(r, this.ctx)
+      this.mechanisms.restore(r, this.ctx)
+      this.characters.restore(r, this.ctx)
+      for (let p = 0; p < this.#seats.length; p++) {
+        this.#status[p] = r.u8()
+        this.#checkpoint[p] = r.i16()
+        this.#prevY[p] = r.f64()
+      }
+      readRoute(r, this.#route)
+      readRespawn(r, this.#respawn)
+      this.restoreFeatures(r)
+      this.#indexSeats()
+      this.#bindBodies()
+      this.#events.length = 0
+    } catch (cause) {
+      throw this.#failure('restore', cause)
     }
-    readRoute(r, this.#route)
-    readRespawn(r, this.#respawn)
-    this.restoreFeatures(r)
-    this.#indexSeats()
-    this.#bindBodies()
-    this.#events.length = 0
+  }
+
+  #failure(operation: string, cause: unknown, featureIndex?: number): Error {
+    const feature = featureIndex === undefined ? '' : ` feature=${this.features[featureIndex].id}`
+    return new Error(`course=${this.#config.course.id} zone=${this.inner.spec.id}` +
+      ` tick=${this.tick} operation=${operation}${feature}`, { cause })
   }
 
   restoreFeatures(r: SnapReader, keepBodies = false): void {
-    for (let i = 0; i < this.features.length; i++) this.features[i].restore(r, this.#featureCtxs[i], keepBodies)
+    for (let i = 0; i < this.features.length; i++) {
+      try {
+        this.features[i].restore(r, this.#featureCtxs[i], keepBodies)
+      } catch (cause) {
+        throw this.#failure('restoreFeatures', cause, i)
+      }
+    }
     this.#featureSounds.length = 0
     this.#featureLoops.clear()
   }

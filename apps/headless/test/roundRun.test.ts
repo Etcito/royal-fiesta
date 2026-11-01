@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { describe, it } from 'node:test'
 import { DEFAULT_PLAN, nextTarget } from '@royal-fiesta/sim/season/plan'
 import { runRound } from '../src/roundRun.ts'
@@ -8,7 +9,46 @@ const SEATS = 8
 const TARGET = nextTarget(SEATS, DEFAULT_PLAN[0], DEFAULT_PLAN[1])
 const COURSES = ['test-flat-race', 'test-flat-survival'] as const
 
+it('roundRun CLI reports the first wasm stack with tile and zone context despite cleanup failure', () => {
+  const tiles = new URL('../../../packages/sim/src/features/tiles.ts', import.meta.url).href
+  const domain = new URL('../../../packages/sim/src/zones/fiestaDomain.ts', import.meta.url).href
+  const preload = `
+    import { TileCells } from ${JSON.stringify(tiles)};
+    import { FiestaDomain } from ${JSON.stringify(domain)};
+    TileCells.prototype.step = function (ctx) {
+      // A body without colliders reproduces the stale-id rbCollider trap.
+      this.body[0] = ctx.physics.createBody(ctx.R.RigidBodyDesc.fixed(), []);
+      this.setGone(0);
+    };
+    FiestaDomain.prototype.dispose = function () { throw new Error('secondary cleanup failure'); };
+  `
+  const child = spawnSync(process.execPath, [
+    '--experimental-strip-types', '--import', `data:text/javascript,${encodeURIComponent(preload)}`,
+    new URL('../src/roundRun.ts', import.meta.url).pathname,
+    '--course', 's1-c1-diamond-citadel', '--dir', 'courses', '--seats', '2', '--peers', '2', '--profile', 'sprint',
+  ], { encoding: 'utf8', timeout: 60_000 })
+  assert.ifError(child.error)
+  assert.equal(child.status, 1, child.stderr)
+  assert.match(child.stderr, /course=s1-c1-diamond-citadel peer=\d+ frame=\d+/)
+  assert.match(child.stderr, /zone=\d+.*feature=/)
+  assert.match(child.stderr, /tile=0 body=\d+ centre=/)
+  assert.match(child.stderr, /RuntimeError: unreachable/)
+  assert.match(child.stderr, /rbCollider/)
+  assert.doesNotMatch(child.stderr, /secondary cleanup failure/)
+})
+
 describe('roundRun', { concurrency: CPUS }, () => {
+  it('a two-seat standalone race keeps its race rules and qualifies one seat', { timeout: 300_000 }, async () => {
+    const report = await runRound({
+      course: 'test-flat-race', dir: 'fixtures/test-courses', seats: 2, peers: 2, profile: 'sprint',
+    })
+    assert.equal(report.ok, true, report.problems.join('\n'))
+    assert.equal(report.rounds.length, 1)
+    assert.equal(report.rounds[0].kind, 'race')
+    assert.equal(report.rounds[0].final, false)
+    assert.equal(report.rounds[0].qualified.length, 1)
+  })
+
   for (const course of COURSES) {
     it(`${course}: 8 sprint seats play one round inside the quota`, { timeout: 300_000 }, async () => {
       const report = await runRound({

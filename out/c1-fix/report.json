@@ -1,0 +1,112 @@
+{
+  "task": 6505,
+  "status": "verified",
+  "inheritedRepairs": {
+    "4d10df7": "Tile body IDs are restored from the snapshot into the corresponding stable feature/cell slots; handoffs preserve receiver bodies. Domain restores its world first. Cleanup preserves the first exception.",
+    "fb0d43f": "Other physics-backed features restore their body IDs; rebuilt-domain regression coverage.",
+    "0bf5f9a": "Zone match releases dropped states and rebuild temporaries."
+  },
+  "rootCause": "The rebuilt domain allocates different body IDs. Retaining the old tile mapping after replacing the physics world makes collider(0) address a body without colliders. The stable key is the course feature plus cell index, which maps to IDs in the incoming snapshot world; logical handoffs retain the receiving world mapping.",
+  "reproduction": {
+    "method": "The inherited baseline already contains the repair. A test-only preload reinstates stale-ID reuse by forcing keepBodies during full restores, without changing project source. This reproduces the original rbCollider wasm trap on the representative 60-seat season run.",
+    "command": "node --experimental-strip-types --import ./out/c1-fix/legacy-tiles.mjs apps/headless/src/roundRun.ts --course s1-c1-diamond-citadel --dir courses --seats 60 --peers 2 --profile season --progress",
+    "exitCode": 1,
+    "frame": 1321,
+    "domainTick": 1320,
+    "zone": 35,
+    "feature": "tile-field-1",
+    "tile": 1,
+    "body": 68,
+    "centre": [
+      312.2,
+      -0.2,
+      0
+    ],
+    "firstException": "RuntimeError: unreachable in Rapier rbCollider via TileCells.restore",
+    "completeStack": "out/c1-fix/legacy-c1.log"
+  },
+  "changes": [
+    "Tile collider errors report cell, body and centre; the old negative-body skip is removed.",
+    "Domain step/restore errors preserve the cause and add course, zone, feature, operation and tick.",
+    "Round runner adds peer/frame context and prints the complete cause chain with unlimited stack depth. A real wasm-trap regression verifies exit 1 despite a secondary cleanup exception.",
+    "Regression tests verify collider states, contact mapping and continued tile transitions across world replacement and logical handoff with different allocations.",
+    "Two-seat standalone race probes now use an explicit initial race plan, avoiding the show scheduler refusal for a final map. Show scheduling and race qualification checks remain intact."
+  ],
+  "verification": [
+    {
+      "name": "tile-remap",
+      "command": "node --experimental-strip-types --test --test-name-pattern=\"tile keys remap\" packages/sim/test/featureTiles.test.ts",
+      "exitCode": 0,
+      "log": "out/c1-fix/tile-remap.log"
+    },
+    {
+      "name": "first-wasm",
+      "command": "node --experimental-strip-types --test --test-name-pattern=\"reports the first wasm\" apps/headless/test/roundRun.test.ts",
+      "exitCode": 0,
+      "log": "out/c1-fix/first-wasm.log"
+    },
+    {
+      "name": "regressions",
+      "command": "node --experimental-strip-types --test --test-concurrency=1 packages/sim/test/featureTiles.test.ts packages/sim/test/featureMovers.test.ts packages/sim/test/fiestaDomain.test.ts packages/game/test/zoneMatch.test.ts apps/headless/test/roundRun.test.ts",
+      "exitCode": 0,
+      "log": "out/c1-fix/regressions.log"
+    },
+    {
+      "name": "c1-sprint-2",
+      "command": "npm run round:run -- --course s1-c1-diamond-citadel --dir courses --seats 2 --peers 2 --profile sprint",
+      "exitCode": 0,
+      "log": "out/c1-fix/c1-sprint-2.log"
+    },
+    {
+      "name": "c1-sprint-4",
+      "command": "npm run round:run -- --course s1-c1-diamond-citadel --dir courses --seats 4 --peers 2 --profile sprint",
+      "exitCode": 0,
+      "log": "out/c1-fix/c1-sprint-4.log"
+    },
+    {
+      "name": "c1-sprint-8",
+      "command": "npm run round:run -- --course s1-c1-diamond-citadel --dir courses --seats 8 --peers 2 --profile sprint",
+      "exitCode": 0,
+      "log": "out/c1-fix/c1-sprint-8.log"
+    },
+    {
+      "name": "c1-season-60",
+      "command": "npm run round:run -- --course s1-c1-diamond-citadel --dir courses --seats 60 --peers 2 --profile season --progress",
+      "exitCode": 0,
+      "log": "out/c1-fix/c1-season-60.log"
+    },
+    {
+      "name": "g-season-60",
+      "command": "npm run round:run -- --course s1-g-cloudstack-tower --dir courses --seats 60 --peers 2 --profile season --progress",
+      "exitCode": 0,
+      "log": "out/c1-fix/g-season-60.log"
+    },
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "log": "out/c1-fix/typecheck.log"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "exitCode": 0,
+      "log": "out/c1-fix/build.log"
+    },
+    {
+      "name": "guard",
+      "command": "npm run guard",
+      "exitCode": 0,
+      "log": "out/c1-fix/guard.log"
+    }
+  ],
+  "functionalResults": {
+    "regressions": "70 tests passed",
+    "c1Sprint": "2/4/8 seats qualified 1/3/6 respectively; all OK",
+    "c1Season": "60 seats, target 40, qualified 40, eliminated 20, reason timeCap, OK",
+    "gSeason": "60 seats, target 40, qualified 40, eliminated 20, reason timeCap, OK",
+    "guard": "1004 files checked, 0 violations"
+  },
+  "acceptance": "Existing checks, thresholds and .nmc/commands.json are unchanged. No timing or benchmark gate was added.",
+  "followup": "Nomorechat commits this task as one commit; card 6495 can then be requeued. No requested verification remains for a programmatic card."
+}

@@ -1,0 +1,94 @@
+[round-run] frame=60 sim=1s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=12200ms
+[round-run] frame=120 sim=2s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=8290ms
+[round-run] frame=180 sim=3s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=7124ms
+[round-run] frame=240 sim=4s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=8520ms
+[round-run] frame=300 sim=5s rounds=0 alive=44 qualified=0 eliminated=0 wallPerSimS=9373ms
+[round-run] frame=360 sim=6s rounds=0 alive=44 qualified=0 eliminated=0 wallPerSimS=8020ms
+[round-run] frame=420 sim=7s rounds=0 alive=44 qualified=0 eliminated=0 wallPerSimS=8572ms
+[round-run] frame=480 sim=8s rounds=0 alive=44 qualified=0 eliminated=0 wallPerSimS=9003ms
+[round-run] frame=540 sim=9s rounds=0 alive=44 qualified=0 eliminated=0 wallPerSimS=10417ms
+[round-run] frame=600 sim=10s rounds=0 alive=60 qualified=0 eliminated=0 wallPerSimS=13844ms
+[round-run] frame=660 sim=11s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=19164ms
+[round-run] frame=720 sim=12s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=10834ms
+[round-run] frame=780 sim=13s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=9917ms
+[round-run] frame=840 sim=14s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=13359ms
+[round-run] frame=900 sim=15s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=15390ms
+[round-run] frame=960 sim=16s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=13004ms
+[round-run] frame=1020 sim=17s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=12908ms
+[round-run] frame=1080 sim=18s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=10736ms
+[round-run] frame=1140 sim=19s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=10738ms
+[round-run] frame=1200 sim=20s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=15365ms
+[round-run] frame=1260 sim=21s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=9475ms
+[round-run] frame=1320 sim=22s rounds=0 alive=48 qualified=0 eliminated=0 wallPerSimS=7589ms
+[round-run] error: course=s1-c1-diamond-citadel peer=0 frame=1321
+Error: course=s1-c1-diamond-citadel peer=0 frame=1321
+    at runRound (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:391:11)
+    at async runCli (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:466:20)
+    at async file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:506:22
+[round-run] error: course=s1-c1-diamond-citadel zone=35 tick=1320 operation=restore
+Error: course=s1-c1-diamond-citadel zone=35 tick=1320 operation=restore
+    at #failure (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:536:12)
+    at FiestaDomain.restore (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:530:26)
+    at ZoneSession.epochStep (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:601:15)
+    at ZoneSession.simulate (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:443:18)
+    at ZoneSession.advance (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:419:18)
+    at ZoneSession.frame (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:303:18)
+    at Object.frame (file:///root/nmc/worktrees/83/6505/packages/game/src/net/zoneMatch.ts:250:24)
+    at Object.frame (file:///root/nmc/worktrees/83/6505/packages/game/src/net/zoneFullMatch.ts:257:31)
+    at runRound (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:370:21)
+    at async runCli (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:466:20)
+    at async file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:506:22
+[round-run] error: course=s1-c1-diamond-citadel zone=35 tick=1320 operation=restoreFeatures feature=tile-field-1
+Error: course=s1-c1-diamond-citadel zone=35 tick=1320 operation=restoreFeatures feature=tile-field-1
+    at #failure (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:536:12)
+    at FiestaDomain.restoreFeatures (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:545:28)
+    at FiestaDomain.restore (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:525:12)
+    at ZoneSession.epochStep (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:601:15)
+    at ZoneSession.simulate (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:443:18)
+    at ZoneSession.advance (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:419:18)
+    at ZoneSession.frame (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:303:18)
+    at Object.frame (file:///root/nmc/worktrees/83/6505/packages/game/src/net/zoneMatch.ts:250:24)
+    at Object.frame (file:///root/nmc/worktrees/83/6505/packages/game/src/net/zoneFullMatch.ts:257:31)
+    at runRound (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:370:21)
+    at async runCli (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:466:20)
+    at async file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:506:22
+[round-run] error: tile=1 body=68 centre=[312.2,-0.2,0]: collider lookup failed
+Error: tile=1 body=68 centre=[312.2,-0.2,0]: collider lookup failed
+    at #collider (file:///root/nmc/worktrees/83/6505/packages/sim/src/features/tiles.ts:92:13)
+    at TileCells.restore (file:///root/nmc/worktrees/83/6505/packages/sim/src/features/tiles.ts:187:38)
+    at TileCells.restore (file:///root/nmc/worktrees/83/6505/out/c1-fix/legacy-tiles.mjs:5:18)
+    at Object.restore (file:///root/nmc/worktrees/83/6505/packages/sim/src/features/tiles.ts:263:41)
+    at FiestaDomain.restoreFeatures (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:543:26)
+    at FiestaDomain.restore (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:525:12)
+    at ZoneSession.epochStep (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:601:15)
+    at ZoneSession.simulate (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:443:18)
+    at ZoneSession.advance (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:419:18)
+    at ZoneSession.frame (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:303:18)
+    at Object.frame (file:///root/nmc/worktrees/83/6505/packages/game/src/net/zoneMatch.ts:250:24)
+    at Object.frame (file:///root/nmc/worktrees/83/6505/packages/game/src/net/zoneFullMatch.ts:257:31)
+    at runRound (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:370:21)
+    at async runCli (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:466:20)
+    at async file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:506:22
+[round-run] error: unreachable
+RuntimeError: unreachable
+    at wasm://wasm/00bd9196:wasm-function[1558]:0x250ba6
+    at wasm://wasm/00bd9196:wasm-function[2555]:0x282dd1
+    at wasm://wasm/00bd9196:wasm-function[2266]:0x27cdf1
+    at wasm://wasm/00bd9196:wasm-function[1468]:0x24acf7
+    at l.rbCollider (file:///root/nmc/worktrees/83/gamesaloon-rollback/node_modules/@dimforge/rapier3d-deterministic-compat/dist/rapier.mjs:1:57284)
+    at nI.collider (file:///root/nmc/worktrees/83/gamesaloon-rollback/node_modules/@dimforge/rapier3d-deterministic-compat/dist/rapier.mjs:1:129915)
+    at #collider (file:///root/nmc/worktrees/83/6505/packages/sim/src/features/tiles.ts:89:37)
+    at TileCells.restore (file:///root/nmc/worktrees/83/6505/packages/sim/src/features/tiles.ts:187:38)
+    at TileCells.restore (file:///root/nmc/worktrees/83/6505/out/c1-fix/legacy-tiles.mjs:5:18)
+    at Object.restore (file:///root/nmc/worktrees/83/6505/packages/sim/src/features/tiles.ts:263:41)
+    at FiestaDomain.restoreFeatures (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:543:26)
+    at FiestaDomain.restore (file:///root/nmc/worktrees/83/6505/packages/sim/src/zones/fiestaDomain.ts:525:12)
+    at ZoneSession.epochStep (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:601:15)
+    at ZoneSession.simulate (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:443:18)
+    at ZoneSession.advance (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:419:18)
+    at ZoneSession.frame (file:///root/nmc/worktrees/83/gamesaloon-rollback/packages/core/dist/zones/session.js:303:18)
+    at Object.frame (file:///root/nmc/worktrees/83/6505/packages/game/src/net/zoneMatch.ts:250:24)
+    at Object.frame (file:///root/nmc/worktrees/83/6505/packages/game/src/net/zoneFullMatch.ts:257:31)
+    at runRound (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:370:21)
+    at async runCli (file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:466:20)
+    at async file:///root/nmc/worktrees/83/6505/apps/headless/src/roundRun.ts:506:22

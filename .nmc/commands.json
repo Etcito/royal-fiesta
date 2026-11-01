@@ -240,6 +240,6 @@
   {
     "name": "s3-m11-map-d",
     "command": "npm run round:run -- --course s1-d-spiral-of-mischief --dir courses --seats 60 --peers 2 --profile season",
-    "timeout_s": 1800
+    "timeout_s": 3600
   }
 ]

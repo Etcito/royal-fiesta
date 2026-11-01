@@ -1,0 +1,488 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.golden-crown",
+  "name": "golden_crown",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 32,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "golden_crown",
+    "root": [
+      "golden_crown"
+    ],
+    "nodes": {
+      "golden_crown": {
+        "id": "golden_crown",
+        "name": "golden_crown",
+        "kind": "group",
+        "children": [
+          "anchor_crown_head",
+          "band",
+          "spike_1",
+          "spike_2",
+          "spike_3",
+          "spike_4",
+          "spike_5",
+          "cap_1",
+          "cap_2",
+          "cap_3",
+          "cap_4",
+          "cap_5",
+          "gem_big_1",
+          "gem_big_2",
+          "gem_big_3",
+          "gem_big_4",
+          "gem_big_5",
+          "gem_small_1",
+          "gem_small_2",
+          "gem_small_3",
+          "gem_small_4",
+          "gem_small_5"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.golden-crown",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 32,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "anchor_crown_head": {
+        "id": "anchor_crown_head",
+        "name": "head",
+        "kind": "anchor",
+        "transform": {
+          "position": [0, 0.8, 0]
+        },
+        "gameCollision": false
+      },
+      "band": {
+        "id": "band",
+        "name": "band",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 1, 0.02],
+          "scale": [1, 1.25, 1]
+        },
+        "material": "m1",
+        "params": {
+          "majorRadius": 0.31,
+          "minorRadius": 0.058
+        },
+        "gameCollision": false
+      },
+      "spike_1": {
+        "id": "spike_1",
+        "name": "spike_1",
+        "kind": "cone",
+        "transform": {
+          "position": [0, 1.15, 0.33]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.076,
+          "radiusTop": 0.014
+        },
+        "gameCollision": false
+      },
+      "spike_2": {
+        "id": "spike_2",
+        "name": "spike_2",
+        "kind": "cone",
+        "transform": {
+          "position": [0.2948, 1.15, 0.1158]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.076,
+          "radiusTop": 0.014
+        },
+        "gameCollision": false
+      },
+      "spike_3": {
+        "id": "spike_3",
+        "name": "spike_3",
+        "kind": "cone",
+        "transform": {
+          "position": [0.1822, 1.15, -0.2308]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.076,
+          "radiusTop": 0.014
+        },
+        "gameCollision": false
+      },
+      "spike_4": {
+        "id": "spike_4",
+        "name": "spike_4",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.1822, 1.15, -0.2308]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.076,
+          "radiusTop": 0.014
+        },
+        "gameCollision": false
+      },
+      "spike_5": {
+        "id": "spike_5",
+        "name": "spike_5",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.2948, 1.15, 0.1158]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "height": 0.26,
+          "radiusBottom": 0.076,
+          "radiusTop": 0.014
+        },
+        "gameCollision": false
+      },
+      "cap_1": {
+        "id": "cap_1",
+        "name": "cap_1",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 1.29, 0.33]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m4",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "cap_2": {
+        "id": "cap_2",
+        "name": "cap_2",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.2948, 1.29, 0.1158]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m4",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "cap_3": {
+        "id": "cap_3",
+        "name": "cap_3",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.1822, 1.29, -0.2308]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m4",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "cap_4": {
+        "id": "cap_4",
+        "name": "cap_4",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.1822, 1.29, -0.2308]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m4",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "cap_5": {
+        "id": "cap_5",
+        "name": "cap_5",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.2948, 1.29, 0.1158]
+        },
+        "smooth": 0.01,
+        "colorBlend": "hard",
+        "material": "m4",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "gem_big_1": {
+        "id": "gem_big_1",
+        "name": "gem_big_1",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.2028, 1, 0.2991]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "gem_big_2": {
+        "id": "gem_big_2",
+        "name": "gem_big_2",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.3281, 1, -0.0866]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "gem_big_3": {
+        "id": "gem_big_3",
+        "name": "gem_big_3",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 1, -0.325]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "gem_big_4": {
+        "id": "gem_big_4",
+        "name": "gem_big_4",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.3281, 1, -0.0866]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "gem_big_5": {
+        "id": "gem_big_5",
+        "name": "gem_big_5",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.2028, 1, 0.2991]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radius": 0.05
+        },
+        "gameCollision": false
+      },
+      "gem_small_1": {
+        "id": "gem_small_1",
+        "name": "gem_small_1",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 0.99, 0.375]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.032
+        },
+        "gameCollision": false
+      },
+      "gem_small_2": {
+        "id": "gem_small_2",
+        "name": "gem_small_2",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.3376, 0.99, 0.1297]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.032
+        },
+        "gameCollision": false
+      },
+      "gem_small_3": {
+        "id": "gem_small_3",
+        "name": "gem_small_3",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.2087, 0.99, -0.2672]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.032
+        },
+        "gameCollision": false
+      },
+      "gem_small_4": {
+        "id": "gem_small_4",
+        "name": "gem_small_4",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.2087, 0.99, -0.2672]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.032
+        },
+        "gameCollision": false
+      },
+      "gem_small_5": {
+        "id": "gem_small_5",
+        "name": "gem_small_5",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.3376, 0.99, 0.1297]
+        },
+        "smooth": 0.008,
+        "colorBlend": "hard",
+        "material": "m3",
+        "params": {
+          "radius": 0.032
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "crown-gold",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc22e",
+                "in.metallic": 0.4,
+                "in.roughness": 0.28
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m2": {
+        "name": "crown-blue-gem",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#2f6fe8",
+                "in.roughness": 0.15
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m3": {
+        "name": "crown-green-gem",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#2fcf6a",
+                "in.roughness": 0.15
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m4": {
+        "name": "crown-red-gem",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#e8283c",
+                "in.roughness": 0.15
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "head": {
+      "t": [0, 0.8, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.3908, 0.9275, -0.383],
+    "max": [0.3908, 1.35, 0.426]
+  },
+  "hash": "47cdf5d806069389c3cc7fbccceddf084f2cc58b638766c5796f6036b5a3e0ea"
+}

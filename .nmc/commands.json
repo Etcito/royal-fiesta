@@ -288,5 +288,18 @@
     "after": [
       "m13-costume-jester-hat-render"
     ]
+  },
+  {
+    "name": "m13-costume-golden-crown-render",
+    "command": "node --experimental-strip-types --input-type=module -e \"import { existsSync } from 'node:fs'; const peer = process.cwd() + '-ro-sdfm'; if (!process.env.SDFM_DIR && existsSync(peer + '/bin/sdfm.mjs')) process.env.SDFM_DIR = peer; const { main } = await import('./tools/renderViews.ts'); process.exit(await main(['proofs/m13/views/golden-crown.views.input.json']));\"",
+    "timeout_s": 1800
+  },
+  {
+    "name": "m13-costume-golden-crown-judge",
+    "command": "python3 $NMC_JUDGE_CLIENT out/m13/golden-crown/golden-crown-front.png --description \"A shiny gold toy crown seen from the front on a plain background: a thick rounded gold band set with large round blue gems and smaller round green gems, and five gold cone-shaped points rising from the band, each topped by a round red gem ball. Chunky, rounded, toy-like style, clean complete geometry.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "m13-costume-golden-crown-render"
+    ]
   }
 ]

@@ -1,0 +1,400 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.jetpack",
+  "name": "jetpack",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 32,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "jetpack",
+    "root": [
+      "jetpack"
+    ],
+    "nodes": {
+      "jetpack": {
+        "id": "jetpack",
+        "name": "jetpack",
+        "kind": "group",
+        "children": [
+          "anchor_x",
+          "plate",
+          "tank_r",
+          "tank_r_b1",
+          "tank_r_b2",
+          "tank_r_b3",
+          "knob_r",
+          "nozzle_r",
+          "flame_r",
+          "tank_l",
+          "tank_l_b1",
+          "tank_l_b2",
+          "tank_l_b3",
+          "knob_l",
+          "nozzle_l",
+          "flame_l",
+          "strap_chest",
+          "strap_belly"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.jetpack",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 32,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": true
+      },
+      "anchor_x": {
+        "id": "anchor_x",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": false
+      },
+      "plate": {
+        "id": "plate",
+        "name": "plate",
+        "kind": "roundBox",
+        "transform": {
+          "position": [0, 0.05, -0.42]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.03,
+          "size": [0.66, 0.56, 0.1]
+        },
+        "gameCollision": false
+      },
+      "tank_r": {
+        "id": "tank_r",
+        "name": "tank_r",
+        "kind": "capsule",
+        "transform": {
+          "position": [-0.21, 0.05, -0.54]
+        },
+        "material": "m2",
+        "params": {
+          "height": 0.95,
+          "radius": 0.17
+        },
+        "gameCollision": false
+      },
+      "tank_r_b1": {
+        "id": "tank_r_b1",
+        "name": "tank_r_b1",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-0.21, -0.17, -0.54]
+        },
+        "material": "m1",
+        "params": {
+          "height": 0.1,
+          "radius": 0.176
+        },
+        "gameCollision": false
+      },
+      "tank_r_b2": {
+        "id": "tank_r_b2",
+        "name": "tank_r_b2",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-0.21, 0.05, -0.54]
+        },
+        "material": "m1",
+        "params": {
+          "height": 0.1,
+          "radius": 0.176
+        },
+        "gameCollision": false
+      },
+      "tank_r_b3": {
+        "id": "tank_r_b3",
+        "name": "tank_r_b3",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-0.21, 0.27, -0.54]
+        },
+        "material": "m1",
+        "params": {
+          "height": 0.1,
+          "radius": 0.176
+        },
+        "gameCollision": false
+      },
+      "knob_r": {
+        "id": "knob_r",
+        "name": "knob_r",
+        "kind": "cylinder",
+        "transform": {
+          "position": [-0.21, 0.54, -0.54]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.07,
+          "radius": 0.06
+        },
+        "gameCollision": false
+      },
+      "nozzle_r": {
+        "id": "nozzle_r",
+        "name": "nozzle_r",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.21, -0.47, -0.54]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.17,
+          "radiusBottom": 0.11,
+          "radiusTop": 0.15
+        },
+        "gameCollision": false
+      },
+      "flame_r": {
+        "id": "flame_r",
+        "name": "flame_r",
+        "kind": "cone",
+        "transform": {
+          "position": [-0.21, -0.66, -0.54]
+        },
+        "material": "m4",
+        "params": {
+          "height": 0.24,
+          "radiusBottom": 0,
+          "radiusTop": 0.085
+        },
+        "gameCollision": false
+      },
+      "tank_l": {
+        "id": "tank_l",
+        "name": "tank_l",
+        "kind": "capsule",
+        "transform": {
+          "position": [0.21, 0.05, -0.54]
+        },
+        "material": "m2",
+        "params": {
+          "height": 0.95,
+          "radius": 0.17
+        },
+        "gameCollision": false
+      },
+      "tank_l_b1": {
+        "id": "tank_l_b1",
+        "name": "tank_l_b1",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0.21, -0.17, -0.54]
+        },
+        "material": "m1",
+        "params": {
+          "height": 0.1,
+          "radius": 0.176
+        },
+        "gameCollision": false
+      },
+      "tank_l_b2": {
+        "id": "tank_l_b2",
+        "name": "tank_l_b2",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0.21, 0.05, -0.54]
+        },
+        "material": "m1",
+        "params": {
+          "height": 0.1,
+          "radius": 0.176
+        },
+        "gameCollision": false
+      },
+      "tank_l_b3": {
+        "id": "tank_l_b3",
+        "name": "tank_l_b3",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0.21, 0.27, -0.54]
+        },
+        "material": "m1",
+        "params": {
+          "height": 0.1,
+          "radius": 0.176
+        },
+        "gameCollision": false
+      },
+      "knob_l": {
+        "id": "knob_l",
+        "name": "knob_l",
+        "kind": "cylinder",
+        "transform": {
+          "position": [0.21, 0.54, -0.54]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.07,
+          "radius": 0.06
+        },
+        "gameCollision": false
+      },
+      "nozzle_l": {
+        "id": "nozzle_l",
+        "name": "nozzle_l",
+        "kind": "cone",
+        "transform": {
+          "position": [0.21, -0.47, -0.54]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.17,
+          "radiusBottom": 0.11,
+          "radiusTop": 0.15
+        },
+        "gameCollision": false
+      },
+      "flame_l": {
+        "id": "flame_l",
+        "name": "flame_l",
+        "kind": "cone",
+        "transform": {
+          "position": [0.21, -0.66, -0.54]
+        },
+        "material": "m4",
+        "params": {
+          "height": 0.24,
+          "radiusBottom": 0,
+          "radiusTop": 0.085
+        },
+        "gameCollision": false
+      },
+      "strap_chest": {
+        "id": "strap_chest",
+        "name": "strap_chest",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.22, 0],
+          "scale": [1, 1, 0.88]
+        },
+        "material": "m3",
+        "params": {
+          "majorRadius": 0.425,
+          "minorRadius": 0.045
+        },
+        "gameCollision": false
+      },
+      "strap_belly": {
+        "id": "strap_belly",
+        "name": "strap_belly",
+        "kind": "torus",
+        "transform": {
+          "position": [0, -0.2, 0],
+          "scale": [1, 1, 0.88]
+        },
+        "material": "m3",
+        "params": {
+          "majorRadius": 0.455,
+          "minorRadius": 0.045
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "jetpack-red",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#e8283c",
+                "in.roughness": 0.3
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m2": {
+        "name": "jetpack-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#fff4f0",
+                "in.roughness": 0.3
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m3": {
+        "name": "jetpack-gold",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc22e",
+                "in.metallic": 0.4,
+                "in.roughness": 0.28
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m4": {
+        "name": "jetpack-flame",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff8a1f",
+                "in.emissive": "#c25a00"
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.5, -0.78, -0.716],
+    "max": [0.5, 0.575, 0.44]
+  },
+  "hash": "0eef326df627e93a3097d816485b2f225e23970c74024f30d241fd11e4fb6e15"
+}

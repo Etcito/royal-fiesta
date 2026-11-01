@@ -27,7 +27,7 @@
         "name": "cloud_skirt",
         "kind": "group",
         "children": [
-          "body",
+          "cloud_skirt_body",
           "hem_puff_1",
           "hem_puff_2",
           "hem_puff_3",
@@ -65,8 +65,8 @@
         },
         "gameCollision": false
       },
-      "body": {
-        "id": "body",
+      "cloud_skirt_body": {
+        "id": "cloud_skirt_body",
         "name": "body",
         "kind": "anchor",
         "gameCollision": false
@@ -383,5 +383,5 @@
     "min": [-0.78355, -0.8344, -0.66215],
     "max": [0.79295, -0.16777, 0.74075]
   },
-  "hash": "79f856cf0a93a9d6ab01b51a70fe22737c4dd1a6e4fe1bffb53b9ad7c63d2907"
+  "hash": "7193cdb753e702ae26ef2e848c6aeba517612671e05dcd061344759eb67da419"
 }

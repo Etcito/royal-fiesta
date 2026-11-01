@@ -70,7 +70,7 @@
           "sequin_36",
           "sequin_37",
           "sequin_38",
-          "anchor_body"
+          "disco_jacket_anchor_body"
         ],
         "asset": {
           "game": "royal-fiesta",
@@ -658,8 +658,8 @@
         },
         "gameCollision": false
       },
-      "anchor_body": {
-        "id": "anchor_body",
+      "disco_jacket_anchor_body": {
+        "id": "disco_jacket_anchor_body",
         "name": "body",
         "kind": "anchor",
         "gameCollision": false
@@ -751,5 +751,5 @@
     "min": [-0.711606, -0.35, -0.564],
     "max": [0.711606, 0.6, 0.7]
   },
-  "hash": "c048fd60b8977b51294bdb0162bf75deeecfe1bd832fb88db62268462f5a8896"
+  "hash": "f1137d43c391623bd4625aa951b4bfc27f511f8e3ccd85f4d254d38433605a66"
 }

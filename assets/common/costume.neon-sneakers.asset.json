@@ -27,7 +27,7 @@
         "name": "neon_sneakers",
         "kind": "group",
         "children": [
-          "body",
+          "neon_sneakers_body",
           "sole_l",
           "upper_l",
           "toe_l",
@@ -63,8 +63,8 @@
         },
         "gameCollision": false
       },
-      "body": {
-        "id": "body",
+      "neon_sneakers_body": {
+        "id": "neon_sneakers_body",
         "name": "body",
         "kind": "anchor",
         "gameCollision": false
@@ -401,5 +401,5 @@
     "min": [-0.39, -1.045, -0.12],
     "max": [0.39, -0.70701, 0.52]
   },
-  "hash": "0bf42940164463b8824c2ea79fc51bef2c8a958728a9c2975c72ddca878fefdf"
+  "hash": "637846926d7da0115f2381d7b2b6c8bd1a9af4b85246c23f9bbd999639daa6c5"
 }

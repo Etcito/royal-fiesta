@@ -1,0 +1,881 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.dragon-suit",
+  "name": "Dragon Suit",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "dragon_suit",
+    "root": [
+      "dragon_suit"
+    ],
+    "nodes": {
+      "dragon_suit": {
+        "id": "dragon_suit",
+        "name": "Dragon Suit",
+        "kind": "group",
+        "children": [
+          "anchor_body",
+          "onesie_body",
+          "onesie_hips",
+          "belly_panel",
+          "left_cuff",
+          "left_shoulder",
+          "right_cuff",
+          "right_shoulder",
+          "back_spike_0",
+          "back_spike_1",
+          "back_spike_2",
+          "back_spike_3",
+          "back_spike_4",
+          "tail_0",
+          "tail_1",
+          "tail_2",
+          "tail_3",
+          "tail_4",
+          "tail_5",
+          "tail_6",
+          "tail_7"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.dragon-suit",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "anchor_body": {
+        "id": "anchor_body",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": false
+      },
+      "onesie_body": {
+        "id": "onesie_body",
+        "name": "onesie_body",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.15, 0],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.035,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.51, 0, 0],
+              [-0.51, 0, 0],
+              [0, 0.73, 0],
+              [0, -0.73, 0],
+              [0, 0, 0.445],
+              [0, 0, -0.445]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "onesie_hips": {
+        "id": "onesie_hips",
+        "name": "onesie_hips",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.41, 0.035],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.035,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.535, 0, 0],
+              [-0.535, 0, 0],
+              [0, 0.42, 0],
+              [0, -0.42, 0],
+              [0, 0, 0.445],
+              [0, 0, -0.445]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "belly_panel": {
+        "id": "belly_panel",
+        "name": "belly_panel",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.15, 0.25],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.015,
+        "material": "belly",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.445, 0, 0],
+              [-0.445, 0, 0],
+              [0, 0.59, 0],
+              [0, -0.59, 0],
+              [0, 0, 0.315],
+              [0, 0, -0.315]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "left_cuff": {
+        "id": "left_cuff",
+        "name": "left_cuff",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.28, -0.7, 0],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.035,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.205, 0, 0],
+              [-0.205, 0, 0],
+              [0, 0.19, 0],
+              [0, -0.19, 0],
+              [0, 0, 0.29],
+              [0, 0, -0.29]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "left_shoulder": {
+        "id": "left_shoulder",
+        "name": "left_shoulder",
+        "kind": "paramesh",
+        "transform": {
+          "position": [-0.46, 0.27, 0],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.035,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.19, 0, 0],
+              [-0.19, 0, 0],
+              [0, 0.235, 0],
+              [0, -0.235, 0],
+              [0, 0, 0.255],
+              [0, 0, -0.255]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "right_cuff": {
+        "id": "right_cuff",
+        "name": "right_cuff",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.28, -0.7, 0],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.035,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.205, 0, 0],
+              [-0.205, 0, 0],
+              [0, 0.19, 0],
+              [0, -0.19, 0],
+              [0, 0, 0.29],
+              [0, 0, -0.29]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "right_shoulder": {
+        "id": "right_shoulder",
+        "name": "right_shoulder",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.46, 0.27, 0],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.035,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.19, 0, 0],
+              [-0.19, 0, 0],
+              [0, 0.235, 0],
+              [0, -0.235, 0],
+              [0, 0, 0.255],
+              [0, 0, -0.255]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "back_spike_0": {
+        "id": "back_spike_0",
+        "name": "back_spike_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.46, -0.364901],
+          "rotation": [25, 0, 0]
+        },
+        "smooth": 0.02,
+        "material": "spikes",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.085, 0, 0],
+              [-0.085, 0, 0],
+              [0, 0.135, 0],
+              [0, -0.135, 0],
+              [0, 0, 0.19],
+              [0, 0, -0.19]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "back_spike_1": {
+        "id": "back_spike_1",
+        "name": "back_spike_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, 0.225, -0.454352],
+          "rotation": [25, 0, 0]
+        },
+        "smooth": 0.02,
+        "material": "spikes",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.085, 0, 0],
+              [-0.085, 0, 0],
+              [0, 0.135, 0],
+              [0, -0.135, 0],
+              [0, 0, 0.19],
+              [0, 0, -0.19]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "back_spike_2": {
+        "id": "back_spike_2",
+        "name": "back_spike_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.01, -0.493923],
+          "rotation": [25, 0, 0]
+        },
+        "smooth": 0.02,
+        "material": "spikes",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.085, 0, 0],
+              [-0.085, 0, 0],
+              [0, 0.135, 0],
+              [0, -0.135, 0],
+              [0, 0, 0.19],
+              [0, 0, -0.19]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "back_spike_3": {
+        "id": "back_spike_3",
+        "name": "back_spike_3",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.245, -0.497212],
+          "rotation": [25, 0, 0]
+        },
+        "smooth": 0.02,
+        "material": "spikes",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.085, 0, 0],
+              [-0.085, 0, 0],
+              [0, 0.135, 0],
+              [0, -0.135, 0],
+              [0, 0, 0.19],
+              [0, 0, -0.19]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "back_spike_4": {
+        "id": "back_spike_4",
+        "name": "back_spike_4",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.48, -0.465094],
+          "rotation": [25, 0, 0]
+        },
+        "smooth": 0.02,
+        "material": "spikes",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.085, 0, 0],
+              [-0.085, 0, 0],
+              [0, 0.135, 0],
+              [0, -0.135, 0],
+              [0, 0, 0.19],
+              [0, 0, -0.19]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_0": {
+        "id": "tail_0",
+        "name": "tail_0",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0, -0.58, -0.38],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.045,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.21, 0, 0],
+              [-0.21, 0, 0],
+              [0, 0.21, 0],
+              [0, -0.21, 0],
+              [0, 0, 0.21],
+              [0, 0, -0.21]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_1": {
+        "id": "tail_1",
+        "name": "tail_1",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.025, -0.64, -0.53],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.045,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.19, 0, 0],
+              [-0.19, 0, 0],
+              [0, 0.19, 0],
+              [0, -0.19, 0],
+              [0, 0, 0.19],
+              [0, 0, -0.19]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_2": {
+        "id": "tail_2",
+        "name": "tail_2",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.075, -0.65, -0.68],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.045,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.16, 0, 0],
+              [-0.16, 0, 0],
+              [0, 0.16, 0],
+              [0, -0.16, 0],
+              [0, 0, 0.16],
+              [0, 0, -0.16]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_3": {
+        "id": "tail_3",
+        "name": "tail_3",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.15, -0.62, -0.8],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.045,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.135, 0, 0],
+              [-0.135, 0, 0],
+              [0, 0.135, 0],
+              [0, -0.135, 0],
+              [0, 0, 0.135],
+              [0, 0, -0.135]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_4": {
+        "id": "tail_4",
+        "name": "tail_4",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.24, -0.54, -0.87],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.045,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.11, 0, 0],
+              [-0.11, 0, 0],
+              [0, 0.11, 0],
+              [0, -0.11, 0],
+              [0, 0, 0.11],
+              [0, 0, -0.11]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_5": {
+        "id": "tail_5",
+        "name": "tail_5",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.3, -0.44, -0.88],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.045,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.09, 0, 0],
+              [-0.09, 0, 0],
+              [0, 0.09, 0],
+              [0, -0.09, 0],
+              [0, 0, 0.09],
+              [0, 0, -0.09]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_6": {
+        "id": "tail_6",
+        "name": "tail_6",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.31, -0.35, -0.84],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.045,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.07, 0, 0],
+              [-0.07, 0, 0],
+              [0, 0.07, 0],
+              [0, -0.07, 0],
+              [0, 0, 0.07],
+              [0, 0, -0.07]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_7": {
+        "id": "tail_7",
+        "name": "tail_7",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.28, -0.3, -0.78],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.045,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.052, 0, 0],
+              [-0.052, 0, 0],
+              [0, 0.052, 0],
+              [0, -0.052, 0],
+              [0, 0, 0.052],
+              [0, 0, -0.052]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "green": {
+        "name": "dragon_green",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#46a951",
+                "in.roughness": 0.82
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "belly": {
+        "name": "dragon_belly",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#d5ed91",
+                "in.roughness": 0.82
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "spikes": {
+        "name": "dragon_spikes",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#9edb66",
+                "in.roughness": 0.82
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.68, -0.93, -1.02],
+    "max": [0.68, 0.64, 0.61]
+  },
+  "hash": "9f12a474bcc7796cb3a5f666c8e0797085056f33a44492447d2aec5788395d3a"
+}

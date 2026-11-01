@@ -1,6 +1,0 @@
-
-> round:run
-> node --experimental-strip-types apps/headless/src/roundRun.ts --course s1-c1-diamond-citadel --dir courses --seats 2 --peers 2 --profile sprint
-
-[round-run] course=s1-c1-diamond-citadel seats=2 kind=race target=1 reason=timeCap qualified=1 eliminated=1 OK
-[round-run] champion=0

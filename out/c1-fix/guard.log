@@ -1,5 +1,0 @@
-
-> guard
-> node --experimental-strip-types tools/guard.ts
-
-guard: 1004 files checked, 0 violations

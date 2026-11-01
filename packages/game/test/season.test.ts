@@ -126,13 +126,13 @@ test('playable and scheduled maps preserve roster order and filter status and lo
   assert.deepEqual(s, season())
 })
 
-test('committed courses/season.json: wave-1 maps are built, the rest planned, the floor holds', () => {
+test('committed courses/season.json: waves 1-2 (M10, M11) maps are built, the rest planned, the floor holds', () => {
   const file = new URL('../../../courses/season.json', import.meta.url)
   const season = parseSeason(JSON.parse(readFileSync(file, 'utf8')), 'courses/season.json')
   assert.equal(season.maps.length, 18)
   assert.deepEqual(season.maps.map(m => m.id), ['A', 'B', 'C1', 'C2', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'])
-  // Wave 1 (M10) passed level_validate and its headless run; no map needed the cut rule.
-  const built = ['E', 'F', 'I', 'Q']
+  // Waves 1-2 (M10, M11) passed level_validate and their headless runs; no map needed the cut rule.
+  const built = ['B', 'C1', 'C2', 'D', 'E', 'F', 'G', 'I', 'Q']
   for (const map of season.maps) {
     assert.equal(map.status, built.includes(map.id) ? 'built' : 'planned', map.id)
     assert.equal(map.reason, null, map.id)

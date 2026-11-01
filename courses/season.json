@@ -107,7 +107,7 @@
         "course": "courses/s1-b-butterfly-freeway.course.json",
         "zones": "courses/s1-b-butterfly-freeway.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     },
     {
@@ -140,7 +140,7 @@
         "course": "courses/s1-c1-diamond-citadel.course.json",
         "zones": "courses/s1-c1-diamond-citadel.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     },
     {
@@ -173,7 +173,7 @@
         "course": "courses/s1-c2-tidal-relay.course.json",
         "zones": "courses/s1-c2-tidal-relay.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     },
     {
@@ -204,7 +204,7 @@
         "course": "courses/s1-d-spiral-of-mischief.course.json",
         "zones": "courses/s1-d-spiral-of-mischief.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     },
     {
@@ -295,7 +295,7 @@
         "course": "courses/s1-g-cloudstack-tower.course.json",
         "zones": "courses/s1-g-cloudstack-tower.zones.json"
       },
-      "status": "planned",
+      "status": "built",
       "reason": null
     },
     {

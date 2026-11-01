@@ -1,0 +1,268 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.jester-hat",
+  "name": "jester_hat",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "jester_hat",
+    "root": [
+      "jester_hat"
+    ],
+    "nodes": {
+      "jester_hat": {
+        "id": "jester_hat",
+        "name": "jester_hat",
+        "kind": "group",
+        "children": [
+          "head",
+          "purple_point",
+          "gold_point",
+          "head_band",
+          "left_bell",
+          "right_bell"
+        ],
+        "gameCollision": false,
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.jester-hat",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        }
+      },
+      "head": {
+        "id": "head",
+        "name": "head",
+        "kind": "anchor",
+        "transform": {
+          "position": [0, 0.8, 0]
+        },
+        "gameCollision": false
+      },
+      "purple_point": {
+        "id": "purple_point",
+        "name": "purple_point",
+        "kind": "sweep",
+        "smooth": 0.035,
+        "colorBlend": "hard",
+        "material": "purple",
+        "params": {
+          "path": {
+            "type": "bezier",
+            "closed": false,
+            "points": [
+              {
+                "p": [-0.13, 0.98, 0.02],
+                "out": [-0.13, 1.64, 0.02]
+              },
+              {
+                "p": [-0.7, 1.24, 0.02],
+                "in": [-0.63, 1.72, 0.02]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.26
+              },
+              {
+                "t": 0.45,
+                "r": 0.19
+              },
+              {
+                "t": 1,
+                "r": 0.022
+              }
+            ]
+          }
+        },
+        "gameCollision": false
+      },
+      "gold_point": {
+        "id": "gold_point",
+        "name": "gold_point",
+        "kind": "sweep",
+        "smooth": 0.035,
+        "colorBlend": "hard",
+        "material": "gold",
+        "params": {
+          "path": {
+            "type": "bezier",
+            "closed": false,
+            "points": [
+              {
+                "p": [0.13, 0.98, 0.02],
+                "out": [0.13, 1.64, 0.02]
+              },
+              {
+                "p": [0.7, 1.24, 0.02],
+                "in": [0.63, 1.72, 0.02]
+              }
+            ]
+          },
+          "radius": {
+            "type": "radius",
+            "points": [
+              {
+                "t": 0,
+                "r": 0.26
+              },
+              {
+                "t": 0.45,
+                "r": 0.19
+              },
+              {
+                "t": 1,
+                "r": 0.022
+              }
+            ]
+          }
+        },
+        "gameCollision": false
+      },
+      "head_band": {
+        "id": "head_band",
+        "name": "head_band",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.98, 0.02]
+        },
+        "material": "gold",
+        "params": {
+          "majorRadius": 0.325,
+          "minorRadius": 0.055
+        },
+        "gameCollision": false
+      },
+      "left_bell": {
+        "id": "left_bell",
+        "name": "left_bell",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.7, 1.17, 0.02]
+        },
+        "material": "gold",
+        "params": {
+          "radius": 0.085
+        },
+        "children": [
+          "left_bell_mouth"
+        ],
+        "gameCollision": false
+      },
+      "left_bell_mouth": {
+        "id": "left_bell_mouth",
+        "name": "left_bell_mouth",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, -0.045, 0.064]
+        },
+        "op": "subtract",
+        "params": {
+          "radius": 0.034
+        },
+        "gameCollision": false
+      },
+      "right_bell": {
+        "id": "right_bell",
+        "name": "right_bell",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.7, 1.17, 0.02]
+        },
+        "material": "gold",
+        "params": {
+          "radius": 0.085
+        },
+        "children": [
+          "right_bell_mouth"
+        ],
+        "gameCollision": false
+      },
+      "right_bell_mouth": {
+        "id": "right_bell_mouth",
+        "name": "right_bell_mouth",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, -0.045, 0.064]
+        },
+        "op": "subtract",
+        "params": {
+          "radius": 0.034
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "purple": {
+        "name": "jester-purple",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#7639c7",
+                "in.roughness": 0.72
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "gold": {
+        "name": "jester-gold",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffc63d",
+                "in.roughness": 0.4
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "head": {
+      "t": [0, 0.8, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.82, 0.91, -0.37],
+    "max": [0.82, 1.78, 0.41]
+  },
+  "hash": "82af79d3eae43d7cb017b1b319b3bedadec58c9afb86fdd682f0ea28e6870d51"
+}

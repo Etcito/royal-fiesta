@@ -275,5 +275,18 @@
     "after": [
       "m13-wardrobe"
     ]
+  },
+  {
+    "name": "m13-costume-jester-hat-render",
+    "command": "node --experimental-strip-types --input-type=module -e \"import { existsSync } from 'node:fs'; const peer = process.cwd() + '-ro-sdfm'; if (!process.env.SDFM_DIR && existsSync(peer + '/bin/sdfm.mjs')) process.env.SDFM_DIR = peer; const { main } = await import('./tools/renderViews.ts'); process.exit(await main(['proofs/m13/views/jester-hat.views.input.json']));\"",
+    "timeout_s": 300
+  },
+  {
+    "name": "m13-costume-jester-hat-judge",
+    "command": "python3 $NMC_JUDGE_CLIENT out/m13/jester-hat/jester-hat-front.png --description \"A toy-like rounded cartoon penguin wearing a two-pointed jester hat fitted to its head. The hat has a purple left half and a gold right half, two curved floppy points, a small gold bell hanging from each tip, and a gold band around the head. The penguin face remains clearly visible.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "m13-costume-jester-hat-render"
+    ]
   }
 ]

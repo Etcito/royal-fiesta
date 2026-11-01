@@ -17,6 +17,8 @@ export interface TourGame {
   views: HTMLElement
   // One App frame: input, nav, the mode (dtS of game time) and the uaa frame at performance.now().
   step(dtS: number): void
+  // The App's live scene/GPU inventory (mode, screen, ports, start view, sound, listeners).
+  inventory(): unknown
   dispose(): void
 }
 export type BootGame = (onScreen: (e: UaaScreenChange) => void) => Promise<TourGame>

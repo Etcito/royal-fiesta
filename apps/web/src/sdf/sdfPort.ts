@@ -10,7 +10,7 @@ import type { SdfmCompiledMaterial, SdfmMappedMaterial, SdfmNormalVolume } from 
 import { checkNormalVolume, volumeInstanceParams, volumeMaterial, volumeStandardMaterial, volumeSurfaceAttributes, volumeTexture } from '@etcito/raa-sdfm'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
-import type { CameraPose, QuatT, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
+import type { CameraPose, QuatT, RenderInventory, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import { checkPose, checkSkin } from '@royal-fiesta/game/render/nullPort'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../render/courseEnvironment.ts'
@@ -69,7 +69,8 @@ type PartTint = 'graph' | 'multiply' | 'none'
 interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
-interface Live { root: number; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null }
+// asset = the uploaded/handle index this instance was created from (for the live inventory).
+interface Live { asset: number; root: number; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
   failed: ReadonlyMap<string, string> = new Map(),
@@ -132,6 +133,9 @@ class SdfRenderPort implements ResizablePort {
   private volumeDefault: number | null = null
   private readonly normals: NormalsMode = normalsMode()
   private readonly debugNormals = normalsDebug()
+  // GPU handles this port created, for the live inventory.
+  private meshes = 0
+  private textures = 0
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
   constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map()) {
@@ -207,7 +211,7 @@ class SdfRenderPort implements ResizablePort {
         if (part.normalVolume === undefined || part.meshes.length === 0) continue
         try {
           const volume: SdfmNormalVolume = checkNormalVolume(part.normalVolume)
-          const params = volumeInstanceParams(volume, engine.addTexture(volumeTexture(volume)), { debug: this.debugNormals })
+          const params = volumeInstanceParams(volume, this.addTexture(volumeTexture(volume)), { debug: this.debugNormals })
           // Debug of the vertex mode: the wrapped functions run with the volume off (the mesh normal).
           if (this.normals === 'vertex') params[12] = 0
           textures.set(part, params)
@@ -251,7 +255,7 @@ class SdfRenderPort implements ResizablePort {
           this.volumeDefault ??= this.volumeSurface({})
           desc = { ...desc, ...volumeSurfaceAttributes(desc.positions, desc.normals), subMeshes: built.subMeshes.map(sub => ({ ...sub, material: sub.material ?? this.volumeDefault! })) }
         }
-        const mesh = engine.addMesh(desc)
+        const mesh = this.addMesh(engine, desc)
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
@@ -317,7 +321,7 @@ class SdfRenderPort implements ResizablePort {
       let max = 0
       for (let i = 0; i < s.joints.length; i++) if (s.joints[i] > max) max = s.joints[i]
       const desc: MeshDesc = { ...part.desc, joints: s.joints, weights: s.weights }
-      return { ...part, desc, mesh: engine.addMesh(desc), joints: max + 1 }
+      return { ...part, desc, mesh: this.addMesh(engine, desc), joints: max + 1 }
     })
     if (!parts.some(part => part.joints !== undefined)) refuse(AREA, assetId, 'no skinned part matches a meshed part name; pass the parts of the same raa-sdfm asset')
     const handle = this.uploaded.length
@@ -355,7 +359,7 @@ class SdfRenderPort implements ResizablePort {
       instances.push(instance)
       if (part.joints !== undefined) skin.push({ instance, part })
     }
-    this.live.push({ root, instances, partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [], filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null })
+    this.live.push({ asset, root, instances, partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [], filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null })
     return this.live.length - 1
   }
 
@@ -432,6 +436,31 @@ class SdfRenderPort implements ResizablePort {
     return this.lastStats
   }
 
+  // Assets are permanent in the upload table; the live inventory names the ones that still have an
+  // instance, so a released lobby no longer reports its plaza or bean.
+  inventory(): RenderInventory {
+    const live = this.live.filter((entry): entry is Live => entry !== null)
+    const liveHandles = new Set(live.map(entry => entry.asset))
+    const assets = [...this.handleOfName].filter(([, handle]) => liveHandles.has(handle)).map(([name]) => name)
+    return {
+      assets: [...new Set(assets)].sort(),
+      instances: live.length,
+      meshes: this.meshes,
+      textures: this.textures,
+      skinned: live.filter(entry => entry.bones > 0).length,
+    }
+  }
+
+  private addMesh(engine: SdfEngine, desc: MeshDesc): number {
+    this.meshes++
+    return engine.addMesh(desc)
+  }
+
+  private addTexture(texture: Parameters<SdfEngine['addTexture']>[0]): number {
+    this.textures++
+    return this.need().addTexture(texture)
+  }
+
   async capture(): Promise<Uint8Array | null> {
     if (this.canvas === null) return null
     const blob = await new Promise<Blob | null>((resolve) => this.canvas!.toBlob(resolve, 'image/png'))
@@ -498,7 +527,7 @@ class SdfRenderPort implements ResizablePort {
       else white = this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
       const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? white }))
       const desc = { ...part.desc, subMeshes }
-      return { ...part, desc, subMeshes, mesh: engine.addMesh(desc) }
+      return { ...part, desc, subMeshes, mesh: this.addMesh(engine, desc) }
     })
     return uploaded.tintedParts
   }

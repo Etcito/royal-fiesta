@@ -178,6 +178,21 @@ function touchWanted(search: string): boolean {
   return new URLSearchParams(search).get('touch') === '1'
 }
 
+// mountTouchControls registers its pointer listeners synchronously; count them for the lobby inventory.
+function mountCountedTouch(root: HTMLElement): { touch: ReturnType<typeof mountTouchControls>; listeners: number } {
+  const add = EventTarget.prototype.addEventListener
+  let listeners = 0
+  EventTarget.prototype.addEventListener = function (this: EventTarget, ...args: Parameters<typeof add>) {
+    listeners++
+    return add.apply(this, args)
+  }
+  try {
+    return { touch: mountTouchControls(root), listeners }
+  } finally {
+    EventTarget.prototype.addEventListener = add
+  }
+}
+
 function requiredElement<T extends Element>(selector: string): T {
   const found = document.querySelector<T>(selector)
   if (found === null) throw new Error(`game.html needs ${selector}`)
@@ -628,6 +643,12 @@ class LocalMode implements Mode {
   private readonly local = emptyChar()
   private readonly cv = emptyCharView()
   private readonly still = emptyControls()
+  private disposed = false
+
+  // The hub (HubWorld + HubView) is only alive until this mode is disposed; a live inventory reads this.
+  get hubAlive(): boolean {
+    return !this.disposed
+  }
 
   constructor(c: ModeCtx) {
     this.c = c
@@ -798,6 +819,7 @@ class LocalMode implements Mode {
   }
 
   dispose(): void {
+    this.disposed = true
     this.presenter.dispose()
     this.match?.match.dispose()
     this.match = null
@@ -1283,6 +1305,18 @@ function hubEnvironment(content: GameContent): Readonly<Record<string, unknown>>
   return environment
 }
 
+// The hub's own asset names and instance count (plaza obstacles, mechanisms and the local bean). The
+// dressing's decor is not in the course record; a leaked lobby instance is still counted by the port.
+function hubInventory(content: GameContent): { assets: string[]; instances: number } {
+  const plaza = content.hub()
+  const assets = new Set<string>()
+  let instances = 1
+  for (const obstacle of plaza.obstacles) { assets.add(obstacle.asset); instances++ }
+  for (const item of plaza.mechanisms?.items ?? []) { assets.add(item.asset); instances++ }
+  try { assets.add(content.character().id) } catch { /* the hub still has its obstacles */ }
+  return { assets: [...assets].sort(), instances }
+}
+
 // The page: Nav drives every screen; its effects start and stop modes and the load. The uaa host draws
 // the screen nav is on and reports its button presses back as menu commands.
 class App {
@@ -1335,6 +1369,8 @@ class App {
   private readonly touchRoot: HTMLElement
   private readonly touchOn: boolean
   private readonly touch: ReturnType<typeof mountTouchControls> | null
+  // DOM/window listeners the lobby views and touch controls registered (HubView and LocalMode add none).
+  private lobbyListeners = 0
   private readonly remapRoot: HTMLElement
   private readonly remapButton: HTMLButtonElement
   private readonly community: { setVisible(on: boolean): void; dispose(): void } | null
@@ -1372,7 +1408,11 @@ class App {
     // A coarse pointer or ?touch=1 mounts the virtual joystick and buttons over #views; seat 0 is touch.
     this.touchRoot = requiredElement<HTMLElement>('#touch')
     this.touchOn = touchWanted(search)
-    this.touch = this.touchOn ? mountTouchControls(this.touchRoot) : null
+    if (this.touchOn) {
+      const mounted = mountCountedTouch(this.touchRoot)
+      this.touch = mounted.touch
+      this.lobbyListeners = mounted.listeners
+    } else this.touch = null
     this.touchRoot.hidden = true
     this.remapRoot = requiredElement<HTMLElement>('#remap')
     this.remapButton = requiredElement<HTMLButtonElement>('#open-remap')
@@ -1412,6 +1452,39 @@ class App {
         this.fail(messageOf(e))
       }
     })
+  }
+
+  // Live scene/GPU inventory: what the page is showing and holding right now, read by the UI checks.
+  inventory(): {
+    mode: string | null
+    screen: Screen
+    hub: { alive: boolean; assets: string[]; instances: number }
+    ports: { inventory: ReturnType<NonNullable<RenderPort['inventory']>> | null; inDom: boolean; displayed: boolean }[]
+    startView: boolean
+    sound: ReturnType<SoundDriver['inventory']>
+    listeners: number
+  } {
+    const loaded = this.loaded
+    const local = this.mode instanceof LocalMode ? this.mode : this.preparedLocal
+    const alive = local !== null && local.hubAlive
+    const hub = loaded === null ? { assets: [], instances: 0 } : hubInventory(loaded.content)
+    const ports = (loaded?.ports ?? []).map((port, i) => {
+      const canvas = loaded!.canvases[i]
+      return {
+        inventory: port.inventory?.() ?? null,
+        inDom: canvas?.isConnected === true,
+        displayed: canvas !== undefined && canvas.style.display !== 'none',
+      }
+    })
+    return {
+      mode: this.mode === null ? null : this.mode.constructor.name,
+      screen: this.nav.screen,
+      hub: { alive, assets: alive ? hub.assets : [], instances: alive ? hub.instances : 0 },
+      ports,
+      startView: this.startView !== null,
+      sound: this.sound.inventory(),
+      listeners: this.lobbyListeners,
+    }
   }
 
   fail(message: string): void {
@@ -2336,7 +2409,7 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourG
   }
   const booted = await start(ui, env, () => false, onScreen)
   if (booted === null) throw new Error('uiTour: the App did not start')
-  return { host: booted.host, ui, views, step: dt => frame?.(dt), dispose: () => booted.app.dispose() }
+  return { host: booted.host, ui, views, step: dt => frame?.(dt), inventory: () => booted.app.inventory(), dispose: () => booted.app.dispose() }
 }
 
 // Nothing mounted: write the message into the page rather than only the console, and let the Wavedash shell show it.

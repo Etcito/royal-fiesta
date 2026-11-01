@@ -52,6 +52,8 @@ export class SoundDriver {
   #game: GameAudio | null = null
   #courseAudio: CourseAudio | null = null
   #emitters: CourseEmitters | null = null
+  // Course emitter ids whose loop the view has been told to play (for a live inventory).
+  readonly #courseLoops = new Set<string>()
   #course: ResolvedCourse | null = null
   readonly #commands: EmitterCommand[] = []
   readonly #listener: ListenerPose = { x: 0, y: 0, z: 0, fx: 0, fz: 1 }
@@ -112,6 +114,7 @@ export class SoundDriver {
     this.#courseAudio = audio
     this.#course = null
     this.#emitters = null
+    this.#courseLoops.clear()
   }
 
   /** Plays a non-spatial one-shot when the engine is open. */
@@ -131,6 +134,7 @@ export class SoundDriver {
       this.#game.observe(this.#menuSample, 'lobby')
       this.#course = null
       this.#emitters = null
+      this.#courseLoops.clear()
       return
     }
     this.#game.observe(sampleMatch(sim, this.#sample, this.#scratch), 'match')
@@ -139,10 +143,30 @@ export class SoundDriver {
       this.#course = course
       this.#emitters = course === null ? null : new CourseEmitters(course)
       this.#emitters?.reset()
+      this.#courseLoops.clear()
     }
     if (this.#courseAudio === null || this.#emitters === null) return
     const n = this.#emitters.frame(sim, sim.tick, this.#commands)
+    for (let i = 0; i < n; i++) {
+      const cmd = this.#commands[i]
+      if (!cmd.loop) continue
+      if (cmd.kind === 'start') this.#courseLoops.add(cmd.id)
+      else if (cmd.kind === 'stop') this.#courseLoops.delete(cmd.id)
+    }
     this.#courseAudio.apply(this.#commands, n)
+  }
+
+  /** Read-only list of the loops and course emitters the driver currently has playing. */
+  inventory(): { loops: string[]; emitters: string[]; music: string | null; ambience: string | null; bed: boolean } {
+    const game = this.#game?.inventory()
+    const emitters = [...this.#courseLoops].sort()
+    const loops = new Set<string>(game?.loops ?? [])
+    if (game?.music) loops.add(game.music)
+    for (const id of emitters) loops.add(id)
+    return {
+      loops: [...loops].sort(), emitters,
+      music: game?.music ?? null, ambience: game?.ambience ?? null, bed: game?.bed ?? false,
+    }
   }
 
   /** Frees the course audio and stops the game's sounds; the engine stays open until close(). */

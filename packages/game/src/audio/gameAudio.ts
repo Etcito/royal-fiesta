@@ -100,6 +100,11 @@ export class GameAudio {
     this.#port.setListeners(ls)
   }
 
+  /** Read-only list of what is playing, for a live inventory or a check. */
+  inventory(): { loops: string[]; music: string | null; ambience: string | null; bed: boolean } {
+    return { loops: [...this.#loops.keys()].sort(), music: this.#musicId, ambience: this.#ambienceId, bed: this.#bed !== null }
+  }
+
   /** Stops all loops and forgets frame and cue state so the controller can be reused. */
   stop(): void {
     for (const loop of this.#loops.values()) loop.stop(0.15)

@@ -11,6 +11,9 @@ export interface SkinRigT { readonly name: string; readonly bones: readonly { re
 export interface SkinPartT { readonly name: string; readonly skin?: { readonly joints: Uint16Array; readonly weights: Float32Array } }
 export interface SkinnedAssetT { readonly rig: SkinRigT; readonly clips?: readonly unknown[]; readonly parts: readonly SkinPartT[] }
 export interface RenderStats { frameMs: number; drawCalls: number; triangles: number; instances: number; visible: number }
+// Live state of a port for checks: the asset names it has instances of, the live instance count and the
+// GPU-side handles it holds. Ports without a table omit inventory.
+export interface RenderInventory { assets: string[]; instances: number; meshes: number; textures: number; skinned: number }
 
 export interface RenderPort {
   readonly kind: 'null' | 'raa'
@@ -31,6 +34,8 @@ export interface RenderPort {
   render(): RenderStats
   capture(): Promise<Uint8Array | null>
   dispose(): void
+  // Optional live inventory (assets currently drawn, instances, meshes, textures, skinned instances).
+  inventory?(): RenderInventory
 }
 
 export type SkinnedRenderPort = RenderPort & Required<Pick<RenderPort, 'registerSkinned' | 'setPose'>>

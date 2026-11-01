@@ -1,5 +1,6 @@
 // Shared disk layout for local play, content checkouts and CDN uploads.
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { gzipSync } from 'node:zlib'
@@ -24,8 +25,36 @@ export function contentDir(root = repoRoot()): string {
 // cache in the git common dir: a fresh worktree reuses the meshes another one baked instead of meshing cold.
 export function meshCacheDir(root = repoRoot()): string {
   if (process.env.RF_MESH_CACHE_DIR) return resolve(process.env.RF_MESH_CACHE_DIR)
-  const common = gitCommonDir(root)
-  return common === null ? join(root, '.cache', 'meshes') : join(common, 'rf-cache', 'meshes')
+  return join(rfCacheRoot(root) ?? join(tmpdir(), 'rf-cache'), 'meshes')
+}
+
+// The build caches (meshes, audio) live under one root, the first that can be written: RF_CACHE_DIR, then
+// <git common dir>/rf-cache (shared by every worktree of the clone; read-only in a sandboxed worktree), then
+// <os tmpdir>/rf-cache. Probed once per process; null when none can be written (the build goes on uncached).
+const cacheRoots = new Map<string, string | null>()
+export function rfCacheRoot(root = repoRoot()): string | null {
+  const env = process.env.RF_CACHE_DIR ?? ''
+  const memo = `${env}\0${root}`
+  if (!cacheRoots.has(memo)) {
+    const common = gitCommonDir(root)
+    const candidates = env ? [resolve(env)] : []
+    candidates.push(common === null ? join(root, '.cache') : join(common, 'rf-cache'), join(tmpdir(), 'rf-cache'))
+    cacheRoots.set(memo, candidates.find(writableDir) ?? null)
+  }
+  return cacheRoots.get(memo)!
+}
+
+/** True when dir exists or can be created and a file can be written in it. */
+export function writableDir(dir: string): boolean {
+  const probe = join(dir, `.probe-${process.pid}`)
+  try {
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(probe, '')
+    rmSync(probe, { force: true })
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function gitCommonDir(root: string): string | null {

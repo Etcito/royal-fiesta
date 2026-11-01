@@ -229,9 +229,11 @@ export async function compressAudio(audioDir: string, opts: CompressOptions = {}
   const log = opts.log ?? console.log
   const encode = opts.encode ?? ffmpegEncode
   const keyMap = (opts.keys ?? (() => bakeFileKeys()))()
+  const audioCache = opts.cacheDir ? null : audioCacheDir()
   const cacheRoot = opts.cacheDir
     ? resolve(opts.cacheDir)
-    : join(audioCacheDir(), 'compressed', `v${CACHE_VERSION}`)
+    : audioCache === null ? null : join(audioCache, 'compressed', `v${CACHE_VERSION}`)
+  if (cacheRoot === null) log('[audio-compress] cache disabled: no writable cache directory (set RF_CACHE_DIR); encoding every file')
   const manifestPath = join(dir, 'manifest.json')
   let manifest: AudioManifest
   try {
@@ -252,8 +254,8 @@ export async function compressAudio(audioDir: string, opts: CompressOptions = {}
   const stateOf = (key: string): EntryState => {
     let state = states.get(key)
     if (!state) {
-      const entry = join(cacheRoot, key)
-      state = { dir: entry, choices: readCache(entry), dirty: false }
+      const entry = cacheRoot === null ? '' : join(cacheRoot, key)
+      state = { dir: entry, choices: cacheRoot === null ? {} : readCache(entry), dirty: false }
       states.set(key, state)
     }
     return state
@@ -321,7 +323,7 @@ export async function compressAudio(audioDir: string, opts: CompressOptions = {}
       }
     }
     for (const state of states.values()) {
-      if (state.dirty) writeCacheEntry(state, dir, log)
+      if (state.dirty && cacheRoot !== null) writeCacheEntry(state, dir, log)
     }
     manifest.sounds = manifest.sounds.map((sound) => ({
       ...sound, files: sound.files.map((file) => renames.get(file) ?? file),

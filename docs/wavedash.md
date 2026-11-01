@@ -73,8 +73,9 @@ For every WAV the manifest lists:
 - The WAV is deleted from `upload/audio` and `manifest.json` is rewritten with the kept file names; every other
   manifest field is unchanged.
 - The result is cached under the sound's bake key: `<RF_AUDIO_CACHE_DIR>/compressed/v1/<key>/` when
-  `RF_AUDIO_CACHE_DIR` is set, otherwise `<git common dir>/rf-cache/audio/compressed/v1/<key>/` (next to the
-  bake cache; every worktree of a clone shares it). The key is the one `bakeFileKeys()`
+  `RF_AUDIO_CACHE_DIR` is set, otherwise `<cache root>/audio/compressed/v1/<key>/` (next to the bake cache;
+  the cache root is `RF_CACHE_DIR`, `<git common dir>/rf-cache` or `<os tmpdir>/rf-cache`, the first writable,
+  see docs/etcito-build.md). The key is the one `bakeFileKeys()`
   (tools/bake-audio.ts) derives for the bake: HAA's built JS and wasm, bake-audio.ts, the sound definition, its
   bank entries and every source text the bake reads. A cache hit copies the encoded file and runs no ffmpeg.
 - The real encoder refuses when ffmpeg or `libmp3lame`/`libopus` is missing, naming the codec and how to install

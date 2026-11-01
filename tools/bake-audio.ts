@@ -27,15 +27,19 @@ import type { FamilyRender } from '../packages/game/src/audio/sounds/movement.ts
 import { BED_FAMILIES, loadArrangement, MUSIC_CUE_IDS } from '../packages/game/src/audio/sounds/music.ts'
 import { WORLD_FAMILIES } from '../packages/game/src/audio/sounds/world.ts'
 import { repoRoot } from './bricks.ts'
-import { gitCommonDir } from './content.ts'
+import { rfCacheRoot, writableDir } from './content.ts'
 
 export const DEFAULT_AUDIO_OUT = 'apps/web/public/audio'
 
-// Every worktree of one clone shares one cache in the git common dir, like the mesh cache (content.ts).
-export function audioCacheDir(root = repoRoot()): string {
-  if (process.env.RF_AUDIO_CACHE_DIR) return resolve(process.env.RF_AUDIO_CACHE_DIR)
-  const common = gitCommonDir(root)
-  return common === null ? join(root, '.cache', 'audio') : join(common, 'rf-cache', 'audio')
+// Every worktree of one clone shares one cache under rfCacheRoot, like the mesh cache (content.ts).
+// null: no cache directory can be written, the bake renders everything and stores nothing.
+export function audioCacheDir(root = repoRoot()): string | null {
+  if (process.env.RF_AUDIO_CACHE_DIR) {
+    const dir = resolve(process.env.RF_AUDIO_CACHE_DIR)
+    return writableDir(dir) ? dir : null
+  }
+  const base = rfCacheRoot(root)
+  return base === null ? null : join(base, 'audio')
 }
 
 function filesUnder(dir: string): string[] {
@@ -168,10 +172,11 @@ function message(error: unknown): string {
 
 /** Bakes every catalog sound into outDir and returns the S17 manifest. Deterministic. */
 export async function bakeAudio(
-  outDir: string, log: (line: string) => void = console.log, cacheDir: string = audioCacheDir(),
+  outDir: string, log: (line: string) => void = console.log, cacheDir: string | null = audioCacheDir(),
 ): Promise<AudioManifest> {
   const root = repoRoot()
   mkdirSync(outDir, { recursive: true })
+  if (cacheDir === null) log('[audio-bake] cache disabled: no writable cache directory (set RF_CACHE_DIR); rendering every sound')
   let module: Awaited<ReturnType<typeof loadModule>> | null = null
   const keys = bakeFileKeys(root)
   const sources = bakeSources(root)
@@ -184,6 +189,7 @@ export async function bakeAudio(
   // A hit copies the cached files; a miss renders them (already checked) and stores them under the key.
   // The entry is written to a temporary folder and renamed, so a cut bake never leaves a partial entry.
   const fromCache = (key: string, files: string[]): boolean => {
+    if (cacheDir === null) return false
     const dir = join(cacheDir, key)
     if (!files.every((file) => existsSync(join(dir, file)))) return false
     for (const file of files) copyFileSync(join(dir, file), join(outDir, file))
@@ -191,6 +197,7 @@ export async function bakeAudio(
     return true
   }
   const toCache = (key: string, files: string[]): void => {
+    if (cacheDir === null) return
     const dir = join(cacheDir, key)
     const temp = `${dir}.${process.pid}.tmp`
     try {
@@ -264,7 +271,7 @@ export async function bakeAudio(
   copyFileSync(require.resolve('@etcito/haa-spatial/worklet'), join(outDir, 'haa-processors.js'))
   copyFileSync(require.resolve('@etcito/haa-spatial/wasm'), join(outDir, 'haa.wasm'))
   const patches = sounds.filter((sound) => sound.patch !== null).length
-  log(`[audio-bake] ${sounds.length} sounds: ${wavs} WAVs (${wavs - cached} rendered, ${cached} from ${cacheDir}), ${patches} live patches, manifest, worklet and wasm -> ${outDir}`)
+  log(`[audio-bake] ${sounds.length} sounds: ${wavs} WAVs (${wavs - cached} rendered, ${cached} from ${cacheDir ?? 'no cache'}), ${patches} live patches, manifest, worklet and wasm -> ${outDir}`)
   return manifest
 }
 

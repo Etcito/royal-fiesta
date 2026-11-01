@@ -41,6 +41,12 @@ the uaa clone is the fresh `<work>/uaa` sibling it fetches.
    - with `$RF_BRICKS_DIR/MAMA`, it links that sibling;
    - otherwise it clones the pinned commit of `bricks.pins.json` from GitHub with the env token.
 5. `npm run build`: audio bake, then the Vite build into `apps/web/dist`.
+   The audio bake and the mesh bake cache their output outside the checkout, under the first cache root
+   that can be written: `RF_CACHE_DIR` when set, then `<git common dir>/rf-cache` (shared by every worktree
+   of the clone), then `<os tmpdir>/rf-cache`. A sandboxed worktree whose main `.git` is read-only uses the
+   temp root; set `RF_CACHE_DIR` to share one cache between such builds. When none can be written the build
+   logs one `cache disabled` line and renders everything uncached. `RF_AUDIO_CACHE_DIR` and
+   `RF_MESH_CACHE_DIR` still override one cache each.
 6. `npm run wavedash -- --skip-build`: packWavedash in the clone. It writes `out/wavedash-build/` there
    (docs/wavedash.md: layout and `rf-build.json`, whose `mama` names the source and commit).
 

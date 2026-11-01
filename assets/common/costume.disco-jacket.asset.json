@@ -1,0 +1,755 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.disco-jacket",
+  "name": "disco_jacket",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 32,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "disco_jacket",
+    "root": [
+      "disco_jacket"
+    ],
+    "nodes": {
+      "disco_jacket": {
+        "id": "disco_jacket",
+        "name": "disco_jacket",
+        "kind": "group",
+        "children": [
+          "jacket_body",
+          "front_opening",
+          "collar_back",
+          "collar_l",
+          "collar_r",
+          "sequin_1",
+          "sequin_2",
+          "sequin_3",
+          "sequin_4",
+          "sequin_5",
+          "sequin_6",
+          "sequin_7",
+          "sequin_8",
+          "sequin_9",
+          "sequin_10",
+          "sequin_11",
+          "sequin_12",
+          "sequin_13",
+          "sequin_14",
+          "sequin_15",
+          "sequin_16",
+          "sequin_17",
+          "sequin_18",
+          "sequin_19",
+          "sequin_20",
+          "sequin_21",
+          "sequin_22",
+          "sequin_23",
+          "sequin_24",
+          "sequin_25",
+          "sequin_26",
+          "sequin_27",
+          "sequin_28",
+          "sequin_29",
+          "sequin_30",
+          "sequin_31",
+          "sequin_32",
+          "sequin_33",
+          "sequin_34",
+          "sequin_35",
+          "sequin_36",
+          "sequin_37",
+          "sequin_38",
+          "anchor_body"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.disco-jacket",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 32,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "jacket_body": {
+        "id": "jacket_body",
+        "name": "jacket_body",
+        "kind": "cone",
+        "transform": {
+          "position": [0, -0.02, 0.05],
+          "scale": [1, 1, 0.98]
+        },
+        "round": 0.07,
+        "material": "m1",
+        "params": {
+          "height": 0.62,
+          "radiusBottom": 0.6,
+          "radiusTop": 0.46
+        },
+        "gameCollision": false
+      },
+      "front_opening": {
+        "id": "front_opening",
+        "name": "front_opening",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0, 0.7]
+        },
+        "op": "subtract",
+        "smooth": 0.03,
+        "params": {
+          "radii": [0.21, 0.55, 0.3]
+        },
+        "gameCollision": false
+      },
+      "collar_back": {
+        "id": "collar_back",
+        "name": "collar_back",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, 0.35, -0.16],
+          "rotation": [-12, 0, 0]
+        },
+        "smooth": 0.03,
+        "material": "m2",
+        "params": {
+          "radii": [0.44, 0.1, 0.26]
+        },
+        "gameCollision": false
+      },
+      "collar_l": {
+        "id": "collar_l",
+        "name": "collar_l",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.3, 0.37, 0.2],
+          "rotation": [-20, -25, -30]
+        },
+        "smooth": 0.03,
+        "material": "m2",
+        "params": {
+          "radii": [0.31, 0.1, 0.22]
+        },
+        "gameCollision": false
+      },
+      "collar_r": {
+        "id": "collar_r",
+        "name": "collar_r",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.3, 0.37, 0.2],
+          "rotation": [-20, 25, 30]
+        },
+        "smooth": 0.03,
+        "material": "m2",
+        "params": {
+          "radii": [0.31, 0.1, 0.22]
+        },
+        "gameCollision": false
+      },
+      "sequin_1": {
+        "id": "sequin_1",
+        "name": "sequin_1",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.5, -0.23, 0.333]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_2": {
+        "id": "sequin_2",
+        "name": "sequin_2",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.577, -0.23, 0.05]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_3": {
+        "id": "sequin_3",
+        "name": "sequin_3",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.5, -0.23, -0.233]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_4": {
+        "id": "sequin_4",
+        "name": "sequin_4",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.289, -0.23, -0.44]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_5": {
+        "id": "sequin_5",
+        "name": "sequin_5",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, -0.23, -0.516]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_6": {
+        "id": "sequin_6",
+        "name": "sequin_6",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.289, -0.23, -0.44]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_7": {
+        "id": "sequin_7",
+        "name": "sequin_7",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.5, -0.23, -0.233]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_8": {
+        "id": "sequin_8",
+        "name": "sequin_8",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.577, -0.23, 0.05]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_9": {
+        "id": "sequin_9",
+        "name": "sequin_9",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.5, -0.23, 0.333]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_10": {
+        "id": "sequin_10",
+        "name": "sequin_10",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.388, -0.1, 0.43]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_11": {
+        "id": "sequin_11",
+        "name": "sequin_11",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.529, -0.1, 0.189]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_12": {
+        "id": "sequin_12",
+        "name": "sequin_12",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.529, -0.1, -0.089]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_13": {
+        "id": "sequin_13",
+        "name": "sequin_13",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.388, -0.1, -0.33]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_14": {
+        "id": "sequin_14",
+        "name": "sequin_14",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.142, -0.1, -0.469]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_15": {
+        "id": "sequin_15",
+        "name": "sequin_15",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.142, -0.1, -0.469]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_16": {
+        "id": "sequin_16",
+        "name": "sequin_16",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.388, -0.1, -0.33]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_17": {
+        "id": "sequin_17",
+        "name": "sequin_17",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.529, -0.1, -0.089]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_18": {
+        "id": "sequin_18",
+        "name": "sequin_18",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.529, -0.1, 0.189]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_19": {
+        "id": "sequin_19",
+        "name": "sequin_19",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.388, -0.1, 0.43]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_20": {
+        "id": "sequin_20",
+        "name": "sequin_20",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.449, 0.03, 0.304]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_21": {
+        "id": "sequin_21",
+        "name": "sequin_21",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.519, 0.03, 0.05]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_22": {
+        "id": "sequin_22",
+        "name": "sequin_22",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.449, 0.03, -0.204]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_23": {
+        "id": "sequin_23",
+        "name": "sequin_23",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.259, 0.03, -0.39]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_24": {
+        "id": "sequin_24",
+        "name": "sequin_24",
+        "kind": "sphere",
+        "transform": {
+          "position": [0, 0.03, -0.458]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_25": {
+        "id": "sequin_25",
+        "name": "sequin_25",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.259, 0.03, -0.39]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_26": {
+        "id": "sequin_26",
+        "name": "sequin_26",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.449, 0.03, -0.204]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_27": {
+        "id": "sequin_27",
+        "name": "sequin_27",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.519, 0.03, 0.05]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_28": {
+        "id": "sequin_28",
+        "name": "sequin_28",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.449, 0.03, 0.304]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_29": {
+        "id": "sequin_29",
+        "name": "sequin_29",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.346, 0.16, 0.389]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_30": {
+        "id": "sequin_30",
+        "name": "sequin_30",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.473, 0.16, 0.174]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_31": {
+        "id": "sequin_31",
+        "name": "sequin_31",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.473, 0.16, -0.074]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_32": {
+        "id": "sequin_32",
+        "name": "sequin_32",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.346, 0.16, -0.289]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_33": {
+        "id": "sequin_33",
+        "name": "sequin_33",
+        "kind": "sphere",
+        "transform": {
+          "position": [0.127, 0.16, -0.413]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_34": {
+        "id": "sequin_34",
+        "name": "sequin_34",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.127, 0.16, -0.413]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_35": {
+        "id": "sequin_35",
+        "name": "sequin_35",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.346, 0.16, -0.289]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_36": {
+        "id": "sequin_36",
+        "name": "sequin_36",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.473, 0.16, -0.074]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_37": {
+        "id": "sequin_37",
+        "name": "sequin_37",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.473, 0.16, 0.174]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "sequin_38": {
+        "id": "sequin_38",
+        "name": "sequin_38",
+        "kind": "sphere",
+        "transform": {
+          "position": [-0.346, 0.16, 0.389]
+        },
+        "material": "m4",
+        "params": {
+          "radius": 0.048
+        },
+        "gameCollision": false
+      },
+      "anchor_body": {
+        "id": "anchor_body",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "disco-jacket-magenta",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#d0209f",
+                "in.metallic": 0.35,
+                "in.roughness": 0.3
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m2": {
+        "name": "disco-jacket-purple",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#5a2aa8",
+                "in.metallic": 0.3,
+                "in.roughness": 0.35
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m3": {
+        "name": "disco-jacket-gold",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffd23a",
+                "in.metallic": 0.8,
+                "in.roughness": 0.2
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m4": {
+        "name": "disco-jacket-cyan",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#3fe0f0",
+                "in.metallic": 0.8,
+                "in.roughness": 0.2
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.711606, -0.35, -0.564],
+    "max": [0.711606, 0.6, 0.7]
+  },
+  "hash": "c048fd60b8977b51294bdb0162bf75deeecfe1bd832fb88db62268462f5a8896"
+}

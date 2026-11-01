@@ -21,6 +21,12 @@ import { takeoverInput } from './takeoverBot.ts'
 import { FIESTA_TUNING } from './tuning.ts'
 import { mergeZoneTuning, peerClasses } from './zoneTuning.ts'
 
+/** The states ZoneSession keeps (private there): the current one of each domain and the old ones kept for a grace. */
+interface SessionStates {
+  readonly list: readonly { readonly sim: DomainSim<PlayerInput> }[]
+  readonly grace: readonly { readonly sim: DomainSim<PlayerInput> }[]
+}
+
 export interface ZoneMatchConfig {
   readonly localPeer: number
   readonly roster: Roster
@@ -55,6 +61,8 @@ export interface ZoneMatch {
   readonly currentLedger: MatchLedger | null
   /** Borrowed list of current local physics domains, ascending id; each exposes characters and seats. */
   readonly domains: readonly FiestaDomain[]
+  /** Rapier worlds alive now: only the states the session still holds, as current or as grace. */
+  readonly worlds: number
   confirmedHash(domain: number, tick: number): number | undefined
   dispose(): void
 }
@@ -124,23 +132,43 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
     course: cfg.course, zones: cfg.zones, profile: cfg.profile, kind: cfg.kind,
     seatCount: cfg.roster.seatCount, spawnIndices: cfg.spawnIndices, slot: cfg.slot,
   })
-  // The session disposes every state it drops and every rebuild temporary; the match frees what is left at disposal.
+  // ZoneSession never disposes a DomainSim (its interface has no dispose): every epoch boundary leaks the states it
+  // drops and its rebuild/reset temporaries, so the wasm heap and every Rapier step grow until the match ends.
+  // The match frees them: a temporary once the frame that built it ends (the session only reads its snapshot), a
+  // state once the session holds it neither as current nor as grace, and what is left at disposal.
   const worlds = new Set<FiestaDomain>()
+  const temporaries: FiestaDomain[] = []
   function own(sim: DomainSim<PlayerInput>): DomainSim<PlayerInput> {
     if (sim instanceof FiestaDomain) worlds.add(sim)
     return sim
   }
-  function forgetDisposed(): void {
-    for (const world of worlds) if (world.disposed) worlds.delete(world)
+  function temporary(sim: DomainSim<PlayerInput>): DomainSim<PlayerInput> {
+    if (sim instanceof FiestaDomain) temporaries.push(sim)
+    return sim
+  }
+  const held = new Set<DomainSim<PlayerInput>>()
+  function freeDropped(): void {
+    for (const sim of temporaries) sim.dispose()
+    temporaries.length = 0
+    const states = session as unknown as SessionStates
+    held.clear()
+    for (const d of states.list) held.add(d.sim)
+    for (const d of states.grace) held.add(d.sim)
+    for (const world of worlds) {
+      if (!held.has(world)) world.dispose()
+      if (world.disposed) worlds.delete(world)
+    }
   }
   function freeWorlds(): void {
     for (const world of worlds) world.dispose()
     worlds.clear()
+    for (const sim of temporaries) sim.dispose()
+    temporaries.length = 0
   }
   const factory: DomainFactory<PlayerInput> = {
     create: (spec, tick) => own(recipe.create(spec, tick)),
-    rebuild: (spec, tick, sources) => own(recipe.rebuild(spec, tick, sources)),
-    reset: (spec, tick) => own(recipe.reset(spec, tick)),
+    rebuild: (spec, tick, sources) => temporary(recipe.rebuild(spec, tick, sources)),
+    reset: (spec, tick) => temporary(recipe.reset(spec, tick)),
   }
   const memory = Array.from({ length: cfg.roster.seatCount }, () => newMemory())
   // The global and seat domains can request the same bot tick; advance its brain only once.
@@ -222,7 +250,7 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
         return session.frame(dtS, sample)
       } finally {
         sampleInputs = undefined
-        forgetDisposed()
+        freeDropped()
       }
     },
     get currentLedger() {
@@ -259,6 +287,7 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
       domains.length = count
       return domains
     },
+    get worlds() { return worlds.size + temporaries.length },
     confirmedHash: (domain, tick) => session.confirmedHash(domain, tick),
     dispose() {
       if (disposed) return

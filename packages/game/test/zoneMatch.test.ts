@@ -101,6 +101,7 @@ test('zoneMatch: 8 peers finish one round with zero desyncs and identical ledger
   const sampleTicks = new Int32Array(PEERS)
   const seatDomainIds = new Set<number>()
   let maxEpoch = 0
+  let worldLeak: string | undefined
   try {
     for (let p = 0; p < PEERS; p++) {
       matches.push(createZoneMatch(R, {
@@ -134,6 +135,10 @@ test('zoneMatch: 8 peers finish one round with zero desyncs and identical ledger
         if (results[p] === null && result !== null) results[p] = copyResult(result)
         const epoch = Math.floor(match.stats.tick / FIESTA_ZONE_TUNING.epochTicks)
         if (epoch > maxEpoch) maxEpoch = epoch
+        // The session never disposes a state: the match frees dropped states and rebuild temporaries every frame,
+        // so a peer holds at most a current and a grace state per local domain, not one more world per epoch.
+        const bound = 2 * (match.domains.length + 1)
+        if (match.worlds > bound) worldLeak ??= `peer ${p} tick ${match.stats.tick}: ${match.worlds} worlds > ${bound}`
         if (epoch > 0) {
           for (const domain of match.domains) {
             if (domain.inner.spec.kind === 'seat') seatDomainIds.add(domain.inner.spec.id)
@@ -142,6 +147,7 @@ test('zoneMatch: 8 peers finish one round with zero desyncs and identical ledger
       }
     }
 
+    assert.equal(worldLeak, undefined, 'dropped domain states are freed')
     assert.ok(maxEpoch > 0, `assignment reached an epoch boundary (epoch ${maxEpoch})`)
     assert.ok(seatDomainIds.size > 1,
       `an epoch boundary ran with more than one seat domain (saw ${[...seatDomainIds].join(',')})`)

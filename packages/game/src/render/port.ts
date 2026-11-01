@@ -34,8 +34,12 @@ export interface RenderPort {
   render(): RenderStats
   capture(): Promise<Uint8Array | null>
   dispose(): void
-  // Optional live inventory (assets currently drawn, instances, meshes, textures, skinned instances).
+  // Optional live inventory (registered assets, instances, meshes, textures, skinned instances).
   inventory?(): RenderInventory
+  // Optional: free a registered asset's GPU resources (meshes, textures and volume textures) and
+  // forget its handle, so a later registerAsset of the same id re-uploads it. Callers destroy its
+  // instances first; a port that cannot free a single asset omits this (dispose the port instead).
+  releaseAsset?(handle: number): void
 }
 
 export type SkinnedRenderPort = RenderPort & Required<Pick<RenderPort, 'registerSkinned' | 'setPose'>>

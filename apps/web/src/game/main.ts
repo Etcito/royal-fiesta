@@ -36,7 +36,7 @@ import { globalWsFactory, type WsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
-import type { CameraPose, RenderPort, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
+import type { CameraPose, RenderPort, SkinnedAssetT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
@@ -1317,6 +1317,32 @@ function hubInventory(content: GameContent): { assets: string[]; instances: numb
   return { assets: [...assets].sort(), instances }
 }
 
+// Wraps the stage port so the App can free every asset the lobby registered (RenderPort.releaseAsset).
+function trackLobbyAssets(port: RenderPort, into: Set<number>): RenderPort {
+  return new Proxy(port, {
+    get(target, key) {
+      if (key === 'registerAsset') {
+        return (name: string, asset: PrimsAsset): number => {
+          const handle = target.registerAsset(name, asset)
+          into.add(handle)
+          return handle
+        }
+      }
+      if (key === 'registerSkinned') {
+        const register = target.registerSkinned
+        if (register === undefined) return undefined
+        return (assetId: string, skin: SkinnedAssetT): number => {
+          const handle = register.call(target, assetId, skin)
+          into.add(handle)
+          return handle
+        }
+      }
+      const value = Reflect.get(target, key, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
+}
+
 // The page: Nav drives every screen; its effects start and stop modes and the load. The uaa host draws
 // the screen nav is on and reports its button presses back as menu commands.
 class App {
@@ -1371,6 +1397,10 @@ class App {
   private readonly touch: ReturnType<typeof mountTouchControls> | null
   // DOM/window listeners the lobby views and touch controls registered (HubView and LocalMode add none).
   private lobbyListeners = 0
+  // Asset handles the lobby registered on the stage port, freed when the show starts (releaseAsset).
+  private readonly lobbyAssets = new Set<number>()
+  // The show has no MatchSim, so SoundDriver.frame would restart the lobby music; keep it stopped.
+  private lobbySoundOff = false
   private readonly remapRoot: HTMLElement
   private readonly remapButton: HTMLButtonElement
   private readonly community: { setVisible(on: boolean): void; dispose(): void } | null
@@ -1490,6 +1520,7 @@ class App {
   fail(message: string): void {
     // Whatever the error screen shows is also logged: a run that ends on it names its cause in the log.
     console.error(`[error-screen] ${message}`)
+    this.lobbySoundOff = false
     this.roundLoading = null
     this.loadingOverlay.hide()
     this.run(this.nav.dispatch({ kind: 'error', message }))
@@ -1670,6 +1701,7 @@ class App {
         } else this.loadingOverlay.hide()
       }, content.report())
       this.loaded = { R, content, ports, canvases, course }
+      if (ports[0] !== undefined) ports[0] = trackLobbyAssets(ports[0], this.lobbyAssets)
       this.resizeViews()
       if (q.server === null && q.clients === 1) {
         boot.enter('first frame (pipelines, capture)')
@@ -1909,9 +1941,11 @@ class App {
     const q = this.query
     if (loaded === null || q === null) return
     this.stopMode()
+    // The show owns its own canvas and port: release the lobby (start view, hub, its assets and sound)
+    // before it registers the first round's assets on its port.
+    this.releaseLobby()
     const load = this.showLoad
     this.setLayout(1)
-    this.startView?.setVisible(false)
     this.run(this.nav.dispatch({ kind: 'game', screen: 'vote' }))
     try {
       const show = await ShowMode.create({
@@ -1935,11 +1969,32 @@ class App {
     this.showView = null
   }
 
+  // Unmount the start view and free every asset the lobby registered, stop its sound and let the show
+  // start from a clean stage port. The start view and hub rebuild on return (draw / startMode).
+  private releaseLobby(): void {
+    this.startView?.unmount()
+    this.startView = null
+    this.preparedLocal?.dispose()
+    this.preparedLocal = null
+    const port = this.loaded?.ports[0]
+    try {
+      if (port?.releaseAsset !== undefined) for (const handle of this.lobbyAssets) port.releaseAsset(handle)
+    } catch (e) {
+      console.warn('[lobby] asset release failed:', messageOf(e))
+    }
+    this.lobbyAssets.clear()
+    this.sound.dispose()
+    this.lobbySoundOff = true
+  }
+
   private stopMode(): void {
     this.showLoad++
     this.unmountShowView()
     this.roundLoading = null
     this.loadingOverlay.hide()
+    this.lobbySoundOff = false
+    // A mode stopping returns to a fresh start menu: focus the first bin, as on the first entry.
+    if (this.startModel !== null) this.startModel = { ...this.startModel, focus: 'bins', bin: 0 }
     if (this.mode instanceof LocalMode && !this.disposed && this.nav.screen === 'title') {
       this.preparedLocal?.dispose()
       this.preparedLocal = this.mode
@@ -2028,7 +2083,8 @@ class App {
       }
     }
     this.emote = 0
-    this.sound.frame(this.mode?.sim() ?? null, this.mode?.listener?.() ?? undefined)
+    // The show has no MatchSim; skip SoundDriver.frame so it cannot restart the lobby music it stopped.
+    if (!this.lobbySoundOff) this.sound.frame(this.mode?.sim() ?? null, this.mode?.listener?.() ?? undefined)
     this.draw()
   }
 

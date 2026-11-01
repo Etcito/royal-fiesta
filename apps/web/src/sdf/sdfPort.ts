@@ -66,7 +66,7 @@ interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; 
 type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
 // emptyParts: parts the mesher kept by name with no triangle (hidden colliders): a part filter may list them.
-interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[] }
+interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[]; textures?: number[]; base?: number }
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
 // asset = the uploaded/handle index this instance was created from (for the live inventory).
@@ -118,7 +118,7 @@ class SdfRenderPort implements ResizablePort {
   private engine: SdfEngine | null = null
   private canvas: HTMLCanvasElement | null = null
   private target: RenderTarget | null = null
-  private readonly uploaded: Uploaded[] = []
+  private readonly uploaded: (Uploaded | undefined)[] = []
   private readonly handleOfId = new Map<string, number>()
   private readonly handleOfName = new Map<string, number>()
   private readonly functions = new Map<string, string>()
@@ -206,15 +206,18 @@ class SdfRenderPort implements ResizablePort {
     // Per-pixel normals: each part's volume becomes a texture; a part whose volume is missing, malformed or does not
     // fit the atlas keeps its vertex normals.
     const textures = new Map<PayloadPart, number[]>()
+    const volumeTextures: number[] = []
     if (this.normals === 'pixel' || this.debugNormals) {
       for (const group of payload.groups) for (const part of group.parts) {
         if (part.normalVolume === undefined || part.meshes.length === 0) continue
         try {
           const volume: SdfmNormalVolume = checkNormalVolume(part.normalVolume)
-          const params = volumeInstanceParams(volume, this.addTexture(volumeTexture(volume)), { debug: this.debugNormals })
+          const texture = this.addTexture(volumeTexture(volume))
+          const params = volumeInstanceParams(volume, texture, { debug: this.debugNormals })
           // Debug of the vertex mode: the wrapped functions run with the volume off (the mesh normal).
           if (this.normals === 'vertex') params[12] = 0
           textures.set(part, params)
+          volumeTextures.push(texture)
         } catch (e) {
           console.warn(`[sdf-port] ${id}#part:${part.name}: vertex normals (${messageOf(e)})`)
         }
@@ -263,7 +266,7 @@ class SdfRenderPort implements ResizablePort {
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
-    return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}) }
+    return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}), ...(volumeTextures.length > 0 ? { textures: volumeTextures } : {}) }
   }
 
   // Registers a material function once per name (a name is the hash of its code).
@@ -304,14 +307,14 @@ class SdfRenderPort implements ResizablePort {
   registerSkinned(assetId: string, skin: SkinnedAssetT): number {
     const bones = checkSkin(AREA, `registerSkinned(${assetId})`, skin)
     const known = this.handleOfId.get(assetId)
-    if (known !== undefined && this.uploaded[known].bones !== undefined) {
-      if (this.uploaded[known].bones !== bones) refuse(AREA, assetId, `already registered with ${this.uploaded[known].bones} bones, not ${bones}; pass the same raa-sdfm asset`)
+    if (known !== undefined && this.uploaded[known]!.bones !== undefined) {
+      if (this.uploaded[known]!.bones !== bones) refuse(AREA, assetId, `already registered with ${this.uploaded[known]!.bones} bones, not ${bones}; pass the same raa-sdfm asset`)
       return known
     }
     const rigidHandle = this.registerAsset(assetId, { id: assetId } as PrimsAsset)
     const streams = new Map(skin.parts.map(part => [part.name, part.skin]))
     const engine = this.need()
-    const parts = this.uploaded[rigidHandle].parts.map((part): PartUpload => {
+    const parts = this.uploaded[rigidHandle]!.parts.map((part): PartUpload => {
       const s = streams.get(part.key)
       if (s === undefined) return part
       const vertices = part.desc.positions.length / 3
@@ -325,7 +328,7 @@ class SdfRenderPort implements ResizablePort {
     })
     if (!parts.some(part => part.joints !== undefined)) refuse(AREA, assetId, 'no skinned part matches a meshed part name; pass the parts of the same raa-sdfm asset')
     const handle = this.uploaded.length
-    this.uploaded.push({ assetId, parts, bones, rig: skin.rig, clips: skin.clips ?? [] })
+    this.uploaded.push({ assetId, parts, bones, rig: skin.rig, clips: skin.clips ?? [], base: rigidHandle })
     this.handleOfId.set(assetId, handle)
     for (const [name, h] of this.handleOfName) if (h === rigidHandle) this.handleOfName.set(name, handle)
     return handle
@@ -393,6 +396,42 @@ class SdfRenderPort implements ResizablePort {
     this.need().removeNode(live.root)
     this.live[instance] = null
     this.posed.delete(instance)
+  }
+
+  // Frees the asset's RAA meshes and volume textures and forgets its handles, so a later registerAsset
+  // of the same id re-uploads it. A skinned visual also frees the rigid upload it grew from.
+  releaseAsset(handle: number): void {
+    const uploaded = this.uploaded[handle]
+    if (uploaded === undefined) return
+    if (uploaded.base !== undefined) this.releaseUpload(uploaded.base)
+    this.releaseUpload(handle)
+  }
+
+  private releaseUpload(handle: number): void {
+    const uploaded = this.uploaded[handle]
+    if (uploaded === undefined) return
+    const engine = this.engine
+    // Any instance still pointing at the asset goes with it (callers destroy them first).
+    for (let i = 0; i < this.live.length; i++) {
+      const live = this.live[i]
+      if (live === null || live.asset !== handle) continue
+      if (engine !== null) engine.removeNode(live.root)
+      this.live[i] = null
+      this.posed.delete(i)
+    }
+    if (engine !== null) {
+      for (const part of [...uploaded.parts, ...(uploaded.tintedParts ?? [])]) {
+        try { engine.removeMesh(part.mesh) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
+      }
+      for (const texture of uploaded.textures ?? []) {
+        try { engine.removeTexture(texture) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
+      }
+    }
+    this.meshes -= uploaded.parts.length + (uploaded.tintedParts?.length ?? 0)
+    this.textures -= uploaded.textures?.length ?? 0
+    this.uploaded[handle] = undefined
+    for (const [name, h] of this.handleOfName) if (h === handle) this.handleOfName.delete(name)
+    for (const [id, h] of this.handleOfId) if (h === handle) this.handleOfId.delete(id)
   }
 
   setCamera(viewport: number, cam: CameraPose): void {

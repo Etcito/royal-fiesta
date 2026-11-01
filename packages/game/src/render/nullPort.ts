@@ -1,6 +1,6 @@
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import type { CameraPose, QuatT, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, Vec3T } from './port.ts'
+import type { CameraPose, QuatT, RenderInventory, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, Vec3T } from './port.ts'
 
 const AREA = 'render'
 
@@ -172,6 +172,34 @@ export class NullRenderPort implements SkinnedRenderPort {
       if (inst.visible) visible++
     }
     return { frameMs: performance.now() - t0, drawCalls: 0, triangles: 0, instances, visible }
+  }
+
+  inventory(): RenderInventory {
+    let instances = 0
+    let skinned = 0
+    for (const inst of this.live) {
+      if (inst === null) continue
+      instances++
+      if (this.skinBones.has(inst.asset)) skinned++
+    }
+    return { assets: [...this.assets.keys()].sort(), instances, meshes: 0, textures: 0, skinned }
+  }
+
+  // Forgets the asset and any instances it still holds, so a later registerAsset re-creates it.
+  releaseAsset(handle: number): void {
+    const p = 'NullRenderPort.releaseAsset'
+    if (!Number.isInteger(handle) || handle < 0 || handle >= this.assetCount) {
+      refuse(AREA, p, `unknown asset handle ${handle}; pass a handle from registerAsset`)
+    }
+    for (let i = 0; i < this.live.length; i++) {
+      const inst = this.live[i]
+      if (inst !== null && inst.asset === handle) {
+        this.live[i] = null
+        this.poses.delete(i)
+      }
+    }
+    for (const [name, h] of this.assets) if (h === handle) this.assets.delete(name)
+    this.skinBones.delete(handle)
   }
 
   async capture(): Promise<Uint8Array | null> {

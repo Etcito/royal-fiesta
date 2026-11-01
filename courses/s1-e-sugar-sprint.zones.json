@@ -1,0 +1,15 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "s1-e-sugar-sprint",
+  "grid": {
+    "origin": [-38, -8],
+    "cell": [2, 2],
+    "cols": 38,
+    "rows": 150
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 38
+  }
+}

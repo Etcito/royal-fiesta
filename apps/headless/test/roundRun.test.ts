@@ -29,6 +29,18 @@ describe('roundRun', { concurrency: CPUS }, () => {
     })
   }
 
+  it('a standalone probe plays a map scheduled for later show stages', { timeout: 300_000 }, async () => {
+    // G is an R2-R4 race, so the probe's first slot (R1) has to use the map's own stage.
+    const report = await runRound({
+      course: 's1-g-cloudstack-tower', dir: 'courses', seats: SEATS, peers: 2, profile: 'sprint',
+    })
+    assert.equal(report.ok, true, report.problems.join('\n'))
+    assert.equal(report.rounds.length, 1)
+    assert.equal(report.rounds[0].kind, 'race')
+    assert.equal(report.rounds[0].qualified.length, TARGET)
+    assert.ok(report.champion >= 0, `champion ${report.champion}`)
+  })
+
   it('a final that ties into a playoff plays the playoff and crowns its winner', { timeout: 300_000 }, async () => {
     // Seed 1: two bots grab the crown on the same tick, so the first round settles as a playoff.
     const report = await runRound({

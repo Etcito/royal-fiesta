@@ -1,0 +1,21 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "s1-g-cloudstack-tower",
+  "grid": {
+    "origin": [
+      8,
+      6
+    ],
+    "cell": [
+      2,
+      2
+    ],
+    "cols": 40,
+    "rows": 40
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 40
+  }
+}

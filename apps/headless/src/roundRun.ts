@@ -116,7 +116,13 @@ function probeSeason(courses: readonly ResolvedCourse[], plan: readonly number[]
   const maps = showMaps(courses)
   const slot = nextSlot(newCursor(plan, seats))
   if (slot === null || slot.final) return maps
-  return maps.map(map => map.finalRule === null ? map : { ...map, finalRule: null })
+  // A standalone probe plays its one map at the slot it starts with, even when the map is
+  // scheduled for later show stages (G and D are R2-R4 races). Normal shows keep their stages.
+  const stage = slot.stage
+  return maps.map(map => {
+    if (stage === 'cut' || map.stages.includes(stage)) return { ...map, finalRule: null }
+    return { ...map, finalRule: null, stages: [stage] }
+  })
 }
 
 function maxEndTick(sim: ResolvedCourse, profile: ProfileName): number {

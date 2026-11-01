@@ -216,5 +216,30 @@
     "name": "s3-m10-map-f",
     "command": "npm run round:run -- --course s1-f-taffy-circuit --dir courses --seats 60 --peers 2 --profile season",
     "timeout_s": 1800
+  },
+  {
+    "name": "s3-m11-map-c1",
+    "command": "npm run round:run -- --course s1-c1-diamond-citadel --dir courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m11-map-c2",
+    "command": "npm run round:run -- --course s1-c2-tidal-relay --dir courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m11-map-g",
+    "command": "npm run round:run -- --course s1-g-cloudstack-tower --dir courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m11-map-b",
+    "command": "npm run round:run -- --course s1-b-butterfly-freeway --dir courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
+  },
+  {
+    "name": "s3-m11-map-d",
+    "command": "npm run round:run -- --course s1-d-spiral-of-mischief --dir courses --seats 60 --peers 2 --profile season",
+    "timeout_s": 1800
   }
 ]

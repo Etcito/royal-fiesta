@@ -124,15 +124,18 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
     course: cfg.course, zones: cfg.zones, profile: cfg.profile, kind: cfg.kind,
     seatCount: cfg.roster.seatCount, spawnIndices: cfg.spawnIndices, slot: cfg.slot,
   })
-  // DomainSim has no disposal hook. Retain worlds, including rebuild temporaries, until match disposal.
-  const worlds: FiestaDomain[] = []
+  // The session disposes every state it drops and every rebuild temporary; the match frees what is left at disposal.
+  const worlds = new Set<FiestaDomain>()
   function own(sim: DomainSim<PlayerInput>): DomainSim<PlayerInput> {
-    if (sim instanceof FiestaDomain) worlds.push(sim)
+    if (sim instanceof FiestaDomain) worlds.add(sim)
     return sim
   }
+  function forgetDisposed(): void {
+    for (const world of worlds) if (world.disposed) worlds.delete(world)
+  }
   function freeWorlds(): void {
-    for (let i = 0; i < worlds.length; i++) worlds[i].inner.world.sim.free()
-    worlds.length = 0
+    for (const world of worlds) world.dispose()
+    worlds.clear()
   }
   const factory: DomainFactory<PlayerInput> = {
     create: (spec, tick) => own(recipe.create(spec, tick)),
@@ -156,7 +159,7 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
     if (!state?.replica || !(state.sim instanceof FiestaDomain) || !state.sim.seats.includes(seat)) return undefined
     if (started(state.start, state.sim)) return running[seat] = state.sim
     const prev = running[seat]
-    return prev !== undefined && prev.seats.includes(seat) ? prev : undefined
+    return prev !== undefined && !prev.disposed && prev.seats.includes(seat) ? prev : undefined
   }
   try {
     session = new ZoneSession({
@@ -219,6 +222,7 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
         return session.frame(dtS, sample)
       } finally {
         sampleInputs = undefined
+        forgetDisposed()
       }
     },
     get currentLedger() {

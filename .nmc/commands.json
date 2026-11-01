@@ -220,12 +220,12 @@
   {
     "name": "s3-m11-map-c1",
     "command": "npm run round:run -- --course s1-c1-diamond-citadel --dir courses --seats 60 --peers 2 --profile season",
-    "timeout_s": 1800
+    "timeout_s": 3600
   },
   {
     "name": "s3-m11-map-c2",
     "command": "npm run round:run -- --course s1-c2-tidal-relay --dir courses --seats 60 --peers 2 --profile season",
-    "timeout_s": 1800
+    "timeout_s": 3600
   },
   {
     "name": "s3-m11-map-g",

@@ -4,8 +4,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
+import { repoRoot } from '../bricks.ts'
 import { loadAssetFile } from '../contentProbe.ts'
-import { costumeNodeIdViolations } from '../guard.ts'
+import { checkPaths, costumeNodeIdViolations } from '../guard.ts'
 import { sharedNodeIds } from '../nodeIds.ts'
 import { mergeDocuments } from '../renderViews.ts'
 
@@ -63,10 +64,34 @@ test('the staged guard reports a colliding costume and passes the fixed Jester H
     assert.equal(bad.length, 1)
     assert.equal(bad[0]!.rule, 'costume-node-id-collision')
     assert.match(bad[0]!.detail, /'head'/)
-    writeFileSync(join(root, file), JSON.stringify({ document: document(hat) }))
+    const validated = checkPaths(root, [file]).filter((v) => v.rule === 'costume-node-id-collision')
+    assert.equal(validated.length, 1)
+    writeFileSync(join(root, file), readFileSync(JESTER, 'utf8'))
     assert.deepEqual(costumeNodeIdViolations(root, [file]), [])
+    assert.deepEqual(checkPaths(root, [file]), [])
     assert.deepEqual(sharedNodeIds(document(hat), document(body)), [])
   } finally {
     rmSync(root, { recursive: true, force: true })
+  }
+})
+
+const M13_COSTUMES = [
+  'assets/common/costume.cloud-skirt.asset.json',
+  'assets/common/costume.disco-jacket.asset.json',
+  'assets/common/costume.dragon-suit.asset.json',
+  'assets/common/costume.ghost-aura.asset.json',
+  'assets/common/costume.golden-crown.asset.json',
+  'assets/common/costume.jester-hat.asset.json',
+  'assets/common/costume.jetpack.asset.json',
+  'assets/common/costume.neon-sneakers.asset.json',
+  'assets/common/costume.sparkler-wand.asset.json',
+]
+
+test('all nine M13 costumes pass the guard rule against the penguin', async () => {
+  assert.deepEqual(costumeNodeIdViolations(repoRoot(), M13_COSTUMES), [])
+  const body = await loadAssetFile(PENGUIN)
+  for (const rel of M13_COSTUMES) {
+    const costume = await loadAssetFile(rel)
+    assert.deepEqual(sharedNodeIds(document(costume), document(body)), [], rel)
   }
 })

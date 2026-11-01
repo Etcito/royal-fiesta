@@ -27,7 +27,7 @@
         "name": "Dragon Suit",
         "kind": "group",
         "children": [
-          "anchor_body",
+          "dragon_suit_anchor_body",
           "onesie_body",
           "onesie_hips",
           "belly_panel",
@@ -65,8 +65,8 @@
         },
         "gameCollision": false
       },
-      "anchor_body": {
-        "id": "anchor_body",
+      "dragon_suit_anchor_body": {
+        "id": "dragon_suit_anchor_body",
         "name": "body",
         "kind": "anchor",
         "gameCollision": false
@@ -877,5 +877,5 @@
     "min": [-0.68, -0.93, -1.02],
     "max": [0.68, 0.64, 0.61]
   },
-  "hash": "9f12a474bcc7796cb3a5f666c8e0797085056f33a44492447d2aec5788395d3a"
+  "hash": "61856ea53fb98dbde2557eba8a5683c632554fb00035f45978cf68768d29fad6"
 }

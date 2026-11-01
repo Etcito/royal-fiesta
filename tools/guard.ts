@@ -301,14 +301,6 @@ function modelerAssetViolations(file: string, decoded: string): GuardViolation[]
 const PENGUIN_ASSET = 'assets/common/penguin.body.asset.json'
 const COSTUME_ASSET = /^assets\/[a-z]+\/costume\.[a-z0-9.-]+\.asset\.json$/
 
-// Costumes from earlier M13 cards whose collision predates this rule; their own corrective cards hold the fix.
-// Any other costume, or a new colliding id, is refused.
-const KNOWN_COLLISIONS: Record<string, readonly string[]> = {
-  'assets/common/costume.cloud-skirt.asset.json': ['body'],
-  'assets/common/costume.disco-jacket.asset.json': ['anchor_body'],
-  'assets/common/costume.neon-sneakers.asset.json': ['body'],
-}
-
 // A costume is merged into the penguin for the views render, so it may not reuse a penguin document node id.
 // The rule is shared with tools/renderViews.ts and runs on every guard pass, the card check after the commit too.
 export function costumeNodeIdViolations(root: string, files: readonly string[]): GuardViolation[] {
@@ -328,9 +320,7 @@ export function costumeNodeIdViolations(root: string, files: readonly string[]):
     } catch {
       continue
     }
-    const known = new Set(KNOWN_COLLISIONS[file] ?? [])
     for (const id of sharedNodeIds(json.document, body.document)) {
-      if (known.has(id)) continue
       out.push({
         path: file,
         rule: 'costume-node-id-collision',
@@ -353,6 +343,7 @@ export function checkPaths(root: string, files: readonly string[]): GuardViolati
     }
     violations.push(...checkFile(file, bytes))
   }
+  violations.push(...costumeNodeIdViolations(root, files))
   return violations
 }
 
@@ -386,7 +377,6 @@ export function main(argv: string[]): number {
   const staged = argv.includes('--staged')
   const files = staged ? stagedFiles(root) : trackedFiles(root)
   const violations = checkPaths(root, files)
-  violations.push(...costumeNodeIdViolations(root, files))
 
   console.log(`guard: ${files.length} files checked, ${violations.length} violations`)
   for (const violation of violations) {

@@ -43,6 +43,8 @@ export interface RoundRunOptions {
   target?: number
   show?: boolean
   seed?: number
+  /** Print one progress line per simulated second to stderr. */
+  progress?: boolean
 }
 
 export interface RoundRunReport {
@@ -328,6 +330,22 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
     ? 2 * (maxEndTick(sims[0], profileName) + SETTLE_TICKS)
     : (DEFAULT_PLAN.length + 2) * (Math.max(...sims.map(sim => maxEndTick(sim, profileName))) + SETTLE_TICKS)
   let frames = 0
+  let wallMark = performance.now()
+
+  function progressLine(frame: number): void {
+    const now = performance.now()
+    const counts = [0, 0, 0, 0]
+    const round = fulls[0].round
+    if (round !== null) {
+      for (const domain of round.match.domains) {
+        for (const seat of domain.seats) counts[domain.status(seat)]++
+      }
+    }
+    console.error(`[round-run] frame=${frame} sim=${(frame * DT).toFixed(0)}s rounds=${fulls[0].report.rounds.length}` +
+      ` alive=${counts[PlayerStatus.alive]} qualified=${counts[PlayerStatus.qualified]}` +
+      ` eliminated=${counts[PlayerStatus.eliminated]} wallPerSimS=${(now - wallMark).toFixed(0)}ms`)
+    wallMark = now
+  }
 
   try {
     for (const peer of peers) {
@@ -345,6 +363,7 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
         checkRound(printed)
         printed++
       }
+      if (o.progress === true && (frames + 1) % 60 === 0) progressLine(frames + 1)
       if (single) {
         if (fulls.every(full => settledOutcome(full.report.rounds))) break
       } else if (fulls.every(full => full.done)) break
@@ -404,6 +423,7 @@ async function runCli(argv: string[]): Promise<number> {
       target: { type: 'string' },
       show: { type: 'boolean', default: false },
       seed: { type: 'string' },
+      progress: { type: 'boolean', default: false },
     } })
     if (values.course === undefined || values.course.length === 0) {
       refuse('cli', '--course', `required; ${USAGE}`)
@@ -424,7 +444,7 @@ async function runCli(argv: string[]): Promise<number> {
     const report = await runRound({
       course: values.course, dir: values.dir, seats, peers, profile: values.profile,
       target: values.target === undefined ? undefined : Number(values.target),
-      show: values.show, seed: values.seed === undefined ? undefined : Number(values.seed),
+      show: values.show, progress: values.progress, seed: values.seed === undefined ? undefined : Number(values.seed),
     })
     for (const problem of report.problems) console.error(`[round-run] ${problem}`)
     console.log(`[round-run] champion=${report.champion}`)

@@ -1,0 +1,405 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.neon-sneakers",
+  "name": "neon_sneakers",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 32,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "neon_sneakers",
+    "root": [
+      "neon_sneakers"
+    ],
+    "nodes": {
+      "neon_sneakers": {
+        "id": "neon_sneakers",
+        "name": "neon_sneakers",
+        "kind": "group",
+        "children": [
+          "body",
+          "sole_l",
+          "upper_l",
+          "toe_l",
+          "flash_l",
+          "heel_l",
+          "tongue_l",
+          "lace_l1",
+          "lace_l2",
+          "lace_l3",
+          "sole_r",
+          "upper_r",
+          "toe_r",
+          "flash_r",
+          "heel_r",
+          "tongue_r",
+          "lace_r1",
+          "lace_r2",
+          "lace_r3"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.neon-sneakers",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 32,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "body": {
+        "id": "body",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": false
+      },
+      "sole_l": {
+        "id": "sole_l",
+        "name": "sole_l",
+        "kind": "roundBox",
+        "transform": {
+          "position": [0.2, -0.965, 0.19]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.05,
+          "size": [0.36, 0.11, 0.62]
+        },
+        "gameCollision": false
+      },
+      "upper_l": {
+        "id": "upper_l",
+        "name": "upper_l",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.2, -0.885, 0.2]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "radii": [0.17, 0.14, 0.28]
+        },
+        "gameCollision": false
+      },
+      "toe_l": {
+        "id": "toe_l",
+        "name": "toe_l",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.2, -0.925, 0.4]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radii": [0.15, 0.08, 0.1]
+        },
+        "gameCollision": false
+      },
+      "flash_l": {
+        "id": "flash_l",
+        "name": "flash_l",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.36, -0.89, 0.17]
+        },
+        "material": "m2",
+        "params": {
+          "radii": [0.02, 0.05, 0.16]
+        },
+        "gameCollision": false
+      },
+      "heel_l": {
+        "id": "heel_l",
+        "name": "heel_l",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.2, -0.87, -0.05]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radii": [0.1, 0.06, 0.04]
+        },
+        "gameCollision": false
+      },
+      "tongue_l": {
+        "id": "tongue_l",
+        "name": "tongue_l",
+        "kind": "roundBox",
+        "transform": {
+          "position": [0.2, -0.75, 0.05],
+          "rotation": [-30, 0, 0]
+        },
+        "material": "m2",
+        "params": {
+          "radius": 0.012,
+          "size": [0.1, 0.03, 0.12]
+        },
+        "gameCollision": false
+      },
+      "lace_l1": {
+        "id": "lace_l1",
+        "name": "lace_l1",
+        "kind": "capsule",
+        "transform": {
+          "position": [0.2, -0.739, 0.17],
+          "rotation": [10, 0, 90]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.12,
+          "radius": 0.016
+        },
+        "gameCollision": false
+      },
+      "lace_l2": {
+        "id": "lace_l2",
+        "name": "lace_l2",
+        "kind": "capsule",
+        "transform": {
+          "position": [0.2, -0.744, 0.27],
+          "rotation": [20, 0, 90]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.12,
+          "radius": 0.016
+        },
+        "gameCollision": false
+      },
+      "lace_l3": {
+        "id": "lace_l3",
+        "name": "lace_l3",
+        "kind": "capsule",
+        "transform": {
+          "position": [0.2, -0.768, 0.37],
+          "rotation": [30, 0, 90]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.12,
+          "radius": 0.016
+        },
+        "gameCollision": false
+      },
+      "sole_r": {
+        "id": "sole_r",
+        "name": "sole_r",
+        "kind": "roundBox",
+        "transform": {
+          "position": [-0.2, -0.965, 0.19]
+        },
+        "material": "m3",
+        "params": {
+          "radius": 0.05,
+          "size": [0.36, 0.11, 0.62]
+        },
+        "gameCollision": false
+      },
+      "upper_r": {
+        "id": "upper_r",
+        "name": "upper_r",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.2, -0.885, 0.2]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m1",
+        "params": {
+          "radii": [0.17, 0.14, 0.28]
+        },
+        "gameCollision": false
+      },
+      "toe_r": {
+        "id": "toe_r",
+        "name": "toe_r",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.2, -0.925, 0.4]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radii": [0.15, 0.08, 0.1]
+        },
+        "gameCollision": false
+      },
+      "flash_r": {
+        "id": "flash_r",
+        "name": "flash_r",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.36, -0.89, 0.17]
+        },
+        "material": "m2",
+        "params": {
+          "radii": [0.02, 0.05, 0.16]
+        },
+        "gameCollision": false
+      },
+      "heel_r": {
+        "id": "heel_r",
+        "name": "heel_r",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.2, -0.87, -0.05]
+        },
+        "smooth": 0.02,
+        "colorBlend": "hard",
+        "material": "m2",
+        "params": {
+          "radii": [0.1, 0.06, 0.04]
+        },
+        "gameCollision": false
+      },
+      "tongue_r": {
+        "id": "tongue_r",
+        "name": "tongue_r",
+        "kind": "roundBox",
+        "transform": {
+          "position": [-0.2, -0.75, 0.05],
+          "rotation": [-30, 0, 0]
+        },
+        "material": "m2",
+        "params": {
+          "radius": 0.012,
+          "size": [0.1, 0.03, 0.12]
+        },
+        "gameCollision": false
+      },
+      "lace_r1": {
+        "id": "lace_r1",
+        "name": "lace_r1",
+        "kind": "capsule",
+        "transform": {
+          "position": [-0.2, -0.739, 0.17],
+          "rotation": [10, 0, 90]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.12,
+          "radius": 0.016
+        },
+        "gameCollision": false
+      },
+      "lace_r2": {
+        "id": "lace_r2",
+        "name": "lace_r2",
+        "kind": "capsule",
+        "transform": {
+          "position": [-0.2, -0.744, 0.27],
+          "rotation": [20, 0, 90]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.12,
+          "radius": 0.016
+        },
+        "gameCollision": false
+      },
+      "lace_r3": {
+        "id": "lace_r3",
+        "name": "lace_r3",
+        "kind": "capsule",
+        "transform": {
+          "position": [-0.2, -0.768, 0.37],
+          "rotation": [30, 0, 90]
+        },
+        "material": "m3",
+        "params": {
+          "height": 0.12,
+          "radius": 0.016
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "sneaker-neon-green",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#39ff14",
+                "in.emissive": "#1f9a0c",
+                "in.roughness": 0.35
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m2": {
+        "name": "sneaker-neon-pink",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ff2bd1",
+                "in.emissive": "#a0187f",
+                "in.roughness": 0.35
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      },
+      "m3": {
+        "name": "sneaker-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.emissive": "#303030"
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.39, -1.045, -0.12],
+    "max": [0.39, -0.70701, 0.52]
+  },
+  "hash": "0bf42940164463b8824c2ea79fc51bef2c8a958728a9c2975c72ddca878fefdf"
+}

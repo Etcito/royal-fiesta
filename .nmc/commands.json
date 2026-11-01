@@ -301,5 +301,18 @@
     "after": [
       "m13-costume-golden-crown-render"
     ]
+  },
+  {
+    "name": "m13-costume-neon-sneakers-render",
+    "command": "node --experimental-strip-types --input-type=module -e \"import { existsSync } from 'node:fs'; const peer = process.cwd() + '-ro-sdfm'; if (!process.env.SDFM_DIR && existsSync(peer + '/bin/sdfm.mjs')) process.env.SDFM_DIR = peer; const { main } = await import('./tools/renderViews.ts'); process.exit(await main(['proofs/m13/views/neon-sneakers.views.input.json']));\"",
+    "timeout_s": 1800
+  },
+  {
+    "name": "m13-costume-neon-sneakers-judge",
+    "command": "python3 $NMC_JUDGE_CLIENT out/m13/neon-sneakers/neon-sneakers-front.png --description \"A cartoon penguin seen from the front wearing two chunky neon sneakers, one on each foot: bright neon green uppers with hot pink accents, thick white soles and white laces. The sneakers sit at the bottom of the body where its feet are.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "m13-costume-neon-sneakers-render"
+    ]
   }
 ]

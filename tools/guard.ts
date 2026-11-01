@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { assetDocumentText, assetFileText } from '../packages/game/src/gameAsset.ts'
-import { sharedNodeIds } from './nodeIds.ts'
+import { sharedMaterialIds, sharedNodeIds } from './nodeIds.ts'
 
 export type GuardRule =
   | 'binary-ext'
@@ -13,6 +13,7 @@ export type GuardRule =
   | 'asset-outside-fixtures'
   | 'asset-not-modeler-valid'
   | 'costume-node-id-collision'
+  | 'costume-material-id-collision'
   | 'fixture-not-json'
   | 'fixture-too-large'
   | 'public-leak'
@@ -301,7 +302,7 @@ function modelerAssetViolations(file: string, decoded: string): GuardViolation[]
 const PENGUIN_ASSET = 'assets/common/penguin.body.asset.json'
 const COSTUME_ASSET = /^assets\/[a-z]+\/costume\.[a-z0-9.-]+\.asset\.json$/
 
-// A costume is merged into the penguin for the views render, so it may not reuse a penguin document node id.
+// A costume is merged into the penguin for the views render, so it may not reuse a penguin document node or material id.
 // The rule is shared with tools/renderViews.ts and runs on every guard pass, the card check after the commit too.
 export function costumeNodeIdViolations(root: string, files: readonly string[]): GuardViolation[] {
   const costumes = files.filter((file) => COSTUME_ASSET.test(file))
@@ -325,6 +326,13 @@ export function costumeNodeIdViolations(root: string, files: readonly string[]):
         path: file,
         rule: 'costume-node-id-collision',
         detail: `node id '${id}' is also used by ${PENGUIN_ASSET}; rename it with a costume prefix`,
+      })
+    }
+    for (const id of sharedMaterialIds(json.document, body.document)) {
+      out.push({
+        path: file,
+        rule: 'costume-material-id-collision',
+        detail: `material id '${id}' is also used by ${PENGUIN_ASSET}; rename it with a costume prefix`,
       })
     }
   }

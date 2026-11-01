@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -7,7 +7,7 @@ import { isRefusal } from '../../packages/sim/src/refusal.ts'
 import { repoRoot } from '../bricks.ts'
 import { loadAssetFile } from '../contentProbe.ts'
 import { checkPaths, costumeNodeIdViolations } from '../guard.ts'
-import { sharedNodeIds } from '../nodeIds.ts'
+import { sharedMaterialIds, sharedNodeIds } from '../nodeIds.ts'
 import { mergeDocuments } from '../renderViews.ts'
 
 const PENGUIN = 'assets/common/penguin.body.asset.json'
@@ -94,4 +94,36 @@ test('all nine M13 costumes pass the guard rule against the penguin', async () =
     const costume = await loadAssetFile(rel)
     assert.deepEqual(sharedNodeIds(document(costume), document(body)), [], rel)
   }
+})
+
+test('a costume reusing a penguin material id fails the guard, as the views render would refuse it', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'rf-costume-'))
+  try {
+    mkdirSync(join(root, 'assets/common'), { recursive: true })
+    writeFileSync(join(root, PENGUIN), readFileSync(PENGUIN, 'utf8'))
+    const body = await loadAssetFile(PENGUIN)
+    const hat = await loadAssetFile(JESTER)
+    const doc = structuredClone(document(hat))
+    const materials = doc.materials as Obj
+    materials['penguin-beak'] = materials.gold
+    writeFileSync(join(root, JESTER), JSON.stringify({ document: doc }))
+    const bad = checkPaths(root, [JESTER]).filter((v) => v.rule === 'costume-material-id-collision')
+    assert.equal(bad.length, 1)
+    assert.match(bad[0]!.detail, /'penguin-beak'/)
+    assert.deepEqual(sharedMaterialIds(doc, document(body)), ['penguin-beak'])
+    assert.throws(
+      () => mergeDocuments(document(body), [{ document: doc, offset: [0, 0, 0], rel: JESTER }]),
+      (e) => isRefusal(e) && /materials\/penguin-beak/.test(e.message),
+    )
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('every costume asset in the repository passes the guard rules against the penguin', () => {
+  const costumes = readdirSync(join(repoRoot(), 'assets/common'))
+    .filter((f) => /^costume\..+\.asset\.json$/.test(f))
+    .map((f) => `assets/common/${f}`)
+  assert.ok(costumes.length >= M13_COSTUMES.length)
+  assert.deepEqual(costumeNodeIdViolations(repoRoot(), costumes), [])
 })

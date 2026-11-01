@@ -1,0 +1,21 @@
+{
+  "format": "royal-fiesta.zones",
+  "version": 0,
+  "course": "s1-c2-tidal-relay",
+  "grid": {
+    "origin": [
+      -110,
+      -110
+    ],
+    "cell": [
+      2,
+      2
+    ],
+    "cols": 110,
+    "rows": 110
+  },
+  "parts": {},
+  "tuning": {
+    "gridCols": 110
+  }
+}

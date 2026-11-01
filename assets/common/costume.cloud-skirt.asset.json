@@ -1,0 +1,387 @@
+{
+  "format": "sdfm.game-asset",
+  "version": 1,
+  "game": "royal-fiesta",
+  "id": "costume.cloud-skirt",
+  "name": "cloud_skirt",
+  "category": "cosmetic",
+  "world": "common",
+  "mesher": {
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
+  },
+  "document": {
+    "format": "sdfm",
+    "version": 2,
+    "name": "cloud_skirt",
+    "root": [
+      "cloud_skirt"
+    ],
+    "nodes": {
+      "cloud_skirt": {
+        "id": "cloud_skirt",
+        "name": "cloud_skirt",
+        "kind": "group",
+        "children": [
+          "body",
+          "hem_puff_1",
+          "hem_puff_2",
+          "hem_puff_3",
+          "hem_puff_4",
+          "hem_puff_5",
+          "hem_puff_6",
+          "hem_puff_7",
+          "hem_puff_8",
+          "hem_puff_9",
+          "hem_puff_10",
+          "hem_puff_11",
+          "hem_puff_12",
+          "waist_puff_1",
+          "waist_puff_2",
+          "waist_puff_3",
+          "waist_puff_4",
+          "waist_puff_5",
+          "waist_puff_6",
+          "waist_puff_7",
+          "waist_puff_8"
+        ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.cloud-skirt",
+          "category": "cosmetic",
+          "world": "common"
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "gameCollision": false
+      },
+      "body": {
+        "id": "body",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": false
+      },
+      "hem_puff_1": {
+        "id": "hem_puff_1",
+        "name": "hem_puff_1",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, -0.536, 0.44]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.24675, 0.189, 0.22575]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_2": {
+        "id": "hem_puff_2",
+        "name": "hem_puff_2",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.245, -0.555, 0.38574]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.2162, 0.1656, 0.1978]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_3": {
+        "id": "hem_puff_3",
+        "name": "hem_puff_3",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.424352, -0.574, 0.2375]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.2397, 0.1836, 0.2193]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_4": {
+        "id": "hem_puff_4",
+        "name": "hem_puff_4",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.49, -0.555, 0.035]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.22795, 0.1746, 0.20855]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_5": {
+        "id": "hem_puff_5",
+        "name": "hem_puff_5",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.424352, -0.536, -0.1675]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.2491, 0.1908, 0.2279]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_6": {
+        "id": "hem_puff_6",
+        "name": "hem_puff_6",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.245, -0.555, -0.31574]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.2209, 0.1692, 0.2021]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_7": {
+        "id": "hem_puff_7",
+        "name": "hem_puff_7",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0, -0.574, -0.37]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.23735, 0.1818, 0.21715]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_8": {
+        "id": "hem_puff_8",
+        "name": "hem_puff_8",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.245, -0.555, -0.31574]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.22325, 0.171, 0.20425]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_9": {
+        "id": "hem_puff_9",
+        "name": "hem_puff_9",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.424352, -0.536, -0.1675]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.2444, 0.1872, 0.2236]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_10": {
+        "id": "hem_puff_10",
+        "name": "hem_puff_10",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.49, -0.555, 0.035]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.21855, 0.1674, 0.19995]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_11": {
+        "id": "hem_puff_11",
+        "name": "hem_puff_11",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.424352, -0.574, 0.2375]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.24205, 0.1854, 0.22145]
+        },
+        "gameCollision": false
+      },
+      "hem_puff_12": {
+        "id": "hem_puff_12",
+        "name": "hem_puff_12",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.245, -0.555, 0.38574]
+        },
+        "smooth": 0.075,
+        "material": "m1",
+        "params": {
+          "radii": [0.2303, 0.1764, 0.2107]
+        },
+        "gameCollision": false
+      },
+      "waist_puff_1": {
+        "id": "waist_puff_1",
+        "name": "waist_puff_1",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.166467, -0.37837, 0.358358]
+        },
+        "smooth": 0.065,
+        "material": "m1",
+        "params": {
+          "radii": [0.17472, 0.1456, 0.16432]
+        },
+        "gameCollision": false
+      },
+      "waist_puff_2": {
+        "id": "waist_puff_2",
+        "name": "waist_puff_2",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.401888, -0.401888, 0.168939]
+        },
+        "smooth": 0.065,
+        "material": "m1",
+        "params": {
+          "radii": [0.15288, 0.1274, 0.14378]
+        },
+        "gameCollision": false
+      },
+      "waist_puff_3": {
+        "id": "waist_puff_3",
+        "name": "waist_puff_3",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.401888, -0.401888, -0.098939]
+        },
+        "smooth": 0.065,
+        "material": "m1",
+        "params": {
+          "radii": [0.17808, 0.1484, 0.16748]
+        },
+        "gameCollision": false
+      },
+      "waist_puff_4": {
+        "id": "waist_puff_4",
+        "name": "waist_puff_4",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [0.166467, -0.37837, -0.288358]
+        },
+        "smooth": 0.065,
+        "material": "m1",
+        "params": {
+          "radii": [0.1596, 0.133, 0.1501]
+        },
+        "gameCollision": false
+      },
+      "waist_puff_5": {
+        "id": "waist_puff_5",
+        "name": "waist_puff_5",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.166467, -0.41163, -0.288358]
+        },
+        "smooth": 0.065,
+        "material": "m1",
+        "params": {
+          "radii": [0.168, 0.14, 0.158]
+        },
+        "gameCollision": false
+      },
+      "waist_puff_6": {
+        "id": "waist_puff_6",
+        "name": "waist_puff_6",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.401888, -0.388112, -0.098939]
+        },
+        "smooth": 0.065,
+        "material": "m1",
+        "params": {
+          "radii": [0.15624, 0.1302, 0.14694]
+        },
+        "gameCollision": false
+      },
+      "waist_puff_7": {
+        "id": "waist_puff_7",
+        "name": "waist_puff_7",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.401888, -0.388112, 0.168939]
+        },
+        "smooth": 0.065,
+        "material": "m1",
+        "params": {
+          "radii": [0.1764, 0.147, 0.1659]
+        },
+        "gameCollision": false
+      },
+      "waist_puff_8": {
+        "id": "waist_puff_8",
+        "name": "waist_puff_8",
+        "kind": "ellipsoid",
+        "transform": {
+          "position": [-0.166467, -0.41163, 0.358358]
+        },
+        "smooth": 0.065,
+        "material": "m1",
+        "params": {
+          "radii": [0.16296, 0.1358, 0.15326]
+        },
+        "gameCollision": false
+      }
+    },
+    "materials": {
+      "m1": {
+        "name": "cloud-skirt-white",
+        "graph": {
+          "nodes": [
+            {
+              "id": "out",
+              "type": "material.output",
+              "params": {
+                "in.base_color": "#ffffff",
+                "in.roughness": 0.95
+              },
+              "position": [0, 0]
+            }
+          ],
+          "links": []
+        }
+      }
+    }
+  },
+  "collision": [],
+  "anchors": {
+    "body": {
+      "t": [0, 0, 0],
+      "r": [0, 0, 0, 1]
+    }
+  },
+  "bounds": {
+    "min": [-0.78355, -0.8344, -0.66215],
+    "max": [0.79295, -0.16777, 0.74075]
+  },
+  "hash": "79f856cf0a93a9d6ab01b51a70fe22737c4dd1a6e4fe1bffb53b9ad7c63d2907"
+}

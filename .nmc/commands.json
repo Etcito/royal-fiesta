@@ -241,5 +241,39 @@
     "name": "s3-m11-map-d",
     "command": "npm run round:run -- --course s1-d-spiral-of-mischief --dir courses --seats 60 --peers 2 --profile season",
     "timeout_s": 3600
+  },
+  {
+    "name": "m13-costume-cloud-skirt-render",
+    "command": "node --experimental-strip-types --input-type=module -e \"import { existsSync } from 'node:fs'; const peer = process.cwd() + '-ro-sdfm'; if (!process.env.SDFM_DIR && existsSync(peer + '/bin/sdfm.mjs')) process.env.SDFM_DIR = peer; const { main } = await import('./tools/renderViews.ts'); process.exit(await main(['proofs/m13/views/cloud-skirt.views.input.json']));\"",
+    "timeout_s": 300
+  },
+  {
+    "name": "m13-costume-cloud-skirt-judge",
+    "command": "python3 $NMC_JUDGE_CLIENT out/m13/cloud-skirt/cloud-skirt-front.png --description \"A cartoon penguin wearing a fluffy white cloud skirt: soft blended rounded puffs form a continuous skirt around its lower body, above its visible orange feet. The cloud hem is wider than its hips, with smaller puffs rising toward the waist.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "m13-costume-cloud-skirt-render"
+    ]
+  },
+  {
+    "name": "m13-build",
+    "command": "npm run build",
+    "timeout_s": 900
+  },
+  {
+    "name": "m13-wardrobe",
+    "command": "env RF_MESH_JOBS=1 NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/flowTour.ts",
+    "timeout_s": 1800,
+    "after": [
+      "m13-build"
+    ]
+  },
+  {
+    "name": "m13-wardrobe-judge",
+    "command": "python3 $NMC_JUDGE_CLIENT out/s3/m7/start.png --description \"Royal Fiesta wardrobe start screen with a visible cartoon penguin, cosmetic bins for head, body and bottom, a colour palette, and Play and Shop controls. The screen is legible and composed with the character clearly visible.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "m13-wardrobe"
+    ]
   }
 ]

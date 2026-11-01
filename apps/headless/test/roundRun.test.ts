@@ -28,4 +28,22 @@ describe('roundRun', { concurrency: CPUS }, () => {
       assert.ok(report.champion >= 0, `champion ${report.champion}`)
     })
   }
+
+  it('a final that ties into a playoff plays the playoff and crowns its winner', { timeout: 300_000 }, async () => {
+    // Seed 1: two bots grab the crown on the same tick, so the first round settles as a playoff.
+    const report = await runRound({
+      course: 's1-q-crown-confection', dir: 'courses', seats: 12, peers: 2, profile: 'season', target: 1,
+    })
+    assert.equal(report.ok, true, report.problems.join('\n'))
+    assert.equal(report.rounds.length, 2)
+    const [tie, playoff] = report.rounds
+    assert.equal(tie.kind, 'final')
+    assert.equal(tie.reason, 'playoff')
+    assert.equal(tie.qualified.length, 0)
+    assert.equal(playoff.playoff, true)
+    assert.notEqual(playoff.reason, 'playoff')
+    assert.deepEqual(playoff.qualified, [playoff.champion])
+    assert.equal(report.champion, playoff.champion)
+    assert.ok(tie.ranking.includes(report.champion) && !tie.eliminated.includes(report.champion))
+  })
 })

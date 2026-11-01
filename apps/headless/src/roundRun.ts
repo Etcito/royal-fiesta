@@ -155,6 +155,10 @@ function quotaProblem(meta: RoundMeta | undefined, result: ZoneRoundResult): str
   }
 }
 
+function settledOutcome(rounds: readonly ZoneRoundResult[]): boolean {
+  return rounds.length >= 1 && rounds[rounds.length - 1].reason !== 'playoff'
+}
+
 export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
   if (typeof o.course !== 'string' || o.course.length === 0) {
     refuse('round-run', '--course', 'missing course id; pass --course <id>')
@@ -295,7 +299,8 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
     if (meta === undefined) {
       problems.push(`round ${index}: no plan was recorded for the round`)
     } else {
-      if (single || first.reason !== 'playoff') {
+      // A playoff result is not an outcome: the game replays the disputed seats next round.
+      if (first.reason !== 'playoff') {
         const quota = quotaProblem(meta, first)
         if (quota !== null) problems.push(quota)
       }
@@ -318,8 +323,9 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
       ` qualified=${first.qualified.length} eliminated=${first.eliminated.length} ${ok ? 'OK' : 'FAIL'}`)
   }
 
+  // A single round may tie into one playoff round, which always settles (season tie order).
   const roundLimit = single
-    ? maxEndTick(sims[0], profileName) + SETTLE_TICKS
+    ? 2 * (maxEndTick(sims[0], profileName) + SETTLE_TICKS)
     : (DEFAULT_PLAN.length + 2) * (Math.max(...sims.map(sim => maxEndTick(sim, profileName))) + SETTLE_TICKS)
   let frames = 0
 
@@ -340,10 +346,10 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
         printed++
       }
       if (single) {
-        if (fulls.every(full => full.report.rounds.length >= 1)) break
+        if (fulls.every(full => settledOutcome(full.report.rounds))) break
       } else if (fulls.every(full => full.done)) break
     }
-    if (single && !fulls.every(full => full.report.rounds.length >= 1)) {
+    if (single && !fulls.every(full => settledOutcome(full.report.rounds))) {
       problems.push(`round 0: did not settle within ${frames} frames; check the course, spawns and target`)
     }
     if (!single && !fulls.every(full => full.done)) {
@@ -369,7 +375,9 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
       }
     }
   }
-  if (single && rounds.length !== 1) problems.push(`round-run: expected one round, got ${rounds.length}`)
+  if (single && (rounds.length === 0 || rounds.slice(0, -1).some(result => result.reason !== 'playoff'))) {
+    problems.push(`round-run: expected one round (plus its playoff), got ${rounds.length}`)
+  }
 
   const last = rounds.length === 0 ? undefined : rounds[rounds.length - 1]
   const reported = fulls[0].report.champion

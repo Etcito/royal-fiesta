@@ -25,8 +25,9 @@ proofs/**/*.wav
 !.nmc/artifacts.json
 !.nmc/judge/
 kong.rules
-# S24 saved meshes are a local cache written by the SDF Modeler save: never tracked
+# Saved game meshes ship with their source assets.
 *.mesh
+!assets/**/*.mesh
 # baked by npm run audio:bake (tools/bake-audio.ts): WAV strips, manifest.json, haa-processors.js, haa.wasm
 apps/web/public/audio/
 # staged by npm run ui:fonts (tools/uiFont.ts bundle): the verified ui/fonts.json fonts

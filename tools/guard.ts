@@ -190,8 +190,11 @@ export function checkFile(file: string, bytes: Uint8Array): GuardViolation[] {
   const ext = path.extname(file).toLowerCase()
   const underFixtures = file.startsWith('fixtures/')
 
-  // the pinned UI logo source (ui/logo.<name>.png, sha256 in ui/logo.json) is the one binary the repository carries
+  // The pinned UI logo source (ui/logo.<name>.png, sha256 in ui/logo.json).
   if (LOGO_SOURCE.test(file) && bytes.length <= MAX_ASSET_FILE_BYTES) return violations
+
+  // Saved meshes are validated by tools/savedMeshes.ts in every web build.
+  if (/^assets\/[^/]+\/[^/]+\.mesh$/.test(file)) return violations
 
   if (BINARY_EXT_SET.has(ext)) {
     violations.push({ path: file, rule: 'binary-ext', detail: ext })

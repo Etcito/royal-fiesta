@@ -125,22 +125,23 @@ function serve(status: number, body: Uint8Array | null, calls: { url: string; ca
   }
 }
 
-test('fetchMeshFile returns null for a 404 or a network error', async () => {
+test('fetchMeshFile returns null only for a 404 and refuses network errors', async () => {
   const value = fromJsonValue(vector.value)
   const asset = testAsset(value.assetId, value.hash)
   const calls: { url: string; cache: RequestCache | undefined }[] = []
   assert.equal(await fetchMeshFile('content/assets/candy/candy.wire-vector.mesh', value.key!, asset, serve(404, null, calls)), null)
   assert.deepEqual(calls, [{ url: 'content/assets/candy/candy.wire-vector.mesh', cache: 'no-cache' }])
   const offline: typeof fetch = async () => { throw new TypeError('fetch failed') }
-  assert.equal(await fetchMeshFile('x.mesh', value.key!, asset, offline), null)
+  await assert.rejects(fetchMeshFile('x.mesh', value.key!, asset, offline), /cannot fetch saved mesh/)
+  await assert.rejects(fetchMeshFile('x.mesh', value.key!, asset, serve(500, null)), /HTTP 500/)
 })
 
-test('fetchMeshFile returns null and counts stale for another key, asset or hash', async () => {
+test('fetchMeshFile refuses and counts stale for another key, asset or hash', async () => {
   const value = fromJsonValue(vector.value)
   const before = meshFileStats.stale
-  assert.equal(await fetchMeshFile('x.mesh', 'f'.repeat(64), testAsset(value.assetId, value.hash), serve(200, vectorBytes())), null)
-  assert.equal(await fetchMeshFile('x.mesh', value.key!, testAsset('candy.other', value.hash), serve(200, vectorBytes())), null)
-  assert.equal(await fetchMeshFile('x.mesh', value.key!, testAsset(value.assetId, '0'.repeat(64)), serve(200, vectorBytes())), null)
+  await assert.rejects(fetchMeshFile('x.mesh', 'f'.repeat(64), testAsset(value.assetId, value.hash), serve(200, vectorBytes())), /stale saved mesh/)
+  await assert.rejects(fetchMeshFile('x.mesh', value.key!, testAsset('candy.other', value.hash), serve(200, vectorBytes())), /stale saved mesh/)
+  await assert.rejects(fetchMeshFile('x.mesh', value.key!, testAsset(value.assetId, '0'.repeat(64)), serve(200, vectorBytes())), /stale saved mesh/)
   assert.equal(meshFileStats.stale, before + 3)
 })
 

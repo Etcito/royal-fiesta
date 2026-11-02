@@ -8,7 +8,7 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "prebuild": "node --experimental-strip-types ../../tools/uiLogo.ts bundle",
+    "prebuild": "node --experimental-strip-types ../../tools/savedMeshes.ts && node --experimental-strip-types ../../tools/uiLogo.ts bundle",
     "build": "vite build --configLoader runner --config anim-brick.vite.config.ts",
     "typecheck": "tsc --noEmit -p ."
   },

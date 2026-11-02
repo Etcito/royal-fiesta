@@ -142,3 +142,19 @@ Run `npm run content:pack -- <out dir>` to copy every indexed file and write the
 index for a CDN upload. A plain `npm run build` does not copy content into dist.
 Wavedash, Etcito builds and GPU proof publication currently pack content beside
 the page; this packaging goes away when the CDN serves it.
+
+Saved game meshes are shipped alongside every `assets/<world>/<id>.asset.json` as
+`<id>.mesh` and must be committed together. SDF Modeler's `asset_save_game` writes
+both through its Node `writeAssetMesh` path. The web build runs
+`node --experimental-strip-types tools/savedMeshes.ts` and lists all missing,
+stale, invalid, or incomplete meshes by asset id. Re-save the listed assets in
+SDF Modeler before building.
+
+Mesh identity uses the validated document hash, canonical mesher parameters, and
+`format:1;algorithm:2`, matching MAMA's `MESH_COMPATIBILITY`. Repository commits
+and package releases do not invalidate meshes. Bump the algorithm version when
+geometry, normals, skinning, physics part splitting, or compiled material output
+changes; bump format for wire encoding or RAA payload schema changes. Update both
+contracts and re-save all assets in that change. The loader reports
+`browserMeshingJobs`; a complete shipped content set must report zero on a cold
+load. Missing saved meshes retain the existing authoring compatibility path.

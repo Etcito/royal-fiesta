@@ -1,16 +1,19 @@
 // S16 client mesh cache: an in-memory Map over IndexedDB, keyed by sha256 of the asset hash,
-// its canonical mesher, and both brick versions. Values are stored as they came from the mesher.
+// its canonical mesher, and the explicit mesh compatibility version. Values are stored as they came from the mesher.
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { canonicalJson } from '@royal-fiesta/game/course'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset } from './mamaApi.ts'
 
+// Keep in sync with MAMA core/game/mesh-file.ts; tested by tools/test/savedMeshes.test.ts.
+export const MESH_COMPATIBILITY = 'format:1;algorithm:2'
+
 const DB_NAME = 'royal-fiesta-mesh'
 const STORE_NAME = 'meshes'
 const DB_VERSION = 1
 
-export async function meshCacheKey(a: GameAsset, mamaVersion: string, raaSdfmVersion: string, sha256Hex: (b: Uint8Array) => Promise<string>): Promise<string> {
-  const material = `${a.hash}|${canonicalJson(a.mesher)}|${mamaVersion}|${raaSdfmVersion}`
+export async function meshCacheKey(a: GameAsset, _mamaVersion: string, _raaSdfmVersion: string, sha256Hex: (b: Uint8Array) => Promise<string>): Promise<string> {
+  const material = `${a.hash}|${canonicalJson(a.mesher)}|${MESH_COMPATIBILITY}`
   return sha256Hex(new TextEncoder().encode(material))
 }
 

@@ -6,7 +6,7 @@ import test from 'node:test'
 import { canonicalJson } from '@royal-fiesta/game/course'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import type { MeshedAsset } from '../src/sdf/mamaApi.ts'
-import { MeshCache, idbStore, memoryStore, meshCacheKey, type MeshStore } from '../src/sdf/meshCache.ts'
+import { MESH_COMPATIBILITY, MeshCache, idbStore, memoryStore, meshCacheKey, type MeshStore } from '../src/sdf/meshCache.ts'
 
 function sha256Hex(b: Uint8Array): Promise<string> {
   return Promise.resolve(createHash('sha256').update(b).digest('hex'))
@@ -37,15 +37,16 @@ class FakeStore implements MeshStore {
   async delete(key: string): Promise<void> { this.deletes++; this.map.delete(key) }
 }
 
-test('the key is sha256 of hash|canonical mesher|mamaVersion|raaSdfmVersion', async () => {
+test('the key is sha256 of hash|canonical mesher|explicit compatibility version', async () => {
   const a = asset()
   const key = await meshCacheKey(a, 'mama-1', 'raa-sdfm-2', sha256Hex)
-  const material = `${a.hash}|${canonicalJson(a.mesher)}|mama-1|raa-sdfm-2`
+  const material = `${a.hash}|${canonicalJson(a.mesher)}|${MESH_COMPATIBILITY}`
   assert.equal(key, createHash('sha256').update(material, 'utf8').digest('hex'))
 })
 
-test('the key changes with hash, mesher output, mesher params and either version, and is stable otherwise', async () => {
+test('the key changes with hash, mesher output, mesher params independent of unrelated library versions, and is stable otherwise', async () => {
   const base = await meshCacheKey(asset(), 'mama-1', 'raa-sdfm-2', sha256Hex)
+  assert.equal(await meshCacheKey(asset(), 'unrelated-commit', 'unrelated-release', sha256Hex), base)
   const stable = await meshCacheKey(
     asset({ name: 'Another name', id: 'candy.other', document: { nodes: [] } }),
     'mama-1', 'raa-sdfm-2', sha256Hex,
@@ -64,8 +65,7 @@ test('the key changes with hash, mesher output, mesher params and either version
     await meshCacheKey(asset({ hash: 'b'.repeat(64) }), 'mama-1', 'raa-sdfm-2', sha256Hex),
     await meshCacheKey(asset({ mesher: { output: 'quad' } }), 'mama-1', 'raa-sdfm-2', sha256Hex),
     await meshCacheKey(asset({ mesher: { output: 'lowpoly', params: { resolution: 64 } } }), 'mama-1', 'raa-sdfm-2', sha256Hex),
-    await meshCacheKey(asset(), 'mama-3', 'raa-sdfm-2', sha256Hex),
-    await meshCacheKey(asset(), 'mama-1', 'raa-sdfm-4', sha256Hex),
+
   ]
   assert.equal(new Set([base, ...variants]).size, variants.length + 1)
 })

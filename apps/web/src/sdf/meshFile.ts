@@ -1,6 +1,6 @@
 // S24 saved mesh: assets/<world>/<id>.mesh, the meshWire bytes of a MeshedAsset plus its S16 key.
 // The file is used iff key, assetId and hash match the asset and the mesh passes the mesh cache's
-// shape check and RAA's mesh rules; an absent file or a stale one falls back to browser meshing.
+// shape check and RAA's mesh rules; only an absent file falls back to browser meshing.
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset } from './mamaApi.ts'
@@ -46,18 +46,18 @@ function payloadIssues(data: unknown): string[] {
 }
 
 /**
- * The saved mesh at url for this asset and S16 key, or null when there is none (404, network error,
- * any other non-OK answer) or it was made for another key, asset or hash (counted stale).
+ * The saved mesh at url for this asset and S16 key, or null when absent (404). Stale files, network failures and HTTP errors refuse.
  * Throws RefusalError('sdf', url, ...) when the file cannot be decoded or breaks the mesh rules.
  */
 export async function fetchMeshFile(url: string, key: string, asset: GameAsset, fetcher: typeof fetch = globalThis.fetch): Promise<KeyedMeshedAsset | null> {
   let response: Response
   try {
     response = await fetcher(url, { cache: 'no-cache' })
-  } catch {
-    return null
+  } catch (error) {
+    throw new RefusalError('sdf', url, `cannot fetch saved mesh: ${String(error)}`)
   }
-  if (!response.ok) return null
+  if (response.status === 404) return null
+  if (!response.ok) throw new RefusalError('sdf', url, `saved mesh request failed: HTTP ${response.status}`)
   let value: KeyedMeshedAsset
   try {
     value = decodeMesh(new Uint8Array(await response.arrayBuffer()))
@@ -67,7 +67,7 @@ export async function fetchMeshFile(url: string, key: string, asset: GameAsset, 
   if (typeof value !== 'object' || value === null) throw new RefusalError('sdf', url, 'the saved mesh header is not an object; re-save the asset in SDF Modeler')
   if (value.key !== key || value.assetId !== asset.id || value.hash !== asset.hash) {
     meshFileStats.stale++
-    return null
+    throw new RefusalError('sdf', url, 'stale saved mesh (key, asset id or hash differs); re-save the asset in SDF Modeler')
   }
   const issues = validMeshed(value) ? payloadIssues(value.data) : ['the file is not a meshed asset (assetId, hash, parts, triangles, transfer)']
   if (issues.length > 0) {

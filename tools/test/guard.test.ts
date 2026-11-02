@@ -84,8 +84,8 @@ test('binary extension list includes common formats and is lower-case', () => {
   assert.ok(BINARY_EXTS.every((ext) => ext === ext.toLowerCase()))
 })
 
-test('saved .mesh files are refused as binary', () => {
-  assert.deepEqual(rules('assets/candy/candy.penguin.mesh', text('mesh')), ['binary-ext'])
+test('saved asset .mesh files ship with source assets', () => {
+  assert.deepEqual(rules('assets/candy/candy.penguin.mesh', text('mesh')), [])
 })
 
 test('.haa.json is only allowed under audio/ or fixtures/', () => {

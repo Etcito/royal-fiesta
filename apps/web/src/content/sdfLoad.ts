@@ -111,6 +111,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   const meshed = new Map<string, MeshedAsset>()
   const failed = new Map<string, string>()
   const source = new Map<string, 'miss' | 'memory' | 'idb' | 'file' | 'server'>()
+  let browserMeshingJobs = 0
   let done = 0
   // The loading label names what is still being meshed, not the last asset finished: a cold load waits on its
   // slowest asset, and a label stuck on one id looked like that asset was rebuilt for minutes.
@@ -147,6 +148,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       }
       const known = knownFailure(key)
       if (known !== null) throw new Error(known)
+      browserMeshingJobs++
       return { value: await meshPool(facade).mesh(request, MESH_LIMIT_S * 1000), from: 'miss' }
     }
     /* Local failures are checked only after the saved file, so an old browser timeout cannot hide a saved mesh. */
@@ -158,7 +160,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     }, (e: unknown) => {
       // Permissive load (owner rule): an asset the mesher refuses is left out (drawn as nothing) and named in the
       // console and the report; the game still starts. The failure is remembered under the mesh cache key (asset
-      // hash, mesher, MAMA commit), so the next launch does not wait for it again; a changed asset or MAMA retries.
+      // hash, mesher, explicit mesh compatibility version), so the next launch does not wait for it again; a changed asset or mesh compatibility version retries.
       const reason = e instanceof Error ? e.message : String(e)
       rememberFailure(key, reason)
       failed.set(a.id, reason)
@@ -192,6 +194,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       cacheEvictedCorrupt: c.stats.evictedCorrupt - before.evictedCorrupt,
       meshFile: meshFileStats.hits - fileBefore.hits,
       meshFileStale: meshFileStats.stale - fileBefore.stale,
+      browserMeshingJobs,
       courseIds: playlistIds(courses, profile),
       assets: ids.length,
     },

@@ -1,7 +1,7 @@
 // Real App, real HUD writes, fixed simulation steps. Async work gets task turns, never timed sleeps.
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import type { WidgetProps } from '../../ui/screenMap.ts'
-import { checkBoot, nextTask } from './boot.ts'
+import { checkBoot, loadingFrame, nextTask, yieldTask } from './boot.ts'
 import { ELIM_SHOW } from '../../../../../packages/game/src/flow/elimShow.ts'
 
 export const name = 'countdowns'
@@ -136,7 +136,7 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: { ok
       step()
       if (active) elapsed += MS
       // Yield often during loading; batch CPU simulation without tying it to real-time frames.
-      if (screen === 'loading' || frame % 60 === 0) await nextTask()
+      if (loadingFrame(screen)) { await yieldTask(screen); frame-- } else if (frame % 60 === 0) await nextTask()
     }
     if (!returned) failures.push('show did not return to start')
     for (const screen of TIMERS) if (!screens.some(row => row.screen === screen && row.next.length === 3)) failures.push(`missing four displayed samples: ${screen}`)

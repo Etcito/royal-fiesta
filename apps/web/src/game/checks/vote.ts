@@ -7,7 +7,7 @@
 import { browserContentRoot } from '../../content/v1Data.ts'
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
-import { checkBoot, nextTask } from './boot.ts'
+import { checkBoot, loadingFrame, nextTask, yieldTask } from './boot.ts'
 
 export const name = 'vote'
 
@@ -190,7 +190,10 @@ async function waitScreen(game: TourGame, current: () => string, target: string,
     if (current() === target) return true
     // A refusal ends the show; there is nothing left to wait for.
     if (current() === 'error') return false
-    await step(game, FAST.has(current()) ? FAST_DT : DT)
+    const stepped = current()
+    game.step(FAST.has(stepped) ? FAST_DT : DT)
+    await yieldTask(stepped)
+    if (loadingFrame(stepped)) frame--
   }
   return current() === target
 }

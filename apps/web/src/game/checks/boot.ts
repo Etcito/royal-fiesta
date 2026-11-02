@@ -22,17 +22,28 @@ export function publishPhase(text: string): void {
 }
 
 // Loading is asynchronous (fetches, workers and pipeline compilation), not simulated time.
-// Observe the App's visible progress rather than spending its frame budget polling those jobs.
-// Outside loading, yield one task; simulation still receives only BOOT_DT.
-function yieldTask(screen: string): Promise<void> {
+// Observe the App's visible progress rather than spending its frame budget polling those jobs; a quiet
+// progress bar is re-checked every LOADING_POLL_MS so a load that ends without touching it still moves on.
+// Outside loading, yield one task; simulation still receives only the caller's dt.
+// Callers do not count loading frames against a screen's frame budget (see loadingFrame).
+export const LOADING_POLL_MS = 250
+export function yieldTask(screen: string): Promise<void> {
   const progress = typeof document === 'undefined' ? null : document.querySelector<HTMLElement>('#round-loading')
   if (screen === 'loading' && progress && !progress.hidden) {
     return new Promise(resolve => {
-      const observer = new MutationObserver(() => { observer.disconnect(); resolve() })
+      const done = (): void => { observer.disconnect(); clearTimeout(timer); resolve() }
+      const observer = new MutationObserver(done)
+      const timer = setTimeout(done, LOADING_POLL_MS)
       observer.observe(progress, { attributes: true, childList: true, subtree: true, characterData: true })
     })
   }
   return nextTask()
+}
+
+// True when the frame just stepped was a loading frame: it waits on real-time work, so it must not use up
+// a frame budget that measures game time (1800 instant tasks end long before a SwiftShader pipeline compiles).
+export function loadingFrame(screen: string): boolean {
+  return screen === 'loading'
 }
 
 function retry(game: TourGame): void {
@@ -76,8 +87,10 @@ export async function checkBoot(deps: TourDeps): Promise<{
         if (error !== BOOT_REFUSAL || (retried && transitions.includes('loading'))) return { game, json: { ok: false, screen, transitions, error: error ?? 'Unknown boot error' } }
         if (!retried) { retry(game); retried = true }
       }
+      const stepped = screen
       game.step(BOOT_DT)
-      await yieldTask(screen)
+      await yieldTask(stepped)
+      if (loadingFrame(stepped)) frame--
     }
     return { game, json: { ok: false, screen, transitions, error: `Boot did not reach start within ${BOOT_FRAMES} frames` } }
   } catch (error) {

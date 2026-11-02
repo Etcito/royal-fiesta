@@ -2,7 +2,7 @@
 // ?test=1, so every show timer is at its minimum; this op steps fixed dt and waits only on the App's
 // screen callbacks. It never sleeps in real time.
 import type { TourDeps, TourGame } from '../uiTour.ts'
-import { checkBoot, nextTask, publishPhase } from './boot.ts'
+import { checkBoot, loadingFrame, nextTask, publishPhase, yieldTask } from './boot.ts'
 
 export const name = 'lobbyUnload'
 
@@ -58,13 +58,17 @@ function instancesOf(view: AppInventory): number {
 }
 
 // Steps fixed game time until the screen callback names `target`; `acts` run first, on the settled screen.
-async function waitFor(game: TourGame, current: () => string, target: string, acts: () => void, frames = NAV_FRAMES): Promise<void> {
+export async function waitFor(game: TourGame, current: () => string, target: string, acts: () => void, frames = NAV_FRAMES): Promise<void> {
   acts()
   for (let frame = 0; frame < frames; frame++) {
     publishPhase(`lobbyUnload: waiting for '${target}', frame ${frame} on '${current()}'`)
     if (current() === target) return
-    game.step(FAST.has(current()) ? FAST_DT : DT)
-    await nextTask()
+    if (current() === 'error' && target !== 'error') throw new Error(`lobbyUnload: the App reached its error screen while waiting for '${target}'`)
+    const stepped = current()
+    game.step(FAST.has(stepped) ? FAST_DT : DT)
+    await yieldTask(stepped)
+    // The budget is game time; a load waits on real-time work and only ends when its screen changes.
+    if (loadingFrame(stepped)) frame--
   }
   throw new Error(`lobbyUnload: screen '${target}' did not arrive within ${frames} frames (on '${current()}')`)
 }

@@ -3,7 +3,7 @@ import test from 'node:test'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import { newMemory } from '../../sim/src/bots/brain.ts'
 import { nearestPathIndex } from '../../sim/src/bots/courseRead.ts'
-import { neutralInput } from '../../sim/src/input.ts'
+import { encodeInput, neutralInput } from '../../sim/src/input.ts'
 import { PROFILES } from '../../sim/src/match/setup.ts'
 import { PlayerStatus } from '../../sim/src/match/roundSystem.ts'
 import { FiestaDomain } from '../../sim/src/zones/fiestaDomain.ts'
@@ -160,4 +160,33 @@ test('marked spinner crossings anticipate the hub and respect floor and lane', a
   assert.equal(rotorJumpAhead(course, { ...pos, z: 36 }, 1, 0), false)
   assert.equal(rotorJumpAhead(course, { ...pos, x: -20 }, 1, 0), false)
   assert.equal(rotorJumpAhead(course, pos, 0, 0), false)
+})
+
+test('long floor transitions follow the ramp centreline before turning onto the next ring', async () => {
+  const { rampTarget } = await import('../../sim/src/bots/ramps.ts')
+  const course = courses.find(c => c.id === 's1-c2-tidal-relay')!
+  const from = { x: 1, y: 0.85, z: 85 }
+  const target = rampTarget(course, 17, from)!
+  assert.ok(target)
+  assert.equal(target.x, 0, 'line to the next ring node cuts outside the narrow ramp')
+  assert.ok(target.z < from.z, 'follow the course direction even when the support slopes backwards')
+  const second = rampTarget(course, 33, { x: 1, y: 3.85, z: -57 })!
+  assert.ok(second)
+  assert.equal(second.x, 0)
+  assert.ok(second.z > -57)
+  assert.equal(rampTarget(course, 17, { x: 11, y: 4, z: 57 }), null, 'release the ramp on the destination floor')
+  assert.equal(rampTarget(course, 1, from), null, 'flat segments keep their authored steering')
+})
+
+test('takeover encodes the refined ramp steering in its returned input', () => {
+  const course = courses.find(c => c.id === 's1-c2-tidal-relay')!
+  const memory = newMemory(), out = neutralInput()
+  const state = { pos: { x: 0, y: 0.85, z: 85 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: -1 },
+    mode: 0, grounded: true, groundObstacle: 0, knockbacks: 0, teleportTick: 0 }
+  const code = takeoverInput(course, memory, state, 100, out)
+  assert.equal(memory.pathIndex, 17)
+  assert.equal(out.moveX, 0)
+  assert.equal(out.moveZ, -1)
+  // Consumers of the encoded result and the reused output must see the same command.
+  assert.equal(code, encodeInput(out))
 })

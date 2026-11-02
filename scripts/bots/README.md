@@ -42,3 +42,16 @@ BOT_BASELINE=/tmp/bot-baseline node --import ./scripts/bots/local-imports.mjs --
 This reads Git only. No checkout, reset, index write, live-repo edit or server
 restart is needed. The baseline loader substitutes source at its original URL,
 so relative imports and the course/asset data stay identical.
+
+For isolated crossing diagnostics (one character, settled on the actual support):
+
+```sh
+node --import ./scripts/bots/local-imports.mjs --experimental-strip-types scripts/bots/probe-crossings.ts
+```
+
+This sweeps starting positions and jump/dive timing at Tidal's first ramp and
+Hammer Hill's finish. It reports attempts, crossings, and the highest capsule
+centre reached. These selected trajectories are not an exhaustive reachability
+proof: Tidal's reverse ramp admits narrow side-entry and exit jumps that this
+simple sweep does not implement. A successful probe is also not a full-course
+finish. Keep the full eight-seat measurement as the acceptance check.

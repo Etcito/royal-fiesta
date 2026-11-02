@@ -1,3 +1,4 @@
+import { rampTarget } from '../../../sim/src/bots/ramps.ts'
 import { parseBehaviour } from '@royal-fiesta/sim/bots/behaviour'
 import { evaluateBrain } from '@royal-fiesta/sim/bots/brain'
 import type { BrainInput, BrainMemory } from '@royal-fiesta/sim/bots/brain'
@@ -8,7 +9,7 @@ import shortProfile from '../../../sim/src/bots/behaviours/short.bot.json' with 
 import { CharMode } from '@royal-fiesta/sim/character/constants'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
-import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
+import { decodeInput, encodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 
 const behaviour = parseBehaviour(shortProfile)
@@ -103,5 +104,13 @@ export function takeoverInput(
   } else steer.waypoints.length = 0
   const code = evaluateBrain(b, behaviour, steer, tick, memory.stuckTicks)
   decodeInput(code, out)
-  return code
+  const ramp = rampTarget(course, memory.pathIndex, state.pos)
+  if (ramp) {
+    const dx = ramp.x - state.pos.x, dz = ramp.z - state.pos.z
+    const length = Math.hypot(dx, dz)
+    out.moveX = length > 0 ? dx / length : 0
+    out.moveZ = length > 0 ? dz / length : 0
+    out.dive = false
+  }
+  return encodeInput(out)
 }

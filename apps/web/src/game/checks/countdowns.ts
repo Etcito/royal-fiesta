@@ -211,7 +211,7 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: { ok
       await step(live, dt)
       if (active !== null && dt > 0) { elapsed += dt * 1000; lastDt = dt }
     }
-    if (!returned) failures.push('show did not return to start')
+    if (!returned) failures.push(`show did not return to start: it stopped on '${current()}' after ${Math.round(performance.now() - startedAt)} ms, last screen change to '${previous}'`)
     for (const screen of TIMERS) if (!screens.some(row => row.screen === screen && row.next.length >= 3)) failures.push(`missing displayed samples: ${screen}`)
     if (!paused) failures.push('the held-screen pause was not exercised')
   } catch (error) {

@@ -1,7 +1,7 @@
 // Real App, real HUD writes, fixed simulation steps. Async work gets task turns, never timed sleeps.
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import type { WidgetProps } from '../../ui/screenMap.ts'
-import { checkBoot } from './boot.ts'
+import { checkBoot, nextTask } from './boot.ts'
 import { ELIM_SHOW } from '../../../../../packages/game/src/flow/elimShow.ts'
 
 export const name = 'countdowns'
@@ -29,13 +29,6 @@ function click(game: TourGame, id: string): void {
   game.ui.dispatchEvent(new PointerEvent('pointerup', { ...pointer, button: 0, buttons: 0 }))
   game.ui.dispatchEvent(new MouseEvent('mouseup', { ...at, button: 0, buttons: 0 }))
   game.ui.dispatchEvent(new MouseEvent('click', { ...at, button: 0, detail: 1 }))
-}
-function task(): Promise<void> {
-  return new Promise(resolve => {
-    const channel = new MessageChannel()
-    channel.port1.onmessage = () => { channel.port1.close(); channel.port2.close(); resolve() }
-    channel.port2.postMessage(null)
-  })
 }
 
 // The HUD exposes the entrant/qualifier counts, enough to derive the documented drop schedule.
@@ -92,7 +85,7 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: { ok
       for (let i = 0; i < 600; i++) {
         step()
         if (game!.host.currentScreen() === target) return
-        await task()
+        await nextTask()
       }
       throw new Error(`countdowns: did not reach ${target}`)
     }
@@ -143,7 +136,7 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: { ok
       step()
       if (active) elapsed += MS
       // Yield often during loading; batch CPU simulation without tying it to real-time frames.
-      if (screen === 'loading' || frame % 60 === 0) await task()
+      if (screen === 'loading' || frame % 60 === 0) await nextTask()
     }
     if (!returned) failures.push('show did not return to start')
     for (const screen of TIMERS) if (!screens.some(row => row.screen === screen && row.next.length === 3)) failures.push(`missing four displayed samples: ${screen}`)

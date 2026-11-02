@@ -2,7 +2,7 @@
 // ?test=1, so every show timer is at its minimum; this op steps fixed dt and waits only on the App's
 // screen callbacks. It never sleeps in real time.
 import type { TourDeps, TourGame } from '../uiTour.ts'
-import { checkBoot } from './boot.ts'
+import { checkBoot, nextTask, publishPhase } from './boot.ts'
 
 export const name = 'lobbyUnload'
 
@@ -20,14 +20,6 @@ interface AppInventory {
   startView: boolean
   sound: { loops: string[]; emitters: string[]; music: string | null; ambience: string | null; bed: boolean }
   listeners: number
-}
-
-// Loading is asynchronous (fetches, workers, pipelines); give it a presentation callback to breathe.
-function yieldTask(): Promise<void> {
-  return new Promise(resolve => {
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve())
-    else setTimeout(resolve, 0)
-  })
 }
 
 function press(key: string): void {
@@ -69,9 +61,10 @@ function instancesOf(view: AppInventory): number {
 async function waitFor(game: TourGame, current: () => string, target: string, acts: () => void, frames = NAV_FRAMES): Promise<void> {
   acts()
   for (let frame = 0; frame < frames; frame++) {
+    publishPhase(`lobbyUnload: waiting for '${target}', frame ${frame} on '${current()}'`)
     if (current() === target) return
     game.step(FAST.has(current()) ? FAST_DT : DT)
-    await yieldTask()
+    await nextTask()
   }
   throw new Error(`lobbyUnload: screen '${target}' did not arrive within ${frames} frames (on '${current()}')`)
 }
@@ -104,11 +97,11 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{
     const base = inventory(game)
     // start -> Play -> hub: the lobby.
     await toHub(game, current)
-    for (let i = 0; i < 2; i++) { game.step(DT); await yieldTask() }
+    for (let i = 0; i < 2; i++) { game.step(DT); await nextTask() }
     const A = inventory(game)
     // Enter queues; the offline show opens on its vote, then round 0's countdown once its world loaded.
     await waitFor(game, current, 'vote', () => press('Enter'), 1800)
-    for (let i = 0; i < 8; i++) { game.step(DT); await yieldTask() }
+    for (let i = 0; i < 8; i++) { game.step(DT); await nextTask() }
     if (current() === 'vote') {
       press('ArrowRight')
       press('Enter')
@@ -120,7 +113,7 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{
     const inLevel = game
     await waitFor(inLevel, current, 'pause', () => press('Escape'))
     await waitFor(inLevel, current, 'hub', () => click(inLevel, 'act-leave'), 1800)
-    for (let i = 0; i < 2; i++) { game.step(DT); await yieldTask() }
+    for (let i = 0; i < 2; i++) { game.step(DT); await nextTask() }
     const C = inventory(game)
 
     const failures: string[] = []

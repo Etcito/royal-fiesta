@@ -7,7 +7,7 @@
 import { browserContentRoot } from '../../content/v1Data.ts'
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
-import { checkBoot } from './boot.ts'
+import { checkBoot, nextTask } from './boot.ts'
 
 export const name = 'vote'
 
@@ -28,16 +28,9 @@ interface ThumbState extends Thumb { slot: number; src: string; expected: string
 interface VoteResult { device: Device; target: number; chosen: number | null; thumbs: Thumb[] }
 interface VoteJson { ok: boolean; votes: VoteResult[]; failures: string[]; transitions: string[] }
 
-function present(): Promise<void> {
-  return new Promise(resolve => {
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve())
-    else setTimeout(resolve, 0)
-  })
-}
-
 async function step(game: TourGame, dt: number): Promise<void> {
   game.step(dt)
-  await present()
+  await nextTask()
 }
 
 function press(key: string): void {

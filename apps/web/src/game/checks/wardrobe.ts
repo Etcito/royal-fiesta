@@ -4,7 +4,7 @@
 /// <reference types="vite/client" />
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
-import { checkBoot } from './boot.ts'
+import { checkBoot, nextTask } from './boot.ts'
 import economyDocText from '../../../../../economy/royal-fiesta.economy.json?raw'
 
 export const name = 'wardrobe'
@@ -62,16 +62,9 @@ function binLabel(props: Props, slot: Slot): string {
   return (angle?.[1] ?? label).trim()
 }
 
-function present(): Promise<void> {
-  return new Promise(resolve => {
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve())
-    else setTimeout(resolve, 0)
-  })
-}
-
 async function step(game: TourGame): Promise<void> {
   game.step(DT)
-  await present()
+  await nextTask()
 }
 
 async function settle(game: TourGame, frames = 2): Promise<void> {

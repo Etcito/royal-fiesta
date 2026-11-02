@@ -1,8 +1,9 @@
 // Renders the S21 views with SDF Modeler's Node renderer (1.14 camera) into <input.out>/<subject>-<view>.png.
 // The judge card runs it first: PNGs are never committed, so every fresh worktree renders its own.
+import { createHash } from 'node:crypto'
 import { contentPath } from './content.ts'
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -25,7 +26,7 @@ const SDFM_LINK = ['node_modules', 'vendor', 'dist', 'nmc.gpu.json']
 type V3 = [number, number, number]
 type Obj = Record<string, unknown>
 export interface Camera { position: V3; target: V3; fovYDeg: number; ortho: false; orthoHeight: number }
-interface Sdfm { call(name: string, input?: unknown): Promise<{ text: string }>; close(): Promise<void> }
+interface Sdfm { call(name: string, input?: unknown): Promise<{ text: string; data?: unknown }>; close(): Promise<void> }
 
 // 1.14: target = bounds centre, distance = 1.1 x diagonal / (2 tan 15deg), eye raised by 0.25 x height.
 export function viewCamera(bounds: { min: V3; max: V3 }, yawDeg: number): Camera {
@@ -203,7 +204,18 @@ export async function sdfmApi(src: string): Promise<{ createSdfm(o: { doc?: Obj;
   const stamp = existsSync(stampFile) ? readFileSync(stampFile, 'utf8').trim() : null
   const prebuilt = join(src, 'build-node/node/api.js')
   if (existsSync(prebuilt) && (head === 'local' || stamp === head)) return import(pathToFileURL(prebuilt).href)
-  const dir = join(tmpdir(), `rf-sdfm-${head.slice(0, 12)}`)
+  // Uncommitted save/render fixes must not reuse a build cached by HEAD alone.
+  const digest = createHash('sha256')
+  for (const path of SDFM_COPY) {
+    const full = join(src, path)
+    if (path === 'src' || path === 'scripts' || path === 'bin') {
+      for (const entry of readdirSync(full, { recursive: true, withFileTypes: true }).filter(e => e.isFile()).sort((a, b) => join(a.parentPath, a.name).localeCompare(join(b.parentPath, b.name)))) {
+        const file = join(entry.parentPath, entry.name)
+        digest.update(file.slice(src.length)).update(readFileSync(file))
+      }
+    } else digest.update(path).update(readFileSync(full))
+  }
+  const dir = join(tmpdir(), `rf-sdfm-${head.slice(0, 12)}-${digest.digest('hex').slice(0, 16)}`)
   const api = join(dir, 'build-node/node/api.js')
   if (!existsSync(api)) {
     mkdirSync(dir, { recursive: true })

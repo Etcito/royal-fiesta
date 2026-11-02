@@ -195,6 +195,8 @@ export function checkFile(file: string, bytes: Uint8Array): GuardViolation[] {
 
   // Saved meshes are validated by tools/savedMeshes.ts in every web build.
   if (/^assets\/[^/]+\/[^/]+\.mesh$/.test(file)) return violations
+  // Level thumbnails are written by SDF Modeler's course_save next to the course file.
+  if (/^courses\/[^/]+\.thumb\.avif$/.test(file)) return violations
 
   if (BINARY_EXT_SET.has(ext)) {
     violations.push({ path: file, rule: 'binary-ext', detail: ext })

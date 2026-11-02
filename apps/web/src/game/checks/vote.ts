@@ -4,7 +4,7 @@
 // right, A). Each vote checks the model's chosen index (through the mark the renderer derives from it), that
 // the show proceeds to the countdown, and that every visible card's thumbnail has loaded with its map's URL.
 // It steps with fixed dt and waits on screen callbacks and presentation frames only; it never sleeps.
-import { browserContentRoot } from '../../content/v1Data.ts'
+import { browserContentIndex, browserContentRoot } from '../../content/v1Data.ts'
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { checkBoot, loadingFrame, nextTask, yieldTask } from './boot.ts'
@@ -109,10 +109,11 @@ function slotOfIndex(index: number, count: number): number {
   return count === 1 ? 1 : index
 }
 
-// content/thumbs/<map>.avif under the same content root the meshes load from, as screens/vote.ts builds it.
+// Saved course sidecars under the content root, as listed for screens/vote.ts.
+let thumbnailPaths = new Map<string, string>()
 function thumbUrl(map: string): string {
   const root = browserContentRoot().replace(/\/?$/, '/')
-  return new URL(`thumbs/${encodeURIComponent(map)}.avif`, new URL(root, document.baseURI)).href
+  return new URL(thumbnailPaths.get(map) ?? `missing-thumbnail/${encodeURIComponent(map)}`, new URL(root, document.baseURI)).href
 }
 
 function thumbImage(game: TourGame, slot: number): HTMLImageElement | null {
@@ -222,6 +223,7 @@ async function waitThumbs(game: TourGame, slots: readonly number[]): Promise<Thu
 interface StartInventory { startView?: boolean }
 
 export async function run(_input: unknown, deps: TourDeps): Promise<{ json: VoteJson; files: { name: string; blob: Blob }[] }> {
+  thumbnailPaths = new Map(((await browserContentIndex()).thumbs ?? []).map(thumb => [thumb.map, thumb.path]))
   const failures: string[] = []
   const votes: VoteResult[] = []
   const files: { name: string; blob: Blob }[] = []

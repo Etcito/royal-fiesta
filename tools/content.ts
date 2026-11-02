@@ -6,13 +6,14 @@ import { pathToFileURL } from 'node:url'
 import { gzipSync } from 'node:zlib'
 import type { ProfileName } from '@royal-fiesta/sim/course'
 import { repoRoot } from './bricks.ts'
+import { parseSeason, playableMaps } from '../packages/game/src/season.ts'
 import { sharedNodeIds } from './nodeIds.ts'
 import { loadCourseV1 } from '../packages/game/src/courseV1.ts'
 import type { GameAssetResolver, ResolvedGameAsset } from '../packages/game/src/courseV1.ts'
 import { parseGameAsset } from '../packages/game/src/gameAsset.ts'
 
 // S29 index: `mesh` only when the saved S24 mesh exists, `audio` from audio/*.haa.json, `thumbs` from the level
-// thumbnails tools/levelThumbs.ts saves as thumbs/<map>.avif for the vote screen.
+// thumbnails saved by SDF Modeler next to each course for the vote screen.
 export interface ContentIndex {
   assets: { id: string; world: string; path: string; hash: string; mesh?: string }[]
   courses: { id: string; path: string }[]
@@ -96,10 +97,12 @@ export function buildContentIndex(dir = contentDir()): ContentIndex {
     ? readdirSync(join(dir, 'audio')).sort().filter(f => f.endsWith('.haa.json'))
       .map(f => ({ id: f.slice(0, -'.haa.json'.length), path: `audio/${f}` }))
     : []
-  const thumbs = existsSync(join(dir, 'thumbs'))
-    ? readdirSync(join(dir, 'thumbs')).sort().filter(f => f.endsWith('.avif'))
-      .map(f => ({ map: f.slice(0, -'.avif'.length), path: `thumbs/${f}` }))
-    : []
+  const seasonPath = join(dir, 'courses/season.json')
+  const maps = existsSync(seasonPath) ? playableMaps(parseSeason(JSON.parse(readFileSync(seasonPath, 'utf8')), 'courses/season.json')) : []
+  const thumbs = maps.flatMap(map => {
+    const path = `courses/${map.course}.thumb.avif`
+    return existsSync(join(dir, path)) ? [{ map: map.id, path }] : []
+  })
   return { assets, courses, audio, thumbs }
 }
 

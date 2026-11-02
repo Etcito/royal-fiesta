@@ -125,6 +125,14 @@
     "timeout_s": 1800
   },
   {
+    "name": "m13-flow",
+    "command": "env RF_MESH_JOBS=1 NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/chromeCheck.ts m13Flow --out out/m13/flow",
+    "timeout_s": 1800,
+    "after": [
+      "m13-build"
+    ]
+  },
+  {
     "name": "m13-lobby-unload",
     "command": "node --experimental-strip-types tools/chromeCheck.ts lobbyUnload --out out/m13/lobby",
     "timeout_s": 1800,

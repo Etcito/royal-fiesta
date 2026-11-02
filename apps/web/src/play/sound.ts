@@ -13,6 +13,11 @@ import { createMixGraph } from '../audio/mixGraph.ts'
 
 setMixFactory(createMixGraph)
 
+export function audioManifestUrl(baseUrl: string, raw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_RF_AUDIO_URL): string {
+  const base = raw?.trim()
+  return base ? new URL(`${base.replace(/\/+$/, '')}/manifest.json`, baseUrl).href : new URL('audio/manifest.json', baseUrl).href
+}
+
 export interface SoundDeps {
   target: EventTarget
   baseUrl: string
@@ -80,7 +85,7 @@ export class SoundDriver {
     this.#gestures.abort()
     this.#opening ??= (async () => {
       const sound = await this.#deps.open({
-        manifestUrl: new URL('audio/manifest.json', this.#deps.baseUrl).href,
+        manifestUrl: audioManifestUrl(this.#deps.baseUrl),
         maxListeners: 4,
       })
       this.#sound = sound

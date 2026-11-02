@@ -21,24 +21,56 @@ so the statements below were not re-fetched live. They were taken from `docs.wav
 
 ## Build
 
-From a clean clone (README, "Build from a clean clone"):
+Both publishing steps are run by the **HOST**, which has the Wavedash login and route. The sandbox
+prepares code and runs offline tests only. Never upload audio together with the game build.
 
-```
-npm ci
+Host order (use the host's actual CDN directory and upload command in the environment):
+
+```sh
+# If compressed output already exists, reuse it. Otherwise prepare it once:
+npm run audio:bake
+export AUDIO_UPLOAD_CMD='host-audio-push --file {file} --name {name}'
+npm run audio:upload -- --dry-run
+npm run audio:upload
+# Continue only after audio:upload succeeds.
+# Set VITE_RF_AUDIO_URL in the HOST environment to the uploaded audio directory.
 npm run wavedash
+# HOST: wavedash build push, using out/wavedash-build/wavedash.toml and host game_id config.
 ```
 
-`npm run wavedash` runs `npm run build` (audio bake, then the Vite build into `apps/web/dist`), then packs
-`apps/web/dist` with `packWavedash` (tools/wavedash.ts). `-- --skip-build` packs the existing `apps/web/dist`, and
-`-- --out <dir>` changes the output folder. Nothing reads or writes a key or token, and nothing is pushed or
-published: pushing (R5) is done by the publisher with the Wavedash CLI or the Developer Portal.
+`AUDIO_UPLOAD_CMD` is a host-configured shell command. Include `{file}` and `{name}` as standalone,
+**unquoted** placeholders: the tool shell-quotes their values. `{file}` is the absolute local path and
+`{name}` is the CDN-relative name. A host curl wrapper or Wavedash command can supply authentication;
+the tool never reads a key or token itself. Do not commit credentials or upload commands containing them.
+
+`audio:upload` reads the existing compressed `apps/web/public/audio/manifest.json` and its MP3/Ogg files;
+it never renders or encodes. `--dir <dir>` selects another existing compressed output (for example an
+older packed audio directory). It sends exactly one command at a time, waits for exit, and records
+name, size, SHA-256 content key and status in `out/audio-upload.json` (`--journal <file>` overrides).
+A rerun skips matching uploaded content, retries failures and sends changed content. Keep the journal
+for the same CDN destination; use a different journal when changing destinations. The manifest is sent
+last and withheld if media failed. Failures return nonzero; the summary prints total, uploaded, skipped,
+failed and pending counts. Dry-run lists pending files without executing commands or writing a journal.
+
+`VITE_RF_AUDIO_URL` is the public audio **directory** URL, with or without a trailing slash. The game
+loads `<directory>/manifest.json`, whose relative media names resolve on that CDN. Set it only in the
+host build environment, just like `VITE_RF_SERVER` / `VITE_RF_ECONOMY`; never commit it or put it in
+`rf-build.json`. It is public built JavaScript, so it must contain no credential. Without it the local
+game on :5173 keeps loading `audio/manifest.json` relative to the page. CDN responses must support the
+cross-origin headers described below.
+
+`npm run wavedash` runs the normal build (which prepares local audio), then packages the page without
+audio. `-- --skip-build` packages an existing dist; `-- --out <dir>` changes the output directory.
+`checkUpload` refuses any audio directory/media file, a missing HTTP(S) audio base, or built JavaScript
+that does not contain that base. Rebuild with the host environment if a skip-build package is stale.
+No build push or publish is performed by the packager.
 
 ## Layout
 
 `npm run wavedash` writes `out/wavedash-build/` (untracked):
 
 - `upload/`: the upload_dir. It is a copy of `apps/web/dist` without `nmc.gpu.json` (the GPU-client declaration)
-  and `store/` (a local asset mirror), with the baked audio compressed in place (below). `game.html` sits at its
+  and `store/` (a local asset mirror), and without `audio/` or audio media. `game.html` sits at its
   root next to `assets/`, so its relative `./assets/` URLs stay valid. `index.html`, `play.html` and
   `client.html` stay as built (boot and proof pages).
 - `upload/rf-build.json`: the build manifest (below).
@@ -52,37 +84,16 @@ published: pushing (R5) is done by the publisher with the Wavedash CLI or the De
   It has no `game_id` and no token: the push run sets `game_id` in its own configuration.
 
 `packWavedash` replaces `upload/` on every run and returns the sorted list of files under `upload/` (forward
-slashes, `rf-build.json` included), `entry: 'game.html'` and the `audio` counts. A dist without `game.html` is
+slashes, `rf-build.json` included), `entry: 'game.html'`. A dist without `game.html` is
 refused with
 `[bricks] <dist>/game.html: the built game page is missing; run npm run build so apps/web/game.html is built`.
 
 ## Audio compression
 
-`packWavedash` compresses `<upload>/audio` after the copy and before it writes `rf-build.json`. The folder must
-hold the S17 `manifest.json` from `npm run audio:bake`; a dist without it is refused with
-`[bricks] <upload>/audio/manifest.json: the baked audio is missing; run npm run audio:bake`.
-
-For every WAV the manifest lists:
-
-- Both formats are encoded with ffmpeg at 48 kHz: MP3 (`libmp3lame`, VBR `-q:a 4`) and Ogg Opus (`libopus`,
-  64 kb/s mono or 96 kb/s stereo, `-vbr on`). The smaller output is kept, so a file becomes `<name>.mp3` or
-  `<name>.ogg` depending on which won. Only the manifest's `files` change, so the browser still loads them by
-  name through `decodeAudioData`.
-- A non-music sound whose decoded left and right samples are identical on every sample is encoded mono; music
-  cues always stay stereo. A non-music sound with differing channels stays stereo and is named in the log.
-- The WAV is deleted from `upload/audio` and `manifest.json` is rewritten with the kept file names; every other
-  manifest field is unchanged.
-- The result is cached under the sound's bake key: `<RF_AUDIO_CACHE_DIR>/compressed/v1/<key>/` when
-  `RF_AUDIO_CACHE_DIR` is set, otherwise `<cache root>/audio/compressed/v1/<key>/` (next to the bake cache;
-  the cache root is `RF_CACHE_DIR`, `<git common dir>/rf-cache` or `<os tmpdir>/rf-cache`, the first writable,
-  see docs/etcito-build.md). The key is the one `bakeFileKeys()`
-  (tools/bake-audio.ts) derives for the bake: HAA's built JS and wasm, bake-audio.ts, the sound definition, its
-  bank entries and every source text the bake reads. A cache hit copies the encoded file and runs no ffmpeg.
-- The real encoder refuses when ffmpeg or `libmp3lame`/`libopus` is missing, naming the codec and how to install
-  it; it never falls back to an uncompressed or unrequested format.
-
-The counts (`encoded`, `cached`, `mono`, `stereo`) are in the stamp's `audio` object and in the summary line
-`wavedash: ... audio=encoded:<n> cached:<n> mono:<n> stereo:<n> ...`.
+`npm run audio:bake` prepares compressed MP3/Ogg files and their manifest under
+`apps/web/public/audio`. Its existing bake and compression caches are reused. Compression belongs to
+that preparation step, never to `audio:upload` or `packWavedash`. The local served game keeps this audio;
+the Wavedash upload excludes it entirely.
 
 ## Build manifest (`upload/rf-build.json`)
 
@@ -95,8 +106,7 @@ The counts (`encoded`, `cached`, `mono`, `stereo`) are in the stamp's `audio` ob
   "entry": "game.html",
   "raa": "<installed @etcito/raa version, or null>",
   "mama": { "source": "sibling | cloned | absent", "commit": "<40 hex, or null>" },
-  "defaultServer": false,
-  "audio": { "encoded": 0, "cached": 0, "mono": 0, "stereo": 0 }
+  "defaultServer": false
 }
 ```
 

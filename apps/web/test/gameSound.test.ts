@@ -20,7 +20,7 @@ import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { createMatchSim, Phase } from '@royal-fiesta/sim/match/matchSim'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { createMixGraph } from '../src/audio/mixGraph.ts'
-import { pageStore, SoundDriver } from '../src/play/sound.ts'
+import { audioManifestUrl, pageStore, SoundDriver } from '../src/play/sound.ts'
 
 const ROOT = new URL('../../../', import.meta.url)
 const read = (rel: string): Promise<string> => readFile(new URL(rel, ROOT), 'utf8')
@@ -375,4 +375,11 @@ test('a sandboxed page (localStorage getter throws) builds the driver; volumes l
   assert.equal(store.getItem(AUDIO_SETTINGS_KEY), null)
   store.setItem(AUDIO_SETTINGS_KEY, '{"music":0.5}')
   assert.equal(store.getItem(AUDIO_SETTINGS_KEY), '{"music":0.5}')
+})
+
+ test('audio manifest uses the build CDN directory or the relative local default', () => {
+  assert.equal(audioManifestUrl('http://localhost:5173/game.html', ''), 'http://localhost:5173/audio/manifest.json')
+  for (const base of ['https://cdn.example.invalid/sounds', 'https://cdn.example.invalid/sounds/']) {
+    assert.equal(audioManifestUrl('https://page.test/game.html', base), 'https://cdn.example.invalid/sounds/manifest.json')
+  }
 })

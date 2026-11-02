@@ -96,7 +96,7 @@ class RaaRenderPort implements RenderPort {
 
   setCamera(viewport: number, cam: CameraPose): void {
     if (viewport !== 0) refuse(AREA, WHERE, `setCamera: viewport ${viewport} does not exist; RAA has one viewport (0)`)
-    this.need().setCamera({ eye: [...cam.eye], target: [...cam.target], fovYDeg: cam.fovYDeg, near: cam.near, far: cam.far })
+    this.need().setCamera({ eye: [...cam.eye], target: [...cam.target], fovYDeg: cam.fovYDeg, near: cam.near, far: cam.far, ...(cam.up ? { up: [...cam.up] as [number, number, number] } : {}) })
   }
 
   // Everything is checked before the engine is touched, so a refusal never applies half an environment.

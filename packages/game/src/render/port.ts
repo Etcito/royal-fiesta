@@ -3,7 +3,7 @@ import type { PrimsAsset } from '@royal-fiesta/game/prims'
 export type Vec3T = readonly [number, number, number]
 export type QuatT = readonly [number, number, number, number]
 export interface Viewport { x: number; y: number; width: number; height: number }
-export interface CameraPose { eye: Vec3T; target: Vec3T; fovYDeg: number; near: number; far: number }
+export interface CameraPose { up?: Vec3T; eye: Vec3T; target: Vec3T; fovYDeg: number; near: number; far: number }
 export interface RenderTarget { canvas: unknown | null; width: number; height: number; viewports: Viewport[] }
 // S16 rig, S17 clips and S18 per-part skin as @etcito/raa-sdfm exposes them on a loaded asset.
 // Ports read the bone order and the part streams; the rig and clips are carried unchanged.

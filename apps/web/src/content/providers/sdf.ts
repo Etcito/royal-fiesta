@@ -1,3 +1,4 @@
+import { startSceneOf, startSceneId } from '@royal-fiesta/game/startScene'
 // SDF content: the v1 courses, rendered from meshes the MAMA workers built through the SDF render port.
 // The load reads courses and builds meshes only; the sim session never waits on or reads it (1.5).
 import { attachRoundReport } from '@royal-fiesta/game/render/roundLoad'
@@ -116,10 +117,16 @@ export class SdfContent implements GameContent {
     return hub
   }
 
+  startScene(season: number | string) {
+    const course = this.need('start').byId.get(startSceneId(season))
+    if (!course) return refuse('content', `start-season${season}`, 'missing season start scene')
+    return startSceneOf(course)
+  }
+
   podium(): PodiumLayout {
     const podium = this.need('podium').podium
     if (podium === null) refuse('content', 'podium', 'round content has no podium')
-    return podium
+    return podiumLayoutOf(this.need('podium').byId.get(PODIUM_ID)!, id => this.assets(id))
   }
 
   // An S12 asset id, or a v0 name the pages still use ('wall-block', 'bean').

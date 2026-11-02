@@ -165,3 +165,17 @@ test('hide hides every instance and dispose destroys them', async () => {
   st.dispose()
   assert.equal(port.render().instances, 0)
 })
+
+test('authored podium geometry replaces the generated blocks and follows show/hide/dispose', async () => {
+  const layout: PodiumLayout = { ...PODIUM_V0_LAYOUT, courseId: 'podium',
+    stage: [{ asset: block, t: [8, .5, -1000], r: [0, 0, 0, 1], s: [2, 1, 2] }],
+  }
+  const { port, stage: st } = await stage(layout)
+  assert.equal(port.render().instances, 4, 'three winners plus exactly the authored stage item')
+  assert.ok([...port.inst.values()].some(i => i.t?.[0] === 8))
+  st.show([0, 1]); st.update(0)
+  assert.equal(port.render().visible, 3)
+  assert.deepEqual(port.cams.get(0), layout.camera)
+  st.hide(); assert.equal(port.render().visible, 0)
+  st.dispose(); assert.equal(port.render().instances, 0)
+})

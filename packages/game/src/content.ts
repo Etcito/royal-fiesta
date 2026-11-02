@@ -1,5 +1,5 @@
 import type { PrimsAsset } from './prims.ts'
-import type { CameraPose, RenderPort, RenderTarget, Vec3T } from './render/port.ts'
+import type { CameraPose, QuatT, RenderPort, RenderTarget, Vec3T } from './render/port.ts'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 
 export type ContentId = 'v0' | 'v1' | 'sdf'
@@ -12,8 +12,16 @@ export interface LoadProgress {
 }
 
 export interface PodiumLayout {
+  environment?: Readonly<Record<string, unknown>> | null
+  stage?: readonly { asset: PrimsAsset; t: Vec3T; r: QuatT; s: Vec3T }[]
   courseId: string | null
   spots: readonly { t: Vec3T; yawDeg: number }[]
+  camera: CameraPose
+}
+
+export interface StartScene {
+  courseId: string
+  spot: { t: Vec3T; yawDeg: number }
   camera: CameraPose
 }
 
@@ -35,6 +43,7 @@ export interface GameContent {
   playlist(): readonly ResolvedCourse[]
   course(id: string): ResolvedCourse
   hub(): ResolvedCourse
+  startScene?(season: number | string): StartScene
   podium(): PodiumLayout
   assets(name: string): PrimsAsset
   character(): PrimsAsset

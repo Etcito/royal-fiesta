@@ -3,7 +3,6 @@ import type { WornLook } from './wornLook.ts'
 // The podium screen's stage: three blocks and the top 3 beans, placed from a PodiumLayout, plus name anchors.
 // View side only: the sim freezes the winners at course spawns, this builds a real podium instead.
 import type { PodiumLayout } from '../content.ts'
-import { cameraBasis } from '../client/cameraBasis.ts'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { PALETTE } from './palette.ts'
@@ -103,21 +102,27 @@ export class PodiumStage {
     checkLayout(this.layout, floorY)
     const blockAsset = this.port.registerAsset('wall-block', opts.block)
     this.beanAsset = this.port.registerAsset('bean', opts.bean)
-    const size = boxSize(opts.block)
+    const size = this.layout.stage ? [1, 1, 1] : boxSize(opts.block)
     for (let i = 0; i < 3; i++) {
       const { t, yawDeg } = this.layout.spots[i]
       const top = t[1] - floorY
-      const b = this.port.createInstance(blockAsset, PODIUM_TINTS[i])
+      const b = this.layout.stage ? null : this.port.createInstance(blockAsset, PODIUM_TINTS[i])
       // The box is centred on its origin, so its centre sits halfway between the floor and the spot.
-      this.port.setTransform(b, [t[0], floorY + top / 2, t[2]], yawQuat(yawDeg), [BLOCK_SIZE / size[0], top / size[1], BLOCK_SIZE / size[2]])
-      this.blocks.push(b)
+      if (b !== null) this.port.setTransform(b, [t[0], floorY + top / 2, t[2]], yawQuat(yawDeg), [BLOCK_SIZE / size[0], top / size[1], BLOCK_SIZE / size[2]])
+      if (b !== null) this.blocks.push(b)
       this.mounts.push(new WornMounts(this.port))
       this.beans.push(this.createBean(i, i))
       this.beanPlayer.push(i)
     }
+    for (const item of this.layout.stage ?? []) {
+      const asset = this.port.registerAsset(item.asset.id, item.asset)
+      const instance = this.port.createInstance(asset, null)
+      this.port.setTransform(instance, item.t, item.r, item.s)
+      this.blocks.push(instance)
+    }
     this.hide()
     const c = this.layout.camera
-    this.cam = { eye: [c.eye[0], c.eye[1], c.eye[2]], target: [c.target[0], c.target[1], c.target[2]], fovYDeg: c.fovYDeg, near: c.near, far: c.far }
+    this.cam = { eye: [c.eye[0], c.eye[1], c.eye[2]], target: [c.target[0], c.target[1], c.target[2]], fovYDeg: c.fovYDeg, near: c.near, far: c.far, ...(c.up ? { up: c.up } : {}) }
   }
 
   get camera(): CameraPose {
@@ -135,9 +140,10 @@ export class PodiumStage {
         refuse('render', `PodiumStage.show#/${i}`, `player ${p} is outside 0..${PALETTE.length - 1}; pass a player index`)
       }
     }
+    if (this.layout.environment !== undefined) this.port.setEnvironment(this.layout.environment)
     this.podium = podium.slice()
+    for (const block of this.blocks) this.port.setVisible(block, true)
     for (let i = 0; i < 3; i++) {
-      this.port.setVisible(this.blocks[i], true)
       const used = i < podium.length
       if (used && this.beanPlayer[i] !== podium[i]) {
         // The port cannot retint an instance.
@@ -169,13 +175,12 @@ export class PodiumStage {
     fx /= fl
     fy /= fl
     fz /= fl
-    // Screen-right comes from cameraBasis (1.6); up' = right x forward.
-    const { right } = cameraBasis(eye, target)
-    const rx = right.x
-    const rz = right.z
-    const ux = -rz * fy
-    const uy = rz * fx - rx * fz
-    const uz = rx * fy
+    const up = this.cam.up ?? [0, 1, 0]
+    let rx = fy * up[2] - fz * up[1], ry = fz * up[0] - fx * up[2], rz = fx * up[1] - fy * up[0]
+    const length = Math.hypot(rx, ry, rz)
+    if (length < 1e-8) { rx = 1; ry = 0; rz = 0 }
+    else { rx /= length; ry /= length; rz /= length }
+    const ux = ry * fz - rz * fy, uy = rz * fx - rx * fz, uz = rx * fy - ry * fx
     const t = Math.tan((fovYDeg * Math.PI) / 360)
     const aspect = width / height
     const out: PodiumLabel[] = []
@@ -185,7 +190,7 @@ export class PodiumStage {
       const dy = py - eye[1]
       const dz = pz - eye[2]
       const depth = dx * fx + dy * fy + dz * fz
-      const nx = (dx * rx + dz * rz) / (depth * t * aspect)
+      const nx = (dx * rx + dy * ry + dz * rz) / (depth * t * aspect)
       const ny = (dx * ux + dy * uy + dz * uz) / (depth * t)
       out.push({ place: i + 1, player: this.podium[i], x: ((nx + 1) / 2) * width, y: ((1 - ny) / 2) * height })
     }
@@ -194,8 +199,8 @@ export class PodiumStage {
 
   hide(): void {
     for (const mounts of this.mounts) mounts.setVisible(false)
+    for (const block of this.blocks) this.port.setVisible(block, false)
     for (let i = 0; i < 3; i++) {
-      this.port.setVisible(this.blocks[i], false)
       this.port.setVisible(this.beans[i], false)
     }
   }

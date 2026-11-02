@@ -1,3 +1,4 @@
+import startSeasonJson from '../../../../courses/season.json?raw'
 import { DEFAULT_LOBBY_BOTS } from '@royal-fiesta/game/hub/hubBots'
 import { playerLook } from '../play/playerLook.ts'
 import type { WornLook } from '@royal-fiesta/game/render/wornLook'
@@ -1972,6 +1973,8 @@ class App {
         }
       },
       mounts,
+      scene: content.startScene?.(JSON.parse(startSeasonJson).id),
+      dressing: content.dressing(),
       environment: hubEnvironment(content),
     }
   }

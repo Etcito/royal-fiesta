@@ -19,6 +19,7 @@ export function assetSet(courses: readonly CourseV1[], byId: ReadonlyMap<string,
       for (const id of c.assetIds) ids.add(id)
     }
   }
+  for (const c of courses) if (c.kind === 'start') for (const id of c.assetIds) ids.add(id)
   const hubs = courses.filter(c => c.kind === 'hub')
   if (hubs.length !== 1) {
     refuse('content', 'courses/*.course.json', `expected exactly one kind hub course, found ${hubs.length} (${hubs.map(c => c.id).join(', ') || 'none'}); keep one kind hub course`)

@@ -1,3 +1,4 @@
+import { startSceneOf, startSceneId } from '@royal-fiesta/game/startScene'
 // V1 content: S13 courses and S12 assets from the repository, rendered with dev stand-ins (no MAMA).
 import type { ContentProvider, CourseDressing, GameContent, LoadProgress, PodiumLayout } from '@royal-fiesta/game/content'
 import { podiumLayoutOf, V0_ASSET_MAP } from '@royal-fiesta/game/courseV1'
@@ -85,8 +86,15 @@ class V1Content implements GameContent {
     return this.need('hub').hub
   }
 
+  startScene(season: number | string) {
+    const course = this.need('start').byId.get(startSceneId(season))
+    if (!course) return refuse('content', `start-season${season}`, 'missing season start scene')
+    return startSceneOf(course)
+  }
+
   podium(): PodiumLayout {
-    return this.need('podium').podium
+    const loaded = this.need('podium')
+    return podiumLayoutOf(loaded.byId.get(PODIUM_ID)!, id => this.assets(id))
   }
 
   // An asset id, or a v0 name the M1 pages still use ('wall-block', 'bean').

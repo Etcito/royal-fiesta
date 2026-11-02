@@ -41,6 +41,10 @@
       "center": "vec3",
       "half": "vec3"
     },
+    "penguinSpot": {
+      "t": "vec3",
+      "yawDeg": "number"
+    },
     "podiumSpot": {
       "t": "vec3",
       "yawDeg": "number"

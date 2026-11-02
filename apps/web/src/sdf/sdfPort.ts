@@ -446,7 +446,7 @@ class SdfRenderPort implements ResizablePort {
     if (!Number.isInteger(viewport) || viewport < 0 || viewport >= count) {
       refuse(AREA, WHERE, `setCamera: viewport ${viewport} does not exist; use an index from 0 to ${count - 1}`)
     }
-    const camera = { eye: [...cam.eye] as [number, number, number], target: [...cam.target] as [number, number, number], fovYDeg: cam.fovYDeg, near: cam.near, far: cam.far }
+    const camera = { eye: [...cam.eye] as [number, number, number], target: [...cam.target] as [number, number, number], fovYDeg: cam.fovYDeg, near: cam.near, far: cam.far, ...(cam.up ? { up: [...cam.up] as [number, number, number] } : {}) }
     if (count === 1) engine.setCamera(camera)
     else engine.setViewportCamera(viewport, camera)
   }

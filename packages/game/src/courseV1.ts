@@ -1,3 +1,4 @@
+import { sceneCamera } from './sceneCamera.ts'
 // Course v1 (S13): the v0 course plus world, decor, environment and podium, with S12 asset ids.
 // The sim course is built by the v0 loader on a v0-shaped copy with explicit colliders (the course
 // override or the asset's raw collision), so every conversion stays identical (rule 1.5).
@@ -17,7 +18,7 @@ import { itemOf, parseCourseMechanisms, parseCourseSounds } from './mechanismsJs
 import type { PrimsAsset } from './prims.ts'
 import type { QuatT, Vec3T } from './render/port.ts'
 
-export type CourseKindV1 = 'race' | 'survival' | 'hub' | 'podium' | 'gallery'
+export type CourseKindV1 = 'race' | 'survival' | 'hub' | 'podium' | 'gallery' | 'start'
 export interface DecorItem { id: string; asset: string; t: Vec3T; r: QuatT; s: Vec3T }
 export interface PodiumSpec {
   spots: { t: Vec3T; yawDeg: number }[]
@@ -65,10 +66,10 @@ export const V0_ASSET_MAP: Readonly<Record<string, string>> = Object.freeze({
   bean: 'penguin.body',
 })
 
-const KINDS: readonly CourseKindV1[] = ['race', 'survival', 'hub', 'podium', 'gallery']
+const KINDS: readonly CourseKindV1[] = ['race', 'survival', 'hub', 'podium', 'gallery', 'start']
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const S2_KEYS = ['format', 'version', 'id', 'name', 'kind', 'profiles', 'timeLimitS', 'killPlaneY', 'spawns', 'checkpoints', 'finish', 'path', 'regions', 'queuePad', 'obstacles']
-const S13_KEYS = [...S2_KEYS, 'world', 'decor', 'environment', 'podium', 'mechanisms', 'sounds', 'level', 'features']
+const S13_KEYS = [...S2_KEYS, 'world', 'decor', 'environment', 'podium', 'mechanisms', 'sounds', 'level', 'features', 'scene', 'start']
 const ENV_KEYS = ['sky', 'sun', 'fog', 'post']
 
 type Obj = Record<string, unknown>
@@ -308,6 +309,19 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
     fail(path, '#/podium', `podium must be null for kind ${kind}; set podium to null`)
   }
 
+  sceneCamera(v1.scene, kind === 'start' ? 'start' : 'podium')
+  if (kind === 'start') {
+    const start = obj(v1.start, path, '#/start')
+    keys(start, ['spot'], path, '#/start')
+    const spot = obj(start.spot, path, '#/start/spot')
+    keys(spot, ['t', 'yawDeg'], path, '#/start/spot')
+    tuple(spot.t, 3, path, '#/start/spot/t')
+    finiteNum(spot.yawDeg, path, '#/start/spot/yawDeg')
+    if (v1.finish !== null || !Array.isArray(v1.checkpoints) || v1.checkpoints.length || !Array.isArray(v1.path) || v1.path.length || v1.queuePad !== null)
+      fail(path, '#/start', 'start scenes have no finish, checkpoints, path or queue pad')
+    obstacles.forEach(({ o }, i) => { if (obj(o.motion, path, `#/obstacles/${i}/motion`).kind !== 'static') fail(path, `#/obstacles/${i}/motion`, 'start scene obstacles must be static') })
+    if (!sceneCamera(v1.scene, 'start')) fail(path, '#/scene', 'start scene needs a camera tagged start')
+  }
   const resolved: ResolvedGameAsset[] = []
   const rawCollision: unknown[][] = []
   for (let i = 0; i < obstacles.length; i++) {
@@ -354,7 +368,7 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
       return rest
     })
   }
-  if (kind === 'podium') {
+  if (kind === 'podium' || kind === 'start') {
     // Validated with the gallery rules (spawns padded to its minimum of 8); the podium is view only.
     const spawns = arr(copy.spawns, path, '#/spawns')
     while (spawns.length < 8) spawns.push({ t: [0, 0, 0], yawDeg: 0 })
@@ -397,8 +411,8 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
   // `mechanisms` null and `sounds` [] are left out (they read as none), so a course without physics keeps
   // exactly the sim course it had before mechanisms existed.
   const simLevel = level ?? legacyLevel(c)
-  if (kind !== 'podium') applyGroups(simLevel, simObstacles)
-  const sim: ResolvedCourse | null = kind === 'podium'
+  if (kind !== 'podium' && kind !== 'start') applyGroups(simLevel, simObstacles)
+  const sim: ResolvedCourse | null = kind === 'podium' || kind === 'start'
     ? null
     : {
         ...c, path: simPath, obstacles: simObstacles, contentHash, level: simLevel, features,
@@ -409,12 +423,14 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
   return { id, name, kind, world, decor, environment: env, podium, sim, assetIds, contentHash, json: v1 }
 }
 
-export function podiumLayoutOf(course: CourseV1): PodiumLayout {
+export function podiumLayoutOf(course: CourseV1, asset?: (id: string) => PrimsAsset): PodiumLayout {
   if (course.podium === null) refuse('content', `courses/${course.id}.course.json#/podium`, `course '${course.id}' has no podium; use a kind podium course`)
   const { spots, camera } = course.podium
+  const authored = sceneCamera(course.json.scene, 'podium')
   return {
+    ...(asset ? { environment: course.environment, stage: [...(course.json.obstacles as DecorItem[]), ...course.decor].map(d => ({ asset: asset(d.asset), t: d.t, r: d.r, s: d.s })) } : {}),
     courseId: course.id,
     spots: spots.map(s => ({ t: s.t, yawDeg: s.yawDeg })),
-    camera: { eye: camera.eye, target: camera.target, fovYDeg: camera.fovYDeg, near: 0.1, far: 500 },
+    camera: authored ?? { eye: camera.eye, target: camera.target, fovYDeg: camera.fovYDeg, near: 0.1, far: 500 },
   }
 }

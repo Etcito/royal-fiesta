@@ -1,6 +1,7 @@
 import { cosmeticOf, cosmeticName } from '@royal-fiesta/game/flow/startScreen'
 // The caller owns input and advances this view once per frame with the latest wardrobe model.
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
+import type { StartScene, CourseDressing } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { QuatT, RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
@@ -22,6 +23,8 @@ export interface FlowDeps {
 
 // Prepared by game-web from its loaded content; this view never loads or meshes assets.
 export interface StartArt {
+  scene?: StartScene
+  dressing?: CourseDressing
   port: RenderPort
   character: PrimsAsset
   skinned?: SkinnedCharacter
@@ -96,7 +99,9 @@ export function mountStartScreen(
   let mounted = true
   let visible = true
   const started = performance.now()
-  port.setEnvironment(art.environment)
+  if (art.scene && art.dressing) art.dressing.enter(port, art.scene.courseId)
+  else port.setEnvironment(art.environment)
+  const origin = art.scene?.spot.t ?? ORIGIN
 
   function draw(next: StartScreenModel): void {
     if (next.colour !== colour) {
@@ -134,14 +139,14 @@ export function mountStartScreen(
       for (const item of worn.values()) if (item.skinned) port.setPose(item.instance, matrices)
     }
     // Rotate the root and each mount offset together.
-    const yaw = (performance.now() - started) * YAW_PER_MS
+    const yaw = (art.scene?.spot.yawDeg ?? 0) * Math.PI / 180 + (performance.now() - started) * YAW_PER_MS
     const rotation: QuatT = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
-    port.setTransform(penguin, ORIGIN, rotation, UNIT)
+    port.setTransform(penguin, origin, rotation, UNIT)
     for (const { instance, mount: [x, y, z], skinned } of worn.values()) {
-      if (skinned) { port.setTransform(instance, ORIGIN, rotation, UNIT); continue }
-      port.setTransform(instance, [Math.cos(yaw) * x + Math.sin(yaw) * z, y, -Math.sin(yaw) * x + Math.cos(yaw) * z], rotation, UNIT)
+      if (skinned) { port.setTransform(instance, origin, rotation, UNIT); continue }
+      port.setTransform(instance, [origin[0] + Math.cos(yaw) * x + Math.sin(yaw) * z, origin[1] + y, origin[2] - Math.sin(yaw) * x + Math.cos(yaw) * z], rotation, UNIT)
     }
-    if (visible) port.setCamera(0, { eye: [0, 0.7, 4.8], target: [0, 0.3, 0], fovYDeg: 38, near: 0.1, far: 500 })
+    if (visible) port.setCamera(0, art.scene?.camera ?? { eye: [0, 0.7, 4.8], target: [0, 0.3, 0], fovYDeg: 38, near: 0.1, far: 500 })
   }
 
   draw(model)
@@ -168,6 +173,7 @@ export function mountStartScreen(
       if (!mounted) return
       mounted = false
       layer.setVisible(false)
+      if (art.scene && art.dressing) art.dressing.leave(port)
       port.destroyInstance(penguin)
       for (const item of worn.values()) port.destroyInstance(item.instance)
       worn.clear()

@@ -5,7 +5,7 @@ import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
-import type { QuatT, SkinnedAssetT, Vec3T } from '@royal-fiesta/game/render/port'
+import type { CameraPose, QuatT, SkinnedAssetT, Vec3T } from '@royal-fiesta/game/render/port'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { Action } from '@royal-fiesta/game/screens/nav'
@@ -15,6 +15,11 @@ import type { WidgetProps } from '../src/ui/screenMap.ts'
 import type { UaaHost } from '../src/ui/uaaHost.ts'
 
 class RecordingPort extends NullRenderPort {
+  lastCamera?: CameraPose
+  override setCamera(viewport: number, camera: CameraPose): void {
+    super.setCamera(viewport, camera)
+    this.lastCamera = camera
+  }
   readonly registered: string[] = []
   readonly skins: string[] = []
   readonly created: { instance: number; asset: number; tint: Vec3T | null }[] = []
@@ -278,4 +283,18 @@ test('all nine choices per slot wrap and variants reuse the base handle with the
   }
   assert.equal(s.port.registered.length, 13, 'one penguin and twelve meshes for all 36 choices')
   view.unmount()
+})
+
+test('start scene supplies dressing, penguin spot and camera while preserving the screen lifecycle', async () => {
+  const s = await setup()
+  const camera = { eye: [3, 2, 8] as Vec3T, target: [2, 1, 0] as Vec3T, fovYDeg: 47, near: .1, far: 500 }
+  const calls: string[] = []
+  const view = mountStartScreen(s.host, s.model, s.deps, { ...s.art,
+    scene: { courseId: 'start-season2', spot: { t: [2, 0, 0], yawDeg: 90 }, camera },
+    dressing: { enter(_port, id) { calls.push(id) }, leave() { calls.push('leave') } },
+  })
+  assert.deepEqual(s.port.transforms.get(0)!.t, [2, 0, 0])
+  assert.deepEqual(s.port.lastCamera, camera)
+  view.setVisible(false); view.setVisible(true); view.update(s.model, null); view.unmount()
+  assert.deepEqual(calls, ['start-season2', 'leave'])
 })

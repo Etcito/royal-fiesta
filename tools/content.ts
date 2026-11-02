@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { gzipSync } from 'node:zlib'
 import type { ProfileName } from '@royal-fiesta/sim/course'
 import { repoRoot } from './bricks.ts'
+import { sharedNodeIds } from './nodeIds.ts'
 import { loadCourseV1 } from '../packages/game/src/courseV1.ts'
 import type { GameAssetResolver, ResolvedGameAsset } from '../packages/game/src/courseV1.ts'
 import { parseGameAsset } from '../packages/game/src/gameAsset.ts'
@@ -110,6 +111,9 @@ export async function profileAssetIds(profile: ProfileName, dir = contentDir()):
 }
 
 // Strict validation before a pack: every asset and course loads, every haa patch has its header.
+const PENGUIN_ASSET = 'assets/common/penguin.body.asset.json'
+const COSTUME_ASSET = /^assets\/[a-z]+\/costume\.[a-z0-9.-]+\.asset\.json$/
+
 export async function validateContent(index: ContentIndex, dir = contentDir()): Promise<void> {
   const assets = new Map<string, ResolvedGameAsset>()
   for (const a of index.assets) {
@@ -117,6 +121,18 @@ export async function validateContent(index: ContentIndex, dir = contentDir()): 
     const asset = await parseGameAsset(json, a.path)
     if (asset.id !== a.id || asset.world !== a.world) throw new Error(`${a.path}: id/world do not match the file location`)
     assets.set(asset.id, { asset, source: { path: a.path, json } })
+  }
+  // A costume is merged into the penguin for the views render; a shared node id would overwrite the body.
+  const penguin = [...assets.values()].find((resolved) => resolved.source.path === PENGUIN_ASSET)
+  if (penguin !== undefined) {
+    const body = penguin.source.json as Record<string, unknown>
+    for (const resolved of assets.values()) {
+      if (!COSTUME_ASSET.test(resolved.source.path)) continue
+      const costume = resolved.source.json as Record<string, unknown>
+      for (const id of sharedNodeIds(costume.document, body.document)) {
+        throw new Error(`${resolved.source.path}#/document/nodes/${id}: node id also used by the penguin; re-save the costume with unique node ids`)
+      }
+    }
   }
   const resolver: GameAssetResolver = {
     async resolve(id) {

@@ -2,12 +2,32 @@
 import { readFile } from 'node:fs/promises'
 import { repoRoot } from './bricks.ts'
 import { contentPath } from './content.ts'
+import { sharedNodeIds } from './nodeIds.ts'
 import { parseGameAsset, type GameAsset } from '../packages/game/src/gameAsset.ts'
 import { refuse } from '../packages/sim/src/refusal.ts'
 
 export interface AuthoredAsset { rel: string; asset: GameAsset; json: Record<string, unknown> }
 type V3 = [number, number, number]
 interface Aabb { min: V3; max: V3 }
+
+const PENGUIN_ASSET = 'assets/common/penguin.body.asset.json'
+const COSTUME_ASSET = /^assets\/[a-z]+\/costume\.[a-z0-9.-]+\.asset\.json$/
+
+// The authoring load runs this on every costume: the views render merges the costume into the penguin, so a node
+// id it shares with the penguin would overwrite the body. Refuse it here, before the asset is saved, with the same
+// pointer and wording tools/renderViews.ts uses.
+async function refuseCostumeNodeIdCollisions(rel: string, json: Record<string, unknown>, root: string): Promise<void> {
+  if (!COSTUME_ASSET.test(rel)) return
+  let body: Record<string, unknown>
+  try {
+    body = JSON.parse(await readFile(contentPath(PENGUIN_ASSET, root), 'utf8')) as Record<string, unknown>
+  } catch {
+    return
+  }
+  for (const id of sharedNodeIds(json.document, body.document)) {
+    refuse('content', `${rel}#/document/nodes/${id}`, 'node id also used by the penguin; re-save the costume with unique node ids')
+  }
+}
 
 export async function loadAssetFile(rel: string, root = repoRoot()): Promise<AuthoredAsset> {
   let text: string
@@ -18,6 +38,7 @@ export async function loadAssetFile(rel: string, root = repoRoot()): Promise<Aut
   }
   const json = JSON.parse(text) as Record<string, unknown>
   const asset = await parseGameAsset(json, rel)
+  await refuseCostumeNodeIdCollisions(rel, json, root)
   return { rel, asset, json }
 }
 

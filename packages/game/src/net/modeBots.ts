@@ -1,3 +1,4 @@
+import { crossingBlocked } from '@royal-fiesta/sim/bots/crossing'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
 import { G, groups } from '@royal-fiesta/sim/groups'
@@ -24,6 +25,7 @@ export interface ModeBotMemory {
   takeover: object
   target: Vec3 | null
   stuckTicks: number
+  springTicks?: number
 }
 
 export function newModeBotMemory(): ModeBotMemory {
@@ -121,8 +123,9 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
         // distant tile/pad/crown must not shortcut the authored course across voids.
         // Tiles and boosts already lie on that route; stopping on a tile decays it.
         if (course.kind === 'race' && course.path.length > 0) {
-          if (feature.kind === 'tileField' || feature.kind === 'boostLane') continue
-          if (['launchPad', 'crown', 'risingKill'].includes(feature.kind)) {
+          if (['tileField', 'boostLane', 'swimVolume'].includes(feature.kind)) continue
+          if (feature.kind === 'risingKill') continue
+          if (['launchPad', 'crown'].includes(feature.kind)) {
             const distance = Math.hypot(goal.x - state.pos.x, goal.z - state.pos.z)
             const launching = feature.kind === 'launchPad' && !state.grounded && distance < 25
             if (!launching && (distance > LOCAL_TARGET_M || Math.abs(goal.y - state.pos.y) > 2)) continue
@@ -146,10 +149,11 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
       const feet = state.pos.y - CHAR.halfHeight - CHAR.radius
       out.moveX = len > 0.4 ? nx : 0
       out.moveZ = len > 0.4 ? nz : 0
-      out.jump = pathJumpAhead(course, state.pos.x, state.pos.z, nx, nz) ||
-        !groundAhead(domain, state.pos.x, feet, state.pos.z, nx, nz)
-      out.dive = len <= DIVE_DIST && !['tileField', 'hexField', 'risingKill', 'annulus', 'sweep'].includes(targetKind) && state.grounded
-      out.grab = grabNear(domain, state)
+      out.jump = (tick & 1) === 0 && (pathJumpAhead(course, state.pos.x, state.pos.z, nx, nz) ||
+        !groundAhead(domain, state.pos.x, feet, state.pos.z, nx, nz))
+      out.dive = (tick & 1) === 0 && len <= DIVE_DIST && !['tileField', 'hexField', 'risingKill', 'annulus', 'sweep'].includes(targetKind) && state.grounded
+      out.grab = targetKind === 'crown' || grabNear(domain, state)
+      if (targetKind === 'crown') { out.dive = false; out.jump = state.grounded && (tick & 1) === 0 }
       const planar = Math.sqrt(state.vel.x * state.vel.x + state.vel.z * state.vel.z)
       memory.stuckTicks = planar < STUCK_SPEED ? memory.stuckTicks + 1 : 0
       return encodeInput(out)
@@ -162,12 +166,12 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
     memory.stuckTicks++
     if (memory.stuckTicks >= STUCK_LIMIT + TAKEOVER_TICKS) memory.stuckTicks = 0
   }
-  takeoverInput(course, memory.takeover as Parameters<typeof takeoverInput>[1], state, tick, out, obstacleAhead(domain, state))
+  takeoverInput(course, memory.takeover as Parameters<typeof takeoverInput>[1], state, tick, out, obstacleAhead(domain, state), true)
   // Brake before an unsupported edge unless there is a landing within a jump's
   // horizontal range. Probe actual physics, including platforms and feature tiles.
   if (state.grounded && state.mode !== CharMode.swim) {
     const speed = Math.hypot(state.vel.x, state.vel.z)
-    const lead = Math.max(1, speed * speed / (2 * CHAR.groundBrake) + CHAR.radius)
+    const lead = Math.max(0.65, speed * speed / (2 * CHAR.groundBrake) + 0.25)
     const len = Math.hypot(out.moveX, out.moveZ)
     if (len > 0) {
       const nx = out.moveX / len, nz = out.moveZ / len
@@ -175,7 +179,7 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
       const supported = (ahead: number): boolean => {
         if (scratchRay === null) scratchRay = new domain.ctx.R.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 })
         scratchRay.origin.x = state.pos.x + nx * ahead
-        scratchRay.origin.y = feet + 0.5
+        scratchRay.origin.y = feet + 0.6
         scratchRay.origin.z = state.pos.z + nz * ahead
         scratchRay.dir.x = 0; scratchRay.dir.y = -1; scratchRay.dir.z = 0
         return domain.ctx.physics.world.castRay(scratchRay, 2, true, undefined,
@@ -183,11 +187,51 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
       }
       if (!supported(lead)) {
         let landing = false
-        for (let d = lead + 0.5; d <= 4; d += 0.5) if (supported(d)) { landing = true; break }
+        for (let d = lead + 0.25; d <= 5.5; d += 0.25) if (supported(d)) { landing = true; break }
         if (landing) out.jump = (tick & 1) === 0
-        else { out.moveX = 0; out.moveZ = 0; out.jump = false; out.dive = false }
+        else if (!out.jump) {
+          // Follow the support boundary towards a ramp/bridge rather than
+          // indefinitely braking on an authored chord that cuts its corner.
+          let best = -Infinity, bx = 0, bz = 0
+          for (const angle of [0.26, -0.26, 0.52, -0.52, 0.79, -0.79, 1.05, -1.05]) {
+            const x = nx * Math.cos(angle) - nz * Math.sin(angle)
+            const z = nx * Math.sin(angle) + nz * Math.cos(angle)
+            scratchRay!.origin.x = state.pos.x + x * (lead + 0.6)
+            scratchRay!.origin.z = state.pos.z + z * (lead + 0.6)
+            const hit = domain.ctx.physics.world.castRay(scratchRay!, 2, true, undefined,
+              groups(G.PROBE, G.STATIC | G.MOVING))
+            const score = x * nx + z * nz
+            if (hit && score > best) { best = score; bx = x; bz = z }
+          }
+          out.moveX = bx; out.moveZ = bz; out.dive = false
+        }
       }
     }
+  }
+  // Spring mechanisms need loading before takeoff. Running/jumping across the
+  // rim never compresses their dynamic pad and loses the launch needed above it.
+  const node = course.path[(memory.takeover as { pathIndex: number }).pathIndex]
+  if (node && node.p.y - state.pos.y > 1.8) {
+    for (const item of course.mechanisms?.items ?? []) {
+      if (!item.joints.some(j => j.kind === 'spring')) continue
+      const pad = item.bodies.find(b => b.type === 'dynamic' && b.surface === 'rubber')
+      if (!pad) continue
+      const dx = pad.rest.t.x - state.pos.x, dz = pad.rest.t.z - state.pos.z
+      const d = Math.hypot(dx, dz)
+      if (d > 3.5 || Math.abs(pad.rest.t.y - (state.pos.y - 0.85)) > 1) continue
+      memory.springTicks = (memory.springTicks ?? 0) + 1
+      if (memory.springTicks < 70) {
+        out.moveX = d > 0.3 ? dx / d : 0; out.moveZ = d > 0.3 ? dz / d : 0
+        out.jump = false; out.dive = false
+      } else if (state.grounded) out.jump = (tick & 1) === 0
+      if (memory.springTicks > 130) memory.springTicks = 0
+      break
+    }
+  } else memory.springTicks = 0
+  const direction = Math.hypot(out.moveX, out.moveZ)
+  if (state.grounded && direction > 0 && crossingBlocked(course, state.pos, state.vel,
+      out.moveX / direction, out.moveZ / direction, tick)) {
+    out.moveX = 0; out.moveZ = 0; out.jump = false; out.dive = false
   }
   return encodeInput(out)
 }

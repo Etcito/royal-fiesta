@@ -36,6 +36,7 @@ export function takeoverInput(
   tick: number,
   out: PlayerInput,
   obstacleAhead = false,
+  physicsTraversal = false,
 ): number {
   if (!Number.isInteger(tick) || tick < 0) throw new RangeError('brain tick must be a nonnegative integer')
   if (state.mode === CharMode.parked || state.mode === CharMode.frozen) {
@@ -52,7 +53,7 @@ export function takeoverInput(
       route: null,
       steer: null,
     }
-    memory.pathIndex = 0
+    memory.pathIndex = Math.max(0, nearestPathIndex(course, state.pos))
     memory.stuckTicks = 0
     memory.lastX = state.pos.x
     memory.lastZ = state.pos.z
@@ -64,6 +65,7 @@ export function takeoverInput(
   memory.ticks = tick
 
   const b = cache.brain
+  b.physicsTraversal = physicsTraversal
   b.obstacleAhead = obstacleAhead
   b.pos = state.pos
   b.vel = state.vel
@@ -78,7 +80,7 @@ export function takeoverInput(
     cache.steer = { ...route, waypoints: [] }
   }
   // Match BotSystem's ordered cursor: nearest-node steering alone can orbit a passed node.
-  const list = course.kind === 'survival' ? [nearestPathIndex(course, state.pos)].filter(i => i >= 0) : route.waypoints
+  const list = course.kind === 'survival' ? [nearestPathIndex(course, state.pos)].filter(i => i >= 0) : course.path.map((_, i) => i)
   let at = list.indexOf(memory.pathIndex)
   if (at < 0) {
     at = list.findIndex(w => w >= memory.pathIndex)
@@ -87,7 +89,10 @@ export function takeoverInput(
   while (at >= 0 && at < list.length - 1) {
     const node = course.path[list[at]]
     const x = node.p.x - state.pos.x, z = node.p.z - state.pos.z
-    if (Math.sqrt(x * x + z * z) > (node.jump ? 0.5 : behaviour.route.advanceDist)) break
+    const previous = course.path[Math.max(0, list[at] - 1)].p
+    const sx = node.p.x - previous.x, sz = node.p.z - previous.z
+    const passed = sx * -x + sz * -z >= 0 && Math.abs(node.p.y - state.pos.y) < 2
+    if (!passed && Math.sqrt(x * x + z * z) > (node.jump ? 0.8 : 1.2)) break
     at++
   }
   const steer = cache.steer!

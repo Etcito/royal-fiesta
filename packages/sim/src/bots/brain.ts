@@ -66,6 +66,7 @@ export function newMemory(): BrainMemory {
 
 export interface BrainInput {
   course: ResolvedCourse; pos: Vec3; vel: Vec3; facing: { x: number; z: number }; grounded: boolean; mode: number
+  physicsTraversal?: boolean
   obstacleAhead: boolean; hazardNear: boolean
   // Absent callbacks read as false, so view-side pilots compile and run unchanged.
   signalOn?: (id: string) => boolean; leverNear?: (id: string) => boolean
@@ -398,13 +399,13 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
   const feet = b.pos.y - CHAR.halfHeight - CHAR.radius
   const scan = scanAhead(groundBoxes(b.course, observed), feet, b.pos.x, b.pos.z, ux, uz)
   const climb = node.p.y > b.pos.y + 0.4 || (b.obstacleAhead && scan.ledgeTop !== -Infinity)
-  let jump = (rule?.action === 'jump' || (node.jump && dist <= JUMP_DIST)) && canJump
+  let jump = (rule?.action === 'jump' || (!b.physicsTraversal && node.jump && dist <= JUMP_DIST)) && canJump
   let dive = (rule?.action === 'dive' || (node.dive && dist <= JUMP_DIST)) && canDive
   let grab = rule?.action === 'grab' || hanging
   // The route geometry drives traversal independently of the matched action: a gap close
   // ahead is jumped, a reachable ledge is jumped at and caught while airborne, and a
   // see-saw in front is dived when no action already claims the tick.
-  if (scan.gap && canJump) jump = true
+  if (!b.physicsTraversal && scan.gap && canJump) jump = true
   if (climb) {
     if (canJump && scan.ledgeTop !== -Infinity) jump = true
     else if (!b.grounded && scan.ledgeTop !== -Infinity && scan.ledgeDist <= LEDGE_NEAR) grab = true

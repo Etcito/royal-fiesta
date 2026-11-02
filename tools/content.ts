@@ -113,7 +113,7 @@ export async function profileAssetIds(profile: ProfileName, dir = contentDir()):
     return new Response(path === 'index.json' ? JSON.stringify(index) : readFileSync(join(dir, path), 'utf8'))
   }
   const { courses, byId } = await loadV1Courses(() => {}, { root: 'disk://', fetch: read as typeof fetch })
-  return assetSet(courses, byId, profile)
+  return assetSet(courses, byId, profile, index.assets.map(e => e.id).filter(id => id.startsWith('costume.')))
 }
 
 // Strict validation before a pack: every asset and course loads, every haa patch has its header.

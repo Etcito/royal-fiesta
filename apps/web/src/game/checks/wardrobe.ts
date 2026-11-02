@@ -5,6 +5,7 @@
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { checkBoot, nextTask } from './boot.ts'
+import { pendingPipelines } from '../../render/asyncPipelines.ts'
 import economyDocText from '../../../../../economy/royal-fiesta.economy.json?raw'
 
 export const name = 'wardrobe'
@@ -246,8 +247,21 @@ async function holdClock(game: TourGame): Promise<() => void> {
 }
 
 // One settled frame awaited, then the last one stepped and captured in the same task.
+// RAA omits a draw while its pipeline compiles (render/asyncPipelines.ts): a frame taken before they finish shows no
+// penguin and no costume (the 11311 captures were the bare background), so every capture waits for them. Date.now,
+// not performance.now, which a multi-client run freezes.
+async function pipelinesReady(game: TourGame, what: string): Promise<void> {
+  const deadline = Date.now() + 120000
+  while (pendingPipelines() > 0) {
+    if (Date.now() >= deadline) throw new Error(`wardrobe: ${what}: ${pendingPipelines()} pipelines still compiling after 120 s`)
+    await new Promise<void>(resolve => setTimeout(resolve, 20))
+  }
+  await step(game)
+}
+
 async function shoot(game: TourGame): Promise<{ shot: Promise<Shot>; inventory: ReturnType<typeof stageInventory> }> {
   await settle(game, 1)
+  await pipelinesReady(game, 'before the capture')
   game.step(DT)
   return { inventory: stageInventory(game), shot: capture(game) }
 }

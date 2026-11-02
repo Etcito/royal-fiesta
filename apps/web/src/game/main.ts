@@ -45,7 +45,7 @@ import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import { skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { menuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
-import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, flowAction } from '@royal-fiesta/game/screens/nav'
+import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, backPauses, flowAction } from '@royal-fiesta/game/screens/nav'
 import type { Action, EconomyScreen, GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
 import { SETTINGS_ROWS, adjust, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
 import type { KeyAction, Settings, SettingsStore } from '@royal-fiesta/game/screens/settings'
@@ -2359,6 +2359,12 @@ class App {
         host.input({ kind: 'pointer', phase: 'down', x: ev.x, y: ev.y })
         host.input({ kind: 'pointer', phase: 'up', x: ev.x, y: ev.y })
       }
+      return
+    }
+    // Pausing is the game's, not the menu's: the uaa host drops input while a screen transition plays,
+    // which would swallow an Escape pressed as the result screen pops in.
+    if (ev.k === 'back' && this.nav.live && backPauses(this.nav.screen)) {
+      this.run(this.nav.dispatch({ kind: 'back' }))
       return
     }
     if (this.mode instanceof ShowAdapter && (this.nav.screen === 'result' || this.nav.screen === 'endScreen')) {

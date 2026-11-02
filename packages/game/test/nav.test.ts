@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, SCREENS, flowAction, navGraph, navStates } from '../src/screens/nav.ts'
+import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, SCREENS, backPauses, flowAction, navGraph, navStates } from '../src/screens/nav.ts'
 import type { Action, NavEvent, Screen } from '../src/screens/nav.ts'
 import type { LoadProgress } from '../src/content.ts'
 
@@ -345,4 +345,17 @@ test('a scripted flow reaches start, vote, elimShow and endScreen, then confirm 
   assert.equal(nav.screen, 'start')
   assert.equal(nav.live, false)
   assert.equal(nav.inMatch, false)
+})
+
+// The App sends back straight to nav on these screens, never through the uaa host (which drops input mid-transition).
+test('backPauses names exactly the screens where back opens pause', () => {
+  for (const s of SCREENS) {
+    const nav = new Nav()
+    nav.screen = s
+    nav.live = true
+    const pauses = backPauses(s)
+    if (pauses) assert.deepEqual(nav.dispatch(back), [Effect.pause], s)
+    assert.equal(nav.screen === 'pause' && s !== 'pause', pauses, s)
+  }
+  assert.equal(backPauses('result'), true)
 })

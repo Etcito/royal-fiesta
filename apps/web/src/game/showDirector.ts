@@ -29,6 +29,8 @@ export interface ShowFrame {
 
 /** Call step(action, dtMs) before advancing the match, and respect its hold.
  * Newly observed phases start at zero; dt belongs to the previously displayed phase.
+ * The countdown holds the match until its last introMs: the match's own frozen intro then plays under GO,
+ * so the round cannot run (or end) under 3-2-1 and the screen lives its full COUNTDOWN_MS.
  * worldReady must name the currently loading plan, so stale async loads cannot release it.
  */
 export class ShowDirector {
@@ -47,11 +49,13 @@ export class ShowDirector {
   private endModel: EndScreenModel | null = null
   private label: ReturnType<typeof countdownAt>['label'] = null
   private readonly voteMs: number
+  private readonly introMs: number
   private ready = false
   private finished = false
 
-  constructor(port: ShowPort, info: ShowDirector['info'], names: (seat: number) => string, localSeat: number, voteMs = VOTE_MS) {
+  constructor(port: ShowPort, info: ShowDirector['info'], names: (seat: number) => string, localSeat: number, voteMs = VOTE_MS, introMs = 0) {
     this.voteMs = voteMs
+    this.introMs = Math.min(COUNTDOWN_MS, Math.max(0, introMs))
     this.port = port
     this.info = info
     this.names = names
@@ -175,7 +179,9 @@ export class ShowDirector {
       results: this.phase === 'results' ? this.rows : null,
       elimShow: this.phase === 'elimShow' ? this.elimination : null,
       endScreen: this.phase === 'end' || this.phase === 'podium' ? this.endModel : null,
-      sounds, hold: ['load', 'results', 'elimShow', 'podium', 'end'].includes(this.phase), finished: this.finished,
+      sounds, finished: this.finished,
+      hold: ['load', 'results', 'elimShow', 'podium', 'end'].includes(this.phase)
+        || (this.phase === 'countdown' && this.ms < COUNTDOWN_MS - this.introMs),
     }
   }
 }

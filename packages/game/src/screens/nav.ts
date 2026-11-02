@@ -118,6 +118,11 @@ const OUTSIDE_MATCH: readonly Screen[] = ['hub', 'queue', 'lobbyChoice', 'lobbyL
 // Game screens of a match, where back pauses the game.
 const PAUSABLE: readonly Screen[] = ['countdown', 'round', 'spectate', 'result', 'vote', 'elimShow']
 
+// Screens where back opens the pause menu: the hub and the match screens.
+export function backPauses(s: Screen): boolean {
+  return s === 'hub' || PAUSABLE.includes(s)
+}
+
 export function isGameScreen(s: Screen): s is GameScreen {
   return (GAME_SCREENS as readonly Screen[]).includes(s)
 }
@@ -217,7 +222,7 @@ export class Nav {
 
   private back(): Effect[] {
     const s = this.screen
-    if (s === 'hub' || PAUSABLE.includes(s)) {
+    if (backPauses(s)) {
       this.resumeTo = s as GameScreen
       this.screen = 'pause'
       return [Effect.pause]

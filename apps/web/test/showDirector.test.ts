@@ -33,7 +33,7 @@ function load(director: ShowDirector, port: ReturnType<typeof fixture>['port'], 
   port.round = { plan: { index } }
   assert.equal(director.step(null, 0).hold, true)
   director.worldReady(index)
-  assert.equal(director.step(null, 0).hold, false)
+  assert.equal(director.step(null, 0).hold, true, 'the countdown holds the match under 3-2-1')
   return director.step(null, 4000)
 }
 
@@ -109,7 +109,7 @@ test('loading is untimed; only matching worldReady starts countdown and cues eac
   assert.deepEqual(loading.sounds, [])
   director.worldReady(7)
   const start = director.step(null, 0)
-  assert.equal(start.hold, false)
+  assert.equal(start.hold, true)
   assert.equal(start.countdown?.label, '3')
   assert.deepEqual(start.sounds, ['flow.count-tick'])
   director.worldReady(7) // duplicate readiness must not restart the countdown
@@ -277,4 +277,30 @@ test('between rounds, loading stays visible until the next vote has its candidat
   assert.equal(first.screen, 'vote')
   assert.equal(first.vote?.msLeft, 5000)
   for (let i = 1; i <= 3; i++) assert.equal(director.step(null, 16).vote?.msLeft, 5000 - i * 16)
+})
+
+// The match's own frozen intro plays under GO: the round cannot run, or end, under 3-2-1,
+// so the countdown screen lives exactly COUNTDOWN_MS and leaves on its own timer.
+test('countdown holds the match until its last introMs, then leaves at COUNTDOWN_MS', () => {
+  const { port } = fixture()
+  const director = new ShowDirector(port, map => ({ name: `Map ${map}`, kind: 'race' }), seat => `Bean ${seat}`, 0, undefined, 1000)
+  port.candidates = null
+  port.round = { plan: { index: 0 } }
+  director.step(null, 0)
+  director.worldReady(0)
+  const start = director.step(null, 0)
+  assert.equal(start.countdown?.label, '3')
+  assert.equal(start.hold, true)
+  for (let ms = 50; ms < 3000; ms += 50) assert.equal(director.step(null, 50).hold, true, `held at ${ms} ms`)
+  const go = director.step(null, 50)
+  assert.equal(go.countdown?.label, 'GO')
+  assert.equal(go.hold, false)
+  for (let ms = 3050; ms < 4000; ms += 50) {
+    const frame = director.step(null, 50)
+    assert.equal(frame.screen, 'countdown', `still counting at ${ms} ms`)
+    assert.equal(frame.hold, false)
+  }
+  const round = director.step(null, 50)
+  assert.equal(round.screen, 'round')
+  assert.deepEqual(round.sounds, ['flow.round-start'])
 })

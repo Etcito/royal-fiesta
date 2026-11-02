@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { isRefusal } from '../../packages/sim/src/refusal.ts'
 import { repoRoot } from '../bricks.ts'
-import { loadAssetFile } from '../contentProbe.ts'
+import { loadAssetFile, mountedBounds } from '../contentProbe.ts'
 import { checkPaths, costumeNodeIdViolations } from '../guard.ts'
 import { sharedMaterialIds, sharedNodeIds } from '../nodeIds.ts'
 import { mergeDocuments } from '../renderViews.ts'
@@ -120,10 +120,27 @@ test('a costume reusing a penguin material id fails the guard, as the views rend
   }
 })
 
-test('every costume asset in the repository passes the guard rules against the penguin', () => {
+test('every costume asset has unique node ids and mounts into the penguin render document', async (t) => {
   const costumes = readdirSync(join(repoRoot(), 'assets/common'))
     .filter((f) => /^costume\..+\.asset\.json$/.test(f))
     .map((f) => `assets/common/${f}`)
   assert.ok(costumes.length >= M13_COSTUMES.length)
+  const body = await loadAssetFile(PENGUIN)
+  const bodyDocument = document(body)
+  for (const rel of costumes) {
+    await t.test(rel, async () => {
+      const json = JSON.parse(readFileSync(join(repoRoot(), rel), 'utf8')) as Obj
+      const ids = sharedNodeIds(json.document, bodyDocument)
+      assert.deepEqual(ids, [], `${rel}: node ids also used by the penguin: ${ids.join(', ')}`)
+      const costume = await loadAssetFile(rel)
+      const bounds = mountedBounds(costume, body)
+      const min = costume.asset.bounds.min
+      mergeDocuments(bodyDocument, [{
+        document: document(costume),
+        offset: [bounds.min[0] - min.x, bounds.min[1] - min.y, bounds.min[2] - min.z],
+        rel,
+      }])
+    })
+  }
   assert.deepEqual(costumeNodeIdViolations(repoRoot(), costumes), [])
 })

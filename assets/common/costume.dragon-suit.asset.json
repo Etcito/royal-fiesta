@@ -296,8 +296,9 @@
         "name": "back_spike_0",
         "kind": "paramesh",
         "transform": {
-          "position": [0, 0.46, -0.36],
-          "rotation": [25, 0, 0]
+          "position": [0, 0.46, -0.403],
+          "rotation": [35, 0, 0],
+          "scale": [1.5, 1.4, 1.5]
         },
         "smooth": 0.02,
         "material": "spikes",
@@ -333,8 +334,9 @@
         "name": "back_spike_1",
         "kind": "paramesh",
         "transform": {
-          "position": [0, 0.225, -0.48],
-          "rotation": [25, 0, 0]
+          "position": [0, 0.225, -0.529],
+          "rotation": [25, 0, 0],
+          "scale": [1.5, 1.4, 1.5]
         },
         "smooth": 0.02,
         "material": "spikes",
@@ -370,8 +372,9 @@
         "name": "back_spike_2",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.01, -0.55],
-          "rotation": [25, 0, 0]
+          "position": [0, -0.01, -0.585],
+          "rotation": [25, 0, 0],
+          "scale": [1.5, 1.4, 1.5]
         },
         "smooth": 0.02,
         "material": "spikes",
@@ -407,8 +410,9 @@
         "name": "back_spike_3",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.245, -0.57],
-          "rotation": [25, 0, 0]
+          "position": [0, -0.245, -0.593],
+          "rotation": [25, 0, 0],
+          "scale": [1.5, 1.4, 1.5]
         },
         "smooth": 0.02,
         "material": "spikes",
@@ -444,8 +448,9 @@
         "name": "back_spike_4",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.48, -0.56],
-          "rotation": [25, 0, 0]
+          "position": [0, -0.48, -0.578],
+          "rotation": [25, 0, 0],
+          "scale": [1.5, 1.4, 1.5]
         },
         "smooth": 0.02,
         "material": "spikes",
@@ -833,7 +838,7 @@
               "id": "out",
               "type": "material.output",
               "params": {
-                "in.base_color": "#9edb66",
+                "in.base_color": "#c4f58a",
                 "in.roughness": 0.82
               },
               "position": [0, 0]
@@ -855,5 +860,5 @@
     "min": [-0.75, -1.08, -0.91],
     "max": [0.75, 0.72, 0.69]
   },
-  "hash": "14a0584ca348feb65668a85ff57e6ee83ab2c3bd6ec3dc1e561443777872503f"
+  "hash": "a04cd05598cbbc13d6ff9443285628748cb228913d9d9e31a98e0954425e031b"
 }

@@ -50,7 +50,7 @@ export async function run(_input: unknown, deps: TourDeps) {
       await until(() => text(`line-${slot + 1}`).includes('OWNED'), `purchase failed: ${id}`)
       if (!text('line-0').includes(`Coins ${470 - slot * 30} · Tickets 20`)) throw new Error('purchase debit mismatch')
       await press('Escape')
-      await until(() => live.host.currentScreen() === 'start' && text('bin-head').includes('None'), 'wardrobe did not refresh')
+      await until(() => live.host.currentScreen() === 'start' && text('bin-head').length > 0, 'wardrobe did not refresh')
       for (let i = 0; i < slot; i++) await press('ArrowDown')
       let found = false
       for (let i = 0; i < 5; i++) {

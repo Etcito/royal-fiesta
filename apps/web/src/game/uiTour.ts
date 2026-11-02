@@ -5,6 +5,9 @@
 // screen callback. Each screen is captured after two settled frames, as the RAA views and canvas#ui composited
 // in the task that drew them.
 import { refuse } from '@royal-fiesta/sim/refusal'
+import type { CatalogItem, Me } from '@royal-fiesta/game/economy/contract'
+import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
+import type { ShopModel } from '@royal-fiesta/game/flow/shop'
 import type { AdapterInfo } from '../nmc/ops.ts'
 import { raaStatus } from '../render/raaStatus.ts'
 import type { UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
@@ -18,12 +21,19 @@ export interface TourGame {
   // One App frame: input, nav, the mode (dtS of game time) and the uaa frame at performance.now().
   step(dtS: number): void
   // The App's live scene/GPU inventory (mode, screen, ports, start view, sound, listeners).
+  inspect?(): Promise<{
+    offline: boolean
+    me: Me
+    catalog: { items: CatalogItem[] }
+    bins: StartScreenModel['bins'] | undefined
+    shop: ShopModel | null
+  }>
   inventory(): unknown
   dispose(): void
 }
 // refuseFirstLoad: the tour's own entry to 'loading' (Retry on the error screen); only runTour sets it, so the
 // check ops boot straight to start.
-export interface BootOptions { refuseFirstLoad?: boolean; starterInventory?: boolean }
+export interface BootOptions { refuseFirstLoad?: boolean; starterInventory?: boolean; plain?: boolean; saved?: Record<string, string> }
 export type BootGame = (onScreen: (e: UaaScreenChange) => void, options?: BootOptions) => Promise<TourGame>
 export interface TourDeps { boot: BootGame; adapter: () => Promise<AdapterInfo> }
 

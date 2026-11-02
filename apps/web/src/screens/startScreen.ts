@@ -67,7 +67,7 @@ function present(host: UaaHost, model: StartScreenModel): void {
     'palette-mark': { visible: false },
   }
   model.bins.forEach((bin, index) => {
-    const label = `< ${cosmeticName(bin.items[bin.selected])} >`
+    const label = `< ${cosmeticName(bin.items[bin.selected])} > · ${bin.items.length} owned`
     props[`bin-${bin.slot}`] = {
       text: focused(label, model.focus === 'bins' && model.bin === index), visible: true,
     }

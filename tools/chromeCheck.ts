@@ -10,7 +10,7 @@ import { dirname, extname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { publishDist, renderOp } from '../apps/headless/src/gpuClient.ts'
-import { packContent, profileAssetIds } from './content.ts'
+import { buildContentIndex, packContent, profileAssetIds } from './content.ts'
 import { MeshBaker } from './meshBake.ts'
 
 // The GPU client may not have attached when the card starts; NMC_GPU_WAIT_S bounds that wait, with this
@@ -227,6 +227,12 @@ export function injectTestQuery(html: string): string {
     + html.slice(match.index)
 }
 
+// Diagnostics alone leave the plain URL and the production inventory branch intact.
+function injectPlainDiagnostics(html: string): string {
+  const match = bundleMatch(html, 'install plain diagnostics before')
+  return html.slice(0, match.index) + `<script type="module" data-nmc-plain>${DIAGNOSTICS}</script>` + html.slice(match.index)
+}
+
 // The check ops do not report their adapter, so the copied page wraps the selected op and adds the facts
 // to its json. The wrapper runs after the bundle registers the ops, before the GPU client calls one.
 // A wrapped entry placeholder stays marked pending: the game's check install replaces it, not a duplicate.
@@ -303,7 +309,8 @@ export function prepareGpuCopy(source: string, op: string, target: string): void
   const ops = [...new Set([...(manifest.ops as string[]), op])]
   writeFileSync(manifestFile, `${JSON.stringify({ ...manifest, ops }, null, 2)}\n`)
   const page = join(target, 'game.html')
-  writeFileSync(page, injectAdapter(injectTestQuery(readFileSync(page, 'utf8')), op))
+  const html = readFileSync(page, 'utf8')
+  writeFileSync(page, injectAdapter(op === 'startPlain' ? injectPlainDiagnostics(html) : injectTestQuery(html), op))
   // tools/play.ts serves the same fallback: a local build has no deployment stamp.
   const buildFile = join(target, 'rf-build.json')
   if (!existsSync(buildFile)) writeFileSync(buildFile, `${JSON.stringify({ commit: null, builtAt: 'dev' })}\n`)
@@ -356,13 +363,23 @@ export function exitCode(op: string, report: Report, mode: Mode): number {
 
 // Bake the meshes the game page meshes (sprint profile plus every catalog cosmetic) and pack this load's
 // keys into dist/content, exactly as the local route did before the GPU route took over.
-async function bakeAndPack(): Promise<string> {
+async function bakeAndPack(op?: string): Promise<string> {
   const dist = resolve('apps/web/dist')
   if (!existsSync(join(dist, 'game.html'))) throw new Error('apps/web/dist/game.html missing; run npm run build')
   const cpus = Math.max(1, Math.floor(Number(process.env.NMC_CPUS) || 1))
   process.env.RF_MESH_JOBS = String(Math.min(cpus, Math.max(1, Math.floor(Number(process.env.RF_MESH_JOBS) || cpus))))
   const catalog = JSON.parse(readFileSync('economy/catalog.season1.json', 'utf8')) as { items: { asset: string }[] }
-  const baker = new MeshBaker(undefined, undefined, new Set([...await profileAssetIds('sprint'), ...catalog.items.map(item => item.asset)]))
+  const needed = new Set([...await profileAssetIds('sprint'), ...catalog.items.map(item => item.asset)])
+  // The plain page can use its shipped saved meshes, just as the served page does.
+  // Adding a second full server-mesh cache exceeds the GPU upload size limit.
+  if (op === 'startPlain') {
+    const assets = buildContentIndex().assets
+    if ([...needed].every(id => assets.some(asset => asset.id === id && asset.mesh !== undefined))) {
+      packContent(join(dist, 'content'), undefined, new Set())
+      return dist
+    }
+  }
+  const baker = new MeshBaker(undefined, undefined, needed)
   await baker.scan()
   packContent(join(dist, 'content'), undefined, baker.keys)
   return dist
@@ -373,7 +390,7 @@ async function gpu(op: string, input: unknown, out: string): Promise<Report> {
   // gpuClient.ts reads the same variable for its own publish/render calls.
   process.env.NMC_GPU_WAIT_S = String(seconds)
   await waitForGpuClient(seconds)
-  const dist = await bakeAndPack()
+  const dist = await bakeAndPack(op)
   const scratch = mkdtempSync(join(tmpdir(), 'chrome-check-gpu-'))
   try {
     prepareGpuCopy(dist, op, scratch)
@@ -390,7 +407,7 @@ async function gpu(op: string, input: unknown, out: string): Promise<Report> {
 // exitCode() always fails the wardrobe, vote and countdowns proofs.
 async function software(op: string, input: unknown, out: string): Promise<Report> {
   if (!process.env.CHROME_PATH) throw new Error('CHROME_PATH is unset')
-  const dist = await bakeAndPack()
+  const dist = await bakeAndPack(op)
   const report = makeReport(null, 'software')
   const types: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.wasm': 'application/wasm', '.css': 'text/css', '.png': 'image/png', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.avif': 'image/avif', '.wav': 'audio/wav' }
   const server = createServer((req, res) => {

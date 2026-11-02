@@ -1278,19 +1278,19 @@ function refusal(area: string, where: string, what: string): string {
 // The wardrobe the start screen keeps: the body colour and the item worn in each bin slot.
 const WARDROBE_KEY = 'rf.wardrobe'
 
-interface Wardrobe { colour: number; worn: Record<string, string> }
+interface Wardrobe { colour: number; worn: Record<string, string>; version?: number }
 
 function readWardrobe(store: SettingsStore, fallbackColour: number): Wardrobe {
   const raw = store.getItem(WARDROBE_KEY)
   if (raw === null) return { colour: fallbackColour, worn: {} }
   try {
-    const data = JSON.parse(raw) as { colour?: unknown; worn?: unknown }
+    const data = JSON.parse(raw) as { colour?: unknown; worn?: unknown; version?: number }
     const colour = typeof data.colour === 'number' && Number.isInteger(data.colour) ? data.colour : fallbackColour
     const worn: Record<string, string> = {}
     if (typeof data.worn === 'object' && data.worn !== null) {
       for (const [slot, item] of Object.entries(data.worn)) if (typeof item === 'string') worn[slot] = item
     }
-    return { colour, worn }
+    return { colour, worn, version: data.version }
   } catch {
     return { colour: fallbackColour, worn: {} }
   }
@@ -1560,6 +1560,11 @@ class App {
       listeners: this.lobbyListeners,
       camera: { yaw: this.orbit.yaw, pitch: this.orbit.pitch, rendered: this.mode instanceof ShowAdapter ? this.mode.show.camera : null },
     }
+  }
+
+  async inspectEconomy() {
+    return { offline: this.economy.stub !== null, me: await this.economy.port.me(), catalog: await this.economy.port.catalog(),
+      bins: this.startModel?.bins, shop: this.economyScreens.shop }
   }
 
   fail(message: string): void {
@@ -1888,7 +1893,19 @@ class App {
     }
     if (this.disposed || this.loaded !== loaded) return
     this.startCosmetics = cosmetics
-    this.startModel = startScreen(owned, cosmetics, badge, readWardrobe(this.env.store, this.query?.colour ?? 0))
+    const saved = readWardrobe(this.env.store, this.query?.colour ?? 0)
+    // Older saves did not distinguish an untouched bin from an explicit None choice.
+    // Dress the offline starter once; future saves retain explicit empty slots.
+    if (this.economy.stub !== null && saved.version !== 2) {
+      for (const slot of ['head', 'body', 'bottom', 'special']) {
+        if (!owned.includes(saved.worn[slot])) {
+          const first = cosmetics.find(item => item.slot === slot && owned.includes(item.id))
+          if (first) saved.worn[slot] = first.id
+        }
+      }
+    }
+    this.startModel = startScreen(owned, cosmetics, badge, saved)
+    if (this.economy.stub !== null && saved.version !== 2) this.saveWardrobe(this.startModel)
     // The mounts follow this catalog: rebuild the art once the wardrobe is known and remount its view so a
     // cosmetic bought since the last visit draws its worn instance.
     const port = loaded.ports[0]
@@ -2162,7 +2179,7 @@ class App {
     const worn: Record<string, string> = {}
     for (const bin of model.bins) if (bin.selected >= 0) worn[bin.slot] = bin.items[bin.selected]
     try {
-      this.env.store.setItem(WARDROBE_KEY, JSON.stringify({ colour: model.colour, worn }))
+      this.env.store.setItem(WARDROBE_KEY, JSON.stringify({ version: 2, colour: model.colour, worn }))
     } catch (e) {
       console.warn('[start] wardrobe not saved:', messageOf(e))
     }
@@ -2388,6 +2405,7 @@ class App {
             }
           })
         } else if (ev.k === 'click') {
+          if (screen === 'shop' && this.economyScreens.pickShop(ev.x, ev.y)) return
           host.input({ kind: 'pointer', phase: 'move', x: ev.x, y: ev.y })
           host.input({ kind: 'pointer', phase: 'down', x: ev.x, y: ev.y })
           host.input({ kind: 'pointer', phase: 'up', x: ev.x, y: ev.y })
@@ -2541,7 +2559,7 @@ function pageRoots(): { views: HTMLElement; screens: HTMLElement } {
 // Boot waits for the uaa host: there is no DOM menu, so a GPU, asset or font failure fails the boot.
 // taken: an op took the page while the host was being created; the App then never starts.
 async function start(
-  canvas: HTMLCanvasElement, env: AppEnv, taken: () => boolean, onScreen?: (e: UaaScreenChange) => void,
+  canvas: HTMLCanvasElement, env: AppEnv, taken: () => boolean, onScreen?: (e: UaaScreenChange) => void, searchOverride?: string,
 ): Promise<{ app: App; host: UaaHost } | null> {
   const { views, screens } = pageRoots()
   let created: App | null = null
@@ -2553,8 +2571,8 @@ async function start(
     host.destroy()
     return null
   }
-  const search = new URLSearchParams(window.location.search)
-  if ((window as Window & { __nmcCheckTest?: boolean }).__nmcCheckTest) search.set('test', '1')
+  const search = new URLSearchParams(searchOverride ?? window.location.search)
+  if (searchOverride === undefined && (window as Window & { __nmcCheckTest?: boolean }).__nmcCheckTest) search.set('test', '1')
   const booted = new App(views, screens, host, `?${search}`, env)
   created = booted
   booted.start()
@@ -2571,7 +2589,7 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void, options: BootO
   const ui = document.createElement('canvas')
   ui.id = 'ui'
   screens.replaceChildren(ui)
-  const saved = new Map<string, string>()
+  const saved = new Map<string, string>(Object.entries(options.saved ?? {}))
   let frame: ((dtS: number) => void) | null = null
   let loads = 0
   const env: AppEnv = {
@@ -2587,9 +2605,10 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void, options: BootO
       if (options.refuseFirstLoad === true && loads++ === 0) throw new Error('uiTour: the boot load is refused so the tour reaches loading with Retry')
     },
   }
-  const booted = await start(ui, env, () => false, onScreen)
+  const booted = await start(ui, env, () => false, onScreen, options.plain ? '' : undefined)
   if (booted === null) throw new Error('uiTour: the App did not start')
-  return { host: booted.host, ui, views, step: dt => frame?.(dt), inventory: () => booted.app.inventory(), dispose: () => booted.app.dispose() }
+  return { host: booted.host, ui, views, step: dt => frame?.(dt), inventory: () => booted.app.inventory(),
+    inspect: () => booted.app.inspectEconomy(), dispose: () => booted.app.dispose() }
 }
 
 // Nothing mounted: write the message into the page rather than only the console, and let the Wavedash shell show it.

@@ -107,6 +107,25 @@ export class EconomyScreens {
     return null
   }
 
+  /** The catalog grid uses the same confirmation and purchase path as keyboard input. */
+  pickShop(x: number, y: number): boolean {
+    if (this.screen !== 'shop' || this.loading || this.shopState?.pending) return false
+    const model = this.shopState
+    if (!model) return false
+    const dpr = globalThis.devicePixelRatio || 1
+    for (let row = 0; row < model.slots.length; row++) {
+      for (let column = 0; column < model.slots[row].items.length; column++) {
+        const rect = this.host.widgetRect(`catalog-item-${row}-${column}`)
+        if (rect && x / dpr >= rect.x && x / dpr <= rect.x + rect.w && y / dpr >= rect.y && y / dpr <= rect.y + rect.h) {
+          this.shopState = { ...model, focus: [row, column] }
+          void this.shopAction('confirm')
+          return true
+        }
+      }
+    }
+    return false
+  }
+
   /** Forwards the commission description into its flow model. */
   text(value: string): void {
     const model = this.commissionState

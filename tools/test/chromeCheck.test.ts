@@ -178,3 +178,19 @@ test('the GPU route fails on a software adapter and on a missing adapter', () =>
   assert.equal(exitCode('wardrobe', software, 'gpu'), 1)
   assert.equal(exitCode('wardrobe', makeReport({ ok: true }, 'gpu'), 'gpu'), 1, 'an unproven adapter cannot pass')
 })
+
+test('startPlain keeps the plain boot and never injects the test inventory switch', () => {
+  const root = mkdtempSync(join(tmpdir(), 'chrome-plain-'))
+  const source = join(root, 'source')
+  mkdirSync(source)
+  writeFileSync(join(source, 'nmc.gpu.json'), JSON.stringify({ page: 'game.html', ops: [] }))
+  writeFileSync(join(source, 'game.html'), '<html><body><script type="module" src="./game.js"></script></body></html>')
+  try {
+    prepareGpuCopy(source, 'startPlain', join(root, 'copy'))
+    const html = readFileSync(join(root, 'copy/game.html'), 'utf8')
+    assert.doesNotMatch(html, /__nmcCheckTest|data-nmc-test-query|test=1/)
+    assert.match(html, /nmcCheckAdapter/)
+    assert.match(html, /data-nmc-plain/)
+    assert.match(html, /addEventListener\("error"/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})

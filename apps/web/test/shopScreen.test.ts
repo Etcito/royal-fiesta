@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { loadUiDoc } from '@etcito/uaa'
 import { createEconomyStub } from '@royal-fiesta/game/economy/stub'
 import { shopLines, shopModel, shopStep, type ShopModel } from '@royal-fiesta/game/flow/shop'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
@@ -10,6 +11,10 @@ import { screenProps, widgetsOf, type ScreensDoc, type WidgetProps } from '../sr
 import type { UaaHost } from '../src/ui/uaaHost.ts'
 
 const doc = JSON.parse(readFileSync(new URL('../../../ui/screens.ui-doc.json', import.meta.url), 'utf8')) as ScreensDoc
+
+test('catalog UI document passes the runtime schema', () => {
+  assert.doesNotThrow(() => loadUiDoc(doc))
+})
 
 async function setup() {
   const economy = createEconomyStub({ me: { coins: 1000, tickets: 10, owned: [] } })
@@ -52,8 +57,13 @@ test('shop presents shopLines and maps all three buttons to the real UI doc', as
     }
     menu.lines.forEach((text, index) => {
       assert.deepEqual(mapped.props[`line-${index}`], { text, visible: true })
-      assert.deepEqual(s.hud.at(-1)![`line-${index}`], { text, visible: true })
+      if (index !== 6) assert.deepEqual(s.hud.at(-1)![`line-${index}`], { text, visible: index === 0 })
     })
+    const hud = s.hud.at(-1)!
+    const visible = Object.entries(hud).filter(([id, props]) => id.startsWith('catalog-item-') && props.visible)
+    assert.equal(visible.length, model.slots.reduce((n, slot) => n + slot.items.length, 0))
+    for (const [id] of visible) assert.ok(ids.has(id), `${id} is rendered by the UI doc`)
+    assert.equal(hud['line-6'].visible, true)
   }
   check(s.model, ['Inbox', 'Commission', 'Back'])
   for (const column of [0, 1]) {

@@ -33,6 +33,7 @@ function fakeField(): TextFieldElement {
 interface Rig {
   stub: ReturnType<typeof createEconomyStub>
   screens: EconomyScreens
+  host: UaaHost
   menus: MenuModel[]
   calls: string[]
   cues: string[]
@@ -95,7 +96,7 @@ async function setup(): Promise<Rig> {
     createField: () => field,
   })
   assert.equal(hud.length, 0)
-  return { stub, screens, menus, calls, cues, field }
+  return { stub, screens, host, menus, calls, cues, field }
 }
 
 test('open shop shows Loading…, then down+confirm buys and the focused row shows OWNED', async () => {
@@ -167,4 +168,21 @@ test('a URL description is refused locally and never calls port.commission', asy
 test('refreshCount reports the unread inbox count for the start badge', async () => {
   const s = await setup()
   assert.equal(await s.screens.refreshCount(), 1)
+})
+
+
+test('the catalog grid click buys the clicked item through the shared purchase path', async () => {
+  const s = await setup()
+  s.host.widgetRect = id => id === 'catalog-item-1-0' ? { x: 10, y: 10, w: 100, h: 30 } : null
+  await s.screens.open('shop')
+  const before = await s.stub.me()
+  assert.equal(s.screens.pickShop(20, 20), true)
+  await new Promise(resolve => setImmediate(resolve))
+  const after = await s.stub.me()
+  assert.equal(after.coins, before.coins - 20)
+  assert.ok(after.owned.includes('costume.suit'))
+  assert.deepEqual(s.screens.shop?.focus, [1, 0])
+  assert.equal(s.screens.pickShop(900, 900), false)
+  s.screens.close()
+  assert.equal(s.screens.pickShop(20, 20), false)
 })

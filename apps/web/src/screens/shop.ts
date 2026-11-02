@@ -33,7 +33,22 @@ function present(host: UaaHost, model: ShopModel): void {
   }
   host.present(menu)
   const props: Record<string, WidgetProps> = {}
-  menu.lines.forEach((text, index) => { props[`line-${index}`] = { text, visible: true } })
+  menu.lines.forEach((text, index) => { props[`line-${index}`] = { text, visible: index === 0 || index === 6 } })
+  const selected = model.slots[model.focus[0]]?.items[model.focus[1]]
+  props['line-6'] = { text: model.error ?? (model.pending ? 'Buying…' : selected
+    ? `${selected.name} · ${selected.price.coins ?? '—'} coins · ${selected.owned ? 'OWNED' : 'Enter or click to buy'}` : ''), visible: true }
+  for (let row = 0; row < 4; row++) {
+    const slot = model.slots[row]
+    props[`catalog-slot-${row}`] = { text: slot ? `${slot.slot.toUpperCase()} · ${slot.items.length} items` : '', visible: !!slot }
+    for (let column = 0; column < 9; column++) {
+      const item = slot?.items[column]
+      const focused = model.focus[0] === row && model.focus[1] === column
+      props[`catalog-item-${row}-${column}`] = {
+        text: item ? `${focused ? '> ' : ''}${item.name}${item.owned ? ' [OWNED]' : ''}` : '',
+        visible: !!item,
+      }
+    }
+  }
   host.setHud(props)
 }
 

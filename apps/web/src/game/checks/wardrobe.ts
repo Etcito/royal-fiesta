@@ -56,7 +56,7 @@ function binLabel(props: Props, slot: Slot): string {
   let label = text.trim()
   if (label.startsWith('> ')) label = label.slice(2)
   if (label.endsWith(' <')) label = label.slice(0, -2)
-  const angle = /^<\s*(.*?)\s*>$/.exec(label.trim())
+  const angle = /^<\s*(.*?)\s*>(?: · \d+ owned)?$/.exec(label.trim())
   return (angle?.[1] ?? label).trim()
 }
 
@@ -189,7 +189,7 @@ function context(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 // 640x360. The stage pixels alone drive the pixel-difference proof, so the moving bin labels never count as
 // the worn costume. Call it in the task that stepped the frame: the WebGPU canvases are snapshotted
 // synchronously, before the first await.
-async function capture(game: TourGame): Promise<Shot> {
+export async function capture(game: TourGame): Promise<Shot> {
   const ui = game.ui
   const uiBox = ui.getBoundingClientRect()
   const sx = WIDTH / Math.max(1, uiBox.width)
@@ -248,7 +248,7 @@ async function holdClock(game: TourGame): Promise<() => void> {
 // RAA omits a draw while its pipeline compiles (render/asyncPipelines.ts): a frame taken before they finish shows no
 // penguin and no costume (the 11311 captures were the bare background), so every capture waits for them. Date.now,
 // not performance.now, which a multi-client run freezes.
-async function pipelinesReady(game: TourGame, what: string): Promise<void> {
+export async function pipelinesReady(game: TourGame, what: string): Promise<void> {
   const deadline = Date.now() + 120000
   while (pendingPipelines() > 0) {
     if (Date.now() >= deadline) throw new Error(`wardrobe: ${what}: ${pendingPipelines()} pipelines still compiling after 120 s`)

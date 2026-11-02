@@ -32,6 +32,20 @@ function ticksCrossed(fromMs: number, toMs: number): number {
   return Math.max(0, from - to)
 }
 
+// A pointer pick on a candidate: focus and vote land on it in one go. Ignored after a
+// vote or once the timer has run out, like every other input then.
+export function votePick(m: VoteModel, index: number): VoteStep {
+  const n = m.candidates.length
+  if (m.msLeft <= 0 || m.chosen !== null || !Number.isInteger(index) || index < 0 || index >= n) {
+    return { model: m, send: null, sound: null }
+  }
+  return {
+    model: { ...m, focus: index, chosen: index },
+    send: index,
+    sound: 'flow.vote-confirm',
+  }
+}
+
 export function voteStep(m: VoteModel, action: Action | null, dtMs: number): VoteStep {
   const n = m.candidates.length
   let focus = m.focus

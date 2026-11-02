@@ -5047,6 +5047,23 @@
           },
           "children": [
             {
+              "id": "vote-thumb-0",
+              "type": "panel",
+              "asset": "panel.card",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [16, 208],
+                "offsetMax": [192, 372]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [24, 112],
+                "offsetMax": [344, 246]
+              }
+            },
+            {
               "id": "vote-name-0",
               "type": "label",
               "text": "Candidate",
@@ -5061,14 +5078,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 48],
-                "offsetMax": [192, 208]
+                "offsetMin": [16, 104],
+                "offsetMax": [192, 204]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [24, 36],
-                "offsetMax": [344, 148]
+                "offsetMin": [24, 60],
+                "offsetMax": [344, 108]
               }
             },
             {
@@ -5086,14 +5103,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 260],
-                "offsetMax": [192, 324]
+                "offsetMin": [16, 48],
+                "offsetMax": [192, 100]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [24, 164],
-                "offsetMax": [344, 220]
+                "offsetMin": [24, 8],
+                "offsetMax": [344, 52]
               }
             }
           ]
@@ -5141,6 +5158,23 @@
           },
           "children": [
             {
+              "id": "vote-thumb-1",
+              "type": "panel",
+              "asset": "panel.card",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [16, 208],
+                "offsetMax": [192, 372]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [24, 112],
+                "offsetMax": [344, 246]
+              }
+            },
+            {
               "id": "vote-name-1",
               "type": "label",
               "text": "Candidate",
@@ -5155,14 +5189,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 48],
-                "offsetMax": [192, 208]
+                "offsetMin": [16, 104],
+                "offsetMax": [192, 204]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [24, 36],
-                "offsetMax": [344, 148]
+                "offsetMin": [24, 60],
+                "offsetMax": [344, 108]
               }
             },
             {
@@ -5180,14 +5214,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 260],
-                "offsetMax": [192, 324]
+                "offsetMin": [16, 48],
+                "offsetMax": [192, 100]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [24, 164],
-                "offsetMax": [344, 220]
+                "offsetMin": [24, 8],
+                "offsetMax": [344, 52]
               }
             }
           ]
@@ -5235,6 +5269,23 @@
           },
           "children": [
             {
+              "id": "vote-thumb-2",
+              "type": "panel",
+              "asset": "panel.card",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [16, 208],
+                "offsetMax": [192, 372]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [24, 112],
+                "offsetMax": [344, 246]
+              }
+            },
+            {
               "id": "vote-name-2",
               "type": "label",
               "text": "Candidate",
@@ -5249,14 +5300,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 48],
-                "offsetMax": [192, 208]
+                "offsetMin": [16, 104],
+                "offsetMax": [192, 204]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [24, 36],
-                "offsetMax": [344, 148]
+                "offsetMin": [24, 60],
+                "offsetMax": [344, 108]
               }
             },
             {
@@ -5274,14 +5325,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 260],
-                "offsetMax": [192, 324]
+                "offsetMin": [16, 48],
+                "offsetMax": [192, 100]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [24, 164],
-                "offsetMax": [344, 220]
+                "offsetMin": [24, 8],
+                "offsetMax": [344, 52]
               }
             }
           ]

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { COUNTDOWN_MS, countdownAt } from '../src/flow/countdown.ts'
 import type { CountdownLabel } from '../src/flow/countdown.ts'
-import { VOTE_MS, voteStep } from '../src/flow/vote.ts'
+import { VOTE_MS, votePick, voteStep } from '../src/flow/vote.ts'
 import type { VoteCandidate, VoteModel } from '../src/flow/vote.ts'
 import type { Action } from '../src/screens/nav.ts'
 
@@ -54,6 +54,38 @@ test('confirm sends once; later confirms and moves are ignored (no cancel)', () 
     m = r.model
   }
   assert.equal(m.msLeft, VOTE_MS - 16 * 7)
+})
+
+test('a pointer pick focuses and votes the clicked candidate with the confirm cue', () => {
+  const picked = votePick(model(), 2)
+  assert.equal(picked.model.focus, 2)
+  assert.equal(picked.model.chosen, 2)
+  assert.equal(picked.model.msLeft, VOTE_MS)
+  assert.equal(picked.send, 2)
+  assert.equal(picked.sound, 'flow.vote-confirm')
+})
+
+test('a pointer pick after a vote is ignored (no cancel, no second send)', () => {
+  const voted = model({ focus: 1, chosen: 1 })
+  const picked = votePick(voted, 2)
+  assert.deepEqual(picked, { model: voted, send: null, sound: null })
+  assert.equal(picked.model.focus, 1)
+  assert.equal(picked.model.chosen, 1)
+})
+
+test('a pointer pick at 0 ms is ignored', () => {
+  const expired = model({ msLeft: 0 })
+  const picked = votePick(expired, 1)
+  assert.deepEqual(picked, { model: expired, send: null, sound: null })
+  assert.equal(picked.model.focus, 0)
+  assert.equal(picked.model.chosen, null)
+})
+
+test('a pointer pick outside the candidates is ignored', () => {
+  for (const index of [-1, 3, 1.5]) {
+    const picked = votePick(model(), index)
+    assert.deepEqual(picked, { model: model(), send: null, sound: null })
+  }
 })
 
 test('5000 ms of 16 ms steps gives exactly four ticks before 0', () => {

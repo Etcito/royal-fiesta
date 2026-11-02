@@ -362,6 +362,8 @@ class ShowAdapter implements Mode {
     if (this.test && action === 'confirm' && this.show.models?.screen === 'endScreen') this.endConfirmed = true
     this.actions.push(action)
   }
+  pickVote(index: number): void { this.show.pick(index) }
+  hoverVote(index: number): void { this.show.hover(index) }
   get finished(): boolean {
     if (this.test) return this.endConfirmed || this.show.finished
     return this.show.finished
@@ -2160,7 +2162,7 @@ class App {
     const stage = loaded.ports[0]
     const deps = {
       cue: (id: string): void => { if (id.startsWith('flow.crown-')) this.sound.cue(id) },
-      stage, character: loaded.content.character(), names: mode.name, localSeat: 0,
+      stage, character: loaded.content.character(), names: mode.name, localSeat: 0, parent: this.screens,
     }
     // The director calls this screen countdown during its load hold. Do not mount the countdown
     // renderer or draw the legacy sim countdown until worldReady has released that hold.
@@ -2217,7 +2219,7 @@ class App {
     }
     if (this.showView === null) return false
     this.showView.update()
-    this.screens.style.pointerEvents = screen === 'endScreen' || screen === 'result' || screen === 'podium' ? 'auto' : 'none'
+    this.screens.style.pointerEvents = screen === 'endScreen' || screen === 'result' || screen === 'podium' || screen === 'vote' ? 'auto' : 'none'
     if (screen === 'result' || screen === 'elimShow' || screen === 'podium' || screen === 'endScreen') {
       loaded.canvases[0].style.display = ''
       stage.render()
@@ -2366,6 +2368,14 @@ class App {
         return
       }
     }
+    // The vote cards take the pointer: hovering focuses, clicking votes the card under it.
+    if (this.nav.screen === 'vote' && ev.k === 'click' && this.mode instanceof ShowAdapter) {
+      const index = this.voteIndexAt(ev.x, ev.y)
+      if (index !== null) {
+        this.mode.pickVote(index)
+        return
+      }
+    }
     if (this.nav.screen !== 'start' && (FLOW_SCREENS as readonly Screen[]).includes(this.nav.screen)) {
       if (ev.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
       else {
@@ -2401,6 +2411,28 @@ class App {
     if (p === null || (this.pointer !== null && p.x === this.pointer.x && p.y === this.pointer.y)) return
     this.pointer = { x: p.x, y: p.y }
     this.host.input({ kind: 'pointer', phase: 'move', x: p.x, y: p.y })
+    if (this.nav.screen === 'vote' && this.mode instanceof ShowAdapter) {
+      const index = this.voteIndexAt(p.x, p.y)
+      if (index !== null) this.mode.hoverVote(index)
+    }
+  }
+
+  // The vote card under a pointer position (GameInput's overlay backing px): the candidate index, or null.
+  private voteIndexAt(x: number, y: number): number | null {
+    if (!(this.mode instanceof ShowAdapter)) return null
+    const model = this.mode.show.models?.vote
+    if (model == null) return null
+    const dpr = window.devicePixelRatio || 1
+    const px = x / dpr
+    const py = y / dpr
+    const count = Math.min(3, model.candidates.length)
+    for (let slot = 0; slot < 3; slot++) {
+      const rect = this.host.widgetRect(`vote-card-${slot}`)
+      if (rect === null || px < rect.x || px > rect.x + rect.w || py < rect.y || py > rect.y + rect.h) continue
+      if (count === 1) return slot === 1 ? 0 : null
+      return slot < count ? slot : null
+    }
+    return null
   }
 
   private activate(cmd: MenuCmd): void {

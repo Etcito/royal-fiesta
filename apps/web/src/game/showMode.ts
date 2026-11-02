@@ -124,6 +124,18 @@ export class ShowMode {
   screen(): GameScreen { return this.current?.screen ?? 'vote' }
   cues(): string[] { const sounds = this.sounds; this.sounds = []; return sounds }
 
+  /** A pointer click on vote card `index`; the director applies votePick and the cue is drained with the frame's. */
+  pick(index: number): void {
+    if (this.disposed || this.error !== null || this.director === null) return
+    this.sounds.push(...this.director.pick(index))
+  }
+
+  /** A pointer hover over vote card `index`: focus only, with the ui.hover cue when it moves. */
+  hover(index: number): void {
+    if (this.disposed || this.error !== null || this.director === null) return
+    this.sounds.push(...this.director.hover(index))
+  }
+
   frame(dtS: number, action: Action | null, human: PlayerInput): void {
     if (this.disposed || this.error !== null || this.full === null || this.director === null) return
     const dt = Number.isFinite(dtS) ? Math.max(0, dtS) : 0

@@ -1,4 +1,4 @@
-import { VOTE_MS, voteStep } from '../../../../packages/game/src/flow/vote.ts'
+import { VOTE_MS, votePick, voteStep } from '../../../../packages/game/src/flow/vote.ts'
 import type { VoteModel } from '../../../../packages/game/src/flow/vote.ts'
 import { COUNTDOWN_MS, countdownAt } from '../../../../packages/game/src/flow/countdown.ts'
 import { resultRows } from '../../../../packages/game/src/flow/roundResults.ts'
@@ -57,6 +57,25 @@ export class ShowDirector {
 
   worldReady(roundIndex: number): void {
     if (this.phase === 'load' && this.index === roundIndex) this.enter('countdown')
+  }
+
+  /** A pointer pick on a vote card: the same single send and cue as a confirm on that card. */
+  pick(index: number): string[] {
+    if (this.phase !== 'vote' || this.voteModel === null) return []
+    const next = votePick(this.voteModel, index)
+    this.voteModel = next.model
+    if (next.send !== null) this.port.vote(next.send)
+    return next.sound === null ? [] : [next.sound]
+  }
+
+  /** Pointer hover focuses a candidate (ui.hover); it never votes and never cancels. */
+  hover(index: number): string[] {
+    if (this.phase !== 'vote' || this.voteModel === null) return []
+    const m = this.voteModel
+    if (m.chosen !== null || m.msLeft <= 0) return []
+    if (!Number.isInteger(index) || index < 0 || index >= m.candidates.length || index === m.focus) return []
+    this.voteModel = { ...m, focus: index }
+    return ['ui.hover']
   }
 
   private enter(phase: Phase): void {

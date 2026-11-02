@@ -6,6 +6,7 @@ import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { menuModel, type MenuCtx } from '@royal-fiesta/game/screens/menuModel'
 import { DEFAULT_SETTINGS } from '@royal-fiesta/game/screens/settings'
 import type { RoundKind } from '@royal-fiesta/sim/season/kinds'
+import { browserContentRoot } from '../content/v1Data.ts'
 import type { WidgetProps } from '../ui/screenMap.ts'
 import type { UaaHost } from '../ui/uaaHost.ts'
 
@@ -17,6 +18,8 @@ export interface FlowDeps {
   character?: PrimsAsset
   names?: (seat: number) => string
   localSeat?: number
+  // The DOM container the thumbnails sit in (main.ts's #screens); #screens when omitted.
+  parent?: HTMLElement
 }
 
 export interface VoteView {
@@ -98,12 +101,77 @@ function markOf(model: VoteModel): VoteMark {
   return { focus: model.focus, chosen: model.chosen, msLeft: model.msLeft }
 }
 
+// content/thumbs/<map>.avif under the same content root the meshes load from.
+function thumbUrl(map: string): string {
+  const root = browserContentRoot().replace(/\/?$/, '/')
+  return new URL(`thumbs/${encodeURIComponent(map)}.avif`, new URL(root, document.baseURI)).href
+}
+
 let current: VoteView | null = null
 
 export function mountVote(host: UaaHost, model: VoteModel, deps: FlowDeps): VoteView {
   const ctx: MenuCtx = { settings: DEFAULT_SETTINGS, rebinding: null, error: null, info: [] }
   host.present(menuModel('vote', [], ctx))
   let previous = markOf(model)
+  const parent = typeof document === 'undefined' ? null : deps.parent ?? document.getElementById('screens') ?? document.body
+  const images = new Map<number, HTMLImageElement>()
+  const wanted = new Map<number, { map: string; name: string }>()
+
+  function removeImage(slot: number): void {
+    const img = images.get(slot)
+    if (img === undefined) return
+    img.remove()
+    images.delete(slot)
+  }
+
+  function syncImages(next: VoteModel): void {
+    const count = Math.min(3, next.candidates.length)
+    wanted.clear()
+    for (let i = 0; i < count; i++) {
+      const candidate = next.candidates[i]
+      wanted.set(voteSlot(i, count), { map: candidate.map, name: candidate.name })
+    }
+    for (const slot of [...images.keys()]) if (!wanted.has(slot)) removeImage(slot)
+    if (parent === null) return
+    for (const [slot, candidate] of wanted) {
+      let img = images.get(slot)
+      if (img === undefined) {
+        img = document.createElement('img')
+        img.alt = ''
+        img.style.position = 'absolute'
+        img.style.objectFit = 'cover'
+        img.style.pointerEvents = 'none'
+        img.addEventListener('error', () => {
+          console.warn(`[vote] thumbnail for map ${img!.dataset.map ?? '?'} failed to load`)
+        })
+        parent.appendChild(img)
+        images.set(slot, img)
+      }
+      if (img.dataset.map !== candidate.map) {
+        img.dataset.map = candidate.map
+        img.src = thumbUrl(candidate.map)
+      }
+      img.alt = candidate.name
+    }
+  }
+
+  function place(): void {
+    for (const [slot, img] of images) {
+      const rect = host.widgetRect(`vote-thumb-${slot}`)
+      if (rect === null) {
+        img.style.display = 'none'
+        continue
+      }
+      img.style.display = 'block'
+      img.style.left = `${rect.x}px`
+      img.style.top = `${rect.y}px`
+      img.style.width = `${rect.w}px`
+      img.style.height = `${rect.h}px`
+    }
+  }
+
+  const onResize = (): void => place()
+  if (typeof window !== 'undefined') window.addEventListener('resize', onResize)
   const view: VoteView = {
     update(next, sound) {
       let cue = sound
@@ -117,13 +185,19 @@ export function mountVote(host: UaaHost, model: VoteModel, deps: FlowDeps): Vote
       if (cue !== null) deps.cue(cue)
       previous = markOf(next)
       host.setHud(voteProps(next))
+      syncImages(next)
+      place()
     },
     unmount() {
       if (current === view) current = null
+      if (typeof window !== 'undefined') window.removeEventListener('resize', onResize)
+      for (const slot of [...images.keys()]) removeImage(slot)
     },
   }
   current = view
   host.setHud(voteProps(model))
+  syncImages(model)
+  place()
   return view
 }
 

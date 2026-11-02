@@ -161,7 +161,7 @@
   },
   {
     "name": "m13-costume-dragon-suit-judge",
-    "command": "python3 $NMC_JUDGE_CLIENT out/m13/dragon-suit/dragon-suit-back.png --description \"A cartoon penguin wearing a green dragon onesie fitted over its rounded body, with a row of soft light-green back spikes and a short tapering curled tail. Its head and flippers remain visible.\" --min-score 6",
+    "command": "python3 $NMC_JUDGE_CLIENT out/m13/dragon-suit/dragon-suit-three-quarter.png --description \"A cartoon penguin wearing a green dragon onesie fitted over its rounded body, with a row of soft light-green back spikes and a short tapering curled tail. Its head and flippers remain visible.\" --aspect design --min-score 6",
     "timeout_s": 300,
     "after": [
       "m13-costume-dragon-suit-render"

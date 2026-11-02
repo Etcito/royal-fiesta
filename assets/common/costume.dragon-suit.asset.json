@@ -47,7 +47,8 @@
           "tail_4",
           "tail_5",
           "tail_6",
-          "tail_7"
+          "tail_7",
+          "dragon_suit_collar"
         ],
         "asset": {
           "game": "royal-fiesta",
@@ -76,10 +77,10 @@
         "name": "onesie_body",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.15, 0],
+          "position": [0, -0.17, 0.015],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.035,
+        "smooth": 0.06,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -88,12 +89,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.51, 0, 0],
-              [-0.51, 0, 0],
-              [0, 0.73, 0],
-              [0, -0.73, 0],
-              [0, 0, 0.445],
-              [0, 0, -0.445]
+              [0.59, 0, 0],
+              [-0.59, 0, 0],
+              [0, 0.83, 0],
+              [0, -0.83, 0],
+              [0, 0, 0.55],
+              [0, 0, -0.55]
             ],
             "pointRadii": [
               null,
@@ -113,10 +114,10 @@
         "name": "onesie_hips",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.41, 0.035],
+          "position": [0, -0.43, 0.04],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.035,
+        "smooth": 0.08,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -125,12 +126,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.535, 0, 0],
-              [-0.535, 0, 0],
-              [0, 0.42, 0],
-              [0, -0.42, 0],
-              [0, 0, 0.445],
-              [0, 0, -0.445]
+              [0.63, 0, 0],
+              [-0.63, 0, 0],
+              [0, 0.56, 0],
+              [0, -0.56, 0],
+              [0, 0, 0.56],
+              [0, 0, -0.56]
             ],
             "pointRadii": [
               null,
@@ -150,10 +151,10 @@
         "name": "belly_panel",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.15, 0.25],
+          "position": [0, -0.19, 0.34],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.015,
+        "smooth": 0.025,
         "material": "belly",
         "paramesh": {
           "shape": {
@@ -162,12 +163,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.445, 0, 0],
-              [-0.445, 0, 0],
-              [0, 0.59, 0],
-              [0, -0.59, 0],
-              [0, 0, 0.315],
-              [0, 0, -0.315]
+              [0.44, 0, 0],
+              [-0.44, 0, 0],
+              [0, 0.64, 0],
+              [0, -0.64, 0],
+              [0, 0, 0.29],
+              [0, 0, -0.29]
             ],
             "pointRadii": [
               null,
@@ -187,10 +188,10 @@
         "name": "left_cuff",
         "kind": "paramesh",
         "transform": {
-          "position": [-0.28, -0.7, 0],
+          "position": [-0.27, -0.79, 0.015],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.035,
+        "smooth": 0.055,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -199,12 +200,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.205, 0, 0],
-              [-0.205, 0, 0],
-              [0, 0.19, 0],
-              [0, -0.19, 0],
-              [0, 0, 0.29],
-              [0, 0, -0.29]
+              [0.235, 0, 0],
+              [-0.235, 0, 0],
+              [0, 0.235, 0],
+              [0, -0.235, 0],
+              [0, 0, 0.34],
+              [0, 0, -0.34]
             ],
             "pointRadii": [
               null,
@@ -222,38 +223,18 @@
       "left_shoulder": {
         "id": "left_shoulder",
         "name": "left_shoulder",
-        "kind": "paramesh",
+        "kind": "cylinder",
         "transform": {
-          "position": [-0.46, 0.27, 0],
-          "rotation": [0, 0, 0]
+          "position": [-0.5, 0.35, 0],
+          "rotation": [0, 0, 90],
+          "scale": [1, 1, 0.8]
         },
-        "smooth": 0.035,
+        "params": {
+          "radius": 0.24,
+          "height": 0.42
+        },
         "material": "green",
-        "paramesh": {
-          "shape": {
-            "format": "paramesh.shape",
-            "version": 1,
-            "shape": "sphere",
-            "radius": 1,
-            "points": [
-              [0.19, 0, 0],
-              [-0.19, 0, 0],
-              [0, 0.235, 0],
-              [0, -0.235, 0],
-              [0, 0, 0.255],
-              [0, 0, -0.255]
-            ],
-            "pointRadii": [
-              null,
-              null,
-              null,
-              null,
-              null,
-              null
-            ],
-            "edgeRadii": {}
-          }
-        },
+        "smooth": 0.04,
         "gameCollision": false
       },
       "right_cuff": {
@@ -261,10 +242,10 @@
         "name": "right_cuff",
         "kind": "paramesh",
         "transform": {
-          "position": [0.28, -0.7, 0],
+          "position": [0.27, -0.79, 0.015],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.035,
+        "smooth": 0.055,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -273,12 +254,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.205, 0, 0],
-              [-0.205, 0, 0],
-              [0, 0.19, 0],
-              [0, -0.19, 0],
-              [0, 0, 0.29],
-              [0, 0, -0.29]
+              [0.235, 0, 0],
+              [-0.235, 0, 0],
+              [0, 0.235, 0],
+              [0, -0.235, 0],
+              [0, 0, 0.34],
+              [0, 0, -0.34]
             ],
             "pointRadii": [
               null,
@@ -296,38 +277,18 @@
       "right_shoulder": {
         "id": "right_shoulder",
         "name": "right_shoulder",
-        "kind": "paramesh",
+        "kind": "cylinder",
         "transform": {
-          "position": [0.46, 0.27, 0],
-          "rotation": [0, 0, 0]
+          "position": [0.5, 0.35, 0],
+          "rotation": [0, 0, 90],
+          "scale": [1, 1, 0.8]
         },
-        "smooth": 0.035,
+        "params": {
+          "radius": 0.24,
+          "height": 0.42
+        },
         "material": "green",
-        "paramesh": {
-          "shape": {
-            "format": "paramesh.shape",
-            "version": 1,
-            "shape": "sphere",
-            "radius": 1,
-            "points": [
-              [0.19, 0, 0],
-              [-0.19, 0, 0],
-              [0, 0.235, 0],
-              [0, -0.235, 0],
-              [0, 0, 0.255],
-              [0, 0, -0.255]
-            ],
-            "pointRadii": [
-              null,
-              null,
-              null,
-              null,
-              null,
-              null
-            ],
-            "edgeRadii": {}
-          }
-        },
+        "smooth": 0.04,
         "gameCollision": false
       },
       "back_spike_0": {
@@ -335,7 +296,7 @@
         "name": "back_spike_0",
         "kind": "paramesh",
         "transform": {
-          "position": [0, 0.46, -0.364901],
+          "position": [0, 0.46, -0.36],
           "rotation": [25, 0, 0]
         },
         "smooth": 0.02,
@@ -372,7 +333,7 @@
         "name": "back_spike_1",
         "kind": "paramesh",
         "transform": {
-          "position": [0, 0.225, -0.454352],
+          "position": [0, 0.225, -0.48],
           "rotation": [25, 0, 0]
         },
         "smooth": 0.02,
@@ -409,7 +370,7 @@
         "name": "back_spike_2",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.01, -0.493923],
+          "position": [0, -0.01, -0.55],
           "rotation": [25, 0, 0]
         },
         "smooth": 0.02,
@@ -446,7 +407,7 @@
         "name": "back_spike_3",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.245, -0.497212],
+          "position": [0, -0.245, -0.57],
           "rotation": [25, 0, 0]
         },
         "smooth": 0.02,
@@ -483,7 +444,7 @@
         "name": "back_spike_4",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.48, -0.465094],
+          "position": [0, -0.48, -0.56],
           "rotation": [25, 0, 0]
         },
         "smooth": 0.02,
@@ -520,10 +481,10 @@
         "name": "tail_0",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.58, -0.38],
+          "position": [0, -0.66, -0.38],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.045,
+        "smooth": 0.02,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -532,12 +493,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.21, 0, 0],
-              [-0.21, 0, 0],
-              [0, 0.21, 0],
-              [0, -0.21, 0],
-              [0, 0, 0.21],
-              [0, 0, -0.21]
+              [0.15, 0, 0],
+              [-0.15, 0, 0],
+              [0, 0.15, 0],
+              [0, -0.15, 0],
+              [0, 0, 0.15],
+              [0, 0, -0.15]
             ],
             "pointRadii": [
               null,
@@ -557,10 +518,10 @@
         "name": "tail_1",
         "kind": "paramesh",
         "transform": {
-          "position": [0.025, -0.64, -0.53],
+          "position": [0.02, -0.7, -0.5],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.045,
+        "smooth": 0.02,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -569,12 +530,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.19, 0, 0],
-              [-0.19, 0, 0],
-              [0, 0.19, 0],
-              [0, -0.19, 0],
-              [0, 0, 0.19],
-              [0, 0, -0.19]
+              [0.13, 0, 0],
+              [-0.13, 0, 0],
+              [0, 0.13, 0],
+              [0, -0.13, 0],
+              [0, 0, 0.13],
+              [0, 0, -0.13]
             ],
             "pointRadii": [
               null,
@@ -594,84 +555,10 @@
         "name": "tail_2",
         "kind": "paramesh",
         "transform": {
-          "position": [0.075, -0.65, -0.68],
+          "position": [0.06, -0.71, -0.62],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.045,
-        "material": "green",
-        "paramesh": {
-          "shape": {
-            "format": "paramesh.shape",
-            "version": 1,
-            "shape": "sphere",
-            "radius": 1,
-            "points": [
-              [0.16, 0, 0],
-              [-0.16, 0, 0],
-              [0, 0.16, 0],
-              [0, -0.16, 0],
-              [0, 0, 0.16],
-              [0, 0, -0.16]
-            ],
-            "pointRadii": [
-              null,
-              null,
-              null,
-              null,
-              null,
-              null
-            ],
-            "edgeRadii": {}
-          }
-        },
-        "gameCollision": false
-      },
-      "tail_3": {
-        "id": "tail_3",
-        "name": "tail_3",
-        "kind": "paramesh",
-        "transform": {
-          "position": [0.15, -0.62, -0.8],
-          "rotation": [0, 0, 0]
-        },
-        "smooth": 0.045,
-        "material": "green",
-        "paramesh": {
-          "shape": {
-            "format": "paramesh.shape",
-            "version": 1,
-            "shape": "sphere",
-            "radius": 1,
-            "points": [
-              [0.135, 0, 0],
-              [-0.135, 0, 0],
-              [0, 0.135, 0],
-              [0, -0.135, 0],
-              [0, 0, 0.135],
-              [0, 0, -0.135]
-            ],
-            "pointRadii": [
-              null,
-              null,
-              null,
-              null,
-              null,
-              null
-            ],
-            "edgeRadii": {}
-          }
-        },
-        "gameCollision": false
-      },
-      "tail_4": {
-        "id": "tail_4",
-        "name": "tail_4",
-        "kind": "paramesh",
-        "transform": {
-          "position": [0.24, -0.54, -0.87],
-          "rotation": [0, 0, 0]
-        },
-        "smooth": 0.045,
+        "smooth": 0.02,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -700,15 +587,15 @@
         },
         "gameCollision": false
       },
-      "tail_5": {
-        "id": "tail_5",
-        "name": "tail_5",
+      "tail_3": {
+        "id": "tail_3",
+        "name": "tail_3",
         "kind": "paramesh",
         "transform": {
-          "position": [0.3, -0.44, -0.88],
+          "position": [0.12, -0.68, -0.72],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.045,
+        "smooth": 0.02,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -737,15 +624,15 @@
         },
         "gameCollision": false
       },
-      "tail_6": {
-        "id": "tail_6",
-        "name": "tail_6",
+      "tail_4": {
+        "id": "tail_4",
+        "name": "tail_4",
         "kind": "paramesh",
         "transform": {
-          "position": [0.31, -0.35, -0.84],
+          "position": [0.2, -0.62, -0.78],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.045,
+        "smooth": 0.02,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -754,12 +641,86 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.07, 0, 0],
-              [-0.07, 0, 0],
-              [0, 0.07, 0],
-              [0, -0.07, 0],
-              [0, 0, 0.07],
-              [0, 0, -0.07]
+              [0.072, 0, 0],
+              [-0.072, 0, 0],
+              [0, 0.072, 0],
+              [0, -0.072, 0],
+              [0, 0, 0.072],
+              [0, 0, -0.072]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_5": {
+        "id": "tail_5",
+        "name": "tail_5",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.25, -0.55, -0.79],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.02,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.055, 0, 0],
+              [-0.055, 0, 0],
+              [0, 0.055, 0],
+              [0, -0.055, 0],
+              [0, 0, 0.055],
+              [0, 0, -0.055]
+            ],
+            "pointRadii": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "edgeRadii": {}
+          }
+        },
+        "gameCollision": false
+      },
+      "tail_6": {
+        "id": "tail_6",
+        "name": "tail_6",
+        "kind": "paramesh",
+        "transform": {
+          "position": [0.25, -0.49, -0.76],
+          "rotation": [0, 0, 0]
+        },
+        "smooth": 0.02,
+        "material": "green",
+        "paramesh": {
+          "shape": {
+            "format": "paramesh.shape",
+            "version": 1,
+            "shape": "sphere",
+            "radius": 1,
+            "points": [
+              [0.04, 0, 0],
+              [-0.04, 0, 0],
+              [0, 0.04, 0],
+              [0, -0.04, 0],
+              [0, 0, 0.04],
+              [0, 0, -0.04]
             ],
             "pointRadii": [
               null,
@@ -779,10 +740,10 @@
         "name": "tail_7",
         "kind": "paramesh",
         "transform": {
-          "position": [0.28, -0.3, -0.78],
+          "position": [0.22, -0.46, -0.72],
           "rotation": [0, 0, 0]
         },
-        "smooth": 0.045,
+        "smooth": 0.02,
         "material": "green",
         "paramesh": {
           "shape": {
@@ -791,12 +752,12 @@
             "shape": "sphere",
             "radius": 1,
             "points": [
-              [0.052, 0, 0],
-              [-0.052, 0, 0],
-              [0, 0.052, 0],
-              [0, -0.052, 0],
-              [0, 0, 0.052],
-              [0, 0, -0.052]
+              [0.025, 0, 0],
+              [-0.025, 0, 0],
+              [0, 0.025, 0],
+              [0, -0.025, 0],
+              [0, 0, 0.025],
+              [0, 0, -0.025]
             ],
             "pointRadii": [
               null,
@@ -809,6 +770,23 @@
             "edgeRadii": {}
           }
         },
+        "gameCollision": false
+      },
+      "dragon_suit_collar": {
+        "id": "dragon_suit_collar",
+        "name": "dragon_suit_collar",
+        "kind": "torus",
+        "transform": {
+          "position": [0, 0.5, 0.015],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 0.92]
+        },
+        "params": {
+          "majorRadius": 0.35,
+          "minorRadius": 0.055
+        },
+        "material": "spikes",
+        "smooth": 0.02,
         "gameCollision": false
       }
     },
@@ -874,8 +852,8 @@
     }
   },
   "bounds": {
-    "min": [-0.68, -0.93, -1.02],
-    "max": [0.68, 0.64, 0.61]
+    "min": [-0.75, -1.08, -0.91],
+    "max": [0.75, 0.72, 0.69]
   },
-  "hash": "61856ea53fb98dbde2557eba8a5683c632554fb00035f45978cf68768d29fad6"
+  "hash": "14a0584ca348feb65668a85ff57e6ee83ab2c3bd6ec3dc1e561443777872503f"
 }

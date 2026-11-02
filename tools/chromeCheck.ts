@@ -63,12 +63,43 @@ function bundleMatch(html: string, what: string): RegExpExecArray {
   return match
 }
 
+// The copied page keeps the local harness' evidence: every page error, console error and failed request.
+// This runs before the game bundle, so the boot's own errors count too.
+const DIAGNOSTICS = `window.__nmcCheck = { pageErrors: [], consoleErrors: [], failedRequests: [] };
+const check = window.__nmcCheck;
+const describe = value => String(value?.stack ?? value?.message ?? value);
+addEventListener("error", event => {
+  const target = event.target;
+  if (target !== window && target && (target.src || target.href)) check.failedRequests.push(String(target.src ?? target.href));
+  else check.pageErrors.push(event.error ? describe(event.error) : String(event.message));
+}, true);
+addEventListener("unhandledrejection", event => check.pageErrors.push(describe(event.reason)));
+const reportError = console.error;
+console.error = (...args) => { check.consoleErrors.push(args.map(describe).join(" ")); reportError.apply(console, args) };
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  try {
+    const response = await originalFetch.apply(window, args);
+    if (!response.ok) check.failedRequests.push(response.url + " HTTP " + response.status);
+    return response;
+  } catch (error) { check.failedRequests.push(String(args[0]) + " " + describe(error)); throw error }
+};
+if (typeof XMLHttpRequest !== "undefined") {
+  const open = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (...args) {
+    this.addEventListener("loadend", () => {
+      if (this.status === 0 || this.status >= 400) check.failedRequests.push(String(args[1]) + " HTTP " + this.status);
+    }, { once: true });
+    return open.apply(this, args);
+  };
+}`
+
 // The GPU client serves the declared page without the check's query, and ?test=1 shortens every show
 // timer. Module scripts execute in document order, so this one runs before the game bundle.
 export function injectTestQuery(html: string): string {
   if (html.includes(TEST_QUERY_MARK)) return html
   const match = bundleMatch(html, 'run the test query before')
-  const script = `const url = new URL(location.href); url.searchParams.set("test", "1"); history.replaceState(null, "", url.pathname + url.search + url.hash)`
+  const script = `const url = new URL(location.href); url.searchParams.set("test", "1"); history.replaceState(null, "", url.pathname + url.search + url.hash)\n${DIAGNOSTICS}`
   return html.slice(0, match.index)
     + `<script type="module" ${TEST_QUERY_MARK}>${script}</script>`
     + html.slice(match.index)
@@ -91,7 +122,8 @@ const install = () => {
     const facts = { vendor: info.vendor ?? '', architecture: info.architecture ?? '', description: info.description ?? '', software }
     const result = await original(input, files)
     const json = result && typeof result.json === 'object' && result.json !== null ? result.json : {}
-    return { ...result, json: { ...json, adapter: json.adapter ?? facts, software: typeof json.software === 'boolean' ? json.software : software } }
+    const chromeCheck = window.__nmcCheck ?? { pageErrors: [], consoleErrors: [], failedRequests: [] }
+    return { ...result, json: { ...json, adapter: json.adapter ?? facts, software: typeof json.software === 'boolean' ? json.software : software, chromeCheck } }
   }, { nmcCheckAdapter: true })
   return true
 }
@@ -126,6 +158,9 @@ export function prepareGpuCopy(source: string, op: string, target: string): void
   writeFileSync(manifestFile, `${JSON.stringify({ ...manifest, ops }, null, 2)}\n`)
   const page = join(target, 'game.html')
   writeFileSync(page, injectAdapter(injectTestQuery(readFileSync(page, 'utf8')), op))
+  // tools/play.ts serves the same fallback: a local build has no deployment stamp.
+  const buildFile = join(target, 'rf-build.json')
+  if (!existsSync(buildFile)) writeFileSync(buildFile, `${JSON.stringify({ commit: null, builtAt: 'dev' })}\n`)
 }
 
 function objectOf(value: unknown): Record<string, unknown> {
@@ -145,6 +180,19 @@ export function makeReport(json: unknown, mode: Mode, failures: Failures = {}): 
     error: failures.error,
     adapter: mode === 'software' ? null : adapter,
     software,
+  }
+}
+
+// The copied page appends its diagnostics to the op json; report.json keeps them as its own fields.
+export function takeCheckDiagnostics(json: unknown): { json: unknown; failures: Failures } {
+  const out = objectOf(json)
+  if (!('chromeCheck' in out)) return { json, failures: {} }
+  const found = objectOf(out.chromeCheck)
+  const list = (value: unknown): string[] => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+  const { chromeCheck: _diagnostics, ...rest } = out
+  return {
+    json: rest,
+    failures: { pageErrors: list(found.pageErrors), consoleErrors: list(found.consoleErrors), failedRequests: list(found.failedRequests) },
   }
 }
 
@@ -184,7 +232,8 @@ async function gpu(op: string, input: unknown, out: string): Promise<Report> {
     prepareGpuCopy(dist, op, scratch)
     const pageRef = await publishDist(scratch)
     const result = await renderOp(op, input, out, op, pageRef)
-    return makeReport(result.json, 'gpu')
+    const checked = takeCheckDiagnostics(result.json)
+    return makeReport(checked.json, 'gpu', checked.failures)
   } finally {
     rmSync(scratch, { recursive: true, force: true })
   }

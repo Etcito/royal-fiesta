@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { BOOT_REFUSAL, run } from '../../apps/web/src/game/checks/boot.ts'
 import type { TourDeps, TourGame } from '../../apps/web/src/game/uiTour.ts'
-import { DEFAULT_GPU_WAIT_S, exitCode, gpuWaitSeconds, makeReport, prepareGpuCopy } from '../chromeCheck.ts'
+import { DEFAULT_GPU_WAIT_S, exitCode, gpuWaitSeconds, makeReport, prepareGpuCopy, takeCheckDiagnostics } from '../chromeCheck.ts'
 
 test('checkBoot clicks Retry after the deliberate refusal and reaches loading then start', async () => {
   const old = { requestAnimationFrame: globalThis.requestAnimationFrame, window: globalThis.window, MouseEvent: globalThis.MouseEvent, PointerEvent: globalThis.PointerEvent }
@@ -108,10 +108,13 @@ test('prepareGpuCopy appends the op in the copy, leaves the source, and applies 
     assert.match(copied, /url\.searchParams\.set\("test", "1"\)/)
     assert.match(copied, /history\.replaceState\(null, "", url\.pathname \+ url\.search \+ url\.hash\)/)
     assert.match(copied, /nmcCheckAdapter/)
+    assert.match(copied, /window\.__nmcCheck/)
+    assert.match(copied, /addEventListener\("error"/)
     const query = copied.indexOf('data-nmc-test-query')
     const bundle = copied.indexOf('./assets/index-abc.js')
     assert.ok(query >= 0 && query < bundle, 'the test query must run before the game bundle')
     assert.match(readFileSync(join(target, 'assets', 'index-abc.js'), 'utf8'), /bundle/)
+    assert.deepEqual(JSON.parse(readFileSync(join(target, 'rf-build.json'), 'utf8')), { commit: null, builtAt: 'dev' })
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 
@@ -125,6 +128,25 @@ test('--software labels the report software:true and always fails wardrobe, vote
   const lobby = makeReport({ ok: true }, 'software')
   assert.equal(lobby.software, true)
   assert.equal(exitCode('lobbyUnload', lobby, 'software'), 0)
+})
+
+test('the GPU report carries page errors, console errors and failed requests from the copied page', () => {
+  const hardware = { vendor: 'nvidia', architecture: 'ampere', description: '', software: false }
+  const checked = takeCheckDiagnostics({ ok: true, adapter: hardware, software: false,
+    chromeCheck: { pageErrors: ['boom'], consoleErrors: ['[error-screen] refused'], failedRequests: ['https://example.invalid/a.js HTTP 404'] } })
+  assert.deepEqual(checked.json, { ok: true, adapter: hardware, software: false })
+  const report = makeReport(checked.json, 'gpu', checked.failures)
+  assert.deepEqual(report.pageErrors, ['boom'])
+  assert.deepEqual(report.consoleErrors, ['[error-screen] refused'])
+  assert.deepEqual(report.failedRequests, ['https://example.invalid/a.js HTTP 404'])
+  assert.equal(exitCode('checkBoot', report, 'gpu'), 1, 'a page error fails the op')
+  const failed = takeCheckDiagnostics({ ok: true, adapter: hardware, software: false,
+    chromeCheck: { pageErrors: [], consoleErrors: [], failedRequests: ['game.wasm HTTP 404'] } })
+  assert.equal(exitCode('checkBoot', makeReport(failed.json, 'gpu', failed.failures), 'gpu'), 1, 'a failed request fails the op')
+  const clean = takeCheckDiagnostics({ ok: true, adapter: hardware, software: false,
+    chromeCheck: { pageErrors: [], consoleErrors: [], failedRequests: [] } })
+  assert.equal(exitCode('checkBoot', makeReport(clean.json, 'gpu', clean.failures), 'gpu'), 0)
+  assert.deepEqual(takeCheckDiagnostics({ ok: true }).failures, {}, 'an op outside the copy keeps its json')
 })
 
 test('the GPU route fails on a software adapter and on a missing adapter', () => {

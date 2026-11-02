@@ -81,7 +81,7 @@ test('observed ticks step independent real graphs once; pose reads and tick gaps
       }
       driver.observeTick(ticks[i] - 1, [])
       assert.strictEqual(driver.pose(1), pose)
-      assert.notStrictEqual(driver.pose(2)!.skin, pose.skin)
+      assert.notStrictEqual(driver.pose(2), pose, 'characters keep their own tick output; read-only palettes may be shared')
     }
     assert.notDeepEqual(driver.pose(1)!.skin, driver.pose(2)!.skin)
     const retained = driver.pose(1)!, saved = retained.skin.slice()

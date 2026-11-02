@@ -222,3 +222,28 @@ test('integration: simulation state is identical with IK enabled or bypassed', a
     }
   } finally { for (const d of drivers) d.dispose() }
 })
+
+test('single-bone fast path matches the RAA solver through limits, slopes, transitions and hand chains', async () => {
+  const api = await loadAnimBrick()
+  for (const scaled of [false, true]) {
+    const rig = structuredClone(preset)
+    if (scaled) { rig.bones[0].rest.s = [1.2, 0.9, 1.1]; rig.bones[0].rest.r = [0, Math.sin(0.15), 0, Math.cos(0.15)] }
+    const json=JSON.stringify(rig)
+    const fast=VisualIk.create(api,json,true), slow=VisualIk.create(api,json,false)
+    const driver=await AnimDriver.load(graphJson,json,clipsJson,{ik:false,cache:false})
+    try {
+      for(let tick=0;tick<60;tick++) {
+        const mode=tick<20?CharMode.ground:tick<30?CharMode.air:tick<40?CharMode.dive:tick<50?CharMode.grabbing:CharMode.ground
+        driver.observeTick(tick,[{id:0,mode,emote:tick>=50?2:0,surface:'normal',grounded:mode===CharMode.ground,vel:{x:Math.sin(tick)*3,y:mode===CharMode.air?2:-1,z:5}}])
+        const source=driver.pose(0)!
+        const transform={pos:{x:3,y:1,z:-7},facing:{x:Math.sin(tick*0.13),z:Math.cos(tick*0.13)}}
+        const targets={mode,look:tick%4?{x:10*Math.sin(tick),y:tick%3?2:20,z:10*Math.cos(tick)}:null,
+          grab:mode===CharMode.grabbing?{x:3.3,y:1,z:-6.5}:null,
+          ground:mode===CharMode.ground?{point:{x:3,y:0,z:-7},normal:{x:0.1*Math.sin(tick),y:1,z:0.1*Math.cos(tick)}}:null}
+        const a=fast.evaluate(source,transform,targets),b=slow.evaluate(source,transform,targets)
+        near(a.model,b.model,2e-4);near(a.skin,b.skin,2e-4);near(a.local,b.local,2e-4)
+        assert.deepEqual(a.active,b.active)
+      }
+    } finally {fast.dispose();slow.dispose();driver.dispose()}
+  }
+})

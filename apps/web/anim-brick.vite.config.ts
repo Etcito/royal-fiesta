@@ -29,7 +29,7 @@ function animBrick(): Plugin {
     generateBundle() {
       this.emitFile({
         type: 'asset', fileName: 'nmc.gpu.json',
-        source: JSON.stringify({ ...manifest, ops: [...new Set([...manifest.ops, 'animBrick'])] }, null, 2) + '\n',
+        source: JSON.stringify({ ...manifest, ops: [...new Set([...manifest.ops, 'animBrick', 'animPerf'])] }, null, 2) + '\n',
       })
     },
   }
@@ -40,7 +40,10 @@ function animBrick(): Plugin {
 const config = mergeConfig(existing, { plugins: [animBrick()] })
 config.resolve = {
   ...config.resolve,
-  alias: [...localAliases, ...(existing.resolve?.alias as { find: string; replacement: string }[])
+  alias: [
+    { find: '@royal-fiesta/game', replacement: join(webDir, '../../packages/game/src') },
+    { find: '@royal-fiesta/sim', replacement: join(webDir, '../../packages/sim/src') },
+    ...localAliases, ...(existing.resolve?.alias as { find: string; replacement: string }[])
     .filter(a => !names.includes(a.find))],
 }
 config.define = { ...config.define, __RF_RAA_SDFM__: JSON.stringify(version) }

@@ -1,21 +1,39 @@
+import { multiplyInto, localMatrixInto } from './poseMath.ts'
 import type { AnimationGraph, AnimationGraphState, GraphStep } from './brick.ts'
 import { loadAnimBrick } from './brick.ts'
 import { POSE_LAYERS, type PoseLayerInstance } from './layers.ts'
 import { WALK_LAYER, type WalkLayerInstance } from './walkCycle.ts'
-import { localPose, VisualIk, type CharacterTransform, type IkActive, type IkTargets } from './ik.ts'
+import { localPose, toPoseFrame, VisualIk, type CharacterTransform, type IkActive, type IkTargets } from './ik.ts'
 import { mapParams, newParamMemory, type CharObservation, type ParamMemory } from './params.ts'
 
 type Brick = Awaited<ReturnType<typeof loadAnimBrick>>
 type Rig = ReturnType<Brick['loadRig']>
 type Clip = ReturnType<Brick['loadClip']>
-export type CharacterPose = GraphStep & Pick<ReturnType<Brick['sampleClip']>, 'model'> & { readonly ik?: IkActive }
+export type CharacterPose = GraphStep & Pick<ReturnType<Brick['sampleClip']>, 'model'> & { readonly local?: Float32Array; readonly ik?: IkActive }
 /** `xf` and `ik` are the sim placement and targets for visual IK; the corrected pose never reaches the sim. */
 export interface CharacterObservation extends CharObservation {
   readonly id: number; readonly xf?: CharacterTransform; readonly ik?: IkTargets
 }
+interface Execution {
+  state: AnimationGraphState; refs: number; tick: number; before?: Uint8Array
+}
 interface Entry {
-  layers: PoseLayerInstance[]; walk: WalkLayerInstance
-  graph: AnimationGraph; state: AnimationGraphState; memory: ParamMemory; pose?: CharacterPose
+  cohort: number; layers: PoseLayerInstance[]; walk: WalkLayerInstance
+  execution: Execution; memory: ParamMemory; pose?: CharacterPose
+}
+
+interface SharedPose {
+  cohort: number; execution: Execution; base: CharacterPose
+  ik: Map<string, CharacterPose>
+}
+
+// Translation/yaw are instance placement, not animation state. Round only world-to-local
+// cancellation noise (10 nanometres); different ground planes, grabs and look targets stay separate.
+function ikKey(xf: CharacterTransform, targets: IkTargets): string {
+  const point = (v: { x: number; y: number; z: number } | null | undefined, direction = false) =>
+    v == null ? null : toPoseFrame(v, xf, direction).map(n => Math.round(n * 1e8))
+  return JSON.stringify([targets.mode, point(targets.look), point(targets.grab),
+    point(targets.ground?.point), point(targets.ground?.normal, true)])
 }
 
 // Column-major multiplication: skin * restModel recovers the animated bone model.
@@ -71,26 +89,32 @@ function affineInverse(m: ArrayLike<number>): Float32Array {
  */
 export class AnimDriver {
   private readonly entries = new Map<number, Entry>()
+  private nextCohort = 1
+  private cache = true
+  private stats = { evaluated: 0, shared: 0, ikEvaluated: 0, ikShared: 0 }
+  /** Last observed tick, for presentation profiling; never read by the simulation. */
+  get cacheStats() { return this.stats }
   private tick = -1
   private disposed = false
-  private readonly api: Brick
-  private readonly json: string
   private readonly rig: Rig
   private readonly clips: Clip[]
+  private readonly graph: AnimationGraph
   private readonly rest: Float32Array
   private readonly parents: number[]
   private readonly boneNames: string[]
   private readonly inverseRest: Float32Array
   private readonly ik: VisualIk | null
 
-  private constructor(api: Brick, json: string, rig: Rig, clips: Clip[], rest: Float32Array, inverseRest: Float32Array, parents: number[], boneNames: string[], ik: VisualIk | null) {
-    this.api = api; this.json = json; this.rig = rig; this.clips = clips; this.rest = rest; this.ik = ik
+  private constructor(rig: Rig, clips: Clip[], graph: AnimationGraph, rest: Float32Array, inverseRest: Float32Array, parents: number[], boneNames: string[], ik: VisualIk | null) {
+    this.rig = rig; this.clips = clips; this.graph = graph; this.rest = rest; this.ik = ik
     this.inverseRest = inverseRest; this.parents = parents; this.boneNames = boneNames
   }
 
   /** rigJson is S16 (without the SDF Modeler bindings/smooth extension). */
-  static async load(graphJson: string, rigJson: string, clipJson: readonly string[], opts: { ik?: boolean } = {}): Promise<AnimDriver> {
+  static async load(graphJson: string, rigJson: string, clipJson: readonly string[], opts: { ik?: boolean; cache?: boolean; fastIk?: boolean } = {}): Promise<AnimDriver> {
     const api = await loadAnimBrick(), rig = api.loadRig(rigJson), clips: Clip[] = []
+    let graph: AnimationGraph | undefined
+    let ik: VisualIk | null = null
     try {
       for (const json of clipJson) clips.push(api.loadClip(rig, json))
       const bones = JSON.parse(rigJson).bones as RestBone[]
@@ -98,11 +122,14 @@ export class AnimDriver {
       const parents = bones.map(b => b.parent === null ? -1 : boneNames.indexOf(b.parent))
       const rest = restModels(bones, parents), inverseRest = new Float32Array(rest.length)
       for (let i = 0; i < rest.length; i += 16) inverseRest.set(affineInverse(rest.subarray(i, i + 16)), i)
-      // Validate even before the first character joins.
-      api.loadGraph(graphJson, rig, clips).free()
-      const ik = opts.ik === false ? null : VisualIk.create(api, rigJson)
-      return new AnimDriver(api, graphJson, rig, clips, rest, inverseRest, parents, boneNames, ik)
+      // One immutable compiled graph per rig; execution states remain independent.
+      graph = api.loadGraph(graphJson, rig, clips)
+      ik = opts.ik === false ? null : VisualIk.create(api, rigJson, opts.fastIk !== false)
+      const driver = new AnimDriver(rig, clips, graph, rest, inverseRest, parents, boneNames, ik)
+      driver.cache = opts.cache !== false
+      return driver
     } catch (error) {
+      graph?.free(); ik?.dispose()
       for (const clip of clips) clip.free()
       rig.free()
       throw error
@@ -116,40 +143,85 @@ export class AnimDriver {
     const present = new Set(characters.map(c => c.id))
     if (present.size !== characters.length) throw new Error('duplicate character id')
     for (const id of this.entries.keys()) if (!present.has(id)) this.remove(id)
+    // Tick-local ownership bounds memory by the visible character count. Histories only
+    // merge when equivalent; departure/rejoin starts at cohort zero with a fresh graph/layers.
+    const shared = new Map<string, SharedPose>()
+    this.stats = { evaluated: 0, shared: 0, ikEvaluated: 0, ikShared: 0 }
     for (const character of characters) {
       let entry = this.entries.get(character.id)
       if (!entry) {
         const layers = POSE_LAYERS.map(layer => layer.create(this.boneNames))
         const walk = layers[POSE_LAYERS.indexOf(WALK_LAYER)] as WalkLayerInstance
-        const graph = this.api.loadGraph(this.json, this.rig, this.clips)
-        let state: AnimationGraphState
-        try { state = graph.newState() } catch (error) { graph.free(); throw error }
-        entry = { layers, walk, graph, state, memory: newParamMemory() }
+        const state = this.graph.newState()
+        entry = { cohort: 0, layers, walk, execution: { state, refs: 1, tick: -1 }, memory: newParamMemory() }
         this.entries.set(character.id, entry)
       }
-      const step = entry.graph.step(entry.state, { ...mapParams(character, entry.memory) })
-      const model = new Float32Array(this.rest.length)
-      for (let i = 0; i < model.length; i += 16) {
-        model.set(multiply(step.skin.subarray(i, i + 16), this.rest.subarray(i, i + 16)), i)
+      const params = mapParams(character, entry.memory)
+      for (const layer of entry.layers) layer.observe(character)
+      // Both speed calculations matter: graph params use sqrt; walk layers use hypot.
+      // The prior cohort encodes the complete graph/layer history, including transitions.
+      const key = JSON.stringify([entry.cohort, params, character.mode, Math.hypot(character.vel.x, character.vel.z),
+        character.carry ?? 0, character.strokeTimer ?? 0, character.surface, character.slideSpeed ?? 0, character.carryId ?? -1])
+      let cached = this.cache ? shared.get(key) : undefined
+      let base: CharacterPose
+      if (cached) {
+        // Share the execution state too. A later divergent observation splits it lazily.
+        if (entry.execution !== cached.execution) {
+          this.release(entry.execution)
+          entry.execution = cached.execution
+          entry.execution.refs++
+        }
+        base = cached.base
+        this.stats.shared++
+      } else {
+        this.stats.evaluated++
+        let execution = entry.execution
+        if (execution.tick === tick) {
+          // Another member already advanced this cohort with different inputs this tick.
+          // Restore the pre-step snapshot only on a split, never once per cache hit.
+          const state = this.graph.newState()
+          try { state.restore(execution.before!) } catch (error) { state.free(); throw error }
+          this.release(execution)
+          entry.execution = execution = { state, refs: 1, tick: -1 }
+        }
+        execution.before = execution.refs > 1 ? execution.state.save() : undefined
+        const step = this.graph.step(execution.state, { ...params })
+        execution.tick = tick
+        const model = new Float32Array(this.rest.length)
+        for (let i = 0; i < model.length; i += 16) {
+          multiplyInto(model, i, step.skin, i, this.rest, i)
+        }
+        const local = localPose(model, this.parents)
+        for (const layer of entry.layers) {
+          layer.apply(local, character)
+        }
+        const skin = new Float32Array(model.length)
+        const matrix = new Float32Array(16)
+        for (let bone = 0; bone < this.parents.length; bone++) {
+          const o = bone * 10, m = bone * 16, parent = this.parents[bone]
+          localMatrixInto(matrix, 0, local, o)
+          if (parent < 0) model.set(matrix, m)
+          else multiplyInto(model, m, model, parent * 16, matrix, 0)
+          multiplyInto(skin, m, model, m, this.inverseRest, m)
+        }
+        base = { ...step, local, model, skin }
+        cached = { cohort: this.nextCohort++, execution: entry.execution, base, ik: new Map() }
+        if (this.cache) shared.set(key, cached)
       }
-      const local = localPose(model, this.parents)
-      for (const layer of entry.layers) {
-        layer.observe(character)
-        layer.apply(local, character)
-      }
-      const skin = new Float32Array(model.length)
-      for (let bone = 0; bone < this.parents.length; bone++) {
-        const o = bone * 10, m = bone * 16, parent = this.parents[bone]
-        const matrix = localMatrix(local.subarray(o, o + 3), local.subarray(o + 3, o + 7), local.subarray(o + 7, o + 10))
-        model.set(parent < 0 ? matrix : multiply(model.subarray(parent * 16, parent * 16 + 16), matrix), m)
-        skin.set(multiply(model.subarray(m, m + 16), this.inverseRest.subarray(m, m + 16)), m)
-      }
+      entry.cohort = cached.cohort
       // IK starts from this tick's layered pose; its output only feeds rendering.
       const { xf, ik: targets } = character
       if (this.ik !== null && xf !== undefined && targets !== undefined) {
-        const out = this.ik.evaluate({ model, skin }, xf, targets)
-        entry.pose = { ...step, model: out.model, skin: out.skin, ik: out.active }
-      } else entry.pose = { ...step, model, skin }
+        const key = ikKey(xf, targets)
+        const hit = this.cache ? cached.ik.get(key) : undefined
+        if (hit) { entry.pose = hit; this.stats.ikShared++ }
+        else {
+          const out = this.ik.evaluate(base, xf, targets)
+          entry.pose = { ...base, local: out["local"], model: out.model, skin: out.skin, ik: out.active }
+          this.stats.ikEvaluated++
+          if (this.cache) cached.ik.set(key, entry.pose)
+        }
+      } else entry.pose = base
     }
     this.tick = tick
   }
@@ -162,12 +234,17 @@ export class AnimDriver {
   remove(id: number): void {
     const entry = this.entries.get(id)
     if (!entry) return
-    entry.state.free(); entry.graph.free(); this.entries.delete(id)
+    this.release(entry.execution); this.entries.delete(id)
+  }
+
+  private release(execution: Execution): void {
+    if (--execution.refs === 0) { execution.state.free() }
   }
 
   dispose(): void {
     if (this.disposed) return
     for (const id of this.entries.keys()) this.remove(id)
+    this.graph.free()
     for (const clip of this.clips) clip.free()
     this.ik?.dispose(); this.rig.free(); this.disposed = true
   }

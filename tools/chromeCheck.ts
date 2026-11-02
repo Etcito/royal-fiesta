@@ -372,7 +372,7 @@ async function bakeAndPack(op?: string): Promise<string> {
   const needed = new Set([...await profileAssetIds('sprint'), ...catalog.items.map(item => item.asset)])
   // The plain page can use its shipped saved meshes, just as the served page does.
   // Adding a second full server-mesh cache exceeds the GPU upload size limit.
-  if (op === 'startPlain') {
+  if (op === 'startPlain' || op === 'animPerf') {
     const assets = buildContentIndex().assets
     if ([...needed].every(id => assets.some(asset => asset.id === id && asset.mesh !== undefined))) {
       packContent(join(dist, 'content'), undefined, new Set())

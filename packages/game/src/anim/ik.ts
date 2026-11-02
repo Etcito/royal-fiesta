@@ -1,3 +1,4 @@
+import { PoseLookAt, type LookRigBone } from './poseLookAt.ts'
 // View-side visual IK (S20) over a graph pose. Targets are world points the caller reads from simulation
 // state; the corrected pose is for rendering only and nothing here writes the sim or the source pose.
 import { CharMode } from '@royal-fiesta/sim/character/constants'
@@ -49,53 +50,84 @@ export function toPoseFrame(v: Vec3Like, xf: CharacterTransform, direction = fal
   return [x * c - z * s, direction ? v.y : v.y - xf.pos.y, x * s + z * c]
 }
 
-// Inverse of an affine column-major matrix: the inverse 3x3 rows are the cofactor cross products.
-function affineInverse(m: ArrayLike<number>, o: number): Float64Array {
-  const col = (c: number) => [m[o + c * 4], m[o + c * 4 + 1], m[o + c * 4 + 2]]
-  const cross = (a: number[], b: number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
-  const [c0, c1, c2] = [col(0), col(1), col(2)], rows = [cross(c1, c2), cross(c2, c0), cross(c0, c1)]
-  const det = c0[0] * rows[0][0] + c0[1] * rows[0][1] + c0[2] * rows[0][2]
-  const out = new Float64Array(16)
-  for (let r = 0; r < 3; r++) {
-    for (let c = 0; c < 3; c++) out[c * 4 + r] = rows[r][c] / det
-    out[12 + r] = -(out[r] * m[o + 12] + out[4 + r] * m[o + 13] + out[8 + r] * m[o + 14])
-  }
-  out[15] = 1
-  return out
-}
-
-// S17 local TRS of every bone from its model matrix: local = inverse(parent model) * model.
+// S17 local TRS from model matrices. Cache each parent inverse once per pose
+// several flippers/legs/head share the root. Scratch arrays stay local to this solve.
 export function localPose(model: ArrayLike<number>, parents: readonly number[]): Float32Array {
   const out = new Float32Array(parents.length * 10)
+  const inverses = new Float64Array(parents.length * 16), ready = new Uint8Array(parents.length)
   const l = new Float64Array(16)
-  parents.forEach((parent, i) => {
-    const inv = parent < 0 ? null : affineInverse(model, parent * 16)
-    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
-      if (inv === null) { l[c * 4 + r] = model[i * 16 + c * 4 + r]; continue }
-      let v = 0
-      for (let k = 0; k < 4; k++) v += inv[k * 4 + r] * model[i * 16 + c * 4 + k]
-      l[c * 4 + r] = v
+  for (let i = 0; i < parents.length; i++) {
+    const parent = parents[i], p = parent * 16, b = i * 16
+    if (parent >= 0 && !ready[parent]) {
+      const a0 = model[p], a1 = model[p + 1], a2 = model[p + 2], b0 = model[p + 4], b1 = model[p + 5], b2 = model[p + 6], c0 = model[p + 8], c1 = model[p + 9], c2 = model[p + 10]
+      const x0 = b1 * c2 - b2 * c1, x1 = b2 * c0 - b0 * c2, x2 = b0 * c1 - b1 * c0
+      const y0 = c1 * a2 - c2 * a1, y1 = c2 * a0 - c0 * a2, y2 = c0 * a1 - c1 * a0
+      const z0 = a1 * b2 - a2 * b1, z1 = a2 * b0 - a0 * b2, z2 = a0 * b1 - a1 * b0
+      const det = a0 * x0 + a1 * x1 + a2 * x2
+      inverses[p] = x0 / det
+      inverses[p + 4] = x1 / det
+      inverses[p + 8] = x2 / det
+      inverses[p + 1] = y0 / det
+      inverses[p + 5] = y1 / det
+      inverses[p + 9] = y2 / det
+      inverses[p + 2] = z0 / det
+      inverses[p + 6] = z1 / det
+      inverses[p + 10] = z2 / det
+      for (let r = 0; r < 3; r++)
+        inverses[p + 12 + r] = -(inverses[p + r] * model[p + 12] + inverses[p + 4 + r] * model[p + 13] + inverses[p + 8 + r] * model[p + 14])
+      inverses[p + 15] = 1
+      ready[parent] = 1
     }
-    const s = [0, 1, 2].map(c => Math.hypot(l[c * 4], l[c * 4 + 1], l[c * 4 + 2]))
-    const m = (r: number, c: number) => l[c * 4 + r] / s[c]
-    const tr = m(0, 0) + m(1, 1) + m(2, 2)
-    let q: number[]
+    for (let c = 0; c < 4; c++) {
+      const x = model[b + c * 4], y = model[b + c * 4 + 1], z = model[b + c * 4 + 2]
+      for (let r = 0; r < 3; r++)
+        l[c * 4 + r] = parent < 0 ? model[b + c * 4 + r] : inverses[p + r] * x + inverses[p + 4 + r] * y + inverses[p + 8 + r] * z + (c === 3 ? inverses[p + 12 + r] : 0)
+      l[c * 4 + 3] = c === 3 ? 1 : 0
+    }
+    const sx = Math.sqrt(l[0] * l[0] + l[1] * l[1] + l[2] * l[2]), sy = Math.sqrt(l[4] * l[4] + l[5] * l[5] + l[6] * l[6]), sz = Math.sqrt(l[8] * l[8] + l[9] * l[9] + l[10] * l[10])
+    const m00 = l[0] / sx, m10 = l[1] / sx, m20 = l[2] / sx, m01 = l[4] / sy, m11 = l[5] / sy, m21 = l[6] / sy, m02 = l[8] / sz, m12 = l[9] / sz, m22 = l[10] / sz
+    const tr = m00 + m11 + m22
+    let x: number, y: number, z: number, w: number
     if (tr > 0) {
       const k = Math.sqrt(tr + 1) * 2
-      q = [(m(2, 1) - m(1, 2)) / k, (m(0, 2) - m(2, 0)) / k, (m(1, 0) - m(0, 1)) / k, k / 4]
-    } else if (m(0, 0) > m(1, 1) && m(0, 0) > m(2, 2)) {
-      const k = Math.sqrt(1 + m(0, 0) - m(1, 1) - m(2, 2)) * 2
-      q = [k / 4, (m(0, 1) + m(1, 0)) / k, (m(0, 2) + m(2, 0)) / k, (m(2, 1) - m(1, 2)) / k]
-    } else if (m(1, 1) > m(2, 2)) {
-      const k = Math.sqrt(1 + m(1, 1) - m(0, 0) - m(2, 2)) * 2
-      q = [(m(0, 1) + m(1, 0)) / k, k / 4, (m(1, 2) + m(2, 1)) / k, (m(0, 2) - m(2, 0)) / k]
-    } else {
-      const k = Math.sqrt(1 + m(2, 2) - m(0, 0) - m(1, 1)) * 2
-      q = [(m(0, 2) + m(2, 0)) / k, (m(1, 2) + m(2, 1)) / k, k / 4, (m(1, 0) - m(0, 1)) / k]
+      x = (m21 - m12) / k
+      y = (m02 - m20) / k
+      z = (m10 - m01) / k
+      w = k / 4
     }
-    const n = Math.hypot(q[0], q[1], q[2], q[3]) * (q[3] < 0 ? -1 : 1)
-    out.set([l[12], l[13], l[14], q[0] / n, q[1] / n, q[2] / n, q[3] / n, s[0], s[1], s[2]], i * 10)
-  })
+    else if (m00 > m11 && m00 > m22) {
+      const k = Math.sqrt(1 + m00 - m11 - m22) * 2
+      x = k / 4
+      y = (m01 + m10) / k
+      z = (m02 + m20) / k
+      w = (m21 - m12) / k
+    }
+    else if (m11 > m22) {
+      const k = Math.sqrt(1 + m11 - m00 - m22) * 2
+      x = (m01 + m10) / k
+      y = k / 4
+      z = (m12 + m21) / k
+      w = (m02 - m20) / k
+    }
+    else {
+      const k = Math.sqrt(1 + m22 - m00 - m11) * 2
+      x = (m02 + m20) / k
+      y = (m12 + m21) / k
+      z = k / 4
+      w = (m10 - m01) / k
+    }
+    const n = Math.sqrt(x * x + y * y + z * z + w * w) * (w < 0 ? -1 : 1), o = i * 10
+    out[o] = l[12]
+    out[o + 1] = l[13]
+    out[o + 2] = l[14]
+    out[o + 3] = x / n
+    out[o + 4] = y / n
+    out[o + 5] = z / n
+    out[o + 6] = w / n
+    out[o + 7] = sx
+    out[o + 8] = sy
+    out[o + 9] = sz
+  }
   return out
 }
 
@@ -105,13 +137,14 @@ export class VisualIk {
   private readonly rig: Rig
   private readonly parents: number[]
   private readonly index: Map<string, number>
+  private fast: PoseLookAt | null = null
 
   private constructor(api: Brick, rig: Rig, parents: number[], index: Map<string, number>) {
     this.api = api; this.rig = rig; this.parents = parents; this.index = index
   }
 
   /** rigJson is the S16 rig the graph poses use; its chains and bones are used, never extended. */
-  static create(api: Brick, rigJson: string): VisualIk {
+  static create(api: Brick, rigJson: string, fast = true): VisualIk {
     const preset = JSON.parse(rigJson) as { bones: { name: string; parent: string | null }[]; ikChains: { name: string }[] }
     const index = new Map(preset.bones.map((b, i) => [b.name, i]))
     const parents = preset.bones.map(b => (b.parent === null ? -1 : index.get(b.parent) ?? -1))
@@ -122,17 +155,22 @@ export class VisualIk {
     for (const chain of HAND_CHAINS) {
       if (!preset.ikChains.some(c => c.name === chain)) throw new Error(`rig has no chain ${chain}`)
     }
-    return new VisualIk(api, api.loadRig(rigJson), parents, index)
+    const result = new VisualIk(api, api.loadRig(rigJson), parents, index)
+    const full = JSON.parse(rigJson)
+    if (fast) result.fast = new PoseLookAt(full.bones as LookRigBone[], full.limits ?? [])
+    return result
   }
 
-  evaluate(source: Pick<CharacterPose, 'model' | 'skin'>, xf: CharacterTransform, targets: IkTargets): VisualPose {
+  evaluate(source: Pick<CharacterPose, 'model' | 'skin'> & { local?: Float32Array }, xf: CharacterTransform, targets: IkTargets): VisualPose {
     const ik = this.api.ik, active: IkActive = { feet: false, hands: false, look: false }
     let pose: Omit<VisualPose, 'active'> = {
-      local: localPose(source.model, this.parents), model: source.model.slice(), skin: source.skin.slice(),
+      local: source["local"]?.slice() ?? localPose(source.model, this.parents), model: source.model.slice(), skin: source.skin.slice(),
     }
+    const lookAt = (p: typeof pose, name: string, target: Vec3, axis: Vec3, cap: number) =>
+      this.fast && target.every(Number.isFinite) ? this.fast.apply(p, this.index.get(name)!, target, axis, cap) : ik.lookAt(this.rig, p, name, target, axis, cap)
     const { look, grab, ground } = targets
     if (look && finite(look)) {
-      pose = ik.lookAt(this.rig, pose, HEAD, toPoseFrame(look, xf), HEAD_FORWARD, LOOK_MAX_DEG)
+      pose = lookAt(pose, HEAD, toPoseFrame(look, xf), HEAD_FORWARD, LOOK_MAX_DEG)
       active.look = true
     }
     if (grab && targets.mode === CharMode.grabbing && finite(grab)) {
@@ -154,9 +192,9 @@ export class VisualIk {
         const target: Vec3 = [m[h] + d[0] * k, m[h + 1] + dy, m[h + 2] + (flat ? d[2] * k : k)]
         const { local: poseLocal } = pose
         const axis: Vec3 = [poseLocal[f * 10], poseLocal[f * 10 + 1], poseLocal[f * 10 + 2]]
-        pose = ik.lookAt(this.rig, pose, upper, target, axis, LEG_MAX_DEG)
+        pose = lookAt(pose, upper, target, axis, LEG_MAX_DEG)
         m = pose.model
-        pose = ik.lookAt(this.rig, pose, foot, [m[o] + n[0], m[o + 1] + n[1], m[o + 2] + n[2]], FOOT_UP, LEG_MAX_DEG)
+        pose = lookAt(pose, foot, [m[o] + n[0], m[o + 1] + n[1], m[o + 2] + n[2]], FOOT_UP, LEG_MAX_DEG)
       }
       active.feet = true
     }

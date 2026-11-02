@@ -1360,6 +1360,10 @@ class App {
   private preparedLocal: LocalMode | null = null
   private readonly loadingOverlay = roundOverlay()
   private roundLoading: string | null = null
+  // The uaa screen transitions run on the frames' clock, not the wall clock: an op steps game time faster
+  // than real time, and a 150 ms exit fade on performance.now() outlived the whole 1 s test vote, so uaa
+  // replaced the pending 'vote' before entering it. Starts after the host's own creation time.
+  private uiNowMs = performance.now()
   private stopRoundLoad: (() => void) | null = null
   private loaded: Loaded | null = null
   private query: Query | null = null
@@ -2032,6 +2036,7 @@ class App {
 
   private frame(dt: number): void {
     const nav = this.nav
+    this.uiNowMs += Math.max(0, dt) * 1000
     const events = this.input.takeEvents()
     // The remap screen reads the keys itself: they must not also move the uaa settings menu.
     if (this.remap === null) {
@@ -2250,7 +2255,7 @@ class App {
         this.startView.setVisible(true)
         this.startView.update(this.startModel, null)
         this.resize()
-        this.host.frame(performance.now())
+        this.host.frame(this.uiNowMs)
         return
       }
     }
@@ -2259,12 +2264,12 @@ class App {
       this.screens.style.pointerEvents = 'auto'
       this.economyScreens.draw(nav.screen as EconomyScreen)
       this.resize()
-      this.host.frame(performance.now())
+      this.host.frame(this.uiNowMs)
       return
     }
     if (this.drawShow()) {
       this.resize()
-      this.host.frame(performance.now())
+      this.host.frame(this.uiNowMs)
       return
     }
     const mode = this.mode
@@ -2281,7 +2286,7 @@ class App {
     this.resize()
     this.host.present({ ...model, lines: fitLines(model.lines, lineSlots(model.screen)) })
     if (hud !== null && values !== null) this.host.setHud(hudWidgets(values, hud.view))
-    this.host.frame(performance.now())
+    this.host.frame(this.uiNowMs)
   }
 
   private roundTicks(v: MatchViewState): number {

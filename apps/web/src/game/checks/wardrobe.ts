@@ -365,8 +365,21 @@ export async function run(input: unknown, deps: TourDeps): Promise<{
       const style = getComputedStyle(view)
       views.push({ w: view.width, h: view.height, display: style.display, visibility: style.visibility, opacity: style.opacity, opaque64x36: opaque })
     }
+    // A second bare capture after 40 more stepped frames and a real 2 s wait: if it differs from the first inside the
+    // character rect the first frame was taken too early; if it is identical the penguin is not drawn at all.
+    // `boxColours` counts the distinct colours inside the rect of the first capture (1 = a flat background).
+    const colours = new Set<number>()
+    for (let y = box.y0; y <= box.y1; y++) for (let x = box.x0; x <= box.x1; x++) {
+      const i = (y * WIDTH + x) * 4
+      colours.add((bareShot.stage[i] << 16) | (bareShot.stage[i + 1] << 8) | bareShot.stage[i + 2])
+    }
+    await new Promise<void>(resolve => setTimeout(resolve, 2000))
+    await settle(live, 40)
+    const laterTake = await shoot(live)
+    const later = await laterTake.shot
     bare = { file: 'bare.png', assets: [...bareInventory.assets].sort(), instances: bareInventory.instances, controlPixels: 0,
-      stage: { pendingPipelines: pendingPipelines(), views, ports: ports.map(p => ({ inDom: p.inDom, displayed: p.displayed, instances: p.inventory?.instances })) } }
+      stage: { pendingPipelines: pendingPipelines(), views, ports: ports.map(p => ({ inDom: p.inDom, displayed: p.displayed, instances: p.inventory?.instances })),
+        box, boxColours: colours.size, laterDiffPixels: diffPixels(bareShot.stage, later.stage, box) } }
     const files: { name: string; blob: Blob }[] = [{ name: 'bare.png', blob: bareShot.composite }]
     for (const [index, bin] of bins.entries()) {
       for (const item of bin.items) {

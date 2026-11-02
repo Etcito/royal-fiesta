@@ -418,3 +418,26 @@ The settings screen exposes one volume per bus, each running 0..1. The effective
 S16 bus gain multiplied by the slider; a slider at 0 mutes its bus, at 1 restores the S16
 gain. The master limiter stays after the volume stage so a user-raised `sfx` bus still cannot
 cross -1 dBFS.
+
+## M13 build/runtime boundary (2026-11-02)
+
+`npm run audio:bake` (also called by `web:build` and `play`) renders the existing
+one-shot variant banks and music arrangements with HAA on the build machine, then
+runs `tools/audioCompress.ts`. It requires ffmpeg with libmp3lame and libopus. The
+smaller MP3/Ogg Opus encoding is kept per file; `audio/manifest.json` names those
+files and the intermediate WAVs are removed. Runtime `context.ts` follows those
+names and uses the browser's native audio decoder; it does not render those banks.
+`packWavedash` uses the same compressor, without its former WAV fallback.
+
+Render and encoding caches live below `rfCacheRoot()/audio`, with encoding choices
+under `compressed/v1/<bake key>`. Set `RF_CACHE_DIR` outside `.git` when git writes
+are prohibited. The bake keys include authored sources and renderer inputs; a
+changed source invalidates the cache.
+
+**Remaining boundary:** non-music loops and spatial course sounds still use live
+HAA patches, loaded from the audio manifest or content index. Their continuous
+`speed`, `rate`, `gain` and crowd `excitement` inputs alter the authored graph.
+Replacing these with a single recorded loop changes sound behavior. This change
+preserves them; it does not claim that *all* sounds are now server-baked. A future
+sample-bank implementation needs a defined policy for these controls and audible
+loop seams. Native decoding of MP3/Ogg during playback remains necessary.

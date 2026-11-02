@@ -195,7 +195,7 @@ export class ShowMode {
   private async prepare(round: ZoneFullRound): Promise<void> {
     const index = round.plan.index
     try {
-      const content = await zoneContent('sprint')
+      const content = await zoneContent('sprint', round.plan.course.id)
       const prepared = await prepareZoneNetScene({
         canvas: this.canvas, course: round.plan.course, createPort: content.createPort,
         assets: content.assets, bean: content.bean,

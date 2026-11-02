@@ -5,6 +5,8 @@
 // Renders are cached outside the checkout, keyed by a hash of every input of the render (HAA's dist
 // and wasm, this script, the sound def, its bank entries and every source text it reads), so a build
 // whose sounds did not change copies them instead of rendering 372 WAVs again.
+// The CLI compresses the rendered WAVs to MP3/Ogg before publishing the manifest.
+// Live patches keep their authored continuous controls; see docs/audio.md.
 // Run by `npm run audio:bake` (and by web:build).
 //   node --experimental-strip-types tools/bake-audio.ts [--out <dir>]
 import { createHash } from 'node:crypto'
@@ -28,6 +30,7 @@ import { BED_FAMILIES, loadArrangement, MUSIC_CUE_IDS } from '../packages/game/s
 import { WORLD_FAMILIES } from '../packages/game/src/audio/sounds/world.ts'
 import { repoRoot } from './bricks.ts'
 import { rfCacheRoot, writableDir } from './content.ts'
+import { compressAudio } from './audioCompress.ts'
 
 export const DEFAULT_AUDIO_OUT = 'apps/web/public/audio'
 
@@ -280,7 +283,16 @@ if (import.meta.url === entry) {
   const flag = process.argv.indexOf('--out')
   const out = flag >= 0 && process.argv[flag + 1] ? resolve(process.argv[flag + 1]) : join(repoRoot(), DEFAULT_AUDIO_OUT)
   const started = Date.now()
-  const manifest = await bakeAudio(out)
+  await bakeAudio(out)
+  await compressAudio(out)
+  const manifest = JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')) as AudioManifest
+  // Drop stale generated media from earlier bakes/codec choices; retain patches and unrelated files.
+  const used = new Set(manifest.sounds.flatMap(sound => sound.files))
+  for (const file of readdirSync(out)) {
+    if (/\.(wav|mp3|ogg)$/i.test(file) && !used.has(file) && SOUNDS.some(sound => file.startsWith(`${sound.id}.`))) {
+      rmSync(join(out, file))
+    }
+  }
   const files = manifest.sounds.reduce((count, sound) => count + sound.files.length, 0) +
     manifest.sounds.filter((sound) => sound.patch !== null).length + 3
   console.log(`baked ${manifest.sounds.length} sounds (${files} files) into ${out} in ${((Date.now() - started) / 1000).toFixed(1)} s`)

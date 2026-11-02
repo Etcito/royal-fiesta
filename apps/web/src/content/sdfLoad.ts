@@ -12,7 +12,7 @@ import { poolSize } from '../sdf/meshPool.ts'
 import type { MeshPool } from '../sdf/meshPool.ts'
 import { fetchMeshFile, meshFileStats } from '../sdf/meshFile.ts'
 import { fetchServerMesh } from '../sdf/serverMesh.ts'
-import { assetSet } from './assetSet.ts'
+import { assetSet, courseAssetSet } from './assetSet.ts'
 import { browserContentIndex, browserContentRoot, browserGameAssets, loadV1Courses } from './v1Data.ts'
 
 /** An asset still meshing this many seconds after its worker started is left out like a refused one; the load goes on. */
@@ -79,7 +79,7 @@ function playlistIds(courses: readonly CourseV1[], profile: ProfileName): string
     .sort()
 }
 
-export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadProgress) => void): Promise<SdfContent> {
+export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadProgress) => void, courseId?: string): Promise<SdfContent> {
   // First, so a missing MAMA refuses before any fetch.
   const timeline: string[] = []
   let previous = performance.now()
@@ -90,11 +90,12 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   }
   const facade = await loadMamaFacade()
   mark('MAMA module')
-  const { courses, byId } = await loadV1Courses(onProgress)
+  const { courses, byId } = await loadV1Courses(onProgress, undefined, courseId)
 
   mark('Course and referenced asset load')
   const costumes = (await browserContentIndex()).assets.map(e => e.id).filter(id => id.startsWith('costume.'))
-  const ids = assetSet(courses, byId, profile, costumes)
+  const ids = courseId === undefined ? assetSet(courses, byId, profile, costumes)
+    : courseAssetSet(courses, courseId)
   const resolver = browserGameAssets()
   const assets: GameAsset[] = []
   for (let i = 0; i < ids.length; i++) {

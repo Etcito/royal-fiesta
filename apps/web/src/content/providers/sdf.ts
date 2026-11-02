@@ -23,8 +23,8 @@ interface Loaded {
   courses: CourseV1[]
   byId: ReadonlyMap<string, CourseV1>
   playlist: ResolvedCourse[]
-  hub: ResolvedCourse
-  podium: PodiumLayout
+  hub: ResolvedCourse | null
+  podium: PodiumLayout | null
   meshed: Map<string, MeshedAsset>
   failed: ReadonlyMap<string, string>
   standIns: Map<string, PrimsAsset>
@@ -36,7 +36,9 @@ function byIdOrder(a: { id: string }, b: { id: string }): number {
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 }
 
-class SdfContent implements GameContent {
+export class SdfContent implements GameContent {
+  private readonly courseId?: string
+  constructor(courseId?: string) { this.courseId = courseId }
   readonly id = 'sdf' as const
   private loaded: Loaded | null = null
   private onProgress: (p: LoadProgress) => void = () => {}
@@ -44,7 +46,7 @@ class SdfContent implements GameContent {
   // A missing MAMA refuses from loadSdfContent before any fetch; it never falls back to v1.
   async load(profile: ProfileName, onProgress: (p: LoadProgress) => void): Promise<void> {
     this.onProgress = onProgress
-    const content = await loadSdfContent(profile, onProgress)
+    const content = await loadSdfContent(profile, onProgress, this.courseId)
     const { all: courses, byId } = content.courses
     const playlist: ResolvedCourse[] = []
     for (const c of courses) {
@@ -52,13 +54,13 @@ class SdfContent implements GameContent {
     }
     playlist.sort(byIdOrder)
     const hubs = courses.filter(c => c.kind === 'hub')
-    if (hubs.length !== 1) {
+    if (this.courseId === undefined && hubs.length !== 1) {
       refuse('content', 'courses/*.course.json', `expected exactly one kind hub course, found ${hubs.length} (${hubs.map(c => c.id).join(', ') || 'none'}); keep courses/${HUB_ID}.course.json as the only hub`)
     }
-    const hub = hubs[0].sim
-    if (hub === null) refuse('content', `courses/${hubs[0].id}.course.json`, 'the hub course has no sim course; fix the hub course')
+    const hub = hubs[0]?.sim ?? null
+    if (this.courseId === undefined && hub === null) refuse('content', `courses/${hubs[0].id}.course.json`, 'the hub course has no sim course; fix the hub course')
     const podiumCourse = byId.get(PODIUM_ID)
-    if (podiumCourse === undefined || podiumCourse.kind !== 'podium') {
+    if (this.courseId === undefined && (podiumCourse === undefined || podiumCourse.kind !== 'podium')) {
       refuse('content', `courses/${PODIUM_ID}.course.json`, `no kind podium course '${PODIUM_ID}'; add courses/${PODIUM_ID}.course.json`)
     }
     // Only the id reaches the mesh renderer. PodiumStage also needs the block bounds
@@ -79,8 +81,10 @@ class SdfContent implements GameContent {
       standIns.set(id, prims)
     }
     const skinned = await characterSkin(content.meshed.get(CHARACTER_ID), async () => (await resolver.resolve(CHARACTER_ID)).asset.document)
-    this.loaded = { courses, byId, playlist, hub, podium: podiumLayoutOf(podiumCourse), meshed: content.meshed, failed: content.failed, standIns, report: content.report, skinned }
+    this.loaded = { courses, byId, playlist, hub, podium: podiumCourse === undefined ? null : podiumLayoutOf(podiumCourse), meshed: content.meshed, failed: content.failed, standIns, report: content.report, skinned }
   }
+
+  meshData(): Pick<Loaded, 'meshed' | 'failed'> { return this.need('meshes') }
 
   // The skinned character for SceneView (S18 skin and the S19 penguin graph); undefined keeps the rigid one.
   skinned(): SkinnedCharacter | undefined {
@@ -106,11 +110,15 @@ class SdfContent implements GameContent {
   }
 
   hub(): ResolvedCourse {
-    return this.need('hub').hub
+    const hub = this.need('hub').hub
+    if (hub === null) refuse('content', 'hub', 'round content has no hub')
+    return hub
   }
 
   podium(): PodiumLayout {
-    return this.need('podium').podium
+    const podium = this.need('podium').podium
+    if (podium === null) refuse('content', 'podium', 'round content has no podium')
+    return podium
   }
 
   // An S12 asset id, or a v0 name the pages still use ('wall-block', 'bean').

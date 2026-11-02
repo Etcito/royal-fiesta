@@ -223,3 +223,34 @@ test('browserAudioPatches maps patch ids to absolute URLs against the content ro
   const fetcher: typeof fetch = async (input, init) => nested.options.fetch(String(input).replace('https://cdn.example/rf/v2/', 'https://content.example/'), init)
   assert.deepEqual([...await browserAudioPatches({ root: 'https://cdn.example/rf/v2', fetch: fetcher })], [['hum', 'https://cdn.example/rf/v2/audio/hum.haa.json']])
 })
+
+test('a selected round never requests a missing lobby course or its assets', async () => {
+  const json = JSON.parse(readFileSync(new URL('../../../courses/candy-seesaw-run.course.json', import.meta.url), 'utf8'))
+  const { readdirSync } = await import('node:fs')
+  const files: Record<string, unknown> = {}
+  const assets: { id: string; world: string; path: string; hash: string }[] = []
+  for (const world of readdirSync(new URL('../../../assets/', import.meta.url), { withFileTypes: true })) {
+    if (!world.isDirectory()) continue
+    for (const file of readdirSync(new URL(`../../../assets/${world.name}/`, import.meta.url))) {
+      if (!file.endsWith('.asset.json')) continue
+      const path = `assets/${world.name}/${file}`
+      const asset = JSON.parse(readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8'))
+      assets.push({ id: asset.id, world: world.name, path, hash: asset.hash })
+      files[path] = asset
+    }
+  }
+  files['courses/candy-seesaw-run.course.json'] = json
+  files['index.json'] = { assets, courses: [
+    { id: 'hub-plaza', path: 'courses/hub-plaza.course.json' },
+    { id: 'candy-seesaw-run', path: 'courses/candy-seesaw-run.course.json' },
+  ] }
+  // The lobby is intentionally absent: fetching it would fail this load.
+  const stub = runtime(files)
+  const result = await loadV1Courses(() => {}, stub.options, 'candy-seesaw-run')
+  assert.deepEqual(result.courses.map(c => c.id), ['candy-seesaw-run'])
+  const { courseAssetSet } = await import('../src/content/assetSet.ts')
+  assert.deepEqual(courseAssetSet(result.courses, 'candy-seesaw-run'),
+    [...new Set(['penguin.body', ...result.courses[0].assetIds])].sort())
+  assert.ok(stub.requests.every(r => !r.url.includes('hub-plaza')))
+  assert.throws(() => courseAssetSet(result.courses, 'missing'), /expected a playable course/)
+})

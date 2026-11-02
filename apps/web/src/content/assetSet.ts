@@ -31,3 +31,12 @@ export function assetSet(courses: readonly CourseV1[], byId: ReadonlyMap<string,
   for (const id of podium.assetIds) ids.add(id)
   return [...ids].sort()
 }
+
+/** A round owns its course meshes and the shared character, never the lobby/wardrobe/podium. */
+export function courseAssetSet(courses: readonly CourseV1[], courseId: string): string[] {
+  const course = courses.find(c => c.id === courseId)
+  if (!course || (course.kind !== 'race' && course.kind !== 'survival')) {
+    refuse('content', courseId, 'expected a playable course')
+  }
+  return [...new Set([CHARACTER_ID, ...course.assetIds])].sort()
+}

@@ -37,7 +37,7 @@ export async function loadShowContent(profile: ProfileName): Promise<ShowContent
     if (key.startsWith(ZONE_PREFIX)) sidecarText.set(key.slice(ZONE_PREFIX.length), sidecars[key])
   }
 
-  const loaded = (await loadV1Courses(() => {})).courses.flatMap(course => course.sim === null ? [] : [course.sim])
+  const loaded = (await loadV1Courses(() => {}, undefined, [...builtCourses])).courses.flatMap(course => course.sim === null ? [] : [course.sim])
   const courses: ResolvedCourse[] = []
   for (let i = 0; i < loaded.length; i++) {
     const course = loaded[i]

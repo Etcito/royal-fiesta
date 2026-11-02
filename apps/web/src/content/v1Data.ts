@@ -158,10 +158,10 @@ export function browserGameAssets(options?: ContentOptions): GameAssetResolver {
 
 export interface V1Courses { courses: CourseV1[]; byId: ReadonlyMap<string, CourseV1> }
 
-export async function loadV1Courses(onProgress: (p: LoadProgress) => void, options?: ContentOptions): Promise<V1Courses> {
+export async function loadV1Courses(onProgress: (p: LoadProgress) => void, options?: ContentOptions, courseId?: string | readonly string[]): Promise<V1Courses> {
   const read = contentReader(options ?? {})
   const index = await read('index.json') as ContentIndex
-  const entries = [...index.courses].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
+  const entries = index.courses.filter(entry => courseId === undefined || (typeof courseId === 'string' ? entry.id === courseId : courseId.includes(entry.id))).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
   const assets = browserGameAssets(options)
   const courses: CourseV1[] = []
   for (let i = 0; i < entries.length; i++) {

@@ -3,34 +3,33 @@ import type { ProfileName } from '@royal-fiesta/sim/course'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { RenderTarget } from '@royal-fiesta/game/render/port'
 import { farFigureMesh } from '@royal-fiesta/game/render/farRender'
-import { pickContent } from '../content/source.ts'
-import { skinnedCharacterOf } from '../content/providers/sdf.ts'
-import { loadSdfContent } from '../content/sdfLoad.ts'
+import { SdfContent, skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { createSdfPort } from '../sdf/sdfPort.ts'
 
-// One load per profile for the page: two lobbies of one GPU job (zoneLobbyPair) share it.
-const loads = new Map<ProfileName, ReturnType<typeof loadZoneContent>>()
+// Cache each course independently; a round never joins a pending full lobby load.
+const loads = new Map<string, ReturnType<typeof loadZoneContent>>()
 
-async function loadZoneContent(profile: ProfileName) {
-  const content = pickContent(new URLSearchParams({ content: 'sdf' }))
+async function loadZoneContent(profile: ProfileName, courseId?: string) {
+  const content = new SdfContent(courseId)
   await content.load(profile, () => {})
-  // The second load reuses the normal content's memory mesh cache.
-  const loaded = await loadSdfContent(profile, () => {})
+  // Reuse the exact mesh set already loaded by this content instance.
+  const loaded = content.meshData()
   return { content, loaded }
 }
 
-export function zoneContent(profile: ProfileName) {
-  let load = loads.get(profile)
+export function zoneContent(profile: ProfileName, courseId?: string) {
+  const key = `${profile}:${courseId ?? '*'}`
+  let load = loads.get(key)
   if (load === undefined) {
-    load = loadZoneContent(profile)
-    loads.set(profile, load)
+    load = loadZoneContent(profile, courseId)
+    loads.set(key, load)
     // A failed load is not cached: the next lobby retries it.
-    load.catch(() => { if (loads.get(profile) === load) loads.delete(profile) })
+    load.catch(() => { if (loads.get(key) === load) loads.delete(key) })
   }
   return load.then(({ content, loaded }) => zoneContentOf(content, loaded))
 }
 
-function zoneContentOf(content: ReturnType<typeof pickContent>, loaded: Awaited<ReturnType<typeof loadSdfContent>>) {
+function zoneContentOf(content: SdfContent, loaded: ReturnType<SdfContent['meshData']>) {
   const id = 'zone.far-bean'
   const data = farFigureMesh()
   loaded.meshed.set(id, { assetId: id, hash: '', mesher: 'paramesh', parts: 1,

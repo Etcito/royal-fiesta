@@ -31,9 +31,8 @@ function safe(text: string): string {
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[REDACTED EMAIL]')
 }
 
-function stderrTail(stderr: string): string {
-  const lines = stderr.split(/\r?\n/).filter(Boolean).slice(-20).map(safe)
-  return lines.length ? `\nGPU client stderr (last ${lines.length} lines):\n${lines.join('\n')}` : ''
+function stderrOutput(stderr: string): string {
+  return stderr.trim() ? `\nGPU client stderr:\n${safe(stderr.trim())}` : ''
 }
 
 function fail(where: string, what: string): never {
@@ -61,7 +60,7 @@ async function run(args: string[], where: string): Promise<string> {
     }
     child.stdout.setEncoding('utf8').on('data', (s: string) => { stdout += s })
     child.stderr.setEncoding('utf8').on('data', (s: string) => {
-      stderr = `${stderr}${s}`.split(/\r?\n/).slice(-20).join('\n')
+      stderr += s
     })
     child.on('error', () => finish(new Error('launch')))
     child.on('close', code => {
@@ -78,7 +77,7 @@ async function run(args: string[], where: string): Promise<string> {
       : e instanceof Error && e.message.startsWith('exit:')
         ? `exited with status ${e.message.slice(5)}`
         : 'could not start; check that NMC_GPU_CLIENT names an accessible Node script'
-    fail(where, `${reason}${stderrTail(stderr)}`)
+    fail(where, `${reason}${stderrOutput(stderr)}`)
   })
 }
 

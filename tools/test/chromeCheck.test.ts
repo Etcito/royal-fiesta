@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 import { BOOT_REFUSAL, run } from '../../apps/web/src/game/checks/boot.ts'
 import type { TourDeps, TourGame } from '../../apps/web/src/game/uiTour.ts'
 import { DEFAULT_GPU_WAIT_S, exitCode, gpuWaitSeconds, makeReport, prepareGpuCopy, takeCheckDiagnostics } from '../chromeCheck.ts'
@@ -105,11 +106,20 @@ test('prepareGpuCopy appends the op in the copy, leaves the source, and applies 
     assert.equal(readFileSync(join(source, 'nmc.gpu.json'), 'utf8'), manifest, 'the source manifest is untouched')
     assert.equal(readFileSync(join(source, 'game.html'), 'utf8'), html, 'the source page is untouched')
     const copied = readFileSync(join(target, 'game.html'), 'utf8')
-    assert.match(copied, /url\.searchParams\.set\("test", "1"\)/)
-    assert.match(copied, /history\.replaceState\(null, "", url\.pathname \+ url\.search \+ url\.hash\)/)
+    assert.match(copied, /window\.__nmcCheckTest = true/)
+    assert.doesNotMatch(copied, /history\.replaceState/)
     assert.match(copied, /nmcCheckAdapter/)
     assert.match(copied, /window\.__nmcCheck/)
     assert.match(copied, /addEventListener\("error"/)
+    const prelude = copied.match(/<script type="module" data-nmc-test-query>([\s\S]*?)<\/script>/)![1]
+    const listeners: Record<string, (event: any) => void> = {}
+    const page: any = { fetch: async () => ({ ok: true }) }
+    runInNewContext(prelude, { window: page, console: { error() {} }, addEventListener: (name: string, fn: (event: any) => void) => { listeners[name] = fn } })
+    const first = new Error('first page failure')
+    listeners.error({ target: page, error: first })
+    page.__nmcGpuProgress = 'later op progress'
+    assert.match(page.__nmcGpuProgress, /first page failure/)
+    assert.equal(page.__nmcCheckTest, true)
     const query = copied.indexOf('data-nmc-test-query')
     const bundle = copied.indexOf('./assets/index-abc.js')
     assert.ok(query >= 0 && query < bundle, 'the test query must run before the game bundle')

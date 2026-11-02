@@ -68,27 +68,39 @@ function bundleMatch(html: string, what: string): RegExpExecArray {
 const DIAGNOSTICS = `window.__nmcCheck = { pageErrors: [], consoleErrors: [], failedRequests: [] };
 const check = window.__nmcCheck;
 const describe = value => String(value?.stack ?? value?.message ?? value);
+let progress = window.__nmcGpuProgress;
+Object.defineProperty(window, '__nmcGpuProgress', {
+  configurable: true,
+  get: () => check.firstError ?? progress,
+  set: value => { progress = value },
+});
+const record = (kind, message) => {
+  check[kind].push(message);
+  if (!check.firstError) {
+    check.firstError = kind + ': ' + message;
+  }
+};
 addEventListener("error", event => {
   const target = event.target;
-  if (target !== window && target && (target.src || target.href)) check.failedRequests.push(String(target.src ?? target.href));
-  else check.pageErrors.push(event.error ? describe(event.error) : String(event.message));
+  if (target !== window && target && (target.src || target.href)) record('failedRequests', String(target.src ?? target.href));
+  else record('pageErrors', event.error ? describe(event.error) : String(event.message));
 }, true);
-addEventListener("unhandledrejection", event => check.pageErrors.push(describe(event.reason)));
+addEventListener("unhandledrejection", event => record('pageErrors', describe(event.reason)));
 const reportError = console.error;
-console.error = (...args) => { check.consoleErrors.push(args.map(describe).join(" ")); reportError.apply(console, args) };
+console.error = (...args) => { record('consoleErrors', args.map(describe).join(" ")); reportError.apply(console, args) };
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   try {
     const response = await originalFetch.apply(window, args);
-    if (!response.ok) check.failedRequests.push(response.url + " HTTP " + response.status);
+    if (!response.ok) record('failedRequests', response.url + " HTTP " + response.status);
     return response;
-  } catch (error) { check.failedRequests.push(String(args[0]) + " " + describe(error)); throw error }
+  } catch (error) { record('failedRequests', String(args[0]) + " " + describe(error)); throw error }
 };
 if (typeof XMLHttpRequest !== "undefined") {
   const open = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (...args) {
     this.addEventListener("loadend", () => {
-      if (this.status === 0 || this.status >= 400) check.failedRequests.push(String(args[1]) + " HTTP " + this.status);
+      if (this.status === 0 || this.status >= 400) record('failedRequests', String(args[1]) + " HTTP " + this.status);
     }, { once: true });
     return open.apply(this, args);
   };
@@ -99,7 +111,7 @@ if (typeof XMLHttpRequest !== "undefined") {
 export function injectTestQuery(html: string): string {
   if (html.includes(TEST_QUERY_MARK)) return html
   const match = bundleMatch(html, 'run the test query before')
-  const script = `const url = new URL(location.href); url.searchParams.set("test", "1"); history.replaceState(null, "", url.pathname + url.search + url.hash)\n${DIAGNOSTICS}`
+  const script = `${DIAGNOSTICS}\nwindow.__nmcCheckTest = true;`
   return html.slice(0, match.index)
     + `<script type="module" ${TEST_QUERY_MARK}>${script}</script>`
     + html.slice(match.index)
@@ -127,6 +139,24 @@ const install = () => {
   }, { nmcCheckAdapter: true })
   return true
 }
+// The lightweight entry publishes placeholders and the game later replaces the whole object.
+// Wrap both synchronously so a client call cannot race the real registration.
+let gpu = window.nmcGpu
+Object.defineProperty(window, 'nmcGpu', {
+  configurable: true,
+  get: () => gpu,
+  set: value => {
+    if (value?.ops) value.ops = new Proxy(value.ops, {
+      set: (target, key, next) => {
+        Reflect.set(target, key, next);
+        if (key === opName) install();
+        return true;
+      },
+    });
+    gpu = value;
+    install();
+  },
+})
 if (!install()) { const timer = setInterval(() => { if (install()) clearInterval(timer) }, 50) }
 </script>`
 }

@@ -2487,7 +2487,9 @@ async function start(
     host.destroy()
     return null
   }
-  const booted = new App(views, screens, host, window.location.search, env)
+  const search = new URLSearchParams(window.location.search)
+  if ((window as Window & { __nmcCheckTest?: boolean }).__nmcCheckTest) search.set('test', '1')
+  const booted = new App(views, screens, host, `?${search}`, env)
   created = booted
   window.addEventListener('error', e => booted.fail(messageOf(e.error ?? e.message)))
   window.addEventListener('unhandledrejection', e => booted.fail(messageOf(e.reason)))

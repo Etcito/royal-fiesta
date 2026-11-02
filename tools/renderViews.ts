@@ -250,11 +250,9 @@ export async function main(argv: string[]): Promise<number> {
     const root = repoRoot()
     const input = JSON.parse(readFileSync(argv[0], 'utf8')) as ViewsInput
     if (input.format !== 'royal-fiesta.views-input') refuse(AREA, `${argv[0]}#/format`, 'not a views input; pass a proofs/cN/views.input.json file')
-    // An empty NMC_GPU_URL makes sdfm render in Node instead of sending a job to the GPU host.
-    process.env.NMC_GPU_URL = ''
-    // Software rendering compiles a costumed penguin's gbuffer shader for minutes on a loaded machine (sdfm's default limit
-    // is 240 s and failed three judge cards); 25 min stays under the card check's own 1800 s timeout.
-    process.env.SDFM_COMPILE_TIMEOUT_MS ||= '1500000'
+    // NMC_GPU_URL, when nomorechat provides it, sends every render to the connected GPU client (a real GPU compiles the gbuffer
+    // shader in seconds). Blanking it forced the CPU rasteriser: a costumed penguin then compiled for minutes and failed the judge
+    // cards at sdfm's 240 s limit. Without a GPU host sdfm renders in Node, as before.
     const { createSdfm } = await sdfmApi(sdfmDir(root))
     let failed = 0
     for (const s of input.subjects) {

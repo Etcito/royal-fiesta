@@ -145,6 +145,9 @@ export function mountVote(host: UaaHost, model: VoteModel, deps: FlowDeps): Vote
       let img = images.get(slot)
       if (img === undefined) {
         img = document.createElement('img')
+        // The GPU page has an opaque sandbox origin. Keep its composited captures
+        // readable when these images are served from the capability asset origin.
+        img.crossOrigin = 'anonymous'
         img.alt = ''
         img.style.position = 'absolute'
         img.style.objectFit = 'cover'

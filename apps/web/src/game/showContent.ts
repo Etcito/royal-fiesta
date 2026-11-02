@@ -1,20 +1,17 @@
 /// <reference types="vite/client" />
-// The in-page show's content: the fixture courses that have zone sidecars, their zones and map info.
-// No season file is read here: the season maps are not built until M10, so showMaps falls back to the
-// level kind of each course.
+// The in-page show uses the built season maps and their authored zone sidecars.
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
-import { levelOf } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { RoundKind } from '@royal-fiesta/sim/season/kinds'
 import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { showMaps } from '@royal-fiesta/game/net/zoneRounds'
-import { browserCourses } from '../client/sources.ts'
+import { parseSeason, playableMaps } from '@royal-fiesta/game/season'
+import seasonText from '../../../../courses/season.json?raw'
+import { loadV1Courses } from '../content/v1Data.ts'
 
 const ZONE_PREFIX = '../../../../'
-const SHOW_KINDS: readonly RoundKind[] = ['race', 'survival', 'team']
-const VIEW_ONLY = ['hub', 'podium', 'gallery']
 
 export interface ShowMapInfo {
   readonly name: string
@@ -29,6 +26,9 @@ export interface ShowContent {
 }
 
 export async function loadShowContent(profile: ProfileName): Promise<ShowContent> {
+  const season = parseSeason(JSON.parse(seasonText), 'courses/season.json')
+  const maps = playableMaps(season)
+  const builtCourses = new Set(maps.map(map => map.course))
   const sidecars = import.meta.glob<string>('../../../../courses/*.zones.json', {
     query: '?raw', import: 'default', eager: true,
   })
@@ -37,16 +37,14 @@ export async function loadShowContent(profile: ProfileName): Promise<ShowContent
     if (key.startsWith(ZONE_PREFIX)) sidecarText.set(key.slice(ZONE_PREFIX.length), sidecars[key])
   }
 
-  // Every sidecar course is a candidate map, not only those tagged for the match's timing profile: with the
-  // sprint-tagged pair alone, one is the final map and every other round had one candidate, so the match
-  // played it at once and the show never reached a vote (card 6404).
-  const loaded = await browserCourses(null)
+  const loaded = (await loadV1Courses(() => {})).courses.flatMap(course => course.sim === null ? [] : [course.sim])
   const courses: ResolvedCourse[] = []
   for (let i = 0; i < loaded.length; i++) {
     const course = loaded[i]
-    if (VIEW_ONLY.includes(course.kind)) continue
-    if (!SHOW_KINDS.includes(levelOf(course).kind)) continue
-    if (!sidecarText.has(`courses/${course.id}.zones.json`)) continue
+    if (!builtCourses.has(course.id)) continue
+    if (!sidecarText.has(`courses/${course.id}.zones.json`)) {
+      refuse('show', `courses/${course.id}.zones.json`, 'built season map is missing its zone sidecar')
+    }
     courses.push(course)
   }
   if (courses.length < 2) {
@@ -65,18 +63,17 @@ export async function loadShowContent(profile: ProfileName): Promise<ShowContent
   }
 
   const infoById = new Map<string, ShowMapInfo>()
-  for (let i = 0; i < courses.length; i++) {
-    const course = courses[i]
-    infoById.set(course.id, { name: course.name, kind: levelOf(course).kind })
+  for (const map of maps) {
+    infoById.set(map.id, { name: map.name, kind: map.kind })
   }
 
   return {
     courses,
     zones,
-    season: showMaps(courses),
+    season: showMaps(courses, season),
     info(mapId: string): ShowMapInfo {
       const info = infoById.get(mapId)
-      if (info === undefined) refuse('show', `info(${mapId})`, `unknown map id '${mapId}'; use a course id with a zones sidecar`)
+      if (info === undefined) refuse('show', `info(${mapId})`, `unknown map id '${mapId}'; use a built season map with a zones sidecar`)
       return info
     },
   }

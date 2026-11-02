@@ -176,7 +176,10 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: { ok
       }
       if (TIMERS.has(screen)) {
         if (active === null) {
-          if (!ready(screen)) { await step(live, 0); continue }
+          // A pending vote also reports countdown until the network offers its candidates.
+          // Keep the protocol clock moving while no timer is displayed; dt 0 deadlocks
+          // that handoff (notably the final round). The director starts a ready timer at 0.
+          if (!ready(screen)) { await step(live, DT); continue }
           const first = sample(screen)
           active = { screen, full: fullOf(screen), first, next: [] }
           screens.push(active)

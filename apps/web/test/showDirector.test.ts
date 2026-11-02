@@ -304,3 +304,15 @@ test('countdown holds the match until its last introMs, then leaves at COUNTDOWN
   assert.equal(round.screen, 'round')
   assert.deepEqual(round.sounds, ['flow.round-start'])
 })
+
+test('world readiness received during results survives until that round loads', () => {
+  const { port, director } = fixture()
+  load(director, port, 0)
+  port.show.rounds.push(result(0, [0, 1], [0, 1]))
+  assert.equal(director.step(null, 0).screen, 'result')
+  port.round = { plan: { index: 1 } }
+  director.worldReady(1)
+  assert.equal(director.step(null, 4000).screen, 'countdown')
+  assert.equal(director.step(null, 0).countdown, null)
+  assert.equal(director.step(null, 0).countdown?.label, '3')
+})

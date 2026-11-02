@@ -50,7 +50,7 @@ export class ShowDirector {
   private label: ReturnType<typeof countdownAt>['label'] = null
   private readonly voteMs: number
   private readonly introMs: number
-  private ready = false
+  private readyRound: number | null = null
   private finished = false
 
   constructor(port: ShowPort, info: ShowDirector['info'], names: (seat: number) => string, localSeat: number, voteMs = VOTE_MS, introMs = 0) {
@@ -63,7 +63,9 @@ export class ShowDirector {
   }
 
   worldReady(roundIndex: number): void {
-    if (this.phase === 'load' && this.index === roundIndex) this.ready = true
+    // The next world may finish preparing while the previous results are still shown.
+    // Retain that readiness until its load phase, while rejecting stale async completions.
+    if (this.port.round?.plan.index === roundIndex) this.readyRound = roundIndex
   }
 
   /** A pointer pick on a vote card: the same single send and cue as a confirm on that card. */
@@ -107,8 +109,8 @@ export class ShowDirector {
   step(action: Action | null, dtMs: number): ShowFrame {
     const sounds: string[] = []
     let dt = Number.isFinite(dtMs) ? Math.max(0, dtMs) : 0
-    if (this.phase === 'load' && this.ready) {
-      this.ready = false
+    if (this.phase === 'load' && this.readyRound === this.index) {
+      this.readyRound = null
       this.enter('countdown')
       dt = 0
     }

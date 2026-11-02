@@ -157,3 +157,21 @@ test('without voteMs or intermissionMs the show keeps 5000 ms and 12000 ms', asy
     assert.notEqual(mode.screen(), 'vote', '5000 ms of stepped time closes the default vote')
   } finally { mode.dispose() }
 })
+
+test('a full offline show retains early world readiness through results and reaches its winner', async () => {
+  const mode = await ShowMode.create({ ...options(), voteMs: 1000, intermissionMs: 0 })
+  const human = neutralInput()
+  const visited = new Set<string>()
+  try {
+    for (let frame = 0; frame < 30000 && !mode.finished && mode.failure === null; frame++) {
+      mode.frame(3 / 60, null, human)
+      visited.add(mode.screen())
+      if (frame % 100 === 0) await new Promise<void>(resolve => setImmediate(resolve))
+    }
+    assert.equal(mode.failure, null)
+    assert.ok(mode.finished, JSON.stringify({ screen: mode.screen(), models: mode.models, index: mode['index'],
+      peers: mode['fulls'].map(full => ({ done: full.done, alive: full.alive, round: full.round?.plan.index, results: full.show.rounds.length, candidates: full.candidates })) }))
+    assert.ok(visited.has('podium'))
+    assert.ok(visited.has('endScreen'))
+  } finally { mode.dispose() }
+})

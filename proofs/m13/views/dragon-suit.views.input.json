@@ -2,8 +2,8 @@
   "format": "royal-fiesta.views-input",
   "version": 1,
   "out": "out/m13/dragon-suit",
-  "width": 1024,
-  "height": 1024,
+  "width": 512,
+  "height": 512,
   "subjects": [
     {
       "name": "dragon-suit",
@@ -11,11 +11,7 @@
         "penguin.body",
         "costume.dragon-suit"
       ],
-      "views": [
-        "front",
-        "three-quarter",
-        "back"
-      ]
+      "views": ["three-quarter"]
     }
   ]
 }

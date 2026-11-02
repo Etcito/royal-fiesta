@@ -11,11 +11,13 @@ import { loadCourseV1 } from '../packages/game/src/courseV1.ts'
 import type { GameAssetResolver, ResolvedGameAsset } from '../packages/game/src/courseV1.ts'
 import { parseGameAsset } from '../packages/game/src/gameAsset.ts'
 
-// S29 index: `mesh` only when the saved S24 mesh exists, `audio` from audio/*.haa.json.
+// S29 index: `mesh` only when the saved S24 mesh exists, `audio` from audio/*.haa.json, `thumbs` from the level
+// thumbnails tools/levelThumbs.ts saves as thumbs/<map>.avif for the vote screen.
 export interface ContentIndex {
   assets: { id: string; world: string; path: string; hash: string; mesh?: string }[]
   courses: { id: string; path: string }[]
   audio: { id: string; path: string }[]
+  thumbs: { map: string; path: string }[]
 }
 
 export function contentDir(root = repoRoot()): string {
@@ -94,7 +96,11 @@ export function buildContentIndex(dir = contentDir()): ContentIndex {
     ? readdirSync(join(dir, 'audio')).sort().filter(f => f.endsWith('.haa.json'))
       .map(f => ({ id: f.slice(0, -'.haa.json'.length), path: `audio/${f}` }))
     : []
-  return { assets, courses, audio }
+  const thumbs = existsSync(join(dir, 'thumbs'))
+    ? readdirSync(join(dir, 'thumbs')).sort().filter(f => f.endsWith('.avif'))
+      .map(f => ({ map: f.slice(0, -'.avif'.length), path: `thumbs/${f}` }))
+    : []
+  return { assets, courses, audio, thumbs }
 }
 
 // The asset ids a page's SDF load of this profile meshes (apps/web/src/content/sdfLoad.ts), read from disk.
@@ -157,7 +163,7 @@ export async function validateContent(index: ContentIndex, dir = contentDir()): 
 // unfiltered pack can outgrow a page upload.
 export function packContent(out: string, dir = contentDir(), meshKeys?: ReadonlySet<string>): ContentIndex {
   const index = buildContentIndex(dir)
-  const files = [...index.assets.flatMap(a => a.mesh === undefined ? [a.path] : [a.path, a.mesh]), ...index.courses.map(c => c.path), ...index.audio.map(p => p.path)]
+  const files = [...index.assets.flatMap(a => a.mesh === undefined ? [a.path] : [a.path, a.mesh]), ...index.courses.map(c => c.path), ...index.audio.map(p => p.path), ...index.thumbs.map(t => t.path)]
   for (const path of files) {
     const target = join(out, path)
     mkdirSync(dirname(target), { recursive: true })

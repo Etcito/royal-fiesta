@@ -1,0 +1,193 @@
+// Level thumbnails: every built Season 1 course is opened in the SDF Modeler's Node build and saved with course_save,
+// which writes <course>.thumb.avif. The file is cached by the course's content (course text and every asset it draws),
+// copied to thumbs/<map>.avif and packed with the content for the vote screen. course_save renders on the connected GPU
+// client (NMC_GPU_URL); levelThumbs never renders in Node and refuses, naming the course and the error, when course_save
+// reports {error}: no fallback renderer, no browser capture, no placeholder.
+import { createHash } from 'node:crypto'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { delimiter, dirname, join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { parseSeason, playableMaps } from '../packages/game/src/season.ts'
+import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
+import { repoRoot } from './bricks.ts'
+import { sdfmApi, sdfmDir } from './renderViews.ts'
+
+const AREA = 'level-thumbs'
+const GAME = 'royal-fiesta'
+const CACHE_REL = 'thumbs/cache.json'
+const THUMB_SIZE = 256
+
+interface Sdfm { call(name: string, input?: unknown): Promise<{ text: string; data?: unknown }>; close(): Promise<void> }
+interface CacheEntry { course: string; key: string; path: string }
+interface CacheFile { format: string; version: number; thumbs: Record<string, CacheEntry> }
+
+const message = (e: unknown): string => (e instanceof Error ? e.message : String(e))
+
+/** Every asset id a course or an asset document names (obstacles, decor, features and nested assetRefs). */
+export function assetIds(value: unknown, out = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const item of value) assetIds(item, out)
+  } else if (value !== null && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) {
+      const ref = key === 'assetRef' && item !== null && typeof item === 'object' ? (item as { id?: unknown }).id : undefined
+      if (key === 'asset' && typeof item === 'string') out.add(item)
+      else if (typeof ref === 'string') out.add(ref)
+      else assetIds(item, out)
+    }
+  }
+  return out
+}
+
+function assetFile(root: string, id: string): string | null {
+  const dir = join(root, 'assets')
+  if (!existsSync(dir)) return null
+  const hits = readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(dir, entry.name, `${id}.asset.json`))
+    .filter((file) => existsSync(file))
+  return hits.length === 1 ? hits[0] : null
+}
+
+/** The cache key: the course text and, recursively, every asset document its expanded render draws. */
+export function courseContentKey(root: string, courseId: string): string {
+  const courseRel = `courses/${courseId}.course.json`
+  const text = readFileSync(join(root, courseRel), 'utf8')
+  const parts = [`course ${courseRel}\n${text}`]
+  const seen = new Set<string>()
+  const queue = [...assetIds(JSON.parse(text) as unknown)].sort()
+  while (queue.length > 0) {
+    const id = queue.shift()!
+    if (seen.has(id)) continue
+    seen.add(id)
+    const file = assetFile(root, id)
+    if (file === null) {
+      parts.push(`asset ${id} missing`)
+      continue
+    }
+    const assetText = readFileSync(file, 'utf8')
+    parts.push(`asset ${id}\n${assetText}`)
+    for (const nested of assetIds(JSON.parse(assetText) as unknown)) if (!seen.has(nested)) queue.push(nested)
+  }
+  return createHash('sha256').update(parts.join('\n\0\n'), 'utf8').digest('hex')
+}
+
+/** True when the file is a non-empty 256x256 AVIF without an alpha channel (course_save flattens levels). */
+async function opaqueThumb(file: string): Promise<boolean> {
+  try {
+    if (!existsSync(file) || statSync(file).size === 0) return false
+    const { default: sharp } = await import('sharp')
+    const meta = await sharp(file).metadata()
+    return meta.compression === 'av1' && meta.width === THUMB_SIZE && meta.height === THUMB_SIZE && meta.hasAlpha !== true
+  } catch {
+    return false
+  }
+}
+
+function readCache(file: string): CacheFile {
+  const empty: CacheFile = { format: 'royal-fiesta.level-thumbs', version: 0, thumbs: {} }
+  if (!existsSync(file)) return empty
+  try {
+    const value = JSON.parse(readFileSync(file, 'utf8')) as Partial<CacheFile>
+    if (value.format !== empty.format || value.version !== 0 || value.thumbs === null || typeof value.thumbs !== 'object') return empty
+    return { ...empty, thumbs: value.thumbs as Record<string, CacheEntry> }
+  } catch {
+    return empty
+  }
+}
+
+function writeCache(file: string, cache: CacheFile): void {
+  mkdirSync(dirname(file), { recursive: true })
+  const text = JSON.stringify(cache, null, 2) + '\n'
+  if (existsSync(file) && readFileSync(file, 'utf8') === text) return
+  writeFileSync(file, text)
+}
+
+/** Opens the game in the SDF Modeler's Node build; course_open needs no GPU, course_save routes the render to it. */
+async function openSdfm(root: string): Promise<Sdfm> {
+  const games = (process.env.SDFM_GAMES ?? '').split(delimiter).filter((p) => p.trim() !== '')
+  if (!games.some((folder) => resolve(folder) === root)) process.env.SDFM_GAMES = [...games, root].join(delimiter)
+  const { createSdfm } = await sdfmApi(sdfmDir(root))
+  return createSdfm({})
+}
+
+/** Opens one course and saves it: the only thumbnail source is course_save's <course>.thumb.avif. */
+async function renderCourse(sdfm: Sdfm, root: string, mapId: string, courseId: string, target: string): Promise<string> {
+  try {
+    await sdfm.call('course_open', { game: GAME, id: courseId })
+  } catch (e) {
+    refuse(AREA, `${mapId} ${courseId}`, `course_open failed: ${message(e)}`)
+  }
+  let data: { thumbnail?: { path?: string; error?: string } } | undefined
+  try {
+    const saved = await sdfm.call('course_save', {})
+    data = saved.data as typeof data
+  } catch (e) {
+    refuse(AREA, `${mapId} ${courseId}`, `course_save failed: ${message(e)}`)
+  }
+  const thumb = data?.thumbnail
+  if (thumb === undefined) refuse(AREA, `${mapId} ${courseId}`, 'course_save returned no thumbnail result')
+  if (typeof thumb.error === 'string') refuse(AREA, `${mapId} ${courseId}`, `course_save: ${thumb.error}`)
+  if (typeof thumb.path !== 'string') refuse(AREA, `${mapId} ${courseId}`, 'course_save returned neither a thumbnail path nor an error')
+  const source = resolve(root, thumb.path)
+  if (!(await opaqueThumb(source))) {
+    refuse(AREA, `${mapId} ${courseId}`, `course_save wrote ${thumb.path}, which is not a non-empty opaque ${THUMB_SIZE}x${THUMB_SIZE} AVIF`)
+  }
+  copyFileSync(source, target)
+  return thumb.path
+}
+
+export async function main(): Promise<number> {
+  try {
+    const root = repoRoot()
+    const season = parseSeason(JSON.parse(readFileSync(join(root, 'courses/season.json'), 'utf8')) as unknown, 'courses/season.json')
+    const maps = playableMaps(season)
+    const thumbsDir = join(root, 'thumbs')
+    mkdirSync(thumbsDir, { recursive: true })
+    const cacheFile = join(root, CACHE_REL)
+    const cache = readCache(cacheFile)
+    let sdfm: Sdfm | null = null
+    let rendered = 0
+    try {
+      for (const map of maps) {
+        let key: string
+        try {
+          key = courseContentKey(root, map.course)
+        } catch (e) {
+          refuse(AREA, `${map.id} ${map.course}`, `cannot read the course content: ${message(e)}`)
+        }
+        const target = join(thumbsDir, `${map.id}.avif`)
+        const cached = cache.thumbs[map.id]
+        if (cached?.key === key && cached.course === map.course && await opaqueThumb(target)) {
+          console.log(`[level-thumbs] ${map.id} ${map.course}: cached (course content unchanged)`)
+          continue
+        }
+        if (!process.env.NMC_GPU_URL) {
+          refuse(AREA, `${map.id} ${map.course}`, 'no GPU host is configured (NMC_GPU_URL is not set); course_save renders on the GPU client and this tool never renders in Node')
+        }
+        if (sdfm === null) {
+          try {
+            sdfm = await openSdfm(root)
+          } catch (e) {
+            refuse(AREA, `${map.id} ${map.course}`, `the SDF Modeler Node build did not load: ${message(e)}`)
+          }
+        }
+        const source = await renderCourse(sdfm, root, map.id, map.course, target)
+        cache.thumbs[map.id] = { course: map.course, key, path: `thumbs/${map.id}.avif` }
+        writeCache(cacheFile, cache)
+        rendered++
+        console.log(`[level-thumbs] ${map.id} ${map.course}: ${source} -> thumbs/${map.id}.avif`)
+      }
+    } finally {
+      await sdfm?.close()
+    }
+    console.log(`[level-thumbs] ${maps.length} built courses, ${rendered} rendered, ${maps.length - rendered} cached`)
+    return 0
+  } catch (e) {
+    if (!isRefusal(e)) throw e
+    console.error(e.message)
+    return 1
+  }
+}
+
+const entry = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : ''
+if (import.meta.url === entry) process.exit(await main())

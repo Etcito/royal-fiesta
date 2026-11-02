@@ -20,7 +20,7 @@ const USAGE = 'usage: node --experimental-strip-types tools/renderViews.ts <view
 const SDFM_NAME = 'SDF_Modeler_MCP'
 // What the sdfm Node build needs; the rest of the checkout (fixtures, bench, out) is never read.
 const SDFM_COPY = ['src', 'scripts', 'bin', 'package.json', 'tsconfig.node.json']
-const SDFM_LINK = ['node_modules', 'vendor']
+const SDFM_LINK = ['node_modules', 'vendor', 'dist', 'nmc.gpu.json']
 
 type V3 = [number, number, number]
 type Obj = Record<string, unknown>
@@ -178,10 +178,12 @@ function union(a: { min: V3; max: V3 }, b: { min: V3; max: V3 }): { min: V3; max
   }
 }
 
-// SDFM_DIR, then $RF_BRICKS_DIR/SDF_Modeler_MCP, then the folder next to this repository.
-function sdfmDir(root: string): string {
+// SDFM_DIR, then the read-only peer nomorechat binds next to this worktree, then $RF_BRICKS_DIR/SDF_Modeler_MCP,
+// then the folder next to this repository.
+export function sdfmDir(root: string): string {
   const tries = [
     ...(process.env.SDFM_DIR ? [process.env.SDFM_DIR] : []),
+    `${root}-ro-sdfm`,
     ...(process.env.RF_BRICKS_DIR ? [join(process.env.RF_BRICKS_DIR, SDFM_NAME)] : []),
     join(dirname(root), SDFM_NAME),
   ]
@@ -191,13 +193,16 @@ function sdfmDir(root: string): string {
 }
 
 // The sibling checkout is read-only, so its Node side is compiled in a temp copy keyed by its commit.
-async function sdfmApi(src: string): Promise<{ createSdfm(o: { doc: Obj }): Promise<Sdfm> }> {
+export async function sdfmApi(src: string): Promise<{ createSdfm(o: { doc?: Obj; session?: string; live?: string }): Promise<Sdfm> }> {
   // nomorechat compiles the peer's Node side once per checkout (build-node, stamped with its commit): a costume or a level
-  // never compiles SDF Modeler again.
-  const prebuilt = join(src, 'build-node/node/api.js')
-  if (existsSync(prebuilt)) return import(pathToFileURL(prebuilt).href)
+  // never compiles SDF Modeler again. A stamp from another commit is stale (a fix landed after the build), so compile it
+  // in a temp copy instead of loading operations an older source breaks.
   let head = 'local'
   try { head = execFileSync('git', ['-C', src, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() } catch {}
+  const stampFile = join(src, 'build-node/.nmc-built-sha')
+  const stamp = existsSync(stampFile) ? readFileSync(stampFile, 'utf8').trim() : null
+  const prebuilt = join(src, 'build-node/node/api.js')
+  if (existsSync(prebuilt) && (head === 'local' || stamp === head)) return import(pathToFileURL(prebuilt).href)
   const dir = join(tmpdir(), `rf-sdfm-${head.slice(0, 12)}`)
   const api = join(dir, 'build-node/node/api.js')
   if (!existsSync(api)) {

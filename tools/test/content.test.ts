@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -23,6 +23,7 @@ test('index lists sorted stems and worlds, preserves document hashes and packs e
       ],
       courses: [{ id: 'demo', path: 'courses/demo.course.json' }],
       audio: [],
+      thumbs: [],
     })
     const out = join(dir, 'pack')
     assert.deepEqual(packContent(out, dir), index)
@@ -48,23 +49,29 @@ test('RF_CONTENT_DIR is shared by content paths while fixtures stay in the game'
   }
 })
 
-test('index and pack carry saved meshes and audio patches', () => {
+test('index and pack carry saved meshes, audio patches and level thumbnails', () => {
   const dir = mkdtempSync(join(tmpdir(), 'rf-packed-mesh-'))
   try {
     mkdirSync(join(dir, 'assets/candy'), { recursive: true })
     mkdirSync(join(dir, 'courses'))
     mkdirSync(join(dir, 'audio'))
+    mkdirSync(join(dir, 'thumbs'))
     writeFileSync(join(dir, 'assets/candy/candy.a.asset.json'), '{"hash":"x"}')
     writeFileSync(join(dir, 'assets/candy/candy.a.mesh'), new Uint8Array([1, 2, 3]))
     writeFileSync(join(dir, 'assets/candy/candy.b.asset.json'), '{"hash":"y"}')
     writeFileSync(join(dir, 'audio/bell.haa.json'), '{"haa":1,"id":"bell"}')
     writeFileSync(join(dir, 'audio/notes.txt'), 'ignored')
+    writeFileSync(join(dir, 'thumbs/B.avif'), new Uint8Array([9, 8, 7]))
+    writeFileSync(join(dir, 'thumbs/cache.json'), '{}')
     const index = packContent(join(dir, 'out'), dir)
     assert.equal(index.assets[0].mesh, 'assets/candy/candy.a.mesh')
     assert.equal('mesh' in index.assets[1], false)
     assert.deepEqual(index.audio, [{ id: 'bell', path: 'audio/bell.haa.json' }])
+    assert.deepEqual(index.thumbs, [{ map: 'B', path: 'thumbs/B.avif' }])
     assert.deepEqual(readFileSync(join(dir, 'out/assets/candy/candy.a.mesh')), Buffer.from([1, 2, 3]))
     assert.equal(readFileSync(join(dir, 'out/audio/bell.haa.json'), 'utf8'), '{"haa":1,"id":"bell"}')
+    assert.deepEqual(readFileSync(join(dir, 'out/thumbs/B.avif')), Buffer.from([9, 8, 7]))
+    assert.equal(existsSync(join(dir, 'out/thumbs/cache.json')), false)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

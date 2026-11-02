@@ -1,5 +1,4 @@
-// The only game module that constructs a browser audio context or value-imports HAA.
-import { createPlayer, type HaaPlayer } from '@etcito/haa-spatial'
+// The only game module that constructs a browser audio context. Media is baked on the server.
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { SOUNDS, type Bus } from './catalog.ts'
 import type { LoopPort, SoundPort } from './gameAudio.ts'
@@ -20,9 +19,6 @@ export function setMixFactory(f: (ctx: BaseAudioContext) => MixPort): void { mix
 
 export interface BrowserAudioOptions {
   manifestUrl: string
-  processorUrl: string
-  /** Kept for existing callers; HAA now supplies the crowd patch. */
-  crowdProcessorUrl?: string
   maxListeners?: 1 | 2 | 3 | 4
 }
 
@@ -31,6 +27,7 @@ export interface BrowserSound {
   readonly mix: MixPort
   readonly output: AudioNode
   readonly port: SoundPort
+  readonly media?: MediaFactory
   readonly soundsLoaded: number
   close(): Promise<void>
 }
@@ -40,8 +37,19 @@ interface ManifestSound {
   bus: Bus
   mode: 'oneshot' | 'loop'
   files: string[]
-  patch: string | null
+  patch: null
+  strengthInput?: boolean
+  loopStart?: number
+  loopEnd?: number
+  control?: { name: string; values: number[]; default: number }
 }
+
+export interface MediaPlayer {
+  set(name: string, value: number): void
+  restart(): void
+  dispose(): void
+}
+export type MediaFactory = (id: string, output: AudioNode, inputs?: Record<string, number>, loop?: boolean) => Promise<MediaPlayer>
 
 async function read(url: string | URL): Promise<Response> {
   const response = await fetch(url)
@@ -77,7 +85,6 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
   const ctx = new AudioContext()
   let mix: MixPort
   let entries: ManifestSound[]
-  let module: WebAssembly.Module
   const pageBase = document.baseURI
   const manifestUrl = new URL(o.manifestUrl, pageBase)
   try {
@@ -87,7 +94,6 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
       refuse('audio', o.manifestUrl, 'expected an S17 sounds manifest')
     }
     entries = manifest.sounds
-    module = await WebAssembly.compile(await (await read(new URL('haa.wasm', manifestUrl))).arrayBuffer())
     await ctx.resume()
   } catch (error) {
     mix!?.dispose()
@@ -98,11 +104,11 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
   const definitions = new Map(SOUNDS.map(def => [def.id, def]))
   const picks = new Map(entries.map(entry => [entry.id, variants(entry.id, entry.files)]))
   const buffers = new Map<string, Promise<AudioBuffer>>()
-  const patches = new Map<string, Promise<string>>()
   let listeners: ListenerPose[] = []
   let closed = false
   const shots = new Set<() => void>()
   const loops = new Set<() => void>()
+  const mediaDisposals = new Set<() => void>()
   function buffer(file: string): Promise<AudioBuffer> {
     let pending = buffers.get(file)
     if (!pending) {
@@ -110,6 +116,74 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
       buffers.set(file, pending)
     }
     return pending
+  }
+  const media: MediaFactory = async (id, output, inputs = {}, loop) => {
+    const def = sounds.get(id)
+    if (!def?.files.length) throw new Error(`no baked media for ${id}`)
+    const decoded = await Promise.all(def.files.map(buffer))
+    if (closed) throw new Error(`audio closed while loading ${id}`)
+    const control = def.control
+    let value = control ? inputs[control.name] ?? control.default : 0
+    const strength = ctx.createGain()
+    strength.gain.value = def.strengthInput ? inputs.gain ?? 1 : 1
+    strength.connect(output)
+    let layers: { source: AudioBufferSourceNode; gain: GainNode }[] = []
+    let disposed = false
+    function weights(smooth = true) {
+      const values = control?.values
+      const v = values ? Math.min(values.at(-1)!, Math.max(values[0], value)) : 0
+      let lower = 0
+      if (values) for (let i = 0; i < values.length; i++) if (values[i] <= v) lower = i
+      if (lower < 0) lower = 0
+      const upper = values ? Math.min(lower + 1, values.length - 1) : 0
+      const t = values && upper !== lower ? (v - values[lower]) / (values[upper] - values[lower]) : 0
+      for (const [i, layer] of layers.entries()) {
+        const weight = control ? (i === lower ? 1 - t : i === upper ? t : 0) : (i === 0 ? 1 : 0)
+        if (smooth) layer.gain.gain.setTargetAtTime(weight, ctx.currentTime, 0.04)
+        else layer.gain.gain.value = weight
+      }
+    }
+    function stop() {
+      for (const layer of layers) { layer.source.stop(); layer.source.disconnect(); layer.gain.disconnect() }
+      layers = []
+    }
+    function restart() {
+      if (disposed) return
+      stop()
+      // One-shot variants use the first bake here, as the old course patch used seed zero.
+      const files = control ? decoded : decoded.slice(0, 1)
+      layers = files.map(decoded => {
+        const source = ctx.createBufferSource()
+        const gain = ctx.createGain()
+        source.buffer = decoded
+        source.loop = loop ?? def!.mode === 'loop'
+        source.loopStart = def!.loopStart ?? 0
+        source.loopEnd = def!.loopEnd ?? decoded.duration
+        source.connect(gain).connect(strength)
+        return { source, gain }
+      })
+      weights(false)
+      const when = ctx.currentTime
+      for (const layer of layers) layer.source.start(when)
+    }
+    restart()
+    const dispose = () => {
+      if (disposed) return
+      disposed = true
+      stop()
+      strength.disconnect()
+      mediaDisposals.delete(dispose)
+    }
+    mediaDisposals.add(dispose)
+    return {
+      set(name, next) {
+        if (disposed) return
+        if (name === 'gain' && def!.strengthInput) strength.gain.value = next
+        if (name === control?.name) { value = next; weights() }
+      },
+      restart,
+      dispose,
+    }
   }
   function routing(id: string, bus: Bus, strength = 1, initial?: Vec3) {
     const gain = ctx.createGain()
@@ -165,8 +239,7 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
       if (closed || !def || def.mode !== 'loop') return null
       const route = routing(id, def.bus, 1, options.pos)
       spatialUpdates.add(route.update)
-      let player: HaaPlayer | undefined
-      let source: AudioBufferSourceNode | undefined
+      let player: MediaPlayer | undefined
       let stopped = false
       let disposed = false
       let duckTimer: ReturnType<typeof setInterval> | undefined
@@ -178,35 +251,15 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
         clearInterval(duckTimer)
         clearTimeout(fadeTimer)
         player?.dispose()
-        source?.stop()
-        source?.disconnect()
         route.dispose()
         spatialUpdates.delete(route.update)
         loops.delete(dispose)
       }
       loops.add(dispose)
       const start = async () => {
-        if (def.patch) {
-          let patch = patches.get(def.patch)
-          if (!patch) {
-            patch = read(new URL(def.patch, pageBase)).then(r => r.text())
-            patches.set(def.patch, patch)
-          }
-          const text = await patch
-          if (stopped) return
-          player = await createPlayer(ctx, { module, processorUrl: o.processorUrl, patch: text, output: route.gain })
-          if (stopped) { player.dispose(); return }
-          for (const [name, value] of inputs) player.set(name, value)
-        } else {
-          if (!def.files.length) throw new Error(`loop ${id} has no patch or WAV`)
-          const decoded = await buffer(def.files[0])
-          if (stopped) return
-          source = ctx.createBufferSource()
-          source.buffer = decoded
-          source.loop = true
-          source.connect(route.gain)
-          source.start()
-        }
+        player = await media(id, route.gain, Object.fromEntries(inputs), true)
+        if (stopped) { player.dispose(); return }
+        for (const [name, value] of inputs) player.set(name, value)
         mix.duck(id)
         if (DUCK_RULES.some(rule => rule.trigger(id))) duckTimer = setInterval(() => mix.duck(id), 250)
       }
@@ -236,12 +289,13 @@ export async function openBrowserAudio(o: BrowserAudioOptions): Promise<BrowserS
     },
   }
   return {
-    ctx, mix, output: mix.input('sfx'), port, soundsLoaded: entries.length,
+    ctx, mix, media, output: mix.input('sfx'), port, soundsLoaded: entries.length,
     async close() {
       if (closed) return
       closed = true
       for (const dispose of shots) dispose()
       for (const dispose of loops) dispose()
+      for (const dispose of mediaDisposals) dispose()
       mix.dispose()
       await ctx.close()
     },

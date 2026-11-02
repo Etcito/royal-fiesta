@@ -43,7 +43,6 @@ import type { Query } from './query.ts'
 import { browserAssetResolver, browserCourses, preloadAssets } from './sources.ts'
 import { ClientSound } from './sound.ts'
 // Vite bundles the crowd worklet and returns its URL (dev and build alike).
-import fiestaWorkletUrl from '../audio/fiestaWorklet.ts?worker&url'
 
 type Hud = ReturnType<typeof mountHud>
 
@@ -257,8 +256,6 @@ async function main(): Promise<void> {
     manifestUrl: new URL('audio/manifest.json', document.baseURI).href,
     open: manifestUrl => openBrowserAudio({
       manifestUrl,
-      processorUrl: new URL('audio/haa-processors.js', document.baseURI).href,
-      crowdProcessorUrl: fiestaWorkletUrl,
       maxListeners: 1,
     }),
     fetchJson: async url => {

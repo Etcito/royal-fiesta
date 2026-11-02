@@ -1,14 +1,6 @@
-// Bakes the Royal Fiesta sound set with HAA 0.2.0: every catalog one-shot renders its bake-set
-// variants through renderBank, every music cue renders its arrangement, and every patch loop is
-// copied next to an S17 manifest.json that the browser loads. HAA's prebuilt worklet and wasm
-// are copied as haa-processors.js and haa.wasm. Output: apps/web/public/audio (gitignored).
-// Renders are cached outside the checkout, keyed by a hash of every input of the render (HAA's dist
-// and wasm, this script, the sound def, its bank entries and every source text it reads), so a build
-// whose sounds did not change copies them instead of rendering 372 WAVs again.
-// The CLI compresses the rendered WAVs to MP3/Ogg before publishing the manifest.
-// Live patches keep their authored continuous controls; see docs/audio.md.
-// Run by `npm run audio:bake` (and by web:build).
-//   node --experimental-strip-types tools/bake-audio.ts [--out <dir>]
+// Build all sound media on the server with HAA, then compress to MP3/Ogg.
+// Deterministic renders and encoded media share content-addressed caches.
+// Browser playback uses decoded buffers, explicit loop points and control snapshot blends.
 import { createHash } from 'node:crypto'
 import {
   copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync,
@@ -19,7 +11,7 @@ import { pathToFileURL } from 'node:url'
 import { renderArrangement } from '@etcito/haa-spatial/arranger'
 import { analyse, renderBank } from '@etcito/haa-spatial/bank'
 import type { BankEntry } from '@etcito/haa-spatial/bank'
-import { encodeWav, loadModule } from '@etcito/haa-spatial/node'
+import { encodeWav, loadModule, renderPatch } from '@etcito/haa-spatial/node'
 import type { StereoRender } from '@etcito/haa-spatial/node'
 import { SOUNDS } from '../packages/game/src/audio/catalog.ts'
 import type { Bus, SoundDef } from '../packages/game/src/audio/catalog.ts'
@@ -69,7 +61,11 @@ export interface AudioManifestSound {
   bus: Bus
   mode: SoundDef['mode']
   files: string[]
-  patch: string | null
+  patch: null
+  strengthInput?: boolean
+  loopStart?: number
+  loopEnd?: number
+  control?: { name: string; values: number[]; default: number }
 }
 
 /** The S17 audio manifest written to `<out>/manifest.json`. */
@@ -136,6 +132,34 @@ function keyBuilder(root: string): (parts: unknown[]) => string {
   return (parts) => createHash('sha256').update(engine).update(JSON.stringify(parts)).digest('hex')
 }
 
+/** Preserve authored DSP at control snapshots rather than pitching a single recording.
+ * The browser blends adjacent snapshots; sources and HAA graphs remain unchanged. */
+function loopPlan(text: string) {
+  const patch = JSON.parse(text)
+  const input = patch.inputs?.find((i: { name: string }) => ['speed', 'rate', 'excitement'].includes(i.name))
+  const control = input ? { name: input.name, default: input.default,
+    values: Array.from({ length: 11 }, (_, i) => input.min + (input.max - input.min) * i / 10) } : undefined
+  return { seconds: Math.max(16, patch.graph.duration), control }
+}
+
+/** Warm the filters/reverb, then overlap the continuation into the head. The final sample
+ * precedes the first sample in the original render: no fade to silence or hard splice. */
+export function seamlessLoop(render: StereoRender, seconds: number): StereoRender {
+  const frames = Math.round(seconds * render.sampleRate)
+  const warm = 2 * render.sampleRate
+  const overlap = Math.round(0.1 * render.sampleRate)
+  const channel = (source: Float32Array) => {
+    const out = source.slice(warm, warm + frames)
+    for (let i = 0; i < overlap; i++) {
+      const t = i / overlap
+      const weight = t * t * (3 - 2 * t)
+      out[i] = source[warm + frames + i] * (1 - weight) + out[i] * weight
+    }
+    return out
+  }
+  return { ...render, left: channel(render.left), right: channel(render.right) }
+}
+
 /**
  * The bake key of every WAV `bakeAudio` writes, and whether its sound is a music cue.
  * `bakeAudio` renders from this same map, so the bake cache and the audio compressor cannot
@@ -152,7 +176,15 @@ export function bakeFileKeys(root: string = repoRoot()): Map<string, BakeFileKey
       continue
     }
     sources.familyOf(sound.id)
-    if (sound.mode === 'loop') continue
+    if (sound.mode === 'loop') {
+      const text = sources.source(sound.id, sound.source)
+      const plan = loopPlan(text)
+      const key = keyOf([sound, text, plan])
+      for (let i = 0; i < (plan.control?.values.length ?? 1); i++) {
+        keys.set(`${sound.id}.${i}.wav`, { key, music: false })
+      }
+      continue
+    }
     const entries = sources.bakeSet(sound)
     const text = sources.source(sound.id, sound.source)
     const key = keyOf([sound, entries, text])
@@ -240,10 +272,26 @@ export async function bakeAudio(
 
     sources.familyOf(sound.id)
     if (sound.mode === 'loop') {
-      const patch = `audio/${sound.id}.haa.json`
-      if (!existsSync(join(root, patch))) throw new Error(`[audio-bake] ${sound.id}: missing source file ${patch}`)
-      copyFileSync(join(root, patch), join(outDir, `${sound.id}.haa.json`))
-      sounds.push({ id: sound.id, bus: sound.bus, mode: sound.mode, files: [], patch })
+      const text = sources.source(sound.id, sound.source)
+      const plan = loopPlan(text)
+      const values = plan.control?.values ?? [0]
+      const files = values.map((_, i) => `${sound.id}.${i}.wav`)
+      const key = keyOf(files[0])
+      if (!fromCache(key, files)) {
+        for (const [i, value] of values.entries()) {
+          const inputs = plan.control ? { [plan.control.name]: value } : {}
+          const raw = renderPatch(await renderer(), text, { seconds: plan.seconds + 2.1, inputs })
+          const render = seamlessLoop(raw, plan.seconds)
+          // A control's minimum may intentionally mute its graph (slide speed/rate zero).
+          if (value !== 0 || !plan.control) checkRender(sound.id, render)
+          else if (analyse(render).nonFinite || analyse(render).clipped) throw new Error(`[audio-bake] ${sound.id}: invalid zero-control render`)
+          writeFileSync(join(outDir, files[i]), encodeWav(render))
+        }
+        toCache(key, files)
+      }
+      wavs += files.length
+      sounds.push({ id: sound.id, bus: sound.bus, mode: sound.mode, files, patch: null,
+        loopStart: 0, loopEnd: plan.seconds, ...(plan.control ? { control: plan.control } : {}) })
       continue
     }
 
@@ -265,16 +313,13 @@ export async function bakeAudio(
       toCache(key, files)
     }
     wavs += files.length
-    sounds.push({ id: sound.id, bus: sound.bus, mode: sound.mode, files, patch: null })
+    sounds.push({ id: sound.id, bus: sound.bus, mode: sound.mode, files, patch: null,
+      strengthInput: JSON.parse(text).inputs?.some((input: { name: string }) => input.name === 'gain') ?? false })
   }
 
   const manifest: AudioManifest = { format: 'royal-fiesta.audio', version: 1, sampleRate: 48000, sounds }
   writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
-  const require = createRequire(join(root, 'package.json'))
-  copyFileSync(require.resolve('@etcito/haa-spatial/worklet'), join(outDir, 'haa-processors.js'))
-  copyFileSync(require.resolve('@etcito/haa-spatial/wasm'), join(outDir, 'haa.wasm'))
-  const patches = sounds.filter((sound) => sound.patch !== null).length
-  log(`[audio-bake] ${sounds.length} sounds: ${wavs} WAVs (${wavs - cached} rendered, ${cached} from ${cacheDir ?? 'no cache'}), ${patches} live patches, manifest, worklet and wasm -> ${outDir}`)
+  log(`[audio-bake] ${sounds.length} sounds: ${wavs} WAVs (${wavs - cached} rendered, ${cached} from ${cacheDir ?? 'no cache'}) -> ${outDir}`)
   return manifest
 }
 
@@ -286,14 +331,15 @@ if (import.meta.url === entry) {
   await bakeAudio(out)
   await compressAudio(out)
   const manifest = JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')) as AudioManifest
-  // Drop stale generated media from earlier bakes/codec choices; retain patches and unrelated files.
+  // Drop obsolete generated media and the retired browser HAA assets.
   const used = new Set(manifest.sounds.flatMap(sound => sound.files))
   for (const file of readdirSync(out)) {
+    if (file === 'haa-processors.js' || file === 'haa.wasm' || /\.haa\.json$/.test(file)) { rmSync(join(out, file)); continue }
     if (/\.(wav|mp3|ogg)$/i.test(file) && !used.has(file) && SOUNDS.some(sound => file.startsWith(`${sound.id}.`))) {
       rmSync(join(out, file))
     }
   }
   const files = manifest.sounds.reduce((count, sound) => count + sound.files.length, 0) +
-    manifest.sounds.filter((sound) => sound.patch !== null).length + 3
+    1
   console.log(`baked ${manifest.sounds.length} sounds (${files} files) into ${out} in ${((Date.now() - started) / 1000).toFixed(1)} s`)
 }

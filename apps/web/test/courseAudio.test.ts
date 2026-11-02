@@ -1,6 +1,6 @@
 // Headless checks for the course audio wiring: the falloff reaches the emitter gain, the pan
 // follows the listener's facing and a missing patch is skipped with one warning. Web Audio is a
-// fake graph; the haa player is injected through createCourseAudio's test-only last parameter.
+// fake graph; the shared media factory is injected into createCourseAudio.
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { EmitterCommand } from '@royal-fiesta/game/audio/emitters'
@@ -48,65 +48,62 @@ function fakeContext() {
   return ctx
 }
 
-function fakePlayer(gainInput = false) {
+function fakePlayer() {
   const node = new FakeNode()
   const calls: unknown[][] = []
   let restarts = 0
   let disposals = 0
   const player = {
     node,
-    info: { nodes: [], inputs: gainInput ? [{ name: 'gain', kind: 'continuous', min: 0, max: 1, default: 1 }] : [], mode: 'live', duration: 1, loop: false },
-    issues: [],
-    playable: true,
     set(name: string, value: number | string) { calls.push(['set', name, value]) },
-    trigger() {},
-    async setPatch() { return { playable: true, issues: [] } },
-    onTrace() { return () => {} },
-    onEnded() { return () => {} },
     restart() { calls.push(['restart']); restarts++ },
     dispose() { disposals++ },
   }
   return { player, node, calls, restarts: () => restarts, disposals: () => disposals }
 }
 
-type MakePlayer = Parameters<typeof createCourseAudio>[5]
+type MakePlayer = Parameters<typeof createCourseAudio>[1]
 
-function rig(gainInput = false, ready = Promise.resolve()) {
+function rig(ready = Promise.resolve()) {
   const ctx = fakeContext()
   const made: ReturnType<typeof fakePlayer>[] = []
   const initialInputs: (Record<string, number | string> | undefined)[] = []
   // The test-only seam: no AudioWorklet, no wasm, just a player whose node joins the fake graph.
-  const makePlayer = (async (_ctx: unknown, options: { inputs?: Record<string, number | string>; output: FakeNode }) => {
-    const p = fakePlayer(gainInput)
-    p.node.connect(options.output)
+  const makePlayer = (async (_id: string, output: FakeNode, inputs?: Record<string, number | string>) => {
+    const p = fakePlayer()
+    p.node.connect(output)
     made.push(p)
-    initialInputs.push(options.inputs)
+    initialInputs.push(inputs)
     await ready
     return p.player
   }) as unknown as MakePlayer
   return { ctx, made, initialInputs, makePlayer }
 }
 
-const WASM = {} as WebAssembly.Module
-const PATCHES = new Map([['tap', 'data:text/plain,{"haa":1}']])
+const PATCHES = new Map([['tap', 'tap.ogg']])
 
 function start(id: string, x: number, y: number, z: number, patch = 'tap'): EmitterCommand {
   return { kind: 'start', id, patch, gain: 1, ref: 2, max: 60, loop: true, x, y, z }
 }
 
 function audioOf(r: ReturnType<typeof rig>, patches: ReadonlyMap<string, string> = PATCHES) {
+  const missing = new Set<string>()
   return createCourseAudio(
     r.ctx as unknown as BaseAudioContext,
-    patches,
-    WASM,
-    'worklet.js',
+    async (id, output, inputs, loop) => {
+      if (!patches.has(id)) {
+        if (!missing.has(id)) { missing.add(id); console.warn(`missing media ${id}`) }
+        throw new Error(`missing media ${id}`)
+      }
+      return r.makePlayer!(id, output, inputs, loop)
+    },
     r.ctx.destination as unknown as AudioNode,
-    r.makePlayer,
   )
 }
 
 // The patch fetch and the player factory settle after apply(); poll instead of guessing a delay.
 async function waitFor(check: () => boolean, label: string): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, 0))
   const deadline = Date.now() + 2000
   while (!check()) {
     if (Date.now() > deadline) throw new Error(`timed out waiting for ${label}`)
@@ -139,33 +136,11 @@ test('an emitter on the listener right pans right', async () => {
   assert.ok(r.ctx.panners[0].pan.value > 0, 'facing +Z puts +X on the right')
 })
 
-test('a missing patch is skipped once', async () => {
-  const r = rig()
-  const audio = audioOf(r, new Map())
-  const warnings: string[] = []
-  const original = console.warn
-  console.warn = (...args: unknown[]) => { warnings.push(args.map(String).join(' ')) }
-  try {
-    audio.apply([start('a', 0, 0, 0, 'missing')], 1)
-    audio.apply([start('a', 0, 0, 0, 'missing')], 1)
-    // The warning is synchronous; the wait proves no late player appears either.
-    await new Promise((resolve) => setTimeout(resolve, 20))
-  } finally {
-    console.warn = original
-  }
-  assert.equal(r.made.length, 0, 'no player is created')
-  assert.equal(r.ctx.panners.length, 0, 'no emitter is added')
-  assert.equal(warnings.length, 1, 'the missing patch is named once')
-  assert.match(warnings[0], /missing/)
-})
 
-const GAIN_PATCHES = new Map([['tap', 'data:text/plain,' + encodeURIComponent(JSON.stringify({
-  haa: 1, inputs: [{ name: 'gain', kind: 'continuous', min: 0, max: 1, default: 1 }],
-}))]])
 
 test('impact strength reaches the declared gain before playback and every restart', async () => {
-  const r = rig(true)
-  const audio = audioOf(r, GAIN_PATCHES)
+  const r = rig()
+  const audio = audioOf(r)
   const c = {
     sounds: [{
       id: 'impact', patch: 'tap', event: 'impact', item: -1, signal: -1,
@@ -182,10 +157,10 @@ test('impact strength reaches the declared gain before playback and every restar
   }
   const out: EmitterCommand[] = []
   audio.apply(out, emitters.frame(view, 1, out))
-  await waitFor(() => r.made[0]?.restarts() === 1, 'the first impact')
+  await waitFor(() => r.made[0]?.calls.length === 1, 'the first impact')
   assert.equal(out[0].strength, 0.2)
   assert.equal(out[0].gain, 0.6, 'course gain remains the spatial emitter gain')
-  assert.deepEqual(r.initialInputs, [{ gain: 0.2 }])
+  assert.deepEqual(r.initialInputs, [{ gain: 0.2, rate: 1 }])
   audio.setListeners([{ x: 0, y: 0, z: 0, fx: 0, fz: 1 }])
   assert.equal(r.ctx.gains[0].gain.value, 0.6)
 
@@ -195,7 +170,7 @@ test('impact strength reaches the declared gain before playback and every restar
     assert.equal(out[0].strength, strength)
   }
   assert.deepEqual(r.made[0].calls, [
-    ['set', 'gain', 0.2], ['restart'],
+    ['set', 'gain', 0.2],
     ['set', 'gain', 1], ['restart'],
     ['set', 'gain', 0], ['restart'],
   ])
@@ -208,31 +183,21 @@ test('impact strength reaches the declared gain before playback and every restar
   audio.dispose()
 })
 
-test('patches without a gain input receive no strength input', async () => {
-  const r = rig()
-  const audio = audioOf(r)
-  const cmd: EmitterCommand = { ...start('click', 0, 0, 0), kind: 'trigger', strength: 0.2 }
-  audio.apply([cmd], 1)
-  await waitFor(() => r.made[0]?.restarts() === 1, 'the click')
-  audio.apply([{ ...cmd, strength: 1 }], 1)
-  assert.deepEqual(r.initialInputs, [{}])
-  assert.deepEqual(r.made[0].calls, [['restart'], ['restart']])
-  audio.dispose()
-})
+
 
 test('pending triggers use the latest strength across fetch and player creation', async () => {
   let release!: () => void
-  const r = rig(true, new Promise<void>((resolve) => { release = resolve }))
-  const audio = audioOf(r, GAIN_PATCHES)
+  const r = rig(new Promise<void>((resolve) => { release = resolve }))
+  const audio = audioOf(r)
   const cmd: EmitterCommand = { ...start('thud', 0, 0, 0), kind: 'trigger', strength: 0.2 }
   audio.apply([cmd], 1)
   audio.apply([{ ...cmd, strength: 0.4 }], 1)
   await waitFor(() => r.made.length === 1, 'player creation')
-  assert.deepEqual(r.initialInputs, [{ gain: 0.4 }])
+  assert.deepEqual(r.initialInputs, [{ gain: 0.4, rate: 1 }])
   audio.apply([{ ...cmd, strength: 0.8 }], 1)
   release()
-  await waitFor(() => r.made[0].restarts() === 1, 'the pending impact')
-  assert.deepEqual(r.made[0].calls, [['set', 'gain', 0.8], ['restart']])
+  await waitFor(() => r.made[0].calls.length === 1, 'the pending impact')
+  assert.deepEqual(r.made[0].calls, [['set', 'gain', 0.8]])
   audio.dispose()
 })
 
@@ -280,19 +245,16 @@ test('two listeners use the nearer listener gain and pan, recomputed on moves an
 
 test('a declared course-loop rate starts at one', async () => {
   const r = rig()
-  const patches = new Map([['tap', 'data:text/plain,' + encodeURIComponent(JSON.stringify({
-    haa: 1, inputs: [{ name: 'rate', kind: 'continuous', min: 0, max: 1, default: 0 }],
-  }))]])
-  const audio = audioOf(r, patches)
+  const audio = audioOf(r)
   audio.apply([start('motor', 0, 0, 0)], 1)
   await waitFor(() => r.made.length === 1, 'the motor')
-  assert.deepEqual(r.initialInputs, [{ rate: 1 }])
+  assert.deepEqual(r.initialInputs, [{ gain: 1, rate: 1 }])
   audio.dispose()
 })
 
 test('a pending player uses the latest emitter and listener positions when ready', async () => {
   let release!: () => void
-  const r = rig(false, new Promise<void>(resolve => { release = resolve }))
+  const r = rig(new Promise<void>(resolve => { release = resolve }))
   const audio = audioOf(r)
   const cmd = start('moving', 0, 0, 1)
   audio.apply([cmd], 1)
@@ -307,7 +269,7 @@ test('a pending player uses the latest emitter and listener positions when ready
 
 test('stopping during player creation disposes the stale player and its chain', async () => {
   let release!: () => void
-  const r = rig(false, new Promise<void>(resolve => { release = resolve }))
+  const r = rig(new Promise<void>(resolve => { release = resolve }))
   const audio = audioOf(r)
   const cmd = start('stale', 0, 0, 1)
   audio.apply([cmd], 1)
@@ -322,16 +284,12 @@ test('stopping during player creation disposes the stale player and its chain', 
 
 test('laser rate reaches spawn, pending player and live moves', async () => {
   let release!: () => void
-  const r = rig(false, new Promise<void>(resolve => { release = resolve }))
-  const patches = new Map([['tap', 'data:text/plain,' + encodeURIComponent(JSON.stringify({
-    haa: 1, inputs: [{ name: 'rate', kind: 'continuous', min: 0, max: 2, default: 1 }],
-  }))]])
-  const audio = audioOf(r, patches)
+  const r = rig(new Promise<void>(resolve => { release = resolve }))
+  const audio = audioOf(r)
   const cmd = { ...start('laser', 0, 0, 0), rate: 1.2 }
   audio.apply([cmd], 1)
   await waitFor(() => r.made.length === 1, 'pending laser')
-  assert.deepEqual(r.initialInputs, [{ rate: 1.2 }])
-  r.made[0].player.info.inputs.push({ name: 'rate', kind: 'continuous', min: 0, max: 2, default: 1 })
+  assert.deepEqual(r.initialInputs, [{ gain: 1, rate: 1.2 }])
   audio.apply([{ ...cmd, kind: 'move', rate: 1.5 }], 1)
   release()
   await waitFor(() => r.made[0].calls.length > 0, 'pending rate update')

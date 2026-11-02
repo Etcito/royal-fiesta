@@ -11,7 +11,7 @@ import { parsePrims } from '@royal-fiesta/game/prims'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
-import { browserAudioPatches, browserContentIndex, browserGameAssets, loadV1Courses, standInFrom, v1Dressing } from '../src/content/v1Data.ts'
+import { browserContentIndex, browserGameAssets, loadV1Courses, standInFrom, v1Dressing } from '../src/content/v1Data.ts'
 
 function sha256(doc: unknown): string {
   return createHash('sha256').update(canonicalJson(doc), 'utf8').digest('hex')
@@ -215,14 +215,7 @@ test('the S29 index keeps each asset mesh path and the audio patches, read with 
   assert.deepEqual(stub.requests, [{ url: 'https://content.example/index.json', cache: 'no-cache' }])
 })
 
-test('browserAudioPatches maps patch ids to absolute URLs against the content root', async () => {
-  const stub = runtime({ 'index.json': { assets: [], courses: [], audio: [{ id: 'door-creak', path: 'audio/door-creak.haa.json' }] } })
-  const patches = await browserAudioPatches({ ...stub.options, root: 'https://content.example/' })
-  assert.deepEqual([...patches], [['door-creak', 'https://content.example/audio/door-creak.haa.json']])
-  const nested = runtime({ 'index.json': { assets: [], courses: [], audio: [{ id: 'hum', path: 'audio/hum.haa.json' }] } })
-  const fetcher: typeof fetch = async (input, init) => nested.options.fetch(String(input).replace('https://cdn.example/rf/v2/', 'https://content.example/'), init)
-  assert.deepEqual([...await browserAudioPatches({ root: 'https://cdn.example/rf/v2', fetch: fetcher })], [['hum', 'https://cdn.example/rf/v2/audio/hum.haa.json']])
-})
+
 
 test('a selected round never requests a missing lobby course or its assets', async () => {
   const json = JSON.parse(readFileSync(new URL('../../../courses/candy-seesaw-run.course.json', import.meta.url), 'utf8'))

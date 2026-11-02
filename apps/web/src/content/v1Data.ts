@@ -41,7 +41,6 @@ let overlay: Map<string, string> | null = null
 export function installContentOverlay(files: Readonly<Record<string, string>>): void {
   overlay = new Map(Object.entries(files))
   contentIndex = null
-  audioPatches = null
   gameAssets = null
 }
 
@@ -82,7 +81,6 @@ function contentReader(options: ContentOptions) {
 }
 
 let contentIndex: Promise<ContentIndexV1> | null = null
-let audioPatches: Promise<ReadonlyMap<string, string>> | null = null
 
 // The page's index.json, fetched once (with options: a fresh, uncached read).
 export function browserContentIndex(options?: ContentOptions): Promise<ContentIndexV1> {
@@ -94,19 +92,6 @@ export function browserContentIndex(options?: ContentOptions): Promise<ContentIn
     index.catch(() => { if (contentIndex === index) contentIndex = null })
   }
   return index
-}
-
-// Haa patch id -> absolute URL of its audio/<id>.haa.json against the content root (an index without audio has none).
-export function browserAudioPatches(options?: ContentOptions): Promise<ReadonlyMap<string, string>> {
-  if (options === undefined && audioPatches !== null) return audioPatches
-  const root = (options?.root ?? browserContentRoot()).replace(/\/?$/, '/')
-  const base = new URL(root, typeof location === 'undefined' ? undefined : location.href)
-  const patches = browserContentIndex(options).then(index => new Map((index.audio ?? []).map(entry => [entry.id, new URL(entry.path, base).href])))
-  if (options === undefined) {
-    audioPatches = patches
-    patches.catch(() => { if (audioPatches === patches) audioPatches = null })
-  }
-  return patches
 }
 
 let gameAssets: GameAssetResolver | null = null

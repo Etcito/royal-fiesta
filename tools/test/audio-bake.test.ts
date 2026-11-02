@@ -6,7 +6,7 @@ import test from 'node:test'
 import type { StereoRender } from '@etcito/haa-spatial/node'
 import { SOUNDS } from '../../packages/game/src/audio/catalog.ts'
 import { MUSIC_CUE_IDS } from '../../packages/game/src/audio/sounds/music.ts'
-import { bakeAudio, checkRender } from '../bake-audio.ts'
+import { bakeAudio, checkRender, seamlessLoop } from '../bake-audio.ts'
 import type { AudioManifest } from '../bake-audio.ts'
 
 const out = mkdtempSync(join(tmpdir(), 'rf-audio-bake-'))
@@ -23,7 +23,7 @@ test('a second bake with unchanged inputs renders nothing and copies the same by
     const lines: string[] = []
     const second = await bakeAudio(again, (line) => lines.push(line), cache)
     assert.deepEqual(second, manifest)
-    assert.match(lines.join('\n'), /\(0 rendered, 372 from /)
+    assert.match(lines.join('\n'), new RegExp(`\\(0 rendered, ${manifest.sounds.reduce((n, s) => n + s.files.length, 0)} from `))
     for (const sound of manifest.sounds) {
       for (const file of sound.files) assert.ok(readFileSync(join(again, file)).equals(readFileSync(join(out, file))), file)
     }
@@ -82,21 +82,31 @@ test('music cues bake their single arrangement render, whatever their mode', () 
   }
 })
 
-test('patch loops list their patch and no files, and the patch is copied next to the manifest', () => {
-  const loops = SOUNDS.filter((sound) => sound.mode === 'loop' && !MUSIC_CUE_IDS.includes(sound.id))
-  assert.ok(loops.length > 0)
+test('all patch loops bake media and explicit loop points, without browser HAA assets', () => {
+  const loops = SOUNDS.filter(sound => sound.mode === 'loop' && !MUSIC_CUE_IDS.includes(sound.id))
+  assert.equal(loops.length, 11)
   for (const sound of loops) {
-    const entry = manifest.sounds.find((candidate) => candidate.id === sound.id)
-    assert.ok(entry, sound.id)
-    assert.deepEqual(entry.files, [], sound.id)
-    assert.equal(entry.patch, `audio/${sound.id}.haa.json`, sound.id)
-    assert.ok(existsSync(join(out, `${sound.id}.haa.json`)), sound.id)
+    const entry = manifest.sounds.find(candidate => candidate.id === sound.id)!
+    assert.equal(entry.patch, null)
+    assert.ok(entry.files.length > 0)
+    assert.equal(entry.loopStart, 0)
+    assert.ok(entry.loopEnd! >= 16)
+    for (const file of entry.files) assert.ok(wavBytes(join(out, file)) > 44)
+    assert.equal(existsSync(join(out, `${sound.id}.haa.json`)), false)
   }
+  assert.equal(existsSync(join(out, 'haa-processors.js')), false)
+  assert.equal(existsSync(join(out, 'haa.wasm')), false)
 })
 
-test('the HAA worklet and wasm are copied next to the manifest', () => {
-  assert.ok(existsSync(join(out, 'haa-processors.js')))
-  assert.ok(existsSync(join(out, 'haa.wasm')))
+test('seamless splice follows the continuous render across the wrap, in both channels', () => {
+  const rate = 100
+  const source = Float32Array.from({ length: 610 }, (_, i) => Math.sin(i * 0.17))
+  const render = seamlessLoop({ left: source, right: source.map(v => -v), sampleRate: rate, issues: [] }, 4)
+  assert.equal(render.left.length, 400)
+  assert.equal(render.left[0], source[600])
+  assert.equal(render.left.at(-1), source[599])
+  assert.equal(render.left[10], source[210])
+  assert.equal(render.right[0], -source[600])
 })
 
 test('the exported check refuses NaN, silent and clipped renders with the id', () => {

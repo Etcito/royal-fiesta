@@ -1,21 +1,16 @@
-// The course's spatial sounds, on haa 0.2.0. Only apps/web resolves that version (packages/game
-// stays on 0.1.1), so the implementation lives here and packages/game only names CourseAudio.
-//
-// Each player feeds its own gain and stereo panner into the sfx bus. Spatial values follow
-// the nearest local listener. Patches are fetched once per id; at most 32 sounds are active.
-import { createPlayer } from '@etcito/haa-spatial'
-import type { HaaPatch, HaaPlayer } from '@etcito/haa-spatial'
+// Course spatial playback of server-baked media; gain and pan follow the nearest listener.
+import type { MediaFactory, MediaPlayer } from '@royal-fiesta/game/audio/context'
 import { spatialFor, type ListenerPose as MixListenerPose } from '@royal-fiesta/game/audio/mix/listeners'
 import type { CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { EmitterCommand, ListenerPose } from '@royal-fiesta/game/audio/emitters'
 
 /** Course sounds per course are capped at 32 (MECH_CAPS.maxSounds); the active set matches it. */
 const MAX_ACTIVE = 32
-/** The player factory; `makePlayer` is a test-only seam, the default is haa's createPlayer. */
-type PlayerFactory = typeof createPlayer
+/** Shared decoded-media factory, injectable in headless tests. */
+type PlayerFactory = MediaFactory
 
 interface ActiveSound {
-  readonly player: HaaPlayer
+  readonly player: MediaPlayer
   readonly gain: GainNode
   readonly panner: StereoPannerNode
   cmd: EmitterCommand
@@ -27,34 +22,22 @@ interface PendingSound {
   cmd: EmitterCommand
   again: boolean
   strength?: number
+  readonly inputs: Record<string, number>
 }
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-/**
- * The course audio over one context: `output` is the sfx bus input.
- * `patches` maps patch ids to the URL of the patch text; `module` is the compiled haa wasm and
- * `processorUrl` the haa 0.2.0 worklet bundle. `makePlayer` is test-only.
- *
- * `ctx` is haa's own context type (`Parameters<typeof createPlayer>[0]`); naming the DOM type
- * here would trip tools/test/audio-boundary.test.ts, which only lets
- * packages/game/src/audio/context.ts create a context.
- */
+/** Baked media shares decoded buffers; every emitter owns its gain and stereo panner. */
 export function createCourseAudio(
-  ctx: Parameters<typeof createPlayer>[0],
-  patches: ReadonlyMap<string, string>,
-  module: WebAssembly.Module,
-  processorUrl: string | URL,
+  ctx: BaseAudioContext,
+  makePlayer: PlayerFactory,
   output: AudioNode,
-  makePlayer: PlayerFactory = createPlayer,
 ): CourseAudio {
   let listeners: readonly MixListenerPose[] = []
   const active = new Map<string, ActiveSound>()
   const pending = new Map<string, PendingSound>()
-  const texts = new Map<string, Promise<string>>()
-  const warned = new Set<string>()
   const refused = new Set<string>()
   // Per-id version: a start or stop makes any earlier start for that id stale when it resolves.
   const versions = new Map<string, number>()
@@ -62,27 +45,6 @@ export function createCourseAudio(
 
   function warn(message: string): void {
     console.warn(`[course-audio] ${message}`)
-  }
-
-  // The patch text, fetched at most once per patch id; null when no patch has that id.
-  function patchText(id: string): Promise<string> | null {
-    const url = patches.get(id)
-    if (url === undefined) {
-      if (!warned.has(id)) {
-        warned.add(id)
-        warn(`no patch for ${id}; skipped`)
-      }
-      return null
-    }
-    let text = texts.get(id)
-    if (text === undefined) {
-      text = fetch(url).then((response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`)
-        return response.text()
-      })
-      texts.set(id, text)
-    }
-    return text
   }
 
   function bump(id: string): number {
@@ -113,25 +75,17 @@ export function createCourseAudio(
     return false
   }
 
-  // The player appears once its patch text (and the player itself) has resolved.
+  // The player appears once the shared media has decoded.
   async function spawn(cmd: EmitterCommand, entry: PendingSound): Promise<void> {
-    const text = patchText(cmd.patch)
-    if (text === null) return
     let gain: GainNode | undefined
     let panner: StereoPannerNode | undefined
     try {
-      const patch = await text
-      if (disposed || versions.get(cmd.id) !== entry.version) return
-      const declared = (JSON.parse(patch) as HaaPatch).inputs ?? []
-      const inputs: Record<string, number> = {}
-      if (declared.some(input => input.name === 'gain')) inputs.gain = entry.strength ?? 1
-      if (declared.some(input => input.name === 'rate')) inputs.rate = entry.cmd.rate ?? 1
       gain = ctx.createGain()
       panner = ctx.createStereoPanner()
       updateSpatial({ gain, panner, cmd: entry.cmd })
       gain.connect(panner)
       panner.connect(output)
-      const player = await makePlayer(ctx, { module, processorUrl, patch, inputs, output: gain })
+      const player = await makePlayer(cmd.patch, gain, entry.inputs, cmd.loop)
       // A stop, or a newer start, may have landed while this one was awaiting.
       if (disposed || versions.get(cmd.id) !== entry.version) {
         player.dispose()
@@ -143,10 +97,7 @@ export function createCourseAudio(
       updateSpatial(sound)
       setRate(player, entry.cmd.rate)
       active.set(cmd.id, sound)
-      if (entry.again) {
-        setStrength(player, entry.strength)
-        player.restart()
-      }
+      if (entry.again) setStrength(player, entry.strength)
     } catch (error) {
       gain?.disconnect()
       panner?.disconnect()
@@ -168,19 +119,19 @@ export function createCourseAudio(
       updateSpatial(sound)
     }
     const entry = pending.get(cmd.id)
-    if (entry) entry.cmd = { ...cmd }
+    if (entry) { entry.cmd = { ...cmd }; entry.inputs.rate = cmd.rate ?? 1 }
   }
 
-  function setRate(player: HaaPlayer, rate: number | undefined): void {
-    if (rate !== undefined && player.info.inputs.some(input => input.name === 'rate')) player.set('rate', rate)
+  function setRate(player: MediaPlayer, rate: number | undefined): void {
+    if (rate !== undefined) player.set('rate', rate)
   }
 
-  function setStrength(player: HaaPlayer, strength: number | undefined): void {
-    if (player.info.inputs.some((input) => input.name === 'gain')) player.set('gain', strength ?? 1)
+  function setStrength(player: MediaPlayer, strength: number | undefined): void {
+    player.set('gain', strength ?? 1)
   }
 
   function schedule(cmd: EmitterCommand, restartWhenReady: boolean): void {
-    const entry: PendingSound = { cmd: { ...cmd }, version: versions.get(cmd.id) ?? bump(cmd.id), again: restartWhenReady, strength: cmd.strength }
+    const entry: PendingSound = { cmd: { ...cmd }, version: versions.get(cmd.id) ?? bump(cmd.id), again: restartWhenReady, strength: cmd.strength, inputs: { gain: cmd.strength ?? 1, rate: cmd.rate ?? 1 } }
     pending.set(cmd.id, entry)
     void spawn({ ...cmd }, entry).finally(() => {
       if (pending.get(cmd.id) === entry) pending.delete(cmd.id)
@@ -217,6 +168,7 @@ export function createCourseAudio(
             if (entry !== undefined) {
               entry.again = true
               entry.strength = cmd.strength
+              entry.inputs.gain = cmd.strength ?? 1
               break
             }
             if (admit(cmd.id)) schedule(cmd, true)

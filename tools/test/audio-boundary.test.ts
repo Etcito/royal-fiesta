@@ -72,3 +72,12 @@ test('only packages/game/src/audio/context.ts touches the Web Audio API', () => 
   )
   assert.match(readFileSync(join(root, ALLOWED), 'utf8'), /new AudioContext\(\)/)
 })
+
+// HAA is a build-machine dependency; even the context and app adapters use baked media.
+test('browser and game sources contain no HAA runtime or compilation path', () => {
+  for (const file of sources(repoRoot())) {
+    const text = readFileSync(file, 'utf8')
+    assert.equal(HAA_VALUE_IMPORT.test(text), false, file)
+    assert.equal(/WebAssembly\.compile|browserAudioPatches/.test(text) && /audio|sound/i.test(file), false, file)
+  }
+})

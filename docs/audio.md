@@ -434,10 +434,22 @@ under `compressed/v1/<bake key>`. Set `RF_CACHE_DIR` outside `.git` when git wri
 are prohibited. The bake keys include authored sources and renderer inputs; a
 changed source invalidates the cache.
 
-**Remaining boundary:** non-music loops and spatial course sounds still use live
-HAA patches, loaded from the audio manifest or content index. Their continuous
-`speed`, `rate`, `gain` and crowd `excitement` inputs alter the authored graph.
-Replacing these with a single recorded loop changes sound behavior. This change
-preserves them; it does not claim that *all* sounds are now server-baked. A future
-sample-bank implementation needs a defined policy for these controls and audible
-loop seams. Native decoding of MP3/Ogg during playback remains necessary.
+All 11 non-arrangement loops now render through the same build-machine HAA engine.
+The authored graphs are unchanged. Each recording has a two-second DSP warm-up,
+at least 16 seconds of material and a 100 ms continuation/head overlap; explicit
+`loopStart`/`loopEnd` seconds in the manifest exclude codec padding. The browser
+uses `AudioBufferSourceNode.loop`, with no HAA wasm, worklet or patch fetch.
+
+`speed`, `rate` and `excitement` publish eleven evenly spaced baked snapshots
+across the authored range. Browser gain layers blend adjacent snapshots, smoothed
+over 40 ms, without changing pitch. Exact snapshot values use their authored DSP
+render; values between them approximate the continuous graph by interpolation.
+The current course default rate (1) and race/survival/final crowd settings
+(0.5/0.7/0.9) land on snapshots. Event `gain` remains a separate gain stage only
+for patches that declare it. Course emitters share decoded media with game cues
+and each retains its own positional gain and stereo panner. Pending starts,
+retrigger, stop and disposal retain their lifecycle handling.
+
+Listening/browser checks remain necessary for compressed loop seams, slide-speed
+transitions, emitter movement and the crowd levels. No listening or GPU check is
+implied by the headless tests.

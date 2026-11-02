@@ -6,7 +6,6 @@ import { GameAudio, type CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
-import { browserAudioPatches } from '../content/v1Data.ts'
 import { createCourseAudio } from './courseAudio.ts'
 import { AUDIO_SETTINGS_KEY, parseBusVolumes } from '@royal-fiesta/game/audio/mix/volumes'
 import type { SettingsStore } from '@royal-fiesta/game/screens/settings'
@@ -19,8 +18,6 @@ export interface SoundDeps {
   baseUrl: string
   store: SettingsStore
   open: typeof openBrowserAudio
-  compileWasm: (url: string) => Promise<WebAssembly.Module>
-  patches: typeof browserAudioPatches
 }
 
 // The page's localStorage, read only when a value is read: a sandboxed or third-party frame throws on the
@@ -69,8 +66,6 @@ export class SoundDriver {
       baseUrl: deps.baseUrl ?? document.baseURI,
       store: deps.store ?? pageStore(),
       open: deps.open ?? openBrowserAudio,
-      compileWasm: deps.compileWasm ?? compileWasm,
-      patches: deps.patches ?? browserAudioPatches,
     }
     const open = (): void => {
       this.open().catch((error: unknown) => console.warn('[sound] off:', messageOf(error)))
@@ -84,25 +79,13 @@ export class SoundDriver {
   open(): Promise<void> {
     this.#gestures.abort()
     this.#opening ??= (async () => {
-      const processorUrl = new URL('audio/haa-processors.js', this.#deps.baseUrl).href
       const sound = await this.#deps.open({
         manifestUrl: new URL('audio/manifest.json', this.#deps.baseUrl).href,
-        processorUrl,
         maxListeners: 4,
       })
       this.#sound = sound
       this.#game = new GameAudio(sound.port)
-      try {
-        const [module, patches] = await Promise.all([
-          this.#deps.compileWasm(new URL('audio/haa.wasm', this.#deps.baseUrl).href),
-          this.#deps.patches(),
-        ])
-        this.setCourseAudio(createCourseAudio(sound.ctx, patches, module, processorUrl, sound.mix.input('sfx')))
-      } catch (error) {
-        // The match sounds still play; the course's spatial sounds stay off.
-        console.warn('[sound] course audio off:', messageOf(error))
-        this.setCourseAudio(null)
-      }
+      if (sound.media) this.setCourseAudio(createCourseAudio(sound.ctx, sound.media, sound.mix.input('sfx')))
     })()
     return this.#opening
   }
@@ -216,12 +199,6 @@ export class SoundDriver {
     l.fz = c.facing.z
     return [l]
   }
-}
-
-async function compileWasm(url: string): Promise<WebAssembly.Module> {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`HTTP ${response.status} for the haa wasm`)
-  return WebAssembly.compile(await response.arrayBuffer())
 }
 
 function messageOf(error: unknown): string {

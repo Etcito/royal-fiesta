@@ -160,11 +160,13 @@ test('browser context caches WAVs, caps voices, spatialises, and cancels pending
   let decodes = 0
   let closed = 0
   let disposed = 0
-  const param = () => ({ value: 1, cancelScheduledValues() {}, setValueAtTime() {}, linearRampToValueAtTime() {} })
+  const param = () => ({ value: 1, cancelScheduledValues() {}, setValueAtTime() {}, linearRampToValueAtTime() {}, setTargetAtTime(value: number) { this.value = value } })
   class FakeNode {
     gain = param()
     pan = param()
     playbackRate = param()
+    loopStart = 0
+    loopEnd = 0
     loop = false
     buffer: unknown
     onended: (() => void) | null = null
@@ -190,6 +192,8 @@ test('browser context caches WAVs, caps voices, spatialises, and cancels pending
     format: 'royal-fiesta.audio', version: 1, sounds: [
       { id: 'move.step.candy', bus: 'sfx', mode: 'oneshot', files: ['step.0.wav', 'step.1.wav'], patch: null },
       { id: 'music.candy.lobby', bus: 'music', mode: 'loop', files: ['music.wav'], patch: null },
+      { id: 'mech.motor', bus: 'sfx', mode: 'loop', files: ['motor.0.ogg', 'motor.1.ogg', 'motor.2.ogg'], patch: null,
+        strengthInput: true, loopStart: 0, loopEnd: 16, control: { name: 'rate', values: [0, 0.5, 1], default: 0.5 } },
     ],
   }
   const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -204,11 +208,11 @@ test('browser context caches WAVs, caps voices, spatialises, and cancels pending
       return new Response(new Uint8Array([url.endsWith('step.1.wav') ? 1 : 0]))
     }
     setMixFactory(() => ({ input: () => output as unknown as AudioNode, setVolumes() {}, duck(id) { ducks.push(id) }, dispose() { disposed++ } }))
-    const sound = await openBrowserAudio({ manifestUrl: 'audio/manifest.json', processorUrl: 'processor.js' })
+    const sound = await openBrowserAudio({ manifestUrl: 'audio/manifest.json' })
     assert.equal(sound.ctx.state, 'running')
-    assert.equal(sound.soundsLoaded, 2)
+    assert.equal(sound.soundsLoaded, 3)
     assert.equal(decodes, 0, 'opening does not decode WAVs')
-    assert.ok(requests.includes('https://page.test/game/audio/haa.wasm'))
+    assert.equal(requests.some(url => /haa|wasm|processor/.test(url)), false)
     sound.port.setListeners([{ x: 0, y: 0, z: 0, fx: 0, fz: 1 }])
     for (let i = 0; i < 4; i++) {
       sound.port.play('move.step.candy', { pos: { x: 4, y: 0, z: 0 }, strength: 0.5 })
@@ -227,13 +231,31 @@ test('browser context caches WAVs, caps voices, spatialises, and cancels pending
     const cancelled = sound.port.startLoop('music.candy.lobby')!
     cancelled.stop()
     await tick()
-    assert.equal(sources.filter(source => source.loop).length, 0)
+    assert.equal(sources.filter(source => source.loop && !source.stopped).length, 0)
     const loop = sound.port.startLoop('music.candy.lobby')!
     await tick()
     assert.equal(sources.at(-1)!.loop, true)
     assert.ok(ducks.includes('music.candy.lobby'))
     loop.stop()
     assert.equal(sources.at(-1)!.stopped, true)
+    const firstGain = gains.length
+    const media = await sound.media!('mech.motor', output as unknown as AudioNode, { rate: 0.75, gain: 0.2 }, true)
+    const firstSources = sources.slice(-3)
+    assert.ok(firstSources.every(s => s.loop && s.loopEnd === 16 && s.started))
+    assert.deepEqual(gains.slice(firstGain).map(g => g.gain.value), [0.2, 0, 0.5, 0.5])
+    media.set('rate', 1)
+    assert.deepEqual(gains.slice(firstGain).map(g => g.gain.value), [0.2, 0, 0, 1])
+    assert.ok(firstSources.every(s => s.playbackRate.value === 1), 'authored rate is a snapshot blend, not a pitch shift')
+    media.set('gain', 0.8)
+    assert.equal(gains[firstGain].gain.value, 0.8)
+    const decodedBefore = decodes
+    const secondMedia = await sound.media!('mech.motor', output as unknown as AudioNode)
+    assert.equal(decodes, decodedBefore, 'emitters share decoded loop buffers')
+    media.restart()
+    assert.ok(firstSources.every(s => s.stopped))
+    media.dispose()
+    secondMedia.dispose()
+    assert.equal(requests.some(url => /haa|wasm|processor/.test(url)), false)
     await sound.close()
     await sound.close()
     assert.equal(closed, 1)

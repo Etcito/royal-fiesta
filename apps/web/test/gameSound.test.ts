@@ -171,8 +171,6 @@ function fixture(raw: string | null = null) {
       setItem() {},
     },
     async open(options) { opened.push(options); return sound },
-    async compileWasm(url) { wasm.push(url); return {} as WebAssembly.Module },
-    async patches() { return new Map() },
   })
   return {
     driver, target, context, mix, volumes, course, courseListeners,
@@ -242,10 +240,9 @@ test('the first pointer gesture boots the game page audio without console errors
   assert.equal(f.opened.length, 1)
   assert.deepEqual(f.opened[0], {
     manifestUrl: 'https://page.test/sub/audio/manifest.json',
-    processorUrl: 'https://page.test/sub/audio/haa-processors.js',
     maxListeners: 4,
   })
-  assert.deepEqual(f.wasm, ['https://page.test/sub/audio/haa.wasm'])
+  assert.deepEqual(f.wasm, [])
   f.target.dispatchEvent(new Event('pointerdown'))
   await f.driver.open()
   assert.equal(f.opened.length, 1, 'later gestures reuse the first open')

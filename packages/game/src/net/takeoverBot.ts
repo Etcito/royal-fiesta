@@ -1,6 +1,7 @@
 import { parseBehaviour } from '@royal-fiesta/sim/bots/behaviour'
 import { evaluateBrain } from '@royal-fiesta/sim/bots/brain'
 import type { BrainInput, BrainMemory } from '@royal-fiesta/sim/bots/brain'
+import { nearestPathIndex } from '@royal-fiesta/sim/bots/courseRead'
 import { updateRoute } from '@royal-fiesta/sim/bots/routes'
 import type { RouteInput, RoutePlan } from '@royal-fiesta/sim/bots/routes'
 import shortProfile from '../../../sim/src/bots/behaviours/short.bot.json' with { type: 'json' }
@@ -20,6 +21,7 @@ interface TakeoverMemory extends BrainMemory {
     input: RouteInput
     route: RoutePlan | null
     steer: RoutePlan | null
+    teleportTick: number
   }
 }
 
@@ -33,6 +35,7 @@ export function takeoverInput(
   state: CharState,
   tick: number,
   out: PlayerInput,
+  obstacleAhead = false,
 ): number {
   if (!Number.isInteger(tick) || tick < 0) throw new RangeError('brain tick must be a nonnegative integer')
   if (state.mode === CharMode.parked || state.mode === CharMode.frozen) {
@@ -40,11 +43,12 @@ export function takeoverInput(
     return NEUTRAL_CODE
   }
   let cache = memory.takeover
-  if (cache === undefined || cache.brain.course !== course) {
+  if (cache === undefined || cache.brain.course !== course || cache.teleportTick !== state.teleportTick) {
     cache = memory.takeover = {
       brain: { course, pos: state.pos, vel: state.vel, facing: state.facing,
         grounded: state.grounded, mode: state.mode, obstacleAhead: false, hazardNear: false },
       input: { course, behaviour, pos: state.pos, seed: 0, tick },
+      teleportTick: state.teleportTick,
       route: null,
       steer: null,
     }
@@ -60,6 +64,7 @@ export function takeoverInput(
   memory.ticks = tick
 
   const b = cache.brain
+  b.obstacleAhead = obstacleAhead
   b.pos = state.pos
   b.vel = state.vel
   b.facing = state.facing
@@ -73,7 +78,7 @@ export function takeoverInput(
     cache.steer = { ...route, waypoints: [] }
   }
   // Match BotSystem's ordered cursor: nearest-node steering alone can orbit a passed node.
-  const list = route.waypoints
+  const list = course.kind === 'survival' ? [nearestPathIndex(course, state.pos)].filter(i => i >= 0) : route.waypoints
   let at = list.indexOf(memory.pathIndex)
   if (at < 0) {
     at = list.findIndex(w => w >= memory.pathIndex)
@@ -82,7 +87,7 @@ export function takeoverInput(
   while (at >= 0 && at < list.length - 1) {
     const node = course.path[list[at]]
     const x = node.p.x - state.pos.x, z = node.p.z - state.pos.z
-    if (Math.sqrt(x * x + z * z) > behaviour.route.advanceDist) break
+    if (Math.sqrt(x * x + z * z) > (node.jump ? 0.5 : behaviour.route.advanceDist)) break
     at++
   }
   const steer = cache.steer!

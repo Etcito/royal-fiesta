@@ -133,7 +133,11 @@ export function planRoute(input: RouteInput): RoutePlan {
   const base = { preference: b.route.preference, seed, planTick: tick, nextPlanTick }
   if (nav.regions.length === 0) return { ...base, regions: [], edges: [], waypoints: forward, cost: 0, reachable: true }
   const from = startRegion(c, nav, pos)
-  const found = cheapestRegions(c, b.route.preference, seed, from, goalRegion(c))
+  const goal = goalRegion(c)
+  // Some authored routes climb outside their coarse region boxes; crown courses
+  // use a feature objective and a dummy finish. The path remains their route.
+  if (goal < 0) return { ...base, regions: [], edges: [], waypoints: forward, cost: 0, reachable: true }
+  const found = cheapestRegions(c, b.route.preference, seed, from, goal)
   if (found === null) {
     return { ...base, regions: from < 0 ? [] : [from], edges: [], waypoints: forward, cost: 0, reachable: false }
   }

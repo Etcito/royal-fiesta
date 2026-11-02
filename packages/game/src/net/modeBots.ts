@@ -1,5 +1,6 @@
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
+import { G, groups } from '@royal-fiesta/sim/groups'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
@@ -17,6 +18,7 @@ const DIVE_DIST = 2
 const GRAB_DIST = 1
 const GAP_AHEAD = 1
 const GAP_DEPTH = 1.5
+const LOCAL_TARGET_M = 4
 
 export interface ModeBotMemory {
   takeover: object
@@ -64,6 +66,20 @@ function pathJumpAhead(course: ResolvedCourse, x: number, z: number, dx: number,
   return best >= 0 && course.path[best].jump
 }
 
+function obstacleAhead(domain: FiestaDomain, state: CharState): boolean {
+  if (scratchRay === null) scratchRay = new domain.ctx.R.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 })
+  const ray = scratchRay
+  ray.origin.x = state.pos.x
+  ray.origin.y = state.pos.y - CHAR.halfHeight - CHAR.radius + 0.25
+  ray.origin.z = state.pos.z
+  ray.dir.x = state.facing.x
+  ray.dir.y = 0
+  ray.dir.z = state.facing.z
+  const hit = domain.ctx.physics.world.castRayAndGetNormal(ray, 1.5, true, undefined,
+    groups(G.PROBE, G.STATIC | G.MOVING))
+  return hit !== null && hit.normal.y < CHAR.groundMinNy
+}
+
 function grabNear(domain: FiestaDomain, state: CharState): boolean {
   const pos = state.pos
   const facing = state.facing
@@ -97,10 +113,23 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
     goal.y = 0
     goal.z = 0
     let found = false
+    let targetKind = ''
     for (let i = 0; i < domain.features.length; i++) {
       const feature = domain.features[i]
       if (feature.botTarget !== undefined && feature.botTarget(seat, state.pos, goal)) {
+        // Traversal features expose destinations, not routes to them. In a race a
+        // distant tile/pad/crown must not shortcut the authored course across voids.
+        // Tiles and boosts already lie on that route; stopping on a tile decays it.
+        if (course.kind === 'race' && course.path.length > 0) {
+          if (feature.kind === 'tileField' || feature.kind === 'boostLane') continue
+          if (['launchPad', 'crown', 'risingKill'].includes(feature.kind)) {
+            const distance = Math.hypot(goal.x - state.pos.x, goal.z - state.pos.z)
+            const launching = feature.kind === 'launchPad' && !state.grounded && distance < 25
+            if (!launching && (distance > LOCAL_TARGET_M || Math.abs(goal.y - state.pos.y) > 2)) continue
+          }
+        }
         found = true
+        targetKind = feature.kind
         break
       }
     }
@@ -115,11 +144,11 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
       const nx = len > 1e-6 ? dx / len : 0
       const nz = len > 1e-6 ? dz / len : 0
       const feet = state.pos.y - CHAR.halfHeight - CHAR.radius
-      out.moveX = nx
-      out.moveZ = nz
+      out.moveX = len > 0.4 ? nx : 0
+      out.moveZ = len > 0.4 ? nz : 0
       out.jump = pathJumpAhead(course, state.pos.x, state.pos.z, nx, nz) ||
         !groundAhead(domain, state.pos.x, feet, state.pos.z, nx, nz)
-      out.dive = state.grounded && len <= DIVE_DIST
+      out.dive = len <= DIVE_DIST && !['tileField', 'hexField', 'risingKill', 'annulus', 'sweep'].includes(targetKind) && state.grounded
       out.grab = grabNear(domain, state)
       const planar = Math.sqrt(state.vel.x * state.vel.x + state.vel.z * state.vel.z)
       memory.stuckTicks = planar < STUCK_SPEED ? memory.stuckTicks + 1 : 0
@@ -133,5 +162,32 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
     memory.stuckTicks++
     if (memory.stuckTicks >= STUCK_LIMIT + TAKEOVER_TICKS) memory.stuckTicks = 0
   }
-  return takeoverInput(course, memory.takeover as Parameters<typeof takeoverInput>[1], state, tick, out)
+  takeoverInput(course, memory.takeover as Parameters<typeof takeoverInput>[1], state, tick, out, obstacleAhead(domain, state))
+  // Brake before an unsupported edge unless there is a landing within a jump's
+  // horizontal range. Probe actual physics, including platforms and feature tiles.
+  if (state.grounded && state.mode !== CharMode.swim) {
+    const speed = Math.hypot(state.vel.x, state.vel.z)
+    const lead = Math.max(1, speed * speed / (2 * CHAR.groundBrake) + CHAR.radius)
+    const len = Math.hypot(out.moveX, out.moveZ)
+    if (len > 0) {
+      const nx = out.moveX / len, nz = out.moveZ / len
+      const feet = state.pos.y - CHAR.halfHeight - CHAR.radius
+      const supported = (ahead: number): boolean => {
+        if (scratchRay === null) scratchRay = new domain.ctx.R.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 })
+        scratchRay.origin.x = state.pos.x + nx * ahead
+        scratchRay.origin.y = feet + 0.5
+        scratchRay.origin.z = state.pos.z + nz * ahead
+        scratchRay.dir.x = 0; scratchRay.dir.y = -1; scratchRay.dir.z = 0
+        return domain.ctx.physics.world.castRay(scratchRay, 2, true, undefined,
+          groups(G.PROBE, G.STATIC | G.MOVING)) !== null
+      }
+      if (!supported(lead)) {
+        let landing = false
+        for (let d = lead + 0.5; d <= 4; d += 0.5) if (supported(d)) { landing = true; break }
+        if (landing) out.jump = (tick & 1) === 0
+        else { out.moveX = 0; out.moveZ = 0; out.jump = false; out.dive = false }
+      }
+    }
+  }
+  return encodeInput(out)
 }

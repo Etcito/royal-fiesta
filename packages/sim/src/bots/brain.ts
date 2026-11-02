@@ -398,8 +398,8 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
   const feet = b.pos.y - CHAR.halfHeight - CHAR.radius
   const scan = scanAhead(groundBoxes(b.course, observed), feet, b.pos.x, b.pos.z, ux, uz)
   const climb = node.p.y > b.pos.y + 0.4 || (b.obstacleAhead && scan.ledgeTop !== -Infinity)
-  let jump = rule?.action === 'jump' && canJump
-  let dive = rule?.action === 'dive' && canDive
+  let jump = (rule?.action === 'jump' || (node.jump && dist <= JUMP_DIST)) && canJump
+  let dive = (rule?.action === 'dive' || (node.dive && dist <= JUMP_DIST)) && canDive
   let grab = rule?.action === 'grab' || hanging
   // The route geometry drives traversal independently of the matched action: a gap close
   // ahead is jumped, a reachable ledge is jumped at and caught while airborne, and a

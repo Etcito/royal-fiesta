@@ -95,7 +95,8 @@ export function nearestPathIndex(c: ResolvedCourse, p: Vec3): number {
   for (let i = 0; i < c.path.length; i++) {
     const dx = c.path[i].p.x - p.x
     const dz = c.path[i].p.z - p.z
-    const d = dx * dx + dz * dz
+    const dy = c.path[i].p.y - p.y
+    const d = dx * dx + dy * dy + dz * dz
     if (d < bestD) { bestD = d; best = i }
   }
   return best

@@ -1,0 +1,42 @@
+Run from this clone, with Node 24 and no GPU or servers:
+
+```sh
+node --import ./scripts/bots/local-imports.mjs --experimental-strip-types scripts/bots/measure.ts > after.json
+node --import ./scripts/bots/local-imports.mjs --experimental-strip-types --test packages/game/test/courseBots.test.ts packages/game/test/modeBots.test.ts packages/sim/test/bots.test.ts
+```
+
+`local-imports.mjs` resolves workspace imports into this clone. This matters when
+node_modules is a symlink to another checkout: otherwise tests silently exercise
+that checkout's packages.
+
+The measurement runs eight bots on every playable course using the show's
+FiestaDomain, modeBotInput, real asset collisions, mechanisms and features. It
+records parking and catch-volume teleportation before poses are overwritten.
+Each event includes bot id, tick (60 Hz), reason, position, waypoint cursor and
+feature target. Survival modes have no finish slab. Crown completion is a crown
+event, separate from finish-slab qualification. Remaining live racers at the
+course cap timed out; their end poses/cursors are retained. Hazard knockbacks
+ending below the plane are classified by the terminal kill plane, not guessed
+from the earlier contact.
+
+All bots share one physics domain to measure controller/geometry behavior;
+network repartitioning is outside this harness. Domain schedule seed is zero,
+spawn assignment is seats 0..7, and controllers do not consume random input.
+`BOT_COURSES=id,id` selects courses. `BOT_DEBUG=1` prints the final controller cache.
+
+For baseline comparison, capture HEAD's source into a temporary directory:
+
+```sh
+mkdir -p /tmp/bot-baseline
+for name in modeBots takeoverBot; do
+  git show HEAD:packages/game/src/net/$name.ts > /tmp/bot-baseline/$name.ts
+done
+for name in brain courseRead routes; do
+  git show HEAD:packages/sim/src/bots/$name.ts > /tmp/bot-baseline/$name.ts
+done
+BOT_BASELINE=/tmp/bot-baseline node --import ./scripts/bots/local-imports.mjs --experimental-strip-types scripts/bots/measure.ts > ../before.json
+```
+
+This reads Git only. No checkout, reset, index write, live-repo edit or server
+restart is needed. The baseline loader substitutes source at its original URL,
+so relative imports and the course/asset data stay identical.

@@ -251,6 +251,9 @@ export async function main(argv: string[]): Promise<number> {
     if (input.format !== 'royal-fiesta.views-input') refuse(AREA, `${argv[0]}#/format`, 'not a views input; pass a proofs/cN/views.input.json file')
     // An empty NMC_GPU_URL makes sdfm render in Node instead of sending a job to the GPU host.
     process.env.NMC_GPU_URL = ''
+    // Software rendering compiles a costumed penguin's gbuffer shader for minutes on a loaded machine (sdfm's default limit
+    // is 240 s and failed three judge cards); 25 min stays under the card check's own 1800 s timeout.
+    process.env.SDFM_COMPILE_TIMEOUT_MS ||= '1500000'
     const { createSdfm } = await sdfmApi(sdfmDir(root))
     let failed = 0
     for (const s of input.subjects) {

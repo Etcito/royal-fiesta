@@ -187,5 +187,18 @@
     "name": "m13-countdowns-tests",
     "command": "node --experimental-strip-types --test apps/web/test/showDirector.test.ts packages/game/test/flow.test.ts packages/game/test/flowVoteCountdown.test.ts",
     "timeout_s": 60
+  },
+  {
+    "name": "m13-level-thumbs-tests",
+    "command": "node --experimental-strip-types --test tools/test/levelThumbs.test.ts",
+    "timeout_s": 60
+  },
+  {
+    "name": "m13-level-thumbs-cache-check",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --cache-only",
+    "timeout_s": 60,
+    "after": [
+      "m13-level-thumbs"
+    ]
   }
 ]

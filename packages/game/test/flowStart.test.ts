@@ -131,7 +131,7 @@ test('saved worn and colour are restored', () => {
 })
 
 test('a catalog special item fills the special bin and can be worn', () => {
-  const catalog = [...CATALOG, { id: 'costume.sparkler-wand', slot: 'special' }]
+  const catalog = CATALOG
   const m = startScreen(['costume.sparkler-wand'], catalog, 0, {
     colour: 0,
     worn: { special: 'costume.sparkler-wand' },
@@ -151,10 +151,11 @@ test('a catalog special item fills the special bin and can be worn', () => {
   assert.equal(step.model.bins[3].selected, -1)
 })
 
-test('LOCAL_OWNED resolves to the three local costume ids', async () => {
-  assert.deepEqual(await LOCAL_OWNED.owned(), allIds)
-  assert.deepEqual(allIds, ['costume.propeller-hat', 'costume.pineapple-suit', 'costume.fish-scarf'])
-  assert.deepEqual(LOCAL_COSMETICS.map(item => item.slot), ['head', 'body', 'bottom'])
+test('LOCAL_OWNED resolves to the twelve base costume ids', async () => {
+  const owned = await LOCAL_OWNED.owned()
+  assert.deepEqual(owned, LOCAL_COSMETICS.filter(item => item.id === item.asset).map(item => item.id))
+  assert.equal(owned.length, 12)
+  assert.equal(allIds.length, 36)
 })
 
 test('keyboard actions reach Play', () => {

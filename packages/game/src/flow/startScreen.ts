@@ -24,15 +24,41 @@ export interface StartScreenModel {
   background: 'candy'
 }
 
-export const LOCAL_COSMETICS: readonly { id: string; slot: BinSlot }[] = Object.freeze([
-  { id: 'costume.propeller-hat', slot: 'head' },
-  { id: 'costume.pineapple-suit', slot: 'body' },
-  { id: 'costume.fish-scarf', slot: 'bottom' },
-])
+export interface Cosmetic { id: string; slot: BinSlot; asset: string; tint?: readonly [number, number, number] }
+const BASE_COSMETICS: readonly Cosmetic[] = [
+  { id: 'costume.propeller-hat', slot: 'head', asset: 'costume.propeller-hat' },
+  { id: 'costume.jester-hat', slot: 'head', asset: 'costume.jester-hat' },
+  { id: 'costume.golden-crown', slot: 'head', asset: 'costume.golden-crown' },
+  { id: 'costume.pineapple-suit', slot: 'body', asset: 'costume.pineapple-suit' },
+  { id: 'costume.disco-jacket', slot: 'body', asset: 'costume.disco-jacket' },
+  { id: 'costume.dragon-suit', slot: 'body', asset: 'costume.dragon-suit' },
+  { id: 'costume.fish-scarf', slot: 'bottom', asset: 'costume.fish-scarf' },
+  { id: 'costume.neon-sneakers', slot: 'bottom', asset: 'costume.neon-sneakers' },
+  { id: 'costume.cloud-skirt', slot: 'bottom', asset: 'costume.cloud-skirt' },
+  { id: 'costume.sparkler-wand', slot: 'special', asset: 'costume.sparkler-wand' },
+  { id: 'costume.jetpack', slot: 'special', asset: 'costume.jetpack' },
+  { id: 'costume.ghost-aura', slot: 'special', asset: 'costume.ghost-aura' },
+]
+const COLOUR_VARIANTS = [
+  { colour: 'teal', tint: [0.12, 0.85, 0.78] as const },
+  { colour: 'rose', tint: [1, 0.22, 0.48] as const },
+]
+export const LOCAL_COSMETICS: readonly Cosmetic[] = Object.freeze(BASE_COSMETICS.flatMap(base => [
+  base, ...COLOUR_VARIANTS.map(({ colour, tint }) => ({ ...base, id: `${base.id}.${colour}`, tint })),
+]))
 
-// The offline default until M9 wires OwnedSource to the economy.
+export function cosmeticOf(id: string): Cosmetic | undefined {
+  return LOCAL_COSMETICS.find(item => item.id === id)
+}
+
+export function cosmeticName(id: string | undefined): string {
+  if (id === undefined) return 'None'
+  return id.replace(/^costume\./, '').split(/[.-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
+
+// Offline fallback owns the base pieces; colour variants remain purchases.
 export const LOCAL_OWNED: OwnedSource = Object.freeze({
-  owned: (): Promise<string[]> => Promise.resolve(LOCAL_COSMETICS.map(item => item.id)),
+  owned: (): Promise<string[]> => Promise.resolve(LOCAL_COSMETICS.filter(item => item.id === item.asset).map(item => item.id)),
 })
 
 const BIN_SLOTS: readonly BinSlot[] = Object.freeze(['head', 'body', 'bottom', 'special'])

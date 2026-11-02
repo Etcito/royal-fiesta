@@ -14,6 +14,40 @@
       "editionCap": 500
     },
     {
+      "id": "costume.propeller-hat.teal",
+      "name": "Propeller Hat Teal",
+      "slot": "head",
+      "rarity": "common",
+      "asset": "costume.propeller-hat",
+      "price": {
+        "coins": 30,
+        "tickets": 3
+      },
+      "editionCap": 500,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.propeller-hat.rose",
+      "name": "Propeller Hat Rose",
+      "slot": "head",
+      "rarity": "common",
+      "asset": "costume.propeller-hat",
+      "price": {
+        "coins": 30,
+        "tickets": 3
+      },
+      "editionCap": 500,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
+    },
+    {
       "id": "costume.jester-hat",
       "name": "Jester Hat",
       "slot": "head",
@@ -23,6 +57,38 @@
         "coins": 60
       },
       "editionCap": 150
+    },
+    {
+      "id": "costume.jester-hat.teal",
+      "name": "Jester Hat Teal",
+      "slot": "head",
+      "rarity": "rare",
+      "asset": "costume.jester-hat",
+      "price": {
+        "coins": 60
+      },
+      "editionCap": 150,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.jester-hat.rose",
+      "name": "Jester Hat Rose",
+      "slot": "head",
+      "rarity": "rare",
+      "asset": "costume.jester-hat",
+      "price": {
+        "coins": 60
+      },
+      "editionCap": 150,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
     },
     {
       "id": "costume.golden-crown",
@@ -37,6 +103,40 @@
       "editionCap": 60
     },
     {
+      "id": "costume.golden-crown.teal",
+      "name": "Golden Crown Teal",
+      "slot": "head",
+      "rarity": "legendary",
+      "asset": "costume.golden-crown",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.golden-crown.rose",
+      "name": "Golden Crown Rose",
+      "slot": "head",
+      "rarity": "legendary",
+      "asset": "costume.golden-crown",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
+    },
+    {
       "id": "costume.pineapple-suit",
       "name": "Pineapple Suit",
       "slot": "body",
@@ -46,6 +146,38 @@
         "coins": 30
       },
       "editionCap": 500
+    },
+    {
+      "id": "costume.pineapple-suit.teal",
+      "name": "Pineapple Suit Teal",
+      "slot": "body",
+      "rarity": "common",
+      "asset": "costume.pineapple-suit",
+      "price": {
+        "coins": 30
+      },
+      "editionCap": 500,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.pineapple-suit.rose",
+      "name": "Pineapple Suit Rose",
+      "slot": "body",
+      "rarity": "common",
+      "asset": "costume.pineapple-suit",
+      "price": {
+        "coins": 30
+      },
+      "editionCap": 500,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
     },
     {
       "id": "costume.disco-jacket",
@@ -60,6 +192,40 @@
       "editionCap": 150
     },
     {
+      "id": "costume.disco-jacket.teal",
+      "name": "Disco Jacket Teal",
+      "slot": "body",
+      "rarity": "rare",
+      "asset": "costume.disco-jacket",
+      "price": {
+        "coins": 60,
+        "tickets": 4
+      },
+      "editionCap": 150,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.disco-jacket.rose",
+      "name": "Disco Jacket Rose",
+      "slot": "body",
+      "rarity": "rare",
+      "asset": "costume.disco-jacket",
+      "price": {
+        "coins": 60,
+        "tickets": 4
+      },
+      "editionCap": 150,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
+    },
+    {
       "id": "costume.dragon-suit",
       "name": "Dragon Suit",
       "slot": "body",
@@ -70,6 +236,40 @@
         "tickets": 6
       },
       "editionCap": 25
+    },
+    {
+      "id": "costume.dragon-suit.teal",
+      "name": "Dragon Suit Teal",
+      "slot": "body",
+      "rarity": "epic",
+      "asset": "costume.dragon-suit",
+      "price": {
+        "coins": 200,
+        "tickets": 6
+      },
+      "editionCap": 25,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.dragon-suit.rose",
+      "name": "Dragon Suit Rose",
+      "slot": "body",
+      "rarity": "epic",
+      "asset": "costume.dragon-suit",
+      "price": {
+        "coins": 200,
+        "tickets": 6
+      },
+      "editionCap": 25,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
     },
     {
       "id": "costume.fish-scarf",
@@ -84,6 +284,40 @@
       "editionCap": 500
     },
     {
+      "id": "costume.fish-scarf.teal",
+      "name": "Fish Scarf Teal",
+      "slot": "bottom",
+      "rarity": "common",
+      "asset": "costume.fish-scarf",
+      "price": {
+        "coins": 30,
+        "tickets": 3
+      },
+      "editionCap": 500,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.fish-scarf.rose",
+      "name": "Fish Scarf Rose",
+      "slot": "bottom",
+      "rarity": "common",
+      "asset": "costume.fish-scarf",
+      "price": {
+        "coins": 30,
+        "tickets": 3
+      },
+      "editionCap": 500,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
+    },
+    {
       "id": "costume.neon-sneakers",
       "name": "Neon Sneakers",
       "slot": "bottom",
@@ -93,6 +327,38 @@
         "coins": 60
       },
       "editionCap": 150
+    },
+    {
+      "id": "costume.neon-sneakers.teal",
+      "name": "Neon Sneakers Teal",
+      "slot": "bottom",
+      "rarity": "rare",
+      "asset": "costume.neon-sneakers",
+      "price": {
+        "coins": 60
+      },
+      "editionCap": 150,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.neon-sneakers.rose",
+      "name": "Neon Sneakers Rose",
+      "slot": "bottom",
+      "rarity": "rare",
+      "asset": "costume.neon-sneakers",
+      "price": {
+        "coins": 60
+      },
+      "editionCap": 150,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
     },
     {
       "id": "costume.cloud-skirt",
@@ -107,6 +373,40 @@
       "editionCap": 60
     },
     {
+      "id": "costume.cloud-skirt.teal",
+      "name": "Cloud Skirt Teal",
+      "slot": "bottom",
+      "rarity": "legendary",
+      "asset": "costume.cloud-skirt",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.cloud-skirt.rose",
+      "name": "Cloud Skirt Rose",
+      "slot": "bottom",
+      "rarity": "legendary",
+      "asset": "costume.cloud-skirt",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
+    },
+    {
       "id": "costume.sparkler-wand",
       "name": "Sparkler Wand",
       "slot": "special",
@@ -116,6 +416,38 @@
         "coins": 30
       },
       "editionCap": 500
+    },
+    {
+      "id": "costume.sparkler-wand.teal",
+      "name": "Sparkler Wand Teal",
+      "slot": "special",
+      "rarity": "common",
+      "asset": "costume.sparkler-wand",
+      "price": {
+        "coins": 30
+      },
+      "editionCap": 500,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.sparkler-wand.rose",
+      "name": "Sparkler Wand Rose",
+      "slot": "special",
+      "rarity": "common",
+      "asset": "costume.sparkler-wand",
+      "price": {
+        "coins": 30
+      },
+      "editionCap": 500,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
     },
     {
       "id": "costume.jetpack",
@@ -130,6 +462,40 @@
       "editionCap": 60
     },
     {
+      "id": "costume.jetpack.teal",
+      "name": "Candy Jetpack Teal",
+      "slot": "special",
+      "rarity": "legendary",
+      "asset": "costume.jetpack",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.jetpack.rose",
+      "name": "Candy Jetpack Rose",
+      "slot": "special",
+      "rarity": "legendary",
+      "asset": "costume.jetpack",
+      "price": {
+        "coins": 120,
+        "tickets": 5
+      },
+      "editionCap": 60,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
+    },
+    {
       "id": "costume.ghost-aura",
       "name": "Ghost Aura",
       "slot": "special",
@@ -140,6 +506,40 @@
         "tickets": 6
       },
       "editionCap": 25
+    },
+    {
+      "id": "costume.ghost-aura.teal",
+      "name": "Ghost Aura Teal",
+      "slot": "special",
+      "rarity": "epic",
+      "asset": "costume.ghost-aura",
+      "price": {
+        "coins": 200,
+        "tickets": 6
+      },
+      "editionCap": 25,
+      "tint": [
+        0.12,
+        0.85,
+        0.78
+      ]
+    },
+    {
+      "id": "costume.ghost-aura.rose",
+      "name": "Ghost Aura Rose",
+      "slot": "special",
+      "rarity": "epic",
+      "asset": "costume.ghost-aura",
+      "price": {
+        "coins": 200,
+        "tickets": 6
+      },
+      "editionCap": 25,
+      "tint": [
+        1,
+        0.22,
+        0.48
+      ]
     }
   ]
 }

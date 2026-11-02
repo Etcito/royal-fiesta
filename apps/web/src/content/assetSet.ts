@@ -11,7 +11,7 @@ export const CHARACTER_ID = 'penguin.body'
 export function assetSet(courses: readonly CourseV1[], byId: ReadonlyMap<string, CourseV1>, _profile: ProfileName, costumes: readonly string[] = []): string[] {
   // costumes: every costume of the content index. The wardrobe and the start art dress the penguin with the whole
   // economy catalog, not only the three local pieces; an unmeshed catalog costume is never registered on the stage.
-  const ids = new Set<string>([CHARACTER_ID, ...LOCAL_COSMETICS.map(item => item.id), ...costumes])
+  const ids = new Set<string>([CHARACTER_ID, ...LOCAL_COSMETICS.map(item => item.asset), ...costumes])
   for (const c of courses) {
     // Every race and survival course, whatever timing profiles it lists: the show plans its rounds from all of
     // them (browserCourses(null)), so each must be meshed or its round has no world.

@@ -232,3 +232,20 @@ test('part filter hides other parts and composes with instance visibility', () =
   port.setPartFilter(instance, [])
   assert.deepEqual([...calls.visibility.values()], [false, false])
 })
+
+test('cosmetic variants tint fixed graph materials per instance without new meshes or surfaces', () => {
+  const { port, calls, handle } = portFor('costume.jester-hat', [material('cloth', PLAIN)], [part('hat', 'cloth')])
+  const h = handle()
+  const meshes = calls.meshes, surfaces = calls.surfaces
+  port.createInstance(h, null)
+  port.createInstance(h, [0.12, 0.85, 0.78])
+  port.createInstance(h, [1, 0.22, 0.48])
+  assert.equal(calls.meshes, meshes)
+  assert.equal(calls.surfaces, surfaces)
+  assert.equal(new Set(calls.meshOf.values()).size, 1)
+  assert.deepEqual([...calls.tints.values()].flat(), [[0.12, 0.85, 0.78, 1], [1, 0.22, 0.48, 1]])
+  const reused = calls.nextInstance - 1
+  calls.nextInstance = reused
+  port.createInstance(h, null)
+  assert.deepEqual(calls.cleared, [reused])
+})

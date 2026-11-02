@@ -355,7 +355,9 @@ class SdfRenderPort implements ResizablePort {
       const node = engine.addNode(root, part.t, part.r)
       const instance = engine.addMeshInstance(node, part.mesh)
       if (part.volume !== undefined) engine.setInstanceParams(instance, part.volume)
-      if (tint !== null && part.tint !== 'none') {
+      // Cosmetic colourways multiply the existing fixed materials on the same mesh.
+      // The character keeps its graph-selected skin tint so its beak and feet stay fixed.
+      if (tint !== null && (part.tint !== 'none' || uploaded.assetId.startsWith('costume.'))) {
         engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
         this.tinted.add(instance)
       } else if (this.tinted.delete(instance)) engine.clearInstanceTint(instance)

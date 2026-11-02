@@ -21,7 +21,7 @@ import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/
 import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
 import type { GameContent } from '@royal-fiesta/game/content'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
-import { LOCAL_COSMETICS, startScreen, startStep } from '@royal-fiesta/game/flow/startScreen'
+import { cosmeticOf, LOCAL_COSMETICS, startScreen, startStep } from '@royal-fiesta/game/flow/startScreen'
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import { economyOwned, rewardOffline } from '@royal-fiesta/game/economy/owned'
 import { createEconomyStub } from '@royal-fiesta/game/economy/stub'
@@ -266,7 +266,7 @@ type FrameLoop = (frame: (dtS: number) => void) => () => void
 // Where the App keeps its settings and what calls its frames: the page's localStorage and rAF loop, or
 // the uiTour op's in-memory store and its own frame steps. beforeLoad runs as each load starts; a throw fails
 // that load as any load failure does (the uiTour op refuses the boot load so it can reach 'loading' with Retry).
-interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number }
+interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number; starterInventory?: boolean }
 
 // The page's FrameLoop, on requestAnimationFrame. An op tears the App down before building its own views.
 function loop(frame: (dtS: number) => void): () => void {
@@ -1437,7 +1437,7 @@ class App {
     // can walk every catalog cosmetic through the start screen's bins.
     const url = economyUrl()
     const test = new URLSearchParams(search).get('test') === '1'
-    if (test && url === null) {
+    if (test && url === null && !env.starterInventory) {
       const stub = createEconomyStub({
         config, me: { owned: config.catalog.shop.items.map(item => item.id) },
       })
@@ -1898,7 +1898,7 @@ class App {
     for (const item of this.startCosmetics) {
       try {
         if (body === null) continue
-        const costume = (await resolver.resolve(item.id)).asset
+        const costume = (await resolver.resolve(cosmeticOf(item.id)?.asset ?? item.id)).asset
         const names = Object.keys(costume.anchors)
         if (names.length !== 1) continue
         const bodyAnchor = body.anchors[names[0]]
@@ -1919,7 +1919,7 @@ class App {
       skinned: skinnedCharacterOf(content),
       costume: (id: string): PrimsAsset | null => {
         try {
-          return content.assets(id)
+          return content.assets(cosmeticOf(id)?.asset ?? id)
         } catch {
           return null
         }
@@ -2548,6 +2548,7 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void, options: BootO
     store: { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) },
     padStorage: null,
     showSeats: 8,
+    starterInventory: options.starterInventory,
     loop: f => {
       frame = f
       return () => { frame = null }

@@ -96,7 +96,10 @@ test('strict validation refuses a bad haa header and accepts the shipped content
 test('the sprint load set is what the page meshes: playlist, hub, podium and character, not every asset', async () => {
   const ids = await profileAssetIds('sprint')
   assert.ok(ids.includes('penguin.body') && ids.includes('candy.checkpoint-gate'))
-  for (const { id } of LOCAL_COSMETICS) assert.ok(ids.includes(id), `${id} is in the wardrobe load set`)
+  for (const { id, asset } of LOCAL_COSMETICS) {
+    assert.ok(ids.includes(asset), `${id} shares ${asset} in the wardrobe load set`)
+    if (id !== asset) assert.ok(!ids.includes(id), `${id} never requests a separate mesh`)
+  }
   assert.deepEqual(ids, [...ids].sort())
 })
 

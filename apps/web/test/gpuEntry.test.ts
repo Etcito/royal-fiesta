@@ -19,7 +19,7 @@ test('game page registers check ops before loading game dependencies', async () 
     console: { error() {} },
     loadGame: () => {
       loaded = true
-      for (const name of ['countdowns', 'lobbyUnload', 'wardrobe', 'vote', 'm13Flow']) {
+      for (const name of ['countdowns', 'lobbyUnload', 'wardrobe', 'vote', 'm13Flow', 'shopEconomy']) {
         assert.equal(typeof page.nmcGpu?.ops[name], 'function', name)
       }
       return Promise.reject(failure)
@@ -110,7 +110,7 @@ test('check ops replace the entry placeholders; a placeholder call reaches the c
   runInNewContext(ts.transpile(installChecks, { target: ts.ScriptTarget.ES2022 }), {
     window: page, checks, take: () => { taken++ }, bootGame: () => {}, adapterInfo: async () => ({}), Object, Set, Error,
   })
-  assert.deepEqual(checks.map(check => check.name).sort(), ['checkBoot', 'countdowns', 'lobbyUnload', 'm13Flow', 'vote', 'wardrobe'])
+  assert.deepEqual(checks.map(check => check.name).sort(), ['checkBoot', 'countdowns', 'lobbyUnload', 'm13Flow', 'shopEconomy', 'vote', 'wardrobe'])
   finish()
   const result = await pending
   assert.equal(result.json.name, 'wardrobe')

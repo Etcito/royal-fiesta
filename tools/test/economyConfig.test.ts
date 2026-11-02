@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { RARITY_TICKETS } from '../../packages/game/src/economy/contract.ts'
-import { generateEconomyConfig } from '../economyConfig.ts'
+import { generateEconomyConfig, validateSeasonCatalog } from '../economyConfig.ts'
 import type { EconomyConfig } from '../economyConfig.ts'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
@@ -34,5 +34,25 @@ test('every item slot and rarity is declared', () => {
   for (const item of shop.items) {
     assert.ok(shop.slots.includes(item.slot), `${item.id}: slot ${item.slot} is not declared`)
     assert.ok(Object.hasOwn(shop.rarities, item.rarity), `${item.id}: rarity ${item.rarity} is not declared`)
+  }
+})
+
+import { LOCAL_COSMETICS } from '../../packages/game/src/flow/startScreen.ts'
+import type { SeasonCatalog } from '../economyConfig.ts'
+const season = JSON.parse(readFileSync(`${root}economy/catalog.season1.json`, 'utf8')) as SeasonCatalog
+
+test('catalog guard and start list cover 12 bases and 24 shared-mesh tinted variants', () => {
+  validateSeasonCatalog(season)
+  assert.deepEqual(LOCAL_COSMETICS, season.items.map(({ id, slot, asset, tint }) => ({ id, slot, asset, ...(tint ? { tint } : {}) })))
+  for (const mutate of [
+    (copy: SeasonCatalog) => { copy.items.pop() },
+    (copy: SeasonCatalog) => { copy.items[1].asset = copy.items[1].id },
+    (copy: SeasonCatalog) => { copy.items[1].tint = [NaN, 0, 0] },
+    (copy: SeasonCatalog) => { copy.items[1].price.coins = 999 },
+    (copy: SeasonCatalog) => { copy.items[2].tint = copy.items[1].tint },
+  ]) {
+    const copy = structuredClone(season)
+    mutate(copy)
+    assert.throws(() => validateSeasonCatalog(copy), /catalog:/)
   }
 })

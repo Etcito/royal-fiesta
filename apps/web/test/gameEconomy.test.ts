@@ -140,25 +140,25 @@ test('a url authenticates as a guest with one 24-character token reused from the
   two.close()
 })
 
-test('normal offline guest owns the cheapest item per slot and can buy into its wardrobe', async () => {
+test('normal offline guest owns the three base items per slot and can buy into its wardrobe', async () => {
   const economy = createGameEconomy({ config, url: null, store: fakeStore() })
   const before = await economy.port.me()
   const { items } = await economy.port.catalog()
   assert.equal(before.coins, 500)
   assert.equal(before.tickets, 20)
-  assert.equal(before.owned.length, 4)
+  assert.equal(before.owned.length, 12)
   for (const slot of config.catalog.shop.slots) {
     const owned = items.filter(item => item.slot === slot && before.owned.includes(item.id))
-    assert.equal(owned.length, 1)
-    assert.equal(owned[0].price.coins, Math.min(...items.filter(item => item.slot === slot).map(item => item.price.coins ?? Infinity)))
+    assert.equal(owned.length, 3)
+    assert.ok(owned.every(item => item.id === item.asset))
   }
   const wardrobe = startScreen(before.owned, items, 0, { colour: 0, worn: {} })
-  for (const bin of wardrobe.bins) assert.equal(bin.items.length, 1)
+  for (const bin of wardrobe.bins) assert.equal(bin.items.length, 3)
   const available = items.filter(item => !before.owned.includes(item.id))
-  assert.equal(available.length, 8)
+  assert.equal(available.length, 24)
   for (const currency of ['coins', 'tickets'] as const) {
-    const item = available.find(item => item.price[currency] !== undefined && !before.owned.includes(item.id))!
     const wallet = await economy.port.me()
+    const item = available.find(item => item.price[currency] !== undefined && !wallet.owned.includes(item.id))!
     // Use the shop's confirmation path, with just this currency available.
     const shop = shopModel(items, { ...wallet, [currency === 'coins' ? 'tickets' : 'coins']: 0 })
     const row = shop.slots.findIndex(row => row.slot === item.slot)

@@ -27,6 +27,7 @@ export interface SeasonItem {
   rarity: Rarity
   asset: string
   price: { coins?: number; tickets?: number }
+  tint?: readonly [number, number, number]
   editionCap: number
 }
 
@@ -55,6 +56,7 @@ export function buildEconomyConfig(season: SeasonCatalog, bannedWords: readonly 
           slot: item.slot,
           rarity: item.rarity,
           asset: item.asset,
+          ...(item.tint === undefined ? {} : { tint: item.tint }),
           price: { ...item.price },
           edition_cap: item.editionCap,
         })),
@@ -80,8 +82,35 @@ export function buildEconomyConfig(season: SeasonCatalog, bannedWords: readonly 
 
 export type EconomyConfig = ReturnType<typeof buildEconomyConfig>
 
+/** Guard the published wardrobe: variants share a base mesh and carry only an instance tint. */
+export function validateSeasonCatalog(season: SeasonCatalog): void {
+  const ids = new Set(season.items.map(item => item.id))
+  if (ids.size !== 36 || season.items.length !== 36) throw new Error('catalog: expected 36 unique cosmetics')
+  for (const slot of SLOTS) {
+    const items = season.items.filter(item => item.slot === slot)
+    const bases = items.filter(item => item.id === item.asset)
+    if (items.length !== 9 || bases.length !== 3) throw new Error(`catalog: ${slot} needs 3 bases and 6 variants`)
+    for (const base of bases) {
+      const variants = items.filter(item => item.asset === base.id && item.id !== base.id)
+      if (base.tint !== undefined || variants.length !== 2) throw new Error(`catalog: ${base.id} needs two tinted variants`)
+      const colours = new Set<string>()
+      for (const variant of variants) {
+        if (!variant.id.startsWith(base.id + '.') || !variant.tint || variant.tint.length !== 3 ||
+          !variant.tint.every(value => Number.isFinite(value) && value >= 0 && value <= 1)) throw new Error(`catalog: invalid tint ${variant.id}`)
+        colours.add(variant.tint.join(','))
+        for (const currency of ['coins', 'tickets'] as const) {
+          if (variant.price[currency] !== undefined && (variant.price[currency]! > (base.price[currency] ?? -1))) throw new Error(`catalog: variant price exceeds base ${variant.id}`)
+        }
+      }
+      if (colours.size !== 2) throw new Error(`catalog: duplicate tints ${base.id}`)
+    }
+    if (items.some(item => !bases.some(base => base.id === item.asset))) throw new Error(`catalog: unknown base in ${slot}`)
+  }
+}
+
 export function generateEconomyConfig(root = ROOT): EconomyConfig {
   const season = JSON.parse(readFileSync(resolve(root, SOURCE_CATALOG), 'utf8')) as SeasonCatalog
+  validateSeasonCatalog(season)
   const bannedWords = JSON.parse(readFileSync(resolve(root, SOURCE_BANNED), 'utf8')) as string[]
   return buildEconomyConfig(season, bannedWords)
 }

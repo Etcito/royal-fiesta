@@ -2,6 +2,7 @@
 // captures the stage and UI composite, and proves each one reaches the stage port and changes the penguin.
 // It steps the App with a fixed dt and waits only on presentation callbacks; it never sleeps in real time.
 /// <reference types="vite/client" />
+import { cosmeticName } from '@royal-fiesta/game/flow/startScreen'
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { checkBoot, nextTask } from './boot.ts'
@@ -10,7 +11,8 @@ import economyDocText from '../../../../../economy/royal-fiesta.economy.json?raw
 
 export const name = 'wardrobe'
 
-const DT = 1 / 60
+// Input and draws still run at dt=0; freeze the hub simulation as well as its render clock.
+const DT = 0
 const WIDTH = 640
 const HEIGHT = 360
 const SLOTS = ['head', 'body', 'bottom', 'special'] as const
@@ -19,7 +21,7 @@ type Props = Record<string, WidgetProps>
 
 interface CatalogItem { id: string; name: string; slot: Slot; asset: string }
 interface Shot { composite: Blob; stage: Uint8ClampedArray }
-interface ItemResult { id: string; slot: Slot; registered: boolean; instance: boolean; differs: boolean; diffPixels: number }
+interface ItemResult { id: string; slot: Slot; registered: boolean; instance: boolean; differs: boolean; diffPixels: number; baseDiffPixels?: number; siblingDiffPixels?: number }
 interface AppInventory {
   screen: string
   ports: { inventory: { assets: string[]; instances: number } | null; inDom?: boolean; displayed?: boolean }[]
@@ -27,11 +29,6 @@ interface AppInventory {
 
 // The catalog the App's offline economy serves (economy/royal-fiesta.economy.json, built from catalog.season1.json).
 const CATALOG: readonly CatalogItem[] = (JSON.parse(economyDocText) as { catalog: { shop: { items: CatalogItem[] } } }).catalog.shop.items
-
-function itemName(id: string): string {
-  const name = id.slice(id.lastIndexOf('.') + 1).replace(/-/g, ' ')
-  return name.charAt(0).toUpperCase() + name.slice(1)
-}
 
 function fileOf(id: string): string {
   return `${id.replace(/[^a-z0-9._-]/gi, '-')}.png`
@@ -98,7 +95,7 @@ async function focusBin(game: TourGame, focus: Focus, read: () => Props, target:
   if (now >= 0 && now !== target) throw new Error(`the focus is on bin ${now} (${SLOTS[now]}), not on ${SLOTS[target]}`)
 }
 
-const MAX_CYCLES = 8
+const MAX_CYCLES = Math.max(...SLOTS.map(slot => CATALOG.filter(item => item.slot === slot).length)) + 1
 
 async function ensureNone(game: TourGame, focus: Focus, read: () => Props, slot: Slot, index: number): Promise<void> {
   await focusBin(game, focus, read, index)
@@ -111,7 +108,7 @@ async function ensureNone(game: TourGame, focus: Focus, read: () => Props, slot:
 
 async function select(game: TourGame, focus: Focus, read: () => Props, slot: Slot, index: number, item: CatalogItem): Promise<boolean> {
   await focusBin(game, focus, read, index)
-  const want = itemName(item.id)
+  const want = cosmeticName(item.id)
   for (let tries = 0; tries <= MAX_CYCLES; tries++) {
     if (binLabel(read(), slot) === want) return true
     await press(game, 'ArrowRight')
@@ -133,7 +130,7 @@ function stageCanvas(game: TourGame): HTMLCanvasElement {
 
 interface Box { x0: number; y0: number; x1: number; y1: number }
 
-// The start screen's camera (screens/startScreen.ts) projected around the penguin at the origin.
+// The start screen's camera projected around the penguin, including bottom-slot mounts below its origin.
 function characterBox(stage: HTMLCanvasElement, uiBox: DOMRect): Box {
   const aspect = stage.width / Math.max(1, stage.height)
   const eye = [0, 0.7, 4.8]
@@ -154,7 +151,7 @@ function characterBox(stage: HTMLCanvasElement, uiBox: DOMRect): Box {
   const width = rect.width * sx
   const height = rect.height * sy
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
-  for (const x of [-1, 1]) for (const y of [-0.3, 2.2]) for (const z of [-1, 1]) {
+  for (const x of [-1, 1]) for (const y of [-1.3, 2.2]) for (const z of [-1, 1]) {
     const rel = sub([x, y, z], eye)
     const depth = dot(rel, forward)
     const px = (dot(rel, right) / (depth * tanHalf * aspect) + 1) / 2
@@ -176,7 +173,7 @@ function diffPixels(a: Uint8ClampedArray, b: Uint8ClampedArray, box: Box): numbe
   for (let y = box.y0; y <= box.y1; y++) {
     for (let x = box.x0; x <= box.x1; x++) {
       const i = (y * WIDTH + x) * 4
-      if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) count++
+      if (Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2])) > 12) count++
     }
   }
   return count
@@ -242,6 +239,7 @@ async function holdClock(game: TourGame): Promise<() => void> {
   const real = performance.now.bind(performance)
   const now = real() + ENTER_JUMP_MS
   performance.now = () => now
+  game.step(3) // Finish UI entry transitions before freezing the simulation clock.
   await settle(game, 2)
   return () => { performance.now = real }
 }
@@ -391,11 +389,17 @@ export async function run(input: unknown, deps: TourDeps): Promise<{
         const registered = inventory.assets.has(item.id) || inventory.assets.has(item.asset)
         const instance = inventory.instances > bareInventory.instances
         const changed = diffPixels(bareShot.stage, shot.stage, box)
-        const differ = changed > 0
-        items.push({ id: item.id, slot: item.slot, registered, instance, differs: differ, diffPixels: changed })
+        const base = recorded.find(entry => entry.item.id === item.asset)
+        const tintPixels = base ? diffPixels(base.shot.stage, shot.stage, box) : undefined
+        if (base && tintPixels === 0) failures.push(`${item.id}: tint is identical to its base`)
+        const sibling = recorded.find(entry => entry.item.asset === item.asset && entry.item.id !== item.asset)
+        const siblingPixels = sibling ? diffPixels(sibling.shot.stage, shot.stage, box) : undefined
+        if (sibling && siblingPixels === 0) failures.push(`${item.id}: tint is identical to its sibling`)
+        const differ = changed > 0 && tintPixels !== 0 && siblingPixels !== 0
+        items.push({ id: item.id, slot: item.slot, registered, instance, differs: differ, diffPixels: changed, baseDiffPixels: tintPixels, siblingDiffPixels: siblingPixels })
         recorded.push({ item, shot })
         files.push({ name: fileOf(item.id), blob: shot.composite })
-        if (!named) failures.push(`${item.id}: bin-${bin.slot} never named ${itemName(item.id)}`)
+        if (!named) failures.push(`${item.id}: bin-${bin.slot} never named ${cosmeticName(item.id)}`)
         if (!registered) failures.push(`${item.id}: the stage port does not report ${item.asset} as a registered asset`)
         if (!instance) failures.push(`${item.id}: no instance was created (${inventory.instances} live, bare ${bareInventory.instances})`)
         if (!differ) failures.push(`${item.id}: the capture shows no pixel difference from the bare penguin inside the character rect`)
@@ -405,7 +409,10 @@ export async function run(input: unknown, deps: TourDeps): Promise<{
     // Control: the bare penguin again. Pixels that change with nothing worn are background motion, not a costume.
     for (const [other, otherBin] of bins.entries()) await ensureNone(live, focus, read, otherBin.slot, other)
     const controlTake = await shoot(live)
-    bare.controlPixels = diffPixels(bareShot.stage, (await controlTake.shot).stage, box)
+    const controlShot = await controlTake.shot
+    bare.controlPixels = diffPixels(bareShot.stage, controlShot.stage, box)
+    files.push({ name: 'control.png', blob: controlShot.composite })
+    if (bare.controlPixels !== 0) failures.push(`bare control moved: ${bare.controlPixels} pixels; costume differences are inconclusive`)
     files.push({ name: 'sheet.png', blob: await sheet(recorded) })
     return {
       json: { ok: failures.length === 0, items, failures, bare, screen: live.host.currentScreen(), transitions },

@@ -51,7 +51,7 @@ function asset(id: string): PrimsAsset {
   }
 }
 
-const ids = LOCAL_COSMETICS.map(item => item.id)
+const ids = ['costume.propeller-hat', 'costume.pineapple-suit', 'costume.fish-scarf']
 const mounts = new Map<string, Vec3T>(ids.map((id, i) => [id, [0.2 + i, 0.8 - i * 0.3, 0.1 + i]]))
 const skin: SkinnedAssetT = {
   rig: { name: 'test', bones: ['root', 'upper.l', 'upper.r', 'upperLeg.l', 'upperLeg.r', 'head'].map(name => ({ name, parent: null, rest: { t: [0, 0, 0], r: [0, 0, 0, 1], s: [1, 1, 1] } })) },
@@ -181,9 +181,9 @@ test('step notifications drive move/confirm cues and HUD selection uses swatch s
   assert.equal(s.menu()?.screen, 'start')
   assert.deepEqual(s.props()['palette-mark'], { visible: false })
   assert.deepEqual(s.props()['inbox-badge'], { text: { count: '2' }, visible: true })
-  assert.match(String(s.props()['bin-head'].text), /< Propeller hat >/)
-  assert.match(String(s.props()['bin-body'].text), /< Pineapple suit >/)
-  assert.match(String(s.props()['bin-bottom'].text), /< Fish scarf >/)
+  assert.match(String(s.props()['bin-head'].text), /< Propeller Hat >/)
+  assert.match(String(s.props()['bin-body'].text), /< Pineapple Suit >/)
+  assert.match(String(s.props()['bin-bottom'].text), /< Fish Scarf >/)
   view.update(model, null)
   assert.deepEqual(s.cues, [])
 
@@ -249,4 +249,33 @@ test('the start layer hides its instances and restores its environment independe
   assert.equal(s.port.render().visible, 1)
   assert.equal(s.port.lastEnvironment, otherEnvironment)
   other.port.destroyInstance(otherInstance)
+})
+
+test('all nine choices per slot wrap and variants reuse the base handle with their own instance tint', async () => {
+  const s = await setup()
+  const mounts = new Map(LOCAL_COSMETICS.map(item => [item.id, [0, 0, 0] as Vec3T]))
+  let model = startScreen(LOCAL_COSMETICS.map(item => item.id), LOCAL_COSMETICS, 0, { colour: 0, worn: {} })
+  const view = mountStartScreen(s.host, model, s.deps, { ...s.art, mounts })
+  for (let slot = 0; slot < 4; slot++) {
+    model.bin = slot
+    const bin = model.bins[slot]
+    assert.equal(bin.items.length, 9)
+    for (const id of bin.items) {
+      model = startStep(model, 'right').model
+      assert.equal(model.bins[slot].items[model.bins[slot].selected], id)
+      view.update(model, { action: 'right', effect: 'wear' })
+      const spec = LOCAL_COSMETICS.find(item => item.id === id)!
+      assert.deepEqual(s.port.created.at(-1)!.tint, spec.tint ?? null)
+      const previous = LOCAL_COSMETICS.filter(item => item.asset === spec.asset && item.id !== id)
+      if (spec.tint) assert.ok(previous.length === 2)
+    }
+    model = startStep(model, 'right').model
+    assert.equal(model.bins[slot].selected, -1)
+    view.update(model, { action: 'right', effect: 'wear' })
+    model = startStep(model, 'left').model
+    assert.equal(model.bins[slot].selected, 8)
+    model = startStep(model, 'right').model
+  }
+  assert.equal(s.port.registered.length, 13, 'one penguin and twelve meshes for all 36 choices')
+  view.unmount()
 })

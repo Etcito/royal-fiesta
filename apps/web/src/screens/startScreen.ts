@@ -1,3 +1,4 @@
+import { cosmeticOf, cosmeticName } from '@royal-fiesta/game/flow/startScreen'
 // The caller owns input and advances this view once per frame with the latest wardrobe model.
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
@@ -49,11 +50,6 @@ function focused(label: string, focus: boolean): string {
   return focus ? `> ${label} <` : label
 }
 
-function itemName(id: string | undefined): string {
-  if (id === undefined) return 'None'
-  const name = id.slice(id.lastIndexOf('.') + 1).replace(/-/g, ' ')
-  return name.charAt(0).toUpperCase() + name.slice(1)
-}
 
 function present(host: UaaHost, model: StartScreenModel): void {
   const menu: MenuModel = {
@@ -71,7 +67,7 @@ function present(host: UaaHost, model: StartScreenModel): void {
     'palette-mark': { visible: false },
   }
   model.bins.forEach((bin, index) => {
-    const label = `< ${itemName(bin.items[bin.selected])} >`
+    const label = `< ${cosmeticName(bin.items[bin.selected])} >`
     props[`bin-${bin.slot}`] = {
       text: focused(label, model.focus === 'bins' && model.bin === index), visible: true,
     }
@@ -118,14 +114,16 @@ export function mountStartScreen(
       if (id === undefined || worn.has(slot)) continue
       const mount = art.mounts.get(id)
       if (mount === undefined) continue
-      let asset = assets.get(id)
+      const cosmetic = cosmeticOf(id)
+      const assetId = cosmetic?.asset ?? id
+      let asset = assets.get(assetId)
       if (asset === undefined) {
         const costume = art.costume(id)
         if (costume === null) continue
-        asset = port.registerAsset(id, costume)
-        assets.set(id, asset)
+        asset = port.registerAsset(assetId, costume)
+        assets.set(assetId, asset)
       }
-      worn.set(slot, { id, instance: port.createInstance(asset, null), mount })
+      worn.set(slot, { id, instance: port.createInstance(asset, cosmetic?.tint ?? null), mount })
     }
     // The wardrobe has no simulation clock. Advance the shared penguin idle cycle on its view clock.
     if (art.skinned !== undefined && port.setPose !== undefined && port.registerSkinned !== undefined) {

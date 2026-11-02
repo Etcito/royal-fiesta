@@ -3,9 +3,11 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { assetDocumentText, assetFileText } from '../packages/game/src/gameAsset.ts'
+import { validateSeasonCatalog, type SeasonCatalog } from './economyConfig.ts'
 import { sharedMaterialIds, sharedNodeIds } from './nodeIds.ts'
 
 export type GuardRule =
+  | 'economy-catalog'
   | 'binary-ext'
   | 'nul-byte'
   | 'not-utf8'
@@ -355,6 +357,13 @@ export function checkPaths(root: string, files: readonly string[]): GuardViolati
       throw error
     }
     violations.push(...checkFile(file, bytes))
+  }
+  if (files.includes('economy/catalog.season1.json')) {
+    try {
+      validateSeasonCatalog(JSON.parse(readFileSync(path.join(root, 'economy/catalog.season1.json'), 'utf8')) as SeasonCatalog)
+    } catch (error) {
+      violations.push({ path: 'economy/catalog.season1.json', rule: 'economy-catalog', detail: String(error) })
+    }
   }
   violations.push(...costumeNodeIdViolations(root, files))
   return violations

@@ -18,6 +18,8 @@ import { browserAssetResolver, preloadAssets } from '../client/sources.ts'
 
 export interface ZoneNetSceneOptions {
   canvas: HTMLCanvasElement
+  /** Shared with the input owner; standalone zone viewers may own their camera. */
+  orbit?: OrbitCamera
   width?: number
   height?: number
   /** The resolved course the networked match plays. */
@@ -50,6 +52,7 @@ export interface PreparedZoneNetScene {
 
 export interface ZoneNetScene {
   /** Pass as farSink to createZoneMatch before it is constructed. */
+  readonly camera: SceneView['camera']
   readonly feed: FarFeed
   /** Refreshes the near adapter from the match, then the character scene. */
   update(match: ZoneMatch, alpha: number, dtS: number): void
@@ -96,7 +99,7 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
   bean: PrimsAsset, character: PrimsAsset, seatCount: number, localSeat: number): ZoneNetScene {
   const feed = new FarFeed()
   const adapter = new DomainSceneSim(options.course, seatCount)
-  const orbit = new OrbitCamera()
+  const orbit = options.orbit ?? new OrbitCamera()
   orbit.reset(0)
   const scene = new SceneView({
     port, viewport: 0, localPlayer: localSeat, assets, bean,
@@ -110,6 +113,7 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
 
   const render = (): void => { if (!disposed) renderFrame(port, () => port.render()) }
   return {
+    get camera() { return scene.camera },
     feed,
     update(match, alpha, dtS) {
       if (disposed) return

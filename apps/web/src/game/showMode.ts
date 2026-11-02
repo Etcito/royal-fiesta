@@ -1,3 +1,4 @@
+import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { MAX_PEERS } from '@gamesaloon/rollback/zones'
 import type { FarSink, Roster } from '@gamesaloon/rollback/zones'
@@ -30,6 +31,8 @@ const DEFAULT_INTERMISSION_MS = 12000
 
 export interface ShowModeOptions {
   R: RapierModule
+  /** The same camera that receives the App look inputs. */
+  orbit?: OrbitCamera
   views: HTMLElement
   seats: number
   seed: number
@@ -128,6 +131,8 @@ export class ShowMode {
   }
 
   private name(seat: number): string { return seat === 0 ? this.options.localName : `Bot ${seat}` }
+  get camera() { return this.scene?.camera ?? null }
+  get lookCanvas(): HTMLCanvasElement { return this.canvas }
   get failure(): string | null { return this.error }
   get finished(): boolean { return this.current?.finished ?? false }
   get models(): ShowFrame | null { return this.current }
@@ -219,7 +224,7 @@ export class ShowMode {
     try {
       const content = await zoneContent('sprint', round.plan.course.id)
       const prepared = await prepareZoneNetScene({
-        canvas: this.canvas, course: round.plan.course, createPort: content.createPort,
+        canvas: this.canvas, orbit: this.options.orbit, course: round.plan.course, createPort: content.createPort,
         assets: content.assets, bean: content.bean,
         character: content.character, skinned: content.skinned, dressing: content.dressing,
       })

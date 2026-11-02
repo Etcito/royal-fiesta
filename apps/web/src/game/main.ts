@@ -1482,7 +1482,7 @@ class App {
     })
     this.remapRoot.addEventListener('rf-remap-close', this.onRemapClose)
     // Clicking the (single) game canvas locks the pointer for the mouse look.
-    this.input = new GameInput(window, screens, () => (this.loaded?.canvases.length === 1 ? this.loaded.canvases[0] : null))
+    this.input = new GameInput(window, screens, () => this.mode instanceof ShowAdapter ? this.mode.show.lookCanvas : (this.loaded?.canvases.length === 1 ? this.loaded.canvases[0] : null))
     // Every device is polled once per frame; key events bubble from the focused element to the body.
     this.padStore = localPadMapStore(env.padStorage)
     this.devices = new InputDevices(document.body, () => navigator.getGamepads?.() ?? [], this.padStore, this.touch)
@@ -1520,6 +1520,7 @@ class App {
     startView: boolean
     sound: ReturnType<SoundDriver['inventory']>
     listeners: number
+    camera: { yaw: number; pitch: number; rendered: CameraPose | null }
   } {
     const loaded = this.loaded
     const local = this.mode instanceof LocalMode ? this.mode : this.preparedLocal
@@ -1541,6 +1542,7 @@ class App {
       startView: this.startView !== null,
       sound: this.sound.inventory(),
       listeners: this.lobbyListeners,
+      camera: { yaw: this.orbit.yaw, pitch: this.orbit.pitch, rendered: this.mode instanceof ShowAdapter ? this.mode.show.camera : null },
     }
   }
 
@@ -1986,7 +1988,7 @@ class App {
     this.setLayout(1)
     try {
       const show = await ShowMode.create({
-        R: loaded.R, views: this.views,
+        R: loaded.R, views: this.views, orbit: this.orbit,
         seats: intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60),
         seed: Date.now(), localName: q.name,
         voteMs: q.test ? TEST_VOTE_MS : undefined,

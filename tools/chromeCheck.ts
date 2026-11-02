@@ -28,10 +28,11 @@ export interface Report {
   error: string | undefined
   adapter: unknown
   software: boolean
+  progress?: { phase?: unknown; lastAwaitedStep?: unknown; awaitingSteps?: unknown; lastOperation?: unknown; sequence?: unknown; gpuDevices?: unknown; heap?: unknown; heartbeats?: unknown; lifecycle?: unknown; gpuLoss?: unknown; networkAwaiting?: unknown }
 }
 
 export type Mode = 'gpu' | 'software'
-type Failures = Partial<Pick<Report, 'pageErrors' | 'consoleErrors' | 'failedRequests' | 'error'>>
+type Failures = Partial<Pick<Report, 'pageErrors' | 'consoleErrors' | 'failedRequests' | 'error' | 'progress'>>
 
 export function gpuWaitSeconds(raw: string | undefined): number {
   if (raw === undefined || raw === '') return DEFAULT_GPU_WAIT_S
@@ -69,15 +70,44 @@ const DIAGNOSTICS = `window.__nmcCheck = { pageErrors: [], consoleErrors: [], fa
 const check = window.__nmcCheck;
 const describe = value => String(value?.stack ?? value?.message ?? value);
 let progress = window.__nmcGpuProgress;
+let phaseAt = Date.now();
+const traceGpuCalls = ${JSON.stringify(process.env.RF_TRACE_GPU === '1')};
+let lease;
+const gpuWaits = new Map();
+let nextGpuWait = 0;
+const deviceRecords = new WeakMap();
+const deviceRefs = [];
+window.__nmcDeviceSummary = () => {
+  if (!traceGpuCalls) return;
+  check.gpuDevices = deviceRefs.map(record => ({ label: record.label, destroyed: record.destroyed, alive: !!record.ref.deref(), lost: record.lost }));
+  const memory = performance.memory;
+  if (memory) check.heap = { used: memory.usedJSHeapSize, total: memory.totalJSHeapSize, limit: memory.jsHeapSizeLimit };
+};
+addEventListener('message', event => {
+  if (event.source === parent && event.data?.nmcGpu === true) lease = event.data.lease;
+}, true);
+const sendProgress = () => {
+  if (lease) parent.postMessage({ nmcGpuProgress: true, lease, progress: String(check.firstError ?? progress) + '; heartbeat ' + (check.heartbeats ?? 0) + ', quiet ms ' + (Date.now() - phaseAt) + (gpuWaits.size ? '; GPU awaiting: ' + [...gpuWaits.values()].join(', ') : '') + (check.networkAwaiting?.length ? '; network awaiting: ' + check.networkAwaiting.join(', ') : '') + (check.lifecycle?.length ? '; lifecycle: ' + JSON.stringify(check.lifecycle.at(-1)) : '') }, '*');
+};
 Object.defineProperty(window, '__nmcGpuProgress', {
   configurable: true,
   get: () => check.firstError ?? progress,
-  set: value => { progress = value },
+  set: value => { progress = value; phaseAt = Date.now(); sendProgress() },
 });
+if (typeof setInterval === 'function') setInterval(() => { check.heartbeats = (check.heartbeats ?? 0) + 1; window.__nmcDeviceSummary(); sendProgress() }, 1000);
+const lifecycle = event => {
+  const events = check.lifecycle ??= [];
+  events.push({ event: event.type, hidden: document.hidden, at: Date.now() });
+  if (events.length > 16) events.shift();
+  sendProgress();
+};
+for (const type of ['freeze', 'resume', 'visibilitychange']) document.addEventListener(type, lifecycle);
+for (const type of ['pagehide', 'pageshow', 'beforeunload']) addEventListener(type, lifecycle);
 const record = (kind, message) => {
   check[kind].push(message);
   if (!check.firstError) {
     check.firstError = kind + ': ' + message;
+    sendProgress();
   }
 };
 addEventListener("error", event => {
@@ -88,13 +118,93 @@ addEventListener("error", event => {
 addEventListener("unhandledrejection", event => record('pageErrors', describe(event.reason)));
 const reportError = console.error;
 console.error = (...args) => { record('consoleErrors', args.map(describe).join(" ")); reportError.apply(console, args) };
+if (traceGpuCalls) {
+const NativeFinalizationRegistry = window.FinalizationRegistry;
+if (NativeFinalizationRegistry) window.FinalizationRegistry = class extends NativeFinalizationRegistry {
+  constructor(callback) {
+    super(value => {
+      const before = progress;
+      check.lastFinalizer = callback.toString().slice(0, 180);
+      if (traceGpuCalls) { progress = String(before) + '; finalizer: ' + check.lastFinalizer; sendProgress() }
+      try { return callback(value) } finally { if (traceGpuCalls) { progress = before; sendProgress() } }
+    });
+  }
+};
+for (const type of ['GPUDevice', 'GPUQueue', 'GPUCanvasContext', 'GPUBuffer', 'GPUTexture', 'GPUCommandEncoder', 'GPURenderPassEncoder']) {
+  const prototype = window[type]?.prototype;
+  if (!prototype) continue;
+  for (const method of Object.getOwnPropertyNames(prototype)) {
+    if (method === 'constructor') continue;
+    const original = Object.getOwnPropertyDescriptor(prototype, method)?.value;
+    if (typeof original !== 'function') continue;
+    prototype[method] = function (...args) {
+      if (type === 'GPUDevice' && method === 'destroy') { const record = deviceRecords.get(this); if (record) record.destroyed = true }
+      check.lastOperation = type + '.' + method + (args[0]?.label ? ' ' + args[0].label : '');
+      const before = progress;
+      if (traceGpuCalls) { progress = String(before) + '; calling: ' + check.lastOperation; sendProgress() }
+      try { return original.apply(this, args) } finally { if (traceGpuCalls) { progress = before; sendProgress() } }
+    };
+  }
+}
+for (const [type, methods] of [
+  ['GPU', ['requestAdapter']], ['GPUAdapter', ['requestDevice']],
+  ['GPUDevice', ['createRenderPipelineAsync', 'createComputePipelineAsync', 'popErrorScope']],
+]) {
+  const prototype = window[type]?.prototype;
+  if (!prototype) continue;
+  for (const method of methods) {
+    const original = prototype[method];
+    if (typeof original !== 'function') continue;
+    prototype[method] = function (...args) {
+      const ticket = ++nextGpuWait;
+      gpuWaits.set(ticket, type + '.' + method + (args[0]?.label ? ' ' + args[0].label : ''));
+      check.gpuAwaiting = [...gpuWaits.values()];
+      if (traceGpuCalls || type !== 'GPUDevice') sendProgress();
+      const done = () => { gpuWaits.delete(ticket); check.gpuAwaiting = [...gpuWaits.values()]; if (traceGpuCalls || type !== 'GPUDevice') sendProgress() };
+      let result;
+      try { result = original.apply(this, args) } catch (error) { done(); throw error }
+      void result.then(value => {
+        if (type === 'GPUAdapter' && method === 'requestDevice') {
+          const record = { label: args[0]?.label ?? 'UI', destroyed: false, ref: new WeakRef(value) };
+          deviceRecords.set(value, record); deviceRefs.push(record);
+          void value.lost.then(info => {
+            record.lost = { reason: info.reason, message: info.message };
+            if (!record.destroyed && info.reason !== 'destroyed') check.gpuLoss = record.lost;
+            sendProgress();
+          });
+        }
+        done();
+      }, done);
+      return result;
+    };
+  }
+}
+}
 const originalFetch = window.fetch;
+const networkWaits = new Map();
+let nextNetworkWait = 0;
+const networkAwait = async (label, work) => {
+  const ticket = ++nextNetworkWait;
+  networkWaits.set(ticket, label);
+  check.networkAwaiting = [...networkWaits.values()];
+  sendProgress();
+  try { return await work() } finally {
+    networkWaits.delete(ticket);
+    check.networkAwaiting = [...networkWaits.values()];
+    sendProgress();
+  }
+};
 window.fetch = async (...args) => {
+  const url = String(args[0]);
   try {
-    const response = await originalFetch.apply(window, args);
+    const response = await networkAwait('fetch ' + url, () => originalFetch.apply(window, args));
     if (!response.ok) record('failedRequests', response.url + " HTTP " + response.status);
+    for (const method of ['text', 'arrayBuffer', 'blob', 'json']) {
+      const original = response[method].bind(response);
+      response[method] = () => networkAwait(method + ' ' + url, original);
+    }
     return response;
-  } catch (error) { record('failedRequests', String(args[0]) + " " + describe(error)); throw error }
+  } catch (error) { record('failedRequests', url + " " + describe(error)); throw error }
 };
 if (typeof XMLHttpRequest !== "undefined") {
   const open = XMLHttpRequest.prototype.open;
@@ -128,12 +238,17 @@ const install = () => {
   if (!ops || typeof ops[opName] !== 'function' || ops[opName].nmcCheckAdapter === true) return false
   const original = ops[opName]
   ops[opName] = Object.assign(async (input, files) => {
+    const check = window.__nmcCheck ??= {}
+    check.phase = opName + ': adapter probe'
+    check.lastAwaitedStep = 'adapter probe'
+    window.__nmcGpuProgress = check.phase
     const adapter = await navigator.gpu?.requestAdapter()
     if (!adapter) throw new Error('chromeCheck: no WebGPU adapter')
     const info = adapter.info ?? {}
     const software = adapter.isFallbackAdapter === true || info.isFallbackAdapter === true || /swiftshader/i.test([info.vendor, info.architecture, info.description].join(' '))
     const facts = { vendor: info.vendor ?? '', architecture: info.architecture ?? '', description: info.description ?? '', software }
     const result = await original(input, files)
+    window.__nmcDeviceSummary?.()
     const json = result && typeof result.json === 'object' && result.json !== null ? result.json : {}
     const chromeCheck = window.__nmcCheck ?? { pageErrors: [], consoleErrors: [], failedRequests: [] }
     return { ...result, json: { ...json, adapter: json.adapter ?? facts, software: typeof json.software === 'boolean' ? json.software : software, chromeCheck } }
@@ -205,6 +320,7 @@ export function makeReport(json: unknown, mode: Mode, failures: Failures = {}): 
   const software = mode === 'software' ? true : typeof out.software === 'boolean' ? out.software : objectOf(adapter).software === true
   return {
     json,
+    progress: failures.progress,
     pageErrors: failures.pageErrors ?? [],
     consoleErrors: failures.consoleErrors ?? [],
     failedRequests: failures.failedRequests ?? [],
@@ -223,7 +339,7 @@ export function takeCheckDiagnostics(json: unknown): { json: unknown; failures: 
   const { chromeCheck: _diagnostics, ...rest } = out
   return {
     json: rest,
-    failures: { pageErrors: list(found.pageErrors), consoleErrors: list(found.consoleErrors), failedRequests: list(found.failedRequests) },
+    failures: { pageErrors: list(found.pageErrors), consoleErrors: list(found.consoleErrors), failedRequests: list(found.failedRequests), progress: { phase: found.phase, lastAwaitedStep: found.lastAwaitedStep, awaitingSteps: found.awaitingSteps, lastOperation: found.lastOperation, sequence: found.sequence, gpuDevices: found.gpuDevices, heap: found.heap, heartbeats: found.heartbeats, lifecycle: found.lifecycle, gpuLoss: found.gpuLoss, networkAwaiting: found.networkAwaiting } },
   }
 }
 

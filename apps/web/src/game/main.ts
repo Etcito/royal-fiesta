@@ -1,3 +1,4 @@
+import { checkAwait, checkPhase } from './checkProgress.ts'
 // game.html entry: start -> lobby -> offline show -> start; course and network games keep their V1 flow.
 // The hub and its matches run in-page with bots, or on the relay when ?server= is given; ?clients=2..4 runs
 // that many piloted clients over a LoopbackRelay. Content comes from pickContent, input only from GameInput.
@@ -748,6 +749,7 @@ class LocalMode implements Mode {
   // Warms the menu behind a 1-seat match; enqueue reuses it only while the table still holds one seat.
   private prepareMatch(): void {
     const { ports } = this.c.loaded
+    checkPhase('local scene: build warmup match')
     const run = this.buildMatch(1)
     // Enter round zero and finish its intro before handing control to the local player.
     simStep(run.match, 'Round physics / bots / intro', () => {
@@ -1378,6 +1380,7 @@ class App {
   private emote = 0
   private stopLoop: (() => void) | null = null
   private disposed = false
+  private readonly errorEvents = new AbortController()
   // The HUD time bar's full length: the most round ticks left seen in the current round.
   private hudRound = -2
   private hudRoundTicks = 0
@@ -1492,6 +1495,15 @@ class App {
     // The local canvas follows #views when it is resized (S26): the CSS size and DPR reach port.resize.
     this.viewsObserver = new ResizeObserver(() => this.resizeViews())
     this.viewsObserver.observe(this.views)
+    this.observeErrors()
+  }
+
+  // These handlers retain the App, host and GPU device. They belong to this App,
+  // and must be removed before its resources are released or a new App takes the page.
+  private observeErrors(): void {
+    const signal = this.errorEvents.signal
+    window.addEventListener('error', e => this.fail(messageOf(e.error ?? e.message)), { signal })
+    window.addEventListener('unhandledrejection', e => this.fail(messageOf(e.reason)), { signal })
   }
 
   // ?course= skips the title: the load lands in the hub, which starts the round.
@@ -1550,6 +1562,7 @@ class App {
   }
 
   fail(message: string): void {
+    if (this.disposed) return
     // Whatever the error screen shows is also logged: a run that ends on it names its cause in the log.
     console.error(`[error-screen] ${message}`)
     this.lobbySoundOff = false
@@ -1611,6 +1624,7 @@ class App {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
+    this.errorEvents.abort()
     this.loadingOverlay.hide(true)
     this.stopRoundLoad?.()
     this.stopRoundLoad = null
@@ -1701,23 +1715,24 @@ class App {
       const content = pickContent(new URLSearchParams(this.search))
       boot.enter('physics (Rapier wasm)')
       wavedashProgress(0.03)
-      const R = await initRapier()
+      const R = await checkAwait('Rapier initialization', () => initRapier())
       boot.enter('content')
       let phase = ''
-      await content.load('sprint', progress => {
+      await checkAwait('boot content', () => content.load('sprint', progress => {
+        if (this.disposed) return
         if (progress.phase !== phase) boot.enter(`content: ${phase = progress.phase}`)
         wavedashProgress(bootFraction(progress))
         this.loadingOverlay.show(progress.label, progress.done, progress.total)
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
-      })
+      }))
       // ?course=<hub> opens the hub itself: the hub is the lobby, not a round (courseSetup refuses hubs).
       const picked = q.course === null ? null : content.course(q.course)
       const course = picked !== null && picked.kind === 'hub' ? null : picked
       this.loadingOverlay.show('Creating renderer')
       boot.enter('renderer')
       wavedashProgress(0.87)
-      const { ports, canvases } = await this.mountPorts(content, q)
+      const { ports, canvases } = await checkAwait('boot render ports', () => this.mountPorts(content, q))
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.
         for (const port of ports) port.dispose()
@@ -1726,6 +1741,7 @@ class App {
       }
       this.stopRoundLoad?.()
       this.stopRoundLoad = observeRoundLoad(label => {
+        checkPhase(`round load: ${label ?? 'ready'}`)
         this.roundLoading = label
         if (label !== null) {
           this.loadingOverlay.show(label)
@@ -1739,10 +1755,10 @@ class App {
         boot.enter('first frame (pipelines, capture)')
         wavedashProgress(0.93)
         this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) })
-        await this.preparedLocal.ready()
+        await checkAwait('local scene pipelines and capture', () => this.preparedLocal!.ready())
       }
       try {
-        await this.prepareStart(this.loaded)
+        await checkAwait('start menu content', () => this.prepareStart(this.loaded!))
       } catch (e) {
         console.warn('[start] view unavailable:', messageOf(e))
       }
@@ -2530,8 +2546,6 @@ async function start(
   if ((window as Window & { __nmcCheckTest?: boolean }).__nmcCheckTest) search.set('test', '1')
   const booted = new App(views, screens, host, `?${search}`, env)
   created = booted
-  window.addEventListener('error', e => booted.fail(messageOf(e.error ?? e.message)))
-  window.addEventListener('unhandledrejection', e => booted.fail(messageOf(e.reason)))
   booted.start()
   return { app: booted, host }
 }

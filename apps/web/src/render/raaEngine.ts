@@ -1,3 +1,4 @@
+import { checkAwait } from '../game/checkProgress.ts'
 // One RAA engine creation at a time per page. Two Engine.create calls in flight in the one wasm-bindgen
 // module (zoneLobbyPair mounts two lobbies concurrently) left the second engine's future unresolved after a
 // wasm-bindgen "closure invoked recursively or after being dropped" error: that lobby never finished its scene.
@@ -17,5 +18,8 @@ export function oneAtATime(): <T>(work: () => Promise<T>) => Promise<T> {
 const creation = oneAtATime()
 
 export function createRaaEngine(canvas: HTMLCanvasElement, options: EngineOptions): Promise<Engine> {
-  return creation(async () => (await loadRaa()).createEngine(canvas, options))
+  return checkAwait('RAA engine creation queue', () => creation(async () => {
+    const raa = await checkAwait('RAA wasm module', () => loadRaa())
+    return checkAwait('RAA createEngine', () => raa.createEngine(canvas, options))
+  }))
 }

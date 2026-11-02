@@ -113,8 +113,20 @@ test('prepareGpuCopy appends the op in the copy, leaves the source, and applies 
     assert.match(copied, /addEventListener\("error"/)
     const prelude = copied.match(/<script type="module" data-nmc-test-query>([\s\S]*?)<\/script>/)![1]
     const listeners: Record<string, (event: any) => void> = {}
-    const page: any = { fetch: async () => ({ ok: true }) }
-    runInNewContext(prelude, { window: page, console: { error() {} }, addEventListener: (name: string, fn: (event: any) => void) => { listeners[name] = fn } })
+    const messages: any[] = []
+    const parent = { postMessage: (message: any) => messages.push(message) }
+    const page: any = { fetch: async () => ({ ok: true }), GPUDevice: { prototype: {
+      createRenderPipeline() {
+        assert.match(messages.at(-1).progress, /calling: GPUDevice.createRenderPipeline test.pipeline/,
+          'publish the native call before entering it, without waiting for a timer')
+      },
+    } } }
+    runInNewContext(prelude.replace('const traceGpuCalls = false;', 'const traceGpuCalls = true;'), { window: page, parent, document: { addEventListener() {}, hidden: false }, console: { error() {} }, addEventListener: (name: string, fn: (event: any) => void) => { listeners[name] = fn } })
+    listeners.message({ source: parent, data: { nmcGpu: true, lease: 'test-lease' } })
+    page.__nmcGpuProgress = 'boot: UI renderer'
+    page.GPUDevice.prototype.createRenderPipeline({ label: 'test.pipeline' })
+    assert.equal(messages.at(-1).lease, 'test-lease')
+    assert.equal(page.__nmcCheck.lastOperation, 'GPUDevice.createRenderPipeline test.pipeline')
     const first = new Error('first page failure')
     listeners.error({ target: page, error: first })
     page.__nmcGpuProgress = 'later op progress'

@@ -1,3 +1,4 @@
+import { checkAwait, checkPhase } from '../game/checkProgress.ts'
 /// <reference types="vite/client" />
 // The game's uaa UI layer: a transparent premultiplied WebGPU canvas stacked above the RAA canvas.
 // It loads every ui/*.ui.json, ui/screens.ui-doc.json and the ui/fonts.json fonts, then drives a
@@ -150,13 +151,13 @@ async function requestDevice(): Promise<GpuDeviceLike> {
   if (gpu === undefined) throw new UaaError('GPU_UNAVAILABLE', '', 'WebGPU is not available: this browser exposes no navigator.gpu.')
   let adapter: GpuAdapterLike | null
   try {
-    adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' })
+    adapter = await checkAwait('UI GPU adapter', () => gpu.requestAdapter({ powerPreference: 'high-performance' }))
   } catch (e) {
     throw new UaaError('GPU_UNAVAILABLE', '', `WebGPU is not available: requestAdapter failed (${(e as Error).message}).`)
   }
   if (adapter === null) throw new UaaError('GPU_UNAVAILABLE', '', 'WebGPU is not available: no GPU adapter was returned.')
   try {
-    return await adapter.requestDevice()
+    return await checkAwait('UI GPU device', () => adapter!.requestDevice())
   } catch (e) {
     throw new UaaError('GPU_UNAVAILABLE', '', `WebGPU is not available: the GPU device could not be created (${(e as Error).message}).`)
   }
@@ -179,9 +180,9 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
   let doc: UiDoc
   let ui: Ui
   try {
-    renderer = await createWebGpuRenderer(canvas, { device: device as NonNullable<WebGpuRendererOptions['device']> })
+    renderer = await checkAwait('UI renderer', () => createWebGpuRenderer(canvas, { device: device as NonNullable<WebGpuRendererOptions['device']> }))
     renderer = withCapsuleButtons(renderer, () => ui.screen())
-    renderer = await withLogo(renderer, canvas, device as unknown as LogoDevice, { ...logo, format: logo.format as 'png' | 'svg' }, document.baseURI)
+    renderer = await checkAwait('UI logo', () => withLogo(renderer!, canvas, device as unknown as LogoDevice, { ...logo, format: logo.format as 'png' | 'svg' }, document.baseURI))
     const assets = loadAssets(uiAssetTexts())
     try {
       doc = loadUiDoc(JSON.parse(uiDocText()), assets)
@@ -190,7 +191,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
       throw inFile('ui/screens.ui-doc.json', e)
     }
     const fonts = createFontRegistry(fontEntries(uiFontsText(), document.baseURI))
-    await fonts.loadAll()
+    await checkAwait('UI fonts', () => fonts.loadAll())
     const viewport: Viewport = { width: o.width, height: o.height, pixelRatio: o.dpr, safeArea: o.safeArea ?? deviceSafeArea() }
     ui = createUi({ doc, assets, fonts, renderer, viewport, nowMs: performance.now() })
   } catch (e) {
@@ -234,8 +235,11 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     },
     frame(nowMs) {
       if (destroyed) return
+      checkPhase('UI update')
       ui.update(nowMs)
+      checkPhase('UI render')
       ui.render()
+      checkPhase('UI frame complete')
     },
     resize(width, height, ratio) {
       dpr = ratio

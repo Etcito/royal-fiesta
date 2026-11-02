@@ -9,6 +9,11 @@ const ops: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
 let game: Promise<unknown>
 for (const name of names) {
   ops[name] = async (...args) => {
+    const page = window as Window & { __nmcCheck?: Record<string, unknown>; __nmcGpuProgress?: string }
+    const check = page.__nmcCheck ??= {}
+    check.phase = `${name}: entry`
+    check.lastAwaitedStep = 'game module import'
+    page.__nmcGpuProgress = `${check.phase}; awaiting: game module import`
     await game
     const implementation = (window.nmcGpu!.ops as unknown as typeof ops)[name]
     if (implementation === ops[name]) throw new Error(`Game did not register ${name}`)

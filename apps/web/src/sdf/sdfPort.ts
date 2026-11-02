@@ -1,3 +1,4 @@
+import { checkAwait } from '../game/checkProgress.ts'
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the
 // MAMA workers already produced (one mesh per part, split by material) and the graph materials
 // compiled by @etcito/raa-sdfm's mapMaterial. The player colour (S23) reaches graph-mode materials
@@ -80,11 +81,11 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   if (!status.available) refuse(AREA, WHERE, status.reason)
   const port = new SdfRenderPort(meshed, failed)
   const start = performance.now()
-  await port.init(target)
+  await checkAwait('RAA port initialization', () => port.init(target))
   const end = performance.now()
   onTiming({ step: 'RAA engine init', start, end, ms: end - start })
   try {
-    await port.prepare(onProgress, onTiming)
+    await checkAwait('RAA mesh/material uploads', () => port.prepare(onProgress, onTiming))
     return port
   } catch (e) {
     port.dispose()
@@ -164,7 +165,7 @@ class SdfRenderPort implements ResizablePort {
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i]
       onProgress({ phase: 'upload', done: i, total: ids.length, label: `Uploading ${id}` })
-      await paintOrTimer()
+      await checkAwait(`upload paint: ${id}`, () => paintOrTimer())
       const start = performance.now()
       this.registerAsset(id, { id } as PrimsAsset)
       const end = performance.now()

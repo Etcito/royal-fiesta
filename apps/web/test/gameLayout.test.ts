@@ -79,6 +79,7 @@ test('local boot finishes pipeline warmup without animation callbacks, before ti
     require(id: string): unknown {
       if (id === '../render/asyncPipelines.ts') return { pendingPipelines: () => pending }
       if (id === '../content/roundOverlay.ts') return { roundOverlay: () => ({ hide() {} }) }
+      if (id === './checkProgress.ts') return { checkPhase() {}, checkAwait: (_step: string, work: () => Promise<unknown>) => work() }
       if (id === './ops.ts') return { installGameOps() {} }
       if (id.endsWith('.json?raw')) return { default: '{"screens":[]}' }
       return {}
@@ -130,6 +131,7 @@ test('wardrobe submits its scene before the UI frame, and a hidden lobby restore
     window: { location: { search: '?mode=ops' } },
     require(id: string): unknown {
       if (id === '../content/roundOverlay.ts') return { roundOverlay: () => ({ hide() {} }) }
+      if (id === './checkProgress.ts') return { checkPhase() {}, checkAwait: (_step: string, work: () => Promise<unknown>) => work() }
       if (id === './ops.ts') return { installGameOps() {} }
       if (id.endsWith('.json?raw')) return { default: '{"screens":[]}' }
       return {}

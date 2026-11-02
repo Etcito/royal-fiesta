@@ -1,3 +1,4 @@
+import { checkAwait } from '../game/checkProgress.ts'
 /// <reference types="vite/client" />
 // V1 data fetched from a content root, with bundled render stand-ins and course dressing.
 // Every import.meta.glob sits in a function body, so Node tests can import this module.
@@ -145,13 +146,14 @@ export interface V1Courses { courses: CourseV1[]; byId: ReadonlyMap<string, Cour
 
 export async function loadV1Courses(onProgress: (p: LoadProgress) => void, options?: ContentOptions, courseId?: string | readonly string[]): Promise<V1Courses> {
   const read = contentReader(options ?? {})
-  const index = await read('index.json') as ContentIndex
+  const index = await checkAwait('courses: index.json', () => read('index.json')) as ContentIndex
   const entries = index.courses.filter(entry => courseId === undefined || (typeof courseId === 'string' ? entry.id === courseId : courseId.includes(entry.id))).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
   const assets = browserGameAssets(options)
   const courses: CourseV1[] = []
   for (let i = 0; i < entries.length; i++) {
     const { path } = entries[i]
-    courses.push(await loadCourseV1(await read(path), path, assets))
+    const json = await checkAwait(`courses: read ${path}`, () => read(path))
+    courses.push(await checkAwait(`courses: parse ${path}`, () => loadCourseV1(json, path, assets)))
     onProgress({ phase: 'courses', done: i + 1, total: entries.length, label: path })
   }
   const assetIds = new Set<string>()

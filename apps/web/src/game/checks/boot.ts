@@ -1,3 +1,4 @@
+import { checkPhase, checkAwait } from '../checkProgress.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 
 export const name = 'checkBoot'
@@ -11,14 +12,15 @@ export const BOOT_REFUSAL = 'uiTour: the boot load is refused so the tour reache
 export function nextTask(): Promise<void> {
   return new Promise(resolve => {
     const channel = new MessageChannel()
-    channel.port1.onmessage = () => { channel.port1.close(); channel.port2.close(); resolve() }
+    channel.port1.onmessage = () => { checkPhase('yield: MessageChannel delivered'); channel.port1.close(); channel.port2.close(); resolve() }
+    checkPhase('yield: MessageChannel queued')
     channel.port2.postMessage(null)
   })
 }
 
 // The GPU client bridge names window.__nmcGpuProgress when a job times out, so a stuck check says where.
 export function publishPhase(text: string): void {
-  if (typeof window !== 'undefined') (window as Window & { __nmcGpuProgress?: string }).__nmcGpuProgress = text
+  checkPhase(text)
 }
 
 // Loading is asynchronous (fetches, workers and pipeline compilation), not simulated time.
@@ -31,10 +33,11 @@ export function yieldTask(screen: string): Promise<void> {
   const progress = typeof document === 'undefined' ? null : document.querySelector<HTMLElement>('#round-loading')
   if (screen === 'loading' && progress && !progress.hidden) {
     return new Promise(resolve => {
-      const done = (): void => { observer.disconnect(); clearTimeout(timer); resolve() }
-      const observer = new MutationObserver(done)
-      const timer = setTimeout(done, LOADING_POLL_MS)
+      const done = (reason: string): void => { checkPhase(`yield: loading ${reason}`); observer.disconnect(); clearTimeout(timer); resolve() }
+      const observer = new MutationObserver(() => done('mutation'))
+      const timer = setTimeout(() => done('timer'), LOADING_POLL_MS)
       observer.observe(progress, { attributes: true, childList: true, subtree: true, characterData: true })
+      checkPhase('yield: loading observer/timer armed')
     })
   }
   return nextTask()
@@ -79,7 +82,7 @@ export async function checkBoot(deps: TourDeps): Promise<{
     logError.apply(console, args)
   }
   try {
-    game = await deps.boot(e => { screen = e.to; transitions.push(e.to) })
+    game = await checkAwait('App boot / UI host', () => deps.boot(e => { screen = e.to; transitions.push(e.to) }))
     for (let frame = 0; frame < BOOT_FRAMES; frame++) {
       publishPhase(`boot: frame ${frame} on '${screen}'`)
       if (screen === 'start') return { game, json: { ok: true, screen, transitions } }

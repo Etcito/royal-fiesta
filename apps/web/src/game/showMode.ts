@@ -1,4 +1,5 @@
 import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
+import { checkAwait } from './checkProgress.ts'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { MAX_PEERS } from '@gamesaloon/rollback/zones'
 import type { FarSink, Roster } from '@gamesaloon/rollback/zones'
@@ -94,7 +95,7 @@ export class ShowMode {
         [peer, { cpuMs: 4, bandwidthKbps: 4096, latencyMs: 30, spareSlots: 3 }]))
       mode.loopback = new ZoneLoopback(peerCount, { seed: options.seed, rttMs: 0, jitterMs: 0, loss: 0 })
       mode.sampleTicks = peers.map(() => 0)
-      const content = await loadShowContent('sprint')
+      const content = await checkAwait('show course and zone content', () => loadShowContent('sprint'))
       const seats = Array.from({ length: options.seats }, (_, seat) => seat)
       mode.memories.push(...seats.map(() => newModeBotMemory()))
       const farSink = (peer: number): FarSink => ({
@@ -222,19 +223,19 @@ export class ShowMode {
   private async prepare(round: ZoneFullRound): Promise<void> {
     const index = round.plan.index
     try {
-      const content = await zoneContent('sprint', round.plan.course.id)
-      const prepared = await prepareZoneNetScene({
+      const content = await checkAwait(`round ${index}: content ${round.plan.course.id}`, () => zoneContent('sprint', round.plan.course.id))
+      const prepared = await checkAwait(`round ${index}: render port`, () => prepareZoneNetScene({
         canvas: this.canvas, orbit: this.options.orbit, course: round.plan.course, createPort: content.createPort,
         assets: content.assets, bean: content.bean,
         character: content.character, skinned: content.skinned, dressing: content.dressing,
-      })
+      }))
       if (this.disposed || this.error !== null || this.index !== index) { prepared.dispose(); return }
       const local = round.seatOf.indexOf(0)
       const scene = prepared.attach(round.seatOf.length, local >= 0 ? local : (round.localSeats[0] ?? 0))
       this.scene = scene
       // Mount the near scene before waiting for its animation assets.
       scene.update(round.match, 1, 0)
-      await scene.ready()
+      await checkAwait(`round ${index}: scene paint and animation`, () => scene.ready())
       if (!this.disposed && this.error === null && this.index === index) this.director?.worldReady(index)
     } catch (error) {
       if (!this.disposed && this.index === index) this.fail(error)

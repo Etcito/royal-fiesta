@@ -38,6 +38,7 @@ const exports = {} as { make(meshed: ReadonlyMap<string, unknown>): Port }
 runInNewContext(compiled, {
   HTMLCanvasElement: FakeCanvas, exports, Float32Array, Float64Array, Uint32Array, performance, setTimeout, clearTimeout, URLSearchParams,
   require(id: string): unknown {
+    if (id === '../game/checkProgress.ts') return { checkAwait: (_step: string, work: () => Promise<unknown>) => work() }
     if (id === '../render/raaEngine.ts') return { createRaaEngine: async () => initEngine }
     if (id === '../render/shaderCache.ts') return { installShaderCache() {} }
     if (id === './materialProgram.ts') return { materialProgram }

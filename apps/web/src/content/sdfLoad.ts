@@ -1,3 +1,4 @@
+import { checkAwait } from '../game/checkProgress.ts'
 // SDF content load: v1 courses, the asset set they need, meshed through the S16 cache, then the saved
 // .mesh file (S24), then MAMA workers.
 // Reads courses and builds meshes only; it never touches sim state (1.5).
@@ -88,9 +89,9 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     timeline.push(JSON.stringify({ step, start: previous, end, ms: end - previous }))
     previous = end
   }
-  const facade = await loadMamaFacade()
+  const facade = await checkAwait('content: MAMA facade', () => loadMamaFacade())
   mark('MAMA module')
-  const { courses, byId } = await loadV1Courses(onProgress, undefined, courseId)
+  const { courses, byId } = await checkAwait(`content: courses ${courseId ?? 'all'}`, () => loadV1Courses(onProgress, undefined, courseId))
 
   mark('Course and referenced asset load')
   const costumes = (await browserContentIndex()).assets.map(e => e.id).filter(id => id.startsWith('costume.'))
@@ -99,7 +100,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   const resolver = browserGameAssets()
   const assets: GameAsset[] = []
   for (let i = 0; i < ids.length; i++) {
-    assets.push((await resolver.resolve(ids[i])).asset)
+    assets.push((await checkAwait(`content: asset ${ids[i]}`, () => resolver.resolve(ids[i]))).asset)
     onProgress({ phase: 'assets', done: i + 1, total: ids.length, label: ids[i] })
   }
 
@@ -125,9 +126,9 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   }
   const misses: Promise<void>[] = []
   for (const a of assets) {
-    const key = await meshCacheKey(a, facade.mamaVersion, facade.raaSdfmVersion, sha256Hex)
+    const key = await checkAwait(`content: mesh key ${a.id}`, () => meshCacheKey(a, facade.mamaVersion, facade.raaSdfmVersion, sha256Hex))
     const request = meshRequestOf(a)
-    const hit = await c.get(key)
+    const hit = await checkAwait(`content: cache read ${a.id}`, () => c.get(key))
     if (hit !== null && meshHasParts(hit.value, request.parts)) {
       meshed.set(a.id, hit.value)
       source.set(a.id, hit.from)
@@ -137,7 +138,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     const meshPath = meshPaths.get(a.id)
     const load = async (): Promise<{ value: MeshedAsset; from: 'file' | 'server' | 'miss' }> => {
       if (meshPath !== undefined) {
-        const file = await fetchMeshFile(root + meshPath, key, a)
+        const file = await checkAwait(`content: saved mesh ${a.id}`, () => fetchMeshFile(root + meshPath, key, a))
         if (file !== null && meshHasParts(file, request.parts)) return { value: file, from: 'file' }
       }
       const server = await fetchServerMesh(browserContentRoot(), key, () => {
@@ -154,7 +155,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     }
     /* Local failures are checked only after the saved file, so an old browser timeout cannot hide a saved mesh. */
     const miss = load().then(async ({ value, from }) => {
-      await c.put(key, value)
+      await checkAwait(`content: cache write ${a.id}`, () => c.put(key, value))
       meshed.set(a.id, value)
       source.set(a.id, from)
       step(a.id)

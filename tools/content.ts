@@ -105,7 +105,7 @@ export function buildContentIndex(dir = contentDir()): ContentIndex {
   })
   for (const world of new Set(assets.map(a => a.world))) {
     for (const file of readdirSync(join(dir, 'assets', world)).sort()) {
-      if (file.startsWith('costume.') && file.endsWith('.thumb.avif')) thumbs.push({ map: file.slice(0, -'.thumb.avif'.length), path: `assets/${world}/${file}` })
+      if (file.endsWith('.thumb.avif')) thumbs.push({ map: file.slice(0, -'.thumb.avif'.length), path: `assets/${world}/${file}` })
     }
   }
   return { assets, courses, audio, thumbs }

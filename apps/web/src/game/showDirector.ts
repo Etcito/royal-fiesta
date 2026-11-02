@@ -46,9 +46,12 @@ export class ShowDirector {
   private elimination: ElimShowModel | null = null
   private endModel: EndScreenModel | null = null
   private label: ReturnType<typeof countdownAt>['label'] = null
+  private readonly voteMs: number
+  private ready = false
   private finished = false
 
-  constructor(port: ShowPort, info: ShowDirector['info'], names: (seat: number) => string, localSeat: number) {
+  constructor(port: ShowPort, info: ShowDirector['info'], names: (seat: number) => string, localSeat: number, voteMs = VOTE_MS) {
+    this.voteMs = voteMs
     this.port = port
     this.info = info
     this.names = names
@@ -56,7 +59,7 @@ export class ShowDirector {
   }
 
   worldReady(roundIndex: number): void {
-    if (this.phase === 'load' && this.index === roundIndex) this.enter('countdown')
+    if (this.phase === 'load' && this.index === roundIndex) this.ready = true
   }
 
   /** A pointer pick on a vote card: the same single send and cue as a confirm on that card. */
@@ -100,6 +103,11 @@ export class ShowDirector {
   step(action: Action | null, dtMs: number): ShowFrame {
     const sounds: string[] = []
     let dt = Number.isFinite(dtMs) ? Math.max(0, dtMs) : 0
+    if (this.phase === 'load' && this.ready) {
+      this.ready = false
+      this.enter('countdown')
+      dt = 0
+    }
     const presenting = ['results', 'elimShow', 'podium', 'end'].includes(this.phase)
     if (!presenting) {
       const rounds = this.port.show.rounds
@@ -124,7 +132,7 @@ export class ShowDirector {
       } else if (this.phase === 'vote' && this.port.candidates !== null && this.port.candidates !== this.offered) {
         this.offered = this.port.candidates
         this.voteModel = { candidates: this.offered.map(map => ({ map, ...this.info(map) })),
-          focus: 0, chosen: null, msLeft: VOTE_MS }
+          focus: 0, chosen: null, msLeft: this.voteMs }
         this.ms = 0
         dt = 0
       }
@@ -159,7 +167,7 @@ export class ShowDirector {
       this.label = countdown.label
       if (countdown.sound !== null) sounds.push(countdown.sound)
     }
-    const screen: GameScreen = this.phase === 'load' || this.phase === 'countdown' ? 'countdown'
+    const screen: GameScreen = this.phase === 'load' || this.phase === 'countdown' || (this.phase === 'vote' && this.voteModel === null) ? 'countdown'
       : this.phase === 'results' ? 'result' : this.phase === 'end' ? 'endScreen'
       : this.phase === 'round' ? (this.port.alive.includes(this.localSeat) ? 'round' : 'spectate') : this.phase
     return {

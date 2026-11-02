@@ -108,7 +108,7 @@ export class ShowMode {
         }, mode.loopback.transport(peer)))
       }
       mode.full = mode.fulls[0]
-      mode.director = new ShowDirector(mode.full, content.info, seat => mode.name(seat), 0)
+      mode.director = new ShowDirector(mode.full, content.info, seat => mode.name(seat), 0, options.voteMs ?? DEFAULT_VOTE_MS)
       mode.current = mode.director.step(null, 0)
     } catch (error) {
       mode.fail(error)

@@ -130,9 +130,9 @@ const STEP_S = 1 / 60
 const PLAYERS = 8
 // The podium screen returns to the hub by itself after this, or earlier with its button.
 const PODIUM_HOLD_S = 6
-// ?test=1: createZoneFullMatch plays the first candidate at voteMs 0 (its headless path) and accepts
-// an intermission of 0 ms, so a check steps the show without waiting in real time.
-const TEST_VOTE_MS = 0
+// ?test=1: keep an observable one-second vote, stepped without real-time waiting.
+// The network intermission still takes its minimum.
+const TEST_VOTE_MS = 1000
 const TEST_INTERMISSION_MS = 0
 
 function intParam(q: URLSearchParams, key: string, def: number, min: number, max: number): number {
@@ -869,7 +869,7 @@ class LocalMode implements Mode {
     let podium: readonly number[] | null = null
     if (run.singleRace) podium = this.over(run) ? run.order : null
     else if (view.phase >= Phase.podium) podium = view.podium
-    if (this.presenter.draw(run.match, this.over(run) ? 1 : alpha, f.dt, podium)) this.c.setLayout(1)
+    if (this.presenter.draw(run.match, this.over(run) ? 1 : alpha, f.paused ? 0 : f.dt, podium)) this.c.setLayout(1)
     return matchScreen(view, sim.character(0, this.cv).status, this.presenter.onPodium)
   }
 
@@ -1119,7 +1119,7 @@ class OnlineMode implements Mode {
     let screen: GameScreen = 'hub'
     if (match !== null) {
       const v = match.sim.phase(this.presenter.view)
-      this.presenter.draw(match.sim, match.session.smoother, 1, f.dt, v.phase >= Phase.podium ? v.podium : null)
+      this.presenter.draw(match.sim, match.session.smoother, 1, f.paused ? 0 : f.dt, v.phase >= Phase.podium ? v.podium : null)
       screen = matchScreen(v, match.sim.character(this.seat, this.cv).status, this.presenter.onPodium)
     } else if (inHub(flow.state)) {
       this.hubView.update(flow.hub.state(this.local), this.c.q.colour, flow.remotes(now), flow.hub.tick, f.dt, flow.hub.emote(now))
@@ -1972,7 +1972,6 @@ class App {
     this.releaseLobby()
     const load = this.showLoad
     this.setLayout(1)
-    this.run(this.nav.dispatch({ kind: 'game', screen: 'vote' }))
     try {
       const show = await ShowMode.create({
         R: loaded.R, views: this.views,
@@ -1984,6 +1983,7 @@ class App {
       if (this.disposed || load !== this.showLoad) { show.dispose(); return }
       if (show.failure !== null) { this.fail(show.failure); return }
       this.mode = new ShowAdapter(show, q.name, this.economy, q.test)
+      this.run(this.nav.dispatch({ kind: 'game', screen: 'vote' }))
       this.hudRound = -2
     } catch (e) {
       if (!this.disposed && load === this.showLoad) this.fail(messageOf(e))

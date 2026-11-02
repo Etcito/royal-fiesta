@@ -250,9 +250,10 @@ export async function main(argv: string[]): Promise<number> {
     const root = repoRoot()
     const input = JSON.parse(readFileSync(argv[0], 'utf8')) as ViewsInput
     if (input.format !== 'royal-fiesta.views-input') refuse(AREA, `${argv[0]}#/format`, 'not a views input; pass a proofs/cN/views.input.json file')
-    // NMC_GPU_URL, when nomorechat provides it, sends every render to the connected GPU client (a real GPU compiles the gbuffer
-    // shader in seconds). Blanking it forced the CPU rasteriser: a costumed penguin then compiled for minutes and failed the judge
-    // cards at sdfm's 240 s limit. Without a GPU host sdfm renders in Node, as before.
+    // A shader is never compiled on the CPU (owner rule 2026-11-02): every render goes to the connected GPU client (Chrome on
+    // Windows) through NMC_GPU_URL and waits its turn there. The first version of this tool blanked the variable, so costume
+    // renders compiled their gbuffer shader on a software rasteriser for minutes while a real GPU sat idle.
+    if (!process.env.NMC_GPU_URL) refuse(AREA, 'NMC_GPU_URL', 'no GPU client is configured: renders go through the Windows Chrome GPU client and never compile shaders on the CPU; run this check where nomorechat provides NMC_GPU_URL')
     const { createSdfm } = await sdfmApi(sdfmDir(root))
     let failed = 0
     for (const s of input.subjects) {

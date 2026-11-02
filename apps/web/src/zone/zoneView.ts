@@ -1,6 +1,6 @@
 // One page runs a whole zone match: every peer is an in-process createZoneMatch over a shared NetSim,
 // every local seat is driven by takeoverInput, and the viewed peer draws its own domains with SceneView.
-// Seats in other peers' domains come from the display-only FAR stream through FarFeed/FarRenderer.
+// Seats in other peers' domains come from the display-only FAR stream through FarFeed and share the same SceneView.
 import { NetSim } from '@gamesaloon/rollback'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { Roster } from '@gamesaloon/rollback/zones'
@@ -11,29 +11,22 @@ import { takeoverInput } from '@royal-fiesta/game/net/takeoverBot'
 import { createZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
 import type { ZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
 import { ZoneLoopback } from '@royal-fiesta/game/net/zoneLoopback'
-import { FarRenderer } from '@royal-fiesta/game/render/farRender'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
-import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
+import type { CostumeSet, SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { RenderPort, RenderTarget } from '@royal-fiesta/game/render/port'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
-import { CharMode } from '@royal-fiesta/sim/character/constants'
-import type { CharState } from '@royal-fiesta/sim/character/system'
-import type { ObstacleSpec, ProfileName, ResolvedCourse, SpawnPoint } from '@royal-fiesta/sim/course'
+import type { ProfileName, ResolvedCourse, SpawnPoint } from '@royal-fiesta/sim/course'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
-import type { PlayerInput } from '@royal-fiesta/sim/input'
-import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
-import { Phase } from '@royal-fiesta/sim/match/matchSim'
+import type { MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
-import { motionPose } from '@royal-fiesta/sim/obstacles/motion'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import type { BodyRef, MechEvent, MechItem } from '@royal-fiesta/sim/mechanismSpec'
-import type { Pose } from '@royal-fiesta/sim/vec'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { FiestaDomain } from '@royal-fiesta/sim/zones/fiestaDomain'
 import { browserAssetResolver, browserCourses, preloadAssets } from '../client/sources.ts'
+import { DomainSceneSim } from './domainSceneSim.ts'
 import { zoneContent } from './zoneContent.ts'
 import { discloseSeed, ZoneFeatures, ZoneFeatureAudio, zoneSlot } from './zoneLobbyPlay.ts'
 
@@ -69,10 +62,12 @@ export interface ZoneViewOptions {
   assets?: (name: string) => PrimsAsset
   /** The full normal-match character asset for SceneView. */
   character?: PrimsAsset
-  /** The asset FarRenderer draws (and SceneView's fallback); assets('bean') when absent. */
+  /** SceneView's fallback asset; assets('bean') when absent. */
   bean?: PrimsAsset
-  /** Normal-match skin and animation graph for the near characters. */
+  /** Normal-match skin and animation graph for all characters. */
   skinned?: SkinnedCharacter
+  costumes?: CostumeSet
+  wardrobe?: (player: number) => CostumeSet | null | undefined
   dressing?: CourseDressing
   /** Receives positional course-feature sounds; omitted sounds are drained and dropped. */
   courseAudio?: CourseAudio
@@ -164,122 +159,6 @@ function rosterOf(peers: number, seatsPerPeer: number): Roster {
     peersList.push({ peer, seats })
   }
   return { seatCount: peers * seatsPerPeer, peers: peersList, live: Array.from({ length: peers }, () => true) }
-}
-
-// SceneView reads a MatchSim-shaped view. This adapter maps roster seats onto the local peer's domains;
-// a seat in no local domain is parked, so SceneView hides it and FarRenderer draws it instead.
-class DomainSceneSim {
-  tick = 0
-  readonly setup: { playerCount: number }
-  private readonly courseData: ResolvedCourse
-  private readonly seatDomain: (FiestaDomain | undefined)[]
-  private readonly state: CharState = {
-    pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 },
-    mode: 0, grounded: false, groundObstacle: -1, knockbacks: 0, teleportTick: -1,
-  }
-  private reference: FiestaDomain | null = null
-
-  constructor(course: ResolvedCourse, seatCount: number) {
-    this.courseData = course
-    this.setup = { playerCount: seatCount }
-    this.seatDomain = new Array<FiestaDomain | undefined>(seatCount).fill(undefined)
-  }
-
-  refresh(domains: readonly FiestaDomain[], tick: number): void {
-    this.seatDomain.fill(undefined)
-    this.reference = null
-    for (let i = 0; i < domains.length; i++) {
-      const domain = domains[i]
-      if (this.reference === null) this.reference = domain
-      const seats = domain.seats
-      for (let s = 0; s < seats.length; s++) {
-        const seat = seats[s]
-        if (seat >= 0 && seat < this.seatDomain.length) this.seatDomain[seat] = domain
-      }
-    }
-    this.tick = tick
-  }
-
-  holdsSeat(seat: number): boolean {
-    return seat >= 0 && seat < this.seatDomain.length && this.seatDomain[seat] !== undefined
-  }
-
-  phase(out: MatchViewState): MatchViewState {
-    out.tick = this.tick
-    out.phase = Phase.playing
-    out.courseIndex = 0
-    return out
-  }
-
-  course(): ResolvedCourse {
-    return this.courseData
-  }
-
-  character(p: number, out: CharacterView): CharacterView {
-    const domain = this.seatDomain[p]
-    if (domain === undefined) {
-      out.pos.x = 0; out.pos.y = 0; out.pos.z = 0
-      out.vel.x = 0; out.vel.y = 0; out.vel.z = 0
-      out.facing.x = 0; out.facing.z = 1
-      out.mode = CharMode.parked
-      out.status = 0
-      out.parked = true
-      out.teleportTick = -1
-      return out
-    }
-    const state = domain.state(p, this.state)
-    out.pos.x = state.pos.x; out.pos.y = state.pos.y; out.pos.z = state.pos.z
-    out.vel.x = state.vel.x; out.vel.y = state.vel.y; out.vel.z = state.vel.z
-    out.facing.x = state.facing.x; out.facing.z = state.facing.z
-    out.mode = state.mode
-    out.status = domain.status(p)
-    out.parked = state.mode === CharMode.parked
-    out.teleportTick = state.teleportTick
-    return out
-  }
-
-  obstacleCount(): number {
-    return this.courseData.obstacles.length
-  }
-
-  obstacleSpec(i: number): ObstacleSpec {
-    return this.courseData.obstacles[i]
-  }
-
-  obstaclePose(i: number, out: Pose): Pose {
-    const domain = this.reference
-    if (domain === null) return motionPose(this.courseData.obstacles[i], 0, 0, out)
-    return domain.obstacles.pose(i, domain.tick, out)
-  }
-
-  // SceneView builds one instance per mechanism body from the item list (MatchSim has the same two calls).
-  mechanismItemCount(): number {
-    return this.reference?.mechanisms.spec()?.items.length ?? 0
-  }
-
-  mechanismItem(i: number): MechItem {
-    const item = this.reference?.mechanisms.spec()?.items[i]
-    if (item === undefined) throw new Error(`no mechanism item ${i}; pass a loaded item index`)
-    return item
-  }
-
-  mechanismBodyPose(ref: BodyRef, out: Pose): boolean {
-    const domain = this.reference
-    return domain !== null && domain.mechanisms.bodyPose(domain.ctx, ref, out)
-  }
-
-  mechanismEvents(fromTick: number, out: MechEvent[]): number {
-    const domain = this.reference
-    return domain === null ? 0 : domain.mechanisms.events(fromTick, out)
-  }
-
-  signal(id: string): boolean {
-    const domain = this.reference
-    return domain !== null && domain.mechLogic.signal(id)
-  }
-
-  // SceneView wraps step() to observe each simulation tick; the zone session steps its own domains.
-  step(_inputs: readonly PlayerInput[]): void {}
 }
 
 export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView> {
@@ -384,15 +263,13 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
   const scene = new SceneView({
     port, viewport: 0, localPlayer: roster.peers[localPeer].seats[0], assets, bean,
     character, skinned: options.skinned, dressing: options.dressing,
+    costumes: options.costumes, wardrobe: options.wardrobe,
     // An overview along the course keeps the whole foreground pack and downstream FAR rows visible.
     camera: (focus, dt, clip) => spread ? {
       eye: [course.path[0].p.x, course.path[0].p.y + 5, course.path[0].p.z - 9],
       target: [course.path[0].p.x, course.path[0].p.y, course.path[0].p.z + 12],
       fovYDeg: 52, near: 0.1, far: 500,
     } : orbit.pose(focus, dt, clip),
-  })
-  const far = new FarRenderer({
-    port, bean, feed, holdsLocalSeat: seat => adapter.holdsSeat(seat),
   })
 
   function frame(dtS: number): void {
@@ -404,12 +281,11 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
       if (peer === localPeer) alpha = a
     }
     const local = matches[localPeer]
-    adapter.refresh(local.domains, local.stats.tick)
+    adapter.refresh(local.domains, local.stats.tick, feed)
     const domain = domainOf(local, roster.peers[localPeer].seats[0]) ?? undefined
     features.update(domain)
     featureAudio.frame([domain])
     scene.update(adapter as unknown as MatchSim, null, alpha, dtS)
-    far.update(local.stats.tick)
   }
 
   return {
@@ -424,7 +300,6 @@ export async function mountZoneView(options: ZoneViewOptions): Promise<ZoneView>
       removeSeed()
       features.dispose()
       featureAudio.dispose()
-      far.dispose()
       scene.dispose()
       for (let i = 0; i < matches.length; i++) matches[i].dispose()
       matches.length = 0

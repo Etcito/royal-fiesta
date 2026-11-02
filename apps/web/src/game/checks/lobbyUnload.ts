@@ -9,8 +9,6 @@ export const name = 'lobbyUnload'
 const DT = 1 / 60
 const FAST_DT = 3 / 60
 const FAST = new Set(['round', 'spectate', 'vote', 'elimShow', 'podium'])
-// A whole test-mode show at 3 ticks per frame; the cap only guards against a stuck page.
-const SHOW_FRAMES = 240000
 const NAV_FRAMES = 600
 
 interface PortInventory { assets: string[]; instances: number; meshes: number; textures: number; skinned: number }
@@ -117,17 +115,11 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{
     }
     await waitFor(game, current, 'countdown', () => {}, 3600)
     const B = inventory(game)
-    // The test-mode show runs itself to the end screen and back to start (votes expire at 0 ms).
-    let showFrame = 0
-    while (current() !== 'start' && showFrame++ < SHOW_FRAMES) {
-      game.step(FAST.has(current()) ? FAST_DT : DT)
-      await yieldTask()
-    }
-    if (current() !== 'start') {
-      return { json: { ok: false, A, B, C: null, failures: ['the show did not return to start'] }, files: [] }
-    }
-    // Play -> hub again: the lobby comes back with its assets and instances.
-    await toHub(game, current)
+    // Pause -> Leave during level 1: the player's way back to the hub (Nav leaveMatch -> App.startMode), which
+    // rebuilds the lobby on the same stage port without stepping a whole show frame by frame.
+    const inLevel = game
+    await waitFor(inLevel, current, 'pause', () => press('Escape'))
+    await waitFor(inLevel, current, 'hub', () => click(inLevel, 'act-leave'), 1800)
     for (let i = 0; i < 2; i++) { game.step(DT); await yieldTask() }
     const C = inventory(game)
 

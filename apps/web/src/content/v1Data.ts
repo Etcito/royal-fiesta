@@ -22,6 +22,8 @@ export interface ContentIndexV1 {
   assets: { id: string; world: string; path: string; hash: string; mesh?: string }[]
   courses: { id: string; path: string }[]
   audio: { id: string; path: string }[]
+  // Level thumbnails tools/content.ts packs (thumbs/<map>.avif); an index without them has none.
+  thumbs?: { map: string; path: string }[]
 }
 export type ContentIndex = ContentIndexV1
 export interface ContentOptions { root?: string; fetch?: typeof fetch }

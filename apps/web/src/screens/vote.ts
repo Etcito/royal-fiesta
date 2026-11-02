@@ -6,7 +6,7 @@ import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { menuModel, type MenuCtx } from '@royal-fiesta/game/screens/menuModel'
 import { DEFAULT_SETTINGS } from '@royal-fiesta/game/screens/settings'
 import type { RoundKind } from '@royal-fiesta/sim/season/kinds'
-import { browserContentRoot } from '../content/v1Data.ts'
+import { browserContentIndex, browserContentRoot } from '../content/v1Data.ts'
 import type { WidgetProps } from '../ui/screenMap.ts'
 import type { UaaHost } from '../ui/uaaHost.ts'
 
@@ -101,10 +101,10 @@ function markOf(model: VoteModel): VoteMark {
   return { focus: model.focus, chosen: model.chosen, msLeft: model.msLeft }
 }
 
-// content/thumbs/<map>.avif under the same content root the meshes load from.
-function thumbUrl(map: string): string {
+// The thumbnail path index.json lists for the map, under the same content root the meshes load from.
+function thumbUrl(path: string): string {
   const root = browserContentRoot().replace(/\/?$/, '/')
-  return new URL(`thumbs/${encodeURIComponent(map)}.avif`, new URL(root, document.baseURI)).href
+  return new URL(path, new URL(root, document.baseURI)).href
 }
 
 let current: VoteView | null = null
@@ -116,6 +116,9 @@ export function mountVote(host: UaaHost, model: VoteModel, deps: FlowDeps): Vote
   const parent = typeof document === 'undefined' ? null : deps.parent ?? document.getElementById('screens') ?? document.body
   const images = new Map<number, HTMLImageElement>()
   const wanted = new Map<number, { map: string; name: string }>()
+  // Map -> thumbnail path from index.json; a map the index lists no thumbnail for gets no image request.
+  let listed: ReadonlyMap<string, string> | null = null
+  let latest = model
 
   function removeImage(slot: number): void {
     const img = images.get(slot)
@@ -134,6 +137,11 @@ export function mountVote(host: UaaHost, model: VoteModel, deps: FlowDeps): Vote
     for (const slot of [...images.keys()]) if (!wanted.has(slot)) removeImage(slot)
     if (parent === null) return
     for (const [slot, candidate] of wanted) {
+      const path = listed?.get(candidate.map)
+      if (path === undefined) {
+        removeImage(slot)
+        continue
+      }
       let img = images.get(slot)
       if (img === undefined) {
         img = document.createElement('img')
@@ -149,7 +157,7 @@ export function mountVote(host: UaaHost, model: VoteModel, deps: FlowDeps): Vote
       }
       if (img.dataset.map !== candidate.map) {
         img.dataset.map = candidate.map
-        img.src = thumbUrl(candidate.map)
+        img.src = thumbUrl(path)
       }
       img.alt = candidate.name
     }
@@ -185,6 +193,7 @@ export function mountVote(host: UaaHost, model: VoteModel, deps: FlowDeps): Vote
       if (cue !== null) deps.cue(cue)
       previous = markOf(next)
       host.setHud(voteProps(next))
+      latest = next
       syncImages(next)
       place()
     },
@@ -198,6 +207,14 @@ export function mountVote(host: UaaHost, model: VoteModel, deps: FlowDeps): Vote
   host.setHud(voteProps(model))
   syncImages(model)
   place()
+  if (parent !== null) {
+    browserContentIndex().then(index => {
+      listed = new Map((index.thumbs ?? []).map(thumb => [thumb.map, thumb.path]))
+      if (current !== view) return
+      syncImages(latest)
+      place()
+    }, e => console.warn('[vote] content index unavailable, no thumbnails:', e))
+  }
   return view
 }
 

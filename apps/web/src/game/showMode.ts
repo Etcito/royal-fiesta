@@ -1,14 +1,11 @@
 import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { checkAwait } from './checkProgress.ts'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
-import { MAX_PEERS } from '@gamesaloon/rollback/zones'
-import type { FarSink, Roster } from '@gamesaloon/rollback/zones'
 import type { ListenerPose } from '@royal-fiesta/game/audio/emitters'
 import { newModeBotMemory, modeBotInput } from '@royal-fiesta/game/net/modeBots'
-import { createZoneFullMatch } from '@royal-fiesta/game/net/zoneFullMatch'
+import { createOfflineFullMatch } from '@royal-fiesta/game/net/offlineFullMatch'
 import type { ZoneFullMatch, ZoneFullRound } from '@royal-fiesta/game/net/zoneFullMatch'
 import type { ZoneRoundResult } from '@royal-fiesta/game/net/zoneRounds'
-import { ZoneLoopback } from '@royal-fiesta/game/net/zoneLoopback'
 import type { Action, GameScreen } from '@royal-fiesta/game/screens/nav'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
@@ -26,7 +23,6 @@ import { ShowDirector } from './showDirector.ts'
 import type { ShowFrame } from './showDirector.ts'
 import { loadShowContent } from './showContent.ts'
 
-const SHOW_SEATS_PER_PEER = 4
 const DEFAULT_VOTE_MS = 5000
 const DEFAULT_INTERMISSION_MS = 12000
 
@@ -38,29 +34,25 @@ export interface ShowModeOptions {
   seats: number
   seed: number
   localName: string
-  /** The vote window of every round; createZoneFullMatch defaults it to 5000 ms. */
+  /** The vote window of every round; the match defaults it to 5000 ms. */
   voteMs?: number
-  /** The wait between rounds; createZoneFullMatch defaults it to 1500 ms, the show to 12000 ms. */
+  /** The wait between rounds; the match defaults it to 1500 ms, the show to 12000 ms. */
   intermissionMs?: number
 }
 
-/** Owns the offline transport, simulation and round canvas; the app owns the stage. */
+/** Owns the authoritative offline simulation and round canvas; the app owns the stage. */
 export class ShowMode {
   private full: ZoneFullMatch | null = null
-  private readonly fulls: ZoneFullMatch[] = []
-  private roster: Roster | null = null
   private director: ShowDirector | null = null
   private current: ShowFrame | null = null
   private scene: ZoneNetScene | null = null
   private index = -1
-  private viewPeer = 0
   private disposed = false
   private error: string | null = null
   private readonly canvas: HTMLCanvasElement
   private readonly stages: { canvas: HTMLCanvasElement; display: string }[]
-  private loopback: ZoneLoopback | null = null
   private readonly memories: ReturnType<typeof newModeBotMemory>[]
-  private sampleTicks: number[] = []
+  private sampleTick = 0
   private readonly options: ShowModeOptions
   private sounds: string[] = []
 
@@ -83,46 +75,16 @@ export class ShowMode {
       if (!Number.isInteger(options.seats) || options.seats < 2 || options.seats > 60) {
         refuse('game-web', 'showMode.seats', 'supply an integer from 2 to 60')
       }
-      const peerCount = Math.ceil(options.seats / SHOW_SEATS_PER_PEER)
-      if (peerCount > MAX_PEERS) {
-        refuse('game-web', 'showMode.seats', `${peerCount} peers exceed the ${MAX_PEERS} transport limit`)
-      }
-      const peers = Array.from({ length: peerCount }, (_, peer) => ({ peer, seats: [] as number[] }))
-      for (let seat = 0; seat < options.seats; seat++) peers[seat % peerCount].seats.push(seat)
-      const roster: Roster = { seatCount: options.seats, peers, live: peers.map(() => true) }
-      mode.roster = roster
-      const measurements = Object.fromEntries(peers.map(({ peer }) =>
-        [peer, { cpuMs: 4, bandwidthKbps: 4096, latencyMs: 30, spareSlots: 3 }]))
-      mode.loopback = new ZoneLoopback(peerCount, { seed: options.seed, rttMs: 0, jitterMs: 0, loss: 0 })
-      mode.sampleTicks = peers.map(() => 0)
       const content = await checkAwait('show course and zone content', () => loadShowContent('sprint'))
       const seats = Array.from({ length: options.seats }, (_, seat) => seat)
       mode.memories.push(...seats.map(() => newModeBotMemory()))
-      const farSink = (peer: number): FarSink => ({
-        far: (...args) => { if (mode.viewPeer === peer) mode.scene?.feed.far(...args) },
-        sleep: (...args) => { if (mode.viewPeer === peer) mode.scene?.feed.sleep(...args) },
+      mode.full = createOfflineFullMatch(options.R, {
+        seats: options.seats, seed: options.seed,
+        courses: content.courses, zones: content.zones, season: content.season, profile: 'sprint',
+        voteMs: options.voteMs ?? DEFAULT_VOTE_MS,
+        intermissionMs: options.intermissionMs ?? DEFAULT_INTERMISSION_MS,
       })
-      for (const { peer } of peers) {
-        mode.fulls.push(createZoneFullMatch(options.R, {
-          localPeer: peer, roster,
-          seed: options.seed, courses: content.courses, zones: content.zones, season: content.season,
-          profile: 'sprint',
-          voteMs: options.voteMs ?? DEFAULT_VOTE_MS,
-          intermissionMs: options.intermissionMs ?? DEFAULT_INTERMISSION_MS,
-          farSink: farSink(peer), measurements,
-        }, mode.loopback.transport(peer)))
-      }
-      mode.full = mode.fulls[0]
-      // Peer 0 retains the show ledger after elimination, but no longer owns a round.
-      // Presentation follows an active peer so later rounds remain watchable.
-      const presentation = new Proxy(mode.full, {
-        get(target, key) {
-          if (key === 'round') return mode.activeRound()
-          const value = Reflect.get(target, key, target)
-          return typeof value === 'function' ? value.bind(target) : value
-        },
-      })
-      mode.director = new ShowDirector(presentation, content.info, seat => mode.name(seat), 0, options.voteMs ?? DEFAULT_VOTE_MS,
+      mode.director = new ShowDirector(mode.full, content.info, seat => mode.name(seat), 0, options.voteMs ?? DEFAULT_VOTE_MS,
         PROFILES.sprint.introTicks * 1000 / 60)
       mode.current = mode.director.step(null, 0)
     } catch (error) {
@@ -161,10 +123,7 @@ export class ShowMode {
       this.sounds.push(...this.current.sounds)
       this.loadRound()
       if (!this.current.hold && !this.finished) {
-        this.loopback!.advance(dt * 1000)
-        for (let peer = 0; peer < this.fulls.length; peer++) {
-          this.fulls[peer].frame(dt, (round, out) => this.sample(peer, round, out, human))
-        }
+        this.full.frame(dt, (round, out) => this.sample(round, out, human))
         // Start loading on the vote result, before the next animation frame.
         if (this.activeRound() !== null && this.activeRound()!.plan.index !== this.index) {
           this.current = this.director.step(null, 0)
@@ -185,28 +144,20 @@ export class ShowMode {
     }
   }
 
-  private sample(peer: number, round: ZoneFullRound, out: PlayerInput[], human: PlayerInput): void {
+  private sample(round: ZoneFullRound, out: PlayerInput[], human: PlayerInput): void {
     for (let i = 0; i < round.localSeats.length; i++) {
       const seat = round.localSeats[i]
       const roomSeat = round.seatOf[seat]
       if (roomSeat === 0) { Object.assign(out[i], human); continue }
       const domain = round.match.domains.find(domain => domain.seats.includes(seat))
       if (domain === undefined) decodeInput(NEUTRAL_CODE, out[i])
-      else modeBotInput(domain, this.memories[roomSeat], seat, this.sampleTicks[peer], out[i])
+      else modeBotInput(domain, this.memories[roomSeat], seat, this.sampleTick, out[i])
     }
-    this.sampleTicks[peer]++
+    this.sampleTick++
   }
 
   private activeRound(): ZoneFullRound | null {
-    let selected: ZoneFullRound | null = null
-    for (let peer = 0; peer < this.fulls.length; peer++) {
-      const round = this.fulls[peer].round
-      if (round !== null && (selected === null || round.plan.index > selected.plan.index)) {
-        selected = round
-        this.viewPeer = peer
-      }
-    }
-    return selected
+    return this.full?.round ?? null
   }
 
   private loadRound(): void {
@@ -215,7 +166,7 @@ export class ShowMode {
     this.index = round.plan.index
     this.scene?.dispose()
     this.scene = null
-    this.sampleTicks.fill(0)
+    this.sampleTick = 0
     for (let i = 0; i < this.memories.length; i++) this.memories[i] = newModeBotMemory()
     void this.prepare(round)
   }
@@ -301,12 +252,8 @@ export class ShowMode {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
-    for (const full of this.fulls) full.dispose()
-    this.fulls.length = 0
+    this.full?.dispose()
     this.full = null
-    // ZoneLoopback has no dispose hook; kill its transports and release the network.
-    for (const peer of this.roster?.peers ?? []) this.loopback?.net.kill(peer.peer)
-    this.loopback = null
     this.scene?.dispose()
     this.scene = null
     this.canvas.remove()

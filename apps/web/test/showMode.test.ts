@@ -10,7 +10,7 @@ import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { ShowContent } from '../src/game/showContent.ts'
 
-// Replace only browser content/render boundaries; transport, full matches and bots are real.
+// Replace only browser content/render boundaries; the offline match and bots are real.
 const browser: {
   content?: ShowContent; ready: () => Promise<void>; disposed: number
   configs: { voteMs: number | undefined; intermissionMs: number | undefined }[]
@@ -19,7 +19,7 @@ const browser: {
 }
 Object.assign(globalThis, { __showModeTest: browser })
 // The real full match, wrapped so a test can see the config ShowMode hands it.
-const fullMatch = new URL('../../../packages/game/src/net/zoneFullMatch.ts', import.meta.url).href
+const fullMatch = new URL('../../../packages/game/src/net/offlineFullMatch.ts', import.meta.url).href
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (context.parentURL?.endsWith('/game/showMode.ts')) {
@@ -31,10 +31,10 @@ const hooks = registerHooks({
             ready: () => globalThis.__showModeTest.ready(),
             dispose: () => { globalThis.__showModeTest.disposed++ } }), dispose() {}
         })`,
-        '@royal-fiesta/game/net/zoneFullMatch': `import * as real from ${JSON.stringify(fullMatch)}
-export const createZoneFullMatch = (R, cfg, net) => {
+        '@royal-fiesta/game/net/offlineFullMatch': `import * as real from ${JSON.stringify(fullMatch)}
+export const createOfflineFullMatch = (R, cfg) => {
   globalThis.__showModeTest.configs.push({ voteMs: cfg.voteMs, intermissionMs: cfg.intermissionMs })
-  return real.createZoneFullMatch(R, cfg, net)
+  return real.createOfflineFullMatch(R, cfg)
 }`,
       }
       if (stubs[specifier]) return { url: `data:text/javascript,${encodeURIComponent(stubs[specifier])}`, shortCircuit: true }
@@ -76,18 +76,18 @@ function neutralInput() {
   return human
 }
 
-test('60-seat show builds 15 peers with at most four seats, preserving human seat 0', async () => {
-  const mode = await ShowMode.create(options(60))
+test('60-seat offline show owns one world for all inputs and no rollback', async () => {
+  const mode = await ShowMode.create({ ...options(60), voteMs: 0 })
   try {
     assert.equal(mode.failure, null)
-    const roster = mode['roster']!
-    assert.equal(roster.peers.length, 15)
-    assert.ok(roster.peers.every(peer => peer.seats.length <= 4))
-    assert.deepEqual(roster.peers[0].seats, [0, 15, 30, 45])
-    assert.equal(new Set(roster.peers.flatMap(peer => peer.seats)).size, 60)
-    assert.equal(mode['fulls'].length, 15)
+    const round = mode['full']!.round!
+    assert.equal(round.match.worlds, 1)
+    assert.equal(round.match.domains.length, 1)
+    assert.equal(round.localSeats.length, 60)
+    assert.deepEqual(round.seatOf, Array.from({ length: 60 }, (_, i) => i))
+    assert.equal(round.match.stats.rollbacks, 0)
+    assert.equal(round.match.stats.resimTicks, 0)
   } finally { mode.dispose() }
-  assert.equal(mode['loopback'], null)
 })
 
 test('default 12-seat show holds for loading then plays to its first result without refusal', async () => {
@@ -104,9 +104,9 @@ test('default 12-seat show holds for loading then plays to its first result with
     await new Promise<void>(resolve => setImmediate(resolve))
     assert.equal(mode.screen(), 'countdown')
     assert.equal(mode.models?.hold, true)
-    const clock = mode['loopback']!.now()
+    const clock = mode['full']!.round!.match.stats.tick
     mode.frame(10, null, human)
-    assert.equal(mode['loopback']!.now(), clock)
+    assert.equal(mode['full']!.round!.match.stats.tick, clock)
     release()
     await new Promise<void>(resolve => setImmediate(resolve))
     mode.frame(0, null, human)
@@ -126,7 +126,7 @@ test('default 12-seat show holds for loading then plays to its first result with
   assert.ok(browser.disposed > 0)
 })
 
-test('voteMs and intermissionMs reach createZoneFullMatch, and voteMs sets the stepped vote window', async () => {
+test('voteMs and intermissionMs reach createOfflineFullMatch, and voteMs sets the stepped vote window', async () => {
   browser.configs.length = 0
   const mode = await ShowMode.create({ ...options(), voteMs: 250, intermissionMs: 75 })
   const human = neutralInput()
@@ -134,7 +134,7 @@ test('voteMs and intermissionMs reach createZoneFullMatch, and voteMs sets the s
     assert.equal(mode.failure, null)
     assert.equal(mode.screen(), 'vote')
     const expected = { voteMs: 250, intermissionMs: 75 }
-    assert.deepEqual(browser.configs, [expected, expected, expected])
+    assert.deepEqual(browser.configs, [expected])
     mode.frame(0.1, null, human)
     mode.frame(0.1, null, human)
     assert.equal(mode.screen(), 'vote', '200 ms of stepped time is inside the 250 ms vote')
@@ -150,7 +150,7 @@ test('without voteMs or intermissionMs the show keeps 5000 ms and 12000 ms', asy
   try {
     assert.equal(mode.failure, null)
     const expected = { voteMs: 5000, intermissionMs: 12000 }
-    assert.deepEqual(browser.configs, [expected, expected, expected])
+    assert.deepEqual(browser.configs, [expected])
     for (let frame = 0; frame < 49; frame++) mode.frame(0.1, null, human)
     assert.equal(mode.screen(), 'vote', '4900 ms of stepped time is inside the default vote')
     mode.frame(0.1, null, human)
@@ -172,7 +172,7 @@ test('a full offline show retains early world readiness through results and reac
     }
     assert.equal(mode.failure, null)
     assert.ok(mode.finished, JSON.stringify({ screen: mode.screen(), models: mode.models, index: mode['index'],
-      peers: mode['fulls'].map(full => ({ done: full.done, alive: full.alive, round: full.round?.plan.index, results: full.show.rounds.length, candidates: full.candidates })) }))
+      peers: [mode['full']!].map(full => ({ done: full.done, alive: full.alive, round: full.round?.plan.index, results: full.show.rounds.length, candidates: full.candidates })) }))
     for (const result of mode.results()) assert.ok(loaded.has(result.index), `round ${result.index} finished without a spectator scene`)
     assert.ok(visited.has('podium'))
     assert.ok(visited.has('endScreen'))

@@ -381,7 +381,7 @@
       "adjacent": [2]
     }
   ],
-  "timeLimitS": 30,
+  "timeLimitS": 45,
   "mechanisms": {
     "animations": [
       {

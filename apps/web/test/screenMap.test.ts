@@ -1,3 +1,6 @@
+import { roundTicks } from '@royal-fiesta/sim/match/rules'
+import { PROFILES } from '@royal-fiesta/sim/match/setup'
+import { levelOf, type ResolvedCourse } from '@royal-fiesta/sim/course'
 // The screen-to-uaa mapping against the real ui/screens.ui-doc.json: every produced id exists
 // in the doc, and the action round-trip holds.
 import assert from 'node:assert/strict'
@@ -84,4 +87,13 @@ test('hudProps: round kind, timer, time bar, qualified, alive', () => {
   assert.equal(p['hud-time-bar'].value, 0.5)
   assert.equal(p['hud-alive'].text, 'Alive 5')
   assert.match(String(p['hud-qualified'].text), /^Qualified 1 \/ 3$/)
+})
+
+test('HUD time bar uses the authored level duration beyond 20 seconds', () => {
+  const course = { kind: 'race', timeLimitS: 120, checkpoints: [] } as unknown as ResolvedCourse
+  course.level = { ...levelOf(course), timeCapTicks: 330 * 60 }
+  const duration = roundTicks(course, PROFILES.sprint)
+  const state = { phase: 'playing', roundIndex: 0, kind: 'race', final: false, courseIndex: 0,
+    roundTicksLeft: duration * 0.6, alive: 5, target: 3, qualifiedCount: 1, winner: -1, podium: [] } as const
+  assert.equal(hudProps({ ...state, podium: [] }, ['A'], 0, duration)['hud-time-bar'].value, 0.6)
 })

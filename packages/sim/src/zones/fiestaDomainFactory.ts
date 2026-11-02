@@ -7,7 +7,6 @@ import type {
 import { CHAR } from '../character/constants.ts'
 import { CharacterSystem, characterBody } from '../character/system.ts'
 import type { ResolvedCourse } from '../course.ts'
-import { levelOf } from '../course.ts'
 import { G, groups } from '../groups.ts'
 import type { PlayerInput } from '../input.ts'
 import { planRound, roundTicks } from '../match/rules.ts'
@@ -78,7 +77,7 @@ export function createFiestaDomainFactory(
     teams: slot ? slot.teams : null,
     openingRanks: slot?.openingRanks ?? null,
     introTicks: config.profile.introTicks,
-    roundTicks: Math.min(levelOf(config.course).timeCapTicks, roundTicks(config.course, config.profile)),
+    roundTicks: roundTicks(config.course, config.profile),
   }
   const domainConfig = (placeSeats: boolean): FiestaDomainConfig => ({
     course: config.course,

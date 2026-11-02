@@ -136,7 +136,7 @@ export function parseLevelBlock(json: unknown, path: string, course: LevelCourse
   return {
     season: o.season === null ? null : str(o.season, `${p}/season`),
     map: o.map === null ? null : str(o.map, `${p}/map`), kind, finalRule, stages, capacity, usual, quota,
-    timeCapTicks: ticks(o.timeCapS, `${p}/timeCapS`, false), overtimeTicks: ticks(o.overtimeS, `${p}/overtimeS`, true),
+    timeCapTicks: ticks(num(o.timeCapS === undefined ? (survival ? 90 : 120) : o.timeCapS, `${p}/timeCapS`, 10, 600), `${p}/timeCapS`, false), overtimeTicks: ticks(o.overtimeS, `${p}/overtimeS`, true),
     respawn, route, teams, homes, groups,
     grab: { players: grab.players === undefined ? !survival : bool(grab.players, `${p}/grab/players`), objects: grab.objects === undefined ? true : bool(grab.objects, `${p}/grab/objects`) },
   }

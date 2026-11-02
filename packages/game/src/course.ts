@@ -235,7 +235,8 @@ export async function loadCourse(json: unknown, path: string, assets: AssetResol
     profiles.push(value as ProfileName)
   }
   if (root.assetsManifest !== null && (typeof root.assetsManifest !== 'string' || !SHA256.test(root.assetsManifest))) fail(path, '#/assetsManifest', 'must be null or 64 lowercase hexadecimal characters; provide a manifest hash or null')
-  const timeLimitS = posNum(root.timeLimitS, path, '#/timeLimitS')
+  const timeLimitS = posNum(root.timeLimitS === undefined ? (kind === 'race' ? 120 : kind === 'survival' ? 90 : 600) : root.timeLimitS, path, '#/timeLimitS')
+  if (timeLimitS < 10 || timeLimitS > 600) fail(path, '#/timeLimitS', 'must be in 10..600 seconds; use a number in that range')
   const killPlaneY = finiteNum(root.killPlaneY, path, '#/killPlaneY')
   if (!Array.isArray(root.spawns)) fail(path, '#/spawns', 'must be an array; add spawn points')
   const spawns = root.spawns.map((v, i) => spawn(v, path, `#/spawns/${i}`))

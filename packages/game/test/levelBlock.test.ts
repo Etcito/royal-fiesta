@@ -288,3 +288,14 @@ test('invalid level fixtures refuse through the loader (or the parser before the
   await fixtureRefusal('bad-level-route.course.json', '#/level/route/stages/2')
   await fixtureRefusal('bad-level-group.course.json', '#/level/groups/1/members/0')
 })
+
+test('level duration accepts 10..600 seconds and defaults by kind', () => {
+  for (const seconds of [10, 10.5, 600]) {
+    assert.equal(parseLevelBlock(levelJson({ timeCapS: seconds }), PATH, COURSE).timeCapTicks, Math.round(seconds * 60))
+  }
+  for (const seconds of [0, 9.99, 600.01, -1, NaN, Infinity, '120', null]) {
+    assert.throws(() => parseLevelBlock(levelJson({ timeCapS: seconds }), PATH, COURSE))
+  }
+  assert.equal(parseLevelBlock(levelJson({ timeCapS: undefined }), PATH, COURSE).timeCapTicks, 7200)
+  assert.equal(parseLevelBlock(levelJson({ kind: 'survival', timeCapS: undefined, respawn: { mode: 'none', waitS: 0, protectS: 0, slots: 1, spacingM: 1 } }), PATH, COURSE).timeCapTicks, 5400)
+})

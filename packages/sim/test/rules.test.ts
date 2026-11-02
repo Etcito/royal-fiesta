@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Rng, fnv1a32 } from '@gamesaloon/rollback'
-import type { CourseKind, ProfileName, ResolvedCourse } from '../src/course.ts'
+import { levelOf, type CourseKind, type ProfileName, type ResolvedCourse } from '../src/course.ts'
 import { coursePool, pickCourse, planRound, qualifyTarget, roundTicks } from '../src/match/rules.ts'
 import { PROFILES, setupHash, validateSetup } from '../src/match/setup.ts'
 import type { MatchSetup } from '../src/match/setup.ts'
@@ -39,11 +39,18 @@ test('planRound chains 8->5->3->1 and 4->2->1', () => {
   assert.deepEqual(planRound(1, 2), { index: 1, kind: 'survival', final: true, target: 1 })
 })
 
-test('roundTicks applies the profile cap', () => {
-  assert.equal(roundTicks(course('r', 'race', ['sprint'], 120), PROFILES.sprint), 1200)
+test('roundTicks respects authored duration in every profile', () => {
+  assert.equal(roundTicks(course('r', 'race', ['sprint'], 120), PROFILES.sprint), 7200)
   assert.equal(roundTicks(course('r', 'race', ['sprint'], 15), PROFILES.sprint), 900)
   assert.equal(roundTicks(course('r', 'race', ['standard'], 120), PROFILES.standard), 7200)
   assert.equal(roundTicks(course('r', 'race', ['standard'], 0.5), PROFILES.standard), 30)
+})
+
+test('roundTicks uses the level block over legacy timeLimitS', () => {
+  const c = course('r', 'race', ['sprint'], 15)
+  c.level = { ...levelOf(c), timeCapTicks: 18000 }
+  assert.equal(roundTicks(c, PROFILES.sprint), 18000)
+  assert.equal(roundTicks(c, PROFILES.standard), 18000)
 })
 
 test('profiles hold the contract values', () => {

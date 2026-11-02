@@ -1,5 +1,5 @@
 import type { Rng } from '@gamesaloon/rollback'
-import type { ProfileName, ResolvedCourse } from '../course.ts'
+import { levelOf, type ProfileName, type ResolvedCourse } from '../course.ts'
 import type { MatchProfile } from './setup.ts'
 
 export interface RoundPlan { index: number; kind: 'race' | 'survival'; final: boolean; target: number }
@@ -14,9 +14,9 @@ export function planRound(index: number, alive: number): RoundPlan {
   return { index, kind: index % 2 === 0 ? 'race' : 'survival', final: false, target: qualifyTarget(alive) }
 }
 
-export function roundTicks(course: ResolvedCourse, profile: MatchProfile): number {
-  const cap = profile.timeCapS ?? Infinity
-  return Math.round(Math.min(course.timeLimitS, cap) * 60)
+export function roundTicks(course: ResolvedCourse, _profile: MatchProfile): number {
+  // The authored level owns its duration; sprint only changes transitions.
+  return levelOf(course).timeCapTicks
 }
 
 export function coursePool(courses: readonly ResolvedCourse[], kind: 'race' | 'survival', profile: ProfileName): number[] {

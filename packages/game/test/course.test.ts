@@ -201,3 +201,16 @@ test('the invalid course fixtures each refuse with a file#pointer', async () => 
     })
   }
 })
+
+test('course time accepts 10..600 seconds, rejects invalid values and defaults by kind', async () => {
+  for (const timeLimitS of [10, 10.5, 600]) {
+    const c = await loadCourse({ ...baseCourse(), timeLimitS }, FILE, resolver())
+    assert.equal(c.timeLimitS, timeLimitS)
+  }
+  for (const timeLimitS of [0, 9.9, 600.1, -1, NaN, Infinity, null, '120']) {
+    await refused(loadCourse({ ...baseCourse(), timeLimitS }, FILE, resolver()), '#/timeLimitS')
+  }
+  const c = baseCourse()
+  delete c.timeLimitS
+  assert.equal((await loadCourse(c, FILE, resolver())).timeLimitS, 120)
+})

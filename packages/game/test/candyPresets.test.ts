@@ -1,3 +1,4 @@
+import { levelOf } from '@royal-fiesta/sim/course'
 // The candy-patches migration: every former mover is a mechanism item, every tick-function part
 // reproduces motionPose within 5% of its old motion envelope, the seesaw and bounce pad work through
 // their asset joints. Sprint finishes by target; the longer races retain legacy traversal parity.
@@ -299,6 +300,9 @@ async function loadLegacyRace(id: string): Promise<ResolvedCourse> {
 }
 
 async function runRace(race: ResolvedCourse) {
+  // Compare geometry over the same authored 20-second window as the legacy proof.
+  // Production rounds now use each level's duration instead of the sprint cap.
+  race = { ...race, timeLimitS: 20, level: { ...levelOf(race), timeCapTicks: 20 * TICK } }
   const survival = await loadV1('survival-sprint')
   assert.ok(survival.sim)
   const sim = createMatchSim(R, {

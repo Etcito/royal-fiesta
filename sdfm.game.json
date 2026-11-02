@@ -165,7 +165,8 @@
       },
       "timeCapS": {
         "type": "number",
-        "min": 0
+        "min": 10,
+        "max": 600
       },
       "overtimeS": {
         "type": "number",

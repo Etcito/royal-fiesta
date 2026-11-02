@@ -1,3 +1,5 @@
+import { roundTicks } from '@royal-fiesta/sim/match/rules'
+import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -236,4 +238,11 @@ test('nextAlive returns the qualified room seats ascending without touching the 
   const result = { qualified: [5, 2, 9] }
   assert.deepEqual(nextAlive(result), [2, 5, 9])
   assert.deepEqual(result.qualified, [5, 2, 9])
+})
+
+ test('show planner retains the selected level duration beyond the sprint cap', () => {
+  const courses = COURSES.map(c => ({ ...c, level: { ...levelOf(c), timeCapTicks: 19800 } }))
+  const show = newShow(MAPS, 60, 11)
+  const plan = planZoneRound(courses, show, seats(60), null, new Rng(show.schedule.rngState))
+  assert.equal(roundTicks(courses[plan.courseIndex], PROFILES.sprint), 19800)
 })

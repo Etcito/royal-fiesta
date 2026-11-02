@@ -10,7 +10,6 @@ import type { Action, GameScreen } from '@royal-fiesta/game/screens/nav'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import { levelOf } from '@royal-fiesta/sim/course'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import type { MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { PlayerStatus } from '@royal-fiesta/sim/match/roundSystem'
@@ -207,7 +206,7 @@ export class ShowMode {
     const local = this.humanDomain()
     if (local === null) return null
     const { round, seat, domain } = local
-    const duration = Math.min(levelOf(round.plan.course).timeCapTicks, roundTicks(round.plan.course, PROFILES.sprint))
+    const duration = roundTicks(round.plan.course, PROFILES.sprint)
     const intro = PROFILES.sprint.introTicks
     let alive = 0
     let qualified = 0

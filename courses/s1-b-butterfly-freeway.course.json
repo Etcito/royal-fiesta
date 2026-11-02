@@ -1824,7 +1824,7 @@
       "adjacent": [5]
     }
   ],
-  "timeLimitS": 150,
+  "timeLimitS": 330,
   "level": {
     "season": "s1",
     "map": "B",
@@ -1838,7 +1838,7 @@
     "capacity": 60,
     "usual": [60, 40, 24],
     "quota": null,
-    "timeCapS": 150,
+    "timeCapS": 330,
     "overtimeS": 0,
     "respawn": {
       "mode": "checkpoint",

@@ -28,7 +28,8 @@ export function measuredWaitMs(elapsedMs: number): number {
 export function persistentThumbDir(root: string): string {
   const base = process.env.NMC_CACHE_DIR
   if (!base) refuse(AREA, 'cache', 'NMC_CACHE_DIR is required for persistent thumbnails')
-  const dir = resolve(base, 'level-thumbs', 'v1')
+  // v2 frames placed polygon meshes and preserves every component of multipart assets.
+  const dir = resolve(base, 'level-thumbs', 'v2')
   if (dir === root || dir.startsWith(root + sep)) refuse(AREA, 'cache', 'NMC_CACHE_DIR must be outside the checkout')
   mkdirSync(dir, { recursive: true })
   return dir
@@ -209,6 +210,19 @@ export async function main(): Promise<number> {
     mkdirSync(thumbsDir, { recursive: true })
     const cacheFile = join(root, CACHE_REL)
     const cache: CacheFile = { format: 'royal-fiesta.level-thumbs', version: 0, thumbs: {} }
+    // A one-level run updates the manifest; it must retain the other valid levels.
+    try {
+      const previous = JSON.parse(readFileSync(cacheFile, 'utf8')) as CacheFile
+      if (previous.format === cache.format && previous.version === cache.version) {
+        for (const map of built) {
+          const entry = previous.thumbs?.[map.id]
+          if (entry?.course === map.course && entry.key === courseContentKey(root, map.course)
+            && entry.path === `thumbs/${map.id}.avif` && await opaqueThumb(join(root, entry.path))) {
+            cache.thumbs[map.id] = entry
+          }
+        }
+      }
+    } catch { /* A missing or invalid manifest is rebuilt from successful levels. */ }
     let sdfm: Sdfm | null = null
     let rendered = 0
     try {

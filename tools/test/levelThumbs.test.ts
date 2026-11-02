@@ -21,7 +21,7 @@ test('persistent cache requires a location outside the checkout', () => {
     process.env.NMC_CACHE_DIR = join(root, 'cache')
     assert.throws(() => persistentThumbDir(root), /outside the checkout/)
     process.env.NMC_CACHE_DIR = join(root, 'external')
-    assert.equal(persistentThumbDir(join(root, 'checkout')), join(root, 'external/level-thumbs/v1'))
+    assert.equal(persistentThumbDir(join(root, 'checkout')), join(root, 'external/level-thumbs/v2'))
   } finally {
     if (previous === undefined) delete process.env.NMC_CACHE_DIR
     else process.env.NMC_CACHE_DIR = previous

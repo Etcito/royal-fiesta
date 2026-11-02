@@ -21,7 +21,10 @@ export interface TourGame {
   inventory(): unknown
   dispose(): void
 }
-export type BootGame = (onScreen: (e: UaaScreenChange) => void) => Promise<TourGame>
+// refuseFirstLoad: the tour's own entry to 'loading' (Retry on the error screen); only runTour sets it, so the
+// check ops boot straight to start.
+export interface BootOptions { refuseFirstLoad?: boolean }
+export type BootGame = (onScreen: (e: UaaScreenChange) => void, options?: BootOptions) => Promise<TourGame>
 export interface TourDeps { boot: BootGame; adapter: () => Promise<AdapterInfo> }
 
 type TourKey = 'Enter' | 'Escape' | 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
@@ -43,7 +46,7 @@ type Act = { key: TourKey } | { click: string } | { dom: string } | { waitMs: nu
 // vote, whose model mounts after ShowMode has built its matches, so the tour waits before voting).
 interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; until?: 'remap-open' | 'remap-closed'; name?: string; current?: boolean }
 
-// docs/screens.md 'Reached by': the boot load is refused (bootGame), so Retry on the error screen enters
+// docs/screens.md 'Reached by': the boot load is refused (bootGame with refuseFirstLoad), so Retry on the error screen enters
 // 'loading' with a real click; that load lands on the offline page's start screen (the app opens the wardrobe
 // itself), so the tour goes back to title, walks the menus by their buttons (Escape goes back), and Play on
 // title opens the start screen again. There five ArrowDowns reach its Play (4 bins, the palette, then Play) and
@@ -412,7 +415,7 @@ async function runTour(deps: TourDeps, names?: readonly string[]): Promise<{ jso
   Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] })
   let game: TourGame | undefined
   try {
-    game = await deps.boot(e => tour.onScreen(e))
+    game = await deps.boot(e => tour.onScreen(e), { refuseFirstLoad: true })
     const last = names === undefined ? TOUR.length - 1 : Math.max(...names.map(name => TOUR.findIndex(leg => leg.capture && (leg.name ?? leg.to) === name)))
     for (const leg of TOUR.slice(0, last + 1)) {
       await tour.leg(game, { ...leg, capture: leg.capture && (names === undefined || names.includes(leg.name ?? leg.to)) })

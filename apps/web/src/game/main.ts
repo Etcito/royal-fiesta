@@ -100,7 +100,7 @@ import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
 import { EconomyScreens } from './economyScreens.ts'
 import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
-import type { TourGame } from './uiTour.ts'
+import type { BootOptions, TourGame } from './uiTour.ts'
 
 interface Query {
   course: string | null
@@ -2497,9 +2497,10 @@ async function start(
 
 // The uiTour op's App: the page's App on a new canvas#ui (the torn-down App emptied #screens), its settings
 // in memory (the GPU page's opaque origin has no storage) and its frames stepped by the op instead of rAF.
-// Its boot load is refused before it starts, so the tour reaches 'loading' with a real click on the error
-// screen's Retry (docs/screens.md: page load or Retry after a failed load); that retry is the real load.
-async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourGame> {
+// With refuseFirstLoad (the tours only) its boot load is refused before it starts, so the tour reaches 'loading'
+// with a real click on the error screen's Retry (docs/screens.md: page load or Retry after a failed load); that
+// retry is the real load. The check ops boot without it, straight to start.
+async function startForOp(onScreen: (e: UaaScreenChange) => void, options: BootOptions = {}): Promise<TourGame> {
   const { views, screens } = pageRoots()
   const ui = document.createElement('canvas')
   ui.id = 'ui'
@@ -2516,7 +2517,7 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void): Promise<TourG
       return () => { frame = null }
     },
     beforeLoad: async () => {
-      if (loads++ === 0) throw new Error('uiTour: the boot load is refused so the tour reaches loading with Retry')
+      if (options.refuseFirstLoad === true && loads++ === 0) throw new Error('uiTour: the boot load is refused so the tour reaches loading with Retry')
     },
   }
   const booted = await start(ui, env, () => false, onScreen)

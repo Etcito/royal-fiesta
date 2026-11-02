@@ -99,7 +99,8 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: { ok
     await reach('title', () => key('Escape'))
     await reach('start', () => click(game!, 'act-play'))
     await reach('hub', () => {
-      for (let i = 0; i < 4; i++) key('ArrowDown')
+      // Five ArrowDowns walk the 4 bins -> palette -> Play, then Enter runs the hub.
+      for (let i = 0; i < 5; i++) key('ArrowDown')
       key('Enter')
     })
     for (let frame = 0; frame < BUDGET; frame++) {

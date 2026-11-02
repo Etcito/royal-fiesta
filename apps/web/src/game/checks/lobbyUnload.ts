@@ -83,7 +83,8 @@ async function toHub(game: TourGame, current: () => string): Promise<void> {
   await waitFor(game, current, 'title', () => press('Escape'))
   await waitFor(game, current, 'start', () => click(game, 'act-play'))
   await waitFor(game, current, 'hub', () => {
-    for (let i = 0; i < 4; i++) press('ArrowDown')
+    // Five ArrowDowns walk the 4 bins -> palette -> Play, then Enter runs the hub.
+    for (let i = 0; i < 5; i++) press('ArrowDown')
     press('Enter')
   })
 }

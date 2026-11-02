@@ -77,7 +77,7 @@ test('two rounds and a final: screen order, vote once, totals, spectate and held
     assert.equal(after.hold, r.final)
     if (!r.final) {
       // Old round remains visible on the port until the match resumes.
-      assert.equal(director.step(null, 0).screen, 'countdown')
+      assert.equal(director.step(null, 0).screen, 'result')
       port.candidates = r.index === 0 ? ['C', 'D'] : ['Q']
       port.round = null
       const vote = director.step(null, 0)
@@ -92,8 +92,8 @@ test('two rounds and a final: screen order, vote once, totals, spectate and held
   assert.equal(end.endScreen?.goldenTicketTo, 1)
   assert.equal(director.step('confirm', 3999).finished, false)
   assert.equal(director.step('confirm', 1).finished, true)
-  assert.deepEqual(screens, ['vote', 'countdown', 'round', 'result', 'elimShow', 'countdown', 'vote',
-    'countdown', 'spectate', 'result', 'elimShow', 'countdown', 'vote', 'countdown', 'spectate', 'result',
+  assert.deepEqual(screens, ['vote', 'countdown', 'round', 'result', 'elimShow', 'result', 'vote',
+    'countdown', 'spectate', 'result', 'elimShow', 'result', 'vote', 'countdown', 'spectate', 'result',
     'elimShow', 'podium', 'endScreen'])
 })
 
@@ -136,7 +136,7 @@ test('natural results/elimination deadlines and drop cues are not replayed', () 
   assert.deepEqual(director.step(null, 0).sounds, [])
   assert.deepEqual(director.step(null, 1000).sounds, ['flow.elim-drop'])
   const next = director.step(null, 3500)
-  assert.equal(next.screen, 'countdown')
+  assert.equal(next.screen, 'result')
   assert.equal(next.hold, false)
 })
 
@@ -145,7 +145,7 @@ test('zero eliminations bypass elimShow; end finishes automatically two seconds 
   load(director, port, 0)
   port.show.rounds.push(result(0, [0, 1], [0, 1]))
   director.step(null, 0)
-  assert.equal(director.step(null, 4000).screen, 'countdown')
+  assert.equal(director.step(null, 4000).screen, 'result')
   port.done = true
   port.champion = 1
   assert.equal(director.step(null, 0).screen, 'podium')
@@ -195,7 +195,7 @@ test('elimShow gets its entire intermission after result leaves', () => {
   const full = first.elimShow!.doneAtMs
   for (let i = 1; i <= 3; i++) assert.equal(director.step(null, 16).elimShow?.lastMs, i * 16)
   assert.equal(director.step(null, full - 49).screen, 'elimShow')
-  assert.equal(director.step(null, 1).screen, 'countdown')
+  assert.equal(director.step(null, 1).screen, 'result')
 })
 
 test('podium starts on entry and its clock freezes on paused frames', () => {
@@ -260,15 +260,16 @@ test('legacy local podium presenter receives zero dt while App frame is paused',
   assert.equal(seconds, 0.5)
 })
 
-test('between rounds, loading stays visible until the next vote has its candidates', () => {
+test('between rounds, results remain visible without loading until vote candidates arrive', () => {
   const { port, director } = fixture()
   port.candidates = null
   port.show.rounds.push(result(0, [0], [0]))
   director.step(null, 0)
-  assert.equal(director.step(null, 4000).screen, 'countdown')
+  assert.equal(director.step(null, 4000).screen, 'result')
   for (let i = 0; i < 3; i++) {
     const waiting = director.step(null, 9000)
-    assert.equal(waiting.screen, 'countdown')
+    assert.equal(waiting.screen, 'result')
+    assert.equal(waiting.loading, false)
     assert.equal(waiting.countdown, null)
     assert.equal(waiting.hold, false, 'network intermission must still advance')
   }
@@ -312,7 +313,62 @@ test('world readiness received during results survives until that round loads', 
   assert.equal(director.step(null, 0).screen, 'result')
   port.round = { plan: { index: 1 } }
   director.worldReady(1)
-  assert.equal(director.step(null, 4000).screen, 'countdown')
-  assert.equal(director.step(null, 0).countdown, null)
-  assert.equal(director.step(null, 0).countdown?.label, '3')
+  assert.equal(director.step(null, 4000).screen, 'result')
+  const ready = director.step(null, 0)
+  assert.equal(ready.loading, false)
+  assert.equal(ready.countdown?.label, '3')
+})
+
+test('round preparation notifications cannot cover results, eliminations or votes; only an unready selected round loads', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { stripTypeScriptTypes } = await import('node:module')
+  const source = readFileSync(new URL('../src/game/main.ts', import.meta.url), 'utf8')
+  // Execute the production observer and overlay presentation with the real director.
+  const observer = source.match(/observeRoundLoad\(label => \{([\s\S]*?)\n      \}, content.report\(\)\)/)![1]
+  const method = source.match(/  private showLoading\(models: ShowFrame\): void \{[\s\S]*?\n  \}/)![0]
+  class ShowAdapter {}
+  const Subject = new Function('ShowAdapter', 'checkPhase', stripTypeScriptTypes(`class Subject {
+    ${method}
+    progress(label: string | null) { ${observer} }
+  }`) + '; return Subject')(ShowAdapter, () => {})
+  const subject = new Subject()
+  subject.mode = new ShowAdapter()
+  let visible = false
+  let showCalls = 0
+  subject.loadingOverlay = { show() { visible = true; showCalls++ }, hide() { visible = false } }
+  let shown = 'vote'
+  subject.host = { currentScreen() { return shown }, setLoading() { throw new Error('Background work wrote the loading widgets') } }
+  const { port, director } = fixture()
+  load(director, port, 0)
+  port.show.rounds.push(result(0, [0, 1, 2], [0]))
+  const sample = (frame: ReturnType<ShowDirector['step']>) => {
+    const before = showCalls
+    subject.progress('Course instances: next-round')
+    subject.progress('RAA render / pipeline compilation')
+    if (frame.loading) {
+      shown = 'vote'
+      subject.showLoading(frame)
+      assert.equal(visible, false, 'never cover the outgoing vote while uaa changes screen')
+    }
+    shown = frame.loading ? 'loading' : frame.screen
+    subject.showLoading(frame)
+    subject.progress(null)
+    assert.equal(visible, frame.loading, frame.screen)
+    if (!frame.loading) assert.equal(showCalls, before, frame.screen)
+    return frame
+  }
+  assert.equal(sample(director.step(null, 0)).screen, 'result')
+  // A next scene can prepare while previous presentations still own the stage.
+  port.round = { plan: { index: 1 } }
+  assert.equal(sample(director.step(null, 4000)).screen, 'elimShow')
+  assert.equal(sample(director.step(null, 9000)).screen, 'result')
+  port.round = null
+  port.candidates = ['C', 'D']
+  assert.equal(sample(director.step(null, 0)).screen, 'vote')
+  port.round = { plan: { index: 1 } }
+  assert.equal(sample(director.step(null, 0)).loading, true)
+  director.worldReady(1)
+  const ready = sample(director.step(null, 0))
+  assert.equal(ready.loading, false)
+  assert.equal(ready.countdown?.label, '3')
 })

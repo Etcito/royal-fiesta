@@ -99,6 +99,7 @@ import { mountRoundResults } from '../screens/roundResults.ts'
 import { mountElimShow } from '../screens/elimShow.ts'
 import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
+import type { ShowFrame } from './showDirector.ts'
 import { EconomyScreens } from './economyScreens.ts'
 import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { BootOptions, TourGame } from './uiTour.ts'
@@ -1742,6 +1743,8 @@ class App {
       this.stopRoundLoad?.()
       this.stopRoundLoad = observeRoundLoad(label => {
         checkPhase(`round load: ${label ?? 'ready'}`)
+        // Show preparation is background work; its director owns the visible load hold.
+        if (this.mode instanceof ShowAdapter) return
         this.roundLoading = label
         if (label !== null) {
           this.loadingOverlay.show(label)
@@ -2190,6 +2193,12 @@ class App {
     this.startAction('confirm', model.focus === action ? model : { ...model, focus: action })
   }
 
+  private showLoading(models: ShowFrame): void {
+    this.roundLoading = models.loading ? 'Loading round…' : null
+    if (models.loading && this.host.currentScreen() === 'loading') this.loadingOverlay.show(this.roundLoading!)
+    else this.loadingOverlay.hide(true)
+  }
+
   // Mount once per visible flow screen. Director cues are authoritative; only the crown reveals
   // originate in a renderer. The round/spectate screens keep the existing HUD drawing path.
   private drawShow(): boolean {
@@ -2199,6 +2208,7 @@ class App {
     const screen = this.nav.screen
     const models = mode.show.models
     if (models === null || models.screen !== screen) return false
+    this.showLoading(models)
     const stage = loaded.ports[0]
     const deps = {
       cue: (id: string): void => { if (id.startsWith('flow.crown-')) this.sound.cue(id) },
@@ -2206,7 +2216,7 @@ class App {
     }
     // The director calls this screen countdown during its load hold. Do not mount the countdown
     // renderer or draw the legacy sim countdown until worldReady has released that hold.
-    if (screen === 'countdown' && models.countdown === null) {
+    if (models.loading) {
       this.host.present(menuModel('loading', [], { settings: this.settings, rebinding: null, error: null, info: [] }))
       this.host.setLoading(0, 'Loading round…')
       this.screens.style.pointerEvents = 'none'
@@ -2308,6 +2318,7 @@ class App {
     if (this.drawShow()) {
       this.resize()
       this.host.frame(this.uiNowMs)
+      if (this.mode instanceof ShowAdapter && this.mode.show.models !== null) this.showLoading(this.mode.show.models)
       return
     }
     const mode = this.mode

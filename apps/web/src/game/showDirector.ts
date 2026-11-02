@@ -17,6 +17,8 @@ export interface ShowPort extends Pick<ZoneFullMatch, 'candidates' | 'show' | 'd
 type Phase = 'vote' | 'load' | 'countdown' | 'round' | 'results' | 'elimShow' | 'podium' | 'end'
 export interface ShowFrame {
   screen: GameScreen
+  /** Only a selected round awaiting its scene may cover the UI with loading. */
+  loading: boolean
   vote: VoteModel | null
   countdown: ReturnType<typeof countdownAt> | null
   results: ReturnType<typeof resultRows> | null
@@ -134,6 +136,10 @@ export class ShowDirector {
         this.offered = null
         this.voteModel = null
         this.enter('load')
+        if (this.readyRound === this.index) {
+          this.readyRound = null
+          this.enter('countdown')
+        }
         dt = 0
       } else if (this.phase === 'vote' && this.port.candidates !== null && this.port.candidates !== this.offered) {
         this.offered = this.port.candidates
@@ -173,12 +179,14 @@ export class ShowDirector {
       this.label = countdown.label
       if (countdown.sound !== null) sounds.push(countdown.sound)
     }
-    const screen: GameScreen = this.phase === 'load' || this.phase === 'countdown' || (this.phase === 'vote' && this.voteModel === null) ? 'countdown'
+    const waitingForVote = this.phase === 'vote' && this.voteModel === null
+    const screen: GameScreen = waitingForVote ? (this.rows === null ? 'vote' : 'result')
+      : this.phase === 'load' || this.phase === 'countdown' ? 'countdown'
       : this.phase === 'results' ? 'result' : this.phase === 'end' ? 'endScreen'
       : this.phase === 'round' ? (this.port.alive.includes(this.localSeat) ? 'round' : 'spectate') : this.phase
     return {
-      screen, vote: this.phase === 'vote' ? this.voteModel : null, countdown,
-      results: this.phase === 'results' ? this.rows : null,
+      screen, loading: this.phase === 'load', vote: this.phase === 'vote' ? this.voteModel : null, countdown,
+      results: this.phase === 'results' || waitingForVote ? this.rows : null,
       elimShow: this.phase === 'elimShow' ? this.elimination : null,
       endScreen: this.phase === 'end' || this.phase === 'podium' ? this.endModel : null,
       sounds, finished: this.finished,

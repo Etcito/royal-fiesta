@@ -26,7 +26,7 @@ type Props = Record<string, WidgetProps>
 interface Thumb { map: string; loaded: boolean }
 interface ThumbState extends Thumb { slot: number; src: string; expected: string | null; naturalWidth: number }
 interface VoteResult { device: Device; target: number; chosen: number | null; thumbs: Thumb[] }
-interface VoteJson { ok: boolean; votes: VoteResult[]; failures: string[]; transitions: string[] }
+interface VoteJson { ok: boolean; votes: VoteResult[]; failures: string[]; transitions: string[]; overlayScreens: { screen: string; shown: string; overlay: boolean }[] }
 
 async function step(game: TourGame, dt: number): Promise<void> {
   game.step(dt)
@@ -231,6 +231,7 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: Vote
   const votes: VoteResult[] = []
   const files: { name: string; blob: Blob }[] = []
   const transitions: string[] = []
+  const overlayScreens: VoteJson['overlayScreens'] = []
   const pad = syntheticPad()
   const own = Object.getOwnPropertyDescriptor(navigator, 'getGamepads')
   Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] })
@@ -246,9 +247,19 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: Vote
     game = booted.game
     if (!booted.json.ok) {
       failures.push(`boot failed: ${booted.json.error ?? booted.json.screen}`)
-      return { json: { ok: false, votes, failures, transitions }, files }
+      return { json: { ok: false, votes, failures, transitions, overlayScreens }, files }
     }
     const live = game
+    const originalStep = live.step.bind(live)
+    live.step = dt => {
+      originalStep(dt)
+      const row = { screen, shown: live.host.currentScreen(), overlay: !document.querySelector<HTMLElement>('#round-loading')!.hidden }
+      if (JSON.stringify(overlayScreens.at(-1)) !== JSON.stringify(row)) overlayScreens.push(row)
+      if (['result', 'elimShow', 'vote', 'podium', 'endScreen'].includes(screen) && (row.overlay || row.shown === 'loading')) {
+        const failure = `${screen}: loading covered an inter-level screen`
+        if (!failures.includes(failure)) failures.push(failure)
+      }
+    }
     const current = (): string => screen
     const read = watchHud(live)
     // The boot lands on the start screen before its penguin art (meshes, cosmetics) mounts; keys only
@@ -324,10 +335,10 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: Vote
         break
       }
     }
-    return { json: { ok: failures.length === 0, votes, failures, transitions }, files }
+    return { json: { ok: failures.length === 0, votes, failures, transitions, overlayScreens }, files }
   } catch (error) {
     failures.push(error instanceof Error ? error.message : String(error))
-    return { json: { ok: false, votes, failures, transitions }, files }
+    return { json: { ok: false, votes, failures, transitions, overlayScreens }, files }
   } finally {
     game?.dispose()
     if (own) Object.defineProperty(navigator, 'getGamepads', own)

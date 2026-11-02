@@ -84,7 +84,7 @@ export function serveDir(dist: string): Server {
     const requestBase = live ? contentDir() : base
     if (live) path = path.slice('/content'.length)
     // Live content is only the game files: the content directory may be the repository root.
-    if (live && !/^\/(?:courses\/[^/]+(?:\/[^/]+)?\.course\.json|assets\/[^/]+\/[^/]+\.(?:asset\.json|mesh)|audio\/[^/]+\.haa\.json)$/.test(path)) {
+    if (live && !/^\/(?:courses\/[^/]+(?:\/[^/]+)?\.course\.json|courses\/[^/]+\.thumb\.avif|assets\/[^/]+\/[^/]+\.(?:asset\.json|mesh)|audio\/[^/]+\.haa\.json)$/.test(path)) {
       res.writeHead(404).end('not found')
       return
     }

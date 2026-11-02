@@ -14,6 +14,8 @@ for (const name of names) {
     if (implementation === ops[name]) throw new Error(`Game did not register ${name}`)
     return implementation(...args)
   }
+  // Marked so the game's installs replace it instead of seeing a duplicate op.
+  Object.assign(ops[name], { pending: true })
 }
 window.nmcGpu = { ops } as unknown as NonNullable<Window['nmcGpu']>
 game = import('./main.ts')

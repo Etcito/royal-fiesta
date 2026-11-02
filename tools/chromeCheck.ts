@@ -119,6 +119,7 @@ export function injectTestQuery(html: string): string {
 
 // The check ops do not report their adapter, so the copied page wraps the selected op and adds the facts
 // to its json. The wrapper runs after the bundle registers the ops, before the GPU client calls one.
+// A wrapped entry placeholder stays marked pending: the game's check install replaces it, not a duplicate.
 function adapterScript(op: string): string {
   return `<script type="module" ${ADAPTER_MARK}>
 const opName = ${JSON.stringify(op)}
@@ -136,7 +137,7 @@ const install = () => {
     const json = result && typeof result.json === 'object' && result.json !== null ? result.json : {}
     const chromeCheck = window.__nmcCheck ?? { pageErrors: [], consoleErrors: [], failedRequests: [] }
     return { ...result, json: { ...json, adapter: json.adapter ?? facts, software: typeof json.software === 'boolean' ? json.software : software, chromeCheck } }
-  }, { nmcCheckAdapter: true })
+  }, { nmcCheckAdapter: true, pending: original.pending === true })
   return true
 }
 // The lightweight entry publishes placeholders and the game later replaces the whole object.

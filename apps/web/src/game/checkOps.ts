@@ -20,7 +20,8 @@ async function adapterInfo(): Promise<AdapterInfo> {
 export function installCheckOps(take: () => void, bootGame: BootGame): void {
   const modules = import.meta.glob<CheckModule>('./checks/*.ts', { eager: true })
   const ops = window.nmcGpu!.ops as unknown as Record<string, (input: unknown) => ReturnType<CheckModule['run']>>
-  const names = new Set(Object.keys(ops))
+  // The entry's waiting placeholders (marked pending) are not ops yet: the checks replace them.
+  const names = new Set(Object.keys(ops).filter(name => !(ops[name] as { pending?: boolean }).pending))
   for (const check of Object.values(modules)) {
     if (names.has(check.name)) throw new Error(`Duplicate check op: ${check.name}`)
     names.add(check.name)

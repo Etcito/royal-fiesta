@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
@@ -64,4 +64,63 @@ test('game page declares every manifest op before the game loads; the game insta
   assert.deepEqual(await page.nmcGpu!.ops.render({ input: { width: 4 } }), { tour: { width: 4 } })
   // animBrick keeps the placeholder object it saw at DOMContentLoaded: its gameCapture reaches the game's.
   assert.equal(await placeholder.gameCapture({}), 'captured')
+})
+
+// The whole page registration chain, in the game's order: the entry's placeholders, installNmcOps (additive),
+// then installCheckOps with every check module. The placeholders are not duplicates: a call made on one before
+// the game loaded reaches the check (the GPU wardrobe run failed on 'Duplicate check op: countdowns').
+test('check ops replace the entry placeholders; a placeholder call reaches the check', async () => {
+  const source = readFileSync(new URL('../src/game/entry.ts', import.meta.url), 'utf8')
+  const compiled = ts.transpile(source, { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext })
+    .replace("import('./main.ts')", 'loadGame()')
+    .replace(/export \{\};?/, '')
+  type Op = (...args: unknown[]) => Promise<unknown>
+  const page: { nmcGpu?: { ops: Record<string, Op> } } = {}
+  let finish!: () => void
+  runInNewContext(compiled, {
+    window: page, console: { error() {} },
+    loadGame: () => new Promise<void>(resolve => { finish = resolve }),
+  })
+  // tools/chromeCheck.ts's adapter script, injected after the bundle: it wraps the wardrobe placeholder at once.
+  const harness = readFileSync(new URL('../../../tools/chromeCheck.ts', import.meta.url), 'utf8')
+  const adapter = /<script type="module" \$\{ADAPTER_MARK\}>([\s\S]*?)<\/script>`/.exec(harness)![1]
+    .replace('${JSON.stringify(op)}', '"wardrobe"')
+  const gpuAdapter = { info: { vendor: 'test', architecture: '', description: '' } }
+  runInNewContext(adapter, {
+    window: page, navigator: { gpu: { requestAdapter: async () => gpuAdapter } }, setInterval, clearInterval,
+  })
+  const placeholder = page.nmcGpu!.ops
+  assert.equal((placeholder.wardrobe as unknown as { nmcCheckAdapter?: boolean }).nmcCheckAdapter, true)
+  const pending = placeholder.wardrobe({ items: 1 }) as Promise<{ json: Record<string, unknown> }>
+  const nmc = readFileSync(new URL('../src/nmc/ops.ts', import.meta.url), 'utf8')
+  const install = /export function installNmcOps\(\): void \{([\s\S]*?)\n\}/.exec(nmc)![1]
+  runInNewContext(ts.transpile(install, { target: ts.ScriptTarget.ES2022 }), {
+    window: page, roundCapture: async () => 'round', frameTiming: async () => 'frame',
+  })
+  const checks = readdirSync(new URL('../src/game/checks/', import.meta.url))
+    .filter(file => file.endsWith('.ts'))
+    .map(file => {
+      const name = /export const name = '(\w+)'/.exec(readFileSync(new URL(`../src/game/checks/${file}`, import.meta.url), 'utf8'))![1]
+      return { name, run: async (input: unknown) => ({ json: { name, input }, files: [] }) }
+    })
+  const ops = readFileSync(new URL('../src/game/checkOps.ts', import.meta.url), 'utf8')
+  const installChecks = /export function installCheckOps\(.*\): void \{([\s\S]*?)\n\}/.exec(ops)![1]
+    .replace(/import\.meta\.glob<CheckModule>\([^)]*\)/, 'checks')
+  let taken = 0
+  runInNewContext(ts.transpile(installChecks, { target: ts.ScriptTarget.ES2022 }), {
+    window: page, checks, take: () => { taken++ }, bootGame: () => {}, adapterInfo: async () => ({}), Object, Set, Error,
+  })
+  assert.deepEqual(checks.map(check => check.name).sort(), ['checkBoot', 'countdowns', 'lobbyUnload', 'vote', 'wardrobe'])
+  finish()
+  const result = await pending
+  assert.equal(result.json.name, 'wardrobe')
+  assert.deepEqual({ ...(result.json.input as object) }, { items: 1 })
+  assert.equal((result.json.adapter as { vendor: string }).vendor, 'test')
+  assert.equal(taken, 1)
+  // A real duplicate (an op already installed by the game) still throws.
+  page.nmcGpu!.ops.extra = async () => 'x'
+  const extra = [{ name: 'extra', run: async () => ({ json: null, files: [] }) }]
+  assert.throws(() => runInNewContext(ts.transpile(installChecks, { target: ts.ScriptTarget.ES2022 }), {
+    window: page, checks: extra, take() {}, bootGame() {}, adapterInfo: async () => ({}), Object, Set, Error,
+  }), /Duplicate check op: extra/)
 })

@@ -156,22 +156,54 @@ async function renderCourse(sdfm: Sdfm, root: string, mapId: string, courseId: s
   return elapsedMs
 }
 
+function requestedLevel(): string | null {
+  const args = process.argv.slice(2)
+  const index = args.findIndex((arg) => arg === '--level' || arg.startsWith('--level='))
+  if (index < 0) return null
+  const arg = args[index]!
+  const value = arg === '--level' ? args[index + 1] : arg.slice('--level='.length)
+  if (value === undefined || value === '' || value.startsWith('--')) refuse(AREA, '--level', 'expected one course id or map id after --level')
+  return value
+}
+
+interface ReportLevel { map: string; course: string; status: string; elapsedMs?: number; waitMs: number }
+
+function existingRecords(file: string): ReportLevel[] {
+  try {
+    const report = JSON.parse(readFileSync(file, 'utf8')) as { levels?: unknown }
+    return Array.isArray(report.levels) ? report.levels as ReportLevel[] : []
+  } catch {
+    return []
+  }
+}
+
 export async function main(): Promise<number> {
   try {
     const root = repoRoot()
     const season = parseSeason(JSON.parse(readFileSync(join(root, 'courses/season.json'), 'utf8')) as unknown, 'courses/season.json')
-    const maps = playableMaps(season).sort((a, b) => Number(b.course === SLOWEST) - Number(a.course === SLOWEST))
-    if (!maps.some(map => map.course === SLOWEST)) refuse(AREA, SLOWEST, 'measurement course is missing')
+    const built = playableMaps(season)
+    if (!built.some(map => map.course === SLOWEST)) refuse(AREA, SLOWEST, 'measurement course is missing')
+    const level = requestedLevel()
+    const maps = level === null ? built : built.filter((map) => map.id === level || map.course === level)
+    if (maps.length === 0) refuse(AREA, level!, `--level ${level} matches no built course`)
+    maps.sort((a, b) => Number(b.course === SLOWEST) - Number(a.course === SLOWEST))
     const persistent = persistentThumbDir(root)
     const cacheOnly = process.argv.includes('--cache-only')
     let waitMs = JOB_CEILING_MS
-    const records: { map: string; course: string; status: string; elapsedMs?: number; waitMs: number }[] = []
+    if (level !== null) {
+      try {
+        const timing = JSON.parse(readFileSync(join(persistent, `${courseContentKey(root, SLOWEST)}.json`), 'utf8')) as { elapsedMs: number }
+        waitMs = measuredWaitMs(timing.elapsedMs)
+      } catch { /* Butterfly is not measured yet: its ceiling fits the first render too. */ }
+    }
     const reportFile = join(root, 'out/m13/level-thumbs', cacheOnly ? 'cache-check.json' : 'render.json')
+    const records: ReportLevel[] = level === null ? [] : existingRecords(reportFile).filter((entry) => entry.map !== maps[0]!.id)
     const record = (map: string, course: string, status: string, elapsedMs?: number): void => {
       records.push({ map, course, status, elapsedMs, waitMs })
       mkdirSync(dirname(reportFile), { recursive: true })
-      writeFileSync(`${reportFile}.tmp`, JSON.stringify({ measurementCourse: SLOWEST, levels: records }, null, 2) + '\n')
-      renameSync(`${reportFile}.tmp`, reportFile)
+      const temp = `${reportFile}.${process.pid}.tmp`
+      writeFileSync(temp, JSON.stringify({ measurementCourse: SLOWEST, levels: records }, null, 2) + '\n')
+      renameSync(temp, reportFile)
     }
     const thumbsDir = join(root, 'thumbs')
     mkdirSync(thumbsDir, { recursive: true })
@@ -216,6 +248,7 @@ export async function main(): Promise<number> {
             refuse(AREA, `${map.id} ${map.course}`, `the SDF Modeler Node build did not load: ${message(e)}`)
           }
         }
+        if (level !== null && measured !== undefined) waitMs = measuredWaitMs(measured)
         const elapsedMs = await renderCourse(sdfm, root, map.id, map.course, stored, waitMs)
         // Persist each result immediately, before starting another level or packing content.
         writeFileSync(`${timingFile}.${process.pid}.tmp`, JSON.stringify({ course: map.course, elapsedMs, waitMs }) + '\n')

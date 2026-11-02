@@ -194,11 +194,88 @@
     "timeout_s": 60
   },
   {
+    "name": "m13-level-thumbs-render-b",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level B",
+    "timeout_s": 360
+  },
+  {
+    "name": "m13-level-thumbs-render-c1",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level C1",
+    "timeout_s": 360,
+    "after": [
+      "m13-level-thumbs-render-b"
+    ]
+  },
+  {
+    "name": "m13-level-thumbs-render-c2",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level C2",
+    "timeout_s": 360,
+    "after": [
+      "m13-level-thumbs-render-c1"
+    ]
+  },
+  {
+    "name": "m13-level-thumbs-render-d",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level D",
+    "timeout_s": 360,
+    "after": [
+      "m13-level-thumbs-render-c2"
+    ]
+  },
+  {
+    "name": "m13-level-thumbs-render-e",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level E",
+    "timeout_s": 360,
+    "after": [
+      "m13-level-thumbs-render-d"
+    ]
+  },
+  {
+    "name": "m13-level-thumbs-render-f",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level F",
+    "timeout_s": 360,
+    "after": [
+      "m13-level-thumbs-render-e"
+    ]
+  },
+  {
+    "name": "m13-level-thumbs-render-g",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level G",
+    "timeout_s": 360,
+    "after": [
+      "m13-level-thumbs-render-f"
+    ]
+  },
+  {
+    "name": "m13-level-thumbs-render-i",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level I",
+    "timeout_s": 360,
+    "after": [
+      "m13-level-thumbs-render-g"
+    ]
+  },
+  {
+    "name": "m13-level-thumbs-render-q",
+    "command": "node --experimental-strip-types tools/levelThumbs.ts --level Q",
+    "timeout_s": 360,
+    "after": [
+      "m13-level-thumbs-render-i"
+    ]
+  },
+  {
     "name": "m13-level-thumbs-cache-check",
     "command": "node --experimental-strip-types tools/levelThumbs.ts --cache-only",
     "timeout_s": 60,
     "after": [
-      "m13-level-thumbs"
+      "m13-level-thumbs-render-b",
+      "m13-level-thumbs-render-c1",
+      "m13-level-thumbs-render-c2",
+      "m13-level-thumbs-render-d",
+      "m13-level-thumbs-render-e",
+      "m13-level-thumbs-render-f",
+      "m13-level-thumbs-render-g",
+      "m13-level-thumbs-render-i",
+      "m13-level-thumbs-render-q"
     ]
   }
 ]

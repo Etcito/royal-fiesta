@@ -192,6 +192,10 @@ function sdfmDir(root: string): string {
 
 // The sibling checkout is read-only, so its Node side is compiled in a temp copy keyed by its commit.
 async function sdfmApi(src: string): Promise<{ createSdfm(o: { doc: Obj }): Promise<Sdfm> }> {
+  // nomorechat compiles the peer's Node side once per checkout (build-node, stamped with its commit): a costume or a level
+  // never compiles SDF Modeler again.
+  const prebuilt = join(src, 'build-node/node/api.js')
+  if (existsSync(prebuilt)) return import(pathToFileURL(prebuilt).href)
   let head = 'local'
   try { head = execFileSync('git', ['-C', src, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() } catch {}
   const dir = join(tmpdir(), `rf-sdfm-${head.slice(0, 12)}`)

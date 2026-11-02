@@ -259,9 +259,6 @@ export async function main(argv: string[]): Promise<number> {
     // Windows) through NMC_GPU_URL and waits its turn there. The first version of this tool blanked the variable, so costume
     // renders compiled their gbuffer shader on a software rasteriser for minutes while a real GPU sat idle.
     if (!process.env.NMC_GPU_URL) refuse(AREA, 'NMC_GPU_URL', 'no GPU client is configured: renders go through the Windows Chrome GPU client and never compile shaders on the CPU; run this check where nomorechat provides NMC_GPU_URL')
-    // The host wait includes time queued behind other jobs, not just rendering time.
-    // Leave an explicit caller override intact and stay within the five-minute job limit.
-    process.env.NMC_GPU_TIMEOUT_MS ??= '280000'
     const { createSdfm } = await sdfmApi(sdfmDir(root))
     let failed = 0
     for (const s of input.subjects) {

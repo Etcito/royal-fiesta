@@ -86,6 +86,7 @@ export async function packWavedash(
 
   // Remove this bundled content when the CDN serves it.
   packContent(join(upload, 'content'))
+  compressAudio(join(upload, 'audio'))
 
   // Ship compressed audio, never the baked WAVs: the manifest is the S17 one written by the bake.
   const audioDir = join(upload, 'audio')
@@ -113,6 +114,29 @@ export async function packWavedash(
   writeFileSync(join(upload, BUILD_STAMP), `${JSON.stringify(stamp, null, 2)}\n`)
   writeFileSync(join(out, CONFIG_NAME), wavedashToml())
   return { files: listFiles(upload), entry: ENTRY, audio }
+}
+
+/** The baked sounds are 48 kHz WAVs (118 MB); the browser decodes Ogg Opus natively (decodeAudioData, gapless loops), so the
+ * uploaded copy is encoded and its manifest renamed. Needs ffmpeg on PATH; without it the WAVs ship as they are. */
+function compressAudio(dir: string): void {
+  const manifestPath = join(dir, 'manifest.json')
+  if (!existsSync(manifestPath)) return
+  if (spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' }).status !== 0) {
+    console.warn('wavedash: ffmpeg not found, sounds ship as WAV')
+    return
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { sounds: { files: string[] }[] }
+  for (const sound of manifest.sounds) {
+    sound.files = sound.files.map((file) => {
+      if (!file.endsWith('.wav')) return file
+      const opus = file.replace(/\.wav$/, '.opus')
+      const run = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', join(dir, file), '-c:a', 'libopus', '-b:a', '96k', join(dir, opus)], { encoding: 'utf8' })
+      if (run.status !== 0) throw new Error(`wavedash: ffmpeg failed on ${file}: ${run.stderr}`)
+      rmSync(join(dir, file))
+      return opus
+    })
+  }
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 }
 
 function build(root: string): Promise<number> {

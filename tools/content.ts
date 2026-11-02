@@ -15,7 +15,7 @@ import { parseGameAsset } from '../packages/game/src/gameAsset.ts'
 // S29 index: `mesh` only when the saved S24 mesh exists, `audio` from audio/*.haa.json, `thumbs` from the level
 // thumbnails saved by SDF Modeler next to each course for the vote screen.
 export interface ContentIndex {
-  assets: { id: string; world: string; path: string; hash: string; mesh?: string }[]
+  assets: { id: string; world: string; path: string; hash: string; category?: string; mesh?: string }[]
   courses: { id: string; path: string }[]
   audio: { id: string; path: string }[]
   thumbs: { map: string; path: string }[]
@@ -85,10 +85,10 @@ export function buildContentIndex(dir = contentDir()): ContentIndex {
     for (const file of readdirSync(join(dir, 'assets', world.name)).sort()) {
       if (!file.endsWith('.asset.json')) continue
       const path = `assets/${world.name}/${file}`
-      const json = JSON.parse(readFileSync(join(dir, path), 'utf8')) as { hash: string }
+      const json = JSON.parse(readFileSync(join(dir, path), 'utf8')) as { hash: string; category?: string }
       const id = file.slice(0, -'.asset.json'.length)
       const mesh = `assets/${world.name}/${id}.mesh`
-      assets.push({ id, world: world.name, path, hash: json.hash, ...existsSync(join(dir, mesh)) ? { mesh } : {} })
+      assets.push({ id, world: world.name, path, hash: json.hash, ...(json.category ? { category: json.category } : {}), ...existsSync(join(dir, mesh)) ? { mesh } : {} })
     }
   }
   const courses = readdirSync(join(dir, 'courses')).sort().filter(f => f.endsWith('.course.json'))

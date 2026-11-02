@@ -1945,6 +1945,7 @@ class App {
       try {
         if (body === null) continue
         const costume = (await resolver.resolve(cosmeticOf(item.id)?.asset ?? item.id)).asset
+        if (stage.skinOf?.(costume.id)) { mounts.set(item.id, [0, 0, 0]); continue }
         const names = Object.keys(costume.anchors)
         if (names.length !== 1) continue
         const bodyAnchor = body.anchors[names[0]]

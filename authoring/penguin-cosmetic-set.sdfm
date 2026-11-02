@@ -1,0 +1,5025 @@
+{
+  "format": "sdfm",
+  "version": 2,
+  "name": "Penguin cosmetic authoring example",
+  "root": [
+    "catalog_cosmetic_set"
+  ],
+  "nodes": {
+    "catalog_cosmetic_set": {
+      "id": "catalog_cosmetic_set",
+      "name": "Catalog cosmetic set",
+      "kind": "group",
+      "tags": [
+        "cosmetic-set"
+      ],
+      "children": [
+        "hat_jester_hat",
+        "outfit_disco_jacket",
+        "extra_fish_scarf",
+        "special_ghost_aura"
+      ],
+      "gameCollision": true
+    },
+    "hat_jester_hat": {
+      "id": "hat_jester_hat",
+      "name": "Hat",
+      "kind": "group",
+      "children": [
+        "hat_jester_hat_head",
+        "hat_purple_point",
+        "hat_gold_point",
+        "hat_head_band",
+        "hat_left_bell",
+        "hat_right_bell"
+      ],
+      "asset": {
+        "game": "royal-fiesta",
+        "id": "costume.jester-hat",
+        "category": "cosmetic",
+        "world": "common",
+        "cosmetic": {
+          "slot": "hat",
+          "binding": "penguin"
+        }
+      },
+      "mesher": {
+        "output": "paramesh",
+        "params": {
+          "fieldResolution": 16,
+          "subdivisions": 4,
+          "transitionLoops": 1
+        }
+      },
+      "rig": {
+        "format": "raa.rig",
+        "version": 1,
+        "name": "flipper-test",
+        "bones": [
+          {
+            "name": "root",
+            "parent": null,
+            "rest": {
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upper.l",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0.48,
+                0.35,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "lower.l",
+            "parent": "upper.l",
+            "rest": {
+              "t": [
+                0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "tip.l",
+            "parent": "lower.l",
+            "rest": {
+              "t": [
+                0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upper.r",
+            "parent": "root",
+            "rest": {
+              "t": [
+                -0.48,
+                0.35,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "lower.r",
+            "parent": "upper.r",
+            "rest": {
+              "t": [
+                -0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "tip.r",
+            "parent": "lower.r",
+            "rest": {
+              "t": [
+                -0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upperLeg.l",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0.2,
+                -0.5,
+                0.05
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "foot.l",
+            "parent": "upperLeg.l",
+            "rest": {
+              "t": [
+                0,
+                -0.44999999999999996,
+                0.15000000000000002
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upperLeg.r",
+            "parent": "root",
+            "rest": {
+              "t": [
+                -0.2,
+                -0.5,
+                0.05
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "foot.r",
+            "parent": "upperLeg.r",
+            "rest": {
+              "t": [
+                0,
+                -0.44999999999999996,
+                0.15000000000000002
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "head",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0,
+                0.5,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        ],
+        "roles": {
+          "foot.l": "foot.l",
+          "foot.r": "foot.r",
+          "hand.l": "tip.l",
+          "hand.r": "tip.r",
+          "head": "head",
+          "lowerArm.l": "lower.l",
+          "lowerArm.r": "lower.r",
+          "root": "root",
+          "upperArm.l": "upper.l",
+          "upperArm.r": "upper.r",
+          "upperLeg.l": "upperLeg.l",
+          "upperLeg.r": "upperLeg.r"
+        },
+        "ikChains": [
+          {
+            "name": "flipperL",
+            "solver": "twoBone",
+            "bones": [
+              "upper.l",
+              "lower.l",
+              "tip.l"
+            ],
+            "pole": [
+              0,
+              0,
+              1
+            ],
+            "iterations": 16
+          },
+          {
+            "name": "flipperR",
+            "solver": "twoBone",
+            "bones": [
+              "upper.r",
+              "lower.r",
+              "tip.r"
+            ],
+            "pole": [
+              0,
+              0,
+              1
+            ],
+            "iterations": 16
+          }
+        ],
+        "limits": [
+          {
+            "bone": "upper.l",
+            "min": [
+              -80,
+              -80,
+              -80
+            ],
+            "max": [
+              80,
+              80,
+              80
+            ]
+          },
+          {
+            "bone": "upper.r",
+            "min": [
+              -80,
+              -80,
+              -80
+            ],
+            "max": [
+              80,
+              80,
+              80
+            ]
+          },
+          {
+            "bone": "head",
+            "min": [
+              -40,
+              -60,
+              -30
+            ],
+            "max": [
+              40,
+              60,
+              30
+            ]
+          },
+          {
+            "bone": "upperLeg.l",
+            "min": [
+              -60,
+              -30,
+              -30
+            ],
+            "max": [
+              60,
+              30,
+              30
+            ]
+          },
+          {
+            "bone": "upperLeg.r",
+            "min": [
+              -60,
+              -30,
+              -30
+            ],
+            "max": [
+              60,
+              30,
+              30
+            ]
+          },
+          {
+            "bone": "foot.l",
+            "min": [
+              -45,
+              -20,
+              -20
+            ],
+            "max": [
+              45,
+              20,
+              20
+            ]
+          },
+          {
+            "bone": "foot.r",
+            "min": [
+              -45,
+              -20,
+              -20
+            ],
+            "max": [
+              45,
+              20,
+              20
+            ]
+          }
+        ],
+        "attach": {
+          "body": {
+            "bone": "root",
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "head": {
+            "bone": "head",
+            "t": [
+              0,
+              0.3,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "neck": {
+            "bone": "root",
+            "t": [
+              0,
+              0.3,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        },
+        "bindings": [],
+        "smooth": 0.2
+      },
+      "gameCollision": false
+    },
+    "hat_jester_hat_head": {
+      "id": "hat_jester_hat_head",
+      "name": "jester_hat_head",
+      "kind": "anchor",
+      "transform": {
+        "position": [0, 0.8, 0]
+      },
+      "gameCollision": false
+    },
+    "hat_purple_point": {
+      "id": "hat_purple_point",
+      "name": "purple_point",
+      "kind": "sweep",
+      "smooth": 0.035,
+      "colorBlend": "hard",
+      "material": "hat_purple",
+      "params": {
+        "path": {
+          "type": "bezier",
+          "closed": false,
+          "points": [
+            {
+              "p": [-0.13, 0.98, 0.02],
+              "out": [-0.13, 1.64, 0.02]
+            },
+            {
+              "p": [-0.7, 1.24, 0.02],
+              "in": [-0.63, 1.72, 0.02]
+            }
+          ]
+        },
+        "radius": {
+          "type": "radius",
+          "points": [
+            {
+              "t": 0,
+              "r": 0.26
+            },
+            {
+              "t": 0.45,
+              "r": 0.19
+            },
+            {
+              "t": 1,
+              "r": 0.022
+            }
+          ]
+        }
+      },
+      "gameCollision": false
+    },
+    "hat_gold_point": {
+      "id": "hat_gold_point",
+      "name": "gold_point",
+      "kind": "sweep",
+      "smooth": 0.035,
+      "colorBlend": "hard",
+      "material": "hat_gold",
+      "params": {
+        "path": {
+          "type": "bezier",
+          "closed": false,
+          "points": [
+            {
+              "p": [0.13, 0.98, 0.02],
+              "out": [0.13, 1.64, 0.02]
+            },
+            {
+              "p": [0.7, 1.24, 0.02],
+              "in": [0.63, 1.72, 0.02]
+            }
+          ]
+        },
+        "radius": {
+          "type": "radius",
+          "points": [
+            {
+              "t": 0,
+              "r": 0.26
+            },
+            {
+              "t": 0.45,
+              "r": 0.19
+            },
+            {
+              "t": 1,
+              "r": 0.022
+            }
+          ]
+        }
+      },
+      "gameCollision": false
+    },
+    "hat_head_band": {
+      "id": "hat_head_band",
+      "name": "head_band",
+      "kind": "torus",
+      "transform": {
+        "position": [0, 0.98, 0.02]
+      },
+      "material": "hat_gold",
+      "params": {
+        "majorRadius": 0.325,
+        "minorRadius": 0.055
+      },
+      "gameCollision": false
+    },
+    "hat_left_bell": {
+      "id": "hat_left_bell",
+      "name": "left_bell",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.7, 1.17, 0.02]
+      },
+      "material": "hat_gold",
+      "params": {
+        "radius": 0.085
+      },
+      "children": [
+        "hat_left_bell_mouth"
+      ],
+      "gameCollision": false
+    },
+    "hat_left_bell_mouth": {
+      "id": "hat_left_bell_mouth",
+      "name": "left_bell_mouth",
+      "kind": "sphere",
+      "transform": {
+        "position": [0, -0.045, 0.064]
+      },
+      "op": "subtract",
+      "params": {
+        "radius": 0.034
+      },
+      "gameCollision": false
+    },
+    "hat_right_bell": {
+      "id": "hat_right_bell",
+      "name": "right_bell",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.7, 1.17, 0.02]
+      },
+      "material": "hat_gold",
+      "params": {
+        "radius": 0.085
+      },
+      "children": [
+        "hat_right_bell_mouth"
+      ],
+      "gameCollision": false
+    },
+    "hat_right_bell_mouth": {
+      "id": "hat_right_bell_mouth",
+      "name": "right_bell_mouth",
+      "kind": "sphere",
+      "transform": {
+        "position": [0, -0.045, 0.064]
+      },
+      "op": "subtract",
+      "params": {
+        "radius": 0.034
+      },
+      "gameCollision": false
+    },
+    "outfit_disco_jacket": {
+      "id": "outfit_disco_jacket",
+      "name": "Outfit",
+      "kind": "group",
+      "children": [
+        "outfit_jacket_body",
+        "outfit_front_opening",
+        "outfit_collar_back",
+        "outfit_collar_l",
+        "outfit_collar_r",
+        "outfit_sequin_1",
+        "outfit_sequin_2",
+        "outfit_sequin_3",
+        "outfit_sequin_4",
+        "outfit_sequin_5",
+        "outfit_sequin_6",
+        "outfit_sequin_7",
+        "outfit_sequin_8",
+        "outfit_sequin_9",
+        "outfit_sequin_10",
+        "outfit_sequin_11",
+        "outfit_sequin_12",
+        "outfit_sequin_13",
+        "outfit_sequin_14",
+        "outfit_sequin_15",
+        "outfit_sequin_16",
+        "outfit_sequin_17",
+        "outfit_sequin_18",
+        "outfit_sequin_19",
+        "outfit_sequin_20",
+        "outfit_sequin_21",
+        "outfit_sequin_22",
+        "outfit_sequin_23",
+        "outfit_sequin_24",
+        "outfit_sequin_25",
+        "outfit_sequin_26",
+        "outfit_sequin_27",
+        "outfit_sequin_28",
+        "outfit_sequin_29",
+        "outfit_sequin_30",
+        "outfit_sequin_31",
+        "outfit_sequin_32",
+        "outfit_sequin_33",
+        "outfit_sequin_34",
+        "outfit_sequin_35",
+        "outfit_sequin_36",
+        "outfit_sequin_37",
+        "outfit_sequin_38",
+        "outfit_disco_jacket_anchor_body"
+      ],
+      "asset": {
+        "game": "royal-fiesta",
+        "id": "costume.disco-jacket",
+        "category": "cosmetic",
+        "world": "common",
+        "cosmetic": {
+          "slot": "outfit",
+          "binding": "penguin"
+        }
+      },
+      "mesher": {
+        "output": "paramesh",
+        "params": {
+          "fieldResolution": 32,
+          "subdivisions": 4,
+          "transitionLoops": 1
+        }
+      },
+      "rig": {
+        "format": "raa.rig",
+        "version": 1,
+        "name": "flipper-test",
+        "bones": [
+          {
+            "name": "root",
+            "parent": null,
+            "rest": {
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upper.l",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0.48,
+                0.35,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "lower.l",
+            "parent": "upper.l",
+            "rest": {
+              "t": [
+                0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "tip.l",
+            "parent": "lower.l",
+            "rest": {
+              "t": [
+                0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upper.r",
+            "parent": "root",
+            "rest": {
+              "t": [
+                -0.48,
+                0.35,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "lower.r",
+            "parent": "upper.r",
+            "rest": {
+              "t": [
+                -0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "tip.r",
+            "parent": "lower.r",
+            "rest": {
+              "t": [
+                -0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upperLeg.l",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0.2,
+                -0.5,
+                0.05
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "foot.l",
+            "parent": "upperLeg.l",
+            "rest": {
+              "t": [
+                0,
+                -0.44999999999999996,
+                0.15000000000000002
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upperLeg.r",
+            "parent": "root",
+            "rest": {
+              "t": [
+                -0.2,
+                -0.5,
+                0.05
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "foot.r",
+            "parent": "upperLeg.r",
+            "rest": {
+              "t": [
+                0,
+                -0.44999999999999996,
+                0.15000000000000002
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "head",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0,
+                0.5,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        ],
+        "roles": {
+          "foot.l": "foot.l",
+          "foot.r": "foot.r",
+          "hand.l": "tip.l",
+          "hand.r": "tip.r",
+          "head": "head",
+          "lowerArm.l": "lower.l",
+          "lowerArm.r": "lower.r",
+          "root": "root",
+          "upperArm.l": "upper.l",
+          "upperArm.r": "upper.r",
+          "upperLeg.l": "upperLeg.l",
+          "upperLeg.r": "upperLeg.r"
+        },
+        "ikChains": [
+          {
+            "name": "flipperL",
+            "solver": "twoBone",
+            "bones": [
+              "upper.l",
+              "lower.l",
+              "tip.l"
+            ],
+            "pole": [
+              0,
+              0,
+              1
+            ],
+            "iterations": 16
+          },
+          {
+            "name": "flipperR",
+            "solver": "twoBone",
+            "bones": [
+              "upper.r",
+              "lower.r",
+              "tip.r"
+            ],
+            "pole": [
+              0,
+              0,
+              1
+            ],
+            "iterations": 16
+          }
+        ],
+        "limits": [
+          {
+            "bone": "upper.l",
+            "min": [
+              -80,
+              -80,
+              -80
+            ],
+            "max": [
+              80,
+              80,
+              80
+            ]
+          },
+          {
+            "bone": "upper.r",
+            "min": [
+              -80,
+              -80,
+              -80
+            ],
+            "max": [
+              80,
+              80,
+              80
+            ]
+          },
+          {
+            "bone": "head",
+            "min": [
+              -40,
+              -60,
+              -30
+            ],
+            "max": [
+              40,
+              60,
+              30
+            ]
+          },
+          {
+            "bone": "upperLeg.l",
+            "min": [
+              -60,
+              -30,
+              -30
+            ],
+            "max": [
+              60,
+              30,
+              30
+            ]
+          },
+          {
+            "bone": "upperLeg.r",
+            "min": [
+              -60,
+              -30,
+              -30
+            ],
+            "max": [
+              60,
+              30,
+              30
+            ]
+          },
+          {
+            "bone": "foot.l",
+            "min": [
+              -45,
+              -20,
+              -20
+            ],
+            "max": [
+              45,
+              20,
+              20
+            ]
+          },
+          {
+            "bone": "foot.r",
+            "min": [
+              -45,
+              -20,
+              -20
+            ],
+            "max": [
+              45,
+              20,
+              20
+            ]
+          }
+        ],
+        "attach": {
+          "body": {
+            "bone": "root",
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "head": {
+            "bone": "head",
+            "t": [
+              0,
+              0.3,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "neck": {
+            "bone": "root",
+            "t": [
+              0,
+              0.3,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        },
+        "bindings": [],
+        "smooth": 0.2
+      },
+      "gameCollision": false
+    },
+    "outfit_jacket_body": {
+      "id": "outfit_jacket_body",
+      "name": "jacket_body",
+      "kind": "cone",
+      "transform": {
+        "position": [0, -0.02, 0.05],
+        "scale": [1, 1, 0.98]
+      },
+      "round": 0.07,
+      "material": "outfit_m1",
+      "params": {
+        "height": 0.62,
+        "radiusBottom": 0.6,
+        "radiusTop": 0.46
+      },
+      "gameCollision": false
+    },
+    "outfit_front_opening": {
+      "id": "outfit_front_opening",
+      "name": "front_opening",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [0, 0, 0.7]
+      },
+      "op": "subtract",
+      "smooth": 0.03,
+      "params": {
+        "radii": [0.21, 0.55, 0.3]
+      },
+      "gameCollision": false
+    },
+    "outfit_collar_back": {
+      "id": "outfit_collar_back",
+      "name": "collar_back",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [0, 0.35, -0.16],
+        "rotation": [-12, 0, 0]
+      },
+      "smooth": 0.03,
+      "material": "outfit_m2",
+      "params": {
+        "radii": [0.44, 0.1, 0.26]
+      },
+      "gameCollision": false
+    },
+    "outfit_collar_l": {
+      "id": "outfit_collar_l",
+      "name": "collar_l",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [0.3, 0.37, 0.2],
+        "rotation": [-20, -25, -30]
+      },
+      "smooth": 0.03,
+      "material": "outfit_m2",
+      "params": {
+        "radii": [0.31, 0.1, 0.22]
+      },
+      "gameCollision": false
+    },
+    "outfit_collar_r": {
+      "id": "outfit_collar_r",
+      "name": "collar_r",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [-0.3, 0.37, 0.2],
+        "rotation": [-20, 25, 30]
+      },
+      "smooth": 0.03,
+      "material": "outfit_m2",
+      "params": {
+        "radii": [0.31, 0.1, 0.22]
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_1": {
+      "id": "outfit_sequin_1",
+      "name": "sequin_1",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.5, -0.23, 0.333]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_2": {
+      "id": "outfit_sequin_2",
+      "name": "sequin_2",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.577, -0.23, 0.05]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_3": {
+      "id": "outfit_sequin_3",
+      "name": "sequin_3",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.5, -0.23, -0.233]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_4": {
+      "id": "outfit_sequin_4",
+      "name": "sequin_4",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.289, -0.23, -0.44]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_5": {
+      "id": "outfit_sequin_5",
+      "name": "sequin_5",
+      "kind": "sphere",
+      "transform": {
+        "position": [0, -0.23, -0.516]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_6": {
+      "id": "outfit_sequin_6",
+      "name": "sequin_6",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.289, -0.23, -0.44]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_7": {
+      "id": "outfit_sequin_7",
+      "name": "sequin_7",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.5, -0.23, -0.233]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_8": {
+      "id": "outfit_sequin_8",
+      "name": "sequin_8",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.577, -0.23, 0.05]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_9": {
+      "id": "outfit_sequin_9",
+      "name": "sequin_9",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.5, -0.23, 0.333]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_10": {
+      "id": "outfit_sequin_10",
+      "name": "sequin_10",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.388, -0.1, 0.43]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_11": {
+      "id": "outfit_sequin_11",
+      "name": "sequin_11",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.529, -0.1, 0.189]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_12": {
+      "id": "outfit_sequin_12",
+      "name": "sequin_12",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.529, -0.1, -0.089]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_13": {
+      "id": "outfit_sequin_13",
+      "name": "sequin_13",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.388, -0.1, -0.33]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_14": {
+      "id": "outfit_sequin_14",
+      "name": "sequin_14",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.142, -0.1, -0.469]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_15": {
+      "id": "outfit_sequin_15",
+      "name": "sequin_15",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.142, -0.1, -0.469]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_16": {
+      "id": "outfit_sequin_16",
+      "name": "sequin_16",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.388, -0.1, -0.33]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_17": {
+      "id": "outfit_sequin_17",
+      "name": "sequin_17",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.529, -0.1, -0.089]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_18": {
+      "id": "outfit_sequin_18",
+      "name": "sequin_18",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.529, -0.1, 0.189]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_19": {
+      "id": "outfit_sequin_19",
+      "name": "sequin_19",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.388, -0.1, 0.43]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_20": {
+      "id": "outfit_sequin_20",
+      "name": "sequin_20",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.449, 0.03, 0.304]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_21": {
+      "id": "outfit_sequin_21",
+      "name": "sequin_21",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.519, 0.03, 0.05]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_22": {
+      "id": "outfit_sequin_22",
+      "name": "sequin_22",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.449, 0.03, -0.204]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_23": {
+      "id": "outfit_sequin_23",
+      "name": "sequin_23",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.259, 0.03, -0.39]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_24": {
+      "id": "outfit_sequin_24",
+      "name": "sequin_24",
+      "kind": "sphere",
+      "transform": {
+        "position": [0, 0.03, -0.458]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_25": {
+      "id": "outfit_sequin_25",
+      "name": "sequin_25",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.259, 0.03, -0.39]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_26": {
+      "id": "outfit_sequin_26",
+      "name": "sequin_26",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.449, 0.03, -0.204]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_27": {
+      "id": "outfit_sequin_27",
+      "name": "sequin_27",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.519, 0.03, 0.05]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_28": {
+      "id": "outfit_sequin_28",
+      "name": "sequin_28",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.449, 0.03, 0.304]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_29": {
+      "id": "outfit_sequin_29",
+      "name": "sequin_29",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.346, 0.16, 0.389]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_30": {
+      "id": "outfit_sequin_30",
+      "name": "sequin_30",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.473, 0.16, 0.174]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_31": {
+      "id": "outfit_sequin_31",
+      "name": "sequin_31",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.473, 0.16, -0.074]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_32": {
+      "id": "outfit_sequin_32",
+      "name": "sequin_32",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.346, 0.16, -0.289]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_33": {
+      "id": "outfit_sequin_33",
+      "name": "sequin_33",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.127, 0.16, -0.413]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_34": {
+      "id": "outfit_sequin_34",
+      "name": "sequin_34",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.127, 0.16, -0.413]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_35": {
+      "id": "outfit_sequin_35",
+      "name": "sequin_35",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.346, 0.16, -0.289]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_36": {
+      "id": "outfit_sequin_36",
+      "name": "sequin_36",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.473, 0.16, -0.074]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_37": {
+      "id": "outfit_sequin_37",
+      "name": "sequin_37",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.473, 0.16, 0.174]
+      },
+      "material": "outfit_m3",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_sequin_38": {
+      "id": "outfit_sequin_38",
+      "name": "sequin_38",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.346, 0.16, 0.389]
+      },
+      "material": "outfit_m4",
+      "params": {
+        "radius": 0.048
+      },
+      "gameCollision": false
+    },
+    "outfit_disco_jacket_anchor_body": {
+      "id": "outfit_disco_jacket_anchor_body",
+      "name": "body",
+      "kind": "anchor",
+      "gameCollision": false
+    },
+    "extra_fish_scarf": {
+      "id": "extra_fish_scarf",
+      "name": "Extra",
+      "kind": "group",
+      "children": [
+        "extra_neck",
+        "extra_wrap_low",
+        "extra_wrap_high",
+        "extra_knot",
+        "extra_end_front",
+        "extra_end_back",
+        "extra_fish_wrap_0",
+        "extra_fish_wrap_1",
+        "extra_fish_wrap_2",
+        "extra_fish_wrap_3",
+        "extra_fish_wrap_4",
+        "extra_fish_wrap_5",
+        "extra_fish_wrap_6",
+        "extra_fish_wrap_7",
+        "extra_fish_wrap_8",
+        "extra_fish_front_0",
+        "extra_fish_front_1",
+        "extra_fish_front_2",
+        "extra_fish_front_3",
+        "extra_fish_back_0",
+        "extra_fish_back_1",
+        "extra_fish_back_2",
+        "extra_fish_back_3"
+      ],
+      "asset": {
+        "game": "royal-fiesta",
+        "id": "costume.fish-scarf",
+        "category": "cosmetic",
+        "world": "common",
+        "cosmetic": {
+          "slot": "extra",
+          "binding": "penguin"
+        }
+      },
+      "mesher": {
+        "output": "paramesh",
+        "params": {
+          "fieldResolution": 16,
+          "subdivisions": 4,
+          "transitionLoops": 1
+        }
+      },
+      "rig": {
+        "format": "raa.rig",
+        "version": 1,
+        "name": "flipper-test",
+        "bones": [
+          {
+            "name": "root",
+            "parent": null,
+            "rest": {
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upper.l",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0.48,
+                0.35,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "lower.l",
+            "parent": "upper.l",
+            "rest": {
+              "t": [
+                0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "tip.l",
+            "parent": "lower.l",
+            "rest": {
+              "t": [
+                0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upper.r",
+            "parent": "root",
+            "rest": {
+              "t": [
+                -0.48,
+                0.35,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "lower.r",
+            "parent": "upper.r",
+            "rest": {
+              "t": [
+                -0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "tip.r",
+            "parent": "lower.r",
+            "rest": {
+              "t": [
+                -0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upperLeg.l",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0.2,
+                -0.5,
+                0.05
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "foot.l",
+            "parent": "upperLeg.l",
+            "rest": {
+              "t": [
+                0,
+                -0.44999999999999996,
+                0.15000000000000002
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upperLeg.r",
+            "parent": "root",
+            "rest": {
+              "t": [
+                -0.2,
+                -0.5,
+                0.05
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "foot.r",
+            "parent": "upperLeg.r",
+            "rest": {
+              "t": [
+                0,
+                -0.44999999999999996,
+                0.15000000000000002
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "head",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0,
+                0.5,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        ],
+        "roles": {
+          "foot.l": "foot.l",
+          "foot.r": "foot.r",
+          "hand.l": "tip.l",
+          "hand.r": "tip.r",
+          "head": "head",
+          "lowerArm.l": "lower.l",
+          "lowerArm.r": "lower.r",
+          "root": "root",
+          "upperArm.l": "upper.l",
+          "upperArm.r": "upper.r",
+          "upperLeg.l": "upperLeg.l",
+          "upperLeg.r": "upperLeg.r"
+        },
+        "ikChains": [
+          {
+            "name": "flipperL",
+            "solver": "twoBone",
+            "bones": [
+              "upper.l",
+              "lower.l",
+              "tip.l"
+            ],
+            "pole": [
+              0,
+              0,
+              1
+            ],
+            "iterations": 16
+          },
+          {
+            "name": "flipperR",
+            "solver": "twoBone",
+            "bones": [
+              "upper.r",
+              "lower.r",
+              "tip.r"
+            ],
+            "pole": [
+              0,
+              0,
+              1
+            ],
+            "iterations": 16
+          }
+        ],
+        "limits": [
+          {
+            "bone": "upper.l",
+            "min": [
+              -80,
+              -80,
+              -80
+            ],
+            "max": [
+              80,
+              80,
+              80
+            ]
+          },
+          {
+            "bone": "upper.r",
+            "min": [
+              -80,
+              -80,
+              -80
+            ],
+            "max": [
+              80,
+              80,
+              80
+            ]
+          },
+          {
+            "bone": "head",
+            "min": [
+              -40,
+              -60,
+              -30
+            ],
+            "max": [
+              40,
+              60,
+              30
+            ]
+          },
+          {
+            "bone": "upperLeg.l",
+            "min": [
+              -60,
+              -30,
+              -30
+            ],
+            "max": [
+              60,
+              30,
+              30
+            ]
+          },
+          {
+            "bone": "upperLeg.r",
+            "min": [
+              -60,
+              -30,
+              -30
+            ],
+            "max": [
+              60,
+              30,
+              30
+            ]
+          },
+          {
+            "bone": "foot.l",
+            "min": [
+              -45,
+              -20,
+              -20
+            ],
+            "max": [
+              45,
+              20,
+              20
+            ]
+          },
+          {
+            "bone": "foot.r",
+            "min": [
+              -45,
+              -20,
+              -20
+            ],
+            "max": [
+              45,
+              20,
+              20
+            ]
+          }
+        ],
+        "attach": {
+          "body": {
+            "bone": "root",
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "head": {
+            "bone": "head",
+            "t": [
+              0,
+              0.3,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "neck": {
+            "bone": "root",
+            "t": [
+              0,
+              0.3,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        },
+        "bindings": [],
+        "smooth": 0.2
+      },
+      "gameCollision": true
+    },
+    "extra_neck": {
+      "id": "extra_neck",
+      "name": "neck",
+      "kind": "anchor",
+      "transform": {
+        "position": [0, 0.3, 0]
+      },
+      "gameCollision": true
+    },
+    "extra_wrap_low": {
+      "id": "extra_wrap_low",
+      "name": "wrap_low",
+      "kind": "sweep",
+      "transform": {
+        "position": [0, 0.19, 0.01],
+        "rotation": [10, 0, 0]
+      },
+      "material": "extra_m8",
+      "params": {
+        "fieldResolution": 256,
+        "frame": "up",
+        "path": {
+          "type": "bezier",
+          "closed": true,
+          "points": [
+            {
+              "p": [0, 0, 0.285],
+              "in": [-0.1574, 0, 0.285],
+              "out": [0.1574, 0, 0.285]
+            },
+            {
+              "p": [0.285, 0, 0],
+              "in": [0.285, 0, 0.1574],
+              "out": [0.285, 0, -0.1574]
+            },
+            {
+              "p": [0, 0, -0.285],
+              "in": [0.1574, 0, -0.285],
+              "out": [-0.1574, 0, -0.285]
+            },
+            {
+              "p": [-0.285, 0, 0],
+              "in": [-0.285, 0, -0.1574],
+              "out": [-0.285, 0, 0.1574]
+            }
+          ]
+        },
+        "stations": [
+          {
+            "t": 0,
+            "shape": "circle",
+            "scale": [0.06, 0.085]
+          },
+          {
+            "t": 0.3,
+            "shape": "circle",
+            "scale": [0.0672, 0.0765]
+          },
+          {
+            "t": 0.6,
+            "shape": "circle",
+            "scale": [0.0552, 0.0935]
+          },
+          {
+            "t": 0.85,
+            "shape": "circle",
+            "scale": [0.0648, 0.08075]
+          }
+        ]
+      },
+      "gameCollision": false
+    },
+    "extra_wrap_high": {
+      "id": "extra_wrap_high",
+      "name": "wrap_high",
+      "kind": "sweep",
+      "transform": {
+        "position": [0, 0.275, -0.005],
+        "rotation": [-6, 0, 0]
+      },
+      "smooth": 0.035,
+      "material": "extra_m8",
+      "params": {
+        "fieldResolution": 256,
+        "frame": "up",
+        "path": {
+          "type": "bezier",
+          "closed": true,
+          "points": [
+            {
+              "p": [0, 0, 0.262],
+              "in": [-0.1447, 0, 0.262],
+              "out": [0.1447, 0, 0.262]
+            },
+            {
+              "p": [0.262, 0, 0],
+              "in": [0.262, 0, 0.1447],
+              "out": [0.262, 0, -0.1447]
+            },
+            {
+              "p": [0, 0, -0.262],
+              "in": [0.1447, 0, -0.262],
+              "out": [-0.1447, 0, -0.262]
+            },
+            {
+              "p": [-0.262, 0, 0],
+              "in": [-0.262, 0, -0.1447],
+              "out": [-0.262, 0, 0.1447]
+            }
+          ]
+        },
+        "stations": [
+          {
+            "t": 0,
+            "shape": "circle",
+            "scale": [0.05, 0.07]
+          },
+          {
+            "t": 0.3,
+            "shape": "circle",
+            "scale": [0.056, 0.063]
+          },
+          {
+            "t": 0.6,
+            "shape": "circle",
+            "scale": [0.046, 0.077]
+          },
+          {
+            "t": 0.85,
+            "shape": "circle",
+            "scale": [0.054, 0.0665]
+          }
+        ]
+      },
+      "gameCollision": false
+    },
+    "extra_knot": {
+      "id": "extra_knot",
+      "name": "knot",
+      "kind": "paramesh",
+      "transform": {
+        "position": [0.15, 0.2, 0.275],
+        "rotation": [0, 30, 15]
+      },
+      "smooth": 0.03,
+      "material": "extra_m8",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.1, 0, 0],
+            [-0.1, 0, 0],
+            [0, 0.085, 0],
+            [0, -0.085, 0],
+            [0, 0, 0.075],
+            [0, 0, -0.075]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_end_front": {
+      "id": "extra_end_front",
+      "name": "end_front",
+      "kind": "sweep",
+      "smooth": 0.03,
+      "material": "extra_m8",
+      "params": {
+        "fieldResolution": 256,
+        "path": {
+          "type": "bezier",
+          "closed": false,
+          "points": [
+            {
+              "p": [0.15, 0.18, 0.3],
+              "out": [0.1467, 0.1367, 0.325]
+            },
+            {
+              "p": [0.14, 0.05, 0.375],
+              "in": [0.1475, 0.0933, 0.3558],
+              "out": [0.1325, 0.0067, 0.3942]
+            },
+            {
+              "p": [0.105, -0.08, 0.415],
+              "in": [0.1083, -0.0383, 0.4042],
+              "out": [0.1017, -0.1217, 0.4258]
+            },
+            {
+              "p": [0.12, -0.2, 0.44],
+              "in": [0.1208, -0.165, 0.4342],
+              "out": [0.1192, -0.235, 0.4458]
+            },
+            {
+              "p": [0.1, -0.29, 0.45],
+              "in": [0.1067, -0.26, 0.4467]
+            }
+          ]
+        },
+        "roundEnd": true,
+        "stations": [
+          {
+            "t": 0,
+            "shape": "circle",
+            "scale": [0.062, 0.032]
+          },
+          {
+            "t": 0.45,
+            "shape": "circle",
+            "twist": 10,
+            "scale": [0.07, 0.03]
+          },
+          {
+            "t": 1,
+            "shape": "circle",
+            "twist": -6,
+            "scale": [0.082, 0.028]
+          }
+        ],
+        "up": [0, 0.25, 1]
+      },
+      "gameCollision": false
+    },
+    "extra_end_back": {
+      "id": "extra_end_back",
+      "name": "end_back",
+      "kind": "sweep",
+      "smooth": 0.03,
+      "material": "extra_m8",
+      "params": {
+        "fieldResolution": 256,
+        "path": {
+          "type": "bezier",
+          "closed": false,
+          "points": [
+            {
+              "p": [0.2, 0.22, 0.24],
+              "out": [0.245, 0.2367, 0.18]
+            },
+            {
+              "p": [0.335, 0.27, 0.06],
+              "in": [0.3183, 0.27, 0.1367],
+              "out": [0.3517, 0.27, -0.0167]
+            },
+            {
+              "p": [0.3, 0.22, -0.22],
+              "in": [0.315, 0.255, -0.1542],
+              "out": [0.285, 0.185, -0.2858]
+            },
+            {
+              "p": [0.245, 0.06, -0.335],
+              "in": [0.2525, 0.1167, -0.305],
+              "out": [0.2375, 0.0033, -0.365]
+            },
+            {
+              "p": [0.255, -0.12, -0.4],
+              "in": [0.2542, -0.0667, -0.3858],
+              "out": [0.2558, -0.1733, -0.4142]
+            },
+            {
+              "p": [0.25, -0.26, -0.42],
+              "in": [0.2517, -0.2133, -0.4133]
+            }
+          ]
+        },
+        "roundEnd": true,
+        "stations": [
+          {
+            "t": 0,
+            "shape": "circle",
+            "scale": [0.062, 0.032]
+          },
+          {
+            "t": 0.5,
+            "shape": "circle",
+            "twist": -8,
+            "scale": [0.068, 0.03]
+          },
+          {
+            "t": 1,
+            "shape": "circle",
+            "twist": 6,
+            "scale": [0.08, 0.028]
+          }
+        ],
+        "up": [0.35, 0.9, 0.2]
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_0": {
+      "id": "extra_fish_wrap_0",
+      "name": "fish_wrap_0",
+      "kind": "group",
+      "transform": {
+        "position": [-0.1685, 0.1511, 0.2995],
+        "rotation": [0, -30, 0]
+      },
+      "children": [
+        "extra_fish_wrap_0_body",
+        "extra_fish_wrap_0_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_0_body": {
+      "id": "extra_fish_wrap_0_body",
+      "name": "fish_wrap_0_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 12]
+      },
+      "material": "extra_m10",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_0_tail": {
+      "id": "extra_fish_wrap_0_tail",
+      "name": "fish_wrap_0_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, -0.0109, 0],
+        "rotation": [0, 0, 12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m10",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_1": {
+      "id": "extra_fish_wrap_1",
+      "name": "fish_wrap_1",
+      "kind": "group",
+      "transform": {
+        "position": [-0.2976, 0.1507, 0.1637],
+        "rotation": [0, -62, 0]
+      },
+      "children": [
+        "extra_fish_wrap_1_body",
+        "extra_fish_wrap_1_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_1_body": {
+      "id": "extra_fish_wrap_1_body",
+      "name": "fish_wrap_1_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, -12]
+      },
+      "material": "extra_m11",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_1_tail": {
+      "id": "extra_fish_wrap_1_tail",
+      "name": "fish_wrap_1_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, 0.0109, 0],
+        "rotation": [0, 0, -12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m11",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_2": {
+      "id": "extra_fish_wrap_2",
+      "name": "fish_wrap_2",
+      "kind": "group",
+      "transform": {
+        "position": [-0.3362, 0.2059, -0.0111],
+        "rotation": [0, -94, 0]
+      },
+      "children": [
+        "extra_fish_wrap_2_body",
+        "extra_fish_wrap_2_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_2_body": {
+      "id": "extra_fish_wrap_2_body",
+      "name": "fish_wrap_2_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 12]
+      },
+      "material": "extra_m12",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_2_tail": {
+      "id": "extra_fish_wrap_2_tail",
+      "name": "fish_wrap_2_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, -0.0109, 0],
+        "rotation": [0, 0, 12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m12",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_3": {
+      "id": "extra_fish_wrap_3",
+      "name": "fish_wrap_3",
+      "kind": "group",
+      "transform": {
+        "position": [-0.2726, 0.2126, -0.1872],
+        "rotation": [0, -126, 0]
+      },
+      "children": [
+        "extra_fish_wrap_3_body",
+        "extra_fish_wrap_3_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_3_body": {
+      "id": "extra_fish_wrap_3_body",
+      "name": "fish_wrap_3_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, -12]
+      },
+      "material": "extra_m9",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_3_tail": {
+      "id": "extra_fish_wrap_3_tail",
+      "name": "fish_wrap_3_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, 0.0109, 0],
+        "rotation": [0, 0, -12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m9",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_4": {
+      "id": "extra_fish_wrap_4",
+      "name": "fish_wrap_4",
+      "kind": "group",
+      "transform": {
+        "position": [-0.1262, 0.2561, -0.2956],
+        "rotation": [0, -158, 0]
+      },
+      "children": [
+        "extra_fish_wrap_4_body",
+        "extra_fish_wrap_4_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_4_body": {
+      "id": "extra_fish_wrap_4_body",
+      "name": "fish_wrap_4_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 12]
+      },
+      "material": "extra_m13",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_4_tail": {
+      "id": "extra_fish_wrap_4_tail",
+      "name": "fish_wrap_4_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, -0.0109, 0],
+        "rotation": [0, 0, 12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m13",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_5": {
+      "id": "extra_fish_wrap_5",
+      "name": "fish_wrap_5",
+      "kind": "group",
+      "transform": {
+        "position": [0.0585, 0.2358, -0.3189],
+        "rotation": [0, 170, 0]
+      },
+      "children": [
+        "extra_fish_wrap_5_body",
+        "extra_fish_wrap_5_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_5_body": {
+      "id": "extra_fish_wrap_5_body",
+      "name": "fish_wrap_5_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, -12]
+      },
+      "material": "extra_m10",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_5_tail": {
+      "id": "extra_fish_wrap_5_tail",
+      "name": "fish_wrap_5_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, 0.0109, 0],
+        "rotation": [0, 0, -12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m10",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_6": {
+      "id": "extra_fish_wrap_6",
+      "name": "fish_wrap_6",
+      "kind": "group",
+      "transform": {
+        "position": [0.2255, 0.2453, -0.2346],
+        "rotation": [0, 138, 0]
+      },
+      "children": [
+        "extra_fish_wrap_6_body",
+        "extra_fish_wrap_6_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_6_body": {
+      "id": "extra_fish_wrap_6_body",
+      "name": "fish_wrap_6_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 12]
+      },
+      "material": "extra_m11",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_6_tail": {
+      "id": "extra_fish_wrap_6_tail",
+      "name": "fish_wrap_6_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, -0.0109, 0],
+        "rotation": [0, 0, 12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m11",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_7": {
+      "id": "extra_fish_wrap_7",
+      "name": "fish_wrap_7",
+      "kind": "group",
+      "transform": {
+        "position": [0.3205, 0.1963, -0.0946],
+        "rotation": [0, 108, 0]
+      },
+      "children": [
+        "extra_fish_wrap_7_body",
+        "extra_fish_wrap_7_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_7_body": {
+      "id": "extra_fish_wrap_7_body",
+      "name": "fish_wrap_7_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, -12]
+      },
+      "material": "extra_m12",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_7_tail": {
+      "id": "extra_fish_wrap_7_tail",
+      "name": "fish_wrap_7_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, 0.0109, 0],
+        "rotation": [0, 0, -12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m12",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_8": {
+      "id": "extra_fish_wrap_8",
+      "name": "fish_wrap_8",
+      "kind": "group",
+      "transform": {
+        "position": [0.3337, 0.1937, 0.0583],
+        "rotation": [0, 82, 0]
+      },
+      "children": [
+        "extra_fish_wrap_8_body",
+        "extra_fish_wrap_8_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_wrap_8_body": {
+      "id": "extra_fish_wrap_8_body",
+      "name": "fish_wrap_8_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 12]
+      },
+      "material": "extra_m9",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0432, 0, 0],
+            [-0.0432, 0, 0],
+            [0, 0.0243, 0],
+            [0, -0.0243, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_wrap_8_tail": {
+      "id": "extra_fish_wrap_8_tail",
+      "name": "fish_wrap_8_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0511, -0.0109, 0],
+        "rotation": [0, 0, 12]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m9",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0126, 0, 0],
+            [-0.0126, 0, 0],
+            [0, 0.0288, 0],
+            [0, -0.0288, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_front_0": {
+      "id": "extra_fish_front_0",
+      "name": "fish_front_0",
+      "kind": "group",
+      "transform": {
+        "position": [0.1538, 0.0565, 0.4057],
+        "rotation": [0, 20.77, 0]
+      },
+      "children": [
+        "extra_fish_front_0_body",
+        "extra_fish_front_0_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_front_0_body": {
+      "id": "extra_fish_front_0_body",
+      "name": "fish_front_0_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 18]
+      },
+      "material": "extra_m13",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0384, 0, 0],
+            [-0.0384, 0, 0],
+            [0, 0.0216, 0],
+            [0, -0.0216, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_front_0_tail": {
+      "id": "extra_fish_front_0_tail",
+      "name": "fish_front_0_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0441, -0.0143, 0],
+        "rotation": [0, 0, 18]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m13",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0112, 0, 0],
+            [-0.0112, 0, 0],
+            [0, 0.0256, 0],
+            [0, -0.0256, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_front_1": {
+      "id": "extra_fish_front_1",
+      "name": "fish_front_1",
+      "kind": "group",
+      "transform": {
+        "position": [0.1203, -0.0482, 0.4416],
+        "rotation": [0, 15.23, 0]
+      },
+      "children": [
+        "extra_fish_front_1_body",
+        "extra_fish_front_1_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_front_1_body": {
+      "id": "extra_fish_front_1_body",
+      "name": "fish_front_1_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, -18]
+      },
+      "material": "extra_m10",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0384, 0, 0],
+            [-0.0384, 0, 0],
+            [0, 0.0216, 0],
+            [0, -0.0216, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_front_1_tail": {
+      "id": "extra_fish_front_1_tail",
+      "name": "fish_front_1_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0441, 0.0143, 0],
+        "rotation": [0, 0, -18]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m10",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0112, 0, 0],
+            [-0.0112, 0, 0],
+            [0, 0.0256, 0],
+            [0, -0.0256, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_front_2": {
+      "id": "extra_fish_front_2",
+      "name": "fish_front_2",
+      "kind": "group",
+      "transform": {
+        "position": [0.1206, -0.1425, 0.4642],
+        "rotation": [0, 14.56, 0]
+      },
+      "children": [
+        "extra_fish_front_2_body",
+        "extra_fish_front_2_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_front_2_body": {
+      "id": "extra_fish_front_2_body",
+      "name": "fish_front_2_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 18]
+      },
+      "material": "extra_m11",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0384, 0, 0],
+            [-0.0384, 0, 0],
+            [0, 0.0216, 0],
+            [0, -0.0216, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_front_2_tail": {
+      "id": "extra_fish_front_2_tail",
+      "name": "fish_front_2_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0441, -0.0143, 0],
+        "rotation": [0, 0, 18]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m11",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0112, 0, 0],
+            [-0.0112, 0, 0],
+            [0, 0.0256, 0],
+            [0, -0.0256, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_front_3": {
+      "id": "extra_fish_front_3",
+      "name": "fish_front_3",
+      "kind": "group",
+      "transform": {
+        "position": [0.1257, -0.2292, 0.4789],
+        "rotation": [0, 14.71, 0]
+      },
+      "children": [
+        "extra_fish_front_3_body",
+        "extra_fish_front_3_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_front_3_body": {
+      "id": "extra_fish_front_3_body",
+      "name": "fish_front_3_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, -18]
+      },
+      "material": "extra_m12",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0384, 0, 0],
+            [-0.0384, 0, 0],
+            [0, 0.0216, 0],
+            [0, -0.0216, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_front_3_tail": {
+      "id": "extra_fish_front_3_tail",
+      "name": "fish_front_3_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0441, 0.0143, 0],
+        "rotation": [0, 0, -18]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m12",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0112, 0, 0],
+            [-0.0112, 0, 0],
+            [0, 0.0256, 0],
+            [0, -0.0256, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_back_0": {
+      "id": "extra_fish_back_0",
+      "name": "fish_back_0",
+      "kind": "group",
+      "transform": {
+        "position": [0.2844, 0.1566, -0.3199],
+        "rotation": [0, 161.51, 0]
+      },
+      "children": [
+        "extra_fish_back_0_body",
+        "extra_fish_back_0_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_back_0_body": {
+      "id": "extra_fish_back_0_body",
+      "name": "fish_back_0_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, -18]
+      },
+      "material": "extra_m9",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0384, 0, 0],
+            [-0.0384, 0, 0],
+            [0, 0.0216, 0],
+            [0, -0.0216, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_back_0_tail": {
+      "id": "extra_fish_back_0_tail",
+      "name": "fish_back_0_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0441, 0.0143, 0],
+        "rotation": [0, 0, -18]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m9",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0112, 0, 0],
+            [-0.0112, 0, 0],
+            [0, 0.0256, 0],
+            [0, -0.0256, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_back_1": {
+      "id": "extra_fish_back_1",
+      "name": "fish_back_1",
+      "kind": "group",
+      "transform": {
+        "position": [0.2521, 0.0426, -0.3787],
+        "rotation": [0, 166.08, 0]
+      },
+      "children": [
+        "extra_fish_back_1_body",
+        "extra_fish_back_1_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_back_1_body": {
+      "id": "extra_fish_back_1_body",
+      "name": "fish_back_1_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 18]
+      },
+      "material": "extra_m13",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0384, 0, 0],
+            [-0.0384, 0, 0],
+            [0, 0.0216, 0],
+            [0, -0.0216, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_back_1_tail": {
+      "id": "extra_fish_back_1_tail",
+      "name": "fish_back_1_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0441, -0.0143, 0],
+        "rotation": [0, 0, 18]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m13",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0112, 0, 0],
+            [-0.0112, 0, 0],
+            [0, 0.0256, 0],
+            [0, -0.0256, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_back_2": {
+      "id": "extra_fish_back_2",
+      "name": "fish_back_2",
+      "kind": "group",
+      "transform": {
+        "position": [0.2609, -0.0863, -0.4258],
+        "rotation": [0, 167.23, 0]
+      },
+      "children": [
+        "extra_fish_back_2_body",
+        "extra_fish_back_2_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_back_2_body": {
+      "id": "extra_fish_back_2_body",
+      "name": "fish_back_2_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, -18]
+      },
+      "material": "extra_m10",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0384, 0, 0],
+            [-0.0384, 0, 0],
+            [0, 0.0216, 0],
+            [0, -0.0216, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_back_2_tail": {
+      "id": "extra_fish_back_2_tail",
+      "name": "fish_back_2_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0441, 0.0143, 0],
+        "rotation": [0, 0, -18]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m10",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0112, 0, 0],
+            [-0.0112, 0, 0],
+            [0, 0.0256, 0],
+            [0, -0.0256, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_back_3": {
+      "id": "extra_fish_back_3",
+      "name": "fish_back_3",
+      "kind": "group",
+      "transform": {
+        "position": [0.261, -0.1925, -0.448],
+        "rotation": [0, 167.87, 0]
+      },
+      "children": [
+        "extra_fish_back_3_body",
+        "extra_fish_back_3_tail"
+      ],
+      "gameCollision": true
+    },
+    "extra_fish_back_3_body": {
+      "id": "extra_fish_back_3_body",
+      "name": "fish_back_3_body",
+      "kind": "paramesh",
+      "transform": {
+        "rotation": [0, 0, 18]
+      },
+      "material": "extra_m11",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0384, 0, 0],
+            [-0.0384, 0, 0],
+            [0, 0.0216, 0],
+            [0, -0.0216, 0],
+            [0, 0, 0.015],
+            [0, 0, -0.015]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "extra_fish_back_3_tail": {
+      "id": "extra_fish_back_3_tail",
+      "name": "fish_back_3_tail",
+      "kind": "paramesh",
+      "transform": {
+        "position": [-0.0441, -0.0143, 0],
+        "rotation": [0, 0, 18]
+      },
+      "smooth": 0.006,
+      "colorBlend": "hard",
+      "material": "extra_m11",
+      "paramesh": {
+        "shape": {
+          "format": "paramesh.shape",
+          "version": 1,
+          "shape": "sphere",
+          "radius": 1,
+          "points": [
+            [0.0112, 0, 0],
+            [-0.0112, 0, 0],
+            [0, 0.0256, 0],
+            [0, -0.0256, 0],
+            [0, 0, 0.011],
+            [0, 0, -0.011]
+          ],
+          "pointRadii": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgeRadii": {}
+        }
+      },
+      "gameCollision": false
+    },
+    "special_ghost_aura": {
+      "id": "special_ghost_aura",
+      "name": "Special",
+      "kind": "group",
+      "children": [
+        "special_anchor_x",
+        "special_halo_outer",
+        "special_halo_inner",
+        "special_aura_disc",
+        "special_foot_ring",
+        "special_wisp_a",
+        "special_wisp_a_tail",
+        "special_wisp_b",
+        "special_wisp_b_tail",
+        "special_wisp_c",
+        "special_wisp_c_tail",
+        "special_wisp_d",
+        "special_wisp_d_tail",
+        "special_mote_a",
+        "special_mote_b",
+        "special_mote_c"
+      ],
+      "asset": {
+        "game": "royal-fiesta",
+        "id": "costume.ghost-aura",
+        "category": "cosmetic",
+        "world": "common",
+        "cosmetic": {
+          "slot": "special",
+          "binding": "penguin"
+        }
+      },
+      "mesher": {
+        "output": "paramesh",
+        "params": {
+          "fieldResolution": 32,
+          "subdivisions": 4,
+          "transitionLoops": 1
+        }
+      },
+      "rig": {
+        "format": "raa.rig",
+        "version": 1,
+        "name": "flipper-test",
+        "bones": [
+          {
+            "name": "root",
+            "parent": null,
+            "rest": {
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upper.l",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0.48,
+                0.35,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "lower.l",
+            "parent": "upper.l",
+            "rest": {
+              "t": [
+                0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "tip.l",
+            "parent": "lower.l",
+            "rest": {
+              "t": [
+                0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upper.r",
+            "parent": "root",
+            "rest": {
+              "t": [
+                -0.48,
+                0.35,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "lower.r",
+            "parent": "upper.r",
+            "rest": {
+              "t": [
+                -0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "tip.r",
+            "parent": "lower.r",
+            "rest": {
+              "t": [
+                -0.55,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upperLeg.l",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0.2,
+                -0.5,
+                0.05
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "foot.l",
+            "parent": "upperLeg.l",
+            "rest": {
+              "t": [
+                0,
+                -0.44999999999999996,
+                0.15000000000000002
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "upperLeg.r",
+            "parent": "root",
+            "rest": {
+              "t": [
+                -0.2,
+                -0.5,
+                0.05
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "foot.r",
+            "parent": "upperLeg.r",
+            "rest": {
+              "t": [
+                0,
+                -0.44999999999999996,
+                0.15000000000000002
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "name": "head",
+            "parent": "root",
+            "rest": {
+              "t": [
+                0,
+                0.5,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "s": [
+                1,
+                1,
+                1
+              ]
+            }
+          }
+        ],
+        "roles": {
+          "foot.l": "foot.l",
+          "foot.r": "foot.r",
+          "hand.l": "tip.l",
+          "hand.r": "tip.r",
+          "head": "head",
+          "lowerArm.l": "lower.l",
+          "lowerArm.r": "lower.r",
+          "root": "root",
+          "upperArm.l": "upper.l",
+          "upperArm.r": "upper.r",
+          "upperLeg.l": "upperLeg.l",
+          "upperLeg.r": "upperLeg.r"
+        },
+        "ikChains": [
+          {
+            "name": "flipperL",
+            "solver": "twoBone",
+            "bones": [
+              "upper.l",
+              "lower.l",
+              "tip.l"
+            ],
+            "pole": [
+              0,
+              0,
+              1
+            ],
+            "iterations": 16
+          },
+          {
+            "name": "flipperR",
+            "solver": "twoBone",
+            "bones": [
+              "upper.r",
+              "lower.r",
+              "tip.r"
+            ],
+            "pole": [
+              0,
+              0,
+              1
+            ],
+            "iterations": 16
+          }
+        ],
+        "limits": [
+          {
+            "bone": "upper.l",
+            "min": [
+              -80,
+              -80,
+              -80
+            ],
+            "max": [
+              80,
+              80,
+              80
+            ]
+          },
+          {
+            "bone": "upper.r",
+            "min": [
+              -80,
+              -80,
+              -80
+            ],
+            "max": [
+              80,
+              80,
+              80
+            ]
+          },
+          {
+            "bone": "head",
+            "min": [
+              -40,
+              -60,
+              -30
+            ],
+            "max": [
+              40,
+              60,
+              30
+            ]
+          },
+          {
+            "bone": "upperLeg.l",
+            "min": [
+              -60,
+              -30,
+              -30
+            ],
+            "max": [
+              60,
+              30,
+              30
+            ]
+          },
+          {
+            "bone": "upperLeg.r",
+            "min": [
+              -60,
+              -30,
+              -30
+            ],
+            "max": [
+              60,
+              30,
+              30
+            ]
+          },
+          {
+            "bone": "foot.l",
+            "min": [
+              -45,
+              -20,
+              -20
+            ],
+            "max": [
+              45,
+              20,
+              20
+            ]
+          },
+          {
+            "bone": "foot.r",
+            "min": [
+              -45,
+              -20,
+              -20
+            ],
+            "max": [
+              45,
+              20,
+              20
+            ]
+          }
+        ],
+        "attach": {
+          "body": {
+            "bone": "root",
+            "t": [
+              0,
+              0,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "head": {
+            "bone": "head",
+            "t": [
+              0,
+              0.3,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "neck": {
+            "bone": "root",
+            "t": [
+              0,
+              0.3,
+              0
+            ],
+            "r": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        },
+        "bindings": [],
+        "smooth": 0.2
+      },
+      "gameCollision": false
+    },
+    "special_anchor_x": {
+      "id": "special_anchor_x",
+      "name": "body",
+      "kind": "anchor",
+      "gameCollision": false
+    },
+    "special_halo_outer": {
+      "id": "special_halo_outer",
+      "name": "halo_outer",
+      "kind": "torus",
+      "transform": {
+        "position": [0, 0.05, -0.5],
+        "rotation": [90, 0, 0]
+      },
+      "material": "special_m1",
+      "params": {
+        "majorRadius": 1.5,
+        "minorRadius": 0.04
+      },
+      "gameCollision": false
+    },
+    "special_halo_inner": {
+      "id": "special_halo_inner",
+      "name": "halo_inner",
+      "kind": "torus",
+      "transform": {
+        "position": [0, 0.05, -0.45],
+        "rotation": [90, 0, 0]
+      },
+      "material": "special_m1",
+      "params": {
+        "majorRadius": 1.22,
+        "minorRadius": 0.028
+      },
+      "gameCollision": false
+    },
+    "special_aura_disc": {
+      "id": "special_aura_disc",
+      "name": "aura_disc",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [0, 0.05, -0.62]
+      },
+      "material": "special_m2",
+      "params": {
+        "radii": [1.2, 1.3, 0.04]
+      },
+      "gameCollision": false
+    },
+    "special_foot_ring": {
+      "id": "special_foot_ring",
+      "name": "foot_ring",
+      "kind": "torus",
+      "transform": {
+        "position": [0, -0.99, 0.1]
+      },
+      "material": "special_m1",
+      "params": {
+        "majorRadius": 0.75,
+        "minorRadius": 0.03
+      },
+      "gameCollision": false
+    },
+    "special_wisp_a": {
+      "id": "special_wisp_a",
+      "name": "wisp_a",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [-1.05, 0.95, 0.15]
+      },
+      "material": "special_m2",
+      "params": {
+        "radii": [0.08, 0.09, 0.06]
+      },
+      "gameCollision": false
+    },
+    "special_wisp_a_tail": {
+      "id": "special_wisp_a_tail",
+      "name": "wisp_a_tail",
+      "kind": "cone",
+      "transform": {
+        "position": [-1.07, 1.09, 0.15],
+        "rotation": [0, 0, 12]
+      },
+      "material": "special_m2",
+      "params": {
+        "height": 0.2,
+        "radiusBottom": 0.055,
+        "radiusTop": 0
+      },
+      "gameCollision": false
+    },
+    "special_wisp_b": {
+      "id": "special_wisp_b",
+      "name": "wisp_b",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [1.1, 0.7, 0.1]
+      },
+      "material": "special_m2",
+      "params": {
+        "radii": [0.08, 0.09, 0.06]
+      },
+      "gameCollision": false
+    },
+    "special_wisp_b_tail": {
+      "id": "special_wisp_b_tail",
+      "name": "wisp_b_tail",
+      "kind": "cone",
+      "transform": {
+        "position": [1.12, 0.84, 0.1],
+        "rotation": [0, 0, -12]
+      },
+      "material": "special_m2",
+      "params": {
+        "height": 0.2,
+        "radiusBottom": 0.055,
+        "radiusTop": 0
+      },
+      "gameCollision": false
+    },
+    "special_wisp_c": {
+      "id": "special_wisp_c",
+      "name": "wisp_c",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [-0.95, -0.5, 0.25]
+      },
+      "material": "special_m2",
+      "params": {
+        "radii": [0.08, 0.09, 0.06]
+      },
+      "gameCollision": false
+    },
+    "special_wisp_c_tail": {
+      "id": "special_wisp_c_tail",
+      "name": "wisp_c_tail",
+      "kind": "cone",
+      "transform": {
+        "position": [-0.97, -0.36, 0.25],
+        "rotation": [0, 0, 10]
+      },
+      "material": "special_m2",
+      "params": {
+        "height": 0.2,
+        "radiusBottom": 0.055,
+        "radiusTop": 0
+      },
+      "gameCollision": false
+    },
+    "special_wisp_d": {
+      "id": "special_wisp_d",
+      "name": "wisp_d",
+      "kind": "ellipsoid",
+      "transform": {
+        "position": [1, -0.7, 0.2]
+      },
+      "material": "special_m2",
+      "params": {
+        "radii": [0.08, 0.09, 0.06]
+      },
+      "gameCollision": false
+    },
+    "special_wisp_d_tail": {
+      "id": "special_wisp_d_tail",
+      "name": "wisp_d_tail",
+      "kind": "cone",
+      "transform": {
+        "position": [1.02, -0.56, 0.2],
+        "rotation": [0, 0, -10]
+      },
+      "material": "special_m2",
+      "params": {
+        "height": 0.2,
+        "radiusBottom": 0.055,
+        "radiusTop": 0
+      },
+      "gameCollision": false
+    },
+    "special_mote_a": {
+      "id": "special_mote_a",
+      "name": "mote_a",
+      "kind": "sphere",
+      "transform": {
+        "position": [0.8, 1.35, 0]
+      },
+      "material": "special_m1",
+      "params": {
+        "radius": 0.05
+      },
+      "gameCollision": false
+    },
+    "special_mote_b": {
+      "id": "special_mote_b",
+      "name": "mote_b",
+      "kind": "sphere",
+      "transform": {
+        "position": [-0.7, 1.5, 0.05]
+      },
+      "material": "special_m1",
+      "params": {
+        "radius": 0.04
+      },
+      "gameCollision": false
+    },
+    "special_mote_c": {
+      "id": "special_mote_c",
+      "name": "mote_c",
+      "kind": "sphere",
+      "transform": {
+        "position": [1.3, -0.2, 0.2]
+      },
+      "material": "special_m1",
+      "params": {
+        "radius": 0.045
+      },
+      "gameCollision": false
+    }
+  },
+  "materials": {
+    "hat_purple": {
+      "name": "jester-purple",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#7639c7",
+              "in.roughness": 0.72
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "hat_gold": {
+      "name": "jester-gold",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#ffc63d",
+              "in.roughness": 0.4
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "outfit_m1": {
+      "name": "disco-jacket-magenta",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#d0209f",
+              "in.metallic": 0.35,
+              "in.roughness": 0.3
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "outfit_m2": {
+      "name": "disco-jacket-purple",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#5a2aa8",
+              "in.metallic": 0.3,
+              "in.roughness": 0.35
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "outfit_m3": {
+      "name": "disco-jacket-gold",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#ffd23a",
+              "in.metallic": 0.8,
+              "in.roughness": 0.2
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "outfit_m4": {
+      "name": "disco-jacket-cyan",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#3fe0f0",
+              "in.metallic": 0.8,
+              "in.roughness": 0.2
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "extra_m8": {
+      "name": "costume-fish-scarf-aqua",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#cff3ee",
+              "in.roughness": 0.95
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "extra_m9": {
+      "name": "costume-fish-scarf-orange",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#ff8a3d",
+              "in.roughness": 0.8
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "extra_m10": {
+      "name": "costume-fish-scarf-pink",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#f0287f",
+              "in.roughness": 0.8
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "extra_m11": {
+      "name": "costume-fish-scarf-yellow",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#ffc93c",
+              "in.roughness": 0.8
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "extra_m12": {
+      "name": "costume-fish-scarf-blue",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#3fa9f5",
+              "in.roughness": 0.8
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "extra_m13": {
+      "name": "costume-fish-scarf-green",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#7cff3a",
+              "in.roughness": 0.8
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "special_m1": {
+      "name": "aura-halo",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#d6efff",
+              "in.emissive": "#8cc4f0"
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    },
+    "special_m2": {
+      "name": "aura-glow",
+      "graph": {
+        "nodes": [
+          {
+            "id": "out",
+            "type": "material.output",
+            "params": {
+              "in.base_color": "#eaf6ff",
+              "in.emissive": "#6fa6d8",
+              "in.roughness": 0.6
+            },
+            "position": [0, 0]
+          }
+        ],
+        "links": []
+      }
+    }
+  }
+}

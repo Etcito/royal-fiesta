@@ -305,6 +305,8 @@ class SdfRenderPort implements ResizablePort {
   // The rigid upload stays as is; skinned parts get a second mesh with the S18 joint/weight streams.
   // Later registerAsset calls of the id resolve to the skinned visual; a SceneView per match on the
   // same port registers it again and gets that visual back instead of a second upload.
+  private readonly skins = new Map<string, SkinnedAssetT>()
+  skinOf(assetId: string): SkinnedAssetT | undefined { return this.skins.get(assetId) }
   registerSkinned(assetId: string, skin: SkinnedAssetT): number {
     const bones = checkSkin(AREA, `registerSkinned(${assetId})`, skin)
     const known = this.handleOfId.get(assetId)
@@ -331,6 +333,7 @@ class SdfRenderPort implements ResizablePort {
     const handle = this.uploaded.length
     this.uploaded.push({ assetId, parts, bones, rig: skin.rig, clips: skin.clips ?? [], base: rigidHandle })
     this.handleOfId.set(assetId, handle)
+    this.skins.set(assetId, skin)
     for (const [name, h] of this.handleOfName) if (h === rigidHandle) this.handleOfName.set(name, handle)
     return handle
   }

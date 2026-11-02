@@ -13,6 +13,7 @@ import type { MeshedAsset } from '../../sdf/mamaApi.ts'
 import { createSdfPort } from '../../sdf/sdfPort.ts'
 import { loadSdfContent } from '../sdfLoad.ts'
 import { browserGameAssets, standInFrom, v1Dressing } from '../v1Data.ts'
+import { assetSkin } from '../cosmeticSkin.ts'
 import penguinGraph from '../../../../../assets/common/penguin.animgraph.json?raw'
 
 const HUB_ID = 'hub-plaza'
@@ -143,6 +144,17 @@ export class SdfContent implements GameContent {
       const history = loaded.report.bootTimeline
       loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify(span)]
     })
+    if (loaded.skinned && port.registerSkinned) {
+      const resolver = browserGameAssets()
+      for (const [id, meshed] of loaded.meshed) {
+        if (id === CHARACTER_ID) continue
+        const payload = meshed.data as { groups: { parts: { skin?: unknown }[] }[] }
+        if (!payload.groups.some(g => g.parts.some(p => p.skin))) continue
+        const document = (await resolver.resolve(id)).asset.document
+        const skin = assetSkin(meshed.data, document, loaded.skinned.skin.rig)
+        if (skin) port.registerSkinned(id, skin)
+      }
+    }
     attachRoundReport(port, loaded.report)
     const end = performance.now()
     const history = loaded.report.bootTimeline

@@ -3,7 +3,7 @@
   "version": 1,
   "game": "royal-fiesta",
   "id": "costume.jester-hat",
-  "name": "jester_hat",
+  "name": "Hat",
   "category": "cosmetic",
   "world": "common",
   "mesher": {
@@ -17,29 +17,32 @@
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "jester_hat",
+    "name": "Hat",
     "root": [
-      "jester_hat"
+      "hat_jester_hat"
     ],
     "nodes": {
-      "jester_hat": {
-        "id": "jester_hat",
-        "name": "jester_hat",
+      "hat_jester_hat": {
+        "id": "hat_jester_hat",
+        "name": "Hat",
         "kind": "group",
         "children": [
-          "jester_hat_head",
-          "purple_point",
-          "gold_point",
-          "head_band",
-          "left_bell",
-          "right_bell"
+          "hat_jester_hat_head",
+          "hat_purple_point",
+          "hat_gold_point",
+          "hat_head_band",
+          "hat_left_bell",
+          "hat_right_bell"
         ],
-        "gameCollision": false,
         "asset": {
           "game": "royal-fiesta",
           "id": "costume.jester-hat",
           "category": "cosmetic",
-          "world": "common"
+          "world": "common",
+          "cosmetic": {
+            "slot": "hat",
+            "binding": "penguin"
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -48,10 +51,467 @@
             "subdivisions": 4,
             "transitionLoops": 1
           }
-        }
+        },
+        "rig": {
+          "format": "raa.rig",
+          "version": 1,
+          "name": "flipper-test",
+          "bones": [
+            {
+              "name": "root",
+              "parent": null,
+              "rest": {
+                "t": [
+                  0,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.l",
+              "parent": "upper.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.l",
+              "parent": "lower.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.r",
+              "parent": "upper.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.r",
+              "parent": "lower.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.l",
+              "parent": "upperLeg.l",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.r",
+              "parent": "upperLeg.r",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "head",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0,
+                  0.5,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            }
+          ],
+          "roles": {
+            "foot.l": "foot.l",
+            "foot.r": "foot.r",
+            "hand.l": "tip.l",
+            "hand.r": "tip.r",
+            "head": "head",
+            "lowerArm.l": "lower.l",
+            "lowerArm.r": "lower.r",
+            "root": "root",
+            "upperArm.l": "upper.l",
+            "upperArm.r": "upper.r",
+            "upperLeg.l": "upperLeg.l",
+            "upperLeg.r": "upperLeg.r"
+          },
+          "ikChains": [
+            {
+              "name": "flipperL",
+              "solver": "twoBone",
+              "bones": [
+                "upper.l",
+                "lower.l",
+                "tip.l"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            },
+            {
+              "name": "flipperR",
+              "solver": "twoBone",
+              "bones": [
+                "upper.r",
+                "lower.r",
+                "tip.r"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            }
+          ],
+          "limits": [
+            {
+              "bone": "upper.l",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "upper.r",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "head",
+              "min": [
+                -40,
+                -60,
+                -30
+              ],
+              "max": [
+                40,
+                60,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.l",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.r",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "foot.l",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            },
+            {
+              "bone": "foot.r",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            }
+          ],
+          "attach": {
+            "body": {
+              "bone": "root",
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "head": {
+              "bone": "head",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "neck": {
+              "bone": "root",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          },
+          "bindings": [],
+          "smooth": 0.2
+        },
+        "gameCollision": false
       },
-      "jester_hat_head": {
-        "id": "jester_hat_head",
+      "hat_jester_hat_head": {
+        "id": "hat_jester_hat_head",
         "name": "jester_hat_head",
         "kind": "anchor",
         "transform": {
@@ -59,13 +519,13 @@
         },
         "gameCollision": false
       },
-      "purple_point": {
-        "id": "purple_point",
+      "hat_purple_point": {
+        "id": "hat_purple_point",
         "name": "purple_point",
         "kind": "sweep",
         "smooth": 0.035,
         "colorBlend": "hard",
-        "material": "purple",
+        "material": "hat_purple",
         "params": {
           "path": {
             "type": "bezier",
@@ -101,13 +561,13 @@
         },
         "gameCollision": false
       },
-      "gold_point": {
-        "id": "gold_point",
+      "hat_gold_point": {
+        "id": "hat_gold_point",
         "name": "gold_point",
         "kind": "sweep",
         "smooth": 0.035,
         "colorBlend": "hard",
-        "material": "gold",
+        "material": "hat_gold",
         "params": {
           "path": {
             "type": "bezier",
@@ -143,38 +603,38 @@
         },
         "gameCollision": false
       },
-      "head_band": {
-        "id": "head_band",
+      "hat_head_band": {
+        "id": "hat_head_band",
         "name": "head_band",
         "kind": "torus",
         "transform": {
           "position": [0, 0.98, 0.02]
         },
-        "material": "gold",
+        "material": "hat_gold",
         "params": {
           "majorRadius": 0.325,
           "minorRadius": 0.055
         },
         "gameCollision": false
       },
-      "left_bell": {
-        "id": "left_bell",
+      "hat_left_bell": {
+        "id": "hat_left_bell",
         "name": "left_bell",
         "kind": "sphere",
         "transform": {
           "position": [-0.7, 1.17, 0.02]
         },
-        "material": "gold",
+        "material": "hat_gold",
         "params": {
           "radius": 0.085
         },
         "children": [
-          "left_bell_mouth"
+          "hat_left_bell_mouth"
         ],
         "gameCollision": false
       },
-      "left_bell_mouth": {
-        "id": "left_bell_mouth",
+      "hat_left_bell_mouth": {
+        "id": "hat_left_bell_mouth",
         "name": "left_bell_mouth",
         "kind": "sphere",
         "transform": {
@@ -186,24 +646,24 @@
         },
         "gameCollision": false
       },
-      "right_bell": {
-        "id": "right_bell",
+      "hat_right_bell": {
+        "id": "hat_right_bell",
         "name": "right_bell",
         "kind": "sphere",
         "transform": {
           "position": [0.7, 1.17, 0.02]
         },
-        "material": "gold",
+        "material": "hat_gold",
         "params": {
           "radius": 0.085
         },
         "children": [
-          "right_bell_mouth"
+          "hat_right_bell_mouth"
         ],
         "gameCollision": false
       },
-      "right_bell_mouth": {
-        "id": "right_bell_mouth",
+      "hat_right_bell_mouth": {
+        "id": "hat_right_bell_mouth",
         "name": "right_bell_mouth",
         "kind": "sphere",
         "transform": {
@@ -217,7 +677,7 @@
       }
     },
     "materials": {
-      "purple": {
+      "hat_purple": {
         "name": "jester-purple",
         "graph": {
           "nodes": [
@@ -234,7 +694,7 @@
           "links": []
         }
       },
-      "gold": {
+      "hat_gold": {
         "name": "jester-gold",
         "graph": {
           "nodes": [
@@ -255,14 +715,14 @@
   },
   "collision": [],
   "anchors": {
-    "head": {
+    "jester_hat_head": {
       "t": [0, 0.8, 0],
       "r": [0, 0, 0, 1]
     }
   },
   "bounds": {
-    "min": [-0.82, 0.91, -0.37],
-    "max": [0.82, 1.78, 0.41]
+    "min": [-1.060101, 0.619899, -0.36],
+    "max": [1.060101, 1.907093, 0.4]
   },
-  "hash": "611ec6f334d1d85b1d605946c205ff17c00ad33314bcbe638b134e9ef943851c"
+  "hash": "91871fb0be4b48420d61003e4ce7b9633244e0952313ca5114494c0fc81757aa"
 }

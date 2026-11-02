@@ -3,7 +3,7 @@
   "version": 1,
   "game": "royal-fiesta",
   "id": "costume.fish-scarf",
-  "name": "fish_scarf",
+  "name": "Extra",
   "category": "cosmetic",
   "world": "common",
   "mesher": {
@@ -17,45 +17,49 @@
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "fish_scarf",
+    "name": "Extra",
     "root": [
-      "fish_scarf"
+      "extra_fish_scarf"
     ],
     "nodes": {
-      "fish_scarf": {
-        "id": "fish_scarf",
-        "name": "fish_scarf",
+      "extra_fish_scarf": {
+        "id": "extra_fish_scarf",
+        "name": "Extra",
         "kind": "group",
         "children": [
-          "neck",
-          "wrap_low",
-          "wrap_high",
-          "knot",
-          "end_front",
-          "end_back",
-          "fish_wrap_0",
-          "fish_wrap_1",
-          "fish_wrap_2",
-          "fish_wrap_3",
-          "fish_wrap_4",
-          "fish_wrap_5",
-          "fish_wrap_6",
-          "fish_wrap_7",
-          "fish_wrap_8",
-          "fish_front_0",
-          "fish_front_1",
-          "fish_front_2",
-          "fish_front_3",
-          "fish_back_0",
-          "fish_back_1",
-          "fish_back_2",
-          "fish_back_3"
+          "extra_neck",
+          "extra_wrap_low",
+          "extra_wrap_high",
+          "extra_knot",
+          "extra_end_front",
+          "extra_end_back",
+          "extra_fish_wrap_0",
+          "extra_fish_wrap_1",
+          "extra_fish_wrap_2",
+          "extra_fish_wrap_3",
+          "extra_fish_wrap_4",
+          "extra_fish_wrap_5",
+          "extra_fish_wrap_6",
+          "extra_fish_wrap_7",
+          "extra_fish_wrap_8",
+          "extra_fish_front_0",
+          "extra_fish_front_1",
+          "extra_fish_front_2",
+          "extra_fish_front_3",
+          "extra_fish_back_0",
+          "extra_fish_back_1",
+          "extra_fish_back_2",
+          "extra_fish_back_3"
         ],
         "asset": {
           "game": "royal-fiesta",
           "id": "costume.fish-scarf",
           "category": "cosmetic",
-          "world": "common"
+          "world": "common",
+          "cosmetic": {
+            "slot": "extra",
+            "binding": "penguin"
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -65,10 +69,466 @@
             "transitionLoops": 1
           }
         },
+        "rig": {
+          "format": "raa.rig",
+          "version": 1,
+          "name": "flipper-test",
+          "bones": [
+            {
+              "name": "root",
+              "parent": null,
+              "rest": {
+                "t": [
+                  0,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.l",
+              "parent": "upper.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.l",
+              "parent": "lower.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.r",
+              "parent": "upper.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.r",
+              "parent": "lower.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.l",
+              "parent": "upperLeg.l",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.r",
+              "parent": "upperLeg.r",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "head",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0,
+                  0.5,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            }
+          ],
+          "roles": {
+            "foot.l": "foot.l",
+            "foot.r": "foot.r",
+            "hand.l": "tip.l",
+            "hand.r": "tip.r",
+            "head": "head",
+            "lowerArm.l": "lower.l",
+            "lowerArm.r": "lower.r",
+            "root": "root",
+            "upperArm.l": "upper.l",
+            "upperArm.r": "upper.r",
+            "upperLeg.l": "upperLeg.l",
+            "upperLeg.r": "upperLeg.r"
+          },
+          "ikChains": [
+            {
+              "name": "flipperL",
+              "solver": "twoBone",
+              "bones": [
+                "upper.l",
+                "lower.l",
+                "tip.l"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            },
+            {
+              "name": "flipperR",
+              "solver": "twoBone",
+              "bones": [
+                "upper.r",
+                "lower.r",
+                "tip.r"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            }
+          ],
+          "limits": [
+            {
+              "bone": "upper.l",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "upper.r",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "head",
+              "min": [
+                -40,
+                -60,
+                -30
+              ],
+              "max": [
+                40,
+                60,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.l",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.r",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "foot.l",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            },
+            {
+              "bone": "foot.r",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            }
+          ],
+          "attach": {
+            "body": {
+              "bone": "root",
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "head": {
+              "bone": "head",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "neck": {
+              "bone": "root",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          },
+          "bindings": [],
+          "smooth": 0.2
+        },
         "gameCollision": true
       },
-      "neck": {
-        "id": "neck",
+      "extra_neck": {
+        "id": "extra_neck",
         "name": "neck",
         "kind": "anchor",
         "transform": {
@@ -76,15 +536,15 @@
         },
         "gameCollision": true
       },
-      "wrap_low": {
-        "id": "wrap_low",
+      "extra_wrap_low": {
+        "id": "extra_wrap_low",
         "name": "wrap_low",
         "kind": "sweep",
         "transform": {
           "position": [0, 0.19, 0.01],
           "rotation": [10, 0, 0]
         },
-        "material": "m8",
+        "material": "extra_m8",
         "params": {
           "fieldResolution": 256,
           "frame": "up",
@@ -139,8 +599,8 @@
         },
         "gameCollision": false
       },
-      "wrap_high": {
-        "id": "wrap_high",
+      "extra_wrap_high": {
+        "id": "extra_wrap_high",
         "name": "wrap_high",
         "kind": "sweep",
         "transform": {
@@ -148,7 +608,7 @@
           "rotation": [-6, 0, 0]
         },
         "smooth": 0.035,
-        "material": "m8",
+        "material": "extra_m8",
         "params": {
           "fieldResolution": 256,
           "frame": "up",
@@ -203,8 +663,8 @@
         },
         "gameCollision": false
       },
-      "knot": {
-        "id": "knot",
+      "extra_knot": {
+        "id": "extra_knot",
         "name": "knot",
         "kind": "paramesh",
         "transform": {
@@ -212,7 +672,7 @@
           "rotation": [0, 30, 15]
         },
         "smooth": 0.03,
-        "material": "m8",
+        "material": "extra_m8",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -240,12 +700,12 @@
         },
         "gameCollision": false
       },
-      "end_front": {
-        "id": "end_front",
+      "extra_end_front": {
+        "id": "extra_end_front",
         "name": "end_front",
         "kind": "sweep",
         "smooth": 0.03,
-        "material": "m8",
+        "material": "extra_m8",
         "params": {
           "fieldResolution": 256,
           "path": {
@@ -301,12 +761,12 @@
         },
         "gameCollision": false
       },
-      "end_back": {
-        "id": "end_back",
+      "extra_end_back": {
+        "id": "extra_end_back",
         "name": "end_back",
         "kind": "sweep",
         "smooth": 0.03,
-        "material": "m8",
+        "material": "extra_m8",
         "params": {
           "fieldResolution": 256,
           "path": {
@@ -367,8 +827,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_0": {
-        "id": "fish_wrap_0",
+      "extra_fish_wrap_0": {
+        "id": "extra_fish_wrap_0",
         "name": "fish_wrap_0",
         "kind": "group",
         "transform": {
@@ -376,19 +836,19 @@
           "rotation": [0, -30, 0]
         },
         "children": [
-          "fish_wrap_0_body",
-          "fish_wrap_0_tail"
+          "extra_fish_wrap_0_body",
+          "extra_fish_wrap_0_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_0_body": {
-        "id": "fish_wrap_0_body",
+      "extra_fish_wrap_0_body": {
+        "id": "extra_fish_wrap_0_body",
         "name": "fish_wrap_0_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
-        "material": "m10",
+        "material": "extra_m10",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -416,8 +876,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_0_tail": {
-        "id": "fish_wrap_0_tail",
+      "extra_fish_wrap_0_tail": {
+        "id": "extra_fish_wrap_0_tail",
         "name": "fish_wrap_0_tail",
         "kind": "paramesh",
         "transform": {
@@ -426,7 +886,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m10",
+        "material": "extra_m10",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -454,8 +914,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_1": {
-        "id": "fish_wrap_1",
+      "extra_fish_wrap_1": {
+        "id": "extra_fish_wrap_1",
         "name": "fish_wrap_1",
         "kind": "group",
         "transform": {
@@ -463,19 +923,19 @@
           "rotation": [0, -62, 0]
         },
         "children": [
-          "fish_wrap_1_body",
-          "fish_wrap_1_tail"
+          "extra_fish_wrap_1_body",
+          "extra_fish_wrap_1_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_1_body": {
-        "id": "fish_wrap_1_body",
+      "extra_fish_wrap_1_body": {
+        "id": "extra_fish_wrap_1_body",
         "name": "fish_wrap_1_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -12]
         },
-        "material": "m11",
+        "material": "extra_m11",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -503,8 +963,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_1_tail": {
-        "id": "fish_wrap_1_tail",
+      "extra_fish_wrap_1_tail": {
+        "id": "extra_fish_wrap_1_tail",
         "name": "fish_wrap_1_tail",
         "kind": "paramesh",
         "transform": {
@@ -513,7 +973,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m11",
+        "material": "extra_m11",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -541,8 +1001,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_2": {
-        "id": "fish_wrap_2",
+      "extra_fish_wrap_2": {
+        "id": "extra_fish_wrap_2",
         "name": "fish_wrap_2",
         "kind": "group",
         "transform": {
@@ -550,19 +1010,19 @@
           "rotation": [0, -94, 0]
         },
         "children": [
-          "fish_wrap_2_body",
-          "fish_wrap_2_tail"
+          "extra_fish_wrap_2_body",
+          "extra_fish_wrap_2_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_2_body": {
-        "id": "fish_wrap_2_body",
+      "extra_fish_wrap_2_body": {
+        "id": "extra_fish_wrap_2_body",
         "name": "fish_wrap_2_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
-        "material": "m12",
+        "material": "extra_m12",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -590,8 +1050,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_2_tail": {
-        "id": "fish_wrap_2_tail",
+      "extra_fish_wrap_2_tail": {
+        "id": "extra_fish_wrap_2_tail",
         "name": "fish_wrap_2_tail",
         "kind": "paramesh",
         "transform": {
@@ -600,7 +1060,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m12",
+        "material": "extra_m12",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -628,8 +1088,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_3": {
-        "id": "fish_wrap_3",
+      "extra_fish_wrap_3": {
+        "id": "extra_fish_wrap_3",
         "name": "fish_wrap_3",
         "kind": "group",
         "transform": {
@@ -637,19 +1097,19 @@
           "rotation": [0, -126, 0]
         },
         "children": [
-          "fish_wrap_3_body",
-          "fish_wrap_3_tail"
+          "extra_fish_wrap_3_body",
+          "extra_fish_wrap_3_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_3_body": {
-        "id": "fish_wrap_3_body",
+      "extra_fish_wrap_3_body": {
+        "id": "extra_fish_wrap_3_body",
         "name": "fish_wrap_3_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -12]
         },
-        "material": "m9",
+        "material": "extra_m9",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -677,8 +1137,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_3_tail": {
-        "id": "fish_wrap_3_tail",
+      "extra_fish_wrap_3_tail": {
+        "id": "extra_fish_wrap_3_tail",
         "name": "fish_wrap_3_tail",
         "kind": "paramesh",
         "transform": {
@@ -687,7 +1147,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m9",
+        "material": "extra_m9",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -715,8 +1175,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_4": {
-        "id": "fish_wrap_4",
+      "extra_fish_wrap_4": {
+        "id": "extra_fish_wrap_4",
         "name": "fish_wrap_4",
         "kind": "group",
         "transform": {
@@ -724,19 +1184,19 @@
           "rotation": [0, -158, 0]
         },
         "children": [
-          "fish_wrap_4_body",
-          "fish_wrap_4_tail"
+          "extra_fish_wrap_4_body",
+          "extra_fish_wrap_4_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_4_body": {
-        "id": "fish_wrap_4_body",
+      "extra_fish_wrap_4_body": {
+        "id": "extra_fish_wrap_4_body",
         "name": "fish_wrap_4_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
-        "material": "m13",
+        "material": "extra_m13",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -764,8 +1224,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_4_tail": {
-        "id": "fish_wrap_4_tail",
+      "extra_fish_wrap_4_tail": {
+        "id": "extra_fish_wrap_4_tail",
         "name": "fish_wrap_4_tail",
         "kind": "paramesh",
         "transform": {
@@ -774,7 +1234,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m13",
+        "material": "extra_m13",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -802,8 +1262,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_5": {
-        "id": "fish_wrap_5",
+      "extra_fish_wrap_5": {
+        "id": "extra_fish_wrap_5",
         "name": "fish_wrap_5",
         "kind": "group",
         "transform": {
@@ -811,19 +1271,19 @@
           "rotation": [0, 170, 0]
         },
         "children": [
-          "fish_wrap_5_body",
-          "fish_wrap_5_tail"
+          "extra_fish_wrap_5_body",
+          "extra_fish_wrap_5_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_5_body": {
-        "id": "fish_wrap_5_body",
+      "extra_fish_wrap_5_body": {
+        "id": "extra_fish_wrap_5_body",
         "name": "fish_wrap_5_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -12]
         },
-        "material": "m10",
+        "material": "extra_m10",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -851,8 +1311,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_5_tail": {
-        "id": "fish_wrap_5_tail",
+      "extra_fish_wrap_5_tail": {
+        "id": "extra_fish_wrap_5_tail",
         "name": "fish_wrap_5_tail",
         "kind": "paramesh",
         "transform": {
@@ -861,7 +1321,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m10",
+        "material": "extra_m10",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -889,8 +1349,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_6": {
-        "id": "fish_wrap_6",
+      "extra_fish_wrap_6": {
+        "id": "extra_fish_wrap_6",
         "name": "fish_wrap_6",
         "kind": "group",
         "transform": {
@@ -898,19 +1358,19 @@
           "rotation": [0, 138, 0]
         },
         "children": [
-          "fish_wrap_6_body",
-          "fish_wrap_6_tail"
+          "extra_fish_wrap_6_body",
+          "extra_fish_wrap_6_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_6_body": {
-        "id": "fish_wrap_6_body",
+      "extra_fish_wrap_6_body": {
+        "id": "extra_fish_wrap_6_body",
         "name": "fish_wrap_6_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
-        "material": "m11",
+        "material": "extra_m11",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -938,8 +1398,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_6_tail": {
-        "id": "fish_wrap_6_tail",
+      "extra_fish_wrap_6_tail": {
+        "id": "extra_fish_wrap_6_tail",
         "name": "fish_wrap_6_tail",
         "kind": "paramesh",
         "transform": {
@@ -948,7 +1408,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m11",
+        "material": "extra_m11",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -976,8 +1436,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_7": {
-        "id": "fish_wrap_7",
+      "extra_fish_wrap_7": {
+        "id": "extra_fish_wrap_7",
         "name": "fish_wrap_7",
         "kind": "group",
         "transform": {
@@ -985,19 +1445,19 @@
           "rotation": [0, 108, 0]
         },
         "children": [
-          "fish_wrap_7_body",
-          "fish_wrap_7_tail"
+          "extra_fish_wrap_7_body",
+          "extra_fish_wrap_7_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_7_body": {
-        "id": "fish_wrap_7_body",
+      "extra_fish_wrap_7_body": {
+        "id": "extra_fish_wrap_7_body",
         "name": "fish_wrap_7_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -12]
         },
-        "material": "m12",
+        "material": "extra_m12",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1025,8 +1485,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_7_tail": {
-        "id": "fish_wrap_7_tail",
+      "extra_fish_wrap_7_tail": {
+        "id": "extra_fish_wrap_7_tail",
         "name": "fish_wrap_7_tail",
         "kind": "paramesh",
         "transform": {
@@ -1035,7 +1495,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m12",
+        "material": "extra_m12",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1063,8 +1523,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_8": {
-        "id": "fish_wrap_8",
+      "extra_fish_wrap_8": {
+        "id": "extra_fish_wrap_8",
         "name": "fish_wrap_8",
         "kind": "group",
         "transform": {
@@ -1072,19 +1532,19 @@
           "rotation": [0, 82, 0]
         },
         "children": [
-          "fish_wrap_8_body",
-          "fish_wrap_8_tail"
+          "extra_fish_wrap_8_body",
+          "extra_fish_wrap_8_tail"
         ],
         "gameCollision": true
       },
-      "fish_wrap_8_body": {
-        "id": "fish_wrap_8_body",
+      "extra_fish_wrap_8_body": {
+        "id": "extra_fish_wrap_8_body",
         "name": "fish_wrap_8_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 12]
         },
-        "material": "m9",
+        "material": "extra_m9",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1112,8 +1572,8 @@
         },
         "gameCollision": false
       },
-      "fish_wrap_8_tail": {
-        "id": "fish_wrap_8_tail",
+      "extra_fish_wrap_8_tail": {
+        "id": "extra_fish_wrap_8_tail",
         "name": "fish_wrap_8_tail",
         "kind": "paramesh",
         "transform": {
@@ -1122,7 +1582,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m9",
+        "material": "extra_m9",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1150,8 +1610,8 @@
         },
         "gameCollision": false
       },
-      "fish_front_0": {
-        "id": "fish_front_0",
+      "extra_fish_front_0": {
+        "id": "extra_fish_front_0",
         "name": "fish_front_0",
         "kind": "group",
         "transform": {
@@ -1159,19 +1619,19 @@
           "rotation": [0, 20.77, 0]
         },
         "children": [
-          "fish_front_0_body",
-          "fish_front_0_tail"
+          "extra_fish_front_0_body",
+          "extra_fish_front_0_tail"
         ],
         "gameCollision": true
       },
-      "fish_front_0_body": {
-        "id": "fish_front_0_body",
+      "extra_fish_front_0_body": {
+        "id": "extra_fish_front_0_body",
         "name": "fish_front_0_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 18]
         },
-        "material": "m13",
+        "material": "extra_m13",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1199,8 +1659,8 @@
         },
         "gameCollision": false
       },
-      "fish_front_0_tail": {
-        "id": "fish_front_0_tail",
+      "extra_fish_front_0_tail": {
+        "id": "extra_fish_front_0_tail",
         "name": "fish_front_0_tail",
         "kind": "paramesh",
         "transform": {
@@ -1209,7 +1669,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m13",
+        "material": "extra_m13",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1237,8 +1697,8 @@
         },
         "gameCollision": false
       },
-      "fish_front_1": {
-        "id": "fish_front_1",
+      "extra_fish_front_1": {
+        "id": "extra_fish_front_1",
         "name": "fish_front_1",
         "kind": "group",
         "transform": {
@@ -1246,19 +1706,19 @@
           "rotation": [0, 15.23, 0]
         },
         "children": [
-          "fish_front_1_body",
-          "fish_front_1_tail"
+          "extra_fish_front_1_body",
+          "extra_fish_front_1_tail"
         ],
         "gameCollision": true
       },
-      "fish_front_1_body": {
-        "id": "fish_front_1_body",
+      "extra_fish_front_1_body": {
+        "id": "extra_fish_front_1_body",
         "name": "fish_front_1_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -18]
         },
-        "material": "m10",
+        "material": "extra_m10",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1286,8 +1746,8 @@
         },
         "gameCollision": false
       },
-      "fish_front_1_tail": {
-        "id": "fish_front_1_tail",
+      "extra_fish_front_1_tail": {
+        "id": "extra_fish_front_1_tail",
         "name": "fish_front_1_tail",
         "kind": "paramesh",
         "transform": {
@@ -1296,7 +1756,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m10",
+        "material": "extra_m10",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1324,8 +1784,8 @@
         },
         "gameCollision": false
       },
-      "fish_front_2": {
-        "id": "fish_front_2",
+      "extra_fish_front_2": {
+        "id": "extra_fish_front_2",
         "name": "fish_front_2",
         "kind": "group",
         "transform": {
@@ -1333,19 +1793,19 @@
           "rotation": [0, 14.56, 0]
         },
         "children": [
-          "fish_front_2_body",
-          "fish_front_2_tail"
+          "extra_fish_front_2_body",
+          "extra_fish_front_2_tail"
         ],
         "gameCollision": true
       },
-      "fish_front_2_body": {
-        "id": "fish_front_2_body",
+      "extra_fish_front_2_body": {
+        "id": "extra_fish_front_2_body",
         "name": "fish_front_2_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 18]
         },
-        "material": "m11",
+        "material": "extra_m11",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1373,8 +1833,8 @@
         },
         "gameCollision": false
       },
-      "fish_front_2_tail": {
-        "id": "fish_front_2_tail",
+      "extra_fish_front_2_tail": {
+        "id": "extra_fish_front_2_tail",
         "name": "fish_front_2_tail",
         "kind": "paramesh",
         "transform": {
@@ -1383,7 +1843,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m11",
+        "material": "extra_m11",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1411,8 +1871,8 @@
         },
         "gameCollision": false
       },
-      "fish_front_3": {
-        "id": "fish_front_3",
+      "extra_fish_front_3": {
+        "id": "extra_fish_front_3",
         "name": "fish_front_3",
         "kind": "group",
         "transform": {
@@ -1420,19 +1880,19 @@
           "rotation": [0, 14.71, 0]
         },
         "children": [
-          "fish_front_3_body",
-          "fish_front_3_tail"
+          "extra_fish_front_3_body",
+          "extra_fish_front_3_tail"
         ],
         "gameCollision": true
       },
-      "fish_front_3_body": {
-        "id": "fish_front_3_body",
+      "extra_fish_front_3_body": {
+        "id": "extra_fish_front_3_body",
         "name": "fish_front_3_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -18]
         },
-        "material": "m12",
+        "material": "extra_m12",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1460,8 +1920,8 @@
         },
         "gameCollision": false
       },
-      "fish_front_3_tail": {
-        "id": "fish_front_3_tail",
+      "extra_fish_front_3_tail": {
+        "id": "extra_fish_front_3_tail",
         "name": "fish_front_3_tail",
         "kind": "paramesh",
         "transform": {
@@ -1470,7 +1930,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m12",
+        "material": "extra_m12",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1498,8 +1958,8 @@
         },
         "gameCollision": false
       },
-      "fish_back_0": {
-        "id": "fish_back_0",
+      "extra_fish_back_0": {
+        "id": "extra_fish_back_0",
         "name": "fish_back_0",
         "kind": "group",
         "transform": {
@@ -1507,19 +1967,19 @@
           "rotation": [0, 161.51, 0]
         },
         "children": [
-          "fish_back_0_body",
-          "fish_back_0_tail"
+          "extra_fish_back_0_body",
+          "extra_fish_back_0_tail"
         ],
         "gameCollision": true
       },
-      "fish_back_0_body": {
-        "id": "fish_back_0_body",
+      "extra_fish_back_0_body": {
+        "id": "extra_fish_back_0_body",
         "name": "fish_back_0_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -18]
         },
-        "material": "m9",
+        "material": "extra_m9",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1547,8 +2007,8 @@
         },
         "gameCollision": false
       },
-      "fish_back_0_tail": {
-        "id": "fish_back_0_tail",
+      "extra_fish_back_0_tail": {
+        "id": "extra_fish_back_0_tail",
         "name": "fish_back_0_tail",
         "kind": "paramesh",
         "transform": {
@@ -1557,7 +2017,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m9",
+        "material": "extra_m9",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1585,8 +2045,8 @@
         },
         "gameCollision": false
       },
-      "fish_back_1": {
-        "id": "fish_back_1",
+      "extra_fish_back_1": {
+        "id": "extra_fish_back_1",
         "name": "fish_back_1",
         "kind": "group",
         "transform": {
@@ -1594,19 +2054,19 @@
           "rotation": [0, 166.08, 0]
         },
         "children": [
-          "fish_back_1_body",
-          "fish_back_1_tail"
+          "extra_fish_back_1_body",
+          "extra_fish_back_1_tail"
         ],
         "gameCollision": true
       },
-      "fish_back_1_body": {
-        "id": "fish_back_1_body",
+      "extra_fish_back_1_body": {
+        "id": "extra_fish_back_1_body",
         "name": "fish_back_1_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 18]
         },
-        "material": "m13",
+        "material": "extra_m13",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1634,8 +2094,8 @@
         },
         "gameCollision": false
       },
-      "fish_back_1_tail": {
-        "id": "fish_back_1_tail",
+      "extra_fish_back_1_tail": {
+        "id": "extra_fish_back_1_tail",
         "name": "fish_back_1_tail",
         "kind": "paramesh",
         "transform": {
@@ -1644,7 +2104,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m13",
+        "material": "extra_m13",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1672,8 +2132,8 @@
         },
         "gameCollision": false
       },
-      "fish_back_2": {
-        "id": "fish_back_2",
+      "extra_fish_back_2": {
+        "id": "extra_fish_back_2",
         "name": "fish_back_2",
         "kind": "group",
         "transform": {
@@ -1681,19 +2141,19 @@
           "rotation": [0, 167.23, 0]
         },
         "children": [
-          "fish_back_2_body",
-          "fish_back_2_tail"
+          "extra_fish_back_2_body",
+          "extra_fish_back_2_tail"
         ],
         "gameCollision": true
       },
-      "fish_back_2_body": {
-        "id": "fish_back_2_body",
+      "extra_fish_back_2_body": {
+        "id": "extra_fish_back_2_body",
         "name": "fish_back_2_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, -18]
         },
-        "material": "m10",
+        "material": "extra_m10",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1721,8 +2181,8 @@
         },
         "gameCollision": false
       },
-      "fish_back_2_tail": {
-        "id": "fish_back_2_tail",
+      "extra_fish_back_2_tail": {
+        "id": "extra_fish_back_2_tail",
         "name": "fish_back_2_tail",
         "kind": "paramesh",
         "transform": {
@@ -1731,7 +2191,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m10",
+        "material": "extra_m10",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1759,8 +2219,8 @@
         },
         "gameCollision": false
       },
-      "fish_back_3": {
-        "id": "fish_back_3",
+      "extra_fish_back_3": {
+        "id": "extra_fish_back_3",
         "name": "fish_back_3",
         "kind": "group",
         "transform": {
@@ -1768,19 +2228,19 @@
           "rotation": [0, 167.87, 0]
         },
         "children": [
-          "fish_back_3_body",
-          "fish_back_3_tail"
+          "extra_fish_back_3_body",
+          "extra_fish_back_3_tail"
         ],
         "gameCollision": true
       },
-      "fish_back_3_body": {
-        "id": "fish_back_3_body",
+      "extra_fish_back_3_body": {
+        "id": "extra_fish_back_3_body",
         "name": "fish_back_3_body",
         "kind": "paramesh",
         "transform": {
           "rotation": [0, 0, 18]
         },
-        "material": "m11",
+        "material": "extra_m11",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1808,8 +2268,8 @@
         },
         "gameCollision": false
       },
-      "fish_back_3_tail": {
-        "id": "fish_back_3_tail",
+      "extra_fish_back_3_tail": {
+        "id": "extra_fish_back_3_tail",
         "name": "fish_back_3_tail",
         "kind": "paramesh",
         "transform": {
@@ -1818,7 +2278,7 @@
         },
         "smooth": 0.006,
         "colorBlend": "hard",
-        "material": "m11",
+        "material": "extra_m11",
         "paramesh": {
           "shape": {
             "format": "paramesh.shape",
@@ -1848,7 +2308,7 @@
       }
     },
     "materials": {
-      "m8": {
+      "extra_m8": {
         "name": "costume-fish-scarf-aqua",
         "graph": {
           "nodes": [
@@ -1865,7 +2325,7 @@
           "links": []
         }
       },
-      "m9": {
+      "extra_m9": {
         "name": "costume-fish-scarf-orange",
         "graph": {
           "nodes": [
@@ -1882,7 +2342,7 @@
           "links": []
         }
       },
-      "m10": {
+      "extra_m10": {
         "name": "costume-fish-scarf-pink",
         "graph": {
           "nodes": [
@@ -1899,7 +2359,7 @@
           "links": []
         }
       },
-      "m11": {
+      "extra_m11": {
         "name": "costume-fish-scarf-yellow",
         "graph": {
           "nodes": [
@@ -1916,7 +2376,7 @@
           "links": []
         }
       },
-      "m12": {
+      "extra_m12": {
         "name": "costume-fish-scarf-blue",
         "graph": {
           "nodes": [
@@ -1933,7 +2393,7 @@
           "links": []
         }
       },
-      "m13": {
+      "extra_m13": {
         "name": "costume-fish-scarf-green",
         "graph": {
           "nodes": [
@@ -1963,5 +2423,5 @@
     "min": [-0.3786, -0.4021, -0.5301],
     "max": [0.449351, 0.422124, 0.5621]
   },
-  "hash": "707b32b5befec44db95ba00721ffa3c42debc01199f59418f53db0a66518d66f"
+  "hash": "966addf3aa53b15a86806209a1be71995605880de94616770fc36ee56a31663d"
 }

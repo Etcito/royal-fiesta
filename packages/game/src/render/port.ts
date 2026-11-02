@@ -29,6 +29,7 @@ export interface RenderPort {
   // S18 skinned characters. registerSkinned returns an asset handle for createInstance; setPose takes
   // 16 x rig.bones.length S16 skin matrices (column-major, bone order) and an unposed instance draws
   // at rest. Ports without skinning omit both and keep drawing the rigid parts.
+  skinOf?(assetId: string): SkinnedAssetT | undefined
   registerSkinned?(assetId: string, skin: SkinnedAssetT): number
   setPose?(instance: number, matrices: Float32Array): void
   render(): RenderStats

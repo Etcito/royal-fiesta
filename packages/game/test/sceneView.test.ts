@@ -517,3 +517,45 @@ for (const scenario of ['walking', 'idle', 'podium'] as const) {
     }
   })
 }
+
+test('skinned cosmetic in all four slots receives the penguin pose and character root, rigid costume keeps its anchor', async () => {
+  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const port = new NullRenderPort()
+  await port.init({ canvas: null, width: 64, height: 36, viewports: [{ x: 0, y: 0, width: 64, height: 36 }] })
+  const posed = new Map<number, Float32Array>(), transforms = new Map<number, unknown[]>()
+  const namedHandles = new Map<number,string>(), namedInstances = new Map<number,string>()
+  const register = port.registerSkinned.bind(port), create = port.createInstance.bind(port)
+  port.registerSkinned = (id,skin) => { const h=register(id,skin);namedHandles.set(h,id);return h }
+  port.createInstance = (h,tint) => { const id=create(h,tint);namedInstances.set(id,namedHandles.get(h)??'rigid');return id }
+  const setTransform = port.setTransform.bind(port)
+  port.setTransform = (id,t,r,s) => { transforms.set(id, [t,r,s]); setTransform(id,t,r,s) }
+  port.setPose = (id, pose) => { posed.set(id, pose.slice()) }
+  const costume = (id: string): PrimsAsset => ({...bean,id,anchors:{body:{t:[0,0,0],r:[0,0,0,1]}}})
+  const view = new SceneView({port,viewport:0,localPlayer:0,bean,assets:n=>assets.get(n)!,loadingPaint:false,
+    skinned:skinnedPenguin, costumes: {
+      hat:{asset:costume('costume.test.hat'),skin:skinnedPenguin.skin},
+      outfit:{asset:costume('costume.test.outfit'),skin:skinnedPenguin.skin},
+      extra:{asset:costume('costume.test.extra'),skin:skinnedPenguin.skin},
+      special:{asset:costume('costume.test.special'),skin:skinnedPenguin.skin},
+      body:{asset:{...costume('costume.test.rigid'),anchors:{body:{t:[1,2,3],r:[0,0,0,1]}}}},
+    }})
+  try {
+    const inputs = Array.from({length:sim.setup.playerCount},()=>({...neutralInput(),moveZ:1}))
+    for(let i=0;i<180;i++)sim.step(inputs)
+    view.update(sim,null,1,0)
+    await view.animationReady()
+    for(let i=0;i<5;i++){sim.step(inputs);view.update(sim,null,1,1/60)}
+    const body = [...namedInstances].find(([,name])=>name==='penguin')![0]
+    for(const slot of ['hat','outfit','extra','special']) {
+      const id = [...namedInstances].find(([,name])=>name===`costume.test.${slot}`)![0]
+      assert.deepEqual(posed.get(id),posed.get(body),'exact same skin matrices')
+      assert.deepEqual(transforms.get(id),transforms.get(body),'no second rigid anchor transform')
+    }
+    const rigid = [...namedInstances].find(([,name])=>name==='rigid')![0]
+    assert.equal(posed.has(rigid),false)
+    assert.notDeepEqual(transforms.get(rigid),transforms.get(body),'rigid costume keeps anchor offset')
+    const count = port.render().instances
+    view.removeCostume(0,'outfit')
+    assert.equal(port.render().instances,count-1,'slot removal frees only its own instance')
+  } finally {view.dispose();sim.free()}
+})

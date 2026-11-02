@@ -38,10 +38,10 @@ export function ikInputs(c: CharacterView, grounded: boolean): Pick<CharacterObs
 }
 
 // S16 attach points the costumes mount on: the penguin hat, scarf and suit use head, neck and body.
-export type CostumeSlot = 'head' | 'neck' | 'body'
+export type CostumeSlot = 'head' | 'neck' | 'body' | 'hat' | 'outfit' | 'extra' | 'special'
 // A rigid raa.prims costume. `scale` inflates it about its anchor (default 1) and the asset's anchor of the
 // same name places its geometry in the character's rest space.
-export interface CostumeSpec { readonly asset: PrimsAsset; readonly scale?: number }
+export interface CostumeSpec { readonly asset: PrimsAsset; readonly scale?: number; readonly skin?: SkinnedAssetT }
 export type CostumeSet = Partial<Record<CostumeSlot, CostumeSpec | null>>
 
 export interface SceneViewOptions {
@@ -136,7 +136,8 @@ interface AttachPointT { readonly bone: string; readonly t: readonly number[]; r
 interface CostumeRigT { readonly attach?: Readonly<Record<string, AttachPointT>>; readonly bones: readonly RigBoneT[] }
 interface AnchorT { readonly t: readonly number[]; readonly r: readonly number[] }
 interface LocalCostume { readonly t: readonly [number, number, number]; readonly r: readonly [number, number, number, number]; readonly s: readonly [number, number, number] }
-const COSTUME_SLOTS: readonly CostumeSlot[] = ['head', 'neck', 'body']
+const COSTUME_SLOTS: readonly CostumeSlot[] = ['head', 'neck', 'body', 'hat', 'outfit', 'extra', 'special']
+const COSTUME_ANCHORS: Record<CostumeSlot, 'head' | 'neck' | 'body'> = { head: 'head', neck: 'neck', body: 'body', hat: 'head', outfit: 'body', extra: 'neck', special: 'body' }
 const UNIT_QUAT: readonly [number, number, number, number] = [0, 0, 0, 1]
 
 function mat4(t: readonly number[], q: readonly number[], s: readonly number[]): Float32Array {
@@ -830,7 +831,10 @@ export class SceneView {
       if (spec === null) continue
       const live = worn[slot]
       if (live === undefined) {
-        const instance = this.port.createInstance(this.asset(spec.asset.id, spec.asset), null)
+        const skin = spec.skin ?? this.port.skinOf?.(spec.asset.id)
+        const handle = skin && this.port.registerSkinned && this.port.setPose
+          ? this.port.registerSkinned(spec.asset.id, skin) : this.asset(spec.asset.id, spec.asset)
+        const instance = this.port.createInstance(handle, null)
         this.port.setVisible(instance, visible)
         worn[slot] = { spec, instance }
       } else {
@@ -848,8 +852,14 @@ export class SceneView {
     for (const slot of COSTUME_SLOTS) {
       const w = worn[slot]
       if (w === undefined) continue
-      const anchor = w.spec.asset.anchors[slot]
-      const attach = this.attach[slot]
+      const skin = w.spec.skin ?? this.port.skinOf?.(w.spec.asset.id)
+      if (skin && this.port.setPose && this.port.registerSkinned) {
+        this.port.setPose(w.instance, posed?.skin ?? restPoseSkin(skin.rig as unknown as Parameters<typeof restPoseSkin>[0]))
+        this.port.setTransform(w.instance, [d[0], d[1], d[2]], yaw, UNIT)
+        continue
+      }
+      const anchor = w.spec.asset.anchors[COSTUME_ANCHORS[slot]]
+      const attach = this.attach[COSTUME_ANCHORS[slot]]
       const bone = attach === undefined ? undefined : this.boneIndex.get(attach.bone)
       const model = posed !== undefined && bone !== undefined && bone * 16 + 16 <= posed.model.length
         ? posed.model.subarray(bone * 16, bone * 16 + 16)

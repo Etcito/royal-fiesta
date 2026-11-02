@@ -20,7 +20,7 @@ const STAND_IN_RADIUS = 0.05
 
 // S29: mesh = the saved .mesh path when the file exists; audio = the haa patches (audio/<id>.haa.json).
 export interface ContentIndexV1 {
-  assets: { id: string; world: string; path: string; hash: string; mesh?: string }[]
+  assets: { id: string; world: string; path: string; hash: string; category?: string; mesh?: string }[]
   courses: { id: string; path: string }[]
   audio: { id: string; path: string }[]
   // Level thumbnails tools/content.ts packs (courses/<course>.thumb.avif); an index without them has none.
@@ -56,14 +56,15 @@ function mergeOverlayIndex(base: ContentIndexV1, files: ReadonlyMap<string, stri
     }
     const asset = /^assets\/([a-z]+)\/(.+)\.asset\.json$/.exec(path)
     if (asset === null) continue
-    const hash = (JSON.parse(text) as { hash?: unknown }).hash
+    const metadata = JSON.parse(text) as { hash?: unknown; category?: string }
+    const hash = metadata.hash
     if (typeof hash !== 'string') refuse('community', path, 'the asset has no hash')
     const same = merged.assets.find(a => a.id === asset[2])
     if (same !== undefined) {
       if (same.hash !== hash) refuse('community', path, `the game has an asset '${asset[2]}' with other content; the level cannot load`)
       continue
     }
-    merged.assets.push({ id: asset[2], world: asset[1], path, hash })
+    merged.assets.push({ id: asset[2], world: asset[1], path, hash, ...(metadata.category ? { category: metadata.category } : {}) })
   }
   return merged
 }

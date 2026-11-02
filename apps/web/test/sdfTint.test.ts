@@ -3,7 +3,12 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
+import { decodeMesh } from '../src/sdf/meshWire.ts'
+import { assetSkin } from '../src/content/cosmeticSkin.ts'
+import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
 import { materialProgram } from '../src/sdf/materialProgram.ts'
+import { checkPose, checkSkin } from '@royal-fiesta/game/render/nullPort'
+import type { SkinnedAssetT } from '@royal-fiesta/game/render/port'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 
 import type { CameraPose, RenderTarget, Viewport } from '@royal-fiesta/game/render/port'
@@ -16,6 +21,10 @@ const FRAME = new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 interface Port {
   engine: unknown; target: unknown
+  skinOf(id: string): SkinnedAssetT | undefined
+  registerSkinned(id: string, skin: SkinnedAssetT): number
+  setPose(id: number, pose: Float32Array): void
+  flushPoses(engine: unknown): void
   init(target: RenderTarget): Promise<void>
   resize(w: number, h: number, dpr: number, views: Viewport[]): void
   setCamera(index: number, camera: CameraPose): void
@@ -41,6 +50,7 @@ runInNewContext(compiled, {
     if (id === '../game/checkProgress.ts') return { checkAwait: (_step: string, work: () => Promise<unknown>) => work() }
     if (id === '../render/raaEngine.ts') return { createRaaEngine: async () => initEngine }
     if (id === '../render/shaderCache.ts') return { installShaderCache() {} }
+    if (id === '@royal-fiesta/game/render/nullPort') return { checkPose, checkSkin }
     if (id === './materialProgram.ts') return { materialProgram }
     if (id === '@royal-fiesta/game/render/roundLoad') return { roundStep: (_name: string, fn: () => unknown) => fn() }
     if (id === '@royal-fiesta/sim/refusal') return { refuse: (...args: unknown[]) => { throw new Error(args.join(':')) } }
@@ -67,6 +77,8 @@ function fakeEngine() {
   const calls = {
     views: [] as Viewport[][], sizes: [] as number[][], cameras: [] as number[],
     visibility: new Map<number, boolean>(),
+    skinPoses: [] as { ids: Uint32Array; matrices: Float32Array }[],
+    jointStreams: [] as unknown[],
     functions: 0, surfaces: 0, meshes: 0, instances: 0,
     tints: new Map<number, number[][]>(), cleared: [] as number[], modes: new Map<number, string>(),
     meshOf: new Map<number, number>(), meshIds: [] as number[], nextInstance: 1000,
@@ -80,7 +92,8 @@ function fakeEngine() {
     setLight() {}, setAmbient() {},
     addMaterialFunction() { calls.functions++ },
     addSurfaceMaterial() { calls.surfaces++; return ++next },
-    addMesh() { calls.meshes++; const id = ++next; calls.meshIds.push(id); return id },
+    setSkinPoses(ids: Uint32Array, matrices: Float32Array) { calls.skinPoses.push({ ids, matrices }) },
+    addMesh(desc: unknown) { calls.jointStreams.push(desc); calls.meshes++; const id = ++next; calls.meshIds.push(id); return id },
     addNode() { return ++next },
     removeNode() {},
     addMeshInstance(_node: number, mesh: number) { calls.instances++; const id = calls.nextInstance++; calls.meshOf.set(id, mesh); return id },
@@ -249,4 +262,47 @@ test('cosmetic variants tint fixed graph materials per instance without new mesh
   calls.nextInstance = reused
   port.createInstance(h, null)
   assert.deepEqual(calls.cleared, [reused])
+})
+
+
+test('SDF cosmetic rendering uploads joint streams and submits the penguin matrices to RAA', () => {
+  const { port, calls } = portFor('costume.skinned', [material('cloth', PLAIN)], [part('coat', 'cloth')])
+  const skin: SkinnedAssetT = {rig:{name:'penguin',bones:[{name:'root',parent:null}]},parts:[{name:'coat',skin:{
+    joints:new Uint16Array(12),weights:new Float32Array([1,0,0,0,1,0,0,0,1,0,0,0]),
+  }}]}
+  const handle=port.registerSkinned('costume.skinned',skin)
+  assert.equal(port.skinOf('costume.skinned'),skin)
+  assert.ok(calls.jointStreams.some(d => (d as {joints?:unknown}).joints === skin.parts[0].skin!.joints))
+  const instance=port.createInstance(handle,null)
+  const matrices=Float32Array.from(FRAME);matrices[13]=0.4
+  port.setPose(instance,matrices)
+  port.flushPoses(port.engine)
+  assert.equal(calls.skinPoses.length,1)
+  assert.equal(calls.skinPoses[0].ids.length,1)
+  assert.deepEqual(Array.from(calls.skinPoses[0].matrices),Array.from(matrices))
+})
+
+
+test('the four existing catalog cosmetics upload their saved skin and render with the penguin idle pose', () => {
+  const root=new URL('../../../',import.meta.url)
+  const body=JSON.parse(readFileSync(new URL('assets/common/penguin.body.asset.json',root),'utf8'))
+  const owner=Object.values(body.document.nodes).find((n:any)=>n.rig) as any
+  const matrices=restPoseSkin(owner.rig,12)
+  for(const id of ['costume.jester-hat','costume.disco-jacket','costume.fish-scarf','costume.ghost-aura']) {
+    const document=JSON.parse(readFileSync(new URL(`assets/common/${id}.asset.json`,root),'utf8')).document
+    const mesh=decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`,root))))
+    // The recorder checks geometry and skin submission; normal-volume textures require a GPU device.
+    const data=mesh.data as {groups:{parts:{normalVolume?:unknown}[]}[]}
+    for(const group of data.groups)for(const part of group.parts)delete part.normalVolume
+    const {engine,calls}=fakeEngine(), port=exports.make(new Map([[id,mesh]]))
+    port.engine=engine;port.target={}
+    const skin=assetSkin(data,document,owner.rig)!
+    const handle=port.registerSkinned(id,skin)
+    const instance=port.createInstance(handle,null)
+    port.setPose(instance,matrices)
+    port.flushPoses(engine)
+    assert.ok(calls.skinPoses[0].ids.length>0,`${id}: posed draw submitted`)
+    assert.ok(calls.skinPoses[0].matrices.some((v,i)=>Math.abs(v-(i%16%5===0?1:0))>1e-4),`${id}: deforming matrices`)
+    assert.equal(port.skinOf(id),skin)
+  }
 })

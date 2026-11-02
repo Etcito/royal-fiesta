@@ -89,7 +89,7 @@ export function mountStartScreen(
     ? port.registerSkinned(art.skinned.assetId, art.skinned.skin)
     : port.registerAsset(art.character.id, art.character)
   const assets = new Map<string, number>()
-  const worn = new Map<StartScreenModel['bins'][number]['slot'], { id: string; instance: number; mount: Vec3T }>()
+  const worn = new Map<StartScreenModel['bins'][number]['slot'], { id: string; instance: number; mount: Vec3T; skinned: boolean }>()
   let penguin = port.createInstance(character, PALETTE[model.colour])
   let colour = model.colour
   let current = model
@@ -120,21 +120,25 @@ export function mountStartScreen(
       if (asset === undefined) {
         const costume = art.costume(id)
         if (costume === null) continue
-        asset = port.registerAsset(assetId, costume)
+        const skin = port.skinOf?.(assetId)
+        asset = skin && port.registerSkinned && port.setPose ? port.registerSkinned(assetId, skin) : port.registerAsset(assetId, costume)
         assets.set(assetId, asset)
       }
-      worn.set(slot, { id, instance: port.createInstance(asset, cosmetic?.tint ?? null), mount })
+      worn.set(slot, { id, instance: port.createInstance(asset, cosmetic?.tint ?? null), mount, skinned: !!port.skinOf?.(assetId) && !!port.setPose && !!port.registerSkinned })
     }
     // The wardrobe has no simulation clock. Advance the shared penguin idle cycle on its view clock.
     if (art.skinned !== undefined && port.setPose !== undefined && port.registerSkinned !== undefined) {
-      port.setPose(penguin, restPoseSkin(art.skinned.skin.rig as unknown as Parameters<typeof restPoseSkin>[0],
-        Math.floor((performance.now() - started) * 60 / 1000)))
+      const matrices = restPoseSkin(art.skinned.skin.rig as unknown as Parameters<typeof restPoseSkin>[0],
+        Math.floor((performance.now() - started) * 60 / 1000))
+      port.setPose(penguin, matrices)
+      for (const item of worn.values()) if (item.skinned) port.setPose(item.instance, matrices)
     }
     // Rotate the root and each mount offset together.
     const yaw = (performance.now() - started) * YAW_PER_MS
     const rotation: QuatT = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
     port.setTransform(penguin, ORIGIN, rotation, UNIT)
-    for (const { instance, mount: [x, y, z] } of worn.values()) {
+    for (const { instance, mount: [x, y, z], skinned } of worn.values()) {
+      if (skinned) { port.setTransform(instance, ORIGIN, rotation, UNIT); continue }
       port.setTransform(instance, [Math.cos(yaw) * x + Math.sin(yaw) * z, y, -Math.sin(yaw) * x + Math.cos(yaw) * z], rotation, UNIT)
     }
     if (visible) port.setCamera(0, { eye: [0, 0.7, 4.8], target: [0, 0.3, 0], fovYDeg: 38, near: 0.1, far: 500 })

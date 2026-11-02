@@ -192,9 +192,12 @@
     ]
   },
   {
-    "name": "m13-countdowns-tests",
-    "command": "node --experimental-strip-types --test apps/web/test/showDirector.test.ts packages/game/test/flow.test.ts packages/game/test/flowVoteCountdown.test.ts",
-    "timeout_s": 60
+    "name": "m13-countdowns-local",
+    "command": "node --experimental-strip-types --test apps/web/test/showDirector.test.ts packages/game/test/flow.test.ts packages/game/test/flowVoteCountdown.test.ts apps/web/test/gpuEntry.test.ts apps/web/test/checkOpsYield.test.ts tools/test/chromeCheck.test.ts",
+    "timeout_s": 300,
+    "after": [
+      "m13-build"
+    ]
   },
   {
     "name": "m13-level-thumbs-tests",

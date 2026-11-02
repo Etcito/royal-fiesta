@@ -12,27 +12,29 @@ type Capture = {
   files: { name: string; blob: Blob }[]
 }
 
-function register(): void {
-  const gpu = window.nmcGpu as NonNullable<Window['nmcGpu']> & {
-    ops: { gameCapture(input: GameCaptureInput): Promise<Capture>; animBrick?: typeof animBrick }
-  }
-  if (typeof gpu?.ops.gameCapture !== 'function') throw new Error('animBrick requires the game page operations')
+type GameOps = { gameCapture?(input: GameCaptureInput): Promise<Capture>; animBrick?: typeof animBrick }
 
-  // Use the existing game renderer and capture validation, preserving PNGs and nonEmpty records.
-  async function animBrick(input: GameCaptureInput) {
-    const brick = await ready
-    const brickInfo = brick.brickInfo()
-    const records = DET_CASES.map(([seed, ticks]) => brick.selftest('det-selftest', seed, ticks))
-    const capture = await gpu.ops.gameCapture(input)
-    return {
-      ...capture,
-      json: {
-        ...capture.json, brickInfo, records,
-        nonEmpty: capture.json.captures.length > 0 && capture.json.captures.every(c => c.nonEmpty),
-      },
-    }
+// Refuses only when animBrick runs: at DOMContentLoaded the game's ops may still be loading
+// (game/entry.ts imports main.ts dynamically), and a boot-time throw stops every other check op.
+async function animBrick(input: GameCaptureInput) {
+  const ops = window.nmcGpu?.ops as GameOps | undefined
+  if (typeof ops?.gameCapture !== 'function') throw new Error('animBrick requires the game page operations')
+  const brick = await ready
+  const brickInfo = brick.brickInfo()
+  const records = DET_CASES.map(([seed, ticks]) => brick.selftest('det-selftest', seed, ticks))
+  const capture = await ops.gameCapture(input)
+  return {
+    ...capture,
+    json: {
+      ...capture.json, brickInfo, records,
+      nonEmpty: capture.json.captures.length > 0 && capture.json.captures.every(c => c.nonEmpty),
+    },
   }
-  gpu.ops.animBrick = animBrick
+}
+
+function register(): void {
+  const current = window.nmcGpu as { ops?: object } | undefined
+  window.nmcGpu = { ...current, ops: Object.assign(current?.ops ?? {}, { animBrick }) } as unknown as NonNullable<Window['nmcGpu']>
 }
 
 // Existing entry modules install their operations synchronously. Wait until all HTML modules

@@ -124,3 +124,28 @@ test('check ops replace the entry placeholders; a placeholder call reaches the c
     window: page, checks: extra, take() {}, bootGame() {}, adapterInfo: async () => ({}), Object, Set, Error,
   }), /Duplicate check op: extra/)
 })
+
+// GPU countdowns run (card 6541): brickBoot threw 'animBrick requires the game page operations' at
+// DOMContentLoaded, before the game's dynamic import had installed gameCapture, and no check op ever ran.
+// Loading brickBoot never throws; only an animBrick call refuses, and once the game is in it reaches gameCapture.
+test('brickBoot registers animBrick at boot without the game ops; only a call refuses', async () => {
+  const source = readFileSync(new URL('../src/anim/brickBoot.ts', import.meta.url), 'utf8')
+  const compiled = ts.transpile(source, { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS })
+  type Op = (input: unknown) => Promise<{ json: Record<string, unknown> }>
+  const page: { nmcGpu?: { ops: Record<string, Op> } } = { nmcGpu: { ops: {} } }
+  const listeners: (() => void)[] = []
+  const brick = { brickInfo: () => ({ id: 'b' }), selftest: () => ({ ok: true }) }
+  runInNewContext(compiled, {
+    window: page, console, exports: {}, Object,
+    document: { readyState: 'loading', addEventListener: (_: string, f: () => void) => listeners.push(f) },
+    require: () => ({ loadAnimBrick: async () => brick }),
+  })
+  assert.doesNotThrow(() => listeners.forEach(f => f()))
+  const placeholder = page.nmcGpu!.ops
+  assert.equal(typeof placeholder.animBrick, 'function')
+  await assert.rejects(placeholder.animBrick({}), /animBrick requires the game page operations/)
+  placeholder.gameCapture = async () => ({ json: { captures: [{ nonEmpty: true }] } })
+  const result = await placeholder.animBrick({})
+  assert.equal(result.json.nonEmpty, true)
+  assert.deepEqual(result.json.brickInfo, { id: 'b' })
+})

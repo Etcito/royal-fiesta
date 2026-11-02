@@ -110,7 +110,7 @@ test('check ops replace the entry placeholders; a placeholder call reaches the c
   runInNewContext(ts.transpile(installChecks, { target: ts.ScriptTarget.ES2022 }), {
     window: page, checks, take: () => { taken++ }, bootGame: () => {}, adapterInfo: async () => ({}), Object, Set, Error,
   })
-  assert.deepEqual(checks.map(check => check.name).sort(), ['cameraLook', 'checkBoot', 'countdowns', 'lobbyUnload', 'm13Flow', 'shopEconomy', 'vote', 'wardrobe'])
+  assert.deepEqual(checks.map(check => check.name).sort(), ["animPerf", "cameraLook", "checkBoot", "cosmeticThumbs", "countdowns", "lobbyUnload", "m13Flow", "screensPreview", "shopEconomy", "shopScreens", "startPlain", "vote", "wardrobe"])
   finish()
   const result = await pending
   assert.equal(result.json.name, 'wardrobe')

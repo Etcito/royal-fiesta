@@ -24,6 +24,7 @@ export interface ScreensDoc {
 
 // Same shape as uaa's WidgetProps.
 export interface WidgetProps {
+  thumbnail?: string
   text?: string | Record<string, string>
   value?: number
   disabled?: boolean

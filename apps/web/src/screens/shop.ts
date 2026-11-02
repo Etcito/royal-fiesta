@@ -1,6 +1,7 @@
 import { shopLines, type ShopModel, type ShopStep } from '@royal-fiesta/game/flow/shop'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { Action } from '@royal-fiesta/game/screens/nav'
+import { thumbnailUrl } from '../ui/cosmeticThumbnails.ts'
 import type { WidgetProps } from '../ui/screenMap.ts'
 import type { UaaHost } from '../ui/uaaHost.ts'
 import type { FlowDeps } from './startScreen.ts'
@@ -15,16 +16,16 @@ export interface ShopView {
   unmount(): void
 }
 
-const HINT = 'Up/Down slot · Left/Right item · Enter buy · Esc back'
+const HINT = 'Up/Down Grid / Tabs   Left/Right Browse   A / Enter Select   Esc Back'
 
 function focused(label: string, focus: boolean): string {
   return focus ? `> ${label} <` : label
 }
 
 function present(host: UaaHost, model: ShopModel): void {
-  const buttonRow = model.focus[0] === model.slots.length
+  const buttonRow = model.zone === 'buttons' || model.focus[0] === model.slots.length
   const menu: MenuModel = {
-    screen: 'shop', title: 'Shop', lines: shopLines(model), hint: HINT, overlay: false,
+    screen: 'shop', title: 'The Fiesta Shop', lines: shopLines(model), hint: HINT, overlay: false,
     buttons: [
       { label: focused('Inbox', buttonRow && model.focus[1] === 0), cmd: { k: 'action', action: 'inbox' } },
       { label: focused('Commission', buttonRow && model.focus[1] === 1), cmd: { k: 'action', action: 'commission' } },
@@ -36,19 +37,32 @@ function present(host: UaaHost, model: ShopModel): void {
   menu.lines.forEach((text, index) => { props[`line-${index}`] = { text, visible: index === 0 || index === 6 } })
   const selected = model.slots[model.focus[0]]?.items[model.focus[1]]
   props['line-6'] = { text: model.error ?? (model.pending ? 'Buying…' : selected
-    ? `${selected.name} · ${selected.price.coins ?? '—'} coins · ${selected.owned ? 'OWNED' : 'Enter or click to buy'}` : ''), visible: true }
+    ? `${selected.owned ? 'In your wardrobe' : selected.remaining <= 0 ? 'Locked · Sold out' : 'Find your next party look'}` : ''), visible: true }
   for (let row = 0; row < 4; row++) {
+    props[`catalog-slot-${row}`] = { text: ['Hat', 'Outfit', 'Extra', 'Special'][row], visible: true }
+    props[`tab-focus-${row}`] = { visible: model.focus[0] === row }
+  }
+  {
+    const row = model.focus[0]
     const slot = model.slots[row]
-    props[`catalog-slot-${row}`] = { text: slot ? `${slot.slot.toUpperCase()} · ${slot.items.length} items` : '', visible: !!slot }
+    // A moving nine-card window also supports future, larger catalogs.
+    const offset = model.focus[0] === row ? Math.floor(model.focus[1] / 9) * 9 : 0
     for (let column = 0; column < 9; column++) {
-      const item = slot?.items[column]
-      const focused = model.focus[0] === row && model.focus[1] === column
-      props[`catalog-item-${row}-${column}`] = {
-        text: item ? `${focused ? '> ' : ''}${item.name}${item.owned ? ' [OWNED]' : ''}` : '',
-        visible: !!item,
-      }
+      const item = slot?.items[offset + column]
+      const shown = !!item && model.focus[0] === row
+      props[`catalog-card-0-${column}`] = { visible: shown }
+      props[`catalog-focus-0-${column}`] = { visible: shown && model.zone !== 'tabs' && model.zone !== 'buttons' && model.focus[1] === offset + column }
+      props[`thumb-shop-0-${column}`] = { thumbnail: item?.id ?? '', visible: shown && !model.confirm && !!thumbnailUrl(item!.id) }
+      props[`catalog-item-0-${column}`] = { text: item?.name ?? '', visible: shown }
+      props[`catalog-price-0-${column}`] = { text: item ? item.owned ? 'OWNED' : item.remaining <= 0 ? 'LOCKED' : [item.price.coins === undefined ? '' : `${item.price.coins} coins`, item.price.tickets === undefined ? '' : `${item.price.tickets} tickets`].filter(Boolean).join(' / ') : '', visible: shown }
+      props[`catalog-rarity-0-${column}`] = { text: item?.rarity.toUpperCase() ?? '', visible: shown }
     }
   }
+  props['purchase-confirm'] = { visible: !!model.confirm }
+  const purchase = model.slots.flatMap(s => s.items).find(i => i.id === model.confirm?.itemId)
+  props['purchase-item'] = { text: purchase ? `${purchase.name} · ${purchase.price[model.confirm!.currency]} ${model.confirm!.currency}` : '' }
+  props['purchase-buy'] = { text: 'BUY · A / Enter' }
+  props['purchase-cancel'] = { text: 'Cancel · B / Esc' }
   host.setHud(props)
 }
 

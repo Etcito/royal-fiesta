@@ -106,9 +106,12 @@ test('open shop shows Loading…, then down+confirm buys and the focused row sho
   await opening
   assert.equal(s.menus.at(-1)?.lines[6], '')
 
+  await s.screens.action('shop', 'right')
   await s.screens.action('shop', 'down')
   await s.screens.action('shop', 'confirm')
-  assert.deepEqual(s.cues, ['ui.hover', 'ui.buy'])
+  assert.equal(s.screens.shop?.confirm?.itemId, 'costume.suit')
+  await s.screens.action('shop', 'confirm')
+  assert.deepEqual(s.cues, ['ui.hover', 'ui.hover', 'ui.buy'])
   const body = s.menus.at(-1)!.lines[2]
   assert.match(body, /Suit .* OWNED/)
   assert.ok((await s.stub.me()).owned.includes('costume.suit'))
@@ -118,9 +121,11 @@ test('open shop shows Loading…, then down+confirm buys and the focused row sho
 test('a sold-out buy surfaces the port refusal in the status line', async () => {
   const s = await setup()
   await s.screens.open('shop')
+  await s.screens.action('shop', 'down')
+  await s.screens.action('shop', 'confirm')
   await s.screens.action('shop', 'confirm')
   assert.match(s.menus.at(-1)!.lines[6], /^sold_out: /)
-  assert.deepEqual(s.cues, ['ui.buy', 'ui.error'])
+  assert.deepEqual(s.cues, ['ui.hover', 'ui.buy', 'ui.error'])
   assert.equal((await s.stub.me()).owned.includes('costume.hat'), false)
 })
 
@@ -173,11 +178,14 @@ test('refreshCount reports the unread inbox count for the start badge', async ()
 
 test('the catalog grid click buys the clicked item through the shared purchase path', async () => {
   const s = await setup()
-  s.host.widgetRect = id => id === 'catalog-item-1-0' ? { x: 10, y: 10, w: 100, h: 30 } : null
+  s.host.widgetRect = id => id === 'catalog-card-0-0' ? { x: 10, y: 10, w: 100, h: 30 } : null
   await s.screens.open('shop')
+  await s.screens.action('shop', 'right')
   const before = await s.stub.me()
   assert.equal(s.screens.pickShop(20, 20), true)
-  await new Promise(resolve => setImmediate(resolve))
+  assert.equal((await s.stub.me()).coins, before.coins)
+  assert.ok(s.screens.shop?.confirm)
+  await s.screens.action('shop', 'confirm')
   const after = await s.stub.me()
   assert.equal(after.coins, before.coins - 20)
   assert.ok(after.owned.includes('costume.suit'))

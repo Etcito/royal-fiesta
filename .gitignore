@@ -43,3 +43,5 @@ apps/web/public/images/
 audio/*.wav
 
 !courses/*.thumb.avif
+# Saved cosmetic preview sidecars ship with the meshes, like course previews.
+!assets/**/*.thumb.avif

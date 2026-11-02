@@ -50,10 +50,10 @@ export async function run(_input: unknown, deps: TourDeps) {
       await until(() => live.host.currentScreen() === 'shop' && String(props['line-0']?.text).includes('Coins 500'), 'shop load')
       const shop = await live.inspect!()
       const visibleItems = Object.entries(props).filter(([id, value]) => id.startsWith('catalog-item-') && value.visible === true && value.text)
-      if (visibleItems.length !== 36 || shop.shop?.slots.reduce((n, slot) => n + slot.items.length, 0) !== 36) throw new Error('catalog grid incomplete')
+      if (visibleItems.length !== 9 || shop.shop?.slots.reduce((n, slot) => n + slot.items.length, 0) !== 36) throw new Error('catalog grid incomplete')
       await screenshot('shop')
       // The first unowned item is a 30-coin colour variant. Confirm through real key input.
-      await press('ArrowRight'); await press('Enter')
+      await press('ArrowDown'); await press('ArrowRight'); await press('Enter'); await press('Enter')
       await until(() => String(props['line-0']?.text).includes('Coins 470'), 'purchase debit')
       const bought = await live.inspect!()
       if (bought.me.owned.length !== 13 || bought.me.tickets !== 20) throw new Error('purchase inventory mismatch')
@@ -65,7 +65,7 @@ export async function run(_input: unknown, deps: TourDeps) {
       if (after.bins?.[0].items.length !== 4) throw new Error('purchase missing from wardrobe')
       await screenshot('purchased')
       // Versioned saves retain an explicit None choice across a shop refresh.
-      await press('ArrowLeft')
+      await press('ArrowLeft'); await press('Enter')
       for (let i = 0; i < 6; i++) await press('ArrowDown')
       await press('Enter')
       await until(() => live.host.currentScreen() === 'shop' && String(props['line-0']?.text).includes('Coins 470'), 'shop revisit')

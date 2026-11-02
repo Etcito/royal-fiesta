@@ -4,7 +4,7 @@
 import type { CatalogItem, Me, Rarity, Slot } from '../economy/contract.ts'
 import type { Action } from '../screens/nav.ts'
 
-// The brief's fixed slot order and rarity order. Slots without items disappear; rarities rank items.
+// Four permanent tabs in the wardrobe order; rarities rank items within each grid.
 export const SHOP_SLOTS: readonly Slot[] = Object.freeze(['head', 'body', 'bottom', 'special'])
 export const SHOP_RARITIES: readonly Rarity[] = Object.freeze(['common', 'rare', 'legendary', 'epic'])
 export const SHOP_BUTTONS = Object.freeze(['inbox', 'commission'] as const)
@@ -22,10 +22,13 @@ export interface ShopRow {
 
 export interface ShopModel {
   slots: ShopRow[]
-  // [row, column]: rows are the item slots plus the button row at index slots.length.
+  // [tab, item index], or [tab, button index] while zone is buttons.
   focus: [number, number]
   coins: number
   tickets: number
+  lastItem?: number
+  zone?: 'tabs' | 'grid' | 'buttons'
+  confirm?: { itemId: string; currency: 'coins' | 'tickets' } | null
   pending: boolean
   error: string | null
 }
@@ -76,10 +79,12 @@ export function shopModel(catalog: CatalogItem[], me: Me): ShopModel {
         .sort(byRarityThenName)
         .map(item => ({ ...item, price: { ...item.price }, owned: owned.has(item.id) })),
     }))
-    .filter(row => row.items.length > 0)
+
   return {
     slots,
     focus: clampFocus({ slots, focus: [0, 0], coins: me.coins, tickets: me.tickets, pending: false, error: null }, 0, 0),
+    zone: 'tabs',
+    confirm: null,
     coins: me.coins,
     tickets: me.tickets,
     pending: false,
@@ -87,12 +92,28 @@ export function shopModel(catalog: CatalogItem[], me: Me): ShopModel {
   }
 }
 
+export const SHOP_COLUMNS = 3
+export function shopTab(m: ShopModel, tab: number): ShopModel {
+  return { ...m, focus: [Math.max(0, Math.min(m.slots.length - 1, tab)), 0], zone: 'tabs', confirm: null, error: null }
+}
 function move(m: ShopModel, rowDelta: -1 | 0 | 1, columnDelta: -1 | 0 | 1): ShopModel {
-  return {
-    ...m,
-    focus: clampFocus(m, m.focus[0] + rowDelta, m.focus[1] + columnDelta),
-    error: null,
+  if (m.pending) return m
+  if (m.confirm) return { ...m, confirm: null }
+  const zone = m.zone ?? 'grid'
+  const [tab, index] = m.focus
+  if (zone === 'tabs') {
+    if (columnDelta) return shopTab(m, (tab + columnDelta + m.slots.length) % m.slots.length)
+    return { ...m, zone: rowDelta > 0 ? 'grid' : 'buttons', error: null }
   }
+  if (zone === 'buttons') {
+    if (rowDelta) return { ...m, zone: rowDelta < 0 ? 'grid' : 'tabs', focus: [tab, rowDelta < 0 ? m.lastItem ?? 0 : 0] }
+    return { ...m, focus: [tab, columnDelta > 0 ? 1 : 0] }
+  }
+  const count = m.slots[tab]?.items.length ?? 0
+  if (rowDelta < 0 && index < SHOP_COLUMNS) return { ...m, zone: 'tabs' }
+  if (rowDelta > 0 && index + SHOP_COLUMNS >= count) return { ...m, zone: 'buttons', lastItem: index, focus: [tab, 0] }
+  const next = index + rowDelta * SHOP_COLUMNS + columnDelta
+  return { ...m, focus: [tab, Math.max(0, Math.min(count - 1, next))], error: null }
 }
 
 function pickCurrency(item: ShopItem, coins: number, tickets: number): 'coins' | 'tickets' | null {
@@ -117,8 +138,10 @@ export function shopStep(m: ShopModel, action: Action): ShopStep {
       return { model: move(m, 0, 1), buy: null, open: null }
     case 'confirm': {
       if (m.pending) return { model: m, buy: null, open: null }
+      if (m.confirm) return { model: { ...m, pending: true, confirm: null, error: null }, buy: m.confirm, open: null }
+      if (m.zone === 'tabs') return { model: { ...m, zone: 'grid' }, buy: null, open: null }
       const [row, column] = m.focus
-      if (row >= m.slots.length) {
+      if (m.zone === 'buttons' || row >= m.slots.length) {
         const open = SHOP_BUTTONS[Math.min(Math.max(column, 0), buttonCount() - 1)]
         return { model: m, buy: null, open: open ?? null }
       }
@@ -129,8 +152,8 @@ export function shopStep(m: ShopModel, action: Action): ShopStep {
       const currency = pickCurrency(item, m.coins, m.tickets)
       if (currency === null) return refusal(m, 'Not enough coins or tickets')
       return {
-        model: { ...m, pending: true, error: null },
-        buy: { itemId: item.id, currency },
+        model: { ...m, confirm: { itemId: item.id, currency }, error: null },
+        buy: null,
         open: null,
       }
     }

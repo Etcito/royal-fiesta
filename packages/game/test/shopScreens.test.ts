@@ -95,86 +95,42 @@ test('four slots in head, body, bottom, special order, items sorted by rarity th
   assert.deepEqual(m.focus, [0, 0])
 })
 
-test('down, down, right, confirm buys the expected bottom item with coins', async () => {
-  const m = await fresh()
-  const { model, buy } = drive(m, [
-    { k: 'focus', dir: 1 },
-    { k: 'focus', dir: 1 },
-    { k: 'adjust', dir: 1 },
-    { k: 'select' },
-  ])
-
-  assert.deepEqual(model.focus, [2, 1])
-  assert.deepEqual(buy, { itemId: 'costume.bubble-boots', currency: 'coins' })
-  assert.equal(model.pending, true)
-  assert.equal(model.error, null)
+test('tab navigation, three-column grid and two-stage coin purchase', async () => {
+  let m = await fresh()
+  m = shopStep(shopStep(m, 'right').model, 'right').model
+  m = shopStep(m, 'down').model
+  m = shopStep(m, 'right').model
+  const confirm = shopStep(m, 'confirm')
+  assert.deepEqual(confirm.model.focus, [2, 1])
+  assert.equal(confirm.buy, null)
+  const buy = shopStep(confirm.model, 'confirm')
+  assert.deepEqual(buy.buy, { itemId: 'costume.bubble-boots', currency: 'coins' })
+  assert.equal(buy.model.pending, true)
+  assert.equal(shopStep(buy.model, 'confirm').buy, null)
 })
 
-test('a coin price above the wallet falls back to tickets', async () => {
+test('ticket fallback, ownership, stock and affordability are checked before confirmation', async () => {
   const m = await fresh()
-  const { model, buy } = drive(m, [
-    { k: 'focus', dir: 1 },
-    { k: 'adjust', dir: 1 },
-    { k: 'select' },
-  ])
-
-  assert.deepEqual(model.focus, [1, 1])
-  assert.deepEqual(buy, { itemId: 'costume.wing-pack', currency: 'tickets' })
-  assert.equal(model.pending, true)
-})
-
-test('owned, sold-out and unaffordable items refuse with no buy', async () => {
-  const owned = drive(await fresh(), [{ k: 'select' }])
-  assert.equal(owned.buy, null)
-  assert.equal(owned.model.error, 'Already owned')
-  assert.equal(owned.model.pending, false)
-
-  const soldOut = drive(await fresh(), [...down(3), { k: 'adjust', dir: 1 }, { k: 'select' }])
-  assert.deepEqual(soldOut.model.focus, [3, 1])
-  assert.equal(soldOut.buy, null)
-  assert.equal(soldOut.model.error, 'Sold out')
-
-  const broke = drive(await fresh(), [...down(3), { k: 'select' }])
-  assert.deepEqual(broke.model.focus, [3, 0])
-  assert.equal(broke.buy, null)
+  const ticket = shopStep({ ...m, zone: 'grid', focus: [1, 1] }, 'confirm')
+  assert.equal(ticket.model.confirm?.currency, 'tickets')
+  assert.deepEqual(shopStep(ticket.model, 'confirm').buy, { itemId: 'costume.wing-pack', currency: 'tickets' })
+  assert.equal(shopStep({ ...m, zone: 'grid' }, 'confirm').model.error, 'Already owned')
+  assert.equal(shopStep({ ...m, zone: 'grid', focus: [3, 1] }, 'confirm').model.error, 'Sold out')
+  const broke = shopStep({ ...m, zone: 'grid', focus: [3, 0] }, 'confirm')
   assert.equal(broke.model.error, 'Not enough coins or tickets')
-
-  // Any move clears the error, and a confirm while pending never buys again.
-  const moved = shopStep(broke.model, 'up')
-  assert.equal(moved.model.error, null)
-  const buying = drive(await fresh(), [{ k: 'focus', dir: 1 }, { k: 'adjust', dir: 1 }, { k: 'select' }])
-  const again = shopStep(buying.model, 'confirm')
-  assert.equal(again.buy, null)
-  assert.equal(again.model.pending, true)
+  assert.equal(shopStep(broke.model, 'right').model.error, null)
 })
 
-test('the button row returns open for Inbox and Commission', async () => {
+test('grid bottom reaches the action buttons; tab edges wrap', async () => {
   const m = await fresh()
-  const atButtons = drive(m, down(m.slots.length))
-  assert.deepEqual(atButtons.model.focus, [4, 0])
-  const inbox = drive(m, [...down(m.slots.length), { k: 'select' }])
-  assert.deepEqual(inbox.model.focus, [4, 0])
-  assert.equal(inbox.buy, null)
-  assert.equal(inbox.open, 'inbox')
-
-  const commission = drive(inbox.model, [{ k: 'adjust', dir: 1 }, { k: 'select' }])
-  assert.deepEqual(commission.model.focus, [4, 1])
-  assert.equal(commission.buy, null)
-  assert.equal(commission.open, 'commission')
+  const grid = shopStep(m, 'down').model
+  const buttons = shopStep(grid, 'down').model
+  assert.equal(buttons.zone, 'buttons')
+  assert.equal(shopStep(buttons, 'confirm').open, 'inbox')
+  assert.equal(shopStep(shopStep(buttons, 'right').model, 'confirm').open, 'commission')
+  assert.equal(shopStep(m, 'left').model.focus[0], 3)
+  assert.equal(shopStep(shopStep(m, 'left').model, 'right').model.focus[0], 0)
   assert.deepEqual(SHOP_BUTTONS, ['inbox', 'commission'])
-})
-
-test('movement clamps at the rows, the item columns and the two buttons', async () => {
-  const m = await fresh()
-
-  const up = drive(m, [{ k: 'focus', dir: -1 }, { k: 'adjust', dir: -1 }])
-  assert.deepEqual(up.model.focus, [0, 0])
-  const right = drive(m, [{ k: 'adjust', dir: 1 }, { k: 'adjust', dir: 1 }])
-  assert.deepEqual(right.model.focus, [0, 1])
-  const button = drive(m, down(m.slots.length + 2))
-  assert.deepEqual(button.model.focus, [4, 0])
-  const lastButton = drive(button.model, [{ k: 'adjust', dir: 1 }, { k: 'adjust', dir: 1 }])
-  assert.deepEqual(lastButton.model.focus, [4, 1])
 })
 
 test('seven lines show the wallet, remaining copies, OWNED, SOLD OUT and focus marks', async () => {

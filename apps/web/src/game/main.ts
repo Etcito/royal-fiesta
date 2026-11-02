@@ -26,7 +26,7 @@ import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/
 import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
 import type { GameContent } from '@royal-fiesta/game/content'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
-import { cosmeticOf, LOCAL_COSMETICS, startScreen, startStep } from '@royal-fiesta/game/flow/startScreen'
+import { cosmeticOf, LOCAL_COSMETICS, startScreen, startStep, carouselWindow } from '@royal-fiesta/game/flow/startScreen'
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import { economyOwned, rewardOffline } from '@royal-fiesta/game/economy/owned'
 import { createEconomyStub } from '@royal-fiesta/game/economy/stub'
@@ -2191,7 +2191,7 @@ class App {
   // Persists the wardrobe after a wear or colour change.
   private saveWardrobe(model: StartScreenModel): void {
     const worn: Record<string, string> = {}
-    for (const bin of model.bins) if (bin.selected >= 0) worn[bin.slot] = bin.items[bin.selected]
+    for (const bin of model.bins) if (bin.worn >= 0) worn[bin.slot] = bin.items[bin.worn]
     try {
       this.env.store.setItem(WARDROBE_KEY, JSON.stringify({ version: 2, colour: model.colour, worn }))
     } catch (e) {
@@ -2405,8 +2405,10 @@ class App {
     const host = this.host
     if ((ECONOMY_SCREENS as readonly Screen[]).includes(this.nav.screen)) {
       const screen = this.nav.screen as EconomyScreen
-      if (ev.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
-      else {
+      if (ev.k === 'back') {
+        if (screen === 'shop' && this.economyScreens.cancelShop()) return
+        this.run(this.nav.dispatch({ kind: 'back' }))
+      } else {
         const action = flowAction(ev)
         if (action !== null) {
           void this.economyScreens.action(screen, action).then(open => {
@@ -2437,6 +2439,27 @@ class App {
         return
       }
       if (ev.k === 'click') {
+        const dpr = globalThis.devicePixelRatio || 1
+        const hit = (id: string) => {
+          const r = host.widgetRect(id)
+          return r && ev.x / dpr >= r.x && ev.x / dpr <= r.x + r.w && ev.y / dpr >= r.y && ev.y / dpr <= r.y + r.h
+        }
+        for (let row = 0; row < this.startModel.bins.length; row++) {
+          const bin = this.startModel.bins[row]
+          for (const [name, action] of [['prev', 'left'], ['next', 'right']] as const) {
+            if (hit(`carousel-${name}-${row}`)) { this.startAction(action, { ...this.startModel, focus: 'bins', bin: row }); return }
+          }
+          const cells = carouselWindow(bin.selected, bin.items.length)
+          for (let cell = 0; cell < cells.length; cell++) {
+            if (!hit(`carousel-${row}-${cell}`)) continue
+            this.startAction('confirm', { ...this.startModel, focus: 'bins', bin: row,
+              bins: this.startModel.bins.map((b, i) => i === row ? { ...b, selected: cells[cell] } : b) })
+            return
+          }
+        }
+        for (let i = 0; i < 8; i++) if (hit(`palette-${i}`)) {
+          this.startAction('confirm', { ...this.startModel, focus: 'palette', colour: i }); return
+        }
         host.input({ kind: 'pointer', phase: 'move', x: ev.x, y: ev.y })
         host.input({ kind: 'pointer', phase: 'down', x: ev.x, y: ev.y })
         host.input({ kind: 'pointer', phase: 'up', x: ev.x, y: ev.y })

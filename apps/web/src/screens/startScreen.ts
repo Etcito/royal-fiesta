@@ -1,4 +1,4 @@
-import { cosmeticOf, cosmeticName } from '@royal-fiesta/game/flow/startScreen'
+import { cosmeticOf, cosmeticName, carouselWindow } from '@royal-fiesta/game/flow/startScreen'
 // The caller owns input and advances this view once per frame with the latest wardrobe model.
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import type { StartScene, CourseDressing } from '@royal-fiesta/game/content'
@@ -10,6 +10,7 @@ import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
 import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { Action } from '@royal-fiesta/game/screens/nav'
+import { thumbnailUrl } from '../ui/cosmeticThumbnails.ts'
 import type { WidgetProps } from '../ui/screenMap.ts'
 import type { UaaHost } from '../ui/uaaHost.ts'
 
@@ -44,7 +45,7 @@ export interface StartScreenView {
   unmount(): void
 }
 
-const HINT = 'Up/Down choose · Left/Right change · Enter select'
+const HINT = 'Up/Down Slot   Left/Right Browse   A / Enter Wear'
 const UNIT: Vec3T = [1, 1, 1]
 const ORIGIN: Vec3T = [0, 0, 0]
 const YAW_PER_MS = 0.0002
@@ -70,9 +71,18 @@ function present(host: UaaHost, model: StartScreenModel): void {
     'palette-mark': { visible: false },
   }
   model.bins.forEach((bin, index) => {
-    const label = `< ${cosmeticName(bin.items[bin.selected])} > · ${bin.items.length} owned`
-    props[`bin-${bin.slot}`] = {
-      text: focused(label, model.focus === 'bins' && model.bin === index), visible: true,
+    props[`bin-${bin.slot}`] = { text: cosmeticName(bin.items[bin.selected]), visible: true }
+    const cells = carouselWindow(bin.selected, bin.items.length)
+    for (let j = 0; j < 4; j++) {
+      const at = cells[j]
+      const exists = at !== undefined
+      const id = exists && at >= 0 ? bin.items[at] : undefined
+      const active = model.focus === 'bins' && model.bin === index && at === bin.selected
+      props[`carousel-${index}-${j}`] = { visible: exists }
+      props[`carousel-focus-${index}-${j}`] = { visible: exists && (active || at === bin.worn) }
+      props[`thumb-start-${index}-${j}`] = { thumbnail: id ?? '', visible: !!id && !!thumbnailUrl(id) }
+      props[`carousel-name-${index}-${j}`] = { text: exists ? cosmeticName(id) : '', visible: exists }
+      props[`carousel-worn-${index}-${j}`] = { text: at === bin.worn ? 'WORN' : active ? 'SELECT' : '', visible: exists }
     }
   })
   PALETTE.forEach((_, index) => {
@@ -109,7 +119,7 @@ export function mountStartScreen(
       penguin = port.createInstance(character, PALETTE[next.colour])
       colour = next.colour
     }
-    const selected = new Map(next.bins.map(bin => [bin.slot, bin.selected >= 0 ? bin.items[bin.selected] : undefined]))
+    const selected = new Map(next.bins.map(bin => [bin.slot, bin.worn >= 0 ? bin.items[bin.worn] : undefined]))
     for (const [slot, item] of worn) {
       if (selected.get(slot) === item.id) continue
       port.destroyInstance(item.instance)
@@ -146,7 +156,10 @@ export function mountStartScreen(
       if (skinned) { port.setTransform(instance, origin, rotation, UNIT); continue }
       port.setTransform(instance, [origin[0] + Math.cos(yaw) * x + Math.sin(yaw) * z, origin[1] + y, origin[2] - Math.sin(yaw) * x + Math.cos(yaw) * z], rotation, UNIT)
     }
-    if (visible) port.setCamera(0, art.scene?.camera ?? { eye: [0, 0.7, 4.8], target: [0, 0.3, 0], fovYDeg: 38, near: 0.1, far: 500 })
+    if (visible) {
+      const portrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth
+      port.setCamera(0, art.scene?.camera ?? { eye: portrait ? [0, -2.2, 16] : [0, 0.7, 4.8], target: portrait ? [0, -2.6, 0] : [0, 0.3, 0], fovYDeg: 38, near: 0.1, far: 500 })
+    }
   }
 
   draw(model)
@@ -156,7 +169,7 @@ export function mountStartScreen(
       if (!mounted) return
       current = next
       if (step?.effect === 'play' || step?.effect === 'shop') deps.cue('ui.click')
-      else if (step?.action === 'up' || step?.action === 'down' || step?.effect === 'wear') deps.cue('ui.hover')
+      else if (step?.action === 'up' || step?.action === 'down' || ((step?.action === 'left' || step?.action === 'right') && next.focus === 'bins') || step?.effect === 'wear') deps.cue('ui.hover')
       draw(next)
       if (visible) present(host, next)
     },

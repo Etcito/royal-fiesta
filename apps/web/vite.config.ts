@@ -50,7 +50,7 @@ function localRaaAliases(dir: string): Alias[] {
   })
 }
 
-const alias: Alias[] = []
+const alias: Alias[] = ['game', 'sim'].map(name => ({ find: `@royal-fiesta/${name}`, replacement: join(webDir, '../../packages', name, 'src') }))
 if (mama.kind !== 'absent') {
   alias.push({ find: '@etcito/mama', replacement: join(mama.dir, 'src') })
   alias.push({ find: 'manifold-3d', replacement: join(mama.dir, 'node_modules', 'manifold-3d') })
@@ -66,6 +66,7 @@ export default defineConfig({
   // The GPU client serves dist from a sub-path: absolute /assets URLs never load there.
   base: './',
   build: {
+    assetsInlineLimit: 0,
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: { input },

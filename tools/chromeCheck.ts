@@ -308,6 +308,7 @@ export function prepareGpuCopy(source: string, op: string, target: string): void
   }
   const ops = [...new Set([...(manifest.ops as string[]), op])]
   writeFileSync(manifestFile, `${JSON.stringify({ ...manifest, ops }, null, 2)}\n`)
+  if (op === 'cosmeticThumbs') rmSync(join(target, 'audio'), { recursive: true, force: true })
   const page = join(target, 'game.html')
   const html = readFileSync(page, 'utf8')
   writeFileSync(page, injectAdapter(op === 'startPlain' ? injectPlainDiagnostics(html) : injectTestQuery(html), op))
@@ -372,7 +373,7 @@ async function bakeAndPack(op?: string): Promise<string> {
   const needed = new Set([...await profileAssetIds('sprint'), ...catalog.items.map(item => item.asset)])
   // The plain page can use its shipped saved meshes, just as the served page does.
   // Adding a second full server-mesh cache exceeds the GPU upload size limit.
-  if (op === 'startPlain' || op === 'animPerf') {
+  if (op === 'startPlain' || op === 'animPerf' || op === 'shopScreens' || op === 'screensPreview' || op === 'cosmeticThumbs') {
     const assets = buildContentIndex().assets
     if ([...needed].every(id => assets.some(asset => asset.id === id && asset.mesh !== undefined))) {
       packContent(join(dist, 'content'), undefined, new Set())

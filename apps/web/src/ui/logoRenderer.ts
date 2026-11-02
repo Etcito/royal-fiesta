@@ -25,7 +25,7 @@ export interface LogoDevice {
   }
 }
 
-const SHADER = `
+export const SHADER = `
 struct Globals {
   rect: vec4f,
   linear: vec4f,
@@ -58,7 +58,7 @@ export function logoFile(logo: { sha256: string; format: 'png' | 'svg' }): strin
   return `images/${logo.sha256}.${logo.format === 'svg' ? 'svg' : 'avif'}`
 }
 
-async function decodeLogo(blob: Blob): Promise<ImageBitmap> {
+export async function decodeLogo(blob: Blob): Promise<ImageBitmap> {
   // Decode through the browser's image loader, which accepts SVG as well as AVIF.
   // Some browsers reject an SVG Blob passed directly to createImageBitmap().
   const url = URL.createObjectURL(blob)

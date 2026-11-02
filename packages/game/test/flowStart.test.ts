@@ -94,7 +94,7 @@ test('an owned slot with no catalog match is empty, and nothing of another slot 
   assert.deepEqual(empty.bins.map(bin => bin.selected), [-1, -1, -1, -1])
   const stepped = startStep(empty, 'right')
   assert.deepEqual(stepped.model.bins.map(bin => bin.selected), [-1, -1, -1, -1])
-  assert.equal(stepped.effect, 'wear')
+  assert.equal(stepped.effect, null)
 })
 
 test('saved worn and colour are restored', () => {
@@ -147,7 +147,7 @@ test('a catalog special item fills the special bin and can be worn', () => {
   assert.equal(model.focus, 'bins')
   assert.equal(model.bin, 3)
   const step = startStep(model, 'right')
-  assert.equal(step.effect, 'wear')
+  assert.equal(step.effect, null)
   assert.equal(step.model.bins[3].selected, -1)
 })
 
@@ -204,7 +204,7 @@ test('up and down walk the four bins, palette, play and shop ring with wrapping'
   assert.equal(model.focus, 'shop')
 })
 
-test('left and right cycle the bin selection over -1..items-1 and return wear', () => {
+test('left and right cycle the bin selection over -1..items-1 and await confirmation', () => {
   let model = startScreen(['costume.propeller-hat', 'costume.crown'], CATALOG, 0, {
     colour: 0,
     worn: { head: 'costume.propeller-hat' },
@@ -212,21 +212,21 @@ test('left and right cycle the bin selection over -1..items-1 and return wear', 
   assert.equal(model.bins[0].selected, 0)
 
   let step = startStep(model, 'right')
-  assert.equal(step.effect, 'wear')
+  assert.equal(step.effect, null)
   assert.equal(step.model.bins[0].selected, 1)
   step = startStep(step.model, 'right')
-  assert.equal(step.effect, 'wear')
+  assert.equal(step.effect, null)
   assert.equal(step.model.bins[0].selected, -1)
   step = startStep(step.model, 'right')
-  assert.equal(step.effect, 'wear')
+  assert.equal(step.effect, null)
   assert.equal(step.model.bins[0].selected, 0)
   step = startStep(step.model, 'left')
-  assert.equal(step.effect, 'wear')
+  assert.equal(step.effect, null)
   assert.equal(step.model.bins[0].selected, -1)
 
   const empty = startScreen(['costume.propeller-hat'], CATALOG, 0, { colour: 0, worn: {} })
-  assert.equal(startStep(empty, 'left').effect, 'wear')
-  assert.equal(startStep(empty, 'right').effect, 'wear')
+  assert.equal(startStep(empty, 'left').effect, null)
+  assert.equal(startStep(empty, 'right').effect, null)
 })
 
 test('left and right wrap the palette and return wear; play and shop swap', () => {
@@ -258,7 +258,7 @@ test('left and right wrap the palette and return wear; play and shop swap', () =
   assert.equal(startStep(swapped.model, 'left').model.focus, 'play')
 
   // Confirm only acts on a button.
-  assert.equal(startStep(model, 'confirm').effect, null)
+  assert.equal(startStep(model, 'confirm').effect, 'wear')
   assert.equal(startStep(model, 'confirm').model.focus, 'palette')
 })
 

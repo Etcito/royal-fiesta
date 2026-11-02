@@ -25,6 +25,10 @@
     "icon.back",
     "icon.settings",
     "icon.medal",
+    "wardrobe.panel",
+    "wardrobe.card",
+    "wardrobe.focus",
+    "wardrobe.backdrop",
     "panel.hud"
   ],
   "start": "title",
@@ -932,1300 +936,1732 @@
       },
       "widgets": [
         {
-          "id": "card",
+          "id": "shop-backdrop",
           "type": "panel",
-          "asset": "panel.card",
+          "asset": "wardrobe.backdrop",
           "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-330, -600],
-            "offsetMax": [330, 600]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-520, -340],
-            "offsetMax": [520, 340]
-          },
-          "anim": {
-            "enter": {
-              "kind": "pop",
-              "duration": 300
-            }
+            "anchorMin": [0, 0],
+            "anchorMax": [1, 1],
+            "offsetMin": [0, 0],
+            "offsetMax": [0, 0]
           }
         },
         {
           "id": "title",
           "type": "label",
-          "text": "Shop",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 24],
+            "offsetMax": [696, 94]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 18],
+            "offsetMax": [650, 88]
+          },
+          "text": "THE FIESTA SHOP",
           "font": {
             "family": "Fredoka",
             "weight": 700
           },
-          "size": 64,
-          "color": "#ffd23f",
+          "size": 44,
+          "color": "#ffffff",
           "align": "center",
           "outline": {
-            "width": 6,
-            "color": "#c2187a"
-          },
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, -570],
-            "offsetMax": [300, -490]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-480, -320],
-            "offsetMax": [480, -250]
-          }
-        },
-        {
-          "id": "line-0",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 28,
-          "color": "#39204f",
-          "align": "center",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -475],
-            "offsetMax": [290, -437]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-450, -245],
-            "offsetMax": [450, -207]
-          }
-        },
-        {
-          "id": "line-1",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 28,
-          "color": "#39204f",
-          "align": "center",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, -390],
-            "offsetMax": [300, -340]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -184],
-            "offsetMax": [-10, -144]
-          }
-        },
-        {
-          "id": "line-2",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 28,
-          "color": "#39204f",
-          "align": "center",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, -320],
-            "offsetMax": [300, -270]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -138],
-            "offsetMax": [-10, -98]
-          }
-        },
-        {
-          "id": "line-3",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 28,
-          "color": "#39204f",
-          "align": "center",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, -250],
-            "offsetMax": [300, -200]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -92],
-            "offsetMax": [-10, -52]
-          }
-        },
-        {
-          "id": "line-4",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 28,
-          "color": "#39204f",
-          "align": "center",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, -180],
-            "offsetMax": [300, -130]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -46],
-            "offsetMax": [-10, -6]
-          }
-        },
-        {
-          "id": "line-5",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 28,
-          "color": "#39204f",
-          "align": "center",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, -110],
-            "offsetMax": [300, -60]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 0],
-            "offsetMax": [-10, 40]
-          }
-        },
-        {
-          "id": "line-6",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
-          "color": "#39204f",
-          "align": "center",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 420],
-            "offsetMax": [290, 470]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-470, 105],
-            "offsetMax": [470, 145]
+            "width": 3,
+            "color": "#552372"
           }
         },
         {
           "id": "hint",
           "type": "label",
-          "text": "Up/Down choose - Enter select - Esc back",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 1236],
+            "offsetMax": [696, 1268]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [300, 690],
+            "offsetMax": [980, 716]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 18,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 106],
+            "offsetMax": [696, 146]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [760, 32],
+            "offsetMax": [1240, 72]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 25,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "line-1",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 1094],
+            "offsetMax": [696, 1134]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [120, 635],
+            "offsetMax": [1160, 675]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 25,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "line-2",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 1094],
+            "offsetMax": [696, 1134]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [120, 635],
+            "offsetMax": [1160, 675]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 25,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "line-3",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 1094],
+            "offsetMax": [696, 1134]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [120, 635],
+            "offsetMax": [1160, 675]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 25,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "line-4",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 1094],
+            "offsetMax": [696, 1134]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [120, 635],
+            "offsetMax": [1160, 675]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 25,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "line-5",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 1094],
+            "offsetMax": [696, 1134]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [120, 635],
+            "offsetMax": [1160, 675]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 25,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "line-6",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 1094],
+            "offsetMax": [696, 1134]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [120, 635],
+            "offsetMax": [1160, 675]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 25,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "tab-focus-0",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [22, 171],
+            "offsetMax": [188, 235]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [226, 108],
+            "offsetMax": [428, 174]
+          },
+          "asset": "button.primary"
+        },
+        {
+          "id": "catalog-slot-0",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [22, 177],
+            "offsetMax": [188, 227]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [226, 114],
+            "offsetMax": [428, 164]
+          },
+          "text": "Hat",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 30,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "catalog-card-0-0",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 258],
+            "offsetMax": [240, 512]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [104, 196],
+            "offsetMax": [448, 328]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-0",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 258],
+            "offsetMax": [240, 512]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [104, 196],
+            "offsetMax": [448, 328]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-0",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [66, 270],
+            "offsetMax": [198, 402]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [114, 206],
+            "offsetMax": [222, 314]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-0",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 406],
+            "offsetMax": [234, 454]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 208],
+            "offsetMax": [438, 256]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-0",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 456],
+            "offsetMax": [234, 486]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 259],
+            "offsetMax": [438, 287]
+          },
+          "text": "",
           "font": {
             "family": "Fredoka",
             "weight": 700
           },
           "size": 20,
-          "color": "#39204f",
-          "align": "center",
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-0",
+          "type": "label",
           "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 475],
-            "offsetMax": [290, 510]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 486],
+            "offsetMax": [234, 510]
           },
           "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-460, 145],
-            "offsetMax": [460, 175]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 294],
+            "offsetMax": [438, 318]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "catalog-card-0-1",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [252, 258],
+            "offsetMax": [468, 512]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [468, 196],
+            "offsetMax": [812, 328]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-1",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [252, 258],
+            "offsetMax": [468, 512]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [468, 196],
+            "offsetMax": [812, 328]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-1",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [294, 270],
+            "offsetMax": [426, 402]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [478, 206],
+            "offsetMax": [586, 314]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-1",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 406],
+            "offsetMax": [462, 454]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 208],
+            "offsetMax": [802, 256]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-1",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 456],
+            "offsetMax": [462, 486]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 259],
+            "offsetMax": [802, 287]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-1",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 486],
+            "offsetMax": [462, 510]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 294],
+            "offsetMax": [802, 318]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "catalog-card-0-2",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [480, 258],
+            "offsetMax": [696, 512]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [832, 196],
+            "offsetMax": [1176, 328]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-2",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [480, 258],
+            "offsetMax": [696, 512]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [832, 196],
+            "offsetMax": [1176, 328]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-2",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [522, 270],
+            "offsetMax": [654, 402]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [842, 206],
+            "offsetMax": [950, 314]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-2",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 406],
+            "offsetMax": [690, 454]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 208],
+            "offsetMax": [1166, 256]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-2",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 456],
+            "offsetMax": [690, 486]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 259],
+            "offsetMax": [1166, 287]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-2",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 486],
+            "offsetMax": [690, 510]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 294],
+            "offsetMax": [1166, 318]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "catalog-card-0-3",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 528],
+            "offsetMax": [240, 782]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [104, 338],
+            "offsetMax": [448, 470]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-3",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 528],
+            "offsetMax": [240, 782]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [104, 338],
+            "offsetMax": [448, 470]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-3",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [66, 540],
+            "offsetMax": [198, 672]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [114, 348],
+            "offsetMax": [222, 456]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-3",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 676],
+            "offsetMax": [234, 724]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 350],
+            "offsetMax": [438, 398]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-3",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 726],
+            "offsetMax": [234, 756]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 401],
+            "offsetMax": [438, 429]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-3",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 756],
+            "offsetMax": [234, 780]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 436],
+            "offsetMax": [438, 460]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "catalog-card-0-4",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [252, 528],
+            "offsetMax": [468, 782]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [468, 338],
+            "offsetMax": [812, 470]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-4",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [252, 528],
+            "offsetMax": [468, 782]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [468, 338],
+            "offsetMax": [812, 470]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-4",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [294, 540],
+            "offsetMax": [426, 672]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [478, 348],
+            "offsetMax": [586, 456]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-4",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 676],
+            "offsetMax": [462, 724]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 350],
+            "offsetMax": [802, 398]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-4",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 726],
+            "offsetMax": [462, 756]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 401],
+            "offsetMax": [802, 429]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-4",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 756],
+            "offsetMax": [462, 780]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 436],
+            "offsetMax": [802, 460]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "catalog-card-0-5",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [480, 528],
+            "offsetMax": [696, 782]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [832, 338],
+            "offsetMax": [1176, 470]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-5",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [480, 528],
+            "offsetMax": [696, 782]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [832, 338],
+            "offsetMax": [1176, 470]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-5",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [522, 540],
+            "offsetMax": [654, 672]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [842, 348],
+            "offsetMax": [950, 456]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-5",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 676],
+            "offsetMax": [690, 724]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 350],
+            "offsetMax": [1166, 398]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-5",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 726],
+            "offsetMax": [690, 756]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 401],
+            "offsetMax": [1166, 429]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-5",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 756],
+            "offsetMax": [690, 780]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 436],
+            "offsetMax": [1166, 460]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "catalog-card-0-6",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 798],
+            "offsetMax": [240, 1052]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [104, 480],
+            "offsetMax": [448, 612]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-6",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 798],
+            "offsetMax": [240, 1052]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [104, 480],
+            "offsetMax": [448, 612]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-6",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [66, 810],
+            "offsetMax": [198, 942]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [114, 490],
+            "offsetMax": [222, 598]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-6",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 946],
+            "offsetMax": [234, 994]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 492],
+            "offsetMax": [438, 540]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-6",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 996],
+            "offsetMax": [234, 1026]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 543],
+            "offsetMax": [438, 571]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-6",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 1026],
+            "offsetMax": [234, 1050]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [228, 578],
+            "offsetMax": [438, 602]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "catalog-card-0-7",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [252, 798],
+            "offsetMax": [468, 1052]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [468, 480],
+            "offsetMax": [812, 612]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-7",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [252, 798],
+            "offsetMax": [468, 1052]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [468, 480],
+            "offsetMax": [812, 612]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-7",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [294, 810],
+            "offsetMax": [426, 942]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [478, 490],
+            "offsetMax": [586, 598]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-7",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 946],
+            "offsetMax": [462, 994]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 492],
+            "offsetMax": [802, 540]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-7",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 996],
+            "offsetMax": [462, 1026]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 543],
+            "offsetMax": [802, 571]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-7",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [258, 1026],
+            "offsetMax": [462, 1050]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [592, 578],
+            "offsetMax": [802, 602]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "catalog-card-0-8",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [480, 798],
+            "offsetMax": [696, 1052]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [832, 480],
+            "offsetMax": [1176, 612]
+          },
+          "asset": "wardrobe.card"
+        },
+        {
+          "id": "catalog-focus-0-8",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [480, 798],
+            "offsetMax": [696, 1052]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [832, 480],
+            "offsetMax": [1176, 612]
+          },
+          "asset": "wardrobe.focus"
+        },
+        {
+          "id": "thumb-shop-0-8",
+          "type": "icon",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [522, 810],
+            "offsetMax": [654, 942]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [842, 490],
+            "offsetMax": [950, 598]
+          },
+          "asset": "badge.round"
+        },
+        {
+          "id": "catalog-item-0-8",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 946],
+            "offsetMax": [690, 994]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 492],
+            "offsetMax": [1166, 540]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 22,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-price-0-8",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 996],
+            "offsetMax": [690, 1026]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 543],
+            "offsetMax": [1166, 571]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "catalog-rarity-0-8",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [486, 1026],
+            "offsetMax": [690, 1050]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [956, 578],
+            "offsetMax": [1166, 602]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#713286",
+          "align": "center"
+        },
+        {
+          "id": "tab-focus-1",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [196, 171],
+            "offsetMax": [362, 235]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [440, 108],
+            "offsetMax": [642, 174]
+          },
+          "asset": "button.primary"
+        },
+        {
+          "id": "catalog-slot-1",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [196, 177],
+            "offsetMax": [362, 227]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [440, 114],
+            "offsetMax": [642, 164]
+          },
+          "text": "Outfit",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 30,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "tab-focus-2",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [370, 171],
+            "offsetMax": [536, 235]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [654, 108],
+            "offsetMax": [856, 174]
+          },
+          "asset": "button.primary"
+        },
+        {
+          "id": "catalog-slot-2",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [370, 177],
+            "offsetMax": [536, 227]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [654, 114],
+            "offsetMax": [856, 164]
+          },
+          "text": "Extra",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 30,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "tab-focus-3",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [544, 171],
+            "offsetMax": [710, 235]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [868, 108],
+            "offsetMax": [1070, 174]
+          },
+          "asset": "button.primary"
+        },
+        {
+          "id": "catalog-slot-3",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [544, 177],
+            "offsetMax": [710, 227]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [868, 114],
+            "offsetMax": [1070, 164]
+          },
+          "text": "Special",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 30,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
           }
         },
         {
           "id": "act-inbox",
           "type": "button",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [28, 1150],
+            "offsetMax": [228, 1214]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [902, 642],
+            "offsetMax": [1062, 690]
+          },
           "asset": "button.secondary",
           "text": {
             "label": "Inbox"
           },
-          "action": "inbox",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 520],
-            "offsetMax": [-10, 575]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-310, 185],
-            "offsetMax": [-10, 240]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
+          "action": "inbox"
         },
         {
           "id": "act-commission",
           "type": "button",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [242, 1150],
+            "offsetMax": [488, 1214]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [1080, 642],
+            "offsetMax": [1256, 690]
+          },
           "asset": "button.secondary",
           "text": {
             "label": "Commission"
           },
-          "action": "commission",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 520],
-            "offsetMax": [290, 575]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 185],
-            "offsetMax": [310, 240]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
+          "action": "commission"
         },
         {
           "id": "back",
           "type": "button",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [506, 1150],
+            "offsetMax": [694, 1214]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 642],
+            "offsetMax": [184, 690]
+          },
           "asset": "button.secondary",
           "text": {
             "label": "Back"
           },
-          "action": "back",
+          "action": "back"
+        },
+        {
+          "id": "purchase-confirm",
+          "type": "panel",
           "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-160, 585],
-            "offsetMax": [160, 640]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [40, 420],
+            "offsetMax": [680, 760]
           },
           "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-170, 250],
-            "offsetMax": [170, 305]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [350, 210],
+            "offsetMax": [930, 500]
           },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
+          "asset": "wardrobe.panel",
+          "children": [
+            {
+              "id": "purchase-title",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [20, 26],
+                "offsetMax": [620, 82]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [20, 22],
+                "offsetMax": [560, 72]
+              },
+              "text": "MAKE IT YOURS?",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 36,
+              "color": "#3a1757",
+              "align": "center"
             },
-            "press": {
-              "kind": "pop",
-              "duration": 150
+            {
+              "id": "purchase-item",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [24, 100],
+                "offsetMax": [616, 180]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [20, 80],
+                "offsetMax": [560, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 28,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "purchase-buy",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [24, 214],
+                "offsetMax": [306, 310]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [20, 164],
+                "offsetMax": [280, 264]
+              },
+              "text": "BUY \u00b7 A / Enter",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 24,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "purchase-cancel",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [330, 214],
+                "offsetMax": [616, 310]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [300, 164],
+                "offsetMax": [560, 264]
+              },
+              "text": "Cancel \u00b7 B / Esc",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 24,
+              "color": "#3a1757",
+              "align": "center"
             }
-          }
-        },
-        {
-          "id": "catalog-slot-0",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
-          "color": "#7a1f8c",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -420],
-            "offsetMax": [-5, -384]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, -195],
-            "offsetMax": [-240, -167]
-          }
-        },
-        {
-          "id": "catalog-item-0-0",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -378],
-            "offsetMax": [-5, -342]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, -159],
-            "offsetMax": [-240, -131]
-          }
-        },
-        {
-          "id": "catalog-item-0-1",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -340],
-            "offsetMax": [-5, -304]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, -131],
-            "offsetMax": [-240, -103]
-          }
-        },
-        {
-          "id": "catalog-item-0-2",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -302],
-            "offsetMax": [-5, -266]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, -103],
-            "offsetMax": [-240, -75]
-          }
-        },
-        {
-          "id": "catalog-item-0-3",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -264],
-            "offsetMax": [-5, -228]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, -75],
-            "offsetMax": [-240, -47]
-          }
-        },
-        {
-          "id": "catalog-item-0-4",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -226],
-            "offsetMax": [-5, -190]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, -47],
-            "offsetMax": [-240, -19]
-          }
-        },
-        {
-          "id": "catalog-item-0-5",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -188],
-            "offsetMax": [-5, -152]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, -19],
-            "offsetMax": [-240, 9]
-          }
-        },
-        {
-          "id": "catalog-item-0-6",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -150],
-            "offsetMax": [-5, -114]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, 9],
-            "offsetMax": [-240, 37]
-          }
-        },
-        {
-          "id": "catalog-item-0-7",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -112],
-            "offsetMax": [-5, -76]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, 37],
-            "offsetMax": [-240, 65]
-          }
-        },
-        {
-          "id": "catalog-item-0-8",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -74],
-            "offsetMax": [-5, -38]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-475, 65],
-            "offsetMax": [-240, 93]
-          }
-        },
-        {
-          "id": "catalog-slot-1",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
-          "color": "#7a1f8c",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -420],
-            "offsetMax": [295, -384]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, -195],
-            "offsetMax": [0, -167]
-          }
-        },
-        {
-          "id": "catalog-item-1-0",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -378],
-            "offsetMax": [295, -342]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, -159],
-            "offsetMax": [0, -131]
-          }
-        },
-        {
-          "id": "catalog-item-1-1",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -340],
-            "offsetMax": [295, -304]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, -131],
-            "offsetMax": [0, -103]
-          }
-        },
-        {
-          "id": "catalog-item-1-2",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -302],
-            "offsetMax": [295, -266]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, -103],
-            "offsetMax": [0, -75]
-          }
-        },
-        {
-          "id": "catalog-item-1-3",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -264],
-            "offsetMax": [295, -228]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, -75],
-            "offsetMax": [0, -47]
-          }
-        },
-        {
-          "id": "catalog-item-1-4",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -226],
-            "offsetMax": [295, -190]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, -47],
-            "offsetMax": [0, -19]
-          }
-        },
-        {
-          "id": "catalog-item-1-5",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -188],
-            "offsetMax": [295, -152]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, -19],
-            "offsetMax": [0, 9]
-          }
-        },
-        {
-          "id": "catalog-item-1-6",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -150],
-            "offsetMax": [295, -114]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, 9],
-            "offsetMax": [0, 37]
-          }
-        },
-        {
-          "id": "catalog-item-1-7",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -112],
-            "offsetMax": [295, -76]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, 37],
-            "offsetMax": [0, 65]
-          }
-        },
-        {
-          "id": "catalog-item-1-8",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -74],
-            "offsetMax": [295, -38]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-235, 65],
-            "offsetMax": [0, 93]
-          }
-        },
-        {
-          "id": "catalog-slot-2",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
-          "color": "#7a1f8c",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, -10],
-            "offsetMax": [-5, 26]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, -195],
-            "offsetMax": [240, -167]
-          }
-        },
-        {
-          "id": "catalog-item-2-0",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 32],
-            "offsetMax": [-5, 68]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, -159],
-            "offsetMax": [240, -131]
-          }
-        },
-        {
-          "id": "catalog-item-2-1",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 70],
-            "offsetMax": [-5, 106]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, -131],
-            "offsetMax": [240, -103]
-          }
-        },
-        {
-          "id": "catalog-item-2-2",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 108],
-            "offsetMax": [-5, 144]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, -103],
-            "offsetMax": [240, -75]
-          }
-        },
-        {
-          "id": "catalog-item-2-3",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 146],
-            "offsetMax": [-5, 182]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, -75],
-            "offsetMax": [240, -47]
-          }
-        },
-        {
-          "id": "catalog-item-2-4",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 184],
-            "offsetMax": [-5, 220]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, -47],
-            "offsetMax": [240, -19]
-          }
-        },
-        {
-          "id": "catalog-item-2-5",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 222],
-            "offsetMax": [-5, 258]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, -19],
-            "offsetMax": [240, 9]
-          }
-        },
-        {
-          "id": "catalog-item-2-6",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 260],
-            "offsetMax": [-5, 296]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, 9],
-            "offsetMax": [240, 37]
-          }
-        },
-        {
-          "id": "catalog-item-2-7",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 298],
-            "offsetMax": [-5, 334]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, 37],
-            "offsetMax": [240, 65]
-          }
-        },
-        {
-          "id": "catalog-item-2-8",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-290, 336],
-            "offsetMax": [-5, 372]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [5, 65],
-            "offsetMax": [240, 93]
-          }
-        },
-        {
-          "id": "catalog-slot-3",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
-          "color": "#7a1f8c",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, -10],
-            "offsetMax": [295, 26]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, -195],
-            "offsetMax": [480, -167]
-          }
-        },
-        {
-          "id": "catalog-item-3-0",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 32],
-            "offsetMax": [295, 68]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, -159],
-            "offsetMax": [480, -131]
-          }
-        },
-        {
-          "id": "catalog-item-3-1",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 70],
-            "offsetMax": [295, 106]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, -131],
-            "offsetMax": [480, -103]
-          }
-        },
-        {
-          "id": "catalog-item-3-2",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 108],
-            "offsetMax": [295, 144]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, -103],
-            "offsetMax": [480, -75]
-          }
-        },
-        {
-          "id": "catalog-item-3-3",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 146],
-            "offsetMax": [295, 182]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, -75],
-            "offsetMax": [480, -47]
-          }
-        },
-        {
-          "id": "catalog-item-3-4",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 184],
-            "offsetMax": [295, 220]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, -47],
-            "offsetMax": [480, -19]
-          }
-        },
-        {
-          "id": "catalog-item-3-5",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 222],
-            "offsetMax": [295, 258]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, -19],
-            "offsetMax": [480, 9]
-          }
-        },
-        {
-          "id": "catalog-item-3-6",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 260],
-            "offsetMax": [295, 296]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, 9],
-            "offsetMax": [480, 37]
-          }
-        },
-        {
-          "id": "catalog-item-3-7",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 298],
-            "offsetMax": [295, 334]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, 37],
-            "offsetMax": [480, 65]
-          }
-        },
-        {
-          "id": "catalog-item-3-8",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 19,
-          "color": "#39204f",
-          "align": "left",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [10, 336],
-            "offsetMax": [295, 372]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [245, 65],
-            "offsetMax": [480, 93]
-          }
+          ]
         }
       ]
     },
@@ -5419,389 +5855,2128 @@
         {
           "id": "title",
           "type": "label",
-          "text": "Royal Fiesta",
-          "font": { "family": "Fredoka", "weight": 700 },
-          "size": 64,
-          "color": "#ffd23f",
-          "align": "center",
-          "outline": {
-            "width": 6,
-            "color": "#c2187a"
-          },
           "rect": {
-            "anchorMin": [0.5, 0],
-            "anchorMax": [0.5, 0],
-            "offsetMin": [-256, 40],
-            "offsetMax": [256, 140]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [20, 24],
+            "offsetMax": [520, 90]
           },
           "landscape": {
-            "anchorMin": [0.5, 0],
-            "anchorMax": [0.5, 0],
-            "offsetMin": [-480, 28],
-            "offsetMax": [480, 118]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 20],
+            "offsetMax": [630, 95]
+          },
+          "text": "Royal Fiesta",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 52,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
+          }
+        },
+        {
+          "id": "wardrobe-subtitle",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [28, 100],
+            "offsetMax": [528, 142]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [32, 100],
+            "offsetMax": [417, 140]
+          },
+          "text": "DRESS FOR THE FIESTA",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 24,
+          "color": "#ffffff",
+          "align": "center",
+          "outline": {
+            "width": 3,
+            "color": "#552372"
           }
         },
         {
           "id": "hint",
           "type": "label",
-          "text": "Up/Down choose - Enter select - Esc back",
-          "font": { "family": "Fredoka", "weight": 700 },
-          "size": 32,
-          "color": "#3a1757",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 1254],
+            "offsetMax": [696, 1280]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [260, 689],
+            "offsetMax": [1020, 717]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 18,
+          "color": "#ffffff",
           "align": "center",
-          "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-336, -64],
-            "offsetMax": [336, -16]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-600, -40],
-            "offsetMax": [600, -8]
+          "outline": {
+            "width": 3,
+            "color": "#552372"
           }
-        },
-        {
-          "id": "act-play",
-          "type": "button",
-          "asset": "button.primary",
-          "text": {
-            "label": "Play"
-          },
-          "action": "play",
-          "rect": {
-            "anchorMin": [1, 1],
-            "anchorMax": [1, 1],
-            "offsetMin": [-264, -276],
-            "offsetMax": [-24, -172]
-          },
-          "landscape": {
-            "anchorMin": [1, 1],
-            "anchorMax": [1, 1],
-            "offsetMin": [-280, -244],
-            "offsetMax": [-24, -140]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "act-shop",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Shop"
-          },
-          "action": "shop",
-          "rect": {
-            "anchorMin": [1, 1],
-            "anchorMax": [1, 1],
-            "offsetMin": [-220, -148],
-            "offsetMax": [-24, -68]
-          },
-          "landscape": {
-            "anchorMin": [1, 1],
-            "anchorMax": [1, 1],
-            "offsetMin": [-280, -132],
-            "offsetMax": [-24, -44]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "back",
-          "type": "button",
-          "asset": "badge.round",
-          "action": "back",
-          "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 48],
-            "offsetMax": [88, 112]
-          },
-          "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 32],
-            "offsetMax": [88, 96]
-          },
-          "children": [
-            {
-              "id": "back-icon",
-              "type": "icon",
-              "asset": "icon.back",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [1, 1],
-                "offsetMin": [8, 8],
-                "offsetMax": [-8, -8]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [1, 1],
-                "offsetMin": [8, 8],
-                "offsetMax": [-8, -8]
-              }
-            }
-          ]
         },
         {
           "id": "bin-head-card",
           "type": "panel",
-          "asset": "panel.card",
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 328],
-            "offsetMax": [232, 468]
+            "offsetMin": [24, 490],
+            "offsetMax": [696, 634]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [32, 200],
-            "offsetMax": [368, 304]
+            "offsetMin": [24, 170],
+            "offsetMax": [408, 356]
           },
+          "asset": "wardrobe.panel",
           "children": [
             {
               "id": "bin-head-title",
               "type": "label",
-              "text": "Hat",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 36,
-              "color": "#3a1757",
-              "align": "center",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 12],
-                "offsetMax": [196, 56]
+                "offsetMin": [12, 4],
+                "offsetMax": [128, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 8],
-                "offsetMax": [320, 48]
-              }
+                "offsetMin": [12, 6],
+                "offsetMax": [162, 41]
+              },
+              "text": "Hat",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 28,
+              "color": "#3a1757",
+              "align": "center"
             },
             {
               "id": "bin-head",
               "type": "label",
-              "text": "< item >",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 32,
-              "color": "#3a1757",
-              "align": "center",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 64],
-                "offsetMax": [196, 116]
+                "offsetMin": [130, 4],
+                "offsetMax": [650, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 48],
-                "offsetMax": [320, 92]
-              }
+                "offsetMin": [160, 6],
+                "offsetMax": [370, 41]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 20,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-0-0",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [52, 38],
+                "offsetMax": [188, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [37, 46],
+                "offsetMax": [113, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-0-0",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [52, 38],
+                "offsetMax": [188, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [37, 46],
+                "offsetMax": [113, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-0-0",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [74, 38],
+                "offsetMax": [164, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [45, 50],
+                "offsetMax": [105, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-0-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [54, 112],
+                "offsetMax": [186, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [39, 123],
+                "offsetMax": [111, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-0-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [54, 128],
+                "offsetMax": [186, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [39, 152],
+                "offsetMax": [111, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-0-1",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [198, 38],
+                "offsetMax": [334, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [119, 46],
+                "offsetMax": [195, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-0-1",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [198, 38],
+                "offsetMax": [334, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [119, 46],
+                "offsetMax": [195, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-0-1",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [220, 38],
+                "offsetMax": [310, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [127, 50],
+                "offsetMax": [187, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-0-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [200, 112],
+                "offsetMax": [332, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [121, 123],
+                "offsetMax": [193, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-0-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [200, 128],
+                "offsetMax": [332, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [121, 152],
+                "offsetMax": [193, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-0-2",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [344, 38],
+                "offsetMax": [480, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [201, 46],
+                "offsetMax": [277, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-0-2",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [344, 38],
+                "offsetMax": [480, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [201, 46],
+                "offsetMax": [277, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-0-2",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [366, 38],
+                "offsetMax": [456, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [209, 50],
+                "offsetMax": [269, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-0-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [346, 112],
+                "offsetMax": [478, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [203, 123],
+                "offsetMax": [275, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-0-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [346, 128],
+                "offsetMax": [478, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [203, 152],
+                "offsetMax": [275, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-0-3",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [490, 38],
+                "offsetMax": [626, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [283, 46],
+                "offsetMax": [359, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-0-3",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [490, 38],
+                "offsetMax": [626, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [283, 46],
+                "offsetMax": [359, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-0-3",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [512, 38],
+                "offsetMax": [602, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [291, 50],
+                "offsetMax": [351, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-0-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [492, 112],
+                "offsetMax": [624, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [285, 123],
+                "offsetMax": [357, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-0-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [492, 128],
+                "offsetMax": [624, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [285, 152],
+                "offsetMax": [357, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-prev-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [2, 52],
+                "offsetMax": [46, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 78],
+                "offsetMax": [32, 148]
+              },
+              "text": "\u2039",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 40,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-next-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [634, 52],
+                "offsetMax": [668, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [366, 78],
+                "offsetMax": [398, 148]
+              },
+              "text": "\u203a",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 40,
+              "color": "#3a1757",
+              "align": "center"
             }
           ]
         },
         {
           "id": "bin-body-card",
           "type": "panel",
-          "asset": "panel.card",
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 488],
-            "offsetMax": [232, 628]
+            "offsetMin": [24, 638],
+            "offsetMax": [696, 782]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [32, 320],
-            "offsetMax": [368, 424]
+            "offsetMin": [24, 376],
+            "offsetMax": [408, 562]
           },
+          "asset": "wardrobe.panel",
           "children": [
             {
               "id": "bin-body-title",
               "type": "label",
-              "text": "Outfit",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 36,
-              "color": "#3a1757",
-              "align": "center",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 12],
-                "offsetMax": [196, 56]
+                "offsetMin": [12, 4],
+                "offsetMax": [128, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 8],
-                "offsetMax": [320, 48]
-              }
+                "offsetMin": [12, 6],
+                "offsetMax": [162, 41]
+              },
+              "text": "Outfit",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 28,
+              "color": "#3a1757",
+              "align": "center"
             },
             {
               "id": "bin-body",
               "type": "label",
-              "text": "< item >",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 32,
-              "color": "#3a1757",
-              "align": "center",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 64],
-                "offsetMax": [196, 116]
+                "offsetMin": [130, 4],
+                "offsetMax": [650, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 48],
-                "offsetMax": [320, 92]
-              }
+                "offsetMin": [160, 6],
+                "offsetMax": [370, 41]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 20,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-1-0",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [52, 38],
+                "offsetMax": [188, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [37, 46],
+                "offsetMax": [113, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-1-0",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [52, 38],
+                "offsetMax": [188, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [37, 46],
+                "offsetMax": [113, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-1-0",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [74, 38],
+                "offsetMax": [164, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [45, 50],
+                "offsetMax": [105, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-1-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [54, 112],
+                "offsetMax": [186, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [39, 123],
+                "offsetMax": [111, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-1-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [54, 128],
+                "offsetMax": [186, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [39, 152],
+                "offsetMax": [111, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-1-1",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [198, 38],
+                "offsetMax": [334, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [119, 46],
+                "offsetMax": [195, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-1-1",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [198, 38],
+                "offsetMax": [334, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [119, 46],
+                "offsetMax": [195, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-1-1",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [220, 38],
+                "offsetMax": [310, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [127, 50],
+                "offsetMax": [187, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-1-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [200, 112],
+                "offsetMax": [332, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [121, 123],
+                "offsetMax": [193, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-1-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [200, 128],
+                "offsetMax": [332, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [121, 152],
+                "offsetMax": [193, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-1-2",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [344, 38],
+                "offsetMax": [480, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [201, 46],
+                "offsetMax": [277, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-1-2",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [344, 38],
+                "offsetMax": [480, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [201, 46],
+                "offsetMax": [277, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-1-2",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [366, 38],
+                "offsetMax": [456, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [209, 50],
+                "offsetMax": [269, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-1-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [346, 112],
+                "offsetMax": [478, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [203, 123],
+                "offsetMax": [275, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-1-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [346, 128],
+                "offsetMax": [478, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [203, 152],
+                "offsetMax": [275, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-1-3",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [490, 38],
+                "offsetMax": [626, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [283, 46],
+                "offsetMax": [359, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-1-3",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [490, 38],
+                "offsetMax": [626, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [283, 46],
+                "offsetMax": [359, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-1-3",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [512, 38],
+                "offsetMax": [602, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [291, 50],
+                "offsetMax": [351, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-1-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [492, 112],
+                "offsetMax": [624, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [285, 123],
+                "offsetMax": [357, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-1-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [492, 128],
+                "offsetMax": [624, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [285, 152],
+                "offsetMax": [357, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-prev-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [2, 52],
+                "offsetMax": [46, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 78],
+                "offsetMax": [32, 148]
+              },
+              "text": "\u2039",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 40,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-next-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [634, 52],
+                "offsetMax": [668, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [366, 78],
+                "offsetMax": [398, 148]
+              },
+              "text": "\u203a",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 40,
+              "color": "#3a1757",
+              "align": "center"
             }
           ]
         },
         {
           "id": "bin-bottom-card",
           "type": "panel",
-          "asset": "panel.card",
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 648],
-            "offsetMax": [232, 788]
+            "offsetMin": [24, 786],
+            "offsetMax": [696, 930]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [32, 440],
-            "offsetMax": [368, 544]
+            "offsetMin": [872, 170],
+            "offsetMax": [1256, 356]
           },
+          "asset": "wardrobe.panel",
           "children": [
             {
               "id": "bin-bottom-title",
               "type": "label",
-              "text": "Extra",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 36,
-              "color": "#3a1757",
-              "align": "center",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 12],
-                "offsetMax": [196, 56]
+                "offsetMin": [12, 4],
+                "offsetMax": [128, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 8],
-                "offsetMax": [320, 48]
-              }
+                "offsetMin": [12, 6],
+                "offsetMax": [162, 41]
+              },
+              "text": "Extra",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 28,
+              "color": "#3a1757",
+              "align": "center"
             },
             {
               "id": "bin-bottom",
               "type": "label",
-              "text": "< item >",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 32,
-              "color": "#3a1757",
-              "align": "center",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 64],
-                "offsetMax": [196, 116]
+                "offsetMin": [130, 4],
+                "offsetMax": [650, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 48],
-                "offsetMax": [320, 92]
-              }
+                "offsetMin": [160, 6],
+                "offsetMax": [370, 41]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 20,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-2-0",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [52, 38],
+                "offsetMax": [188, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [37, 46],
+                "offsetMax": [113, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-2-0",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [52, 38],
+                "offsetMax": [188, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [37, 46],
+                "offsetMax": [113, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-2-0",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [74, 38],
+                "offsetMax": [164, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [45, 50],
+                "offsetMax": [105, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-2-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [54, 112],
+                "offsetMax": [186, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [39, 123],
+                "offsetMax": [111, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-2-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [54, 128],
+                "offsetMax": [186, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [39, 152],
+                "offsetMax": [111, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-2-1",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [198, 38],
+                "offsetMax": [334, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [119, 46],
+                "offsetMax": [195, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-2-1",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [198, 38],
+                "offsetMax": [334, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [119, 46],
+                "offsetMax": [195, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-2-1",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [220, 38],
+                "offsetMax": [310, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [127, 50],
+                "offsetMax": [187, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-2-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [200, 112],
+                "offsetMax": [332, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [121, 123],
+                "offsetMax": [193, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-2-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [200, 128],
+                "offsetMax": [332, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [121, 152],
+                "offsetMax": [193, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-2-2",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [344, 38],
+                "offsetMax": [480, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [201, 46],
+                "offsetMax": [277, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-2-2",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [344, 38],
+                "offsetMax": [480, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [201, 46],
+                "offsetMax": [277, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-2-2",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [366, 38],
+                "offsetMax": [456, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [209, 50],
+                "offsetMax": [269, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-2-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [346, 112],
+                "offsetMax": [478, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [203, 123],
+                "offsetMax": [275, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-2-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [346, 128],
+                "offsetMax": [478, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [203, 152],
+                "offsetMax": [275, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-2-3",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [490, 38],
+                "offsetMax": [626, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [283, 46],
+                "offsetMax": [359, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-2-3",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [490, 38],
+                "offsetMax": [626, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [283, 46],
+                "offsetMax": [359, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-2-3",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [512, 38],
+                "offsetMax": [602, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [291, 50],
+                "offsetMax": [351, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-2-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [492, 112],
+                "offsetMax": [624, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [285, 123],
+                "offsetMax": [357, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-2-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [492, 128],
+                "offsetMax": [624, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [285, 152],
+                "offsetMax": [357, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-prev-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [2, 52],
+                "offsetMax": [46, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 78],
+                "offsetMax": [32, 148]
+              },
+              "text": "\u2039",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 40,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-next-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [634, 52],
+                "offsetMax": [668, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [366, 78],
+                "offsetMax": [398, 148]
+              },
+              "text": "\u203a",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 40,
+              "color": "#3a1757",
+              "align": "center"
             }
           ]
         },
         {
           "id": "bin-special-card",
           "type": "panel",
-          "asset": "panel.card",
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 808],
-            "offsetMax": [232, 948]
+            "offsetMin": [24, 934],
+            "offsetMax": [696, 1078]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [32, 560],
-            "offsetMax": [368, 664]
+            "offsetMin": [872, 376],
+            "offsetMax": [1256, 562]
           },
+          "asset": "wardrobe.panel",
           "children": [
             {
               "id": "bin-special-title",
               "type": "label",
-              "text": "Special",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 36,
-              "color": "#3a1757",
-              "align": "center",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 12],
-                "offsetMax": [196, 56]
+                "offsetMin": [12, 4],
+                "offsetMax": [128, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 8],
-                "offsetMax": [320, 48]
-              }
+                "offsetMin": [12, 6],
+                "offsetMax": [162, 41]
+              },
+              "text": "Special",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 28,
+              "color": "#3a1757",
+              "align": "center"
             },
             {
               "id": "bin-special",
               "type": "label",
-              "text": "< item >",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 32,
-              "color": "#3a1757",
-              "align": "center",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 64],
-                "offsetMax": [196, 116]
+                "offsetMin": [130, 4],
+                "offsetMax": [650, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [16, 48],
-                "offsetMax": [320, 92]
-              }
+                "offsetMin": [160, 6],
+                "offsetMax": [370, 41]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 20,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-3-0",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [52, 38],
+                "offsetMax": [188, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [37, 46],
+                "offsetMax": [113, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-3-0",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [52, 38],
+                "offsetMax": [188, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [37, 46],
+                "offsetMax": [113, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-3-0",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [74, 38],
+                "offsetMax": [164, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [45, 50],
+                "offsetMax": [105, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-3-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [54, 112],
+                "offsetMax": [186, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [39, 123],
+                "offsetMax": [111, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-3-0",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [54, 128],
+                "offsetMax": [186, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [39, 152],
+                "offsetMax": [111, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-3-1",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [198, 38],
+                "offsetMax": [334, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [119, 46],
+                "offsetMax": [195, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-3-1",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [198, 38],
+                "offsetMax": [334, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [119, 46],
+                "offsetMax": [195, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-3-1",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [220, 38],
+                "offsetMax": [310, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [127, 50],
+                "offsetMax": [187, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-3-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [200, 112],
+                "offsetMax": [332, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [121, 123],
+                "offsetMax": [193, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-3-1",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [200, 128],
+                "offsetMax": [332, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [121, 152],
+                "offsetMax": [193, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-3-2",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [344, 38],
+                "offsetMax": [480, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [201, 46],
+                "offsetMax": [277, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-3-2",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [344, 38],
+                "offsetMax": [480, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [201, 46],
+                "offsetMax": [277, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-3-2",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [366, 38],
+                "offsetMax": [456, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [209, 50],
+                "offsetMax": [269, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-3-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [346, 112],
+                "offsetMax": [478, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [203, 123],
+                "offsetMax": [275, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-3-2",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [346, 128],
+                "offsetMax": [478, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [203, 152],
+                "offsetMax": [275, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-3-3",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [490, 38],
+                "offsetMax": [626, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [283, 46],
+                "offsetMax": [359, 174]
+              },
+              "asset": "wardrobe.card"
+            },
+            {
+              "id": "carousel-focus-3-3",
+              "type": "panel",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [490, 38],
+                "offsetMax": [626, 138]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [283, 46],
+                "offsetMax": [359, 174]
+              },
+              "asset": "wardrobe.focus"
+            },
+            {
+              "id": "thumb-start-3-3",
+              "type": "icon",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [512, 38],
+                "offsetMax": [602, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [291, 50],
+                "offsetMax": [351, 122]
+              },
+              "asset": "badge.round"
+            },
+            {
+              "id": "carousel-name-3-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [492, 112],
+                "offsetMax": [624, 130]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [285, 123],
+                "offsetMax": [357, 152]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 13,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-worn-3-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [492, 128],
+                "offsetMax": [624, 142]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [285, 152],
+                "offsetMax": [357, 170]
+              },
+              "text": "",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 12,
+              "color": "#7a247d",
+              "align": "center"
+            },
+            {
+              "id": "carousel-prev-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [2, 52],
+                "offsetMax": [46, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [0, 78],
+                "offsetMax": [32, 148]
+              },
+              "text": "\u2039",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 40,
+              "color": "#3a1757",
+              "align": "center"
+            },
+            {
+              "id": "carousel-next-3",
+              "type": "label",
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [634, 52],
+                "offsetMax": [668, 114]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [366, 78],
+                "offsetMax": [398, 148]
+              },
+              "text": "\u203a",
+              "font": {
+                "family": "Fredoka",
+                "weight": 700
+              },
+              "size": 40,
+              "color": "#3a1757",
+              "align": "center"
             }
           ]
         },
@@ -5813,16 +7988,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-196, -164],
-            "offsetMax": [-160, -128]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [168, 1100],
+            "offsetMax": [210, 1142]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-228, -128],
-            "offsetMax": [-178, -78]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [452, 578],
+            "offsetMax": [492, 618]
           }
         },
         {
@@ -5833,16 +8008,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-156, -164],
-            "offsetMax": [-120, -128]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [217, 1100],
+            "offsetMax": [259, 1142]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-170, -128],
-            "offsetMax": [-120, -78]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [500, 578],
+            "offsetMax": [540, 618]
           }
         },
         {
@@ -5853,16 +8028,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-116, -164],
-            "offsetMax": [-80, -128]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [266, 1100],
+            "offsetMax": [308, 1142]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-112, -128],
-            "offsetMax": [-62, -78]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [548, 578],
+            "offsetMax": [588, 618]
           }
         },
         {
@@ -5873,16 +8048,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-76, -164],
-            "offsetMax": [-40, -128]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [315, 1100],
+            "offsetMax": [357, 1142]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-54, -128],
-            "offsetMax": [-4, -78]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [596, 578],
+            "offsetMax": [636, 618]
           }
         },
         {
@@ -5893,16 +8068,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-36, -164],
-            "offsetMax": [0, -128]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [364, 1100],
+            "offsetMax": [406, 1142]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [4, -128],
-            "offsetMax": [54, -78]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [644, 578],
+            "offsetMax": [684, 618]
           }
         },
         {
@@ -5913,16 +8088,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [4, -164],
-            "offsetMax": [40, -128]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [413, 1100],
+            "offsetMax": [455, 1142]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [62, -128],
-            "offsetMax": [112, -78]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [692, 578],
+            "offsetMax": [732, 618]
           }
         },
         {
@@ -5933,16 +8108,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [44, -164],
-            "offsetMax": [80, -128]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [462, 1100],
+            "offsetMax": [504, 1142]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [120, -128],
-            "offsetMax": [170, -78]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [740, 578],
+            "offsetMax": [780, 618]
           }
         },
         {
@@ -5953,96 +8128,144 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [84, -164],
-            "offsetMax": [120, -128]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [511, 1100],
+            "offsetMax": [553, 1142]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [178, -128],
-            "offsetMax": [228, -78]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [788, 578],
+            "offsetMax": [828, 618]
           }
         },
         {
           "id": "palette-mark",
           "type": "label",
-          "text": "^",
-          "font": { "family": "Fredoka", "weight": 700 },
-          "size": 24,
-          "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 4,
-            "color": "#7a1f8c"
-          },
           "rect": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-196, -124],
-            "offsetMax": [-160, -92]
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [0, 0],
+            "offsetMax": [1, 1]
           },
           "landscape": {
-            "anchorMin": [0.5, 1],
-            "anchorMax": [0.5, 1],
-            "offsetMin": [-228, -76],
-            "offsetMax": [-178, -44]
-          }
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [0, 0],
+            "offsetMax": [1, 1]
+          },
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#3a1757",
+          "align": "center"
+        },
+        {
+          "id": "act-play",
+          "type": "button",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [368, 1170],
+            "offsetMax": [692, 1250]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [656, 634],
+            "offsetMax": [916, 692]
+          },
+          "asset": "button.primary",
+          "text": {
+            "label": "PLAY!"
+          },
+          "action": "play"
+        },
+        {
+          "id": "act-shop",
+          "type": "button",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [28, 1170],
+            "offsetMax": [352, 1250]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [364, 634],
+            "offsetMax": [624, 692]
+          },
+          "asset": "button.secondary",
+          "text": {
+            "label": "SHOP"
+          },
+          "action": "shop"
         },
         {
           "id": "act-inbox",
           "type": "button",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [548, 28],
+            "offsetMax": [696, 92]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [1100, 28],
+            "offsetMax": [1256, 88]
+          },
           "asset": "button.secondary",
-          "text": { "label": "Inbox" },
-          "action": "inbox",
-          "rect": { "anchorMin": [1, 0], "anchorMax": [1, 0], "offsetMin": [-168, 64], "offsetMax": [-40, 128] },
-          "landscape": { "anchorMin": [1, 0], "anchorMax": [1, 0], "offsetMin": [-168, 48], "offsetMax": [-40, 112] },
-          "anim": { "focus": { "kind": "bounce", "duration": 200 }, "press": { "kind": "pop", "duration": 150 } }
+          "text": {
+            "label": "Inbox"
+          },
+          "action": "inbox"
+        },
+        {
+          "id": "back",
+          "type": "button",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 182],
+            "offsetMax": [144, 237]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 640],
+            "offsetMax": [174, 695]
+          },
+          "asset": "button.secondary",
+          "text": {
+            "label": "Back"
+          },
+          "action": "back"
         },
         {
           "id": "inbox-badge",
           "type": "badge",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [656, 12],
+            "offsetMax": [698, 54]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [1230, 12],
+            "offsetMax": [1272, 54]
+          },
           "asset": "badge.round",
           "text": {
             "count": "0"
-          },
-          "rect": {
-            "anchorMin": [1, 0],
-            "anchorMax": [1, 0],
-            "offsetMin": [-88, 48],
-            "offsetMax": [-24, 112]
-          },
-          "landscape": {
-            "anchorMin": [1, 0],
-            "anchorMax": [1, 0],
-            "offsetMin": [-88, 32],
-            "offsetMax": [-24, 96]
-          }
-        },
-        {
-          "id": "line-0",
-          "type": "label",
-          "text": "",
-          "font": { "family": "Fredoka", "weight": 700 },
-          "size": 28,
-          "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 4,
-            "color": "#7a1f8c"
-          },
-          "rect": {
-            "anchorMin": [0.5, 0],
-            "anchorMax": [0.5, 0],
-            "offsetMin": [-336, 156],
-            "offsetMax": [336, 204]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0],
-            "anchorMax": [0.5, 0],
-            "offsetMin": [-440, 124],
-            "offsetMax": [440, 168]
           }
         }
       ]

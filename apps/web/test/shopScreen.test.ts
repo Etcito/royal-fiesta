@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
 import { loadUiDoc } from '@etcito/uaa'
 import { createEconomyStub } from '@royal-fiesta/game/economy/stub'
 import { shopLines, shopModel, shopStep, type ShopModel } from '@royal-fiesta/game/flow/shop'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { Action } from '@royal-fiesta/game/screens/nav'
+import { loadAssets } from '../src/ui/uaaHost.ts'
 import { mountShop } from '../src/screens/shop.ts'
 import { screenProps, widgetsOf, type ScreensDoc, type WidgetProps } from '../src/ui/screenMap.ts'
 import type { UaaHost } from '../src/ui/uaaHost.ts'
@@ -13,7 +14,7 @@ import type { UaaHost } from '../src/ui/uaaHost.ts'
 const doc = JSON.parse(readFileSync(new URL('../../../ui/screens.ui-doc.json', import.meta.url), 'utf8')) as ScreensDoc
 
 test('catalog UI document passes the runtime schema', () => {
-  assert.doesNotThrow(() => loadUiDoc(doc))
+  assert.doesNotThrow(() => loadUiDoc(doc, loadAssets(Object.fromEntries(readdirSync(new URL('../../../ui', import.meta.url)).filter(f => f.endsWith('.ui.json')).map(f => [f, readFileSync(new URL('../../../ui/' + f, import.meta.url), 'utf8')])))))
 })
 
 async function setup() {
@@ -39,9 +40,9 @@ test('shop presents shopLines and maps all three buttons to the real UI doc', as
   function check(model: ShopModel, labels: string[]): void {
     const menu = s.menus.at(-1)!
     assert.equal(menu.screen, 'shop')
-    assert.equal(menu.title, 'Shop')
+    assert.equal(menu.title, 'The Fiesta Shop')
     assert.equal(menu.overlay, false)
-    assert.equal(menu.hint, 'Up/Down slot · Left/Right item · Enter buy · Esc back')
+    assert.equal(menu.hint, 'Up/Down Grid / Tabs   Left/Right Browse   A / Enter Select   Esc Back')
     assert.equal(menu.lines.length, 7)
     assert.deepEqual(menu.lines, shopLines(model))
     assert.deepEqual(menu.buttons, [
@@ -61,7 +62,7 @@ test('shop presents shopLines and maps all three buttons to the real UI doc', as
     })
     const hud = s.hud.at(-1)!
     const visible = Object.entries(hud).filter(([id, props]) => id.startsWith('catalog-item-') && props.visible)
-    assert.equal(visible.length, model.slots.reduce((n, slot) => n + slot.items.length, 0))
+    assert.equal(visible.length, (model.slots[model.focus[0]]?.items.length ?? 0))
     for (const [id] of visible) assert.ok(ids.has(id), `${id} is rendered by the UI doc`)
     assert.equal(hud['line-6'].visible, true)
   }
@@ -87,6 +88,8 @@ test('shop cues move, buy, refusal and open; unmount stops updates', async () =>
   assert.deepEqual(s.cues, [])
   act('down')
   act('confirm')
+  assert.ok(model.confirm)
+  act('confirm')
   assert.equal(model.pending, true)
   assert.equal(s.menus.at(-1)!.lines[6], 'Buying…')
   // A wallet refresh ends the pending purchase; the next purchase is refused.
@@ -100,7 +103,7 @@ test('shop cues move, buy, refusal and open; unmount stops updates', async () =>
   for (const action of ['up', 'left', 'right'] as const) act(action)
   assert.deepEqual(s.cues.slice(3), ['ui.hover', 'ui.hover', 'ui.hover'])
   for (const column of [0, 1]) {
-    model = { ...model, focus: [model.slots.length, column], error: null }
+    model = { ...model, focus: [model.slots.length, column], zone: 'buttons', error: null }
     act('confirm')
   }
   assert.deepEqual(s.cues.slice(-2), ['ui.click', 'ui.click'])

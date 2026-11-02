@@ -14,7 +14,7 @@ export interface InboxBadgeSource {
 export type BinSlot = 'head' | 'body' | 'bottom' | 'special'
 
 export interface StartScreenModel {
-  bins: { slot: BinSlot; items: string[]; selected: number }[]
+  bins: { slot: BinSlot; items: string[]; selected: number; worn: number }[]
   palette: number[]
   colour: number
   focus: 'bins' | 'palette' | 'play' | 'shop'
@@ -83,7 +83,7 @@ export function startScreen(
       .map(item => item.id)
     const worn = saved.worn[slot]
     const selected = worn === undefined ? -1 : items.indexOf(worn)
-    return { slot, items, selected }
+    return { slot, items, selected, worn: selected }
   })
   const palette = PALETTE.map((_, index) => index)
   return {
@@ -158,15 +158,23 @@ export function startStep(
     case 'left':
     case 'right': {
       const delta = action === 'right' ? 1 : -1
-      if (m.focus === 'bins') return { model: stepBin(m, delta), effect: 'wear' }
+      if (m.focus === 'bins') return { model: stepBin(m, delta), effect: null }
       if (m.focus === 'palette') return { model: stepPalette(m, delta), effect: 'wear' }
       return { model: { ...m, focus: m.focus === 'play' ? 'shop' : 'play' }, effect: null }
     }
     case 'confirm':
       if (m.focus === 'play') return { model: m, effect: 'play' }
       if (m.focus === 'shop') return { model: m, effect: 'shop' }
+      if (m.focus === 'palette') return { model: m, effect: 'wear' }
+      if (m.focus === 'bins') return { model: { ...m, bins: m.bins.map((bin, i) => i === m.bin ? { ...bin, worn: bin.selected } : bin) }, effect: 'wear' }
       return { model: m, effect: null }
     default:
       return { model: m, effect: null }
   }
+}
+
+// A window into the carousel; the first logical cell is always the None choice.
+export function carouselWindow(selected: number, count: number, visible = 4): number[] {
+  const start = Math.max(0, Math.min(selected + 1 - Math.floor(visible / 2), count + 1 - visible))
+  return Array.from({ length: Math.min(visible, count + 1) }, (_, i) => start + i - 1)
 }

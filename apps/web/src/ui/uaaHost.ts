@@ -16,6 +16,8 @@ import type { MenuCmd, MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import { actionToCmd, screenProps, type WidgetProps } from './screenMap.ts'
 import { withLogo, type LogoDevice } from './logoRenderer.ts'
 import logo from '../../../../ui/logo.json' with { type: 'json' }
+import { wardrobeAssets } from './wardrobeAssets.ts'
+import { withCosmeticThumbnails } from './cosmeticThumbnails.ts'
 import { withCapsuleButtons } from './buttonMapping.ts'
 
 export interface UaaCommand {
@@ -115,6 +117,7 @@ export function loadAssets(texts: Record<string, string>): Map<string, UiAsset> 
     assets.set(asset.id, asset)
   }
   for (const asset of paletteAssets(assets.get('badge.round')!)) assets.set(asset.id, asset)
+  for (const asset of wardrobeAssets(assets.get('panel.card')!)) assets.set(asset.id, asset)
   return assets
 }
 
@@ -176,6 +179,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
   Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', background: 'transparent', pointerEvents: 'none' })
   sizeCanvas(canvas, o.width, o.height, o.dpr)
   const device = await requestDevice()
+  const thumbnails = new Map<string, string>()
   let renderer: UiRenderer | null = null
   let doc: UiDoc
   let ui: Ui
@@ -183,6 +187,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     renderer = await checkAwait('UI renderer', () => createWebGpuRenderer(canvas, { device: device as NonNullable<WebGpuRendererOptions['device']> }))
     renderer = withCapsuleButtons(renderer, () => ui.screen())
     renderer = await checkAwait('UI logo', () => withLogo(renderer!, canvas, device as unknown as LogoDevice, { ...logo, format: logo.format as 'png' | 'svg' }, document.baseURI))
+    renderer = await withCosmeticThumbnails(renderer, canvas, device as unknown as LogoDevice, thumbnails)
     const assets = loadAssets(uiAssetTexts())
     try {
       doc = loadUiDoc(JSON.parse(uiDocText()), assets)
@@ -207,7 +212,9 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
   const set = (id: string, props: WidgetProps): void => {
     const key = JSON.stringify(props)
     if (last.get(id) === key) return
-    ui.set(id, props)
+    if (props.thumbnail !== undefined) thumbnails.set(id, props.thumbnail)
+    const { thumbnail: _thumbnail, ...uaaProps } = props
+    ui.set(id, uaaProps)
     last.set(id, key)
   }
 

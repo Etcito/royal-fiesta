@@ -42,11 +42,12 @@ export async function run(_input: unknown, deps: TourDeps) {
       await press('Enter')
       await until(() => live.host.currentScreen() === 'shop' && text('line-0').includes('Coins'), 'shop did not load')
       if (!text('line-0').includes(`Coins ${500 - slot * 30} · Tickets 20`)) throw new Error(`wallet mismatch: ${text('line-0')}`)
-      for (let i = 0; i < slot; i++) await press('ArrowDown')
+      for (let i = 0; i < slot; i++) await press('ArrowRight')
+      await press('ArrowDown')
       await press('ArrowRight')
       const id = `costume.${BASES[slot]}.rose`
       if (!text(`line-${slot + 1}`).includes('Rose') || text(`line-${slot + 1}`).includes('OWNED')) throw new Error(`variant not for sale: ${text(`line-${slot + 1}`)}`)
-      await press('Enter')
+      await press('Enter'); await press('Enter')
       await until(() => text(`line-${slot + 1}`).includes('OWNED'), `purchase failed: ${id}`)
       if (!text('line-0').includes(`Coins ${470 - slot * 30} · Tickets 20`)) throw new Error('purchase debit mismatch')
       await press('Escape')
@@ -61,6 +62,7 @@ export async function run(_input: unknown, deps: TourDeps) {
       purchases.push(id)
       // Leave every bin at None before refreshing the start screen on the next shop visit.
       for (let i = 0; i < 5 && !text(`bin-${SLOTS[slot]}`).includes('None'); i++) await press('ArrowRight')
+      await press('Enter')
       for (let i = 0; i < slot; i++) await press('ArrowUp')
     }
   } catch (error) { failures.push(error instanceof Error ? error.message : String(error)) }

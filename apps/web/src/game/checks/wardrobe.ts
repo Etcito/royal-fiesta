@@ -100,7 +100,7 @@ const MAX_CYCLES = Math.max(...SLOTS.map(slot => CATALOG.filter(item => item.slo
 async function ensureNone(game: TourGame, focus: Focus, read: () => Props, slot: Slot, index: number): Promise<void> {
   await focusBin(game, focus, read, index)
   for (let tries = 0; tries <= MAX_CYCLES; tries++) {
-    if (binLabel(read(), slot) === 'None') return
+    if (binLabel(read(), slot) === 'None') { await press(game, 'Enter'); return }
     await press(game, 'ArrowRight')
   }
   throw new Error(`bin-${slot}: the label never reached None`)
@@ -110,7 +110,7 @@ async function select(game: TourGame, focus: Focus, read: () => Props, slot: Slo
   await focusBin(game, focus, read, index)
   const want = cosmeticName(item.id)
   for (let tries = 0; tries <= MAX_CYCLES; tries++) {
-    if (binLabel(read(), slot) === want) return true
+    if (binLabel(read(), slot) === want) { await press(game, 'Enter'); return true }
     await press(game, 'ArrowRight')
   }
   return binLabel(read(), slot) === want

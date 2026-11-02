@@ -8,7 +8,7 @@ import {
 } from '@royal-fiesta/game/flow/commission'
 import { inboxModel, inboxStep, type InboxModel } from '@royal-fiesta/game/flow/inbox'
 import {
-  shopModel, shopStep, type ShopButton, type ShopModel,
+  shopModel, shopStep, shopTab, type ShopButton, type ShopModel,
 } from '@royal-fiesta/game/flow/shop'
 import type { Action, EconomyScreen } from '@royal-fiesta/game/screens/nav'
 import { mountCommission, type CommissionView, type TextFieldElement, type TextFieldParent } from '../screens/commission.ts'
@@ -108,19 +108,39 @@ export class EconomyScreens {
   }
 
   /** The catalog grid uses the same confirmation and purchase path as keyboard input. */
+  cancelShop(): boolean {
+    if (!this.shopState?.confirm) return false
+    this.shopState = { ...this.shopState, confirm: null }
+    this.render(null)
+    return true
+  }
+
   pickShop(x: number, y: number): boolean {
     if (this.screen !== 'shop' || this.loading || this.shopState?.pending) return false
     const model = this.shopState
     if (!model) return false
     const dpr = globalThis.devicePixelRatio || 1
-    for (let row = 0; row < model.slots.length; row++) {
-      for (let column = 0; column < model.slots[row].items.length; column++) {
-        const rect = this.host.widgetRect(`catalog-item-${row}-${column}`)
-        if (rect && x / dpr >= rect.x && x / dpr <= rect.x + rect.w && y / dpr >= rect.y && y / dpr <= rect.y + rect.h) {
-          this.shopState = { ...model, focus: [row, column] }
-          void this.shopAction('confirm')
-          return true
-        }
+    const hit = (id: string) => {
+      const r = this.host.widgetRect(id)
+      return r && x / dpr >= r.x && x / dpr <= r.x + r.w && y / dpr >= r.y && y / dpr <= r.y + r.h
+    }
+    if (model.confirm) {
+      if (hit('purchase-buy')) void this.shopAction('confirm')
+      else this.cancelShop()
+      return true
+    }
+    for (let tab = 0; tab < model.slots.length; tab++) {
+      if (hit(`catalog-slot-${tab}`)) {
+        this.shopState = shopTab(model, tab); this.render(null); return true
+      }
+    }
+    const tab = model.focus[0]
+    const offset = Math.floor(model.focus[1] / 9) * 9
+    for (let cell = 0; cell < 9; cell++) {
+      if (model.slots[tab]?.items[offset + cell] && hit(`catalog-card-0-${cell}`)) {
+        this.shopState = { ...model, focus: [tab, offset + cell], zone: 'grid' }
+        void this.shopAction('confirm')
+        return true
       }
     }
     return false
@@ -258,7 +278,7 @@ export class EconomyScreens {
       const [catalog, me] = await Promise.all([this.port.catalog(), this.port.me()])
       if (!this.active(token, 'shop')) return null
       const focus = this.shopState?.focus ?? step.model.focus
-      this.shopState = { ...shopModel(catalog.items, me), focus, pending: false, error: null }
+      this.shopState = { ...shopModel(catalog.items, me), focus, zone: 'grid', pending: false, error: null }
       this.render(null)
     } catch (error) {
       if (!this.active(token, 'shop')) return null

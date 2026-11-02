@@ -9,7 +9,21 @@
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
     "skipLibCheck": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["node"]
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@royal-fiesta/game/*": [
+        "./packages/game/src/*.ts"
+      ],
+      "@royal-fiesta/sim/*": [
+        "./packages/sim/src/*.ts"
+      ]
+    }
   }
 }

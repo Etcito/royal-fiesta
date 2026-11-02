@@ -134,12 +134,12 @@ test('start animates one penguin and each worn costume, turns their mounts and r
   near(s.port.transforms.get(4)!.r, rotation)
   assert.ok(s.port.poseOf(4), 'tint replacement receives the current pose')
 
-  s.model.bins[0].selected = -1
+  s.model.bins[0].selected = s.model.bins[0].worn = -1
   view.update(s.model, { action: 'left', effect: 'wear' })
   assert.equal(s.port.render().instances, 3)
   assert.ok(s.port.destroyed.includes(1))
-  assert.match(String(s.props()['bin-head'].text), /< None >/)
-  s.model.bins[0].selected = 0
+  assert.match(String(s.props()['bin-head'].text), /None/)
+  s.model.bins[0].selected = s.model.bins[0].worn = 0
   view.update(s.model, { action: 'right', effect: 'wear' })
   assert.equal(s.port.render().instances, 4)
   assert.equal(s.port.registered.length, 4, 're-wearing reuses the registered asset')
@@ -172,7 +172,7 @@ test('missing assets or mounts are skipped; rigid ports and absent skins use the
     assert.deepEqual(lookedUp, [ids[0], ids[2]])
     assert.equal(s.port.render().instances, 2)
     assert.equal(s.port.lastEnvironment, null)
-    s.model.bins.forEach(bin => { bin.selected = -1 })
+    s.model.bins.forEach(bin => { bin.selected = bin.worn = -1 })
     view.update(s.model, null)
     assert.equal(s.port.render().instances, 1)
     view.unmount()
@@ -186,9 +186,9 @@ test('step notifications drive move/confirm cues and HUD selection uses swatch s
   assert.equal(s.menu()?.screen, 'start')
   assert.deepEqual(s.props()['palette-mark'], { visible: false })
   assert.deepEqual(s.props()['inbox-badge'], { text: { count: '2' }, visible: true })
-  assert.match(String(s.props()['bin-head'].text), /< Propeller Hat >/)
-  assert.match(String(s.props()['bin-body'].text), /< Pineapple Suit >/)
-  assert.match(String(s.props()['bin-bottom'].text), /< Fish Scarf >/)
+  assert.match(String(s.props()['bin-head'].text), /Propeller Hat/)
+  assert.match(String(s.props()['bin-body'].text), /Pineapple Suit/)
+  assert.match(String(s.props()['bin-bottom'].text), /Fish Scarf/)
   view.update(model, null)
   assert.deepEqual(s.cues, [])
 
@@ -199,7 +199,7 @@ test('step notifications drive move/confirm cues and HUD selection uses swatch s
     view.update(model, { ...step, action })
     assert.deepEqual(s.cues.slice(before), cue === null ? [] : [cue], `${action} / ${step.effect}`)
   }
-  act('confirm', null)
+  act('confirm', 'ui.hover')
   act('right', 'ui.hover')
   act('left', 'ui.hover')
   act('up', 'ui.hover') // shop
@@ -211,7 +211,7 @@ test('step notifications drive move/confirm cues and HUD selection uses swatch s
   act('down', 'ui.hover') // body
   act('down', 'ui.hover') // bottom
   act('down', 'ui.hover') // palette
-  act('confirm', null)
+  act('confirm', 'ui.hover')
   act('right', 'ui.hover')
   PALETTE.forEach((_, i) => {
     assert.deepEqual(s.props()[`palette-${i}`], { visible: true, text: { count: i === model.colour ? '*' : '' } })
@@ -268,7 +268,8 @@ test('all nine choices per slot wrap and variants reuse the base handle with the
     for (const id of bin.items) {
       model = startStep(model, 'right').model
       assert.equal(model.bins[slot].items[model.bins[slot].selected], id)
-      view.update(model, { action: 'right', effect: 'wear' })
+      model = startStep(model, 'confirm').model
+      view.update(model, { action: 'confirm', effect: 'wear' })
       const spec = LOCAL_COSMETICS.find(item => item.id === id)!
       assert.deepEqual(s.port.created.at(-1)!.tint, spec.tint ?? null)
       const previous = LOCAL_COSMETICS.filter(item => item.asset === spec.asset && item.id !== id)
@@ -276,7 +277,8 @@ test('all nine choices per slot wrap and variants reuse the base handle with the
     }
     model = startStep(model, 'right').model
     assert.equal(model.bins[slot].selected, -1)
-    view.update(model, { action: 'right', effect: 'wear' })
+    model = startStep(model, 'confirm').model
+    view.update(model, { action: 'confirm', effect: 'wear' })
     model = startStep(model, 'left').model
     assert.equal(model.bins[slot].selected, 8)
     model = startStep(model, 'right').model

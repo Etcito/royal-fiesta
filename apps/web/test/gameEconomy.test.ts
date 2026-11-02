@@ -3,6 +3,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { startScreen } from '@royal-fiesta/game/flow/startScreen'
+import { shopModel, shopStep } from '@royal-fiesta/game/flow/shop'
 import { RARITY_TICKETS, type Rarity } from '@royal-fiesta/game/economy/contract'
 import type { EconomyConfig } from '@royal-fiesta/game/economy/stub'
 import type { WsFactory, WsLike } from '@royal-fiesta/game/net/ws'
@@ -136,4 +138,40 @@ test('a url authenticates as a guest with one 24-character token reused from the
   assert.equal(secondAuth?.token, firstAuth.token, 'the stored token is reused')
   assert.equal(store.writes.get(GUEST_TOKEN_KEY), 1, 'the token is created once')
   two.close()
+})
+
+test('normal offline guest owns the cheapest item per slot and can buy into its wardrobe', async () => {
+  const economy = createGameEconomy({ config, url: null, store: fakeStore() })
+  const before = await economy.port.me()
+  const { items } = await economy.port.catalog()
+  assert.equal(before.coins, 500)
+  assert.equal(before.tickets, 20)
+  assert.equal(before.owned.length, 4)
+  for (const slot of config.catalog.shop.slots) {
+    const owned = items.filter(item => item.slot === slot && before.owned.includes(item.id))
+    assert.equal(owned.length, 1)
+    assert.equal(owned[0].price.coins, Math.min(...items.filter(item => item.slot === slot).map(item => item.price.coins ?? Infinity)))
+  }
+  const wardrobe = startScreen(before.owned, items, 0, { colour: 0, worn: {} })
+  for (const bin of wardrobe.bins) assert.equal(bin.items.length, 1)
+  const available = items.filter(item => !before.owned.includes(item.id))
+  assert.equal(available.length, 8)
+  for (const currency of ['coins', 'tickets'] as const) {
+    const item = available.find(item => item.price[currency] !== undefined && !before.owned.includes(item.id))!
+    const wallet = await economy.port.me()
+    // Use the shop's confirmation path, with just this currency available.
+    const shop = shopModel(items, { ...wallet, [currency === 'coins' ? 'tickets' : 'coins']: 0 })
+    const row = shop.slots.findIndex(row => row.slot === item.slot)
+    shop.focus = [row, shop.slots[row].items.findIndex(candidate => candidate.id === item.id)]
+    const request = shopStep(shop, 'confirm').buy!
+    assert.deepEqual(request, { itemId: item.id, currency })
+    const bought = await economy.port.buy(request.itemId, request.currency)
+    assert.equal(bought[currency], wallet[currency] - item.price[currency]!)
+    const after = await economy.port.me()
+    assert.ok(after.owned.includes(item.id))
+    const bins = startScreen(after.owned, items, 0, { colour: 0, worn: { [item.slot]: item.id } }).bins
+    const bin = bins.find(bin => bin.slot === item.slot)!
+    assert.equal(bin.items[bin.selected], item.id, 'the purchased item can be selected for wearing')
+  }
+  economy.close()
 })

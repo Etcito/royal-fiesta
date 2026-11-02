@@ -3092,7 +3092,7 @@
     },
     {
       "id": "result",
-      "initialFocus": "back",
+      "initialFocus": "act-confirm",
       "enter": {
         "kind": "pop",
         "duration": 300
@@ -3348,6 +3348,37 @@
             "anchorMax": [0.5, 0.5],
             "offsetMin": [10, 40],
             "offsetMax": [490, 100]
+          }
+        },
+        {
+          "id": "act-confirm",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Continue"
+          },
+          "action": "confirm",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 360],
+            "offsetMax": [200, 460]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-200, 220],
+            "offsetMax": [200, 310]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
           }
         },
         {

@@ -7,6 +7,7 @@ import { FarFeed } from '@royal-fiesta/game/net/farFeed'
 import type { ZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
 import { FarRenderer } from '@royal-fiesta/game/render/farRender'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
+import { renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
@@ -230,17 +231,32 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
     port, bean, feed, holdsLocalSeat: seat => adapter.holdsSeat(seat),
   })
   let disposed = false
+  let latest: ZoneMatch | null = null
 
+  const render = (): void => { if (!disposed) renderFrame(port, () => port.render()) }
   return {
     feed,
     update(match, alpha, dtS) {
       if (disposed) return
+      latest = match
       adapter.refresh(match.domains, match.stats.tick)
       scene.update(adapter as unknown as MatchSim, null, alpha, dtS)
       far.update(match.stats.tick)
     },
-    render: () => { if (!disposed) port.render() },
-    ready: () => scene.animationReady(),
+    render,
+    async ready() {
+      // update() may have returned at the loading-paint gate before creating any instances.
+      // Do not release the show's simulation until that gate, animation and first render finish.
+      while (!disposed && scene.loadedCourse !== options.course) {
+        if (latest === null) return
+        adapter.refresh(latest.domains, latest.stats.tick)
+        scene.update(adapter as unknown as MatchSim, null, 1, 0)
+        if (scene.loadedCourse !== options.course) await new Promise<void>(resolve => setTimeout(resolve, 1))
+      }
+      if (disposed) return
+      await scene.animationReady()
+      render()
+    },
     capture: () => disposed ? Promise.resolve(null) : port.capture(),
     dispose() {
       if (disposed) return

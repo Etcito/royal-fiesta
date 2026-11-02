@@ -49,6 +49,7 @@ export class ShowMode {
   private current: ShowFrame | null = null
   private scene: ZoneNetScene | null = null
   private index = -1
+  private viewPeer = 0
   private disposed = false
   private error: string | null = null
   private readonly canvas: HTMLCanvasElement
@@ -93,10 +94,10 @@ export class ShowMode {
       const content = await loadShowContent('sprint')
       const seats = Array.from({ length: options.seats }, (_, seat) => seat)
       mode.memories.push(...seats.map(() => newModeBotMemory()))
-      const farSink: FarSink = {
-        far: (...args) => mode.scene?.feed.far(...args),
-        sleep: (...args) => mode.scene?.feed.sleep(...args),
-      }
+      const farSink = (peer: number): FarSink => ({
+        far: (...args) => { if (mode.viewPeer === peer) mode.scene?.feed.far(...args) },
+        sleep: (...args) => { if (mode.viewPeer === peer) mode.scene?.feed.sleep(...args) },
+      })
       for (const { peer } of peers) {
         mode.fulls.push(createZoneFullMatch(options.R, {
           localPeer: peer, roster,
@@ -104,11 +105,20 @@ export class ShowMode {
           profile: 'sprint',
           voteMs: options.voteMs ?? DEFAULT_VOTE_MS,
           intermissionMs: options.intermissionMs ?? DEFAULT_INTERMISSION_MS,
-          farSink: peer === 0 ? farSink : undefined, measurements,
+          farSink: farSink(peer), measurements,
         }, mode.loopback.transport(peer)))
       }
       mode.full = mode.fulls[0]
-      mode.director = new ShowDirector(mode.full, content.info, seat => mode.name(seat), 0, options.voteMs ?? DEFAULT_VOTE_MS,
+      // Peer 0 retains the show ledger after elimination, but no longer owns a round.
+      // Presentation follows an active peer so later rounds remain watchable.
+      const presentation = new Proxy(mode.full, {
+        get(target, key) {
+          if (key === 'round') return mode.activeRound()
+          const value = Reflect.get(target, key, target)
+          return typeof value === 'function' ? value.bind(target) : value
+        },
+      })
+      mode.director = new ShowDirector(presentation, content.info, seat => mode.name(seat), 0, options.voteMs ?? DEFAULT_VOTE_MS,
         PROFILES.sprint.introTicks * 1000 / 60)
       mode.current = mode.director.step(null, 0)
     } catch (error) {
@@ -150,7 +160,7 @@ export class ShowMode {
           this.fulls[peer].frame(dt, (round, out) => this.sample(peer, round, out, human))
         }
         // Start loading on the vote result, before the next animation frame.
-        if (this.full.round !== null && this.full.round.plan.index !== this.index) {
+        if (this.activeRound() !== null && this.activeRound()!.plan.index !== this.index) {
           this.current = this.director.step(null, 0)
           this.sounds.push(...this.current.sounds)
           this.loadRound()
@@ -159,7 +169,7 @@ export class ShowMode {
       const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
       this.canvas.style.display = visible ? '' : 'none'
       for (const stage of this.stages) stage.canvas.style.display = visible ? 'none' : stage.display
-      const round = this.full.round
+      const round = this.activeRound()
       if (visible && this.scene !== null && round !== null && round.plan.index === this.index) {
         this.scene.update(round.match, 1, dt)
         this.scene.render()
@@ -181,8 +191,20 @@ export class ShowMode {
     this.sampleTicks[peer]++
   }
 
+  private activeRound(): ZoneFullRound | null {
+    let selected: ZoneFullRound | null = null
+    for (let peer = 0; peer < this.fulls.length; peer++) {
+      const round = this.fulls[peer].round
+      if (round !== null && (selected === null || round.plan.index > selected.plan.index)) {
+        selected = round
+        this.viewPeer = peer
+      }
+    }
+    return selected
+  }
+
   private loadRound(): void {
-    const round = this.full?.round
+    const round = this.activeRound()
     if (round == null || round.plan.index === this.index) return
     this.index = round.plan.index
     this.scene?.dispose()
@@ -216,7 +238,7 @@ export class ShowMode {
 
   /** Round seats are compacted after each cut; never query domain seat 0 blindly. */
   private humanDomain() {
-    const round = this.full?.round
+    const round = this.activeRound()
     if (round == null) return null
     const seat = round.seatOf.indexOf(0)
     if (seat < 0) return null

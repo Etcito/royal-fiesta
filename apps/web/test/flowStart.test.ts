@@ -54,7 +54,7 @@ function asset(id: string): PrimsAsset {
 const ids = LOCAL_COSMETICS.map(item => item.id)
 const mounts = new Map<string, Vec3T>(ids.map((id, i) => [id, [0.2 + i, 0.8 - i * 0.3, 0.1 + i]]))
 const skin: SkinnedAssetT = {
-  rig: { name: 'test', bones: [{ name: 'root', parent: null }] },
+  rig: { name: 'test', bones: ['root', 'upper.l', 'upper.r', 'upperLeg.l', 'upperLeg.r', 'head'].map(name => ({ name, parent: null, rest: { t: [0, 0, 0], r: [0, 0, 0, 1], s: [1, 1, 1] } })) },
   parts: [{ name: 'body', skin: { joints: new Uint16Array(4), weights: new Float32Array([1, 0, 0, 0]) } }],
 }
 
@@ -88,7 +88,7 @@ function near(actual: readonly number[], expected: readonly number[]): void {
   actual.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) < 1e-10, `${actual} ~= ${expected}`))
 }
 
-test('start draws one rest penguin and each worn costume, turns their mounts and recreates only the tint', async t => {
+test('start animates one penguin and each worn costume, turns their mounts and recreates only the tint', async t => {
   let now = 0
   t.mock.method(performance, 'now', () => now)
   const s = await setup()
@@ -101,12 +101,14 @@ test('start draws one rest penguin and each worn costume, turns their mounts and
   assert.equal(s.port.render().visible, 4)
   assert.deepEqual(s.port.created.map(item => item.tint), [PALETTE[2], null, null, null])
   assert.equal(s.port.lastEnvironment, s.art.environment)
-  assert.equal(s.port.poseOf(0), null)
-  assert.equal(s.port.calls.setPose, 0, 'the turntable leaves the skin unposed')
+  assert.ok(s.port.poseOf(0))
+  const firstPose = new Float32Array(s.port.poseOf(0)!)
+  assert.ok(s.port.calls.setPose > 0, 'the preview submits a penguin idle pose')
   for (let i = 0; i < ids.length; i++) near(s.port.transforms.get(i + 1)!.t, mounts.get(ids[i])!)
 
   now = 1000
   view.update(s.model, null)
+  assert.notDeepEqual(s.port.poseOf(0), firstPose, 'idle bones advance without a match simulation')
   const rotation = s.port.transforms.get(0)!.r
   assert.notDeepEqual(rotation, [0, 0, 0, 1])
   const yaw = 2 * Math.atan2(rotation[1], rotation[3])
@@ -125,7 +127,7 @@ test('start draws one rest penguin and each worn costume, turns their mounts and
   assert.deepEqual(s.port.created[4].tint, PALETTE[4])
   assert.equal(s.port.render().instances, 4)
   near(s.port.transforms.get(4)!.r, rotation)
-  assert.equal(s.port.poseOf(4), null)
+  assert.ok(s.port.poseOf(4), 'tint replacement receives the current pose')
 
   s.model.bins[0].selected = -1
   view.update(s.model, { action: 'left', effect: 'wear' })

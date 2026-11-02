@@ -671,7 +671,7 @@ class LocalMode implements Mode {
     this.hubLayer = new SceneLayer(ports[0])
     this.matchLayer = new SceneLayer(ports[0])
     this.hubView = new HubView(this.hubLayer.port, 0, name => content.assets(name), content.character(), content.hub(), {
-      orbit: c.orbit, character: content.character(), dressing: content.dressing(),
+      orbit: c.orbit, character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content),
     })
     this.presenter = new LocalPresenter({ ...c, prepared: true, loaded: { ...c.loaded, ports: [this.matchLayer.port] } })
     if (!this.startsShow) this.prepareMatch()
@@ -1035,7 +1035,7 @@ class OnlineMode implements Mode {
     LobbyDiag.get().setRelay(relayHost(server))
     LobbyDiag.get().setConn('connecting')
     this.hubView = new HubView(ports[0], 0, name => content.assets(name), content.character(), content.hub(), {
-      orbit: c.orbit, character: content.character(), dressing: content.dressing(),
+      orbit: c.orbit, character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content),
     })
     this.presenter = new MatchPresenter(c)
     const canvas = c.loaded.canvases[0]
@@ -1980,6 +1980,9 @@ class App {
     // before it registers the first round's assets on its port.
     this.releaseLobby()
     const load = this.showLoad
+    this.roundLoading = 'Preparing show'
+    this.loadingOverlay.show(this.roundLoading)
+    this.host.setLoading(0, this.roundLoading)
     this.setLayout(1)
     try {
       const show = await ShowMode.create({
@@ -1991,6 +1994,8 @@ class App {
       })
       if (this.disposed || load !== this.showLoad) { show.dispose(); return }
       if (show.failure !== null) { this.fail(show.failure); return }
+      this.roundLoading = null
+      this.loadingOverlay.hide()
       this.mode = new ShowAdapter(show, q.name, this.economy, q.test)
       this.run(this.nav.dispatch({ kind: 'game', screen: 'vote' }))
       this.hudRound = -2
@@ -2462,6 +2467,11 @@ class App {
   private activate(cmd: MenuCmd): void {
     if (cmd.k === 'action' && this.nav.screen === 'start' && (cmd.action === 'play' || cmd.action === 'shop')) {
       this.startButton(cmd.action)
+      return
+    }
+    if (cmd.k === 'action' && cmd.action === 'confirm' && this.mode instanceof ShowAdapter
+      && (this.nav.screen === 'result' || this.nav.screen === 'endScreen')) {
+      this.mode.action('confirm')
       return
     }
     if (cmd.k === 'action') this.run(this.nav.dispatch({ kind: 'action', action: cmd.action }))

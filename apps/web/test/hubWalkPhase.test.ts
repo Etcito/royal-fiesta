@@ -90,3 +90,34 @@ test('hub walk phase: the own bean strides per hub tick, the same at 60, 75 and 
   }
   assert.ok(shared > 100)
 })
+
+test('the lobby registers a skin and advances walking and emote bone poses on hub ticks', async () => {
+  const { document: doc } = JSON.parse(readFileSync(new URL('assets/common/penguin.body.asset.json', ROOT), 'utf8'))
+  const penguin = doc.nodes.penguin
+  const port = new NullRenderPort()
+  await port.init({ canvas: null, width: 64, height: 36, viewports: [{ x: 0, y: 0, width: 64, height: 36 }] })
+  const view = new HubView(port, 0, () => bean, bean, plaza, { skinned: {
+    assetId: 'penguin.skin', skin: { rig: penguin.rig, clips: penguin.clips, parts: [{ name: 'body', skin: { joints: new Uint16Array(4), weights: new Float32Array([1, 0, 0, 0]) } }] },
+    graph: readFileSync(new URL('assets/common/penguin.animgraph.json', ROOT), 'utf8'),
+  } })
+  try {
+    await view.animationReady()
+    const idle = walker(0)
+    idle.vel = { x: 0, y: 0, z: 0 }
+    view.update(idle, 0, [], 0, HUB_STEP_S)
+    const rest = new Float32Array(port.poseOf(0)!)
+    for (let tick = 1; tick < 30; tick++) view.update(walker(tick), 0, [], tick, HUB_STEP_S)
+    const walking = new Float32Array(port.poseOf(0)!)
+    assert.notDeepEqual(walking, rest)
+    for (let tick = 30; tick < 60; tick++) view.update(idle, 0, [], tick, HUB_STEP_S, 1)
+    assert.notDeepEqual(port.poseOf(0), walking)
+    const held = new Float32Array(port.poseOf(0)!)
+    view.update(idle, 0, [], 59, 0, 1)
+    assert.deepEqual(port.poseOf(0), held, 'drawing a paused tick does not advance its graph')
+    view.update(idle, 1, [], 59, 0, 1)
+    assert.deepEqual(port.poseOf(1), held, 'recolouring preserves the current animated pose')
+    for (let tick = 0; tick < 15; tick++) view.update(walker(tick), 1, [], tick, HUB_STEP_S)
+    assert.notDeepEqual(port.poseOf(1), held, 'returning to a new hub clock keeps animation advancing')
+  } finally { view.dispose() }
+  assert.equal(port.render().instances, 0)
+})

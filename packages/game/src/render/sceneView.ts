@@ -10,7 +10,7 @@ import type { BodyRef } from '@royal-fiesta/sim/mechanismSpec'
 import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
-import { applyWalkPose, restPose, walkBones } from '../anim/walkCycle.ts'
+import { applyWalkPose, restPose, walkBones, walkPose, newWalkState } from '../anim/walkCycle.ts'
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
@@ -255,12 +255,12 @@ function inverse4(m: ArrayLike<number>): Float32Array {
   return out
 }
 
-/** Skin the rig's rest locals with the walk idle pose (flippers down). */
-export function restPoseSkin(rig: { bones: readonly { name: string; parent: string | null; rest: { t: number[]; r: number[]; s: number[] } }[] }): Float32Array {
+/** Skin the rig with flippers down; idleTick animates the shared breathing/flipper cycle for previews. */
+export function restPoseSkin(rig: { bones: readonly { name: string; parent: string | null; rest: { t: number[]; r: number[]; s: number[] } }[] }, idleTick?: number): Float32Array {
   const { bones } = rig
   const local = new Float32Array(bones.length * 10)
   bones.forEach((bone, i) => local.set([...bone.rest.t, ...bone.rest.r, ...bone.rest.s], i * 10))
-  applyWalkPose(local, walkBones(bones.map(b => b.name)), restPose())
+  applyWalkPose(local, walkBones(bones.map(b => b.name)), idleTick === undefined ? restPose() : walkPose({ ...newWalkState(), ticks: idleTick }))
   const rest = restBoneModels(bones)
   const model = new Float32Array(bones.length * 16)
   const skin = new Float32Array(model.length)
@@ -416,6 +416,9 @@ export class SceneView {
   get mechanismInstanceCount(): number {
     return this.mechanisms.length
   }
+
+  /** Null until the loading-paint gate has admitted and mounted the course. */
+  get loadedCourse(): ResolvedCourse | null { return this.course }
 
   get courseIndex(): number {
     return this.ci

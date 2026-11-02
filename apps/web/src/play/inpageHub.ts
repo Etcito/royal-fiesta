@@ -145,7 +145,7 @@ export class InPageHubLoop {
     let hub = this.hubViews[k]
     if (hub === null && live) {
       hub = this.hubViews[k] = new HubView(this.portOf[k], this.viewportOf[k], this.art.assets, this.art.bean, this.deps.plaza, {
-        character: this.art.character, dressing: this.art.dressing,
+        character: this.art.character, dressing: this.art.dressing, skinned: this.art.skinned,
       })
     }
     // Hidden while the match view is live in the same viewport; only flip on a change. The flip comes before the

@@ -1,6 +1,10 @@
 // Binds the hub to a RenderPort: plaza obstacles, the local bean, pooled remote beans with emote poses, and the
 // camera (the orbit camera on the player page, followCamera on proof pages).
 // DOM-free (the Node proof runs it with NullRenderPort). View side only: emote offsets touch the drawn transform only.
+import { AnimDriver } from '@royal-fiesta/game/anim/driver'
+import type { CharacterObservation } from '@royal-fiesta/game/anim/driver'
+import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
+import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import { NO_DRESSING } from '@royal-fiesta/game/content'
 import type { CourseDressing } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
@@ -63,11 +67,18 @@ export interface HubViewOptions {
   orbit?: OrbitCamera
   // The content's character asset (GameContent.character()); the bean when absent.
   character?: PrimsAsset
+  skinned?: SkinnedCharacter
   // Hub decor and environment: entered while the hub is shown, left when it is hidden or disposed. Default NO_DRESSING.
   dressing?: CourseDressing
 }
 
 export class HubView {
+  private anim: AnimDriver | null = null
+  private animSourceTick = -1
+  private animOffset = 0
+  private animReady: Promise<void> = Promise.resolve()
+  private disposed = false
+  private restSkin: Float32Array | null = null
   private readonly port: RenderPort
   private readonly viewport: number
   private readonly plaza: ResolvedCourse
@@ -108,7 +119,18 @@ export class HubView {
     this.orbit = opts.orbit ?? null
     this.dressing = opts.dressing ?? NO_DRESSING
     const character = opts.character ?? bean
-    this.beanAsset = this.asset(character.id, character)
+    const skin = opts.skinned
+    if (skin !== undefined && port.registerSkinned !== undefined && port.setPose !== undefined) {
+      this.beanAsset = port.registerSkinned(skin.assetId, skin.skin)
+      this.restSkin = restPoseSkin(skin.skin.rig as unknown as Parameters<typeof restPoseSkin>[0])
+      const { bindings: _b, smooth: _s, ...rig } = skin.skin.rig as typeof skin.skin.rig & { bindings?: unknown; smooth?: unknown }
+      this.animReady = AnimDriver.load(skin.graph, JSON.stringify(rig), (skin.skin.clips ?? []).map(clip => JSON.stringify(clip))).then(driver => {
+        if (this.disposed) driver.dispose()
+        else this.anim = driver
+      }).catch(error => {
+        if (!this.disposed) console.error('[hub] penguin animation unavailable:', error)
+      })
+    } else this.beanAsset = this.asset(character.id, character)
     for (let i = 0; i < plaza.obstacles.length; i++) {
       const spec = plaza.obstacles[i]
       this.obstacles.push(this.create(this.asset(spec.asset, assets(spec.asset)), null, true))
@@ -262,6 +284,21 @@ export class HubView {
       this.draw(slot.inst, slot.pos, slot.yaw, slot.emote, slot.mode, slot.speed, slot.stride, scale)
     }
 
+    const characters: CharacterObservation[] = [{ id: -1, mode: local.mode, vel: local.vel,
+      grounded: local.grounded, surface: 'normal', emote: localEmote }]
+    for (const [id, slot] of this.slots) characters.push({ id, mode: slot.mode,
+      vel: { x: slot.speed, y: 0, z: 0 }, grounded: slot.mode === 0, surface: 'normal', emote: slot.emote })
+    // Returning from a match creates a new HubWorld at tick zero on this retained view.
+    if (tick < this.animSourceTick) this.animOffset += this.animSourceTick + 1
+    this.animSourceTick = tick
+    this.anim?.observeTick(this.animOffset + tick, characters)
+    const pose = (id: number, instance: number): void => {
+      const skin = this.anim?.pose(id)?.skin ?? this.restSkin
+      if (skin !== null) port.setPose?.(instance, skin)
+    }
+    pose(-1, this.localBean)
+    for (const [id, slot] of this.slots) pose(id, slot.inst)
+
     this.cam = this.orbit !== null ? this.orbit.pose(local.pos, dtS, this.clip) : followCamera(this.cam, local.pos, local.facing, dtS)
     port.setCamera(this.viewport, this.cam)
   }
@@ -308,7 +345,12 @@ export class HubView {
     this.dress(visible)
   }
 
+  animationReady(): Promise<void> { return this.animReady }
+
   dispose(): void {
+    this.disposed = true
+    this.anim?.dispose()
+    this.anim = null
     this.dress(false)
     for (const inst of [...this.shown.keys()]) this.destroy(inst)
     this.obstacles = []

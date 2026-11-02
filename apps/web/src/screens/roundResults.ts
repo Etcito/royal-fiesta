@@ -80,7 +80,7 @@ function present(host: UaaHost, model: RoundResultsModel, deps: FlowDeps): void 
     screen: 'result',
     title: `Round ${roundOf(model)} results`,
     lines: roundResultsLines(model, deps),
-    buttons: [{ label: 'Back', cmd: { k: 'back' } }],
+    buttons: [{ label: 'Continue', cmd: { k: 'action', action: 'confirm' } }],
     hint: 'Enter continue',
     overlay: false,
   }

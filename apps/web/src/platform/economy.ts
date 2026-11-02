@@ -84,7 +84,14 @@ export function createGameEconomy(options: GameEconomyOptions): GameEconomy {
   const banned = config.settings.filter.banned_words
   const prices = rarityPrices(config)
   if (url === null) {
-    const stub = createEconomyStub({ config })
+    // Offline guest grant only; service-backed players keep the service's wallet and inventory.
+    const owned = config.catalog.shop.slots.flatMap(slot => {
+      const cheapest = config.catalog.shop.items.filter(item => item.slot === slot).sort((a, b) =>
+        (a.price.coins ?? Infinity) - (b.price.coins ?? Infinity) ||
+        (a.price.tickets ?? Infinity) - (b.price.tickets ?? Infinity) || a.id.localeCompare(b.id))[0]
+      return cheapest ? [cheapest.id] : []
+    })
+    const stub = createEconomyStub({ config, me: { coins: 500, tickets: 20, owned } })
     return { port: stub, stub, banned, prices, close() {} }
   }
   const client = createEconomyClient(

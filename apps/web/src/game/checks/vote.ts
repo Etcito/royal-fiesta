@@ -214,7 +214,10 @@ async function waitVoteReady(game: TourGame, read: () => Props, current: () => s
 async function waitThumbs(game: TourGame, slots: readonly number[]): Promise<ThumbState[]> {
   let thumbs = readThumbs(game, slots)
   for (let frame = 0; frame < THUMB_FRAMES && !thumbs.every(thumb => thumb.loaded); frame++) {
-    await step(game, 0)
+    // MessageChannel-only turns can starve browser image/network tasks in the off-screen client.
+    // Yield a timer task while holding game time at zero; keep the existing frame and job bounds.
+    game.step(0)
+    await new Promise<void>(resolve => setTimeout(resolve, 0))
     thumbs = readThumbs(game, slots)
   }
   return thumbs
@@ -265,8 +268,7 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: Vote
     }
     // Enter in the hub queues; the offline show opens on its first vote.
     press('Enter')
-    for (let frame = 0; frame < NAV_FRAMES && current() !== 'vote'; frame++) await step(live, DT)
-    if (current() !== 'vote') throw new Error(`vote: the first vote did not arrive (on '${current()}')`)
+    if (!(await waitScreen(live, current, 'vote', NAV_FRAMES))) throw new Error(`vote: the first vote did not arrive (on '${current()}')`)
 
     const devices: readonly Device[] = ['mouse', 'keyboard', 'gamepad']
     for (const [index, device] of devices.entries()) {

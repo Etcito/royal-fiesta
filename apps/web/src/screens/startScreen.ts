@@ -4,6 +4,7 @@ import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { QuatT, RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
+import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
 import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { Action } from '@royal-fiesta/game/screens/nav'
@@ -126,7 +127,12 @@ export function mountStartScreen(
       }
       worn.set(slot, { id, instance: port.createInstance(asset, null), mount })
     }
-    // Unposed skin draws at rest. Rotate the root and each mount offset together.
+    // The wardrobe has no simulation clock. Advance the shared penguin idle cycle on its view clock.
+    if (art.skinned !== undefined && port.setPose !== undefined && port.registerSkinned !== undefined) {
+      port.setPose(penguin, restPoseSkin(art.skinned.skin.rig as unknown as Parameters<typeof restPoseSkin>[0],
+        Math.floor((performance.now() - started) * 60 / 1000)))
+    }
+    // Rotate the root and each mount offset together.
     const yaw = (performance.now() - started) * YAW_PER_MS
     const rotation: QuatT = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
     port.setTransform(penguin, ORIGIN, rotation, UNIT)

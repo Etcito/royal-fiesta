@@ -1,4 +1,4 @@
-import { crossingBlocked } from '@royal-fiesta/sim/bots/crossing'
+import { crossingBlocked, rotorJumpAhead } from '@royal-fiesta/sim/bots/crossing'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
 import { G, groups } from '@royal-fiesta/sim/groups'
@@ -127,7 +127,13 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
           if (feature.kind === 'risingKill') continue
           if (['launchPad', 'crown'].includes(feature.kind)) {
             const distance = Math.hypot(goal.x - state.pos.x, goal.z - state.pos.z)
-            const launching = feature.kind === 'launchPad' && !state.grounded && distance < 25
+            // The feature returns its destination only during an actual launch.
+            // Airborne proximity alone also matches pads on another spiral floor.
+            const spec = course.features?.find(f => f.id === feature.id)
+            const destination = spec?.params.target as number[] | undefined
+            const launching = feature.kind === 'launchPad' && destination !== undefined &&
+              goal.x === destination[0] && goal.y === destination[1] && goal.z === destination[2]
+            if (feature.kind === 'launchPad' && !launching) continue
             if (!launching && (distance > LOCAL_TARGET_M || Math.abs(goal.y - state.pos.y) > 2)) continue
           }
         }
@@ -207,6 +213,11 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
         }
       }
     }
+  }
+  // A low rotating bar can sweep into the capsule before the short contact
+  // ray sees it. Take off before its hub rather than reacting after the bump.
+  if (state.grounded && rotorJumpAhead(course, state.pos, out.moveX, out.moveZ)) {
+    out.jump = (tick & 1) === 0; out.dive = false
   }
   // Spring mechanisms need loading before takeoff. Running/jumping across the
   // rim never compresses their dynamic pad and loses the launch needed above it.

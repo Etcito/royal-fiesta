@@ -22,7 +22,9 @@ from the earlier contact.
 All bots share one physics domain to measure controller/geometry behavior;
 network repartitioning is outside this harness. Domain schedule seed is zero,
 spawn assignment is seats 0..7, and controllers do not consume random input.
-`BOT_COURSES=id,id` selects courses. `BOT_DEBUG=1` prints the final controller cache.
+`BOT_COURSES=id,id` selects courses. `BOT_DEBUG=1` prints the final controller cache. `BOT_TRACE=1` (through `8`)
+prints that seat’s pose, velocity, input, route cursor and feature target every
+30 ticks to stderr for crossing diagnostics.
 
 For baseline comparison, capture HEAD's source into a temporary directory:
 
@@ -31,7 +33,7 @@ mkdir -p /tmp/bot-baseline
 for name in modeBots takeoverBot; do
   git show HEAD:packages/game/src/net/$name.ts > /tmp/bot-baseline/$name.ts
 done
-for name in brain courseRead routes; do
+for name in brain courseRead routes crossing; do
   git show HEAD:packages/sim/src/bots/$name.ts > /tmp/bot-baseline/$name.ts
 done
 BOT_BASELINE=/tmp/bot-baseline node --import ./scripts/bots/local-imports.mjs --experimental-strip-types scripts/bots/measure.ts > ../before.json

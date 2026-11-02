@@ -20,7 +20,7 @@ const courses = (await loadAllCoursesV1()).flatMap(c => c.sim && (c.kind === 'ra
 // Actual asset colliders, moving mechanisms and course features, using the show's
 // controller and domain. Count respawns too: a parked/respawned bot is not a survivor.
 for (const course of courses) {
-  test(`show bot survival cohort at 10 seconds: ${course.id}`, () => {
+  test(`show bot course cohort: ${course.id}`, () => {
     const seats = Array.from({ length: Math.min(8, course.spawns.length) }, (_, i) => i)
     const zones = parseZonesFile({ format: 'royal-fiesta.zones', version: 0, course: course.id,
       grid: { origin: [-1000, -1000], cell: [2000, 2000], cols: 1, rows: 1 }, parts: {}, tuning: {},
@@ -29,7 +29,7 @@ for (const course of courses) {
       profile: { ...PROFILES.standard, introTicks: 0 }, kind: course.kind as 'race' | 'survival', seatCount: seats.length })
     const domain = factory.create({ id: 1, kind: 'seat', seats, cells: [0], replicas: [0] }, 0)
     assert.ok(domain instanceof FiestaDomain)
-    const finishRequired = ['race-bean-dash', 'race-sprint', 'candy-seesaw-run', 'ice-slide-gates', 'jungle-crane-crossing', 'mech-lab', 'neon-piston-alley', 's1-b-butterfly-freeway', 's1-c1-diamond-citadel', 's1-e-sugar-sprint', 's1-g-cloudstack-tower'].includes(course.id)
+    const finishRequired = ['race-bean-dash', 'race-sprint', 'candy-seesaw-run', 'ice-slide-gates', 'jungle-crane-crossing', 'mech-lab', 'neon-piston-alley', 's1-b-butterfly-freeway', 's1-c1-diamond-citadel', 's1-e-sugar-sprint', 's1-g-cloudstack-tower', 's1-d-spiral-of-mischief'].includes(course.id)
     const failed = new Set<number>()
     const park = domain.characters.park.bind(domain.characters)
     domain.characters.park = (ctx, p) => {
@@ -50,7 +50,11 @@ for (const course of courses) {
         }
         domain.step(inputs, shadows)
       }
-      if (finishRequired) assert.ok(seats.filter(p => domain.status(p) === PlayerStatus.qualified).length >= 6, 'at least six bots must cross the finish')
+      if (finishRequired) {
+        const minimumFinish = course.id === 's1-d-spiral-of-mischief' ? 7 : 8
+        assert.ok(seats.filter(p => domain.status(p) === PlayerStatus.qualified).length >= minimumFinish,
+          `at least ${minimumFinish} bots must cross the finish`)
+      }
       // Hammer Hill has real hammers that knock racers off; the controller must
       // still keep a surviving cohort. The full-course proof separately counts finishes.
       const minimum = course.id === 'race-hammer-hill' ? 1 : 6
@@ -110,4 +114,50 @@ test('mechanism crossing has both waiting and traversable phases', async () => {
   const phases = Array.from({ length: 180 }, (_, tick) => crossingBlocked(c, pos, vel, 0, 1, tick))
   assert.ok(phases.some(Boolean), 'wait when the hammer sweeps the crossing')
   assert.ok(phases.some(x => !x), 'the bot must be allowed through a clear interval')
+})
+
+function spiralDomain(): FiestaDomain {
+  const course = courses.find(c => c.id === 's1-d-spiral-of-mischief')!
+  const zones = parseZonesFile({ format: 'royal-fiesta.zones', version: 0, course: course.id,
+    grid: { origin: [-1000, -1000], cell: [2000, 2000], cols: 1, rows: 1 }, parts: {}, tuning: {},
+  }, 'launch-bots.zones', course)
+  return createFiestaDomainFactory(R, { course, zones,
+    profile: { ...PROFILES.standard, introTicks: 0 }, kind: 'race', seatCount: 1,
+  }).create({ id: 1, kind: 'seat', seats: [0], cells: [0], replicas: [0] }, 0) as FiestaDomain
+}
+
+test('an airborne racer on a lower floor does not steer into an upper launch pad', () => {
+  const domain = spiralDomain()
+  try {
+    const spawn = domain.obstacles.courses[0].spawns[0]
+    domain.characters.place(domain.ctx, 0, { ...spawn, t: { x: 38, y: 4, z: 78 } })
+    const memory = newModeBotMemory()
+    modeBotInput(domain, memory, 0, 2, neutralInput())
+    assert.equal(memory.target, null)
+  } finally { domain.dispose() }
+})
+
+test('an actual launch retains its destination despite the vertical separation', () => {
+  const domain = spiralDomain()
+  try {
+    const spawn = domain.obstacles.courses[0].spawns[0]
+    domain.characters.place(domain.ctx, 0, { ...spawn, t: { x: 22, y: 15.25 - 0.86, z: 60 } })
+    domain.step([neutralInput()], shadows)
+    assert.ok(domain.state(0).vel.y > 20, 'the real launch feature must fire')
+    const memory = newModeBotMemory()
+    modeBotInput(domain, memory, 0, 2, neutralInput())
+    assert.deepEqual(memory.target, { x: 6, y: 22.15, z: 60 })
+  } finally { domain.dispose() }
+})
+
+test('marked spinner crossings anticipate the hub and respect floor and lane', async () => {
+  const { rotorJumpAhead } = await import('../../sim/src/bots/crossing.ts')
+  const course = courses.find(c => c.id === 's1-d-spiral-of-mischief')!
+  const pos = { x: -14, y: 21, z: 32 }
+  assert.equal(rotorJumpAhead(course, pos, 1, 0), true)
+  assert.equal(rotorJumpAhead(course, pos, -1, 0), false)
+  assert.equal(rotorJumpAhead(course, { ...pos, y: 5 }, 1, 0), false)
+  assert.equal(rotorJumpAhead(course, { ...pos, z: 36 }, 1, 0), false)
+  assert.equal(rotorJumpAhead(course, { ...pos, x: -20 }, 1, 0), false)
+  assert.equal(rotorJumpAhead(course, pos, 0, 0), false)
 })

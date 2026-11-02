@@ -42,6 +42,7 @@ for (const content of await loadAllCoursesV1()) {
  const ticks=Math.round(c.timeLimitS*60)
  for(let t=0;t<ticks;t++){
   for(const p of ids)modeBotInput(domain,memories[p],p,t,inputs[p])
+  if(process.env.BOT_TRACE && t % 30 === 0) { const p = Number(process.env.BOT_TRACE)-1; console.error(JSON.stringify({t,p,pos:domain.state(p).pos,vel:domain.state(p).vel,mode:domain.state(p).mode,ground:domain.state(p).grounded,node:(memories[p].takeover as any).pathIndex,target:memories[p].target,input:inputs[p],spring:memories[p].springTicks})) }
   const prev=ids.map(p=>domain.status(p))
   domain.step(inputs,shadows)
   writer.reset()

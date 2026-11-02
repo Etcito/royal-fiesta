@@ -9,7 +9,7 @@ registerHooks({ resolve(specifier, context, next) {
 if (process.env.BOT_BASELINE) {
   const { readFileSync } = await import('node:fs')
   registerHooks({ load(url, context, next) {
-    const match = /\/packages\/(?:game\/src\/net\/(modeBots|takeoverBot)|sim\/src\/bots\/(brain|courseRead|routes))\.ts$/.exec(url)
+    const match = /\/packages\/(?:game\/src\/net\/(modeBots|takeoverBot)|sim\/src\/bots\/(brain|courseRead|routes|crossing))\.ts$/.exec(url)
     if (match) return { format: 'module-typescript', source: readFileSync(`${process.env.BOT_BASELINE}/${match[1] ?? match[2]}.ts`, 'utf8'), shortCircuit: true }
     return next(url, context)
   } })

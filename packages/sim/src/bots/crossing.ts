@@ -17,7 +17,7 @@ export function crossingBlocked(course: ResolvedCourse, pos: Vec3, vel: Vec3,
     if (animationKind(m, i) !== 'tick') continue
     // A horizontal rotor has no wholly clear walk-through window: jump it
     // using contact look-ahead instead of waiting for an impossible interval.
-    if (!a.keys.some(k => Math.abs(k.r.x) + Math.abs(k.r.z) > 0.1)) continue
+    if (!a.keys.some(k => Math.abs(k.r.x) + Math.abs(k.r.z) + Math.abs(k.t.x) + Math.abs(k.t.z) > 0.1)) continue
     const body = m.items[a.target.item].bodies[a.target.body]
     // Platforms support from below; only bodies whose rest intersects our height
     // can be crossing hazards. A distant track cannot affect this short horizon.
@@ -44,6 +44,24 @@ export function crossingBlocked(course: ResolvedCourse, pos: Vec3, vel: Vec3,
       speed = Math.min(CHAR.maxRun, speed + CHAR.groundAccel * 2 / 60)
       travel += speed * 2 / 60
     }
+  }
+  return false
+}
+
+/** Start an authored bar crossing before contact look-ahead can see its rotating tip. */
+export function rotorJumpAhead(course: ResolvedCourse, pos: Vec3, dx: number, dz: number): boolean {
+  const direction = Math.hypot(dx, dz)
+  if (direction === 0 || !course.mechanisms) return false
+  for (const a of course.mechanisms.animations) {
+    if (!a.keys.some(k => Math.abs(k.r.y) > 0.1) || a.keys.some(k => Math.abs(k.r.x) + Math.abs(k.r.z) > 0.1)) continue
+    const body = course.mechanisms.items[a.target.item].bodies[a.target.body]
+    // Preserve unmarked walk-through routes; the authored jump marks identify
+    // bars that block the intended lane, including narrow elevated walkways.
+    if (!course.path.some(n => n.jump && Math.hypot(n.p.x - body.rest.t.x, n.p.z - body.rest.t.z) < 2)) continue
+    const x = body.rest.t.x - pos.x, z = body.rest.t.z - pos.z
+    const along = (x * dx + z * dz) / direction
+    const across = Math.abs(x * dz - z * dx) / direction
+    if (along > 1.5 && along < 2.5 && across < 2 && Math.abs(body.rest.t.y - pos.y) < 1.5) return true
   }
   return false
 }

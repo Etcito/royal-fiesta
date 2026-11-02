@@ -65,13 +65,14 @@ function drive(
 const focusEvents = (dir: -1 | 1, times: number): Ui[] =>
   Array.from({ length: times }, () => ({ k: 'focus', dir }) as Ui)
 
-test('bins list only owned cosmetics, in head, body, bottom order', () => {
+test('bins list only owned cosmetics, in head, body, bottom, special order', () => {
   const m = startScreen(['costume.propeller-hat', 'costume.fish-scarf'], CATALOG, 4, { colour: 1, worn: {} })
 
-  assert.deepEqual(m.bins.map(bin => bin.slot), ['head', 'body', 'bottom'])
+  assert.deepEqual(m.bins.map(bin => bin.slot), ['head', 'body', 'bottom', 'special'])
   assert.deepEqual(m.bins[0].items, ['costume.propeller-hat'])
   assert.deepEqual(m.bins[1].items, [])
   assert.deepEqual(m.bins[2].items, ['costume.fish-scarf'])
+  assert.deepEqual(m.bins[3].items, [])
   assert.ok(!m.bins.some(bin => bin.items.includes('costume.crown')))
   assert.ok(!m.bins.some(bin => bin.items.includes('costume.boots')))
   assert.ok(m.bins.every(bin => bin.selected === -1))
@@ -85,14 +86,14 @@ test('bins list only owned cosmetics, in head, body, bottom order', () => {
 
 test('an owned slot with no catalog match is empty, and nothing of another slot leaks in', () => {
   const m = startScreen(['costume.pineapple-suit'], CATALOG, 0, { colour: 0, worn: {} })
-  assert.deepEqual(m.bins.map(bin => bin.items), [[], ['costume.pineapple-suit'], []])
+  assert.deepEqual(m.bins.map(bin => bin.items), [[], ['costume.pineapple-suit'], [], []])
   assert.ok(m.bins.every(bin => bin.selected === -1))
 
   const empty = startScreen([], CATALOG, 0, { colour: 0, worn: {} })
-  assert.deepEqual(empty.bins.map(bin => bin.items), [[], [], []])
-  assert.deepEqual(empty.bins.map(bin => bin.selected), [-1, -1, -1])
+  assert.deepEqual(empty.bins.map(bin => bin.items), [[], [], [], []])
+  assert.deepEqual(empty.bins.map(bin => bin.selected), [-1, -1, -1, -1])
   const stepped = startStep(empty, 'right')
-  assert.deepEqual(stepped.model.bins.map(bin => bin.selected), [-1, -1, -1])
+  assert.deepEqual(stepped.model.bins.map(bin => bin.selected), [-1, -1, -1, -1])
   assert.equal(stepped.effect, 'wear')
 })
 
@@ -106,7 +107,7 @@ test('saved worn and colour are restored', () => {
     },
   }
   const m = startScreen(allIds, LOCAL_COSMETICS, 2, saved)
-  assert.deepEqual(m.bins.map(bin => bin.selected), [0, 0, 0])
+  assert.deepEqual(m.bins.map(bin => bin.selected), [0, 0, 0, -1])
   assert.equal(m.colour, 3)
 
   // The selection is the item's index in the filtered bin, not its catalog index.
@@ -129,6 +130,27 @@ test('saved worn and colour are restored', () => {
   assert.equal(low.colour, 0)
 })
 
+test('a catalog special item fills the special bin and can be worn', () => {
+  const catalog = [...CATALOG, { id: 'costume.sparkler-wand', slot: 'special' }]
+  const m = startScreen(['costume.sparkler-wand'], catalog, 0, {
+    colour: 0,
+    worn: { special: 'costume.sparkler-wand' },
+  })
+  assert.deepEqual(m.bins.map(bin => bin.slot), ['head', 'body', 'bottom', 'special'])
+  assert.deepEqual(m.bins[3].items, ['costume.sparkler-wand'])
+  assert.equal(m.bins[3].selected, 0)
+
+  let model = m
+  model = startStep(model, 'down').model
+  model = startStep(model, 'down').model
+  model = startStep(model, 'down').model
+  assert.equal(model.focus, 'bins')
+  assert.equal(model.bin, 3)
+  const step = startStep(model, 'right')
+  assert.equal(step.effect, 'wear')
+  assert.equal(step.model.bins[3].selected, -1)
+})
+
 test('LOCAL_OWNED resolves to the three local costume ids', async () => {
   assert.deepEqual(await LOCAL_OWNED.owned(), allIds)
   assert.deepEqual(allIds, ['costume.propeller-hat', 'costume.pineapple-suit', 'costume.fish-scarf'])
@@ -137,26 +159,26 @@ test('LOCAL_OWNED resolves to the three local costume ids', async () => {
 
 test('keyboard actions reach Play', () => {
   const m = startScreen(allIds, LOCAL_COSMETICS, 0, { colour: 0, worn: {} })
-  const played = drive(m, [...focusEvents(1, 4), { k: 'select' }])
+  const played = drive(m, [...focusEvents(1, 5), { k: 'select' }])
   assert.equal(played.model.focus, 'play')
   assert.equal(played.effect, 'play')
 })
 
 test('pad actions reach Play and Shop', () => {
   const m = startScreen(allIds, LOCAL_COSMETICS, 0, { colour: 0, worn: {} })
-  const played = drive(m, [...focusEvents(1, 4), { k: 'select' }])
+  const played = drive(m, [...focusEvents(1, 5), { k: 'select' }])
   assert.equal(played.effect, 'play')
 
   const shopped = drive(m, [{ k: 'focus', dir: -1 }, { k: 'select' }])
   assert.equal(shopped.model.focus, 'shop')
   assert.equal(shopped.effect, 'shop')
 
-  const swapped = drive(m, [...focusEvents(1, 4), { k: 'adjust', dir: 1 }, { k: 'select' }])
+  const swapped = drive(m, [...focusEvents(1, 5), { k: 'adjust', dir: 1 }, { k: 'select' }])
   assert.equal(swapped.model.focus, 'shop')
   assert.equal(swapped.effect, 'shop')
 })
 
-test('up and down walk the bins, palette, play and shop ring with wrapping', () => {
+test('up and down walk the four bins, palette, play and shop ring with wrapping', () => {
   const m = startScreen(allIds, LOCAL_COSMETICS, 0, { colour: 0, worn: {} })
   let model = m
   model = startStep(model, 'down').model
@@ -165,6 +187,9 @@ test('up and down walk the bins, palette, play and shop ring with wrapping', () 
   model = startStep(model, 'down').model
   assert.equal(model.focus, 'bins')
   assert.equal(model.bin, 2)
+  model = startStep(model, 'down').model
+  assert.equal(model.focus, 'bins')
+  assert.equal(model.bin, 3)
   model = startStep(model, 'down').model
   assert.equal(model.focus, 'palette')
   model = startStep(model, 'down').model
@@ -205,6 +230,7 @@ test('left and right cycle the bin selection over -1..items-1 and return wear', 
 
 test('left and right wrap the palette and return wear; play and shop swap', () => {
   let model = startScreen(allIds, LOCAL_COSMETICS, 0, { colour: 0, worn: {} })
+  model = startStep(model, 'down').model
   model = startStep(model, 'down').model
   model = startStep(model, 'down').model
   model = startStep(model, 'down').model

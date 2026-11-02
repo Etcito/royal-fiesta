@@ -11,7 +11,7 @@ export interface InboxBadgeSource {
   unread(): Promise<number>
 }
 
-type BinSlot = 'head' | 'body' | 'bottom'
+export type BinSlot = 'head' | 'body' | 'bottom' | 'special'
 
 export interface StartScreenModel {
   bins: { slot: BinSlot; items: string[]; selected: number }[]
@@ -35,7 +35,7 @@ export const LOCAL_OWNED: OwnedSource = Object.freeze({
   owned: (): Promise<string[]> => Promise.resolve(LOCAL_COSMETICS.map(item => item.id)),
 })
 
-const BIN_SLOTS: readonly BinSlot[] = Object.freeze(['head', 'body', 'bottom'])
+const BIN_SLOTS: readonly BinSlot[] = Object.freeze(['head', 'body', 'bottom', 'special'])
 
 function clampColour(value: number, palette: readonly number[]): number {
   const lo = palette[0] ?? 0

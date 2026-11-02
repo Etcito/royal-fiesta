@@ -126,21 +126,21 @@ function runStart(events: readonly FlowUiEvent[]): {
 
 test('start: change the head bin, change colour twice, go to play and confirm', () => {
   const keyboard = runStart(keyEvents([
-    'ArrowRight', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowRight', 'ArrowRight', 'ArrowDown', 'Enter',
+    'ArrowRight', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowRight', 'ArrowRight', 'ArrowDown', 'Enter',
   ]))
-  const pad = runStart(padEvents([15, 13, 13, 13, 15, 15, 13, 0]))
+  const pad = runStart(padEvents([15, 13, 13, 13, 13, 15, 15, 13, 0]))
   assert.deepEqual(keyboard, pad)
-  assert.deepEqual(keyboard.effects, ['wear', null, null, null, 'wear', 'wear', null, 'play'])
+  assert.deepEqual(keyboard.effects, ['wear', null, null, null, null, 'wear', 'wear', null, 'play'])
   assert.equal(keyboard.model.bins[0].selected, 0)
   assert.equal(keyboard.model.colour, 2)
   assert.equal(keyboard.model.focus, 'play')
 })
 
 test('start: reach shop and confirm', () => {
-  const keyboard = runStart(keyEvents(['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'Enter']))
-  const pad = runStart(padEvents([13, 13, 13, 13, 13, 0]))
+  const keyboard = runStart(keyEvents(['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'Enter']))
+  const pad = runStart(padEvents([13, 13, 13, 13, 13, 13, 0]))
   assert.deepEqual(keyboard, pad)
-  assert.deepEqual(keyboard.effects, [null, null, null, null, null, 'shop'])
+  assert.deepEqual(keyboard.effects, [null, null, null, null, null, null, 'shop'])
   assert.equal(keyboard.model.focus, 'shop')
 })
 

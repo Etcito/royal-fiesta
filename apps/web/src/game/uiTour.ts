@@ -46,7 +46,7 @@ interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; unt
 // docs/screens.md 'Reached by': the boot load is refused (bootGame), so Retry on the error screen enters
 // 'loading' with a real click; that load lands on the offline page's start screen (the app opens the wardrobe
 // itself), so the tour goes back to title, walks the menus by their buttons (Escape goes back), and Play on
-// title opens the start screen again. There four ArrowDowns reach its Play (3 bins, the palette, then Play) and
+// title opens the start screen again. There five ArrowDowns reach its Play (4 bins, the palette, then Play) and
 // Enter runs the hub, where Escape pauses it. Enter in the hub starts the offline show on its vote; the tour
 // votes with a real ArrowRight and Enter, then follows the show: the world loads before the countdown, round 0
 // is a race the idle player cannot qualify in, so it is spectated from round 1 on. The next vote is played with
@@ -71,9 +71,9 @@ const TOUR: readonly Leg[] = [
   { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
   { acts: [{ click: 'act-play-online' }], to: 'error', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
-  // Title Play opens the start screen; four ArrowDowns move bins -> palette -> Play, Enter runs the hub.
+  // Title Play opens the start screen; five ArrowDowns move 4 bins -> palette -> Play, Enter runs the hub.
   { acts: [{ click: 'act-play' }], to: 'start', capture: true, timeoutS: 30 },
-  { acts: [{ key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'Enter' }], to: 'hub', capture: true, timeoutS: 30 },
+  { acts: [{ key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'Enter' }], to: 'hub', capture: true, timeoutS: 30 },
   { acts: [{ key: 'Escape' }], to: 'pause', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'hub', capture: false, timeoutS: 10 },
   // Enter queues: the offline lobby's show starts on its vote, which ShowMode fills in a moment later.

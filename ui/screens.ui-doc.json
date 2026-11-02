@@ -4633,6 +4633,75 @@
           ]
         },
         {
+          "id": "bin-special-card",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 808],
+            "offsetMax": [232, 948]
+          },
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [32, 560],
+            "offsetMax": [368, 664]
+          },
+          "children": [
+            {
+              "id": "bin-special-title",
+              "type": "label",
+              "text": "Special",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 28,
+              "color": "#ffffff",
+              "align": "center",
+              "outline": {
+                "width": 4,
+                "color": "#7a1f8c"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [12, 12],
+                "offsetMax": [196, 56]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [16, 8],
+                "offsetMax": [320, 48]
+              }
+            },
+            {
+              "id": "bin-special",
+              "type": "label",
+              "text": "< item >",
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 24,
+              "color": "#ffffff",
+              "align": "center",
+              "outline": {
+                "width": 4,
+                "color": "#7a1f8c"
+              },
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [12, 64],
+                "offsetMax": [196, 116]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [16, 48],
+                "offsetMax": [320, 92]
+              }
+            }
+          ]
+        },
+        {
           "id": "palette-0",
           "type": "badge",
           "asset": "badge.round",

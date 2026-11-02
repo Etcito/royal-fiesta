@@ -24,6 +24,7 @@ import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { LOCAL_COSMETICS, startScreen, startStep } from '@royal-fiesta/game/flow/startScreen'
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import { economyOwned, rewardOffline } from '@royal-fiesta/game/economy/owned'
+import { createEconomyStub } from '@royal-fiesta/game/economy/stub'
 import type { EconomyConfig } from '@royal-fiesta/game/economy/stub'
 import { PlayFlow } from '@royal-fiesta/game/hub/flow'
 import { HubWorld } from '@royal-fiesta/game/hub/hubWorld'
@@ -80,7 +81,7 @@ import { createUaaHost } from '../ui/uaaHost.ts'
 import type { UaaCommand, UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
 import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
 import economyDocText from '../../../../economy/royal-fiesta.economy.json?raw'
-import { createGameEconomy, economyUrl } from '../platform/economy.ts'
+import { createGameEconomy, economyUrl, rarityPrices } from '../platform/economy.ts'
 import type { GameEconomy } from '../platform/economy.ts'
 import { defaultRelay, onlineRelay } from '../platform/relay.ts'
 import { installGameOps } from './ops.ts'
@@ -1386,6 +1387,8 @@ class App {
   private readonly economyScreens: EconomyScreens
   private economyScreen: EconomyScreen | null = null
   private startModel: StartScreenModel | null = null
+  // Every cosmetic the current catalog offers plus the local ones; buildStartArt mounts each of them.
+  private startCosmetics: readonly { id: string; slot: string }[] = []
   private startArt: StartArt | null = null
   private startView: StartScreenView | null = null
   private readonly orbit = new OrbitCamera()
@@ -1419,8 +1422,21 @@ class App {
     this.sound = new SoundDriver({ store: env.store })
     const config = JSON.parse(economyDocText) as EconomyConfig
     const name = onlineName(new URLSearchParams(search).get('name') ?? DEFAULT_NAME)
-    // A build without VITE_RF_ECONOMY uses the offline stub.
-    this.economy = createGameEconomy({ url: economyUrl(), store: this.env.store, name, config })
+    // A build without VITE_RF_ECONOMY uses the offline stub; ?test=1 has it own the whole drop, so a check
+    // can walk every catalog cosmetic through the start screen's bins.
+    const url = economyUrl()
+    const test = new URLSearchParams(search).get('test') === '1'
+    if (test && url === null) {
+      const stub = createEconomyStub({
+        config, me: { owned: config.catalog.shop.items.map(item => item.id) },
+      })
+      this.economy = {
+        port: stub, stub, banned: config.settings.filter.banned_words, prices: rarityPrices(config),
+        close: () => {},
+      }
+    } else {
+      this.economy = createGameEconomy({ url, store: this.env.store, name, config })
+    }
     this.economyScreens = new EconomyScreens({
       host: this.host, port: this.economy.port, banned: this.economy.banned,
       cue: id => this.sound.cue(id),
@@ -1811,15 +1827,10 @@ class App {
   }
 
   // Builds the flow-web start screen from the loaded content: the penguin on its own layer of the stage
-  // port, its local costume mounts and the hub environment, with the wardrobe read from the settings store.
+  // port, its cosmetic mounts and the hub environment, with the wardrobe read from the settings store.
   private async prepareStart(loaded: Loaded): Promise<void> {
-    const port = loaded.ports[0]
-    if (port === undefined) return
-    const content = loaded.content
+    if (loaded.ports[0] === undefined) return
     await this.refreshStart()
-    const art = await this.buildStartArt(content, port)
-    if (this.disposed || this.loaded !== loaded) return
-    this.startArt = art
   }
 
   private async refreshStart(): Promise<void> {
@@ -1835,20 +1846,33 @@ class App {
       ])
       owned = items
       badge = unread
-      cosmetics = [...new Map([
-        ...LOCAL_COSMETICS,
-        ...catalog.items.filter(item => item.slot === 'head' || item.slot === 'body' || item.slot === 'bottom'),
-      ].map(item => [item.id, item])).values()]
+      // The special bin is a catalog slot too: its three items dress the penguin like any other piece.
+      cosmetics = [...new Map([...LOCAL_COSMETICS, ...catalog.items].map(item => [item.id, item])).values()]
     } catch (e) {
       console.warn('[start] wardrobe unavailable:', messageOf(e))
     }
     if (this.disposed || this.loaded !== loaded) return
+    this.startCosmetics = cosmetics
     this.startModel = startScreen(owned, cosmetics, badge, readWardrobe(this.env.store, this.query?.colour ?? 0))
+    // The mounts follow this catalog: rebuild the art once the wardrobe is known and remount its view so a
+    // cosmetic bought since the last visit draws its worn instance.
+    const port = loaded.ports[0]
+    if (port !== undefined) {
+      try {
+        const art = await this.buildStartArt(loaded.content, port)
+        if (this.disposed || this.loaded !== loaded) return
+        this.startArt = art
+        this.startView?.unmount()
+        this.startView = null
+      } catch (e) {
+        console.warn('[start] art unavailable:', messageOf(e))
+      }
+    }
     this.startView?.update(this.startModel, null)
   }
 
-  // StartArt: the character, its local cosmetics mounted on the body anchors (mountedBounds' rule), the
-  // hub's S13 environment, and a SceneLayer over the stage port so hiding the screen restores the port.
+  // StartArt: the character, every catalog and local cosmetic mounted on the body anchors (mountedBounds'
+  // rule), the hub's S13 environment, and a SceneLayer over the stage port so hiding the screen restores it.
   private async buildStartArt(content: GameContent, stage: RenderPort): Promise<StartArt> {
     const layer = new SceneLayer(stage)
     const character = content.character()
@@ -1860,7 +1884,7 @@ class App {
       console.warn('[start] character anchors unavailable:', messageOf(e))
     }
     const mounts = new Map<string, Vec3T>()
-    for (const item of LOCAL_COSMETICS) {
+    for (const item of this.startCosmetics) {
       try {
         if (body === null) continue
         const costume = (await resolver.resolve(item.id)).asset

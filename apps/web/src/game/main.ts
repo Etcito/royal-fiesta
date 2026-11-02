@@ -134,6 +134,7 @@ const PODIUM_HOLD_S = 6
 // The network intermission still takes its minimum.
 const TEST_VOTE_MS = 1000
 const TEST_INTERMISSION_MS = 0
+const LOCAL_LOBBY_WAIT_LOCAL_S = 2
 
 function intParam(q: URLSearchParams, key: string, def: number, min: number, max: number): number {
   const raw = q.get(key)
@@ -164,7 +165,9 @@ function parseQuery(search: string): Query {
   const touch = intParam(q, 'touch', 0, 0, 1) as 0 | 1
   const test = intParam(q, 'test', 0, 0, 1) === 1
   // The offline lobby's countdown is a real wait: test mode takes its minimum (LocalCountdown needs > 0).
-  const wait = test ? 1 : intParam(q, 'wait', LOCAL_LOBBY_WAIT_S, 1, 600)
+  // Tested on this machine the lobby waits 2 s (owner 2026-11-02); ?wait= sets any value, a hosted page keeps the full wait.
+  const localHost = ['localhost', '127.0.0.1', '[::1]'].includes(globalThis.location?.hostname ?? '')
+  const wait = test ? 1 : intParam(q, 'wait', localHost ? LOCAL_LOBBY_WAIT_LOCAL_S : LOCAL_LOBBY_WAIT_S, 1, 600)
   if (community !== null && (server !== null || course !== null)) refuse('query', 'community', 'plays one level in-page with bots; drop ?server= and ?course=')
   if (community !== null && clients > 1) refuse('query', 'clients', 'a community level plays one client with bots; drop ?clients=')
   if (course !== null && server !== null) refuse('query', 'course', 'plays in-page with bots; drop ?server= or ?course=')
@@ -1989,7 +1992,7 @@ class App {
     try {
       const show = await ShowMode.create({
         R: loaded.R, views: this.views, orbit: this.orbit,
-        seats: intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60),
+        seats: intParam(new URLSearchParams(this.search), new URLSearchParams(this.search).has('bots') ? 'bots' : 'seats', this.env.showSeats ?? 12, 2, 60),
         seed: Date.now(), localName: q.name,
         voteMs: q.test ? TEST_VOTE_MS : undefined,
         intermissionMs: q.test ? TEST_INTERMISSION_MS : undefined,

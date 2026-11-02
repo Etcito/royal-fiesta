@@ -1,5 +1,5 @@
 // Shared disk layout for local play, content checkouts and CDN uploads.
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -174,6 +174,13 @@ export function packContent(out: string, dir = contentDir(), meshKeys?: Readonly
   const meshes = meshCacheDir()
   if (existsSync(meshes)) {
     mkdirSync(join(out, 'meshes'), { recursive: true })
+    // A pack REPLACES the meshes of its load set: the files an earlier pack left here (other MAMA pins, other load sets)
+    // are orphans that only grow the page (run 11326: 785 files, 268495360 bytes, 60 KB over the 256 MiB GPU page limit).
+    if (meshKeys !== undefined) {
+      for (const name of readdirSync(join(out, 'meshes'))) {
+        if (/^[a-f0-9]{64}(\.failed)?$/.test(name) && !meshKeys.has(name.replace(/\.failed$/, ''))) unlinkSync(join(out, 'meshes', name))
+      }
+    }
     for (const name of readdirSync(meshes)) {
       if (meshKeys !== undefined && !meshKeys.has(name.replace(/\.(mesh|failed)$/, ''))) continue
       // Gzipped (a third of the size; apps/web/src/sdf/serverMesh.ts inflates it) so a load's meshes fit a page upload.

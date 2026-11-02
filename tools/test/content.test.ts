@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -96,4 +96,27 @@ test('the sprint load set is what the page meshes: playlist, hub, podium and cha
   assert.ok(ids.includes('penguin.body') && ids.includes('candy.checkpoint-gate'))
   for (const { id } of LOCAL_COSMETICS) assert.ok(ids.includes(id), `${id} is in the wardrobe load set`)
   assert.deepEqual(ids, [...ids].sort())
+})
+
+test('a pack with a load set replaces the meshes it finds in out: orphans of an earlier pack are removed', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rf-pack-orphans-'))
+  const before = process.env.RF_MESH_CACHE_DIR
+  try {
+    for (const d of ['assets', 'courses', 'audio', 'thumbs', 'cache']) mkdirSync(join(dir, d))
+    const keep = 'a'.repeat(64)
+    const orphan = 'b'.repeat(64)
+    writeFileSync(join(dir, 'cache', `${keep}.mesh`), new Uint8Array([1, 2, 3]))
+    writeFileSync(join(dir, 'cache', `${orphan}.mesh`), new Uint8Array([4, 5, 6]))
+    process.env.RF_MESH_CACHE_DIR = join(dir, 'cache')
+    const out = join(dir, 'out')
+    mkdirSync(join(out, 'meshes'), { recursive: true })
+    writeFileSync(join(out, 'meshes', orphan), 'old pack of another MAMA pin')
+    writeFileSync(join(out, 'meshes', `${'c'.repeat(64)}.failed`), 'old refusal')
+    packContent(out, dir, new Set([keep]))
+    assert.deepEqual(readdirSync(join(out, 'meshes')), [keep])
+  } finally {
+    if (before === undefined) delete process.env.RF_MESH_CACHE_DIR
+    else process.env.RF_MESH_CACHE_DIR = before
+    rmSync(dir, { recursive: true, force: true })
+  }
 })

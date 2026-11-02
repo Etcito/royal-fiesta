@@ -785,13 +785,13 @@ describe('M4 slide', () => {
   })
 
   it('a stroke adds strokeImpulse on ice and the cooldown blocks a second press', () => {
-    const plain = slideRig('ice', 12)
+    const plain = slideRig('ice', 6)
     stepN(plain, 1, NEUTRAL)
     const noStroke = state(plain).slideSpeed!
     plain.world.free()
 
-    const stroke = slideRig('ice', 12)
-    stepN(stroke, 1, JUMP)
+    const stroke = slideRig('ice', 6)
+    stepN(stroke, 1, DIVE)
     const afterStroke = state(stroke)
     assert.equal(afterStroke.mode, CharMode.slide)
     assert.ok(Math.abs(afterStroke.slideSpeed! - noStroke - CHAR.slide.strokeImpulse) <= 1e-9,
@@ -799,20 +799,90 @@ describe('M4 slide', () => {
     stroke.world.free()
 
     // Release, then press again inside the cooldown: the second stroke is ignored.
-    const second = slideRig('ice', 12)
-    stepN(second, 1, JUMP)
+    const second = slideRig('ice', 6)
+    stepN(second, 1, DIVE)
     stepN(second, 1, NEUTRAL)
-    stepN(second, 1, JUMP)
+    stepN(second, 1, DIVE)
     stepN(second, 1, NEUTRAL)
     const pressedTwice = state(second).slideSpeed!
     second.world.free()
-    const once = slideRig('ice', 12)
-    stepN(once, 1, JUMP)
+    const once = slideRig('ice', 6)
+    stepN(once, 1, DIVE)
     stepN(once, 3, NEUTRAL)
     const pressedOnce = state(once).slideSpeed!
     once.world.free()
     assert.ok(Math.abs(pressedTwice - pressedOnce) <= 1e-9,
       `second press added ${pressedTwice - pressedOnce}`)
+  })
+
+  it('dive strokes at low speed, but jump exits even at high speed', () => {
+    for (const speed of [0, 3, 12]) {
+      const r = slideRig('ice', speed)
+      const s = stepN(r, 1, DIVE)
+      assert.equal(s.mode, CharMode.slide)
+      assert.ok(s.strokeTimer! > 0)
+      r.world.free()
+      const jump = slideRig('ice', speed)
+      const airborne = stepN(jump, 1, JUMP)
+      assert.equal(airborne.mode, CharMode.air)
+      assert.ok(airborne.vel.y > 0)
+      jump.world.free()
+    }
+  })
+
+  it('a normal-material slope permits propulsion', () => {
+    const run = (stroke: boolean): number => {
+      const floor = surfaceFloor('normal')
+      floor.r = { x: Math.sin(0.2), y: 0, z: 0, w: Math.cos(0.2) }
+      const r = obsRig([floor], v3(0, 0, 0))
+      stepN(r, 30, NEUTRAL)
+      seedSlide(r, 6)
+      const s = stepN(r, 1, stroke ? DIVE : NEUTRAL)
+      assert.equal(s.mode, CharMode.slide)
+      r.world.free()
+      return s.slideSpeed!
+    }
+    assert.ok(Math.abs(run(true) - run(false) - CHAR.slide.strokeImpulse) < 1e-9)
+  })
+
+  it('repeated dry flat strokes never exceed walking speed', () => {
+    for (const surface of ['normal', 'mud', 'rubber'] as Surface[]) {
+      const r = slideRig(surface, 16)
+      const walkCap = surface === 'mud' ? CHAR.maxRun * 0.6 : CHAR.maxRun
+      for (let tick = 0; tick < 100; tick++) {
+        const s = stepN(r, 1, tick % 20 === 0 && state(r).mode === CharMode.slide ? DIVE : NEUTRAL)
+        assert.ok(hspeed(s) <= walkCap + 1e-6)
+      }
+      r.world.free()
+    }
+  })
+
+  it('walking on ice accelerates and brakes more slowly than dry walking', () => {
+    const speeds = (surface: Surface): number[] => {
+      const r = obsRig([surfaceFloor(surface)], v3(0, 0, 0))
+      stepN(r, 30, NEUTRAL)
+      const start = hspeed(stepN(r, 6, FORWARD))
+      stepN(r, 120, FORWARD)
+      const drift = hspeed(stepN(r, 6, NEUTRAL))
+      r.world.free()
+      return [start, drift]
+    }
+    const dry = speeds('normal'), ice = speeds('ice')
+    assert.ok(ice[0] < dry[0])
+    assert.ok(ice[1] > dry[1])
+  })
+
+  it('slide steering redirects ice velocity faster than walking', () => {
+    const sliding = slideRig('ice', 8)
+    const walking = slideRig('ice', 8)
+    // Stand up, settle, then build forward walking momentum.
+    stepN(walking, 1, JUMP)
+    stepN(walking, 150, FORWARD)
+    const side = input({ moveX: 1 })
+    const slide = stepN(sliding, 1, side)
+    const walk = stepN(walking, 1, side)
+    assert.ok(Math.atan2(slide.vel.x, slide.vel.z) > Math.atan2(walk.vel.x, walk.vel.z))
+    sliding.world.free(); walking.world.free()
   })
 
   it('60 ticks of slide from 10 m/s travel ice > normal > mud', () => {
@@ -833,7 +903,7 @@ describe('M4 slide', () => {
   it('an obstacle friction 0.1 on normal decelerates less than friction 0.5', () => {
     const speedAfter = (friction: number): number => {
       const r = slideRig('normal', 12, friction)
-      const s = stepN(r, 60, NEUTRAL)
+      const s = stepN(r, 30, NEUTRAL)
       assert.equal(s.mode, CharMode.slide)
       const speed = hspeed(s)
       r.world.free()
@@ -1000,7 +1070,7 @@ describe('M4 swim and determinism', () => {
   it('QB1: a 240-tick scripted run restores its tick-90 snapshot and reruns identically', () => {
     const script = (t: number): PlayerInput => {
       if (t === 50) return input({ moveZ: 1, dive: true })
-      if (t === 80 || t === 100 || t === 130 || t === 160 || t === 200) return input({ moveZ: 1, jump: true })
+      if (t === 80 || t === 100 || t === 130 || t === 160 || t === 200) return input({ moveZ: 1, dive: true })
       return FORWARD
     }
     const first = new Map<number, number>()

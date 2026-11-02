@@ -26,6 +26,7 @@ export interface PlayerSample {
   vel: Vec3
   pos: Vec3
   /** Belly-slide speed (m/s); 0 until M4 adds the slide states. */
+  strokeTimer?: number
   slideSpeed: number
   /** Carried object count; 0 until M4 adds the carry states. */
   carry: number
@@ -139,7 +140,7 @@ export function diffSamples(prev: MatchSample | null, next: MatchSample): SoundE
         clamp(impact / LAND_FULL_MPS, MIN_STRENGTH, 1))
     }
     if (b.mode === CharMode.dive && a.mode !== CharMode.dive) add('move.dive')
-    if (b.slideSpeed > 0 && b.slideSpeed - a.slideSpeed >= SWIM_STROKE_MPS) add('move.swim')
+    if ((b.strokeTimer ?? 0) > (a.strokeTimer ?? 0) || (b.strokeTimer === undefined && b.slideSpeed > 0 && b.slideSpeed - a.slideSpeed >= SWIM_STROKE_MPS)) add('move.swim')
     if (b.mode === CharMode.stunned && a.mode !== CharMode.stunned) add(stunId(next, p))
     if (b.mode === CharMode.grabbing && a.mode !== CharMode.grabbing) add('move.grab')
     if (a.mode === CharMode.grabbing && b.mode !== CharMode.grabbing) add('move.release')
@@ -276,6 +277,7 @@ export function copySample(from: MatchSample, out: MatchSample | null): MatchSam
     slot.pos.x = a.pos.x
     slot.pos.y = a.pos.y
     slot.pos.z = a.pos.z
+    slot.strokeTimer = a.strokeTimer
     slot.slideSpeed = a.slideSpeed
     slot.carry = a.carry
     slot.surface = a.surface
@@ -314,8 +316,9 @@ export function sampleMatch(sim: MatchSim, out: MatchSample, scratch: CharacterV
     const walk = walks[p] ?? (walks[p] = newWalkState())
     stepWalk(walk, scratch.vel, s.grounded)
     s.footDown = walkPose(walk).footDown
-    s.slideSpeed = 0
-    s.carry = 0
+    s.strokeTimer = scratch.strokeTimer
+    s.slideSpeed = scratch.mode === CharMode.slide ? scratch.slideSpeed ?? 0 : 0
+    s.carry = scratch.carry ?? 0
     s.surface = course === null ? 'normal' : surfaceUnder(sim, scratch.pos)
   }
   return out

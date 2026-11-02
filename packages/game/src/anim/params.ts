@@ -79,3 +79,10 @@ export function mapParams(obs: CharObservation, mem: ParamMemory, out?: PenguinP
   mem.primed = true
   return o
 }
+
+/** Feet scrabble faster than ground travel on ice; derived from the fixed-tick observation. */
+export function pedallingSpeed(obs: CharObservation): number {
+  const speed = Math.sqrt(obs.vel.x * obs.vel.x + obs.vel.z * obs.vel.z)
+  return obs.grounded && obs.surface === 'ice' && obs.mode === CharMode.ground && speed > 0.2
+    ? Math.min(8, Math.max(3, speed * 1.8)) : speed
+}

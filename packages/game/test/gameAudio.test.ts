@@ -267,3 +267,11 @@ test('music cues follow the screen and the phase, ambience plays and crowd follo
   done.observe(frame([], { phase: Phase.done }))
   assert.deepEqual(donePort.played.map((p) => p.id).filter((id) => id.startsWith('music.')), ['music.candy.podium'])
 })
+
+test('a capped belly stroke plays swim once from the sim timer', () => {
+  const audio = new GameAudio(recordingPort())
+  audio.observe(frame([player({ slideSpeed: 8, strokeTimer: 0 })]))
+  const events = audio.observe(frame([player({ slideSpeed: 8, strokeTimer: 18 })]))
+  assert.equal(events.filter(e => e.id === 'move.swim').length, 1)
+  assert.equal(audio.observe(frame([player({ slideSpeed: 8, strokeTimer: 17 })])).some(e => e.id === 'move.swim'), false)
+})

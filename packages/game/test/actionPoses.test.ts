@@ -6,6 +6,7 @@ import { ACTION_LAYER, actionPose } from '../src/anim/actionPoses.ts'
 import { WALK_LAYER, walkBones } from '../src/anim/walkCycle.ts'
 import { POSE_LAYERS } from '../src/anim/layers.ts'
 import { AnimDriver } from '../src/anim/driver.ts'
+import { pedallingSpeed } from '../src/anim/params.ts'
 import type { CharObservation } from '../src/anim/params.ts'
 
 const asset = JSON.parse(readFileSync(new URL('../../../assets/common/penguin.body.asset.json', import.meta.url), 'utf8'))
@@ -133,4 +134,14 @@ test('CPU action sheet renders seven labelled panels at 1500 by 600', async () =
       }
     }
   } finally { await rm(dir, { recursive: true, force: true }) }
+})
+
+test('ice pedalling advances feet faster than ground travel, dry walking keeps its speed', () => {
+  const dry = obs(CharMode.ground)
+  const ice = { ...dry, surface: 'ice' }
+  assert.equal(pedallingSpeed(dry), 3)
+  assert.ok(pedallingSpeed(ice) > 3)
+  const walk = WALK_LAYER.create(names)
+  walk.observe(ice)
+  assert.equal(walk.state.speed, pedallingSpeed(ice))
 })

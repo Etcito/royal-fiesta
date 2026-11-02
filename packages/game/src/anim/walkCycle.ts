@@ -3,7 +3,7 @@
 import { CharMode } from '@royal-fiesta/sim/character/constants'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { PoseLayer, PoseLayerInstance } from './layers.ts'
-import { GraphMode, graphMode, type CharObservation } from './params.ts'
+import { GraphMode, graphMode, pedallingSpeed, type CharObservation } from './params.ts'
 
 export const WALK = Object.freeze({
   strideM: 0.9, runStrideM: 1.6, walkSpeed: 3, runSpeed: 8, idleBelow: 0.2,
@@ -175,7 +175,8 @@ class WalkLayer implements WalkLayerInstance {
   get footDown(): -1 | 0 | 1 { return this.contact }
 
   observe(obs: CharObservation): void {
-    stepWalk(this.walk, obs.vel, obs.grounded)
+    const pedal = pedallingSpeed(obs)
+    stepWalk(this.walk, { x: 0, y: obs.vel.y, z: pedal }, obs.grounded)
     this.contact = walkPose(this.walk).footDown
     const locomotion = graphMode(obs.mode) === GraphMode.locomotion && obs.grounded
       && obs.mode !== CharMode.swim && (obs.carry ?? 0) === 0

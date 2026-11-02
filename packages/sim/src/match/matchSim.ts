@@ -4,7 +4,7 @@ import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { BotSystem } from '../bots/botSystem.ts'
 import { CharacterSystem } from '../character/system.ts'
 import type { CharState } from '../character/system.ts'
-import { regionOf } from '../course.ts'
+import { regionOf, surfaceOf } from '../course.ts'
 import type { ObstacleSpec, ResolvedCourse } from '../course.ts'
 import type { PlayerInput } from '../input.ts'
 import type { BodyRef, MechEvent, MechItem, MechanismView } from '../mechanismSpec.ts'
@@ -50,6 +50,10 @@ export interface CharacterView {
   status: number
   parked: boolean
   teleportTick: number
+  strokeTimer?: number
+  slideSpeed?: number
+  carry?: number
+  surface?: string
 }
 
 const MATCH_RNG_SALT = 0x6d617463
@@ -446,6 +450,12 @@ export class MatchSim implements Simulation<PlayerInput>, MechanismView {
     out.vel.z = st.vel.z
     out.facing.x = st.facing.x
     out.facing.z = st.facing.z
+    out.strokeTimer = st.strokeTimer
+    out.slideSpeed = st.slideSpeed
+    out.carry = st.carry
+    out.surface = st.groundBody != null
+      ? this.#mechanisms.spec()!.items[st.groundBody.item].bodies[st.groundBody.body].surface
+      : st.groundObstacle >= 0 ? surfaceOf(this.#obstacles.spec(st.groundObstacle)) : 'normal'
     out.mode = st.mode
     out.status = this.#round.status(p)
     out.parked = this.#chars.isParked(p)

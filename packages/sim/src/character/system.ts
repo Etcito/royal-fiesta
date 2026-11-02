@@ -667,26 +667,23 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
           fx = scratchH.x
           fz = scratchH.z
         }
-        if (surface === 'ice' || ny < 0.98) {
+        if (surface === 'ice' || ny < CHAR.slipperySlopeNy) {
           const along = mx * fx + mz * fz
           if (along > 0) slideSpeed += CHAR.slide.handPush * along * dt
         }
+        // Dive repeats the belly stroke at any speed; jump always stands up into a jump.
         if ((pressed & JUMP_BIT) !== 0) {
-          if (slideSpeed >= CHAR.slide.enterSpeed && this.#strokeTimer[p] === 0) {
-            slideSpeed += CHAR.slide.strokeImpulse
-            this.#strokeTimer[p] = CHAR.slide.strokeCooldownTicks
-            this.#jumpBuffer[p] = 0
-          } else if (slideSpeed < CHAR.slide.enterSpeed) {
-            vy = CHAR.jumpSpeed + base.y
-            this.#coyote[p] = 0
-            this.#jumpBuffer[p] = 0
-            mode = CharMode.air
-          } else {
-            // A press inside the stroke cooldown is consumed, not buffered into a later jump.
-            this.#jumpBuffer[p] = 0
-          }
+          vy = CHAR.jumpSpeed + base.y
+          this.#coyote[p] = 0
+          this.#jumpBuffer[p] = 0
+          mode = CharMode.air
+        } else if ((pressed & DIVE_BIT) !== 0 && this.#strokeTimer[p] === 0) {
+          if (surface === 'ice' || ny < CHAR.slipperySlopeNy) slideSpeed += CHAR.slide.strokeImpulse
+          this.#strokeTimer[p] = CHAR.slide.strokeCooldownTicks
         }
-        if (slideSpeed > CHAR.slide.maxSpeed) slideSpeed = CHAR.slide.maxSpeed
+        // A flat dry belly slide never beats walking, including on moving ground.
+        const cap = surface === 'ice' || ny < CHAR.slipperySlopeNy ? CHAR.slide.maxSpeed : CHAR.maxRun * tuning.maxRun
+        if (slideSpeed > cap) slideSpeed = cap
         vx = fx * slideSpeed + base.x
         vz = fz * slideSpeed + base.z
         this.#facingX[p] = fx

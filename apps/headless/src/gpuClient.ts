@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { cpSync, mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { packContent } from '../../../tools/content.ts'
 import { join } from 'node:path'
@@ -86,8 +86,11 @@ export async function publishDist(dist: string): Promise<string> {
   let stdout: string
   try {
     cpSync(dist, bundle, { recursive: true })
-    // Remove this bundled content when the CDN serves it.
-    packContent(join(bundle, 'content'))
+    // Remove this bundled content when the CDN serves it. A dist whose content the check already packed with its own
+    // load set (chromeCheck bakeAndPack: index.json is there) is published as it is: repacking it here WITHOUT a load
+    // set adds every mesh of the cache shared by all worktrees and MAMA pins (785 files, 268495360 bytes, over the
+    // 256 MiB page limit: runs 11326, 11329, 11331).
+    if (!existsSync(join(bundle, 'content', 'index.json'))) packContent(join(bundle, 'content'))
     stdout = await run(['publish', bundle], dist)
   } finally {
     rmSync(bundle, { recursive: true, force: true })

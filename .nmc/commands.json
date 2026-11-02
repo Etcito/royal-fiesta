@@ -125,14 +125,6 @@
     ]
   },
   {
-    "name": "m13-lobby-unload-local",
-    "command": "node --experimental-strip-types tools/chromeCheck.ts lobbyUnload --software --out out/m13/lobby-local",
-    "timeout_s": 1800,
-    "after": [
-      "m13-build"
-    ]
-  },
-  {
     "name": "m13-countdowns",
     "command": "node --experimental-strip-types tools/chromeCheck.ts countdowns --out out/m13/countdowns",
     "timeout_s": 1800,

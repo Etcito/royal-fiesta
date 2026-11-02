@@ -62,6 +62,11 @@ The browser plays it from a bake made at build time: `npm run audio:bake` (`tool
 
 Local runner cards and their commands live in `.nmc/commands.json`; judge inputs live under `.nmc/judge/`.
 
+Card commands never pass `--software` and never render on the CPU: a check op, a level thumbnail or a
+view render always goes to the Windows GPU client. The local SwiftShader route of `tools/chromeCheck.ts`
+is a manual debugging aid only, never a card command or proof; `m13-lobby-unload` (GPU) is the only
+lobby-unload command.
+
 ## Proofs
 
 Each milestone proof is a Node script run with `--experimental-strip-types`. Proof records are committed under `proofs/mN/`; captures and logs go to the untracked `out/`.

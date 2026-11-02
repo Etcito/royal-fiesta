@@ -206,6 +206,19 @@ test('command cards keep the dependency chain', () => {
   }
 })
 
+test('card commands render on the GPU client, never with --software or a local Chrome', () => {
+  const cards = JSON.parse(readFileSync(new URL('../../.nmc/commands.json', import.meta.url), 'utf8')) as {
+    name: string
+    command: string
+  }[]
+  for (const card of cards) {
+    assert.doesNotMatch(card.command, /--software|--use-angle=swiftshader|--enable-unsafe-swiftshader/, `${card.name} must render on the GPU client`)
+  }
+  const names = cards.map((card) => card.name)
+  assert.ok(names.includes('m13-lobby-unload'))
+  assert.ok(!names.includes('m13-lobby-unload-local'))
+})
+
 test('M3 inputs match the split, touch and remap capture contract', () => {
   const input = parseJudgeInput(m3Json(), M3_PATH)
   assert.ok('items' in input)

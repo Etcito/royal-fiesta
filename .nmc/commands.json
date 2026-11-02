@@ -166,5 +166,21 @@
     "after": [
       "m13-costume-dragon-suit-render"
     ]
+  },
+  {
+    "name": "m13-wardrobe-check",
+    "command": "env RF_MESH_JOBS=1 node --experimental-strip-types tools/chromeCheck.ts wardrobe --out out/m13/wardrobe",
+    "timeout_s": 1800,
+    "after": [
+      "m13-build"
+    ]
+  },
+  {
+    "name": "m13-wardrobe-sheet-judge",
+    "command": "python3 $NMC_JUDGE_CLIENT out/m13/wardrobe/sheet.png --description \"A contact sheet of labelled tiles, four per row, each showing the Royal Fiesta start screen with one cartoon penguin wearing a different cosmetic (hats, body suits, scarves or skirts, special items). Each tile's label names its cosmetic id and slot, the penguin is clearly visible, and the cosmetics visibly differ from tile to tile.\" --min-score 6",
+    "timeout_s": 300,
+    "after": [
+      "m13-wardrobe-check"
+    ]
   }
 ]

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, SCREENS, backPauses, flowAction, navGraph, navStates } from '../src/screens/nav.ts'
+import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, SCREENS, backPauses, backTogglesPause, flowAction, navGraph, navStates } from '../src/screens/nav.ts'
 import type { Action, NavEvent, Screen } from '../src/screens/nav.ts'
 import type { LoadProgress } from '../src/content.ts'
 
@@ -358,4 +358,16 @@ test('backPauses names exactly the screens where back opens pause', () => {
     assert.equal(nav.screen === 'pause' && s !== 'pause', pauses, s)
   }
   assert.equal(backPauses('result'), true)
+})
+
+// Resuming is the pause toggle's other half: an Escape on the pause menu must reach nav even mid-fade.
+test('backTogglesPause adds the pause menu, and back there resumes the paused screen', () => {
+  for (const s of SCREENS) assert.equal(backTogglesPause(s), s === 'pause' || backPauses(s), s)
+  const nav = new Nav()
+  nav.screen = 'result'
+  nav.live = true
+  assert.deepEqual(nav.dispatch(back), [Effect.pause])
+  assert.equal(backTogglesPause(nav.screen), true)
+  assert.deepEqual(nav.dispatch(back), [Effect.resume])
+  assert.equal(nav.screen, 'result')
 })

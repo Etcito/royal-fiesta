@@ -123,6 +123,11 @@ export function backPauses(s: Screen): boolean {
   return s === 'hub' || PAUSABLE.includes(s)
 }
 
+// Screens where back is the game's pause toggle: pausing, and resuming from the pause menu.
+export function backTogglesPause(s: Screen): boolean {
+  return s === 'pause' || backPauses(s)
+}
+
 export function isGameScreen(s: Screen): s is GameScreen {
   return (GAME_SCREENS as readonly Screen[]).includes(s)
 }

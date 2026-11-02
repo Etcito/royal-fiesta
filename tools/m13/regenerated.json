@@ -1,0 +1,277 @@
+[
+  {
+    "asset": "assets/candy/candy.banner.asset.json",
+    "path": "assets/candy/candy.banner.mesh",
+    "ms": 2083.032405
+  },
+  {
+    "asset": "assets/candy/candy.bounce-pad.asset.json",
+    "path": "assets/candy/candy.bounce-pad.mesh",
+    "ms": 2270.8542000000007
+  },
+  {
+    "asset": "assets/candy/candy.checkpoint-gate.asset.json",
+    "path": "assets/candy/candy.checkpoint-gate.mesh",
+    "ms": 4426.488799999999
+  },
+  {
+    "asset": "assets/candy/candy.cloud.asset.json",
+    "path": "assets/candy/candy.cloud.mesh",
+    "ms": 1757.752805
+  },
+  {
+    "asset": "assets/candy/candy.conveyor-belt.asset.json",
+    "path": "assets/candy/candy.conveyor-belt.mesh",
+    "ms": 12880.637766
+  },
+  {
+    "asset": "assets/candy/candy.finish-arch.asset.json",
+    "path": "assets/candy/candy.finish-arch.mesh",
+    "ms": 15171.000676000003
+  },
+  {
+    "asset": "assets/candy/candy.floor-disc.asset.json",
+    "path": "assets/candy/candy.floor-disc.mesh",
+    "ms": 6225.494577000005
+  },
+  {
+    "asset": "assets/candy/candy.floor-tile.asset.json",
+    "path": "assets/candy/candy.floor-tile.mesh",
+    "ms": 3805.442685000002
+  },
+  {
+    "asset": "assets/candy/candy.hot-air-balloon.asset.json",
+    "path": "assets/candy/candy.hot-air-balloon.mesh",
+    "ms": 27293.043407000005
+  },
+  {
+    "asset": "assets/candy/candy.mech-crane.asset.json",
+    "path": "assets/candy/candy.mech-crane.mesh",
+    "ms": 1491.3688700000057
+  },
+  {
+    "asset": "assets/candy/candy.mech-door.asset.json",
+    "path": "assets/candy/candy.mech-door.mesh",
+    "ms": 1681.8110670000024
+  },
+  {
+    "asset": "assets/candy/candy.mech-lever.asset.json",
+    "path": "assets/candy/candy.mech-lever.mesh",
+    "ms": 784.1527840000053
+  },
+  {
+    "asset": "assets/candy/candy.mech-piston.asset.json",
+    "path": "assets/candy/candy.mech-piston.mesh",
+    "ms": 2515.5236559999903
+  },
+  {
+    "asset": "assets/candy/candy.mech-plate.asset.json",
+    "path": "assets/candy/candy.mech-plate.mesh",
+    "ms": 1135.368089999989
+  },
+  {
+    "asset": "assets/candy/candy.mech-seesaw.asset.json",
+    "path": "assets/candy/candy.mech-seesaw.mesh",
+    "ms": 1423.8946869999927
+  },
+  {
+    "asset": "assets/candy/candy.mech-spring-pad.asset.json",
+    "path": "assets/candy/candy.mech-spring-pad.mesh",
+    "ms": 1721.557084999993
+  },
+  {
+    "asset": "assets/candy/candy.moving-platform.asset.json",
+    "path": "assets/candy/candy.moving-platform.mesh",
+    "ms": 3359.4581640000106
+  },
+  {
+    "asset": "assets/candy/candy.pendulum-hammer.asset.json",
+    "path": "assets/candy/candy.pendulum-hammer.mesh",
+    "ms": 1739.812745999996
+  },
+  {
+    "asset": "assets/candy/candy.plaza-fountain.asset.json",
+    "path": "assets/candy/candy.plaza-fountain.mesh",
+    "ms": 3223.8947999999946
+  },
+  {
+    "asset": "assets/candy/candy.podium-block.asset.json",
+    "path": "assets/candy/candy.podium-block.mesh",
+    "ms": 2182.098131999999
+  },
+  {
+    "asset": "assets/candy/candy.prompt-display.asset.json",
+    "path": "assets/candy/candy.prompt-display.mesh",
+    "ms": 1219.815029999998
+  },
+  {
+    "asset": "assets/candy/candy.queue-pad.asset.json",
+    "path": "assets/candy/candy.queue-pad.mesh",
+    "ms": 2572.7125820000074
+  },
+  {
+    "asset": "assets/candy/candy.ramp-deck.asset.json",
+    "path": "assets/candy/candy.ramp-deck.mesh",
+    "ms": 683.9693419999967
+  },
+  {
+    "asset": "assets/candy/candy.rotating-door.asset.json",
+    "path": "assets/candy/candy.rotating-door.mesh",
+    "ms": 6573.187693
+  },
+  {
+    "asset": "assets/candy/candy.seesaw-plank.asset.json",
+    "path": "assets/candy/candy.seesaw-plank.mesh",
+    "ms": 1724.7549610000133
+  },
+  {
+    "asset": "assets/candy/candy.slime-pool.asset.json",
+    "path": "assets/candy/candy.slime-pool.mesh",
+    "ms": 25815.08428400001
+  },
+  {
+    "asset": "assets/candy/candy.spinner-bar.asset.json",
+    "path": "assets/candy/candy.spinner-bar.mesh",
+    "ms": 13966.36895199999
+  },
+  {
+    "asset": "assets/candy/candy.sweeper-bar.asset.json",
+    "path": "assets/candy/candy.sweeper-bar.mesh",
+    "ms": 13398.320487999998
+  },
+  {
+    "asset": "assets/candy/candy.tower.asset.json",
+    "path": "assets/candy/candy.tower.mesh",
+    "ms": 51860.77881400002
+  },
+  {
+    "asset": "assets/candy/candy.wall-block.asset.json",
+    "path": "assets/candy/candy.wall-block.mesh",
+    "ms": 2069.4021800000046
+  },
+  {
+    "asset": "assets/common/costume.cloud-skirt.asset.json",
+    "path": "assets/common/costume.cloud-skirt.mesh",
+    "ms": 3330.114367000002
+  },
+  {
+    "asset": "assets/common/costume.disco-jacket.asset.json",
+    "path": "assets/common/costume.disco-jacket.mesh",
+    "ms": 5624.395442999987
+  },
+  {
+    "asset": "assets/common/costume.dragon-suit.asset.json",
+    "path": "assets/common/costume.dragon-suit.mesh",
+    "ms": 8456.712812999991
+  },
+  {
+    "asset": "assets/common/costume.fish-scarf.asset.json",
+    "path": "assets/common/costume.fish-scarf.mesh",
+    "ms": 13384.999252000009
+  },
+  {
+    "asset": "assets/common/costume.ghost-aura.asset.json",
+    "path": "assets/common/costume.ghost-aura.mesh",
+    "ms": 7103.746718999988
+  },
+  {
+    "asset": "assets/common/costume.golden-crown.asset.json",
+    "path": "assets/common/costume.golden-crown.mesh",
+    "ms": 50012.877156
+  },
+  {
+    "asset": "assets/common/costume.jester-hat.asset.json",
+    "path": "assets/common/costume.jester-hat.mesh",
+    "ms": 6451.71634100005
+  },
+  {
+    "asset": "assets/common/costume.jetpack.asset.json",
+    "path": "assets/common/costume.jetpack.mesh",
+    "ms": 10238.911590000032
+  },
+  {
+    "asset": "assets/common/costume.neon-sneakers.asset.json",
+    "path": "assets/common/costume.neon-sneakers.mesh",
+    "ms": 2644.197690000001
+  },
+  {
+    "asset": "assets/common/costume.pineapple-suit.asset.json",
+    "path": "assets/common/costume.pineapple-suit.mesh",
+    "ms": 58565.98339000001
+  },
+  {
+    "asset": "assets/common/costume.propeller-hat.asset.json",
+    "path": "assets/common/costume.propeller-hat.mesh",
+    "ms": 9434.59145899996
+  },
+  {
+    "asset": "assets/common/costume.sparkler-wand.asset.json",
+    "path": "assets/common/costume.sparkler-wand.mesh",
+    "ms": 33883.262931000034
+  },
+  {
+    "asset": "assets/common/penguin.body.asset.json",
+    "path": "assets/common/penguin.body.mesh",
+    "ms": 13667.509062999976
+  },
+  {
+    "asset": "assets/ice/ice.floe-platform.asset.json",
+    "path": "assets/ice/ice.floe-platform.mesh",
+    "ms": 1834.6739760000492
+  },
+  {
+    "asset": "assets/ice/ice.floor-tile.asset.json",
+    "path": "assets/ice/ice.floor-tile.mesh",
+    "ms": 1194.5874729999923
+  },
+  {
+    "asset": "assets/ice/ice.slide-gate.asset.json",
+    "path": "assets/ice/ice.slide-gate.mesh",
+    "ms": 9857.116957999999
+  },
+  {
+    "asset": "assets/ice/ice.wall-block.asset.json",
+    "path": "assets/ice/ice.wall-block.mesh",
+    "ms": 1440.8123190000188
+  },
+  {
+    "asset": "assets/jungle/jungle.crane-arm.asset.json",
+    "path": "assets/jungle/jungle.crane-arm.mesh",
+    "ms": 2133.0784289999865
+  },
+  {
+    "asset": "assets/jungle/jungle.floor-tile.asset.json",
+    "path": "assets/jungle/jungle.floor-tile.mesh",
+    "ms": 1619.4862219999777
+  },
+  {
+    "asset": "assets/jungle/jungle.vine-bridge.asset.json",
+    "path": "assets/jungle/jungle.vine-bridge.mesh",
+    "ms": 8505.188040999987
+  },
+  {
+    "asset": "assets/jungle/jungle.wall-block.asset.json",
+    "path": "assets/jungle/jungle.wall-block.mesh",
+    "ms": 3249.9315859999624
+  },
+  {
+    "asset": "assets/neon/neon.floor-tile.asset.json",
+    "path": "assets/neon/neon.floor-tile.mesh",
+    "ms": 387.22409900004277
+  },
+  {
+    "asset": "assets/neon/neon.laser-door.asset.json",
+    "path": "assets/neon/neon.laser-door.mesh",
+    "ms": 380.8330979999737
+  },
+  {
+    "asset": "assets/neon/neon.piston-block.asset.json",
+    "path": "assets/neon/neon.piston-block.mesh",
+    "ms": 1630.1554929999984
+  },
+  {
+    "asset": "assets/neon/neon.wall-block.asset.json",
+    "path": "assets/neon/neon.wall-block.mesh",
+    "ms": 377.5636989999912
+  }
+]

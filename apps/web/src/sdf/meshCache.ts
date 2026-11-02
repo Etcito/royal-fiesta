@@ -6,7 +6,7 @@ import { RefusalError } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset } from './mamaApi.ts'
 
 // Keep in sync with MAMA core/game/mesh-file.ts; tested by tools/test/savedMeshes.test.ts.
-export const MESH_COMPATIBILITY = 'format:1;algorithm:2'
+export const MESH_COMPATIBILITY = 'format:1;algorithm:3'
 
 const DB_NAME = 'royal-fiesta-mesh'
 const STORE_NAME = 'meshes'

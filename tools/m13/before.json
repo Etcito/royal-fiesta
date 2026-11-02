@@ -1,0 +1,9 @@
+{
+  "file": "/tmp/m13-penguin-before.mesh",
+  "vertices": 4664,
+  "distinctPositions": 1434,
+  "distinctPositionNormalMaterial": 1668,
+  "differingWeightGroups": 975,
+  "maxWeightDelta": 0.17000001668930054,
+  "boundaryEdges": 0
+}

@@ -1,0 +1,9 @@
+{
+  "file": "assets/common/penguin.body.mesh",
+  "vertices": 1668,
+  "distinctPositions": 1434,
+  "distinctPositionNormalMaterial": 1668,
+  "differingWeightGroups": 0,
+  "maxWeightDelta": 0,
+  "boundaryEdges": 0
+}

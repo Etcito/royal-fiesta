@@ -1,0 +1,253 @@
+{
+  "file": "/tmp/m13-penguin-before.mesh",
+  "vertices": 4664,
+  "distinctPositions": 1434,
+  "differingWeightGroups": 975,
+  "maxWeightDelta": 0.17000001668930054,
+  "boundaryEdges": 0,
+  "maxGap": 0.04492894813210524,
+  "animatedBoundaryMax": 3080,
+  "epsilon": 1e-7,
+  "clips": [
+    {
+      "clip": "idle",
+      "ticks": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        75,
+        90,
+        105,
+        120
+      ],
+      "maxGap": 0.005905300619308236,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "waddle",
+      "ticks": [
+        0,
+        6,
+        12,
+        18,
+        24,
+        30,
+        36,
+        42,
+        48
+      ],
+      "maxGap": 0.014017037576658604,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "run",
+      "ticks": [
+        0,
+        3,
+        6,
+        9,
+        12,
+        15,
+        18,
+        21,
+        24
+      ],
+      "maxGap": 0.03326987604493598,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "jump",
+      "ticks": [
+        0,
+        4,
+        8,
+        11,
+        15,
+        19,
+        23,
+        26,
+        30
+      ],
+      "maxGap": 0.026925220696182074,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "fall",
+      "ticks": [
+        0,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28,
+        32
+      ],
+      "maxGap": 0.02442922256658236,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "dive",
+      "ticks": [
+        0,
+        3,
+        6,
+        9,
+        12,
+        15,
+        18,
+        21,
+        24
+      ],
+      "maxGap": 0.03313264291691028,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "bellySlide",
+      "ticks": [
+        0,
+        5,
+        9,
+        14,
+        18,
+        23,
+        27,
+        32,
+        36
+      ],
+      "maxGap": 0.041770771424796634,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "handPush",
+      "ticks": [
+        0,
+        3,
+        6,
+        9,
+        12,
+        15,
+        18,
+        21,
+        24
+      ],
+      "maxGap": 0.01815081534777538,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "grab",
+      "ticks": [
+        0,
+        3,
+        6,
+        9,
+        12,
+        15,
+        18,
+        21,
+        24
+      ],
+      "maxGap": 0.036163597765544696,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "hang",
+      "ticks": [
+        0,
+        6,
+        12,
+        18,
+        24,
+        30,
+        36,
+        42,
+        48
+      ],
+      "maxGap": 0.032671793465262125,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "climbUp",
+      "ticks": [
+        0,
+        9,
+        18,
+        27,
+        36,
+        45,
+        54,
+        63,
+        72
+      ],
+      "maxGap": 0.0331935435419771,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "emote.wave",
+      "ticks": [
+        0,
+        12,
+        24,
+        36,
+        48,
+        60,
+        72,
+        84,
+        96
+      ],
+      "maxGap": 0.022743795501672947,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "emote.dance",
+      "ticks": [
+        0,
+        12,
+        24,
+        36,
+        48,
+        60,
+        72,
+        84,
+        96
+      ],
+      "maxGap": 0.04492894813210524,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "emote.cheer",
+      "ticks": [
+        0,
+        14,
+        27,
+        41,
+        54,
+        68,
+        81,
+        95,
+        108
+      ],
+      "maxGap": 0.027701590989898946,
+      "boundaryEdgesMax": 3080
+    },
+    {
+      "clip": "emote.laugh",
+      "ticks": [
+        0,
+        12,
+        24,
+        36,
+        48,
+        60,
+        72,
+        84,
+        96
+      ],
+      "maxGap": 0.026554533525802778,
+      "boundaryEdgesMax": 3080
+    }
+  ]
+}

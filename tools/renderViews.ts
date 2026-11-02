@@ -37,7 +37,7 @@ export function viewCamera(bounds: { min: V3; max: V3 }, yawDeg: number): Camera
   const flat = ext[1] < 0.3 * Math.max(ext[0], ext[2])
   const rise = flat ? dist * Math.tan(30 * Math.PI / 180) : 0.25 * ext[1]
   const position: V3 = [target[0] + dist * Math.sin(yaw), target[1] + rise, target[2] + dist * Math.cos(yaw)]
-  return { position, target, fovYDeg: 30, ortho: false, orthoHeight: 0 }
+  return { position, target, fovYDeg: 30, ortho: false, orthoHeight: 1 }  // unused by a perspective camera; the GPU render job requires > 0 (the Node renderer accepted 0)
 }
 
 export interface Rgba { width: number; height: number; data: Uint8Array }

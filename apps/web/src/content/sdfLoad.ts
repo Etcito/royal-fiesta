@@ -174,6 +174,17 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   mark('MAMA meshing / cache')
   onProgress({ phase: 'done', done: assets.length, total: assets.length, label: 'done' })
 
+  // The check harness (tools/chromeCheck.ts) returns window.__nmcCheck with every result: the proof that a load
+  // took its meshes from the saved .mesh files and ran no mesher in the browser.
+  const checkState = (globalThis as { __nmcCheck?: Record<string, unknown> }).__nmcCheck
+  if (checkState !== undefined) {
+    const before = (checkState.meshLoad ?? { browserMeshingJobs: 0, meshFile: 0, loads: 0 }) as { browserMeshingJobs: number; meshFile: number; loads: number }
+    checkState.meshLoad = {
+      browserMeshingJobs: before.browserMeshingJobs + browserMeshingJobs,
+      meshFile: before.meshFile + (meshFileStats.hits - fileBefore.hits),
+      loads: before.loads + 1,
+    }
+  }
   const meshedLines = ids.map((id) => {
     const m = meshed.get(id)
     return m === undefined ? `${id}|failed|0|0|-` : `${id}|${m.mesher}|${m.parts}|${m.triangles}|${source.get(id)}`

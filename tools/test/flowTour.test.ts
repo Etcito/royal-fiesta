@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { flowTourInput } from '../flowTour.ts'
 
-test('flow tour render input matches the game op and its ordered seven screens', () => {
-  const screens = ['start', 'vote', 'countdown', 'round', 'result', 'elimShow', 'endScreen']
+test('flow tour render input matches the game op and its ordered six screens', () => {
+  const screens = ['start', 'vote', 'countdown', 'round', 'elimShow', 'endScreen']
   assert.deepEqual(flowTourInput(), {
     page: 'game', op: 'flowTour', input: { width: 1920, height: 1080 }, screens,
   })

@@ -96,7 +96,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   mark('Course and referenced asset load')
   const costumes = (await browserContentIndex()).assets.map(e => e.id).filter(id => id.startsWith('costume.'))
   const ids = courseId === undefined ? assetSet(courses, byId, profile, costumes)
-    : courseAssetSet(courses, courseId)
+    : [...new Set([...courseAssetSet(courses, courseId), ...costumes])]
   const resolver = browserGameAssets()
   const assets: GameAsset[] = []
   for (let i = 0; i < ids.length; i++) {

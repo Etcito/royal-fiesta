@@ -94,8 +94,7 @@ const TOUR: readonly Leg[] = [
   { acts: [{ waitMs: 1200 }, { key: 'ArrowRight' }, { key: 'Enter' }], to: 'vote', current: true, capture: true, timeoutS: 10 },
   { acts: [], to: 'countdown', capture: true, timeoutS: 120 },
   { acts: [], to: 'round', capture: true, timeoutS: 120 },
-  { acts: [], to: 'result', capture: true, timeoutS: 180 },
-  { acts: [], to: 'elimShow', capture: true, timeoutS: 60 },
+  { acts: [], to: 'elimShow', capture: true, timeoutS: 180 },
   // The next vote is voted with the real pad path (d-pad right, then A); the idle player is out after
   // round 0, so the following round is spectated.
   { acts: [], to: 'vote', capture: false, timeoutS: 120 },
@@ -118,7 +117,7 @@ const TOUR: readonly Leg[] = [
 export const TOUR_SCREENS: readonly string[] = TOUR.filter(leg => leg.capture).map(leg => leg.name ?? leg.to)
 
 // The M7 flow captures the GPU card renders: every new show screen, all of them tour captures.
-export const FLOW_TOUR_SCREENS: readonly string[] = ['start', 'vote', 'countdown', 'round', 'result', 'elimShow', 'endScreen']
+export const FLOW_TOUR_SCREENS: readonly string[] = ['start', 'vote', 'countdown', 'round', 'elimShow', 'endScreen']
 
 const FRAME_MS = 16
 // Game time per frame: real time on short screens, 3 ticks while game time must run (a round plays, a vote or

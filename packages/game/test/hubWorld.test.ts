@@ -12,6 +12,7 @@ import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { emptyMechanisms } from '@royal-fiesta/sim/mechanismSpec'
 import type { BodySpec } from '@royal-fiesta/sim/mechanismSpec'
 import { pose } from '@royal-fiesta/sim/vec'
+import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import { neutralInput } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
@@ -344,5 +345,88 @@ test('hub world: a character dropped above a mechanism spring pad lands on its m
     assert.equal(s.grounded, true)
     assert.deepEqual(s.groundBody, { item: 1, body: 1 })
     assert.ok(s.pos.y < startY - 2 && s.pos.y > 0.7, `landed y ${s.pos.y}, drop y ${startY}`)
+  } finally { hw.free() }
+})
+
+// Isolate player-to-player interaction from the fountain and mechanisms.
+function botPlaza(): ResolvedCourse {
+  return { ...plaza, spawns: [{ t: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 } }],
+    obstacles: [{ ...plaza.obstacles[0], t: { x: 0, y: -0.5, z: 0 }, s: { x: 1, y: 1, z: 1 },
+      colliders: [{ shape: 'cuboid', half: { x: 20, y: 0.5, z: 20 }, t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 } }] }], mechanisms: undefined }
+}
+
+test('offline hub bots: 0..8, repeatable wandering and actual bot view poses', () => {
+  for (const count of [0, 1, 8]) {
+    const a = new HubWorld(R, botPlaza(), 0, count, 42)
+    const b = new HubWorld(R, botPlaza(), 0, count, 42)
+    try {
+      assert.equal(a.botCount, count)
+      const before = a.botViews()
+      for (let tick = 0; tick < 360; tick++) {
+        a.step(neutralInput()); b.step(neutralInput())
+        assert.deepEqual(a.botViews(), b.botViews(), `count ${count}, tick ${tick}`)
+      }
+      const after = a.botViews()
+      assert.equal(after.length, count)
+      if (count) assert.ok(after.some((bot, i) => Math.hypot(bot.pos.x - before[i].pos.x, bot.pos.z - before[i].pos.z) > 0.5), 'bots wander')
+      after.forEach((bot, i) => assert.deepEqual(bot.pos, a.state(newState(), i + 1).pos))
+    } finally { a.free(); b.free() }
+  }
+  for (const count of [-1, 9, 1.5]) assert.throws(() => new HubWorld(R, plaza, 0, count), RefusalError)
+})
+
+test('offline hub bot can be caught and held with the existing grab action', () => {
+  const hw = new HubWorld(R, botPlaza(), 0, 1, 42)
+  try {
+    let held = 0
+    for (let tick = 0; tick < 240; tick++) {
+      const human = hw.state(newState()), bot = hw.state(newState(), 1)
+      const dx = bot.pos.x - human.pos.x, dz = bot.pos.z - human.pos.z, d = Math.hypot(dx, dz)
+      hw.step({ ...move(dx / Math.max(d, 0.001), dz / Math.max(d, 0.001)), grab: true })
+      if (hw.state(newState()).mode === CharMode.grabbing) held++
+    }
+    assert.ok(held >= 10, `grabbed for ${held} ticks`)
+  } finally { hw.free() }
+})
+
+test('offline hub bot is physically pushed by a player dive', () => {
+  const dive = new HubWorld(R, botPlaza(), 0, 1, 42)
+  const walk = new HubWorld(R, botPlaza(), 0, 1, 42)
+  try {
+    let pushed = 0
+    let impactSpeed = 0
+    for (let tick = 0; tick < 120; tick++) {
+      const human = dive.state(newState()), bot = dive.state(newState(), 1)
+      const dx = bot.pos.x - human.pos.x, dz = bot.pos.z - human.pos.z, d = Math.hypot(dx, dz)
+      const input = move(dx / Math.max(d, 0.001), dz / Math.max(d, 0.001))
+      dive.step({ ...input, dive: tick === 18 })
+      walk.step(input)
+      const hit = dive.state(newState(), 1), control = walk.state(newState(), 1)
+      impactSpeed = Math.max(impactSpeed, Math.hypot(hit.vel.x, hit.vel.z))
+      pushed = Math.max(pushed, Math.hypot(hit.pos.x - control.pos.x, hit.pos.z - control.pos.z))
+    }
+    assert.ok(impactSpeed > CHAR.maxRun * 0.5 + 1, `collision accelerates bot beyond its own steering speed: ${impactSpeed}`)
+    assert.ok(pushed > 0.5, `dive changed bot displacement by ${pushed} m`)
+  } finally { dive.free(); walk.free() }
+})
+
+test('offline hub bots respawn after falling below the kill plane', () => {
+  const tiny = botPlaza()
+  // An unsupported bot falls; only the player has a small landing platform.
+  tiny.obstacles[0].colliders = [{ shape: 'cuboid', half: { x: 0.6, y: 0.5, z: 0.6 }, t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 } }]
+  const hw = new HubWorld(R, tiny, 0, 1, 42)
+  try {
+    let respawned = false
+    for (let tick = 0; tick < 240; tick++) {
+      hw.step(neutralInput())
+      const bot = hw.state(newState(), 1)
+      if (bot.teleportTick > 0) {
+        assert.ok(Math.abs(bot.pos.y - (CHAR.halfHeight + CHAR.radius + 0.01)) < 0.01)
+        assert.ok(Math.hypot(bot.pos.x, bot.pos.z - 2.2) < 0.01)
+        respawned = true
+        break
+      }
+    }
+    assert.ok(respawned)
   } finally { hw.free() }
 })

@@ -1,3 +1,4 @@
+import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 // One networked ZoneMatch drawn by this page: the match itself is created by the caller over a real
 // transport and passed in on every update. Seats in this peer's local domains are near (SceneView);
 // every other seat comes from the display-only FAR stream, posed by the same SceneView. The match is never
@@ -34,6 +35,7 @@ export interface ZoneNetSceneOptions {
   bean?: PrimsAsset
   /** Normal-match skin and animation graph for all characters. */
   skinned?: SkinnedCharacter
+  look?: () => WornLook | null
   costumes?: CostumeSet
   wardrobe?: (player: number) => CostumeSet | null | undefined
   dressing?: CourseDressing
@@ -104,7 +106,7 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
   const scene = new SceneView({
     port, viewport: 0, localPlayer: localSeat, assets, bean,
     character, skinned: options.skinned, dressing: options.dressing,
-    costumes: options.costumes, wardrobe: options.wardrobe,
+    look: options.look, costumes: options.costumes, wardrobe: options.wardrobe,
     // Third-person orbit around the local seat, so the near pack and nearby far rows stay in frame.
     camera: (focus, dt, clip) => orbit.pose(focus, dt, clip),
   })

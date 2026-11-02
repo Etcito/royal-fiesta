@@ -201,3 +201,10 @@ test('FiestaWorld has no hash property', () => {
   assert.equal((world as unknown as Record<string, unknown>).hash, undefined)
   world.free()
 })
+
+test('local worlds can opt into nine physical characters without changing the default eight-seat limit', () => {
+  assert.throws(() => new FiestaWorld(R, { playerCount: 9, systems: [] }), RefusalError)
+  const world = new FiestaWorld(R, { playerCount: 9, maxPlayers: 9, systems: [] })
+  try { world.step(Array(9).fill(0)); assert.equal(world.tick, 1) } finally { world.free() }
+  for (const maxPlayers of [0, 61, 1.5]) assert.throws(() => new FiestaWorld(R, { playerCount: 1, maxPlayers, systems: [] }), RefusalError)
+})

@@ -1,3 +1,5 @@
+import { WornMounts } from './wornLook.ts'
+import type { WornLook } from './wornLook.ts'
 // Binds a MatchSim to a RenderPort: bean, obstacle and mechanism instances and the follow camera.
 // View side only: reads the sim view API and the smoother, never writes either.
 import { courseFrame, roundReady } from './roundLoad.ts'
@@ -56,6 +58,8 @@ export interface SceneViewOptions {
   // poses it from the skin's rig and clips. Ports without skinning keep the rigid character.
   skinned?: SkinnedCharacter
   // Costumes worn by every character, by rig attach slot; the wardrobe hook replaces them per character.
+  look?: () => WornLook | null
+  lookPlayer?: number
   costumes?: CostumeSet
   wardrobe?: (player: number) => CostumeSet | null | undefined
 }
@@ -293,6 +297,8 @@ const IDENTITY4 = mat4([0, 0, 0], UNIT_QUAT, [1, 1, 1])
 interface WornCostume { spec: CostumeSpec; instance: number }
 
 export class SceneView {
+  private lookMounts: WornMounts | null = null
+  private lookColour = -1
   private readonly opts: SceneViewOptions
   private readonly port: RenderPort
   private readonly beanAsset: number
@@ -484,11 +490,25 @@ export class SceneView {
     const c = this.view
     const d = this.shown
     const local = this.opts.localPlayer
+    const lookPlayer = this.opts.lookPlayer ?? local
     let camPos: { x: number; y: number; z: number } | null = null
     let camFacing = { x: 0, z: 1 }
     let onLocal = false
     for (let p = 0; p < players; p++) {
       sim.character(p, c)
+      if (p === lookPlayer && this.opts.look !== undefined) {
+        const look = this.opts.look()
+        this.lookMounts ??= new WornMounts(port)
+        this.lookMounts.sync(look)
+        this.lookMounts.setVisible(!c.parked)
+        if (look !== null && look.colour !== this.lookColour) {
+          port.destroyInstance(this.beans[p])
+          this.beans[p] = port.createInstance(this.beanAsset, PALETTE[look.colour])
+          port.setVisible(this.beans[p], !c.parked)
+          this.posed[p] = undefined
+          this.lookColour = look.colour
+        }
+      }
       if (c.parked) {
         this.show(p, false)
         continue
@@ -501,6 +521,7 @@ export class SceneView {
       const fz = this.facing[p * 2 + 1]
       const half = Math.atan2(fx, fz) / 2
       port.setTransform(this.beans[p], [d[0], d[1], d[2]], [0, Math.sin(half), 0, Math.cos(half)], UNIT)
+      if (p === lookPlayer) this.lookMounts?.draw([d[0], d[1], d[2]], [0, Math.sin(half), 0, Math.cos(half)], UNIT)
       // Submits the pose retained for the last observed tick; reading it never steps the graph.
       const posed = this.anim?.pose(p)
       if (posed !== undefined && posed !== this.posed[p]) {
@@ -565,6 +586,9 @@ export class SceneView {
   }
 
   dispose(): void {
+    this.lookMounts?.dispose()
+    this.lookMounts = null
+    this.lookColour = -1
     this.unobserve?.()
     this.unobserve = null
     this.stepSim = null

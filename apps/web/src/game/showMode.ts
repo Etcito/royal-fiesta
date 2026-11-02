@@ -1,3 +1,4 @@
+import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { checkAwait } from './checkProgress.ts'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
@@ -26,6 +27,7 @@ const DEFAULT_VOTE_MS = 5000
 const DEFAULT_INTERMISSION_MS = 12000
 
 export interface ShowModeOptions {
+  look?: WornLook | null
   R: RapierModule
   /** The same camera that receives the App look inputs. */
   orbit?: OrbitCamera
@@ -177,6 +179,7 @@ export class ShowMode {
       const prepared = await checkAwait(`round ${index}: render port`, () => prepareZoneNetScene({
         canvas: this.canvas, orbit: this.options.orbit, course: round.plan.course, createPort: content.createPort,
         assets: content.assets, bean: content.bean,
+        look: round.seatOf.includes(0) ? () => this.options.look ?? null : undefined,
         character: content.character, skinned: content.skinned, dressing: content.dressing,
       }))
       if (this.disposed || this.error !== null || this.index !== index) { prepared.dispose(); return }

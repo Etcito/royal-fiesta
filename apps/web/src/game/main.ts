@@ -1,3 +1,6 @@
+import { DEFAULT_LOBBY_BOTS } from '@royal-fiesta/game/hub/hubBots'
+import { playerLook } from '../play/playerLook.ts'
+import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import { checkAwait, checkPhase } from './checkProgress.ts'
 // game.html entry: start -> lobby -> offline show -> start; course and network games keep their V1 flow.
 // The hub and its matches run in-page with bots, or on the relay when ?server= is given; ?clients=2..4 runs
@@ -95,7 +98,6 @@ import { mountStartScreen } from '../screens/startScreen.ts'
 import type { StartArt, StartScreenView } from '../screens/startScreen.ts'
 import { mountVote } from '../screens/vote.ts'
 import { mountCountdown } from '../screens/countdown.ts'
-import { mountRoundResults } from '../screens/roundResults.ts'
 import { mountElimShow } from '../screens/elimShow.ts'
 import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
@@ -114,6 +116,7 @@ interface Query {
   hub: string | 'new'
   name: string
   colour: number
+  lobbybots: number
   party: 2 | 3 | 4
   clients: number
   touch: 0 | 1
@@ -162,6 +165,7 @@ function parseQuery(search: string): Query {
   const name = q.get('name') ?? 'Bean'
   if (name.length < 1 || name.length > 24) refuse('query', 'name', `has ${name.length} characters; choose a name of 1..24 characters`)
   const colour = intParam(q, 'colour', Math.floor(Math.random() * 8), 0, 7)
+  const lobbybots = intParam(q, 'lobbybots', DEFAULT_LOBBY_BOTS, 0, 8)
   const party = intParam(q, 'party', 4, 2, 4) as 2 | 3 | 4
   const clients = intParam(q, 'clients', 1, 1, 4)
   const touch = intParam(q, 'touch', 0, 0, 1) as 0 | 1
@@ -175,7 +179,7 @@ function parseQuery(search: string): Query {
   if (course !== null && server !== null) refuse('query', 'course', 'plays in-page with bots; drop ?server= or ?course=')
   if (clients > 1 && server !== null) refuse('query', 'clients', `${clients} in-page clients use a LoopbackRelay; drop ?server= or ?clients=`)
   if (clients > 1 && course !== null) refuse('query', 'clients', `?course= plays one client with bots; drop ?clients= or ?course=`)
-  return { course, community, chash, server, hub, name, colour, party, clients, touch, wait, test }
+  return { course, community, chash, server, hub, name, colour, lobbybots, party, clients, touch, wait, test }
 }
 
 // A coarse pointer (a phone or tablet) uses the on-screen controls; ?touch=1 asks for them on any device.
@@ -409,6 +413,7 @@ class ShowAdapter implements Mode {
 }
 
 interface ModeCtx {
+  look?: () => WornLook | null
   loaded: Loaded; q: Query; orbit: OrbitCamera; prepared?: boolean
   // Touch controls drive seat 0 and hold it: the local table then has room for one seat only.
   touch: boolean
@@ -451,7 +456,7 @@ class MatchPresenter {
     this.scene = new SceneView({
       port: ports[0], viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
       character: content.character(), dressing: content.dressing(), camera: (focus, dt, clip) => orbit.pose(focus, dt, clip),
-      loadingPaint: !this.c.prepared, skinned: skinnedCharacterOf(content),
+      look: this.c.look, loadingPaint: !this.c.prepared, skinned: skinnedCharacterOf(content),
     })
   }
 
@@ -563,7 +568,7 @@ class LocalPresenter {
         port: ports[0], viewport: k, localPlayer: k, assets: name => content.assets(name), bean: content.character(),
         character: content.character(), dressing: content.dressing(),
         camera: k === 0 ? (focus, dt, clip) => orbit.pose(focus, dt, clip) : undefined,
-        loadingPaint: !this.c.prepared, skinned: skinnedCharacterOf(content),
+        look: this.c.look, lookPlayer: 0, loadingPaint: !this.c.prepared, skinned: skinnedCharacterOf(content),
       }))
     }
   }
@@ -672,11 +677,11 @@ class LocalMode implements Mode {
     if (c.touch) this.seats.join('touch')
     this.names = playerNames(0, c.q.name)
     this.countdown = new LocalCountdown(c.q.wait)
-    this.hub = new HubWorld(R, content.hub(), 0)
+    this.hub = new HubWorld(R, content.hub(), 0, c.q.lobbybots)
     this.hubLayer = new SceneLayer(ports[0])
     this.matchLayer = new SceneLayer(ports[0])
     this.hubView = new HubView(this.hubLayer.port, 0, name => content.assets(name), content.character(), content.hub(), {
-      orbit: c.orbit, character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content),
+      look: c.look, orbit: c.orbit, character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content),
     })
     this.presenter = new LocalPresenter({ ...c, prepared: true, loaded: { ...c.loaded, ports: [this.matchLayer.port] } })
     if (!this.startsShow) this.prepareMatch()
@@ -764,7 +769,7 @@ class LocalMode implements Mode {
     renderFrame(this.matchLayer.port, () => ports[0].render())
     this.matchLayer.setVisible(false)
     this.hubLayer.setVisible(true)
-    this.hubView.update(this.hub.state(this.local), this.c.q.colour, [], this.hub.tick, 0, this.hub.emote(performance.now()))
+    this.hubView.update(this.hub.state(this.local), this.c.q.colour, this.hub.botViews(), this.hub.tick, 0, this.hub.emote(performance.now()))
     ports[0].render()
   }
 
@@ -784,7 +789,7 @@ class LocalMode implements Mode {
     if (this.match === null) {
       this.matchLayer.setVisible(false)
       this.hubLayer.setVisible(true)
-      this.hubView.update(this.hub.state(this.local), this.c.q.colour, [], this.hub.tick, 0, this.hub.emote(performance.now()))
+      this.hubView.update(this.hub.state(this.local), this.c.q.colour, this.hub.botViews(), this.hub.tick, 0, this.hub.emote(performance.now()))
       ports[0].render()
       await ports[0].capture()
     }
@@ -799,7 +804,7 @@ class LocalMode implements Mode {
     this.match = null
     // Back at the spawn, off the queue pad, as PlayFlow does after a match.
     this.hub.free()
-    this.hub = new HubWorld(this.c.loaded.R, this.c.loaded.content.hub(), 0)
+    this.hub = new HubWorld(this.c.loaded.R, this.c.loaded.content.hub(), 0, this.c.q.lobbybots)
     this.pad = new QueuePad(1)
     this.countdown.reset()
     this.hubAcc = 0
@@ -860,7 +865,7 @@ class LocalMode implements Mode {
         }
       }
     }
-    this.hubView.update(this.hub.state(this.local), this.c.q.colour, [], this.hub.tick, f.dt, this.hub.emote(now))
+    this.hubView.update(this.hub.state(this.local), this.c.q.colour, this.hub.botViews(), this.hub.tick, f.dt, this.hub.emote(now))
     return 'hub'
   }
 
@@ -1041,7 +1046,7 @@ class OnlineMode implements Mode {
     LobbyDiag.get().setRelay(relayHost(server))
     LobbyDiag.get().setConn('connecting')
     this.hubView = new HubView(ports[0], 0, name => content.assets(name), content.character(), content.hub(), {
-      orbit: c.orbit, character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content),
+      look: c.look, orbit: c.orbit, character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content),
     })
     this.presenter = new MatchPresenter(c)
     const canvas = c.loaded.canvases[0]
@@ -1762,7 +1767,7 @@ class App {
       if (q.server === null && q.clients === 1) {
         boot.enter('first frame (pipelines, capture)')
         wavedashProgress(0.93)
-        this.preparedLocal = new LocalMode({ loaded: this.loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) })
+        this.preparedLocal = new LocalMode({ look: () => this.wornLook(), loaded: this.loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) })
         await checkAwait('local scene pipelines and capture', () => this.preparedLocal!.ready())
       }
       try {
@@ -1975,7 +1980,7 @@ class App {
     const q = this.query
     if (loaded === null || q === null) return this.fail(refusal('game', 'start', 'the content is not loaded; retry the load'))
     this.stopMode()
-    const c: ModeCtx = { loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) }
+    const c: ModeCtx = { look: () => this.wornLook(), loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) }
     try {
       const pending = this.pendingRelay
       this.pendingRelay = null
@@ -2012,10 +2017,15 @@ class App {
   // The build default relay armed by Play online, consumed by the next startMode.
   private pendingRelay: string | null = null
 
+  private wornLook(): WornLook | null {
+    return playerLook(this.startModel, this.startArt)
+  }
+
   private async startShow(): Promise<void> {
     const loaded = this.loaded
     const q = this.query
     if (loaded === null || q === null) return
+    const look = this.wornLook()
     this.stopMode()
     // The show owns its own canvas and port: release the lobby (start view, hub, its assets and sound)
     // before it registers the first round's assets on its port.
@@ -2027,7 +2037,7 @@ class App {
     this.setLayout(1)
     try {
       const show = await ShowMode.create({
-        R: loaded.R, views: this.views, orbit: this.orbit,
+        R: loaded.R, views: this.views, orbit: this.orbit, look,
         seats: intParam(new URLSearchParams(this.search), new URLSearchParams(this.search).has('bots') ? 'bots' : 'seats', this.env.showSeats ?? 12, 2, 60),
         seed: Date.now(), localName: q.name,
         voteMs: q.test ? TEST_VOTE_MS : undefined,
@@ -2229,7 +2239,7 @@ class App {
     const stage = loaded.ports[0]
     const deps = {
       cue: (id: string): void => { if (id.startsWith('flow.crown-')) this.sound.cue(id) },
-      stage, character: loaded.content.character(), names: mode.name, localSeat: 0, parent: this.screens,
+      look: this.wornLook(), stage, character: loaded.content.character(), names: mode.name, localSeat: 0, parent: this.screens,
     }
     // The director calls this screen countdown during its load hold. Do not mount the countdown
     // renderer or draw the legacy sim countdown until worldReady has released that hold.
@@ -2246,10 +2256,6 @@ class App {
       } else if (screen === 'countdown' && models.countdown !== null) {
         const view = mountCountdown(this.host, models.countdown, deps)
         this.showView = { screen, update: () => view.update(mode.show.models!.countdown!), unmount: () => view.unmount() }
-      } else if (screen === 'result' && models.results !== null) {
-        const model = { round: mode.round, rows: models.results }
-        const view = mountRoundResults(this.host, model, deps)
-        this.showView = { screen, update: () => view.update(model), unmount: () => view.unmount() }
       } else if (screen === 'elimShow' && models.elimShow !== null) {
         // elimShowAt mutates its input's lastMs/grid. The director has already stepped its copy;
         // sharing it would consume every drop before the renderer can start its throw animation.
@@ -2266,9 +2272,9 @@ class App {
         this.showView = { screen, update: () => view.update(mode.show.models!.endScreen!, mode.elapsedMs), unmount: () => view.unmount() }
       } else if (screen === 'podium' && models.endScreen !== null) {
         const podium = new PodiumStage({
-          port: stage, viewport: 0, bean: deps.character, block: loaded.content.assets('wall-block'), layout: loaded.content.podium(),
+          look: place => models.endScreen!.podium[place]?.seat === 0 ? deps.look : null, port: stage, viewport: 0, bean: deps.character, block: loaded.content.assets('wall-block'), layout: loaded.content.podium(),
         })
-        // PodiumStage takes palette indices; keep the actual room seats for the name labels.
+        // Palette indices draw the podium; the look hook above uses the actual room seat.
         podium.show(models.endScreen.podium.map(p => p.seat % PALETTE.length))
         let lastMs = mode.elapsedMs
         this.showView = {

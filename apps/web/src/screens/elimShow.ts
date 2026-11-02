@@ -1,7 +1,9 @@
+import { WornMounts } from '@royal-fiesta/game/render/wornLook'
+import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 // The elimination show: up to 60 tinted beans on a fixed 10x6 stage, thrown out one at a time.
 import { elimShowAt, type ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
-import { seatTint } from '@royal-fiesta/game/render/palette'
+import { PALETTE, seatTint } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, QuatT, RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { UaaHost } from '../ui/uaaHost.ts'
@@ -12,6 +14,7 @@ export interface FlowDeps {
   character?: PrimsAsset
   names?: (seat: number) => string
   localSeat?: number
+  look?: WornLook | null
 }
 
 export type ElimShowInput = ElimShowModel & { roundName?: string }
@@ -84,6 +87,8 @@ export function mountElimShow(host: UaaHost, model: ElimShowInput, deps: FlowDep
   let lastMs = 0
   const stage = deps.stage
   const views: CellView[] = []
+  const mounts = stage === undefined ? null : new WornMounts(stage)
+  mounts?.sync(deps.look)
   let asset: number | null = null
 
   if (stage !== undefined && deps.character !== undefined) {
@@ -96,12 +101,14 @@ export function mountElimShow(host: UaaHost, model: ElimShowInput, deps: FlowDep
     const base = spot(cell.col, cell.row)
     const view: CellView = { seat: cell.seat, instance: null, base, phase: 'stay', startMs: 0 }
     if (asset !== null && stage !== undefined) {
-      const instance = stage.createInstance(asset, seatTint(cell.seat))
+      const instance = stage.createInstance(asset, cell.seat === (deps.localSeat ?? 0) && deps.look ? PALETTE[deps.look.colour] : seatTint(cell.seat))
       stage.setTransform(instance, base, IDENTITY, UNIT)
+      if (cell.seat === (deps.localSeat ?? 0)) mounts?.draw(base, IDENTITY, UNIT)
       view.instance = instance
     }
     if (cell.state === 'gone') {
       view.phase = 'hidden'
+      if (cell.seat === (deps.localSeat ?? 0)) mounts?.setVisible(false)
       if (view.instance !== null && stage !== undefined) stage.setVisible(view.instance, false)
     } else if (cell.state === 'drop') {
       view.phase = reduced ? 'shrink' : 'throw'
@@ -113,6 +120,7 @@ export function mountElimShow(host: UaaHost, model: ElimShowInput, deps: FlowDep
   for (const view of views) if (!bySeat.has(view.seat)) bySeat.set(view.seat, view)
 
   const hide = (view: CellView): void => {
+    if (view.seat === (deps.localSeat ?? 0)) mounts?.setVisible(false)
     if (view.phase === 'hidden') return
     view.phase = 'hidden'
     if (view.instance !== null && stage !== undefined) stage.setVisible(view.instance, false)
@@ -151,6 +159,7 @@ export function mountElimShow(host: UaaHost, model: ElimShowInput, deps: FlowDep
           const s = Math.max(0, 1 - elapsed / SHRINK_MS)
           if (view.instance !== null && stage !== undefined) {
             stage.setTransform(view.instance, view.base, IDENTITY, [s, s, s])
+            if (view.seat === (deps.localSeat ?? 0)) mounts?.draw(view.base, IDENTITY, [s, s, s])
           }
           continue
         }
@@ -164,12 +173,14 @@ export function mountElimShow(host: UaaHost, model: ElimShowInput, deps: FlowDep
         const y = view.base[1] + POP_M * Math.sin((pop * Math.PI) / 2) - (view.base[1] + POP_M - FALL_BELOW) * fall * fall
         if (view.instance !== null && stage !== undefined) {
           stage.setTransform(view.instance, [view.base[0], y, view.base[2]], yawQuat(u * SPIN_RAD), UNIT)
+          if (view.seat === (deps.localSeat ?? 0)) mounts?.draw([view.base[0], y, view.base[2]], yawQuat(u * SPIN_RAD), UNIT)
         }
       }
 
       present(host, next)
     },
     unmount() {
+      mounts?.dispose()
       for (const view of views) {
         if (view.instance !== null && stage !== undefined) stage.destroyInstance(view.instance)
         view.instance = null

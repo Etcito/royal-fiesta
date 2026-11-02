@@ -14,7 +14,7 @@ export interface ShowPort extends Pick<ZoneFullMatch, 'candidates' | 'show' | 'd
   readonly round: { readonly plan: { readonly index: number } } | null
 }
 
-type Phase = 'vote' | 'load' | 'countdown' | 'round' | 'results' | 'elimShow' | 'podium' | 'end'
+type Phase = 'vote' | 'load' | 'countdown' | 'round' | 'elimShow' | 'podium' | 'end'
 export interface ShowFrame {
   screen: GameScreen
   /** Only a selected round awaiting its scene may cover the UI with loading. */
@@ -65,7 +65,7 @@ export class ShowDirector {
   }
 
   worldReady(roundIndex: number): void {
-    // The next world may finish preparing while the previous results are still shown.
+    // The next world may finish preparing during the elimination presentation.
     // Retain that readiness until its load phase, while rejecting stale async completions.
     if (this.port.round?.plan.index === roundIndex) this.readyRound = roundIndex
   }
@@ -116,7 +116,7 @@ export class ShowDirector {
       this.enter('countdown')
       dt = 0
     }
-    const presenting = ['results', 'elimShow', 'podium', 'end'].includes(this.phase)
+    const presenting = ['elimShow', 'podium', 'end'].includes(this.phase)
     if (!presenting) {
       const rounds = this.port.show.rounds
       if (rounds.length > this.seenResults) {
@@ -124,7 +124,8 @@ export class ShowDirector {
         this.seenResults = rounds.length
         this.rows = resultRows(last, this.names, rounds.slice(0, -1))
         this.elimination = last.eliminated.length ? elimShow(last.ranking, last) : null
-        this.enter('results')
+        if (this.elimination !== null) this.enter('elimShow')
+        else this.afterRound()
         if (last.qualified.includes(this.localSeat)) sounds.push('flow.qualify')
         else if (last.eliminated.includes(this.localSeat)) sounds.push('flow.eliminate')
         dt = 0
@@ -158,9 +159,6 @@ export class ShowDirector {
     } else if (this.phase === 'countdown' && this.ms >= COUNTDOWN_MS) {
       this.enter('round')
       sounds.push('flow.round-start')
-    } else if (this.phase === 'results' && (this.ms >= 4000 || (action === 'confirm' && this.ms >= 1500))) {
-      if (this.elimination !== null) this.enter('elimShow')
-      else this.afterRound()
     } else if (this.phase === 'elimShow' && this.elimination !== null) {
       if (action === 'confirm') this.elimination = elimSkip(this.elimination, this.ms)
       const frame = elimShowAt(this.elimination, this.ms)
@@ -179,18 +177,16 @@ export class ShowDirector {
       this.label = countdown.label
       if (countdown.sound !== null) sounds.push(countdown.sound)
     }
-    const waitingForVote = this.phase === 'vote' && this.voteModel === null
-    const screen: GameScreen = waitingForVote ? (this.rows === null ? 'vote' : 'result')
-      : this.phase === 'load' || this.phase === 'countdown' ? 'countdown'
-      : this.phase === 'results' ? 'result' : this.phase === 'end' ? 'endScreen'
+    const screen: GameScreen = this.phase === 'load' || this.phase === 'countdown' ? 'countdown'
+      : this.phase === 'end' ? 'endScreen'
       : this.phase === 'round' ? (this.port.alive.includes(this.localSeat) ? 'round' : 'spectate') : this.phase
     return {
       screen, loading: this.phase === 'load', vote: this.phase === 'vote' ? this.voteModel : null, countdown,
-      results: this.phase === 'results' || waitingForVote ? this.rows : null,
+      results: this.rows,
       elimShow: this.phase === 'elimShow' ? this.elimination : null,
       endScreen: this.phase === 'end' || this.phase === 'podium' ? this.endModel : null,
       sounds, finished: this.finished,
-      hold: ['load', 'results', 'elimShow', 'podium', 'end'].includes(this.phase)
+      hold: ['load', 'elimShow', 'podium', 'end'].includes(this.phase)
         || (this.phase === 'countdown' && this.ms < COUNTDOWN_MS - this.introMs),
     }
   }

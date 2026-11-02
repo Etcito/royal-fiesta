@@ -35,6 +35,8 @@ export interface SimSystem<TInput> {
 }
 
 export interface FiestaWorldOptions<TInput> {
+  // Local worlds can host extra interactive characters; network worlds retain the eight-seat limit.
+  maxPlayers?: number
   playerCount: number
   systems: SimSystem<TInput>[]
   gravityY?: number
@@ -57,8 +59,10 @@ export class FiestaWorld<TInput> implements Simulation<TInput> {
 
   constructor(R: RapierModule, opts: FiestaWorldOptions<TInput>) {
     const pc = opts.playerCount
-    if (!Number.isInteger(pc) || pc < 1 || pc > MAX_PLAYERS) {
-      refuse('world', 'playerCount', `got ${pc}, must be an integer in 1..${MAX_PLAYERS}; pass a valid player count`)
+    const max = opts.maxPlayers ?? MAX_PLAYERS
+    if (!Number.isInteger(max) || max < 1 || max > 60) refuse('world', 'maxPlayers', 'pass an integer in 1..60')
+    if (!Number.isInteger(pc) || pc < 1 || pc > max) {
+      refuse('world', 'playerCount', `got ${pc}, must be an integer in 1..${max}; pass a valid player count`)
     }
     const systems = opts.systems.slice()
     const byName = new Map<string, SimSystem<TInput>>()

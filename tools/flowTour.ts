@@ -8,7 +8,7 @@ import { promisify } from 'node:util'
 import { unwrapOp } from '../apps/headless/src/gpuRecord.ts'
 
 // uiTour.ts imports a Vite ?raw module. Keep Node independent; the test checks this list against it.
-const SCREENS = ['start', 'vote', 'countdown', 'round', 'result', 'elimShow', 'endScreen']
+const SCREENS = ['start', 'vote', 'countdown', 'round', 'elimShow', 'endScreen']
 export function flowTourInput(): object {
   return { page: 'game', op: 'flowTour', input: { width: 1920, height: 1080 }, screens: [...SCREENS] }
 }

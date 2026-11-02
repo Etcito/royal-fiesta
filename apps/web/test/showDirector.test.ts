@@ -67,17 +67,14 @@ test('two rounds and a final: screen order, vote once, totals, spectate and held
     assert.equal(results.hold, true)
     assert.equal(results.results?.[0].name, `Bean ${r.ranking[0]}`)
     if (r.final) assert.equal(results.results?.[0].total, 11)
-    assert.equal(director.step('confirm', 1499).screen, 'result')
-    const elimination = director.step('confirm', 1)
-    observe(elimination.screen)
-    assert.equal(elimination.hold, true)
+    assert.equal(results.screen, 'elimShow')
     assert.equal(director.step('confirm', 1499).screen, 'elimShow')
     const after = director.step('confirm', 1)
     observe(after.screen)
     assert.equal(after.hold, r.final)
     if (!r.final) {
       // Old round remains visible on the port until the match resumes.
-      assert.equal(director.step(null, 0).screen, 'result')
+      assert.equal(director.step(null, 0).screen, 'vote')
       port.candidates = r.index === 0 ? ['C', 'D'] : ['Q']
       port.round = null
       const vote = director.step(null, 0)
@@ -92,8 +89,8 @@ test('two rounds and a final: screen order, vote once, totals, spectate and held
   assert.equal(end.endScreen?.goldenTicketTo, 1)
   assert.equal(director.step('confirm', 3999).finished, false)
   assert.equal(director.step('confirm', 1).finished, true)
-  assert.deepEqual(screens, ['vote', 'countdown', 'round', 'result', 'elimShow', 'result', 'vote',
-    'countdown', 'spectate', 'result', 'elimShow', 'result', 'vote', 'countdown', 'spectate', 'result',
+  assert.deepEqual(screens, ['vote', 'countdown', 'round', 'elimShow', 'vote',
+    'countdown', 'spectate', 'elimShow', 'vote', 'countdown', 'spectate',
     'elimShow', 'podium', 'endScreen'])
 })
 
@@ -125,18 +122,16 @@ test('loading is untimed; only matching worldReady starts countdown and cues eac
   assert.deepEqual(director.step(null, 0).sounds, [])
 })
 
-test('natural results/elimination deadlines and drop cues are not replayed', () => {
+test('natural elimination deadlines and drop cues are not replayed', () => {
   const { port, director } = fixture()
   load(director, port, 0)
   port.show.rounds.push(result(0, [0, 1, 2], [0]))
   director.step(null, 0)
-  assert.equal(director.step(null, 3999).screen, 'result')
-  assert.equal(director.step(null, 1).screen, 'elimShow')
   assert.deepEqual(director.step(null, 1500).sounds, ['flow.elim-drop'])
   assert.deepEqual(director.step(null, 0).sounds, [])
   assert.deepEqual(director.step(null, 1000).sounds, ['flow.elim-drop'])
   const next = director.step(null, 3500)
-  assert.equal(next.screen, 'result')
+  assert.equal(next.screen, 'vote')
   assert.equal(next.hold, false)
 })
 
@@ -145,7 +140,7 @@ test('zero eliminations bypass elimShow; end finishes automatically two seconds 
   load(director, port, 0)
   port.show.rounds.push(result(0, [0, 1], [0, 1]))
   director.step(null, 0)
-  assert.equal(director.step(null, 4000).screen, 'result')
+  assert.equal(director.step(null, 4000).screen, 'vote')
   port.done = true
   port.champion = 1
   assert.equal(director.step(null, 0).screen, 'podium')
@@ -176,26 +171,17 @@ test('countdown starts at 3 on its first displayed frame after an arbitrarily lo
   assert.equal(director.step(null, 952).countdown?.label, '2')
 })
 
-test('result gets its full four seconds from its first frame', () => {
+test('elimination starts immediately and receives its full intermission from the first frame', () => {
   const { port, director } = fixture()
   port.show.rounds.push(result(0, [0, 1], [0]))
-  assert.equal(director.step(null, 9000).screen, 'result')
-  for (let i = 0; i < 3; i++) assert.equal(director.step(null, 16).screen, 'result')
-  assert.equal(director.step(null, 3951).screen, 'result')
-  assert.equal(director.step(null, 1).screen, 'elimShow')
-})
-
-test('elimShow gets its entire intermission after result leaves', () => {
-  const { port, director } = fixture()
-  port.show.rounds.push(result(0, [0, 1], [0]))
-  director.step(null, 0)
   const first = director.step(null, 9000)
   assert.equal(first.screen, 'elimShow')
   assert.equal(first.elimShow?.lastMs, 0)
+  assert.equal(first.results?.length, 2, 'standings remain available without a results screen')
   const full = first.elimShow!.doneAtMs
   for (let i = 1; i <= 3; i++) assert.equal(director.step(null, 16).elimShow?.lastMs, i * 16)
   assert.equal(director.step(null, full - 49).screen, 'elimShow')
-  assert.equal(director.step(null, 1).screen, 'result')
+  assert.equal(director.step(null, 1).screen, 'vote')
 })
 
 test('podium starts on entry and its clock freezes on paused frames', () => {
@@ -260,15 +246,15 @@ test('legacy local podium presenter receives zero dt while App frame is paused',
   assert.equal(seconds, 0.5)
 })
 
-test('between rounds, results remain visible without loading until vote candidates arrive', () => {
+test('between rounds, vote waits for candidates without reviving a results panel', () => {
   const { port, director } = fixture()
   port.candidates = null
   port.show.rounds.push(result(0, [0], [0]))
   director.step(null, 0)
-  assert.equal(director.step(null, 4000).screen, 'result')
+  assert.equal(director.step(null, 4000).screen, 'vote')
   for (let i = 0; i < 3; i++) {
     const waiting = director.step(null, 9000)
-    assert.equal(waiting.screen, 'result')
+    assert.equal(waiting.screen, 'vote')
     assert.equal(waiting.loading, false)
     assert.equal(waiting.countdown, null)
     assert.equal(waiting.hold, false, 'network intermission must still advance')
@@ -306,20 +292,19 @@ test('countdown holds the match until its last introMs, then leaves at COUNTDOWN
   assert.deepEqual(round.sounds, ['flow.round-start'])
 })
 
-test('world readiness received during results survives until that round loads', () => {
+test('world readiness received during intermission survives until that round loads', () => {
   const { port, director } = fixture()
   load(director, port, 0)
   port.show.rounds.push(result(0, [0, 1], [0, 1]))
-  assert.equal(director.step(null, 0).screen, 'result')
+  assert.equal(director.step(null, 0).screen, 'vote')
   port.round = { plan: { index: 1 } }
   director.worldReady(1)
-  assert.equal(director.step(null, 4000).screen, 'result')
   const ready = director.step(null, 0)
   assert.equal(ready.loading, false)
   assert.equal(ready.countdown?.label, '3')
 })
 
-test('round preparation notifications cannot cover results, eliminations or votes; only an unready selected round loads', async () => {
+test('round preparation notifications cannot cover eliminations or votes; only an unready selected round loads', async () => {
   const { readFileSync } = await import('node:fs')
   const { stripTypeScriptTypes } = await import('node:module')
   const source = readFileSync(new URL('../src/game/main.ts', import.meta.url), 'utf8')
@@ -357,11 +342,11 @@ test('round preparation notifications cannot cover results, eliminations or vote
     if (!frame.loading) assert.equal(showCalls, before, frame.screen)
     return frame
   }
-  assert.equal(sample(director.step(null, 0)).screen, 'result')
+  assert.equal(sample(director.step(null, 0)).screen, 'elimShow')
   // A next scene can prepare while previous presentations still own the stage.
   port.round = { plan: { index: 1 } }
-  assert.equal(sample(director.step(null, 4000)).screen, 'elimShow')
-  assert.equal(sample(director.step(null, 9000)).screen, 'result')
+  assert.equal(sample(director.step(null, 0)).screen, 'elimShow')
+  assert.equal(sample(director.step(null, 9000)).screen, 'vote')
   port.round = null
   port.candidates = ['C', 'D']
   assert.equal(sample(director.step(null, 0)).screen, 'vote')

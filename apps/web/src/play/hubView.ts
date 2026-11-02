@@ -1,3 +1,5 @@
+import { WornMounts } from '@royal-fiesta/game/render/wornLook'
+import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 // Binds the hub to a RenderPort: plaza obstacles, the local bean, pooled remote beans with emote poses, and the
 // camera (the orbit camera on the player page, followCamera on proof pages).
 // DOM-free (the Node proof runs it with NullRenderPort). View side only: emote offsets touch the drawn transform only.
@@ -64,6 +66,7 @@ export interface HubTag { key: number; name: string; spectator: boolean; own: bo
 
 export interface HubViewOptions {
   // The player page's orbit camera frames the local bean; without it, followCamera (proof pages).
+  look?: () => WornLook | null
   orbit?: OrbitCamera
   // The content's character asset (GameContent.character()); the bean when absent.
   character?: PrimsAsset
@@ -73,6 +76,8 @@ export interface HubViewOptions {
 }
 
 export class HubView {
+  private readonly mounts: WornMounts
+  private readonly look: HubViewOptions['look']
   private anim: AnimDriver | null = null
   private animSourceTick = -1
   private animOffset = 0
@@ -114,6 +119,8 @@ export class HubView {
 
   constructor(port: RenderPort, viewport: number, assets: (n: string) => PrimsAsset, bean: PrimsAsset, plaza: ResolvedCourse, opts: HubViewOptions = {}) {
     this.port = port
+    this.mounts = new WornMounts(port)
+    this.look = opts.look
     this.viewport = viewport
     this.plaza = plaza
     this.orbit = opts.orbit ?? null
@@ -215,7 +222,9 @@ export class HubView {
       port.setTransform(this.mechanisms[i], [t.x, t.y, t.z], [r.x, r.y, r.z, r.w], [item.s.x, item.s.y, item.s.z])
     }
 
-    const lc = localColour % 8
+    const look = this.look?.()
+    this.mounts.sync(look)
+    const lc = (look?.colour ?? localColour) % 8
     if (this.localBean < 0 || lc !== this.localColour) {
       if (this.localBean >= 0) this.destroy(this.localBean)
       this.localBean = this.create(this.beanAsset, PALETTE[lc], true)
@@ -342,12 +351,14 @@ export class HubView {
     if (visible === this.visible) return
     this.visible = visible
     for (const [inst, on] of this.shown) this.port.setVisible(inst, visible && on)
+    this.mounts.setVisible(visible)
     this.dress(visible)
   }
 
   animationReady(): Promise<void> { return this.animReady }
 
   dispose(): void {
+    this.mounts.dispose()
     this.disposed = true
     this.anim?.dispose()
     this.anim = null
@@ -393,7 +404,9 @@ export class HubView {
     const qp: QuatT = [Math.sin(pitch / 2), 0, 0, Math.cos(pitch / 2)]
     const qr: QuatT = [0, 0, Math.sin(roll / 2), Math.cos(roll / 2)]
     const r = mulQ(mulQ(qy, qp), qr)
-    this.port.setTransform(inst, [pos.x, y, pos.z], r, [s[0] * scale, s[1] * scale, s[2] * scale])
+    const size: Vec3T = [s[0] * scale, s[1] * scale, s[2] * scale]
+    this.port.setTransform(inst, [pos.x, y, pos.z], r, size)
+    if (inst === this.localBean) this.mounts.draw([pos.x, y, pos.z], r, size)
   }
 
   // Hub entry enters the plaza dressing; hub exit leaves it.

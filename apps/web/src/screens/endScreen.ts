@@ -1,7 +1,9 @@
+import { WornMounts } from '@royal-fiesta/game/render/wornLook'
+import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 // The champion and crowns share the transparent uaa overlay with a small 3D stage.
 import type { EndScreenModel } from '@royal-fiesta/game/flow/endScreen'
 import { parsePrims, type PrimsAsset } from '@royal-fiesta/game/prims'
-import { seatTint } from '@royal-fiesta/game/render/palette'
+import { PALETTE, seatTint } from '@royal-fiesta/game/render/palette'
 import type { RenderPort } from '@royal-fiesta/game/render/port'
 import type { UaaHost } from '../ui/uaaHost.ts'
 import type { WidgetProps } from '../ui/screenMap.ts'
@@ -13,6 +15,7 @@ export interface FlowDeps {
   character?: PrimsAsset
   names?: (seat: number) => string
   localSeat?: number
+  look?: WornLook | null
 }
 
 export interface EndScreenView {
@@ -25,6 +28,8 @@ const CROWN_CUES = ['flow.crown-gold', 'flow.crown-silver', 'flow.crown-bronze']
 
 export function mountEndScreen(host: UaaHost, model: EndScreenModel, deps: FlowDeps): EndScreenView {
   const port = deps.stage
+  const mounts = port === undefined ? null : new WornMounts(port)
+  mounts?.sync(deps.look)
   const asset = port?.registerAsset('end-screen-character', deps.character ?? parsePrims(bean, 'fixtures/assets/bean.prims.json'))
   const instances: { seat: number; handle: number }[] = []
   const name = deps.names ?? ((seat: number) => `Bean ${seat + 1}`)
@@ -56,14 +61,16 @@ export function mountEndScreen(host: UaaHost, model: EndScreenModel, deps: FlowD
       port.destroyInstance(instances[i].handle)
       instances.pop()
     }
+    mounts?.setVisible(seats.includes(deps.localSeat ?? 0))
     seats.forEach((seat, i) => {
       if (instances[i]?.seat !== seat) {
         if (instances[i] !== undefined) port.destroyInstance(instances[i].handle)
-        instances[i] = { seat, handle: port.createInstance(asset, seatTint(seat)) }
+        instances[i] = { seat, handle: port.createInstance(asset, seat === (deps.localSeat ?? 0) && deps.look ? PALETTE[deps.look.colour] : seatTint(seat)) }
       }
       const scale = i === 0 ? 1.6 : 0.95
       port.setTransform(instances[i].handle, [i === 0 ? 0 : i === 1 ? -2.2 : 2.2, 0.85 * scale, -1000],
         [0, 0, 0, 1], [scale, scale, scale])
+      if (seat === (deps.localSeat ?? 0)) mounts?.draw([i === 0 ? 0 : i === 1 ? -2.2 : 2.2, 0.85 * scale, -1000], [0, 0, 0, 1], [scale, scale, scale])
       port.setVisible(instances[i].handle, true)
     })
     port.setCamera(0, { eye: [0, 2.8, -992], target: [0, 2.8, -1000], fovYDeg: 60, near: 0.1, far: 500 })
@@ -85,6 +92,7 @@ export function mountEndScreen(host: UaaHost, model: EndScreenModel, deps: FlowD
     unmount() {
       if (!mounted) return
       mounted = false
+      mounts?.dispose()
       for (const { handle } of instances) port?.destroyInstance(handle)
       instances.length = 0
     },

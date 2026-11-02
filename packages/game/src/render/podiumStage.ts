@@ -1,3 +1,5 @@
+import { WornMounts } from './wornLook.ts'
+import type { WornLook } from './wornLook.ts'
 // The podium screen's stage: three blocks and the top 3 beans, placed from a PodiumLayout, plus name anchors.
 // View side only: the sim freezes the winners at course spawns, this builds a real podium instead.
 import type { PodiumLayout } from '../content.ts'
@@ -30,6 +32,7 @@ export const PODIUM_V0_LAYOUT: PodiumLayout = Object.freeze({
 
 export interface PodiumStageOptions {
   port: RenderPort
+  look?: (place: number) => WornLook | null
   viewport: number
   bean: PrimsAsset
   block: PrimsAsset
@@ -78,6 +81,8 @@ function checkLayout(layout: PodiumLayout, floorY: number): void {
 }
 
 export class PodiumStage {
+  private readonly look: PodiumStageOptions['look']
+  private readonly mounts: WornMounts[] = []
   private readonly port: RenderPort
   private readonly viewport: number
   private readonly layout: PodiumLayout
@@ -91,6 +96,7 @@ export class PodiumStage {
 
   constructor(opts: PodiumStageOptions) {
     this.port = opts.port
+    this.look = opts.look
     this.viewport = opts.viewport
     this.layout = opts.layout ?? PODIUM_V0_LAYOUT
     const floorY = opts.floorY ?? PODIUM_ORIGIN[1]
@@ -105,6 +111,7 @@ export class PodiumStage {
       // The box is centred on its origin, so its centre sits halfway between the floor and the spot.
       this.port.setTransform(b, [t[0], floorY + top / 2, t[2]], yawQuat(yawDeg), [BLOCK_SIZE / size[0], top / size[1], BLOCK_SIZE / size[2]])
       this.blocks.push(b)
+      this.mounts.push(new WornMounts(this.port))
       this.beans.push(this.createBean(i, i))
       this.beanPlayer.push(i)
     }
@@ -138,6 +145,8 @@ export class PodiumStage {
         this.beans[i] = this.createBean(podium[i], i)
         this.beanPlayer[i] = podium[i]
       }
+      this.mounts[i].sync(used ? this.look?.(i) : null)
+      this.mounts[i].setVisible(used)
       this.port.setVisible(this.beans[i], used)
     }
     this.timeS = 0
@@ -184,6 +193,7 @@ export class PodiumStage {
   }
 
   hide(): void {
+    for (const mounts of this.mounts) mounts.setVisible(false)
     for (let i = 0; i < 3; i++) {
       this.port.setVisible(this.blocks[i], false)
       this.port.setVisible(this.beans[i], false)
@@ -191,6 +201,7 @@ export class PodiumStage {
   }
 
   dispose(): void {
+    for (const mounts of this.mounts) mounts.dispose()
     for (const h of this.blocks) this.port.destroyInstance(h)
     for (const h of this.beans) this.port.destroyInstance(h)
     this.blocks.length = 0
@@ -199,7 +210,7 @@ export class PodiumStage {
   }
 
   private createBean(player: number, place: number): number {
-    const h = this.port.createInstance(this.beanAsset, PALETTE[player])
+    const h = this.port.createInstance(this.beanAsset, this.look?.(place) ? PALETTE[this.look(place)!.colour] : PALETTE[player])
     this.port.setVisible(h, false)
     this.port.setTransform(h, this.beanPos(place), yawQuat(this.layout.spots[place].yawDeg), UNIT)
     return h
@@ -223,6 +234,7 @@ export class PodiumStage {
   private placeBeans(): void {
     for (let i = 0; i < this.podium.length; i++) {
       this.port.setTransform(this.beans[i], this.beanPos(i), yawQuat(this.layout.spots[i].yawDeg), UNIT)
+      this.mounts[i].draw(this.beanPos(i), yawQuat(this.layout.spots[i].yawDeg), UNIT)
     }
   }
 }

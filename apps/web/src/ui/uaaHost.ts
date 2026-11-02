@@ -4,6 +4,7 @@
 // uaa Ui from menuModel results through screenMap. There is no fallback: a GPU, asset or font
 // failure rejects with the uaa error, and there is no DOM or Canvas2D substitute.
 // Every import.meta.glob sits in a function body, so Node tests can import this module.
+import { paletteAssets } from './paletteAssets.ts'
 import { installShaderCache } from '../render/shaderCache.ts'
 import {
   createFontRegistry, createUi, loadUiDoc, parseUiAssetText, UaaError,
@@ -112,6 +113,7 @@ export function loadAssets(texts: Record<string, string>): Map<string, UiAsset> 
     if (`${asset.id}.ui.json` !== name) throw new UaaError('UI_ASSET_SCHEMA', 'id', `${file}: asset id '${asset.id}' does not match the file name`)
     assets.set(asset.id, asset)
   }
+  for (const asset of paletteAssets(assets.get('badge.round')!)) assets.set(asset.id, asset)
   return assets
 }
 

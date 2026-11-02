@@ -118,3 +118,45 @@ test('local boot finishes pipeline warmup without animation callbacks, before ti
     'round false', 'hub true', 'draw hub', 'render', 'capture',
   ], 'load can enter title only after the prepared round and hub have rendered and read back')
 })
+
+test('wardrobe submits its scene before the UI frame, and a hidden lobby restores only its active layer', () => {
+  const source = readFileSync(new URL('../src/game/main.ts', import.meta.url), 'utf8')
+  const compiled = transpileModule(source + '\nexports.drawStart = App.prototype.draw; exports.visible = LocalMode.prototype.setVisible\n', {
+    compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
+  }).outputText
+  const exports = {} as { drawStart(this: unknown): void; visible(this: unknown, visible: boolean): void }
+  runInNewContext(compiled, {
+    exports, URLSearchParams, performance, setTimeout,
+    window: { location: { search: '?mode=ops' } },
+    require(id: string): unknown {
+      if (id === '../content/roundOverlay.ts') return { roundOverlay: () => ({ hide() {} }) }
+      if (id === './ops.ts') return { installGameOps() {} }
+      if (id.endsWith('.json?raw')) return { default: '{"screens":[]}' }
+      return {}
+    },
+  })
+  const calls: string[] = []
+  exports.drawStart.call({
+    nav: { screen: 'start', live: false }, showView: null, unmountShowView() {}, remap: null,
+    touchRoot: {}, remapButton: {}, community: null, screens: { style: {} }, startModel: {},
+    startView: { setVisible() {}, update() { calls.push('wardrobe camera and instances') } },
+    resize() {}, loaded: { ports: [{ render() { calls.push('stage render') } }] },
+    host: { frame() { calls.push('UI frame') } },
+  })
+  assert.deepEqual(calls, ['wardrobe camera and instances', 'stage render', 'UI frame'])
+  const visibility: boolean[][] = []
+  let hub = true, round = false
+  const mode = {
+    match: null as unknown,
+    hubLayer: { setVisible(on: boolean) { hub = on } },
+    matchLayer: { setVisible(on: boolean) { round = on } },
+  }
+  for (const match of [null, {}]) {
+    mode.match = match
+    for (const visible of [false, true]) {
+      exports.visible.call(mode, visible)
+      visibility.push([hub, round])
+    }
+  }
+  assert.deepEqual(visibility, [[false, false], [true, false], [false, false], [false, true]])
+})

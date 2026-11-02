@@ -24,8 +24,10 @@ export function mapCapsule(command: AssetCommand, screen = '', landscape = false
   const slots = command.slots.map(s => {
     const { min, max } = s.slot.box
     const scale = mapping.scaleAt([(min[0] + max[0]) / 2, (min[1] + max[1]) / 2])
-    const run = layoutLine(s.placed.run.font, s.text, s.slot.size * scale)
-    return { ...s, placed: placeInBox(run, slotBoxPx(mapping, s.slot.box), s.slot.align) }
+    const wardrobe = screen === 'start' && (command.widget === 'act-play' || command.widget === 'act-shop')
+    const slot = wardrobe ? { ...s.slot, fill: { kind: 'solid' as const, color: '#301342', opacity: 1 }, outline: null, effects: [] } : s.slot
+    const run = layoutLine(s.placed.run.font, s.text, wardrobe ? rect.h * 0.42 : slot.size * scale)
+    return { ...s, slot, placed: placeInBox(run, slotBoxPx(mapping, s.slot.box), s.slot.align) }
   })
   return { ...command, mapping, slots }
 }

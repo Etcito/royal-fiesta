@@ -653,6 +653,11 @@ class LocalMode implements Mode {
     return !this.disposed
   }
 
+  setVisible(visible: boolean): void {
+    this.hubLayer.setVisible(visible && this.match === null)
+    this.matchLayer.setVisible(visible && this.match !== null)
+  }
+
   constructor(c: ModeCtx) {
     this.c = c
     const { R, content, ports } = c.loaded
@@ -2096,7 +2101,11 @@ class App {
     }
     if (playing) controlsToInput(controls, this.orbit.ground(), this.world)
     else Object.assign(this.world, neutralInput())
-    if (mode !== null && nav.live) {
+    // The wardrobe owns the shared stage while open. Keep the prepared lobby
+    // alive without advancing or drawing it behind the character preview.
+    this.preparedLocal?.setVisible(nav.screen !== 'start')
+    if (mode instanceof LocalMode) mode.setVisible(nav.screen !== 'start')
+    if (mode !== null && nav.live && nav.screen !== 'start') {
       const paused = nav.screen === 'pause' || nav.screen === 'settings'
       const screen = mode.frame({
         dt, paused, world: this.world, emote: playing ? this.emote : 0, devices: this.devicePolls, deviceCount,
@@ -2255,6 +2264,9 @@ class App {
         this.startView.setVisible(true)
         this.startView.update(this.startModel, null)
         this.resize()
+        // The mode rendered its camera before draw() updated the wardrobe scene.
+        // Submit the start camera and newly worn instances before presenting the UI.
+        this.loaded?.ports[0]?.render()
         this.host.frame(this.uiNowMs)
         return
       }

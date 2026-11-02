@@ -35,7 +35,7 @@
   },
   {
     "name": "m13-wardrobe-judge",
-    "command": "python3 $NMC_JUDGE_CLIENT out/m13/wardrobe/bare.png --description \"Royal Fiesta wardrobe start screen with a visible cartoon penguin, cosmetic bins for head, body and bottom, a colour palette, and Play and Shop controls. The screen is legible and composed with the character clearly visible.\" --min-score 6",
+    "command": "python3 $NMC_JUDGE_CLIENT out/m13/wardrobe/bare.png --description \"Royal Fiesta wardrobe start screen with a visible cartoon penguin, four cosmetic bins labelled Hat, Outfit, Extra and Special (catalog slots head, body, bottom and special), a colour palette, and Play and Shop controls. The screen is legible and composed with the character clearly visible.\" --min-score 6",
     "timeout_s": 300,
     "after": [
       "m13-wardrobe"

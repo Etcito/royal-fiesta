@@ -12,6 +12,14 @@
     "button.secondary",
     "panel.card",
     "badge.round",
+    "palette.0",
+    "palette.1",
+    "palette.2",
+    "palette.3",
+    "palette.4",
+    "palette.5",
+    "palette.6",
+    "palette.7",
     "bar.progress",
     "bar.track",
     "icon.back",
@@ -4306,13 +4314,9 @@
           "type": "label",
           "text": "Up/Down choose - Enter select - Esc back",
           "font": { "family": "Fredoka", "weight": 700 },
-          "size": 24,
-          "color": "#ffffff",
+          "size": 32,
+          "color": "#3a1757",
           "align": "center",
-          "outline": {
-            "width": 4,
-            "color": "#7a1f8c"
-          },
           "rect": {
             "anchorMin": [0.5, 1],
             "anchorMax": [0.5, 1],
@@ -4447,13 +4451,9 @@
               "type": "label",
               "text": "Hat",
               "font": { "family": "Fredoka", "weight": 700 },
-              "size": 28,
-              "color": "#ffffff",
+              "size": 36,
+              "color": "#3a1757",
               "align": "center",
-              "outline": {
-                "width": 4,
-                "color": "#7a1f8c"
-              },
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -4472,13 +4472,9 @@
               "type": "label",
               "text": "< item >",
               "font": { "family": "Fredoka", "weight": 700 },
-              "size": 24,
-              "color": "#ffffff",
+              "size": 32,
+              "color": "#3a1757",
               "align": "center",
-              "outline": {
-                "width": 4,
-                "color": "#7a1f8c"
-              },
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -4516,13 +4512,9 @@
               "type": "label",
               "text": "Outfit",
               "font": { "family": "Fredoka", "weight": 700 },
-              "size": 28,
-              "color": "#ffffff",
+              "size": 36,
+              "color": "#3a1757",
               "align": "center",
-              "outline": {
-                "width": 4,
-                "color": "#7a1f8c"
-              },
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -4541,13 +4533,9 @@
               "type": "label",
               "text": "< item >",
               "font": { "family": "Fredoka", "weight": 700 },
-              "size": 24,
-              "color": "#ffffff",
+              "size": 32,
+              "color": "#3a1757",
               "align": "center",
-              "outline": {
-                "width": 4,
-                "color": "#7a1f8c"
-              },
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -4585,13 +4573,9 @@
               "type": "label",
               "text": "Extra",
               "font": { "family": "Fredoka", "weight": 700 },
-              "size": 28,
-              "color": "#ffffff",
+              "size": 36,
+              "color": "#3a1757",
               "align": "center",
-              "outline": {
-                "width": 4,
-                "color": "#7a1f8c"
-              },
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -4610,13 +4594,9 @@
               "type": "label",
               "text": "< item >",
               "font": { "family": "Fredoka", "weight": 700 },
-              "size": 24,
-              "color": "#ffffff",
+              "size": 32,
+              "color": "#3a1757",
               "align": "center",
-              "outline": {
-                "width": 4,
-                "color": "#7a1f8c"
-              },
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -4654,13 +4634,9 @@
               "type": "label",
               "text": "Special",
               "font": { "family": "Fredoka", "weight": 700 },
-              "size": 28,
-              "color": "#ffffff",
+              "size": 36,
+              "color": "#3a1757",
               "align": "center",
-              "outline": {
-                "width": 4,
-                "color": "#7a1f8c"
-              },
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -4679,13 +4655,9 @@
               "type": "label",
               "text": "< item >",
               "font": { "family": "Fredoka", "weight": 700 },
-              "size": 24,
-              "color": "#ffffff",
+              "size": 32,
+              "color": "#3a1757",
               "align": "center",
-              "outline": {
-                "width": 4,
-                "color": "#7a1f8c"
-              },
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -4704,7 +4676,7 @@
         {
           "id": "palette-0",
           "type": "badge",
-          "asset": "badge.round",
+          "asset": "palette.0",
           "text": {
             "count": ""
           },
@@ -4724,7 +4696,7 @@
         {
           "id": "palette-1",
           "type": "badge",
-          "asset": "badge.round",
+          "asset": "palette.1",
           "text": {
             "count": ""
           },
@@ -4744,7 +4716,7 @@
         {
           "id": "palette-2",
           "type": "badge",
-          "asset": "badge.round",
+          "asset": "palette.2",
           "text": {
             "count": ""
           },
@@ -4764,7 +4736,7 @@
         {
           "id": "palette-3",
           "type": "badge",
-          "asset": "badge.round",
+          "asset": "palette.3",
           "text": {
             "count": ""
           },
@@ -4784,7 +4756,7 @@
         {
           "id": "palette-4",
           "type": "badge",
-          "asset": "badge.round",
+          "asset": "palette.4",
           "text": {
             "count": ""
           },
@@ -4804,7 +4776,7 @@
         {
           "id": "palette-5",
           "type": "badge",
-          "asset": "badge.round",
+          "asset": "palette.5",
           "text": {
             "count": ""
           },
@@ -4824,7 +4796,7 @@
         {
           "id": "palette-6",
           "type": "badge",
-          "asset": "badge.round",
+          "asset": "palette.6",
           "text": {
             "count": ""
           },
@@ -4844,7 +4816,7 @@
         {
           "id": "palette-7",
           "type": "badge",
-          "asset": "badge.round",
+          "asset": "palette.7",
           "text": {
             "count": ""
           },

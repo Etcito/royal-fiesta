@@ -75,7 +75,10 @@ export function simStep<T>(sim: object, step: string, work: () => T): T {
   return trace ? trace.measure(step, work) : work()
 }
 
-// Give the loading backing a paint before replacing the hub with course instances.
+// Give the loading backing a paint before replacing the hub with course instances. A visible page paints
+// within a frame; a page that gets no rendering opportunity (the GPU client's off-screen iframe fires no
+// requestAnimationFrame at all) cannot paint, so PAINT_WAIT_MS ends the wait instead of holding 'loading' forever.
+export const PAINT_WAIT_MS = 100
 export function roundReady(port: object, course: string): boolean {
   if (!observed || typeof requestAnimationFrame === 'undefined') return true
   const state = ready.get(port)
@@ -83,6 +86,8 @@ export function roundReady(port: object, course: string): boolean {
   const next = { course, painted: false }
   ready.set(port, next)
   notify(`Preparing course: ${course}`)
-  requestAnimationFrame(() => { next.painted = true })
+  const painted = (): void => { next.painted = true }
+  requestAnimationFrame(painted)
+  setTimeout(painted, PAINT_WAIT_MS)
   return false
 }

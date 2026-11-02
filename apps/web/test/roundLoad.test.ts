@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { RoundLoad, observeRoundLoad, startup, courseFrame, renderFrame, roundReady, attachRoundReport } from '../../../packages/game/src/render/roundLoad.ts'
+import { RoundLoad, observeRoundLoad, startup, courseFrame, renderFrame, roundReady, attachRoundReport, PAINT_WAIT_MS } from '../../../packages/game/src/render/roundLoad.ts'
 
 test('spans retain start/end, record failures, and print only once', () => {
   let clock = 10
@@ -50,6 +50,23 @@ test('a new course waits for a loading paint and disposal removes the observer',
     stop()
     assert.equal(roundReady({}, 'survival'), true)
     assert.equal(labels.length, 1)
+  } finally {
+    stop()
+    if (original) Object.defineProperty(globalThis, 'requestAnimationFrame', original)
+    else Reflect.deleteProperty(globalThis, 'requestAnimationFrame')
+  }
+})
+
+test('a page that never fires requestAnimationFrame still leaves the loading paint', async () => {
+  // The GPU client's off-screen iframe gets no rAF: the show stayed on 'loading' until the job timed out (run 11306).
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame')
+  Object.defineProperty(globalThis, 'requestAnimationFrame', { configurable: true, value: () => 1 })
+  const stop = observeRoundLoad(() => {}, {})
+  try {
+    const port = {}
+    assert.equal(roundReady(port, 'race'), false)
+    await new Promise(resolve => setTimeout(resolve, PAINT_WAIT_MS + 20))
+    assert.equal(roundReady(port, 'race'), true)
   } finally {
     stop()
     if (original) Object.defineProperty(globalThis, 'requestAnimationFrame', original)

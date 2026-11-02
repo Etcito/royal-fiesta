@@ -321,6 +321,9 @@ async function frameTiming(raw: unknown): Promise<OpEnvelope<FrameTimingOutput>>
   }
 }
 
+// Additive: the game entry's waiting placeholders and other page scripts' ops (animBrick, a card's
+// render transport) were registered before the game loaded; replacing the object would drop them.
 export function installNmcOps(): void {
-  window.nmcGpu = { ops: { roundCapture, frameTiming } }
+  const current = window.nmcGpu as { ops?: object } | undefined
+  window.nmcGpu = { ...current, ops: { ...current?.ops, roundCapture, frameTiming } } as NonNullable<Window['nmcGpu']>
 }

@@ -19,15 +19,23 @@
   },
   {
     "name": "m13-wardrobe",
-    "command": "env RF_MESH_JOBS=1 NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/flowTour.ts",
+    "command": "env RF_MESH_JOBS=1 NMC_GPU_WAIT_S=600 node --experimental-strip-types tools/chromeCheck.ts wardrobe --out out/m13/wardrobe",
     "timeout_s": 1800,
     "after": [
       "m13-build"
     ]
   },
   {
+    "name": "m13-wardrobe-local",
+    "command": "node --experimental-strip-types --test apps/web/test/gpuEntry.test.ts tools/test/chromeCheck.test.ts",
+    "timeout_s": 300,
+    "after": [
+      "m13-build"
+    ]
+  },
+  {
     "name": "m13-wardrobe-judge",
-    "command": "python3 $NMC_JUDGE_CLIENT out/s3/m7/start.png --description \"Royal Fiesta wardrobe start screen with a visible cartoon penguin, cosmetic bins for head, body and bottom, a colour palette, and Play and Shop controls. The screen is legible and composed with the character clearly visible.\" --min-score 6",
+    "command": "python3 $NMC_JUDGE_CLIENT out/m13/wardrobe/bare.png --description \"Royal Fiesta wardrobe start screen with a visible cartoon penguin, cosmetic bins for head, body and bottom, a colour palette, and Play and Shop controls. The screen is legible and composed with the character clearly visible.\" --min-score 6",
     "timeout_s": 300,
     "after": [
       "m13-wardrobe"

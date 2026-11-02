@@ -1,14 +1,18 @@
-// Register the checks before loading the game and its potentially failing dependencies.
-// Calls wait for the real implementation, so failures surface through the GPU client.
-const names = ['countdowns', 'lobbyUnload', 'wardrobe', 'vote'] as const
-const ops: Record<string, (input: unknown) => Promise<unknown>> = {}
+// Register every page op (public/nmc.gpu.json plus the checks) before loading the game and its potentially
+// failing dependencies: scripts that run at DOMContentLoaded (animBrick, a render transport) find them, and
+// calls wait for the real implementation, so failures surface through the GPU client.
+const names = [
+  'controlsProbe', 'gameCapture', 'roundCapture', 'uiTour', 'flowTour', 'zoneCapture', 'zoneLobbyCapture',
+  'zoneLobbyPair', 'zoneSplitPair', 'countdowns', 'lobbyUnload', 'wardrobe', 'vote',
+] as const
+const ops: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
 let game: Promise<unknown>
 for (const name of names) {
-  ops[name] = async input => {
+  ops[name] = async (...args) => {
     await game
     const implementation = (window.nmcGpu!.ops as unknown as typeof ops)[name]
     if (implementation === ops[name]) throw new Error(`Game did not register ${name}`)
-    return implementation(input)
+    return implementation(...args)
   }
 }
 window.nmcGpu = { ops } as unknown as NonNullable<Window['nmcGpu']>

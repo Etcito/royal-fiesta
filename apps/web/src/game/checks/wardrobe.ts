@@ -22,7 +22,7 @@ interface Shot { composite: Blob; stage: Uint8ClampedArray }
 interface ItemResult { id: string; slot: Slot; registered: boolean; instance: boolean; differs: boolean; diffPixels: number }
 interface AppInventory {
   screen: string
-  ports: { inventory: { assets: string[]; instances: number } | null }[]
+  ports: { inventory: { assets: string[]; instances: number } | null; inDom?: boolean; displayed?: boolean }[]
 }
 
 // The catalog the App's offline economy serves (economy/royal-fiesta.economy.json, built from catalog.season1.json).
@@ -304,7 +304,7 @@ interface WardrobeJson {
   ok: boolean
   items: ItemResult[]
   failures: string[]
-  bare: { file: string; assets: string[]; instances: number; controlPixels: number } | null
+  bare: { file: string; assets: string[]; instances: number; controlPixels: number; stage?: unknown } | null
   screen: string
   transitions: string[]
 }
@@ -349,7 +349,24 @@ export async function run(input: unknown, deps: TourDeps): Promise<{
     const bareInventory = bareTake.inventory
     const bareShot = await bareTake.shot
     const box = characterBox(stageCanvas(live), live.ui.getBoundingClientRect())
-    bare = { file: 'bare.png', assets: [...bareInventory.assets].sort(), instances: bareInventory.instances, controlPixels: 0 }
+    const ports = (live.inventory() as AppInventory).ports
+    const views: unknown[] = []
+    for (const view of Array.from(live.views.querySelectorAll('canvas'))) {
+      const probe = document.createElement('canvas')
+      probe.width = 64
+      probe.height = 36
+      const pctx = context(probe)
+      const bitmap = await createImageBitmap(view)
+      pctx.drawImage(bitmap, 0, 0, 64, 36)
+      bitmap.close()
+      const px = pctx.getImageData(0, 0, 64, 36).data
+      let opaque = 0
+      for (let i = 3; i < px.length; i += 4) if (px[i] > 0) opaque++
+      const style = getComputedStyle(view)
+      views.push({ w: view.width, h: view.height, display: style.display, visibility: style.visibility, opacity: style.opacity, opaque64x36: opaque })
+    }
+    bare = { file: 'bare.png', assets: [...bareInventory.assets].sort(), instances: bareInventory.instances, controlPixels: 0,
+      stage: { pendingPipelines: pendingPipelines(), views, ports: ports.map(p => ({ inDom: p.inDom, displayed: p.displayed, instances: p.inventory?.instances })) } }
     const files: { name: string; blob: Blob }[] = [{ name: 'bare.png', blob: bareShot.composite }]
     for (const [index, bin] of bins.entries()) {
       for (const item of bin.items) {

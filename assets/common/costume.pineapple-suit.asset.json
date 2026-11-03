@@ -27,19 +27,18 @@
         "name": "pineapple_suit",
         "kind": "group",
         "children": [
-          "anchor_suit",
-          "shell",
-          "shell_hem",
-          "lattice_cw",
-          "lattice_ccw",
-          "strap",
-          "crown"
+          "penguin_clearance",
+          "anchor_suit"
         ],
         "asset": {
           "game": "royal-fiesta",
           "id": "costume.pineapple-suit",
           "category": "cosmetic",
-          "world": "common"
+          "world": "common",
+          "cosmetic": {
+            "slot": "outfit",
+            "binding": "penguin"
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -49,12 +48,479 @@
             "transitionLoops": 1
           }
         },
+        "rig": {
+          "format": "raa.rig",
+          "version": 1,
+          "name": "flipper-test",
+          "bones": [
+            {
+              "name": "root",
+              "parent": null,
+              "rest": {
+                "t": [
+                  0,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.l",
+              "parent": "upper.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.l",
+              "parent": "lower.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.r",
+              "parent": "upper.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.r",
+              "parent": "lower.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.l",
+              "parent": "upperLeg.l",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.r",
+              "parent": "upperLeg.r",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "head",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0,
+                  0.5,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            }
+          ],
+          "roles": {
+            "foot.l": "foot.l",
+            "foot.r": "foot.r",
+            "hand.l": "tip.l",
+            "hand.r": "tip.r",
+            "head": "head",
+            "lowerArm.l": "lower.l",
+            "lowerArm.r": "lower.r",
+            "root": "root",
+            "upperArm.l": "upper.l",
+            "upperArm.r": "upper.r",
+            "upperLeg.l": "upperLeg.l",
+            "upperLeg.r": "upperLeg.r"
+          },
+          "ikChains": [
+            {
+              "name": "flipperL",
+              "solver": "twoBone",
+              "bones": [
+                "upper.l",
+                "lower.l",
+                "tip.l"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            },
+            {
+              "name": "flipperR",
+              "solver": "twoBone",
+              "bones": [
+                "upper.r",
+                "lower.r",
+                "tip.r"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            }
+          ],
+          "limits": [
+            {
+              "bone": "upper.l",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "upper.r",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "head",
+              "min": [
+                -40,
+                -60,
+                -30
+              ],
+              "max": [
+                40,
+                60,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.l",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.r",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "foot.l",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            },
+            {
+              "bone": "foot.r",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            }
+          ],
+          "attach": {
+            "body": {
+              "bone": "root",
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "head": {
+              "bone": "head",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "neck": {
+              "bone": "root",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          },
+          "bindings": [],
+          "smooth": 0.2
+        },
         "gameCollision": true
       },
-      "anchor_suit": {
-        "id": "anchor_suit",
-        "name": "body",
-        "kind": "anchor",
+      "penguin_clearance": {
+        "id": "penguin_clearance",
+        "name": "Penguin clearance",
+        "kind": "group",
+        "transform": {
+          "scale": [1.25, 1.05, 1.25]
+        },
+        "children": [
+          "shell",
+          "shell_hem",
+          "lattice_cw",
+          "lattice_ccw",
+          "strap",
+          "crown"
+        ],
         "gameCollision": true
       },
       "shell": {
@@ -603,6 +1069,12 @@
           }
         },
         "gameCollision": false
+      },
+      "anchor_suit": {
+        "id": "anchor_suit",
+        "name": "body",
+        "kind": "anchor",
+        "gameCollision": true
       }
     },
     "materials": {
@@ -684,8 +1156,8 @@
     }
   },
   "bounds": {
-    "min": [-0.677947, -0.78, -0.677947],
-    "max": [0.677947, 1.21, 0.677947]
+    "min": [-0.635, -0.756, -0.6625],
+    "max": [0.635, 1.2705, 0.6625]
   },
-  "hash": "a78d49e30f8eac07d8f0253d0b6e2b3e39160f5522bb4564fdfba614227044eb"
+  "hash": "4b134228bc2ce32d9d1c11c6d900c629954ffff9d8238e678790b8497fca0cfc"
 }

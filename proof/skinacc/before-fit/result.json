@@ -1,0 +1,239 @@
+{
+  "job_id": "8075af3baed881d4900856aa2b194755",
+  "client_id": "5d9ade23d0db07a019cca085",
+  "result": {
+    "records": [
+      {
+        "id": "costume.cloud-skirt",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.cloud-skirt",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.disco-jacket",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.disco-jacket",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.dragon-suit",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.dragon-suit",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.fish-scarf",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.fish-scarf",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.ghost-aura",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.ghost-aura",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.golden-crown",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.golden-crown",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.jester-hat",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.jester-hat",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.jetpack",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.jetpack",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.neon-sneakers",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.neon-sneakers",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.pineapple-suit",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.pineapple-suit",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.propeller-hat",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.propeller-hat",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.sparkler-wand",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.sparkler-wand",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      }
+    ],
+    "adapter": {
+      "vendor": "nvidia",
+      "architecture": "ampere",
+      "description": ""
+    },
+    "inventory": {
+      "assets": [
+        "costume.sparkler-wand",
+        "penguin.body"
+      ],
+      "instances": 2,
+      "meshes": 26,
+      "textures": 11,
+      "skinned": 2
+    }
+  }
+}

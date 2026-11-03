@@ -505,7 +505,19 @@
               ]
             }
           },
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "group": "hat_jester_hat"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": false
@@ -724,5 +736,5 @@
     "min": [-1.060101, 0.619899, -0.36],
     "max": [1.060101, 1.907093, 0.4]
   },
-  "hash": "91871fb0be4b48420d61003e4ce7b9633244e0952313ca5114494c0fc81757aa"
+  "hash": "947f36c0f1459b8b211b6ffed9f7e7a78bca5d5a35bd35babda152fc72212828"
 }

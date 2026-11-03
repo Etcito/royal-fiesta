@@ -7,7 +7,12 @@
   "category": "cosmetic",
   "world": "common",
   "mesher": {
-    "output": "paramesh"
+    "output": "paramesh",
+    "params": {
+      "fieldResolution": 16,
+      "subdivisions": 4,
+      "transitionLoops": 1
+    }
   },
   "document": {
     "format": "sdfm",
@@ -22,18 +27,508 @@
         "name": "propeller_hat",
         "kind": "group",
         "children": [
-          "anchor_hat_head",
-          "hat_cap"
+          "penguin_clearance",
+          "anchor_hat_head"
         ],
+        "asset": {
+          "game": "royal-fiesta",
+          "id": "costume.propeller-hat",
+          "category": "cosmetic",
+          "world": "common",
+          "cosmetic": {
+            "slot": "hat",
+            "binding": "penguin"
+          }
+        },
+        "mesher": {
+          "output": "paramesh",
+          "params": {
+            "fieldResolution": 16,
+            "subdivisions": 4,
+            "transitionLoops": 1
+          }
+        },
+        "rig": {
+          "format": "raa.rig",
+          "version": 1,
+          "name": "flipper-test",
+          "bones": [
+            {
+              "name": "root",
+              "parent": null,
+              "rest": {
+                "t": [
+                  0,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.l",
+              "parent": "upper.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.l",
+              "parent": "lower.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.r",
+              "parent": "upper.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.r",
+              "parent": "lower.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.l",
+              "parent": "upperLeg.l",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.r",
+              "parent": "upperLeg.r",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "head",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0,
+                  0.5,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            }
+          ],
+          "roles": {
+            "foot.l": "foot.l",
+            "foot.r": "foot.r",
+            "hand.l": "tip.l",
+            "hand.r": "tip.r",
+            "head": "head",
+            "lowerArm.l": "lower.l",
+            "lowerArm.r": "lower.r",
+            "root": "root",
+            "upperArm.l": "upper.l",
+            "upperArm.r": "upper.r",
+            "upperLeg.l": "upperLeg.l",
+            "upperLeg.r": "upperLeg.r"
+          },
+          "ikChains": [
+            {
+              "name": "flipperL",
+              "solver": "twoBone",
+              "bones": [
+                "upper.l",
+                "lower.l",
+                "tip.l"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            },
+            {
+              "name": "flipperR",
+              "solver": "twoBone",
+              "bones": [
+                "upper.r",
+                "lower.r",
+                "tip.r"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            }
+          ],
+          "limits": [
+            {
+              "bone": "upper.l",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "upper.r",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "head",
+              "min": [
+                -40,
+                -60,
+                -30
+              ],
+              "max": [
+                40,
+                60,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.l",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.r",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "foot.l",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            },
+            {
+              "bone": "foot.r",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            }
+          ],
+          "attach": {
+            "body": {
+              "bone": "root",
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "head": {
+              "bone": "head",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "neck": {
+              "bone": "root",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          },
+          "bindings": [
+            {
+              "source": {
+                "group": "propeller_hat"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
+          "smooth": 0.2
+        },
         "gameCollision": true
       },
-      "anchor_hat_head": {
-        "id": "anchor_hat_head",
-        "name": "head",
-        "kind": "anchor",
+      "penguin_clearance": {
+        "id": "penguin_clearance",
+        "name": "Penguin clearance",
+        "kind": "group",
         "transform": {
-          "position": [0, 0.8, 0]
+          "position": [0, 0.2, 0],
+          "scale": [1.15, 1, 1.15]
         },
+        "children": [
+          "hat_cap"
+        ],
         "gameCollision": true
       },
       "hat_cap": {
@@ -74,12 +569,6 @@
         "children": [
           "gore_1"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -214,12 +703,6 @@
         "children": [
           "gore_2"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -355,12 +838,6 @@
         "children": [
           "gore_3"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -496,12 +973,6 @@
         "children": [
           "gore_4"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -637,12 +1108,6 @@
         "children": [
           "gore_5"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -778,12 +1243,6 @@
         "children": [
           "gore_6"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -918,12 +1377,6 @@
         "children": [
           "gore_7"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1058,12 +1511,6 @@
         "children": [
           "gore_8"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1199,12 +1646,6 @@
         "children": [
           "gore_9"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1340,12 +1781,6 @@
         "children": [
           "gore_10"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1481,12 +1916,6 @@
         "children": [
           "gore_11"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1622,12 +2051,6 @@
         "children": [
           "gore_12"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1762,12 +2185,6 @@
         "children": [
           "hat_rim"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1839,12 +2256,6 @@
         "children": [
           "hat_button"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1898,12 +2309,6 @@
         "children": [
           "prop_stem"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -1950,12 +2355,6 @@
         "children": [
           "prop_hub"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -2009,12 +2408,6 @@
         "children": [
           "prop_blade_1"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -2069,12 +2462,6 @@
         "children": [
           "prop_blade_2"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -2129,12 +2516,6 @@
         "children": [
           "prop_blade_3"
         ],
-        "asset": {
-          "game": "royal-fiesta",
-          "id": "costume.propeller-hat",
-          "category": "cosmetic",
-          "world": "common"
-        },
         "mesher": {
           "output": "paramesh",
           "params": {
@@ -2181,6 +2562,15 @@
           }
         },
         "gameCollision": false
+      },
+      "anchor_hat_head": {
+        "id": "anchor_hat_head",
+        "name": "head",
+        "kind": "anchor",
+        "transform": {
+          "position": [0, 0.8, 0]
+        },
+        "gameCollision": true
       }
     },
     "materials": {
@@ -2279,8 +2669,8 @@
     }
   },
   "bounds": {
-    "min": [-0.446105, -0.006054, -0.540575],
-    "max": [0.446105, 1.16511, 0.450584]
+    "min": [-0.499221, 0.193946, -0.607861],
+    "max": [0.499221, 1.361155, 0.518172]
   },
-  "hash": "25443b5b641f33bdbd5fd767cfcc7b667d57c3db845e51829c6c2447d8779b52"
+  "hash": "990eff3064e135bc833186735256b52cc79a84421e7ede78993226311e04e06c"
 }

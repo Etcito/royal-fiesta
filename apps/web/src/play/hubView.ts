@@ -306,6 +306,8 @@ export class HubView {
       if (skin !== null) port.setPose?.(instance, skin)
     }
     pose(-1, this.localBean)
+    const wornPose = this.anim?.pose(-1)?.skin ?? this.restSkin
+    if (wornPose) this.mounts.setPose(wornPose)
     for (const [id, slot] of this.slots) pose(id, slot.inst)
 
     this.cam = this.orbit !== null ? this.orbit.pose(local.pos, dtS, this.clip) : followCamera(this.cam, local.pos, local.facing, dtS)

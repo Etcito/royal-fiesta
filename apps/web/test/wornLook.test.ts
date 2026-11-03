@@ -74,3 +74,25 @@ test('start wardrobe mounts all four bins and chosen tint on hub and round local
   assert.equal(port.draws.size, 0)
   port.dispose()
 })
+
+test('penguin-bound wardrobe items receive the body matrices and ignore legacy mount offsets', async () => {
+  const { WornMounts } = await import('../../../packages/game/src/render/wornLook.ts')
+  const rig = { format: 'raa.rig', version: 1, name: 'test', bones: [{ name: 'root', parent: null, rest: { t: [0,0,0], r: [0,0,0,1], s: [1,1,1] } }] }
+  const skin = { rig, parts: [{ name: 'prop', skin: { joints: new Uint16Array(4), weights: new Float32Array([1,0,0,0]) } }] }
+  class SkinRecorder extends Recorder {
+    skinOf() { return skin }
+    readonly submitted: Float32Array[] = []
+    override setPose(i: number, pose: Float32Array) { super.setPose(i, pose); this.submitted.push(pose.slice()) }
+  }
+  const port = new SkinRecorder()
+  await port.init({ canvas: null, width: 64, height: 64, viewports: [{x:0,y:0,width:64,height:64}] })
+  const mounts = new WornMounts(port)
+  mounts.sync({colour:0,items:[{asset:bean,mount:[100,200,300],tint:null}]})
+  for (const y of [0.3,-0.4]) {
+    const pose = new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,y,0,1])
+    mounts.setPose(pose); mounts.draw([4,2,3],[0,0,0,1],[1,1,1])
+    assert.deepEqual(port.submitted.at(-1),pose)
+    assert.deepEqual([...port.draws.values()][0].t,[4,2,3])
+  }
+  mounts.dispose(); assert.equal(port.draws.size,0); port.dispose()
+})

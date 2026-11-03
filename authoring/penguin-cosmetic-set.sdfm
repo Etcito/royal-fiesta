@@ -504,7 +504,19 @@
             ]
           }
         },
-        "bindings": [],
+        "bindings": [
+          {
+            "source": {
+              "group": "hat_jester_hat"
+            },
+            "bones": [
+              {
+                "bone": "head",
+                "factor": 1
+              }
+            ]
+          }
+        ],
         "smooth": 0.2
       },
       "gameCollision": false
@@ -1781,29 +1793,8 @@
       "name": "Extra",
       "kind": "group",
       "children": [
-        "extra_neck",
-        "extra_wrap_low",
-        "extra_wrap_high",
-        "extra_knot",
-        "extra_end_front",
-        "extra_end_back",
-        "extra_fish_wrap_0",
-        "extra_fish_wrap_1",
-        "extra_fish_wrap_2",
-        "extra_fish_wrap_3",
-        "extra_fish_wrap_4",
-        "extra_fish_wrap_5",
-        "extra_fish_wrap_6",
-        "extra_fish_wrap_7",
-        "extra_fish_wrap_8",
-        "extra_fish_front_0",
-        "extra_fish_front_1",
-        "extra_fish_front_2",
-        "extra_fish_front_3",
-        "extra_fish_back_0",
-        "extra_fish_back_1",
-        "extra_fish_back_2",
-        "extra_fish_back_3"
+        "penguin_clearance",
+        "extra_neck"
       ],
       "asset": {
         "game": "royal-fiesta",
@@ -2281,13 +2272,38 @@
       },
       "gameCollision": true
     },
-    "extra_neck": {
-      "id": "extra_neck",
-      "name": "neck",
-      "kind": "anchor",
+    "penguin_clearance": {
+      "id": "penguin_clearance",
+      "name": "Penguin clearance",
+      "kind": "group",
       "transform": {
-        "position": [0, 0.3, 0]
+        "position": [0, 0.2, 0],
+        "scale": [1.3, 1, 1.3]
       },
+      "children": [
+        "extra_wrap_low",
+        "extra_wrap_high",
+        "extra_knot",
+        "extra_end_front",
+        "extra_end_back",
+        "extra_fish_wrap_0",
+        "extra_fish_wrap_1",
+        "extra_fish_wrap_2",
+        "extra_fish_wrap_3",
+        "extra_fish_wrap_4",
+        "extra_fish_wrap_5",
+        "extra_fish_wrap_6",
+        "extra_fish_wrap_7",
+        "extra_fish_wrap_8",
+        "extra_fish_front_0",
+        "extra_fish_front_1",
+        "extra_fish_front_2",
+        "extra_fish_front_3",
+        "extra_fish_back_0",
+        "extra_fish_back_1",
+        "extra_fish_back_2",
+        "extra_fish_back_3"
+      ],
       "gameCollision": true
     },
     "extra_wrap_low": {
@@ -4059,6 +4075,15 @@
         }
       },
       "gameCollision": false
+    },
+    "extra_neck": {
+      "id": "extra_neck",
+      "name": "neck",
+      "kind": "anchor",
+      "transform": {
+        "position": [0, 0.3, 0]
+      },
+      "gameCollision": true
     },
     "special_ghost_aura": {
       "id": "special_ghost_aura",

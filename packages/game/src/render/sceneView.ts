@@ -525,6 +525,10 @@ export class SceneView {
       if (p === lookPlayer) this.lookMounts?.draw([d[0], d[1], d[2]], [0, Math.sin(half), 0, Math.cos(half)], UNIT)
       // Submits the pose retained for the last observed tick; reading it never steps the graph.
       const posed = this.anim?.pose(p)
+      if (p === lookPlayer) {
+        const wornPose = posed?.skin ?? this.restSkin
+        if (wornPose) this.lookMounts?.setPose(wornPose)
+      }
       if (posed !== undefined && posed !== this.posed[p]) {
         port.setPose!(this.beans[p], posed.skin)
         this.posed[p] = posed

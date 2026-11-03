@@ -1,0 +1,59 @@
+{
+  "job_id": "97c2fc788777b4adf90cc7c608fcb4fa",
+  "client_id": "864294bb3ad935ea6fd9f0fb",
+  "result": {
+    "records": [
+      {
+        "id": "costume.cloud-skirt",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.cloud-skirt",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.golden-crown",
+        "clip": "walk",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      },
+      {
+        "id": "costume.golden-crown",
+        "clip": "dive-slide",
+        "frames": [
+          18,
+          42
+        ],
+        "skinned": 1
+      }
+    ],
+    "adapter": {
+      "vendor": "nvidia",
+      "architecture": "ampere",
+      "description": ""
+    },
+    "inventory": {
+      "assets": [
+        "costume.golden-crown",
+        "penguin.body"
+      ],
+      "instances": 2,
+      "meshes": 6,
+      "textures": 0,
+      "skinned": 2
+    }
+  }
+}

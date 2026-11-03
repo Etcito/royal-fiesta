@@ -1,0 +1,33 @@
+{
+  "job_id": "a2a7003a17ad13e5ba9891fc6c895920",
+  "client_id": "1865b6223a173e335e998f26",
+  "result": {
+    "ok": true,
+    "items": [
+      "costume.propeller-hat.teal.png",
+      "costume.propeller-hat.rose.png",
+      "costume.jester-hat.teal.png",
+      "costume.jester-hat.rose.png",
+      "costume.golden-crown.teal.png",
+      "costume.golden-crown.rose.png",
+      "costume.pineapple-suit.teal.png",
+      "costume.pineapple-suit.rose.png",
+      "costume.disco-jacket.teal.png",
+      "costume.disco-jacket.rose.png",
+      "costume.dragon-suit.teal.png",
+      "costume.dragon-suit.rose.png",
+      "costume.fish-scarf.teal.png",
+      "costume.fish-scarf.rose.png",
+      "costume.neon-sneakers.teal.png",
+      "costume.neon-sneakers.rose.png",
+      "costume.cloud-skirt.teal.png",
+      "costume.cloud-skirt.rose.png",
+      "costume.sparkler-wand.teal.png",
+      "costume.sparkler-wand.rose.png",
+      "costume.jetpack.teal.png",
+      "costume.jetpack.rose.png",
+      "costume.ghost-aura.teal.png",
+      "costume.ghost-aura.rose.png"
+    ]
+  }
+}

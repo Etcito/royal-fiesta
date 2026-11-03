@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
@@ -283,12 +283,12 @@ test('SDF cosmetic rendering uploads joint streams and submits the penguin matri
 })
 
 
-test('the four existing catalog cosmetics upload their saved skin and render with the penguin idle pose', () => {
+test('all committed catalog cosmetics upload their saved skin and render with the penguin idle pose', () => {
   const root=new URL('../../../',import.meta.url)
   const body=JSON.parse(readFileSync(new URL('assets/common/penguin.body.asset.json',root),'utf8'))
   const owner=Object.values(body.document.nodes).find((n:any)=>n.rig) as any
   const matrices=restPoseSkin(owner.rig,12)
-  for(const id of ['costume.jester-hat','costume.disco-jacket','costume.fish-scarf','costume.ghost-aura']) {
+  for(const id of readdirSync(new URL('assets/common/',root)).filter(n=>/^costume\..*\.asset\.json$/.test(n)).map(n=>n.replace(/\.asset\.json$/,''))) {
     const document=JSON.parse(readFileSync(new URL(`assets/common/${id}.asset.json`,root),'utf8')).document
     const mesh=decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`,root))))
     // The recorder checks geometry and skin submission; normal-volume textures require a GPU device.

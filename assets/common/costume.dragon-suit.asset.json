@@ -17,7 +17,7 @@
   "document": {
     "format": "sdfm",
     "version": 2,
-    "name": "dragon_suit",
+    "name": "Dragon Suit",
     "root": [
       "dragon_suit"
     ],
@@ -54,7 +54,11 @@
           "game": "royal-fiesta",
           "id": "costume.dragon-suit",
           "category": "cosmetic",
-          "world": "common"
+          "world": "common",
+          "cosmetic": {
+            "slot": "outfit",
+            "binding": "penguin"
+          }
         },
         "mesher": {
           "output": "paramesh",
@@ -63,6 +67,462 @@
             "subdivisions": 4,
             "transitionLoops": 1
           }
+        },
+        "rig": {
+          "format": "raa.rig",
+          "version": 1,
+          "name": "flipper-test",
+          "bones": [
+            {
+              "name": "root",
+              "parent": null,
+              "rest": {
+                "t": [
+                  0,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.l",
+              "parent": "upper.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.l",
+              "parent": "lower.l",
+              "rest": {
+                "t": [
+                  0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upper.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.48,
+                  0.35,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "lower.r",
+              "parent": "upper.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "tip.r",
+              "parent": "lower.r",
+              "rest": {
+                "t": [
+                  -0.55,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.l",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.l",
+              "parent": "upperLeg.l",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "upperLeg.r",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  -0.2,
+                  -0.5,
+                  0.05
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "foot.r",
+              "parent": "upperLeg.r",
+              "rest": {
+                "t": [
+                  0,
+                  -0.44999999999999996,
+                  0.15000000000000002
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "head",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0,
+                  0.5,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            }
+          ],
+          "roles": {
+            "foot.l": "foot.l",
+            "foot.r": "foot.r",
+            "hand.l": "tip.l",
+            "hand.r": "tip.r",
+            "head": "head",
+            "lowerArm.l": "lower.l",
+            "lowerArm.r": "lower.r",
+            "root": "root",
+            "upperArm.l": "upper.l",
+            "upperArm.r": "upper.r",
+            "upperLeg.l": "upperLeg.l",
+            "upperLeg.r": "upperLeg.r"
+          },
+          "ikChains": [
+            {
+              "name": "flipperL",
+              "solver": "twoBone",
+              "bones": [
+                "upper.l",
+                "lower.l",
+                "tip.l"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            },
+            {
+              "name": "flipperR",
+              "solver": "twoBone",
+              "bones": [
+                "upper.r",
+                "lower.r",
+                "tip.r"
+              ],
+              "pole": [
+                0,
+                0,
+                1
+              ],
+              "iterations": 16
+            }
+          ],
+          "limits": [
+            {
+              "bone": "upper.l",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "upper.r",
+              "min": [
+                -80,
+                -80,
+                -80
+              ],
+              "max": [
+                80,
+                80,
+                80
+              ]
+            },
+            {
+              "bone": "head",
+              "min": [
+                -40,
+                -60,
+                -30
+              ],
+              "max": [
+                40,
+                60,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.l",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "upperLeg.r",
+              "min": [
+                -60,
+                -30,
+                -30
+              ],
+              "max": [
+                60,
+                30,
+                30
+              ]
+            },
+            {
+              "bone": "foot.l",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            },
+            {
+              "bone": "foot.r",
+              "min": [
+                -45,
+                -20,
+                -20
+              ],
+              "max": [
+                45,
+                20,
+                20
+              ]
+            }
+          ],
+          "attach": {
+            "body": {
+              "bone": "root",
+              "t": [
+                0,
+                0,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "head": {
+              "bone": "head",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "neck": {
+              "bone": "root",
+              "t": [
+                0,
+                0.3,
+                0
+              ],
+              "r": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          },
+          "bindings": [],
+          "smooth": 0.2
         },
         "gameCollision": false
       },
@@ -77,8 +537,7 @@
         "name": "onesie_body",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.17, 0.015],
-          "rotation": [0, 0, 0]
+          "position": [0, -0.17, 0.015]
         },
         "smooth": 0.06,
         "material": "green",
@@ -114,8 +573,7 @@
         "name": "onesie_hips",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.43, 0.04],
-          "rotation": [0, 0, 0]
+          "position": [0, -0.43, 0.04]
         },
         "smooth": 0.08,
         "material": "green",
@@ -151,8 +609,7 @@
         "name": "belly_panel",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.19, 0.34],
-          "rotation": [0, 0, 0]
+          "position": [0, -0.19, 0.34]
         },
         "smooth": 0.025,
         "material": "belly",
@@ -188,8 +645,7 @@
         "name": "left_cuff",
         "kind": "paramesh",
         "transform": {
-          "position": [-0.27, -0.79, 0.015],
-          "rotation": [0, 0, 0]
+          "position": [-0.27, -0.79, 0.015]
         },
         "smooth": 0.055,
         "material": "green",
@@ -229,12 +685,12 @@
           "rotation": [0, 0, 90],
           "scale": [1, 1, 0.8]
         },
-        "params": {
-          "radius": 0.24,
-          "height": 0.42
-        },
-        "material": "green",
         "smooth": 0.04,
+        "material": "green",
+        "params": {
+          "height": 0.42,
+          "radius": 0.24
+        },
         "gameCollision": false
       },
       "right_cuff": {
@@ -242,8 +698,7 @@
         "name": "right_cuff",
         "kind": "paramesh",
         "transform": {
-          "position": [0.27, -0.79, 0.015],
-          "rotation": [0, 0, 0]
+          "position": [0.27, -0.79, 0.015]
         },
         "smooth": 0.055,
         "material": "green",
@@ -283,12 +738,12 @@
           "rotation": [0, 0, 90],
           "scale": [1, 1, 0.8]
         },
-        "params": {
-          "radius": 0.24,
-          "height": 0.42
-        },
-        "material": "green",
         "smooth": 0.04,
+        "material": "green",
+        "params": {
+          "height": 0.42,
+          "radius": 0.24
+        },
         "gameCollision": false
       },
       "back_spike_0": {
@@ -486,8 +941,7 @@
         "name": "tail_0",
         "kind": "paramesh",
         "transform": {
-          "position": [0, -0.66, -0.38],
-          "rotation": [0, 0, 0]
+          "position": [0, -0.66, -0.38]
         },
         "smooth": 0.02,
         "material": "green",
@@ -523,8 +977,7 @@
         "name": "tail_1",
         "kind": "paramesh",
         "transform": {
-          "position": [0.02, -0.7, -0.5],
-          "rotation": [0, 0, 0]
+          "position": [0.02, -0.7, -0.5]
         },
         "smooth": 0.02,
         "material": "green",
@@ -560,8 +1013,7 @@
         "name": "tail_2",
         "kind": "paramesh",
         "transform": {
-          "position": [0.06, -0.71, -0.62],
-          "rotation": [0, 0, 0]
+          "position": [0.06, -0.71, -0.62]
         },
         "smooth": 0.02,
         "material": "green",
@@ -597,8 +1049,7 @@
         "name": "tail_3",
         "kind": "paramesh",
         "transform": {
-          "position": [0.12, -0.68, -0.72],
-          "rotation": [0, 0, 0]
+          "position": [0.12, -0.68, -0.72]
         },
         "smooth": 0.02,
         "material": "green",
@@ -634,8 +1085,7 @@
         "name": "tail_4",
         "kind": "paramesh",
         "transform": {
-          "position": [0.2, -0.62, -0.78],
-          "rotation": [0, 0, 0]
+          "position": [0.2, -0.62, -0.78]
         },
         "smooth": 0.02,
         "material": "green",
@@ -671,8 +1121,7 @@
         "name": "tail_5",
         "kind": "paramesh",
         "transform": {
-          "position": [0.25, -0.55, -0.79],
-          "rotation": [0, 0, 0]
+          "position": [0.25, -0.55, -0.79]
         },
         "smooth": 0.02,
         "material": "green",
@@ -708,8 +1157,7 @@
         "name": "tail_6",
         "kind": "paramesh",
         "transform": {
-          "position": [0.25, -0.49, -0.76],
-          "rotation": [0, 0, 0]
+          "position": [0.25, -0.49, -0.76]
         },
         "smooth": 0.02,
         "material": "green",
@@ -745,8 +1193,7 @@
         "name": "tail_7",
         "kind": "paramesh",
         "transform": {
-          "position": [0.22, -0.46, -0.72],
-          "rotation": [0, 0, 0]
+          "position": [0.22, -0.46, -0.72]
         },
         "smooth": 0.02,
         "material": "green",
@@ -783,15 +1230,14 @@
         "kind": "torus",
         "transform": {
           "position": [0, 0.5, 0.015],
-          "rotation": [0, 0, 0],
           "scale": [1, 1, 0.92]
         },
+        "smooth": 0.02,
+        "material": "spikes",
         "params": {
           "majorRadius": 0.35,
           "minorRadius": 0.055
         },
-        "material": "spikes",
-        "smooth": 0.02,
         "gameCollision": false
       }
     },
@@ -857,8 +1303,8 @@
     }
   },
   "bounds": {
-    "min": [-0.75, -1.08, -0.91],
-    "max": [0.75, 0.72, 0.69]
+    "min": [-0.75, -1.025, -0.931173],
+    "max": [0.75, 0.778289, 0.63]
   },
-  "hash": "a04cd05598cbbc13d6ff9443285628748cb228913d9d9e31a98e0954425e031b"
+  "hash": "4c66709d710d0eccde65bbd1d9ae6d6b4d1efc1e4714cd90158b01ac3af54480"
 }

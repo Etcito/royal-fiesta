@@ -1,0 +1,43 @@
+{
+  "job_id": "40209b4c89a81a0bf4f48e52b1ce0e09",
+  "adapter": {
+    "vendor": "nvidia",
+    "architecture": "ampere",
+    "description": ""
+  },
+  "page_ref": "exec-202611030020-de7e22ffc502a0bf5c242b5cafcac80a132cc129cc80f04ec5a918616552b09d",
+  "views_reviewed": 24,
+  "frames_reviewed": 48,
+  "inspection": "All 12 individually worn cosmetics follow body motion. No skin-seam tears or detached pieces observed in the sampled walk and dive views. Hats follow head, wand follows right hand. This is sampled visual evidence, not an all-angle or all-animation guarantee.",
+  "fit_adjustments": [
+    "fish-scarf: x/z scale 1.3, y +0.2",
+    "pineapple-suit: x/z scale 1.25, y scale 1.05",
+    "propeller-hat: x/z scale 1.15, y +0.2"
+  ],
+  "captures": [
+    "costume.cloud-skirt-dive-slide.png",
+    "costume.cloud-skirt-walk.png",
+    "costume.disco-jacket-dive-slide.png",
+    "costume.disco-jacket-walk.png",
+    "costume.dragon-suit-dive-slide.png",
+    "costume.dragon-suit-walk.png",
+    "costume.fish-scarf-dive-slide.png",
+    "costume.fish-scarf-walk.png",
+    "costume.ghost-aura-dive-slide.png",
+    "costume.ghost-aura-walk.png",
+    "costume.golden-crown-dive-slide.png",
+    "costume.golden-crown-walk.png",
+    "costume.jester-hat-dive-slide.png",
+    "costume.jester-hat-walk.png",
+    "costume.jetpack-dive-slide.png",
+    "costume.jetpack-walk.png",
+    "costume.neon-sneakers-dive-slide.png",
+    "costume.neon-sneakers-walk.png",
+    "costume.pineapple-suit-dive-slide.png",
+    "costume.pineapple-suit-walk.png",
+    "costume.propeller-hat-dive-slide.png",
+    "costume.propeller-hat-walk.png",
+    "costume.sparkler-wand-dive-slide.png",
+    "costume.sparkler-wand-walk.png"
+  ]
+}

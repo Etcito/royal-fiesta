@@ -1,0 +1,326 @@
+[
+  {
+    "id": "costume.cloud-skirt",
+    "hash": "299ba629a2074465a0fbed0226b97dacf5002149e7fcafd77a2945478aede621",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 2120,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [],
+    "bounds": {
+      "min": [
+        -0.78355,
+        -0.8344,
+        -0.66215
+      ],
+      "max": [
+        0.79295,
+        -0.16777,
+        0.74075
+      ]
+    }
+  },
+  {
+    "id": "costume.disco-jacket",
+    "hash": "d0f10918cb0fe55353af191c80684aec187d5316aad21845f007b4ec54f10692",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 15010,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [],
+    "bounds": {
+      "min": [
+        -0.711606,
+        -0.58,
+        -0.564
+      ],
+      "max": [
+        0.711606,
+        0.663649,
+        1.03
+      ]
+    }
+  },
+  {
+    "id": "costume.dragon-suit",
+    "hash": "4c66709d710d0eccde65bbd1d9ae6d6b4d1efc1e4714cd90158b01ac3af54480",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 2663,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [],
+    "bounds": {
+      "min": [
+        -0.75,
+        -1.025,
+        -0.931173
+      ],
+      "max": [
+        0.75,
+        0.778289,
+        0.63
+      ]
+    }
+  },
+  {
+    "id": "costume.fish-scarf",
+    "hash": "9fcc62a4f9fb1eba53cbd91cb5c9432eb14d88c2f27cc5424378aa2029299927",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 14373,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [],
+    "bounds": {
+      "min": [
+        -0.492181,
+        -0.2111,
+        -0.68913
+      ],
+      "max": [
+        0.584156,
+        0.632624,
+        0.73073
+      ]
+    }
+  },
+  {
+    "id": "costume.ghost-aura",
+    "hash": "0f7fae8e44c029ea5451965ffe37329e1279b060ce03fc51fa3365a74257306e",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 2261,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [],
+    "bounds": {
+      "min": [
+        -1.54,
+        -1.49,
+        -0.68
+      ],
+      "max": [
+        1.54,
+        1.59,
+        0.88
+      ]
+    }
+  },
+  {
+    "id": "costume.golden-crown",
+    "hash": "3ed0299aabb5c6360ad310e73f29dcf21c9c19e579d0f6ebfdfa2e4ff953b095",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 2393,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [
+      {
+        "source": {
+          "group": "golden_crown"
+        },
+        "bones": [
+          {
+            "bone": "head",
+            "factor": 1
+          }
+        ]
+      }
+    ],
+    "bounds": {
+      "min": [
+        -0.3908,
+        0.9275,
+        -0.383
+      ],
+      "max": [
+        0.3908,
+        1.35,
+        0.426
+      ]
+    }
+  },
+  {
+    "id": "costume.jester-hat",
+    "hash": "947f36c0f1459b8b211b6ffed9f7e7a78bca5d5a35bd35babda152fc72212828",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 2614,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [
+      {
+        "source": {
+          "group": "hat_jester_hat"
+        },
+        "bones": [
+          {
+            "bone": "head",
+            "factor": 1
+          }
+        ]
+      }
+    ],
+    "bounds": {
+      "min": [
+        -1.060101,
+        0.619899,
+        -0.36
+      ],
+      "max": [
+        1.060101,
+        1.907093,
+        0.4
+      ]
+    }
+  },
+  {
+    "id": "costume.jetpack",
+    "hash": "8a8f7f9463e3cbf3c5f1f4aa8d77955b9a7ee9ec4056e066af19adb0202dc7ed",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 6435,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [],
+    "bounds": {
+      "min": [
+        -0.5,
+        -0.78,
+        -0.716
+      ],
+      "max": [
+        0.5,
+        0.575,
+        0.44
+      ]
+    }
+  },
+  {
+    "id": "costume.neon-sneakers",
+    "hash": "4fea39a281fe9e31618b2b8bd5467a25e422ebb0ab1fafcc41c8a9d9c7fb4224",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 5488,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [],
+    "bounds": {
+      "min": [
+        -0.39,
+        -1.045,
+        -0.12
+      ],
+      "max": [
+        0.39,
+        -0.70701,
+        0.52
+      ]
+    }
+  },
+  {
+    "id": "costume.pineapple-suit",
+    "hash": "4b134228bc2ce32d9d1c11c6d900c629954ffff9d8238e678790b8497fca0cfc",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 12155,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [],
+    "bounds": {
+      "min": [
+        -0.635,
+        -0.756,
+        -0.6625
+      ],
+      "max": [
+        0.635,
+        1.2705,
+        0.6625
+      ]
+    }
+  },
+  {
+    "id": "costume.propeller-hat",
+    "hash": "990eff3064e135bc833186735256b52cc79a84421e7ede78993226311e04e06c",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 2719,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [
+      {
+        "source": {
+          "group": "propeller_hat"
+        },
+        "bones": [
+          {
+            "bone": "head",
+            "factor": 1
+          }
+        ]
+      }
+    ],
+    "bounds": {
+      "min": [
+        -0.499221,
+        0.193946,
+        -0.607861
+      ],
+      "max": [
+        0.499221,
+        1.361155,
+        0.518172
+      ]
+    }
+  },
+  {
+    "id": "costume.sparkler-wand",
+    "hash": "64a8a681f24b66cc0d8ff760fa555ae20c29bd0c062361d4fdc13f137fc54f5e",
+    "hashMatches": true,
+    "parts": 1,
+    "skinParts": 1,
+    "vertices": 1370,
+    "seamMismatches": 0,
+    "invalidWeights": 0,
+    "bindings": [
+      {
+        "source": {
+          "group": "sparkler_wand"
+        },
+        "bones": [
+          {
+            "bone": "tip.r",
+            "factor": 1
+          }
+        ]
+      }
+    ],
+    "bounds": {
+      "min": [
+        -2.03,
+        0.095,
+        -0.066
+      ],
+      "max": [
+        -1.21,
+        1.678,
+        0.066
+      ]
+    }
+  }
+]

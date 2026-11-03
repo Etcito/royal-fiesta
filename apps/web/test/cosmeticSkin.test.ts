@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { decodeMesh } from '../src/sdf/meshWire.ts'
 import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
 import { assetSkin } from '../src/content/cosmeticSkin.ts'
@@ -24,11 +24,11 @@ test('the web provider registers cosmetic skins before presenting the port; ward
 })
 
 
-test('existing catalog set loads four saved skinned meshes on the exact penguin skeleton', () => {
+test('every committed cosmetic loads normalized skin streams on the exact penguin skeleton', () => {
   const root = new URL('../../../',import.meta.url)
   const body=JSON.parse(readFileSync(new URL('assets/common/penguin.body.asset.json',root),'utf8'))
   const penguin=Object.values(body.document.nodes).find((n:any)=>n.rig) as any
-  for(const id of ['costume.jester-hat','costume.disco-jacket','costume.fish-scarf','costume.ghost-aura']) {
+  for(const id of readdirSync(new URL('assets/common/',root)).filter(n=>/^costume\..*\.asset\.json$/.test(n)).map(n=>n.replace(/\.asset\.json$/,''))) {
     const file=JSON.parse(readFileSync(new URL(`assets/common/${id}.asset.json`,root),'utf8'))
     const mesh=decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`,root))))
     assert.equal(mesh.hash,file.hash)
@@ -39,6 +39,13 @@ test('existing catalog set loads four saved skinned meshes on the exact penguin 
     for(const part of skin.parts) {
       assert.ok(part.skin!.joints.length>0)
       assert.equal(part.skin!.joints.length,part.skin!.weights.length)
+      const {joints,weights}=part.skin!
+      const bone = id.endsWith('-hat') || id.endsWith('-crown') ? 'head' : id.endsWith('sparkler-wand') ? 'tip.r' : null
+      for(let v=0;v<weights.length;v+=4) {
+        assert.ok(Math.abs(weights[v]+weights[v+1]+weights[v+2]+weights[v+3]-1)<1e-5,id)
+        for(let k=0;k<4;k++)assert.ok(joints[v+k]<skin.rig.bones.length && Number.isFinite(weights[v+k]) && weights[v+k]>=0,id)
+        if(bone) {assert.equal(weights[v],1,id);assert.equal(skin.rig.bones[joints[v]].name,bone,id)}
+      }
     }
   }
 })

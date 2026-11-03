@@ -543,7 +543,19 @@
               ]
             }
           },
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "group": "outfit_disco_jacket"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": false
@@ -1211,5 +1223,5 @@
     "min": [-0.711606, -0.58, -0.564],
     "max": [0.711606, 0.663649, 1.03]
   },
-  "hash": "d0f10918cb0fe55353af191c80684aec187d5316aad21845f007b4ec54f10692"
+  "hash": "3a0d1a582b855a0cf5226f4001626141ef728ae04fab8e54c86621f35bd91a36"
 }

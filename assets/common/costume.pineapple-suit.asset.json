@@ -501,7 +501,19 @@
               ]
             }
           },
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "group": "pineapple_suit"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": true
@@ -1159,5 +1171,5 @@
     "min": [-0.635, -0.756, -0.6625],
     "max": [0.635, 1.2705, 0.6625]
   },
-  "hash": "4b134228bc2ce32d9d1c11c6d900c629954ffff9d8238e678790b8497fca0cfc"
+  "hash": "e8cb350703c5cd11d0e0c1ae5d96de01d493011d624812beea40552735e68b3f"
 }

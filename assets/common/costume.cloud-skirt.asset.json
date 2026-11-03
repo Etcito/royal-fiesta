@@ -520,7 +520,19 @@
               ]
             }
           },
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "group": "cloud_skirt"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": false
@@ -843,5 +855,5 @@
     "min": [-0.78355, -0.8344, -0.66215],
     "max": [0.79295, -0.16777, 0.74075]
   },
-  "hash": "299ba629a2074465a0fbed0226b97dacf5002149e7fcafd77a2945478aede621"
+  "hash": "e6bc94d8a8a5db4f7423148e9b7fbb8c3d32cfcb88f6e7e4c9e859f97b388bb1"
 }

@@ -501,7 +501,19 @@
               ]
             }
           },
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "group": "extra_fish_scarf"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": true
@@ -2436,5 +2448,5 @@
     "min": [-0.492181, -0.2111, -0.68913],
     "max": [0.584156, 0.632624, 0.73073]
   },
-  "hash": "9fcc62a4f9fb1eba53cbd91cb5c9432eb14d88c2f27cc5424378aa2029299927"
+  "hash": "5ba4287caa6d970c9ec4fe0506a70fefe6b73eb22ec60077b942167a8f9b174c"
 }

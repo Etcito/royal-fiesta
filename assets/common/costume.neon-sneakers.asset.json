@@ -518,7 +518,19 @@
               ]
             }
           },
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "group": "neon_sneakers"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": false
@@ -861,5 +873,5 @@
     "min": [-0.39, -1.045, -0.12],
     "max": [0.39, -0.70701, 0.52]
   },
-  "hash": "4fea39a281fe9e31618b2b8bd5467a25e422ebb0ab1fafcc41c8a9d9c7fb4224"
+  "hash": "ff3104be7e717725a4180230393365a2f8ac5655a4cdc8ccaf3d89be3320e02b"
 }

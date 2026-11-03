@@ -155,6 +155,8 @@ class SdfRenderPort implements ResizablePort {
     if (!fullView(rects)) this.engine.setViewports(rects)
     this.engine.setLight(DEFAULT_LIGHT)
     this.engine.setAmbient(DEFAULT_AMBIENT)
+    // One PBR material per object (RAA render option, on by default). Royal Fiesta can turn it off later in its options.
+    this.engine.setSingleMaterial(true)
     this.canvas = target.canvas
     this.target = { ...target, viewports: target.viewports.map(v => ({ ...v })) }
   }

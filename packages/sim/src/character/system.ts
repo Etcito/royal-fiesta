@@ -73,6 +73,11 @@ const scratchBody: BodyRef = { item: -1, body: -1 }
 const scratchObsV = { x: 0, y: 0, z: 0 }
 let scratchRay: InstanceType<RapierModule['Ray']> | null = null
 
+// #timer in air mode: airborne off a slide (a bump, a lip, a drop), not a jump. The landing returns
+// to slide and the slide rules decide there. Stun and dive-recover timers are positive, so the mark
+// lives in the snapshotted timer without a new field.
+const SLIDE_AIR = -1
+
 // The one character body: FiestaWorld's init and a domain entity recipe both call this, so a
 // domain seat is byte-for-byte the same body as a full-mesh seat.
 export function characterBody(R: RapierModule, parkSlot: number): CharacterBodyDescs {
@@ -272,6 +277,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     this.#facingX[p] = at.facing.x
     this.#facingZ[p] = at.facing.z
     this.#mode[p] = CharMode.air
+    this.#timer[p] = 0
     this.#parked[p] = 0
   }
 
@@ -559,6 +565,10 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         }
       } else if (mode === CharMode.grabbing) {
         if (protectedNow || (buttons & GRAB_BIT) === 0 || ++this.#grabTicks[p] >= CHAR.grabMaxTicks) mode = free
+      } else if (mode === CharMode.air && timer === SLIDE_AIR && grounded) {
+        // Landing from a slide's airtime: back on the belly, the slide block decides whether he stands.
+        mode = CharMode.slide
+        timer = 0
       } else if (mode !== CharMode.slide && mode !== CharMode.swim) {
         // Slide persists; the slide block below applies its rules and exits it. Swim persists
         // until setSwim(false), a place or a park, so the probe never re-derives ground/air here.
@@ -567,7 +577,9 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
 
       const wasSliding = mode === CharMode.slide
       if (wasSliding) this.#slid[p] = 1
-      const steer = mode === CharMode.ground || mode === CharMode.air || mode === CharMode.grabbing
+      // A slide's airtime carries its horizontal velocity: no steering, no facing turn.
+      const slideAir = mode === CharMode.air && timer === SLIDE_AIR
+      const steer = !slideAir && (mode === CharMode.ground || mode === CharMode.air || mode === CharMode.grabbing)
       const swimming = mode === CharMode.swim
       let vx = v.x
       let vz = v.z
@@ -694,9 +706,13 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         this.#facingX[p] = fx
         this.#facingZ[p] = fz
         this.#slideSpeed[p] = slideSpeed
-        if (mode === CharMode.slide && slideSpeed < CHAR.slide.exitSpeed && this.#strokeTimer[p] === 0) mode = CharMode.ground
+        // Stands up only below walking speed (the dry cap); the stroke grace keeps the dry cruise on the belly.
+        if (mode === CharMode.slide && slideSpeed < CHAR.maxRun * tuning.maxRun && this.#strokeTimer[p] === 0) mode = CharMode.ground
       }
-      if (mode === CharMode.slide && !grounded && this.#coyote[p] === 0) mode = CharMode.air
+      if (mode === CharMode.slide && !grounded && this.#coyote[p] === 0) {
+        mode = CharMode.air
+        timer = SLIDE_AIR
+      }
 
       if (!wasSliding && (mode === CharMode.ground || mode === CharMode.air) && (pressed & DIVE_BIT) !== 0 && this.#diveUsed[p] === 0) {
         const s = Math.max(Math.sqrt(vx * vx + vz * vz), CHAR.diveSpeed)
@@ -737,6 +753,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       }
       if (mode !== CharMode.grabbing && (this.#grabTarget[p] >= 0 || this.#grabLever[p] >= 0)) this.#release(ctx, p)
       if (this.#grabLever[p] >= 0) mechanisms!.grabHandle(ctx, this.#grabLever[p], p)
+      // Any other mode (dive, grab, bounce, swim, stun) ends the slide's airtime.
+      if (timer === SLIDE_AIR && mode !== CharMode.air) timer = 0
       this.#mode[p] = mode
       this.#timer[p] = timer
       // Stunned: the knockback is left to physics.
@@ -798,6 +816,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         this.#grabTarget[p] = q
         this.#grabTicks[p] = 0
         this.#mode[p] = CharMode.grabbing
+        if (this.#timer[p] === SLIDE_AIR) this.#timer[p] = 0
       }
       if (q >= 0) this.#scaleHorizontal(ctx, q, CHAR.grabSlow)
       const gv = this.#preVel

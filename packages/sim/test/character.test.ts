@@ -841,7 +841,8 @@ describe('M4 slide', () => {
       stepN(r, 30, NEUTRAL)
       seedSlide(r, 6)
       const s = stepN(r, 1, stroke ? DIVE : NEUTRAL)
-      assert.equal(s.mode, CharMode.slide)
+      // Without the stroke's grace, 6 m/s is below walking speed and he stands up.
+      assert.equal(s.mode, stroke ? CharMode.slide : CharMode.ground)
       r.world.free()
       return s.slideSpeed!
     }
@@ -864,18 +865,22 @@ describe('M4 slide', () => {
   })
 
   it('a slow dry stroke restores cruise speed and grace expires without further strokes', () => {
-    assert.ok(CHAR.slide.drySwimSpeed > CHAR.slide.exitSpeed)
-    assert.ok(CHAR.slide.drySwimSpeed <= CHAR.maxRun)
-    const r = slideRig('mud', 0)
-    try {
-      const stroke = stepN(r, 1, DIVE)
-      assert.equal(stroke.mode, CharMode.slide)
-      assert.ok(stroke.slideSpeed! >= CHAR.slide.drySwimSpeed * 0.6)
-      for (let tick = 1; tick < CHAR.slide.strokeGraceTicks; tick++) {
-        assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.slide)
-      }
-      assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.ground)
-    } finally { r.world.free() }
+    // The dry cruise is below walking speed: only the stroke grace keeps it on the belly.
+    assert.ok(CHAR.slide.drySwimSpeed < CHAR.maxRun)
+    for (const [surface, k] of [['mud', 0.6], ['normal', 1]] as const) {
+      const r = slideRig(surface, 0)
+      try {
+        const stroke = stepN(r, 1, DIVE)
+        assert.equal(stroke.mode, CharMode.slide)
+        assert.ok(stroke.slideSpeed! >= CHAR.slide.drySwimSpeed * k - 1e-9)
+        for (let tick = 1; tick < CHAR.slide.strokeGraceTicks; tick++) {
+          const s = stepN(r, 1, NEUTRAL)
+          assert.equal(s.mode, CharMode.slide, `${surface} tick ${tick}`)
+          assert.ok(s.slideSpeed! < CHAR.maxRun * k)
+        }
+        assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.ground)
+      } finally { r.world.free() }
+    }
   })
 
   it('walking on ice accelerates and brakes more slowly than dry walking', () => {
@@ -924,7 +929,9 @@ describe('M4 slide', () => {
   it('an obstacle friction 0.1 on normal decelerates less than friction 0.5', () => {
     const speedAfter = (friction: number): number => {
       const r = slideRig('normal', 12, friction)
-      const s = stepN(r, 30, NEUTRAL)
+      // One stroke: its grace keeps the dry slide (capped at walking speed) on the belly for 30 ticks.
+      stepN(r, 1, DIVE)
+      const s = stepN(r, 29, NEUTRAL)
       assert.equal(s.mode, CharMode.slide)
       const speed = hspeed(s)
       r.world.free()
@@ -935,13 +942,90 @@ describe('M4 slide', () => {
     assert.ok(low > high, `friction 0.1 ${low} m/s, friction 0.5 ${high} m/s`)
   })
 
-  it('slide ends below exitSpeed', () => {
-    const r = slideRig('normal', 10)
-    let s = state(r)
-    for (let i = 0; i < 300 && s.mode === CharMode.slide; i++) s = stepN(r, 1, NEUTRAL)
-    assert.equal(s.mode, CharMode.ground)
-    assert.ok(s.slideSpeed! < CHAR.slide.exitSpeed, `slideSpeed ${s.slideSpeed}`)
-    r.world.free()
+  it('slide stands up only below walking speed', () => {
+    for (const [surface, walk] of [['normal', CHAR.maxRun], ['mud', CHAR.maxRun * 0.6]] as const) {
+      const r = slideRig(surface, 10)
+      let s = state(r)
+      let prev = 10
+      for (let i = 0; i < 300 && s.mode === CharMode.slide; i++) {
+        prev = s.slideSpeed ?? prev
+        s = stepN(r, 1, NEUTRAL)
+      }
+      assert.equal(s.mode, CharMode.ground, surface)
+      assert.ok(s.slideSpeed! < walk, `${surface} slideSpeed ${s.slideSpeed}`)
+      assert.ok(prev >= walk, `${surface} was still at walking speed before ${prev}`)
+      r.world.free()
+    }
+  })
+
+  it('a belly slide above walking speed never stands up', () => {
+    const r = slideRig('ice', 12)
+    try {
+      for (let tick = 0; tick < 300; tick++) {
+        const s = stepN(r, 1, NEUTRAL)
+        assert.equal(s.mode, CharMode.slide, `tick ${tick}`)
+        assert.ok(s.slideSpeed! > CHAR.maxRun * 1.1)
+      }
+    } finally { r.world.free() }
+  })
+
+  // An ice deck that ends at z = 10 above a lower deck 0.4 m below: a short drop at slide speed.
+  function dropRig(lower: Surface, speed: number): ObsRig {
+    const upper = obstacle('deck-upper', v3(0, -0.5, -40), { kind: 'static' }, v3(20, 0.5, 50))
+    upper.surface = 'ice'
+    upper.friction = 2
+    const low = obstacle('deck-lower', v3(0, -0.9, 60), { kind: 'static' }, v3(20, 0.5, 50))
+    low.surface = lower
+    low.friction = 2
+    const r = obsRig([upper, low], v3(0, 0, 0))
+    stepN(r, 30, NEUTRAL)
+    seedSlide(r, speed)
+    return r
+  }
+
+  // Slides straight off the upper deck, then holds `inAir` until the first grounded tick.
+  function overTheDrop(r: ObsRig, inAir: PlayerInput): { air: CharState, landed: CharState } {
+    stepUntil(r, () => NEUTRAL, (s) => s.mode === CharMode.air, 240)
+    stepN(r, 1, inAir)
+    const air = state(r)
+    stepUntil(r, () => inAir, (s) => s.grounded, 120)
+    return { air, landed: state(r) }
+  }
+
+  it('a short airtime at slide speed lands back on the belly, with no air steering', () => {
+    const r = dropRig('ice', 12)
+    try {
+      const side = input({ moveX: 1 })
+      const { air, landed } = overTheDrop(r, side)
+      assert.ok(air.pos.z > 10, `left the deck at z ${air.pos.z}`)
+      // Carried: the side input neither turns the facing nor adds lateral velocity in the air.
+      assert.ok(Math.abs(air.vel.x) < 1e-3 && air.facing.z === 1, `air vel.x ${air.vel.x}`)
+      assert.ok(hspeed(air) > 11.5, `air speed ${hspeed(air)}`)
+      assert.equal(landed.mode, CharMode.slide)
+      for (let tick = 0; tick < 60; tick++) assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.slide, `tick ${tick}`)
+    } finally { r.world.free() }
+  })
+
+  it('landing a slide airtime below walking speed stands up as before', () => {
+    // A dry lower deck caps the slide at walking speed: the first tick under it stands up.
+    const r = dropRig('normal', 12)
+    try {
+      const { landed } = overTheDrop(r, NEUTRAL)
+      assert.equal(landed.mode, CharMode.slide)
+      const t = stepUntil(r, () => NEUTRAL, (s) => s.mode === CharMode.ground, 10)
+      assert.ok(t <= 2, `stood up after ${t + 1} ticks`)
+      for (let tick = 0; tick < 30; tick++) assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.ground)
+    } finally { r.world.free() }
+  })
+
+  it('a jump from the slide lands standing, even above walking speed', () => {
+    const r = slideRig('ice', 12)
+    try {
+      assert.equal(stepN(r, 1, JUMP).mode, CharMode.air)
+      stepUntil(r, () => NEUTRAL, (s) => s.grounded, 120)
+      assert.equal(state(r).mode, CharMode.ground)
+      for (let tick = 0; tick < 30; tick++) assert.notEqual(stepN(r, 1, NEUTRAL).mode, CharMode.slide)
+    } finally { r.world.free() }
   })
 })
 

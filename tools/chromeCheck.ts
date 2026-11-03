@@ -371,9 +371,9 @@ async function bakeAndPack(op?: string): Promise<string> {
   process.env.RF_MESH_JOBS = String(Math.min(cpus, Math.max(1, Math.floor(Number(process.env.RF_MESH_JOBS) || cpus))))
   const catalog = JSON.parse(readFileSync('economy/catalog.season1.json', 'utf8')) as { items: { asset: string }[] }
   const needed = new Set([...await profileAssetIds('sprint'), ...catalog.items.map(item => item.asset)])
-  // The plain page can use its shipped saved meshes, just as the served page does.
-  // Adding a second full server-mesh cache exceeds the GPU upload size limit.
-  if (op === 'startPlain' || op === 'animPerf' || op === 'shopScreens' || op === 'screensPreview' || op === 'cosmeticThumbs') {
+  // Every page loads its shipped saved meshes, just as the served page does; baking them again adds a second
+  // full server-mesh cache that exceeds the GPU upload size limit (lobbyUnload: 277.9 MB > 268.4 MB).
+  {
     const assets = buildContentIndex().assets
     if ([...needed].every(id => assets.some(asset => asset.id === id && asset.mesh !== undefined))) {
       packContent(join(dist, 'content'), undefined, new Set())

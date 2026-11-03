@@ -206,7 +206,7 @@ export class ShowMode {
     try {
       const content = await checkAwait(`round ${index}: content ${round.plan.course.id}`, () => zoneContent('sprint', round.plan.course.id))
       const prepared = await checkAwait(`round ${index}: render port`, () => prepareZoneNetScene({
-        canvas: this.canvas,
+        canvas: this.canvas, crowdCull: round.seatOf.length > 8,
         followSeats: Array.from({ length: this.humanCount }, (_, k) => {
           const local = round.seatOf.indexOf(k)
           return local >= 0 ? local : (round.localSeats[0] ?? 0)

@@ -2,7 +2,7 @@
 // failing dependencies: scripts that run at DOMContentLoaded (animBrick, a render transport) find them, and
 // calls wait for the real implementation, so failures surface through the GPU client.
 const names = [
-  'localPads', 'controlsProbe', 'gameCapture', 'roundCapture', 'uiTour', 'flowTour', 'zoneCapture', 'zoneLobbyCapture',
+  'botPerf', 'localPads', 'controlsProbe', 'gameCapture', 'roundCapture', 'uiTour', 'flowTour', 'zoneCapture', 'zoneLobbyCapture',
   'zoneLobbyPair', 'zoneSplitPair', 'countdowns', 'lobbyUnload', 'wardrobe', 'vote', 'm13Flow', 'shopEconomy', 'startPlain', 'cameraLook', 'animPerf', 'cosmeticThumbs', 'shopScreens', 'screensPreview',
 ] as const
 const ops: Record<string, (...args: unknown[]) => Promise<unknown>> = {}

@@ -1,3 +1,4 @@
+import { inCrowdView } from './crowdVisibility.ts'
 import { WornMounts } from './wornLook.ts'
 import type { WornLook } from './wornLook.ts'
 // Binds a MatchSim to a RenderPort: bean, obstacle and mechanism instances and the follow camera.
@@ -54,6 +55,8 @@ export interface SceneViewOptions {
   dressing?: CourseDressing
   // Prepared local scenes build behind the menu, without a loading paint.
   loadingPaint?: boolean
+  // Offline crowds only: cull off-screen characters before animation and skin submission.
+  crowdAspect?: () => number
   // The skinned character (S18): its raa-sdfm skin, registered under assetId, and the S19 graph JSON that
   // poses it from the skin's rig and clips. Ports without skinning keep the rigid character.
   skinned?: SkinnedCharacter
@@ -456,7 +459,7 @@ export class SceneView {
       this.readCharacters(sim, advanced && !reset, tick)
       this.tick = tick
     }
-    this.observeTick(sim)
+    if (this.opts.crowdAspect === undefined) this.observeTick(sim)
 
     const t: [number, number, number] = [0, 0, 0]
     const r: [number, number, number, number] = [0, 0, 0, 1]
@@ -488,6 +491,23 @@ export class SceneView {
       port.setTransform(body.instance, [t[0] + arm[0], t[1] + arm[1], t[2] + arm[2]], quatMul(motion, body.placeR), body.s)
     }
 
+    // Resolve the current orbit before deciding which crowd members can be seen.
+    // Small rollback scenes retain their original camera and animation path.
+    let crowdCamera = false
+    if (this.opts.crowdAspect !== undefined && this.state.phase !== Phase.podium) {
+      sim.character(this.opts.localPlayer, this.view)
+      if (!this.view.parked) {
+        const b = this.opts.localPlayer * 3
+        const focus = [0, 1, 2].map(k => this.chPrev[b + k] + (this.chCur[b + k] - this.chPrev[b + k]) * alpha)
+        if (smoother !== null) smoother.applyEntity(this.opts.localPlayer, focus)
+        const pos = { x: focus[0], y: focus[1], z: focus[2] }
+        this.cam = this.opts.camera ? this.opts.camera(pos, frameDtS, this.obClip ?? NO_CLIP) : followCamera(this.cam, pos, this.view.facing, frameDtS)
+        port.setCamera(this.opts.viewport, this.cam)
+        crowdCamera = true
+      }
+    }
+    if (this.opts.crowdAspect !== undefined) this.observeTick(sim)
+
     const c = this.view
     const d = this.shown
     const local = this.opts.localPlayer
@@ -510,7 +530,7 @@ export class SceneView {
           this.lookColour = look.colour
         }
       }
-      if (c.parked) {
+      if (c.parked || !this.crowdVisible(p, c.pos)) {
         this.show(p, false)
         continue
       }
@@ -560,11 +580,16 @@ export class SceneView {
       camFacing = { x: 0, z: 1 }
       onLocal = false
     }
-    if (camPos !== null) {
+    if (camPos !== null && !crowdCamera) {
       const hook = this.opts.camera
       this.cam = hook !== undefined && onLocal ? hook(camPos, frameDtS, this.obClip ?? NO_CLIP) : followCamera(this.cam, camPos, camFacing, frameDtS)
       port.setCamera(this.opts.viewport, this.cam)
     }
+  }
+
+  private crowdVisible(player: number, pos: { x: number; y: number; z: number }): boolean {
+    return this.opts.crowdAspect === undefined || player === this.opts.localPlayer ||
+      player === this.opts.lookPlayer || inCrowdView(this.cam, pos, this.opts.crowdAspect())
   }
 
   /**
@@ -582,7 +607,7 @@ export class SceneView {
     for (let p = 0; p < this.beans.length; p++) {
       sim.character(p, c)
       // A parked character leaves: the driver frees its graph and a return starts a fresh one.
-      if (c.parked) continue
+      if (c.parked || !this.crowdVisible(p, c.pos)) continue
       // Matches carry no S9 emote; grounded is every mode but the airborne ones.
       const grounded = c.mode !== CharMode.air && c.mode !== CharMode.dive
       out.push({ id: p, mode: c.mode, vel: { x: c.vel.x, y: c.vel.y, z: c.vel.z }, grounded, surface: c.surface ?? 'normal', strokeTimer: c.strokeTimer, slideSpeed: c.slideSpeed, carry: c.carry, emote: 0, ...ikInputs(c, grounded) })

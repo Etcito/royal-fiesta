@@ -559,3 +559,38 @@ test('skinned cosmetic in all four slots receives the penguin pose and character
     assert.equal(port.render().instances,count-1,'slot removal frees only its own instance')
   } finally {view.dispose();sim.free()}
 })
+
+test('offline crowd culls off-screen instances and restores them on the same camera-turn frame', async () => {
+  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const inputs = Array.from({ length: sim.setup.playerCount }, () => neutralInput())
+  for (let i = 0; i < 200 && sim.course() === null; i++) sim.step(inputs)
+  const port = new NullRenderPort()
+  await port.init({ canvas: null, width: 960, height: 540, viewports: [{ x: 0, y: 0, width: 960, height: 540 }] })
+  const visible = new Map<number, boolean>()
+  const original = port.setVisible.bind(port)
+  port.setVisible = (id, show) => { visible.set(id, show); original(id, show) }
+  let turn = false
+  const view = new SceneView({ port, viewport: 0, localPlayer: 0, bean, assets: n => assets.get(n)!,
+    loadingPaint: false, crowdAspect: () => 16/9,
+    camera: () => ({ eye:[0,0,0],target: turn ? [1,0,0] : [0,0,1],fovYDeg:60,near:0.1,far:500 }) })
+  const crowd = new Proxy(sim, { get(target, key) {
+    if (key === 'setup') return { ...target.setup, playerCount: 60 }
+    if (key === 'character') return (_p: number, out: CharacterView) => {
+      target.character(0, out); out.parked = false
+      out.pos.x = _p === 0 ? 0 : 50; out.pos.y = 0; out.pos.z = 10
+      return out
+    }
+    const value = Reflect.get(target, key, target)
+    return typeof value === 'function' ? value.bind(target) : value
+  } })
+  try {
+    view.update(crowd, null, 1, 1/60)
+    const beans = (view as unknown as {beans: number[]}).beans
+    assert.equal(beans.length, 60)
+    assert.equal(visible.get(beans[1]), false)
+    turn = true
+    view.update(crowd, null, 1, 1/60)
+    assert.equal(visible.get(beans[1]), true)
+    assert.equal(view.camera?.target[0], 1)
+  } finally { view.dispose(); sim.free() }
+})

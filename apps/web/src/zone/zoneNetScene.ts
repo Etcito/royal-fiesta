@@ -42,6 +42,8 @@ export interface ZoneNetSceneOptions {
   costumes?: CostumeSet
   wardrobe?: (player: number) => CostumeSet | null | undefined
   dressing?: CourseDressing
+  /** Only the large single-world offline show opts into presentation culling. */
+  crowdCull?: boolean
 }
 
 /** A scene whose assets and render port are ready; attach() then builds the rest synchronously. */
@@ -107,9 +109,14 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
   const adapter = new DomainSceneSim(options.course, seatCount)
   const orbit = options.orbit ?? new OrbitCamera()
   orbit.reset(0)
+  const layout = splitLayout(options.followSeats?.length ?? 1, false)
   const scenes = (options.followSeats ?? [localSeat]).map((seat, viewport) => new SceneView({
     port, viewport, localPlayer: seat, assets, bean,
     character, skinned: options.skinned, dressing: options.dressing,
+    crowdAspect: options.crowdCull ? () => {
+      const cell = layout[viewport]
+      return (options.canvas.width / options.canvas.height) * cell.width / cell.height
+    } : undefined,
     look: options.look, costumes: options.costumes, wardrobe: options.wardrobe,
     // Third-person orbit around the local seat, so the near pack and nearby far rows stay in frame.
     camera: viewport === 0 ? (focus, dt, clip) => orbit.pose(focus, dt, clip) : undefined,

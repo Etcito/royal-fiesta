@@ -671,25 +671,30 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
           const along = mx * fx + mz * fz
           if (along > 0) slideSpeed += CHAR.slide.handPush * along * dt
         }
+        const slippery = surface === 'ice' || ny < CHAR.slipperySlopeNy
+        // In slide, strokeTimer counts grace remaining; its first cooldown ticks block strokes.
+        // Keeping this in the existing snapshotted timer preserves rollback determinism.
+        const strokeReady = this.#strokeTimer[p] <= CHAR.slide.strokeGraceTicks - CHAR.slide.strokeCooldownTicks
         // Dive repeats the belly stroke at any speed; jump always stands up into a jump.
         if ((pressed & JUMP_BIT) !== 0) {
           vy = CHAR.jumpSpeed + base.y
           this.#coyote[p] = 0
           this.#jumpBuffer[p] = 0
           mode = CharMode.air
-        } else if ((pressed & DIVE_BIT) !== 0 && this.#strokeTimer[p] === 0) {
-          if (surface === 'ice' || ny < CHAR.slipperySlopeNy) slideSpeed += CHAR.slide.strokeImpulse
-          this.#strokeTimer[p] = CHAR.slide.strokeCooldownTicks
+        } else if ((pressed & DIVE_BIT) !== 0 && strokeReady) {
+          slideSpeed += CHAR.slide.strokeImpulse
+          if (!slippery) slideSpeed = Math.max(slideSpeed, CHAR.slide.drySwimSpeed * tuning.maxRun)
+          this.#strokeTimer[p] = CHAR.slide.strokeGraceTicks
         }
         // A flat dry belly slide never beats walking, including on moving ground.
-        const cap = surface === 'ice' || ny < CHAR.slipperySlopeNy ? CHAR.slide.maxSpeed : CHAR.maxRun * tuning.maxRun
+        const cap = slippery ? CHAR.slide.maxSpeed : CHAR.maxRun * tuning.maxRun
         if (slideSpeed > cap) slideSpeed = cap
         vx = fx * slideSpeed + base.x
         vz = fz * slideSpeed + base.z
         this.#facingX[p] = fx
         this.#facingZ[p] = fz
         this.#slideSpeed[p] = slideSpeed
-        if (mode === CharMode.slide && slideSpeed < CHAR.slide.exitSpeed) mode = CharMode.ground
+        if (mode === CharMode.slide && slideSpeed < CHAR.slide.exitSpeed && this.#strokeTimer[p] === 0) mode = CharMode.ground
       }
       if (mode === CharMode.slide && !grounded && this.#coyote[p] === 0) mode = CharMode.air
 

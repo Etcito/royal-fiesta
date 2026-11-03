@@ -308,7 +308,7 @@ export function prepareGpuCopy(source: string, op: string, target: string): void
   }
   const ops = [...new Set([...(manifest.ops as string[]), op])]
   writeFileSync(manifestFile, `${JSON.stringify({ ...manifest, ops }, null, 2)}\n`)
-  if (op === 'cosmeticThumbs') rmSync(join(target, 'audio'), { recursive: true, force: true })
+  if (op === 'cosmeticThumbs' || op === 'screensPreview') rmSync(join(target, 'audio'), { recursive: true, force: true })
   const page = join(target, 'game.html')
   const html = readFileSync(page, 'utf8')
   writeFileSync(page, injectAdapter(op === 'startPlain' ? injectPlainDiagnostics(html) : injectTestQuery(html), op))

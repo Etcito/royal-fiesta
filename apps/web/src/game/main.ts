@@ -1963,6 +1963,7 @@ class App {
     }
     return {
       port: layer.port,
+      wallet: await this.economy.port.me().then(({ coins, tickets }) => ({ coins, tickets })).catch(() => undefined),
       character,
       skinned: skinnedCharacterOf(content),
       costume: (id: string): PrimsAsset | null => {

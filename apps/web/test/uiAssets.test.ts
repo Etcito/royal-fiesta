@@ -1,16 +1,14 @@
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
-import { assetMapping, createFontRegistry, createUi, layoutScreen, loadUiDoc, parseUiAssetText, type AssetCommand, type Widget } from '@etcito/uaa'
+import { loadAssets } from '../src/ui/uaaHost.ts'
+import { assetMapping, createFontRegistry, createUi, layoutScreen, loadUiDoc, layoutLine, parseUiAssetText, type AssetCommand, type UiFont, type Widget } from '@etcito/uaa'
 import { DEFAULT_SETTINGS, describeRow, SETTINGS_ROWS } from '@royal-fiesta/game/screens/settings'
 import { containLogo, logoFile } from '../src/ui/logoRenderer.ts'
 import { capsuleMapping, mapCapsule } from '../src/ui/buttonMapping.ts'
 
 const uiDir = new URL('../../../ui/', import.meta.url)
-const assets = new Map(readdirSync(uiDir).filter(n => n.endsWith('.ui.json')).map(n => {
-  const asset = parseUiAssetText(readFileSync(new URL(n, uiDir), 'utf8'))
-  return [asset.id, asset] as const
-}))
+const assets = loadAssets(Object.fromEntries(readdirSync(uiDir).filter(n => n.endsWith('.ui.json')).map(n => [n, readFileSync(new URL(n, uiDir), 'utf8')])))
 const doc = loadUiDoc(JSON.parse(readFileSync(new URL('screens.ui-doc.json', uiDir), 'utf8')), assets)
 
 function flatten(widgets: readonly Widget[]): Widget[] {
@@ -19,6 +17,8 @@ function flatten(widgets: readonly Widget[]): Widget[] {
 
 test('every pink button keeps a readable label in every state and orientation', () => {
   const asset = assets.get('button.primary')!
+  const font: UiFont = { id: 'test:700', family: 'test', weight: 700, unitsPerEm: 1000, ascender: 800, descender: -200,
+    glyph: codePoint => ({ index: codePoint, advance: 500, contours: [] }), kerning: () => 0 }
   let checked = 0
   for (const [width, height] of [[360, 640], [720, 1280], [1280, 720], [1920, 1080]]) {
     const viewport = { width, height, pixelRatio: 1, safeArea: { top: 0, right: 0, bottom: 0, left: 0 } }
@@ -30,7 +30,12 @@ test('every pink button keeps a readable label in every state and orientation', 
         for (const [state, list] of Object.entries(asset.states)) {
           const slot = list.textSlots[0]
           const centre: [number, number] = [(slot.box.min[0] + slot.box.max[0]) / 2, (slot.box.min[1] + slot.box.max[1]) / 2]
-          assert.ok(slot.size * mapping.scaleAt(centre) >= 25 * layout.dpToPx, `${screen.id}/${widget.id}/${state}: collapsed label`)
+          const rect = layout.rects.get(widget.id)!
+          const command: AssetCommand = { kind: 'asset', widget: widget.id, asset, rect, state: state as AssetCommand['state'], list,
+            mapping, opacity: 1, transform: [1,0,0,1,0,0], clip: null,
+            slots: [{ slot, text: 'Play', placed: { run: layoutLine(font, 'Play', slot.size * mapping.scaleAt(centre)), originX: 0, baselineY: 0, scale: 1 } }] }
+          const placed = mapCapsule(command, screen.id, width > height).slots[0].placed
+          assert.ok(placed.run.sizePx * placed.scale >= 25 * layout.dpToPx, `${screen.id}/${widget.id}/${state}: collapsed label`)
           checked++
         }
       }

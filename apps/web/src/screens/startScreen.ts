@@ -24,6 +24,7 @@ export interface FlowDeps {
 
 // Prepared by game-web from its loaded content; this view never loads or meshes assets.
 export interface StartArt {
+  wallet?: { coins: number; tickets: number }
   scene?: StartScene
   dressing?: CourseDressing
   port: RenderPort
@@ -55,7 +56,7 @@ function focused(label: string, focus: boolean): string {
 }
 
 
-function present(host: UaaHost, model: StartScreenModel): void {
+function present(host: UaaHost, model: StartScreenModel, wallet?: StartArt['wallet']): void {
   const menu: MenuModel = {
     screen: 'start', title: 'Royal Fiesta', lines: [], hint: HINT, overlay: false,
     buttons: [
@@ -69,6 +70,11 @@ function present(host: UaaHost, model: StartScreenModel): void {
   const props: Record<string, WidgetProps> = {
     'inbox-badge': { text: { count: String(model.badge) }, visible: model.badge > 0 },
     'palette-mark': { visible: false },
+    hint: { visible: false },
+    'wardrobe-subtitle': { text: 'DRESS UP. STAND OUT.', visible: !wallet },
+    wallet: { visible: !!wallet },
+    'wallet-coins': { text: String(wallet?.coins ?? '') },
+    'wallet-tickets': { text: String(wallet?.tickets ?? '') },
   }
   model.bins.forEach((bin, index) => {
     props[`bin-${bin.slot}`] = { text: cosmeticName(bin.items[bin.selected]), visible: true }
@@ -81,7 +87,7 @@ function present(host: UaaHost, model: StartScreenModel): void {
       props[`carousel-${index}-${j}`] = { visible: exists }
       props[`carousel-focus-${index}-${j}`] = { visible: exists && (active || at === bin.worn) }
       props[`thumb-start-${index}-${j}`] = { thumbnail: id ?? '', visible: !!id && !!thumbnailUrl(id) }
-      props[`carousel-name-${index}-${j}`] = { text: exists ? cosmeticName(id) : '', visible: exists }
+      props[`carousel-name-${index}-${j}`] = { text: exists ? cosmeticName(id) : '', visible: exists && !id }
       props[`carousel-worn-${index}-${j}`] = { text: at === bin.worn ? 'WORN' : active ? 'SELECT' : '', visible: exists }
     }
   })
@@ -111,6 +117,7 @@ export function mountStartScreen(
   const started = performance.now()
   if (art.scene && art.dressing) art.dressing.enter(port, art.scene.courseId)
   else port.setEnvironment(art.environment)
+  port.setEnvironment({ ...art.environment, sky: 'day', fog: 'clear', post: 'candy', menu: 'candy' })
   const origin = art.scene?.spot.t ?? ORIGIN
 
   function draw(next: StartScreenModel): void {
@@ -158,12 +165,12 @@ export function mountStartScreen(
     }
     if (visible) {
       const portrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth
-      port.setCamera(0, art.scene?.camera ?? { eye: portrait ? [0, -2.2, 16] : [0, 0.7, 4.8], target: portrait ? [0, -2.6, 0] : [0, 0.3, 0], fovYDeg: 38, near: 0.1, far: 500 })
+      port.setCamera(0, { ...art.scene?.camera, eye: [origin[0], origin[1] + 0.7, origin[2] + (portrait ? 12 : 6.2)], target: [origin[0], origin[1] + (portrait ? 0.3 : 0.1), origin[2]], fovYDeg: 38, near: 0.1, far: 500 })
     }
   }
 
   draw(model)
-  present(host, model)
+  present(host, model, art.wallet)
   return {
     update(next, step) {
       if (!mounted) return
@@ -171,7 +178,7 @@ export function mountStartScreen(
       if (step?.effect === 'play' || step?.effect === 'shop') deps.cue('ui.click')
       else if (step?.action === 'up' || step?.action === 'down' || ((step?.action === 'left' || step?.action === 'right') && next.focus === 'bins') || step?.effect === 'wear') deps.cue('ui.hover')
       draw(next)
-      if (visible) present(host, next)
+      if (visible) present(host, next, art.wallet)
     },
     setVisible(shown) {
       if (!mounted) return
@@ -179,7 +186,7 @@ export function mountStartScreen(
       layer.setVisible(shown)
       if (shown) {
         draw(current)
-        present(host, current)
+        present(host, current, art.wallet)
       }
     },
     unmount() {

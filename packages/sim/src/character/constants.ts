@@ -4,6 +4,7 @@ import type { Vec3 } from '../vec.ts'
 
 // Starting values for the M3 tuning task. Tuning may change them only to make the
 // M3 `behaviours` check pass; the thresholds of that check are fixed.
+const maxRun = 8
 const turnRate: number = degToRad(720)
 const parkOrigin: Vec3 = v3(0, -500, 0)
 
@@ -11,7 +12,7 @@ export const CHAR = {
   radius: 0.4,
   halfHeight: 0.45,
   mass: 60,
-  maxRun: 8,
+  maxRun,
   groundAccel: 60,
   groundBrake: 70,
   slipperySlopeNy: 0.98,
@@ -47,6 +48,9 @@ export const CHAR = {
     steerRadS: degToRad(240),
     bankGain: 0.5,
     handPush: 6,
+    // Flat dry belly strokes cruise below walking speed (also scaled by surface tuning).
+    drySwimSpeed: maxRun * 0.9,
+    strokeGraceTicks: 36,
     strokeImpulse: 6,
     strokeCooldownTicks: 18,
   },

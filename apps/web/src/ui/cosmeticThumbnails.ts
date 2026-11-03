@@ -7,6 +7,26 @@ try { files = import.meta.glob<string>('../../../../assets/**/*.thumb.avif', { q
 const urls = new Map(Object.entries(files).map(([path, url]) => [path.split('/').pop()!.replace('.thumb.avif', ''), url]))
 export function thumbnailUrl(id: string): string | undefined { return urls.get(id) }
 
+// Fit the visible object, not the transparent margins of its saved thumbnail.
+async function trimThumbnail(bitmap: ImageBitmap): Promise<ImageBitmap> {
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(bitmap, 0, 0)
+  const pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data
+  let left = bitmap.width, top = bitmap.height, right = -1, bottom = -1
+  for (let y = 0; y < bitmap.height; y++) for (let x = 0; x < bitmap.width; x++) {
+    if (pixels[(y * bitmap.width + x) * 4 + 3] <= 8) continue
+    left = Math.min(left, x); right = Math.max(right, x)
+    top = Math.min(top, y); bottom = Math.max(bottom, y)
+  }
+  if (right < left) return bitmap
+  left = Math.max(0, left - 2); top = Math.max(0, top - 2)
+  right = Math.min(bitmap.width - 1, right + 2); bottom = Math.min(bitmap.height - 1, bottom + 2)
+  const cropped = await createImageBitmap(bitmap, left, top, right - left + 1, bottom - top + 1)
+  bitmap.close()
+  return cropped
+}
+
 export async function withCosmeticThumbnails(renderer: UiRenderer, canvas: HTMLCanvasElement, device: LogoDevice,
   selected: ReadonlyMap<string, string>): Promise<UiRenderer> {
   const shader = device.createShaderModule({ label: 'cosmetic-thumbnails', code: SHADER })
@@ -22,7 +42,7 @@ export async function withCosmeticThumbnails(renderer: UiRenderer, canvas: HTMLC
   for (const [id, url] of urls) {
     const response = await fetch(new URL(url, document.baseURI))
     if (!response.ok) continue
-    const bitmap = await decodeLogo(await response.blob())
+    const bitmap = await trimThumbnail(await decodeLogo(await response.blob()))
     const texture = device.createTexture({ size: [bitmap.width, bitmap.height], format: 'rgba8unorm', usage: 0x16 })
     device.queue.copyExternalImageToTexture({ source: bitmap }, { texture, premultipliedAlpha: true }, [bitmap.width, bitmap.height])
     textures.set(id, { texture, width: bitmap.width, height: bitmap.height }); bitmap.close()

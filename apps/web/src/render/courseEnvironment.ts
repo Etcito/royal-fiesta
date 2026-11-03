@@ -12,7 +12,7 @@ const ENV_NAMES = {
   post: ['neutral', 'candy', 'ice', 'jungle', 'neon'],
 } as const
 
-type EnvironmentEngine = Pick<Engine, 'applyEnvironment' | 'setPassEnabled' | 'setLight' | 'setAmbient'>
+type EnvironmentEngine = Pick<Engine, 'applyEnvironment' | 'setPassEnabled' | 'setLight' | 'setAmbient'> & Partial<Pick<Engine, 'setSky'>>
 
 // Validate every section before touching the engine. RAA preset names pass through unchanged.
 export function applyCourseEnvironment(engine: EnvironmentEngine, env: Readonly<Record<string, unknown>> | null, area: string, p: string): void {
@@ -31,6 +31,7 @@ export function applyCourseEnvironment(engine: EnvironmentEngine, env: Readonly<
   for (const key of Object.keys(env)) {
     const v = env[key]
     if (v === undefined || v === null) continue
+    if (key === 'menu' && v === 'candy') continue
     if (key === 'sun') light = sunLight(area, p, v)
     else if (key === 'sky' || key === 'fog' || key === 'post') {
       const known: readonly string[] = ENV_NAMES[key]
@@ -42,6 +43,8 @@ export function applyCourseEnvironment(engine: EnvironmentEngine, env: Readonly<
     else refuse(area, p, `environment.${key} is not an S13 environment key; use sky, sun, fog or post`)
   }
   engine.applyEnvironment({ sky: 'day', fog: 'clear', post: 'neutral', ...environment })
+  // A menu has no playable ground: keep its turntable backdrop in the UI's candy palette.
+  if (env.menu === 'candy') engine.setSky?.({ preset: 'day', zenith: [0.035, 0.24, 0.95], horizon: [0.08, 0.65, 1], ground: [0.24, 0.07, 0.65], horizonSoftness: 0.8, clouds: { coverage: 0.2, density: 0.25 } })
   engine.setPassEnabled('fog', environment.fog !== undefined)
   engine.setPassEnabled('grading', environment.post !== undefined)
   engine.setPassEnabled('bloom', environment.post !== undefined)

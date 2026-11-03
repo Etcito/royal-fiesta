@@ -58,7 +58,7 @@ test('shop presents shopLines and maps all three buttons to the real UI doc', as
     }
     menu.lines.forEach((text, index) => {
       assert.deepEqual(mapped.props[`line-${index}`], { text, visible: true })
-      if (index !== 6) assert.deepEqual(s.hud.at(-1)![`line-${index}`], { text, visible: index === 0 })
+      if (index !== 6) assert.deepEqual(s.hud.at(-1)![`line-${index}`], { text, visible: false })
     })
     const hud = s.hud.at(-1)!
     const visible = Object.entries(hud).filter(([id, props]) => id.startsWith('catalog-item-') && props.visible)

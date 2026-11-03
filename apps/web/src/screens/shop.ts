@@ -33,8 +33,8 @@ function present(host: UaaHost, model: ShopModel): void {
     ],
   }
   host.present(menu)
-  const props: Record<string, WidgetProps> = {}
-  menu.lines.forEach((text, index) => { props[`line-${index}`] = { text, visible: index === 0 || index === 6 } })
+  const props: Record<string, WidgetProps> = { wallet: { visible: true }, hint: { visible: false }, 'wallet-coins': { text: String(model.coins) }, 'wallet-tickets': { text: String(model.tickets) } }
+  menu.lines.forEach((text, index) => { props[`line-${index}`] = { text, visible: index === 6 } })
   const selected = model.slots[model.focus[0]]?.items[model.focus[1]]
   props['line-6'] = { text: model.error ?? (model.pending ? 'Buying…' : selected
     ? `${selected.owned ? 'In your wardrobe' : selected.remaining <= 0 ? 'Locked · Sold out' : 'Find your next party look'}` : ''), visible: true }
@@ -49,11 +49,11 @@ function present(host: UaaHost, model: ShopModel): void {
     const offset = model.focus[0] === row ? Math.floor(model.focus[1] / 9) * 9 : 0
     for (let column = 0; column < 9; column++) {
       const item = slot?.items[offset + column]
-      const shown = !!item && model.focus[0] === row
+      const shown = !!item && model.focus[0] === row && !model.confirm
       props[`catalog-card-0-${column}`] = { visible: shown }
       props[`catalog-focus-0-${column}`] = { visible: shown && model.zone !== 'tabs' && model.zone !== 'buttons' && model.focus[1] === offset + column }
-      props[`thumb-shop-0-${column}`] = { thumbnail: item?.id ?? '', visible: shown && !model.confirm && !!thumbnailUrl(item!.id) }
-      props[`catalog-item-0-${column}`] = { text: item?.name ?? '', visible: shown }
+      props[`thumb-shop-0-${column}`] = { thumbnail: item?.id ?? '', visible: shown && !!thumbnailUrl(item!.id) }
+      props[`catalog-item-0-${column}`] = { text: item?.name.replace('Golden Crown', 'Crown').replace(/ (Hat|Suit|Jacket|Scarf|Sneakers|Skirt|Wand|Aura)(?= (Rose|Teal)$)/, '').replace(/ (Rose|Teal)$/, ' · $1') ?? '', visible: shown }
       props[`catalog-price-0-${column}`] = { text: item ? item.owned ? 'OWNED' : item.remaining <= 0 ? 'LOCKED' : [item.price.coins === undefined ? '' : `${item.price.coins} coins`, item.price.tickets === undefined ? '' : `${item.price.tickets} tickets`].filter(Boolean).join(' / ') : '', visible: shown }
       props[`catalog-rarity-0-${column}`] = { text: item?.rarity.toUpperCase() ?? '', visible: shown }
     }
@@ -61,8 +61,8 @@ function present(host: UaaHost, model: ShopModel): void {
   props['purchase-confirm'] = { visible: !!model.confirm }
   const purchase = model.slots.flatMap(s => s.items).find(i => i.id === model.confirm?.itemId)
   props['purchase-item'] = { text: purchase ? `${purchase.name} · ${purchase.price[model.confirm!.currency]} ${model.confirm!.currency}` : '' }
-  props['purchase-buy'] = { text: 'BUY · A / Enter' }
-  props['purchase-cancel'] = { text: 'Cancel · B / Esc' }
+  props['purchase-buy'] = { text: 'BUY' }
+  props['purchase-cancel'] = { text: 'Cancel' }
   host.setHud(props)
 }
 

@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
+import { loadAssets } from '../src/ui/uaaHost.ts'
 import { createFontRegistry, createUi, loadUiDoc, parseUiAssetText } from '@etcito/uaa'
 
 const uiDir = new URL('../../../ui/', import.meta.url)
-const assets = new Map(readdirSync(uiDir).filter(n => n.endsWith('.ui.json')).map(n => {
-  const asset = parseUiAssetText(readFileSync(new URL(n, uiDir), 'utf8'))
-  return [asset.id, asset] as const
-}))
+const assets = loadAssets(Object.fromEntries(readdirSync(uiDir).filter(n => n.endsWith('.ui.json')).map(n => [n, readFileSync(new URL(n, uiDir), 'utf8')])))
 const doc = loadUiDoc(JSON.parse(readFileSync(new URL('screens.ui-doc.json', uiDir), 'utf8')), assets)
 const DT_MS = 1000 / 60
 const TEST_VOTE_FRAMES = 60

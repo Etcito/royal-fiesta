@@ -105,7 +105,7 @@ test('start animates one penguin and each worn costume, turns their mounts and r
   assert.equal(s.port.render().instances, 4)
   assert.equal(s.port.render().visible, 4)
   assert.deepEqual(s.port.created.map(item => item.tint), [PALETTE[2], null, null, null])
-  assert.equal(s.port.lastEnvironment, s.art.environment)
+  assert.deepEqual(s.port.lastEnvironment, { ...s.art.environment, sky: 'day', fog: 'clear', post: 'candy', menu: 'candy' })
   assert.ok(s.port.poseOf(0))
   const firstPose = new Float32Array(s.port.poseOf(0)!)
   assert.ok(s.port.calls.setPose > 0, 'the preview submits a penguin idle pose')
@@ -171,7 +171,7 @@ test('missing assets or mounts are skipped; rigid ports and absent skins use the
     assert.deepEqual(s.port.registered, ['penguin.body', ids[2]])
     assert.deepEqual(lookedUp, [ids[0], ids[2]])
     assert.equal(s.port.render().instances, 2)
-    assert.equal(s.port.lastEnvironment, null)
+    assert.deepEqual(s.port.lastEnvironment, { sky: 'day', fog: 'clear', post: 'candy', menu: 'candy' })
     s.model.bins.forEach(bin => { bin.selected = bin.worn = -1 })
     view.update(s.model, null)
     assert.equal(s.port.render().instances, 1)
@@ -247,7 +247,7 @@ test('the start layer hides its instances and restores its environment independe
   other.setVisible(false)
   view.setVisible(true)
   assert.equal(s.port.render().visible, 4)
-  assert.equal(s.port.lastEnvironment, s.art.environment)
+  assert.deepEqual(s.port.lastEnvironment, { ...s.art.environment, sky: 'day', fog: 'clear', post: 'candy', menu: 'candy' })
   view.unmount()
   other.setVisible(true)
   assert.equal(s.port.render().instances, 1, 'unmount destroys only the start screen instances')
@@ -287,7 +287,7 @@ test('all nine choices per slot wrap and variants reuse the base handle with the
   view.unmount()
 })
 
-test('start scene supplies dressing, penguin spot and camera while preserving the screen lifecycle', async () => {
+test('start scene supplies dressing and penguin spot with responsive camera framing', async () => {
   const s = await setup()
   const camera = { eye: [3, 2, 8] as Vec3T, target: [2, 1, 0] as Vec3T, fovYDeg: 47, near: .1, far: 500 }
   const calls: string[] = []
@@ -296,7 +296,7 @@ test('start scene supplies dressing, penguin spot and camera while preserving th
     dressing: { enter(_port, id) { calls.push(id) }, leave() { calls.push('leave') } },
   })
   assert.deepEqual(s.port.transforms.get(0)!.t, [2, 0, 0])
-  assert.deepEqual(s.port.lastCamera, camera)
+  assert.deepEqual(s.port.lastCamera, { eye: [2, 0.7, 6.2], target: [2, 0.1, 0], fovYDeg: 38, near: 0.1, far: 500 })
   view.setVisible(false); view.setVisible(true); view.update(s.model, null); view.unmount()
   assert.deepEqual(calls, ['start-season2', 'leave'])
 })

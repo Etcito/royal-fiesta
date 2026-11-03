@@ -752,7 +752,7 @@ describe('M4 slide', () => {
   }
 
   function surfaceFloor(surface: Surface, friction = 2): ObstacleSpec {
-    const floor = obstacle(`floor-${surface}`, v3(0, -0.5, 0), { kind: 'static' }, v3(20, 0.5, 20))
+    const floor = obstacle(`floor-${surface}`, v3(0, -0.5, 0), { kind: 'static' }, v3(20, 0.5, 100))
     floor.surface = surface
     floor.friction = friction
     return floor
@@ -767,13 +767,18 @@ describe('M4 slide', () => {
 
   it('a grounded dive at run speed lands in slide; a dive from standing lands in diveRecover', () => {
     // A conveyor adds 4 m/s to the 8 m/s run: the dive carries 12 m/s into the landing.
-    const belt = obstacle('belt', v3(0, -0.5, 0), { kind: 'conveyor', velocity: v3(0, 0, 4) }, v3(20, 0.5, 20))
+    const belt = obstacle('belt', v3(0, -0.5, 0), { kind: 'conveyor', velocity: v3(0, 0, 4) }, v3(20, 0.5, 100))
     const fast = obsRig([belt], v3(0, 0, -5))
     const run = stepN(fast, 60, FORWARD)
     assert.ok(hspeed(run) >= CHAR.slide.enterSpeed, `run speed ${hspeed(run)}`)
     fast.world.step([input({ moveZ: 1, dive: true })])
     stepUntil(fast, () => NEUTRAL, (s) => s.mode !== CharMode.dive, 120)
     assert.equal(state(fast).mode, CharMode.slide)
+    for (let tick = 0; tick < 300; tick++) {
+      const s = stepN(fast, 1, tick % 24 === 0 ? DIVE : NEUTRAL)
+      assert.equal(s.mode, CharMode.slide, `dry conveyor tick ${tick}`)
+      assert.ok(s.slideSpeed! <= CHAR.maxRun)
+    }
     fast.world.free()
 
     const still = rig()
@@ -816,13 +821,13 @@ describe('M4 slide', () => {
   })
 
   it('dive strokes at low speed, but jump exits even at high speed', () => {
-    for (const speed of [0, 3, 12]) {
-      const r = slideRig('ice', speed)
+    for (const surface of ['normal', 'ice'] as const) for (const speed of [0, 3, 12]) {
+      const r = slideRig(surface, speed)
       const s = stepN(r, 1, DIVE)
       assert.equal(s.mode, CharMode.slide)
       assert.ok(s.strokeTimer! > 0)
       r.world.free()
-      const jump = slideRig('ice', speed)
+      const jump = slideRig(surface, speed)
       const airborne = stepN(jump, 1, JUMP)
       assert.equal(airborne.mode, CharMode.air)
       assert.ok(airborne.vel.y > 0)
@@ -846,15 +851,33 @@ describe('M4 slide', () => {
   })
 
   it('repeated dry flat strokes never exceed walking speed', () => {
-    for (const surface of ['normal', 'mud', 'rubber'] as Surface[]) {
+    for (const surface of ['normal', 'mud', 'rubber'] as Surface[]) for (const rhythm of [18, 24, 30]) {
       const r = slideRig(surface, 16)
       const walkCap = surface === 'mud' ? CHAR.maxRun * 0.6 : CHAR.maxRun
-      for (let tick = 0; tick < 100; tick++) {
-        const s = stepN(r, 1, tick % 20 === 0 && state(r).mode === CharMode.slide ? DIVE : NEUTRAL)
-        assert.ok(hspeed(s) <= walkCap + 1e-6)
+      for (let tick = 0; tick < 300; tick++) {
+        const s = stepN(r, 1, tick % rhythm === 0 ? DIVE : NEUTRAL)
+        assert.equal(s.mode, CharMode.slide, `${surface}, rhythm ${rhythm}, tick ${tick}`)
+        assert.ok(s.slideSpeed! <= walkCap)
+        // Rapier stores positions as f32, so measured velocity has rounding error.
+        assert.ok(hspeed(s) <= walkCap + 1e-4, `${surface}, rhythm ${rhythm}, tick ${tick}: ${hspeed(s)}`)
       }
       r.world.free()
     }
+  })
+
+  it('a slow dry stroke restores cruise speed and grace expires without further strokes', () => {
+    assert.ok(CHAR.slide.drySwimSpeed > CHAR.slide.exitSpeed)
+    assert.ok(CHAR.slide.drySwimSpeed <= CHAR.maxRun)
+    const r = slideRig('mud', 0)
+    try {
+      const stroke = stepN(r, 1, DIVE)
+      assert.equal(stroke.mode, CharMode.slide)
+      assert.ok(stroke.slideSpeed! >= CHAR.slide.drySwimSpeed * 0.6)
+      for (let tick = 1; tick < CHAR.slide.strokeGraceTicks; tick++) {
+        assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.slide)
+      }
+      assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.ground)
+    } finally { r.world.free() }
   })
 
   it('walking on ice accelerates and brakes more slowly than dry walking', () => {

@@ -93,7 +93,7 @@ test('HUD time bar uses the authored level duration beyond 20 seconds', () => {
   const course = { kind: 'race', timeLimitS: 120, checkpoints: [] } as unknown as ResolvedCourse
   course.level = { ...levelOf(course), timeCapTicks: 330 * 60 }
   const duration = roundTicks(course, PROFILES.sprint)
-  const state = { phase: 'playing', roundIndex: 0, kind: 'race', final: false, courseIndex: 0,
+  const state = { tick: 0, phaseTicksLeft: 0, roundKind: 'race', phase: 2, roundIndex: 0, kind: 'race', final: false, courseIndex: 0,
     roundTicksLeft: duration * 0.6, alive: 5, target: 3, qualifiedCount: 1, winner: -1, podium: [] } as const
   assert.equal(hudProps({ ...state, podium: [] }, ['A'], 0, duration)['hud-time-bar'].value, 0.6)
 })

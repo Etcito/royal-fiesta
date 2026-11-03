@@ -29,7 +29,8 @@
     "wardrobe.card",
     "wardrobe.focus",
     "wardrobe.backdrop",
-    "panel.hud"
+    "panel.hud",
+    "wallet.ticket"
   ],
   "start": "title",
   "screens": [
@@ -952,55 +953,44 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 24],
-            "offsetMax": [696, 94]
+            "offsetMin": [24, 20],
+            "offsetMax": [696, 92]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 18],
-            "offsetMax": [650, 88]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540, 18],
+            "offsetMax": [120, 88]
           },
           "text": "THE FIESTA SHOP",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 44,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 48,
           "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "align": "left",
+          "outline": { "width": 3, "color": "#552372" }
         },
+        {"id":"wallet","type":"group","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[24,98],"offsetMax":[360,154]},"landscape":{"anchorMin":[0.5,0],"anchorMax":[0.5,0],"offsetMin":[196,28],"offsetMax":[532,84]},"children":[{"id":"wallet-coins-panel","type":"panel","asset":"button.secondary","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[0,0],"offsetMax":[160,56]}},{"id":"wallet-coins-icon","type":"icon","asset":"badge.round","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[8,6],"offsetMax":[52,50]}},{"id":"wallet-coins","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[56,2],"offsetMax":[152,52]},"text":"","font":{"family":"Fredoka","weight":700},"size":30,"color":"#ffffff","align":"center","outline":{"width":2,"color":"#552372"}},{"id":"wallet-tickets-panel","type":"panel","asset":"button.secondary","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[176,0],"offsetMax":[336,56]}},{"id":"wallet-tickets-icon","type":"icon","asset":"wallet.ticket","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[184,6],"offsetMax":[228,50]}},{"id":"wallet-tickets","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[232,2],"offsetMax":[328,52]},"text":"","font":{"family":"Fredoka","weight":700},"size":30,"color":"#ffffff","align":"center","outline":{"width":2,"color":"#552372"}}]},
         {
           "id": "hint",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 1236],
-            "offsetMax": [696, 1268]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [24, -44],
+            "offsetMax": [696, -12]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [300, 690],
-            "offsetMax": [980, 716]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-340.0, -30],
+            "offsetMax": [340.0, -4]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 18,
           "color": "#ffffff",
           "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "outline": { "width": 3, "color": "#552372" }
         },
         {
           "id": "line-0",
@@ -1008,195 +998,65 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 106],
-            "offsetMax": [696, 146]
+            "offsetMin": [24, 100],
+            "offsetMax": [696, 144]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [760, 32],
-            "offsetMax": [1240, 72]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [160, 32],
+            "offsetMax": [532, 72]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 25,
           "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "align": "right",
+          "outline": { "width": 3, "color": "#552372" }
         },
-        {
-          "id": "line-1",
-          "type": "label",
-          "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 1094],
-            "offsetMax": [696, 1134]
-          },
-          "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [120, 635],
-            "offsetMax": [1160, 675]
-          },
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 25,
-          "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
-        },
-        {
-          "id": "line-2",
-          "type": "label",
-          "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 1094],
-            "offsetMax": [696, 1134]
-          },
-          "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [120, 635],
-            "offsetMax": [1160, 675]
-          },
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 25,
-          "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
-        },
-        {
-          "id": "line-3",
-          "type": "label",
-          "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 1094],
-            "offsetMax": [696, 1134]
-          },
-          "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [120, 635],
-            "offsetMax": [1160, 675]
-          },
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 25,
-          "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
-        },
-        {
-          "id": "line-4",
-          "type": "label",
-          "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 1094],
-            "offsetMax": [696, 1134]
-          },
-          "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [120, 635],
-            "offsetMax": [1160, 675]
-          },
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 25,
-          "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
-        },
-        {
-          "id": "line-5",
-          "type": "label",
-          "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 1094],
-            "offsetMax": [696, 1134]
-          },
-          "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [120, 635],
-            "offsetMax": [1160, 675]
-          },
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 25,
-          "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
-        },
+        {"id":"line-1","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[24,1094],"offsetMax":[696,1134]},"landscape":{"anchorMin":[0.5,0],"anchorMax":[0.5,0],"offsetMin":[-520.0,635],"offsetMax":[520.0,675]},"text":"","font":{"family":"Fredoka","weight":700},"size":25,"color":"#ffffff","align":"center","outline":{"width":3,"color":"#552372"}},
+        {"id":"line-2","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[24,1094],"offsetMax":[696,1134]},"landscape":{"anchorMin":[0.5,0],"anchorMax":[0.5,0],"offsetMin":[-520.0,635],"offsetMax":[520.0,675]},"text":"","font":{"family":"Fredoka","weight":700},"size":25,"color":"#ffffff","align":"center","outline":{"width":3,"color":"#552372"}},
+        {"id":"line-3","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[24,1094],"offsetMax":[696,1134]},"landscape":{"anchorMin":[0.5,0],"anchorMax":[0.5,0],"offsetMin":[-520.0,635],"offsetMax":[520.0,675]},"text":"","font":{"family":"Fredoka","weight":700},"size":25,"color":"#ffffff","align":"center","outline":{"width":3,"color":"#552372"}},
+        {"id":"line-4","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[24,1094],"offsetMax":[696,1134]},"landscape":{"anchorMin":[0.5,0],"anchorMax":[0.5,0],"offsetMin":[-520.0,635],"offsetMax":[520.0,675]},"text":"","font":{"family":"Fredoka","weight":700},"size":25,"color":"#ffffff","align":"center","outline":{"width":3,"color":"#552372"}},
+        {"id":"line-5","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[24,1094],"offsetMax":[696,1134]},"landscape":{"anchorMin":[0.5,0],"anchorMax":[0.5,0],"offsetMin":[-520.0,635],"offsetMax":[520.0,675]},"text":"","font":{"family":"Fredoka","weight":700},"size":25,"color":"#ffffff","align":"center","outline":{"width":3,"color":"#552372"}},
         {
           "id": "line-6",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 1094],
-            "offsetMax": [696, 1134]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [24, -210],
+            "offsetMax": [696, -166]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [120, 635],
-            "offsetMax": [1160, 675]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-440.0, -108],
+            "offsetMax": [440.0, -78]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 25,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 22,
           "color": "#ffffff",
           "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "outline": { "width": 3, "color": "#552372" }
+        },
+        {
+          "id": "tab-background-0",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 172],
+            "offsetMax": [180, 238]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540, 108],
+            "offsetMax": [-284, 172]
+          },
+          "asset": "button.secondary"
         },
         {
           "id": "tab-focus-0",
@@ -1204,14 +1064,14 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [22, 171],
-            "offsetMax": [188, 235]
+            "offsetMin": [24, 172],
+            "offsetMax": [180, 238]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [226, 108],
-            "offsetMax": [428, 174]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540, 108],
+            "offsetMax": [-284, 172]
           },
           "asset": "button.primary"
         },
@@ -1221,42 +1081,36 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [22, 177],
-            "offsetMax": [188, 227]
+            "offsetMin": [24, 178],
+            "offsetMax": [180, 228]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [226, 114],
-            "offsetMax": [428, 164]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540, 114],
+            "offsetMax": [-284, 162]
           },
           "text": "Hat",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 30,
           "color": "#ffffff",
           "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "outline": { "width": 3, "color": "#552372" }
         },
         {
           "id": "catalog-card-0-0",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 258],
-            "offsetMax": [240, 512]
+            "anchorMin": [0, 0.0],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [24, 266.0],
+            "offsetMax": [240, 85.33333333333331]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [104, 196],
-            "offsetMax": [448, 328]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540.0, 196],
+            "offsetMax": [-196.0, 322]
           },
           "asset": "wardrobe.card"
         },
@@ -1264,16 +1118,16 @@
           "id": "catalog-focus-0-0",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 258],
-            "offsetMax": [240, 512]
+            "anchorMin": [0, 0.0],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [24, 266.0],
+            "offsetMax": [240, 85.33333333333331]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [104, 196],
-            "offsetMax": [448, 328]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540.0, 196],
+            "offsetMax": [-196.0, 322]
           },
           "asset": "wardrobe.focus"
         },
@@ -1281,16 +1135,16 @@
           "id": "thumb-shop-0-0",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [66, 270],
-            "offsetMax": [198, 402]
+            "anchorMin": [0, 0.13333333333333333],
+            "anchorMax": [0, 0.13333333333333333],
+            "offsetMin": [44.0, 103.33333333333334],
+            "offsetMax": [220.0, 279.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [114, 206],
-            "offsetMax": [222, 314]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-530.0, 204.0],
+            "offsetMax": [-420.0, 314.0]
           },
           "asset": "badge.round"
         },
@@ -1298,23 +1152,20 @@
           "id": "catalog-item-0-0",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 406],
-            "offsetMax": [234, 454]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [32, -14.666666666666629],
+            "offsetMax": [232, 23.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 208],
-            "offsetMax": [438, 256]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 206],
+            "offsetMax": [-208.0, 244]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -1322,22 +1173,19 @@
           "id": "catalog-price-0-0",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 456],
-            "offsetMax": [234, 486]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [32, 27.33333333333337],
+            "offsetMax": [232, 55.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 259],
-            "offsetMax": [438, 287]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 248],
+            "offsetMax": [-208.0, 276]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -1346,23 +1194,20 @@
           "id": "catalog-rarity-0-0",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 486],
-            "offsetMax": [234, 510]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [32, 58.33333333333337],
+            "offsetMax": [232, 80.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 294],
-            "offsetMax": [438, 318]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 284],
+            "offsetMax": [-208.0, 308]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
         },
@@ -1370,16 +1215,16 @@
           "id": "catalog-card-0-1",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [252, 258],
-            "offsetMax": [468, 512]
+            "anchorMin": [0, 0.0],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [252, 266.0],
+            "offsetMax": [468, 85.33333333333331]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [468, 196],
-            "offsetMax": [812, 328]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-176.0, 196],
+            "offsetMax": [168.0, 322]
           },
           "asset": "wardrobe.card"
         },
@@ -1387,16 +1232,16 @@
           "id": "catalog-focus-0-1",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [252, 258],
-            "offsetMax": [468, 512]
+            "anchorMin": [0, 0.0],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [252, 266.0],
+            "offsetMax": [468, 85.33333333333331]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [468, 196],
-            "offsetMax": [812, 328]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-176.0, 196],
+            "offsetMax": [168.0, 322]
           },
           "asset": "wardrobe.focus"
         },
@@ -1404,16 +1249,16 @@
           "id": "thumb-shop-0-1",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [294, 270],
-            "offsetMax": [426, 402]
+            "anchorMin": [0, 0.13333333333333333],
+            "anchorMax": [0, 0.13333333333333333],
+            "offsetMin": [272.0, 103.33333333333334],
+            "offsetMax": [448.0, 279.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [478, 206],
-            "offsetMax": [586, 314]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-166.0, 204.0],
+            "offsetMax": [-56.0, 314.0]
           },
           "asset": "badge.round"
         },
@@ -1421,23 +1266,20 @@
           "id": "catalog-item-0-1",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 406],
-            "offsetMax": [462, 454]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [260, -14.666666666666629],
+            "offsetMax": [460, 23.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 208],
-            "offsetMax": [802, 256]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 206],
+            "offsetMax": [156.0, 244]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -1445,22 +1287,19 @@
           "id": "catalog-price-0-1",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 456],
-            "offsetMax": [462, 486]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [260, 27.33333333333337],
+            "offsetMax": [460, 55.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 259],
-            "offsetMax": [802, 287]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 248],
+            "offsetMax": [156.0, 276]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -1469,23 +1308,20 @@
           "id": "catalog-rarity-0-1",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 486],
-            "offsetMax": [462, 510]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [260, 58.33333333333337],
+            "offsetMax": [460, 80.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 294],
-            "offsetMax": [802, 318]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 284],
+            "offsetMax": [156.0, 308]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
         },
@@ -1493,16 +1329,16 @@
           "id": "catalog-card-0-2",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [480, 258],
-            "offsetMax": [696, 512]
+            "anchorMin": [0, 0.0],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [480, 266.0],
+            "offsetMax": [696, 85.33333333333331]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [832, 196],
-            "offsetMax": [1176, 328]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [188.0, 196],
+            "offsetMax": [532.0, 322]
           },
           "asset": "wardrobe.card"
         },
@@ -1510,16 +1346,16 @@
           "id": "catalog-focus-0-2",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [480, 258],
-            "offsetMax": [696, 512]
+            "anchorMin": [0, 0.0],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [480, 266.0],
+            "offsetMax": [696, 85.33333333333331]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [832, 196],
-            "offsetMax": [1176, 328]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [188.0, 196],
+            "offsetMax": [532.0, 322]
           },
           "asset": "wardrobe.focus"
         },
@@ -1527,16 +1363,16 @@
           "id": "thumb-shop-0-2",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [522, 270],
-            "offsetMax": [654, 402]
+            "anchorMin": [0, 0.13333333333333333],
+            "anchorMax": [0, 0.13333333333333333],
+            "offsetMin": [500.0, 103.33333333333334],
+            "offsetMax": [676.0, 279.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [842, 206],
-            "offsetMax": [950, 314]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [198.0, 204.0],
+            "offsetMax": [308.0, 314.0]
           },
           "asset": "badge.round"
         },
@@ -1544,23 +1380,20 @@
           "id": "catalog-item-0-2",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 406],
-            "offsetMax": [690, 454]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [488, -14.666666666666629],
+            "offsetMax": [688, 23.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 208],
-            "offsetMax": [1166, 256]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 206],
+            "offsetMax": [520.0, 244]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -1568,22 +1401,19 @@
           "id": "catalog-price-0-2",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 456],
-            "offsetMax": [690, 486]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [488, 27.33333333333337],
+            "offsetMax": [688, 55.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 259],
-            "offsetMax": [1166, 287]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 248],
+            "offsetMax": [520.0, 276]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -1592,23 +1422,20 @@
           "id": "catalog-rarity-0-2",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 486],
-            "offsetMax": [690, 510]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.3333333333333333],
+            "offsetMin": [488, 58.33333333333337],
+            "offsetMax": [688, 80.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 294],
-            "offsetMax": [1166, 318]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 284],
+            "offsetMax": [520.0, 308]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
         },
@@ -1616,16 +1443,16 @@
           "id": "catalog-card-0-3",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 528],
-            "offsetMax": [240, 782]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [24, 103.33333333333337],
+            "offsetMax": [240, -77.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [104, 338],
-            "offsetMax": [448, 470]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540.0, 334],
+            "offsetMax": [-196.0, 460]
           },
           "asset": "wardrobe.card"
         },
@@ -1633,16 +1460,16 @@
           "id": "catalog-focus-0-3",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 528],
-            "offsetMax": [240, 782]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [24, 103.33333333333337],
+            "offsetMax": [240, -77.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [104, 338],
-            "offsetMax": [448, 470]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540.0, 334],
+            "offsetMax": [-196.0, 460]
           },
           "asset": "wardrobe.focus"
         },
@@ -1650,16 +1477,16 @@
           "id": "thumb-shop-0-3",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [66, 540],
-            "offsetMax": [198, 672]
+            "anchorMin": [0, 0.4666666666666666],
+            "anchorMax": [0, 0.4666666666666666],
+            "offsetMin": [44.0, -59.33333333333326],
+            "offsetMax": [220.0, 116.66666666666674]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [114, 348],
-            "offsetMax": [222, 456]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-530.0, 342.0],
+            "offsetMax": [-420.0, 452.0]
           },
           "asset": "badge.round"
         },
@@ -1667,23 +1494,20 @@
           "id": "catalog-item-0-3",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 676],
-            "offsetMax": [234, 724]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [32, -177.33333333333326],
+            "offsetMax": [232, -139.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 350],
-            "offsetMax": [438, 398]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 344],
+            "offsetMax": [-208.0, 382]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -1691,22 +1515,19 @@
           "id": "catalog-price-0-3",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 726],
-            "offsetMax": [234, 756]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [32, -135.33333333333326],
+            "offsetMax": [232, -107.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 401],
-            "offsetMax": [438, 429]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 386],
+            "offsetMax": [-208.0, 414]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -1715,23 +1536,20 @@
           "id": "catalog-rarity-0-3",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 756],
-            "offsetMax": [234, 780]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [32, -104.33333333333326],
+            "offsetMax": [232, -82.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 436],
-            "offsetMax": [438, 460]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 422],
+            "offsetMax": [-208.0, 446]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
         },
@@ -1739,16 +1557,16 @@
           "id": "catalog-card-0-4",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [252, 528],
-            "offsetMax": [468, 782]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [252, 103.33333333333337],
+            "offsetMax": [468, -77.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [468, 338],
-            "offsetMax": [812, 470]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-176.0, 334],
+            "offsetMax": [168.0, 460]
           },
           "asset": "wardrobe.card"
         },
@@ -1756,16 +1574,16 @@
           "id": "catalog-focus-0-4",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [252, 528],
-            "offsetMax": [468, 782]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [252, 103.33333333333337],
+            "offsetMax": [468, -77.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [468, 338],
-            "offsetMax": [812, 470]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-176.0, 334],
+            "offsetMax": [168.0, 460]
           },
           "asset": "wardrobe.focus"
         },
@@ -1773,16 +1591,16 @@
           "id": "thumb-shop-0-4",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [294, 540],
-            "offsetMax": [426, 672]
+            "anchorMin": [0, 0.4666666666666666],
+            "anchorMax": [0, 0.4666666666666666],
+            "offsetMin": [272.0, -59.33333333333326],
+            "offsetMax": [448.0, 116.66666666666674]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [478, 348],
-            "offsetMax": [586, 456]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-166.0, 342.0],
+            "offsetMax": [-56.0, 452.0]
           },
           "asset": "badge.round"
         },
@@ -1790,23 +1608,20 @@
           "id": "catalog-item-0-4",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 676],
-            "offsetMax": [462, 724]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [260, -177.33333333333326],
+            "offsetMax": [460, -139.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 350],
-            "offsetMax": [802, 398]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 344],
+            "offsetMax": [156.0, 382]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -1814,22 +1629,19 @@
           "id": "catalog-price-0-4",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 726],
-            "offsetMax": [462, 756]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [260, -135.33333333333326],
+            "offsetMax": [460, -107.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 401],
-            "offsetMax": [802, 429]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 386],
+            "offsetMax": [156.0, 414]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -1838,23 +1650,20 @@
           "id": "catalog-rarity-0-4",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 756],
-            "offsetMax": [462, 780]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [260, -104.33333333333326],
+            "offsetMax": [460, -82.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 436],
-            "offsetMax": [802, 460]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 422],
+            "offsetMax": [156.0, 446]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
         },
@@ -1862,16 +1671,16 @@
           "id": "catalog-card-0-5",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [480, 528],
-            "offsetMax": [696, 782]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [480, 103.33333333333337],
+            "offsetMax": [696, -77.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [832, 338],
-            "offsetMax": [1176, 470]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [188.0, 334],
+            "offsetMax": [532.0, 460]
           },
           "asset": "wardrobe.card"
         },
@@ -1879,16 +1688,16 @@
           "id": "catalog-focus-0-5",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [480, 528],
-            "offsetMax": [696, 782]
+            "anchorMin": [0, 0.3333333333333333],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [480, 103.33333333333337],
+            "offsetMax": [696, -77.33333333333337]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [832, 338],
-            "offsetMax": [1176, 470]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [188.0, 334],
+            "offsetMax": [532.0, 460]
           },
           "asset": "wardrobe.focus"
         },
@@ -1896,16 +1705,16 @@
           "id": "thumb-shop-0-5",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [522, 540],
-            "offsetMax": [654, 672]
+            "anchorMin": [0, 0.4666666666666666],
+            "anchorMax": [0, 0.4666666666666666],
+            "offsetMin": [500.0, -59.33333333333326],
+            "offsetMax": [676.0, 116.66666666666674]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [842, 348],
-            "offsetMax": [950, 456]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [198.0, 342.0],
+            "offsetMax": [308.0, 452.0]
           },
           "asset": "badge.round"
         },
@@ -1913,23 +1722,20 @@
           "id": "catalog-item-0-5",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 676],
-            "offsetMax": [690, 724]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [488, -177.33333333333326],
+            "offsetMax": [688, -139.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 350],
-            "offsetMax": [1166, 398]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 344],
+            "offsetMax": [520.0, 382]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -1937,22 +1743,19 @@
           "id": "catalog-price-0-5",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 726],
-            "offsetMax": [690, 756]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [488, -135.33333333333326],
+            "offsetMax": [688, -107.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 401],
-            "offsetMax": [1166, 429]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 386],
+            "offsetMax": [520.0, 414]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -1961,23 +1764,20 @@
           "id": "catalog-rarity-0-5",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 756],
-            "offsetMax": [690, 780]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 0.6666666666666666],
+            "offsetMin": [488, -104.33333333333326],
+            "offsetMax": [688, -82.33333333333326]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 436],
-            "offsetMax": [1166, 460]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 422],
+            "offsetMax": [520.0, 446]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
         },
@@ -1985,16 +1785,16 @@
           "id": "catalog-card-0-6",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 798],
-            "offsetMax": [240, 1052]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [24, -59.33333333333326],
+            "offsetMax": [240, -240.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [104, 480],
-            "offsetMax": [448, 612]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540.0, 472],
+            "offsetMax": [-196.0, 598]
           },
           "asset": "wardrobe.card"
         },
@@ -2002,16 +1802,16 @@
           "id": "catalog-focus-0-6",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 798],
-            "offsetMax": [240, 1052]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [24, -59.33333333333326],
+            "offsetMax": [240, -240.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [104, 480],
-            "offsetMax": [448, 612]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-540.0, 472],
+            "offsetMax": [-196.0, 598]
           },
           "asset": "wardrobe.focus"
         },
@@ -2019,16 +1819,16 @@
           "id": "thumb-shop-0-6",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [66, 810],
-            "offsetMax": [198, 942]
+            "anchorMin": [0, 0.7999999999999999],
+            "anchorMax": [0, 0.7999999999999999],
+            "offsetMin": [44.0, -221.9999999999999],
+            "offsetMax": [220.0, -45.999999999999886]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [114, 490],
-            "offsetMax": [222, 598]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-530.0, 480.0],
+            "offsetMax": [-420.0, 590.0]
           },
           "asset": "badge.round"
         },
@@ -2036,23 +1836,20 @@
           "id": "catalog-item-0-6",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 946],
-            "offsetMax": [234, 994]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [32, -340.0],
+            "offsetMax": [232, -302.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 492],
-            "offsetMax": [438, 540]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 482],
+            "offsetMax": [-208.0, 520]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -2060,22 +1857,19 @@
           "id": "catalog-price-0-6",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 996],
-            "offsetMax": [234, 1026]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [32, -298.0],
+            "offsetMax": [232, -270.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 543],
-            "offsetMax": [438, 571]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 524],
+            "offsetMax": [-208.0, 552]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -2084,23 +1878,20 @@
           "id": "catalog-rarity-0-6",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [30, 1026],
-            "offsetMax": [234, 1050]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [32, -267.0],
+            "offsetMax": [232, -245.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [228, 578],
-            "offsetMax": [438, 602]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-420.0, 560],
+            "offsetMax": [-208.0, 584]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
         },
@@ -2108,16 +1899,16 @@
           "id": "catalog-card-0-7",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [252, 798],
-            "offsetMax": [468, 1052]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [252, -59.33333333333326],
+            "offsetMax": [468, -240.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [468, 480],
-            "offsetMax": [812, 612]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-176.0, 472],
+            "offsetMax": [168.0, 598]
           },
           "asset": "wardrobe.card"
         },
@@ -2125,16 +1916,16 @@
           "id": "catalog-focus-0-7",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [252, 798],
-            "offsetMax": [468, 1052]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [252, -59.33333333333326],
+            "offsetMax": [468, -240.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [468, 480],
-            "offsetMax": [812, 612]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-176.0, 472],
+            "offsetMax": [168.0, 598]
           },
           "asset": "wardrobe.focus"
         },
@@ -2142,16 +1933,16 @@
           "id": "thumb-shop-0-7",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [294, 810],
-            "offsetMax": [426, 942]
+            "anchorMin": [0, 0.7999999999999999],
+            "anchorMax": [0, 0.7999999999999999],
+            "offsetMin": [272.0, -221.9999999999999],
+            "offsetMax": [448.0, -45.999999999999886]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [478, 490],
-            "offsetMax": [586, 598]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-166.0, 480.0],
+            "offsetMax": [-56.0, 590.0]
           },
           "asset": "badge.round"
         },
@@ -2159,23 +1950,20 @@
           "id": "catalog-item-0-7",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 946],
-            "offsetMax": [462, 994]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [260, -340.0],
+            "offsetMax": [460, -302.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 492],
-            "offsetMax": [802, 540]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 482],
+            "offsetMax": [156.0, 520]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -2183,22 +1971,19 @@
           "id": "catalog-price-0-7",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 996],
-            "offsetMax": [462, 1026]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [260, -298.0],
+            "offsetMax": [460, -270.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 543],
-            "offsetMax": [802, 571]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 524],
+            "offsetMax": [156.0, 552]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -2207,23 +1992,20 @@
           "id": "catalog-rarity-0-7",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [258, 1026],
-            "offsetMax": [462, 1050]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [260, -267.0],
+            "offsetMax": [460, -245.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [592, 578],
-            "offsetMax": [802, 602]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-56.0, 560],
+            "offsetMax": [156.0, 584]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
         },
@@ -2231,16 +2013,16 @@
           "id": "catalog-card-0-8",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [480, 798],
-            "offsetMax": [696, 1052]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [480, -59.33333333333326],
+            "offsetMax": [696, -240.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [832, 480],
-            "offsetMax": [1176, 612]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [188.0, 472],
+            "offsetMax": [532.0, 598]
           },
           "asset": "wardrobe.card"
         },
@@ -2248,16 +2030,16 @@
           "id": "catalog-focus-0-8",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [480, 798],
-            "offsetMax": [696, 1052]
+            "anchorMin": [0, 0.6666666666666666],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [480, -59.33333333333326],
+            "offsetMax": [696, -240.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [832, 480],
-            "offsetMax": [1176, 612]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [188.0, 472],
+            "offsetMax": [532.0, 598]
           },
           "asset": "wardrobe.focus"
         },
@@ -2265,16 +2047,16 @@
           "id": "thumb-shop-0-8",
           "type": "icon",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [522, 810],
-            "offsetMax": [654, 942]
+            "anchorMin": [0, 0.7999999999999999],
+            "anchorMax": [0, 0.7999999999999999],
+            "offsetMin": [500.0, -221.9999999999999],
+            "offsetMax": [676.0, -45.999999999999886]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [842, 490],
-            "offsetMax": [950, 598]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [198.0, 480.0],
+            "offsetMax": [308.0, 590.0]
           },
           "asset": "badge.round"
         },
@@ -2282,23 +2064,20 @@
           "id": "catalog-item-0-8",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 946],
-            "offsetMax": [690, 994]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [488, -340.0],
+            "offsetMax": [688, -302.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 492],
-            "offsetMax": [1166, 540]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 482],
+            "offsetMax": [520.0, 520]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 22,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#3a1757",
           "align": "center"
         },
@@ -2306,22 +2085,19 @@
           "id": "catalog-price-0-8",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 996],
-            "offsetMax": [690, 1026]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [488, -298.0],
+            "offsetMax": [688, -270.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 543],
-            "offsetMax": [1166, 571]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 524],
+            "offsetMax": [520.0, 552]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 20,
           "color": "#3a1757",
           "align": "center"
@@ -2330,25 +2106,39 @@
           "id": "catalog-rarity-0-8",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [486, 1026],
-            "offsetMax": [690, 1050]
+            "anchorMin": [0, 1.0],
+            "anchorMax": [0, 1.0],
+            "offsetMin": [488, -267.0],
+            "offsetMax": [688, -245.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [956, 578],
-            "offsetMax": [1166, 602]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [308.0, 560],
+            "offsetMax": [520.0, 584]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 20,
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 19,
           "color": "#713286",
           "align": "center"
+        },
+        {
+          "id": "tab-background-1",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [196, 172],
+            "offsetMax": [352, 238]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-268, 108],
+            "offsetMax": [-12, 172]
+          },
+          "asset": "button.secondary"
         },
         {
           "id": "tab-focus-1",
@@ -2356,14 +2146,14 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [196, 171],
-            "offsetMax": [362, 235]
+            "offsetMin": [196, 172],
+            "offsetMax": [352, 238]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [440, 108],
-            "offsetMax": [642, 174]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-268, 108],
+            "offsetMax": [-12, 172]
           },
           "asset": "button.primary"
         },
@@ -2373,27 +2163,38 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [196, 177],
-            "offsetMax": [362, 227]
+            "offsetMin": [196, 178],
+            "offsetMax": [352, 228]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [440, 114],
-            "offsetMax": [642, 164]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [-268, 114],
+            "offsetMax": [-12, 162]
           },
           "text": "Outfit",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 30,
           "color": "#ffffff",
           "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "outline": { "width": 3, "color": "#552372" }
+        },
+        {
+          "id": "tab-background-2",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [368, 172],
+            "offsetMax": [524, 238]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [4, 108],
+            "offsetMax": [260, 172]
+          },
+          "asset": "button.secondary"
         },
         {
           "id": "tab-focus-2",
@@ -2401,14 +2202,14 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [370, 171],
-            "offsetMax": [536, 235]
+            "offsetMin": [368, 172],
+            "offsetMax": [524, 238]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [654, 108],
-            "offsetMax": [856, 174]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [4, 108],
+            "offsetMax": [260, 172]
           },
           "asset": "button.primary"
         },
@@ -2418,27 +2219,38 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [370, 177],
-            "offsetMax": [536, 227]
+            "offsetMin": [368, 178],
+            "offsetMax": [524, 228]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [654, 114],
-            "offsetMax": [856, 164]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [4, 114],
+            "offsetMax": [260, 162]
           },
           "text": "Extra",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 30,
           "color": "#ffffff",
           "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "outline": { "width": 3, "color": "#552372" }
+        },
+        {
+          "id": "tab-background-3",
+          "type": "panel",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [540, 172],
+            "offsetMax": [696, 238]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [276, 108],
+            "offsetMax": [532, 172]
+          },
+          "asset": "button.secondary"
         },
         {
           "id": "tab-focus-3",
@@ -2446,14 +2258,14 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [544, 171],
-            "offsetMax": [710, 235]
+            "offsetMin": [540, 172],
+            "offsetMax": [696, 238]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [868, 108],
-            "offsetMax": [1070, 174]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [276, 108],
+            "offsetMax": [532, 172]
           },
           "asset": "button.primary"
         },
@@ -2463,42 +2275,36 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [544, 177],
-            "offsetMax": [710, 227]
+            "offsetMin": [540, 178],
+            "offsetMax": [696, 228]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [868, 114],
-            "offsetMax": [1070, 164]
+            "anchorMin": [0.5, 0],
+            "anchorMax": [0.5, 0],
+            "offsetMin": [276, 114],
+            "offsetMax": [532, 162]
           },
           "text": "Special",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 30,
           "color": "#ffffff",
           "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "outline": { "width": 3, "color": "#552372" }
         },
         {
           "id": "act-inbox",
           "type": "button",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [28, 1150],
-            "offsetMax": [228, 1214]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [24, -128],
+            "offsetMax": [224, -52]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [902, 642],
-            "offsetMax": [1062, 690]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [160, -70],
+            "offsetMax": [332, -14]
           },
           "asset": "button.secondary",
           "text": {
@@ -2510,16 +2316,16 @@
           "id": "act-commission",
           "type": "button",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [242, 1150],
-            "offsetMax": [488, 1214]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [236, -128],
+            "offsetMax": [500, -52]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [1080, 642],
-            "offsetMax": [1256, 690]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [352, -70],
+            "offsetMax": [532, -14]
           },
           "asset": "button.secondary",
           "text": {
@@ -2531,16 +2337,16 @@
           "id": "back",
           "type": "button",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [506, 1150],
-            "offsetMax": [694, 1214]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [512, -128],
+            "offsetMax": [696, -52]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 642],
-            "offsetMax": [184, 690]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-540, -70],
+            "offsetMax": [-360, -14]
           },
           "asset": "button.secondary",
           "text": {
@@ -2552,16 +2358,16 @@
           "id": "purchase-confirm",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [40, 420],
-            "offsetMax": [680, 760]
+            "anchorMin": [0, 0.5],
+            "anchorMax": [0, 0.5],
+            "offsetMin": [40, -170.0],
+            "offsetMax": [680, 170.0]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [350, 210],
-            "offsetMax": [930, 500]
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-290.0, -145.0],
+            "offsetMax": [290.0, 145.0]
           },
           "asset": "wardrobe.panel",
           "children": [
@@ -2581,10 +2387,7 @@
                 "offsetMax": [560, 72]
               },
               "text": "MAKE IT YOURS?",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 36,
               "color": "#3a1757",
               "align": "center"
@@ -2605,13 +2408,27 @@
                 "offsetMax": [560, 152]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 28,
               "color": "#3a1757",
               "align": "center"
+            },
+            {
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [24, 214],
+                "offsetMax": [306, 310]
+              },
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [20, 164],
+                "offsetMax": [280, 264]
+              },
+              "id": "purchase-buy-background",
+              "type": "panel",
+              "asset": "button.primary"
             },
             {
               "id": "purchase-buy",
@@ -2629,13 +2446,28 @@
                 "offsetMax": [280, 264]
               },
               "text": "BUY \u00b7 A / Enter",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 30,
+              "color": "#ffffff",
+              "align": "center",
+              "outline": { "width": 2, "color": "#552372" }
+            },
+            {
+              "rect": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [330, 214],
+                "offsetMax": [616, 310]
               },
-              "size": 24,
-              "color": "#3a1757",
-              "align": "center"
+              "landscape": {
+                "anchorMin": [0, 0],
+                "anchorMax": [0, 0],
+                "offsetMin": [300, 164],
+                "offsetMax": [560, 264]
+              },
+              "id": "purchase-cancel-background",
+              "type": "panel",
+              "asset": "button.secondary"
             },
             {
               "id": "purchase-cancel",
@@ -2653,13 +2485,11 @@
                 "offsetMax": [560, 264]
               },
               "text": "Cancel \u00b7 B / Esc",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 24,
-              "color": "#3a1757",
-              "align": "center"
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 30,
+              "color": "#ffffff",
+              "align": "center",
+              "outline": { "width": 2, "color": "#552372" }
             }
           ]
         }
@@ -5858,27 +5688,21 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [20, 24],
-            "offsetMax": [520, 90]
+            "offsetMin": [24, 20],
+            "offsetMax": [514, 92]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [30, 20],
-            "offsetMax": [630, 95]
+            "offsetMin": [28, 18],
+            "offsetMax": [648, 90]
           },
           "text": "Royal Fiesta",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 52,
           "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "align": "left",
+          "outline": { "width": 3, "color": "#552372" }
         },
         {
           "id": "wardrobe-subtitle",
@@ -5886,27 +5710,44 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [28, 100],
-            "offsetMax": [528, 142]
+            "offsetMin": [24, 96],
+            "offsetMax": [514, 136]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [32, 100],
-            "offsetMax": [417, 140]
+            "offsetMin": [30, 90],
+            "offsetMax": [630, 130]
           },
-          "text": "DRESS FOR THE FIESTA",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
+          "text": "DRESS UP. STAND OUT.",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
+          "color": "#ffffff",
+          "align": "left",
+          "outline": { "width": 3, "color": "#552372" }
+        },
+        {"id":"wallet","type":"group","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[24,98],"offsetMax":[360,154]},"landscape":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[24,96],"offsetMax":[360,152]},"children":[{"id":"wallet-coins-panel","type":"panel","asset":"button.secondary","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[0,0],"offsetMax":[160,56]}},{"id":"wallet-coins-icon","type":"icon","asset":"badge.round","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[8,6],"offsetMax":[52,50]}},{"id":"wallet-coins","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[56,2],"offsetMax":[152,52]},"text":"","font":{"family":"Fredoka","weight":700},"size":30,"color":"#ffffff","align":"center","outline":{"width":2,"color":"#552372"}},{"id":"wallet-tickets-panel","type":"panel","asset":"button.secondary","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[176,0],"offsetMax":[336,56]}},{"id":"wallet-tickets-icon","type":"icon","asset":"wallet.ticket","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[184,6],"offsetMax":[228,50]}},{"id":"wallet-tickets","type":"label","rect":{"anchorMin":[0,0],"anchorMax":[0,0],"offsetMin":[232,2],"offsetMax":[328,52]},"text":"","font":{"family":"Fredoka","weight":700},"size":30,"color":"#ffffff","align":"center","outline":{"width":2,"color":"#552372"}}]},
+        {
+          "id": "line-0",
+          "type": "label",
+          "rect": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [24, 96],
+            "offsetMax": [514, 136]
           },
-          "size": 24,
+          "landscape": {
+            "anchorMin": [0, 0],
+            "anchorMax": [0, 0],
+            "offsetMin": [30, 90],
+            "offsetMax": [630, 130]
+          },
+          "text": "",
+          "font": { "family": "Fredoka", "weight": 700 },
+          "size": 23,
           "color": "#ffffff",
           "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "outline": { "width": 3, "color": "#552372" }
         },
         {
           "id": "hint",
@@ -5914,27 +5755,21 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 1254],
-            "offsetMax": [696, 1280]
+            "offsetMin": [0, 1270],
+            "offsetMax": [720, 1280]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [260, 689],
-            "offsetMax": [1020, 717]
+            "offsetMin": [0, 710],
+            "offsetMax": [1280, 720]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 18,
           "color": "#ffffff",
           "align": "center",
-          "outline": {
-            "width": 3,
-            "color": "#552372"
-          }
+          "outline": { "width": 3, "color": "#552372" }
         },
         {
           "id": "bin-head-card",
@@ -5942,14 +5777,14 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 490],
-            "offsetMax": [696, 634]
+            "offsetMin": [24, 162],
+            "offsetMax": [696, 302]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 170],
-            "offsetMax": [408, 356]
+            "offsetMin": [24, 162],
+            "offsetMax": [444, 346]
           },
           "asset": "wardrobe.panel",
           "children": [
@@ -5959,21 +5794,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 4],
-                "offsetMax": [128, 34]
+                "offsetMin": [16, 4],
+                "offsetMax": [156, 36]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
                 "offsetMin": [12, 6],
-                "offsetMax": [162, 41]
+                "offsetMax": [152, 40]
               },
               "text": "Hat",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 28,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 26,
               "color": "#3a1757",
               "align": "center"
             },
@@ -5983,21 +5815,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [130, 4],
+                "offsetMin": [170, 6],
                 "offsetMax": [650, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [160, 6],
-                "offsetMax": [370, 41]
+                "offsetMin": [155, 8],
+                "offsetMax": [406, 36]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 20,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 22,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6007,14 +5836,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [52, 38],
-                "offsetMax": [188, 138]
+                "offsetMin": [44, 36],
+                "offsetMax": [182, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [37, 46],
-                "offsetMax": [113, 174]
+                "offsetMin": [32, 42],
+                "offsetMax": [116, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -6024,14 +5853,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [52, 38],
-                "offsetMax": [188, 138]
+                "offsetMin": [44, 36],
+                "offsetMax": [182, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [37, 46],
-                "offsetMax": [113, 174]
+                "offsetMin": [32, 42],
+                "offsetMax": [116, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -6041,14 +5870,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [74, 38],
-                "offsetMax": [164, 114]
+                "offsetMin": [76, 30],
+                "offsetMax": [150, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [45, 50],
-                "offsetMax": [105, 122]
+                "offsetMin": [36, 43],
+                "offsetMax": [112, 123]
               },
               "asset": "badge.round"
             },
@@ -6058,21 +5887,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [54, 112],
-                "offsetMax": [186, 130]
+                "offsetMin": [47, 80],
+                "offsetMax": [179, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [39, 123],
-                "offsetMax": [111, 152]
+                "offsetMin": [34, 88],
+                "offsetMax": [114, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6082,21 +5908,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [54, 128],
-                "offsetMax": [186, 142]
+                "offsetMin": [47, 110],
+                "offsetMax": [179, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [39, 152],
-                "offsetMax": [111, 170]
+                "offsetMin": [34, 145],
+                "offsetMax": [114, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -6106,14 +5929,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [198, 38],
-                "offsetMax": [334, 138]
+                "offsetMin": [190, 36],
+                "offsetMax": [328, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [119, 46],
-                "offsetMax": [195, 174]
+                "offsetMin": [122, 42],
+                "offsetMax": [206, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -6123,14 +5946,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [198, 38],
-                "offsetMax": [334, 138]
+                "offsetMin": [190, 36],
+                "offsetMax": [328, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [119, 46],
-                "offsetMax": [195, 174]
+                "offsetMin": [122, 42],
+                "offsetMax": [206, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -6140,14 +5963,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [220, 38],
-                "offsetMax": [310, 114]
+                "offsetMin": [222, 30],
+                "offsetMax": [296, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [127, 50],
-                "offsetMax": [187, 122]
+                "offsetMin": [126, 43],
+                "offsetMax": [202, 123]
               },
               "asset": "badge.round"
             },
@@ -6157,21 +5980,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [200, 112],
-                "offsetMax": [332, 130]
+                "offsetMin": [193, 80],
+                "offsetMax": [325, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [121, 123],
-                "offsetMax": [193, 152]
+                "offsetMin": [124, 88],
+                "offsetMax": [204, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6181,21 +6001,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [200, 128],
-                "offsetMax": [332, 142]
+                "offsetMin": [193, 110],
+                "offsetMax": [325, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [121, 152],
-                "offsetMax": [193, 170]
+                "offsetMin": [124, 145],
+                "offsetMax": [204, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -6205,14 +6022,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [344, 38],
-                "offsetMax": [480, 138]
+                "offsetMin": [336, 36],
+                "offsetMax": [474, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [201, 46],
-                "offsetMax": [277, 174]
+                "offsetMin": [212, 42],
+                "offsetMax": [296, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -6222,14 +6039,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [344, 38],
-                "offsetMax": [480, 138]
+                "offsetMin": [336, 36],
+                "offsetMax": [474, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [201, 46],
-                "offsetMax": [277, 174]
+                "offsetMin": [212, 42],
+                "offsetMax": [296, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -6239,14 +6056,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [366, 38],
-                "offsetMax": [456, 114]
+                "offsetMin": [368, 30],
+                "offsetMax": [442, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [209, 50],
-                "offsetMax": [269, 122]
+                "offsetMin": [216, 43],
+                "offsetMax": [292, 123]
               },
               "asset": "badge.round"
             },
@@ -6256,21 +6073,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [346, 112],
-                "offsetMax": [478, 130]
+                "offsetMin": [339, 80],
+                "offsetMax": [471, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [203, 123],
-                "offsetMax": [275, 152]
+                "offsetMin": [214, 88],
+                "offsetMax": [294, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6280,21 +6094,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [346, 128],
-                "offsetMax": [478, 142]
+                "offsetMin": [339, 110],
+                "offsetMax": [471, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [203, 152],
-                "offsetMax": [275, 170]
+                "offsetMin": [214, 145],
+                "offsetMax": [294, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -6304,14 +6115,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [490, 38],
-                "offsetMax": [626, 138]
+                "offsetMin": [482, 36],
+                "offsetMax": [620, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [283, 46],
-                "offsetMax": [359, 174]
+                "offsetMin": [302, 42],
+                "offsetMax": [386, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -6321,14 +6132,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [490, 38],
-                "offsetMax": [626, 138]
+                "offsetMin": [482, 36],
+                "offsetMax": [620, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [283, 46],
-                "offsetMax": [359, 174]
+                "offsetMin": [302, 42],
+                "offsetMax": [386, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -6338,14 +6149,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [512, 38],
-                "offsetMax": [602, 114]
+                "offsetMin": [514, 30],
+                "offsetMax": [588, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [291, 50],
-                "offsetMax": [351, 122]
+                "offsetMin": [306, 43],
+                "offsetMax": [382, 123]
               },
               "asset": "badge.round"
             },
@@ -6355,21 +6166,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [492, 112],
-                "offsetMax": [624, 130]
+                "offsetMin": [485, 80],
+                "offsetMax": [617, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [285, 123],
-                "offsetMax": [357, 152]
+                "offsetMin": [304, 88],
+                "offsetMax": [384, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6379,21 +6187,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [492, 128],
-                "offsetMax": [624, 142]
+                "offsetMin": [485, 110],
+                "offsetMax": [617, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [285, 152],
-                "offsetMax": [357, 170]
+                "offsetMin": [304, 145],
+                "offsetMax": [384, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -6403,20 +6208,17 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [2, 52],
-                "offsetMax": [46, 114]
+                "offsetMin": [2, 54],
+                "offsetMax": [40, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [0, 78],
-                "offsetMax": [32, 148]
+                "offsetMin": [0, 64],
+                "offsetMax": [30, 154]
               },
-              "text": "\u2039",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "text": "<",
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
               "color": "#3a1757",
               "align": "center"
@@ -6427,20 +6229,17 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [634, 52],
-                "offsetMax": [668, 114]
+                "offsetMin": [632, 54],
+                "offsetMax": [670, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [366, 78],
-                "offsetMax": [398, 148]
+                "offsetMin": [390, 64],
+                "offsetMax": [420, 154]
               },
-              "text": "\u203a",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "text": ">",
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
               "color": "#3a1757",
               "align": "center"
@@ -6453,14 +6252,14 @@
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 638],
-            "offsetMax": [696, 782]
+            "offsetMin": [24, 312],
+            "offsetMax": [696, 452]
           },
           "landscape": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
-            "offsetMin": [24, 376],
-            "offsetMax": [408, 562]
+            "offsetMin": [24, 366],
+            "offsetMax": [444, 550]
           },
           "asset": "wardrobe.panel",
           "children": [
@@ -6470,21 +6269,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 4],
-                "offsetMax": [128, 34]
+                "offsetMin": [16, 4],
+                "offsetMax": [156, 36]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
                 "offsetMin": [12, 6],
-                "offsetMax": [162, 41]
+                "offsetMax": [152, 40]
               },
               "text": "Outfit",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 28,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 26,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6494,21 +6290,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [130, 4],
+                "offsetMin": [170, 6],
                 "offsetMax": [650, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [160, 6],
-                "offsetMax": [370, 41]
+                "offsetMin": [155, 8],
+                "offsetMax": [406, 36]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 20,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 22,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6518,14 +6311,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [52, 38],
-                "offsetMax": [188, 138]
+                "offsetMin": [44, 36],
+                "offsetMax": [182, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [37, 46],
-                "offsetMax": [113, 174]
+                "offsetMin": [32, 42],
+                "offsetMax": [116, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -6535,14 +6328,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [52, 38],
-                "offsetMax": [188, 138]
+                "offsetMin": [44, 36],
+                "offsetMax": [182, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [37, 46],
-                "offsetMax": [113, 174]
+                "offsetMin": [32, 42],
+                "offsetMax": [116, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -6552,14 +6345,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [74, 38],
-                "offsetMax": [164, 114]
+                "offsetMin": [76, 30],
+                "offsetMax": [150, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [45, 50],
-                "offsetMax": [105, 122]
+                "offsetMin": [36, 43],
+                "offsetMax": [112, 123]
               },
               "asset": "badge.round"
             },
@@ -6569,21 +6362,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [54, 112],
-                "offsetMax": [186, 130]
+                "offsetMin": [47, 80],
+                "offsetMax": [179, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [39, 123],
-                "offsetMax": [111, 152]
+                "offsetMin": [34, 88],
+                "offsetMax": [114, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6593,21 +6383,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [54, 128],
-                "offsetMax": [186, 142]
+                "offsetMin": [47, 110],
+                "offsetMax": [179, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [39, 152],
-                "offsetMax": [111, 170]
+                "offsetMin": [34, 145],
+                "offsetMax": [114, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -6617,14 +6404,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [198, 38],
-                "offsetMax": [334, 138]
+                "offsetMin": [190, 36],
+                "offsetMax": [328, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [119, 46],
-                "offsetMax": [195, 174]
+                "offsetMin": [122, 42],
+                "offsetMax": [206, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -6634,14 +6421,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [198, 38],
-                "offsetMax": [334, 138]
+                "offsetMin": [190, 36],
+                "offsetMax": [328, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [119, 46],
-                "offsetMax": [195, 174]
+                "offsetMin": [122, 42],
+                "offsetMax": [206, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -6651,14 +6438,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [220, 38],
-                "offsetMax": [310, 114]
+                "offsetMin": [222, 30],
+                "offsetMax": [296, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [127, 50],
-                "offsetMax": [187, 122]
+                "offsetMin": [126, 43],
+                "offsetMax": [202, 123]
               },
               "asset": "badge.round"
             },
@@ -6668,21 +6455,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [200, 112],
-                "offsetMax": [332, 130]
+                "offsetMin": [193, 80],
+                "offsetMax": [325, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [121, 123],
-                "offsetMax": [193, 152]
+                "offsetMin": [124, 88],
+                "offsetMax": [204, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6692,21 +6476,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [200, 128],
-                "offsetMax": [332, 142]
+                "offsetMin": [193, 110],
+                "offsetMax": [325, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [121, 152],
-                "offsetMax": [193, 170]
+                "offsetMin": [124, 145],
+                "offsetMax": [204, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -6716,14 +6497,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [344, 38],
-                "offsetMax": [480, 138]
+                "offsetMin": [336, 36],
+                "offsetMax": [474, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [201, 46],
-                "offsetMax": [277, 174]
+                "offsetMin": [212, 42],
+                "offsetMax": [296, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -6733,14 +6514,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [344, 38],
-                "offsetMax": [480, 138]
+                "offsetMin": [336, 36],
+                "offsetMax": [474, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [201, 46],
-                "offsetMax": [277, 174]
+                "offsetMin": [212, 42],
+                "offsetMax": [296, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -6750,14 +6531,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [366, 38],
-                "offsetMax": [456, 114]
+                "offsetMin": [368, 30],
+                "offsetMax": [442, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [209, 50],
-                "offsetMax": [269, 122]
+                "offsetMin": [216, 43],
+                "offsetMax": [292, 123]
               },
               "asset": "badge.round"
             },
@@ -6767,21 +6548,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [346, 112],
-                "offsetMax": [478, 130]
+                "offsetMin": [339, 80],
+                "offsetMax": [471, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [203, 123],
-                "offsetMax": [275, 152]
+                "offsetMin": [214, 88],
+                "offsetMax": [294, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6791,21 +6569,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [346, 128],
-                "offsetMax": [478, 142]
+                "offsetMin": [339, 110],
+                "offsetMax": [471, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [203, 152],
-                "offsetMax": [275, 170]
+                "offsetMin": [214, 145],
+                "offsetMax": [294, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -6815,14 +6590,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [490, 38],
-                "offsetMax": [626, 138]
+                "offsetMin": [482, 36],
+                "offsetMax": [620, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [283, 46],
-                "offsetMax": [359, 174]
+                "offsetMin": [302, 42],
+                "offsetMax": [386, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -6832,14 +6607,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [490, 38],
-                "offsetMax": [626, 138]
+                "offsetMin": [482, 36],
+                "offsetMax": [620, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [283, 46],
-                "offsetMax": [359, 174]
+                "offsetMin": [302, 42],
+                "offsetMax": [386, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -6849,14 +6624,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [512, 38],
-                "offsetMax": [602, 114]
+                "offsetMin": [514, 30],
+                "offsetMax": [588, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [291, 50],
-                "offsetMax": [351, 122]
+                "offsetMin": [306, 43],
+                "offsetMax": [382, 123]
               },
               "asset": "badge.round"
             },
@@ -6866,21 +6641,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [492, 112],
-                "offsetMax": [624, 130]
+                "offsetMin": [485, 80],
+                "offsetMax": [617, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [285, 123],
-                "offsetMax": [357, 152]
+                "offsetMin": [304, 88],
+                "offsetMax": [384, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -6890,21 +6662,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [492, 128],
-                "offsetMax": [624, 142]
+                "offsetMin": [485, 110],
+                "offsetMax": [617, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [285, 152],
-                "offsetMax": [357, 170]
+                "offsetMin": [304, 145],
+                "offsetMax": [384, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -6914,20 +6683,17 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [2, 52],
-                "offsetMax": [46, 114]
+                "offsetMin": [2, 54],
+                "offsetMax": [40, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [0, 78],
-                "offsetMax": [32, 148]
+                "offsetMin": [0, 64],
+                "offsetMax": [30, 154]
               },
-              "text": "\u2039",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "text": "<",
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
               "color": "#3a1757",
               "align": "center"
@@ -6938,20 +6704,17 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [634, 52],
-                "offsetMax": [668, 114]
+                "offsetMin": [632, 54],
+                "offsetMax": [670, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [366, 78],
-                "offsetMax": [398, 148]
+                "offsetMin": [390, 64],
+                "offsetMax": [420, 154]
               },
-              "text": "\u203a",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "text": ">",
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
               "color": "#3a1757",
               "align": "center"
@@ -6962,16 +6725,16 @@
           "id": "bin-bottom-card",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 786],
-            "offsetMax": [696, 930]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [24, -476],
+            "offsetMax": [696, -336]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [872, 170],
-            "offsetMax": [1256, 356]
+            "anchorMin": [1, 0],
+            "anchorMax": [1, 0],
+            "offsetMin": [-444, 162],
+            "offsetMax": [-24, 346]
           },
           "asset": "wardrobe.panel",
           "children": [
@@ -6981,21 +6744,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 4],
-                "offsetMax": [128, 34]
+                "offsetMin": [16, 4],
+                "offsetMax": [156, 36]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
                 "offsetMin": [12, 6],
-                "offsetMax": [162, 41]
+                "offsetMax": [152, 40]
               },
               "text": "Extra",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 28,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 26,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7005,21 +6765,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [130, 4],
+                "offsetMin": [170, 6],
                 "offsetMax": [650, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [160, 6],
-                "offsetMax": [370, 41]
+                "offsetMin": [155, 8],
+                "offsetMax": [406, 36]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 20,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 22,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7029,14 +6786,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [52, 38],
-                "offsetMax": [188, 138]
+                "offsetMin": [44, 36],
+                "offsetMax": [182, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [37, 46],
-                "offsetMax": [113, 174]
+                "offsetMin": [32, 42],
+                "offsetMax": [116, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -7046,14 +6803,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [52, 38],
-                "offsetMax": [188, 138]
+                "offsetMin": [44, 36],
+                "offsetMax": [182, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [37, 46],
-                "offsetMax": [113, 174]
+                "offsetMin": [32, 42],
+                "offsetMax": [116, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -7063,14 +6820,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [74, 38],
-                "offsetMax": [164, 114]
+                "offsetMin": [76, 30],
+                "offsetMax": [150, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [45, 50],
-                "offsetMax": [105, 122]
+                "offsetMin": [36, 43],
+                "offsetMax": [112, 123]
               },
               "asset": "badge.round"
             },
@@ -7080,21 +6837,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [54, 112],
-                "offsetMax": [186, 130]
+                "offsetMin": [47, 80],
+                "offsetMax": [179, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [39, 123],
-                "offsetMax": [111, 152]
+                "offsetMin": [34, 88],
+                "offsetMax": [114, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7104,21 +6858,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [54, 128],
-                "offsetMax": [186, 142]
+                "offsetMin": [47, 110],
+                "offsetMax": [179, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [39, 152],
-                "offsetMax": [111, 170]
+                "offsetMin": [34, 145],
+                "offsetMax": [114, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -7128,14 +6879,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [198, 38],
-                "offsetMax": [334, 138]
+                "offsetMin": [190, 36],
+                "offsetMax": [328, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [119, 46],
-                "offsetMax": [195, 174]
+                "offsetMin": [122, 42],
+                "offsetMax": [206, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -7145,14 +6896,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [198, 38],
-                "offsetMax": [334, 138]
+                "offsetMin": [190, 36],
+                "offsetMax": [328, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [119, 46],
-                "offsetMax": [195, 174]
+                "offsetMin": [122, 42],
+                "offsetMax": [206, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -7162,14 +6913,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [220, 38],
-                "offsetMax": [310, 114]
+                "offsetMin": [222, 30],
+                "offsetMax": [296, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [127, 50],
-                "offsetMax": [187, 122]
+                "offsetMin": [126, 43],
+                "offsetMax": [202, 123]
               },
               "asset": "badge.round"
             },
@@ -7179,21 +6930,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [200, 112],
-                "offsetMax": [332, 130]
+                "offsetMin": [193, 80],
+                "offsetMax": [325, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [121, 123],
-                "offsetMax": [193, 152]
+                "offsetMin": [124, 88],
+                "offsetMax": [204, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7203,21 +6951,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [200, 128],
-                "offsetMax": [332, 142]
+                "offsetMin": [193, 110],
+                "offsetMax": [325, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [121, 152],
-                "offsetMax": [193, 170]
+                "offsetMin": [124, 145],
+                "offsetMax": [204, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -7227,14 +6972,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [344, 38],
-                "offsetMax": [480, 138]
+                "offsetMin": [336, 36],
+                "offsetMax": [474, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [201, 46],
-                "offsetMax": [277, 174]
+                "offsetMin": [212, 42],
+                "offsetMax": [296, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -7244,14 +6989,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [344, 38],
-                "offsetMax": [480, 138]
+                "offsetMin": [336, 36],
+                "offsetMax": [474, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [201, 46],
-                "offsetMax": [277, 174]
+                "offsetMin": [212, 42],
+                "offsetMax": [296, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -7261,14 +7006,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [366, 38],
-                "offsetMax": [456, 114]
+                "offsetMin": [368, 30],
+                "offsetMax": [442, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [209, 50],
-                "offsetMax": [269, 122]
+                "offsetMin": [216, 43],
+                "offsetMax": [292, 123]
               },
               "asset": "badge.round"
             },
@@ -7278,21 +7023,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [346, 112],
-                "offsetMax": [478, 130]
+                "offsetMin": [339, 80],
+                "offsetMax": [471, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [203, 123],
-                "offsetMax": [275, 152]
+                "offsetMin": [214, 88],
+                "offsetMax": [294, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7302,21 +7044,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [346, 128],
-                "offsetMax": [478, 142]
+                "offsetMin": [339, 110],
+                "offsetMax": [471, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [203, 152],
-                "offsetMax": [275, 170]
+                "offsetMin": [214, 145],
+                "offsetMax": [294, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -7326,14 +7065,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [490, 38],
-                "offsetMax": [626, 138]
+                "offsetMin": [482, 36],
+                "offsetMax": [620, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [283, 46],
-                "offsetMax": [359, 174]
+                "offsetMin": [302, 42],
+                "offsetMax": [386, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -7343,14 +7082,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [490, 38],
-                "offsetMax": [626, 138]
+                "offsetMin": [482, 36],
+                "offsetMax": [620, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [283, 46],
-                "offsetMax": [359, 174]
+                "offsetMin": [302, 42],
+                "offsetMax": [386, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -7360,14 +7099,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [512, 38],
-                "offsetMax": [602, 114]
+                "offsetMin": [514, 30],
+                "offsetMax": [588, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [291, 50],
-                "offsetMax": [351, 122]
+                "offsetMin": [306, 43],
+                "offsetMax": [382, 123]
               },
               "asset": "badge.round"
             },
@@ -7377,21 +7116,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [492, 112],
-                "offsetMax": [624, 130]
+                "offsetMin": [485, 80],
+                "offsetMax": [617, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [285, 123],
-                "offsetMax": [357, 152]
+                "offsetMin": [304, 88],
+                "offsetMax": [384, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7401,21 +7137,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [492, 128],
-                "offsetMax": [624, 142]
+                "offsetMin": [485, 110],
+                "offsetMax": [617, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [285, 152],
-                "offsetMax": [357, 170]
+                "offsetMin": [304, 145],
+                "offsetMax": [384, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -7425,20 +7158,17 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [2, 52],
-                "offsetMax": [46, 114]
+                "offsetMin": [2, 54],
+                "offsetMax": [40, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [0, 78],
-                "offsetMax": [32, 148]
+                "offsetMin": [0, 64],
+                "offsetMax": [30, 154]
               },
-              "text": "\u2039",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "text": "<",
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
               "color": "#3a1757",
               "align": "center"
@@ -7449,20 +7179,17 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [634, 52],
-                "offsetMax": [668, 114]
+                "offsetMin": [632, 54],
+                "offsetMax": [670, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [366, 78],
-                "offsetMax": [398, 148]
+                "offsetMin": [390, 64],
+                "offsetMax": [420, 154]
               },
-              "text": "\u203a",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "text": ">",
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
               "color": "#3a1757",
               "align": "center"
@@ -7473,16 +7200,16 @@
           "id": "bin-special-card",
           "type": "panel",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 934],
-            "offsetMax": [696, 1078]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [24, -326],
+            "offsetMax": [696, -186]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [872, 376],
-            "offsetMax": [1256, 562]
+            "anchorMin": [1, 0],
+            "anchorMax": [1, 0],
+            "offsetMin": [-444, 366],
+            "offsetMax": [-24, 550]
           },
           "asset": "wardrobe.panel",
           "children": [
@@ -7492,21 +7219,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [12, 4],
-                "offsetMax": [128, 34]
+                "offsetMin": [16, 4],
+                "offsetMax": [156, 36]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
                 "offsetMin": [12, 6],
-                "offsetMax": [162, 41]
+                "offsetMax": [152, 40]
               },
               "text": "Special",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 28,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 26,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7516,21 +7240,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [130, 4],
+                "offsetMin": [170, 6],
                 "offsetMax": [650, 34]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [160, 6],
-                "offsetMax": [370, 41]
+                "offsetMin": [155, 8],
+                "offsetMax": [406, 36]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 20,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 22,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7540,14 +7261,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [52, 38],
-                "offsetMax": [188, 138]
+                "offsetMin": [44, 36],
+                "offsetMax": [182, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [37, 46],
-                "offsetMax": [113, 174]
+                "offsetMin": [32, 42],
+                "offsetMax": [116, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -7557,14 +7278,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [52, 38],
-                "offsetMax": [188, 138]
+                "offsetMin": [44, 36],
+                "offsetMax": [182, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [37, 46],
-                "offsetMax": [113, 174]
+                "offsetMin": [32, 42],
+                "offsetMax": [116, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -7574,14 +7295,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [74, 38],
-                "offsetMax": [164, 114]
+                "offsetMin": [76, 30],
+                "offsetMax": [150, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [45, 50],
-                "offsetMax": [105, 122]
+                "offsetMin": [36, 43],
+                "offsetMax": [112, 123]
               },
               "asset": "badge.round"
             },
@@ -7591,21 +7312,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [54, 112],
-                "offsetMax": [186, 130]
+                "offsetMin": [47, 80],
+                "offsetMax": [179, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [39, 123],
-                "offsetMax": [111, 152]
+                "offsetMin": [34, 88],
+                "offsetMax": [114, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7615,21 +7333,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [54, 128],
-                "offsetMax": [186, 142]
+                "offsetMin": [47, 110],
+                "offsetMax": [179, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [39, 152],
-                "offsetMax": [111, 170]
+                "offsetMin": [34, 145],
+                "offsetMax": [114, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -7639,14 +7354,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [198, 38],
-                "offsetMax": [334, 138]
+                "offsetMin": [190, 36],
+                "offsetMax": [328, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [119, 46],
-                "offsetMax": [195, 174]
+                "offsetMin": [122, 42],
+                "offsetMax": [206, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -7656,14 +7371,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [198, 38],
-                "offsetMax": [334, 138]
+                "offsetMin": [190, 36],
+                "offsetMax": [328, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [119, 46],
-                "offsetMax": [195, 174]
+                "offsetMin": [122, 42],
+                "offsetMax": [206, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -7673,14 +7388,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [220, 38],
-                "offsetMax": [310, 114]
+                "offsetMin": [222, 30],
+                "offsetMax": [296, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [127, 50],
-                "offsetMax": [187, 122]
+                "offsetMin": [126, 43],
+                "offsetMax": [202, 123]
               },
               "asset": "badge.round"
             },
@@ -7690,21 +7405,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [200, 112],
-                "offsetMax": [332, 130]
+                "offsetMin": [193, 80],
+                "offsetMax": [325, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [121, 123],
-                "offsetMax": [193, 152]
+                "offsetMin": [124, 88],
+                "offsetMax": [204, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7714,21 +7426,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [200, 128],
-                "offsetMax": [332, 142]
+                "offsetMin": [193, 110],
+                "offsetMax": [325, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [121, 152],
-                "offsetMax": [193, 170]
+                "offsetMin": [124, 145],
+                "offsetMax": [204, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -7738,14 +7447,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [344, 38],
-                "offsetMax": [480, 138]
+                "offsetMin": [336, 36],
+                "offsetMax": [474, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [201, 46],
-                "offsetMax": [277, 174]
+                "offsetMin": [212, 42],
+                "offsetMax": [296, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -7755,14 +7464,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [344, 38],
-                "offsetMax": [480, 138]
+                "offsetMin": [336, 36],
+                "offsetMax": [474, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [201, 46],
-                "offsetMax": [277, 174]
+                "offsetMin": [212, 42],
+                "offsetMax": [296, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -7772,14 +7481,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [366, 38],
-                "offsetMax": [456, 114]
+                "offsetMin": [368, 30],
+                "offsetMax": [442, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [209, 50],
-                "offsetMax": [269, 122]
+                "offsetMin": [216, 43],
+                "offsetMax": [292, 123]
               },
               "asset": "badge.round"
             },
@@ -7789,21 +7498,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [346, 112],
-                "offsetMax": [478, 130]
+                "offsetMin": [339, 80],
+                "offsetMax": [471, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [203, 123],
-                "offsetMax": [275, 152]
+                "offsetMin": [214, 88],
+                "offsetMax": [294, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7813,21 +7519,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [346, 128],
-                "offsetMax": [478, 142]
+                "offsetMin": [339, 110],
+                "offsetMax": [471, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [203, 152],
-                "offsetMax": [275, 170]
+                "offsetMin": [214, 145],
+                "offsetMax": [294, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -7837,14 +7540,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [490, 38],
-                "offsetMax": [626, 138]
+                "offsetMin": [482, 36],
+                "offsetMax": [620, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [283, 46],
-                "offsetMax": [359, 174]
+                "offsetMin": [302, 42],
+                "offsetMax": [386, 174]
               },
               "asset": "wardrobe.card"
             },
@@ -7854,14 +7557,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [490, 38],
-                "offsetMax": [626, 138]
+                "offsetMin": [482, 36],
+                "offsetMax": [620, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [283, 46],
-                "offsetMax": [359, 174]
+                "offsetMin": [302, 42],
+                "offsetMax": [386, 174]
               },
               "asset": "wardrobe.focus"
             },
@@ -7871,14 +7574,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [512, 38],
-                "offsetMax": [602, 114]
+                "offsetMin": [514, 30],
+                "offsetMax": [588, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [291, 50],
-                "offsetMax": [351, 122]
+                "offsetMin": [306, 43],
+                "offsetMax": [382, 123]
               },
               "asset": "badge.round"
             },
@@ -7888,21 +7591,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [492, 112],
-                "offsetMax": [624, 130]
+                "offsetMin": [485, 80],
+                "offsetMax": [617, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [285, 123],
-                "offsetMax": [357, 152]
+                "offsetMin": [304, 88],
+                "offsetMax": [384, 118]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 13,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 17,
               "color": "#3a1757",
               "align": "center"
             },
@@ -7912,21 +7612,18 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [492, 128],
-                "offsetMax": [624, 142]
+                "offsetMin": [485, 110],
+                "offsetMax": [617, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [285, 152],
-                "offsetMax": [357, 170]
+                "offsetMin": [304, 145],
+                "offsetMax": [384, 170]
               },
               "text": "",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
-              "size": 12,
+              "font": { "family": "Fredoka", "weight": 700 },
+              "size": 18,
               "color": "#7a247d",
               "align": "center"
             },
@@ -7936,20 +7633,17 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [2, 52],
-                "offsetMax": [46, 114]
+                "offsetMin": [2, 54],
+                "offsetMax": [40, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [0, 78],
-                "offsetMax": [32, 148]
+                "offsetMin": [0, 64],
+                "offsetMax": [30, 154]
               },
-              "text": "\u2039",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "text": "<",
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
               "color": "#3a1757",
               "align": "center"
@@ -7960,20 +7654,17 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [634, 52],
-                "offsetMax": [668, 114]
+                "offsetMin": [632, 54],
+                "offsetMax": [670, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [366, 78],
-                "offsetMax": [398, 148]
+                "offsetMin": [390, 64],
+                "offsetMax": [420, 154]
               },
-              "text": "\u203a",
-              "font": {
-                "family": "Fredoka",
-                "weight": 700
-              },
+              "text": ">",
+              "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
               "color": "#3a1757",
               "align": "center"
@@ -7988,16 +7679,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [168, 1100],
-            "offsetMax": [210, 1142]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [168, -160],
+            "offsetMax": [210, -118]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [452, 578],
-            "offsetMax": [492, 618]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-188.0, -146],
+            "offsetMax": [-148.0, -106]
           }
         },
         {
@@ -8008,16 +7699,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [217, 1100],
-            "offsetMax": [259, 1142]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [217, -160],
+            "offsetMax": [259, -118]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [500, 578],
-            "offsetMax": [540, 618]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-140.0, -146],
+            "offsetMax": [-100.0, -106]
           }
         },
         {
@@ -8028,16 +7719,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [266, 1100],
-            "offsetMax": [308, 1142]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [266, -160],
+            "offsetMax": [308, -118]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [548, 578],
-            "offsetMax": [588, 618]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-92.0, -146],
+            "offsetMax": [-52.0, -106]
           }
         },
         {
@@ -8048,16 +7739,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [315, 1100],
-            "offsetMax": [357, 1142]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [315, -160],
+            "offsetMax": [357, -118]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [596, 578],
-            "offsetMax": [636, 618]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-44.0, -146],
+            "offsetMax": [-4.0, -106]
           }
         },
         {
@@ -8068,16 +7759,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [364, 1100],
-            "offsetMax": [406, 1142]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [364, -160],
+            "offsetMax": [406, -118]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [644, 578],
-            "offsetMax": [684, 618]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [4.0, -146],
+            "offsetMax": [44.0, -106]
           }
         },
         {
@@ -8088,16 +7779,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [413, 1100],
-            "offsetMax": [455, 1142]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [413, -160],
+            "offsetMax": [455, -118]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [692, 578],
-            "offsetMax": [732, 618]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [52.0, -146],
+            "offsetMax": [92.0, -106]
           }
         },
         {
@@ -8108,16 +7799,16 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [462, 1100],
-            "offsetMax": [504, 1142]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [462, -160],
+            "offsetMax": [504, -118]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [740, 578],
-            "offsetMax": [780, 618]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [100.0, -146],
+            "offsetMax": [140.0, -106]
           }
         },
         {
@@ -8128,38 +7819,35 @@
             "count": ""
           },
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [511, 1100],
-            "offsetMax": [553, 1142]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [511, -160],
+            "offsetMax": [553, -118]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [788, 578],
-            "offsetMax": [828, 618]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [148.0, -146],
+            "offsetMax": [188.0, -106]
           }
         },
         {
           "id": "palette-mark",
           "type": "label",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [0, 0],
-            "offsetMax": [1, 1]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [0, -1280],
+            "offsetMax": [1, -1279]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [0, 0],
-            "offsetMax": [1, 1]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-640.0, -720],
+            "offsetMax": [-639.0, -719]
           },
           "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
+          "font": { "family": "Fredoka", "weight": 700 },
           "size": 26,
           "color": "#3a1757",
           "align": "center"
@@ -8168,16 +7856,16 @@
           "id": "act-play",
           "type": "button",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [368, 1170],
-            "offsetMax": [692, 1250]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [432, -98],
+            "offsetMax": [696, -14]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [656, 634],
-            "offsetMax": [916, 692]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [8.0, -98],
+            "offsetMax": [272.0, -14]
           },
           "asset": "button.primary",
           "text": {
@@ -8189,16 +7877,16 @@
           "id": "act-shop",
           "type": "button",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [28, 1170],
-            "offsetMax": [352, 1250]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [180, -98],
+            "offsetMax": [416, -14]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [364, 634],
-            "offsetMax": [624, 692]
+            "anchorMin": [0.5, 1],
+            "anchorMax": [0.5, 1],
+            "offsetMin": [-260.0, -98],
+            "offsetMax": [-20.0, -14]
           },
           "asset": "button.secondary",
           "text": {
@@ -8216,10 +7904,10 @@
             "offsetMax": [696, 92]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [1100, 28],
-            "offsetMax": [1256, 88]
+            "anchorMin": [1, 0],
+            "anchorMax": [1, 0],
+            "offsetMin": [-180, 28],
+            "offsetMax": [-24, 88]
           },
           "asset": "button.secondary",
           "text": {
@@ -8231,16 +7919,16 @@
           "id": "back",
           "type": "button",
           "rect": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 182],
-            "offsetMax": [144, 237]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [24, -90],
+            "offsetMax": [164, -28]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [24, 640],
-            "offsetMax": [174, 695]
+            "anchorMin": [0, 1],
+            "anchorMax": [0, 1],
+            "offsetMin": [24, -86],
+            "offsetMax": [174, -26]
           },
           "asset": "button.secondary",
           "text": {
@@ -8258,10 +7946,10 @@
             "offsetMax": [698, 54]
           },
           "landscape": {
-            "anchorMin": [0, 0],
-            "anchorMax": [0, 0],
-            "offsetMin": [1230, 12],
-            "offsetMax": [1272, 54]
+            "anchorMin": [1, 0],
+            "anchorMax": [1, 0],
+            "offsetMin": [-50, 12],
+            "offsetMax": [-8, 54]
           },
           "asset": "badge.round",
           "text": {

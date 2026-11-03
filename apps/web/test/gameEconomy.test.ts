@@ -163,7 +163,8 @@ test('normal offline guest owns the three base items per slot and can buy into i
     const shop = shopModel(items, { ...wallet, [currency === 'coins' ? 'tickets' : 'coins']: 0 })
     const row = shop.slots.findIndex(row => row.slot === item.slot)
     shop.focus = [row, shop.slots[row].items.findIndex(candidate => candidate.id === item.id)]
-    const request = shopStep(shop, 'confirm').buy!
+    const confirmation = shopStep({ ...shop, zone: 'grid' }, 'confirm')
+    const request = shopStep(confirmation.model, 'confirm').buy!
     assert.deepEqual(request, { itemId: item.id, currency })
     const bought = await economy.port.buy(request.itemId, request.currency)
     assert.equal(bought[currency], wallet[currency] - item.price[currency]!)

@@ -34,6 +34,8 @@ export interface ShowModeOptions {
   views: HTMLElement
   openingCourse?: string
   seats: number
+  humans?: number
+  fixedSeats?: boolean
   seed: number
   localName: string
   /** The vote window of every round; the match defaults it to 5000 ms. */
@@ -95,7 +97,28 @@ export class ShowMode {
     return mode
   }
 
-  private name(seat: number): string { return seat === 0 ? this.options.localName : `Bot ${seat}` }
+  get humanCount(): number { return this.options.humans ?? 1 }
+  get fixedSeats(): boolean { return this.options.fixedSeats === true }
+  facing(seat: number) {
+    if (seat === 0 && this.options.orbit) return this.options.orbit.ground()
+    const camera = this.scene?.cameras?.[seat]
+    if (!camera) return { x: 0, z: 1 }
+    const x = camera.target[0] - camera.eye[0], z = camera.target[2] - camera.eye[2]
+    const length = Math.hypot(x, z)
+    return length > 0 ? { x: x / length, z: z / length } : { x: 0, z: 1 }
+  }
+  inspectHumans() {
+    const round = this.activeRound()
+    return {
+      cameras: this.scene?.cameras?.map(camera => camera === null ? null : { ...camera, eye: [...camera.eye], target: [...camera.target] }) ?? [],
+      characters: Array.from({ length: this.humanCount }, (_, k) => {
+        const seat = round?.seatOf.indexOf(k) ?? -1
+        const state = round?.match.domains.find(domain => domain.seats.includes(seat))?.state(seat)
+        return state === undefined ? null : { pos: { ...state.pos }, vel: { ...state.vel }, mode: state.mode }
+      }),
+    }
+  }
+  private name(seat: number): string { return seat === 0 ? this.options.localName : seat < this.humanCount ? `P${seat + 1}` : `Bot ${seat}` }
   get camera() { return this.scene?.camera ?? null }
   get lookCanvas(): HTMLCanvasElement { return this.canvas }
   get failure(): string | null { return this.error }
@@ -117,7 +140,7 @@ export class ShowMode {
     this.sounds.push(...this.director.hover(index))
   }
 
-  frame(dtS: number, action: Action | null, human: PlayerInput): void {
+  frame(dtS: number, action: Action | null, human: PlayerInput | readonly PlayerInput[]): void {
     if (this.disposed || this.error !== null || this.full === null || this.director === null) return
     const dt = Number.isFinite(dtS) ? Math.max(0, dtS) : 0
     try {
@@ -146,11 +169,16 @@ export class ShowMode {
     }
   }
 
-  private sample(round: ZoneFullRound, out: PlayerInput[], human: PlayerInput): void {
+  private sample(round: ZoneFullRound, out: PlayerInput[], human: PlayerInput | readonly PlayerInput[]): void {
     for (let i = 0; i < round.localSeats.length; i++) {
       const seat = round.localSeats[i]
       const roomSeat = round.seatOf[seat]
-      if (roomSeat === 0) { Object.assign(out[i], human); continue }
+      if (roomSeat < this.humanCount) {
+        const input = Array.isArray(human) ? human[roomSeat] : roomSeat === 0 ? human : null
+        if (input) Object.assign(out[i], input)
+        else decodeInput(NEUTRAL_CODE, out[i])
+        continue
+      }
       const domain = round.match.domains.find(domain => domain.seats.includes(seat))
       if (domain === undefined) decodeInput(NEUTRAL_CODE, out[i])
       else modeBotInput(domain, this.memories[roomSeat], seat, this.sampleTick, out[i])
@@ -178,7 +206,11 @@ export class ShowMode {
     try {
       const content = await checkAwait(`round ${index}: content ${round.plan.course.id}`, () => zoneContent('sprint', round.plan.course.id))
       const prepared = await checkAwait(`round ${index}: render port`, () => prepareZoneNetScene({
-        canvas: this.canvas, orbit: this.options.orbit, course: round.plan.course, createPort: content.createPort,
+        canvas: this.canvas,
+        followSeats: Array.from({ length: this.humanCount }, (_, k) => {
+          const local = round.seatOf.indexOf(k)
+          return local >= 0 ? local : (round.localSeats[0] ?? 0)
+        }), orbit: this.options.orbit, course: round.plan.course, createPort: content.createPort,
         assets: content.assets, bean: content.bean,
         look: round.seatOf.includes(0) ? () => this.options.look ?? null : undefined,
         character: content.character, skinned: content.skinned, dressing: content.dressing,

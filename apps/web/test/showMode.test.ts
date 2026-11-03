@@ -178,3 +178,19 @@ test('a full offline show retains early world readiness through results and reac
     assert.ok(visited.has('endScreen'))
   } finally { mode.dispose() }
 })
+
+test('multiple local humans sample independently, including compacted later-round seats', async () => {
+  const mode = await ShowMode.create({ ...options(8), humans: 4, fixedSeats: true, voteMs: 0 })
+  try {
+    const round = mode['full']!.round!
+    const out = Array.from({ length: round.localSeats.length }, neutralInput)
+    const humans = Array.from({ length: 4 }, (_, k) => ({ ...neutralInput(), moveX: (k + 1) / 4, jump: k === 1, dive: k === 2, grab: k === 3 }))
+    mode['sample'](round, out, humans)
+    for (let k = 0; k < 4; k++) assert.deepEqual(out[k], humans[k])
+    // Room humans 0 and 2 remain after a cut; compacted round seat 1 must still sample human 2.
+    const compact = { ...round, localSeats: [0, 1], seatOf: [0, 2] }
+    mode['sample'](compact, out, humans)
+    assert.deepEqual(out[0], humans[0])
+    assert.deepEqual(out[1], humans[2])
+  } finally { mode.dispose() }
+})

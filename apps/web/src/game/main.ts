@@ -1,3 +1,4 @@
+import { localPlayerCount } from './localPlayers.ts'
 import { localBotCount } from './localBots.ts'
 import startSeasonJson from '../../../../courses/season.json?raw'
 import { DEFAULT_LOBBY_BOTS } from '@royal-fiesta/game/hub/hubBots'
@@ -7,6 +8,7 @@ import { checkAwait, checkPhase } from './checkProgress.ts'
 // game.html entry: start -> lobby -> offline show -> start; course and network games keep their V1 flow.
 // The hub and its matches run in-page with bots, or on the relay when ?server= is given; ?clients=2..4 runs
 // that many piloted clients over a LoopbackRelay. Content comes from pickContent, input only from GameInput.
+// ?players=1..4 (alias ?local=) reserves local human seats in one split-screen canvas; works with ?course= and ?bots=.
 // Every screen and the round HUD are drawn by uaa on canvas#ui, above the RAA views.
 /// <reference types="vite/client" />
 import { roundOverlay } from '../content/roundOverlay.ts'
@@ -109,6 +111,7 @@ import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { BootOptions, TourGame } from './uiTour.ts'
 
 interface Query {
+  players: number | null
   bots: number | null
   course: string | null
   // ?community=<level id>: a published community level (docs/community-levels.md), played as ?course= of its course.
@@ -155,7 +158,9 @@ function intParam(q: URLSearchParams, key: string, def: number, min: number, max
 // content= is read by pickContent itself.
 function parseQuery(search: string): Query {
   const q = new URLSearchParams(search)
+  const players = localPlayerCount(q)
   const bots = localBotCount(q)
+  if (players !== null && bots !== null && players > bots) refuse('query', 'bots', 'total roster must include all ?players= human seats; increase ?bots=')
   const course = q.get('course')
   if (course !== null && course.length === 0) refuse('query', 'course', 'is empty; pass a course id of the content playlist')
   const community = q.get('community')
@@ -183,7 +188,7 @@ function parseQuery(search: string): Query {
   if (course !== null && server !== null) refuse('query', 'course', 'plays in-page with bots; drop ?server= or ?course=')
   if (clients > 1 && server !== null) refuse('query', 'clients', `${clients} in-page clients use a LoopbackRelay; drop ?server= or ?clients=`)
   if (clients > 1 && course !== null) refuse('query', 'clients', `?course= plays one client with bots; drop ?clients= or ?course=`)
-  return { bots, course, community, chash, server, hub, name, colour, lobbybots, party, clients, touch, wait, test }
+  return { players, bots, course, community, chash, server, hub, name, colour, lobbybots, party, clients, touch, wait, test }
 }
 
 // A coarse pointer (a phone or tablet) uses the on-screen controls; ?touch=1 asks for them on any device.
@@ -358,6 +363,8 @@ class ShowAdapter implements Mode {
   private rewardedResults = 0
   private readonly economy: GameEconomy
   private readonly test: boolean
+  private readonly seats = new SeatTable()
+  private readonly inputs = Array.from({ length: 4 }, () => neutralInput())
   private endConfirmed = false
   elapsedMs = 0
   round = 0
@@ -368,6 +375,8 @@ class ShowAdapter implements Mode {
     this.economy = economy
     this.test = test
   }
+
+  inspectSeats() { return { seats: this.seats.seats.map(seat => ({ ...seat })), ...this.show.inspectHumans() } }
 
   name = (seat: number): string => seat === 0 ? this.localName : `Bot ${seat}`
   action(action: Action): void {
@@ -396,8 +405,14 @@ class ShowAdapter implements Mode {
   frame(f: FrameIn): GameScreen {
     const before = this.show.screen()
     if (!f.paused) {
-      for (const action of this.actions) this.show.frame(0, action, f.world)
-      this.show.frame(f.dt, null, f.world)
+      if (this.show.humanCount > 1 || this.show.fixedSeats) this.seats.reserve(this.show.humanCount, f.devices.slice(0, f.deviceCount).map(p => p.device))
+      else if (this.seats.seats.length === 0) claimSeats(this.seats, f.devices, f.deviceCount, true, false)
+      for (let k = 0; k < this.show.humanCount; k++) {
+        const poll = f.devices.slice(0, f.deviceCount).find(p => p.device === this.seats.seats[k]?.device)
+        controlsToInput(poll?.controls ?? emptyControls(), this.show.facing(k), this.inputs[k])
+      }
+      for (const action of this.actions) this.show.frame(0, action, this.inputs)
+      this.show.frame(f.dt, null, this.inputs)
     }
     this.actions.length = 0
     const rounds = this.show.results()
@@ -511,6 +526,7 @@ interface LocalRun { match: LocalMatch; singleRace: boolean; order: number[] }
 function deviceName(device: DeviceId): string {
   if (device === 'keyboard') return 'Keyboard'
   if (device === 'touch') return 'Touch'
+  if (device.startsWith('pending:')) return 'Waiting for pad'
   return `Pad ${Number(device.slice(4)) + 1}`
 }
 
@@ -577,6 +593,8 @@ class LocalPresenter {
     }
   }
 
+  cameras(): (CameraPose | null)[] { return this.scenes.map(scene => scene.camera) }
+
   // The facing a seat's own camera looks along (default +Z before its first update).
   facing(seat: number): Planar {
     return cameraFacing(this.scenes[seat]?.camera ?? null)
@@ -605,7 +623,7 @@ class LocalPresenter {
       return false
     }
     for (const view of this.scenes) view.update(match.sim, null, alpha, dt)
-    if (this.seats === 3) {
+    if (this.seats === 3 && this.c.q.players === null) {
       const ci = match.sim.phase(this.state).courseIndex
       if (ci !== this.overviewIndex) {
         this.overviewIndex = ci
@@ -676,9 +694,10 @@ class LocalMode implements Mode {
     this.c = c
     const { R, content, ports } = c.loaded
     // Touch holds seat 0 and leaves no room to join, so the layout stays at one seat.
-    this.seats = new SeatTable(c.touch ? 1 : MAX_LOCAL_SEATS)
+    this.seats = new SeatTable(c.touch && c.q.players === null ? 1 : MAX_LOCAL_SEATS)
     // Touch is the only device on a touch screen. Elsewhere nothing is seated: the first device pressed or used is P1.
-    if (c.touch) this.seats.join('touch')
+    if (c.q.players !== null) this.seats.reserve(c.q.players, [])
+    else if (c.touch) this.seats.join('touch')
     this.names = playerNames(0, c.q.name)
     this.countdown = new LocalCountdown(c.q.wait)
     this.hub = new HubWorld(R, content.hub(), 0, c.q.lobbybots)
@@ -704,6 +723,17 @@ class LocalMode implements Mode {
     return this.match?.match.sim ?? null
   }
 
+  inspectSeats() {
+    return {
+      seats: this.seats.seats.map(s => ({ ...s })),
+      cameras: this.presenter.cameras().map(camera => camera === null ? null : { ...camera, eye: [...camera.eye], target: [...camera.target] }),
+      characters: Array.from({ length: Math.max(1, this.seats.seats.length) }, (_, k) => {
+        const c = this.match?.match.sim.character(k, emptyCharView())
+        return c === undefined ? null : { ...c, pos: { ...c.pos }, vel: { ...c.vel }, facing: { ...c.facing } }
+      }),
+    }
+  }
+
   seated(device: DeviceId): boolean {
     return this.seats.seatOf(device) !== -1
   }
@@ -723,9 +753,8 @@ class LocalMode implements Mode {
       return
     }
     if (this.match !== null) return
-    // ?course= starts a round before any device was used: the keyboard takes P1 then.
-    if (this.seats.seats.length === 0) this.seats.join('keyboard')
-    const count = this.seats.seats.length
+    // An unclaimed P1 remains available to the first active device during the round.
+    const count = Math.max(1, this.seats.seats.length)
     if (count === 1 && this.prepared !== null) {
       // The prepared 1-seat match is already stepped past its intro and warmed.
       this.match = this.prepared
@@ -818,6 +847,8 @@ class LocalMode implements Mode {
   }
 
   frame(f: FrameIn): GameScreen {
+    if (this.c.q.players !== null) this.seats.reserve(this.c.q.players, f.devices.slice(0, f.deviceCount).map(p => p.device))
+    else if (this.match !== null && this.seats.seats.length === 0) claimSeats(this.seats, f.devices, f.deviceCount, !f.paused, false)
     const screen = this.match === null ? this.frameHub(f) : this.frameMatch(this.match, f)
     renderFrame(this.match === null ? this.c.loaded.ports[0] : this.matchLayer.port, () => this.c.loaded.ports[0].render())
     return screen
@@ -856,7 +887,7 @@ class LocalMode implements Mode {
   private frameHub(f: FrameIn): GameScreen {
     const now = performance.now()
     // A device's join button takes the next free seat while the hub is live; a match freezes the seats.
-    claimSeats(this.seats, f.devices, f.deviceCount, !f.paused)
+    if (this.c.q.players === null) claimSeats(this.seats, f.devices, f.deviceCount, !f.paused)
     if (f.emote !== 0) this.hub.setEmote(f.emote, now)
     if (!f.paused) {
       this.hubAcc = Math.min(this.hubAcc + f.dt, 8 * STEP_S)
@@ -1539,6 +1570,7 @@ class App {
 
   // Live scene/GPU inventory: what the page is showing and holding right now, read by the UI checks.
   inventory(): {
+    local: unknown
     mode: string | null
     screen: Screen
     hub: { alive: boolean; assets: string[]; instances: number }
@@ -1561,6 +1593,7 @@ class App {
       }
     })
     return {
+      local: (this.mode instanceof LocalMode || this.mode instanceof ShowAdapter) ? this.mode.inspectSeats() : null,
       mode: this.mode === null ? null : this.mode.constructor.name,
       screen: this.nav.screen,
       hub: { alive, assets: alive ? hub.assets : [], instances: alive ? hub.instances : 0 },
@@ -1856,7 +1889,7 @@ class App {
   // S26: the local canvas's split cells for a seat count (3 seats add the overview cell, seat -1).
   // The next step drives this for 2..4 seats; local play starts with one.
   private setLayout(seats: number): void {
-    this.cells = splitLayout(seats, seats === 3)
+    this.cells = splitLayout(seats, seats === 3 && this.query?.players === null)
     this.viewsSizeKey = ''
     this.resizeViews()
   }
@@ -2047,8 +2080,9 @@ class App {
     try {
       const show = await ShowMode.create({
         R: loaded.R, views: this.views, orbit: this.orbit, look,
-        seats: q.bots ?? intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60),
-        openingCourse: q.bots !== null ? q.course ?? undefined : undefined,
+        humans: q.players ?? 1, fixedSeats: q.players !== null,
+        seats: Math.max(q.players ?? 1, q.bots ?? intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60)),
+        openingCourse: q.course ?? undefined,
         seed: Date.now(), localName: q.name,
         voteMs: q.test ? TEST_VOTE_MS : undefined,
         intermissionMs: q.test ? TEST_INTERMISSION_MS : undefined,
@@ -2644,7 +2678,7 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void, options: BootO
       if (options.refuseFirstLoad === true && loads++ === 0) throw new Error('uiTour: the boot load is refused so the tour reaches loading with Retry')
     },
   }
-  const booted = await start(ui, env, () => false, onScreen, options.plain ? '' : undefined)
+  const booted = await start(ui, env, () => false, onScreen, options.search ?? (options.plain ? '' : undefined))
   if (booted === null) throw new Error('uiTour: the App did not start')
   return { host: booted.host, ui, views, step: dt => frame?.(dt), inventory: () => booted.app.inventory(),
     inspect: () => booted.app.inspectEconomy(), dispose: () => booted.app.dispose() }

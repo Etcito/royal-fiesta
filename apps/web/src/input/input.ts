@@ -137,6 +137,7 @@ export interface DevicePoll {
   device: DeviceId
   controls: RawControls
   joinPressed: boolean
+  active?: boolean
   pausePressed: boolean
 }
 
@@ -204,6 +205,7 @@ export class InputDevices {
       const map = this.maps.get(pad.id)
       const entry = slot(out, n++)
       entry.device = device
+      entry.active = pad.buttons.some(button => button.pressed) || pad.axes.some(axis => Math.abs(axis) > 0.15)
       padControls(pad, map, entry.controls)
       const edges = this.edges.get(device) ?? { join: false, pause: false }
       const join = pad.buttons[map.buttons.join]?.pressed === true

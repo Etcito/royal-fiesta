@@ -2,7 +2,7 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 
 // Local seats for split screen (ARCHITECTURE 1.6 / S26). DOM-free: the web shell owns
 // device discovery and only tags each device with one of these ids.
-export type DeviceId = 'keyboard' | 'touch' | `pad:${number}`
+export type DeviceId = 'keyboard' | 'touch' | `pad:${number}` | `pending:${number}`
 
 export interface Seat {
   index: number
@@ -39,6 +39,14 @@ export class SeatTable {
     return seat
   }
 
+  // URL seats exist even before their devices connect; only P1 falls back to keyboard.
+  reserve(count: number, devices: readonly DeviceId[]): void {
+    if (!Number.isInteger(count) || count < 1 || count > this.max) refuseMax(count)
+    const pads = devices.filter(d => d.startsWith('pad:'))
+    this.table.length = 0
+    for (let k = 0; k < count; k++) this.join(pads[k] ?? (k === 0 ? 'keyboard' : `pending:${k}`))
+  }
+
   leave(device: DeviceId): void {
     const at = this.seatOf(device)
     if (at === -1) return
@@ -72,15 +80,16 @@ export function controlsActive(c: UsedControls): boolean {
 export interface SeatClaim {
   device: DeviceId
   joinPressed: boolean
+  active?: boolean
   controls: UsedControls
 }
 
 // Seats go in join order and nothing is seated beforehand. A join press takes the next free seat;
 // while the table is still empty, the first device that is used at all (walking the hub with a pad or
 // the keyboard) takes P1, so the player who touches a controller first is P1 and a lone pad plays alone.
-export function claimSeats(table: SeatTable, polls: readonly SeatClaim[], count: number, canActivate: boolean): void {
+export function claimSeats(table: SeatTable, polls: readonly SeatClaim[], count: number, canActivate: boolean, allowJoin = true): void {
   for (let i = 0; i < count; i++) {
     const poll = polls[i]
-    if (poll.joinPressed || (canActivate && table.seats.length === 0 && controlsActive(poll.controls))) table.join(poll.device)
+    if ((allowJoin && poll.joinPressed) || (canActivate && table.seats.length === 0 && (poll.joinPressed || poll.active || controlsActive(poll.controls)))) table.join(poll.device)
   }
 }

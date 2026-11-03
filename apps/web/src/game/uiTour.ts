@@ -33,7 +33,7 @@ export interface TourGame {
 }
 // refuseFirstLoad: the tour's own entry to 'loading' (Retry on the error screen); only runTour sets it, so the
 // check ops boot straight to start.
-export interface BootOptions { refuseFirstLoad?: boolean; starterInventory?: boolean; plain?: boolean; saved?: Record<string, string> }
+export interface BootOptions { search?: string; refuseFirstLoad?: boolean; starterInventory?: boolean; plain?: boolean; saved?: Record<string, string> }
 export type BootGame = (onScreen: (e: UaaScreenChange) => void, options?: BootOptions) => Promise<TourGame>
 export interface TourDeps { boot: BootGame; adapter: () => Promise<AdapterInfo> }
 

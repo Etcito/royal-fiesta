@@ -105,3 +105,31 @@ test('claimSeats: stick drift or a paused frame seats nobody, and use after P1 d
   claimSeats(t, [poll('pad:0', { stickX: 1 })], 1, true)
   assert.deepEqual(t.seats.map(s => s.device), ['keyboard'])
 })
+
+
+test('claimSeats: late round activity claims empty P1, including any pad button; frozen seats never grow', () => {
+  const t = new SeatTable(1)
+  claimSeats(t, [poll('keyboard'), poll('pad:0')], 2, true)
+  assert.equal(t.seats.length, 0)
+  claimSeats(t, [{ ...poll('pad:0'), active: true }], 1, true)
+  claimSeats(t, [poll('keyboard', {}, true)], 1, false, false)
+  assert.deepEqual(t.seats.map(s => s.device), ['pad:0'])
+})
+
+test('reserved local seats persist while absent pads connect, disconnect and reconnect', () => {
+  const t = new SeatTable()
+  t.reserve(4, ['keyboard'])
+  assert.deepEqual(t.seats.map(s => s.device), ['keyboard', 'pending:1', 'pending:2', 'pending:3'])
+  t.reserve(4, ['keyboard', 'pad:2', 'pad:5'])
+  assert.deepEqual(t.seats.map(s => s.device), ['pad:2', 'pad:5', 'pending:2', 'pending:3'])
+  t.reserve(4, [])
+  assert.equal(t.seats.length, 4)
+  assert.equal(t.seats[0].device, 'keyboard')
+})
+
+
+test('round claiming takes exactly one device even with simultaneous join buttons', () => {
+  const t = new SeatTable()
+  claimSeats(t, [poll('pad:0', {}, true), poll('pad:1', {}, true)], 2, true, false)
+  assert.deepEqual(t.seats.map(s => s.device), ['pad:0'])
+})

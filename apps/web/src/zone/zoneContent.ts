@@ -40,6 +40,11 @@ function zoneContentOf(content: SdfContent, loaded: ReturnType<SdfContent['meshD
   return {
     assets: (name: string) => content.assets(name),
     character: content.character(), bean, skinned: skinnedCharacterOf(content), dressing: content.dressing(),
-    createPort: (target: RenderTarget) => createSdfPort(target, loaded.meshed, loaded.failed),
+    // The same cosmetic skins as SdfContent.createPort: without them a show round's worn cosmetics draw rigid, at rest.
+    createPort: async (target: RenderTarget) => {
+      const port = await createSdfPort(target, loaded.meshed, loaded.failed)
+      await content.registerCosmetics(port, loaded.meshed)
+      return port
+    },
   }
 }

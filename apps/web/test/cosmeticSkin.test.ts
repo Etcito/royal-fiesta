@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFileSync, readdirSync } from 'node:fs'
 import { decodeMesh } from '../src/sdf/meshWire.ts'
 import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
-import { assetSkin } from '../src/content/cosmeticSkin.ts'
+import { assetSkin, registerCosmeticSkins } from '../src/content/cosmeticSkin.ts'
 const rig = { name: 'penguin', bones: [{name:'root', parent:null, rest:{t:[0,0,0],r:[0,0,0,1],s:[1,1,1]}}] }
 const skin = { joints: new Uint16Array(4), weights: new Float32Array([1,0,0,0]) }
 const payload = { groups: [{group:'a',parts:[{name:'mesh',partId:'x',skin}]}, {group:'b',parts:[{name:'mesh',partId:'y',skin}]}] }
@@ -16,11 +16,26 @@ test('cosmetic loading retains skin streams and the port part names, rejects a d
   assert.throws(()=>assetSkin(payload,document,{...rig,bones:[{...rig.bones[0],name:'other'}]}), /must match penguin/)
   assert.equal(assetSkin({groups:[]},document,rig),null)
 })
-test('the web provider registers cosmetic skins before presenting the port; wardrobe poses them with the body', () => {
-  // Integration guards complement the running SceneView/port tests without importing Vite raw modules in Node.
-  const provider = readFileSync(new URL('../src/content/providers/sdf.ts', import.meta.url),'utf8')
-  assert.ok(provider.includes('assetSkin(meshed.data, document, loaded.skinned.skin.rig)'))
-  assert.ok(provider.indexOf('if (skin) port.registerSkinned(id, skin)') < provider.indexOf('return port'))
+test('registerCosmeticSkins registers every penguin-bound skinned cosmetic, never the character or unskinned assets', async () => {
+  const registered: string[] = []
+  const port = { registerSkinned: (id: string) => { registered.push(id); return registered.length } }
+  const unskinned = { groups: [{ group: 'c', parts: [{ name: 'm', partId: 'z' }] }] }
+  const meshed = new Map<string, { data: unknown }>([['penguin.body', { data: payload }], ['costume.a', { data: payload }], ['course.block', { data: unskinned }]])
+  assert.equal(await registerCosmeticSkins(port, meshed, rig, async () => document, 'penguin.body'), 1)
+  assert.deepEqual(registered, ['costume.a'])
+  assert.equal(await registerCosmeticSkins({}, meshed, rig, async () => document, 'penguin.body'), 0)
+})
+test('both web ports (lobby content and show-round zone content) register the cosmetic skins before presenting the port', () => {
+  // Show rounds (?course=, ?bots=) draw on the zone content port. Before 2026-11-03 it skipped the registration,
+  // so port.skinOf missed every cosmetic and WornMounts drew them rigid, at rest, while the body skinned.
+  // Source guards: both modules import Vite raw files that Node cannot load.
+  const call = (text: string, from: string, needle: string): void => {
+    const body = text.slice(text.indexOf(from))
+    assert.ok(body.indexOf(needle) > 0, `${from} lacks ${needle}`)
+    assert.ok(body.indexOf(needle) < body.indexOf('return port'), `${needle} runs after the port is presented`)
+  }
+  call(readFileSync(new URL('../src/content/providers/sdf.ts', import.meta.url), 'utf8'), 'async createPort(', 'await this.registerCosmetics(port, loaded.meshed)')
+  call(readFileSync(new URL('../src/zone/zoneContent.ts', import.meta.url), 'utf8'), 'createPort:', 'await content.registerCosmetics(port, loaded.meshed)')
 })
 
 

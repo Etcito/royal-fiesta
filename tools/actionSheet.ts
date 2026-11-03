@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import sharp from 'sharp'
 import { walkBones, applyWalkPose, restPose } from '../packages/game/src/anim/walkCycle.ts'
 import { actionPose } from '../packages/game/src/anim/actionPoses.ts'
-import { CHAR, CharMode, CarryKind } from '@royal-fiesta/sim/character/constants'
+import { CHAR, CharMode, CarryKind, SLIDE_STROKE, strokeTotalTicks } from '@royal-fiesta/sim/character/constants'
 
 type Matrix = number[]
 type Bone = { name: string; parent: string | null; rest: { t: number[]; r: number[]; s: number[] } }
@@ -138,7 +138,7 @@ export async function actionSheet(outPng: string): Promise<{ width: 1500; height
   const panels = [
     { label: 'SLIDE', mode: CharMode.slide, carry: 0, timer: 0 },
     ...[0.25,0.5,0.75].map(u => ({ label: `STROKE U=${u}`, mode: CharMode.slide,
-      carry: 0, timer: (1-u)*CHAR.slide.strokeCooldownTicks })),
+      carry: 0, timer: strokeTotalTicks(SLIDE_STROKE) - u*SLIDE_STROKE.animTicks })),
     { label: 'SWIM', mode: CharMode.swim, carry: 0, timer: CHAR.swim.strokeCooldownTicks / 2 },
     { label: 'GRAB', mode: CharMode.grabbing, carry: 0, timer: 0 },
     { label: 'CARRY', mode: CharMode.ground, carry: CarryKind.object, timer: 0 },

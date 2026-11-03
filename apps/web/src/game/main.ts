@@ -21,6 +21,7 @@ import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
 import { controlsToInput, emptyControls, mergeControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import { LocalMatch } from '@royal-fiesta/game/client/localMatch'
+import { strokeTuningFromUrl } from './strokeTuner.ts'
 import { localPadMapStore } from '@royal-fiesta/game/client/padMap'
 import type { PadMapStore } from '@royal-fiesta/game/client/padMap'
 import { MAX_LOCAL_SEATS, SeatTable, claimSeats } from '@royal-fiesta/game/client/seats'
@@ -782,7 +783,9 @@ class LocalMode implements Mode {
     const courses = course !== null
       ? courseSetup(seed, course, content.playlist()).courses
       : netSetup(seed, seats, 'sprint', content.playlist()).courses
-    const match = startup('Local round', () => new LocalMatch({ R, seats, seed, profile: 'sprint', courses }))
+    // ?tune=1 hands the live-tuned belly stroke to this local sim only (online matches keep the defaults).
+    const slideStroke = strokeTuningFromUrl() ?? undefined
+    const match = startup('Local round', () => new LocalMatch({ R, seats, seed, profile: 'sprint', courses, slideStroke }))
     return { match, singleRace: course !== null && course.kind === 'race', order: [] }
   }
 

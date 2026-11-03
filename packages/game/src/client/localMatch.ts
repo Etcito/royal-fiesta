@@ -3,12 +3,15 @@ import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { neutralInput } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import { MatchSim } from '@royal-fiesta/sim/match/matchSim'
+import type { SlideStroke } from '@royal-fiesta/sim/character/constants'
 import { refuse } from '@royal-fiesta/sim/refusal'
 
 const STEP_S = 1 / 60
 
 export interface LocalMatchOptions {
   R: RapierModule; seats: number; seed: number; profile: ProfileName; courses: readonly ResolvedCourse[]
+  /** Live-tuned belly stroke (?tune=1). Local only: no peer to diverge from; online keeps the defaults. */
+  slideStroke?: SlideStroke
 }
 
 // One shared simulation for all local seats; no snapshots or rollback session.
@@ -27,7 +30,7 @@ export class LocalMatch {
     this.sim = new MatchSim(o.R, {
       seed: o.seed, playerCount: 8, humans: Array.from({ length: 8 }, (_, p) => p < o.seats),
       profile: o.profile, courses: o.courses,
-    })
+    }, { slideStroke: o.slideStroke })
   }
 
   get done(): boolean {

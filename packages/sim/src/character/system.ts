@@ -15,13 +15,19 @@ import { pose } from '../vec.ts'
 import type { Vec3 } from '../vec.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
 import { GRAVITY_Y } from '../world.ts'
-import { CHAR, CarryKind, CharMode, SURFACE_TUNING } from './constants.ts'
+import { CHAR, CarryKind, CharMode, SLIDE_STROKE, SURFACE_TUNING, strokeAnimPhase, strokeElapsed, strokeReadyTicks, strokeStartTick, strokeTotalTicks } from './constants.ts'
+import type { SlideStroke } from './constants.ts'
 import { approach2, turnFacing } from './controller.ts'
 
 export interface CharacterOptions {
   playerCount: number
   // Domain worlds spawn the seat bodies themselves; init then only resets the players.
   externalBodies?: boolean
+  /**
+   * Belly stroke parameters, read every tick (a tuning panel may change them live). Offline/local
+   * sims only: an online rollback sim must leave this unset so every peer steps SLIDE_STROKE.
+   */
+  slideStroke?: SlideStroke
 }
 
 export interface CharacterBodyDescs {
@@ -45,6 +51,10 @@ export interface CharState {
   carry?: number
   carryId?: number
   strokeTimer?: number
+  /** Belly stroke animation phase 0..1 from strokeTimer and this sim's stroke parameters (derived, not state). */
+  strokePhase?: number
+  /** This sim's push start as a fraction of the stroke animation (startFrac). */
+  strokeStart?: number
 }
 
 const CHAR_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING | G.CHAR)
@@ -153,8 +163,11 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
   #bumpObs = 0
   #bumped = false
 
+  readonly slideStroke: SlideStroke
+
   constructor(opts: CharacterOptions) {
     const n = opts.playerCount
+    this.slideStroke = opts.slideStroke ?? { ...SLIDE_STROKE }
     this.playerCount = n
     this.#externalBodies = opts.externalBodies === true
     this.#bodies = new Array<BodyId>(n).fill(-1)
@@ -421,6 +434,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     out.carry = this.#carry[p]
     out.carryId = this.#carryId[p]
     out.strokeTimer = this.#strokeTimer[p]
+    out.strokePhase = this.#mode[p] === CharMode.swim ? undefined : strokeAnimPhase(this.slideStroke, this.#strokeTimer[p])
+    out.strokeStart = this.slideStroke.startFrac
     return out
   }
 
@@ -684,30 +699,34 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
           if (along > 0) slideSpeed += CHAR.slide.handPush * along * dt
         }
         const slippery = surface === 'ice' || ny < CHAR.slipperySlopeNy
-        // In slide, strokeTimer counts grace remaining; its first cooldown ticks block strokes.
-        // Keeping this in the existing snapshotted timer preserves rollback determinism.
-        const strokeReady = this.#strokeTimer[p] <= CHAR.slide.strokeGraceTicks - CHAR.slide.strokeCooldownTicks
-        // Dive repeats the belly stroke at any speed; jump always stands up into a jump.
+        // In slide, strokeTimer counts the running stroke down from strokeTotalTicks (snapshotted,
+        // so rollback stays deterministic); the parameters are sim inputs, never presentation.
+        const stroke = this.slideStroke
+        const strokeReady = this.#strokeTimer[p] === 0 || strokeElapsed(stroke, this.#strokeTimer[p]) >= strokeReadyTicks(stroke)
+        // Dive starts one belly stroke (a press during a stroke does nothing); jump always stands up into a jump.
         if ((pressed & JUMP_BIT) !== 0) {
           vy = CHAR.jumpSpeed + base.y
           this.#coyote[p] = 0
           this.#jumpBuffer[p] = 0
           mode = CharMode.air
         } else if ((pressed & DIVE_BIT) !== 0 && strokeReady) {
-          slideSpeed += CHAR.slide.strokeImpulse
-          if (!slippery) slideSpeed = Math.max(slideSpeed, CHAR.slide.drySwimSpeed * tuning.maxRun)
-          this.#strokeTimer[p] = CHAR.slide.strokeGraceTicks
+          this.#strokeTimer[p] = strokeTotalTicks(stroke)
         }
-        // A flat dry belly slide never beats walking, including on moving ground.
-        const cap = slippery ? CHAR.slide.maxSpeed : CHAR.maxRun * tuning.maxRun
+        // The push runs from startFrac of the animation for impulseTicks; never any vertical speed.
+        const elapsed = strokeElapsed(stroke, this.#strokeTimer[p])
+        const pushStart = strokeStartTick(stroke)
+        const pushTicks = Math.max(1, Math.round(stroke.impulseTicks))
+        if (mode === CharMode.slide && elapsed >= pushStart && elapsed < pushStart + pushTicks) slideSpeed += stroke.impulse / pushTicks
+        // A flat dry belly slide stays below walking, including on moving ground; ice and slopes do not.
+        const cap = slippery ? CHAR.slide.maxSpeed : CHAR.maxRun * tuning.maxRun * stroke.dryCapFactor
         if (slideSpeed > cap) slideSpeed = cap
         vx = fx * slideSpeed + base.x
         vz = fz * slideSpeed + base.z
         this.#facingX[p] = fx
         this.#facingZ[p] = fz
         this.#slideSpeed[p] = slideSpeed
-        // Stands up only below walking speed (the dry cap); the stroke grace keeps the dry cruise on the belly.
-        if (mode === CharMode.slide && slideSpeed < CHAR.maxRun * tuning.maxRun && this.#strokeTimer[p] === 0) mode = CharMode.ground
+        // Stands up by himself below standUpSpeed, never while a stroke (animation or push) runs.
+        if (mode === CharMode.slide && slideSpeed < stroke.standUpSpeed && this.#strokeTimer[p] === 0) mode = CharMode.ground
       }
       if (mode === CharMode.slide && !grounded && this.#coyote[p] === 0) {
         mode = CharMode.air

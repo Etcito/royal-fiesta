@@ -3,7 +3,8 @@ import { describe, it } from 'node:test'
 import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { FIXED_DT, initRapier } from '@gamesaloon/rollback-rapier'
 import type { BodyId, RapierModule } from '@gamesaloon/rollback-rapier'
-import { CHAR, CarryKind, CharMode } from '../src/character/constants.ts'
+import { CHAR, CarryKind, CharMode, SLIDE_STROKE, strokeReadyTicks, strokeStartTick, strokeTotalTicks } from '../src/character/constants.ts'
+import type { SlideStroke } from '../src/character/constants.ts'
 import { approach2, turnFacing } from '../src/character/controller.ts'
 import { CharacterSystem, characterBody } from '../src/character/system.ts'
 import type { CharState } from '../src/character/system.ts'
@@ -215,7 +216,7 @@ const FLOOR = obstacle('floor', v3(0, -0.5, 0), { kind: 'static' }, v3(10, 0.5, 
 
 interface ObsRig extends Rig { obs: ObstacleSystem }
 
-function obsRig(obstacles: ObstacleSpec[], at: Vec3): ObsRig {
+function obsRig(obstacles: ObstacleSpec[], at: Vec3, slideStroke?: SlideStroke): ObsRig {
   const obs = new ObstacleSystem([course(obstacles)])
   const loader: SimSystem<PlayerInput> = {
     name: 'loader',
@@ -225,7 +226,7 @@ function obsRig(obstacles: ObstacleSpec[], at: Vec3): ObsRig {
     snapshot() {},
     restore() {},
   }
-  const chars = new CharacterSystem({ playerCount: 1 })
+  const chars = new CharacterSystem({ playerCount: 1, slideStroke })
   const world = new FiestaWorld<PlayerInput>(R, { playerCount: 1, systems: [obs, loader, chars] })
   chars.place(world.ctx, 0, { t: at, facing: { x: 0, z: 1 } })
   return { world, chars, obs }
@@ -756,8 +757,8 @@ describe('M4 slide', () => {
     return floor
   }
 
-  function slideRig(surface: Surface, speed: number, friction = 2): ObsRig {
-    const r = obsRig([surfaceFloor(surface, friction)], v3(0, 0, 0))
+  function slideRig(surface: Surface, speed: number, friction = 2, stroke?: SlideStroke): ObsRig {
+    const r = obsRig([surfaceFloor(surface, friction)], v3(0, 0, 0), stroke)
     stepN(r, 30, NEUTRAL)
     seedSlide(r, speed)
     return r
@@ -787,35 +788,67 @@ describe('M4 slide', () => {
     still.world.free()
   })
 
-  it('a stroke adds strokeImpulse on ice and the cooldown blocks a second press', () => {
-    const plain = slideRig('ice', 6)
-    stepN(plain, 1, NEUTRAL)
-    const noStroke = state(plain).slideSpeed!
-    plain.world.free()
+  // Per-tick slideSpeed gains over one stroke pressed at tick 0 on ice, minus the same run without it.
+  function strokeGains(stroke?: SlideStroke): number[] {
+    const run = (press: boolean): number[] => {
+      const r = slideRig('ice', 6, 2, stroke)
+      const speeds: number[] = []
+      try {
+        for (let tick = 0; tick < 80; tick++) speeds.push(stepN(r, 1, press && tick === 0 ? DIVE : NEUTRAL).slideSpeed!)
+      } finally { r.world.free() }
+      return speeds
+    }
+    const a = run(true), b = run(false)
+    return a.map((v, i) => (v - b[i]) - (i > 0 ? a[i - 1] - b[i - 1] : 0))
+  }
 
-    const stroke = slideRig('ice', 6)
-    stepN(stroke, 1, DIVE)
-    const afterStroke = state(stroke)
-    assert.equal(afterStroke.mode, CharMode.slide)
-    assert.ok(Math.abs(afterStroke.slideSpeed! - noStroke - CHAR.slide.strokeImpulse) <= 1e-9,
-      `stroke added ${afterStroke.slideSpeed! - noStroke}`)
-    stroke.world.free()
+  it('one stroke pushes exactly impulse, from startFrac of the animation, for impulseTicks', () => {
+    for (const stroke of [undefined, { ...SLIDE_STROKE, startFrac: 0.25, impulseTicks: 30, impulse: 3 }]) {
+      const s = stroke ?? SLIDE_STROKE
+      const gains = strokeGains(stroke)
+      const start = strokeStartTick(s)
+      // The press tick is elapsed 0: nothing before the push start, impulse/impulseTicks per tick after.
+      for (let e = 0; e < gains.length; e++) {
+        const want = e >= start && e < start + s.impulseTicks ? s.impulse / s.impulseTicks : 0
+        assert.ok(Math.abs(gains[e] - want) < 1e-9, `startFrac ${s.startFrac}, elapsed ${e}: gain ${gains[e]}, want ${want}`)
+      }
+      const total = gains.reduce((x, y) => x + y, 0)
+      assert.ok(Math.abs(total - s.impulse) < 1e-9, `total push ${total}`)
+    }
+  })
 
-    // Release, then press again inside the cooldown: the second stroke is ignored.
-    const second = slideRig('ice', 6)
-    stepN(second, 1, DIVE)
-    stepN(second, 1, NEUTRAL)
-    stepN(second, 1, DIVE)
-    stepN(second, 1, NEUTRAL)
-    const pressedTwice = state(second).slideSpeed!
-    second.world.free()
-    const once = slideRig('ice', 6)
-    stepN(once, 1, DIVE)
-    stepN(once, 3, NEUTRAL)
-    const pressedOnce = state(once).slideSpeed!
-    once.world.free()
-    assert.ok(Math.abs(pressedTwice - pressedOnce) <= 1e-9,
-      `second press added ${pressedTwice - pressedOnce}`)
+  it('the push starts at the middle of the animation and lasts past its end', () => {
+    const s = SLIDE_STROKE
+    assert.equal(s.startFrac, 0.5)
+    assert.ok(strokeStartTick(s) + s.impulseTicks > s.animTicks, 'push ends after the animation')
+    const gains = strokeGains()
+    assert.ok(Math.abs(gains[strokeStartTick(s) - 1]) < 1e-9)
+    assert.ok(gains[strokeStartTick(s)] > 1e-3)
+    // Still pushing after the animation has ended.
+    assert.ok(gains[s.animTicks] > 1e-3 && gains[strokeStartTick(s) + s.impulseTicks - 1] > 1e-3)
+    assert.ok(Math.abs(gains[strokeStartTick(s) + s.impulseTicks]) < 1e-9)
+  })
+
+  it('a dive press during a running stroke does nothing (no buffering, mashing gains nothing)', () => {
+    const run = (presses: (tick: number) => boolean): CharState[] => {
+      const r = slideRig('ice', 6)
+      const out: CharState[] = []
+      try {
+        for (let tick = 0; tick < 70; tick++) out.push(stepN(r, 1, presses(tick) ? DIVE : NEUTRAL))
+      } finally { r.world.free() }
+      return out
+    }
+    const ready = strokeReadyTicks(SLIDE_STROKE)
+    const once = run((t) => t === 0)
+    // Mash on every other tick inside the animation: identical to a single press.
+    const mashed = run((t) => t % 2 === 0 && t < ready)
+    for (let tick = 0; tick < 70; tick++) {
+      assert.equal(mashed[tick].strokeTimer, once[tick].strokeTimer, `tick ${tick}`)
+      assert.equal(mashed[tick].slideSpeed, once[tick].slideSpeed, `tick ${tick}`)
+    }
+    // At the end of the animation a press starts the next stroke.
+    const next = run((t) => t === 0 || t === ready)
+    assert.equal(next[ready].strokeTimer, strokeTotalTicks(SLIDE_STROKE))
   })
 
   it('dive strokes at low speed, but jump exits even at high speed', () => {
@@ -833,30 +866,84 @@ describe('M4 slide', () => {
     }
   })
 
-  it('a normal-material slope permits propulsion', () => {
+  it('a normal-material slope permits propulsion past walking speed', () => {
     const run = (stroke: boolean): number => {
       const floor = surfaceFloor('normal')
       floor.r = { x: Math.sin(0.2), y: 0, z: 0, w: Math.cos(0.2) }
       const r = obsRig([floor], v3(0, 0, 0))
       stepN(r, 30, NEUTRAL)
       seedSlide(r, 6)
-      const s = stepN(r, 1, stroke ? DIVE : NEUTRAL)
-      // Without the stroke's grace, 6 m/s is below walking speed and he stands up.
-      assert.equal(s.mode, stroke ? CharMode.slide : CharMode.ground)
+      stepN(r, 1, stroke ? DIVE : NEUTRAL)
+      const s = stepN(r, strokeTotalTicks(SLIDE_STROKE), NEUTRAL)
+      assert.equal(s.mode, CharMode.slide)
       r.world.free()
       return s.slideSpeed!
     }
-    assert.ok(Math.abs(run(true) - run(false) - CHAR.slide.strokeImpulse) < 1e-9)
+    assert.ok(Math.abs(run(true) - run(false) - SLIDE_STROKE.impulse) < 1e-9)
   })
 
-  it('repeated dry flat strokes never exceed walking speed', () => {
+  it('a belly stroke never changes vel.y or y, at any rhythm', () => {
+    for (const surface of ['normal', 'ice'] as Surface[]) for (const rhythm of [18, 30, 40]) {
+      const r = slideRig(surface, 6)
+      try {
+        const settled = state(r)
+        let strokes = 0
+        for (let tick = 0; tick < 120; tick++) {
+          const s = stepN(r, 1, tick % rhythm === 0 ? DIVE : NEUTRAL)
+          if (s.strokeTimer === strokeTotalTicks(SLIDE_STROKE)) strokes++
+          assert.equal(s.mode, CharMode.slide, `${surface}, rhythm ${rhythm}, tick ${tick}`)
+          assert.equal(s.grounded, true)
+          // Rapier stores positions as f32, so measured velocity has rounding error.
+          assert.ok(Math.abs(s.vel.y) < 1e-3, `${surface}, rhythm ${rhythm}, tick ${tick}: vel.y ${s.vel.y}`)
+          assert.ok(Math.abs(s.pos.y - settled.pos.y) < 1e-3, `${surface}, rhythm ${rhythm}, tick ${tick}: y ${s.pos.y}`)
+        }
+        assert.ok(strokes >= 2, `${surface}, rhythm ${rhythm}: ${strokes} strokes`)
+      } finally { r.world.free() }
+    }
+  })
+
+  // Best average speed over 10 s of strokes at a fixed rhythm, from a standstill on the belly.
+  function rhythmSpeed(surface: Surface, rhythm: number): { mean: number, max: number, mode: number } {
+    const r = slideRig(surface, 0)
+    try {
+      const start = state(r).pos
+      let max = 0
+      let s = state(r)
+      for (let tick = 0; tick < 600; tick++) {
+        s = stepN(r, 1, tick % rhythm === 0 ? DIVE : NEUTRAL)
+        if (tick >= 300) max = Math.max(max, hspeed(s))
+      }
+      return { mean: dist2(start.x, start.z, s.pos.x, s.pos.z) / 10, max, mode: s.mode }
+    } finally { r.world.free() }
+  }
+
+  it('dry flat strokes at the best rhythm move him well but below walking speed; ice goes past it', () => {
+    const ready = strokeReadyTicks(SLIDE_STROKE)
+    const rhythms = Array.from({ length: 16 }, (_, i) => ready + i)
+    let best = { mean: 0, max: 0, mode: 0 }
+    for (const rhythm of rhythms) {
+      const dry = rhythmSpeed('normal', rhythm)
+      assert.ok(dry.max <= CHAR.maxRun * SLIDE_STROKE.dryCapFactor + 1e-3, `rhythm ${rhythm}: ${dry.max} m/s`)
+      if (dry.mean > best.mean) best = dry
+    }
+    assert.ok(best.mean < CHAR.maxRun, `best dry mean ${best.mean}`)
+    assert.ok(best.mean > CHAR.maxRun * 0.5, `best dry mean ${best.mean} m/s is not moving well`)
+    assert.equal(best.mode, CharMode.slide)
+    // Mashing (a press every tick) is no faster than the best rhythm.
+    assert.ok(rhythmSpeed('normal', 1).mean <= best.mean + 1e-9)
+    const ice = rhythmSpeed('ice', ready + strokeStartTick(SLIDE_STROKE))
+    assert.ok(ice.max > CHAR.maxRun * 1.1, `ice ${ice.max} m/s`)
+  })
+
+  it('repeated dry flat strokes never exceed the dry cap', () => {
     for (const surface of ['normal', 'mud', 'rubber'] as Surface[]) for (const rhythm of [18, 24, 30]) {
       const r = slideRig(surface, 16)
-      const walkCap = surface === 'mud' ? CHAR.maxRun * 0.6 : CHAR.maxRun
+      const walkCap = (surface === 'mud' ? CHAR.maxRun * 0.6 : CHAR.maxRun) * SLIDE_STROKE.dryCapFactor
       for (let tick = 0; tick < 300; tick++) {
         const s = stepN(r, 1, tick % rhythm === 0 ? DIVE : NEUTRAL)
-        assert.equal(s.mode, CharMode.slide, `${surface}, rhythm ${rhythm}, tick ${tick}`)
-        assert.ok(s.slideSpeed! <= walkCap)
+        if (surface !== 'mud') assert.equal(s.mode, CharMode.slide, `${surface}, rhythm ${rhythm}, tick ${tick}`)
+        if (s.mode !== CharMode.slide) break
+        assert.ok(s.slideSpeed! <= walkCap + 1e-9)
         // Rapier stores positions as f32, so measured velocity has rounding error.
         assert.ok(hspeed(s) <= walkCap + 1e-4, `${surface}, rhythm ${rhythm}, tick ${tick}: ${hspeed(s)}`)
       }
@@ -864,23 +951,17 @@ describe('M4 slide', () => {
     }
   })
 
-  it('a slow dry stroke restores cruise speed and grace expires without further strokes', () => {
-    // The dry cruise is below walking speed: only the stroke grace keeps it on the belly.
-    assert.ok(CHAR.slide.drySwimSpeed < CHAR.maxRun)
-    for (const [surface, k] of [['mud', 0.6], ['normal', 1]] as const) {
-      const r = slideRig(surface, 0)
-      try {
-        const stroke = stepN(r, 1, DIVE)
-        assert.equal(stroke.mode, CharMode.slide)
-        assert.ok(stroke.slideSpeed! >= CHAR.slide.drySwimSpeed * k - 1e-9)
-        for (let tick = 1; tick < CHAR.slide.strokeGraceTicks; tick++) {
-          const s = stepN(r, 1, NEUTRAL)
-          assert.equal(s.mode, CharMode.slide, `${surface} tick ${tick}`)
-          assert.ok(s.slideSpeed! < CHAR.maxRun * k)
-        }
-        assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.ground)
-      } finally { r.world.free() }
+  it('a tuned slideStroke is a sim input: same inputs and parameters give the same states', () => {
+    const tuned = { ...SLIDE_STROKE, impulse: 6, animTicks: 20, startFrac: 0.3, impulseTicks: 12, cooldownTicks: 24, standUpSpeed: 2, dryCapFactor: 0.8 }
+    const run = (): number[] => {
+      const r = slideRig('normal', 4, 2, { ...tuned })
+      const out: number[] = []
+      try { for (let tick = 0; tick < 120; tick++) out.push(stepN(r, 1, tick % 26 === 0 ? DIVE : NEUTRAL).slideSpeed!) } finally { r.world.free() }
+      return out
     }
+    const a = run()
+    assert.deepEqual(run(), a)
+    assert.ok(Math.max(...a) <= CHAR.maxRun * 0.8 + 1e-9)
   })
 
   it('walking on ice accelerates and brakes more slowly than dry walking', () => {
@@ -929,9 +1010,8 @@ describe('M4 slide', () => {
   it('an obstacle friction 0.1 on normal decelerates less than friction 0.5', () => {
     const speedAfter = (friction: number): number => {
       const r = slideRig('normal', 12, friction)
-      // One stroke: its grace keeps the dry slide (capped at walking speed) on the belly for 30 ticks.
-      stepN(r, 1, DIVE)
-      const s = stepN(r, 29, NEUTRAL)
+      // No stroke (its push would reach the dry cap on both); above standUpSpeed he stays on the belly.
+      const s = stepN(r, 20, NEUTRAL)
       assert.equal(s.mode, CharMode.slide)
       const speed = hspeed(s)
       r.world.free()
@@ -942,20 +1022,26 @@ describe('M4 slide', () => {
     assert.ok(low > high, `friction 0.1 ${low} m/s, friction 0.5 ${high} m/s`)
   })
 
-  it('slide stands up only below walking speed', () => {
-    for (const [surface, walk] of [['normal', CHAR.maxRun], ['mud', CHAR.maxRun * 0.6]] as const) {
-      const r = slideRig(surface, 10)
+  it('slide stands up by himself only below standUpSpeed, never during a stroke', () => {
+    for (const surface of ['normal', 'mud'] as const) {
+      const r = slideRig(surface, 6)
       let s = state(r)
-      let prev = 10
+      let prev = 6
       for (let i = 0; i < 300 && s.mode === CharMode.slide; i++) {
         prev = s.slideSpeed ?? prev
         s = stepN(r, 1, NEUTRAL)
       }
       assert.equal(s.mode, CharMode.ground, surface)
-      assert.ok(s.slideSpeed! < walk, `${surface} slideSpeed ${s.slideSpeed}`)
-      assert.ok(prev >= walk, `${surface} was still at walking speed before ${prev}`)
+      assert.ok(s.slideSpeed! < SLIDE_STROKE.standUpSpeed, `${surface} slideSpeed ${s.slideSpeed}`)
+      assert.ok(prev >= SLIDE_STROKE.standUpSpeed, `${surface} was still above standUpSpeed before: ${prev}`)
       r.world.free()
     }
+    // A stroke started at a standstill keeps him on the belly until its push has lifted the speed.
+    const r = slideRig('normal', 0)
+    try {
+      stepN(r, 1, DIVE)
+      for (let tick = 1; tick < strokeTotalTicks(SLIDE_STROKE); tick++) assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.slide, `tick ${tick}`)
+    } finally { r.world.free() }
   })
 
   it('a belly slide above walking speed never stands up', () => {
@@ -1006,14 +1092,16 @@ describe('M4 slide', () => {
     } finally { r.world.free() }
   })
 
-  it('landing a slide airtime below walking speed stands up as before', () => {
-    // A dry lower deck caps the slide at walking speed: the first tick under it stands up.
+  it('landing a slide airtime on dry ground stays on the belly until standUpSpeed', () => {
+    // A dry lower deck caps the slide below walking speed; he stands up only under standUpSpeed.
     const r = dropRig('normal', 12)
     try {
       const { landed } = overTheDrop(r, NEUTRAL)
       assert.equal(landed.mode, CharMode.slide)
-      const t = stepUntil(r, () => NEUTRAL, (s) => s.mode === CharMode.ground, 10)
-      assert.ok(t <= 2, `stood up after ${t + 1} ticks`)
+      let last = landed
+      stepUntil(r, () => NEUTRAL, (s) => { if (s.mode === CharMode.slide) last = s; return s.mode === CharMode.ground }, 180)
+      assert.ok(last.slideSpeed! >= SLIDE_STROKE.standUpSpeed, `still sliding at ${last.slideSpeed}`)
+      assert.ok(state(r).slideSpeed! < SLIDE_STROKE.standUpSpeed, `stood up at ${state(r).slideSpeed}`)
       for (let tick = 0; tick < 30; tick++) assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.ground)
     } finally { r.world.free() }
   })
@@ -1172,7 +1260,7 @@ describe('M4 swim and determinism', () => {
     return { world, chars }
   }
 
-  it('QB1: a 240-tick scripted run restores its tick-90 snapshot and reruns identically', () => {
+  it('QB1: a 250-tick scripted run restores its tick-90 snapshot and reruns identically', () => {
     const script = (t: number): PlayerInput => {
       if (t === 50) return input({ moveZ: 1, dive: true })
       if (t === 80 || t === 100 || t === 130 || t === 160 || t === 200) return input({ moveZ: 1, dive: true })
@@ -1194,7 +1282,8 @@ describe('M4 swim and determinism', () => {
 
     const seenA: CharState[] = []
     const seenB: CharState[] = []
-    for (let t = 90; t < 240; t++) {
+    // The dive at 200 ends back in the swim volume; 250 ticks leave margin for the belly stroke's delayed push.
+    for (let t = 90; t < 250; t++) {
       a.world.step([script(t)])
       b.world.step([script(t)])
       seenA.push(state(a))

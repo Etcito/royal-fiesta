@@ -1,5 +1,5 @@
 // Isolated GPU proof using committed meshes, the game animation driver and the production RAA port.
-import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
+import { CHAR, CharMode, SLIDE_STROKE, strokeTotalTicks } from '@royal-fiesta/sim/character/constants'
 import { nextTask, publishPhase } from '../../../apps/web/src/game/checks/boot.ts'
 import { pendingPipelines } from '../../../apps/web/src/render/asyncPipelines.ts'
 import { createSdfPort } from '../../../apps/web/src/sdf/sdfPort.ts'
@@ -50,7 +50,7 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
             const t=tick-24
             const mode=sequence === 'transition' ? (t<4?CharMode.dive:t<20?CharMode.slide:CharMode.ground) : CharMode.slide
             const angle=sequence === 'bank' ? Math.max(0,t)*0.065 : 0
-            const timer=sequence === 'stroke' && t>=0 ? Math.max(0, CHAR.slide.strokeCooldownTicks-t) : 0
+            const timer=sequence === 'stroke' && t>=0 ? Math.max(0, strokeTotalTicks(SLIDE_STROKE)-t) : 0
             driver.observeTick(tick,[{id:0,mode,strokeTimer:timer,grounded:mode!==CharMode.dive,surface:'ice',vel:{x:Math.sin(angle)*5,y:0,z:Math.cos(angle)*5},emote:0}])
             const frame=frames.indexOf(t);if(frame<0)continue
             const pose=driver.pose(0)!.skin

@@ -48,11 +48,6 @@ export const CHAR = {
     steerRadS: degToRad(240),
     bankGain: 0.5,
     handPush: 6,
-    // Flat dry belly strokes cruise below walking speed (also scaled by surface tuning).
-    drySwimSpeed: maxRun * 0.9,
-    strokeGraceTicks: 36,
-    strokeImpulse: 6,
-    strokeCooldownTicks: 18,
   },
   swim: {
     maxSpeed: 5,
@@ -61,6 +56,72 @@ export const CHAR = {
     strokeCooldownTicks: 18,
   },
 } as const
+
+/**
+ * The belly stroke (a breaststroke): DIVE on the belly starts one stroke animation of animTicks;
+ * the push starts at startFrac of it and lasts impulseTicks, a little past the animation's end.
+ * A press is accepted only once the animation (and cooldownTicks) has run, so mashing gains
+ * nothing; a press during the push tail starts the next stroke and drops the rest of that tail.
+ * Below standUpSpeed with no stroke running he stands up. On dry flat ground the slide is capped
+ * at dryCapFactor x walking speed; on ice or a slope it is capped at CHAR.slide.maxSpeed.
+ * Ticks are sim ticks (60 Hz).
+ */
+export interface SlideStroke {
+  /** m/s added to the slide speed by one whole push. */
+  impulse: number
+  /** Ticks of the stroke animation; also the earliest next stroke. */
+  animTicks: number
+  /** 0..1: where in the animation the push starts. */
+  startFrac: number
+  /** Ticks of the push. */
+  impulseTicks: number
+  /** Ticks from a press before the next press counts (at least animTicks is enforced). */
+  cooldownTicks: number
+  /** m/s: below it, with no stroke running, he stands up. */
+  standUpSpeed: number
+  /** Dry flat cap as a fraction of walking speed (CHAR.maxRun x surface maxRun). */
+  dryCapFactor: number
+}
+
+/**
+ * Defaults. The online rollback sim always uses these: every peer must step the same numbers.
+ * Only an offline/local sim may be handed a tuned copy (the ?tune=1 panel).
+ */
+export const SLIDE_STROKE: Readonly<SlideStroke> = {
+  impulse: 7,
+  animTicks: 30,
+  startFrac: 0.5,
+  impulseTicks: 24,
+  cooldownTicks: 30,
+  standUpSpeed: 1,
+  dryCapFactor: 0.9,
+}
+
+/** Elapsed tick (from the press) at which the push starts. */
+export function strokeStartTick(s: Readonly<SlideStroke>): number {
+  return Math.round(s.startFrac * s.animTicks)
+}
+
+/** Ticks a stroke runs (animation, cooldown and push), the slide strokeTimer's start value (u8). */
+export function strokeTotalTicks(s: Readonly<SlideStroke>): number {
+  return Math.max(1, Math.min(255, Math.round(Math.max(s.animTicks, s.cooldownTicks, strokeStartTick(s) + s.impulseTicks))))
+}
+
+/** Ticks after a press before the next press counts. */
+export function strokeReadyTicks(s: Readonly<SlideStroke>): number {
+  return Math.round(Math.max(s.animTicks, s.cooldownTicks))
+}
+
+/** Ticks since the press from the slide strokeTimer (counting down from strokeTotalTicks), -1 when none. */
+export function strokeElapsed(s: Readonly<SlideStroke>, timer: number): number {
+  return timer > 0 ? Math.max(0, strokeTotalTicks(s) - timer) : -1
+}
+
+/** Stroke animation phase 0..1 (1 = glide, also with no stroke running). */
+export function strokeAnimPhase(s: Readonly<SlideStroke>, timer: number): number {
+  const elapsed = strokeElapsed(s, timer)
+  return elapsed < 0 ? 1 : Math.min(1, elapsed / Math.max(1, s.animTicks))
+}
 
 export const CharMode = {
   ground: 0,

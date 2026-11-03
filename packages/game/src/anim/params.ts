@@ -19,6 +19,10 @@ export interface CharObservation {
   carryId?: number
   carry?: number
   strokeTimer?: number
+  /** Belly stroke animation phase 0..1 from the sim's stroke parameters; absent: derived from strokeTimer with the defaults. */
+  strokePhase?: number
+  /** The sim's push start (startFrac): the flippers sweep back from there. Absent: SLIDE_STROKE. */
+  strokeStart?: number
   vel: { readonly x: number; readonly y: number; readonly z: number }
   grounded: boolean
   /** Obstacle surface: normal, ice, mud or rubber. */

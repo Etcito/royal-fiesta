@@ -161,7 +161,7 @@ export class AnimDriver {
       // Both speed calculations matter: graph params use sqrt; walk layers use hypot.
       // The prior cohort encodes the complete graph/layer history, including transitions.
       const key = JSON.stringify([entry.cohort, params, character.mode, Math.hypot(character.vel.x, character.vel.z),
-        character.vel.x, character.vel.z, character.carry ?? 0, character.strokeTimer ?? 0, character.surface, character.slideSpeed ?? 0, character.carryId ?? -1])
+        character.vel.x, character.vel.z, character.carry ?? 0, character.strokeTimer ?? 0, character.strokePhase ?? -1, character.strokeStart ?? -1, character.surface, character.slideSpeed ?? 0, character.carryId ?? -1])
       let cached = this.cache ? shared.get(key) : undefined
       let base: CharacterPose
       if (cached) {

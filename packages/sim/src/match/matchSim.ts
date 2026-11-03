@@ -4,6 +4,7 @@ import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { BotSystem } from '../bots/botSystem.ts'
 import { CharacterSystem } from '../character/system.ts'
 import type { CharState } from '../character/system.ts'
+import type { SlideStroke } from '../character/constants.ts'
 import { regionOf, surfaceOf } from '../course.ts'
 import type { ObstacleSpec, ResolvedCourse } from '../course.ts'
 import type { PlayerInput } from '../input.ts'
@@ -51,9 +52,21 @@ export interface CharacterView {
   parked: boolean
   teleportTick: number
   strokeTimer?: number
+  /** Belly stroke animation phase 0..1, from this sim's stroke parameters. */
+  strokePhase?: number
+  /** Belly stroke push start as a fraction of the animation (startFrac). */
+  strokeStart?: number
   slideSpeed?: number
   carry?: number
   surface?: string
+}
+
+export interface MatchSimOptions {
+  /**
+   * Tuned belly stroke parameters (the ?tune=1 panel), read live by the sim. Offline/local only:
+   * an online rollback match never passes it, so every peer steps SLIDE_STROKE and never diverges.
+   */
+  slideStroke?: SlideStroke
 }
 
 const MATCH_RNG_SALT = 0x6d617463
@@ -323,7 +336,7 @@ export class MatchSim implements Simulation<PlayerInput>, MechanismView {
   readonly #chars: CharacterSystem
   readonly #round: RoundSystem
 
-  constructor(R: RapierModule, setup: MatchSetup) {
+  constructor(R: RapierModule, setup: MatchSetup, opts: MatchSimOptions = {}) {
     validateSetup(setup)
     this.setup = setup
     const n = setup.playerCount
@@ -331,7 +344,7 @@ export class MatchSim implements Simulation<PlayerInput>, MechanismView {
     const obstacles = new ObstacleSystem(setup.courses)
     const mechLogic = new MechLogicSystem(setup.courses)
     const mechanisms = new MechanismSystem(setup.courses)
-    const chars = new CharacterSystem({ playerCount: n })
+    const chars = new CharacterSystem({ playerCount: n, slideStroke: opts.slideStroke })
     const round = new RoundSystem(setup)
     const match = new MatchSystem(setup, obstacles, mechLogic, mechanisms, chars, bots, round)
     this.#match = match
@@ -451,6 +464,8 @@ export class MatchSim implements Simulation<PlayerInput>, MechanismView {
     out.facing.x = st.facing.x
     out.facing.z = st.facing.z
     out.strokeTimer = st.strokeTimer
+    out.strokePhase = st.strokePhase
+    out.strokeStart = st.strokeStart
     out.slideSpeed = st.slideSpeed
     out.carry = st.carry
     out.surface = st.groundBody != null

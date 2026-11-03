@@ -1,21 +1,44 @@
 // Snapshot-driven rotations relative to the rig rest pose. No render clock is involved.
-import { CHAR, CharMode, CarryKind } from '@royal-fiesta/sim/character/constants'
+import { CHAR, CharMode, CarryKind, SLIDE_STROKE, strokeAnimPhase } from '@royal-fiesta/sim/character/constants'
 import type { PoseLayer } from './layers.ts'
 import { walkBones, type WalkBones } from './walkCycle.ts'
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v))
 const ease = (v: number) => { const t = clamp(v); return t*t*(3-2*t) }
 
-/** Wide recovery, forward catch, power sweep, then a held streamlined glide. */
-export function strokeShape(mode: number, timer: number) {
-  const duration = mode === CharMode.swim ? CHAR.swim.strokeCooldownTicks : CHAR.slide.strokeCooldownTicks
-  const phase = timer > 0 ? clamp(1 - timer / duration) : 1
-  const reach = ease(phase / 0.3) * (1 - ease((phase - 0.36) / 0.4))
-  const power = Math.sin(Math.PI * clamp((phase - 0.36) / 0.4))
+/** Where the swim stroke's power sweep starts (its push is the press itself). */
+const SWIM_SWEEP_START = 0.4
+
+/**
+ * Stroke phase 0..1 (1 = glide). Belly: the sim's own strokePhase when observed (it follows the
+ * sim's stroke parameters, tuned or not), else derived from strokeTimer with SLIDE_STROKE.
+ * Swim: the timer counts the cooldown down from the press.
+ */
+export function strokePhase(mode: number, timer: number, simPhase?: number): number {
+  if (mode === CharMode.swim) return timer > 0 ? clamp(1 - timer / CHAR.swim.strokeCooldownTicks) : 1
+  return simPhase ?? strokeAnimPhase(SLIDE_STROKE, timer)
+}
+
+/**
+ * A breaststroke: the flippers reach wide and forward (catch), hold, then sweep back from
+ * `sweepStart` (the sim's push start, startFrac) and settle into the streamlined glide before the
+ * animation ends. reach 1 = flippers forward, power = the sweep back.
+ */
+export function strokeShapeAt(phase: number, sweepStart: number) {
+  const s = Math.max(0.1, Math.min(0.9, sweepStart))
+  const sweep = 0.8 * (1 - s)
+  const reach = ease(phase / (0.8 * s)) * (1 - ease((phase - s) / sweep))
+  const power = Math.sin(Math.PI * clamp((phase - s) / sweep))
   return { reach, power }
 }
 
-export function actionPose(mode: number, carry: number, strokeTimer: number, out: Float32Array, bones: WalkBones): void {
+export function strokeShape(mode: number, timer: number, simPhase?: number, sweepStart?: number) {
+  const swim = mode === CharMode.swim
+  return strokeShapeAt(strokePhase(mode, timer, simPhase), swim ? SWIM_SWEEP_START : sweepStart ?? SLIDE_STROKE.startFrac)
+}
+
+export function actionPose(mode: number, carry: number, strokeTimer: number, out: Float32Array, bones: WalkBones,
+  simPhase?: number, sweepStart?: number): void {
   out.fill(0)
   for (let i = 3; i < out.length; i += 4) out[i] = 1
   const rotate = (bone: number, x: number, y: number, z: number): void => {
@@ -27,9 +50,10 @@ export function actionPose(mode: number, carry: number, strokeTimer: number, out
   }
   const sliding = mode === CharMode.slide, swimming = mode === CharMode.swim
   if (sliding || swimming || mode === CharMode.dive || mode === CharMode.diveRecover) {
-    const { reach, power } = strokeShape(mode, sliding || swimming ? strokeTimer : 0)
+    const { reach, power } = sliding || swimming ? strokeShape(mode, strokeTimer, simPhase, sweepStart) : strokeShapeAt(1, SLIDE_STROKE.startFrac)
     // +Y of the upright rig becomes forward; local -Z becomes up on the belly.
-    rotate(bones.root, sliding || mode === CharMode.diveRecover ? 1.48 - power * 0.09 : swimming ? 1.3 : 1.4, 0, 0)
+    // No pitch from the stroke: the body stays flat on the belly, only the flippers sweep.
+    rotate(bones.root, sliding || mode === CharMode.diveRecover ? 1.48 : swimming ? 1.3 : 1.4, 0, 0)
     rotate(bones.head, -1.25 + power * 0.06, 0, 0)
     rotate(bones.footL, 1.15, 0, 0); rotate(bones.footR, 1.15, 0, 0)
     rotate(bones.legL, 0.18, 0, -0.08); rotate(bones.legR, 0.18, 0, 0.08)
@@ -71,12 +95,12 @@ export const ACTION_LAYER: PoseLayer = {
         const turn = Math.atan2(prevZ*x - prevX*z, prevX*x + prevZ*z)
         bank += (Math.max(-0.22, Math.min(0.22, -turn*4)) - bank) * 0.25
         prevX = x; prevZ = z
-        const duration = obs.mode === CharMode.swim ? CHAR.swim.strokeCooldownTicks : CHAR.slide.strokeCooldownTicks
-        const phase = (obs.strokeTimer ?? 0) > 0 ? clamp(1 - obs.strokeTimer! / duration) : 1
+        const stroking = obs.mode === CharMode.slide || obs.mode === CharMode.swim
+        const phase = stroking ? strokePhase(obs.mode, obs.strokeTimer ?? 0, obs.strokePhase) : 1
         load = belly ? Math.sin(Math.PI * clamp(phase / 0.3)) : load
-        power = belly ? strokeShape(obs.mode, obs.strokeTimer ?? 0).power : power
+        power = belly ? (stroking ? strokeShape(obs.mode, obs.strokeTimer ?? 0, obs.strokePhase, obs.strokeStart).power : 0) : power
         // Retain the last target while fading back to the graph.
-        if (active) actionPose(obs.mode, obs.carry ?? 0, obs.strokeTimer ?? 0, target, bones)
+        if (active) actionPose(obs.mode, obs.carry ?? 0, obs.strokeTimer ?? 0, target, bones, obs.strokePhase, obs.strokeStart)
       },
       apply(local) {
         if (!ramp) return
@@ -94,7 +118,8 @@ export const ACTION_LAYER: PoseLayer = {
           for (let i = 0; i < 4; i++) local[o+i] /= norm
         }
         // Lower the visible body within the unchanged upright collision capsule to touch the ice.
-        // Root local Y is travel, Z is thickness after the prone rotation.
+        // Root translation is model space: t.y is height (only lowered here), t.z is forward travel
+        // (the stroke surge, never a lift). Scale y/z are travel/thickness after the prone rotation.
         const r = bones.root * 10, w = ease(bellyWeight)
         local[r+1] += (-0.42 - impact*0.045 - local[r+1]) * ease(contact)
         local[r+2] += (power * 0.16 - load * 0.035) * w

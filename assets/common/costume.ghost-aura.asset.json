@@ -515,19 +515,7 @@
               ]
             }
           },
-          "bindings": [
-            {
-              "source": {
-                "group": "special_ghost_aura"
-              },
-              "bones": [
-                {
-                  "bone": "root",
-                  "factor": 1
-                }
-              ]
-            }
-          ],
+          "bindings": [],
           "smooth": 0.2
         },
         "gameCollision": false
@@ -800,5 +788,5 @@
     "min": [-1.54, -1.49, -0.68],
     "max": [1.54, 1.59, 0.88]
   },
-  "hash": "26613df83a214cf19a5798f2794ba5a04e4e08bf9ed3af552801fd4152458cf2"
+  "hash": "0f7fae8e44c029ea5451965ffe37329e1279b060ce03fc51fa3365a74257306e"
 }

@@ -521,19 +521,7 @@
               ]
             }
           },
-          "bindings": [
-            {
-              "source": {
-                "group": "dragon_suit"
-              },
-              "bones": [
-                {
-                  "bone": "root",
-                  "factor": 1
-                }
-              ]
-            }
-          ],
+          "bindings": [],
           "smooth": 0.2
         },
         "gameCollision": false
@@ -1318,5 +1306,5 @@
     "min": [-0.75, -1.025, -0.931173],
     "max": [0.75, 0.778289, 0.63]
   },
-  "hash": "204598f1b68d8bdd6de231660706632937d53aa8a5111c7987792adc4af71773"
+  "hash": "4c66709d710d0eccde65bbd1d9ae6d6b4d1efc1e4714cd90158b01ac3af54480"
 }

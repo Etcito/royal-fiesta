@@ -517,19 +517,7 @@
               ]
             }
           },
-          "bindings": [
-            {
-              "source": {
-                "group": "jetpack"
-              },
-              "bones": [
-                {
-                  "bone": "root",
-                  "factor": 1
-                }
-              ]
-            }
-          ],
+          "bindings": [],
           "smooth": 0.2
         },
         "gameCollision": true
@@ -868,5 +856,5 @@
     "min": [-0.5, -0.78, -0.716],
     "max": [0.5, 0.575, 0.44]
   },
-  "hash": "d675e70cfcd29e941396d74c5f28ed49758fd92718394c87eb38a0bdda2a54a8"
+  "hash": "8a8f7f9463e3cbf3c5f1f4aa8d77955b9a7ee9ec4056e066af19adb0202dc7ed"
 }

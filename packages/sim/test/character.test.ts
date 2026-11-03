@@ -449,7 +449,7 @@ describe('system', () => {
     b.free()
   })
 
-  it('dive: at least diveSpeed after the press, then diveRecover for diveRecoverTicks after landing', () => {
+  it('dive: at least diveSpeed after the press, then lands on the belly (slide) at any plain dive', () => {
     const r = rig()
     stepN(r, 30, NEUTRAL)
     assert.equal(stepN(r, 1, DIVE).mode, CharMode.dive)
@@ -457,10 +457,8 @@ describe('system', () => {
     assert.ok(hspeed(after) >= CHAR.diveSpeed, `speed ${hspeed(after)}`)
     stepUntil(r, () => NEUTRAL, (s) => s.mode !== CharMode.dive, 120)
     const landed = state(r)
-    assert.equal(landed.mode, CharMode.diveRecover)
+    assert.equal(landed.mode, CharMode.slide)
     assert.equal(landed.grounded, true)
-    assert.equal(stepN(r, CHAR.diveRecoverTicks - 1, NEUTRAL).mode, CharMode.diveRecover)
-    assert.equal(stepN(r, 1, NEUTRAL).mode, CharMode.ground)
     r.world.free()
   })
 
@@ -765,7 +763,7 @@ describe('M4 slide', () => {
     return r
   }
 
-  it('a grounded dive at run speed lands in slide; a dive from standing lands in diveRecover', () => {
+  it('every grounded dive lands in slide, on a belt as on plain ground', () => {
     // A conveyor adds 4 m/s to the 8 m/s run: the dive carries 12 m/s into the landing.
     const belt = obstacle('belt', v3(0, -0.5, 0), { kind: 'conveyor', velocity: v3(0, 0, 4) }, v3(20, 0.5, 100))
     const fast = obsRig([belt], v3(0, 0, -5))
@@ -785,7 +783,7 @@ describe('M4 slide', () => {
     stepN(still, 30, NEUTRAL)
     stepN(still, 1, DIVE)
     stepUntil(still, () => NEUTRAL, (s) => s.mode !== CharMode.dive, 120)
-    assert.equal(state(still).mode, CharMode.diveRecover)
+    assert.equal(state(still).mode, CharMode.slide)
     still.world.free()
   })
 

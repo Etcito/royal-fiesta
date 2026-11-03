@@ -69,7 +69,7 @@
         { "from": "dive", "to": "locomotion", "when": [{ "param": "mode", "op": "!=", "value": 2 }, { "param": "grounded", "op": "==", "value": true }], "blendTicks": 8, "exitTick": null, "priority": 1 },
         { "from": "dive", "to": "fall", "when": [{ "param": "mode", "op": "==", "value": 1 }], "blendTicks": 8, "exitTick": null, "priority": 2 },
         { "from": "bellySlide", "to": "dive", "when": [{ "param": "mode", "op": "==", "value": 2 }], "blendTicks": 4, "exitTick": null, "priority": 0 },
-        { "from": "bellySlide", "to": "locomotion", "when": [{ "param": "mode", "op": "!=", "value": 3 }, { "param": "grounded", "op": "==", "value": true }], "blendTicks": 8, "exitTick": null, "priority": 1 },
+        { "from": "bellySlide", "to": "locomotion", "when": [{ "param": "mode", "op": "!=", "value": 3 }, { "param": "grounded", "op": "==", "value": true }], "blendTicks": 12, "exitTick": null, "priority": 1 },
         { "from": "bellySlide", "to": "fall", "when": [{ "param": "mode", "op": "!=", "value": 3 }, { "param": "grounded", "op": "==", "value": false }], "blendTicks": 8, "exitTick": null, "priority": 2 },
         { "from": "grab", "to": "dive", "when": [{ "param": "mode", "op": "==", "value": 2 }], "blendTicks": 4, "exitTick": null, "priority": 0 },
         { "from": "grab", "to": "locomotion", "when": [{ "param": "mode", "op": "!=", "value": 5 }, { "param": "grounded", "op": "==", "value": true }], "blendTicks": 6, "exitTick": null, "priority": 1 },

@@ -49,6 +49,7 @@ export function graphMode(mode: number): number {
   switch (mode) {
     case CharMode.air: return GraphMode.air
     case CharMode.dive: return GraphMode.dive
+    case CharMode.swim:
     case CharMode.slide: return GraphMode.bellySlide
     case CharMode.diveRecover: return GraphMode.bellySlide
     case CharMode.grabbing: return GraphMode.grab

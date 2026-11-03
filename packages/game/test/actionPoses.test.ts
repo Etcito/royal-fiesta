@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { CHAR, CharMode, CarryKind } from '@royal-fiesta/sim/character/constants'
-import { ACTION_LAYER, actionPose } from '../src/anim/actionPoses.ts'
+import { ACTION_LAYER, actionPose, strokeShape } from '../src/anim/actionPoses.ts'
 import { WALK_LAYER, walkBones } from '../src/anim/walkCycle.ts'
 import { POSE_LAYERS } from '../src/anim/layers.ts'
 import { AnimDriver } from '../src/anim/driver.ts'
@@ -50,7 +50,7 @@ test('walk mutes grounded swim and carry over six ticks and returns to ordinary 
     assert.deepEqual(muted, rest())
     const posed = rest(); layer.apply(posed, action)
     assert.notDeepEqual(posed, walking)
-    for (let i = 0; i < 6; i++) { walk.observe(ground); layer.observe(ground) }
+    for (let i = 0; i < 12; i++) { walk.observe(ground); layer.observe(ground) }
     const cleared = rest(); layer.apply(cleared, ground)
     assert.deepEqual(cleared, rest())
     walk.apply(cleared, ground); assert.notDeepEqual(cleared, rest())
@@ -144,4 +144,55 @@ test('ice pedalling advances feet faster than ground travel, dry walking keeps i
   const walk = WALK_LAYER.create(names)
   walk.observe(ice)
   assert.equal(walk.state.speed, pedallingSpeed(ice))
+})
+
+
+test('breaststroke has a forward catch, delayed power and a held glide', () => {
+  const shape = (phase: number) => strokeShape(CharMode.slide, (1-phase)*CHAR.slide.strokeCooldownTicks)
+  assert.equal(shape(0).reach, 0)
+  assert.equal(shape(0.32).reach, 1)
+  assert.equal(shape(0.32).power, 0)
+  assert(shape(0.56).power > 0.99)
+  assert.equal(shape(0.8).reach, 0)
+  const glide = pose(CharMode.slide)
+  for (const phase of [0.8,0.9,1]) {
+    const p = pose(CharMode.slide, 0, (1-phase)*CHAR.slide.strokeCooldownTicks)
+    p.forEach((v,i) => assert(Math.abs(v-glide[i]) < 1e-6))
+  }
+  // Transform the flipper's outward axis: catch is forward (+Y), glide trails (-Y).
+  for (const [phase, sign] of [[0,-1],[0.32,1]] as const) {
+    const p=pose(CharMode.slide,0,(1-phase)*CHAR.slide.strokeCooldownTicks)
+    const q=bones.flipperL*4, [x,y,z,w]=p.slice(q,q+4)
+    assert(sign*2*(x*y+z*w) > 0.8)
+    assert(Math.abs(p[bones.flipperL*4+2]+p[bones.flipperR*4+2])<1e-6)
+  }
+})
+
+test('belly contact, impact, surge and gradual stand are presentation only', () => {
+  const layer=ACTION_LAYER.create(names)
+  const apply=() => { const local=rest();layer.apply(local,obs(CharMode.slide));return local }
+  for(let i=0;i<6;i++)layer.observe(obs(CharMode.dive))
+  layer.observe(obs(CharMode.slide));const impact=apply()
+  for(let i=0;i<12;i++)layer.observe(obs(CharMode.slide))
+  const glide=apply(), r=bones.root*10
+  assert(Math.abs(glide[r+1]+0.42)<1e-6)
+  assert(impact[r+9]<glide[r+9])
+  layer.observe(obs(CharMode.slide,0,CHAR.slide.strokeCooldownTicks*0.44))
+  const surge=apply();assert(surge[r+8]>glide[r+8]+0.1)
+  for(let i=0;i<6;i++)layer.observe(obs(CharMode.ground))
+  const rising=apply();assert(rising[r+1]>glide[r+1]);assert(rising[r+1]<0)
+  for(let i=0;i<6;i++)layer.observe(obs(CharMode.ground))
+  assert.deepEqual(apply(),rest())
+})
+
+test('opposite slide turns bank in opposite directions and reset drops history', () => {
+  const run=(sign:number)=>{
+    const layer=ACTION_LAYER.create(names)
+    for(let i=0;i<8;i++)layer.observe(obs(CharMode.slide))
+    for(let i=1;i<=6;i++)layer.observe({...obs(CharMode.slide),vel:{x:sign*Math.sin(i*0.06)*5,y:0,z:Math.cos(i*0.06)*5}})
+    const local=rest();layer.apply(local,obs(CharMode.slide));return local
+  }
+  const left=run(-1),right=run(1),r=bones.root*10
+  assert(left[r+4]*right[r+4]<0)
+  assert(Math.abs(left[r+4]+right[r+4])<1e-6)
 })

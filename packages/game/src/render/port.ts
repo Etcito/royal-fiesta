@@ -18,6 +18,7 @@ export interface RenderInventory { assets: string[]; instances: number; meshes: 
 export interface RenderPort {
   readonly kind: 'null' | 'raa'
   init(target: RenderTarget): Promise<void>
+  registerRoad?(name: string, sweep: import('@royal-fiesta/sim/road').RoadData): number
   registerAsset(name: string, asset: PrimsAsset): number
   createInstance(asset: number, tint: Vec3T | null): number
   setTransform(instance: number, t: Vec3T, r: QuatT, s: Vec3T): void

@@ -10,7 +10,7 @@ import type { ZoneRoundPlan } from './zoneRounds.ts'
 import type { ZoneFullMatch, ZoneFullMatchConfig, ZoneFullRound } from './zoneFullMatch.ts'
 
 export type OfflineFullMatchConfig = Pick<ZoneFullMatchConfig,
-  'seed' | 'courses' | 'zones' | 'season' | 'plan' | 'profile' | 'voteMs' | 'intermissionMs' | 'onVote'> & { seats: number }
+  'seed' | 'courses' | 'zones' | 'season' | 'plan' | 'profile' | 'voteMs' | 'intermissionMs' | 'onVote'> & { seats: number; openingCourse?: string }
 
 /** Offline show ledger and scheduler: all surviving seats belong to one authoritative world. */
 export function createOfflineFullMatch(R: RapierModule, cfg: OfflineFullMatchConfig): ZoneFullMatch {
@@ -30,7 +30,13 @@ export function createOfflineFullMatch(R: RapierModule, cfg: OfflineFullMatchCon
   let qualifiedBeforePlayoff: number[] = []
 
   function start(): void {
-    candidates = playoff ? [playoff.map] : roundCandidates(show, rng)
+    // A local ?course= launch pins only the first map; subsequent rounds use the season.
+    const opening = !report.rounds.length && cfg.openingCourse !== undefined
+      ? cfg.season.find(map => cfg.courses[map.course]?.id === cfg.openingCourse) : undefined
+    if (!report.rounds.length && cfg.openingCourse !== undefined && !opening) {
+      refuse('show', 'offlineFullMatch.openingCourse', `unknown course ${cfg.openingCourse}; use a built season course`)
+    }
+    candidates = playoff ? [playoff.map] : opening ? [opening.id] : roundCandidates(show, rng)
     elapsed = 0
     choice = -1
     settled = false
@@ -39,8 +45,12 @@ export function createOfflineFullMatch(R: RapierModule, cfg: OfflineFullMatchCon
   }
   function play(): void {
     const offered = candidates!
-    const plan = playoff ?? planZoneRound(cfg.courses, show, alive,
+    const planned = playoff ?? planZoneRound(cfg.courses, show, alive,
       { candidates: choice < 0 ? [offered[0]] : offered, votes: [choice] }, rng)
+    // A two-seat URL launch can already be the final slot. Keep the selected
+    // course's race/survival rules when it has no specialised final rule.
+    const plan = cfg.openingCourse !== undefined && !report.rounds.length && planned.final && planned.finalRule === null
+      ? { ...planned, kind: levelOf(planned.course).kind } : planned
     playoff = null
     candidates = null
     elapsed = 0

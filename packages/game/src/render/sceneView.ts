@@ -636,7 +636,11 @@ export class SceneView {
     const n = course === null ? 0 : sim.obstacleCount()
     for (let i = 0; i < n; i++) {
       const spec = sim.obstacleSpec(i)
-      this.obstacles.push(this.port.createInstance(this.asset(spec.asset, this.opts.assets(spec.asset)), null))
+      const asset = spec.sweep
+        ? this.port.registerRoad?.(`road:${this.course!.id}:${spec.id}`, spec.sweep)
+        : this.asset(spec.asset, this.opts.assets(spec.asset))
+      if (asset === undefined) throw new Error('The render port does not support polygon roads')
+      this.obstacles.push(this.port.createInstance(asset, null))
     }
     this.obPrev = new Float64Array(n * OB)
     this.obCur = new Float64Array(n * OB)

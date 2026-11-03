@@ -86,3 +86,33 @@ test('offline: the complete show repeats its rounds and champion for the same se
   }
   assert.deepEqual(run(), run())
 })
+
+test('offline URL rosters pin the opening course and size one world to human plus bots', () => {
+  for (const count of [2, 8, 60]) {
+    const openingCourse = courses.find(course => course.kind === 'race')!.id
+    const full = createOfflineFullMatch(R, {
+      seats: count, openingCourse, seed: 7, courses, zones, season: showMaps(courses),
+    })
+    try {
+      const round = full.round!
+      assert.equal(full.candidates, null)
+      assert.equal(round.plan.course.id, openingCourse)
+      assert.equal(round.plan.kind, 'race')
+      assert.equal(round.seatOf.length, count)
+      assert.equal(round.match.worlds, 1)
+      assert.deepEqual(round.seatOf, Array.from({ length: count }, (_, i) => i))
+      let samples = 0
+      full.frame(1 / 60, (_, out) => { assert.equal(out.length, count); out[0].moveX = 1; samples++ })
+      assert.equal(samples, 1)
+      assert.equal(round.match.stats.rollbacks, 0)
+      if (count === 2) {
+        for (let frame = 0; frame < 30000 && !full.report.rounds.length; frame++) {
+          full.frame(1 / 60, () => {})
+        }
+        assert.equal(full.report.rounds[0]?.ranking.length, 2)
+        assert.equal(full.done, true)
+        assert.notEqual(full.champion, null)
+      }
+    } finally { full.dispose() }
+  }
+})

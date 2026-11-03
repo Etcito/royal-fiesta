@@ -1,3 +1,4 @@
+import { roadMesh, type RoadData } from '@royal-fiesta/sim/road'
 import { checkAwait } from '../game/checkProgress.ts'
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the
 // MAMA workers already produced (one mesh per part, split by material) and the graph materials
@@ -172,6 +173,21 @@ class SdfRenderPort implements ResizablePort {
       onTiming({ step: `Mesh and material data: ${id}`, start, end, ms: end - start })
     }
     onProgress({ phase: 'upload', done: ids.length, total: ids.length, label: 'Assets uploaded' })
+  }
+
+  registerRoad(name: string, sweep: RoadData): number {
+    const known = this.handleOfName.get(name)
+    if (known !== undefined) return known
+    const engine = this.need(), ribbon = roadMesh(sweep)
+    const color = [1, 3, 5].map(i => parseInt(sweep.material.slice(i, i+2), 16)/255) as [number, number, number]
+    const material = engine.addSurfaceMaterial({ color, roughness: sweep.surface === 'ice' ? .22 : .7 })
+    const desc: MeshDesc = { positions: ribbon.positions, normals: ribbon.normals, uvs: ribbon.uvs, indices: ribbon.indices,
+      subMeshes: [{ first: 0, count: ribbon.indices.length, material }] }
+    const handle = this.uploaded.length
+    this.uploaded.push({ assetId: name, parts: [{ name, key: name, mesh: this.addMesh(engine, desc), desc,
+      subMeshes: desc.subMeshes!, t: [0,0,0], r: [0,0,0,1], tint: 'none' }] })
+    this.handleOfName.set(name, handle)
+    return handle
   }
 
   registerAsset(name: string, asset: PrimsAsset): number {

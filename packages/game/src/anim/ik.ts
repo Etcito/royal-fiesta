@@ -169,7 +169,9 @@ export class VisualIk {
     const lookAt = (p: typeof pose, name: string, target: Vec3, axis: Vec3, cap: number) =>
       this.fast && target.every(Number.isFinite) ? this.fast.apply(p, this.index.get(name)!, target, axis, cap) : ik.lookAt(this.rig, p, name, target, axis, cap)
     const { look, grab, ground } = targets
-    if (look && finite(look)) {
+    const prone = targets.mode === CharMode.slide || targets.mode === CharMode.swim ||
+      targets.mode === CharMode.dive || targets.mode === CharMode.diveRecover
+    if (!prone && look && finite(look)) {
       pose = lookAt(pose, HEAD, toPoseFrame(look, xf), HEAD_FORWARD, LOOK_MAX_DEG)
       active.look = true
     }
@@ -180,7 +182,7 @@ export class VisualIk {
     }
     const p = ground && finite(ground.point) && finite(ground.normal) ? toPoseFrame(ground.point, xf) : null
     const n = p && ground ? toPoseFrame(ground.normal, xf, true) : null
-    if (p && n && n[1] > 1e-3) {
+    if (!prone && p && n && n[1] > 1e-3) {
       // Keep each animated foot's height above the ground but follow the contact plane under it: with no
       // knee, the upper leg swings its fixed length to that height. Then the foot's up axis turns to the normal.
       for (const [upper, foot] of LEGS) {

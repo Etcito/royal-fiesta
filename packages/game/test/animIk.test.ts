@@ -174,7 +174,7 @@ test('integration: airborne and released grabs drop the feet and hand correction
   try {
     const modes = [CharMode.ground, CharMode.air, CharMode.dive, CharMode.grabbing, CharMode.ground]
     const expected = [
-      { feet: true, hands: false, look: true }, { feet: false, hands: false, look: true }, { feet: false, hands: false, look: true },
+      { feet: true, hands: false, look: true }, { feet: false, hands: false, look: true }, { feet: false, hands: false, look: false },
       { feet: true, hands: true, look: true }, { feet: true, hands: false, look: true },
     ]
     modes.forEach((mode, i) => {
@@ -246,4 +246,15 @@ test('single-bone fast path matches the RAA solver through limits, slopes, trans
       }
     } finally {fast.dispose();slow.dispose();driver.dispose()}
   }
+})
+
+test('belly action silhouette survives production foot and look targets', async () => {
+  const driver=await AnimDriver.load(graphJson,rigJson,clipsJson)
+  try {
+    let tick=100
+    for(const mode of [CharMode.slide,CharMode.swim,CharMode.diveRecover]) {
+      driver.observeTick(tick++,[withIk(view(mode))])
+      assert.deepEqual(driver.pose(0)!.ik,{feet:false,hands:false,look:false})
+    }
+  }finally{driver.dispose()}
 })

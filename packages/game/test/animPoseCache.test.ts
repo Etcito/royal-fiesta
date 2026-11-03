@@ -105,3 +105,17 @@ test('different world targets do not share IK; translated/rotated equivalent tar
     driver.dispose()
   }
 })
+
+test('same-speed belly turns split the pose cache by direction', async () => {
+  const cached=await load(true), reference=await load(false)
+  try {
+    for(let tick=0;tick<24;tick++) {
+      const angle=Math.max(0,tick-8)*0.06
+      const actors=[-1,1].map((sign,id)=>({...character(id),mode:3,ik:undefined,
+        vel:{x:sign*Math.sin(angle)*5,y:0,z:Math.cos(angle)*5}}))
+      cached.observeTick(tick,actors);reference.observeTick(tick,actors)
+      for(const actor of actors)near(cached.pose(actor.id)!.skin,reference.pose(actor.id)!.skin)
+    }
+    assert.notDeepEqual(cached.pose(0)!.skin,cached.pose(1)!.skin)
+  }finally{cached.dispose();reference.dispose()}
+})

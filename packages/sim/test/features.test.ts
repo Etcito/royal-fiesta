@@ -149,7 +149,7 @@ test('FEATURE_KINDS keeps marker first and registers the M4, M5 and M6 kinds', (
   assert.deepEqual(Object.keys(FEATURE_KINDS), [
     'marker', 'boostLane', 'launchPad', 'catchVolume', 'rollingLog', 'doorBank', 'swimVolume', 'carryItem',
     'tileField', 'hexField', 'memoryTiles', 'annulus', 'sweep', 'risingKill',
-    'ball', 'goal', 'collectible', 'bank', 'captureZone', 'tailSet', 'crown',
+    'ball', 'goal', 'collectible', 'bank', 'captureZone', 'tailSet', 'crown', 'road',
   ])
 })
 

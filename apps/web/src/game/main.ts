@@ -1,3 +1,4 @@
+import { localBotCount } from './localBots.ts'
 import startSeasonJson from '../../../../courses/season.json?raw'
 import { DEFAULT_LOBBY_BOTS } from '@royal-fiesta/game/hub/hubBots'
 import { playerLook } from '../play/playerLook.ts'
@@ -108,6 +109,7 @@ import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { BootOptions, TourGame } from './uiTour.ts'
 
 interface Query {
+  bots: number | null
   course: string | null
   // ?community=<level id>: a published community level (docs/community-levels.md), played as ?course= of its course.
   community: string | null
@@ -153,6 +155,7 @@ function intParam(q: URLSearchParams, key: string, def: number, min: number, max
 // content= is read by pickContent itself.
 function parseQuery(search: string): Query {
   const q = new URLSearchParams(search)
+  const bots = localBotCount(q)
   const course = q.get('course')
   if (course !== null && course.length === 0) refuse('query', 'course', 'is empty; pass a course id of the content playlist')
   const community = q.get('community')
@@ -180,7 +183,7 @@ function parseQuery(search: string): Query {
   if (course !== null && server !== null) refuse('query', 'course', 'plays in-page with bots; drop ?server= or ?course=')
   if (clients > 1 && server !== null) refuse('query', 'clients', `${clients} in-page clients use a LoopbackRelay; drop ?server= or ?clients=`)
   if (clients > 1 && course !== null) refuse('query', 'clients', `?course= plays one client with bots; drop ?clients= or ?course=`)
-  return { course, community, chash, server, hub, name, colour, lobbybots, party, clients, touch, wait, test }
+  return { bots, course, community, chash, server, hub, name, colour, lobbybots, party, clients, touch, wait, test }
 }
 
 // A coarse pointer (a phone or tablet) uses the on-screen controls; ?touch=1 asks for them on any device.
@@ -709,8 +712,9 @@ class LocalMode implements Mode {
     return this.presenter.listener()
   }
 
+  // Explicit bot rosters use the single-world show, including a pinned ?course= opening.
   private get startsShow(): boolean {
-    return this.c.q.server === null && this.c.q.clients === 1 && this.c.q.course === null
+    return this.c.q.server === null && this.c.q.clients === 1 && (this.c.q.course === null || this.c.q.bots !== null)
   }
 
   enqueue(): void {
@@ -2043,7 +2047,8 @@ class App {
     try {
       const show = await ShowMode.create({
         R: loaded.R, views: this.views, orbit: this.orbit, look,
-        seats: intParam(new URLSearchParams(this.search), new URLSearchParams(this.search).has('bots') ? 'bots' : 'seats', this.env.showSeats ?? 12, 2, 60),
+        seats: q.bots ?? intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60),
+        openingCourse: q.bots !== null ? q.course ?? undefined : undefined,
         seed: Date.now(), localName: q.name,
         voteMs: q.test ? TEST_VOTE_MS : undefined,
         intermissionMs: q.test ? TEST_INTERMISSION_MS : undefined,

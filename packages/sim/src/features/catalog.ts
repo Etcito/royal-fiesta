@@ -1,3 +1,4 @@
+import { roadFeature } from './road.ts'
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { FeatureSpec, ResolvedCourse } from '../course.ts'
 import type { Vec3 } from '../vec.ts'
@@ -145,6 +146,7 @@ export const FEATURE_KINDS: Readonly<Record<string, FeatureFactory>> = {
   captureZone: captureZoneFeature,
   tailSet: tailSetFeature,
   crown: crownFeature,
+  road: roadFeature,
 }
 
 export function createFeatures(course: ResolvedCourse, path: string): CourseFeature[] {

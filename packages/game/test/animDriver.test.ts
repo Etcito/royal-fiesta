@@ -68,7 +68,7 @@ test('observed ticks step independent real graphs once; pose reads and tick gaps
       const before = structuredClone([a, b])
       driver.observeTick(ticks[i], [a, b])
       const expected = graph.step(state, { ...mapParams(a, mem) }), pose = driver.pose(1)!
-      if (a.mode === CharMode.grabbing) {
+      if (i >= 2) { // Dive and its recovery now retain the action pose while it fades.
         assert.notDeepEqual(pose.skin, expected.skin)
         assert(pose.skin.every(Number.isFinite))
       } else near(pose.skin, expected.skin)

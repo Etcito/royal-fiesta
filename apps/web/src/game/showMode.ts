@@ -32,6 +32,7 @@ export interface ShowModeOptions {
   /** The same camera that receives the App look inputs. */
   orbit?: OrbitCamera
   views: HTMLElement
+  openingCourse?: string
   seats: number
   seed: number
   localName: string
@@ -80,7 +81,7 @@ export class ShowMode {
       const seats = Array.from({ length: options.seats }, (_, seat) => seat)
       mode.memories.push(...seats.map(() => newModeBotMemory()))
       mode.full = createOfflineFullMatch(options.R, {
-        seats: options.seats, seed: options.seed,
+        seats: options.seats, seed: options.seed, openingCourse: options.openingCourse,
         courses: content.courses, zones: content.zones, season: content.season, profile: 'sprint',
         voteMs: options.voteMs ?? DEFAULT_VOTE_MS,
         intermissionMs: options.intermissionMs ?? DEFAULT_INTERMISSION_MS,

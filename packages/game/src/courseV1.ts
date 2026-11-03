@@ -1,3 +1,4 @@
+import { validateRoad } from '@royal-fiesta/sim/road'
 import { sceneCamera } from './sceneCamera.ts'
 // Course v1 (S13): the v0 course plus world, decor, environment and podium, with S12 asset ids.
 // The sim course is built by the v0 loader on a v0-shaped copy with explicit colliders (the course
@@ -395,6 +396,12 @@ export async function loadCourseV1(json: unknown, path: string, assets: GameAsse
       simObstacles.push({ ...o, asset: aid, ...(surface === undefined ? {} : { surface }) })
     }
   })
+  for (const f of features) if (f.kind === 'road') {
+    const sweep = validateRoad(f.params)
+    simObstacles.push({ id: f.id, asset: '', t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 }, s: { x: 1, y: 1, z: 1 },
+      friction: sweep.surface === 'ice' ? .02 : .6, surface: sweep.surface, motion: { kind: 'static' },
+      sweep, colliders: [] })
+  }
   const noBlock = v1.mechanisms === undefined || v1.mechanisms === null
   const mechanisms: MechanismSpec | null = items.length === 0 && noBlock ? null : parseCourseMechanisms(v1.mechanisms, items, path)
   const sounds: SoundSpec[] = parseCourseSounds(v1.sounds, mechanisms ?? emptyMechanisms(), obstacles.map(o => o.id), path)

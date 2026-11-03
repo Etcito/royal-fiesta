@@ -1,0 +1,560 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "id": "s1-slide-race",
+  "name": "SLIDE-RACE · Glacier Run",
+  "world": "ice",
+  "kind": "race",
+  "queuePad": null,
+  "decor": [{"id":"finish-arch","asset":"ice.slide-gate","t":[0,0,282],"r":[0,0,0,1],"s":[2,1,1]}],
+  "environment": null,
+  "podium": null,
+  "profiles": [
+    "standard",
+    "sprint"
+  ],
+  "path": [
+    {
+      "p": [
+        0,
+        31,
+        20
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        8,
+        26,
+        55
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        18,
+        20,
+        90
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        18,
+        19,
+        100
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        18,
+        18.5,
+        102
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        18,
+        16,
+        125
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        5,
+        12,
+        150
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        -8,
+        10,
+        165
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        -8,
+        11,
+        176
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        -8,
+        9.5,
+        178
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        -8,
+        7,
+        200
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        0,
+        4,
+        235
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        0,
+        1,
+        275
+      ],
+      "jump": false,
+      "dive": true
+    },
+    {
+      "p": [
+        0,
+        1,
+        290
+      ],
+      "jump": false,
+      "dive": true
+    }
+  ],
+  "regions": [],
+  "timeLimitS": 120,
+  "features": [
+    {
+      "id": "glacier-entry",
+      "kind": "road",
+      "path": [
+        {
+          "p": [
+            0,
+            32,
+            -8
+          ]
+        },
+        {
+          "p": [
+            0,
+            30,
+            20
+          ]
+        },
+        {
+          "p": [
+            8,
+            25,
+            55
+          ]
+        },
+        {
+          "p": [
+            18,
+            19,
+            90
+          ]
+        },
+        {
+          "p": [
+            18,
+            18,
+            100
+          ]
+        }
+      ],
+      "profile": [
+        [
+          -0.5,
+          0.65
+        ],
+        [
+          -0.4,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0.4,
+          0
+        ],
+        [
+          0.5,
+          0.65
+        ]
+      ],
+      "width": 14,
+      "banking": [
+        0,
+        0,
+        -8,
+        -10,
+        0
+      ],
+      "surface": "ice",
+      "material": "#89d9f2"
+    },
+    {
+      "id": "blue-bend",
+      "kind": "road",
+      "path": [
+        {
+          "p": [
+            18,
+            17.5,
+            102
+          ]
+        },
+        {
+          "p": [
+            18,
+            15,
+            125
+          ]
+        },
+        {
+          "p": [
+            5,
+            11,
+            150
+          ]
+        },
+        {
+          "p": [
+            -8,
+            9,
+            165
+          ]
+        },
+        {
+          "p": [
+            -8,
+            10,
+            176
+          ]
+        }
+      ],
+      "profile": [
+        [
+          -0.5,
+          0.65
+        ],
+        [
+          -0.4,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0.4,
+          0
+        ],
+        [
+          0.5,
+          0.65
+        ]
+      ],
+      "width": 14,
+      "banking": [
+        0,
+        8,
+        12,
+        0,
+        0
+      ],
+      "surface": "ice",
+      "material": "#89d9f2"
+    },
+    {
+      "id": "finish-chute",
+      "kind": "road",
+      "path": [
+        {
+          "p": [
+            -8,
+            8.5,
+            178
+          ]
+        },
+        {
+          "p": [
+            -8,
+            6,
+            200
+          ]
+        },
+        {
+          "p": [
+            0,
+            3,
+            235
+          ]
+        },
+        {
+          "p": [
+            0,
+            0,
+            275
+          ]
+        },
+        {
+          "p": [
+            0,
+            0,
+            290
+          ]
+        }
+      ],
+      "profile": [
+        [
+          -0.5,
+          0.65
+        ],
+        [
+          -0.4,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0.4,
+          0
+        ],
+        [
+          0.5,
+          0.65
+        ]
+      ],
+      "width": 14,
+      "banking": [
+        0,
+        -8,
+        0,
+        0,
+        0
+      ],
+      "surface": "ice",
+      "material": "#89d9f2"
+    }
+  ],
+  "spawns": [
+    {
+      "t": [
+        -2.25,
+        33,
+        -3
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -0.75,
+        33,
+        -3
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        0.75,
+        33,
+        -3
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        2.25,
+        33,
+        -3
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -2.25,
+        33,
+        -1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        -0.75,
+        33,
+        -1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        0.75,
+        33,
+        -1
+      ],
+      "yawDeg": 0
+    },
+    {
+      "t": [
+        2.25,
+        33,
+        -1
+      ],
+      "yawDeg": 0
+    }
+  ],
+  "checkpoints": [
+    {
+      "center": [
+        8,
+        26.5,
+        55
+      ],
+      "half": [
+        7,
+        3,
+        1.5
+      ],
+      "respawn": {
+        "t": [
+          8,
+          26,
+          57
+        ],
+        "yawDeg": 0
+      }
+    },
+    {
+      "center": [
+        18,
+        16.5,
+        125
+      ],
+      "half": [
+        7,
+        3,
+        1.5
+      ],
+      "respawn": {
+        "t": [
+          18,
+          16,
+          127
+        ],
+        "yawDeg": 0
+      }
+    },
+    {
+      "center": [
+        -8,
+        7.5,
+        200
+      ],
+      "half": [
+        7,
+        3,
+        1.5
+      ],
+      "respawn": {
+        "t": [
+          -8,
+          7,
+          202
+        ],
+        "yawDeg": 0
+      }
+    }
+  ],
+  "finish": {
+    "center": [
+      0,
+      2,
+      282
+    ],
+    "half": [
+      7,
+      4,
+      2
+    ]
+  },
+  "killPlaneY": -20,
+  "obstacles": [
+    {
+      "id": "ice-pillar-left",
+      "asset": "ice.wall-block",
+      "t": [
+        1,
+        27,
+        55
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        0.5,
+        1,
+        1
+      ],
+      "motion": {
+        "kind": "static"
+      },
+      "friction": 0.02,
+      "colliders": null
+    },
+    {
+      "id": "ice-pillar-right",
+      "asset": "ice.wall-block",
+      "t": [
+        12,
+        12,
+        150
+      ],
+      "r": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "s": [
+        0.5,
+        1,
+        1
+      ],
+      "motion": {
+        "kind": "static"
+      },
+      "friction": 0.02,
+      "colliders": null
+    }
+  ]
+}

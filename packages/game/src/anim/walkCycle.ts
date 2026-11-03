@@ -23,7 +23,7 @@ export interface WalkPose {
   footDown: -1 | 0 | 1
 }
 
-export interface WalkBones { root: number; flipperL: number; flipperR: number; legL: number; legR: number; head: number }
+export interface WalkBones { root: number; flipperL: number; flipperR: number; legL: number; legR: number; head: number; footL: number; footR: number }
 
 const TAU = Math.PI * 2
 const AIR_DECAY = 6
@@ -90,7 +90,7 @@ export function restPose(out?: WalkPose): WalkPose {
   return walkPose(newWalkState(), out)
 }
 
-const WALK_BONE_NAMES = ['root', 'upper.l', 'upper.r', 'upperLeg.l', 'upperLeg.r', 'head'] as const
+const WALK_BONE_NAMES = ['root', 'upper.l', 'upper.r', 'upperLeg.l', 'upperLeg.r', 'head', 'foot.l', 'foot.r'] as const
 
 export function walkBones(boneNames: readonly string[]): WalkBones {
   const index = new Map<string, number>()
@@ -100,8 +100,8 @@ export function walkBones(boneNames: readonly string[]): WalkBones {
     if (i === undefined) refuse('anim', 'walkBones', `bone '${name}' missing; the rig must list all walk bones`)
     return i
   }
-  const [root, flipperL, flipperR, legL, legR, head] = WALK_BONE_NAMES.map(find)
-  return { root, flipperL, flipperR, legL, legR, head }
+  const [root, flipperL, flipperR, legL, legR, head, footL, footR] = WALK_BONE_NAMES.map(find)
+  return { root, flipperL, flipperR, legL, legR, head, footL, footR }
 }
 
 type Quat = [number, number, number, number]

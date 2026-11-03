@@ -896,6 +896,60 @@
         "min": 0.25,
         "max": 3
       }
+    },
+    "road": {
+      "path": {
+        "type": "list",
+        "items": {
+          "type": "object",
+          "fields": {
+            "p": {
+              "type": "vec3"
+            },
+            "in": {
+              "type": "vec3"
+            },
+            "out": {
+              "type": "vec3"
+            }
+          }
+        }
+      },
+      "profile": {
+        "type": "list",
+        "items": {
+          "type": "list",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "width": {
+        "type": "number",
+        "min": 0.1,
+        "max": 100
+      },
+      "banking": {
+        "type": "list",
+        "items": {
+          "type": "number",
+          "min": -75,
+          "max": 75
+        }
+      },
+      "surface": {
+        "type": "enum",
+        "enum": [
+          "normal",
+          "ice"
+        ]
+      },
+      "material": {
+        "type": "string"
+      },
+      "closed": {
+        "type": "boolean"
+      }
     }
   },
   "play": {

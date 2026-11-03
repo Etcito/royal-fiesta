@@ -1,3 +1,4 @@
+import { roadMesh } from '../road.ts'
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { BodyId } from '@gamesaloon/rollback-rapier'
 import { MAX_OBSTACLES } from '../course.ts'
@@ -85,6 +86,11 @@ export class ObstacleSystem implements SimSystem<unknown> {
           .setCollisionGroups(word)
           .setFriction(o.friction)
           .setRestitution(0))
+      }
+      if (o.sweep) {
+        const ribbon = roadMesh(o.sweep)
+        cols.push(R.ColliderDesc.trimesh(ribbon.positions, ribbon.indices)
+          .setCollisionGroups(word).setFriction(o.friction).setRestitution(0))
       }
       bodies.push(ctx.physics.createBody(desc, cols))
     }

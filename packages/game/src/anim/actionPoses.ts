@@ -3,6 +3,18 @@ import { CHAR, CharMode, CarryKind } from '@royal-fiesta/sim/character/constants
 import type { PoseLayer } from './layers.ts'
 import { walkBones, type WalkBones } from './walkCycle.ts'
 
+const clamp = (v: number) => Math.max(0, Math.min(1, v))
+const ease = (v: number) => { const t = clamp(v); return t*t*(3-2*t) }
+
+/** Wide recovery, forward catch, power sweep, then a held streamlined glide. */
+export function strokeShape(mode: number, timer: number) {
+  const duration = mode === CharMode.swim ? CHAR.swim.strokeCooldownTicks : CHAR.slide.strokeCooldownTicks
+  const phase = timer > 0 ? clamp(1 - timer / duration) : 1
+  const reach = ease(phase / 0.3) * (1 - ease((phase - 0.36) / 0.4))
+  const power = Math.sin(Math.PI * clamp((phase - 0.36) / 0.4))
+  return { reach, power }
+}
+
 export function actionPose(mode: number, carry: number, strokeTimer: number, out: Float32Array, bones: WalkBones): void {
   out.fill(0)
   for (let i = 3; i < out.length; i += 4) out[i] = 1
@@ -14,18 +26,16 @@ export function actionPose(mode: number, carry: number, strokeTimer: number, out
       cx*cy*sz + sx*sy*cz, cx*cy*cz - sx*sy*sz], bone * 4)
   }
   const sliding = mode === CharMode.slide, swimming = mode === CharMode.swim
-  const phase = sliding ? 1 - strokeTimer / CHAR.slide.strokeCooldownTicks :
-    swimming ? 1 - strokeTimer / CHAR.swim.strokeCooldownTicks : 0
-  if (sliding || swimming) {
-    // Swim follows a gentler half-sine sweep; slide makes a full butterfly recovery.
-    const sweep = strokeTimer > 0 ? Math.sin(Math.PI * phase) : 0
-    const reach = strokeTimer > 0 ? Math.sin(2 * Math.PI * phase) : 0
-    rotate(bones.root, sliding ? Math.PI / 2 : 1.05, 0, 0)
-    rotate(bones.head, -0.45, 0, 0)
-    rotate(bones.legL, -0.2, 0, 0); rotate(bones.legR, -0.2, 0, 0)
-    const down = (sliding ? 1.15 : 0.85) - sweep * (sliding ? 1.8 : 1.1)
-    rotate(bones.flipperL, reach * (sliding ? 1 : 0.5), 0, -down)
-    rotate(bones.flipperR, reach * (sliding ? 1 : 0.5), 0, down)
+  if (sliding || swimming || mode === CharMode.dive || mode === CharMode.diveRecover) {
+    const { reach, power } = strokeShape(mode, sliding || swimming ? strokeTimer : 0)
+    // +Y of the upright rig becomes forward; local -Z becomes up on the belly.
+    rotate(bones.root, sliding || mode === CharMode.diveRecover ? 1.48 - power * 0.09 : swimming ? 1.3 : 1.4, 0, 0)
+    rotate(bones.head, -1.25 + power * 0.06, 0, 0)
+    rotate(bones.footL, 1.15, 0, 0); rotate(bones.footR, 1.15, 0, 0)
+    rotate(bones.legL, 0.18, 0, -0.08); rotate(bones.legR, 0.18, 0, 0.08)
+    const sweep = -1.43 + reach * 2.68
+    rotate(bones.flipperL, 0, 0.24 + reach * 0.08, sweep)
+    rotate(bones.flipperR, 0, -0.24 - reach * 0.08, -sweep)
   }
   if (carry !== CarryKind.none || mode === CharMode.grabbing) {
     const holding = carry !== CarryKind.none
@@ -40,19 +50,38 @@ export const ACTION_LAYER: PoseLayer = {
   create(names) {
     const bones = walkBones(names), target = new Float32Array(names.length * 4)
     const affected = Object.values(bones)
-    let ramp = 0
+    let ramp = 0, bellyWeight = 0, impact = 0, previousMode = -1
+    let prevX = 0, prevZ = 0, bank = 0, power = 0, load = 0
+    let belly = false, contact = 0
     return {
       observe(obs) {
-        const active = obs.mode === CharMode.slide || obs.mode === CharMode.swim ||
+        belly = obs.mode === CharMode.slide || obs.mode === CharMode.swim ||
+          obs.mode === CharMode.dive || obs.mode === CharMode.diveRecover
+        const active = belly ||
           obs.mode === CharMode.grabbing || (obs.carry ?? 0) !== CarryKind.none
-        ramp = Math.max(0, Math.min(6, ramp + (active ? 1 : -1)))
+        ramp = Math.max(0, Math.min(6, ramp + (active ? 1 : bellyWeight > 0 ? -0.5 : -1)))
+        bellyWeight = Math.max(0, Math.min(1, bellyWeight + (belly ? 1/6 : -1/12)))
+        const onBelly = obs.mode === CharMode.slide || obs.mode === CharMode.diveRecover
+        contact = Math.max(0, Math.min(1, contact + (onBelly ? 1/6 : -1/12)))
+        impact = obs.mode === CharMode.slide && previousMode === CharMode.dive ? 1 : Math.max(0, impact - 1/10)
+        previousMode = obs.mode
+        const speed = Math.hypot(obs.vel.x, obs.vel.z)
+        const x = speed > 0.5 ? obs.vel.x / speed : prevX
+        const z = speed > 0.5 ? obs.vel.z / speed : prevZ
+        const turn = Math.atan2(prevZ*x - prevX*z, prevX*x + prevZ*z)
+        bank += (Math.max(-0.22, Math.min(0.22, -turn*4)) - bank) * 0.25
+        prevX = x; prevZ = z
+        const duration = obs.mode === CharMode.swim ? CHAR.swim.strokeCooldownTicks : CHAR.slide.strokeCooldownTicks
+        const phase = (obs.strokeTimer ?? 0) > 0 ? clamp(1 - obs.strokeTimer! / duration) : 1
+        load = belly ? Math.sin(Math.PI * clamp(phase / 0.3)) : load
+        power = belly ? strokeShape(obs.mode, obs.strokeTimer ?? 0).power : power
         // Retain the last target while fading back to the graph.
         if (active) actionPose(obs.mode, obs.carry ?? 0, obs.strokeTimer ?? 0, target, bones)
       },
       apply(local) {
         if (!ramp) return
         for (const bone of affected) {
-          const q = bone * 4, o = bone * 10 + 3, weight = ramp / 6
+          const q = bone * 4, o = bone * 10 + 3, weight = ease(ramp / 6)
           let dot = 0
           for (let i = 0; i < 4; i++) dot += local[o+i] * target[q+i]
           const sign = dot < 0 ? -1 : 1
@@ -64,8 +93,24 @@ export const ACTION_LAYER: PoseLayer = {
           norm = Math.sqrt(norm)
           for (let i = 0; i < 4; i++) local[o+i] /= norm
         }
+        // Lower the visible body within the unchanged upright collision capsule to touch the ice.
+        // Root local Y is travel, Z is thickness after the prone rotation.
+        const r = bones.root * 10, w = ease(bellyWeight)
+        local[r+1] += (-0.42 - impact*0.045 - local[r+1]) * ease(contact)
+        local[r+2] += (power * 0.16 - load * 0.035) * w
+        local[r+7] *= 1 + (impact*0.08 - power*0.065 + load*0.035)*w
+        local[r+8] *= 1 + (power*0.24 - load*0.08 + impact*0.05)*w
+        local[r+9] *= 1 - (power*0.12 + impact*0.14 - load*0.035)*w
+        // Bank about the prone body's long axis (local Y).
+        const h = bank*w/2, sy = Math.sin(h), cy = Math.cos(h)
+        const x = local[r+3], y = local[r+4], z = local[r+5], q = local[r+6]
+        local[r+3] = x*cy-z*sy; local[r+4] = y*cy+q*sy
+        local[r+5] = z*cy+x*sy; local[r+6] = q*cy-y*sy
       },
-      reset() { ramp = 0; target.fill(0) },
+      reset() {
+        ramp = 0; bellyWeight = 0; impact = 0; previousMode = -1
+        prevX = 0; prevZ = 0; bank = 0; power = 0; load = 0; belly = false; contact = 0; target.fill(0)
+      },
     }
   },
 }

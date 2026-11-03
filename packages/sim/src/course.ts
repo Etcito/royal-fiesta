@@ -46,6 +46,7 @@ export interface ObstacleSpec {
   friction: number
   colliders: ColliderSpec[]
   motion: Motion
+  sweep?: import('./road.ts').RoadData
   surface?: Surface
 }
 

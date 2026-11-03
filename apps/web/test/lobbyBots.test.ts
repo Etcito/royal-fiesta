@@ -10,6 +10,7 @@ import { DEFAULT_LOBBY_BOTS } from '@royal-fiesta/game/hub/hubBots'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import { neutralInput } from '@royal-fiesta/sim/input'
 import { refuse, RefusalError } from '@royal-fiesta/sim/refusal'
+import { localBotCount } from '../src/game/localBots.ts'
 import { HubView } from '../src/play/hubView.ts'
 
 // Execute the page's query parser without importing its Vite-only UI documents.
@@ -17,9 +18,12 @@ test('offline page defaults to one lobby bot; URL accepts every integer 0..8', (
   const source = readFileSync(new URL('../src/game/main.ts', import.meta.url), 'utf8')
   const intParam = source.match(/function intParam\([\s\S]*?\n\}/)![0]
   const parseQuery = source.match(/function parseQuery\([\s\S]*?\n\}/)![0]
-  const parse = new Function('refuse', 'DEFAULT_LOBBY_BOTS', 'LOCAL_LOBBY_WAIT_LOCAL_S', 'LOCAL_LOBBY_WAIT_S',
-    stripTypeScriptTypes(intParam + '\n' + parseQuery) + '; return parseQuery')(refuse, DEFAULT_LOBBY_BOTS, 2, 60)
+  const parse = new Function('localBotCount', 'refuse', 'DEFAULT_LOBBY_BOTS', 'LOCAL_LOBBY_WAIT_LOCAL_S', 'LOCAL_LOBBY_WAIT_S',
+    stripTypeScriptTypes(intParam + '\n' + parseQuery) + '; return parseQuery')(localBotCount, refuse, DEFAULT_LOBBY_BOTS, 2, 60)
   assert.equal(parse('').lobbybots, 1)
+  assert.equal(parse('').bots, null)
+  assert.equal(parse('?course=s1-c1-diamond-citadel&bots=60').bots, 60)
+  assert.equal(parse('?bot=60').bots, 60)
   for (let n = 0; n <= 8; n++) assert.equal(parse(`?lobbybots=${n}`).lobbybots, n)
   for (const value of ['-1', '9', '1.5', 'abc', '']) assert.throws(() => parse(`?lobbybots=${value}`), RefusalError)
 })

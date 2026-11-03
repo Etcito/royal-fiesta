@@ -176,7 +176,9 @@ export function raceBrain(b: BrainInput, skill: BotSkill, mem: BrainMemory, rng:
   let jump = b.obstacleAhead || mem.stuckTicks > STUCK_TICKS || (node.jump && nodeNear)
   if (mem.stuckTicks > STUCK_TICKS && (tick & 1) === 0) mem.stuckTicks = 0
 
-  let dive = node.dive && nodeNear
+  // Sweep races use repeated belly strokes along the authored route.
+  const roadRace = b.course.obstacles.some(o => o.sweep !== undefined)
+  let dive = roadRace || (node.dive && nodeNear)
   const fin = b.course.finish
   if (!dive && fin !== null) {
     const fx = Math.max(0, Math.abs(b.pos.x - fin.center.x) - fin.half.x)
@@ -395,17 +397,18 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
   const rule = matches.find(r => r.phase === null || (nearby.length ? nearby.some(o => inWindow(o, observed, r.phase!)) : observed >= r.phase.from && observed <= r.phase.to))
   const hanging = b.mode === CharMode.grabbing
   const canJump = b.grounded && !hanging && b.mode !== CharMode.dive && b.mode !== CharMode.diveRecover && b.mode !== CharMode.stunned
-  const canDive = b.mode === CharMode.ground || b.mode === CharMode.air
+  const roadRace = b.course.obstacles.some(o => o.sweep !== undefined)
+  const canDive = b.mode === CharMode.ground || b.mode === CharMode.air || (roadRace && b.mode === CharMode.slide)
   const feet = b.pos.y - CHAR.halfHeight - CHAR.radius
   const scan = scanAhead(groundBoxes(b.course, observed), feet, b.pos.x, b.pos.z, ux, uz)
   const climb = node.p.y > b.pos.y + 0.4 || (b.obstacleAhead && scan.ledgeTop !== -Infinity)
   let jump = (rule?.action === 'jump' || (!b.physicsTraversal && node.jump && dist <= JUMP_DIST)) && canJump
-  let dive = (rule?.action === 'dive' || (node.dive && dist <= JUMP_DIST)) && canDive
+  let dive = (roadRace || rule?.action === 'dive' || (node.dive && dist <= JUMP_DIST)) && canDive
   let grab = rule?.action === 'grab' || hanging
   // The route geometry drives traversal independently of the matched action: a gap close
   // ahead is jumped, a reachable ledge is jumped at and caught while airborne, and a
   // see-saw in front is dived when no action already claims the tick.
-  if (!b.physicsTraversal && scan.gap && canJump) jump = true
+  if (!roadRace && !b.physicsTraversal && scan.gap && canJump) jump = true
   if (climb) {
     if (canJump && scan.ledgeTop !== -Infinity) jump = true
     else if (!b.grounded && scan.ledgeTop !== -Infinity && scan.ledgeDist <= LEDGE_NEAR) grab = true

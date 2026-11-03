@@ -79,6 +79,10 @@ export class NullRenderPort implements SkinnedRenderPort {
     this.target = target
   }
 
+  registerRoad(name: string, _sweep: import('@royal-fiesta/sim/road').RoadData): number {
+    return this.registerAsset(name, { id: name } as PrimsAsset)
+  }
+
   registerAsset(name: string, _asset: PrimsAsset): number {
     this.calls.registerAsset++
     let h = this.assets.get(name)

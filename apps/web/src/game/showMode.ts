@@ -22,7 +22,6 @@ import type { ZoneNetScene } from '../zone/zoneNetScene.ts'
 import { ShowDirector } from './showDirector.ts'
 import type { ShowFrame } from './showDirector.ts'
 import { loadShowContent } from './showContent.ts'
-import type { ShowContent } from './showContent.ts'
 import { prepareCourse } from '../render/pipelineGate.ts'
 import type { RoundStage } from '../render/pipelineGate.ts'
 
@@ -69,7 +68,6 @@ export class ShowMode {
   private sounds: string[] = []
   private background: boolean
   private look: WornLook | null
-  private content: ShowContent | null = null
 
   private constructor(options: ShowModeOptions) {
     this.options = options
@@ -93,7 +91,6 @@ export class ShowMode {
         refuse('game-web', 'showMode.seats', 'supply an integer from 2 to 60')
       }
       const content = await checkAwait('show course and zone content', () => loadShowContent('sprint'))
-      mode.content = content
       const seats = Array.from({ length: options.seats }, (_, seat) => seat)
       mode.memories.push(...seats.map(() => newModeBotMemory()))
       mode.full = createOfflineFullMatch(options.R, {
@@ -112,51 +109,17 @@ export class ShowMode {
   }
 
   /**
-   * Prepares the first round behind the start screen. A first round on a course nobody votes for loads now (its port,
-   * scene and warm-up draw); the director holds its countdown until it is ready, as for any round. A first round put to
-   * the vote (12 seats open on three candidates) loads each candidate's content and draws every rigid asset of it once
-   * on a port of its own, one asset at a time: the round's own port, created after the vote, then finds the content
-   * loaded and its pipelines in the browser's shader cache. False when there is nothing to prepare.
+   * Prepares the show behind the start screen: its content is loaded and its director is on its first round. A first
+   * round on a course nobody votes for also loads now (its port, scene and warm-up draw); the director holds its
+   * countdown until it is ready, as for any round. A first round put to the vote (12 seats open on three candidates)
+   * loads after the vote, on a port of its own: pipelines compiled ahead on another port do not carry over (measured
+   * 2026-11-04: pipelines already compiled for the three candidates on their own ports took a median 4.3 s on the round's
+   * port, fresh ones 3.9 s). False when the show failed.
    */
   preload(): boolean {
     if (this.disposed || this.error !== null || this.full === null) return false
-    if (this.activeRound() !== null) {
-      this.loadRound()
-      return true
-    }
-    const candidates = this.full.candidates
-    if (candidates === null || candidates.length === 0 || this.content === null) return false
-    void this.warmCandidates(candidates, this.content)
+    if (this.activeRound() !== null) this.loadRound()
     return true
-  }
-
-  private async warmCandidates(maps: readonly string[], content: ShowContent): Promise<void> {
-    const waiting = (): boolean => !this.disposed && this.error === null && this.background
-    for (const map of maps) {
-      const index = content.season.find(entry => entry.id === map)?.course
-      const course = index === undefined ? undefined : content.courses[index]
-      if (course === undefined || !waiting()) continue
-      try {
-        const zone = await zoneContent('sprint', course.id)
-        if (!waiting()) return
-        const canvas = this.options.views.ownerDocument.createElement('canvas')
-        canvas.width = this.canvas.width
-        canvas.height = this.canvas.height
-        const port = await zone.createPort({ canvas, width: canvas.width, height: canvas.height,
-          viewports: [{ x: 0, y: 0, width: canvas.width, height: canvas.height }] })
-        try {
-          // The course environment and decor, as the round sets them: its lit variants depend on them.
-          zone.dressing.enter(port, course.id)
-          const assets = [...new Set(course.obstacles.map(obstacle => obstacle.asset))]
-          await prepareCourse(port, course.id, { oneAtATime: true, assets, cancelled: () => !waiting(),
-            register: asset => { port.registerAsset(asset, zone.assets(asset)) } })
-        } finally {
-          port.dispose()
-        }
-      } catch (error) {
-        console.warn(`[show] preparing candidate ${course.id} failed:`, error instanceof Error ? error.message : String(error))
-      }
-    }
   }
 
   /** True while this show was sized for `views` as it is now (a preloaded show is discarded when the page resized). */

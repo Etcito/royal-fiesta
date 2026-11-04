@@ -96,7 +96,7 @@ test('local boot finishes pipeline warmup without animation callbacks, before ti
     presenter: { draw() { calls.push('draw round') } },
     hubLayer: { setVisible(on: boolean) { calls.push(`hub ${on}`) } },
     matchLayer: { setVisible(on: boolean) { calls.push(`round ${on}`) } },
-    hub: { tick: 0, state() { return {} }, emote() { return 0 } },
+    hub: { tick: 0, state() { return {} }, botViews() { return [] }, emote() { return 0 } },
     hubView: { update() { calls.push('draw hub') } },
     local: {},
   }

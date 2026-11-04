@@ -136,9 +136,12 @@ test('zoneMatch: 8 peers finish one round with zero desyncs and identical ledger
         const epoch = Math.floor(match.stats.tick / FIESTA_ZONE_TUNING.epochTicks)
         if (epoch > maxEpoch) maxEpoch = epoch
         // The session never disposes a state: the match frees dropped states and rebuild temporaries every frame,
-        // so a peer holds at most a current and a grace state per local domain, not one more world per epoch.
-        const bound = 2 * (match.domains.length + 1)
-        if (match.worlds > bound) worldLeak ??= `peer ${p} tick ${match.stats.tick}: ${match.worlds} worlds > ${bound}`
+        // so the live worlds are only the states the session holds (current, next built ahead of its start, grace),
+        // never one more world per epoch. Bounding by the listed domains failed at a split, where 1 listed domain had
+        // 3 next states and 2 grace states held (tick 391: 5 worlds, all held).
+        if (match.worlds > match.heldStates) {
+          worldLeak ??= `peer ${p} tick ${match.stats.tick}: ${match.worlds} worlds > ${match.heldStates} held states`
+        }
         if (epoch > 0) {
           for (const domain of match.domains) {
             if (domain.inner.spec.kind === 'seat') seatDomainIds.add(domain.inner.spec.id)

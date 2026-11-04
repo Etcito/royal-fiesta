@@ -28,6 +28,7 @@ export function createOfflineMatch(R: RapierModule, cfg: FiestaDomainFactoryConf
   return {
     stats, ledger, currentLedger: ledger, domains: [domain],
     get worlds() { return disposed ? 0 : 1 },
+    get heldStates() { return disposed ? 0 : 1 },
     confirmedHash: () => undefined,
     frame(dtS, sample) {
       if (disposed) return 0

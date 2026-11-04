@@ -63,6 +63,11 @@ export interface ZoneMatch {
   readonly domains: readonly FiestaDomain[]
   /** Rapier worlds alive now: only the states the session still holds, as current or as grace. */
   readonly worlds: number
+  /**
+   * Physics states the session holds now, current (including next states built ahead of their start tick) or grace:
+   * worlds never exceeds it once a frame ends, whatever the domain split.
+   */
+  readonly heldStates: number
   confirmedHash(domain: number, tick: number): number | undefined
   dispose(): void
 }
@@ -288,6 +293,13 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
       return domains
     },
     get worlds() { return worlds.size + temporaries.length },
+    get heldStates() {
+      const states = session as unknown as SessionStates
+      const sims = new Set<DomainSim<PlayerInput>>()
+      for (const d of states.list) if (d.sim instanceof FiestaDomain) sims.add(d.sim)
+      for (const d of states.grace) if (d.sim instanceof FiestaDomain) sims.add(d.sim)
+      return sims.size
+    },
     confirmedHash: (domain, tick) => session.confirmedHash(domain, tick),
     dispose() {
       if (disposed) return

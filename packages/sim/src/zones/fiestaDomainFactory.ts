@@ -4,7 +4,7 @@ import { mergeEntityStreams, RapierDomainFactory } from '@gamesaloon/rollback-ra
 import type {
   DomainEntityBuilder, DomainJointBuilder, KinematicPart, RapierDomainHooks, RapierModule,
 } from '@gamesaloon/rollback-rapier'
-import { CHAR } from '../character/constants.ts'
+import { CAPSULE } from '../character/capsule.ts'
 import { CharacterSystem, characterBody } from '../character/system.ts'
 import type { ResolvedCourse } from '../course.ts'
 import { G, groups } from '../groups.ts'
@@ -116,7 +116,7 @@ export function createFiestaDomainFactory(
     buildProxy() {
       return {
         body: R.RigidBodyDesc.kinematicPositionBased(),
-        colliders: [R.ColliderDesc.capsule(CHAR.halfHeight, CHAR.radius)
+        colliders: [R.ColliderDesc.capsule(CAPSULE.halfHeight, CAPSULE.radius)
           .setDensity(0)
           .setFriction(0)
           .setFrictionCombineRule(R.CoefficientCombineRule.Min)

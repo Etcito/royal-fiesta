@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import { CHAR, CharMode, ICE_GRIP_MU } from '../src/character/constants.ts'
+import { CAPSULE } from '../src/character/capsule.ts'
 import { CharacterSystem } from '../src/character/system.ts'
 import type { CharState } from '../src/character/system.ts'
 import type { ResolvedCourse, Surface } from '../src/course.ts'
@@ -20,7 +21,7 @@ const I = { x: 0, y: 0, z: 0, w: 1 }
 const REF = { item: 0, body: 0 }
 const NEUTRAL = neutralInput()
 const RUN = decodeInput(inputCode({ moveZ: 1 }), neutralInput())
-const STAND = CHAR.halfHeight + CHAR.radius
+const STAND = CAPSULE.stand
 function state(): CharState {
   return { pos: { ...O }, vel: { ...O }, facing: { x: 0, z: 1 }, mode: 0,
     grounded: false, groundObstacle: -1, groundBody: null, grabLever: -1,

@@ -6,7 +6,8 @@
 // seen; at 60 fps a frame is one tick, so this only happens to a sub-tick mode change.
 import { surfaceOf } from '@royal-fiesta/sim/course'
 import type { ColliderSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
-import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
+import { CharMode } from '@royal-fiesta/sim/character/constants'
+import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import { PlayerStatus } from '@royal-fiesta/sim/match/roundSystem'
@@ -245,7 +246,7 @@ function underFeet(colliders: readonly ColliderSpec[], p: Pose, feet: Vec3): boo
 // The surface an obstacle under the player's feet carries; ice and mud override the world.
 function surfaceUnder(sim: MatchSim, pos: Vec3): string {
   const count = sim.obstacleCount()
-  const feetY = pos.y - (CHAR.halfHeight + CHAR.radius)
+  const feetY = pos.y - CAPSULE.stand
   const feet: Vec3 = { x: pos.x, y: feetY, z: pos.z }
   for (let i = 0; i < count; i++) {
     const spec = sim.obstacleSpec(i)

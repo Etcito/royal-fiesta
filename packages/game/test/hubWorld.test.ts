@@ -13,6 +13,7 @@ import { emptyMechanisms } from '@royal-fiesta/sim/mechanismSpec'
 import type { BodySpec } from '@royal-fiesta/sim/mechanismSpec'
 import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
+import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
 import { neutralInput } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
@@ -421,7 +422,7 @@ test('offline hub bots respawn after falling below the kill plane', () => {
       hw.step(neutralInput())
       const bot = hw.state(newState(), 1)
       if (bot.teleportTick > 0) {
-        assert.ok(Math.abs(bot.pos.y - (CHAR.halfHeight + CHAR.radius + 0.01)) < 0.01)
+        assert.ok(Math.abs(bot.pos.y - (CAPSULE.stand + 0.01)) < 0.01)
         assert.ok(Math.hypot(bot.pos.x, bot.pos.z - 2.2) < 0.01)
         respawned = true
         break

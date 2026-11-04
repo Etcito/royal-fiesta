@@ -1,5 +1,6 @@
 import { orderedSeatIndices } from './seatState.ts'
-import { CHAR, CharMode } from '../character/constants.ts'
+import { CharMode } from '../character/constants.ts'
+import { CAPSULE } from '../character/capsule.ts'
 import { G, groups } from '../groups.ts'
 import { PlayerStatus } from '../match/roundSystem.ts'
 import { refuse } from '../refusal.ts'
@@ -82,7 +83,7 @@ export const doorBankFeature: FeatureFactory = (spec, path) => {
     preStep(ctx) {
       tick = ctx.tick
       dt = ctx.physics.dt
-      const margin = CHAR.radius + 0.1
+      const margin = CAPSULE.radius + 0.1
       for (const i of orderedSeatIndices(ctx.seats)) {
         if (ctx.seats.status(i) !== PlayerStatus.alive || ctx.seats.protectedNow(i)) continue
         ctx.seats.pos(i, pos)

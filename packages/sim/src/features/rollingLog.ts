@@ -2,6 +2,7 @@ import { orderedSeatIndices } from './seatState.ts'
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { RapierWorldSim } from '@gamesaloon/rollback-rapier'
 import { CHAR, CharMode } from '../character/constants.ts'
+import { CAPSULE } from '../character/capsule.ts'
 import { HALF_PI, datan2 } from '../detmath.ts'
 import { G, groups } from '../groups.ts'
 import { PlayerStatus } from '../match/roundSystem.ts'
@@ -126,7 +127,7 @@ class RollingLog implements CourseFeature {
     const centre = this.#pose.t
     const axis = this.#axis
     const half = this.#length / 2
-    const reach = this.#radius + CHAR.radius + 0.05
+    const reach = this.#radius + CAPSULE.radius + 0.05
     const reach2 = reach * reach
     for (const i of orderedSeatIndices(ctx.seats)) {
       if (ctx.seats.status(i) !== PlayerStatus.alive) continue

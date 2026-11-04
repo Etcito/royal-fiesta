@@ -1,5 +1,6 @@
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
-import { CHAR, CharMode } from '../character/constants.ts'
+import { CharMode } from '../character/constants.ts'
+import { CAPSULE } from '../character/capsule.ts'
 import type { FeatureSpec } from '../course.ts'
 import { PlayerStatus } from '../match/roundSystem.ts'
 import { quatIdentity, v3 } from '../vec.ts'
@@ -10,7 +11,7 @@ import { orderedSeatIndices } from './seatState.ts'
 
 export const COLLECTIBLE_KIND = 'collectible'
 
-const CONTACT_RADIUS = CHAR.radius + 0.5
+const CONTACT_RADIUS = CAPSULE.radius + 0.5
 const CONTACT_RADIUS2 = CONTACT_RADIUS * CONTACT_RADIUS
 const SPOT_ASSET = 'candy.floor-disc'
 

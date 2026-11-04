@@ -12,6 +12,7 @@ import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import type { BodyRef } from '@royal-fiesta/sim/mechanismSpec'
 import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
+import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
 import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
 import { applyWalkPose, restPose, walkBones, walkPose, newWalkState } from '../anim/walkCycle.ts'
 import { NO_DRESSING } from '../content.ts'
@@ -31,7 +32,7 @@ export function ikInputs(c: CharacterView, grounded: boolean): Pick<CharacterObs
     xf: { pos, facing: f },
     ik: {
       mode: c.mode,
-      ground: grounded ? { point: { x: pos.x, y: pos.y - CHAR.halfHeight - CHAR.radius, z: pos.z }, normal: { x: 0, y: 1, z: 0 } } : null,
+      ground: grounded ? { point: { x: pos.x, y: pos.y - CAPSULE.halfHeight - CAPSULE.radius, z: pos.z }, normal: { x: 0, y: 1, z: 0 } } : null,
       grab: c.mode === CharMode.grabbing ? ahead(CHAR.grabRange) : null,
       look: f.x === 0 && f.z === 0 ? null : ahead(10),
     },

@@ -4,6 +4,7 @@ import type { Vec3 } from '../vec.ts'
 import { quatConj, quatMul, quatRotate, v3 } from '../vec.ts'
 import { animationKind, trackPose } from '../mechanisms/animation.ts'
 import { CHAR } from '../character/constants.ts'
+import { CAPSULE } from '../character/capsule.ts'
 
 /** Predict free mechanism tracks with the same clock and pose composition as MechLogic.
  * Only wait before entry: stopping within a swept volume makes a crossing less safe.
@@ -38,9 +39,9 @@ export function crossingBlocked(course: ResolvedCourse, pos: Vec3, vel: Vec3,
         if (!('half' in c)) continue
         const p = quatRotate(quatConj(c.r, { x: 0, y: 0, z: 0, w: 1 }),
           v3(local.x - c.t.x, local.y - c.t.y, local.z - c.t.z), v3(0, 0, 0))
-        if (Math.abs(p.x) < c.half.x + CHAR.radius + 0.15 &&
-            Math.abs(p.z) < c.half.z + CHAR.radius + 0.15 &&
-            Math.abs(p.y) < c.half.y + CHAR.halfHeight + CHAR.radius) return true
+        if (Math.abs(p.x) < c.half.x + CAPSULE.radius + 0.15 &&
+            Math.abs(p.z) < c.half.z + CAPSULE.radius + 0.15 &&
+            Math.abs(p.y) < c.half.y + CAPSULE.stand) return true
       }
       speed = Math.min(CHAR.maxRun, speed + CHAR.groundAccel * 2 / 60)
       travel += speed * 2 / 60

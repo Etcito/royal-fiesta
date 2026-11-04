@@ -8,9 +8,8 @@ const maxRun = 8
 const turnRate: number = degToRad(720)
 const parkOrigin: Vec3 = v3(0, -500, 0)
 
+// Tuning only: the body size is penguin.body's saved capsule (CAPSULE, ./capsule.ts), edited in SDF Modeler.
 export const CHAR = {
-  radius: 0.4,
-  halfHeight: 0.45,
   mass: 60,
   maxRun,
   groundAccel: 60,

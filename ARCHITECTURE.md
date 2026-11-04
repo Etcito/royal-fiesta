@@ -1117,12 +1117,14 @@ export const inputCodec: InputCodec<PlayerInput>
 ## Module: character
 Owner: M3. Consumes: input, obstacles, detmath.
 
-Files: `packages/sim/src/character/constants.ts`, `packages/sim/src/character/controller.ts`, `packages/sim/src/character/system.ts`, `packages/sim/test/character.test.ts`.
+Files: `packages/sim/src/character/capsule.ts`, `packages/sim/src/character/constants.ts`, `packages/sim/src/character/controller.ts`, `packages/sim/src/character/system.ts`, `packages/sim/test/character.test.ts`, `packages/sim/test/characterCapsule.test.ts`.
 
-constants.ts:
+capsule.ts: the character body is penguin.body's saved game collider (`assets/common/penguin.body.asset.json` `collision`), edited in SDF Modeler (Collider section of the capsule part). The sim imports the asset file and reads its one collider at module load: `CAPSULE {radius, halfHeight, stand = radius + halfHeight}`, values at save, the same in every client. `parseCharacterCapsule` refuses anything but exactly one capsule centred on the asset origin, upright, radius > 0, halfHeight >= 0 (MAMA refuses the same at save, COLLISION_CHARACTER). The web build bundles only the asset's game data from that import (vite.config.ts `rfAssetData`). Everything that depends on the body size (the body collider, a domain proxy, spawn height, ground probe, bot reach and feet, feature margins, the IK ground point, footstep audio) reads CAPSULE.
+
+constants.ts (tuning only):
 ```ts
 export const CHAR: {
-  radius: 0.4; halfHeight: 0.45; mass: 60
+  mass: 60
   maxRun: 8; groundAccel: 60; groundBrake: 70; airAccel: 18; turnRate: number /* degToRad(720) per s */
   jumpSpeed: 7.5; coyoteTicks: 6; jumpBufferTicks: 6
   diveSpeed: 10.5; diveUp: 3.5; diveRecoverTicks: 24; diveRecoverBrake: 30
@@ -1171,7 +1173,7 @@ Bodies and placement:
 - `init` creates playerCount capsule bodies in index order:
   - dynamic, rotations locked, canSleep false, friction 0 (combine Min), restitution 0, group CHAR/(STATIC|MOVING|CHAR);
   - all parked at parkOrigin + (p*parkStep, 0, 0), with gravityScale 0 and collision groups 0.
-- `place` teleports to `at.t` + (0, halfHeight+radius+0.01, 0) with zero velocity, gravityScale 1 and the CHAR groups. It sets mode air and teleportTick = ctx.tick.
+- `place` teleports to `at.t` + (0, CAPSULE.stand+0.01, 0) with zero velocity, gravityScale 1 and the CHAR groups. It sets mode air and teleportTick = ctx.tick.
 - `park` reverses `place`.
 - `freeze` ignores input, keeps vertical physics and zeroes horizontal velocity.
 - `override` is consumed by the next preStep only.
@@ -1968,7 +1970,7 @@ export class SceneView {
   - each frame, obstacles are posed between the previous and current tick by alpha (lerp + nlerp);
   - one bean instance per player, tinted PALETTE[p], hidden when parked, at lerp(prev, cur, alpha) + the smoother offset, with yaw from facing;
   - the camera follows localPlayer.
-- bean.prims.json is the jelly-bean: a capsule body, two eye spheres with pupils and a mouth, under 1500 triangles, with one capsule collider matching CHAR.
+- bean.prims.json is the jelly-bean: a capsule body, two eye spheres with pupils and a mouth, under 1500 triangles, with one capsule collider matching CAPSULE.
 
 ## Module: client-core
 Owner: M7. Consumes: scene-view, net-match, net-metrics.

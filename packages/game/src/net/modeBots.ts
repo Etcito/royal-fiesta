@@ -3,6 +3,7 @@ import type { RapierModule } from '@gamesaloon/rollback-rapier'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
 import { G, groups } from '@royal-fiesta/sim/groups'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
+import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { decodeInput, encodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
@@ -72,7 +73,7 @@ function obstacleAhead(domain: FiestaDomain, state: CharState): boolean {
   if (scratchRay === null) scratchRay = new domain.ctx.R.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 })
   const ray = scratchRay
   ray.origin.x = state.pos.x
-  ray.origin.y = state.pos.y - CHAR.halfHeight - CHAR.radius + 0.25
+  ray.origin.y = state.pos.y - CAPSULE.halfHeight - CAPSULE.radius + 0.25
   ray.origin.z = state.pos.z
   ray.dir.x = state.facing.x
   ray.dir.y = 0
@@ -152,7 +153,7 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
       const len = Math.sqrt(dx * dx + dz * dz)
       const nx = len > 1e-6 ? dx / len : 0
       const nz = len > 1e-6 ? dz / len : 0
-      const feet = state.pos.y - CHAR.halfHeight - CHAR.radius
+      const feet = state.pos.y - CAPSULE.halfHeight - CAPSULE.radius
       out.moveX = len > 0.4 ? nx : 0
       out.moveZ = len > 0.4 ? nz : 0
       out.jump = (tick & 1) === 0 && (pathJumpAhead(course, state.pos.x, state.pos.z, nx, nz) ||
@@ -184,7 +185,7 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
     const len = Math.hypot(out.moveX, out.moveZ)
     if (len > 0) {
       const nx = out.moveX / len, nz = out.moveZ / len
-      const feet = state.pos.y - CHAR.halfHeight - CHAR.radius
+      const feet = state.pos.y - CAPSULE.halfHeight - CAPSULE.radius
       const supported = (ahead: number): boolean => {
         if (scratchRay === null) scratchRay = new domain.ctx.R.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 })
         scratchRay.origin.x = state.pos.x + nx * ahead

@@ -1,7 +1,8 @@
 import { Rng } from '@gamesaloon/rollback'
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
-import { CHAR, CharMode } from '../character/constants.ts'
+import { CharMode } from '../character/constants.ts'
+import { CAPSULE } from '../character/capsule.ts'
 import type { ResolvedCourse } from '../course.ts'
 import type { CharacterSystem, CharState } from '../character/system.ts'
 import { G, groups } from '../groups.ts'
@@ -304,7 +305,7 @@ export class BotSystem implements SimSystem<PlayerInput> {
     const fl = Math.sqrt(fx * fx + fz * fz)
     if (fl < 1e-6) return false
     ray.origin.x = st.pos.x
-    ray.origin.y = st.pos.y - CHAR.halfHeight - CHAR.radius + KNEE
+    ray.origin.y = st.pos.y - CAPSULE.halfHeight - CAPSULE.radius + KNEE
     ray.origin.z = st.pos.z
     ray.dir.x = fx / fl
     ray.dir.y = 0

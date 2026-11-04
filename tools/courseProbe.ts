@@ -5,6 +5,7 @@ import { loadCourseV1 } from '../packages/game/src/courseV1.ts'
 import type { CourseV1, GameAssetResolver } from '../packages/game/src/courseV1.ts'
 import { runMatchOffline } from '../packages/sim/src/match/offline.ts'
 import type { MatchSetup } from '../packages/sim/src/match/setup.ts'
+import { CAPSULE } from '../packages/sim/src/character/capsule.ts'
 import { refuse } from '../packages/sim/src/refusal.ts'
 import type { Vec3 } from '../packages/sim/src/vec.ts'
 import { loadCourseV1File, nodeGameAssets } from '../apps/headless/src/contentFiles.ts'
@@ -120,7 +121,7 @@ export async function decorProblems(c: CourseV1, assets: GameAssetResolver): Pro
     play.push({ name: `obstacle ${o.id}`, b: p })
     if (FLOORS.includes(o.asset as string)) floorTop = Math.min(floorTop, p.max[1])
   }
-  ((j.spawns ?? []) as Obj[]).forEach((s, i) => play.push({ name: `spawn ${i}`, b: box(s.t as number[], [0.4, 0.85, 0.4]) }))
+  ((j.spawns ?? []) as Obj[]).forEach((s, i) => play.push({ name: `spawn ${i}`, b: box(s.t as number[], [CAPSULE.radius, CAPSULE.stand, CAPSULE.radius]) }))
   ;((j.checkpoints ?? []) as Obj[]).forEach((k, i) => play.push({ name: `checkpoint ${i}`, b: box(k.center as number[], k.half as number[]) }))
   for (const key of ['finish', 'queuePad']) {
     const z = j[key] as Obj | null | undefined

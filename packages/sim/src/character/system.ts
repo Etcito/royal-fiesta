@@ -16,6 +16,7 @@ import type { Vec3 } from '../vec.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
 import { GRAVITY_Y } from '../world.ts'
 import { CHAR, CarryKind, CharMode, SLIDE_STROKE, SURFACE_TUNING, iceWalkTuning, type SurfaceTuning, strokeAnimPhase, strokeElapsed, strokeReadyTicks, strokeStartTick, strokeTotalTicks } from './constants.ts'
+import { CAPSULE } from './capsule.ts'
 import type { SlideStroke } from './constants.ts'
 import { approach2, turnFacing } from './controller.ts'
 
@@ -65,7 +66,7 @@ const CHAR_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING | G.CHAR)
 // Respawn protection is non-blocking: no character-character contact until it ends.
 const PROTECTED_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING)
 const PROBE_GROUPS = groups(G.PROBE, G.STATIC | G.MOVING)
-const STAND = CHAR.halfHeight + CHAR.radius
+const STAND = CAPSULE.stand
 const NO_OVERRIDE = -1
 const JUMP_BIT = BTN.JUMP >>> 16
 const DIVE_BIT = BTN.DIVE >>> 16
@@ -105,7 +106,7 @@ export function characterBody(R: RapierModule, parkSlot: number): CharacterBodyD
     .setGravityScale(0)
     .setAdditionalMass(CHAR.mass)
   // Density 0 so the body mass is exactly CHAR.mass.
-  const collider = R.ColliderDesc.capsule(CHAR.halfHeight, CHAR.radius)
+  const collider = R.ColliderDesc.capsule(CAPSULE.halfHeight, CAPSULE.radius)
     .setDensity(0)
     .setFriction(0)
     .setFrictionCombineRule(R.CoefficientCombineRule.Min)

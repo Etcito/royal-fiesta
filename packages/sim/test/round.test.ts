@@ -3,7 +3,8 @@ import { describe, it } from 'node:test'
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
-import { CHAR, CharMode } from '../src/character/constants.ts'
+import { CharMode } from '../src/character/constants.ts'
+import { CAPSULE } from '../src/character/capsule.ts'
 import { CharacterSystem } from '../src/character/system.ts'
 import type { CharState } from '../src/character/system.ts'
 import type { CourseKind, Motion, ObstacleSpec, ResolvedCourse, SpawnPoint } from '../src/course.ts'
@@ -23,7 +24,7 @@ const R: RapierModule = await initRapier()
 const N = 8
 const ALL = [0, 1, 2, 3, 4, 5, 6, 7]
 const ID = { x: 0, y: 0, z: 0, w: 1 }
-const STAND = CHAR.halfHeight + CHAR.radius + 0.01
+const STAND = CAPSULE.stand + 0.01
 const FORWARD = inputCode({ moveZ: 1 })
 const SETUP_MARKER = 0x52544553
 
@@ -33,7 +34,7 @@ function obstacle(id: string, t: Vec3, motion: Motion, half: Vec3): ObstacleSpec
 
 const FLOOR = obstacle('floor', v3(0, -0.5, 10), { kind: 'static' }, v3(40, 0.5, 40))
 // Far from every spawn: only a player placed next to it gets knocked.
-const SPINNER = obstacle('spin', v3(-12, CHAR.halfHeight + CHAR.radius, 10), { kind: 'spinner', axis: v3(0, 1, 0), radPerTick: PI / 60, phase: 0 }, v3(4, 0.25, 0.25))
+const SPINNER = obstacle('spin', v3(-12, CAPSULE.stand, 10), { kind: 'spinner', axis: v3(0, 1, 0), radPerTick: PI / 60, phase: 0 }, v3(4, 0.25, 0.25))
 
 function spawn(x: number, z: number): SpawnPoint {
   return { t: v3(x, 0, z), facing: { x: 0, z: 1 } }

@@ -29,6 +29,23 @@ function rfMama(): Plugin {
   }
 }
 
+// A module that imports an SDF Modeler asset file (packages/sim/src/character/capsule.ts reads penguin.body's saved
+// capsule) gets only the asset's game data: the document (most of the file, ~1 MB for the penguin) stays in the content
+// pack the page fetches. The sim reads `category` and `collision`; tests and Node read the whole file.
+const ASSET_DATA_KEYS = ['format', 'version', 'game', 'id', 'category', 'collision'] as const
+function rfAssetData(): Plugin {
+  return {
+    name: 'rf-asset-data',
+    enforce: 'pre',
+    load(id) {
+      const file = id.split('?')[0]
+      if (!file.endsWith('.asset.json')) return null
+      const asset = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>
+      return JSON.stringify(Object.fromEntries(ASSET_DATA_KEYS.filter((k) => k in asset).map((k) => [k, asset[k]])))
+    },
+  }
+}
+
 type Alias = { find: string; replacement: string }
 
 // The local RAA checkout carries its packages under packages/<name>; read the names from their
@@ -71,7 +88,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: { input },
   },
-  plugins: [rfMama(), {
+  plugins: [rfMama(), rfAssetData(), {
     name: 'rf-uaa-text-edges',
     enforce: 'pre',
     transform(code, id) {

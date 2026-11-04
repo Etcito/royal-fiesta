@@ -8,6 +8,7 @@ import type { Vec3 } from '../vec.ts'
 import { quatMul, quatRotate, v3 } from '../vec.ts'
 import { FIXED_DT } from '@gamesaloon/rollback-rapier'
 import { CHAR, CharMode } from '../character/constants.ts'
+import { CAPSULE } from '../character/capsule.ts'
 import type { ObstacleSpec } from '../course.ts'
 import { GRAVITY_Y } from '../world.ts'
 import { motionPose } from '../obstacles/motion.ts'
@@ -355,8 +356,8 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
   const nearby = b.course.obstacles.filter(o => {
     if (!['pendulum', 'spinner', 'movingPlatform'].includes(o.motion.kind)) return false
     const box = routeBounds(o, null, ux, uz)
-    return box.hi[0] + CHAR.radius >= along && box.lo[0] - CHAR.radius <= along + dist &&
-      across >= box.lo[1] - CHAR.radius && across <= box.hi[1] + CHAR.radius
+    return box.hi[0] + CAPSULE.radius >= along && box.lo[0] - CAPSULE.radius <= along + dist &&
+      across >= box.lo[1] - CAPSULE.radius && across <= box.hi[1] + CAPSULE.radius
   }).sort((a, c) => a.id < c.id ? -1 : a.id > c.id ? 1 : 0)
   const fin = b.course.finish
   const fdx = fin === null ? 0 : Math.max(0, Math.abs(b.pos.x - fin.center.x) - fin.half.x)
@@ -374,23 +375,23 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
     const timed = matches.some(r => r.phase !== null)
     if (!timed) continue
     const box = routeBounds(o, null, ux, uz)
-    const gap = box.lo[0] - CHAR.radius - along
+    const gap = box.lo[0] - CAPSULE.radius - along
     if (gap > behaviour.route.advanceDist + braking + speed * reactionTicks * FIXED_DT) continue
     const windows = matches.filter(r => r.phase !== null)
     let travel = 0, v = Math.min(CHAR.maxRun, speed)
     // Bounded by the route segment: obstacles past the target never delay this decision.
-    const exit = Math.min(dist, box.hi[0] + CHAR.radius - along)
+    const exit = Math.min(dist, box.hi[0] + CAPSULE.radius - along)
     for (let dt = 0; travel <= exit; dt++) {
       if (travel >= Math.max(0, gap)) {
         const at = now + dt
         if (windows.length && !windows.some(r => inWindow(o, at, r.phase!))) return NEUTRAL_CODE
         const pose = routeBounds(o, at, ux, uz)
-        const lateral = across >= pose.lo[1] - CHAR.radius && across <= pose.hi[1] + CHAR.radius
+        const lateral = across >= pose.lo[1] - CAPSULE.radius && across <= pose.hi[1] + CAPSULE.radius
         if (o.motion.kind === 'movingPlatform') {
-          const feet = b.pos.y - CHAR.halfHeight - CHAR.radius
-          if (along + travel < pose.lo[0] - CHAR.radius || along + travel > pose.hi[0] + CHAR.radius ||
-            across < pose.lo[1] || across > pose.hi[1] || Math.abs(pose.hi[2] - feet) > CHAR.groundProbe + CHAR.radius) return NEUTRAL_CODE
-        } else if (lateral && pose.lo[2] < b.pos.y + CHAR.halfHeight + CHAR.radius && pose.hi[2] > b.pos.y - CHAR.halfHeight - CHAR.radius) return NEUTRAL_CODE
+          const feet = b.pos.y - CAPSULE.halfHeight - CAPSULE.radius
+          if (along + travel < pose.lo[0] - CAPSULE.radius || along + travel > pose.hi[0] + CAPSULE.radius ||
+            across < pose.lo[1] || across > pose.hi[1] || Math.abs(pose.hi[2] - feet) > CHAR.groundProbe + CAPSULE.radius) return NEUTRAL_CODE
+        } else if (lateral && pose.lo[2] < b.pos.y + CAPSULE.stand && pose.hi[2] > b.pos.y - CAPSULE.halfHeight - CAPSULE.radius) return NEUTRAL_CODE
       }
       v = Math.min(CHAR.maxRun, v + (b.grounded ? CHAR.groundAccel : CHAR.airAccel) * FIXED_DT)
       travel += v * FIXED_DT
@@ -401,7 +402,7 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
   const canJump = b.grounded && !hanging && b.mode !== CharMode.dive && b.mode !== CharMode.diveRecover && b.mode !== CharMode.stunned
   const roadRace = b.course.obstacles.some(o => o.sweep !== undefined)
   const canDive = (b.mode === CharMode.ground && b.rising !== true) || b.mode === CharMode.air || (roadRace && b.mode === CharMode.slide)
-  const feet = b.pos.y - CHAR.halfHeight - CHAR.radius
+  const feet = b.pos.y - CAPSULE.halfHeight - CAPSULE.radius
   const scan = scanAhead(groundBoxes(b.course, observed), feet, b.pos.x, b.pos.z, ux, uz)
   const climb = node.p.y > b.pos.y + 0.4 || (b.obstacleAhead && scan.ledgeTop !== -Infinity)
   let jump = (rule?.action === 'jump' || (!b.physicsTraversal && node.jump && dist <= JUMP_DIST)) && canJump

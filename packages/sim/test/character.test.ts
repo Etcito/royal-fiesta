@@ -4,6 +4,7 @@ import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { FIXED_DT, initRapier } from '@gamesaloon/rollback-rapier'
 import type { BodyId, RapierModule } from '@gamesaloon/rollback-rapier'
 import { CHAR, CarryKind, CharMode, GLARE_ICE, SLIDE_STROKE, SURFACE_TUNING, strokeReadyTicks, strokeStartTick, strokeTotalTicks } from '../src/character/constants.ts'
+import { CAPSULE } from '../src/character/capsule.ts'
 import type { SlideStroke } from '../src/character/constants.ts'
 import { approach2, turnFacing } from '../src/character/controller.ts'
 import { CharacterSystem, characterBody } from '../src/character/system.ts'
@@ -174,7 +175,7 @@ const JUMP = input({ jump: true })
 const FORWARD_JUMP = input({ moveZ: 1, jump: true })
 const DIVE = input({ dive: true })
 const GRABBER = input({ moveZ: 1, grab: true })
-const STAND = CHAR.halfHeight + CHAR.radius
+const STAND = CAPSULE.stand
 
 function newState(): CharState {
   return { pos: v3(0, 0, 0), vel: v3(0, 0, 0), facing: { x: 0, z: 0 }, mode: 0, grounded: false, groundObstacle: 0, knockbacks: 0, teleportTick: 0 }

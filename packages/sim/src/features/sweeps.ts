@@ -1,5 +1,6 @@
 import type { SnapReader, SnapWriter } from '@gamesaloon/rollback'
-import { CHAR, CharMode } from '../character/constants.ts'
+import { CharMode } from '../character/constants.ts'
+import { CAPSULE } from '../character/capsule.ts'
 import { levelOf } from '../course.ts'
 import type { FeatureSpec } from '../course.ts'
 import { dcos, dsin } from '../detmath.ts'
@@ -189,8 +190,8 @@ class Sweep implements CourseFeature {
         const nx = x - clamp(x, -half.x, half.x)
         const nz = z - clamp(z, -half.z, half.z)
         // Distance from the character's vertical capsule segment to the cuboid.
-        const ny = Math.max(0, Math.abs(p.y - pose.t.y) - CHAR.halfHeight - half.y)
-        const reach = CHAR.radius + 0.05
+        const ny = Math.max(0, Math.abs(p.y - pose.t.y) - CAPSULE.halfHeight - half.y)
+        const reach = CAPSULE.radius + 0.05
         if (nx * nx + ny * ny + nz * nz > reach * reach) continue
         if (lethal) ctx.seats.kill(i)
         else {

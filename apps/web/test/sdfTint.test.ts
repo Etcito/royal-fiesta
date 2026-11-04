@@ -82,6 +82,7 @@ function fakeEngine() {
     functions: 0, surfaces: 0, meshes: 0, instances: 0,
     tints: new Map<number, number[][]>(), cleared: [] as number[], modes: new Map<number, string>(),
     meshOf: new Map<number, number>(), meshIds: [] as number[], nextInstance: 1000,
+    single: [] as unknown[][], objectMaterials: new Map<number, number | null>(), descs: [] as Record<string, unknown>[],
   }
   const engine = {
     resize(...args: number[]) { calls.sizes.push(args) },
@@ -91,7 +92,7 @@ function fakeEngine() {
     setVisible(id: number, visible: boolean) { calls.visibility.set(id, visible) },
     setLight() {}, setAmbient() {},
     addMaterialFunction() { calls.functions++ },
-    addSurfaceMaterial() { calls.surfaces++; return ++next },
+    addSurfaceMaterial(desc: Record<string, unknown>) { calls.surfaces++; calls.descs.push(desc); return ++next },
     setSkinPoses(ids: Uint32Array, matrices: Float32Array) { calls.skinPoses.push({ ids, matrices }) },
     addMesh(desc: unknown) { calls.jointStreams.push(desc); calls.meshes++; const id = ++next; calls.meshIds.push(id); return id },
     addNode() { return ++next },
@@ -100,12 +101,14 @@ function fakeEngine() {
     setInstanceTint(id: number, rgba: number[]) { calls.tints.set(id, [...(calls.tints.get(id) ?? []), Array.from(rgba)]) },
     clearInstanceTint(id: number) { calls.cleared.push(id) },
     setMaterialTintMode(handle: number, mode: string) { calls.modes.set(handle, mode) },
+    setSingleMaterial(on: boolean | null, instance?: number) { calls.single.push([on, instance]) },
+    setInstanceMaterial(instance: number, material: number | null) { calls.objectMaterials.set(instance, material) },
   }
   return { engine, calls }
 }
 
-function portFor(id: string, materials: unknown[], parts: unknown[]) {
-  const meshed = new Map([[id, { assetId: id, data: { materials, groups: [{ group: 'g', parts }] } }]])
+function portFor(id: string, materials: unknown[], parts: unknown[], single?: boolean) {
+  const meshed = new Map([[id, { assetId: id, data: { materials, groups: [{ group: 'g', parts, ...(single === undefined ? {} : { single }) }] } }]])
   const { engine, calls } = fakeEngine()
   const port = exports.make(meshed)
   port.engine = engine
@@ -305,4 +308,32 @@ test('all committed catalog cosmetics upload their saved skin and render with th
     assert.ok(calls.skinPoses[0].matrices.some((v,i)=>Math.abs(v-(i%16%5===0?1:0))>1e-4),`${id}: deforming matrices`)
     assert.equal(port.skinOf(id),skin)
   }
+})
+
+// Owner 2026-11-04: one material per object. A part whose meshes carry the blended colours draws one white standard
+// material (setInstanceMaterial) with the part's roughness/metallic and the colours in its mesh; a group tagged off, or a
+// mesh made before the colours, keeps its per-face materials (setSingleMaterial(false, instance)).
+test('one material per object: coloured parts get a white object material, others stay per-face', () => {
+  const coloured = (name: string, materialName: string, rgb: number[]) => {
+    const p = part(name, materialName)
+    return { ...p, look: { roughness: 0.3, metallic: 0.1 }, meshes: p.meshes.map(m => ({ ...m, colors: new Float32Array([...rgb, 1, ...rgb, 1, ...rgb, 1]) })) }
+  }
+  const on = portFor('test.single', [material('blue', PLAIN), material('red', PLAIN)], [{ ...coloured('ball', 'blue', [0, 0, 1]),
+    meshes: [...coloured('ball', 'blue', [0, 0, 1]).meshes, ...coloured('ball', 'red', [1, 0, 0]).meshes] }])
+  const instance = on.calls.nextInstance
+  on.port.createInstance(on.handle(), null)
+  const object = on.calls.objectMaterials.get(instance)
+  assert.ok(object !== undefined && object !== null, 'the instance gets its object material')
+  assert.equal(JSON.stringify(on.calls.descs.at(-1)), JSON.stringify({ color: [1, 1, 1], roughness: 0.3, metallic: 0.1 }))
+  const desc = on.calls.jointStreams.at(-1) as { colors?: Float32Array }
+  assert.deepEqual(Array.from(desc.colors ?? []), [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1])
+  assert.equal(on.calls.single.length, 0)
+  const off = portFor('test.off', [material('blue', PLAIN)], [coloured('ball', 'blue', [0, 0, 1])], false)
+  const offInstance = off.calls.nextInstance
+  off.port.createInstance(off.handle(), null)
+  assert.equal(JSON.stringify(off.calls.single), JSON.stringify([[false, offInstance]]))
+  assert.equal(off.calls.objectMaterials.size, 0)
+  const old = portFor('test.old', [material('blue', PLAIN)], [part('ball', 'blue')])
+  old.port.createInstance(old.handle(), null)
+  assert.equal(old.calls.single.length, 1, 'a mesh without colours keeps its per-face materials')
 })

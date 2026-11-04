@@ -16,6 +16,7 @@ import { COMMON_NO_PROGRAM_WGSL } from '@etcito/mama/gpu/wgsl/common.ts'
 import { sha256Hex } from '@etcito/mama/core/image/sha256.ts'
 import { ensureMesher, setMesherWasm } from '@etcito/mama/core/paramesh/runtime.ts'
 import { inlinePool } from '@etcito/mama/core/compute/pool.ts'
+import { partColouring, singleMaterialOf } from './singleMaterial.ts'
 import type { GroupMesher, SdfDocument } from '@etcito/mama/core/doc/types.ts'
 import type { NormalVolume } from '@etcito/mama/core/game/normal-volume.ts'
 
@@ -29,6 +30,8 @@ interface PayloadMesh {
   normals: Float32Array
   uvs: Float32Array | null
   indices: Uint32Array
+  /** Linear rgba per vertex for one material per object (singleMaterial.ts); absent on meshes made before it. */
+  colors?: Float32Array
 }
 
 // S18 joint/weight streams of a skinned part, in the vertex order the render port concatenates its meshes.
@@ -42,9 +45,12 @@ interface PayloadPart {
   meshes: PayloadMesh[]
   skin?: PayloadSkin
   normalVolume?: NormalVolume
+  /** The part's one roughness/metallic for one material per object (with the meshes' colors). */
+  look?: { roughness: number; metallic: number }
 }
 
-interface PayloadGroup { group: string; parts: PayloadPart[] }
+// single: one material per object for this group (its 'per-face-materials' / 'single-material' tags, default true).
+interface PayloadGroup { group: string; parts: PayloadPart[]; single?: boolean }
 
 interface BuiltPayload { groups: PayloadGroup[]; materials: BuiltMaterial[] }
 
@@ -200,10 +206,13 @@ function toPayload(results: readonly AssetMeshResult[], doc: SdfDocument, assetI
         built.push(mesh)
       }
       const skin = partSkin(built)
+      // One material per object: the shapes' material colours blended at the smooth rims, per vertex.
+      const colouring = part.source && part.program ? partColouring(part.source.doc, part.source.mesh, part.program) : null
+      if (colouring) for (const b of built) b.mesh.colors = colouring.colors(b.mesh)
       payloadParts.push({ partId: part.partId, name: part.name, frame: part.frame, meshes: built.map(m => m.mesh), ...(skin ? { skin } : {}),
-        ...(part.normalVolume ? { normalVolume: part.normalVolume } : {}) })
+        ...(part.normalVolume ? { normalVolume: part.normalVolume } : {}), ...(colouring ? { look: colouring.look(built.map(b => b.mesh)) } : {}) })
     }
-    groups.push({ group: result.group, parts: payloadParts })
+    groups.push({ group: result.group, parts: payloadParts, single: singleMaterialOf(doc, result.group) })
     for (const built of result.materials) if (!materials.has(built.id)) materials.set(built.id, built)
   }
   return { data: { groups, materials: [...materials.values()] }, parts, triangles }
@@ -227,6 +236,7 @@ function transferOf(groups: readonly PayloadGroup[]): ArrayBuffer[] {
         add(mesh.normals)
         if (mesh.uvs !== null) add(mesh.uvs)
         add(mesh.indices)
+        if (mesh.colors !== undefined) add(mesh.colors)
       }
     }
   }
@@ -254,7 +264,7 @@ export async function meshRequest(req: MeshRequest): Promise<MeshedAsset> {
   await ensureMesherOnce()
   const results = req.parts !== undefined && req.parts.length > 0
     ? await meshByParts(doc, req.parts, req.assetId)
-    : await meshAssets(doc, { pool: inlinePool(), normalVolumes: true })
+    : await meshAssets(doc, { pool: inlinePool(), normalVolumes: true, programs: true })
   throwFirstRefusal(results, doc, req.assetId)
   if (results.length === 0) {
     throw new RefusalError('sdf', req.assetId, 'the document has no group with a game asset; save the asset from SDF Modeler or mark its group as a game asset')

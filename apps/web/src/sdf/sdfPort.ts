@@ -32,6 +32,10 @@ type SdfEngine = Engine & {
   resize(cssW: number, cssH: number, dpr: number): void
   setMaterialTintMode(handle: number, mode: 'graph' | 'multiply'): void
   clearInstanceTint(instance: number): void
+  // RAA bbcece7 render option: one material per object (engine default off).
+  setSingleMaterial(enabled: boolean): void
+  setSingleMaterial(enabled: boolean | null, instance: number): void
+  setInstanceMaterial(instance: number, material: number | null): void
 }
 
 const AREA = 'sdf'
@@ -54,16 +58,19 @@ const MAX_INSTANCES = 4096
 const MAX_MATERIALS = 1024
 
 // The payload of apps/web/src/sdf/mama/worker.ts: MAMA parts with per-material meshes.
-interface PayloadMesh { material: string | null; positions: Float32Array; normals: Float32Array; uvs: Float32Array | null; indices: Uint32Array }
+interface PayloadMesh { material: string | null; positions: Float32Array; normals: Float32Array; uvs: Float32Array | null; indices: Uint32Array; colors?: Float32Array }
 // normalVolume: MAMA's per-pixel normal volume of a Paramesh part (absent in meshes made before it, or for other meshers).
-interface PayloadPart { partId: string; name: string; frame: Float64Array; meshes: PayloadMesh[]; normalVolume?: unknown }
-interface PayloadGroup { group: string; parts: PayloadPart[] }
+// colors/look/single: one material per object (mama/singleMaterial.ts), absent on meshes made before it.
+interface PayloadPart { partId: string; name: string; frame: Float64Array; meshes: PayloadMesh[]; normalVolume?: unknown; look?: { roughness: number; metallic: number } }
+interface PayloadGroup { group: string; parts: PayloadPart[]; single?: boolean }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
 // key = the raa-sdfm part name (group/partId when two parts share a name); joints = 1 + max joint of a skinned part.
 // subMeshes keep `material` absent for MAMA's no-material faces (tintableParts fills them); volume = the 16
 // setInstanceParams floats of a part shaded with its normal volume (its desc then carries the rest-frame streams).
-interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint; volume?: number[] }
+// object: the one standard material (white x vertex colour) the part draws while one material per object is on; absent =
+// the part keeps its per-face materials (group tagged off, a player-colour graph, or a mesh without colours).
+interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint; volume?: number[]; object?: number }
 // graph: a material of the part holds input.player_color; multiply: a part with no SDF material (white fallback).
 type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
@@ -155,6 +162,9 @@ class SdfRenderPort implements ResizablePort {
     if (!fullView(rects)) this.engine.setViewports(rects)
     this.engine.setLight(DEFAULT_LIGHT)
     this.engine.setAmbient(DEFAULT_AMBIENT)
+    // One PBR material per object (RAA render option, on by default); an asset group tagged 'per-face-materials' keeps
+    // its per-face materials (createInstance turns it off per instance).
+    this.engine.setSingleMaterial(true)
     this.canvas = target.canvas
     this.target = { ...target, viewports: target.viewports.map(v => ({ ...v })) }
   }
@@ -279,7 +289,14 @@ class SdfRenderPort implements ResizablePort {
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
-        parts.push({ name: part.name, key, mesh, desc, subMeshes: built.subMeshes, t, r, tint: built.tint, ...(volume !== undefined ? { volume } : {}) })
+        // One material per object: white x the blended vertex colours, with the part's roughness/metallic. A player-colour
+        // part keeps its graph materials (the tint lives in them); so does a part shaded with its normal volume, whose
+        // vertex colour stream carries the rest-frame positions (raa-sdfm volumeSurfaceAttributes), not colours.
+        let object: number | undefined
+        if (group.single !== false && volume === undefined && desc.colors !== undefined && part.look !== undefined && built.tint !== 'graph') {
+          object = engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: part.look.roughness, metallic: part.look.metallic })
+        }
+        parts.push({ name: part.name, key, mesh, desc, subMeshes: built.subMeshes, t, r, tint: built.tint, ...(volume !== undefined ? { volume } : {}), ...(object !== undefined ? { object } : {}) })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
@@ -375,6 +392,8 @@ class SdfRenderPort implements ResizablePort {
       const node = engine.addNode(root, part.t, part.r)
       const instance = engine.addMeshInstance(node, part.mesh)
       if (part.volume !== undefined) engine.setInstanceParams(instance, part.volume)
+      if (part.object !== undefined) engine.setInstanceMaterial(instance, part.object)
+      else engine.setSingleMaterial(false, instance)
       // Cosmetic colourways multiply the existing fixed materials on the same mesh.
       // The character keeps its graph-selected skin tint so its beak and feet stay fixed.
       if (tint !== null && (part.tint !== 'none' || uploaded.assetId.startsWith('costume.'))) {
@@ -739,6 +758,13 @@ function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, graph
   }
   const desc: MeshDesc = { positions, normals, indices, subMeshes }
   if (uvs !== null) desc.uvs = uvs
+  // One material per object: the vertex colours (graph materials ignore them; only the object material multiplies them).
+  if (ordered.every(mesh => mesh.colors instanceof Float32Array && mesh.colors.length === mesh.positions.length / 3 * 4)) {
+    const colors = new Float32Array(vertices * 4)
+    let at = 0
+    for (const mesh of ordered) { colors.set(mesh.colors!, at * 4); at += mesh.positions.length / 3 }
+    desc.colors = colors
+  }
   const materials = [...byMaterial.keys()]
   const tint: PartTint = materials.some(m => m !== null && graph.has(m)) ? 'graph'
     : graph.size === 0 && materials.every(m => m === null) ? 'multiply' : 'none'

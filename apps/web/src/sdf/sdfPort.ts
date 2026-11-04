@@ -9,7 +9,7 @@ import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
 import { materialProgram } from './materialProgram.ts'
 import { createRaaEngine } from '../render/raaEngine.ts'
 import type { SdfmCompiledMaterial, SdfmMappedMaterial, SdfmPartShading } from '@etcito/raa-sdfm'
-import { fieldPartMaterialWgsl, fieldSurfaceAttributes } from '@etcito/raa-sdfm'
+import { fieldPartShading, fieldSurfaceAttributes } from '@etcito/raa-sdfm'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { CameraPose, QuatT, RenderInventory, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
@@ -44,7 +44,7 @@ const WHERE = 'sdf-port'
 
 /**
  * How Paramesh surfaces are shaded: 'pixel' (default) evaluates the part's SDF field per fragment (its stored shading,
- * @etcito/raa-sdfm fieldPartMaterialWgsl, the same material as SDF Modeler's Game view: the field's gradient as the
+ * @etcito/raa-sdfm fieldPartShading, the same material as SDF Modeler's Game view: the field's gradient as the
  * normal and the shapes' materials mixed by the field, whatever the mesh density; nothing baked); 'vertex' keeps the
  * saved per-face materials and the interpolated vertex normals. `?normals=vertex` in the page address picks 'vertex'.
  */
@@ -61,7 +61,7 @@ const MAX_MATERIALS = 1024
 
 // The payload of apps/web/src/sdf/mama/worker.ts: MAMA parts with per-material meshes.
 interface PayloadMesh { material: string | null; positions: Float32Array; normals: Float32Array; uvs: Float32Array | null; indices: Uint32Array; colors?: Float32Array }
-// shading: the part's per-pixel shading (MAMA field-wgsl.ts savedPartShading, saved mesh format 2), or shadingError: why
+// shading: the part's per-pixel shading (MAMA field-program.ts savedPartShading, saved mesh format 3), or shadingError: why
 // it has none. colors/look/single: one material per object (mama/singleMaterial.ts), on browser-meshed parts only.
 interface PayloadPart { partId: string; name: string; frame: Float64Array; meshes: PayloadMesh[]; shading?: SdfmPartShading; shadingError?: string; look?: { roughness: number; metallic: number } }
 interface PayloadGroup { group: string; parts: PayloadPart[]; single?: boolean }
@@ -80,7 +80,8 @@ interface Fallback { mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; obj
 type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
 // emptyParts: parts the mesher kept by name with no triangle (hidden colliders): a part filter may list them.
-interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[]; base?: number }
+// data: the field-shading data blocks (RAA material data words) this upload added, freed with it.
+interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[]; base?: number; data?: number[] }
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
 // asset = the uploaded/handle index this instance was created from (for the live inventory).
@@ -95,7 +96,7 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   onTiming: (span: { step: string; start: number; end: number; ms: number }) => void = () => {}): Promise<ResizablePort> {
   const status = await raaStatus()
   if (!status.available) refuse(AREA, WHERE, status.reason)
-  const port = new SdfRenderPort(meshed, failed)
+  const port = new SdfRenderPort(meshed, failed, await fieldEvaluator())
   const start = performance.now()
   await checkAwait('RAA port initialization', () => port.init(target))
   const end = performance.now()
@@ -106,6 +107,18 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   } catch (e) {
     port.dispose()
     throw e
+  }
+}
+
+// MAMA's field evaluator (FIELD_PROGRAM_WGSL of core/paramesh/field-program-wgsl.ts), the text the one per-pixel shading
+// interpreter embeds (@etcito/raa-sdfm fieldPartShading); null when this build has no MAMA (parts keep vertex normals).
+// Imported here, not at the top, so Node tests can import this module.
+async function fieldEvaluator(): Promise<string | null> {
+  try {
+    const mod = await import('virtual:rf-mama') as { FIELD_PROGRAM_WGSL?: unknown }
+    return typeof mod.FIELD_PROGRAM_WGSL === 'string' && mod.FIELD_PROGRAM_WGSL !== '' ? mod.FIELD_PROGRAM_WGSL : null
+  } catch {
+    return null
   }
 }
 
@@ -151,9 +164,13 @@ class SdfRenderPort implements ResizablePort {
   private meshes = 0
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
-  constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map()) {
+  // MAMA's field evaluator text (fieldEvaluator), null without MAMA.
+  private readonly field: string | null
+
+  constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map(), field: string | null = null) {
     this.meshed = meshed
     this.failed = failed
+    this.field = field
   }
 
   async init(target: RenderTarget): Promise<void> {
@@ -249,6 +266,7 @@ class SdfRenderPort implements ResizablePort {
     const parts: PartUpload[] = []
     const keys = new Set<string>()
     const emptyParts: string[] = []
+    const data: number[] = []
     for (const group of payload.groups) {
       for (const part of group.parts) {
         if (part.meshes.length === 0) {
@@ -266,6 +284,7 @@ class SdfRenderPort implements ResizablePort {
         const shaded = this.normals === 'pixel' ? this.shadingMaterial(id, part, payload.materials, graph.size > 0) : null
         let field: Pick<PartUpload, 'field' | 'fallback'> = {}
         if (shaded !== null) {
+          data.push(shaded.data)
           // The rest point and rest frame the field reads (raa-sdfm fieldSurfaceAttributes) replace colours, uvs, tangents.
           subMeshes = subMeshes.map(sub => ({ ...sub, material: shaded.handle }))
           desc = { ...desc, ...fieldSurfaceAttributes(desc.positions, desc.normals), subMeshes }
@@ -281,7 +300,7 @@ class SdfRenderPort implements ResizablePort {
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
-    return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}) }
+    return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}), ...(data.length > 0 ? { data } : {}) }
   }
 
   // Registers a material function once per name (a name is the hash of its code).
@@ -298,27 +317,36 @@ class SdfRenderPort implements ResizablePort {
   }
 
   // The per-pixel material of a part (owner 2026-11-04: normals and materials from the SDF in the shader, nothing
-  // baked): its stored shading drawn by raa-sdfm fieldPartMaterialWgsl, the same code as SDF Modeler's Game view. Null,
+  // baked): its stored shading drawn by raa-sdfm fieldPartShading, the same code as SDF Modeler's Game view: ONE
+  // interpreter function for every part whose materials are constant (the pipelines do not grow with the course), the
+  // part itself a block of RAA material data words (its field program, operands, frame) named by the record's `data`. Null,
   // with one console warning naming the asset and part, when MAMA could not give the part a field (shadingError) or RAA
   // refuses the function: the part then keeps its per-face materials and vertex normals. A part with neither shading nor
   // shadingError was not made from an SDF document (MAMA writes one of the two for every meshed part; the zone's far-LOD
   // bean is generated in code): it keeps its vertex normals without a warning.
-  private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): { handle: number; wgsl: string } | null {
+  private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): { handle: number; wgsl: string; data: number } | null {
     const where = `${id}#part:${part.name}`
     if (part.shading === undefined) {
       if (part.shadingError !== undefined) warnOnce(where, `vertex normals (${part.shadingError})`)
       return null
     }
+    if (this.field === null) {
+      warnOnce(where, 'vertex normals (this build has no MAMA field evaluator)')
+      return null
+    }
+    const engine = this.need()
+    let data: number | null = null
     try {
-      const { wgsl, tintMode, missing } = fieldPartMaterialWgsl(part.shading, materials, { debug: this.debugNormals })
+      const { name, wgsl, words, tintMode, missing } = fieldPartShading(part.shading, materials, { field: this.field, debug: this.debugNormals })
       if (missing.length > 0) warnOnce(`${where}:missing`, `material ${missing.map(m => `'${m}'`).join(', ')} not in the saved mesh; its shapes wear their colour`)
-      const name = `sdff.${hashText(wgsl)}`
       this.addFunction(name, wgsl)
+      data = engine.addMaterialData(words)
       const s = part.shading
-      const handle = this.need().addSurfaceMaterial(s.single ? { function: name, roughness: s.look.roughness, metallic: s.look.metallic } : { function: name, roughness: 0.5 })
-      if (graphMode || tintMode === 'graph') this.need().setMaterialTintMode(handle, 'graph')
-      return { handle, wgsl }
+      const handle = engine.addSurfaceMaterial(s.single ? { function: name, data, roughness: s.look.roughness, metallic: s.look.metallic } : { function: name, data, roughness: 0.5 })
+      if (graphMode || tintMode === 'graph') engine.setMaterialTintMode(handle, 'graph')
+      return { handle, wgsl, data }
     } catch (e) {
+      if (data !== null) engine.removeMaterialData(data)
       warnOnce(where, `vertex normals (${messageOf(e)})`)
       return null
     }
@@ -540,6 +568,7 @@ class SdfRenderPort implements ResizablePort {
         try { engine.removeMesh(mesh) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
       }
     }
+    if (engine !== null) for (const base of uploaded.data ?? []) engine.removeMaterialData(base)
     this.meshes -= all.length + uploaded.parts.filter(part => part.fallback !== undefined).length
     this.uploaded[handle] = undefined
     for (const [name, h] of this.handleOfName) if (h === handle) this.handleOfName.delete(name)
@@ -691,17 +720,6 @@ function warnOnce(key: string, text: string): void {
   if (warned.has(key)) return
   warned.add(key)
   console.warn(`[sdf-port] ${key.replace(/:missing$/, '')}: ${text}`)
-}
-
-// A 64-bit FNV-1a of a function's text (two 32-bit lanes): the name of a per-pixel shading function.
-function hashText(text: string): string {
-  let a = 0x811c9dc5, b = 0x9dc5811c
-  for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i)
-    a = Math.imul(a ^ c, 0x01000193)
-    b = Math.imul(b ^ c, 0x01000193) ^ (b >>> 15)
-  }
-  return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0')
 }
 
 function fullView(rects: Viewport[]): boolean {

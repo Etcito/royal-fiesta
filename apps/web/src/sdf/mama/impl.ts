@@ -3,6 +3,8 @@
 // here: the worker builds its upload payload and the renderer consumes it.
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { MESH_COMPATIBILITY } from '@etcito/mama/core/game/mesh-file.ts'
+// The field evaluator the port's one per-pixel shading interpreter embeds (sdfPort.ts fieldEvaluator).
+export { FIELD_PROGRAM_WGSL } from '@etcito/mama/core/paramesh/field-program-wgsl.ts'
 import workerUrl from './worker.ts?worker&url'
 import { classicWorker } from '../classicWorker.ts'
 import type { MamaFacade, MeshedAsset, MeshRequest } from '../mamaApi.ts'

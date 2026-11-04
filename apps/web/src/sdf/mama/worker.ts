@@ -18,7 +18,7 @@ import { ensureMesher, setMesherWasm } from '@etcito/mama/core/paramesh/runtime.
 import { inlinePool } from '@etcito/mama/core/compute/pool.ts'
 import { partColouring, singleMaterialOf } from './singleMaterial.ts'
 import type { GroupMesher, SdfDocument } from '@etcito/mama/core/doc/types.ts'
-import { meshedPartShading, type PartShading } from '@etcito/mama/core/paramesh/field-wgsl.ts'
+import { meshedPartShading, type PartShading } from '@etcito/mama/core/paramesh/field-program.ts'
 
 // MaterialFull fields in declaration order (MAMA core/material-graph/wgsl-parts.ts). The renderer
 // reads exactly these names out of every compiled graph material.
@@ -37,8 +37,8 @@ interface PayloadMesh {
 // S18 joint/weight streams of a skinned part, in the vertex order the render port concatenates its meshes.
 interface PayloadSkin { joints: Uint16Array; weights: Float32Array }
 
-// shading: the part's per-pixel shading (MAMA field-wgsl.ts meshedPartShading, the record a saved mesh part stores: field
-// WGSL + operand labels; nothing baked), drawn by @etcito/raa-sdfm fieldPartMaterialWgsl; shadingError: why it has none.
+// shading: the part's per-pixel shading (MAMA field-program.ts meshedPartShading, the record a saved mesh part stores: field
+// program + operand labels; nothing baked), drawn by @etcito/raa-sdfm fieldPartShading; shadingError: why it has none.
 interface PayloadPart {
   partId: string
   name: string

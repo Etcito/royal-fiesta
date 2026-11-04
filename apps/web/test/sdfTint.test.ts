@@ -39,7 +39,9 @@ interface Port {
 }
 
 const source = readFileSync(new URL('../src/sdf/sdfPort.ts', import.meta.url), 'utf8')
-const compiled = transpileModule(source + '\nexports.make = (meshed) => new SdfRenderPort(meshed)\n', {
+// The port gets MAMA's field evaluator from virtual:rf-mama (sdfPort.ts fieldEvaluator); a stand-in of its shape here.
+const FIELD = 'struct PmfSample { d: f32, g: vec3f, la: u32, lb: u32, t: f32 }\nfn pmf_eval(base: u32, p: vec3f) -> PmfSample { return PmfSample(0.0, p, 0u, 0u, 0.0); }'
+const compiled = transpileModule(source + `\nexports.make = (meshed) => new SdfRenderPort(meshed, new Map(), ${JSON.stringify(FIELD)})\n`, {
   compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
 }).outputText
 class FakeCanvas {}
@@ -85,7 +87,7 @@ function fakeEngine() {
     visibility: new Map<number, boolean>(),
     skinPoses: [] as { ids: Uint32Array; matrices: Float32Array }[],
     jointStreams: [] as unknown[],
-    functions: 0, surfaces: 0, meshes: 0, instances: 0,
+    functions: 0, surfaces: 0, meshes: 0, instances: 0, data: [] as Uint32Array[], freed: [] as number[],
     tints: new Map<number, number[][]>(), cleared: [] as number[], modes: new Map<number, string>(),
     meshOf: new Map<number, number>(), meshIds: [] as number[], nextInstance: 1000,
     single: [] as unknown[][], objectMaterials: new Map<number, number | null>(), descs: [] as Record<string, unknown>[],
@@ -99,6 +101,8 @@ function fakeEngine() {
     setLight() {}, setAmbient() {},
     addMaterialFunction() { calls.functions++ },
     addSurfaceMaterial(desc: Record<string, unknown>) { calls.surfaces++; calls.descs.push(desc); return ++next },
+    addMaterialData(words: Uint32Array) { calls.data.push(words); return 4 + calls.data.slice(0, -1).reduce((n, w) => n + w.length, 0) },
+    removeMaterialData(base: number) { calls.freed.push(base) },
     setSkinPoses(ids: Uint32Array, matrices: Float32Array) { calls.skinPoses.push({ ids, matrices }) },
     addMesh(desc: unknown) { calls.jointStreams.push(desc); calls.meshes++; const id = ++next; calls.meshIds.push(id); return id },
     addNode() { return ++next },
@@ -315,8 +319,10 @@ test('all committed catalog cosmetics upload their saved skin and render with th
 })
 
 // Owner 2026-11-04: normals and materials from the SDF in the shader, never baked. Every saved part of the penguin and
-// the costumes carries its per-pixel shading (saved mesh format 2) and draws it: one sdff.* function per part on every
-// sub-mesh, the rest point in the vertex colour and the rest frame in uv + tangent, no per-face material, no texture.
+// the costumes carries its per-pixel shading (saved mesh format 3) and draws it on every sub-mesh: ONE interpreter
+// function shared by the parts (one more only for a material graph such as the player colour), each part a block of
+// material data words named by its surface record; the rest point in the vertex colour and the rest frame in uv +
+// tangent, no per-face material, no texture.
 test('saved penguin and costume parts draw their per-pixel SDF shading on every sub-mesh', () => {
   const root=new URL('../../../',import.meta.url)
   for(const id of ['penguin.body',...readdirSync(new URL('assets/common/',root)).filter(n=>/^costume\..*\.mesh$/.test(n)).map(n=>n.replace(/\.mesh$/,''))]) {
@@ -328,7 +334,11 @@ test('saved penguin and costume parts draw their per-pixel SDF shading on every 
     engine.addMaterialFunction=((name:string)=>{functions.push(name);calls.functions++}) as typeof engine.addMaterialFunction
     port.engine=engine;port.target={}
     port.createInstance(port.registerAsset(id,{id}),null)
-    assert.equal(functions.filter(f=>f.startsWith('sdff.')).length,parts.length,`${id}: one shading function per part`)
+    const sdff=functions.filter(f=>f.startsWith('sdff.'))
+    assert.ok(sdff.length>=1&&sdff.length<=2,`${id}: ${sdff.length} shading functions for ${parts.length} parts (one interpreter, plus one with the player-colour graph)`)
+    assert.equal(calls.data.length,parts.length,`${id}: one data block per part`)
+    const shaded=calls.descs.filter(d=>typeof d.function==='string'&&d.function.startsWith('sdff.'))
+    assert.ok(shaded.length===parts.length&&shaded.every(d=>typeof d.data==='number'&&d.data>=4),`${id}: each part's surface record names its data block`)
     const descs=calls.jointStreams as {colors?:Float32Array;uvs?:Float32Array;tangents?:Float32Array;positions:Float32Array;subMeshes:{material?:number}[]}[]
     // Each part uploads its vertex-colour copy first (drawn while its shading compiles), then its shaded mesh.
     assert.equal(descs.length,parts.length*2,`${id}: a vertex-colour copy and a shaded mesh per part`)
@@ -363,9 +373,10 @@ test('a shaded part draws its vertex-colour copy until every pipeline of its sha
   context.configure({ device })
   const { engine, calls } = fakeEngine()
   const shadings: string[] = []
+  const names: string[] = []
   const removed: number[] = []
   Object.assign(engine, {
-    addMaterialFunction(name: string, wgsl: string) { calls.functions++; if (name.startsWith('sdff.')) shadings.push(wgsl) },
+    addMaterialFunction(name: string, wgsl: string) { calls.functions++; if (name.startsWith('sdff.')) { shadings.push(wgsl); names.push(name) } },
     removeNode(node: number) { removed.push(node) },
     render() {}, stats: () => ({ drawCalls: 0, triangles: 0, instances: 0 }),
   })
@@ -373,7 +384,10 @@ test('a shaded part draws its vertex-colour copy until every pipeline of its sha
   port.engine = engine; port.target = {}
   Object.assign(port, { canvas: context.canvas })
   port.createInstance(port.registerAsset(id, { id }), null)
-  assert.equal(shadings.length, parts.length)
+  // The parts share the interpreter: the parts of one function swap together.
+  const partsOf = (name: string) => calls.descs.filter(d => d.function === name).length
+  assert.ok(shadings.length >= 1 && shadings.length <= parts.length, `${shadings.length} shading functions for ${parts.length} parts`)
+  assert.equal(names.reduce((n, name) => n + partsOf(name), 0), parts.length)
   assert.equal(calls.instances, parts.length * 2, 'each part draws its shading and, meanwhile, its vertex-colour copy')
   const view = port as unknown as { render(): void; fallbackParts(): number }
   assert.equal(view.fallbackParts(), parts.length)
@@ -390,8 +404,8 @@ test('a shaded part draws its vertex-colour copy until every pipeline of its sha
   resolvers.splice(0, 1).forEach(done => done())
   await new Promise(resolve => setTimeout(resolve, 0))
   view.render()
-  assert.equal(removed.length, 1, 'the first part swaps the frame its shadow and forward variants are compiled')
-  assert.equal(view.fallbackParts(), parts.length - 1)
+  assert.equal(removed.length, partsOf(names[0]), 'the parts of the first function swap the frame its shadow and forward variants are compiled')
+  assert.equal(view.fallbackParts(), parts.length - partsOf(names[0]))
   resolvers.splice(0).forEach(done => done())
   await new Promise(resolve => setTimeout(resolve, 0))
   view.render()

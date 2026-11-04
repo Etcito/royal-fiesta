@@ -9,7 +9,7 @@ import type { CameraPose, QuatT, SkinnedAssetT, Vec3T } from '@royal-fiesta/game
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { Action } from '@royal-fiesta/game/screens/nav'
-import { mountStartScreen } from '../src/screens/startScreen.ts'
+import { cameraRay, mountStartScreen } from '../src/screens/startScreen.ts'
 import type { StartArt } from '../src/screens/startScreen.ts'
 import type { WidgetProps } from '../src/ui/screenMap.ts'
 import type { UaaHost } from '../src/ui/uaaHost.ts'
@@ -299,4 +299,46 @@ test('start scene supplies dressing and penguin spot with responsive camera fram
   assert.deepEqual(s.port.lastCamera, { eye: [2, 0.7, 6.2], target: [2, 0.1, 0], fovYDeg: 38, near: 0.1, far: 500 })
   view.setVisible(false); view.setVisible(true); view.update(s.model, null); view.unmount()
   assert.deepEqual(calls, ['start-season2', 'leave'])
+})
+
+// Owner 2026-11-04: the carousels show the cosmetics themselves in 3D (the asset the penguin wears), with no
+// card and no thumbnail. Each visible cell holding an item gets an instance of the shared asset on the camera
+// ray through the cell, fitted to it; the focused selection is drawn larger.
+test('carousel cells draw each cosmetic as its 3D asset on the camera ray through the cell, no card or thumbnail', async () => {
+  const s = await setup()
+  const cell = (id: string) => {
+    const m = /^carousel-(\d)-(\d)$/.exec(id)
+    return m === null ? null : { x: 100 + 150 * Number(m[2]), y: 50 + 120 * Number(m[1]), w: 138, h: 100 }
+  }
+  s.host.widgetRect = cell
+  const box = { min: [-0.5, -0.5, -0.5] as Vec3T, max: [0.5, 0.5, 0.5] as Vec3T }
+  const bounds = new Map(ids.map(id => [id, box]))
+  const size = { width: 800, height: 600 }
+  const view = mountStartScreen(s.host, s.model, { ...s.deps, viewSize: () => size }, { ...s.art, bounds })
+  // One penguin, three worn costumes and one carousel item per bin that owns one (the special bin owns none).
+  assert.equal(s.port.render().instances, 7)
+  assert.deepEqual(s.port.registered, ['penguin.body', ...ids], 'carousel items reuse the worn assets')
+  for (const key of Object.keys(s.props())) assert.ok(!/^(thumb-start|carousel-focus)-/.test(key), `${key} is still set`)
+  const carouselInstances = s.port.created.slice(4)
+  assert.equal(carouselInstances.length, 3)
+  const ray = cameraRay(s.port.lastCamera!, size)
+  carouselInstances.forEach(({ instance }, bin) => {
+    // Each bin holds one item: its window is [None, item], so the item sits in column 1.
+    const rect = cell(`carousel-${bin}-1`)!
+    const top = rect.h * 0.72
+    const { point, worldPerPx } = ray(rect.x + rect.w / 2, rect.y + top / 2)
+    const transform = s.port.transforms.get(instance)!
+    near(transform.t, point)
+    // The focused bin (head, selected) is drawn at full size, the others smaller.
+    const fill = bin === 0 ? 1 : 0.78
+    near(transform.s, [1, 1, 1].map(() => Math.min(rect.w, top) * worldPerPx * fill))
+    const eye = s.port.lastCamera!.eye
+    assert.ok(Math.hypot(point[0] - eye[0], point[1] - eye[1], point[2] - eye[2]) < 6.2, 'in front of the penguin')
+  })
+  // Without a laid-out cell nothing is drawn there; the cell's instance goes.
+  s.host.widgetRect = id => id === 'carousel-0-1' ? null : cell(id)
+  view.update(s.model, null)
+  assert.equal(s.port.render().instances, 6)
+  view.unmount()
+  assert.equal(s.port.render().instances, 0)
 })

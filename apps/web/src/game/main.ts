@@ -1979,10 +1979,14 @@ class App {
       console.warn('[start] character anchors unavailable:', messageOf(e))
     }
     const mounts = new Map<string, Vec3T>()
+    const bounds = new Map<string, { min: Vec3T; max: Vec3T }>()
     for (const item of this.startCosmetics) {
       try {
-        if (body === null) continue
         const costume = (await resolver.resolve(cosmeticOf(item.id)?.asset ?? item.id)).asset
+        // The start carousels draw the cosmetic itself in 3D, centred and fitted with its asset bounds.
+        const { min, max } = costume.bounds
+        bounds.set(item.id, { min: [min.x, min.y, min.z], max: [max.x, max.y, max.z] })
+        if (body === null) continue
         if (stage.skinOf?.(costume.id)) { mounts.set(item.id, [0, 0, 0]); continue }
         const names = Object.keys(costume.anchors)
         if (names.length !== 1) continue
@@ -2011,6 +2015,7 @@ class App {
         }
       },
       mounts,
+      bounds,
       scene: content.startScene?.(JSON.parse(startSeasonJson).id),
       dressing: content.dressing(),
       environment: hubEnvironment(content),
@@ -2358,6 +2363,8 @@ class App {
       if (this.startView === null && this.startArt !== null && this.startModel !== null) {
         this.startView = mountStartScreen(this.host, this.startModel, {
           cue: id => this.sound.cue(id), stage: this.loaded?.ports[0], character: this.startArt.character, localSeat: 0,
+          // canvas#ui follows #screens; the carousels place their 3D cosmetics under its cells.
+          viewSize: () => ({ width: this.screens.clientWidth, height: this.screens.clientHeight }),
         }, this.startArt)
       }
       if (this.startView !== null && this.startModel !== null) {

@@ -5617,7 +5617,7 @@
         },
         {
           "id": "bin-head-card",
-          "type": "panel",
+          "type": "group",
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
@@ -5630,7 +5630,6 @@
             "offsetMin": [24, 162],
             "offsetMax": [444, 346]
           },
-          "asset": "wardrobe.panel",
           "children": [
             {
               "id": "bin-head-title",
@@ -5650,7 +5649,8 @@
               "text": "Hat",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 26,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -5671,12 +5671,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 22,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-0-0",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -5688,42 +5689,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [32, 42],
                 "offsetMax": [116, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-0-0",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [44, 36],
-                "offsetMax": [182, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [32, 42],
-                "offsetMax": [116, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-0-0",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [76, 30],
-                "offsetMax": [150, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [36, 43],
-                "offsetMax": [112, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-0-0",
@@ -5743,7 +5709,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -5764,12 +5731,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-0-1",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -5781,42 +5749,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [122, 42],
                 "offsetMax": [206, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-0-1",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [190, 36],
-                "offsetMax": [328, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [122, 42],
-                "offsetMax": [206, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-0-1",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [222, 30],
-                "offsetMax": [296, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [126, 43],
-                "offsetMax": [202, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-0-1",
@@ -5836,7 +5769,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -5857,12 +5791,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-0-2",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -5874,42 +5809,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [212, 42],
                 "offsetMax": [296, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-0-2",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [336, 36],
-                "offsetMax": [474, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [212, 42],
-                "offsetMax": [296, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-0-2",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [368, 30],
-                "offsetMax": [442, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [216, 43],
-                "offsetMax": [292, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-0-2",
@@ -5929,7 +5829,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -5950,12 +5851,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-0-3",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -5967,42 +5869,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [302, 42],
                 "offsetMax": [386, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-0-3",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [482, 36],
-                "offsetMax": [620, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [302, 42],
-                "offsetMax": [386, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-0-3",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [514, 30],
-                "offsetMax": [588, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [306, 43],
-                "offsetMax": [382, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-0-3",
@@ -6022,7 +5889,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6043,7 +5911,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6064,7 +5933,8 @@
               "text": "<",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6085,14 +5955,15 @@
               "text": ">",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             }
           ]
         },
         {
           "id": "bin-body-card",
-          "type": "panel",
+          "type": "group",
           "rect": {
             "anchorMin": [0, 0],
             "anchorMax": [0, 0],
@@ -6105,7 +5976,6 @@
             "offsetMin": [24, 366],
             "offsetMax": [444, 550]
           },
-          "asset": "wardrobe.panel",
           "children": [
             {
               "id": "bin-body-title",
@@ -6125,7 +5995,8 @@
               "text": "Outfit",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 26,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6146,12 +6017,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 22,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-1-0",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -6163,42 +6035,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [32, 42],
                 "offsetMax": [116, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-1-0",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [44, 36],
-                "offsetMax": [182, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [32, 42],
-                "offsetMax": [116, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-1-0",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [76, 30],
-                "offsetMax": [150, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [36, 43],
-                "offsetMax": [112, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-1-0",
@@ -6218,7 +6055,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6239,12 +6077,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-1-1",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -6256,42 +6095,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [122, 42],
                 "offsetMax": [206, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-1-1",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [190, 36],
-                "offsetMax": [328, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [122, 42],
-                "offsetMax": [206, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-1-1",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [222, 30],
-                "offsetMax": [296, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [126, 43],
-                "offsetMax": [202, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-1-1",
@@ -6311,7 +6115,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6332,12 +6137,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-1-2",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -6349,42 +6155,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [212, 42],
                 "offsetMax": [296, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-1-2",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [336, 36],
-                "offsetMax": [474, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [212, 42],
-                "offsetMax": [296, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-1-2",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [368, 30],
-                "offsetMax": [442, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [216, 43],
-                "offsetMax": [292, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-1-2",
@@ -6404,7 +6175,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6425,12 +6197,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-1-3",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -6442,42 +6215,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [302, 42],
                 "offsetMax": [386, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-1-3",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [482, 36],
-                "offsetMax": [620, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [302, 42],
-                "offsetMax": [386, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-1-3",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [514, 30],
-                "offsetMax": [588, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [306, 43],
-                "offsetMax": [382, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-1-3",
@@ -6497,7 +6235,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6518,7 +6257,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6539,7 +6279,8 @@
               "text": "<",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6560,14 +6301,15 @@
               "text": ">",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             }
           ]
         },
         {
           "id": "bin-bottom-card",
-          "type": "panel",
+          "type": "group",
           "rect": {
             "anchorMin": [0, 1],
             "anchorMax": [0, 1],
@@ -6580,7 +6322,6 @@
             "offsetMin": [-444, 162],
             "offsetMax": [-24, 346]
           },
-          "asset": "wardrobe.panel",
           "children": [
             {
               "id": "bin-bottom-title",
@@ -6600,7 +6341,8 @@
               "text": "Extra",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 26,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6621,12 +6363,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 22,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-2-0",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -6638,42 +6381,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [32, 42],
                 "offsetMax": [116, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-2-0",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [44, 36],
-                "offsetMax": [182, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [32, 42],
-                "offsetMax": [116, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-2-0",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [76, 30],
-                "offsetMax": [150, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [36, 43],
-                "offsetMax": [112, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-2-0",
@@ -6693,7 +6401,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6714,12 +6423,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-2-1",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -6731,42 +6441,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [122, 42],
                 "offsetMax": [206, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-2-1",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [190, 36],
-                "offsetMax": [328, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [122, 42],
-                "offsetMax": [206, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-2-1",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [222, 30],
-                "offsetMax": [296, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [126, 43],
-                "offsetMax": [202, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-2-1",
@@ -6786,7 +6461,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6807,12 +6483,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-2-2",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -6824,42 +6501,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [212, 42],
                 "offsetMax": [296, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-2-2",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [336, 36],
-                "offsetMax": [474, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [212, 42],
-                "offsetMax": [296, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-2-2",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [368, 30],
-                "offsetMax": [442, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [216, 43],
-                "offsetMax": [292, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-2-2",
@@ -6879,7 +6521,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6900,12 +6543,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-2-3",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -6917,42 +6561,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [302, 42],
                 "offsetMax": [386, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-2-3",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [482, 36],
-                "offsetMax": [620, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [302, 42],
-                "offsetMax": [386, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-2-3",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [514, 30],
-                "offsetMax": [588, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [306, 43],
-                "offsetMax": [382, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-2-3",
@@ -6972,7 +6581,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -6993,7 +6603,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7014,7 +6625,8 @@
               "text": "<",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7035,14 +6647,15 @@
               "text": ">",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             }
           ]
         },
         {
           "id": "bin-special-card",
-          "type": "panel",
+          "type": "group",
           "rect": {
             "anchorMin": [0, 1],
             "anchorMax": [0, 1],
@@ -7055,7 +6668,6 @@
             "offsetMin": [-444, 366],
             "offsetMax": [-24, 550]
           },
-          "asset": "wardrobe.panel",
           "children": [
             {
               "id": "bin-special-title",
@@ -7075,7 +6687,8 @@
               "text": "Special",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 26,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7096,12 +6709,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 22,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-3-0",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -7113,42 +6727,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [32, 42],
                 "offsetMax": [116, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-3-0",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [44, 36],
-                "offsetMax": [182, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [32, 42],
-                "offsetMax": [116, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-3-0",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [76, 30],
-                "offsetMax": [150, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [36, 43],
-                "offsetMax": [112, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-3-0",
@@ -7168,7 +6747,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7189,12 +6769,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-3-1",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -7206,42 +6787,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [122, 42],
                 "offsetMax": [206, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-3-1",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [190, 36],
-                "offsetMax": [328, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [122, 42],
-                "offsetMax": [206, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-3-1",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [222, 30],
-                "offsetMax": [296, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [126, 43],
-                "offsetMax": [202, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-3-1",
@@ -7261,7 +6807,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7282,12 +6829,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-3-2",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -7299,42 +6847,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [212, 42],
                 "offsetMax": [296, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-3-2",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [336, 36],
-                "offsetMax": [474, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [212, 42],
-                "offsetMax": [296, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-3-2",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [368, 30],
-                "offsetMax": [442, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [216, 43],
-                "offsetMax": [292, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-3-2",
@@ -7354,7 +6867,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7375,12 +6889,13 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
               "id": "carousel-3-3",
-              "type": "panel",
+              "type": "group",
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
@@ -7392,42 +6907,7 @@
                 "anchorMax": [0, 0],
                 "offsetMin": [302, 42],
                 "offsetMax": [386, 174]
-              },
-              "asset": "wardrobe.card"
-            },
-            {
-              "id": "carousel-focus-3-3",
-              "type": "panel",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [482, 36],
-                "offsetMax": [620, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [302, 42],
-                "offsetMax": [386, 174]
-              },
-              "asset": "wardrobe.focus"
-            },
-            {
-              "id": "thumb-start-3-3",
-              "type": "icon",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [514, 30],
-                "offsetMax": [588, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [306, 43],
-                "offsetMax": [382, 123]
-              },
-              "asset": "badge.round"
+              }
             },
             {
               "id": "carousel-name-3-3",
@@ -7447,7 +6927,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 17,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7468,7 +6949,8 @@
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 18,
-              "color": "#7a247d",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7489,7 +6971,8 @@
               "text": "<",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             },
             {
@@ -7510,7 +6993,8 @@
               "text": ">",
               "font": { "family": "Fredoka", "weight": 700 },
               "size": 40,
-              "color": "#3a1757",
+              "color": "#ffffff",
+              "outline": { "width": 3, "color": "#552372" },
               "align": "center"
             }
           ]

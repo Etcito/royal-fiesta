@@ -52,6 +52,51 @@ test('maps every CharMode, horizontal units, vertical motion, emotes and jump ed
   for (const emote of [-1, 5, 1.5, NaN]) assert.equal(mapParams(observation(1, 0, emote), mem).emote, 0)
 })
 
+test('airTime counts the airborne ticks; a slide airtime never fires jump', () => {
+  const mem = newParamMemory()
+  const belly = { ...observation(1, CharMode.slide), grounded: true }
+  mapParams(belly, mem)
+  const hop = { ...observation(1, CharMode.air), vel: { x: 6, y: 2, z: 0 }, slideAir: true }
+  const first = mapParams(hop, mem)
+  assert.equal(first.jump, false, 'a bump under a belly slide is no jump')
+  assert.equal(first.airTime, 1 / 60)
+  for (let tick = 2; tick <= 180; tick++) assert(Math.abs(mapParams(hop, mem).airTime - tick / 60) < 1e-9)
+  assert.equal(mapParams(belly, mem).airTime, 0)
+})
+
+test('a short airtime never plays the fall clip; past FALL_AFTER_S it does (owner 2026-11-04)', async () => {
+  const api = await loadAnimBrick(), rig = api.loadRig(rigJson)
+  const clips = clipsJson.map((json: string) => api.loadClip(rig, json))
+  const graph = api.loadGraph(graphJson, rig, clips)
+  // The same pose sequence on the belly with and without an airtime: equal skins mean no transition.
+  const run = (from: number, airTicks: number) => {
+    const hop = graph.newState(), slide = graph.newState(), mem = newParamMemory(), still = newParamMemory()
+    const ground = { ...observation(1, from), grounded: true }
+    try {
+      const params = (state: typeof hop, obs: CharacterObservation, m: typeof mem) => graph.step(state, { ...mapParams(obs, m) }).skin
+      for (let tick = 0; tick < 40; tick++) {
+        params(hop, ground, mem); params(slide, ground, still)
+      }
+      let a: Float32Array = new Float32Array(), b: Float32Array = new Float32Array()
+      for (let tick = 0; tick < airTicks; tick++) {
+        a = params(hop, { ...observation(1, CharMode.air), slideAir: from === CharMode.slide, grounded: false, vel: { x: 3, y: -1, z: 4 } }, mem)
+        b = params(slide, ground, still)
+      }
+      return a.every((v, i) => Math.abs(v - b[i]) < 1e-6)
+    } finally { hop.free(); slide.free() }
+  }
+  try {
+    assert.equal(run(CharMode.slide, 40), true, 'a bump under a belly slide keeps the belly')
+    assert.equal(run(CharMode.slide, 179), true, 'still on the belly just under 3 s')
+    assert.equal(run(CharMode.slide, 200), false, 'a 3 s fall plays the fall clip')
+    assert.equal(run(CharMode.ground, 40), true, 'a short drop off a ledge keeps locomotion')
+  } finally {
+    graph.free()
+    for (const clip of clips) clip.free()
+    rig.free()
+  }
+})
+
 test('observed ticks step independent real graphs once; pose reads and tick gaps never catch up', async () => {
   const driver = await AnimDriver.load(graphJson, rigJson, clipsJson)
   const api = await loadAnimBrick(), rig = api.loadRig(rigJson)

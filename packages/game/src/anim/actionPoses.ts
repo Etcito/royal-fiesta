@@ -2,6 +2,7 @@
 import { CHAR, CharMode, CarryKind, SLIDE_STROKE, strokeAnimPhase } from '@royal-fiesta/sim/character/constants'
 import type { PoseLayer } from './layers.ts'
 import { walkBones, type WalkBones } from './walkCycle.ts'
+import { FALL_AFTER_S, TICK_S } from './params.ts'
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v))
 const ease = (v: number) => { const t = clamp(v); return t*t*(3-2*t) }
@@ -76,31 +77,35 @@ export const ACTION_LAYER: PoseLayer = {
     const affected = Object.values(bones)
     let ramp = 0, bellyWeight = 0, impact = 0, previousMode = -1
     let prevX = 0, prevZ = 0, bank = 0, power = 0, load = 0
-    let belly = false, contact = 0
+    let belly = false, contact = 0, airTicks = 0
     return {
       observe(obs) {
-        belly = obs.mode === CharMode.slide || obs.mode === CharMode.swim ||
-          obs.mode === CharMode.dive || obs.mode === CharMode.diveRecover
+        // A belly slide's short airtime (a bump) stays on the belly: the sim lands it back there,
+        // and the graph keeps its bellySlide state until the fall delay (owner 2026-11-04).
+        airTicks = obs.grounded ? 0 : airTicks + 1
+        const mode = obs.slideAir === true && airTicks * TICK_S < FALL_AFTER_S ? CharMode.slide : obs.mode
+        belly = mode === CharMode.slide || mode === CharMode.swim ||
+          mode === CharMode.dive || mode === CharMode.diveRecover
         const active = belly ||
-          obs.mode === CharMode.grabbing || (obs.carry ?? 0) !== CarryKind.none
+          mode === CharMode.grabbing || (obs.carry ?? 0) !== CarryKind.none
         ramp = Math.max(0, Math.min(6, ramp + (active ? 1 : bellyWeight > 0 ? -0.5 : -1)))
         bellyWeight = Math.max(0, Math.min(1, bellyWeight + (belly ? 1/6 : -1/12)))
-        const onBelly = obs.mode === CharMode.slide || obs.mode === CharMode.diveRecover
+        const onBelly = mode === CharMode.slide || mode === CharMode.diveRecover
         contact = Math.max(0, Math.min(1, contact + (onBelly ? 1/6 : -1/12)))
-        impact = obs.mode === CharMode.slide && previousMode === CharMode.dive ? 1 : Math.max(0, impact - 1/10)
-        previousMode = obs.mode
+        impact = mode === CharMode.slide && previousMode === CharMode.dive ? 1 : Math.max(0, impact - 1/10)
+        previousMode = mode
         const speed = Math.hypot(obs.vel.x, obs.vel.z)
         const x = speed > 0.5 ? obs.vel.x / speed : prevX
         const z = speed > 0.5 ? obs.vel.z / speed : prevZ
         const turn = Math.atan2(prevZ*x - prevX*z, prevX*x + prevZ*z)
         bank += (Math.max(-0.22, Math.min(0.22, -turn*4)) - bank) * 0.25
         prevX = x; prevZ = z
-        const stroking = obs.mode === CharMode.slide || obs.mode === CharMode.swim
-        const phase = stroking ? strokePhase(obs.mode, obs.strokeTimer ?? 0, obs.strokePhase) : 1
+        const stroking = mode === CharMode.slide || mode === CharMode.swim
+        const phase = stroking ? strokePhase(mode, obs.strokeTimer ?? 0, obs.strokePhase) : 1
         load = belly ? Math.sin(Math.PI * clamp(phase / 0.3)) : load
-        power = belly ? (stroking ? strokeShape(obs.mode, obs.strokeTimer ?? 0, obs.strokePhase, obs.strokeStart).power : 0) : power
+        power = belly ? (stroking ? strokeShape(mode, obs.strokeTimer ?? 0, obs.strokePhase, obs.strokeStart).power : 0) : power
         // Retain the last target while fading back to the graph.
-        if (active) actionPose(obs.mode, obs.carry ?? 0, obs.strokeTimer ?? 0, target, bones, obs.strokePhase, obs.strokeStart)
+        if (active) actionPose(mode, obs.carry ?? 0, obs.strokeTimer ?? 0, target, bones, obs.strokePhase, obs.strokeStart)
       },
       apply(local) {
         if (!ramp) return
@@ -134,7 +139,7 @@ export const ACTION_LAYER: PoseLayer = {
       },
       reset() {
         ramp = 0; bellyWeight = 0; impact = 0; previousMode = -1
-        prevX = 0; prevZ = 0; bank = 0; power = 0; load = 0; belly = false; contact = 0; target.fill(0)
+        prevX = 0; prevZ = 0; bank = 0; power = 0; load = 0; belly = false; contact = 0; airTicks = 0; target.fill(0)
       },
     }
   },

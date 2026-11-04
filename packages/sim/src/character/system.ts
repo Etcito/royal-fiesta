@@ -55,6 +55,8 @@ export interface CharState {
   strokePhase?: number
   /** This sim's push start as a fraction of the stroke animation (startFrac). */
   strokeStart?: number
+  /** In a belly slide's airtime (derived, not state): the landing puts him back on the belly. */
+  slideAir?: boolean
 }
 
 const CHAR_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING | G.CHAR)
@@ -437,6 +439,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     out.strokeTimer = this.#strokeTimer[p]
     out.strokePhase = this.#mode[p] === CharMode.swim ? undefined : strokeAnimPhase(this.slideStroke, this.#strokeTimer[p])
     out.strokeStart = this.slideStroke.startFrac
+    out.slideAir = this.#mode[p] === CharMode.air && this.#timer[p] === SLIDE_AIR
     return out
   }
 

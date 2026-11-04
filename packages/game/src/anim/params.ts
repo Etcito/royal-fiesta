@@ -29,7 +29,14 @@ export interface CharObservation {
   surface: string
   /** S9 emote index: 0 none, 1 wave, 2 dance, 3 cheer, 4 laugh. */
   emote: number
+  /** A belly slide's airtime (a bump): the sim lands it back on the belly, so it is no jump. */
+  slideAir?: boolean
 }
+
+/** Observed sim ticks per second (the sim's fixed 60 Hz step). */
+export const TICK_S = 1 / 60
+/** The fall animation plays only once he has been off the ground this long (owner 2026-11-04). */
+export const FALL_AFTER_S = 3
 
 /** Graph params keyed by the declared names, with the declared types. */
 export interface PenguinParams {
@@ -39,13 +46,14 @@ export interface PenguinParams {
   mode: number // int
   jump: boolean // trigger: true on the tick it fires
   emote: number // int
+  airTime: number // float, seconds off the ground (0 while grounded)
 }
 
 /** Per-character edge-detection memory for trigger inputs. */
-export interface ParamMemory { prevGrounded: boolean; prevMode: number; primed: boolean }
+export interface ParamMemory { prevGrounded: boolean; prevMode: number; primed: boolean; airTicks: number }
 
 export function newParamMemory(): ParamMemory {
-  return { prevGrounded: true, prevMode: CharMode.ground, primed: false }
+  return { prevGrounded: true, prevMode: CharMode.ground, primed: false, airTicks: 0 }
 }
 
 /** Maps a CharMode to the graph's `mode` int. */
@@ -68,17 +76,22 @@ export function graphEmote(emote: number): number {
 
 /**
  * Builds the graph params for one tick and advances `mem`. `jump` fires only on the
- * grounded -> airborne edge with upward velocity, so repeated observations never retrigger it.
+ * grounded -> airborne edge with upward velocity, so repeated observations never retrigger it;
+ * a slide's airtime never fires it. `airTime` counts the observed airborne ticks: every
+ * transition into `fall` but a jump's own descent waits for FALL_AFTER_S, so a short hop (a bump
+ * under a belly slide, a step off a ledge) keeps the pose it had.
  */
 export function mapParams(obs: CharObservation, mem: ParamMemory, out?: PenguinParams): PenguinParams {
-  const o = out ?? { speed: 0, vy: 0, grounded: true, mode: 0, jump: false, emote: 0 }
+  const o = out ?? { speed: 0, vy: 0, grounded: true, mode: 0, jump: false, emote: 0, airTime: 0 }
   const { x, y, z } = obs.vel
   o.speed = Math.sqrt(x * x + z * z)
   o.vy = y
   o.grounded = obs.grounded
   o.mode = graphMode(obs.mode)
-  o.jump = mem.primed && mem.prevGrounded && !obs.grounded && y > 0 && obs.mode === CharMode.air
+  o.jump = mem.primed && mem.prevGrounded && !obs.grounded && y > 0 && obs.mode === CharMode.air && obs.slideAir !== true
   o.emote = graphEmote(obs.emote)
+  mem.airTicks = obs.grounded ? 0 : mem.airTicks + 1
+  o.airTime = mem.airTicks * TICK_S
   mem.prevGrounded = obs.grounded
   mem.prevMode = obs.mode
   mem.primed = true

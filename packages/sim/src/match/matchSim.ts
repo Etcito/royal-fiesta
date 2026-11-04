@@ -59,6 +59,8 @@ export interface CharacterView {
   slideSpeed?: number
   carry?: number
   surface?: string
+  /** In a belly slide's airtime: it lands back on the belly. */
+  slideAir?: boolean
 }
 
 export interface MatchSimOptions {
@@ -468,6 +470,7 @@ export class MatchSim implements Simulation<PlayerInput>, MechanismView {
     out.strokeStart = st.strokeStart
     out.slideSpeed = st.slideSpeed
     out.carry = st.carry
+    out.slideAir = st.slideAir
     out.surface = st.groundBody != null
       ? this.#mechanisms.spec()!.items[st.groundBody.item].bodies[st.groundBody.body].surface
       : st.groundObstacle >= 0 ? surfaceOf(this.#obstacles.spec(st.groundObstacle)) : 'normal'

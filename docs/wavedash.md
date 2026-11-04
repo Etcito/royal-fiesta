@@ -67,6 +67,32 @@ Without a CDN, `checkUpload` refuses a WAV, a missing audio manifest or a file i
 any audio directory/media file, a non-HTTP(S) audio base, or built JavaScript that does not contain that base. Rebuild with the host environment if a skip-build package is stale.
 No build push or publish is performed by the packager.
 
+A Wavedash build plays online: `npm run wavedash` refuses to build or pack when `VITE_RF_SERVER` is unset
+("a Wavedash build must play online; set VITE_RF_SERVER=wss://<relay>/ws in the build environment (never a file),
+or pass --offline for an offline-only build"), refuses a value that is not ws:// or wss://, and refuses an upload
+whose built JavaScript does not carry that URL (a stale `--skip-build` dist: rebuild). `-- --offline` packs an
+offline-only build on purpose. The URL stays out of the repository and out of `rf-build.json` (only
+`defaultServer`). Example, placeholder host: `VITE_RF_SERVER=wss://relay.example.invalid/ws npm run wavedash`.
+
+### Levels and meshes in the upload
+
+The upload ships only what a shipped page uses (`shippedContent` in tools/content.ts, from the real load code):
+
+- the levels ticked in SDF Modeler (Assets > Games > Levels, "in the build"), saved as `sdfm.build.json` at the
+  repository root (`{"format": "sdfm.build", "version": 1, "courses": [...]}`; without the file every course ships).
+  `content/index.json` lists only these courses, so the page offers no other level;
+- the assets those pages mesh (`assetSet` of apps/web/src/content/assetSet.ts over the ticked courses: every race and
+  survival course, the start scene, the hub, the podium, the character and every cosmetic) plus the catalog
+  cosmetics (`economy/catalog.season1.json`); an asset file a ticked course places is kept so the course parses;
+- each meshed asset's saved `.mesh`, gzipped under its own name (the page decodes every fetched mesh with
+  `decodeMeshBytes`, which inflates by the gzip magic); a server mesh only for a meshed asset without a saved mesh,
+  never the whole server mesh cache. An earlier local pack in `dist/content/` is not copied.
+
+`checkUpload` refuses an upload that carries an asset file or a mesh no shipped page uses, a server mesh while the
+asset has a saved one, or a file `content/index.json` names but the upload lacks. The summary line prints the file
+count, the total size, the meshes (count and gzipped MB), the audio MB and the number of levels, then the levels and
+the assets whose meshes were left out.
+
 ## Layout
 
 `npm run wavedash` writes `out/wavedash-build/` (untracked):

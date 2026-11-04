@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { gunzipSync } from 'node:zlib'
 import { LOCAL_COSMETICS } from '@royal-fiesta/game/flow/startScreen'
 import { buildContentIndex, contentDir, contentPath, packContent, profileAssetIds, validateContent } from '../content.ts'
 
@@ -74,7 +75,8 @@ test('index and pack carry saved meshes, audio patches and level thumbnails', ()
     assert.deepEqual(index.thumbs, [{ map: 'B', path: 'courses/s1-b-butterfly-freeway.thumb.avif' }, { map: 'candy.a', path: 'assets/candy/candy.a.thumb.avif' }, { map: 'costume.hat.rose', path: 'assets/candy/costume.hat.rose.thumb.avif' }])
     assert.deepEqual(readFileSync(join(dir, 'out/assets/candy/costume.hat.rose.thumb.avif')), Buffer.from([6, 5, 4]))
     assert.deepEqual(readFileSync(join(dir, 'out/assets/candy/candy.a.thumb.avif')), Buffer.from([3, 2, 1]))
-    assert.deepEqual(readFileSync(join(dir, 'out/assets/candy/candy.a.mesh')), Buffer.from([1, 2, 3]))
+    // packed saved meshes are gzipped under the same name (the page inflates them by the magic)
+    assert.deepEqual(gunzipSync(readFileSync(join(dir, 'out/assets/candy/candy.a.mesh'))), Buffer.from([1, 2, 3]))
     assert.equal(readFileSync(join(dir, 'out/audio/bell.haa.json'), 'utf8'), '{"haa":1,"id":"bell"}')
     assert.deepEqual(readFileSync(join(dir, 'out/courses/s1-b-butterfly-freeway.thumb.avif')), Buffer.from([9, 8, 7]))
     assert.equal(existsSync(join(dir, 'out/thumbs/cache.json')), false)

@@ -11,6 +11,7 @@ import { sharedNodeIds } from './nodeIds.ts'
 import { loadCourseV1 } from '../packages/game/src/courseV1.ts'
 import type { GameAssetResolver, ResolvedGameAsset } from '../packages/game/src/courseV1.ts'
 import { parseGameAsset } from '../packages/game/src/gameAsset.ts'
+import { refuse } from '../packages/sim/src/refusal.ts'
 
 // S29 index: `mesh` only when the saved S24 mesh exists, `audio` from audio/*.haa.json, `thumbs` from the level
 // thumbnails saved by SDF Modeler next to each course for the vote screen.
@@ -124,6 +125,80 @@ export async function profileAssetIds(profile: ProfileName, dir = contentDir()):
   return assetSet(courses, byId, profile, index.assets.map(e => e.id).filter(id => id.startsWith('costume.')))
 }
 
+// The build list SDF Modeler writes (Assets tab > Games > Levels, sdfm.build.json at the game root): the courses that
+// ship. Absent: every course ships.
+export const BUILD_FILE = 'sdfm.build.json'
+export const CATALOG_FILE = 'economy/catalog.season1.json'
+
+/** The ticked course ids of the build list in dir, or null when dir has no build list (every course ships). */
+export function buildCourses(dir = contentDir()): string[] | null {
+  const file = join(dir, BUILD_FILE)
+  if (!existsSync(file)) return null
+  const json = JSON.parse(readFileSync(file, 'utf8')) as { format?: unknown; version?: unknown; courses?: unknown }
+  if (json.format !== 'sdfm.build' || json.version !== 1 || !Array.isArray(json.courses) || !json.courses.every(c => typeof c === 'string')) {
+    refuse('content', BUILD_FILE, 'is not a build list {"format": "sdfm.build", "version": 1, "courses": [...]}; tick the levels again in SDF Modeler (Assets > Games > Levels)')
+  }
+  return [...new Set(json.courses as string[])].sort()
+}
+
+/** What a shipped page needs: the courses offered, the asset files they read, the assets whose meshes it loads. */
+export interface ShippedContent {
+  courses: Set<string>
+  /** Asset files the page reads: the meshed assets plus every asset a shipped course places (a course parses them). */
+  assets: Set<string>
+  /** Assets the page meshes (apps/web/src/content/sdfLoad.ts): its saved .mesh, or a server mesh when it has none. */
+  meshed: Set<string>
+}
+
+/**
+ * The content a shipped game page uses, from its real load code: the courses of the build list (all without one),
+ * then sdfLoad's set over them (assetSet: every race and survival course, the start scene, the hub, the podium, the
+ * character and the wardrobe of every cosmetic in the index) plus the catalog cosmetics (economy/catalog.season1.json).
+ */
+export async function shippedContent(dir = contentDir(), root = repoRoot()): Promise<ShippedContent> {
+  const { assetSet } = await import('../apps/web/src/content/assetSet.ts')
+  const { loadV1Courses } = await import('../apps/web/src/content/v1Data.ts')
+  const index = buildContentIndex(dir)
+  const known = new Set(index.courses.map(c => c.id))
+  const listed = buildCourses(dir)
+  for (const id of listed ?? []) {
+    if (!known.has(id)) refuse('content', BUILD_FILE, `lists '${id}', which has no courses/${id}.course.json; untick it in SDF Modeler (Assets > Games > Levels)`)
+  }
+  const ticked = listed ?? [...known]
+  const read = async (url: string | URL | Request): Promise<Response> => {
+    const path = String(url).replace(/^disk:\/\//, '')
+    return new Response(path === 'index.json' ? JSON.stringify(index) : readFileSync(join(dir, path), 'utf8'))
+  }
+  const { courses, byId } = await loadV1Courses(() => {}, { root: 'disk://', fetch: read as typeof fetch }, ticked)
+  const costumes = index.assets.filter(e => e.category === 'cosmetic' || e.id.startsWith('costume.')).map(e => e.id)
+  const catalogPath = join(root, CATALOG_FILE)
+  const catalog = existsSync(catalogPath) ? (JSON.parse(readFileSync(catalogPath, 'utf8')) as { items?: { asset?: unknown }[] }).items ?? [] : []
+  const assetIds = new Set(index.assets.map(a => a.id))
+  const meshed = new Set(assetSet(courses, byId, 'standard', costumes))
+  for (const item of catalog) {
+    if (typeof item.asset !== 'string') continue
+    if (!assetIds.has(item.asset)) refuse('content', `${CATALOG_FILE}#${item.asset}`, `the catalog names asset '${item.asset}', which has no assets/*/${item.asset}.asset.json`)
+    meshed.add(item.asset)
+  }
+  const assets = new Set(meshed)
+  for (const c of courses) for (const id of c.assetIds) assets.add(id)
+  return { courses: new Set(ticked), assets, meshed }
+}
+
+/** The index of a shipped pack: only its courses, asset files, the saved meshes it loads and their thumbnails. */
+export function shippedIndex(index: ContentIndex, ship: ShippedContent): ContentIndex {
+  const assets = index.assets.filter(a => ship.assets.has(a.id)).map(a => {
+    if (a.mesh === undefined || ship.meshed.has(a.id)) return a
+    const { mesh: _unused, ...rest } = a
+    return rest
+  })
+  const thumbs = index.thumbs.filter(t => {
+    const course = /^courses\/(.+)\.thumb\.avif$/.exec(t.path)
+    return course !== null ? ship.courses.has(course[1]) : ship.assets.has(t.map)
+  })
+  return { assets, courses: index.courses.filter(c => ship.courses.has(c.id)), audio: index.audio, thumbs }
+}
+
 // Strict validation before a pack: every asset and course loads, every haa patch has its header.
 const PENGUIN_ASSET = 'assets/common/penguin.body.asset.json'
 const COSTUME_ASSET = /^assets\/[a-z]+\/costume\.[a-z0-9.-]+\.asset\.json$/
@@ -168,14 +243,18 @@ export async function validateContent(index: ContentIndex, dir = contentDir()): 
 
 // Copies only; the content:pack CLI validates first (validateContent). meshKeys limits the baked server meshes to one
 // load set (MeshBaker.keys); every cached mesh when absent. The cache is shared by every worktree and MAMA pin, so an
-// unfiltered pack can outgrow a page upload.
-export function packContent(out: string, dir = contentDir(), meshKeys?: ReadonlySet<string>): ContentIndex {
-  const index = buildContentIndex(dir)
+// unfiltered pack can outgrow a page upload. ship (shippedContent) packs only what a shipped page uses.
+export function packContent(out: string, dir = contentDir(), meshKeys?: ReadonlySet<string>, ship?: ShippedContent): ContentIndex {
+  const full = buildContentIndex(dir)
+  const index = ship === undefined ? full : shippedIndex(full, ship)
   const files = [...index.assets.flatMap(a => a.mesh === undefined ? [a.path] : [a.path, a.mesh]), ...index.courses.map(c => c.path), ...index.audio.map(p => p.path), ...index.thumbs.map(t => t.path)]
   for (const path of files) {
     const target = join(out, path)
     mkdirSync(dirname(target), { recursive: true })
-    cpSync(join(dir, path), target)
+    // A packed saved mesh is gzipped under the same name (181 MB raw -> 37 MB); the page decodes every fetched mesh
+    // with decodeMeshBytes (apps/web/src/sdf/meshWire.ts), which inflates by the gzip magic. Sources stay raw.
+    if (path.endsWith('.mesh')) writeFileSync(target, gzipSync(readFileSync(join(dir, path)), { level: 9 }))
+    else cpSync(join(dir, path), target)
   }
   // Baked successes are directly addressable by the same key on a static content host; a server refusal is
   // published as <key>.failed, so the page leaves the asset out instead of meshing it again in the browser.

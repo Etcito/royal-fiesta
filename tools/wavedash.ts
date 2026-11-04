@@ -2,7 +2,10 @@ import { spawn, spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { packContent } from './content.ts'
+import { gunzipSync } from 'node:zlib'
+import { buildContentIndex, packContent, shippedContent } from './content.ts'
+import type { ContentIndex } from './content.ts'
+import { decodeMesh } from '../apps/web/src/sdf/meshWire.ts'
 import { mamaSource, repoRoot } from './bricks.ts'
 import { isRefusal, refuse } from '../packages/sim/src/refusal.ts'
 
@@ -86,8 +89,94 @@ export function packAudio(from: string, to: string): void {
   for (const name of ['manifest.json', ...names]) cpSync(join(from, name), join(to, name))
 }
 
-/** Verify the upload's audio, including an existing build used with --skip-build: packed (default) or on a CDN. */
-export function checkUpload(upload: string, raw = process.env.VITE_RF_AUDIO_URL): void {
+/** What an upload weighs: every file, the meshes (saved .mesh and server meshes, both gzipped) and the audio. */
+export interface UploadSummary {
+  files: number
+  bytes: number
+  meshes: { count: number; bytes: number }
+  audioBytes: number
+}
+
+const RELAY_FIX = 'set VITE_RF_SERVER=wss://<relay>/ws in the build environment (never a file), or pass --offline for an offline-only build'
+
+/** The relay a Wavedash build plays online with (VITE_RF_SERVER), or null with --offline. Unset or malformed refuses. */
+export function relayServer(raw = process.env.VITE_RF_SERVER, offline = false): string | null {
+  if (offline) return null
+  const url = (raw ?? '').trim()
+  if (url === '') refuse('bricks', 'VITE_RF_SERVER', `a Wavedash build must play online; ${RELAY_FIX}`)
+  if (!/^wss?:\/\/\S+$/.test(url)) refuse('bricks', 'VITE_RF_SERVER', `is not a ws:// or wss:// URL; ${RELAY_FIX}`)
+  return url
+}
+
+/** The built JavaScript of the upload must carry the relay (an existing dist packed with --skip-build may not). */
+export function checkRelay(upload: string, raw = process.env.VITE_RF_SERVER, offline = false): void {
+  const url = relayServer(raw, offline)
+  if (url === null) return
+  const literal = JSON.stringify(url)
+  if (!listFiles(upload).filter(file => /\.js$/.test(file)).some(file => readFileSync(join(upload, file), 'utf8').includes(literal))) {
+    refuse('bricks', 'VITE_RF_SERVER', 'the relay URL is absent from the built JavaScript; rebuild with it in the build environment (npm run wavedash without --skip-build)')
+  }
+}
+
+const sizeOf = (path: string): number => statSync(path).size
+
+/**
+ * The upload's content carries exactly what a shipped page uses (tools/content.ts shippedContent, computed again from
+ * the upload's own courses): every file index.json names is there, no asset file or saved mesh of an asset no page
+ * meshes, and a server mesh only for a meshed asset that has no saved mesh.
+ */
+async function checkContent(upload: string): Promise<{ count: number; bytes: number }> {
+  const content = join(upload, 'content')
+  if (!existsSync(join(content, 'index.json'))) return { count: 0, bytes: 0 }
+  const index = JSON.parse(readFileSync(join(content, 'index.json'), 'utf8')) as ContentIndex
+  const named = [...index.assets.flatMap(a => a.mesh === undefined ? [a.path] : [a.path, a.mesh]), ...index.courses.map(c => c.path),
+    ...index.audio.map(p => p.path), ...index.thumbs.map(t => t.path)]
+  for (const path of named) {
+    if (!existsSync(join(content, path))) refuse('bricks', `content/${path}`, 'named by content/index.json but missing from the upload')
+  }
+  const ship = await shippedContent(content)
+  for (const a of buildContentIndex(content).assets) {
+    if (!ship.assets.has(a.id)) refuse('bricks', `content/${a.path}`, `asset '${a.id}' is used by no shipped page; pack with npm run wavedash`)
+  }
+  const saved = new Map(index.assets.flatMap(a => a.mesh === undefined ? [] : [[a.mesh, a.id] as const]))
+  let count = 0
+  let bytes = 0
+  const assetsDir = join(content, 'assets')
+  for (const file of existsSync(assetsDir) ? listFiles(assetsDir).filter(f => f.endsWith('.mesh')) : []) {
+    const path = `assets/${file}`
+    const id = saved.get(path)
+    if (id === undefined || !ship.meshed.has(id)) {
+      refuse('bricks', `content/${path}`, 'carries a mesh no shipped page uses; pack with npm run wavedash (only the ticked levels, the characters and the catalog cosmetics)')
+    }
+    count++
+    bytes += sizeOf(join(content, path))
+  }
+  const serverOnly = new Set([...ship.meshed].filter(id => !index.assets.some(a => a.id === id && a.mesh !== undefined)))
+  const meshes = join(content, 'meshes')
+  if (existsSync(meshes)) {
+    for (const name of readdirSync(meshes).sort()) {
+      const path = `content/meshes/${name}`
+      if (/^[a-f0-9]{64}\.failed$/.test(name)) {
+        if (serverOnly.size === 0) refuse('bricks', path, 'a server mesh refusal, but every meshed asset has a saved mesh')
+        continue
+      }
+      let assetId = ''
+      try { assetId = decodeMesh(gunzipSync(readFileSync(join(meshes, name)))).assetId } catch { /* not a server mesh */ }
+      if (!/^[a-f0-9]{64}$/.test(name) || !serverOnly.has(assetId)) {
+        refuse('bricks', path, `carries a server mesh${assetId ? ` of '${assetId}'` : ''} no shipped page uses: only a meshed asset without a saved mesh gets one`)
+      }
+      count++
+      bytes += sizeOf(join(meshes, name))
+    }
+  }
+  return { count, bytes }
+}
+
+/**
+ * Verify an upload, including an existing build used with --skip-build: the audio packed (default) or on a CDN, and the
+ * content limited to what a shipped page uses. Returns what the upload weighs.
+ */
+export async function checkUpload(upload: string, raw = process.env.VITE_RF_AUDIO_URL): Promise<UploadSummary> {
   const files = listFiles(upload)
   const base = audioCdn(raw)
   if (base === null) {
@@ -97,38 +186,57 @@ export function checkUpload(upload: string, raw = process.env.VITE_RF_AUDIO_URL)
     for (const name of audioFiles(audio)) {
       if (!existsSync(join(audio, name))) refuse('bricks', `${AUDIO_DIR}/${name}`, 'named by the audio manifest but missing from the upload')
     }
-    return
+  } else {
+    if (files.some(file => file.startsWith('audio/') || /\.(wav|mp3|ogg|opus|flac|aac|m4a)$/i.test(file))) {
+      refuse('bricks', upload, 'audio must be uploaded separately with npm run audio:upload')
+    }
+    if (!files.filter(file => /\.js$/.test(file)).some(file => [JSON.stringify(base), JSON.stringify(base + '/')].some(literal => readFileSync(join(upload, file), 'utf8').includes(literal)))) {
+      refuse('bricks', 'VITE_RF_AUDIO_URL', 'audio URL base is absent from built JavaScript; rebuild with the host environment')
+    }
   }
-  if (files.some(file => file.startsWith('audio/') || /\.(wav|mp3|ogg|opus|flac|aac|m4a)$/i.test(file))) {
-    refuse('bricks', upload, 'audio must be uploaded separately with npm run audio:upload')
-  }
-  if (!files.filter(file => /\.js$/.test(file)).some(file => [JSON.stringify(base), JSON.stringify(base + '/')].some(literal => readFileSync(join(upload, file), 'utf8').includes(literal)))) {
-    refuse('bricks', 'VITE_RF_AUDIO_URL', 'audio URL base is absent from built JavaScript; rebuild with the host environment')
-  }
+  const meshes = await checkContent(upload)
+  const sum = (list: string[]): number => list.reduce((n, file) => n + sizeOf(join(upload, file)), 0)
+  return { files: files.length, bytes: sum(files), meshes, audioBytes: sum(files.filter(file => file.startsWith(`${AUDIO_DIR}/`))) }
 }
 
 export async function packWavedash(
-  opts: { outDir: string },
-): Promise<{ files: string[]; entry: 'game.html' }> {
+  opts: { outDir: string; offline?: boolean },
+): Promise<{ files: string[]; entry: 'game.html'; summary: UploadSummary; courses: string[]; leftOut: string[] }> {
   const root = repoRoot()
   const dist = resolve(process.env.RF_WAVEDASH_DIST ?? join(root, 'apps', 'web', 'dist'))
   const page = join(dist, ENTRY)
   if (!existsSync(page)) refuse('bricks', page, `the built game page is missing; run npm run build so apps/web/${ENTRY} is built`)
+  relayServer(process.env.VITE_RF_SERVER, opts.offline === true)
 
   const out = resolve(opts.outDir)
   const upload = join(out, UPLOAD_DIR)
   rmSync(upload, { recursive: true, force: true })
   mkdirSync(upload, { recursive: true })
   for (const name of readdirSync(dist).sort()) {
-    if (EXCLUDED.includes(name) || name === AUDIO_DIR) continue
+    // content/ (an earlier local pack into dist, e.g. tools/chromeCheck.ts) is packed again below from the sources.
+    if (EXCLUDED.includes(name) || name === AUDIO_DIR || name === 'content') continue
     cpSync(join(dist, name), join(upload, name), { recursive: true })
   }
   if (audioCdn() === null) packAudio(join(dist, AUDIO_DIR), join(upload, AUDIO_DIR))
 
-  // Remove this bundled content when the CDN serves it.
-  packContent(join(upload, 'content'))
+  // Remove this bundled content when the CDN serves it. Only what a shipped page uses: the levels ticked in SDF Modeler
+  // (sdfm.build.json), the assets they load, the characters and the catalog cosmetics. A meshed asset loads its saved
+  // .mesh (sdfLoad.ts tries it first); a server mesh ships only for a meshed asset without one, never the whole cache.
+  const ship = await shippedContent()
+  const full = buildContentIndex()
+  const serverOnly = [...ship.meshed].filter(id => !full.assets.some(a => a.id === id && a.mesh !== undefined)).sort()
+  let meshKeys: ReadonlySet<string> = new Set()
+  if (serverOnly.length > 0) {
+    const { MeshBaker } = await import('./meshBake.ts')
+    const baker = new MeshBaker(undefined, undefined, serverOnly)
+    await baker.scan()
+    meshKeys = baker.keys
+  }
+  packContent(join(upload, 'content'), undefined, meshKeys, ship)
+  const leftOut = full.assets.filter(a => a.mesh !== undefined && !ship.meshed.has(a.id)).map(a => a.id).sort()
 
-  checkUpload(upload)
+  const summary = await checkUpload(upload)
+  checkRelay(upload, process.env.VITE_RF_SERVER, opts.offline === true)
 
   const stamp = {
     format: 'royal-fiesta.build',
@@ -143,7 +251,8 @@ export async function packWavedash(
   }
   writeFileSync(join(upload, BUILD_STAMP), `${JSON.stringify(stamp, null, 2)}\n`)
   writeFileSync(join(out, CONFIG_NAME), wavedashToml())
-  return { files: listFiles(upload), entry: ENTRY }
+  const files = listFiles(upload)
+  return { files, entry: ENTRY, summary: { ...summary, files: files.length, bytes: summary.bytes + sizeOf(join(upload, BUILD_STAMP)) }, courses: [...ship.courses].sort(), leftOut }
 }
 
 function build(root: string): Promise<number> {
@@ -155,14 +264,17 @@ function build(root: string): Promise<number> {
   })
 }
 
-const USAGE = 'usage: npm run wavedash [-- --out <dir>] [--skip-build]'
+const USAGE = 'usage: npm run wavedash [-- --out <dir>] [--skip-build] [--offline]'
+const mb = (bytes: number): string => `${(bytes / 1e6).toFixed(1)} MB`
 
 export async function main(argv: string[]): Promise<number> {
   let outDir = DEFAULT_OUT
   let skipBuild = false
+  let offline = false
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--skip-build') skipBuild = true
+    else if (arg === '--offline') offline = true
     else if (arg === '--out' && argv[i + 1] !== undefined) outDir = argv[++i]
     else {
       console.error(`wavedash: unexpected argument ${JSON.stringify(arg)}`)
@@ -171,16 +283,27 @@ export async function main(argv: string[]): Promise<number> {
     }
   }
   const root = repoRoot()
+  try {
+    // Before the build: a Wavedash build without a relay is offline-only (one was pushed so on 2026-11-04).
+    relayServer(process.env.VITE_RF_SERVER, offline)
+  } catch (error) {
+    if (!isRefusal(error)) throw error
+    console.error(error.message)
+    return 1
+  }
   if (!skipBuild) {
     const code = await build(root)
     if (code !== 0) return code
   }
   try {
     const out = resolve(root, outDir)
-    const { files, entry } = await packWavedash({ outDir: out })
+    const { entry, summary, courses, leftOut } = await packWavedash({ outDir: out, offline })
     const rel = (p: string): string => relative(root, p) || '.'
-    console.log(`wavedash: upload_dir=${rel(join(out, UPLOAD_DIR))} files=${files.length} entry=${entry}` +
-      ` config=${rel(join(out, CONFIG_NAME))}`)
+    console.log(`wavedash: upload_dir=${rel(join(out, UPLOAD_DIR))} files=${summary.files} total=${mb(summary.bytes)}` +
+      ` meshes=${summary.meshes.count} (${mb(summary.meshes.bytes)} gzipped) audio=${mb(summary.audioBytes)} levels=${courses.length}` +
+      ` entry=${entry} config=${rel(join(out, CONFIG_NAME))}${offline ? ' offline' : ''}`)
+    console.log(`wavedash: levels ${courses.join(', ')}`)
+    console.log(`wavedash: meshes left out (${leftOut.length}): ${leftOut.join(', ') || 'none'}`)
     return 0
   } catch (error) {
     if (!isRefusal(error)) throw error

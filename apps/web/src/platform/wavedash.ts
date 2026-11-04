@@ -62,8 +62,8 @@ export function wavedashProgress(fraction: number, g: PageGlobal = globalThis as
 }
 
 /**
- * Wavedash.init() once per page: the shell then drops its loading screen and shows the frame. Called when the title
- * (or the error screen) is up. Returns what happened; 'absent' off Wavedash. A second call returns the first result.
+ * Wavedash.init() once per page: the shell then drops its loading screen and shows the frame. Called when the start
+ * screen (or the error screen) is up. Returns what happened; 'absent' off Wavedash. A second call returns the first result.
  */
 export function wavedashReady(g: PageGlobal = globalThis as PageGlobal): WavedashInit {
   const s = stateOf(g)

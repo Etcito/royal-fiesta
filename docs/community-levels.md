@@ -30,7 +30,7 @@ only), caps a pack at 4 MB and the store at 200 levels. The write key is `LEVELS
 ## In the game
 
 Only when the page has a levels base: `VITE_RF_LEVELS_URL` in the build ENVIRONMENT (never a committed file) or `?levels=`.
-The title then shows "Community levels". A level plays with `?community=<id>` (optional `&chash=<64 hex>` pins the exact
+The start screen then shows "Community levels". A level plays with `?community=<id>` (optional `&chash=<64 hex>` pins the exact
 version): the pack is downloaded, verified (`verifyLevelPack`) before any byte is used, and its files overlay the content
 (apps/web/src/content/v1Data.ts `installContentOverlay`); the page then plays that course with bots. Shipped levels never
 need Etcito.

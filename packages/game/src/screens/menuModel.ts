@@ -58,7 +58,6 @@ export const HINTS = Object.freeze({
 
 const LABELS: Readonly<Record<Action, string>> = Object.freeze({
   play: 'Play',
-  playOnline: 'Play online',
   settings: 'Settings',
   credits: 'Credits',
   queue: 'Find a match',
@@ -80,7 +79,6 @@ const LABELS: Readonly<Record<Action, string>> = Object.freeze({
 })
 
 const TITLES: Readonly<Record<Screen, string>> = Object.freeze({
-  title: 'Royal Fiesta',
   hub: 'Hub',
   queue: 'Finding players',
   countdown: 'Get ready',
@@ -106,15 +104,16 @@ const TITLES: Readonly<Record<Screen, string>> = Object.freeze({
 
 // vote and elimShow are HUD-like (no back button; back pauses the match).
 const OVERLAY: readonly Screen[] = ['hub', 'countdown', 'round', 'spectate', 'vote', 'elimShow']
-// Screens without a final 'Back' button (title is the root, the rest are HUDs).
+// Screens without a final 'Back' button (start is the root: its Settings button stands where Back was;
+// the rest are HUDs).
 // Loading has none either: it ends only when the load succeeds or fails.
 // The lobby choice neither: unanswered (or on back) it takes its default by itself.
 // The end screen offers Continue; back still leaves the game to the start menu.
-const NO_BACK: readonly Screen[] = ['title', 'loading', 'lobbyChoice', 'lobbyLive', 'endScreen', ...OVERLAY]
+const NO_BACK: readonly Screen[] = ['start', 'loading', 'lobbyChoice', 'lobbyLive', 'endScreen', ...OVERLAY]
 
 function label(screen: Screen, a: Action): string {
-  // On the error screen, leave returns to the title.
-  if (screen === 'error' && a === 'leave') return 'Back to title'
+  // On the error screen, leave returns to the start screen.
+  if (screen === 'error' && a === 'leave') return 'Back to menu'
   return LABELS[a]
 }
 
@@ -155,13 +154,17 @@ export function menuModel(screen: Screen, actions: readonly Action[], ctx: MenuC
     case 'pause':
       lines.push(...controlLines(ctx.settings))
       break
-    case 'settings':
+    case 'settings': {
+      // The rows first, then the screen's actions (Credits, in the settings opened from start), then Back.
+      const acts = buttons.splice(0)
       SETTINGS_ROWS.forEach((row, i) => {
         buttons.push({ label: describeRow(row, ctx.settings), cmd: { k: 'row', row: i } })
       })
+      buttons.push(...acts)
       if (ctx.rebinding !== null) lines.push(`Press a key for ${ctx.rebinding} - Esc cancels`)
       if (ctx.error !== null) lines.push(ctx.error)
       break
+    }
     case 'error':
       lines.push(ctx.error ?? 'Unknown error')
       break

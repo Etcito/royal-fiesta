@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, SCREENS, backPauses, backTogglesPause, flowAction, navGraph, navStates } from '../src/screens/nav.ts'
+import { ACTIONS, ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, SCREENS, backPauses, backTogglesPause, flowAction, navGraph, navStates } from '../src/screens/nav.ts'
 import type { Action, NavEvent, Screen } from '../src/screens/nav.ts'
 import type { LoadProgress } from '../src/content.ts'
 
@@ -28,17 +28,25 @@ function navAt(...events: NavEvent[]): Nav {
 
 const play: NavEvent = { kind: 'action', action: 'play' }
 
-test('every screen is reachable from title', () => {
-  const fromTitle = reachable(navGraph(), 'title')
-  for (const s of SCREENS) assert.ok(fromTitle.has(s), `${s} unreachable`)
+test('every screen is reachable from start, the root', () => {
+  const fromStart = reachable(navGraph(), 'start')
+  for (const s of SCREENS) assert.ok(fromStart.has(s), `${s} unreachable`)
 })
 
-test('no dead end: title is reachable from every screen, and back leaves every non-title screen', () => {
+// The title menu is gone (owner 2026-11-04): no screen, action or load lands on it.
+test('there is no title screen and no Play online action', () => {
+  assert.equal((SCREENS as readonly string[]).includes('title'), false)
+  assert.equal((ACTIONS as readonly string[]).includes('playOnline'), false)
+  assert.equal(new Nav().screen, 'start')
+})
+
+test('no dead end: start is reachable from every screen, and back leaves every screen', () => {
   const graph = navGraph()
-  for (const s of SCREENS) assert.ok(reachable(graph, s).has('title'), `${s} is a dead end`)
+  for (const s of SCREENS) assert.ok(reachable(graph, s).has('start'), `${s} is a dead end`)
   for (const state of navStates()) {
-    // Loading has no back edge: it ends only in loaded or error (tested below).
-    if (state.screen === 'title' || state.screen === 'loading') continue
+    // Loading has no back edge: it ends only in loaded or error (tested below); a failed load's error
+    // screen neither: only Retry leaves it.
+    if (state.screen === 'loading' || (state.screen === 'error' && !state.contentReady())) continue
     const n = state.clone()
     n.dispatch(back)
     assert.notEqual(n.screen, state.screen, `no back edge from ${state.key()}`)
@@ -46,30 +54,30 @@ test('no dead end: title is reachable from every screen, and back leaves every n
 })
 
 test('pause back returns to the screen paused from', () => {
-  const round = navAt(play, play, { kind: 'game', screen: 'queue' }, { kind: 'game', screen: 'countdown' },
+  const round = navAt(play, { kind: 'game', screen: 'queue' }, { kind: 'game', screen: 'countdown' },
     { kind: 'game', screen: 'round' })
   assert.deepEqual(round.dispatch(back), ['pause'])
   assert.equal(round.screen, 'pause')
   assert.deepEqual(round.dispatch(back), ['resume'])
   assert.equal(round.screen, 'round')
 
-  const hub = navAt(play, play)
+  const hub = navAt(play)
   assert.deepEqual(hub.dispatch(back), ['pause'])
   assert.deepEqual(hub.dispatch({ kind: 'action', action: 'resume' }), ['resume'])
   assert.equal(hub.screen, 'hub')
 })
 
-test('leave from pause: match goes to hub, hub goes to title', () => {
-  const match = navAt(play, play, { kind: 'game', screen: 'queue' }, { kind: 'game', screen: 'countdown' }, back)
+test('leave from pause: match goes to hub, hub goes to start', () => {
+  const match = navAt(play, { kind: 'game', screen: 'queue' }, { kind: 'game', screen: 'countdown' }, back)
   assert.deepEqual(match.dispatch({ kind: 'action', action: 'leave' }), ['leaveMatch', 'resume'])
   assert.equal(match.screen, 'hub')
-  const hub = navAt(play, play, back)
+  const hub = navAt(play, back)
   assert.deepEqual(hub.dispatch({ kind: 'action', action: 'leave' }), ['leaveGame'])
-  assert.equal(hub.screen, 'title')
+  assert.equal(hub.screen, 'start')
 })
 
 test('settings opened from pause returns to pause', () => {
-  const nav = navAt(play, play, back, { kind: 'action', action: 'settings' })
+  const nav = navAt(play, back, { kind: 'action', action: 'settings' })
   assert.equal(nav.screen, 'settings')
   assert.equal(nav.settingsFrom, 'pause')
   nav.dispatch(back)
@@ -78,31 +86,38 @@ test('settings opened from pause returns to pause', () => {
   assert.equal(nav.screen, 'hub')
 })
 
-test('error keeps its message, leaves a live game, and back goes to title', () => {
-  const nav = navAt(play, play)
+test('error keeps its message, leaves a live game, and back goes to start', () => {
+  const nav = navAt(play)
   assert.deepEqual(nav.dispatch({ kind: 'error', message: 'relay closed' }), ['leaveGame'])
   assert.equal(nav.screen, 'error')
   assert.equal(nav.error, 'relay closed')
   assert.deepEqual(nav.actions(), ['retry', 'leave'])
   nav.dispatch(back)
-  assert.equal(nav.screen, 'title')
+  assert.equal(nav.screen, 'start')
+  const left = navAt(play, { kind: 'error', message: 'x' })
+  assert.deepEqual(left.dispatch({ kind: 'action', action: 'leave' }), [])
+  assert.equal(left.screen, 'start')
 })
 
 test('retry repeats the last start', () => {
-  const hub = navAt(play, play, { kind: 'error', message: 'x' })
+  const hub = navAt(play, { kind: 'error', message: 'x' })
   assert.deepEqual(hub.dispatch({ kind: 'action', action: 'retry' }), ['startHub'])
   assert.equal(hub.screen, 'hub')
-  const online = navAt({ kind: 'action', action: 'playOnline' }, { kind: 'error', message: 'x' })
+  const online = new Nav()
+  online.onlineOnly = true
+  online.dispatch(play)
+  online.dispatch({ kind: 'error', message: 'x' })
   assert.deepEqual(online.dispatch({ kind: 'action', action: 'retry' }), ['startOnline'])
-  assert.equal(online.screen, 'title')
+  assert.equal(online.screen, 'start')
 })
 
 test('an invalid event returns [] and leaves the state unchanged', () => {
   const invalid: [Nav, NavEvent][] = [
-    [new Nav(), back],
     [new Nav(), { kind: 'action', action: 'leave' }],
+    [new Nav(), { kind: 'action', action: 'credits' }],
     [new Nav(), { kind: 'game', screen: 'round' }],
-    [navAt(play, play), { kind: 'action', action: 'retry' }],
+    [navAt(play), { kind: 'action', action: 'retry' }],
+    [navAt(play, back, { kind: 'action', action: 'settings' }), { kind: 'action', action: 'credits' }],
   ]
   for (const [nav, ev] of invalid) {
     const before = nav.key()
@@ -112,21 +127,21 @@ test('an invalid event returns [] and leaves the state unchanged', () => {
 })
 
 test('actions list the buttons of the current screen', () => {
-  assert.deepEqual(new Nav().actions(), ['play', 'playOnline', 'settings', 'credits'])
-  assert.deepEqual(navAt(play).actions(), ['play', 'shop', 'inbox'])
-  assert.deepEqual(navAt(play, play).actions(), ['queue'])
-  assert.deepEqual(navAt(play, play, back).actions(), ['resume', 'settings', 'leave'])
-  assert.deepEqual(navAt(play, play, { kind: 'game', screen: 'round' }).actions(), [])
+  assert.deepEqual(new Nav().actions(), ['play', 'shop', 'inbox', 'settings'])
+  assert.deepEqual(navAt(play).actions(), ['queue'])
+  assert.deepEqual(navAt(play, back).actions(), ['resume', 'settings', 'leave'])
+  assert.deepEqual(navAt(play, { kind: 'game', screen: 'round' }).actions(), [])
+  assert.deepEqual(navAt({ kind: 'action', action: 'settings' }).actions(), ['credits'])
+  assert.deepEqual(navAt(play, back, { kind: 'action', action: 'settings' }).actions(), [])
 })
 
-test('onlineOnly (a baked relay): Play is Play online, no separate button, retry stays online', () => {
+test('onlineOnly (a baked relay): the start screen Play is the online lobby, retry stays online', () => {
   const nav = new Nav()
   nav.onlineOnly = true
-  assert.deepEqual(nav.actions(), ['play', 'settings', 'credits'])
-  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'playOnline' }), [])
-  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'play' }), [])
-  assert.equal(nav.screen, 'start')
+  assert.deepEqual(nav.actions(), ['play', 'shop', 'inbox', 'settings'])
   assert.deepEqual(nav.dispatch({ kind: 'action', action: 'play' }), ['startOnline'])
+  // The start screen stays up while the app connects, then enters the hub.
+  assert.equal(nav.screen, 'start')
   assert.deepEqual(nav.enterHub(), ['startHub'])
   assert.equal(nav.screen, 'hub')
   nav.dispatch({ kind: 'error', message: 'x' })
@@ -142,7 +157,7 @@ const progress = (phase: LoadProgress['phase'], done: number, total: number, lab
 
 test('loading -> progress updates -> next screen', () => {
   const nav = new Nav()
-  assert.deepEqual(nav.dispatch({ kind: 'load', next: 'title' }), ['load'])
+  assert.deepEqual(nav.dispatch({ kind: 'load', next: 'start' }), ['load'])
   assert.equal(nav.screen, 'loading')
   assert.equal(nav.progress, null)
   assert.equal(nav.contentReady(), false)
@@ -153,10 +168,10 @@ test('loading -> progress updates -> next screen', () => {
   assert.deepEqual(nav.progress, { phase: 'meshing', done: 3, total: 9, label: 'candy.spinner-bar' })
   assert.equal(nav.screen, 'loading')
   assert.deepEqual(nav.dispatch({ kind: 'loaded' }), [])
-  assert.equal(nav.screen, 'title')
+  assert.equal(nav.screen, 'start')
   assert.equal(nav.contentReady(), true)
   assert.equal(nav.progress, null)
-  assert.deepEqual(nav.actions(), ['play', 'playOnline', 'settings', 'credits'])
+  assert.deepEqual(nav.actions(), ['play', 'shop', 'inbox', 'settings'])
 
   const hub = navAt({ kind: 'load', next: 'hub' }, progress('done', 1, 1, 'v0'))
   assert.deepEqual(hub.dispatch({ kind: 'loaded' }), ['startHub'])
@@ -168,44 +183,42 @@ test('loading is never skipped: back, actions, game events and a second load are
   const nav = navAt({ kind: 'load', next: 'hub' }, progress('assets', 2, 5, 'bean'))
   const before = nav.key()
   const events: NavEvent[] = [back, play, { kind: 'action', action: 'retry' },
-    { kind: 'game', screen: 'hub' }, { kind: 'load', next: 'title' }]
+    { kind: 'game', screen: 'hub' }, { kind: 'load', next: 'start' }]
   for (const ev of events) {
     assert.deepEqual(nav.dispatch(ev), [])
     assert.equal(nav.key(), before)
   }
   // Progress and loaded outside loading do nothing.
-  const title = new Nav()
-  assert.deepEqual(title.dispatch(progress('done', 1, 1, 'x')), [])
-  assert.deepEqual(title.dispatch({ kind: 'loaded' }), [])
-  assert.equal(title.key(), new Nav().key())
+  const root = new Nav()
+  assert.deepEqual(root.dispatch(progress('done', 1, 1, 'x')), [])
+  assert.deepEqual(root.dispatch({ kind: 'loaded' }), [])
+  assert.equal(root.key(), new Nav().key())
 })
 
 test('loading -> fail keeps the message text, then retry reloads', () => {
   const message = '[content] courses/race-sprint.course.json#/obstacles/3/asset: unknown asset; add the asset file'
-  const nav = navAt({ kind: 'load', next: 'title' }, progress('courses', 0, 6, 'race-sprint'))
+  const nav = navAt({ kind: 'load', next: 'start' }, progress('courses', 0, 6, 'race-sprint'))
   assert.deepEqual(nav.dispatch({ kind: 'error', message }), [])
   assert.equal(nav.screen, 'error')
   assert.equal(nav.error, message)
   assert.equal(nav.contentReady(), false)
-  // Back to title offers no play without content, only retry.
+  // Without content there is no start screen to go back to: only Retry, and back does nothing.
+  assert.deepEqual(nav.actions(), ['retry'])
   const left = nav.clone()
-  left.dispatch(back)
-  assert.equal(left.screen, 'title')
-  assert.deepEqual(left.actions(), ['retry', 'settings', 'credits'])
+  assert.deepEqual(left.dispatch(back), [])
+  assert.deepEqual(left.dispatch({ kind: 'action', action: 'leave' }), [])
   assert.deepEqual(left.dispatch(play), [])
-  assert.deepEqual(left.dispatch({ kind: 'action', action: 'retry' }), ['load'])
-  assert.equal(left.screen, 'loading')
-  // Retry on the error screen reloads too.
+  assert.equal(left.key(), nav.key())
+  // Retry on the error screen reloads and lands on the start screen.
   assert.deepEqual(nav.dispatch({ kind: 'action', action: 'retry' }), ['load'])
   assert.equal(nav.screen, 'loading')
   assert.equal(nav.error, null)
   nav.dispatch({ kind: 'loaded' })
-  assert.equal(nav.screen, 'title')
+  assert.equal(nav.screen, 'start')
 })
 
 test('lobby choice: join / spectate / new lobby buttons, back takes the default and returns to the hub; neither counts as a match', () => {
   const n = new Nav()
-  n.dispatch({ kind: 'action', action: 'play' })
   n.dispatch({ kind: 'action', action: 'play' })
   n.dispatch({ kind: 'game', screen: 'lobbyChoice' })
   assert.equal(n.screen, 'lobbyChoice')
@@ -247,24 +260,34 @@ test('keyboard and pad UiEvents reach the same flow actions', () => {
   assert.equal(flowAction(clickEvent), null)
 })
 
-test('title Play opens start; shop opens the shop; start back returns to title; start Play starts the hub', () => {
+test('start is the root: shop opens the shop; Settings (and back) open settings, which returns to start; Play starts the hub', () => {
   const nav = new Nav()
-  assert.deepEqual(nav.dispatch(play), [])
   assert.equal(nav.screen, 'start')
   assert.deepEqual(nav.dispatch({ kind: 'action', action: 'shop' }), [Effect.openShop])
   assert.equal(nav.screen, 'shop')
   assert.deepEqual(nav.dispatch(back), [])
   assert.equal(nav.screen, 'start')
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'settings' }), [])
+  assert.equal(nav.screen, 'settings')
+  assert.equal(nav.settingsFrom, 'start')
+  assert.deepEqual(nav.dispatch({ kind: 'action', action: 'credits' }), [])
+  assert.equal(nav.screen, 'credits')
   assert.deepEqual(nav.dispatch(back), [])
-  assert.equal(nav.screen, 'title')
-  const started = navAt(play)
+  assert.equal(nav.screen, 'settings')
+  assert.deepEqual(nav.dispatch(back), [])
+  assert.equal(nav.screen, 'start')
+  // Back on start (Escape, pad B) is its Settings button.
+  assert.deepEqual(nav.dispatch(back), [])
+  assert.equal(nav.screen, 'settings')
+  nav.dispatch(back)
+  const started = new Nav()
   assert.deepEqual(started.dispatch(play), [Effect.startHub])
   assert.equal(started.screen, 'hub')
   assert.equal(started.live, true)
 })
 
 test('start -> shop -> commission -> back -> shop -> inbox -> back -> shop -> back -> start', () => {
-  const nav = navAt(play)
+  const nav = new Nav()
   assert.equal(nav.screen, 'start')
   assert.deepEqual(nav.dispatch({ kind: 'action', action: 'shop' }), [Effect.openShop])
   assert.equal(nav.screen, 'shop')
@@ -285,7 +308,7 @@ test('start -> shop -> commission -> back -> shop -> inbox -> back -> shop -> ba
 })
 
 test('start -> inbox -> back -> start', () => {
-  const nav = navAt(play)
+  const nav = new Nav()
   assert.deepEqual(nav.dispatch({ kind: 'action', action: 'inbox' }), [Effect.openInbox])
   assert.equal(nav.screen, 'inbox')
   assert.equal(nav.inboxFrom, 'start')
@@ -293,9 +316,9 @@ test('start -> inbox -> back -> start', () => {
   assert.equal(nav.screen, 'start')
 })
 
-test('navGraph reaches shop, inbox and commission from title', () => {
-  const fromTitle = reachable(navGraph(), 'title')
-  for (const s of ECONOMY_SCREENS) assert.ok(fromTitle.has(s), `${s} unreachable`)
+test('navGraph reaches shop, inbox and commission from start', () => {
+  const fromStart = reachable(navGraph(), 'start')
+  for (const s of ECONOMY_SCREENS) assert.ok(fromStart.has(s), `${s} unreachable`)
 })
 
 test('ECONOMY_SCREENS are shop, inbox and commission', () => {
@@ -303,7 +326,7 @@ test('ECONOMY_SCREENS are shop, inbox and commission', () => {
 })
 
 test('vote and elimShow pause on back; endScreen back leaves the game to start', () => {
-  const vote = navAt(play, play, { kind: 'game', screen: 'vote' })
+  const vote = navAt(play, { kind: 'game', screen: 'vote' })
   assert.equal(vote.inMatch, true)
   assert.deepEqual(vote.actions(), [])
   assert.deepEqual(vote.dispatch(back), [Effect.pause])
@@ -315,7 +338,7 @@ test('vote and elimShow pause on back; endScreen back leaves the game to start',
   assert.deepEqual(vote.dispatch(back), [Effect.pause])
   assert.equal(vote.screen, 'pause')
 
-  const end = navAt(play, play, { kind: 'game', screen: 'podium' }, { kind: 'game', screen: 'endScreen' })
+  const end = navAt(play, { kind: 'game', screen: 'podium' }, { kind: 'game', screen: 'endScreen' })
   assert.equal(end.screen, 'endScreen')
   assert.deepEqual(end.actions(), ['confirm'])
   assert.deepEqual(end.dispatch(back), [Effect.leaveGame])
@@ -327,11 +350,10 @@ test('vote and elimShow pause on back; endScreen back leaves the game to start',
 test('a scripted flow reaches start, vote, elimShow and endScreen, then confirm leaves to start', () => {
   const graph = navGraph()
   for (const s of ['start', 'vote', 'elimShow', 'endScreen'] as const) {
-    assert.ok(reachable(graph, 'title').has(s), `${s} unreachable`)
+    assert.ok(reachable(graph, 'start').has(s), `${s} unreachable`)
   }
   const nav = new Nav()
-  // Play on title (the menu path) opens start; the start screen's Play starts the hub.
-  assert.deepEqual(nav.dispatch(play), [])
+  // The start screen's Play starts the hub.
   assert.equal(nav.screen, 'start')
   assert.deepEqual(nav.dispatch(play), [Effect.startHub])
   assert.equal(nav.screen, 'hub')

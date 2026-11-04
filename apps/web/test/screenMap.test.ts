@@ -16,7 +16,7 @@ const doc = JSON.parse(readFileSync(new URL('../../../ui/screens.ui-doc.json', i
 const ctx = (over: Partial<MenuCtx> = {}): MenuCtx => ({ settings: DEFAULT_SETTINGS, rebinding: null, error: null, info: [], ...over })
 
 const CTX: Record<Screen, MenuCtx> = {
-  title: ctx(), hub: ctx(), queue: ctx({ info: ['2 / 4 players'] }), countdown: ctx(), round: ctx(), spectate: ctx(),
+  hub: ctx(), queue: ctx({ info: ['2 / 4 players'] }), countdown: ctx(), round: ctx(), spectate: ctx(),
   result: ctx({ info: ['1st Bean 1', '2nd Bean 2'] }), podium: ctx({ info: ['Bean 1', 'Bean 2', 'Bean 3'] }),
   pause: ctx(), settings: ctx({ error: 'KeyW is bound to forward' }), credits: ctx(),
   error: ctx({ error: 'Connection lost' }), loading: ctx({ info: ['assets 3/10 course.glb'] }),
@@ -61,7 +61,7 @@ for (const screen of SCREENS) {
 }
 
 test('every nav action maps to act-<kebab> and back', () => {
-  assert.equal(cmdWidgetId({ k: 'action', action: 'playOnline' }), 'act-play-online')
+  assert.equal(cmdWidgetId({ k: 'action', action: 'newLobby' }), 'act-new-lobby')
   for (const action of ACTIONS) assert.deepEqual(actionToCmd(cmdWidgetId({ k: 'action', action })), { k: 'action', action })
 })
 

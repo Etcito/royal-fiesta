@@ -16,14 +16,15 @@ function modelAt(c: MenuCtx, ...events: NavEvent[]) {
   return menuModel(nav.screen, nav.actions(), c)
 }
 
-test('title has 4 buttons in nav order', () => {
+// No title menu (owner 2026-11-04): the root is the start screen, its buttons in nav order.
+test('the root menu is the start screen, its buttons in nav order', () => {
   const m = modelAt(ctx())
+  assert.equal(m.screen, 'start')
   assert.equal(m.overlay, false)
-  assert.deepEqual(m.buttons.map((b) => b.label), ['Play', 'Play online', 'Settings', 'Credits'])
   assert.deepEqual(m.buttons.map((b) => b.cmd), new Nav().actions().map((action) => ({ k: 'action', action })))
 })
 
-test('settings has one button per row plus Back, and shows a rebind refusal', () => {
+test('settings from start has one button per row, Credits and Back, and shows a rebind refusal', () => {
   let message = ''
   try {
     rebind(DEFAULT_SETTINGS, 'jump', 'KeyW')
@@ -33,10 +34,14 @@ test('settings has one button per row plus Back, and shows a rebind refusal', ()
   assert.match(message, /forward/)
   const m = modelAt(ctx({ rebinding: 'jump', error: message }), { kind: 'action', action: 'settings' })
   assert.equal(m.screen, 'settings')
-  assert.equal(m.buttons.length, SETTINGS_ROWS.length + 1)
+  assert.equal(m.buttons.length, SETTINGS_ROWS.length + 2)
   assert.deepEqual(m.buttons[0].cmd, { k: 'row', row: 0 })
   assert.equal(m.buttons[0].label, 'Volume 80%')
+  assert.deepEqual(m.buttons.at(-2), { label: 'Credits', cmd: { k: 'action', action: 'credits' } })
   assert.deepEqual(m.buttons.at(-1)!.cmd, { k: 'back' })
+  // The settings of a paused game have no Credits.
+  const paused = modelAt(ctx(), { kind: 'action', action: 'play' }, { kind: 'back' }, { kind: 'action', action: 'settings' })
+  assert.equal(paused.buttons.length, SETTINGS_ROWS.length + 1)
   assert.ok(m.lines.includes('Press a key for jump - Esc cancels'))
   assert.ok(m.lines.includes(message))
 })
@@ -45,14 +50,14 @@ test('the error model shows the message', () => {
   const m = modelAt(ctx({ error: 'relay unreachable' }), { kind: 'error', message: 'relay unreachable' })
   assert.equal(m.title, 'Disconnected / error')
   assert.equal(m.lines[0], 'relay unreachable')
-  assert.deepEqual(m.buttons.map((b) => b.label), ['Retry', 'Back to title', 'Back'])
+  assert.deepEqual(m.buttons.map((b) => b.label), ['Retry', 'Back to menu', 'Back'])
 })
 
 test('credits, HUD and hub models', () => {
-  const credits = modelAt(ctx(), { kind: 'action', action: 'credits' })
+  const credits = modelAt(ctx(), { kind: 'action', action: 'settings' }, { kind: 'action', action: 'credits' })
   assert.equal(credits.title, 'Credits')
   assert.deepEqual(credits.lines, [...CREDITS])
-  const hub = modelAt(ctx({ info: ['3 players'] }), { kind: 'action', action: 'play' }, { kind: 'action', action: 'play' })
+  const hub = modelAt(ctx({ info: ['3 players'] }), { kind: 'action', action: 'play' })
   assert.equal(hub.overlay, true)
   assert.equal(hub.buttons.length, 0)
   assert.match(hub.hint, /WASD/)
@@ -112,7 +117,7 @@ test('pause lists all controls with current key bindings', () => {
   assert.equal(lines[2], 'Jump: KeyJ / pad button 0')
   assert.equal(lines[3], 'Dive: KeyV / pad button 1')
   assert.equal(lines[4], 'Grab: KeyQ / pad button 2')
-  const pause = modelAt(ctx({ settings }), { kind: 'action', action: 'play' }, { kind: 'action', action: 'play' }, { kind: 'back' })
+  const pause = modelAt(ctx({ settings }), { kind: 'action', action: 'play' }, { kind: 'back' })
   assert.equal(pause.screen, 'pause')
   assert.deepEqual(pause.lines, lines)
   assert.equal(HINTS.hub, 'WASD/ZQSD move - mouse or right stick: camera - 1-4 emote - the round starts by itself - Esc menu')
@@ -120,7 +125,7 @@ test('pause lists all controls with current key bindings', () => {
 
 test('loading shows its progress line and has no button', () => {
   const nav = new Nav()
-  nav.dispatch({ kind: 'load', next: 'title' })
+  nav.dispatch({ kind: 'load', next: 'start' })
   const ctx: MenuCtx = { settings: DEFAULT_SETTINGS, rebinding: null, error: null, info: [progressLine(nav.progress)] }
   assert.deepEqual(menuModel(nav.screen, nav.actions(), ctx).buttons, [])
   assert.deepEqual(menuModel(nav.screen, nav.actions(), ctx).lines, ['Starting...'])
@@ -128,25 +133,25 @@ test('loading shows its progress line and has no button', () => {
   assert.equal(progressLine(nav.progress), 'meshing 2/7 candy.spinner-bar')
 })
 
-// The inbox joined the start actions in 3f32834 (shop, inbox and commission registered in nav).
-test('start lists Play, Shop, Inbox and Back, with the Royal Fiesta title', () => {
-  const m = modelAt(ctx({ info: ['Season 1'] }), { kind: 'action', action: 'play' })
+// The inbox joined the start actions in 3f32834; its Back became Settings when the title menu went (owner 2026-11-04).
+test('start lists Play, Shop, Inbox and Settings (no Back), with the Royal Fiesta title', () => {
+  const m = modelAt(ctx({ info: ['Season 1'] }))
   assert.equal(m.screen, 'start')
   assert.equal(m.title, 'Royal Fiesta')
   assert.equal(m.overlay, false)
-  assert.deepEqual(m.buttons.map((b) => b.label), ['Play', 'Shop', 'Inbox', 'Back'])
+  assert.deepEqual(m.buttons.map((b) => b.label), ['Play', 'Shop', 'Inbox', 'Settings'])
   assert.deepEqual(m.buttons.map((b) => b.cmd), [
     { k: 'action', action: 'play' },
     { k: 'action', action: 'shop' },
     { k: 'action', action: 'inbox' },
-    { k: 'back' },
+    { k: 'action', action: 'settings' },
   ])
   assert.deepEqual(m.lines, ['Season 1'])
 })
 
 test('endScreen lists Continue only (no Back), titled Champion', () => {
   const m = modelAt(ctx({ info: ['Champion: Bean 1'] }),
-    { kind: 'action', action: 'play' }, { kind: 'action', action: 'play' },
+    { kind: 'action', action: 'play' },
     { kind: 'game', screen: 'podium' }, { kind: 'game', screen: 'endScreen' })
   assert.equal(m.screen, 'endScreen')
   assert.equal(m.title, 'Champion')
@@ -159,7 +164,7 @@ test('endScreen lists Continue only (no Back), titled Champion', () => {
 
 test('vote and elimShow are overlays with no buttons', () => {
   const vote = modelAt(ctx({ info: ['Round 2'] }),
-    { kind: 'action', action: 'play' }, { kind: 'action', action: 'play' }, { kind: 'game', screen: 'vote' })
+    { kind: 'action', action: 'play' }, { kind: 'game', screen: 'vote' })
   assert.equal(vote.screen, 'vote')
   assert.equal(vote.title, 'Vote for the next round')
   assert.equal(vote.overlay, true)
@@ -167,7 +172,7 @@ test('vote and elimShow are overlays with no buttons', () => {
   assert.equal(vote.hint, HINTS.hud)
 
   const elim = modelAt(ctx({ info: ['Bean 2'] }),
-    { kind: 'action', action: 'play' }, { kind: 'action', action: 'play' }, { kind: 'game', screen: 'elimShow' })
+    { kind: 'action', action: 'play' }, { kind: 'game', screen: 'elimShow' })
   assert.equal(elim.screen, 'elimShow')
   assert.equal(elim.title, 'Eliminated')
   assert.equal(elim.overlay, true)

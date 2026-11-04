@@ -1551,9 +1551,10 @@ class App {
     window.addEventListener('unhandledrejection', e => this.fail(messageOf(e.reason)), { signal })
   }
 
-  // ?course= skips the title: the load lands in the hub, which starts the round.
+  // The load lands on the start screen, the game's root (there is no title menu); ?course= and ?community= skip it:
+  // the load lands in the hub, which starts the round.
   start(): void {
-    let next: 'title' | 'hub' = 'title'
+    let next: 'start' | 'hub' = 'start'
     try {
       const parsed = parseQuery(this.search)
       if (parsed.course !== null || parsed.community !== null) next = 'hub'
@@ -1816,14 +1817,10 @@ class App {
       } catch (e) {
         console.warn('[start] view unavailable:', messageOf(e))
       }
+      // Lands on the start screen (nav's root), or in the hub for ?course= / ?community=.
       this.run(this.nav.dispatch({ kind: 'loaded' }))
-      // The offline page opens on the wardrobe start screen; ?course=, ?community=, ?clients= and the relay
-      // keep their V1 paths.
-      if (q.server === null && q.clients === 1 && q.course === null && q.community === null) {
-        this.run(this.nav.dispatch({ kind: 'action', action: 'play' }))
-      }
       if (this.roundLoading === null) this.loadingOverlay.hide()
-      // R3: the title is up, so the Wavedash shell may show the game now.
+      // R3: the start screen is up, so the Wavedash shell may show the game now.
       boot.done()
       wavedashReady()
     } catch (e) {
@@ -2042,9 +2039,9 @@ class App {
     }
   }
 
-  // Play goes online by itself when ?server= is given. Otherwise Play online uses the build default relay
-  // (VITE_RF_SERVER, platform/relay.ts), for this one start only, so Play afterwards stays in-page with bots.
-  // With neither, Play online has nowhere to go and says so.
+  // Play goes online by itself when ?server= is given. Otherwise a build default relay (VITE_RF_SERVER,
+  // platform/relay.ts) makes the start screen's Play the online lobby (Nav.onlineOnly sends startOnline).
+  // With neither, Play plays in-page with bots and never comes here; a startOnline without a relay says so.
   private startOnline(): void {
     let relay: string | null
     try {
@@ -2053,13 +2050,13 @@ class App {
       return this.fail(messageOf(e))
     }
     if (relay === null) {
-      return this.fail(refusal('query', 'server', 'Play online needs a relay; pass ?server=wss://host/... or choose Play to play with bots'))
+      return this.fail(refusal('query', 'server', 'online play needs a relay; pass ?server=wss://host/... or rebuild with VITE_RF_SERVER=wss://host/ws'))
     }
     this.pendingRelay = this.query?.server === null ? relay : null
     this.run(this.nav.enterHub())
   }
 
-  // The build default relay armed by Play online, consumed by the next startMode.
+  // The build default relay armed by the online Play, consumed by the next startMode.
   private pendingRelay: string | null = null
 
   private wornLook(): WornLook | null {
@@ -2133,7 +2130,7 @@ class App {
     this.lobbySoundOff = false
     // A mode stopping returns to a fresh start menu: focus the first bin, as on the first entry.
     if (this.startModel !== null) this.startModel = { ...this.startModel, focus: 'bins', bin: 0 }
-    if (this.mode instanceof LocalMode && !this.disposed && this.nav.screen === 'title') {
+    if (this.mode instanceof LocalMode && !this.disposed && this.nav.screen === 'start') {
       this.preparedLocal?.dispose()
       this.preparedLocal = this.mode
     } else this.mode?.dispose()
@@ -2355,7 +2352,7 @@ class App {
     if (this.remap !== null && nav.screen !== 'settings') this.closeRemap()
     this.touchRoot.hidden = this.touch === null || !(nav.live && PLAYING.includes(nav.screen))
     this.remapButton.hidden = !(nav.screen === 'settings' && this.remap === null)
-    this.community?.setVisible(nav.screen === 'title')
+    this.community?.setVisible(nav.screen === 'start')
     // The start screen draws its own penguin layer and presents its own menu; nav still owns leaving it.
     if (nav.screen === 'start') {
       if (this.startView === null && this.startArt !== null && this.startModel !== null) {

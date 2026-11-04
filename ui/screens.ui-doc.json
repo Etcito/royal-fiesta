@@ -32,195 +32,8 @@
     "panel.hud",
     "wallet.ticket"
   ],
-  "start": "title",
+  "start": "loading",
   "screens": [
-    {
-      "id": "title",
-      "initialFocus": "act-play",
-      "enter": {
-        "kind": "pop",
-        "duration": 300
-      },
-      "exit": {
-        "kind": "fade",
-        "duration": 150
-      },
-      "widgets": [
-        {
-          "id": "logo",
-          "type": "icon",
-          "asset": "logo.crown",
-          "rect": {
-            "anchorMin": [0.5, 0],
-            "anchorMax": [0.5, 0],
-            "offsetMin": [-300, 80],
-            "offsetMax": [300, 418]
-          },
-          "landscape": {
-            "anchorMin": [0.3, 0.5],
-            "anchorMax": [0.3, 0.5],
-            "offsetMin": [-300, -210],
-            "offsetMax": [300, 128]
-          },
-          "anim": {
-            "enter": {
-              "kind": "bounce",
-              "duration": 400
-            }
-          }
-        },
-        {
-          "id": "menu",
-          "type": "group",
-          "rect": {
-            "anchorMin": [0.5, 0],
-            "anchorMax": [0.5, 0],
-            "offsetMin": [-220, 520],
-            "offsetMax": [220, 1080]
-          },
-          "landscape": {
-            "anchorMin": [0.72, 0.5],
-            "anchorMax": [0.72, 0.5],
-            "offsetMin": [-220, -280],
-            "offsetMax": [220, 280]
-          },
-          "anim": {
-            "enter": {
-              "kind": "slide",
-              "from": "right",
-              "duration": 350
-            }
-          },
-          "children": [
-            {
-              "id": "act-play",
-              "type": "button",
-              "asset": "button.primary",
-              "text": {
-                "label": "Play"
-              },
-              "action": "play",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [0, 0],
-                "offsetMax": [440, 110]
-              },
-              "anim": {
-                "focus": {
-                  "kind": "bounce",
-                  "duration": 200
-                },
-                "press": {
-                  "kind": "pop",
-                  "duration": 150
-                }
-              }
-            },
-            {
-              "id": "act-retry",
-              "type": "button",
-              "asset": "button.primary",
-              "text": {
-                "label": "Retry"
-              },
-              "action": "retry",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [0, 0],
-                "offsetMax": [440, 110]
-              },
-              "anim": {
-                "focus": {
-                  "kind": "bounce",
-                  "duration": 200
-                },
-                "press": {
-                  "kind": "pop",
-                  "duration": 150
-                }
-              }
-            },
-            {
-              "id": "act-play-online",
-              "type": "button",
-              "asset": "button.secondary",
-              "text": {
-                "label": "Play online"
-              },
-              "action": "playOnline",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [0, 150],
-                "offsetMax": [440, 250]
-              },
-              "anim": {
-                "focus": {
-                  "kind": "bounce",
-                  "duration": 200
-                },
-                "press": {
-                  "kind": "pop",
-                  "duration": 150
-                }
-              }
-            },
-            {
-              "id": "act-settings",
-              "type": "button",
-              "asset": "button.secondary",
-              "text": {
-                "label": "Settings"
-              },
-              "action": "settings",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [0, 290],
-                "offsetMax": [440, 390]
-              },
-              "anim": {
-                "focus": {
-                  "kind": "bounce",
-                  "duration": 200
-                },
-                "press": {
-                  "kind": "pop",
-                  "duration": 150
-                }
-              }
-            },
-            {
-              "id": "act-credits",
-              "type": "button",
-              "asset": "button.secondary",
-              "text": {
-                "label": "Credits"
-              },
-              "action": "credits",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [0, 430],
-                "offsetMax": [440, 530]
-              },
-              "anim": {
-                "focus": {
-                  "kind": "bounce",
-                  "duration": 200
-                },
-                "press": {
-                  "kind": "pop",
-                  "duration": 150
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
     {
       "id": "loading",
       "enter": {
@@ -2923,8 +2736,8 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, -600],
-            "offsetMax": [300, -520]
+            "offsetMin": [-300, -616],
+            "offsetMax": [300, -556]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
@@ -3506,14 +3319,14 @@
           "rect": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 426],
-            "offsetMax": [220, 456]
+            "offsetMin": [-220, -552],
+            "offsetMax": [220, -516]
           },
           "landscape": {
             "anchorMin": [0.5, 0.5],
             "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 214],
-            "offsetMax": [-20, 238]
+            "offsetMin": [-250, 214],
+            "offsetMax": [130, 238]
           }
         },
         {
@@ -3535,6 +3348,37 @@
             "anchorMax": [0.5, 0.5],
             "offsetMin": [140, 214],
             "offsetMax": [420, 264]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "act-credits",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Credits"
+          },
+          "action": "credits",
+          "rect": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-130, 424],
+            "offsetMax": [130, 466]
+          },
+          "landscape": {
+            "anchorMin": [0.5, 0.5],
+            "anchorMax": [0.5, 0.5],
+            "offsetMin": [-490, 210],
+            "offsetMax": [-260, 256]
           },
           "anim": {
             "focus": {
@@ -7916,7 +7760,7 @@
           "action": "inbox"
         },
         {
-          "id": "back",
+          "id": "act-settings",
           "type": "button",
           "rect": {
             "anchorMin": [0, 1],
@@ -7932,9 +7776,9 @@
           },
           "asset": "button.secondary",
           "text": {
-            "label": "Back"
+            "label": "Settings"
           },
-          "action": "back"
+          "action": "settings"
         },
         {
           "id": "inbox-badge",

@@ -1,4 +1,5 @@
-// The build-time default relay (platform/relay.ts): it feeds Play online only; ?server= wins; none means no relay.
+// The build-time default relay (platform/relay.ts): it makes the start screen's Play the online lobby; ?server= wins;
+// none means no relay (Play plays with bots).
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { defaultRelay, onlineRelay } from '../src/platform/relay.ts'
@@ -20,7 +21,7 @@ test('a malformed build value is refused with the fix', () => {
     e instanceof RefusalError && e.message.includes('VITE_RF_SERVER') && e.message.includes('wss://host/ws'))
 })
 
-test('Play online uses ?server= first, then the build default, else nothing', () => {
+test('online play uses ?server= first, then the build default, else nothing', () => {
   assert.equal(onlineRelay('wss://a.example.invalid', 'wss://b.example.invalid'), 'wss://a.example.invalid')
   assert.equal(onlineRelay(null, 'wss://b.example.invalid'), 'wss://b.example.invalid')
   assert.equal(onlineRelay(null, null), null)

@@ -1,6 +1,6 @@
 // Ported V0 M12 proof (docs/v0-port.md): the screen graph and its captures. Rewritten for main:
 // - nav-graph: docs/screens.md ids = SCREENS (13 on main: V0's 12 plus loading), every screen reachable
-//   from and back to title, no dead ends;
+//   from and back to start, no dead ends;
 // - screens-tour: V0 fetched the asset store, built RAA (raaBuild) and drove a screensTour op on local.html;
 //   none of these is on main. RAA is the @etcito/raa release (no RAA build step), the v0 content reads
 //   fixtures/assets, and the gameCapture op on game.html runs its tour flow (loading, hub, round, podium,
@@ -85,16 +85,16 @@ async function navCheck(): Promise<CheckResult> {
     for (const s of seen) for (const next of graph[s]) seen.add(next)
     return seen
   }
-  const reached = reach('title')
-  const deadEnds = SCREENS.filter(s => s !== 'title' && graph[s].filter(to => to !== s).length === 0)
-  const stranded = SCREENS.filter(s => !reach(s).has('title'))
+  const reached = reach('start')
+  const deadEnds = SCREENS.filter(s => s !== 'start' && graph[s].filter(to => to !== s).length === 0)
+  const stranded = SCREENS.filter(s => !reach(s).has('start'))
   const n = SCREENS.length
   const same = docs.length === n && new Set(docs).size === n && SCREENS.every(s => docs.includes(s))
   return {
     value: `screens=${docs.length} reachable=${reached.size} deadEnds=${deadEnds.join(',') || '[]'}`,
-    threshold: `${n} docs ids = SCREENS, all reachable from/to title, no dead ends`,
+    threshold: `${n} docs ids = SCREENS, all reachable from/to start, no dead ends`,
     pass: same && SCREENS.every(s => reached.has(s)) && stranded.length === 0 && deadEnds.length === 0,
-    notes: [...(!same ? [`docs=${docs.join(',')} SCREENS=${SCREENS.join(',')}`] : []), ...stranded.map(s => `cannot return to title: ${s}`)],
+    notes: [...(!same ? [`docs=${docs.join(',')} SCREENS=${SCREENS.join(',')}`] : []), ...stranded.map(s => `cannot return to start: ${s}`)],
   }
 }
 

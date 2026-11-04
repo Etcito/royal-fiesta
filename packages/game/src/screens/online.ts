@@ -1,4 +1,4 @@
-// The title's 'Play online': probe the GameSaloon relay, then hand over to play.html or show why not.
+// Online play: probe the GameSaloon relay, then hand over to play.html or show why not.
 import { isRefusal, refuse } from '@royal-fiesta/sim/refusal'
 import { RelayClient } from '../net/relayClient.ts'
 import type { WsFactory } from '../net/ws.ts'

@@ -86,8 +86,8 @@ test('an in-memory uiTour output becomes one entry per offline SCREENS id, with 
   assert.equal(loading.width, SIZE)
   assert.equal(loading.height, SIZE)
   assert.equal(loading.inputs.length, 1)
-  const hub = rec.screens.find(s => s.screen === 'hub')
-  assert.deepEqual(hub?.inputs[0], { kind: 'click', target: 'act-play', x: 12.5, y: 8, events: ['pointerdown', 'click'] })
+  // The fixture gives every odd-indexed screen a click: the record keeps it as given.
+  assert.deepEqual(rec.screens[1].inputs[0], { kind: 'click', target: 'act-play', x: 12.5, y: 8, events: ['pointerdown', 'click'] })
 })
 
 test('an online-only screen is not required and a capture of one is refused', () => {
@@ -141,9 +141,9 @@ test('a missing PNG and a stale sha256 are refused and name the screen', () => {
 test('an absolute path or the GPU token is never written', () => {
   const { raw, pngs } = tour()
   const absolute = structuredClone(raw) as { captures: { screen: string; inputs: { kind?: string; key?: string }[] }[] }
-  const title = absolute.captures.find(c => c.screen === 'title')
-  assert.ok(title)
-  title.inputs[0] = { kind: 'key', key: '/etc/passwd' }
+  const start = absolute.captures.find(c => c.screen === 'start')
+  assert.ok(start)
+  start.inputs[0] = { kind: 'key', key: '/etc/passwd' }
   refused(() => buildScreensRecord(absolute, pngs), /would contain the absolute path/)
   const token = structuredClone(raw) as { adapter: { description: string } }
   token.adapter.description = 'token-abc'

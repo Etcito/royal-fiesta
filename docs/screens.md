@@ -2,8 +2,7 @@ The playable game is `apps/web/game.html`. Navigation is the state machine in `p
 
 | id | Screen | Reached by (UI) | Leave with | What it does |
 |---|---|---|---|---|
-| `title` | Title / main menu | A finished load; Escape from credits, settings, or error | Play (goes to the start screen), Play online, Settings, Credits (a build with a baked relay, VITE_RF_SERVER, has no separate Play online) | Play goes to the start screen; Play online, Settings and Credits open their screens. |
-| `start` | Start menu | Play on title | Play to the lobby (or online in a baked-relay build), Shop or Inbox, Escape back to title | The pre-game menu: the own penguin with its worn cosmetics, 3 bins of OWNED items only, the palette, the inbox badge and the candy background. |
+| `start` | Start menu (the root: there is no title menu) | A finished load; Escape from settings or error; Leave from the paused hub; Continue on the end screen | Play to the lobby (the online lobby in a build with a baked relay, VITE_RF_SERVER; in-page with bots without one), Shop, Inbox, Settings; Escape opens settings too | The game's root screen: the own penguin with its worn cosmetics, 4 bins of OWNED items only, the palette, the inbox badge and the seasonal 3D start scene. |
 | `shop` | Shop | Shop on start | Escape back to start | The catalogue in slots, with each item's price and owned state; Inbox and Commission open their screens. |
 | `inbox` | Inbox | Inbox on start, the inbox badge, or Inbox on the shop | Escape back to where the inbox was opened (start or the shop) | The player's inbox entries, with claimable items. |
 | `commission` | Commission | Commission on the shop | Escape back to the shop | The commission form: slot, rarity, description and its ticket cost. |
@@ -19,10 +18,10 @@ The playable game is `apps/web/game.html`. Navigation is the state machine in `p
 | `result` | Round result | Round ends | Next round or final result | Lists qualified and eliminated beans with the round points and the show totals. |
 | `podium` | Podium | Match ends; reused at the show end | Enter or Escape to hub; also returns by itself after 12 s | Shows the top 3 beans standing on a 3D podium, with their names. |
 | `endScreen` | Champion | The podium of the final moves to the end screen | Continue or Escape leaves the game for the start screen | Shows the winner for 4 s with gold/silver/bronze crowns and the golden ticket. |
-| `settings` | Settings | Title or pause | Escape returns to where you came from | Lets you rebind keys and adjust volume and quality. |
-| `pause` | Pause | Escape in the hub or a match | Resume, Settings, Leave; Escape resumes | Leave goes from a match to the hub, or from the hub to title. |
-| `error` | Disconnected / error | For example, Play online when the relay is unreachable, or a failed load | Retry, Back to title; Escape goes to title | Shows the error message. |
-| `credits` | Credits | Credits on title | Escape goes back to title | Shows who made the game and the open-source bricks. |
+| `settings` | Settings | Settings (or Escape) on start, or Settings on pause | Escape returns to where you came from; Credits (only in the settings opened from start) | Lets you rebind keys and adjust volume and quality. |
+| `pause` | Pause | Escape in the hub or a match | Resume, Settings, Leave; Escape resumes | Leave goes from a match to the hub, or from the hub to start. |
+| `error` | Disconnected / error | For example, Play in a baked-relay build when the relay is unreachable, or a failed load | Retry, Back to menu; Escape goes to start. After a failed load only Retry (there is no content to go back to) | Shows the error message. |
+| `credits` | Credits | Credits on the settings opened from start | Escape goes back to settings | Shows who made the game and the open-source bricks. |
 | `loading` | Loading | Page load (or Retry after a failed load) | Only when the load ends: to the next screen, or to `error` | Shows the latest load progress: phase, done/total and label. |
 
 ## Show flow
@@ -45,12 +44,12 @@ The `loading` screen is shown while `GameContent.load` (packages/game/src/conten
 
 | Event | Valid on | Result |
 |---|---|---|
-| `{kind: 'load', next}` | `title` or `error`, with no game running | Screen `loading`, `progress` = null, `loadNext` = next (`'title'` or `'hub'`); returns the `load` effect: the app calls `GameContent.load(profile, onProgress)`. |
+| `{kind: 'load', next}` | `start` (page boot) or `error`, with no game running | Screen `loading`, `progress` = null, `loadNext` = next (`'start'` or `'hub'`); returns the `load` effect: the app calls `GameContent.load(profile, onProgress)`. |
 | `{kind: 'progress', progress}` | `loading` | `nav.progress` = a copy of the latest `LoadProgress`; the screen stays `loading`. The menu line is `progressLine(nav.progress)` (`<phase> <done>/<total> <label>`). |
-| `{kind: 'loaded'}` | `loading` | The load succeeded: `next` = `'title'` goes to the title menu; `'hub'` starts the hub (returns `startHub`). |
+| `{kind: 'loaded'}` | `loading` | The load succeeded: `next` = `'start'` goes to the start screen; `'hub'` (`?course=`, `?community=`) starts the hub (returns `startHub`, or `startOnline` with a baked relay). |
 | `{kind: 'error', message}` | any | The load failed: screen `error` with the refusal message unchanged in `nav.error`. |
 
 No silent skip:
 - on `loading`, back, every action, game events and another `load` are ignored, and the screen has no button;
 - `progress` and `loaded` do nothing outside `loading`, so a late report cannot change another screen;
-- after a failed load, `contentReady()` is false and the title offers Retry, Settings and Credits but no Play. Retry, on the error screen or the title, enters `loading` again with the same `next`.
+- after a failed load, `contentReady()` is false and the error screen offers Retry only (Escape does nothing): Retry enters `loading` again with the same `next`.

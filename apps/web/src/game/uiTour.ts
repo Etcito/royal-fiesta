@@ -57,10 +57,10 @@ type Act = { key: TourKey } | { click: string } | { dom: string } | { waitMs: nu
 interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; until?: 'remap-open' | 'remap-closed'; name?: string; current?: boolean }
 
 // docs/screens.md 'Reached by': the boot load is refused (bootGame with refuseFirstLoad), so Retry on the error screen enters
-// 'loading' with a real click; that load lands on the offline page's start screen (the app opens the wardrobe
-// itself), so the tour goes back to title, walks the menus by their buttons (Escape goes back), and Play on
-// title opens the start screen again. There five ArrowDowns reach its Play (4 bins, the palette, then Play) and
-// Enter runs the hub, where Escape pauses it. Enter in the hub starts the offline show on its vote; the tour
+// 'loading' with a real click; that load lands on the start screen, the game's root (there is no title menu).
+// Its Settings button opens settings, whose Credits button opens the credits (Escape goes back each time, and
+// back to start). On start five ArrowDowns reach its Play (4 bins, the palette, then Play) and Enter runs the
+// hub, where Escape pauses it. Enter in the hub starts the offline show on its vote; the tour
 // votes with a real ArrowRight and Enter, then follows the show: the world loads before the countdown, round 0
 // is a race the idle player cannot qualify in, so it is spectated from round 1 on. The next vote is played with
 // the pad (d-pad right, then A); the remaining votes expire to their first candidate and the show ends on its
@@ -70,22 +70,19 @@ interface Leg { acts: Act[]; to: string; capture: boolean; timeoutS: number; unt
 // returns to the shop and whose second Escape returns to the start menu. Every leg waits on the host's screen
 // events. The offline queue, lobbyChoice, lobbyLive are not in this tour.
 const TOUR: readonly Leg[] = [
-  { acts: [], to: 'error', capture: false, timeoutS: 20 },
+  // The refused boot load: its error screen offers Retry only.
+  { acts: [], to: 'error', capture: true, timeoutS: 20 },
   { acts: [{ click: 'act-retry' }], to: 'loading', capture: true, timeoutS: 10 },
-  // The successful load opens the offline page's wardrobe start by itself; Escape goes back to the title.
-  { acts: [], to: 'start', capture: false, timeoutS: 120 },
-  { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
+  // The successful load lands on the start screen, the root.
+  { acts: [], to: 'start', capture: true, timeoutS: 120 },
   { acts: [{ click: 'act-settings' }], to: 'settings', capture: true, timeoutS: 10 },
   // Captured idle, as opened: Enter there would start listening and hide the focused row's button.
   { acts: [{ dom: '#open-remap' }], to: 'settings', until: 'remap-open', name: 'settings-controls', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'settings', until: 'remap-closed', capture: false, timeoutS: 10 },
-  { acts: [{ key: 'Escape' }], to: 'title', capture: true, timeoutS: 10 },
   { acts: [{ click: 'act-credits' }], to: 'credits', capture: true, timeoutS: 10 },
-  { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
-  { acts: [{ click: 'act-play-online' }], to: 'error', capture: true, timeoutS: 10 },
-  { acts: [{ key: 'Escape' }], to: 'title', capture: false, timeoutS: 10 },
-  // Title Play opens the start screen; five ArrowDowns move 4 bins -> palette -> Play, Enter runs the hub.
-  { acts: [{ click: 'act-play' }], to: 'start', capture: true, timeoutS: 30 },
+  { acts: [{ key: 'Escape' }], to: 'settings', capture: false, timeoutS: 10 },
+  { acts: [{ key: 'Escape' }], to: 'start', capture: false, timeoutS: 10 },
+  // Five ArrowDowns move 4 bins -> palette -> Play, Enter runs the hub.
   { acts: [{ key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'ArrowDown' }, { key: 'Enter' }], to: 'hub', capture: true, timeoutS: 30 },
   { acts: [{ key: 'Escape' }], to: 'pause', capture: true, timeoutS: 10 },
   { acts: [{ key: 'Escape' }], to: 'hub', capture: false, timeoutS: 10 },

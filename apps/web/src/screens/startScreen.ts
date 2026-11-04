@@ -63,7 +63,8 @@ function present(host: UaaHost, model: StartScreenModel, wallet?: StartArt['wall
       { label: focused('Play', model.focus === 'play'), cmd: { k: 'action', action: 'play' } },
       { label: focused('Shop', model.focus === 'shop'), cmd: { k: 'action', action: 'shop' } },
       { label: 'Inbox', cmd: { k: 'action', action: 'inbox' } },
-      { label: 'Back', cmd: { k: 'back' } },
+      // The start screen is the root: where Back was, Settings opens the settings screen (owner 2026-11-04).
+      { label: 'Settings', cmd: { k: 'action', action: 'settings' } },
     ],
   }
   host.present(menu)

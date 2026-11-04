@@ -3,7 +3,7 @@
 import type { LoadProgress } from '../content.ts'
 
 export const SCREENS = Object.freeze([
-  'title', 'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium',
+  'hub', 'queue', 'countdown', 'round', 'spectate', 'result', 'podium',
   'pause', 'settings', 'credits', 'error', 'loading', 'lobbyChoice', 'lobbyLive',
   'start', 'vote', 'elimShow', 'endScreen', 'shop', 'inbox', 'commission',
 ] as const)
@@ -22,7 +22,7 @@ export const GAME_SCREENS = Object.freeze([
 export type GameScreen = typeof GAME_SCREENS[number]
 
 export const ACTIONS = Object.freeze([
-  'play', 'playOnline', 'settings', 'credits', 'queue', 'toHub', 'resume', 'leave', 'retry',
+  'play', 'settings', 'credits', 'queue', 'toHub', 'resume', 'leave', 'retry',
   'join', 'spectate', 'newLobby', 'shop', 'inbox', 'commission', 'up', 'down', 'left', 'right', 'confirm',
 ] as const)
 export type Action = typeof ACTIONS[number]
@@ -81,8 +81,8 @@ export type Effect = typeof Effect[keyof typeof Effect]
 
 export type StartEffect = typeof Effect.startHub | typeof Effect.startOnline
 
-// Where a successful load lands: the title menu, or straight into the hub.
-export type LoadNext = 'title' | 'hub'
+// Where a successful load lands: the start screen (the game's root), or straight into the hub.
+export type LoadNext = 'start' | 'hub'
 
 export type NavEvent =
   | { kind: 'action', action: Action }
@@ -94,7 +94,6 @@ export type NavEvent =
   | { kind: 'loaded' }
 
 const BUTTONS: Readonly<Partial<Record<Screen, readonly Action[]>>> = Object.freeze({
-  title: ['play', 'playOnline', 'settings', 'credits'],
   pause: ['resume', 'settings', 'leave'],
   error: ['retry', 'leave'],
   loading: [],
@@ -103,7 +102,8 @@ const BUTTONS: Readonly<Partial<Record<Screen, readonly Action[]>>> = Object.fre
   // A player arriving while a lobby waits (lobbyChoice) or plays its round (lobbyLive).
   lobbyChoice: ['join', 'spectate', 'newLobby'],
   lobbyLive: ['spectate', 'newLobby'],
-  start: ['play', 'shop', 'inbox'],
+  // The start screen is the root: no Back; its Settings button opens settings (owner 2026-11-04).
+  start: ['play', 'shop', 'inbox', 'settings'],
   shop: ['inbox', 'commission'],
   inbox: [],
   commission: [],
@@ -133,10 +133,12 @@ export function isGameScreen(s: Screen): s is GameScreen {
 }
 
 export class Nav {
-  screen: Screen = 'title'
+  // The root screen is the start screen (the penguin wardrobe); there is no title menu. The page dispatches
+  // the boot load at once, so only tests see a fresh Nav on start with content.
+  screen: Screen = 'start'
   // The game screen pause returns to.
   resumeTo: GameScreen = 'hub'
-  settingsFrom: 'title' | 'pause' = 'title'
+  settingsFrom: 'start' | 'pause' = 'start'
   // The screen the inbox returns to (the inbox is reached from start, the shop or the badge).
   inboxFrom: 'start' | 'shop' = 'start'
   // A hub or match session is running.
@@ -144,7 +146,7 @@ export class Nav {
   inMatch = false
   error: string | null = null
   lastStart: StartEffect | null = null
-  // A build with a baked relay: Play IS Play online (the lobby), and the separate button is not offered.
+  // A build with a baked relay: the start screen's Play IS the online lobby; without one Play plays offline with bots.
   onlineOnly = false
   // The latest progress of the running load (null before its first report).
   progress: LoadProgress | null = null
@@ -179,10 +181,11 @@ export class Nav {
   }
 
   actions(): readonly Action[] {
-    // A failed load offers no play button: retry reloads instead.
-    if (this.screen === 'title' && !this.contentReady()) return ['retry', 'settings', 'credits']
-    const buttons = BUTTONS[this.screen] ?? []
-    return this.onlineOnly && this.screen === 'title' ? buttons.filter(a => a !== 'playOnline') : buttons
+    // A failed load has no start screen to go back to: retry reloads.
+    if (this.screen === 'error' && !this.contentReady()) return ['retry']
+    // Credits are reached from the settings opened on the start screen, never from a paused game.
+    if (this.screen === 'settings') return this.settingsFrom === 'start' ? ['credits'] : []
+    return BUTTONS[this.screen] ?? []
   }
 
   dispatch(ev: NavEvent): Effect[] {
@@ -244,7 +247,9 @@ export class Nav {
       case 'podium':
         return this.toHub()
       case 'start':
-        this.screen = 'title'
+        // Back on the root (Escape, pad B) is its Settings button.
+        this.settingsFrom = 'start'
+        this.screen = 'settings'
         return []
       case 'shop':
         this.screen = 'start'
@@ -264,8 +269,12 @@ export class Nav {
         this.screen = this.settingsFrom
         return []
       case 'credits':
+        this.screen = 'settings'
+        return []
       case 'error':
-        this.screen = 'title'
+        // Without content (a failed load) only Retry leaves the error screen.
+        if (!this.contentReady()) return []
+        this.screen = 'start'
         return []
       default:
         return []
@@ -275,11 +284,7 @@ export class Nav {
   private action(a: Action): Effect[] {
     switch (a) {
       case 'play':
-        // Title Play opens the start screen; start's Play runs the existing start (hub, or online).
-        if (this.screen === 'title') {
-          this.screen = 'start'
-          return []
-        }
+        // The start screen's Play: the online lobby with a baked relay, else the in-page hub with bots.
         return this.start(this.onlineOnly ? Effect.startOnline : Effect.startHub)
       case 'shop':
         if (this.screen !== 'start') return []
@@ -296,10 +301,8 @@ export class Nav {
         return [Effect.openCommission]
       case 'confirm':
         return this.screen === 'endScreen' ? this.leaveEndScreen() : []
-      case 'playOnline':
-        return this.start(Effect.startOnline)
       case 'settings':
-        this.settingsFrom = this.screen === 'pause' ? 'pause' : 'title'
+        this.settingsFrom = this.screen === 'pause' ? 'pause' : 'start'
         this.screen = 'settings'
         return []
       case 'credits':
@@ -331,9 +334,9 @@ export class Nav {
     }
   }
 
-  // Loading starts from a menu with no game running (page boot, or retry).
+  // Loading starts from the root with no game running (page boot), or from the error screen (retry).
   private load(next: LoadNext): Effect[] {
-    if (this.live || (this.screen !== 'title' && this.screen !== 'error')) return []
+    if (this.live || (this.screen !== 'start' && this.screen !== 'error')) return []
     this.screen = 'loading'
     this.loadNext = next
     this.progress = null
@@ -347,7 +350,7 @@ export class Nav {
     this.loadNext = null
     this.progress = null
     if (next === 'hub') return this.start(this.onlineOnly ? Effect.startOnline : Effect.startHub)
-    this.screen = 'title'
+    this.screen = 'start'
     return []
   }
 
@@ -369,8 +372,8 @@ export class Nav {
       this.inMatch = false
       this.resumeTo = 'hub'
     } else {
-      // The app later sends an error or leaves the page.
-      this.screen = 'title'
+      // The start screen stays up while the app connects; it then enters the hub (enterHub) or sends an error.
+      this.screen = 'start'
     }
     return [fx]
   }
@@ -393,11 +396,11 @@ export class Nav {
 
   private leave(): Effect[] {
     if (this.screen === 'error') {
-      this.screen = 'title'
+      this.screen = 'start'
       return []
     }
     if (this.inMatch) return [...this.toHub(), Effect.resume]
-    this.screen = 'title'
+    this.screen = 'start'
     this.live = false
     this.resumeTo = 'hub'
     return [Effect.leaveGame]
@@ -410,7 +413,7 @@ export const PROBE_EVENTS: readonly NavEvent[] = Object.freeze([
   { kind: 'back' },
   ...GAME_SCREENS.map((screen): NavEvent => ({ kind: 'game', screen })),
   { kind: 'error', message: 'x' },
-  { kind: 'load', next: 'title' },
+  { kind: 'load', next: 'start' },
   { kind: 'load', next: 'hub' },
   { kind: 'progress', progress: { phase: 'assets', done: 1, total: 2, label: 'x' } },
   { kind: 'loaded' },

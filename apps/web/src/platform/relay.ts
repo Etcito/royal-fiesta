@@ -1,6 +1,7 @@
 // Build-time default relay (docs/wavedash.md, "Relay URL in the frame"). The Wavedash frame URL cannot carry ?server=,
-// so a build made with VITE_RF_SERVER=wss://host/ws in its ENVIRONMENT (never a committed file) feeds the title's
-// Play online only. Play stays in-page with bots; an explicit ?server= still puts the whole page online.
+// so a build made with VITE_RF_SERVER=wss://host/ws in its ENVIRONMENT (never a committed file) makes the start
+// screen's Play the online lobby (Nav.onlineOnly). Without it Play stays in-page with bots; an explicit ?server=
+// still puts the whole page online.
 import { refuse } from '@royal-fiesta/sim/refusal'
 
 // Read here, not in main.ts (a test evaluates main.ts as a script, where import.meta is invalid).
@@ -16,7 +17,7 @@ export function defaultRelay(raw: string | undefined = buildServer()): string | 
   return url
 }
 
-/** The relay Play online uses: an explicit ?server= first, then the build default, else null (no relay to go to). */
+/** The relay online play uses: an explicit ?server= first, then the build default, else null (no relay to go to). */
 export function onlineRelay(queryServer: string | null, buildDefault: string | null): string | null {
   return queryServer ?? buildDefault
 }

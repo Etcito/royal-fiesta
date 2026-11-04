@@ -29,21 +29,6 @@ function key(code: string): void {
   for (const type of ['keydown', 'keyup']) window.dispatchEvent(new KeyboardEvent(type, { code, key: code, bubbles: true, cancelable: true }))
 }
 
-function click(game: TourGame, id: string): void {
-  const rect = game.host.widgetRect(id)
-  if (!rect) throw new Error(`countdowns: missing ${id}`)
-  const box = game.ui.getBoundingClientRect()
-  const at = { clientX: box.left + rect.x + rect.w / 2, clientY: box.top + rect.y + rect.h / 2,
-    bubbles: true, cancelable: true, view: window }
-  const pointer = { ...at, pointerId: 1, pointerType: 'mouse', isPrimary: true }
-  game.ui.dispatchEvent(new PointerEvent('pointermove', pointer))
-  game.ui.dispatchEvent(new PointerEvent('pointerdown', { ...pointer, button: 0, buttons: 1 }))
-  game.ui.dispatchEvent(new MouseEvent('mousedown', { ...at, button: 0, buttons: 1 }))
-  game.ui.dispatchEvent(new PointerEvent('pointerup', { ...pointer, button: 0, buttons: 0 }))
-  game.ui.dispatchEvent(new MouseEvent('mouseup', { ...at, button: 0, buttons: 0 }))
-  game.ui.dispatchEvent(new MouseEvent('click', { ...at, button: 0, detail: 1 }))
-}
-
 async function step(game: TourGame, dt: number): Promise<void> {
   game.step(dt)
   await nextTask()
@@ -136,8 +121,6 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: { ok
     }
     if (!mounted) throw new Error('countdowns: the start screen view never mounted')
     await step(live, DT)
-    await waitScreen(live, shown, 'title', () => key('Escape'))
-    await waitScreen(live, shown, 'start', () => click(live, 'act-play'))
     await waitScreen(live, shown, 'hub', () => {
       // Five ArrowDowns walk the 4 bins -> palette -> Play, then Enter runs the hub.
       for (let i = 0; i < 5; i++) key('ArrowDown')

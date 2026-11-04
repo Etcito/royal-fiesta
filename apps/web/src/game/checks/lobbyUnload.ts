@@ -73,10 +73,20 @@ export async function waitFor(game: TourGame, current: () => string, target: str
   throw new Error(`lobbyUnload: screen '${target}' did not arrive within ${frames} frames (on '${current()}')`)
 }
 
-// start -> title -> start -> hub, the route docs/screens.md gives Play through the menus.
+// The boot lands on the start screen (the root) before its penguin art mounts; keys only reach startStep after it.
+export async function startMounted(game: TourGame, current: () => string, frames = NAV_FRAMES): Promise<void> {
+  for (let frame = 0; frame < frames; frame++) {
+    if (current() === 'start' && (game.inventory() as { startView?: boolean }).startView === true) return
+    publishPhase(`start view: waiting for its mount, frame ${frame} on '${current()}'`)
+    game.step(DT)
+    await yieldTask(current())
+  }
+  throw new Error(`start view did not mount within ${frames} frames (on '${current()}')`)
+}
+
+// start -> hub, the route docs/screens.md gives Play: the start screen is the root, there is no title menu.
 async function toHub(game: TourGame, current: () => string): Promise<void> {
-  await waitFor(game, current, 'title', () => press('Escape'))
-  await waitFor(game, current, 'start', () => click(game, 'act-play'))
+  await startMounted(game, current)
   await waitFor(game, current, 'hub', () => {
     // Five ArrowDowns walk the 4 bins -> palette -> Play, then Enter runs the hub.
     for (let i = 0; i < 5; i++) press('ArrowDown')

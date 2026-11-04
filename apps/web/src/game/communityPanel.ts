@@ -1,4 +1,4 @@
-// The title's "Community levels" list (docs/community-levels.md): a DOM button and panel next to the uaa menu, shown only
+// The start screen's "Community levels" list (docs/community-levels.md): a DOM button and panel next to the uaa menu, shown only
 // when the page has a levels base URL. Choosing a level reloads the page with ?community=<id>.
 import type { LevelListing } from '@royal-fiesta/game/levelPack'
 

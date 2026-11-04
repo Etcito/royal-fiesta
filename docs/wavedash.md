@@ -215,15 +215,14 @@ the frame can carry:
   build that is pushed (`npm run wavedash` and `npm run etcito:build` pass their environment down to `vite build`;
   Vite injects it and apps/web/src/platform/relay.ts reads it). Never put it in a file of the repository. The value
   ends up in the built JavaScript, so it is a public relay URL and no token belongs in it. A malformed value (not
-  ws:// or wss://) is refused when Play online is chosen.
+  ws:// or wss://) is refused when Play is chosen.
   - Order: an explicit `?server=` first, then the build default. An explicit `?server=` keeps its behaviour (the
-    whole page is online: `parseQuery` then `OnlineMode`). With a build default, the title's Play IS the online lobby
-    flow (PlayFlow with `matchmaking: 'lobby'`) and the separate Play online button is not shown (`Nav.onlineOnly`);
-    retry after a failure stays online. Such a build never falls back to the in-page loopback hub. Without a build
+    whole page is online: `parseQuery` then `OnlineMode`). With a build default, the start screen's Play IS the online
+    lobby flow (PlayFlow with `matchmaking: 'lobby'`, `Nav.onlineOnly`); there is no title menu and no separate Play
+    online button; retry after a failure stays online. Such a build never falls back to the in-page loopback hub. Without a build
     default, Play stays offline with bots. A discreet bottom-left line shows build (rf-build.json commit and
     builtAt), relay host, socket status, lobby id, own key, members; also logged as `[lobby]`.
-  - With neither, Play online shows the refusal "Play online needs a relay; pass ?server=wss://host/... or choose
-    Play to play with bots" and does not hang.
+  - With neither, Play plays in-page with bots; there is no online button to choose.
   - `rf-build.json` records only `defaultServer` (a boolean: a default relay was set), never the URL.
   - Example, placeholder host: `VITE_RF_SERVER=wss://relay.example.invalid/ws npm run wavedash`.
 - `Wavedash.getLaunchParams()` exists in the frame and returned no keys for the playtest build; the docs read on

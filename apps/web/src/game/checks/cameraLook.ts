@@ -2,17 +2,11 @@
 // browser user activation: model only the pointer-lock API, retaining target selection and hit testing.
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { checkBoot, nextTask } from './boot.ts'
-import { waitFor } from './lobbyUnload.ts'
+import { startMounted, waitFor } from './lobbyUnload.ts'
 export const name = 'cameraLook'
 function press(code: string): void {
   window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }))
   window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }))
-}
-function click(game: TourGame, id: string): void {
-  const r = game.host.widgetRect(id)
-  if (!r) throw new Error(`Missing ${id}`)
-  const b = game.ui.getBoundingClientRect()
-  game.ui.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: b.left + r.x + r.w/2, clientY: b.top + r.y + r.h/2 }))
 }
 interface Sample { yaw: number; pitch: number; rendered: { eye: number[]; target: number[] } | null }
 function sample(game: TourGame): Sample { return (game.inventory() as { camera: Sample }).camera }
@@ -46,8 +40,8 @@ export async function run(_input: unknown, deps: TourDeps) {
     if (!result.json.ok) throw new Error(JSON.stringify(result.json))
     const live = game
     const current = () => screen
-    await waitFor(live, current, 'title', () => press('Escape'))
-    await waitFor(live, current, 'start', () => click(live, 'act-play'))
+    // The boot lands on the start screen, the root; five ArrowDowns reach its Play once its view mounted.
+    await startMounted(live, current)
     await waitFor(live, current, 'hub', () => { for (let i=0;i<5;i++) press('ArrowDown'); press('Enter') })
     await waitFor(live, current, 'vote', () => press('Enter'), 1800)
     for (let i=0;i<8;i++) { live.step(1/60); await nextTask() }

@@ -955,5 +955,29 @@
   "play": {
     "dev": "http://localhost:5173/game.html?course={id}"
   },
-  "meshCheck": "tools/savedMeshes.ts"
+  "meshCheck": "tools/savedMeshes.ts",
+  "players": {
+    "capacityField": "level.capacity",
+    "max": 8,
+    "kinds": {
+      "race": {
+        "min": 8
+      },
+      "survival": {
+        "min": 8
+      },
+      "hub": {
+        "min": 1,
+        "shared": true
+      },
+      "podium": {
+        "marker": "podiumSpot",
+        "min": 3
+      },
+      "gallery": {
+        "min": 8
+      },
+      "start": null
+    }
+  }
 }

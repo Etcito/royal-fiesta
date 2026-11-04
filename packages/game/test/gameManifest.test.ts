@@ -4,7 +4,7 @@ import test from 'node:test'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
 import { FEATURE_KINDS } from '@royal-fiesta/sim/features/catalog'
 import { ROUND_KINDS, STAGE_IDS } from '@royal-fiesta/sim/season/kinds'
-import { manifestCoverage, parseGameManifest } from '../src/gameManifest.ts'
+import { manifestCoverage, parseGameManifest, playersMismatches } from '../src/gameManifest.ts'
 
 const S13_KEYS = [
   'season', 'map', 'kind', 'finalRule', 'stages', 'capacity', 'usual', 'quota',
@@ -140,6 +140,33 @@ test('meshCheck names the saved mesh check SDF Modeler runs for its stale view',
   const m = parseGameManifest(read(), PATH)
   assert.equal(m.meshCheck, 'tools/savedMeshes.ts')
   assert.ok(existsSync(new URL(`../../../${m.meshCheck}`, import.meta.url)))
+})
+
+test('the players rule SDF Modeler shows level capacity from equals the game code', () => {
+  const m = parseGameManifest(read(), PATH)
+  assert.deepEqual(playersMismatches(m), [])
+  assert.equal(m.players!.capacityField, 'level.capacity')
+  assert.ok(S13_KEYS.includes('capacity'))
+})
+
+test('a players rule that drifts from the game code is reported, an unknown players key refuses', () => {
+  const json = read()
+  json.players.max = 12
+  json.players.kinds.hub.shared = false
+  delete json.players.kinds.start
+  json.players.kinds.team = { min: 2 }
+  assert.deepEqual(playersMismatches(parseGameManifest(json, PATH)), [
+    'players.max: expected 8, got 12',
+    'players.kinds.hub: expected {"min":1,"shared":true}, got {"min":1,"shared":false}',
+    'players.kinds.start: expected null, got nothing',
+    'players.kinds.team: not a course kind',
+  ])
+  const missing = read()
+  delete missing.players
+  assert.deepEqual(playersMismatches(parseGameManifest(missing, PATH)), ['players: missing; add the players rule'])
+  const extra = read()
+  extra.players.kinds.race.seats = 8
+  refusesAt(extra, '[manifest] sdfm.game.json#/players/kinds/race/seats')
 })
 
 test('level.fields covers exactly the S13 keys', () => {

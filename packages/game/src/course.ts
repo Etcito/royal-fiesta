@@ -9,6 +9,8 @@ import { collidersOf, parseColliderJson, scaleColliders } from './prims.ts'
 
 type Obj = Record<string, unknown>
 const KINDS: readonly CourseKind[] = ['race', 'survival', 'hub', 'gallery']
+/** The fewest spawns a course of each kind loads with (sdfm.game.json players.kinds.<kind>.min states the same). */
+export const MIN_SPAWNS: Readonly<Record<CourseKind, number>> = { race: 8, survival: 8, hub: 1, gallery: 8 }
 const PROFILES: readonly ProfileName[] = ['standard', 'sprint']
 const ASSET_NAME = /^[a-z0-9-]{1,48}$/
 const COURSE_ID = /^[a-z0-9-]{1,40}$/
@@ -240,7 +242,7 @@ export async function loadCourse(json: unknown, path: string, assets: AssetResol
   const killPlaneY = finiteNum(root.killPlaneY, path, '#/killPlaneY')
   if (!Array.isArray(root.spawns)) fail(path, '#/spawns', 'must be an array; add spawn points')
   const spawns = root.spawns.map((v, i) => spawn(v, path, `#/spawns/${i}`))
-  const minSpawns = kind === 'hub' ? 1 : 8
+  const minSpawns = MIN_SPAWNS[kind]
   if (spawns.length < minSpawns) fail(path, '#/spawns', `needs at least ${minSpawns} spawns for ${kind}; add spawn points`)
   if (!Array.isArray(root.checkpoints)) fail(path, '#/checkpoints', 'must be an array; use an ordered checkpoint array')
   const checkpoints = root.checkpoints.map((v, i) => checkpoint(v, path, `#/checkpoints/${i}`))

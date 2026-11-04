@@ -1,9 +1,14 @@
 // Game manifest `sdfm.game.json` (S14): parsed strictly, then checked against the game's own loader
-// (MOTION_KINDS and courseV1's MOTION_FIELDS) so SDF Modeler sees exactly the keys the game reads.
+// (MOTION_KINDS and courseV1's MOTION_FIELDS) so SDF Modeler sees exactly the keys the game reads. Its "players" rule
+// (how many players a level hosts, shown on SDF Modeler's level list) is checked against the game's own numbers by
+// playersMismatches: the course key of a season map's seats, the match cap, the spawn minimum per kind, the podium spots.
 import { MOTION_KINDS } from '@royal-fiesta/sim/course'
 import type { MotionKind } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import { MOTION_FIELDS } from './courseV1.ts'
+import { MAX_PLAYERS } from '@royal-fiesta/sim/world'
+import { MIN_SPAWNS } from './course.ts'
+import { KINDS as COURSE_KINDS, MOTION_FIELDS, PODIUM_SPOTS } from './courseV1.ts'
+import type { CourseKindV1 } from './courseV1.ts'
 import { MECHANISM_PRESETS } from './mechanismsJson.ts'
 import type { MechanismPreset } from './mechanismsJson.ts'
 import type { JointKind, LinkTarget } from '@royal-fiesta/sim/mechanismSpec'
@@ -39,7 +44,13 @@ export interface GameManifest {
   features?: Record<string, Record<string, FieldSchema>>
   /** The saved mesh check SDF Modeler runs (`--json`) to show stale meshes in red: tools/savedMeshes.ts. */
   meshCheck?: string
+  /** How many players a level hosts, as SDF Modeler shows it (its core/game/level-capacity.ts reads this rule). */
+  players?: PlayersRule
 }
+
+/** players.kinds.<kind>: the marker counted (spawn by default), the fewest the game accepts, players sharing them. */
+export interface PlayersKind { marker?: string; min?: number; shared?: boolean }
+export interface PlayersRule { capacityField?: string; max?: number; kinds?: Record<string, PlayersKind | null> }
 
 // S14: the S12/S13 mechanism schemas declared to sdfm.
 export interface ManifestMechanisms { version: 1; jointKinds: JointKind[]; linkTargets: LinkTarget['kind'][]; presets: MechanismPreset[] }
@@ -49,7 +60,7 @@ const LINK_TARGETS: readonly LinkTarget['kind'][] = ['motor', 'door', 'spring', 
 
 const TOP_KEYS = ['format', 'version', 'id', 'name', 'folders', 'worlds', 'courseFormat', 'courseVersion', 'markers', 'motions', 'play']
 const FOLDER_KEYS = ['assets', 'courses', 'ui']
-const OPTIONAL_TOP = ['mechanisms', 'level', 'features', 'meshCheck']
+const OPTIONAL_TOP = ['mechanisms', 'level', 'features', 'meshCheck', 'players']
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const SCALARS = ['number', 'integer', 'boolean', 'string', 'vec3', 'quat']
 const FIELD_SCHEMA_TYPES: readonly FieldSchemaType[] = ['number', 'integer', 'boolean', 'string', 'vec3', 'enum', 'list', 'object']
@@ -254,7 +265,71 @@ export function parseGameManifest(json: unknown, path: string): GameManifest {
     ...(Object.hasOwn(m, 'level') ? { level: levelSchema(m.level, path) } : {}),
     ...(Object.hasOwn(m, 'features') ? { features: featureSchemas(m.features, path) } : {}),
     ...(Object.hasOwn(m, 'meshCheck') ? { meshCheck: text(m.meshCheck, path, '/meshCheck') } : {}),
+    ...(Object.hasOwn(m, 'players') ? { players: playersOf(m.players, path) } : {}),
   }
+}
+
+function count(v: unknown, least: number, path: string, ptr: string): number {
+  if (typeof v !== 'number' || !Number.isInteger(v) || v < least) fail(path, ptr, `must be an integer of ${least} or more; provide a whole number`)
+  return v
+}
+
+function playersOf(v: unknown, path: string): PlayersRule {
+  const o = obj(v, path, '/players')
+  exactKeys(o, [], path, '/players', ['capacityField', 'max', 'kinds'])
+  const out: PlayersRule = {}
+  if (Object.hasOwn(o, 'capacityField')) out.capacityField = text(o.capacityField, path, '/players/capacityField')
+  if (Object.hasOwn(o, 'max')) out.max = count(o.max, 1, path, '/players/max')
+  if (Object.hasOwn(o, 'kinds')) {
+    const kinds = obj(o.kinds, path, '/players/kinds')
+    out.kinds = {}
+    for (const [kind, raw] of Object.entries(kinds)) {
+      const ptr = `/players/kinds/${escapePointer(kind)}`
+      if (raw === null) { out.kinds[kind] = null; continue }
+      const k = obj(raw, path, ptr)
+      exactKeys(k, [], path, ptr, ['marker', 'min', 'shared'])
+      const spec: PlayersKind = {}
+      if (Object.hasOwn(k, 'marker')) spec.marker = text(k.marker, path, `${ptr}/marker`)
+      if (Object.hasOwn(k, 'min')) spec.min = count(k.min, 0, path, `${ptr}/min`)
+      if (Object.hasOwn(k, 'shared')) {
+        if (typeof k.shared !== 'boolean') fail(path, `${ptr}/shared`, 'must be true or false; set it or remove it')
+        spec.shared = k.shared
+      }
+      out.kinds[kind] = spec
+    }
+  }
+  return out
+}
+
+/** The players rule the game's code implies: season maps declare their seats in level.capacity (levelBlock), a match
+ * seats MAX_PLAYERS, every kind needs MIN_SPAWNS spawns (a hub shares them: hubWorld wraps seats onto its spawns), a
+ * podium shows PODIUM_SPOTS winners, a start scene hosts nobody. */
+export function expectedPlayersRule(): PlayersRule {
+  const kinds: Record<string, PlayersKind | null> = {}
+  for (const kind of COURSE_KINDS as readonly CourseKindV1[]) {
+    kinds[kind] = kind === 'start' ? null
+      : kind === 'podium' ? { marker: 'podiumSpot', min: PODIUM_SPOTS }
+        : kind === 'hub' ? { min: MIN_SPAWNS.hub, shared: true }
+          : { min: MIN_SPAWNS[kind] }
+  }
+  return { capacityField: 'level.capacity', max: MAX_PLAYERS, kinds }
+}
+
+/** Where the manifest's players rule differs from the game's code (expectedPlayersRule), one line each; [] when equal. */
+export function playersMismatches(m: GameManifest): string[] {
+  if (!m.players) return ['players: missing; add the players rule']
+  const want = expectedPlayersRule()
+  const got = m.players
+  const out: string[] = []
+  if (got.capacityField !== want.capacityField) out.push(`players.capacityField: expected ${want.capacityField}, got ${String(got.capacityField)}`)
+  if (got.max !== want.max) out.push(`players.max: expected ${want.max}, got ${String(got.max)}`)
+  const kinds = got.kinds ?? {}
+  for (const [kind, spec] of Object.entries(want.kinds!)) {
+    const have = Object.hasOwn(kinds, kind) ? kinds[kind] : undefined
+    if (JSON.stringify(have) !== JSON.stringify(spec)) out.push(`players.kinds.${kind}: expected ${JSON.stringify(spec)}, got ${JSON.stringify(have) ?? 'nothing'}`)
+  }
+  for (const kind of Object.keys(kinds)) if (!Object.hasOwn(want.kinds!, kind)) out.push(`players.kinds.${kind}: not a course kind`)
+  return out
 }
 
 function subset<T extends string>(v: unknown, allowed: readonly T[], path: string, ptr: string): T[] {

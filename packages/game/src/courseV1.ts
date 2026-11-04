@@ -67,7 +67,9 @@ export const V0_ASSET_MAP: Readonly<Record<string, string>> = Object.freeze({
   bean: 'penguin.body',
 })
 
-const KINDS: readonly CourseKindV1[] = ['race', 'survival', 'hub', 'podium', 'gallery', 'start']
+export const KINDS: readonly CourseKindV1[] = ['race', 'survival', 'hub', 'podium', 'gallery', 'start']
+/** A podium course has exactly this many spots (1st, 2nd, 3rd). */
+export const PODIUM_SPOTS = 3
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const S2_KEYS = ['format', 'version', 'id', 'name', 'kind', 'profiles', 'timeLimitS', 'killPlaneY', 'spawns', 'checkpoints', 'finish', 'path', 'regions', 'queuePad', 'obstacles']
 const S13_KEYS = [...S2_KEYS, 'world', 'decor', 'environment', 'podium', 'mechanisms', 'sounds', 'level', 'features', 'scene', 'start']
@@ -201,7 +203,7 @@ function podiumSpec(v: unknown, path: string): PodiumSpec {
   keys(o, ['spots', 'camera'], path, '#/podium')
   required(o, ['spots', 'camera'], path, '#/podium')
   const raw = arr(o.spots, path, '#/podium/spots')
-  if (raw.length !== 3) fail(path, '#/podium/spots', `has ${raw.length} spots; give exactly 3 (1st, 2nd, 3rd)`)
+  if (raw.length !== PODIUM_SPOTS) fail(path, '#/podium/spots', `has ${raw.length} spots; give exactly ${PODIUM_SPOTS} (1st, 2nd, 3rd)`)
   const spots = raw.map((sv, i) => {
     const ptr = `#/podium/spots/${i}`
     const so = obj(sv, path, ptr)

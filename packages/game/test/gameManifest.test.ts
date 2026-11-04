@@ -114,7 +114,7 @@ test('the committed level and features schemas parse in the M3 shape', () => {
   assert.ok(m.level)
   assert.deepEqual(m.level.groupRoles, GROUP_ROLES)
   assert.deepEqual(m.level.fields.kind, { type: 'enum', enum: [...ROUND_KINDS] })
-  assert.deepEqual(m.level.fields.finalRule, { type: 'enum', enum: ['crown', 'lastStanding'] })
+  assert.deepEqual(m.level.fields.finalRule, { type: 'enum', enum: ['crown', 'lastStanding'], nullable: true })
   assert.deepEqual(m.level.fields.stages, { type: 'list', items: { type: 'enum', enum: [...STAGE_IDS] } })
   assert.deepEqual(m.level.fields.capacity, { type: 'integer', min: 1, max: 60 })
   assert.deepEqual(m.level.fields.timeCapS, { type: 'number', min: 0 })

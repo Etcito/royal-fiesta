@@ -13,12 +13,14 @@ export type FieldType = 'number' | 'integer' | 'boolean' | 'string' | 'vec3' | '
 
 // S13/S19 M3 amendment: the level-panel schema shape.
 export type FieldSchemaType = 'number' | 'integer' | 'boolean' | 'string' | 'vec3' | 'enum' | 'list' | 'object'
-export type FieldSchema =
+// nullable (b002040): the field may hold an explicit null ("none"), as SDF Modeler's level validator honours it.
+export type FieldSchema = (
   | { type: 'number' | 'integer'; min?: number; max?: number }
   | { type: 'boolean' | 'string' | 'vec3' }
   | { type: 'enum'; enum: string[] }
   | { type: 'list'; items: FieldSchema }
   | { type: 'object'; fields: Record<string, FieldSchema> }
+) & { nullable?: true }
 
 export interface GameManifest {
   format: 'sdfm.game'
@@ -138,7 +140,15 @@ function strings(v: unknown, path: string, ptr: string): string[] {
 }
 
 function fieldSchema(v: unknown, path: string, ptr: string): FieldSchema {
-  const o = obj(v, path, ptr)
+  const raw = obj(v, path, ptr)
+  if (!Object.hasOwn(raw, 'nullable')) return typedFieldSchema(raw, path, ptr)
+  if (typeof raw.nullable !== 'boolean') fail(path, `${ptr}/nullable`, 'must be true or false; set "nullable": true or remove it')
+  const { nullable, ...rest } = raw
+  const schema = typedFieldSchema(rest, path, ptr)
+  return nullable ? { ...schema, nullable: true } : schema
+}
+
+function typedFieldSchema(o: Obj, path: string, ptr: string): FieldSchema {
   const type = o.type
   if (typeof type !== 'string' || !(FIELD_SCHEMA_TYPES as readonly string[]).includes(type)) {
     fail(path, `${ptr}/type`, `unknown field type '${String(type)}'; use one of ${FIELD_SCHEMA_TYPES.join(', ')}`)

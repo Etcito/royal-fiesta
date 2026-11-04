@@ -66,6 +66,8 @@ export function newMemory(): BrainMemory {
 
 export interface BrainInput {
   course: ResolvedCourse; pos: Vec3; vel: Vec3; facing: { x: number; z: number }; grounded: boolean; mode: number
+  /** CharState.rising: a dive press is a belly stroke there (8edc37d), so a bot that wants a dive waits it out. */
+  rising?: boolean
   physicsTraversal?: boolean
   obstacleAhead: boolean; hazardNear: boolean
   // Absent callbacks read as false, so view-side pilots compile and run unchanged.
@@ -398,7 +400,7 @@ export function evaluateBrain(b: BrainInput, behaviour: BotBehaviour, route: Rou
   const hanging = b.mode === CharMode.grabbing
   const canJump = b.grounded && !hanging && b.mode !== CharMode.dive && b.mode !== CharMode.diveRecover && b.mode !== CharMode.stunned
   const roadRace = b.course.obstacles.some(o => o.sweep !== undefined)
-  const canDive = b.mode === CharMode.ground || b.mode === CharMode.air || (roadRace && b.mode === CharMode.slide)
+  const canDive = (b.mode === CharMode.ground && b.rising !== true) || b.mode === CharMode.air || (roadRace && b.mode === CharMode.slide)
   const feet = b.pos.y - CHAR.halfHeight - CHAR.radius
   const scan = scanAhead(groundBoxes(b.course, observed), feet, b.pos.x, b.pos.z, ux, uz)
   const climb = node.p.y > b.pos.y + 0.4 || (b.obstacleAhead && scan.ledgeTop !== -Infinity)

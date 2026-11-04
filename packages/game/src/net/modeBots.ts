@@ -157,7 +157,10 @@ export function modeBotInput(domain: FiestaDomain, memory: ModeBotMemory, seat: 
       out.moveZ = len > 0.4 ? nz : 0
       out.jump = (tick & 1) === 0 && (pathJumpAhead(course, state.pos.x, state.pos.z, nx, nz) ||
         !groundAhead(domain, state.pos.x, feet, state.pos.z, nx, nz))
-      out.dive = (tick & 1) === 0 && len <= DIVE_DIST && !['tileField', 'hexField', 'risingKill', 'annulus', 'sweep'].includes(targetKind) && state.grounded
+      // A dive launch only: on the belly (a slide, a dive recover, the rise after them) DIVE is one more belly
+      // stroke (8edc37d), which pushes a bot lying against a wall into it instead of launching him.
+      out.dive = (tick & 1) === 0 && len <= DIVE_DIST && !['tileField', 'hexField', 'risingKill', 'annulus', 'sweep'].includes(targetKind) &&
+        state.grounded && state.mode === CharMode.ground && state.rising !== true
       out.grab = targetKind === 'crown' || grabNear(domain, state)
       if (targetKind === 'crown') { out.dive = false; out.jump = state.grounded && (tick & 1) === 0 }
       const planar = Math.sqrt(state.vel.x * state.vel.x + state.vel.z * state.vel.z)

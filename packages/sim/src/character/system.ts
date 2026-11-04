@@ -57,6 +57,8 @@ export interface CharState {
   strokeStart?: number
   /** In a belly slide's airtime (derived, not state): the landing puts him back on the belly. */
   slideAir?: boolean
+  /** Rising from the belly (derived, not state): DIVE now is one more belly stroke, never a dive launch. */
+  rising?: boolean
 }
 
 const CHAR_GROUPS = groups(G.CHAR, G.STATIC | G.MOVING | G.CHAR)
@@ -441,6 +443,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
     out.strokePhase = this.#mode[p] === CharMode.swim ? undefined : strokeAnimPhase(this.slideStroke, this.#strokeTimer[p])
     out.strokeStart = this.slideStroke.startFrac
     out.slideAir = this.#mode[p] === CharMode.air && this.#timer[p] === SLIDE_AIR
+    out.rising = this.#mode[p] === CharMode.ground && this.#timer[p] > 0
     return out
   }
 

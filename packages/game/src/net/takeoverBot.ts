@@ -48,7 +48,7 @@ export function takeoverInput(
   if (cache === undefined || cache.brain.course !== course || cache.teleportTick !== state.teleportTick) {
     cache = memory.takeover = {
       brain: { course, pos: state.pos, vel: state.vel, facing: state.facing,
-        grounded: state.grounded, mode: state.mode, obstacleAhead: false, hazardNear: false },
+        grounded: state.grounded, mode: state.mode, rising: state.rising === true, obstacleAhead: false, hazardNear: false },
       input: { course, behaviour, pos: state.pos, seed: 0, tick },
       teleportTick: state.teleportTick,
       route: null,
@@ -73,6 +73,7 @@ export function takeoverInput(
   b.facing = state.facing
   b.grounded = state.grounded
   b.mode = state.mode
+  b.rising = state.rising === true
   cache.input.pos = state.pos
   cache.input.tick = tick
   const route = updateRoute(cache.route, cache.input)

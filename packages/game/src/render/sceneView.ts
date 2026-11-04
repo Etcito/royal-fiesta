@@ -38,6 +38,15 @@ export function ikInputs(c: CharacterView, grounded: boolean): Pick<CharacterObs
   }
 }
 
+/** The animation driver's observation of seat `id` from its sim view, as SceneView.observeTick feeds it. */
+export function characterObservation(id: number, c: CharacterView): CharacterObservation {
+  // Matches carry no S9 emote; grounded is every mode but the airborne ones.
+  const grounded = c.mode !== CharMode.air && c.mode !== CharMode.dive
+  return { id, mode: c.mode, vel: { x: c.vel.x, y: c.vel.y, z: c.vel.z }, grounded, surface: c.surface ?? 'normal',
+    strokeTimer: c.strokeTimer, strokePhase: c.strokePhase, strokeStart: c.strokeStart, slideSpeed: c.slideSpeed,
+    carry: c.carry, slideAir: c.slideAir, emote: 0, ...ikInputs(c, grounded) }
+}
+
 // S16 attach points the costumes mount on: the penguin hat, scarf and suit use head, neck and body.
 export type CostumeSlot = 'head' | 'neck' | 'body' | 'hat' | 'outfit' | 'extra' | 'special'
 // A rigid raa.prims costume. `scale` inflates it about its anchor (default 1) and the asset's anchor of the
@@ -608,9 +617,7 @@ export class SceneView {
       sim.character(p, c)
       // A parked character leaves: the driver frees its graph and a return starts a fresh one.
       if (c.parked || !this.crowdVisible(p, c.pos)) continue
-      // Matches carry no S9 emote; grounded is every mode but the airborne ones.
-      const grounded = c.mode !== CharMode.air && c.mode !== CharMode.dive
-      out.push({ id: p, mode: c.mode, vel: { x: c.vel.x, y: c.vel.y, z: c.vel.z }, grounded, surface: c.surface ?? 'normal', strokeTimer: c.strokeTimer, strokePhase: c.strokePhase, strokeStart: c.strokeStart, slideSpeed: c.slideSpeed, carry: c.carry, slideAir: c.slideAir, emote: 0, ...ikInputs(c, grounded) })
+      out.push(characterObservation(p, c))
     }
     anim.observeTick(tick, out)
   }

@@ -63,6 +63,47 @@ export interface CharacterView {
   slideAir?: boolean
 }
 
+/**
+ * Copies one character's sim state into its view, with the surface he stands on: everything but status and
+ * parked, which the caller's round owns. Every view the scene animates from goes through it (MatchSim and the
+ * show/zone DomainSceneSim): the show rounds drew no belly stroke, carry pose, slide airtime or ice pedalling
+ * while DomainSceneSim copied only the pose and the mode (owner 2026-11-04, the breaststroke was lost).
+ */
+export function viewCharacter(st: CharState, obstacles: ObstacleSystem, mechanisms: MechanismSystem, out: CharacterView): CharacterView {
+  out.pos.x = st.pos.x
+  out.pos.y = st.pos.y
+  out.pos.z = st.pos.z
+  out.vel.x = st.vel.x
+  out.vel.y = st.vel.y
+  out.vel.z = st.vel.z
+  out.facing.x = st.facing.x
+  out.facing.z = st.facing.z
+  out.strokeTimer = st.strokeTimer
+  out.strokePhase = st.strokePhase
+  out.strokeStart = st.strokeStart
+  out.slideSpeed = st.slideSpeed
+  out.carry = st.carry
+  out.slideAir = st.slideAir
+  out.surface = st.groundBody != null
+    ? mechanisms.spec()!.items[st.groundBody.item].bodies[st.groundBody.body].surface
+    : st.groundObstacle >= 0 ? surfaceOf(obstacles.spec(st.groundObstacle)) : 'normal'
+  out.mode = st.mode
+  out.teleportTick = st.teleportTick
+  return out
+}
+
+/** A view with no sim state behind it (a parked seat, a display-only remote): no stroke, carry or surface. */
+export function clearCharacterDetail(out: CharacterView): CharacterView {
+  out.strokeTimer = undefined
+  out.strokePhase = undefined
+  out.strokeStart = undefined
+  out.slideSpeed = undefined
+  out.carry = undefined
+  out.slideAir = undefined
+  out.surface = undefined
+  return out
+}
+
 export interface MatchSimOptions {
   /**
    * Tuned belly stroke parameters (the ?tune=1 panel), read live by the sim. Offline/local only:
@@ -455,29 +496,9 @@ export class MatchSim implements Simulation<PlayerInput>, MechanismView {
   }
 
   character(p: number, out: CharacterView): CharacterView {
-    const ctx = this.world.ctx
-    const st = this.#chars.state(ctx, p, scratchState)
-    out.pos.x = st.pos.x
-    out.pos.y = st.pos.y
-    out.pos.z = st.pos.z
-    out.vel.x = st.vel.x
-    out.vel.y = st.vel.y
-    out.vel.z = st.vel.z
-    out.facing.x = st.facing.x
-    out.facing.z = st.facing.z
-    out.strokeTimer = st.strokeTimer
-    out.strokePhase = st.strokePhase
-    out.strokeStart = st.strokeStart
-    out.slideSpeed = st.slideSpeed
-    out.carry = st.carry
-    out.slideAir = st.slideAir
-    out.surface = st.groundBody != null
-      ? this.#mechanisms.spec()!.items[st.groundBody.item].bodies[st.groundBody.body].surface
-      : st.groundObstacle >= 0 ? surfaceOf(this.#obstacles.spec(st.groundObstacle)) : 'normal'
-    out.mode = st.mode
+    viewCharacter(this.#chars.state(this.world.ctx, p, scratchState), this.#obstacles, this.#mechanisms, out)
     out.status = this.#round.status(p)
     out.parked = this.#chars.isParked(p)
-    out.teleportTick = st.teleportTick
     return out
   }
 

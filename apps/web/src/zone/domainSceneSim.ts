@@ -7,7 +7,7 @@ import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ObstacleSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import type { CharacterView, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
-import { Phase } from '@royal-fiesta/sim/match/matchSim'
+import { clearCharacterDetail, Phase, viewCharacter } from '@royal-fiesta/sim/match/matchSim'
 import { motionPose } from '@royal-fiesta/sim/obstacles/motion'
 import type { BodyRef, MechEvent, MechItem } from '@royal-fiesta/sim/mechanismSpec'
 import type { Pose } from '@royal-fiesta/sim/vec'
@@ -75,6 +75,8 @@ export class DomainSceneSim {
   character(p: number, out: CharacterView): CharacterView {
     const domain = this.seatDomain[p]
     const remote = this.remote.get(p)
+    // `out` is the scene's one view for every seat: a seat without sim state must not keep the previous seat's stroke.
+    if (domain === undefined) clearCharacterDetail(out)
     if (domain === undefined && remote !== undefined) {
       out.pos.x = remote.x; out.pos.y = remote.y; out.pos.z = remote.z
       out.vel.x = remote.vx; out.vel.y = remote.vy; out.vel.z = remote.vz
@@ -95,14 +97,10 @@ export class DomainSceneSim {
       out.teleportTick = -1
       return out
     }
-    const state = domain.state(p, this.state)
-    out.pos.x = state.pos.x; out.pos.y = state.pos.y; out.pos.z = state.pos.z
-    out.vel.x = state.vel.x; out.vel.y = state.vel.y; out.vel.z = state.vel.z
-    out.facing.x = state.facing.x; out.facing.z = state.facing.z
-    out.mode = state.mode
+    // The same copy as MatchSim.character: the scene animates the stroke, carry and slide from these fields.
+    const state = viewCharacter(domain.state(p, this.state), domain.obstacles, domain.mechanisms, out)
     out.status = domain.status(p)
     out.parked = state.mode === CharMode.parked
-    out.teleportTick = state.teleportTick
     return out
   }
 

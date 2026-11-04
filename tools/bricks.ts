@@ -743,7 +743,8 @@ export async function checkBricks(): Promise<BrickCheck> {
   }
   try {
     const raa = raaSource()
-    if (raa.kind === 'absent') lines.push(`INFO ${RAA_ABSENT_PREFIX}${raa.reason}`)
+    // Both lines name RF_RAA_LOCAL: a checkout that still sets it learns it is ignored, with or without ../raa.
+    if (raa.kind === 'absent') lines.push(`INFO ${RAA_ABSENT_PREFIX}${raa.reason} (RF_RAA_LOCAL is no longer read by fetch or status)`)
     else lines.push(`INFO RAA ${raa.kind} ${raa.dir} at ${raa.commit ?? 'unknown'}; the pinned local channel (RF_RAA_LOCAL is no longer read by fetch or status)`)
   } catch (error) {
     lines.push(`FAIL ${isRefusal(error) ? error.message : String(error)}`)

@@ -90,7 +90,7 @@ test('60-seat offline show owns one world for all inputs and no rollback', async
   } finally { mode.dispose() }
 })
 
-test('default 12-seat show holds for loading then plays to its first result without refusal', async () => {
+test('default 12-seat show holds for loading then plays its first round to a result without refusal', async () => {
   let release!: () => void
   browser.ready = () => new Promise<void>(resolve => { release = resolve })
   const mode = await ShowMode.create(options())
@@ -112,13 +112,15 @@ test('default 12-seat show holds for loading then plays to its first result with
     mode.frame(0, null, human)
     assert.equal(mode.models?.countdown?.label, '3')
     assert.equal(mode.hud()?.view.alive, 12)
-    for (let frame = 0; frame < 12000 && mode.screen() !== 'result' && mode.failure === null; frame++) {
+    for (let frame = 0; frame < 12000 && mode.results().length === 0 && mode.failure === null; frame++) {
       mode.frame(1 / 60, null, human)
     }
     assert.equal(mode.failure, null)
-    assert.equal(mode.screen(), 'result')
+    assert.equal(mode.results().length, 1)
+    mode.frame(0, null, human) // the director presents a result on the frame after the round ends
     assert.equal(mode.models?.results?.length, 12)
-    assert.equal(mode.models?.hold, true)
+    // No round-results popup since 872b09f: the round goes straight to its elimination show, or to the next vote.
+    assert.ok(['elimShow', 'vote'].includes(mode.screen()), mode.screen())
   } finally {
     mode.dispose()
     browser.ready = () => Promise.resolve()

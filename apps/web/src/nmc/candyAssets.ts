@@ -17,7 +17,7 @@ interface Adapter {
 }
 
 async function hardware() {
-  const gpu = (navigator as Navigator & {
+  const gpu = (navigator as {
     gpu?: { requestAdapter(): Promise<Adapter | null> }
   }).gpu
   const adapter = await gpu?.requestAdapter()

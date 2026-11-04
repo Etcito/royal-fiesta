@@ -7,7 +7,7 @@ interface CheckModule {
 }
 
 async function adapterInfo(): Promise<AdapterInfo> {
-  const gpu = (navigator as Navigator & { gpu?: {
+  const gpu = (navigator as { gpu?: {
     requestAdapter(): Promise<{ info?: Partial<AdapterInfo> & { isFallbackAdapter?: boolean }; isFallbackAdapter?: boolean } | null>
   } }).gpu
   const adapter = await gpu?.requestAdapter()

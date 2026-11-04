@@ -1,3 +1,4 @@
+/// <reference path="../types-mama.d.ts" />
 // The Graphics page of the settings screen (owner 2026-11-04: "these options must be exposed by MAMA"): every row,
 // label, range, default and the validation come from MAMA's game render-options contract
 // (src/core/game/render-options.ts), reached through the private virtual:rf-mama module like the rest of MAMA; this

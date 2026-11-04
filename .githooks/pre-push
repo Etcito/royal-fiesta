@@ -1,0 +1,11 @@
+#!/bin/sh
+# Push guard: a push never leaves a TypeScript project of the repository red (tools/typecheck.ts: the root project and
+# every workspace's own, apps/web included). `tsc -p apps/web` sat red because no hook ran it (2026-11-05).
+# Enabled by `npm run prepare` (git config core.hooksPath .githooks), next to the pre-commit guard.
+# WSL host shells have no node on PATH (or only the Windows shims): use the pinned engines first.
+ENGINES="${NMC_ENGINES:-$HOME/nmc/engines}/bin"
+[ -d "$ENGINES" ] && PATH="$ENGINES:$PATH" && export PATH
+# git runs hooks with GIT_DIR and friends pointing at this repository; nothing below should inherit them.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_PREFIX
+cd "$(git rev-parse --show-toplevel)" || exit 1
+exec node --experimental-strip-types tools/typecheck.ts

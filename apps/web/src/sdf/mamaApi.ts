@@ -1,3 +1,4 @@
+/// <reference path="../types-mama.d.ts" />
 // The MAMA facade as the page sees it. MAMA itself is private: it is reached only through the
 // virtual module virtual:rf-mama (real impl when present, the mamaAbsent.ts stub otherwise).
 import type { GameAsset, MesherOutput } from '@royal-fiesta/game/gameAsset'

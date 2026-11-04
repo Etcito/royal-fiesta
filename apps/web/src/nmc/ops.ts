@@ -53,7 +53,7 @@ interface GpuAdapterLike { info?: GpuAdapterInfoLike; isFallbackAdapter?: boolea
 interface GpuLike { requestAdapter(opts?: { powerPreference?: string }): Promise<GpuAdapterLike | null> }
 
 async function adapterInfo(): Promise<AdapterInfo> {
-  const gpu = (navigator as Navigator & { gpu?: GpuLike }).gpu
+  const gpu = (navigator as { gpu?: GpuLike }).gpu
   if (!gpu) refuse('gpu', 'navigator.gpu', 'WebGPU is not exposed by this browser; run the op in the GPU client browser')
   const adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' })
   if (adapter === null) refuse('gpu', 'navigator.gpu.requestAdapter', 'no WebGPU adapter; run the op in the GPU client browser')

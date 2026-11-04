@@ -4,8 +4,8 @@ declare module '*?worker&url' {
   export default url
 }
 
-// Vite's `?url` import of an asset (the manifold-3d wasm the MAMA worker loads): its served URL. tsconfig.mama.json
-// type-checks apps/web/src/sdf/mama with this file only (no vite/client types), so the declaration lives here.
+// Vite's `?url` import of an asset (the manifold-3d wasm the MAMA worker loads): its served URL. vite/client declares it
+// too (sdf/mama/worker.ts references it); this copy keeps it typed in a program that loads no vite/client.
 declare module '*?url' {
   const url: string
   export default url

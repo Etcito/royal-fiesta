@@ -1,5 +1,5 @@
-import { checkAwait, checkPhase } from '../game/checkProgress.ts'
 /// <reference types="vite/client" />
+import { checkAwait, checkPhase } from '../game/checkProgress.ts'
 // The game's uaa UI layer: a transparent premultiplied WebGPU canvas stacked above the RAA canvas.
 // It loads every ui/*.ui.json, ui/screens.ui-doc.json and the ui/fonts.json fonts, then drives a
 // uaa Ui from menuModel results through screenMap. There is no fallback: a GPU, asset or font
@@ -150,7 +150,7 @@ interface GpuLike { requestAdapter(opts?: { powerPreference?: string }): Promise
 
 async function requestDevice(): Promise<GpuDeviceLike> {
   installShaderCache()
-  const gpu = typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { gpu?: GpuLike }).gpu
+  const gpu = typeof navigator === 'undefined' ? undefined : (navigator as { gpu?: GpuLike }).gpu
   if (gpu === undefined) throw new UaaError('GPU_UNAVAILABLE', '', 'WebGPU is not available: this browser exposes no navigator.gpu.')
   let adapter: GpuAdapterLike | null
   try {

@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { localPlayerCount } from './localPlayers.ts'
 import { localBotCount } from './localBots.ts'
 import startSeasonJson from '../../../../courses/season.json?raw'
@@ -10,7 +11,6 @@ import { checkAwait, checkPhase } from './checkProgress.ts'
 // that many piloted clients over a LoopbackRelay. Content comes from pickContent, input only from GameInput.
 // ?players=1..4 (alias ?local=) reserves local human seats in one split-screen canvas; works with ?course= and ?bots=.
 // Every screen and the round HUD are drawn by uaa on canvas#ui, above the RAA views.
-/// <reference types="vite/client" />
 import { roundOverlay } from '../content/roundOverlay.ts'
 import { observeRoundLoad, startup, renderFrame, simStep } from '@royal-fiesta/game/render/roundLoad'
 import { UaaError } from '@etcito/uaa'

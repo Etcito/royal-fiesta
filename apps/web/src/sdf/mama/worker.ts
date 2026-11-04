@@ -1,5 +1,5 @@
-import { meshByParts } from '@etcito/mama/core/game/mesh-by-parts.ts'
 /// <reference types="vite/client" />
+import { meshByParts } from '@etcito/mama/core/game/mesh-by-parts.ts'
 // MAMA mesh worker core: one MeshRequest -> one MeshedAsset. The payload is the upload shape of
 // @etcito/raa-sdfm's meshDocument (per-material mesh parts + the compiled graph materials), so the
 // render path can hand it to RAA without remeshing. The MAMA calls are the ones that package makes.

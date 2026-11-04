@@ -60,7 +60,7 @@ interface GpuAdapterLike { info?: GpuAdapterInfoLike; isFallbackAdapter?: boolea
 interface GpuLike { requestAdapter(opts?: { powerPreference?: string; featureLevel?: string }): Promise<GpuAdapterLike | null> }
 
 async function adapterInfo(): Promise<AdapterInfo> {
-  const gpu = (navigator as Navigator & { gpu?: GpuLike }).gpu
+  const gpu = (navigator as { gpu?: GpuLike }).gpu
   if (!gpu) refuse('gpu', 'navigator.gpu', 'WebGPU is not exposed by this browser; run the op in the GPU client browser')
   const adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' })
   if (adapter === null) refuse('gpu', 'navigator.gpu.requestAdapter', 'no WebGPU adapter; run the op in the GPU client browser')
@@ -222,7 +222,7 @@ async function hubLoopCapture(raw: unknown): Promise<OpEnvelope<HubLoopOutput>> 
 // The GPU client exposes the RTX only at WebGPU's compatibility feature level, and RAA's browser backend never
 // asks for it, so inject it into every requestAdapter call (the page's own and RAA's) or both get SwiftShader.
 function preferCompatibilityAdapter(): void {
-  const gpu = (navigator as Navigator & { gpu?: GpuLike }).gpu
+  const gpu = (navigator as { gpu?: GpuLike }).gpu
   if (!gpu || typeof gpu.requestAdapter !== 'function') return
   const orig = gpu.requestAdapter.bind(gpu)
   gpu.requestAdapter = async (opts?: { powerPreference?: string; featureLevel?: string }) => {

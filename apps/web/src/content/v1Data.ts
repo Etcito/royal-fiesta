@@ -1,5 +1,5 @@
-import { checkAwait } from '../game/checkProgress.ts'
 /// <reference types="vite/client" />
+import { checkAwait } from '../game/checkProgress.ts'
 // V1 data fetched from a content root, with bundled render stand-ins and course dressing.
 // Every import.meta.glob sits in a function body, so Node tests can import this module.
 import type { CourseDressing, LoadProgress } from '@royal-fiesta/game/content'

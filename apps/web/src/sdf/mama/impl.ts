@@ -1,3 +1,4 @@
+/// <reference path="../../types-mama.d.ts" />
 // The real MAMA facade, resolved by vite.config.ts as virtual:rf-mama when MAMA is present.
 // Meshing runs in workers (mama/worker.ts); nothing of raa-sdfm needs main-thread initialisation
 // here: the worker builds its upload payload and the renderer consumes it.

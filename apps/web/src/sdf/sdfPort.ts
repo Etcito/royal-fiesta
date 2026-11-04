@@ -1,3 +1,4 @@
+/// <reference path="../types-mama.d.ts" />
 import { roadMesh, type RoadData } from '@royal-fiesta/sim/road'
 import { checkAwait } from '../game/checkProgress.ts'
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the

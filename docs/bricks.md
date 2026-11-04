@@ -19,8 +19,12 @@ and locked in `package-lock.json`:
 
 The three RAA packages (`@etcito/raa`, `@etcito/raa-sdfm` and `@etcito/raa-anim`) are not release
 tarballs: they come from the pinned local build described below. A clean clone gets the release
-packages from `npm ci`; `npm run bricks -- check` verifies that the GameSaloon packages resolve and
-that the Rapier WASM initialises.
+packages from `npm ci`; `npm run bricks -- check` verifies that every workspace package
+(`packages/*`, `apps/*`) resolves into this checkout, that the GameSaloon packages resolve and that the
+Rapier WASM initialises. A worktree whose `node_modules` belongs to another checkout (a symlink to
+the live clone's, or a kong env made for another folder) fails the first check: it would load that checkout's sources next
+to its own, two copies of each module, and tests fail far from the cause. Run `kong rules && kong
+use` (or `npm install`) in the worktree itself.
 
 To update a release pin, change the tarball URL in the `package.json` that declares it, run
 `npm install` from the repository root so `package-lock.json` follows, and commit both. Bump
@@ -196,7 +200,7 @@ This is execution/non-empty evidence, not a judged visual change; no image judge
 ## CLI
 
 ```sh
-npm run bricks -- check                # GameSaloon packages, Rapier, the MAMA and RAA lines
+npm run bricks -- check                # workspace packages, GameSaloon packages, Rapier, the MAMA and RAA lines
 npm run bricks -- status               # every pin, plus the RAA manifest commit and staged packages
 npm run bricks -- where <gamesaloon-public|raa-assets-tools|raa|MAMA>
 npm run bricks -- fetch mama           # link or clone .bricks/MAMA, print its kind and commit

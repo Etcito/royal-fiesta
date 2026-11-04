@@ -1,8 +1,8 @@
 import { createRequire } from 'node:module'
 import { spawn } from 'node:child_process'
 import {
-  accessSync, constants, cpSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync,
-  symlinkSync, unlinkSync, writeFileSync,
+  accessSync, constants, cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync,
+  statSync, symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { pathToFileURL, fileURLToPath } from 'node:url'
@@ -710,13 +710,55 @@ export async function fetchUaa(root: string = repoRoot(), print: (line: string) 
 
 export interface BrickCheck { ok: boolean; lines: string[] }
 
-// Checks the installed GameSaloon packages: they resolve from the repository, and the Rapier WASM
-// initialises. A failure names the install command that fixes it.
+const INSTALL_FIX = 'run the install (npm install or kong rules + kong use) in the repository root'
+
+// Every workspace package (packages/*, apps/*) must resolve through node_modules to its own folder in
+// this checkout. A node_modules borrowed from another checkout (a symlink to the live clone's, or a
+// kong env made for another folder) loads that checkout's sources next to these: two copies of one
+// module, so instanceof RefusalError, prototype patches in a child preload and course loaders
+// disagree, and tests fail far from the cause. One PASS or FAIL line per package.
+export function workspaceResolution(root: string = repoRoot()): string[] {
+  const lines: string[] = []
+  const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { workspaces?: string[] }
+  for (const pattern of manifest.workspaces ?? []) {
+    if (!pattern.endsWith('/*')) continue
+    const parent = join(root, pattern.slice(0, -2))
+    if (!existsSync(parent)) continue
+    for (const entry of readdirSync(parent, { withFileTypes: true })) {
+      const dir = join(parent, entry.name)
+      const pkgFile = join(dir, 'package.json')
+      if (!entry.isDirectory() || !existsSync(pkgFile)) continue
+      const name = (JSON.parse(readFileSync(pkgFile, 'utf8')) as { name?: string }).name
+      if (!name) continue
+      const link = join(root, 'node_modules', ...name.split('/'))
+      let resolved: string
+      try {
+        resolved = realpathSync(link)
+      } catch {
+        lines.push(`FAIL [bricks] ${name}: workspace package does not resolve from ${link}; ${INSTALL_FIX}`)
+        continue
+      }
+      const own = realpathSync(dir)
+      if (resolved === own) lines.push(`PASS ${name} resolves into this checkout`)
+      else lines.push(`FAIL [bricks] ${name}: resolves to ${resolved}, not ${own}: node_modules belongs to another checkout; ${INSTALL_FIX}`)
+    }
+  }
+  return lines
+}
+
+// Checks the installed packages: the workspace packages resolve into this checkout, the GameSaloon
+// packages resolve from the repository, and the Rapier WASM initialises. A failure names the install
+// command that fixes it.
 export async function checkBricks(): Promise<BrickCheck> {
   const lines: string[] = []
   const fail = (path: string, what: string, fix: string): void => { lines.push(`FAIL [bricks] ${path}: ${what}; ${fix}`) }
   const require = createRequire(join(repoRoot(), 'package.json'))
-  const fix = 'run the install (npm install or kong rules + kong use) in the repository root'
+  const fix = INSTALL_FIX
+  try {
+    lines.push(...workspaceResolution())
+  } catch (error) {
+    fail('workspaces', error instanceof Error ? error.message : String(error), fix)
+  }
   for (const pkg of ['@gamesaloon/rollback', '@gamesaloon/rollback-rapier', '@dimforge/rapier3d-deterministic-compat']) {
     try {
       lines.push(`PASS ${pkg} resolves to ${realpathSync(require.resolve(pkg))}`)

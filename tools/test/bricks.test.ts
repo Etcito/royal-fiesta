@@ -9,7 +9,7 @@ import { delimiter, join } from 'node:path'
 import test, { afterEach } from 'node:test'
 import {
   brickDir, checkBricks, fetchMama, fetchUaa, githubToken, mamaSource, raaLocal, readPins, repoRoot,
-  uaaSource,
+  uaaSource, workspaceResolution,
 } from '../bricks.ts'
 import type { BrickName } from '../bricks.ts'
 import { RefusalError } from '../../packages/sim/src/refusal.ts'
@@ -181,6 +181,42 @@ test('checkBricks stays ok without MAMA', async () => {
   assert.ok(result.lines.some((line) => line.includes('MAMA')), result.lines.join('\n'))
   assert.ok(result.lines.some((line) => line.includes('RF_RAA_LOCAL')), result.lines.join('\n'))
   assert.ok(!result.lines.some((line) => line.startsWith('FAIL ')), result.lines.join('\n'))
+})
+
+// A checkout with one workspace package; its node_modules links the package into itself, or into
+// another checkout (a borrowed node_modules), which loads a second copy of every module.
+function workspaceCheckout(base: string, name: string): string {
+  const root = join(base, name)
+  mkdirSync(join(root, 'packages', 'sim'), { recursive: true })
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'royal-fiesta', workspaces: ['packages/*', 'apps/*'] }))
+  writeFileSync(join(root, 'packages', 'sim', 'package.json'), JSON.stringify({ name: '@royal-fiesta/sim' }))
+  return root
+}
+
+test('workspaceResolution passes a workspace package linked into its own checkout', () => {
+  const root = workspaceCheckout(temp(), 'own')
+  mkdirSync(join(root, 'node_modules', '@royal-fiesta'), { recursive: true })
+  symlinkSync('../../packages/sim', join(root, 'node_modules', '@royal-fiesta', 'sim'), 'dir')
+  assert.deepEqual(workspaceResolution(root), ['PASS @royal-fiesta/sim resolves into this checkout'])
+})
+
+test('workspaceResolution fails a node_modules borrowed from another checkout, with the install fix', () => {
+  const base = temp()
+  const other = workspaceCheckout(base, 'other')
+  mkdirSync(join(other, 'node_modules', '@royal-fiesta'), { recursive: true })
+  symlinkSync('../../packages/sim', join(other, 'node_modules', '@royal-fiesta', 'sim'), 'dir')
+  const root = workspaceCheckout(base, 'worktree')
+  symlinkSync(join(other, 'node_modules'), join(root, 'node_modules'), 'dir')
+  const lines = workspaceResolution(root)
+  assert.equal(lines.length, 1)
+  assert.match(lines[0], /^FAIL \[bricks\] @royal-fiesta\/sim: resolves to .*other.*node_modules belongs to another checkout; run the install/)
+})
+
+test('workspaceResolution fails a workspace package missing from node_modules', () => {
+  const root = workspaceCheckout(temp(), 'bare')
+  const lines = workspaceResolution(root)
+  assert.equal(lines.length, 1)
+  assert.match(lines[0], /^FAIL \[bricks\] @royal-fiesta\/sim: workspace package does not resolve/)
 })
 
 // A stub git and npm, first on PATH: each call appends its tool, argv, cwd and env (names and

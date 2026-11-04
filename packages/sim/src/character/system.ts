@@ -86,6 +86,7 @@ let scratchRay: InstanceType<RapierModule['Ray']> | null = null
 // #timer in air mode: airborne off a slide (a bump, a lip, a drop), not a jump. The landing returns
 // to slide and the slide rules decide there. Stun and dive-recover timers are positive, so the mark
 // lives in the snapshotted timer without a new field.
+// #timer in ground mode: the rise ticks left (CHAR.riseTicks) after the belly ends.
 const SLIDE_AIR = -1
 
 // The one character body: FiestaWorld's init and a domain entity recipe both call this, so a
@@ -560,7 +561,7 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         timer = 0
       } else if (mode === CharMode.stunned || mode === CharMode.diveRecover) {
         if (--timer <= 0) {
-          timer = 0
+          timer = mode === CharMode.diveRecover && free === CharMode.ground ? CHAR.riseTicks : 0
           mode = free
         }
       } else if (mode === CharMode.dive) {
@@ -726,14 +727,26 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         this.#facingZ[p] = fz
         this.#slideSpeed[p] = slideSpeed
         // Stands up by himself below standUpSpeed, never while a stroke (animation or push) runs.
-        if (mode === CharMode.slide && slideSpeed < stroke.standUpSpeed && this.#strokeTimer[p] === 0) mode = CharMode.ground
+        if (mode === CharMode.slide && slideSpeed < stroke.standUpSpeed && this.#strokeTimer[p] === 0) {
+          mode = CharMode.ground
+          timer = CHAR.riseTicks
+        }
       }
       if (mode === CharMode.slide && !grounded && this.#coyote[p] === 0) {
         mode = CharMode.air
         timer = SLIDE_AIR
       }
 
-      if (!wasSliding && (mode === CharMode.ground || mode === CharMode.air) && (pressed & DIVE_BIT) !== 0 && this.#diveUsed[p] === 0) {
+      // Still on the belly to the eye (a dive recover, or the rise after it or after a slide): dive is
+      // one more belly stroke, never a dive launch (owner 2026-11-04).
+      if ((pressed & DIVE_BIT) !== 0 && (mode === CharMode.diveRecover || (mode === CharMode.ground && grounded && timer > 0))) {
+        this.#slideSpeed[p] = Math.sqrt((vx - base.x) * (vx - base.x) + (vz - base.z) * (vz - base.z))
+        this.#strokeTimer[p] = strokeTotalTicks(this.slideStroke)
+        mode = CharMode.slide
+        timer = 0
+      }
+
+      if (!wasSliding && !slideAir && (mode === CharMode.ground || mode === CharMode.air) && (pressed & DIVE_BIT) !== 0 && this.#diveUsed[p] === 0) {
         const s = Math.max(Math.sqrt(vx * vx + vz * vz), CHAR.diveSpeed)
         vx = this.#facingX[p] * s
         vz = this.#facingZ[p] * s
@@ -774,6 +787,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
       if (this.#grabLever[p] >= 0) mechanisms!.grabHandle(ctx, this.#grabLever[p], p)
       // Any other mode (dive, grab, bounce, swim, stun) ends the slide's airtime.
       if (timer === SLIDE_AIR && mode !== CharMode.air) timer = 0
+      // The rise counts down on the ground only; any other mode ends it.
+      if (timer > 0 && mode !== CharMode.stunned && mode !== CharMode.diveRecover) timer = mode === CharMode.ground ? timer - 1 : 0
       this.#mode[p] = mode
       this.#timer[p] = timer
       // Stunned: the knockback is left to physics.

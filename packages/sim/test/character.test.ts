@@ -866,6 +866,17 @@ describe('M4 slide', () => {
     }
   })
 
+  it('a dive press while the belly pose still fades (after a slide stands up) is a stroke, never a dive launch', () => {
+    const r = slideRig('normal', 3)
+    stepUntil(r, () => NEUTRAL, (s) => s.mode === CharMode.ground, 300)
+    stepN(r, 1, NEUTRAL)
+    const s = stepN(r, 1, DIVE)
+    assert.equal(s.mode, CharMode.slide)
+    assert.ok(s.strokeTimer! > 0)
+    for (let tick = 0; tick < 200; tick++) assert.ok(stepN(r, 1, tick % 10 === 0 ? DIVE : NEUTRAL).vel.y < 0.5, `tick ${tick}`)
+    r.world.free()
+  })
+
   it('a normal-material slope permits propulsion past walking speed', () => {
     const run = (stroke: boolean): number => {
       const floor = surfaceFloor('normal')

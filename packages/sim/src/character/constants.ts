@@ -25,6 +25,9 @@ export const CHAR = {
   diveUp: 3.5,
   diveRecoverTicks: 24,
   diveRecoverBrake: 30,
+  // Ticks after the belly ends (a slide stands up, a dive recover runs out) while the belly pose still
+  // fades (the action layer blends it out over 12 ticks): dive there is a belly stroke, never a dive launch.
+  riseTicks: 12,
   grabRange: 1.0,
   grabConeDot: 0.5,
   grabSlow: 0.6,

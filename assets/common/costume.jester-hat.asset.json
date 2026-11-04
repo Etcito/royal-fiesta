@@ -727,7 +727,7 @@
   },
   "collision": [],
   "anchors": {
-    "jester_hat_head": {
+    "head": {
       "t": [0, 0.8, 0],
       "r": [0, 0, 0, 1]
     }

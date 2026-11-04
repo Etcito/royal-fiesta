@@ -216,7 +216,10 @@ test('card commands render on the GPU client, never with --software or a local C
   }
   const names = cards.map((card) => card.name)
   assert.ok(names.includes('m13-lobby-unload'))
-  assert.ok(!names.includes('m13-lobby-unload-local'))
+  // The CPU-rendered m13-lobby-unload-local (chromeCheck --software) was retired in 3811d68; 5dbdfcf reused the name
+  // for browser-free unit tests of the flow's pieces. The lobby render stays m13-lobby-unload, on the GPU client.
+  const local = cards.find((card) => card.name === 'm13-lobby-unload-local')
+  if (local) assert.doesNotMatch(local.command, /chromeCheck\.ts/, 'm13-lobby-unload-local runs browser-free tests only')
 })
 
 test('M3 inputs match the split, touch and remap capture contract', () => {

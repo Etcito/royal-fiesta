@@ -13,7 +13,7 @@ import { sharedNodeIds } from '../nodeIds.ts'
 
 const PENGUIN_ASSET = 'assets/common/penguin.body.asset.json'
 const SOURCE = 'assets/common/costume.jester-hat.asset.json'
-const OLD_ID = 'jester_hat_head'
+const OLD_ID = 'hat_jester_hat_head'
 const REL = 'assets/common/costume.anchor-test.asset.json'
 
 type Obj = Record<string, unknown>

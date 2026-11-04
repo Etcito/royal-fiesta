@@ -13,7 +13,8 @@ import { mergeDocuments } from '../renderViews.ts'
 const PENGUIN = 'assets/common/penguin.body.asset.json'
 const JESTER = 'assets/common/costume.jester-hat.asset.json'
 const OLD_ID = 'head'
-const NEW_ID = 'jester_hat_head'
+// The skinned cosmetic format (270b781) prefixes every node id with its group, 'hat_'.
+const NEW_ID = 'hat_jester_hat_head'
 
 type Obj = Record<string, unknown>
 const document = (a: { json: Obj }): Obj => a.json.document as Obj
@@ -25,7 +26,7 @@ function collidingJester(fixed: Obj): Obj {
   const renamed = nodes[NEW_ID] as Obj
   nodes[OLD_ID] = { ...renamed, id: OLD_ID, name: OLD_ID }
   delete nodes[NEW_ID]
-  const parent = nodes.jester_hat as { children: string[] }
+  const parent = nodes.hat_jester_hat as { children: string[] }
   parent.children = parent.children.map((id) => id === NEW_ID ? OLD_ID : id)
   return doc
 }
@@ -105,7 +106,7 @@ test('a costume reusing a penguin material id fails the guard, as the views rend
     const hat = await loadAssetFile(JESTER)
     const doc = structuredClone(document(hat))
     const materials = doc.materials as Obj
-    materials['penguin-beak'] = materials.gold
+    materials['penguin-beak'] = materials.hat_gold
     writeFileSync(join(root, JESTER), JSON.stringify({ document: doc }))
     const bad = checkPaths(root, [JESTER]).filter((v) => v.rule === 'costume-material-id-collision')
     assert.equal(bad.length, 1)

@@ -3,7 +3,7 @@ import { LOCAL_COSMETICS } from '@royal-fiesta/game/flow/startScreen'
 import { nextTask, publishPhase } from '../game/checks/boot.ts'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
 import { createSdfPort } from './sdfPort.ts'
-import { decodeMesh } from './meshWire.ts'
+import { decodeMeshBytes } from './meshWire.ts'
 import { assetSkin } from '../content/cosmeticSkin.ts'
 import { AnimDriver } from '@royal-fiesta/game/anim/driver'
 import { WornMounts } from '@royal-fiesta/game/render/wornLook'
@@ -21,7 +21,7 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
   for (const id of ['penguin.body', ...manifest]) {
     const file = await (await fetch(`./saved/${id}.asset.json`)).json()
     docs.set(id, file.document)
-    meshed.set(id, decodeMesh(new Uint8Array(await (await fetch(`./saved/${id}.mesh`)).arrayBuffer())))
+    meshed.set(id, await decodeMeshBytes(new Uint8Array(await (await fetch(`./saved/${id}.mesh`)).arrayBuffer())))
   }
   if(input.vertexNormals)for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.normalVolume
   const canvas = document.createElement('canvas'); canvas.width=480;canvas.height=480;document.body.append(canvas)
@@ -80,7 +80,7 @@ async function cosmeticThumbs() {
   const meshed=new Map<string,MeshedAsset>(), bounds=new Map<string,{min:number[];max:number[]}>()
   for(const id of new Set(items.map(item=>item.asset))) {
     const file=await(await fetch(`./saved/${id}.asset.json`)).json();bounds.set(id,file.bounds)
-    meshed.set(id,decodeMesh(new Uint8Array(await(await fetch(`./saved/${id}.mesh`)).arrayBuffer())))
+    meshed.set(id,await decodeMeshBytes(new Uint8Array(await(await fetch(`./saved/${id}.mesh`)).arrayBuffer())))
   }
   // Sidecars use geometric normals, like the existing cosmetic thumbnail renderer.
   for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.normalVolume

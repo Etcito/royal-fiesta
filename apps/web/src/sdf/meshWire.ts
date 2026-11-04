@@ -33,7 +33,18 @@ export function encodeMesh(value: KeyedMeshedAsset): Uint8Array {
   return out
 }
 
+const isGzip = (bytes: Uint8Array): boolean => bytes[0] === 0x1f && bytes[1] === 0x8b
+
+/** A packed upload stores meshes gzipped (tools/content.ts packContent); the wire starts with version 1, never the
+ * gzip magic, so raw bytes (a source .mesh, a mesh server answer) pass through unchanged. Every fetched mesh goes here. */
+export async function decodeMeshBytes(bytes: Uint8Array): Promise<KeyedMeshedAsset> {
+  if (!isGzip(bytes)) return decodeMesh(bytes)
+  const inflated = new Blob([bytes as BlobPart]).stream().pipeThrough(new DecompressionStream('gzip'))
+  return decodeMesh(new Uint8Array(await new Response(inflated).arrayBuffer()))
+}
+
 export function decodeMesh(bytes: Uint8Array): KeyedMeshedAsset {
+  if (isGzip(bytes)) throw new Error('gzipped mesh: decode fetched meshes with decodeMeshBytes')
   if (bytes[0] !== 1) throw new Error('unsupported mesh format')
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const length = view.getUint32(1)

@@ -2,7 +2,7 @@
 import type { Engine } from '@etcito/raa'
 import { LOCAL_COSMETICS } from '@royal-fiesta/game/flow/startScreen'
 import { createRaaEngine } from '../../render/raaEngine.ts'
-import { decodeMesh } from '../../sdf/meshWire.ts'
+import { decodeMeshBytes } from '../../sdf/meshWire.ts'
 import type { TourDeps } from '../uiTour.ts'
 import { pendingPipelines } from '../../render/asyncPipelines.ts'
 import { nextTask } from './boot.ts'
@@ -16,7 +16,7 @@ export async function run(_input: unknown, deps: TourDeps) {
   for (const base of LOCAL_COSMETICS.filter(c => c.id === c.asset)) {
     const response = await fetch(new URL(`content/assets/common/${base.asset}.mesh`, document.baseURI))
     if (!response.ok) throw new Error(`Missing saved mesh: ${base.asset}`)
-    meshes.set(base.asset, decodeMesh(new Uint8Array(await response.arrayBuffer())))
+    meshes.set(base.asset, await decodeMeshBytes(new Uint8Array(await response.arrayBuffer())))
   }
   const engine = await createRaaEngine(canvas, { maxInstances: 1024, maxMaterials: 1024 })
   engine.resize(256, 256)

@@ -6,7 +6,7 @@ import { RefusalError } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset } from './mamaApi.ts'
 import { meshIssues } from './meshValidity.ts'
 import type { MeshArrays } from './meshValidity.ts'
-import { decodeMesh } from './meshWire.ts'
+import { decodeMeshBytes } from './meshWire.ts'
 import type { KeyedMeshedAsset } from './meshWire.ts'
 
 /** Files used (hits) and files found but made for another key, asset or hash (stale), in this page. */
@@ -60,7 +60,7 @@ export async function fetchMeshFile(url: string, key: string, asset: GameAsset, 
   if (!response.ok) throw new RefusalError('sdf', url, `saved mesh request failed: HTTP ${response.status}`)
   let value: KeyedMeshedAsset
   try {
-    value = decodeMesh(new Uint8Array(await response.arrayBuffer()))
+    value = await decodeMeshBytes(new Uint8Array(await response.arrayBuffer()))
   } catch (e) {
     throw new RefusalError('sdf', url, `the saved mesh cannot be decoded (${e instanceof Error ? e.message : String(e)}); re-save the asset in SDF Modeler`)
   }

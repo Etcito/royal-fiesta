@@ -9,7 +9,8 @@ import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { fetchMeshFile, meshFileStats } from '../src/sdf/meshFile.ts'
 import { meshCacheKey } from '../src/sdf/meshCache.ts'
-import { decodeMesh, encodeMesh } from '../src/sdf/meshWire.ts'
+import { gzipSync } from 'node:zlib'
+import { decodeMesh, decodeMeshBytes, encodeMesh } from '../src/sdf/meshWire.ts'
 import type { KeyedMeshedAsset } from '../src/sdf/meshWire.ts'
 
 const VECTOR_URL = new URL('../../../fixtures/golden/mesh-wire-vector.json', import.meta.url)
@@ -163,4 +164,12 @@ test('fetchMeshFile refuses a matching file that breaks the mesh rules or cannot
   const shapeless = { ...value, parts: 'one' } as unknown as KeyedMeshedAsset
   await assert.rejects(fetchMeshFile(url, value.key!, asset, serve(200, encodeMesh(shapeless))), isSdfRefusal(/not a meshed asset/))
   await assert.rejects(fetchMeshFile(url, value.key!, asset, serve(200, vectorBytes().slice(0, -1))), isSdfRefusal(/cannot be decoded/))
+})
+
+test('decodeMeshBytes reads a gzipped packed mesh and a raw one alike; decodeMesh refuses gzip by name', async () => {
+  const raw = encodeMesh(await vectorValue())
+  const packed = new Uint8Array(gzipSync(raw))
+  assert.deepEqual(encodeMesh(await decodeMeshBytes(packed)), raw)
+  assert.deepEqual(encodeMesh(await decodeMeshBytes(raw)), raw)
+  assert.throws(() => decodeMesh(packed), /decodeMeshBytes/)
 })

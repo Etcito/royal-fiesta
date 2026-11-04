@@ -1,7 +1,7 @@
 // Isolated screen capture: real screen renderers and saved RAA meshes, no unrelated courses.
 import { createUaaHost } from '../../ui/uaaHost.ts'
 import { createSdfPort } from '../../sdf/sdfPort.ts'
-import { decodeMesh } from '../../sdf/meshWire.ts'
+import { decodeMeshBytes } from '../../sdf/meshWire.ts'
 import { mountStartScreen } from '../../screens/startScreen.ts'
 import { mountShop } from '../../screens/shop.ts'
 import { LOCAL_COSMETICS, startScreen } from '@royal-fiesta/game/flow/startScreen'
@@ -25,7 +25,7 @@ export async function run(raw: unknown, deps: TourDeps) {
   const ids = ['penguin.body', ...LOCAL_COSMETICS.filter(c=>c.id===c.asset).map(c=>c.asset), ...new Set(season.decor.map(d => d.asset))]
   for (const id of ids) {
     const base = new URL(`content/assets/${id.startsWith('candy.') ? 'candy' : 'common'}/${id}`, document.baseURI).href
-    meshes.set(id, decodeMesh(new Uint8Array(await (await fetch(base+'.mesh')).arrayBuffer())))
+    meshes.set(id, await decodeMeshBytes(new Uint8Array(await (await fetch(base+'.mesh')).arrayBuffer())))
     const asset = await (await fetch(base+'.asset.json')).json()
     anchors.set(id, asset.anchors)
     const skin = assetSkin(meshes.get(id).data, asset.document)

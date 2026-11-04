@@ -289,12 +289,14 @@ class SdfRenderPort implements ResizablePort {
 
   // The per-pixel material of a part (owner 2026-11-04: normals and materials from the SDF in the shader, nothing
   // baked): its stored shading drawn by raa-sdfm fieldPartMaterialWgsl, the same code as SDF Modeler's Game view. Null,
-  // with one console warning naming the asset and part, when the part has no shading or RAA refuses the function: the
-  // part then keeps its per-face materials and vertex normals.
+  // with one console warning naming the asset and part, when MAMA could not give the part a field (shadingError) or RAA
+  // refuses the function: the part then keeps its per-face materials and vertex normals. A part with neither shading nor
+  // shadingError was not made from an SDF document (MAMA writes one of the two for every meshed part; the zone's far-LOD
+  // bean is generated in code): it keeps its vertex normals without a warning.
   private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): number | null {
     const where = `${id}#part:${part.name}`
     if (part.shading === undefined) {
-      warnOnce(where, `vertex normals (${part.shadingError ?? 'the saved mesh carries no per-pixel SDF shading; re-save the asset in SDF Modeler'})`)
+      if (part.shadingError !== undefined) warnOnce(where, `vertex normals (${part.shadingError})`)
       return null
     }
     try {

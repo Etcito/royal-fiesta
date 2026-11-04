@@ -45,7 +45,9 @@ class FakeCanvas {}
 let initEngine: ReturnType<typeof fakeEngine>['engine']
 
 const exports = {} as { make(meshed: ReadonlyMap<string, unknown>): Port }
+const warnings: string[] = []
 runInNewContext(compiled, {
+  console: { ...console, warn: (...args: unknown[]) => { warnings.push(args.join(' ')) } },
   HTMLCanvasElement: FakeCanvas, exports, Float32Array, Float64Array, Uint32Array, performance, setTimeout, clearTimeout, URLSearchParams,
   require(id: string): unknown {
     if (id === '../game/checkProgress.ts') return { checkAwait: (_step: string, work: () => Promise<unknown>) => work() }
@@ -332,6 +334,17 @@ test('saved penguin and costume parts draw their per-pixel SDF shading on every 
       assert.ok(desc.uvs&&desc.tangents,`${id}: rest frame streams`)
     }
   }
+})
+
+// Deliverable 4 (owner 2026-11-04): a part MAMA gave no field keeps vertex normals with one warning naming the asset and
+// part; a part generated in code (no SDF document, neither shading nor shadingError) keeps them silently.
+test('a part without a field warns once by name; a generated part stays silent', () => {
+  const failed = { ...part('arm', 'skin'), shadingError: "the per-pixel SDF field cannot express 'arm' (no section)" }
+  const { port, handle } = portFor('test.nofield', [material('skin', PLAIN)], [failed, part('generated', 'skin')])
+  const before = warnings.length
+  const h = handle()
+  port.createInstance(h, null); port.createInstance(h, null)
+  assert.deepEqual(warnings.slice(before), ["[sdf-port] test.nofield#part:arm: vertex normals (the per-pixel SDF field cannot express 'arm' (no section))"])
 })
 
 // Owner 2026-11-04: one material per object. A part whose meshes carry the blended colours draws one white standard

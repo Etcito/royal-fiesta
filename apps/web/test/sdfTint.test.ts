@@ -520,10 +520,11 @@ function bakeDevice() {
   return device
 }
 
-// Owner 2026-11-04: 'baked texture (normal/material)'. With shading baked, prepare() bakes each field-shaded part on the
-// GPU into its UV atlas, uploads the textures and swaps the part to the ONE shared baked material (its data words name
-// its textures) on a mesh carrying the atlas uvs and the bake tangents; the field mesh and its data block are freed.
-test('baked shading: each field part is baked at load and draws the shared baked material with its textures', async () => {
+// Owner 2026-11-04: 'baked texture (normal/material)'. With shading baked, each field-shaded part is uploaded on a mesh
+// carrying its atlas uvs and bake tangents, drawn with the ONE shared baked material (its data words name its textures);
+// the first instance of the asset bakes it on the GPU into its UV atlas and writes the texture ids into its data block.
+// Until then the part's own draw is hidden and its vertex-colour copy covers it.
+test('baked shading: the first instance bakes each field part and its baked draw shows once its textures are in', async () => {
   const root = new URL('../../../', import.meta.url)
   const id = 'costume.golden-crown'
   const mesh = decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`, root))))
@@ -531,32 +532,46 @@ test('baked shading: each field part is baked at load and draws the shared baked
   assert.ok(parts.every(p => p.meshes.every(m => m.uvs instanceof Float32Array)), 'saved mesh format 4: every mesh carries its UV atlas')
   const { engine, calls } = fakeEngine()
   const textures: { width: number; height: number; data: Uint8Array }[] = []
-  const removedMeshes: number[] = []
+  const written: { base: number; words: Uint32Array }[] = []
   const functions: string[] = []
   Object.assign(engine, {
     addTexture(t: { width: number; height: number; data: Uint8Array }) { textures.push(t); return textures.length - 1 },
     removeTexture() {},
-    removeMesh(mesh: number) { removedMeshes.push(mesh) },
+    removeMesh() {},
+    setMaterialData(base: number, words: Uint32Array) { written.push({ base, words: Uint32Array.from(words) }) },
     addMaterialFunction(name: string) { functions.push(name); calls.functions++ },
   })
   const port = exports.makeWith(new Map([[id, mesh]]), { shading: 'baked', bakeTexelDensity: 256, bakeMaxSize: 512 }, CONTRACT)
   const device = bakeDevice()
   Object.assign(port, { engine, target: {}, gpuDevice: device })
   await port.prepare(() => {}, () => {})
-  const stats = (port as unknown as { bakes(): { parts: number; failed: number; textures: number; bytes: number } }).bakes()
-  assert.equal(stats.failed, 0)
-  assert.ok(stats.parts >= 1 && stats.parts <= parts.length, `${stats.parts} of ${parts.length} parts baked`)
+  const view = port as unknown as { bakes(): { parts: number; failed: number; textures: number }; bakesDone(): Promise<void>; inventory(): { textures: number } }
+  assert.equal(textures.length, 0, 'nothing is baked before a scene uses the asset')
+  const bakedDescs = calls.descs.filter(d => d.function === 'sdfb.baked')
   assert.ok(functions.includes('sdfb.baked'), 'the shared baked material function is registered')
-  const baked = calls.descs.filter(d => d.function === 'sdfb.baked')
-  assert.equal(baked.length, stats.parts, 'one baked surface material per part')
+  assert.ok(bakedDescs.length >= 1 && bakedDescs.length <= parts.length, `${bakedDescs.length} of ${parts.length} parts baked`)
+  assert.equal(calls.freed.length, bakedDescs.length, 'the field data block of each baked part is freed at upload')
+  const descs = calls.jointStreams as { uvs?: Float32Array; tangents?: Float32Array; positions: Float32Array }[]
+  const bakedMeshes = descs.filter(d => d.tangents !== undefined)
+  assert.equal(bakedMeshes.length, bakedDescs.length)
+  assert.ok(bakedMeshes.every(d => d.uvs && d.tangents!.length === d.positions.length / 3 * 4), 'baked meshes carry the atlas uvs and tangents')
+  port.createInstance(port.registerAsset(id, { id }), null)
+  const hidden = [...calls.visibility].filter(([, shown]) => !shown).map(([instance]) => instance)
+  assert.equal(hidden.length, bakedDescs.length, 'each baked part hides its own draw until its textures are baked')
+  await view.bakesDone()
+  const stats = view.bakes()
+  assert.equal(stats.failed, 0)
+  assert.equal(stats.parts, bakedDescs.length)
   assert.equal(textures.length, stats.textures)
   assert.ok(textures.every(t => t.width === 64 && t.height === 64 && t.data.length === 64 * 64 * 4))
-  assert.equal(removedMeshes.length, stats.parts, 'the field mesh of each baked part is freed')
-  assert.equal(calls.freed.length, stats.parts, 'the field data block of each baked part is freed')
+  assert.equal(written.length, stats.parts, 'each baked part gets its texture ids in its data block')
+  assert.ok(written.every(w => w.words[1] < textures.length && w.words[2] < textures.length))
+  assert.ok(hidden.every(instance => calls.visibility.get(instance) === true), 'the baked draws show once baked')
   assert.equal(device.live, 0, 'the bake frees its GPU buffers and textures')
-  const descs = calls.jointStreams as { uvs?: Float32Array; tangents?: Float32Array; positions: Float32Array }[]
-  const last = descs.slice(-stats.parts)
-  assert.ok(last.every(d => d.uvs && d.tangents && d.tangents.length === d.positions.length / 3 * 4), 'baked meshes carry the atlas uvs and tangents')
-  const inventory = (port as unknown as { inventory(): { textures: number } }).inventory()
-  assert.equal(inventory.textures, stats.textures)
+  assert.equal(view.inventory().textures, stats.textures)
+  // A second instance draws the baked parts at once; nothing is baked again.
+  port.createInstance(port.registerAsset(id, { id }), null)
+  await view.bakesDone()
+  assert.equal(view.bakes().parts, stats.parts)
+  assert.equal(textures.length, stats.textures)
 })

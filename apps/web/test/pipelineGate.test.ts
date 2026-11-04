@@ -46,6 +46,13 @@ test('prepareCourse is the warm-up draw of the scene, once per course and port',
   await prepareCourse(cancelled, 'sprint.ramps', { oneAtATime: true, cancelled: () => true })
   assert.deepEqual(cancelled.warmed, [])
   await prepareCourse({ render() {} }, 'sprint.ramps')
+  // A port with no scene yet (a vote candidate): the listed assets, each registered just before its draw.
+  const candidate = new GatedPort()
+  const registered: string[] = []
+  await prepareCourse(candidate, 'sprint.fall', { oneAtATime: true, assets: ['fall.disc', 'fall.bar'],
+    register: asset => { registered.push(asset); assert.equal(candidate.warmed.length, registered.length - 1) } })
+  assert.deepEqual(registered, ['fall.disc', 'fall.bar'])
+  assert.deepEqual(candidate.warmed, [['fall.disc'], ['fall.bar']])
 })
 
 test('the round gate warms each shown course, hub and podium once and guards every countdown', () => {

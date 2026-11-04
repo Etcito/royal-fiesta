@@ -23,6 +23,10 @@ export interface PrepareOptions {
   cancelled?: () => boolean
   /** oneAtATime only: give up waiting after this long (default 120 s); the countdown never waits on it. */
   timeoutMs?: number
+  /** The asset ids to draw instead of every rigid asset the port has instances of (a port with no scene yet). */
+  assets?: readonly string[]
+  /** Called before each asset is drawn (a port with no scene registers it then, one upload per step). */
+  register?: (asset: string) => void
 }
 
 const warmedOn = new WeakMap<object, Set<string>>()
@@ -39,8 +43,9 @@ export async function prepareCourse(port: unknown, course: string, options: Prep
   let courses = warmedOn.get(gated)
   if (courses === undefined) warmedOn.set(gated, courses = new Set())
   courses.add(course)
-  const assets = gated.warmableAssets?.()
+  const assets = options.assets ?? gated.warmableAssets?.()
   if (!options.oneAtATime || assets === undefined) {
+    if (assets !== undefined) for (const asset of assets) options.register?.(asset)
     gated.warmPipelines(assets)
     return
   }
@@ -54,6 +59,7 @@ export async function prepareCourse(port: unknown, course: string, options: Prep
   }
   for (const asset of assets) {
     if (!await idle()) return
+    options.register?.(asset)
     gated.warmPipelines([asset])
   }
 }

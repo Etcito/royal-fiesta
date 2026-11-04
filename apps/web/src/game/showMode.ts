@@ -22,6 +22,7 @@ import type { ZoneNetScene } from '../zone/zoneNetScene.ts'
 import { ShowDirector } from './showDirector.ts'
 import type { ShowFrame } from './showDirector.ts'
 import { loadShowContent } from './showContent.ts'
+import type { ShowContent } from './showContent.ts'
 import { prepareCourse } from '../render/pipelineGate.ts'
 import type { RoundStage } from '../render/pipelineGate.ts'
 
@@ -68,6 +69,7 @@ export class ShowMode {
   private sounds: string[] = []
   private background: boolean
   private look: WornLook | null
+  private content: ShowContent | null = null
 
   private constructor(options: ShowModeOptions) {
     this.options = options
@@ -91,6 +93,7 @@ export class ShowMode {
         refuse('game-web', 'showMode.seats', 'supply an integer from 2 to 60')
       }
       const content = await checkAwait('show course and zone content', () => loadShowContent('sprint'))
+      mode.content = content
       const seats = Array.from({ length: options.seats }, (_, seat) => seat)
       mode.memories.push(...seats.map(() => newModeBotMemory()))
       mode.full = createOfflineFullMatch(options.R, {
@@ -109,13 +112,51 @@ export class ShowMode {
   }
 
   /**
-   * Loads the first round now (its port, scene and warm-up draw) when the match opens on a course nobody votes for;
-   * false when it opens on a vote. The director holds that round's countdown until it is ready, as for any round.
+   * Prepares the first round behind the start screen. A first round on a course nobody votes for loads now (its port,
+   * scene and warm-up draw); the director holds its countdown until it is ready, as for any round. A first round put to
+   * the vote (12 seats open on three candidates) loads each candidate's content and draws every rigid asset of it once
+   * on a port of its own, one asset at a time: the round's own port, created after the vote, then finds the content
+   * loaded and its pipelines in the browser's shader cache. False when there is nothing to prepare.
    */
   preload(): boolean {
-    if (this.disposed || this.error !== null || this.activeRound() === null) return false
-    this.loadRound()
+    if (this.disposed || this.error !== null || this.full === null) return false
+    if (this.activeRound() !== null) {
+      this.loadRound()
+      return true
+    }
+    const candidates = this.full.candidates
+    if (candidates === null || candidates.length === 0 || this.content === null) return false
+    void this.warmCandidates(candidates, this.content)
     return true
+  }
+
+  private async warmCandidates(maps: readonly string[], content: ShowContent): Promise<void> {
+    const waiting = (): boolean => !this.disposed && this.error === null && this.background
+    for (const map of maps) {
+      const index = content.season.find(entry => entry.id === map)?.course
+      const course = index === undefined ? undefined : content.courses[index]
+      if (course === undefined || !waiting()) continue
+      try {
+        const zone = await zoneContent('sprint', course.id)
+        if (!waiting()) return
+        const canvas = this.options.views.ownerDocument.createElement('canvas')
+        canvas.width = this.canvas.width
+        canvas.height = this.canvas.height
+        const port = await zone.createPort({ canvas, width: canvas.width, height: canvas.height,
+          viewports: [{ x: 0, y: 0, width: canvas.width, height: canvas.height }] })
+        try {
+          // The course environment and decor, as the round sets them: its lit variants depend on them.
+          zone.dressing.enter(port, course.id)
+          const assets = [...new Set(course.obstacles.map(obstacle => obstacle.asset))]
+          await prepareCourse(port, course.id, { oneAtATime: true, assets, cancelled: () => !waiting(),
+            register: asset => { port.registerAsset(asset, zone.assets(asset)) } })
+        } finally {
+          port.dispose()
+        }
+      } catch (error) {
+        console.warn(`[show] preparing candidate ${course.id} failed:`, error instanceof Error ? error.message : String(error))
+      }
+    }
   }
 
   /** True while this show was sized for `views` as it is now (a preloaded show is discarded when the page resized). */
@@ -132,10 +173,13 @@ export class ShowMode {
     return this
   }
 
-  /** The port and course of the round on screen (RoundGate, the app's countdown guard). */
+  /**
+   * The port and course of the round on screen (RoundGate, the app's countdown guard); null while the round loads: the
+   * director shows its load hold as the countdown screen, the countdown itself starts once the world is ready.
+   */
   roundStage(): RoundStage | null {
     const round = this.activeRound()
-    if (this.scene === null || round === null || round.plan.index !== this.index) return null
+    if (this.scene === null || round === null || round.plan.index !== this.index || this.current?.loading !== false) return null
     return { port: this.scene.port, course: round.plan.course.id }
   }
 

@@ -45,6 +45,27 @@ function payloadIssues(data: unknown): string[] {
   return issues
 }
 
+/** Why a decoded saved mesh cannot be used for this asset and key, the codes tools/savedMeshes.ts reports. */
+export type MeshFileProblemCode = 'edited' | 'algorithm' | 'asset' | 'rules'
+export interface MeshFileProblem { code: MeshFileProblemCode; message: string }
+
+/**
+ * The one check of a decoded saved mesh (fetchMeshFile and tools/savedMeshes.ts, so SDF Modeler's stale list is what
+ * the page refuses): null when it is usable. Stale: made for another asset id, for an older asset hash (the asset was
+ * edited since), or under another key with the same hash (mesher settings or MESH_COMPATIBILITY changed). Then the
+ * mesh rules of the payload.
+ */
+export function meshFileProblem(value: unknown, key: string, asset: GameAsset): MeshFileProblem | null {
+  if (typeof value !== 'object' || value === null) return { code: 'rules', message: 'the saved mesh header is not an object' }
+  const v = value as KeyedMeshedAsset
+  if (v.assetId !== asset.id) return { code: 'asset', message: `stale saved mesh (key, asset id or hash differs): made for asset '${String(v.assetId)}'` }
+  if (v.hash !== asset.hash) return { code: 'edited', message: 'stale saved mesh (key, asset id or hash differs): the asset was edited since the mesh was saved' }
+  if (v.key !== key) return { code: 'algorithm', message: 'stale saved mesh (key, asset id or hash differs): made with other mesher settings or an older mesh algorithm (MESH_COMPATIBILITY)' }
+  const issues = validMeshed(v) ? payloadIssues(v.data) : ['the file is not a meshed asset (assetId, hash, parts, triangles, transfer)']
+  if (issues.length > 0) return { code: 'rules', message: `the saved mesh breaks the mesh rules (${issues.join('; ')})` }
+  return null
+}
+
 /**
  * The saved mesh at url for this asset and S16 key, or null when absent (404). Stale files, network failures and HTTP errors refuse.
  * Throws RefusalError('sdf', url, ...) when the file cannot be decoded or breaks the mesh rules.
@@ -64,14 +85,10 @@ export async function fetchMeshFile(url: string, key: string, asset: GameAsset, 
   } catch (e) {
     throw new RefusalError('sdf', url, `the saved mesh cannot be decoded (${e instanceof Error ? e.message : String(e)}); re-save the asset in SDF Modeler`)
   }
-  if (typeof value !== 'object' || value === null) throw new RefusalError('sdf', url, 'the saved mesh header is not an object; re-save the asset in SDF Modeler')
-  if (value.key !== key || value.assetId !== asset.id || value.hash !== asset.hash) {
-    meshFileStats.stale++
-    throw new RefusalError('sdf', url, 'stale saved mesh (key, asset id or hash differs); re-save the asset in SDF Modeler')
-  }
-  const issues = validMeshed(value) ? payloadIssues(value.data) : ['the file is not a meshed asset (assetId, hash, parts, triangles, transfer)']
-  if (issues.length > 0) {
-    throw new RefusalError('sdf', url, `the saved mesh breaks the mesh rules (${issues.join('; ')}); re-save the asset in SDF Modeler`)
+  const problem = meshFileProblem(value, key, asset)
+  if (problem !== null) {
+    if (problem.code !== 'rules') meshFileStats.stale++
+    throw new RefusalError('sdf', url, `${problem.message}; re-save the asset in SDF Modeler`)
   }
   meshFileStats.hits++
   return value

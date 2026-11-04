@@ -27,6 +27,9 @@ function hexOf(bytes: Uint8Array): string {
   return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('hex')
 }
 
+// The golden vector's key was made under this compatibility version (the key bytes are part of the vector).
+const VECTOR_COMPAT = 'format:1;algorithm:3'
+
 function testAsset(id: string, hash: string): GameAsset {
   return {
     format: 'sdfm.game-asset', version: 1, game: 'royal-fiesta', id, name: 'Wire vector', category: 'prop', world: 'candy',
@@ -38,7 +41,7 @@ function testAsset(id: string, hash: string): GameAsset {
 // The vector's MeshedAsset: one group, one part, one 3-vertex triangle, in the MAMA worker's payload layout.
 async function vectorValue(): Promise<KeyedMeshedAsset> {
   const hash = await sha256Hex(new TextEncoder().encode('royal-fiesta.mesh-wire-vector'))
-  const key = await meshCacheKey(testAsset('candy.wire-vector', hash), 'mama-vector', 'raa-sdfm-vector', sha256Hex)
+  const key = await meshCacheKey(testAsset('candy.wire-vector', hash), VECTOR_COMPAT, sha256Hex)
   const frame = new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
   const mesh = {
     material: 'candy',

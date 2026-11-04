@@ -1,19 +1,21 @@
 // S16 client mesh cache: an in-memory Map over IndexedDB, keyed by sha256 of the asset hash,
-// its canonical mesher, and the explicit mesh compatibility version. Values are stored as they came from the mesher.
+// its canonical mesher, and the mesh compatibility version. Values are stored as they came from the mesher.
+// The compatibility version is MAMA's own (MESH_COMPATIBILITY of MAMA core/game/mesh-file.ts, the pinned checkout):
+// the page reads it from the MAMA facade, Node tools from apps/headless/src/mama/meshNode.ts meshCompatibility().
+// Royal Fiesta holds no copy, so a MAMA algorithm bump cannot diverge from the key the game checks.
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { canonicalJson } from '@royal-fiesta/game/course'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset } from './mamaApi.ts'
 
-// Keep in sync with MAMA core/game/mesh-file.ts; tested by tools/test/savedMeshes.test.ts.
-export const MESH_COMPATIBILITY = 'format:1;algorithm:3'
-
 const DB_NAME = 'royal-fiesta-mesh'
 const STORE_NAME = 'meshes'
 const DB_VERSION = 1
 
-export async function meshCacheKey(a: GameAsset, _mamaVersion: string, _raaSdfmVersion: string, sha256Hex: (b: Uint8Array) => Promise<string>): Promise<string> {
-  const material = `${a.hash}|${canonicalJson(a.mesher)}|${MESH_COMPATIBILITY}`
+/** The key of MAMA's meshFileKey: sha256 of `<asset hash>|<canonical mesher>|<MAMA MESH_COMPATIBILITY>`. */
+export async function meshCacheKey(a: GameAsset, meshCompatibility: string, sha256Hex: (b: Uint8Array) => Promise<string>): Promise<string> {
+  if (meshCompatibility === '') throw new RefusalError('sdf', 'MESH_COMPATIBILITY', 'no mesh compatibility version; it comes from the pinned MAMA (docs/bricks.md)')
+  const material = `${a.hash}|${canonicalJson(a.mesher)}|${meshCompatibility}`
   return sha256Hex(new TextEncoder().encode(material))
 }
 

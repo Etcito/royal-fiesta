@@ -13,6 +13,7 @@ import type { MeshedAsset } from '../apps/web/src/sdf/mamaApi.ts'
 interface NodeMesher {
   mamaVersion(): string
   raaSdfmVersion(): string
+  meshCompatibility(): Promise<string>
   meshWholeAsset(asset: GameAsset, timeoutMs: number, signal?: AbortSignal): Promise<MeshedAsset>
 }
 export { meshCacheDir }
@@ -44,14 +45,14 @@ export class MeshBaker {
   private async bake(): Promise<void> {
     const moduleUrl = new URL('../apps/headless/src/mama/meshNode.ts', import.meta.url).href
     const node = await import(moduleUrl) as NodeMesher
-    const mama = node.mamaVersion(), raa = node.raaSdfmVersion()
+    const compatibility = await node.meshCompatibility()
     const timeout = meshTimeoutMs()
     const queue: { asset: GameAsset; key: string }[] = []
     mkdirSync(this.cache, { recursive: true })
     for (const entry of buildContentIndex(this.dir).assets) {
       if (this.only !== undefined && !this.only.has(entry.id)) continue
       const asset = await parseGameAsset(JSON.parse(readFileSync(join(this.dir, entry.path), 'utf8')), entry.path)
-      const key = await meshCacheKey(asset, mama, raa, async bytes => createHash('sha256').update(bytes).digest('hex'))
+      const key = await meshCacheKey(asset, compatibility, async bytes => createHash('sha256').update(bytes).digest('hex'))
       queue.push({ asset, key })
       this.keys.add(key)
       this.pending.add(key)

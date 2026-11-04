@@ -24,6 +24,7 @@ function loadFacade(info: unknown): Promise<MamaFacade> {
     require(id: string): unknown {
       if (id === '@royal-fiesta/sim/refusal') return { RefusalError }
       if (id === '../meshPool.ts') return { MeshPool }
+      if (id === '@etcito/mama/core/game/mesh-file.ts') return { MESH_COMPATIBILITY: 'format:1;algorithm:test' }
       if (id === './worker.ts?worker&url') return { default: './worker.js' }
       if (id === '../classicWorker.ts') return { classicWorker() { throw new Error('test must not spawn a worker') } }
       throw new Error(`unexpected facade import: ${id}`)
@@ -48,6 +49,8 @@ test('facade cache version is the installed raa-sdfm from the pinned local chann
   const facade = await loadFacade({ kind: 'sibling', commit: 'test-commit' })
   assert.equal(manifest.dependencies['@etcito/raa-sdfm'], 'file:../../../raa/dist/bricks/raa-sdfm')
   assert.equal(facade.raaSdfmVersion, installed.version)
+  // The saved mesh / cache key version is MAMA's own export, passed through unchanged.
+  assert.equal(facade.meshCompatibility, 'format:1;algorithm:test')
 })
 
 for (const kind of ['sibling', 'cloned']) {

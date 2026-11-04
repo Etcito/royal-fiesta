@@ -126,7 +126,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
   }
   const misses: Promise<void>[] = []
   for (const a of assets) {
-    const key = await checkAwait(`content: mesh key ${a.id}`, () => meshCacheKey(a, facade.mamaVersion, facade.raaSdfmVersion, sha256Hex))
+    const key = await checkAwait(`content: mesh key ${a.id}`, () => meshCacheKey(a, facade.meshCompatibility, sha256Hex))
     const request = meshRequestOf(a)
     const hit = await checkAwait(`content: cache read ${a.id}`, () => c.get(key))
     if (hit !== null && meshHasParts(hit.value, request.parts)) {

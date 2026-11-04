@@ -2,6 +2,7 @@
 // Meshing runs in workers (mama/worker.ts); nothing of raa-sdfm needs main-thread initialisation
 // here: the worker builds its upload payload and the renderer consumes it.
 import { RefusalError } from '@royal-fiesta/sim/refusal'
+import { MESH_COMPATIBILITY } from '@etcito/mama/core/game/mesh-file.ts'
 import workerUrl from './worker.ts?worker&url'
 import { classicWorker } from '../classicWorker.ts'
 import type { MamaFacade, MeshedAsset, MeshRequest } from '../mamaApi.ts'
@@ -50,5 +51,6 @@ export async function loadMama(): Promise<MamaFacade> {
       pool.close()
     }
   }
-  return { mamaVersion, raaSdfmVersion: RAA_SDFM_VERSION, createPool, meshOnce }
+  // The saved mesh and cache key version is MAMA's own (meshCache.ts holds no copy).
+  return { mamaVersion, raaSdfmVersion: RAA_SDFM_VERSION, meshCompatibility: MESH_COMPATIBILITY, createPool, meshOnce }
 }

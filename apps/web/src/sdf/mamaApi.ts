@@ -25,7 +25,7 @@ export function meshHasParts(meshed: MeshedAsset, parts: readonly string[] | und
   return parts.every(part => names.has(part))
 }
 
-export interface MamaFacade { readonly mamaVersion: string; readonly raaSdfmVersion: string; createPool(size: number): MeshPool; meshOnce(req: MeshRequest): Promise<MeshedAsset> }
+export interface MamaFacade { readonly mamaVersion: string; readonly raaSdfmVersion: string; readonly meshCompatibility: string; createPool(size: number): MeshPool; meshOnce(req: MeshRequest): Promise<MeshedAsset> }
 
 function absent(reason: string): RefusalError {
   return new RefusalError('sdf', 'MAMA', MAMA_ABSENT_PREFIX + reason + '; see docs/bricks.md')
@@ -38,7 +38,7 @@ function message(e: unknown): string {
 function shapeProblem(v: unknown): string | null {
   if (typeof v !== 'object' || v === null) return 'loadMama() did not return an object'
   const f = v as Record<string, unknown>
-  for (const k of ['mamaVersion', 'raaSdfmVersion']) {
+  for (const k of ['mamaVersion', 'raaSdfmVersion', 'meshCompatibility']) {
     if (typeof f[k] !== 'string' || f[k] === '') return `loadMama() facade has no non-empty string ${k}`
   }
   for (const k of ['createPool', 'meshOnce']) {

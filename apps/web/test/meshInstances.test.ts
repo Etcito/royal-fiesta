@@ -21,6 +21,7 @@ import type { KeyedMeshedAsset } from '../src/sdf/meshWire.ts'
 const ROOT = new URL('../../../', import.meta.url)
 const COURSE = 'courses/obstacle-gallery.course.json'
 const MAMA = 'mama-instances-test'
+const COMPAT = 'format:1;algorithm:instances-test'
 const RAA = 'raa-sdfm-instances-test'
 
 function sha256Hex(bytes: Uint8Array): Promise<string> {
@@ -89,7 +90,7 @@ function meshedAssetFor(asset: GameAsset): MeshedAsset {
 
 // What the loader looks up (and SDF Modeler saves) for an asset, never for one of its placements.
 async function savedFile(asset: GameAsset): Promise<KeyedMeshedAsset> {
-  return { ...meshedAssetFor(asset), key: await meshCacheKey(asset, MAMA, RAA, sha256Hex) }
+  return { ...meshedAssetFor(asset), key: await meshCacheKey(asset, COMPAT, sha256Hex) }
 }
 
 class RecordingPort extends NullRenderPort {

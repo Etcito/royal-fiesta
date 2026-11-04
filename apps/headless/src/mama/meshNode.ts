@@ -46,6 +46,30 @@ function hookSource(distUrl: string): string {
 }
 
 let loaded: Promise<WorkerModule> | null = null
+let hooked = false
+
+// One resolve hook per Node thread, for the worker and for meshCompatibility.
+function registerMamaHook(dist: string): void {
+  if (hooked) return
+  register('data:text/javascript,' + encodeURIComponent(hookSource(pathToFileURL(dist + '/').href)))
+  hooked = true
+}
+
+/**
+ * MAMA's MESH_COMPATIBILITY (core/game/mesh-file.ts of the resolved checkout, its built dist like the Node mesher):
+ * the version every saved mesh and cache key is made with. Royal Fiesta holds no copy of it.
+ */
+export async function meshCompatibility(): Promise<string> {
+  const { dir } = resolvedMama()
+  const dist = join(dir, 'dist')
+  if (!existsSync(join(dist, 'core', 'game', 'mesh-file.js'))) throw absent(`${dist} is not built; run npm run build in ${dir}`)
+  registerMamaHook(dist)
+  const mod = (await import('@etcito/mama/core/game/mesh-file.ts')) as { MESH_COMPATIBILITY?: unknown }
+  if (typeof mod.MESH_COMPATIBILITY !== 'string' || mod.MESH_COMPATIBILITY === '') {
+    throw absent(`${dist}/core/game/mesh-file.js exports no MESH_COMPATIBILITY; rebuild MAMA (npm run build in ${dir})`)
+  }
+  return mod.MESH_COMPATIBILITY
+}
 
 async function loadWorker(): Promise<WorkerModule> {
   const { dir } = resolvedMama()
@@ -53,7 +77,7 @@ async function loadWorker(): Promise<WorkerModule> {
   if (!existsSync(join(dist, 'index.js'))) throw absent(`${dist} is not built; run npm run build in ${dir}`)
   const wasm = join(dir, 'node_modules', 'manifold-3d', 'manifold.wasm')
   if (!existsSync(wasm)) throw absent(`${wasm} is missing; run npm ci in ${dir}`)
-  register('data:text/javascript,' + encodeURIComponent(hookSource(pathToFileURL(dist + '/').href)))
+  registerMamaHook(dist)
   // Plugins and the bitmap decoder, as every MAMA Node host installs them.
   const plugins = (await import('@etcito/mama/node/load-plugins.ts')) as typeof import('@etcito/mama/node/load-plugins.ts')
   await plugins.loadCorePlugins()

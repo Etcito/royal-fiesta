@@ -59,7 +59,7 @@ function asset(id: string): PrimsAsset {
 const ids = ['costume.propeller-hat', 'costume.pineapple-suit', 'costume.fish-scarf']
 const mounts = new Map<string, Vec3T>(ids.map((id, i) => [id, [0.2 + i, 0.8 - i * 0.3, 0.1 + i]]))
 const skin: SkinnedAssetT = {
-  rig: { name: 'test', bones: ['root', 'upper.l', 'upper.r', 'upperLeg.l', 'upperLeg.r', 'head'].map(name => ({ name, parent: null, rest: { t: [0, 0, 0], r: [0, 0, 0, 1], s: [1, 1, 1] } })) },
+  rig: { name: 'test', bones: ['root', 'upper.l', 'upper.r', 'upperLeg.l', 'upperLeg.r', 'head', 'foot.l', 'foot.r'].map(name => ({ name, parent: null, rest: { t: [0, 0, 0], r: [0, 0, 0, 1], s: [1, 1, 1] } })) },
   parts: [{ name: 'body', skin: { joints: new Uint16Array(4), weights: new Float32Array([1, 0, 0, 0]) } }],
 }
 

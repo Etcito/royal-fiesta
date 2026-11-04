@@ -28,13 +28,14 @@ test('uploads sequentially, journals failures, resumes and detects changed bytes
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
-test('checkUpload refuses audio, missing CDN base and stale builds', () => {
+test('checkUpload with a CDN refuses packed audio and stale builds; without one it wants the packed manifest', () => {
   const dir = mkdtempSync(join(tmpdir(), 'audio-check-'))
   try {
     const base = 'https://cdn.example.invalid/sounds'
     writeFileSync(join(dir, 'game.js'), `const base = ${JSON.stringify(base)}`)
     checkUpload(dir, base)
-    assert.throws(() => checkUpload(dir, ''), /VITE_RF_AUDIO_URL/)
+    assert.throws(() => checkUpload(dir, ''), /audio manifest is missing/)
+    assert.throws(() => checkUpload(dir, 'ftp://x'), /VITE_RF_AUDIO_URL/)
     assert.throws(() => checkUpload(dir, base + '/other'), /absent/)
     writeFileSync(join(dir, 'hidden.ogg'), 'sound')
     assert.throws(() => checkUpload(dir, base), /separately/)

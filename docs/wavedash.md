@@ -22,9 +22,11 @@ so the statements below were not re-fetched live. They were taken from `docs.wav
 ## Build
 
 Both publishing steps are run by the **HOST**, which has the Wavedash login and route. The sandbox
-prepares code and runs offline tests only. Never upload audio together with the game build.
+prepares code and runs offline tests only.
 
-Host order (use the host's actual CDN directory and upload command in the environment):
+By default the audio ships IN the upload (`audio/manifest.json` and the MP3/Ogg it names, never a WAV):
+leave `VITE_RF_AUDIO_URL` unset and run `npm run wavedash`. A CDN is optional; with one, the host order is
+(use the host's actual CDN directory and upload command in the environment):
 
 ```sh
 # If compressed output already exists, reuse it. Otherwise prepare it once:
@@ -59,10 +61,10 @@ host build environment, just like `VITE_RF_SERVER` / `VITE_RF_ECONOMY`; never co
 game on :5173 keeps loading `audio/manifest.json` relative to the page. CDN responses must support the
 cross-origin headers described below.
 
-`npm run wavedash` runs the normal build (which prepares local audio), then packages the page without
-audio. `-- --skip-build` packages an existing dist; `-- --out <dir>` changes the output directory.
-`checkUpload` refuses any audio directory/media file, a missing HTTP(S) audio base, or built JavaScript
-that does not contain that base. Rebuild with the host environment if a skip-build package is stale.
+`npm run wavedash` runs the normal build (which prepares local audio), then packages the page with its
+audio (or without it when `VITE_RF_AUDIO_URL` is set). `-- --skip-build` packages an existing dist; `-- --out <dir>` changes the output directory.
+Without a CDN, `checkUpload` refuses a WAV, a missing audio manifest or a file it names. With one, it refuses
+any audio directory/media file, a non-HTTP(S) audio base, or built JavaScript that does not contain that base. Rebuild with the host environment if a skip-build package is stale.
 No build push or publish is performed by the packager.
 
 ## Layout
@@ -70,7 +72,7 @@ No build push or publish is performed by the packager.
 `npm run wavedash` writes `out/wavedash-build/` (untracked):
 
 - `upload/`: the upload_dir. It is a copy of `apps/web/dist` without `nmc.gpu.json` (the GPU-client declaration)
-  and `store/` (a local asset mirror), and without `audio/` or audio media. `game.html` sits at its
+  and `store/` (a local asset mirror); `audio/` keeps only the manifest and the MP3/Ogg it names (none with a CDN). `game.html` sits at its
   root next to `assets/`, so its relative `./assets/` URLs stay valid. `index.html`, `play.html` and
   `client.html` stay as built (boot and proof pages).
 - `upload/rf-build.json`: the build manifest (below).
@@ -93,7 +95,7 @@ refused with
 `npm run audio:bake` prepares compressed MP3/Ogg files and their manifest under
 `apps/web/public/audio`. Its existing bake and compression caches are reused. Compression belongs to
 that preparation step, never to `audio:upload` or `packWavedash`. The local served game keeps this audio;
-the Wavedash upload excludes it entirely.
+the Wavedash upload packs the manifest and the files it names, unless a CDN serves them.
 
 ## Build manifest (`upload/rf-build.json`)
 

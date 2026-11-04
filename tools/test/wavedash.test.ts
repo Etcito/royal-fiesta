@@ -110,6 +110,25 @@ test('packing again replaces the previous upload', async () => {
   }
 })
 
+test('without VITE_RF_AUDIO_URL the upload carries the audio manifest and only the MP3/Ogg it names', async () => {
+  const manifest = JSON.stringify({ format: 'royal-fiesta.audio', version: 1, sounds: [{ files: ['a.0.mp3', 'a.1.ogg'] }] })
+  const dir = tree({ 'dist/game.html': GAME, 'dist/audio/manifest.json': manifest, 'dist/audio/a.0.mp3': 'm',
+    'dist/audio/a.1.ogg': 'o', 'dist/audio/stale.mp3': 'old', 'dist/audio/a.0.wav': 'raw' })
+  const before = process.env.VITE_RF_AUDIO_URL
+  try {
+    delete process.env.VITE_RF_AUDIO_URL
+    const result = await withDist(join(dir, 'dist'), () => packWavedash({ outDir: join(dir, 'out') }))
+    assert.deepEqual(result.files.filter(f => f.startsWith('audio/')), ['audio/a.0.mp3', 'audio/a.1.ogg', 'audio/manifest.json'])
+    writeFileSync(join(dir, 'dist/audio/manifest.json'), JSON.stringify({ sounds: [{ files: ['a.0.wav'] }] }))
+    await assert.rejects(withDist(join(dir, 'dist'), () => packWavedash({ outDir: join(dir, 'out') })), /MP3\/Ogg/)
+    writeFileSync(join(dir, 'dist/audio/manifest.json'), JSON.stringify({ sounds: [{ files: ['gone.mp3'] }] }))
+    await assert.rejects(withDist(join(dir, 'dist'), () => packWavedash({ outDir: join(dir, 'out') })), /missing from the build/)
+  } finally {
+    process.env.VITE_RF_AUDIO_URL = before
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('a dist without game.html is refused', async () => {
   const dir = tree({ 'dist/index.html': '<pre></pre>\n' })
   try {

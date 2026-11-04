@@ -18,7 +18,9 @@ export const CONFIG_NAME = 'wavedash.toml'
 export const BUILD_STAMP = 'rf-build.json'
 export const ENTRY = 'game.html'
 // nmc.gpu.json is the GPU-client declaration and store/ a local asset mirror: neither is part of the game.
-export const EXCLUDED: readonly string[] = ['nmc.gpu.json', 'store', 'audio']
+export const EXCLUDED: readonly string[] = ['nmc.gpu.json', 'store']
+// audio/ is copied by packAudio (the manifest and the MP3/Ogg it names), unless VITE_RF_AUDIO_URL points at a CDN.
+export const AUDIO_DIR = 'audio'
 
 export function wavedashToml(): string {
   return [
@@ -58,11 +60,45 @@ function mamaStamp(root: string): { source: 'sibling' | 'cloned' | 'absent'; com
   return { source: source.kind, commit: source.kind === 'absent' ? null : source.commit }
 }
 
-/** Verify the CDN build contract, including an existing build used with --skip-build. */
-export function checkUpload(upload: string, raw = process.env.VITE_RF_AUDIO_URL): void {
+/** The audio CDN base from the host build environment, or null when the audio ships in the upload. */
+export function audioCdn(raw = process.env.VITE_RF_AUDIO_URL): string | null {
   const base = (raw ?? '').trim().replace(/\/+$/, '')
-  if (!/^https?:\/\/[^\s?#]+$/.test(base)) refuse('bricks', 'VITE_RF_AUDIO_URL', 'set an http(s) audio directory URL in the host build environment')
+  if (base === '') return null
+  if (!/^https?:\/\/[^\s?#]+$/.test(base)) refuse('bricks', 'VITE_RF_AUDIO_URL', 'set an http(s) audio directory URL in the host build environment, or leave it unset to pack the audio')
+  return base
+}
+
+function audioFiles(dir: string): string[] {
+  const manifest = join(dir, 'manifest.json')
+  if (!existsSync(manifest)) refuse('bricks', manifest, 'the audio manifest is missing; run npm run build (it prepares the compressed audio)')
+  const sounds = (JSON.parse(readFileSync(manifest, 'utf8')) as { sounds?: { files?: string[] }[] }).sounds ?? []
+  return [...new Set(sounds.flatMap(sound => sound.files ?? []))].sort()
+}
+
+/** Copy the audio manifest and exactly the MP3/Ogg files it names; a WAV or a missing file is refused. */
+export function packAudio(from: string, to: string): void {
+  const names = audioFiles(from)
+  for (const name of names) {
+    if (!/\.(mp3|ogg)$/i.test(name)) refuse('bricks', `${AUDIO_DIR}/${name}`, 'only compressed MP3/Ogg audio ships; run npm run audio:bake')
+    if (!existsSync(join(from, name))) refuse('bricks', `${AUDIO_DIR}/${name}`, 'named by the audio manifest but missing from the build')
+  }
+  mkdirSync(to, { recursive: true })
+  for (const name of ['manifest.json', ...names]) cpSync(join(from, name), join(to, name))
+}
+
+/** Verify the upload's audio, including an existing build used with --skip-build: packed (default) or on a CDN. */
+export function checkUpload(upload: string, raw = process.env.VITE_RF_AUDIO_URL): void {
   const files = listFiles(upload)
+  const base = audioCdn(raw)
+  if (base === null) {
+    const wav = files.find(file => /\.wav$/i.test(file))
+    if (wav !== undefined) refuse('bricks', wav, 'a WAV never ships; only the MP3/Ogg the audio manifest names')
+    const audio = join(upload, AUDIO_DIR)
+    for (const name of audioFiles(audio)) {
+      if (!existsSync(join(audio, name))) refuse('bricks', `${AUDIO_DIR}/${name}`, 'named by the audio manifest but missing from the upload')
+    }
+    return
+  }
   if (files.some(file => file.startsWith('audio/') || /\.(wav|mp3|ogg|opus|flac|aac|m4a)$/i.test(file))) {
     refuse('bricks', upload, 'audio must be uploaded separately with npm run audio:upload')
   }
@@ -84,9 +120,10 @@ export async function packWavedash(
   rmSync(upload, { recursive: true, force: true })
   mkdirSync(upload, { recursive: true })
   for (const name of readdirSync(dist).sort()) {
-    if (EXCLUDED.includes(name)) continue
+    if (EXCLUDED.includes(name) || name === AUDIO_DIR) continue
     cpSync(join(dist, name), join(upload, name), { recursive: true })
   }
+  if (audioCdn() === null) packAudio(join(dist, AUDIO_DIR), join(upload, AUDIO_DIR))
 
   // Remove this bundled content when the CDN serves it.
   packContent(join(upload, 'content'))

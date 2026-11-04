@@ -4,18 +4,18 @@
   "course": "s1-c1-diamond-citadel",
   "grid": {
     "origin": [
-      -24,
+      -26,
       -132
     ],
     "cell": [
       2,
       2
     ],
-    "cols": 220,
+    "cols": 221,
     "rows": 132
   },
   "parts": {},
   "tuning": {
-    "gridCols": 220
+    "gridCols": 221
   }
 }

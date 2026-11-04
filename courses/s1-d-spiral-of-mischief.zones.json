@@ -3,10 +3,10 @@
   "version": 0,
   "course": "s1-d-spiral-of-mischief",
   "grid": {
-    "origin": [-64, -12],
+    "origin": [-64, -16],
     "cell": [2, 2],
     "cols": 55,
-    "rows": 57
+    "rows": 59
   },
   "parts": {
     "z06-seesaw": "physics"

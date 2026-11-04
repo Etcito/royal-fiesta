@@ -5,14 +5,14 @@
   "grid": {
     "origin": [
       8,
-      6
+      2
     ],
     "cell": [
       2,
       2
     ],
     "cols": 40,
-    "rows": 40
+    "rows": 42
   },
   "parts": {},
   "tuning": {

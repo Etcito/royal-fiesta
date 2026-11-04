@@ -50,12 +50,16 @@ test('every committed cosmetic loads normalized skin streams on the exact pengui
     const skin=assetSkin(mesh.data,file.document,penguin.rig)!
     assert.ok(skin && skin.parts.length>0)
     const matrices=restPoseSkin(penguin.rig,12)
-    assert.equal(matrices.length,skin.rig.bones.length*16)
+    // A penguin-rig copy takes the penguin pose as is; an own armature (rig.parentBone, the jester hat with its jiggle
+    // horns) is mounted on that penguin bone and has its own bones.
+    const parentBone=(skin.rig as {parentBone?:string}).parentBone
+    if(parentBone===undefined) assert.equal(matrices.length,skin.rig.bones.length*16)
+    else assert.equal(skin.mount,penguin.rig.bones.findIndex((b:{name:string})=>b.name===parentBone),id)
     for(const part of skin.parts) {
       assert.ok(part.skin!.joints.length>0)
       assert.equal(part.skin!.joints.length,part.skin!.weights.length)
       const {joints,weights}=part.skin!
-      const bone = id.endsWith('-hat') || id.endsWith('-crown') ? 'head' : id.endsWith('sparkler-wand') ? 'tip.r' : null
+      const bone = parentBone !== undefined ? null : id.endsWith('-hat') || id.endsWith('-crown') ? 'head' : id.endsWith('sparkler-wand') ? 'tip.r' : null
       for(let v=0;v<weights.length;v+=4) {
         assert.ok(Math.abs(weights[v]+weights[v+1]+weights[v+2]+weights[v+3]-1)<1e-5,id)
         for(let k=0;k<4;k++)assert.ok(joints[v+k]<skin.rig.bones.length && Number.isFinite(weights[v+k]) && weights[v+k]>=0,id)

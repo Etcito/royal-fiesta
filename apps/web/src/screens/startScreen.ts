@@ -7,6 +7,7 @@ import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, QuatT, RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
+import { CosmeticJiggle, wornPalette } from '@royal-fiesta/game/anim/jiggle'
 import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { Action } from '@royal-fiesta/game/screens/nav'
@@ -165,6 +166,9 @@ export function mountStartScreen(
   let mounted = true
   let visible = true
   const started = performance.now()
+  // The worn cosmetics' jiggle bones (a jester hat's horns) swing as the turntable turns and the penguin idles.
+  const jiggle = new CosmeticJiggle()
+  let lastFrame = started
   if (art.scene && art.dressing) art.dressing.enter(port, art.scene.courseId)
   else port.setEnvironment(art.environment)
   port.setEnvironment({ ...art.environment, sky: 'day', fog: 'clear', post: 'candy', menu: 'candy' })
@@ -179,6 +183,7 @@ export function mountStartScreen(
     const selected = new Map(next.bins.map(bin => [bin.slot, bin.worn >= 0 ? bin.items[bin.worn] : undefined]))
     for (const [slot, item] of worn) {
       if (selected.get(slot) === item.id) continue
+      jiggle.release(item.instance)
       port.destroyInstance(item.instance)
       worn.delete(slot)
     }
@@ -191,16 +196,24 @@ export function mountStartScreen(
       const assetId = cosmeticOf(id)?.asset ?? id
       worn.set(slot, { id, instance: port.createInstance(asset, cosmeticOf(id)?.tint ?? null), mount, skinned: !!port.skinOf?.(assetId) && !!port.setPose && !!port.registerSkinned })
     }
+    // Rotate the root and each mount offset together.
+    const now = performance.now()
+    const yaw = (art.scene?.spot.yawDeg ?? 0) * Math.PI / 180 + (now - started) * YAW_PER_MS
+    const rotation: QuatT = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
     // The wardrobe has no simulation clock. Advance the shared penguin idle cycle on its view clock.
     if (art.skinned !== undefined && port.setPose !== undefined && port.registerSkinned !== undefined) {
       const matrices = restPoseSkin(art.skinned.skin.rig as unknown as Parameters<typeof restPoseSkin>[0],
-        Math.floor((performance.now() - started) * 60 / 1000))
+        Math.floor((now - started) * 60 / 1000))
       port.setPose(penguin, matrices)
-      for (const item of worn.values()) if (item.skinned) port.setPose(item.instance, matrices)
+      for (const item of worn.values()) {
+        if (!item.skinned) continue
+        const skin = port.skinOf?.(cosmeticOf(item.id)?.asset ?? item.id)
+        if (skin?.mount !== undefined) jiggle.add(item.instance, skin, matrices, origin, rotation, UNIT, true, 0)
+        else port.setPose(item.instance, matrices)
+      }
+      jiggle.flush((now - lastFrame) / 1000, (instance, palette) => port.setPose!(instance, palette))
     }
-    // Rotate the root and each mount offset together.
-    const yaw = (art.scene?.spot.yawDeg ?? 0) * Math.PI / 180 + (performance.now() - started) * YAW_PER_MS
-    const rotation: QuatT = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
+    lastFrame = now
     port.setTransform(penguin, origin, rotation, UNIT)
     for (const { instance, mount: [x, y, z], skinned } of worn.values()) {
       if (skinned) { port.setTransform(instance, origin, rotation, UNIT); continue }
@@ -256,7 +269,8 @@ export function mountStartScreen(
           const asset = assetOf(id)
           if (asset === null) return
           cell = { id, instance: port.createInstance(asset, cosmeticOf(id)?.tint ?? null) }
-          if (restPose !== null && port.skinOf?.(cosmeticOf(id)?.asset ?? id)) port.setPose!(cell.instance, restPose)
+          const skin = port.skinOf?.(cosmeticOf(id)?.asset ?? id)
+          if (restPose !== null && skin) port.setPose!(cell.instance, wornPalette(skin, restPose))
           carousel.set(index, cell)
         }
         keep.add(index)
@@ -308,6 +322,7 @@ export function mountStartScreen(
       port.destroyInstance(penguin)
       for (const item of worn.values()) port.destroyInstance(item.instance)
       worn.clear()
+      jiggle.dispose()
       for (const cell of carousel.values()) port.destroyInstance(cell.instance)
       carousel.clear()
     },

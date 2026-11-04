@@ -28,7 +28,8 @@ export async function run(raw: unknown, deps: TourDeps) {
     meshes.set(id, await decodeMeshBytes(new Uint8Array(await (await fetch(base+'.mesh')).arrayBuffer())))
     const asset = await (await fetch(base+'.asset.json')).json()
     anchors.set(id, asset.anchors)
-    const skin = assetSkin(meshes.get(id).data, asset.document)
+    // Cosmetics against the penguin rig, as the game registers them (a mounted armature learns its penguin bone).
+    const skin = assetSkin(meshes.get(id).data, asset.document, id === 'penguin.body' ? undefined : skins.get('penguin.body')?.rig)
     if (skin) skins.set(id, skin)
   }
   const owned = LOCAL_COSMETICS.filter(c=>c.id===c.asset).map(c=>c.id)

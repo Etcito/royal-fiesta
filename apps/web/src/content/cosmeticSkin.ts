@@ -10,11 +10,18 @@ export function assetSkin(data: unknown, document: Record<string, unknown>, peng
     if (part.skin) parts.push({ name, skin: part.skin })
   }
   if (!parts.length) return null
-  const nodes = document.nodes as Record<string, { rig?: SkinRigT; clips?: unknown[]; asset?: { cosmetic?: { binding: string } } }>
+  const nodes = document.nodes as Record<string, { rig?: SkinRigT & { parentBone?: string }; clips?: unknown[]; asset?: { cosmetic?: { binding: string } } }>
   const owner = Object.values(nodes).find(n => n.rig)
   if (!owner?.rig) throw new Error('Skinned asset is missing its rig')
   if (penguin) {
     if (owner.asset?.cosmetic?.binding !== 'penguin') return null
+    const parentBone = owner.rig.parentBone
+    if (parentBone !== undefined) {
+      // Its own armature (jiggle bones, e.g. a jester hat's horns) mounted on one penguin bone.
+      const mount = penguin.bones.findIndex(b => b.name === parentBone)
+      if (mount < 0) throw new Error(`Cosmetic armature is mounted on '${parentBone}', which is not a penguin bone (${penguin.bones.map(b => b.name).join(', ')})`)
+      return { rig: owner.rig, clips: owner.clips ?? [], parts, mount }
+    }
     if (JSON.stringify(owner.rig.bones) !== JSON.stringify(penguin.bones)) throw new Error('Cosmetic rig must match penguin bone order and rest transforms')
   }
   return { rig: owner.rig, clips: owner.clips ?? [], parts }

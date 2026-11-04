@@ -4,6 +4,7 @@
 // through the many places that create one (local play, the show's own canvas, the hub, lobbies, zones).
 import { applyRenderOptions } from '@etcito/raa-sdfm'
 import type { Engine } from '@etcito/raa'
+import { setJiggleQuality } from '@royal-fiesta/game/anim/jiggle'
 
 export type RenderOptionValues = Readonly<Record<string, unknown>>
 
@@ -17,6 +18,8 @@ export function renderOptions(): RenderOptionValues {
 // Replaces the page's options and tells every live port.
 export function setRenderOptions(options: RenderOptionValues): void {
   current = { ...options }
+  // The jiggle bones are stepped by the views (packages/game anim/jiggle.ts), not by the engine.
+  setJiggleQuality(current.jiggle)
   for (const listener of listeners) listener(current)
 }
 

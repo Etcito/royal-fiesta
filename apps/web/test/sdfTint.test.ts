@@ -6,6 +6,7 @@ import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 import { decodeMesh } from '../src/sdf/meshWire.ts'
 import { assetSkin } from '../src/content/cosmeticSkin.ts'
 import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
+import { wornPalette } from '@royal-fiesta/game/anim/jiggle'
 import { materialProgram } from '../src/sdf/materialProgram.ts'
 import { checkPose, checkSkin } from '@royal-fiesta/game/render/nullPort'
 import type { SkinnedAssetT } from '@royal-fiesta/game/render/port'
@@ -324,7 +325,8 @@ test('all committed catalog cosmetics upload their saved skin and render with th
     const skin=assetSkin(data,document,owner.rig)!
     const handle=port.registerSkinned(id,skin)
     const instance=port.createInstance(handle,null)
-    port.setPose(instance,matrices)
+    // The palette the game draws: the penguin pose, or its mount bone for every bone of an own armature (jester hat).
+    port.setPose(instance,wornPalette(skin,matrices))
     port.flushPoses(engine)
     assert.ok(calls.skinPoses[0].ids.length>0,`${id}: posed draw submitted`)
     assert.ok(calls.skinPoses[0].matrices.some((v,i)=>Math.abs(v-(i%16%5===0?1:0))>1e-4),`${id}: deforming matrices`)

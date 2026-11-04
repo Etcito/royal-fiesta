@@ -14,6 +14,7 @@ import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
 import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
+import { CosmeticJiggle } from '../anim/jiggle.ts'
 import { applyWalkPose, restPose, walkBones, walkPose, newWalkState } from '../anim/walkCycle.ts'
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
@@ -307,12 +308,16 @@ function costumeLocal(model: ArrayLike<number>, attach: AttachPointT | undefined
 }
 
 const IDENTITY4 = mat4([0, 0, 0], UNIT_QUAT, [1, 1, 1])
+// A one-bone identity pose: a mounted cosmetic before the character has any pose follows its rest place.
+const IDENTITY4_SKIN = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 interface WornCostume { spec: CostumeSpec; instance: number }
 
 export class SceneView {
   private lookMounts: WornMounts | null = null
   private lookColour = -1
+  // Jiggle bones of every worn cosmetic of this view, stepped once per drawn frame after the poses (view only).
+  private readonly jiggle = new CosmeticJiggle()
   private readonly opts: SceneViewOptions
   private readonly port: RenderPort
   private readonly beanAsset: number
@@ -521,6 +526,8 @@ export class SceneView {
     const c = this.view
     const d = this.shown
     const local = this.opts.localPlayer
+    // The camera of the previous frame places the jiggle's distance culling (the new one is set after the loop).
+    const eye = this.cam?.eye ?? null
     const lookPlayer = this.opts.lookPlayer ?? local
     let camPos: { x: number; y: number; z: number } | null = null
     let camFacing = { x: 0, z: 1 }
@@ -555,9 +562,10 @@ export class SceneView {
       if (p === lookPlayer) this.lookMounts?.draw([d[0], d[1], d[2]], [0, Math.sin(half), 0, Math.cos(half)], UNIT)
       // Submits the pose retained for the last observed tick; reading it never steps the graph.
       const posed = this.anim?.pose(p)
+      const distance2 = eye === null ? 0 : (d[0] - eye[0]) ** 2 + (d[1] - eye[1]) ** 2 + (d[2] - eye[2]) ** 2
       if (p === lookPlayer) {
         const wornPose = posed?.skin ?? this.restSkin
-        if (wornPose) this.lookMounts?.setPose(wornPose)
+        if (wornPose) this.lookMounts?.setPose(wornPose, { dtS: frameDtS, batch: this.jiggle, localWearer: p === local, distance2 })
       }
       if (posed !== undefined && posed !== this.posed[p]) {
         port.setPose!(this.beans[p], posed.skin)
@@ -566,13 +574,15 @@ export class SceneView {
         port.setPose!(this.beans[p], this.restSkin)
         this.posed[p] = REST_POSED
       }
-      this.placeCostumes(p, d, fx, fz, posed)
+      this.placeCostumes(p, d, fx, fz, posed, p === local, distance2)
       if (p === local) {
         camPos = { x: d[0], y: d[1], z: d[2] }
         camFacing = { x: fx, z: fz }
         onLocal = true
       }
     }
+    // Low priority, after every pose of the frame: one jiggle step for all worn cosmetics (anim/jiggle.ts).
+    this.jiggle.flush(frameDtS, (instance, palette) => port.setPose!(instance, palette))
     // The podium freezes the winners and parks the rest, so the local player may have no camera:
     // frame the podium itself or the capture is the void.
     if (this.state.phase === Phase.podium && this.state.podium.length > 0) {
@@ -626,6 +636,7 @@ export class SceneView {
   dispose(): void {
     this.lookMounts?.dispose()
     this.lookMounts = null
+    this.jiggle.dispose()
     this.lookColour = -1
     this.unobserve?.()
     this.unobserve = null
@@ -866,6 +877,7 @@ export class SceneView {
       const spec = set?.[slot] ?? null
       const old = worn[slot]
       if (old !== undefined && (spec === null || old.spec.asset.id !== spec.asset.id)) {
+        this.jiggle.release(old.instance)
         this.port.destroyInstance(old.instance)
         delete worn[slot]
       }
@@ -885,7 +897,7 @@ export class SceneView {
   }
 
   // Character placement * posed bone model * attach frame * inverse costume anchor, then the costume scale.
-  private placeCostumes(p: number, d: Float64Array, fx: number, fz: number, posed: CharacterPose | undefined): void {
+  private placeCostumes(p: number, d: Float64Array, fx: number, fz: number, posed: CharacterPose | undefined, localWearer: boolean, distance2: number): void {
     const worn = this.worn[p]
     if (worn === undefined) return
     const half = Math.atan2(fx, fz) / 2
@@ -895,8 +907,12 @@ export class SceneView {
       if (w === undefined) continue
       const skin = w.spec.skin ?? this.port.skinOf?.(w.spec.asset.id)
       if (skin && this.port.setPose && this.port.registerSkinned) {
-        this.port.setPose(w.instance, posed?.skin ?? restPoseSkin(skin.rig as unknown as Parameters<typeof restPoseSkin>[0]))
-        this.port.setTransform(w.instance, [d[0], d[1], d[2]], yaw, UNIT)
+        const t: Vec3T = [d[0], d[1], d[2]]
+        if (skin.mount !== undefined) {
+          // Its own armature on a penguin bone: the mount bone's pose, its jiggle bones swung by the frame's batch.
+          this.jiggle.add(w.instance, skin, posed?.skin ?? this.restSkin ?? IDENTITY4_SKIN, t, yaw, UNIT, localWearer, distance2)
+        } else this.port.setPose(w.instance, posed?.skin ?? restPoseSkin(skin.rig as unknown as Parameters<typeof restPoseSkin>[0]))
+        this.port.setTransform(w.instance, t, yaw, UNIT)
         continue
       }
       const anchor = w.spec.asset.anchors[COSTUME_ANCHORS[slot]]

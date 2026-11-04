@@ -307,7 +307,7 @@ export class HubView {
     }
     pose(-1, this.localBean)
     const wornPose = this.anim?.pose(-1)?.skin ?? this.restSkin
-    if (wornPose) this.mounts.setPose(wornPose)
+    if (wornPose) this.mounts.setPose(wornPose, { dtS, localWearer: true })
     for (const [id, slot] of this.slots) pose(id, slot.inst)
 
     this.cam = this.orbit !== null ? this.orbit.pose(local.pos, dtS, this.clip) : followCamera(this.cam, local.pos, local.facing, dtS)
@@ -360,7 +360,7 @@ export class HubView {
   animationReady(): Promise<void> { return this.animReady }
 
   dispose(): void {
-    this.mounts.dispose()
+    this.mounts.destroy()
     this.disposed = true
     this.anim?.dispose()
     this.anim = null

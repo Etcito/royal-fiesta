@@ -55,253 +55,12 @@
         "rig": {
           "format": "raa.rig",
           "version": 1,
-          "name": "flipper-test",
+          "name": "costume.jester-hat",
+          "parentBone": "head",
           "bones": [
             {
-              "name": "root",
+              "name": "hat",
               "parent": null,
-              "rest": {
-                "t": [
-                  0,
-                  0,
-                  0
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "upper.l",
-              "parent": "root",
-              "rest": {
-                "t": [
-                  0.48,
-                  0.35,
-                  0
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "lower.l",
-              "parent": "upper.l",
-              "rest": {
-                "t": [
-                  0.55,
-                  0,
-                  0
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "tip.l",
-              "parent": "lower.l",
-              "rest": {
-                "t": [
-                  0.55,
-                  0,
-                  0
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "upper.r",
-              "parent": "root",
-              "rest": {
-                "t": [
-                  -0.48,
-                  0.35,
-                  0
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "lower.r",
-              "parent": "upper.r",
-              "rest": {
-                "t": [
-                  -0.55,
-                  0,
-                  0
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "tip.r",
-              "parent": "lower.r",
-              "rest": {
-                "t": [
-                  -0.55,
-                  0,
-                  0
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "upperLeg.l",
-              "parent": "root",
-              "rest": {
-                "t": [
-                  0.2,
-                  -0.5,
-                  0.05
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "foot.l",
-              "parent": "upperLeg.l",
-              "rest": {
-                "t": [
-                  0,
-                  -0.44999999999999996,
-                  0.15000000000000002
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "upperLeg.r",
-              "parent": "root",
-              "rest": {
-                "t": [
-                  -0.2,
-                  -0.5,
-                  0.05
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "foot.r",
-              "parent": "upperLeg.r",
-              "rest": {
-                "t": [
-                  0,
-                  -0.44999999999999996,
-                  0.15000000000000002
-                ],
-                "r": [
-                  0,
-                  0,
-                  0,
-                  1
-                ],
-                "s": [
-                  1,
-                  1,
-                  1
-                ]
-              }
-            },
-            {
-              "name": "head",
-              "parent": "root",
               "rest": {
                 "t": [
                   0,
@@ -320,191 +79,106 @@
                   1
                 ]
               }
+            },
+            {
+              "name": "horn.l",
+              "parent": "hat",
+              "rest": {
+                "t": [
+                  0.13,
+                  0.48,
+                  0.02
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "jiggle": {
+                "maxAngle": 25,
+                "stiffness": 0.4,
+                "damping": 0.3
+              }
+            },
+            {
+              "name": "horn.l.tip",
+              "parent": "horn.l",
+              "rest": {
+                "t": [
+                  0.57,
+                  0.19,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            },
+            {
+              "name": "horn.r",
+              "parent": "hat",
+              "rest": {
+                "t": [
+                  -0.13,
+                  0.48,
+                  0.02
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "jiggle": {
+                "maxAngle": 25,
+                "stiffness": 0.4,
+                "damping": 0.3
+              }
+            },
+            {
+              "name": "horn.r.tip",
+              "parent": "horn.r",
+              "rest": {
+                "t": [
+                  -0.57,
+                  0.19,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
             }
           ],
-          "roles": {
-            "foot.l": "foot.l",
-            "foot.r": "foot.r",
-            "hand.l": "tip.l",
-            "hand.r": "tip.r",
-            "head": "head",
-            "lowerArm.l": "lower.l",
-            "lowerArm.r": "lower.r",
-            "root": "root",
-            "upperArm.l": "upper.l",
-            "upperArm.r": "upper.r",
-            "upperLeg.l": "upperLeg.l",
-            "upperLeg.r": "upperLeg.r"
-          },
-          "ikChains": [
-            {
-              "name": "flipperL",
-              "solver": "twoBone",
-              "bones": [
-                "upper.l",
-                "lower.l",
-                "tip.l"
-              ],
-              "pole": [
-                0,
-                0,
-                1
-              ],
-              "iterations": 16
-            },
-            {
-              "name": "flipperR",
-              "solver": "twoBone",
-              "bones": [
-                "upper.r",
-                "lower.r",
-                "tip.r"
-              ],
-              "pole": [
-                0,
-                0,
-                1
-              ],
-              "iterations": 16
-            }
-          ],
-          "limits": [
-            {
-              "bone": "upper.l",
-              "min": [
-                -80,
-                -80,
-                -80
-              ],
-              "max": [
-                80,
-                80,
-                80
-              ]
-            },
-            {
-              "bone": "upper.r",
-              "min": [
-                -80,
-                -80,
-                -80
-              ],
-              "max": [
-                80,
-                80,
-                80
-              ]
-            },
-            {
-              "bone": "head",
-              "min": [
-                -40,
-                -60,
-                -30
-              ],
-              "max": [
-                40,
-                60,
-                30
-              ]
-            },
-            {
-              "bone": "upperLeg.l",
-              "min": [
-                -60,
-                -30,
-                -30
-              ],
-              "max": [
-                60,
-                30,
-                30
-              ]
-            },
-            {
-              "bone": "upperLeg.r",
-              "min": [
-                -60,
-                -30,
-                -30
-              ],
-              "max": [
-                60,
-                30,
-                30
-              ]
-            },
-            {
-              "bone": "foot.l",
-              "min": [
-                -45,
-                -20,
-                -20
-              ],
-              "max": [
-                45,
-                20,
-                20
-              ]
-            },
-            {
-              "bone": "foot.r",
-              "min": [
-                -45,
-                -20,
-                -20
-              ],
-              "max": [
-                45,
-                20,
-                20
-              ]
-            }
-          ],
-          "attach": {
-            "body": {
-              "bone": "root",
-              "t": [
-                0,
-                0,
-                0
-              ],
-              "r": [
-                0,
-                0,
-                0,
-                1
-              ]
-            },
-            "head": {
-              "bone": "head",
-              "t": [
-                0,
-                0.3,
-                0
-              ],
-              "r": [
-                0,
-                0,
-                0,
-                1
-              ]
-            },
-            "neck": {
-              "bone": "root",
-              "t": [
-                0,
-                0.3,
-                0
-              ],
-              "r": [
-                0,
-                0,
-                0,
-                1
-              ]
-            }
-          },
           "bindings": [
             {
               "source": {
@@ -512,7 +186,73 @@
               },
               "bones": [
                 {
-                  "bone": "head",
+                  "bone": "hat",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "hat_gold_point"
+              },
+              "bones": [
+                {
+                  "bone": "horn.l",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "hat_right_bell"
+              },
+              "bones": [
+                {
+                  "bone": "horn.l",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "hat_right_bell_mouth"
+              },
+              "bones": [
+                {
+                  "bone": "horn.l",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "hat_purple_point"
+              },
+              "bones": [
+                {
+                  "bone": "horn.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "hat_left_bell"
+              },
+              "bones": [
+                {
+                  "bone": "horn.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "hat_left_bell_mouth"
+              },
+              "bones": [
+                {
+                  "bone": "horn.r",
                   "factor": 1
                 }
               ]
@@ -736,5 +476,5 @@
     "min": [-1.060101, 0.619899, -0.36],
     "max": [1.060101, 1.907093, 0.4]
   },
-  "hash": "947f36c0f1459b8b211b6ffed9f7e7a78bca5d5a35bd35babda152fc72212828"
+  "hash": "21579e085982e88e59736edcf099e2717340f4eb2ab79a3e9c7de8e31697f8ac"
 }

@@ -14,6 +14,7 @@ import { loadShowContent } from '../showContent.ts'
 import { animPerfGpu } from '../animPerfGpu.ts'
 import { pendingPipelines } from '../../render/asyncPipelines.ts'
 import type { TourDeps } from '../uiTour.ts'
+import { nextTask } from './boot.ts'
 export const name = 'animPerf'
 const DT = 1 / 60
 const realNow = performance.now.bind(performance)
@@ -128,8 +129,9 @@ export async function run(raw: unknown, deps: TourDeps) {
         camera: focus => ({ eye: [focus.x + 10, focus.y + 12, focus.z + 18], target: [focus.x, focus.y, focus.z], fovYDeg: 60, near: 0.1, far: 200 }) })
       cacheCounts = { evaluated: 0, shared: 0, ikEvaluated: 0, ikShared: 0 }
       const gpuSamples: number[] = []
-      const rafSamples: number[] = []
-      let lastRaf = 0
+      // Frame-to-frame interval of the loop: the GPU client page gets no requestAnimationFrame (checkOpsYield).
+      const intervalSamples: number[] = []
+      let lastFrame = 0
       const samples: {
         graph: number
         ik: number
@@ -150,10 +152,11 @@ export async function run(raw: unknown, deps: TourDeps) {
         for (let tick = 0; tick < 60; tick++)
           step()
         for (let frame = 0; frame < 240; frame++) {
-          const raf = await new Promise<number>(resolve => { const timeout = setTimeout(() => resolve(realNow()), 25); requestAnimationFrame(t => { clearTimeout(timeout); resolve(t); }); })
-          if (frame >= 60 && lastRaf)
-            rafSamples.push(raf - lastRaf)
-          lastRaf = raf
+          await nextTask()
+          const now = realNow()
+          if (frame >= 60 && lastFrame)
+            intervalSamples.push(now - lastFrame)
+          lastFrame = now
           const start = realNow()
           animMs = 0
           uploadMs = 0
@@ -179,7 +182,7 @@ export async function run(raw: unknown, deps: TourDeps) {
         }
         const mean = (key: keyof typeof samples[number]) => samples.reduce((n, s) => n + s[key], 0) / samples.length
         rows.push({ count, samples: samples.length, animMs: mean('anim'), graphMs: mean('graph'), ikMs: mean('ik'), paletteUploadMs: mean('flush'), setPoseMs: mean('upload'), sceneUpdateMs: mean('update'),
-          renderSubmitMs: mean('render'), cpuFrameMs: mean('frame'), gpuPassMs: gpuSamples.length ? gpuSamples.reduce((a, b) => a + b, 0) / gpuSamples.length : null, rafMs: rafSamples.reduce((a, b) => a + b, 0) / rafSamples.length, cacheCounts, inventory: port.inventory?.() })
+          renderSubmitMs: mean('render'), cpuFrameMs: mean('frame'), gpuPassMs: gpuSamples.length ? gpuSamples.reduce((a, b) => a + b, 0) / gpuSamples.length : null, frameIntervalMs: intervalSamples.reduce((a, b) => a + b, 0) / intervalSamples.length, cacheCounts, inventory: port.inventory?.() })
       }
       finally {
         scene.dispose()

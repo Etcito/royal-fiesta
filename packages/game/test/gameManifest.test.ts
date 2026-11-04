@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { isRefusal } from '@royal-fiesta/sim/refusal'
 import { FEATURE_KINDS } from '@royal-fiesta/sim/features/catalog'
@@ -134,6 +134,12 @@ test('the committed level and features schemas parse in the M3 shape', () => {
     },
   })
   assert.deepEqual(Object.keys(m.features!), Object.keys(FEATURE_KINDS))
+})
+
+test('meshCheck names the saved mesh check SDF Modeler runs for its stale view', () => {
+  const m = parseGameManifest(read(), PATH)
+  assert.equal(m.meshCheck, 'tools/savedMeshes.ts')
+  assert.ok(existsSync(new URL(`../../../${m.meshCheck}`, import.meta.url)))
 })
 
 test('level.fields covers exactly the S13 keys', () => {

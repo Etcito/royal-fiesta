@@ -954,5 +954,6 @@
   },
   "play": {
     "dev": "http://localhost:5173/game.html?course={id}"
-  }
+  },
+  "meshCheck": "tools/savedMeshes.ts"
 }

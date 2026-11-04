@@ -37,6 +37,8 @@ export interface GameManifest {
   mechanisms?: ManifestMechanisms
   level?: { groupRoles: string[]; fields: Record<string, FieldSchema> }
   features?: Record<string, Record<string, FieldSchema>>
+  /** The saved mesh check SDF Modeler runs (`--json`) to show stale meshes in red: tools/savedMeshes.ts. */
+  meshCheck?: string
 }
 
 // S14: the S12/S13 mechanism schemas declared to sdfm.
@@ -47,7 +49,7 @@ const LINK_TARGETS: readonly LinkTarget['kind'][] = ['motor', 'door', 'spring', 
 
 const TOP_KEYS = ['format', 'version', 'id', 'name', 'folders', 'worlds', 'courseFormat', 'courseVersion', 'markers', 'motions', 'play']
 const FOLDER_KEYS = ['assets', 'courses', 'ui']
-const OPTIONAL_TOP = ['mechanisms', 'level', 'features']
+const OPTIONAL_TOP = ['mechanisms', 'level', 'features', 'meshCheck']
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const SCALARS = ['number', 'integer', 'boolean', 'string', 'vec3', 'quat']
 const FIELD_SCHEMA_TYPES: readonly FieldSchemaType[] = ['number', 'integer', 'boolean', 'string', 'vec3', 'enum', 'list', 'object']
@@ -251,6 +253,7 @@ export function parseGameManifest(json: unknown, path: string): GameManifest {
     ...(Object.hasOwn(m, 'mechanisms') ? { mechanisms: mechanismsOf(m.mechanisms, path) } : {}),
     ...(Object.hasOwn(m, 'level') ? { level: levelSchema(m.level, path) } : {}),
     ...(Object.hasOwn(m, 'features') ? { features: featureSchemas(m.features, path) } : {}),
+    ...(Object.hasOwn(m, 'meshCheck') ? { meshCheck: text(m.meshCheck, path, '/meshCheck') } : {}),
   }
 }
 

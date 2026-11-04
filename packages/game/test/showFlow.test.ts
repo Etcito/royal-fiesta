@@ -130,9 +130,10 @@ test('start: change the head bin, change colour twice, go to play and confirm', 
   ]))
   const pad = runStart(padEvents([15, 13, 13, 13, 13, 15, 15, 13, 0]))
   assert.deepEqual(keyboard, pad)
-  // Left/right on a carousel moves its selection; Enter wears it (5460589).
-  assert.deepEqual(keyboard.effects, [null, null, null, null, null, 'wear', 'wear', null, 'play'])
+  // Left/right on a carousel wears what it shows (owner 2026-11-04; no Enter needed).
+  assert.deepEqual(keyboard.effects, ['wear', null, null, null, null, 'wear', 'wear', null, 'play'])
   assert.equal(keyboard.model.bins[0].selected, 0)
+  assert.equal(keyboard.model.bins[0].worn, 0)
   assert.equal(keyboard.model.colour, 2)
   assert.equal(keyboard.model.focus, 'play')
 })

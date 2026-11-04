@@ -12,6 +12,7 @@ import type { SkinnedAssetT } from '@royal-fiesta/game/render/port'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import * as raaSdfm from '@etcito/raa-sdfm'
 import * as asyncPipelines from '../src/render/asyncPipelines.ts'
+import * as renderOptions from '../src/render/renderOptions.ts'
 
 import type { CameraPose, RenderTarget, Viewport } from '@royal-fiesta/game/render/port'
 
@@ -57,6 +58,7 @@ runInNewContext(compiled, {
     if (id === '../render/raaEngine.ts') return { createRaaEngine: async () => initEngine }
     if (id === '../render/shaderCache.ts') return { installShaderCache() {} }
     if (id === '../render/asyncPipelines.ts') return asyncPipelines
+    if (id === '../render/renderOptions.ts') return renderOptions
     if (id === '@royal-fiesta/game/render/nullPort') return { checkPose, checkSkin }
     if (id === './materialProgram.ts') return { materialProgram }
     if (id === '@etcito/raa-sdfm') return raaSdfm

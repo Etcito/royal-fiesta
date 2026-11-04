@@ -3,6 +3,9 @@
 // here: the worker builds its upload payload and the renderer consumes it.
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { MESH_COMPATIBILITY } from '@etcito/mama/core/game/mesh-file.ts'
+import { GAME_RENDER_OPTION_SPECS, GAME_RENDER_SECTIONS, gameRenderOptionShown, gameRenderValueLabel, stepGameRenderOption,
+  validateGameRenderOptions } from '@etcito/mama/core/game/render-options.ts'
+import type { GraphicsContract } from '../../game/graphicsSettings.ts'
 // The field evaluator the port's one per-pixel shading interpreter embeds (sdfPort.ts fieldEvaluator).
 export { FIELD_PROGRAM_WGSL } from '@etcito/mama/core/paramesh/field-program-wgsl.ts'
 import workerUrl from './worker.ts?worker&url'
@@ -55,4 +58,16 @@ export async function loadMama(): Promise<MamaFacade> {
   }
   // The saved mesh and cache key version is MAMA's own (meshCache.ts holds no copy).
   return { mamaVersion, raaSdfmVersion: RAA_SDFM_VERSION, meshCompatibility: MESH_COMPATIBILITY, createPool, meshOnce }
+}
+
+// MAMA's game render-options contract, as the Graphics settings page reads it (game/graphicsSettings.ts).
+export async function loadRenderOptions(): Promise<GraphicsContract> {
+  return {
+    specs: GAME_RENDER_OPTION_SPECS,
+    sections: GAME_RENDER_SECTIONS,
+    validate: validateGameRenderOptions,
+    step: stepGameRenderOption,
+    label: gameRenderValueLabel,
+    shown: gameRenderOptionShown,
+  } as unknown as GraphicsContract
 }

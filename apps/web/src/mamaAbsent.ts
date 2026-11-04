@@ -11,3 +11,8 @@ const REASON = 'MAMA not available: MAMA is not resolved in this build (public c
 export async function loadMama(): Promise<unknown> {
   throw new RefusalError('sdf', 'MAMA', REASON)
 }
+
+// No MAMA, no render-options contract: the Graphics page says so and the defaults apply.
+export async function loadRenderOptions(): Promise<null> {
+  return null
+}

@@ -49,7 +49,9 @@ export interface StartScreenView {
   unmount(): void
 }
 
-const HINT = 'Up/Down Slot   Left/Right Browse   A / Enter Wear'
+const HINT = 'Up/Down Slot   Left/Right Change'
+// The bin titles of ui/screens.ui-doc.json; the focused one is marked like the focused button.
+const BIN_TITLES: Readonly<Record<StartScreenModel['bins'][number]['slot'], string>> = { head: 'Hat', body: 'Outfit', bottom: 'Extra', special: 'Special' }
 const UNIT: Vec3T = [1, 1, 1]
 const ORIGIN: Vec3T = [0, 0, 0]
 const YAW_PER_MS = 0.0002
@@ -96,14 +98,18 @@ function present(host: UaaHost, model: StartScreenModel, wallet?: StartArt['wall
     'wallet-tickets': { text: String(wallet?.tickets ?? '') },
   }
   model.bins.forEach((bin, index) => {
-    props[`bin-${bin.slot}`] = { text: cosmeticName(bin.items[bin.selected]), visible: true }
+    // No names on the items (owner 2026-11-04): the cosmetic's name stays on its bin label as data (the UI checks
+    // read it) but is never drawn.
+    props[`bin-${bin.slot}`] = { text: cosmeticName(bin.items[bin.selected]), visible: false }
     // The one cell is an empty group: the selected cosmetic itself is drawn in 3D behind canvas#ui (mountStartScreen);
     // 'None' (nothing selected) is written in it.
     const id = bin.selected >= 0 ? bin.items[bin.selected] : undefined
     const active = model.focus === 'bins' && model.bin === index
+    props[`bin-${bin.slot}-title`] = { text: focused(BIN_TITLES[bin.slot], active), visible: true }
     props[carouselCell(index)] = { visible: true }
     props[`carousel-name-${index}-0`] = { text: cosmeticName(id), visible: id === undefined }
-    props[`carousel-worn-${index}-0`] = { text: bin.selected === bin.worn ? 'WORN' : active ? 'SELECT' : '', visible: true }
+    // The arrows wear what the carousel shows, so there is no WORN / SELECT state left to label.
+    props[`carousel-worn-${index}-0`] = { text: '', visible: false }
   })
   PALETTE.forEach((_, index) => {
     props[`palette-${index}`] = {

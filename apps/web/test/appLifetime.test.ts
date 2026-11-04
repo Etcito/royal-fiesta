@@ -27,7 +27,7 @@ test('disposing an App removes its global errors before destroying its host; lat
     loadingOverlay: { hide() {} }, stopMode() {}, economyScreens: { close() {} }, economy: { close() {} },
     startView: null, preparedLocal: null, viewsObserver: { disconnect() {} }, closeRemap() {},
     remapButton: { removeEventListener() {}, hidden: false }, remapRoot: { removeEventListener() {} },
-    devices: { dispose() {} }, input: { dispose() {} }, sound: { async close() {} }, loaded: null,
+    devices: { dispose() {} }, input: { dispose() {} }, fps: { dispose() {} }, sound: { async close() {} }, loaded: null,
     host: { destroy() { assert.equal(getEventListeners(page, 'error').length, index === 0 ? 1 : 0) } },
     views: { replaceChildren() {} }, screens: { replaceChildren() {} },
   })

@@ -130,12 +130,14 @@ function cycleSelected(selected: number, count: number, delta: -1 | 1): number {
   return ((shifted + delta) % (count + 1) + (count + 1)) % (count + 1) - 1
 }
 
+// The arrows wear what they show (owner 2026-11-04: each carousel shows one item, so no click is needed to wear it):
+// the selection and the worn item move together.
 function stepBin(m: StartScreenModel, delta: -1 | 1): StartScreenModel {
   const index = Math.min(Math.max(m.bin, 0), Math.max(0, m.bins.length - 1))
   const bin = m.bins[index]
   if (bin === undefined) return m
   const selected = cycleSelected(bin.selected, bin.items.length, delta)
-  const bins = m.bins.map((entry, i) => (i === index ? { ...entry, selected } : entry))
+  const bins = m.bins.map((entry, i) => (i === index ? { ...entry, selected, worn: selected } : entry))
   return { ...m, bins }
 }
 
@@ -158,7 +160,12 @@ export function startStep(
     case 'left':
     case 'right': {
       const delta = action === 'right' ? 1 : -1
-      if (m.focus === 'bins') return { model: stepBin(m, delta), effect: null }
+      if (m.focus === 'bins') {
+        if (m.bins[m.bin] === undefined) return { model: m, effect: null }
+        const model = stepBin(m, delta)
+        // An empty carousel has nothing to wear.
+        return { model, effect: model.bins[m.bin].worn === m.bins[m.bin].worn ? null : 'wear' }
+      }
       if (m.focus === 'palette') return { model: stepPalette(m, delta), effect: 'wear' }
       return { model: { ...m, focus: m.focus === 'play' ? 'shop' : 'play' }, effect: null }
     }
@@ -166,7 +173,7 @@ export function startStep(
       if (m.focus === 'play') return { model: m, effect: 'play' }
       if (m.focus === 'shop') return { model: m, effect: 'shop' }
       if (m.focus === 'palette') return { model: m, effect: 'wear' }
-      if (m.focus === 'bins') return { model: { ...m, bins: m.bins.map((bin, i) => i === m.bin ? { ...bin, worn: bin.selected } : bin) }, effect: 'wear' }
+      // A carousel wears its item as the arrows change it; confirming on it has nothing left to do.
       return { model: m, effect: null }
     default:
       return { model: m, effect: null }

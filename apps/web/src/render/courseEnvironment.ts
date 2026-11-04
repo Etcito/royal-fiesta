@@ -14,6 +14,12 @@ const ENV_NAMES = {
 
 type EnvironmentEngine = Pick<Engine, 'applyEnvironment' | 'setPassEnabled' | 'setLight' | 'setAmbient'> & Partial<Pick<Engine, 'setSky'>>
 
+// RAA installs its depth of field enabled, focused at 10 m with an f/2.8 50 mm lens, and no S13 environment authors one:
+// everything nearer or farther than 10 m was blurred, the start-screen carousel items (about 3.4 m from the camera,
+// in front of the penguin at 6.2 m) by about 9 px at 1080p (owner 2026-11-04: "the items look blurry"). The game has
+// no depth of field: every environment turns the pass off.
+const NO_DOF = 'dof'
+
 // Validate every section before touching the engine. RAA preset names pass through unchanged.
 export function applyCourseEnvironment(engine: EnvironmentEngine, env: Readonly<Record<string, unknown>> | null, area: string, p: string): void {
   if (env === null) {
@@ -21,6 +27,7 @@ export function applyCourseEnvironment(engine: EnvironmentEngine, env: Readonly<
     engine.setPassEnabled('fog', false)
     engine.setPassEnabled('grading', false)
     engine.setPassEnabled('bloom', false)
+    engine.setPassEnabled(NO_DOF, false)
     engine.setLight(DEFAULT_LIGHT)
     engine.setAmbient(DEFAULT_AMBIENT)
     return
@@ -48,6 +55,7 @@ export function applyCourseEnvironment(engine: EnvironmentEngine, env: Readonly<
   engine.setPassEnabled('fog', environment.fog !== undefined)
   engine.setPassEnabled('grading', environment.post !== undefined)
   engine.setPassEnabled('bloom', environment.post !== undefined)
+  engine.setPassEnabled(NO_DOF, false)
   engine.setLight(light ?? DEFAULT_LIGHT)
   engine.setAmbient(DEFAULT_AMBIENT)
 }

@@ -140,7 +140,7 @@ test('wardrobe submits its scene before the UI frame, and a hidden lobby restore
   const calls: string[] = []
   exports.drawStart.call({
     nav: { screen: 'start', live: false }, showView: null, unmountShowView() {}, remap: null,
-    touchRoot: {}, remapButton: {}, community: null, screens: { style: {} }, startModel: {},
+    touchRoot: {}, remapButton: {}, graphics: { isOpen: false }, community: null, screens: { style: {} }, startModel: {},
     startView: { setVisible() {}, update() { calls.push('wardrobe camera and instances') } },
     resize() {}, loaded: { ports: [{ render() { calls.push('stage render') } }] },
     host: { frame() { calls.push('UI frame') } },

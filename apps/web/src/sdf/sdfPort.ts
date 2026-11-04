@@ -20,6 +20,7 @@ import { raaStatus } from '../render/raaStatus.ts'
 import type { MeshedAsset } from './mamaApi.ts'
 import { installShaderCache } from '../render/shaderCache.ts'
 import { deviceOfCanvas, fieldReady, materialKey } from '../render/asyncPipelines.ts'
+import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
 
 export interface ResizablePort extends SkinnedRenderPort {
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
@@ -46,11 +47,12 @@ const WHERE = 'sdf-port'
  * How Paramesh surfaces are shaded: 'pixel' (default) evaluates the part's SDF field per fragment (its stored shading,
  * @etcito/raa-sdfm fieldPartShading, the same material as SDF Modeler's Game view: the field's gradient as the
  * normal and the shapes' materials mixed by the field, whatever the mesh density; nothing baked); 'vertex' keeps the
- * saved per-face materials and the interpolated vertex normals. `?normals=vertex` in the page address picks 'vertex'.
+ * saved per-face materials and the interpolated vertex normals. `?normals=vertex` in the page address picks 'vertex';
+ * otherwise the Graphics setting (MAMA's `shading`, 'vertex' = Vertex) does, for the ports created after it changed.
  */
 export type NormalsMode = 'pixel' | 'vertex'
 export function normalsMode(search: string = typeof location === 'undefined' ? '' : location.search): NormalsMode {
-  return new URLSearchParams(search).get('normals') === 'vertex' ? 'vertex' : 'pixel'
+  return new URLSearchParams(search).get('normals') === 'vertex' ? 'vertex' : preferredNormals()
 }
 /** `?normalsDebug`: per-pixel Paramesh surfaces show the normal lighting receives (0.5 + n / 2). */
 function normalsDebug(search: string = typeof location === 'undefined' ? '' : location.search): boolean {
@@ -188,6 +190,16 @@ class SdfRenderPort implements ResizablePort {
     this.engine.setSingleMaterial(true)
     this.canvas = target.canvas
     this.target = { ...target, viewports: target.viewports.map(v => ({ ...v })) }
+    // The player's graphics options (AO, render scale, screen effects), now and on every change.
+    this.applyOptions()
+    this.offOptions = onRenderOptions(() => this.applyOptions())
+  }
+
+  // Whether the current environment has a post look (bloom and grading on), for the graphics options.
+  private post = false
+  private offOptions: (() => void) | null = null
+  private applyOptions(): void {
+    if (this.engine !== null) applyEngineOptions(this.engine, renderOptions(), this.post)
   }
 
   // Upload data only. The renderer requests pipelines for visible draws during gameplay;
@@ -605,6 +617,8 @@ class SdfRenderPort implements ResizablePort {
   // Everything is checked before the engine is touched, so a refusal never applies half an environment.
   setEnvironment(env: Readonly<Record<string, unknown>> | null): void {
     applyCourseEnvironment(this.need(), env, AREA, 'SdfRenderPort.setEnvironment')
+    this.post = env !== null && env.post !== undefined && env.post !== null
+    this.applyOptions()
   }
 
   render(): RenderStats {
@@ -649,6 +663,8 @@ class SdfRenderPort implements ResizablePort {
   }
 
   dispose(): void {
+    this.offOptions?.()
+    this.offOptions = null
     this.engine?.dispose()
     this.engine = null
     this.canvas = null

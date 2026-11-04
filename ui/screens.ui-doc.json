@@ -2782,7 +2782,7 @@
           "type": "button",
           "asset": "button.secondary",
           "text": {
-            "label": "Quality high"
+            "label": "Graphics..."
           },
           "action": "row",
           "rect": {

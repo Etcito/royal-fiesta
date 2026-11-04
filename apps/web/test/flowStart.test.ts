@@ -188,6 +188,11 @@ test('step notifications drive move/confirm cues and HUD selection uses swatch s
   assert.deepEqual(s.props()['palette-mark'], { visible: false })
   assert.deepEqual(s.props()['inbox-badge'], { text: { count: '2' }, visible: true })
   assert.match(String(s.props()['bin-head'].text), /Propeller Hat/)
+  // No names on the items: the bin label keeps the name as data, hidden; the focused bin's title is marked.
+  for (const slot of ['head', 'body', 'bottom', 'special']) assert.equal(s.props()[`bin-${slot}`].visible, false)
+  assert.deepEqual(s.props()['bin-head-title'], { text: '> Hat <', visible: true })
+  assert.deepEqual(s.props()['bin-body-title'], { text: 'Outfit', visible: true })
+  assert.deepEqual(s.props()['carousel-worn-0-0'], { text: '', visible: false })
   assert.match(String(s.props()['bin-body'].text), /Pineapple Suit/)
   assert.match(String(s.props()['bin-bottom'].text), /Fish Scarf/)
   view.update(model, null)
@@ -200,7 +205,7 @@ test('step notifications drive move/confirm cues and HUD selection uses swatch s
     view.update(model, { ...step, action })
     assert.deepEqual(s.cues.slice(before), cue === null ? [] : [cue], `${action} / ${step.effect}`)
   }
-  act('confirm', 'ui.hover')
+  act('confirm', null) // a carousel wears as the arrows change it: confirm on it does nothing
   act('right', 'ui.hover')
   act('left', 'ui.hover')
   act('up', 'ui.hover') // shop
@@ -211,6 +216,7 @@ test('step notifications drive move/confirm cues and HUD selection uses swatch s
   act('down', 'ui.hover') // head
   act('down', 'ui.hover') // body
   act('down', 'ui.hover') // bottom
+  act('down', 'ui.hover') // special
   act('down', 'ui.hover') // palette
   act('confirm', 'ui.hover')
   act('right', 'ui.hover')

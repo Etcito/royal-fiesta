@@ -5,6 +5,7 @@ import type { CameraPose, QuatT, RenderPort, RenderStats, RenderTarget, Vec3T } 
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { raaStatus } from './raaStatus.ts'
 import { createRaaEngine } from './raaEngine.ts'
+import { applyEngineOptions, onRenderOptions, renderOptions } from './renderOptions.ts'
 
 const AREA = 'render'
 const WHERE = 'raa'
@@ -44,6 +45,15 @@ class RaaRenderPort implements RenderPort {
     this.engine.setAmbient(DEFAULT_AMBIENT)
     this.canvas = target.canvas
     this.target = target
+    // The player's graphics options (AO, render scale, screen effects), now and on every change.
+    this.applyOptions()
+    this.offOptions = onRenderOptions(() => this.applyOptions())
+  }
+
+  private post = false
+  private offOptions: (() => void) | null = null
+  private applyOptions(): void {
+    if (this.engine !== null) applyEngineOptions(this.engine, renderOptions(), this.post)
   }
 
   registerAsset(name: string, asset: PrimsAsset): number {
@@ -102,6 +112,8 @@ class RaaRenderPort implements RenderPort {
   // Everything is checked before the engine is touched, so a refusal never applies half an environment.
   setEnvironment(env: Readonly<Record<string, unknown>> | null): void {
     applyCourseEnvironment(this.need(), env, AREA, 'RaaRenderPort.setEnvironment')
+    this.post = env !== null && env.post !== undefined && env.post !== null
+    this.applyOptions()
   }
 
   render(): RenderStats {
@@ -124,6 +136,8 @@ class RaaRenderPort implements RenderPort {
   }
 
   dispose(): void {
+    this.offOptions?.()
+    this.offOptions = null
     this.engine?.dispose()
     this.engine = null
     this.canvas = null

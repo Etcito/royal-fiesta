@@ -113,6 +113,9 @@ import type { ShowFrame } from './showDirector.ts'
 import { EconomyScreens } from './economyScreens.ts'
 import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { BootOptions, TourGame } from './uiTour.ts'
+import { GraphicsSettings, loadGraphicsContract } from './graphicsSettings.ts'
+import { FpsCounter, FramePacer, frameInterval } from './framePacing.ts'
+import { setRenderOptions } from '../render/renderOptions.ts'
 
 interface Query {
   players: number | null
@@ -282,8 +285,9 @@ function matchScreen(v: MatchViewState, localStatus: number, podium: boolean): G
   return 'result'
 }
 
-// Calls frame once per page frame and returns the stop.
-type FrameLoop = (frame: (dtS: number) => void) => () => void
+// Calls frame once per page frame and returns the stop. `interval` (ms, 0 = every display refresh) caps the page's
+// frame rate (Graphics: 60 fps by default, Vmax); a loop that steps frames itself (the uiTour op) ignores it.
+type FrameLoop = (frame: (dtS: number) => void, interval?: () => number) => () => void
 
 // Where the App keeps its settings and what calls its frames: the page's localStorage and rAF loop, or
 // the uiTour op's in-memory store and its own frame steps. beforeLoad runs as each load starts; a throw fails
@@ -291,14 +295,18 @@ type FrameLoop = (frame: (dtS: number) => void) => () => void
 interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number; starterInventory?: boolean }
 
 // The page's FrameLoop, on requestAnimationFrame. An op tears the App down before building its own views.
-function loop(frame: (dtS: number) => void): () => void {
+// A callback the frame cap does not render is skipped (FramePacer, off rAF timestamps); dt is the time since the last
+// rendered frame, so the simulations' fixed-tick accumulators see the same time whatever the cap.
+function loop(frame: (dtS: number) => void, interval: () => number = () => 0): () => void {
+  const pacer = new FramePacer(interval)
   let last = performance.now()
   let id = 0
   const tick = (now: number) => {
+    id = requestAnimationFrame(tick)
+    if (!pacer.shouldRender(now)) return
     const dt = Math.min(0.1, Math.max(0, now - last) / 1000)
     last = now
     frame(dt)
-    id = requestAnimationFrame(tick)
   }
   id = requestAnimationFrame(tick)
   return () => cancelAnimationFrame(id)
@@ -1437,6 +1445,9 @@ class App {
   readonly nav = new Nav()
   private settings: Settings
   private settingsError: string | null
+  // The Graphics page and options (MAMA's render-options contract) and the FPS counter they show.
+  private readonly graphics: GraphicsSettings
+  private readonly fps: FpsCounter
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
@@ -1545,6 +1556,12 @@ class App {
     const saved = loadSettings(env.store)
     this.settings = saved.settings
     this.settingsError = saved.error
+    this.fps = new FpsCounter(this.screens)
+    this.graphics = new GraphicsSettings(env.store, options => {
+      setRenderOptions(options)
+      this.fps.setVisible(options.showFps === true)
+    })
+    void loadGraphicsContract().then(contract => { if (!this.disposed) this.graphics.attach(contract) })
     // A coarse pointer or ?touch=1 mounts the virtual joystick and buttons over #views; seat 0 is touch.
     this.touchRoot = requiredElement<HTMLElement>('#touch')
     this.touchOn = touchWanted(search)
@@ -1597,11 +1614,12 @@ class App {
     this.stopLoop = this.env.loop(dt => {
       try {
         this.frame(dt)
+        this.fps.frame(performance.now())
       } catch (e) {
         console.error(e)
         this.fail(messageOf(e))
       }
-    })
+    }, () => frameInterval(this.graphics.options.frameRate))
   }
 
   // Live scene/GPU inventory: what the page is showing and holding right now, read by the UI checks.
@@ -1663,8 +1681,17 @@ class App {
   // batch) is dropped, as is any while a key is being rebound.
   command(c: UaaCommand): void {
     if (this.disposed || this.rebinding !== null || c.screen !== this.nav.screen) return
-    if (c.cmd.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
+    if (c.cmd.k === 'back') this.back()
     else this.activate(c.cmd)
+  }
+
+  // Back from the Graphics page returns to the settings rows; any other back is nav's.
+  private back(): void {
+    if (this.nav.screen === 'settings' && this.graphics.isOpen) {
+      this.graphics.closePage()
+      return
+    }
+    this.run(this.nav.dispatch({ kind: 'back' }))
   }
 
   // The settings screen's 'Controller...' button opens the canvas remap over #screens; its close event
@@ -1715,6 +1742,7 @@ class App {
     this.stopRoundLoad = null
     this.stopLoop?.()
     this.stopLoop = null
+    this.fps.dispose()
     this.stopMode()
     this.economyScreens.close()
     this.economy.close()
@@ -2427,7 +2455,9 @@ class App {
     // The remap belongs to the settings screen; #touch takes the pointer only where the game does.
     if (this.remap !== null && nav.screen !== 'settings') this.closeRemap()
     this.touchRoot.hidden = this.touch === null || !(nav.live && PLAYING.includes(nav.screen))
-    this.remapButton.hidden = !(nav.screen === 'settings' && this.remap === null)
+    // The Graphics page belongs to the settings screen: leaving the screen closes it.
+    if (nav.screen !== 'settings' && this.graphics.isOpen) this.graphics.closePage()
+    this.remapButton.hidden = !(nav.screen === 'settings' && this.remap === null && !this.graphics.isOpen)
     this.community?.setVisible(nav.screen === 'start')
     // The start screen draws its own penguin layer and presents its own menu; nav still owns leaving it.
     if (nav.screen === 'start') {
@@ -2475,11 +2505,14 @@ class App {
     // The spectate banner has no HUD pills: its lines carry the round and the qualified count.
     if (nav.screen === 'spectate' && values !== null) info = [values.kind, values.qualified ?? '']
     const error = nav.screen === 'settings' ? this.settingsError : nav.error
-    const model = menuModel(this.roundLoading === null ? nav.screen : 'loading', this.roundLoading === null ? nav.actions() : [], { settings: this.settings, rebinding: this.rebinding, error, info })
+    let model = menuModel(this.roundLoading === null ? nav.screen : 'loading', this.roundLoading === null ? nav.actions() : [], { settings: this.settings, rebinding: this.rebinding, error, info })
+    const graphicsPage = model.screen === 'settings' && this.graphics.isOpen
+    if (graphicsPage) model = this.graphics.model(model.hint)
     // Overlays leave the pointer to the views (pointer lock on the game canvas); menus take clicks.
     this.screens.style.pointerEvents = model.overlay ? 'none' : 'auto'
     this.resize()
     this.host.present({ ...model, lines: fitLines(model.lines, lineSlots(model.screen)) })
+    if (graphicsPage) this.host.setHud(this.graphics.props())
     if (hud !== null && values !== null) this.host.setHud(hudWidgets(values, hud.view))
     this.host.frame(this.uiNowMs)
   }
@@ -2568,10 +2601,10 @@ class App {
           for (const [name, action] of [['prev', 'left'], ['next', 'right']] as const) {
             if (hit(`carousel-${name}-${row}`)) { this.startAction(action, { ...this.startModel, focus: 'bins', bin: row }); return }
           }
-          // The one cell shows the selected cosmetic: clicking it wears it.
+          // The cell shows what is worn (the arrows wear it): clicking it only focuses its bin.
           if (hit(carouselCell(row))) {
-            this.startAction('confirm', { ...this.startModel, focus: 'bins', bin: row,
-              bins: this.startModel.bins.map((b, i) => i === row ? { ...b, selected: bin.selected } : b) })
+            this.startModel = { ...this.startModel, focus: 'bins', bin: row }
+            this.startView?.update(this.startModel, null)
             return
           }
         }
@@ -2676,10 +2709,12 @@ class App {
       return
     }
     if (cmd.k === 'action') this.run(this.nav.dispatch({ kind: 'action', action: cmd.action }))
-    else if (cmd.k === 'back') this.run(this.nav.dispatch({ kind: 'back' }))
+    else if (cmd.k === 'back') this.back()
+    else if (this.nav.screen === 'settings' && this.graphics.isOpen) this.graphics.activate(cmd.row)
     else {
       const row = SETTINGS_ROWS[cmd.row]
       if (row.kind === 'key') this.pendingRebind = row.action
+      else if (row.kind === 'graphics') this.graphics.openPage()
       else this.apply(adjust(this.settings, row, 1))
     }
   }

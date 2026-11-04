@@ -7,13 +7,11 @@ export const SETTINGS_KEY = 'royal-fiesta.settings'
 
 export const KEY_ACTIONS = ['forward', 'back', 'left', 'right', 'jump', 'dive', 'grab'] as const
 export type KeyAction = typeof KEY_ACTIONS[number]
-export type Quality = 'low' | 'medium' | 'high'
 
 export interface Settings {
   keys: Record<KeyAction, string>
   volume: number
   buses: BusVolumes
-  quality: Quality
   mouseSensitivity: number
   stickSensitivity: number
   invertY: boolean
@@ -28,17 +26,18 @@ export const DEFAULT_SETTINGS: Settings = {
   keys: { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', dive: 'ShiftLeft', grab: 'KeyE' },
   volume: 80,
   buses: { ...DEFAULT_BUS_VOLUMES },
-  quality: 'high',
   mouseSensitivity: 5,
   stickSensitivity: 5,
   invertY: false
 }
 
-export type SettingsRow = { kind: 'volume' } | { kind: 'bus'; bus: Bus } | { kind: 'quality' } | { kind: 'mouseSensitivity' | 'stickSensitivity' | 'invertY' } | { kind: 'key'; action: KeyAction } | { kind: 'reset' }
+// 'graphics' opens the Graphics page (the app's, built from MAMA's render-options contract), which replaced the old
+// Quality row: that low/medium/high value was saved but never applied to any renderer.
+export type SettingsRow = { kind: 'volume' } | { kind: 'bus'; bus: Bus } | { kind: 'graphics' } | { kind: 'mouseSensitivity' | 'stickSensitivity' | 'invertY' } | { kind: 'key'; action: KeyAction } | { kind: 'reset' }
 
 export const SETTINGS_ROWS: readonly SettingsRow[] = [
   { kind: 'volume' },
-  { kind: 'quality' },
+  { kind: 'graphics' },
   { kind: 'mouseSensitivity' },
   { kind: 'stickSensitivity' },
   { kind: 'invertY' },
@@ -53,12 +52,11 @@ function copy(settings: Settings): Settings {
 
 export function parseSettings(value: unknown): Settings {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    refuse('settings', 'where#', 'expected a settings object; provide keys, volume, and quality')
+    refuse('settings', 'where#', 'expected a settings object; provide keys and volume')
   }
   const data = value as Record<string, unknown>
   if (!Object.hasOwn(data, 'keys')) refuse('settings', 'where#/keys', 'missing field; provide all key bindings')
   if (!Object.hasOwn(data, 'volume')) refuse('settings', 'where#/volume', 'missing field; set a volume from 0 to 100')
-  if (!Object.hasOwn(data, 'quality')) refuse('settings', 'where#/quality', 'missing field; choose low, medium, or high')
   const rawKeys = data.keys
   if (typeof rawKeys !== 'object' || rawKeys === null || Array.isArray(rawKeys)) {
     refuse('settings', 'where#/keys', 'expected key bindings; provide a code for every action')
@@ -77,10 +75,7 @@ export function parseSettings(value: unknown): Settings {
   if (!Number.isInteger(data.volume) || (data.volume as number) < 0 || (data.volume as number) > 100) {
     refuse('settings', 'where#/volume', 'volume must be an integer from 0 to 100; choose a value in that range')
   }
-  if (data.quality !== 'low' && data.quality !== 'medium' && data.quality !== 'high') {
-    refuse('settings', 'where#/quality', 'unknown quality; choose low, medium, or high')
-  }
-  // Saves written before these fields existed use defaults for absent fields.
+  // Saves written before these fields existed use defaults for absent fields; an old save's `quality` is ignored.
   const mouseSensitivity = Object.hasOwn(data, 'mouseSensitivity') ? data.mouseSensitivity : DEFAULT_SETTINGS.mouseSensitivity
   const stickSensitivity = Object.hasOwn(data, 'stickSensitivity') ? data.stickSensitivity : DEFAULT_SETTINGS.stickSensitivity
   const invertY = Object.hasOwn(data, 'invertY') ? data.invertY : DEFAULT_SETTINGS.invertY
@@ -90,7 +85,7 @@ export function parseSettings(value: unknown): Settings {
     }
   }
   if (typeof invertY !== 'boolean') refuse('settings', 'where#/invertY', 'must be a boolean; choose true or false')
-  return { keys, volume: data.volume as number, quality: data.quality,
+  return { keys, volume: data.volume as number,
     buses: Object.hasOwn(data, 'buses') ? parseBusVolumes(data.buses) : { ...DEFAULT_BUS_VOLUMES },
     mouseSensitivity: mouseSensitivity as number, stickSensitivity: stickSensitivity as number, invertY }
 }
@@ -126,11 +121,6 @@ export function adjust(settings: Settings, row: SettingsRow, dir: number): Setti
     next[row.kind] = Math.max(1, Math.min(10, next[row.kind] + Math.sign(dir)))
   }
   if (row.kind === 'invertY') next.invertY = !next.invertY
-  if (row.kind === 'quality') {
-    const qualities: readonly Quality[] = ['low', 'medium', 'high']
-    const index = qualities.indexOf(next.quality)
-    next.quality = qualities[(index + (dir < 0 ? 2 : 1)) % qualities.length]
-  }
   return next
 }
 
@@ -143,10 +133,6 @@ export function rebind(settings: Settings, action: KeyAction, code: string): Set
   const next = copy(settings)
   next.keys[action] = code
   return next
-}
-
-export function renderScale(quality: Quality): number {
-  return quality === 'low' ? 0.5 : quality === 'medium' ? 0.75 : 1
 }
 
 export function controlsFromKeys(held: ReadonlySet<string>, settings: Settings): RawControls {
@@ -169,7 +155,7 @@ export function describeRow(row: SettingsRow, settings: Settings): string {
     const labels: Record<Bus, string> = { music: 'Music', sfx: 'SFX', ui: 'UI', ambience: 'Ambience', crowd: 'Crowd' }
     return `${labels[row.bus]} volume ${Math.round(settings.buses[row.bus] * 100)}%`
   }
-  if (row.kind === 'quality') return `Quality ${settings.quality}`
+  if (row.kind === 'graphics') return 'Graphics...'
   if (row.kind === 'mouseSensitivity') return `Mouse sensitivity ${settings.mouseSensitivity}`
   if (row.kind === 'stickSensitivity') return `Stick sensitivity ${settings.stickSensitivity}`
   if (row.kind === 'invertY') return `Invert Y ${settings.invertY ? 'on' : 'off'}`

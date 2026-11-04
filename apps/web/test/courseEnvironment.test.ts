@@ -19,8 +19,8 @@ for (const area of ['render', 'sdf']) {
     const sun = { dir: [-0.35, -1, -0.45] as [number, number, number], color: [1, 0.96, 0.9], intensity: 3.2 }
     applyCourseEnvironment(engine, { sky: 'day', fog: 'haze', post: 'candy', sun }, area, 'environment')
     assert.deepEqual(engine.calls[0], ['environment', { sky: 'day', fog: 'haze', post: 'candy' }])
-    assert.deepEqual(engine.calls.slice(1, 4), [['pass', 'fog', true], ['pass', 'grading', true], ['pass', 'bloom', true]])
-    assert.deepEqual(engine.calls[4], ['light', { direction: sun.dir, color: sun.color, intensity: sun.intensity }])
+    assert.deepEqual(engine.calls.slice(1, 5), [['pass', 'fog', true], ['pass', 'grading', true], ['pass', 'bloom', true], ['pass', 'dof', false]])
+    assert.deepEqual(engine.calls[5], ['light', { direction: sun.dir, color: sun.color, intensity: sun.intensity }])
   })
 
   for (const [key, name, known] of [
@@ -45,8 +45,8 @@ for (const area of ['render', 'sdf']) {
       const engine = mockEngine()
       applyCourseEnvironment(engine, env, area, 'environment')
       assert.deepEqual(engine.calls[0], ['environment', { sky: 'day', fog: 'clear', post: 'neutral' }])
-      assert.deepEqual(engine.calls.slice(1, 4), [['pass', 'fog', false], ['pass', 'grading', false], ['pass', 'bloom', false]])
-      assert.deepEqual(engine.calls[4], ['light', DEFAULT_LIGHT])
+      assert.deepEqual(engine.calls.slice(1, 5), [['pass', 'fog', false], ['pass', 'grading', false], ['pass', 'bloom', false], ['pass', 'dof', false]])
+      assert.deepEqual(engine.calls[5], ['light', DEFAULT_LIGHT])
     }
   })
 

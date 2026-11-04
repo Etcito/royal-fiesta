@@ -7,17 +7,17 @@ const owned = LOCAL_COSMETICS.map(c => c.id)
 const wardrobe = () => startScreen(owned, LOCAL_COSMETICS, 0, { colour: 0, worn: { head: owned[0] } })
 const catalog: CatalogItem[] = LOCAL_COSMETICS.map(c => ({ ...c, name: c.id, rarity: 'common', price: { coins: 30, tickets: 2 }, remaining: 10, editionCap: 10, sold: 0 }))
 const shop = () => shopModel(catalog, { playerId: 'test', coins: 100, tickets: 3, owned: [owned[0]], inboxUnread: 0 })
-test('carousel browsing preserves worn item; confirm wears and None removes', () => {
+test('the carousel arrows wear what they show; None removes it and confirm has nothing left to do', () => {
  const original = wardrobe()
  const browse = startStep(original, 'right')
- assert.equal(browse.effect, null); assert.equal(browse.model.bins[0].worn, 0)
+ assert.equal(browse.effect, 'wear'); assert.equal(browse.model.bins[0].worn, 1)
  assert.equal(browse.model.bins[0].selected, 1)
- const wear = startStep(browse.model, 'confirm')
- assert.equal(wear.effect, 'wear'); assert.equal(wear.model.bins[0].worn, 1)
+ const confirm = startStep(browse.model, 'confirm')
+ assert.equal(confirm.effect, null); assert.deepEqual(confirm.model, browse.model)
  let m = original
  m = startStep(m, 'left').model
  assert.equal(m.bins[0].selected, -1)
- assert.equal(startStep(m, 'confirm').model.bins[0].worn, -1)
+ assert.equal(m.bins[0].worn, -1)
  assert.equal(original.bins[0].worn, 0)
 })
 test('all four carousel rows, palette and actions wrap deterministically', () => {

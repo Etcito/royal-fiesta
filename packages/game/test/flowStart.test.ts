@@ -147,8 +147,12 @@ test('a catalog special item fills the special bin and can be worn', () => {
   assert.equal(model.focus, 'bins')
   assert.equal(model.bin, 3)
   const step = startStep(model, 'right')
-  assert.equal(step.effect, null)
+  assert.equal(step.effect, 'wear')
   assert.equal(step.model.bins[3].selected, -1)
+  assert.equal(step.model.bins[3].worn, -1)
+  const back = startStep(step.model, 'left')
+  assert.equal(back.effect, 'wear')
+  assert.equal(back.model.bins[3].worn, 0)
 })
 
 test('LOCAL_OWNED resolves to the twelve base costume ids', async () => {
@@ -204,29 +208,33 @@ test('up and down walk the four bins, palette, play and shop ring with wrapping'
   assert.equal(model.focus, 'shop')
 })
 
-test('left and right cycle the bin selection over -1..items-1 and await confirmation', () => {
-  let model = startScreen(['costume.propeller-hat', 'costume.crown'], CATALOG, 0, {
+test('left and right cycle the bin over -1..items-1 and wear what it shows', () => {
+  const model = startScreen(['costume.propeller-hat', 'costume.crown'], CATALOG, 0, {
     colour: 0,
     worn: { head: 'costume.propeller-hat' },
   })
   assert.equal(model.bins[0].selected, 0)
 
   let step = startStep(model, 'right')
-  assert.equal(step.effect, null)
-  assert.equal(step.model.bins[0].selected, 1)
+  assert.equal(step.effect, 'wear')
+  assert.deepEqual([step.model.bins[0].selected, step.model.bins[0].worn], [1, 1])
   step = startStep(step.model, 'right')
-  assert.equal(step.effect, null)
-  assert.equal(step.model.bins[0].selected, -1)
+  assert.equal(step.effect, 'wear')
+  assert.deepEqual([step.model.bins[0].selected, step.model.bins[0].worn], [-1, -1])
   step = startStep(step.model, 'right')
-  assert.equal(step.effect, null)
-  assert.equal(step.model.bins[0].selected, 0)
+  assert.equal(step.effect, 'wear')
+  assert.deepEqual([step.model.bins[0].selected, step.model.bins[0].worn], [0, 0])
   step = startStep(step.model, 'left')
-  assert.equal(step.effect, null)
-  assert.equal(step.model.bins[0].selected, -1)
+  assert.equal(step.effect, 'wear')
+  assert.deepEqual([step.model.bins[0].selected, step.model.bins[0].worn], [-1, -1])
+  // Confirm on a carousel has nothing left to do.
+  assert.equal(startStep(step.model, 'confirm').effect, null)
 
-  const empty = startScreen(['costume.propeller-hat'], CATALOG, 0, { colour: 0, worn: {} })
-  assert.equal(startStep(empty, 'left').effect, null)
-  assert.equal(startStep(empty, 'right').effect, null)
+  // Nothing worn: either arrow puts on the bin's only item.
+  const bare = startScreen(['costume.propeller-hat'], CATALOG, 0, { colour: 0, worn: {} })
+  assert.equal(startStep(bare, 'left').effect, 'wear')
+  assert.equal(startStep(bare, 'left').model.bins[0].worn, 0)
+  assert.equal(startStep(bare, 'right').model.bins[0].worn, 0)
 })
 
 test('left and right wrap the palette and return wear; play and shop swap', () => {

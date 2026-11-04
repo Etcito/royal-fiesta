@@ -4,7 +4,7 @@ import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { BUSES } from '../src/audio/catalog.ts'
 import { AUDIO_SETTINGS_KEY, DEFAULT_BUS_VOLUMES } from '../src/audio/mix/volumes.ts'
 import {
-  adjust, controlsFromKeys, DEFAULT_SETTINGS, describeRow, loadSettings, parseSettings, rebind, renderScale,
+  adjust, controlsFromKeys, DEFAULT_SETTINGS, describeRow, loadSettings, parseSettings, rebind,
   saveSettings, SETTINGS_KEY, SETTINGS_ROWS, KEY_ACTIONS, type SettingsStore
 } from '../src/screens/settings.ts'
 
@@ -113,13 +113,14 @@ test('corrupt JSON returns defaults and a visible refusal message', () => {
   assert.match(loaded.error ?? '', /\[settings\]/)
 })
 
-test('adjust clamps volume and cycles quality without mutating input', () => {
+test('adjust clamps volume without mutating input; the Graphics row opens a page and changes nothing here', () => {
   const up = adjust({ ...DEFAULT_SETTINGS, volume: 100 }, { kind: 'volume' }, 1)
   assert.equal(up.volume, 100)
   assert.equal(DEFAULT_SETTINGS.volume, 80)
   assert.equal(adjust({ ...DEFAULT_SETTINGS, volume: 0 }, { kind: 'volume' }, -1).volume, 0)
-  assert.equal(adjust(DEFAULT_SETTINGS, { kind: 'quality' }, 1).quality, 'low')
-  assert.equal(adjust(DEFAULT_SETTINGS, { kind: 'quality' }, -1).quality, 'medium')
+  assert.deepEqual(adjust(DEFAULT_SETTINGS, { kind: 'graphics' }, 1), DEFAULT_SETTINGS)
+  assert.equal(describeRow({ kind: 'graphics' }, DEFAULT_SETTINGS), 'Graphics...')
+  assert.deepEqual(SETTINGS_ROWS[1], { kind: 'graphics' })
 })
 
 test('rebind refuses a duplicate and names the action already holding it', () => {
@@ -140,16 +141,13 @@ test('controlsFromKeys honors rebound jump and keeps arrow movement alternates',
   assert.equal(controls.stickY, 0)
 })
 
-test('render scale matches each quality', () => {
-  assert.deepEqual([renderScale('low'), renderScale('medium'), renderScale('high')], [0.5, 0.75, 1])
-})
-
 
 test('old saved JSON defaults only the absent camera settings', () => {
   const store = new MemoryStore()
+  // An old save's quality (never applied by any renderer) is ignored.
   store.value = JSON.stringify({ keys: DEFAULT_SETTINGS.keys, volume: 30, quality: 'low' })
   assert.deepEqual(loadSettings(store), {
-    settings: { ...DEFAULT_SETTINGS, volume: 30, quality: 'low' }, error: null
+    settings: { ...DEFAULT_SETTINGS, volume: 30 }, error: null
   })
   for (const field of ['mouseSensitivity', 'stickSensitivity', 'invertY'] as const) {
     const saved: Record<string, unknown> = { ...DEFAULT_SETTINGS, mouseSensitivity: 9, stickSensitivity: 2, invertY: true }
@@ -172,7 +170,7 @@ test('present invalid camera settings refuse with the field path and fix', () =>
   assert.throws(() => parseSettings({ ...DEFAULT_SETTINGS, invertY: 1 }), /where#\/invertY: must be a boolean; choose true or false/)
 })
 
-test('camera rows follow quality, step and clamp sensitivity, and toggle invert Y', () => {
+test('camera rows follow the Graphics row, step and clamp sensitivity, and toggle invert Y', () => {
   assert.deepEqual(SETTINGS_ROWS.slice(2, 5), [
     { kind: 'mouseSensitivity' }, { kind: 'stickSensitivity' }, { kind: 'invertY' }
   ])

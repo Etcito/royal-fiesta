@@ -1,49 +1,14 @@
-// One material per object (owner 2026-11-04), the game side of SDF Modeler's core/game/single-material.ts (same tags,
-// same colours). ON (default): an asset part is drawn as ONE PBR object, one standard material (white base x vertex
-// colour, the part's mean roughness and metallic; RAA Engine.setSingleMaterial + setInstanceMaterial) whose vertex colours
-// are the shapes' own material colours blended by MAMA's smooth-min material weight (la/lb/t). OFF (group tagged
-// 'per-face-materials'): each face keeps the graph material of the shape that makes it. A group's own material is never
-// used for colour.
-import { buildIndex } from '@etcito/mama/core/doc/tree.ts'
+// One material per object (owner 2026-11-04). The option (singleMaterialOf: the 'per-face-materials' / 'single-material'
+// group tags), the material look and the part look are MAMA's core/game/single-material.ts, the one copy SDF Modeler's
+// Game view uses too; a shaded part carries them in its shading record (MAMA meshedPartShading). This file keeps only the
+// vertex-colour fallback of a part without per-pixel shading: the shapes' own material colours blended by MAMA's
+// smooth-min material weight (la/lb/t) on a white standard material with the part's one roughness and metallic.
 import type { SdfDocument } from '@etcito/mama/core/doc/types.ts'
-import { cpuGraphOrNull } from '@etcito/mama/core/material-graph/cpu-eval.ts'
 import type { Mesh } from '@etcito/mama/core/mesh/types.ts'
 import type { SdfProgram } from '@etcito/mama/core/sdf/program.ts'
+import { materialLook, objectLook } from '@etcito/mama/core/game/single-material.ts'
 
-export const PER_FACE_MATERIALS_TAG = 'per-face-materials'
-export const SINGLE_MATERIAL_TAG = 'single-material'
-
-/** True when group/shape `id` draws one material per object: the nearest group (itself or above) with a tag decides; default ON. */
-export function singleMaterialOf(doc: SdfDocument, id: string): boolean {
-  if (!doc.nodes[id]) return true
-  for (const n of [id, ...buildIndex(doc).ancestors(id)]) {
-    const node = doc.nodes[n]
-    if (node?.kind !== 'group') continue
-    if (node.tags?.includes(PER_FACE_MATERIALS_TAG)) return false
-    if (node.tags?.includes(SINGLE_MATERIAL_TAG)) return true
-  }
-  return true
-}
-
-interface MaterialLook { color: [number, number, number]; roughness: number; metallic: number }
-const NEUTRAL_MASKS = { curvature: 0, cavity: 0, ao: 1, height: 0, proximity: 0 }
-const looks = new WeakMap<object, MaterialLook | null>()
-
-function materialLook(doc: SdfDocument, id: string | null | undefined): MaterialLook | null {
-  const def = id ? doc.materials?.[id] : undefined
-  if (!def) return null
-  if (looks.has(def)) return looks.get(def)!
-  let look: MaterialLook | null = null
-  try {
-    const graph = cpuGraphOrNull(def, doc)
-    if (graph) {
-      const v = graph.eval([0, 0, 0], [0, 0, 0], [0, 0, 1], () => NEUTRAL_MASKS)
-      look = { color: [v.baseColor[0], v.baseColor[1], v.baseColor[2]], roughness: v.roughness, metallic: v.metallic }
-    }
-  } catch { look = null }
-  looks.set(def, look)
-  return look
-}
+export { singleMaterialOf } from '@etcito/mama/core/game/single-material.ts'
 
 /** Linear rgb per source-mesh vertex: the two owning shapes' material colours mixed by t; null without la/lb/t labels or materials. */
 function blendedColours(doc: SdfDocument, mesh: Mesh, program: SdfProgram): Float32Array | null {
@@ -93,14 +58,6 @@ export function partColouring(doc: SdfDocument, mesh: Mesh, program: SdfProgram)
       }
       return out
     },
-    look(meshes) {
-      let w = 0, roughness = 0, metallic = 0
-      for (const m of meshes) {
-        const l = materialLook(doc, m.material), n = m.positions.length / 3
-        if (!l || !n) continue
-        w += n; roughness += l.roughness * n; metallic += l.metallic * n
-      }
-      return w ? { roughness: roughness / w, metallic: metallic / w } : { roughness: 0.5, metallic: 0 }
-    },
+    look(meshes) { return objectLook(doc, meshes) },
   }
 }

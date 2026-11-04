@@ -23,7 +23,7 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
     docs.set(id, file.document)
     meshed.set(id, await decodeMeshBytes(new Uint8Array(await (await fetch(`./saved/${id}.mesh`)).arrayBuffer())))
   }
-  if(input.vertexNormals)for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.normalVolume
+  if(input.vertexNormals)for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.shading
   const canvas = document.createElement('canvas'); canvas.width=480;canvas.height=480;document.body.append(canvas)
   const port = await createSdfPort({canvas,width:480,height:480,viewports:[{x:0,y:0,width:480,height:480}]},meshed)
   const body = assetSkin(meshed.get('penguin.body')!.data,docs.get('penguin.body'))!
@@ -82,8 +82,8 @@ async function cosmeticThumbs() {
     const file=await(await fetch(`./saved/${id}.asset.json`)).json();bounds.set(id,file.bounds)
     meshed.set(id,await decodeMeshBytes(new Uint8Array(await(await fetch(`./saved/${id}.mesh`)).arrayBuffer())))
   }
-  // Sidecars use geometric normals, like the existing cosmetic thumbnail renderer.
-  for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.normalVolume
+  // Sidecars use geometric normals and per-face materials, like the existing cosmetic thumbnail renderer.
+  for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.shading
   const canvas=document.body.appendChild(document.createElement('canvas'));canvas.width=canvas.height=256
   const port=await createSdfPort({canvas,width:256,height:256,viewports:[{x:0,y:0,width:256,height:256}]},meshed)
   const engine=(port as any).engine

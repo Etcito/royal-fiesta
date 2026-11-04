@@ -8,8 +8,8 @@ import { roundStep, renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
 import { materialProgram } from './materialProgram.ts'
 import { createRaaEngine } from '../render/raaEngine.ts'
-import type { SdfmCompiledMaterial, SdfmMappedMaterial, SdfmNormalVolume } from '@etcito/raa-sdfm'
-import { checkNormalVolume, volumeInstanceParams, volumeMaterial, volumeStandardMaterial, volumeSurfaceAttributes, volumeTexture } from '@etcito/raa-sdfm'
+import type { SdfmCompiledMaterial, SdfmMappedMaterial, SdfmPartShading } from '@etcito/raa-sdfm'
+import { fieldPartMaterialWgsl, fieldSurfaceAttributes } from '@etcito/raa-sdfm'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { CameraPose, QuatT, RenderInventory, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
@@ -42,15 +42,16 @@ const AREA = 'sdf'
 const WHERE = 'sdf-port'
 
 /**
- * How Paramesh surfaces get their shading normal: 'pixel' (default) samples the part's normal volume per fragment (the
- * SDF gradient, whatever the mesh density); 'vertex' keeps the interpolated vertex normals. `?normals=vertex` in the
- * page address picks 'vertex' (comparison, or a device that cannot afford the texture taps).
+ * How Paramesh surfaces are shaded: 'pixel' (default) evaluates the part's SDF field per fragment (its stored shading,
+ * @etcito/raa-sdfm fieldPartMaterialWgsl, the same material as SDF Modeler's Game view: the field's gradient as the
+ * normal and the shapes' materials mixed by the field, whatever the mesh density; nothing baked); 'vertex' keeps the
+ * saved per-face materials and the interpolated vertex normals. `?normals=vertex` in the page address picks 'vertex'.
  */
 export type NormalsMode = 'pixel' | 'vertex'
 export function normalsMode(search: string = typeof location === 'undefined' ? '' : location.search): NormalsMode {
   return new URLSearchParams(search).get('normals') === 'vertex' ? 'vertex' : 'pixel'
 }
-/** `?normalsDebug`: Paramesh surfaces show the normal lighting receives (0.5 + n / 2), in either mode. */
+/** `?normalsDebug`: per-pixel Paramesh surfaces show the normal lighting receives (0.5 + n / 2). */
 function normalsDebug(search: string = typeof location === 'undefined' ? '' : location.search): boolean {
   return new URLSearchParams(search).has('normalsDebug')
 }
@@ -59,23 +60,23 @@ const MAX_MATERIALS = 1024
 
 // The payload of apps/web/src/sdf/mama/worker.ts: MAMA parts with per-material meshes.
 interface PayloadMesh { material: string | null; positions: Float32Array; normals: Float32Array; uvs: Float32Array | null; indices: Uint32Array; colors?: Float32Array }
-// normalVolume: MAMA's per-pixel normal volume of a Paramesh part (absent in meshes made before it, or for other meshers).
-// colors/look/single: one material per object (mama/singleMaterial.ts), absent on meshes made before it.
-interface PayloadPart { partId: string; name: string; frame: Float64Array; meshes: PayloadMesh[]; normalVolume?: unknown; look?: { roughness: number; metallic: number } }
+// shading: the part's per-pixel shading (MAMA field-wgsl.ts savedPartShading, saved mesh format 2), or shadingError: why
+// it has none. colors/look/single: one material per object (mama/singleMaterial.ts), on browser-meshed parts only.
+interface PayloadPart { partId: string; name: string; frame: Float64Array; meshes: PayloadMesh[]; shading?: SdfmPartShading; shadingError?: string; look?: { roughness: number; metallic: number } }
 interface PayloadGroup { group: string; parts: PayloadPart[]; single?: boolean }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
 // key = the raa-sdfm part name (group/partId when two parts share a name); joints = 1 + max joint of a skinned part.
-// subMeshes keep `material` absent for MAMA's no-material faces (tintableParts fills them); volume = the 16
-// setInstanceParams floats of a part shaded with its normal volume (its desc then carries the rest-frame streams).
+// subMeshes keep `material` absent for MAMA's no-material faces (tintableParts fills them); a part drawn with its
+// per-pixel shading has the one shading material on every sub-mesh (its desc then carries the rest-frame streams).
 // object: the one standard material (white x vertex colour) the part draws while one material per object is on; absent =
-// the part keeps its per-face materials (group tagged off, a player-colour graph, or a mesh without colours).
-interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint; volume?: number[]; object?: number }
+// the part keeps its per-face materials (group tagged off, a player-colour graph, a mesh without colours, or shading).
+interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint; object?: number }
 // graph: a material of the part holds input.player_color; multiply: a part with no SDF material (white fallback).
 type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
 // emptyParts: parts the mesher kept by name with no triangle (hidden colliders): a part filter may list them.
-interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[]; textures?: number[]; base?: number }
+interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[]; base?: number }
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
 // asset = the uploaded/handle index this instance was created from (for the live inventory).
@@ -137,14 +138,10 @@ class SdfRenderPort implements ResizablePort {
   // RAA instances given a player colour; a later untinted instance with a reused id clears it.
   private readonly tinted = new Set<number>()
   private whiteSurface: number | null = null
-  // The volume-normal twins of the white tint surface and of RAA's default surface (no MAMA material).
-  private volumeWhite: number | null = null
-  private volumeDefault: number | null = null
   private readonly normals: NormalsMode = normalsMode()
   private readonly debugNormals = normalsDebug()
-  // GPU handles this port created, for the live inventory.
+  // GPU handles this port created, for the live inventory (it creates no texture).
   private meshes = 0
-  private textures = 0
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
   constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map()) {
@@ -226,48 +223,22 @@ class SdfRenderPort implements ResizablePort {
   }
 
   // Mirrors @etcito/raa-sdfm's upload: one mesh per part with one sub-mesh per MAMA material, each
-  // drawn with its own surface material built from the compiled graph.
+  // drawn with its own surface material built from the compiled graph; a part with its per-pixel shading draws the one
+  // shading material on every sub-mesh instead (shadingMaterial).
   private upload(id: string, meshed: MeshedAsset): Uploaded {
     const payload = payloadOf(id, meshed)
     const engine = this.need()
-    // Per-pixel normals: each part's volume becomes a texture; a part whose volume is missing, malformed or does not
-    // fit the atlas keeps its vertex normals.
-    const textures = new Map<PayloadPart, number[]>()
-    const volumeTextures: number[] = []
-    if (this.normals === 'pixel' || this.debugNormals) {
-      for (const group of payload.groups) for (const part of group.parts) {
-        if (part.normalVolume === undefined || part.meshes.length === 0) continue
-        try {
-          const volume: SdfmNormalVolume = checkNormalVolume(part.normalVolume)
-          const texture = this.addTexture(volumeTexture(volume))
-          const params = volumeInstanceParams(volume, texture, { debug: this.debugNormals })
-          // Debug of the vertex mode: the wrapped functions run with the volume off (the mesh normal).
-          if (this.normals === 'vertex') params[12] = 0
-          textures.set(part, params)
-          volumeTextures.push(texture)
-        } catch (e) {
-          console.warn(`[sdf-port] ${id}#part:${part.name}: vertex normals (${messageOf(e)})`)
-        }
-      }
-    }
     const handles = new Map<string, number>()
-    // The same surfaces with the volume normal (volumeMaterial wraps each function), for the parts in `textures`.
-    const volumeHandles = new Map<string, number>()
     const graph = new Set<string>()
     for (const compiled of payload.materials) {
       const mapped = mapCompiled(compiled, id)
       this.addFunction(mapped.functionName, mapped.wgsl)
-      const base = engine.addSurfaceMaterial({ ...mapped.desc })
-      handles.set(compiled.name, base)
-      if (textures.size > 0) {
-        const wrapped = this.volumeFunction(mapped.functionName, mapped.wgsl)
-        volumeHandles.set(compiled.name, wrapped === null ? base : engine.addSurfaceMaterial({ ...mapped.desc, function: wrapped }))
-      }
+      handles.set(compiled.name, engine.addSurfaceMaterial({ ...mapped.desc }))
       if (usesPlayerColour(compiled, mapped)) graph.add(compiled.name)
     }
     // An asset that uses the node puts its fixed materials in graph mode too: a tinted part may mix
     // them with a player-colour material, and in multiply mode the beak and feet would take the tint.
-    if (graph.size > 0) for (const handle of new Set([...handles.values(), ...volumeHandles.values()])) engine.setMaterialTintMode(handle, 'graph')
+    if (graph.size > 0) for (const handle of new Set(handles.values())) engine.setMaterialTintMode(handle, 'graph')
     const parts: PartUpload[] = []
     const keys = new Set<string>()
     const emptyParts: string[] = []
@@ -277,30 +248,30 @@ class SdfRenderPort implements ResizablePort {
           emptyParts.push(part.name)
           continue
         }
-        const volume = textures.get(part)
-        const built = partMesh(part, volume === undefined ? handles : volumeHandles, graph, id)
+        const built = partMesh(part, handles, graph, id)
         let desc = built.desc
-        if (volume !== undefined) {
-          // The rest-frame streams the volume lookup reads; MAMA's no-material faces take the default surface's twin.
-          this.volumeDefault ??= this.volumeSurface({})
-          desc = { ...desc, ...volumeSurfaceAttributes(desc.positions, desc.normals), subMeshes: built.subMeshes.map(sub => ({ ...sub, material: sub.material ?? this.volumeDefault! })) }
+        let subMeshes = built.subMeshes
+        const shaded = this.normals === 'pixel' ? this.shadingMaterial(id, part, payload.materials, graph.size > 0) : null
+        if (shaded !== null) {
+          // The rest point and rest frame the field reads (raa-sdfm fieldSurfaceAttributes) replace colours, uvs, tangents.
+          subMeshes = subMeshes.map(sub => ({ ...sub, material: shaded }))
+          desc = { ...desc, ...fieldSurfaceAttributes(desc.positions, desc.normals), subMeshes }
         }
         const mesh = this.addMesh(engine, desc)
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
         // One material per object: white x the blended vertex colours, with the part's roughness/metallic. A player-colour
-        // part keeps its graph materials (the tint lives in them); so does a part shaded with its normal volume, whose
-        // vertex colour stream carries the rest-frame positions (raa-sdfm volumeSurfaceAttributes), not colours.
+        // part keeps its graph materials (the tint lives in them); a part with its per-pixel shading draws that instead.
         let object: number | undefined
-        if (group.single !== false && volume === undefined && desc.colors !== undefined && part.look !== undefined && built.tint !== 'graph') {
+        if (group.single !== false && shaded === null && desc.colors !== undefined && part.look !== undefined && built.tint !== 'graph') {
           object = engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: part.look.roughness, metallic: part.look.metallic })
         }
-        parts.push({ name: part.name, key, mesh, desc, subMeshes: built.subMeshes, t, r, tint: built.tint, ...(volume !== undefined ? { volume } : {}), ...(object !== undefined ? { object } : {}) })
+        parts.push({ name: part.name, key, mesh, desc, subMeshes, t, r, tint: built.tint, ...(object !== undefined ? { object } : {}) })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
-    return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}), ...(volumeTextures.length > 0 ? { textures: volumeTextures } : {}) }
+    return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}) }
   }
 
   // Registers a material function once per name (a name is the hash of its code).
@@ -316,23 +287,29 @@ class SdfRenderPort implements ResizablePort {
     this.functions.set(name, wgsl)
   }
 
-  // The volume-normal twin of a registered function, or null when RAA refuses it (the base then keeps vertex normals).
-  private volumeFunction(name: string, wgsl: string): string | null {
-    try {
-      const wrapped = volumeMaterial(name, wgsl)
-      this.addFunction(wrapped.functionName, wrapped.wgsl)
-      return wrapped.functionName
-    } catch (e) {
-      console.warn(`[sdf-port] ${name}: vertex normals (${messageOf(e)})`)
+  // The per-pixel material of a part (owner 2026-11-04: normals and materials from the SDF in the shader, nothing
+  // baked): its stored shading drawn by raa-sdfm fieldPartMaterialWgsl, the same code as SDF Modeler's Game view. Null,
+  // with one console warning naming the asset and part, when the part has no shading or RAA refuses the function: the
+  // part then keeps its per-face materials and vertex normals.
+  private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): number | null {
+    const where = `${id}#part:${part.name}`
+    if (part.shading === undefined) {
+      warnOnce(where, `vertex normals (${part.shadingError ?? 'the saved mesh carries no per-pixel SDF shading; re-save the asset in SDF Modeler'})`)
       return null
     }
-  }
-
-  // A surface of the wrapped standard function (the record's own values): `desc` as for addSurfaceMaterial.
-  private volumeSurface(desc: { color?: [number, number, number]; roughness?: number }): number {
-    const standard = volumeStandardMaterial()
-    this.addFunction(standard.functionName, standard.wgsl)
-    return this.need().addSurfaceMaterial({ ...desc, function: standard.functionName })
+    try {
+      const { wgsl, tintMode, missing } = fieldPartMaterialWgsl(part.shading, materials, { debug: this.debugNormals })
+      if (missing.length > 0) warnOnce(`${where}:missing`, `material ${missing.map(m => `'${m}'`).join(', ')} not in the saved mesh; its shapes wear their colour`)
+      const name = `sdff.${hashText(wgsl)}`
+      this.addFunction(name, wgsl)
+      const s = part.shading
+      const handle = this.need().addSurfaceMaterial(s.single ? { function: name, roughness: s.look.roughness, metallic: s.look.metallic } : { function: name, roughness: 0.5 })
+      if (graphMode || tintMode === 'graph') this.need().setMaterialTintMode(handle, 'graph')
+      return handle
+    } catch (e) {
+      warnOnce(where, `vertex normals (${messageOf(e)})`)
+      return null
+    }
   }
 
   // The rigid upload stays as is; skinned parts get a second mesh with the S18 joint/weight streams.
@@ -391,7 +368,6 @@ class SdfRenderPort implements ResizablePort {
     for (const part of parts) {
       const node = engine.addNode(root, part.t, part.r)
       const instance = engine.addMeshInstance(node, part.mesh)
-      if (part.volume !== undefined) engine.setInstanceParams(instance, part.volume)
       if (part.object !== undefined) engine.setInstanceMaterial(instance, part.object)
       else engine.setSingleMaterial(false, instance)
       // Cosmetic colourways multiply the existing fixed materials on the same mesh.
@@ -439,7 +415,7 @@ class SdfRenderPort implements ResizablePort {
     this.posed.delete(instance)
   }
 
-  // Frees the asset's RAA meshes and volume textures and forgets its handles, so a later registerAsset
+  // Frees the asset's RAA meshes and forgets its handles, so a later registerAsset
   // of the same id re-uploads it. A skinned visual also frees the rigid upload it grew from.
   releaseAsset(handle: number): void {
     const uploaded = this.uploaded[handle]
@@ -464,12 +440,8 @@ class SdfRenderPort implements ResizablePort {
       for (const part of [...uploaded.parts, ...(uploaded.tintedParts ?? [])]) {
         try { engine.removeMesh(part.mesh) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
       }
-      for (const texture of uploaded.textures ?? []) {
-        try { engine.removeTexture(texture) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
-      }
     }
     this.meshes -= uploaded.parts.length + (uploaded.tintedParts?.length ?? 0)
-    this.textures -= uploaded.textures?.length ?? 0
     this.uploaded[handle] = undefined
     for (const [name, h] of this.handleOfName) if (h === handle) this.handleOfName.delete(name)
     for (const [id, h] of this.handleOfId) if (h === handle) this.handleOfId.delete(id)
@@ -526,7 +498,7 @@ class SdfRenderPort implements ResizablePort {
       assets: [...new Set(assets)].sort(),
       instances: live.length,
       meshes: this.meshes,
-      textures: this.textures,
+      textures: 0,
       skinned: live.filter(entry => entry.bones > 0).length,
     }
   }
@@ -534,11 +506,6 @@ class SdfRenderPort implements ResizablePort {
   private addMesh(engine: SdfEngine, desc: MeshDesc): number {
     this.meshes++
     return engine.addMesh(desc)
-  }
-
-  private addTexture(texture: Parameters<SdfEngine['addTexture']>[0]): number {
-    this.textures++
-    return this.need().addTexture(texture)
   }
 
   async capture(): Promise<Uint8Array | null> {
@@ -602,15 +569,32 @@ class SdfRenderPort implements ResizablePort {
     const engine = this.need()
     uploaded.tintedParts = uploaded.parts.map(part => {
       if (part.tint !== 'multiply') return part
-      let white: number
-      if (part.volume !== undefined) white = this.volumeWhite ??= this.volumeSurface({ color: [1, 1, 1], roughness: 0.6 })
-      else white = this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
+      const white = this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
       const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? white }))
       const desc = { ...part.desc, subMeshes }
       return { ...part, desc, subMeshes, mesh: this.addMesh(engine, desc) }
     })
     return uploaded.tintedParts
   }
+}
+
+// One console warning per asset part and reason per page (several ports may upload the same asset).
+const warned = new Set<string>()
+function warnOnce(key: string, text: string): void {
+  if (warned.has(key)) return
+  warned.add(key)
+  console.warn(`[sdf-port] ${key.replace(/:missing$/, '')}: ${text}`)
+}
+
+// A 64-bit FNV-1a of a function's text (two 32-bit lanes): the name of a per-pixel shading function.
+function hashText(text: string): string {
+  let a = 0x811c9dc5, b = 0x9dc5811c
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    a = Math.imul(a ^ c, 0x01000193)
+    b = Math.imul(b ^ c, 0x01000193) ^ (b >>> 15)
+  }
+  return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0')
 }
 
 function fullView(rects: Viewport[]): boolean {

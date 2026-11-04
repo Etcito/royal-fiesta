@@ -10,6 +10,7 @@ import { materialProgram } from '../src/sdf/materialProgram.ts'
 import { checkPose, checkSkin } from '@royal-fiesta/game/render/nullPort'
 import type { SkinnedAssetT } from '@royal-fiesta/game/render/port'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
+import * as raaSdfm from '@etcito/raa-sdfm'
 
 import type { CameraPose, RenderTarget, Viewport } from '@royal-fiesta/game/render/port'
 
@@ -52,6 +53,7 @@ runInNewContext(compiled, {
     if (id === '../render/shaderCache.ts') return { installShaderCache() {} }
     if (id === '@royal-fiesta/game/render/nullPort') return { checkPose, checkSkin }
     if (id === './materialProgram.ts') return { materialProgram }
+    if (id === '@etcito/raa-sdfm') return raaSdfm
     if (id === '@royal-fiesta/game/render/roundLoad') return { roundStep: (_name: string, fn: () => unknown) => fn() }
     if (id === '@royal-fiesta/sim/refusal') return { refuse: (...args: unknown[]) => { throw new Error(args.join(':')) } }
     return {}
@@ -294,9 +296,7 @@ test('all committed catalog cosmetics upload their saved skin and render with th
   for(const id of readdirSync(new URL('assets/common/',root)).filter(n=>/^costume\..*\.asset\.json$/.test(n)).map(n=>n.replace(/\.asset\.json$/,''))) {
     const document=JSON.parse(readFileSync(new URL(`assets/common/${id}.asset.json`,root),'utf8')).document
     const mesh=decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`,root))))
-    // The recorder checks geometry and skin submission; normal-volume textures require a GPU device.
-    const data=mesh.data as {groups:{parts:{normalVolume?:unknown}[]}[]}
-    for(const group of data.groups)for(const part of group.parts)delete part.normalVolume
+    const data=mesh.data as {groups:{parts:unknown[]}[]}
     const {engine,calls}=fakeEngine(), port=exports.make(new Map([[id,mesh]]))
     port.engine=engine;port.target={}
     const skin=assetSkin(data,document,owner.rig)!
@@ -307,6 +307,30 @@ test('all committed catalog cosmetics upload their saved skin and render with th
     assert.ok(calls.skinPoses[0].ids.length>0,`${id}: posed draw submitted`)
     assert.ok(calls.skinPoses[0].matrices.some((v,i)=>Math.abs(v-(i%16%5===0?1:0))>1e-4),`${id}: deforming matrices`)
     assert.equal(port.skinOf(id),skin)
+  }
+})
+
+// Owner 2026-11-04: normals and materials from the SDF in the shader, never baked. Every saved part of the penguin and
+// the costumes carries its per-pixel shading (saved mesh format 2) and draws it: one sdff.* function per part on every
+// sub-mesh, the rest point in the vertex colour and the rest frame in uv + tangent, no per-face material, no texture.
+test('saved penguin and costume parts draw their per-pixel SDF shading on every sub-mesh', () => {
+  const root=new URL('../../../',import.meta.url)
+  for(const id of ['penguin.body',...readdirSync(new URL('assets/common/',root)).filter(n=>/^costume\..*\.mesh$/.test(n)).map(n=>n.replace(/\.mesh$/,''))]) {
+    const mesh=decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`,root))))
+    const parts=(mesh.data as {groups:{parts:{shading?:unknown;shadingError?:string;meshes:unknown[]}[]}[]}).groups.flatMap(g=>g.parts).filter(p=>p.meshes.length)
+    for(const part of parts) assert.ok(part.shading,`${id}: saved part without shading (${part.shadingError})`)
+    const {engine,calls}=fakeEngine(), port=exports.make(new Map([[id,mesh]]))
+    const functions:string[]=[]
+    engine.addMaterialFunction=((name:string)=>{functions.push(name);calls.functions++}) as typeof engine.addMaterialFunction
+    port.engine=engine;port.target={}
+    port.createInstance(port.registerAsset(id,{id}),null)
+    assert.equal(functions.filter(f=>f.startsWith('sdff.')).length,parts.length,`${id}: one shading function per part`)
+    const descs=calls.jointStreams as {colors?:Float32Array;uvs?:Float32Array;tangents?:Float32Array;positions:Float32Array;subMeshes:{material?:number}[]}[]
+    for(const desc of descs){
+      assert.equal(new Set(desc.subMeshes.map(s=>s.material)).size,1,`${id}: every sub-mesh draws the part's shading`)
+      assert.equal(desc.colors![0],desc.positions[0],`${id}: the vertex colour carries the rest point`)
+      assert.ok(desc.uvs&&desc.tangents,`${id}: rest frame streams`)
+    }
   }
 })
 

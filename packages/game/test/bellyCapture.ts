@@ -23,7 +23,7 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
     docs.set(id, file.document)
     meshed.set(id, decodeMesh(new Uint8Array(await (await fetch(`./saved/${id}.mesh`)).arrayBuffer())))
   }
-  if(input.vertexNormals)for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.normalVolume
+  if(input.vertexNormals)for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.shading
   const canvas = document.createElement('canvas'); canvas.width=320;canvas.height=280;document.body.append(canvas)
   const port = await createSdfPort({canvas,width:320,height:280,viewports:[{x:0,y:0,width:320,height:280}]},meshed)
   const body = assetSkin(meshed.get('penguin.body')!.data,docs.get('penguin.body'))!

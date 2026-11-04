@@ -128,15 +128,17 @@ test('loading shows its progress line and has no button', () => {
   assert.equal(progressLine(nav.progress), 'meshing 2/7 candy.spinner-bar')
 })
 
-test('start lists Play, Shop and Back, with the Royal Fiesta title', () => {
+// The inbox joined the start actions in 3f32834 (shop, inbox and commission registered in nav).
+test('start lists Play, Shop, Inbox and Back, with the Royal Fiesta title', () => {
   const m = modelAt(ctx({ info: ['Season 1'] }), { kind: 'action', action: 'play' })
   assert.equal(m.screen, 'start')
   assert.equal(m.title, 'Royal Fiesta')
   assert.equal(m.overlay, false)
-  assert.deepEqual(m.buttons.map((b) => b.label), ['Play', 'Shop', 'Back'])
+  assert.deepEqual(m.buttons.map((b) => b.label), ['Play', 'Shop', 'Inbox', 'Back'])
   assert.deepEqual(m.buttons.map((b) => b.cmd), [
     { k: 'action', action: 'play' },
     { k: 'action', action: 'shop' },
+    { k: 'action', action: 'inbox' },
     { k: 'back' },
   ])
   assert.deepEqual(m.lines, ['Season 1'])

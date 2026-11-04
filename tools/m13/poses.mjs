@@ -110,5 +110,8 @@ if (!process.env.M13_BASELINE) {
     assert(maxGap < 1e-7);
     assert.equal(boundary, 0);
     assert.equal(animatedBoundaryMax, 0);
-    assert(vertices <= 1700, `vertex count ${vertices}, baseline 4664`);
+    // The skin stays welded: one vertex per position (baseline 4664 before the weld). Since saved mesh format 4 the UV
+    // atlas splits the vertices on chart seams (same position, same weights, other uv), at most once more per position.
+    assert(distinct <= 1700, `welded vertex count ${distinct}, baseline 4664`);
+    assert(vertices <= 2 * distinct, `vertex count ${vertices} for ${distinct} positions: the UV atlas splits more than its seams`);
 }

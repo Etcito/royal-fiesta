@@ -3,11 +3,13 @@
 // here: the worker builds its upload payload and the renderer consumes it.
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { MESH_COMPATIBILITY } from '@etcito/mama/core/game/mesh-file.ts'
-import { GAME_RENDER_OPTION_SPECS, GAME_RENDER_SECTIONS, gameRenderOptionShown, gameRenderValueLabel, stepGameRenderOption,
-  validateGameRenderOptions } from '@etcito/mama/core/game/render-options.ts'
+import { bakeTextureSize, GAME_RENDER_OPTION_SPECS, GAME_RENDER_SECTIONS, gameRenderOptionShown, gameRenderValueLabel,
+  stepGameRenderOption, validateGameRenderOptions } from '@etcito/mama/core/game/render-options.ts'
 import type { GraphicsContract } from '../../game/graphicsSettings.ts'
 // The field evaluator the port's one per-pixel shading interpreter embeds (sdfPort.ts fieldEvaluator).
 export { FIELD_PROGRAM_WGSL } from '@etcito/mama/core/paramesh/field-program-wgsl.ts'
+// The game render-options contract as the SDF port applies it (shading field | vertex | baked, the bake sizes).
+export const GAME_RENDER_OPTIONS = { validate: validateGameRenderOptions, specs: GAME_RENDER_OPTION_SPECS, bakeTextureSize }
 import workerUrl from './worker.ts?worker&url'
 import { classicWorker } from '../classicWorker.ts'
 import type { MamaFacade, MeshedAsset, MeshRequest } from '../mamaApi.ts'

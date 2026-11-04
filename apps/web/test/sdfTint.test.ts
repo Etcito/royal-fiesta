@@ -42,13 +42,25 @@ interface Port {
 const source = readFileSync(new URL('../src/sdf/sdfPort.ts', import.meta.url), 'utf8')
 // The port gets MAMA's field evaluator from virtual:rf-mama (sdfPort.ts fieldEvaluator); a stand-in of its shape here.
 const FIELD = 'struct PmfSample { d: f32, g: vec3f, la: u32, lb: u32, t: f32 }\nfn pmf_eval(base: u32, p: vec3f) -> PmfSample { return PmfSample(0.0, p, 0u, 0u, 0.0); }'
-const compiled = transpileModule(source + `\nexports.make = (meshed) => new SdfRenderPort(meshed, new Map(), ${JSON.stringify(FIELD)})\n`, {
+const compiled = transpileModule(source + `\nexports.make = (meshed) => new SdfRenderPort(meshed, new Map(), ${JSON.stringify(FIELD)})\n` +
+  `exports.makeWith = (meshed, render, contract) => new SdfRenderPort(meshed, new Map(), ${JSON.stringify(FIELD)}, render, contract)\n` +
+  'exports.gameRenderOptions = gameRenderOptions\n', {
   compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
 }).outputText
 class FakeCanvas {}
 let initEngine: ReturnType<typeof fakeEngine>['engine']
 
-const exports = {} as { make(meshed: ReadonlyMap<string, unknown>): Port }
+interface RenderOptions { shading: 'field' | 'vertex' | 'baked'; bakeTexelDensity: number; bakeMaxSize: number }
+interface Contract {
+  validate(input: unknown): { options: RenderOptions; issues: { key: string; message: string; fix: string }[] }
+  specs: readonly { key: string; kind: string }[]
+  bakeTextureSize(scale: number, options: RenderOptions): number
+}
+const exports = {} as {
+  make(meshed: ReadonlyMap<string, unknown>): Port
+  makeWith(meshed: ReadonlyMap<string, unknown>, render: RenderOptions, contract: Contract): Port
+  gameRenderOptions(contract: Contract | null, given?: unknown, search?: string): RenderOptions
+}
 const warnings: string[] = []
 runInNewContext(compiled, {
   console: { ...console, warn: (...args: unknown[]) => { warnings.push(args.join(' ')) } },
@@ -452,4 +464,99 @@ test('one material per object: coloured parts get a white object material, other
   const old = portFor('test.old', [material('blue', PLAIN)], [part('ball', 'blue')])
   old.port.createInstance(old.handle(), null)
   assert.equal(old.calls.single.length, 1, 'a mesh without colours keeps its per-face materials')
+})
+
+// MAMA game render options (core/game/render-options.ts) reach the port from the player settings and the page address;
+// a stand-in of the contract here (MAMA is private).
+const CONTRACT: Contract = {
+  specs: [{ key: 'shading', kind: 'choice' }, { key: 'bakeTexelDensity', kind: 'number' }, { key: 'bakeMaxSize', kind: 'number' }],
+  validate(input: unknown) {
+    const options: RenderOptions = { shading: 'field', bakeTexelDensity: 256, bakeMaxSize: 512 }
+    const issues: { key: string; message: string; fix: string }[] = []
+    for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+      const ok = key === 'shading' ? ['field', 'vertex', 'baked'].includes(value as string) : typeof value === 'number' && Number.isFinite(value)
+      if (ok) (options as unknown as Record<string, unknown>)[key] = value
+      else issues.push({ key, message: `${key} ${String(value)} is invalid`, fix: `fix ${key}` })
+    }
+    return { options, issues }
+  },
+  bakeTextureSize: () => 64,
+}
+
+test('game render options: settings, then the page address on top; a bad value keeps its default with a warning', () => {
+  assert.equal(exports.gameRenderOptions(CONTRACT, undefined, '').shading, 'field')
+  assert.equal(exports.gameRenderOptions(CONTRACT, { shading: 'baked' }, '').shading, 'baked')
+  const url = exports.gameRenderOptions(CONTRACT, { shading: 'baked' }, '?shading=vertex&bakeTexelDensity=128')
+  assert.equal(url.shading, 'vertex')
+  assert.equal(url.bakeTexelDensity, 128)
+  assert.equal(exports.gameRenderOptions(CONTRACT, undefined, '?normals=vertex').shading, 'vertex')
+  const before = warnings.length
+  assert.equal(exports.gameRenderOptions(CONTRACT, undefined, '?shading=raytrace').shading, 'field')
+  assert.ok(warnings.slice(before).some(w => w.includes('render-options:shading')))
+  // No MAMA (a public clone): vertex normals.
+  assert.equal(exports.gameRenderOptions(null, { shading: 'baked' }, '').shading, 'vertex')
+})
+
+/** A recording stand-in for a GPUDevice: draws nothing, maps readback buffers filled with a pattern. */
+function bakeDevice() {
+  let live = 0
+  const device = {
+    get live() { return live },
+    queue: { writeBuffer() {}, submit() {} },
+    createShaderModule: ({ label }: { label: string }) => ({ label }),
+    createRenderPipelineAsync: async (d: { label: string }) => ({ label: d.label, getBindGroupLayout: () => ({}) }),
+    createBindGroup: () => ({}),
+    createBuffer: ({ size }: { size: number }) => {
+      live++
+      let bytes: Uint8Array | null = null
+      return { size, destroy: () => { live-- }, mapAsync: async () => { bytes = new Uint8Array(size).fill(200) }, getMappedRange: () => bytes!.buffer, unmap() {} }
+    },
+    createTexture: () => { live++; return { createView: () => ({}), destroy: () => { live-- } } },
+    createCommandEncoder: () => ({
+      beginRenderPass: () => ({ setPipeline() {}, setBindGroup() {}, setVertexBuffer() {}, setIndexBuffer() {}, drawIndexed() {}, draw() {}, end() {} }),
+      copyTextureToBuffer() {}, finish: () => ({}),
+    }),
+  }
+  return device
+}
+
+// Owner 2026-11-04: 'baked texture (normal/material)'. With shading baked, prepare() bakes each field-shaded part on the
+// GPU into its UV atlas, uploads the textures and swaps the part to the ONE shared baked material (its data words name
+// its textures) on a mesh carrying the atlas uvs and the bake tangents; the field mesh and its data block are freed.
+test('baked shading: each field part is baked at load and draws the shared baked material with its textures', async () => {
+  const root = new URL('../../../', import.meta.url)
+  const id = 'costume.golden-crown'
+  const mesh = decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`, root))))
+  const parts = (mesh.data as { groups: { parts: { meshes: { uvs: Float32Array | null }[] }[] }[] }).groups.flatMap(g => g.parts).filter(p => p.meshes.length)
+  assert.ok(parts.every(p => p.meshes.every(m => m.uvs instanceof Float32Array)), 'saved mesh format 4: every mesh carries its UV atlas')
+  const { engine, calls } = fakeEngine()
+  const textures: { width: number; height: number; data: Uint8Array }[] = []
+  const removedMeshes: number[] = []
+  const functions: string[] = []
+  Object.assign(engine, {
+    addTexture(t: { width: number; height: number; data: Uint8Array }) { textures.push(t); return textures.length - 1 },
+    removeTexture() {},
+    removeMesh(mesh: number) { removedMeshes.push(mesh) },
+    addMaterialFunction(name: string) { functions.push(name); calls.functions++ },
+  })
+  const port = exports.makeWith(new Map([[id, mesh]]), { shading: 'baked', bakeTexelDensity: 256, bakeMaxSize: 512 }, CONTRACT)
+  const device = bakeDevice()
+  Object.assign(port, { engine, target: {}, gpuDevice: device })
+  await port.prepare(() => {}, () => {})
+  const stats = (port as unknown as { bakes(): { parts: number; failed: number; textures: number; bytes: number } }).bakes()
+  assert.equal(stats.failed, 0)
+  assert.ok(stats.parts >= 1 && stats.parts <= parts.length, `${stats.parts} of ${parts.length} parts baked`)
+  assert.ok(functions.includes('sdfb.baked'), 'the shared baked material function is registered')
+  const baked = calls.descs.filter(d => d.function === 'sdfb.baked')
+  assert.equal(baked.length, stats.parts, 'one baked surface material per part')
+  assert.equal(textures.length, stats.textures)
+  assert.ok(textures.every(t => t.width === 64 && t.height === 64 && t.data.length === 64 * 64 * 4))
+  assert.equal(removedMeshes.length, stats.parts, 'the field mesh of each baked part is freed')
+  assert.equal(calls.freed.length, stats.parts, 'the field data block of each baked part is freed')
+  assert.equal(device.live, 0, 'the bake frees its GPU buffers and textures')
+  const descs = calls.jointStreams as { uvs?: Float32Array; tangents?: Float32Array; positions: Float32Array }[]
+  const last = descs.slice(-stats.parts)
+  assert.ok(last.every(d => d.uvs && d.tangents && d.tangents.length === d.positions.length / 3 * 4), 'baked meshes carry the atlas uvs and tangents')
+  const inventory = (port as unknown as { inventory(): { textures: number } }).inventory()
+  assert.equal(inventory.textures, stats.textures)
 })

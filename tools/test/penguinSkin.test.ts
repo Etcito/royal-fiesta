@@ -11,7 +11,10 @@ test('saved penguin has shared position weights and stays closed through every c
   assert.equal(result.boundaryEdges, 0)
   assert.equal(result.animatedBoundaryMax, 0)
   assert(result.maxGap < 1e-7)
-  assert(result.vertices <= 1700, 'baseline was 4664; preserve material and hard normal seams')
+  // Welded: one vertex per position (baseline was 4664; preserve material and hard normal seams). The UV atlas (saved
+  // mesh format 4) splits seam vertices, at most once more per position.
+  assert(result.distinctPositions <= 1700, 'baseline was 4664; preserve material and hard normal seams')
+  assert(result.vertices <= 2 * result.distinctPositions, 'the UV atlas splits only its chart seams')
   assert.equal(result.clips.length, 15)
   assert(result.clips.every((clip: { ticks: number[] }) => clip.ticks.length === 9))
 })

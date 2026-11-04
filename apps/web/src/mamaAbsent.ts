@@ -5,6 +5,8 @@ import { RefusalError } from '@royal-fiesta/sim/refusal'
 export const MAMA_PRESENT = false
 // No field evaluator: per-pixel shaded parts keep their vertex normals (sdfPort.ts fieldEvaluator).
 export const FIELD_PROGRAM_WGSL: string | null = null
+// No game render-options contract either: the port draws every part with its vertex normals.
+export const GAME_RENDER_OPTIONS = null
 
 const REASON = 'MAMA not available: MAMA is not resolved in this build (public clone); see docs/bricks.md'
 

@@ -9,7 +9,8 @@ import type { Engine, MeshDesc, SubMeshDesc } from '@etcito/raa'
 import { materialProgram } from './materialProgram.ts'
 import { createRaaEngine } from '../render/raaEngine.ts'
 import type { SdfmCompiledMaterial, SdfmMappedMaterial, SdfmPartShading } from '@etcito/raa-sdfm'
-import { fieldPartShading, fieldSurfaceAttributes } from '@etcito/raa-sdfm'
+import { atlasScale, BAKED_FUNCTION, BAKED_MATERIAL_WGSL, bakedMaterialWords, createFieldBaker, fieldPartShading, fieldSurfaceAttributes, fitBakeSizes, partTangents } from '@etcito/raa-sdfm'
+import type { RfGameRenderOptions } from 'virtual:rf-mama'
 import type { LoadProgress } from '@royal-fiesta/game/content'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { CameraPose, QuatT, RenderInventory, RenderStats, RenderTarget, SkinnedAssetT, SkinnedRenderPort, SkinRigT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
@@ -54,6 +55,40 @@ export type NormalsMode = 'pixel' | 'vertex'
 export function normalsMode(search: string = typeof location === 'undefined' ? '' : location.search): NormalsMode {
   return new URLSearchParams(search).get('normals') === 'vertex' ? 'vertex' : preferredNormals()
 }
+
+/** MAMA's game render-options contract as the port uses it (virtual:rf-mama GAME_RENDER_OPTIONS). */
+interface RenderContract {
+  validate(input: unknown): { options: RfGameRenderOptions; issues: { key: string; message: string; fix: string }[] }
+  specs: readonly { key: string; kind: string }[]
+  bakeTextureSize(scale: number, options: RfGameRenderOptions): number
+}
+
+// The render options the port applies when it uploads (the engine-side ones are render/renderOptions.ts').
+const PORT_OPTIONS = ['shading', 'bakeTexelDensity', 'bakeMaxSize'] as const
+
+/**
+ * The upload options of a port (MAMA core/game/render-options.ts; owner 2026-11-04: the graphics options are MAMA's):
+ * `given` (the player's Graphics settings) with the page address on top (`?shading=field|vertex|baked`,
+ * `?bakeTexelDensity=`, `?bakeMaxSize=`; `?normals=vertex` is `shading=vertex`). Permissive: a bad value keeps its
+ * default with one console warning. Without MAMA (public clone) every part keeps its vertex normals.
+ */
+export function gameRenderOptions(contract: RenderContract | null, given: unknown = undefined,
+  search: string = typeof location === 'undefined' ? '' : location.search): RfGameRenderOptions {
+  if (contract === null) return { shading: 'vertex', bakeTexelDensity: 0, bakeMaxSize: 0 }
+  const params = new URLSearchParams(search)
+  const record = typeof given === 'object' && given !== null && !Array.isArray(given) ? given as Record<string, unknown> : {}
+  const merged: Record<string, unknown> = {}
+  for (const key of PORT_OPTIONS) if (record[key] !== undefined) merged[key] = record[key]
+  if (params.get('normals') === 'vertex') merged.shading = 'vertex'
+  for (const spec of contract.specs) {
+    const v = params.get(spec.key)
+    if (v === null || !(PORT_OPTIONS as readonly string[]).includes(spec.key)) continue
+    merged[spec.key] = spec.kind === 'number' ? Number(v) : v
+  }
+  const { options, issues } = contract.validate(merged)
+  for (const issue of issues) warnOnce(`render-options:${issue.key}`, `${issue.message}; ${issue.fix}`)
+  return options
+}
 /** `?normalsDebug`: per-pixel Paramesh surfaces show the normal lighting receives (0.5 + n / 2). */
 function normalsDebug(search: string = typeof location === 'undefined' ? '' : location.search): boolean {
   return new URLSearchParams(search).has('normalsDebug')
@@ -82,8 +117,9 @@ interface Fallback { mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; obj
 type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
 // emptyParts: parts the mesher kept by name with no triangle (hidden colliders): a part filter may list them.
-// data: the field-shading data blocks (RAA material data words) this upload added, freed with it.
-interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[]; base?: number; data?: number[] }
+// data: the field-shading data blocks (RAA material data words) this upload added, freed with it; textures: the baked
+// textures of its parts (Engine.addTexture ids), freed with it; bakes: its parts waiting for prepare() to bake them.
+interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[]; base?: number; data?: number[]; textures?: number[]; bakes?: BakeJob[] }
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
 // asset = the uploaded/handle index this instance was created from (for the live inventory).
@@ -95,10 +131,13 @@ interface LiveFallback { instance: number; node: number; part: PartUpload; index
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
   failed: ReadonlyMap<string, string> = new Map(),
   onProgress: (p: LoadProgress) => void = () => {},
-  onTiming: (span: { step: string; start: number; end: number; ms: number }) => void = () => {}): Promise<ResizablePort> {
+  onTiming: (span: { step: string; start: number; end: number; ms: number }) => void = () => {},
+  given: unknown = renderOptions()): Promise<ResizablePort> {
   const status = await raaStatus()
   if (!status.available) refuse(AREA, WHERE, status.reason)
-  const port = new SdfRenderPort(meshed, failed, await fieldEvaluator())
+  const mama = await mamaShading()
+  // The shading and bake options of this upload: the player's Graphics settings (applied when the next scene loads).
+  const port = new SdfRenderPort(meshed, failed, mama.field, gameRenderOptions(mama.render, given), mama.render)
   const start = performance.now()
   await checkAwait('RAA port initialization', () => port.init(target))
   const end = performance.now()
@@ -113,16 +152,26 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
 }
 
 // MAMA's field evaluator (FIELD_PROGRAM_WGSL of core/paramesh/field-program-wgsl.ts), the text the one per-pixel shading
-// interpreter embeds (@etcito/raa-sdfm fieldPartShading); null when this build has no MAMA (parts keep vertex normals).
-// Imported here, not at the top, so Node tests can import this module.
-async function fieldEvaluator(): Promise<string | null> {
+// interpreter embeds (@etcito/raa-sdfm fieldPartShading), and its game render-options contract; null when this build has
+// no MAMA (parts keep vertex normals). Imported here, not at the top, so Node tests can import this module.
+async function mamaShading(): Promise<{ field: string | null; render: RenderContract | null }> {
   try {
-    const mod = await import('virtual:rf-mama') as { FIELD_PROGRAM_WGSL?: unknown }
-    return typeof mod.FIELD_PROGRAM_WGSL === 'string' && mod.FIELD_PROGRAM_WGSL !== '' ? mod.FIELD_PROGRAM_WGSL : null
+    const mod = await import('virtual:rf-mama') as { FIELD_PROGRAM_WGSL?: unknown; GAME_RENDER_OPTIONS?: RenderContract | null }
+    const field = typeof mod.FIELD_PROGRAM_WGSL === 'string' && mod.FIELD_PROGRAM_WGSL !== '' ? mod.FIELD_PROGRAM_WGSL : null
+    return { field, render: mod.GAME_RENDER_OPTIONS ?? null }
   } catch {
-    return null
+    return { field: null, render: null }
   }
 }
+
+// Baked parts are baked a few at a time: each bake holds two sets of three render targets and three readback buffers.
+const BAKE_BATCH = 6
+
+// A part of an upload whose field shading is replaced by its baked textures once prepare() has baked them.
+interface BakeJob { uploaded: Uploaded; index: number; assetId: string; part: PayloadPart; materials: readonly SdfmCompiledMaterial[]; vertex: MeshDesc; fieldData: number }
+
+/** What the 'baked' shading cost on this port (inventory and the load timings). */
+export interface BakeStats { parts: number; failed: number; ms: number; texels: number; bytes: number; textures: number; pipelines: number }
 
 // A frame between uploads lets a loading screen paint; a timer bounds the wait, since requestAnimationFrame
 // fires rarely or never in the GPU client browser (an off-screen cross-origin frame).
@@ -160,19 +209,28 @@ class SdfRenderPort implements ResizablePort {
   // RAA instances given a player colour; a later untinted instance with a reused id clears it.
   private readonly tinted = new Set<number>()
   private whiteSurface: number | null = null
-  private readonly normals: NormalsMode = normalsMode()
+  // The game render options (MAMA render-options.ts): shading 'field' draws each part's SDF per pixel, 'vertex' its
+  // vertex normals and colours, 'baked' its normal and material baked at load into textures in its UV atlas.
+  private readonly options: RfGameRenderOptions
+  private readonly contract: RenderContract | null
   private readonly debugNormals = normalsDebug()
-  // GPU handles this port created, for the live inventory (it creates no texture).
+  // GPU handles this port created, for the live inventory.
   private meshes = 0
+  private textures = 0
+  private bakeStats: BakeStats = { parts: 0, failed: 0, ms: 0, texels: 0, bytes: 0, textures: 0, pipelines: 0 }
   private lastStats: RenderStats = { frameMs: 0, drawCalls: 0, triangles: 0, instances: 0, visible: 0 }
 
   // MAMA's field evaluator text (fieldEvaluator), null without MAMA.
   private readonly field: string | null
 
-  constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map(), field: string | null = null) {
+  constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map(), field: string | null = null,
+    render: RfGameRenderOptions = { shading: normalsMode() === 'vertex' ? 'vertex' : 'field', bakeTexelDensity: 0, bakeMaxSize: 0 },
+    contract: RenderContract | null = null) {
     this.meshed = meshed
     this.failed = failed
     this.field = field
+    this.options = render
+    this.contract = contract
   }
 
   async init(target: RenderTarget): Promise<void> {
@@ -215,7 +273,107 @@ class SdfRenderPort implements ResizablePort {
       const end = performance.now()
       onTiming({ step: `Mesh and material data: ${id}`, start, end, ms: end - start })
     }
+    const jobs = this.uploaded.flatMap(entry => entry?.bakes ?? [])
+    if (jobs.length > 0) {
+      const start = performance.now()
+      await checkAwait('baked textures', () => this.bakeParts(jobs, onProgress))
+      const end = performance.now()
+      onTiming({ step: `Baked textures: ${this.bakeStats.parts} parts, ${(this.bakeStats.bytes / 1048576).toFixed(1)} MB`, start, end, ms: end - start })
+    }
     onProgress({ phase: 'upload', done: ids.length, total: ids.length, label: 'Assets uploaded' })
+  }
+
+  /** What the 'baked' shading baked on this port (zero when the shading is not 'baked'). */
+  bakes(): BakeStats { return { ...this.bakeStats } }
+
+  // The 'baked' shading (owner 2026-11-04: "baked texture (normal/material)"): each waiting part is baked on the GPU RAA
+  // renders with (@etcito/raa-sdfm createFieldBaker: the part's triangles rasterised in its UV atlas, the same field
+  // interpreter as the per-pixel shading writing the normal and material), its textures go to RAA's texture atlas and
+  // the part draws the ONE shared baked material function (its data words name its textures). Nothing is downloaded,
+  // nothing is a 3D volume. A part whose bake fails (no device, the atlas full, a GPU error) keeps its field shading,
+  // with one console warning; the vertex copy covers the part until the baked material's pipelines are compiled.
+  private async bakeParts(jobs: BakeJob[], onProgress: (p: LoadProgress) => void): Promise<void> {
+    const t0 = performance.now()
+    const engine = this.need()
+    const device = this.device()
+    const contract = this.contract
+    if (device === undefined || contract === null || this.field === null) {
+      warnOnce('bake', `field shading (no ${device === undefined ? 'GPU device' : 'MAMA'} to bake with)`)
+      for (const job of jobs) delete job.uploaded.bakes
+      return
+    }
+    const baker = createFieldBaker(device)
+    this.addFunction(BAKED_FUNCTION, BAKED_MATERIAL_WGSL)
+    const key = materialKey(BAKED_MATERIAL_WGSL)
+    // The side each part's density asks for (MAMA bakeTextureSize), then fitted to RAA's texture atlas (the densest parts
+    // halved first) and baked largest first, so the atlas's shelves pack whole.
+    const wanted = jobs.map(job => {
+      const scale = atlasScale(job.vertex.positions, job.vertex.uvs!, job.vertex.indices)
+      const textures = job.part.shading!.operands.some(o => o.constant === undefined || o.constant.emissive.some(e => e > 0)) ? 3 : 2
+      return { size: contract.bakeTextureSize(scale, this.options), textures, scale }
+    })
+    const fitted = fitBakeSizes(wanted)
+    const order = jobs.map((job, i) => ({ job, size: fitted[i] })).sort((a, b) => b.size - a.size)
+    let full = false
+    for (let i = 0; i < order.length; i += BAKE_BATCH) {
+      onProgress({ phase: 'upload', done: i, total: order.length, label: `Baking ${order[i].job.assetId}` })
+      await checkAwait(`bake paint: ${order[i].job.assetId}`, () => paintOrTimer())
+      const batch = order.slice(i, i + BAKE_BATCH)
+      const baked = await Promise.all(batch.map(async ({ job, size }) => {
+        if (full) return null
+        const d = job.vertex
+        try {
+          const tangents = partTangents(d.positions, d.normals, d.uvs!, d.indices)
+          const r = await baker.bake({ shading: job.part.shading!, materials: job.materials, field: this.field!, positions: d.positions,
+            normals: d.normals, uvs: d.uvs!, tangents, indices: d.indices, size })
+          return { job, r, tangents }
+        } catch (e) {
+          warnOnce(`${job.assetId}#part:${job.part.name}:bake`, `field shading (bake failed: ${messageOf(e)})`)
+          this.bakeStats.failed++
+          return null
+        }
+      }))
+      for (const entry of baked) {
+        if (entry === null) continue
+        const { job, r, tangents } = entry
+        const where = `${job.assetId}#part:${job.part.name}`
+        const textures: number[] = []
+        let data: number | null = null
+        try {
+          if (full) throw new Error('the texture atlas is full')
+          for (const image of [r.normal, r.color, r.emissive]) if (image !== null) textures.push(engine.addTexture({ width: r.size, height: r.size, data: image }))
+          data = engine.addMaterialData(bakedMaterialWords(textures[0], textures[1], textures[2]))
+          const look = job.part.shading!.look
+          const handle = engine.addSurfaceMaterial({ function: BAKED_FUNCTION, data, roughness: look.roughness, metallic: look.metallic })
+          const part = job.uploaded.parts[job.index]
+          const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: handle }))
+          const desc: MeshDesc = { positions: job.vertex.positions, normals: job.vertex.normals, uvs: job.vertex.uvs, tangents, indices: job.vertex.indices, subMeshes }
+          const mesh = this.addMesh(engine, desc)
+          // The baked mesh replaces the field one; the field's data block goes with it.
+          engine.removeMesh(part.mesh)
+          this.meshes--
+          engine.removeMaterialData(job.fieldData)
+          job.uploaded.data = (job.uploaded.data ?? []).filter(base => base !== job.fieldData).concat(data)
+          job.uploaded.textures = [...(job.uploaded.textures ?? []), ...textures]
+          job.uploaded.parts[job.index] = { ...part, mesh, desc, subMeshes, field: key }
+          this.textures += textures.length
+          this.bakeStats.parts++
+          this.bakeStats.textures += textures.length
+          this.bakeStats.texels += r.size * r.size * textures.length
+          this.bakeStats.bytes += r.size * r.size * 4 * textures.length
+        } catch (e) {
+          for (const id of textures) engine.removeTexture(id)
+          if (data !== null) engine.removeMaterialData(data)
+          if (raaCode(e) === 'texture.atlas_full') full = true
+          warnOnce(`${where}:bake`, `field shading (${messageOf(e)})`)
+          this.bakeStats.failed++
+        }
+      }
+    }
+    for (const job of jobs) delete job.uploaded.bakes
+    this.bakeStats.pipelines = baker.pipelines
+    this.bakeStats.ms += performance.now() - t0
+    console.info(`[sdf-port] baked ${this.bakeStats.parts} parts (${this.bakeStats.failed} kept field shading) in ${this.bakeStats.ms.toFixed(0)} ms: ${this.bakeStats.textures} textures, ${(this.bakeStats.bytes / 1048576).toFixed(1)} MB, ${baker.pipelines} bake pipelines`)
   }
 
   registerRoad(name: string, sweep: RoadData): number {
@@ -279,6 +437,7 @@ class SdfRenderPort implements ResizablePort {
     const keys = new Set<string>()
     const emptyParts: string[] = []
     const data: number[] = []
+    const bakes: Omit<BakeJob, 'uploaded'>[] = []
     for (const group of payload.groups) {
       for (const part of group.parts) {
         if (part.meshes.length === 0) {
@@ -293,7 +452,7 @@ class SdfRenderPort implements ResizablePort {
           ? engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: part.look.roughness, metallic: part.look.metallic }) : undefined
         let desc = built.desc
         let subMeshes = built.subMeshes
-        const shaded = this.normals === 'pixel' ? this.shadingMaterial(id, part, payload.materials, graph.size > 0) : null
+        const shaded = this.options.shading !== 'vertex' ? this.shadingMaterial(id, part, payload.materials, graph.size > 0) : null
         let field: Pick<PartUpload, 'field' | 'fallback'> = {}
         if (shaded !== null) {
           data.push(shaded.data)
@@ -308,11 +467,18 @@ class SdfRenderPort implements ResizablePort {
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
+        // 'baked': a field-shaded part with its UV atlas is baked by prepare() (bakeParts); a part whose material takes
+        // the player colour keeps its field shading (a baked colour cannot follow the tint).
+        if (this.options.shading === 'baked' && shaded !== null && !shaded.graph && built.desc.uvs !== undefined) {
+          bakes.push({ index: parts.length, assetId: id, part, materials: payload.materials, vertex: built.desc, fieldData: shaded.data })
+        }
         parts.push({ name: part.name, key, mesh, desc, subMeshes, t, r, tint: built.tint, ...(shaded === null && object !== undefined ? { object } : {}), ...field })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
-    return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}), ...(data.length > 0 ? { data } : {}) }
+    const uploaded: Uploaded = { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}), ...(data.length > 0 ? { data } : {}) }
+    if (bakes.length > 0) uploaded.bakes = bakes.map(job => ({ ...job, uploaded }))
+    return uploaded
   }
 
   // Registers a material function once per name (a name is the hash of its code).
@@ -336,7 +502,7 @@ class SdfRenderPort implements ResizablePort {
   // refuses the function: the part then keeps its per-face materials and vertex normals. A part with neither shading nor
   // shadingError was not made from an SDF document (MAMA writes one of the two for every meshed part; the zone's far-LOD
   // bean is generated in code): it keeps its vertex normals without a warning.
-  private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): { handle: number; wgsl: string; data: number } | null {
+  private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): { handle: number; wgsl: string; data: number; graph: boolean } | null {
     const where = `${id}#part:${part.name}`
     if (part.shading === undefined) {
       if (part.shadingError !== undefined) warnOnce(where, `vertex normals (${part.shadingError})`)
@@ -355,8 +521,9 @@ class SdfRenderPort implements ResizablePort {
       data = engine.addMaterialData(words)
       const s = part.shading
       const handle = engine.addSurfaceMaterial(s.single ? { function: name, data, roughness: s.look.roughness, metallic: s.look.metallic } : { function: name, data, roughness: 0.5 })
-      if (graphMode || tintMode === 'graph') engine.setMaterialTintMode(handle, 'graph')
-      return { handle, wgsl, data }
+      const graph = graphMode || tintMode === 'graph'
+      if (graph) engine.setMaterialTintMode(handle, 'graph')
+      return { handle, wgsl, data, graph }
     } catch (e) {
       if (data !== null) engine.removeMaterialData(data)
       warnOnce(where, `vertex normals (${messageOf(e)})`)
@@ -581,6 +748,8 @@ class SdfRenderPort implements ResizablePort {
       }
     }
     if (engine !== null) for (const base of uploaded.data ?? []) engine.removeMaterialData(base)
+    if (engine !== null) for (const texture of uploaded.textures ?? []) engine.removeTexture(texture)
+    this.textures -= uploaded.textures?.length ?? 0
     this.meshes -= all.length + uploaded.parts.filter(part => part.fallback !== undefined).length
     this.uploaded[handle] = undefined
     for (const [name, h] of this.handleOfName) if (h === handle) this.handleOfName.delete(name)
@@ -645,7 +814,7 @@ class SdfRenderPort implements ResizablePort {
       assets: [...new Set(assets)].sort(),
       instances: live.length,
       meshes: this.meshes,
-      textures: 0,
+      textures: this.textures,
       skinned: live.filter(entry => entry.bones > 0).length,
     }
   }

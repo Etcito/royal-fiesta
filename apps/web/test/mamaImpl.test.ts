@@ -26,7 +26,7 @@ function loadFacade(info: unknown): Promise<MamaFacade> {
       if (id === '../meshPool.ts') return { MeshPool }
       if (id === '@etcito/mama/core/game/mesh-file.ts') return { MESH_COMPATIBILITY: 'format:1;algorithm:test' }
       if (id === '@etcito/mama/core/paramesh/field-program-wgsl.ts') return { FIELD_PROGRAM_WGSL: 'fn pmf_eval() {}' }
-      if (id === '@etcito/mama/core/game/render-options.ts') return {}
+      if (id === '@etcito/mama/core/game/render-options.ts') return { validateGameRenderOptions: () => ({ options: {}, issues: [] }), GAME_RENDER_OPTION_SPECS: [], bakeTextureSize: () => 128 }
       if (id === './worker.ts?worker&url') return { default: './worker.js' }
       if (id === '../classicWorker.ts') return { classicWorker() { throw new Error('test must not spawn a worker') } }
       throw new Error(`unexpected facade import: ${id}`)

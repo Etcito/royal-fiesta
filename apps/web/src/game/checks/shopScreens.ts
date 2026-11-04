@@ -46,14 +46,14 @@ async function captureCase(portrait: boolean, deps: TourDeps) {
     await until(() => live.host.currentScreen() === 'start' && !!props['bin-head'], 'start mount')
     await nextTask(); await step()
     await capture('start-carousels')
-    // Selecting a carousel cell with real pointer input wears it.
+    // Clicking a carousel arrow with real pointer input browses its one item.
     const click = async (id: string) => {
       const r = live.host.widgetRect(id); if (!r) throw new Error('Missing target ' + id)
       const box = live.ui.getBoundingClientRect()
       const at = { clientX: box.left+r.x+r.w/2, clientY: box.top+r.y+r.h/2, bubbles: true, cancelable: true }
       live.ui.dispatchEvent(new MouseEvent('click', at)); await step(); await step()
     }
-    await click('carousel-0-2')
+    await click('carousel-next-0')
     await capture('start-selected')
     for (let i = 0; i < 6; i++) await press('ArrowDown')
     await press('Enter')

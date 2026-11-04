@@ -30,7 +30,7 @@ import { overviewCamera, pixelViewports, splitLayout } from '@royal-fiesta/game/
 import type { SplitCell } from '@royal-fiesta/game/client/splitLayout'
 import type { GameContent } from '@royal-fiesta/game/content'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
-import { cosmeticOf, LOCAL_COSMETICS, startScreen, startStep, carouselWindow } from '@royal-fiesta/game/flow/startScreen'
+import { cosmeticOf, LOCAL_COSMETICS, startScreen, startStep } from '@royal-fiesta/game/flow/startScreen'
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import { economyOwned, rewardOffline } from '@royal-fiesta/game/economy/owned'
 import { createEconomyStub } from '@royal-fiesta/game/economy/stub'
@@ -49,6 +49,8 @@ import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, RenderPort, SkinnedAssetT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
+import { RoundGate } from '../render/pipelineGate.ts'
+import type { RoundStage } from '../render/pipelineGate.ts'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import { skinnedCharacterOf } from '../content/providers/sdf.ts'
@@ -99,13 +101,14 @@ import { NetPump } from './netPump.ts'
 import { communityBase, listCommunityLevels, loadCommunityPack } from '../content/community.ts'
 import { browserGameAssets, installContentOverlay } from '../content/v1Data.ts'
 import { mountCommunityPanel } from './communityPanel.ts'
-import { mountStartScreen } from '../screens/startScreen.ts'
+import { carouselCell, mountStartScreen } from '../screens/startScreen.ts'
 import type { StartArt, StartScreenView } from '../screens/startScreen.ts'
 import { mountVote } from '../screens/vote.ts'
 import { mountCountdown } from '../screens/countdown.ts'
 import { mountElimShow } from '../screens/elimShow.ts'
 import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
+import type { ShowModeOptions } from './showMode.ts'
 import type { ShowFrame } from './showDirector.ts'
 import { EconomyScreens } from './economyScreens.ts'
 import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
@@ -353,6 +356,8 @@ interface Mode {
   // Local split screen: a device with a seat, and seat 0's sound listener when its camera exists.
   seated?(device: DeviceId): boolean
   listener?(): ListenerPose | null
+  // Where the screen's course, hub or podium is drawn: App's RoundGate warms it and guards each countdown.
+  roundStage(): RoundStage | null
 }
 
 // The show owns its simulation and canvas; App owns navigation, screen views and sound.
@@ -399,6 +404,7 @@ class ShowAdapter implements Mode {
   dequeue(): void {}
   leaveMatch(): void {}
   dispose(): void { this.show.dispose() }
+  roundStage(): RoundStage | null { return this.show.roundStage() }
   lines(): string[] {
     return this.show.models?.endScreen?.podium.map((p, i) => `${PLACES[i]} ${this.name(p.seat)}`) ?? []
   }
@@ -832,6 +838,14 @@ class LocalMode implements Mode {
     }
   }
 
+  roundStage(): RoundStage | null {
+    const run = this.match
+    if (run === null) return { port: this.hubLayer.port, course: 'hub' }
+    if (this.presenter.onPodium) return { port: this.matchLayer.port, course: 'podium' }
+    const course = run.match.sim.course()
+    return course === null ? null : { port: this.matchLayer.port, course: course.id }
+  }
+
   leaveMatch(): void {
     const run = this.match
     if (run === null) return
@@ -1125,6 +1139,15 @@ class OnlineMode implements Mode {
   enqueue(): void {}
   dequeue(): void {}
 
+  roundStage(): RoundStage | null {
+    const port = this.c.loaded.ports[0]
+    const sim = this.flow.match?.sim ?? null
+    if (sim === null) return { port, course: 'hub' }
+    if (this.presenter.onPodium) return { port, course: 'podium' }
+    const course = sim.course()
+    return course === null ? null : { port, course: course.id }
+  }
+
   pick(p: LobbyPick | 'default'): void {
     this.flow.pick(p === 'default' ? this.flow.lobby.defaultPick() : p)
   }
@@ -1240,6 +1263,13 @@ class InPageMode implements Mode {
   enqueue(): void {}
   dequeue(): void {}
   leaveMatch(): void {}
+  roundStage(): RoundStage | null {
+    const port = this.c.loaded.ports[0]
+    const sim = this.sim()
+    if (sim === null) return { port, course: 'hub' }
+    const course = sim.course()
+    return course === null ? null : { port, course: course.id }
+  }
 
   // Real-time dt even while paused: the relay's rate limits run on the same clock.
   frame(f: FrameIn): GameScreen {
@@ -1410,6 +1440,8 @@ class App {
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
+  // Every mode's course, hub and podium go through this gate (render/pipelineGate.ts).
+  private readonly roundGate = new RoundGate()
   private showLoad = 0
   private showView: { screen: Screen; update(): void; unmount(): void } | null = null
   private preparedLocal: LocalMode | null = null
@@ -1692,6 +1724,8 @@ class App {
     this.startArt = null
     this.preparedLocal?.dispose()
     this.preparedLocal = null
+    void this.showAhead?.then(show => show?.dispose())
+    this.showAhead = null
     this.viewsObserver.disconnect()
     this.cells = []
     this.closeRemap()
@@ -1795,8 +1829,9 @@ class App {
       this.stopRoundLoad?.()
       this.stopRoundLoad = observeRoundLoad(label => {
         checkPhase(`round load: ${label ?? 'ready'}`)
-        // Show preparation is background work; its director owns the visible load hold.
-        if (this.mode instanceof ShowAdapter) return
+        // Show preparation is background work; its director owns the visible load hold. The show prepared behind
+        // the start screen loads silently too.
+        if (this.mode instanceof ShowAdapter || this.showAhead !== null) return
         this.roundLoading = label
         if (label !== null) {
           this.loadingOverlay.show(label)
@@ -2068,11 +2103,49 @@ class App {
     return playerLook(this.startModel, this.startArt)
   }
 
+  // The options of the show Play starts (startShow, and the one preloaded behind the start screen).
+  private showOptions(loaded: Loaded, q: Query, look: WornLook | null): ShowModeOptions {
+    return {
+      R: loaded.R, views: this.views, orbit: this.orbit, look,
+      humans: q.players ?? 1, fixedSeats: q.players !== null,
+      seats: Math.max(q.players ?? 1, q.bots ?? intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60)),
+      openingCourse: q.course ?? undefined,
+      seed: Date.now(), localName: q.name,
+      voteMs: q.test ? TEST_VOTE_MS : undefined,
+      intermissionMs: q.test ? TEST_INTERMISSION_MS : undefined,
+    }
+  }
+
+  // The show Play will start, created behind the start screen with its first (unvoted) round loading on its own
+  // canvas and port, so Play starts without the course load. One job at a time: it starts once the start screen
+  // compiles nothing, and its warm-up draw goes one asset at a time (ShowModeOptions.background).
+  private showAhead: Promise<ShowMode | null> | null = null
+
+  private preloadShow(): void {
+    const loaded = this.loaded
+    const q = this.query
+    if (this.showAhead !== null || this.disposed || loaded === null || q === null || this.startView === null) return
+    // Only when Play starts the in-page show (LocalMode.startsShow, no build default relay); UI checks (?test=1)
+    // step the start screen without it.
+    if (q.server !== null || q.clients !== 1 || (q.course !== null && q.bots === null) || this.nav.onlineOnly || q.test) return
+    if (pendingPipelines() > 0) return
+    this.showAhead = ShowMode.create({ ...this.showOptions(loaded, q, this.wornLook()), background: true }).then(show => {
+      if (!this.disposed && show.failure === null && show.preload()) return show
+      show.dispose()
+      return null
+    }, (e: unknown) => {
+      console.warn('[show] preload failed:', messageOf(e))
+      return null
+    })
+  }
+
   private async startShow(): Promise<void> {
     const loaded = this.loaded
     const q = this.query
     if (loaded === null || q === null) return
     const look = this.wornLook()
+    const ahead = this.showAhead
+    this.showAhead = null
     this.stopMode()
     // The show owns its own canvas and port: release the lobby (start view, hub, its assets and sound)
     // before it registers the first round's assets on its port.
@@ -2083,15 +2156,12 @@ class App {
     this.host.setLoading(0, this.roundLoading)
     this.setLayout(1)
     try {
-      const show = await ShowMode.create({
-        R: loaded.R, views: this.views, orbit: this.orbit, look,
-        humans: q.players ?? 1, fixedSeats: q.players !== null,
-        seats: Math.max(q.players ?? 1, q.bots ?? intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60)),
-        openingCourse: q.course ?? undefined,
-        seed: Date.now(), localName: q.name,
-        voteMs: q.test ? TEST_VOTE_MS : undefined,
-        intermissionMs: q.test ? TEST_INTERMISSION_MS : undefined,
-      })
+      let show = ahead === null ? null : await ahead
+      if (show !== null && (show.failure !== null || !show.fits(this.views))) {
+        show.dispose()
+        show = null
+      }
+      show = show?.adopt(look) ?? await ShowMode.create(this.showOptions(loaded, q, look))
       if (this.disposed || load !== this.showLoad) { show.dispose(); return }
       if (show.failure !== null) { this.fail(show.failure); return }
       this.roundLoading = null
@@ -2216,6 +2286,7 @@ class App {
         dt, paused, world: this.world, emote: playing ? this.emote : 0, devices: this.devicePolls, deviceCount,
       })
       if (mode.failure !== null) return this.fail(mode.failure)
+      this.roundGate.frame(screen, mode.roundStage())
       this.run(nav.dispatch({ kind: 'game', screen }))
       if (mode instanceof LocalMode && mode.showRequested) void this.startShow()
       if (mode instanceof ShowAdapter) {
@@ -2378,6 +2449,7 @@ class App {
         // Submit the start camera and newly worn instances before presenting the UI.
         this.loaded?.ports[0]?.render()
         this.host.frame(this.uiNowMs)
+        this.preloadShow()
         return
       }
     }
@@ -2496,11 +2568,10 @@ class App {
           for (const [name, action] of [['prev', 'left'], ['next', 'right']] as const) {
             if (hit(`carousel-${name}-${row}`)) { this.startAction(action, { ...this.startModel, focus: 'bins', bin: row }); return }
           }
-          const cells = carouselWindow(bin.selected, bin.items.length)
-          for (let cell = 0; cell < cells.length; cell++) {
-            if (!hit(`carousel-${row}-${cell}`)) continue
+          // The one cell shows the selected cosmetic: clicking it wears it.
+          if (hit(carouselCell(row))) {
             this.startAction('confirm', { ...this.startModel, focus: 'bins', bin: row,
-              bins: this.startModel.bins.map((b, i) => i === row ? { ...b, selected: cells[cell] } : b) })
+              bins: this.startModel.bins.map((b, i) => i === row ? { ...b, selected: bin.selected } : b) })
             return
           }
         }

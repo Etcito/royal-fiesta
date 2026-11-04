@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { startScreen, startStep, carouselWindow, LOCAL_COSMETICS } from '../src/flow/startScreen.ts'
+import { startScreen, startStep, LOCAL_COSMETICS } from '../src/flow/startScreen.ts'
 import { shopModel, shopStep, shopTab } from '../src/flow/shop.ts'
 import type { CatalogItem } from '../src/economy/contract.ts'
 const owned = LOCAL_COSMETICS.map(c => c.id)
@@ -28,13 +28,13 @@ test('all four carousel rows, palette and actions wrap deterministically', () =>
  m = startStep(m, 'down').model; assert.equal(startStep(m, 'confirm').effect, 'shop')
  assert.equal(startStep(m, 'down').model.bin, 0)
 })
-test('carousel window shows None and follows selection through every owned colour variant', () => {
- assert.deepEqual(carouselWindow(-1, 9), [-1, 0, 1, 2])
- assert.deepEqual(carouselWindow(8, 9), [5, 6, 7, 8])
+test('the arrows step the one shown item through None and every owned colour variant, wrapping', () => {
  let m = wardrobe()
  const seen = new Set([m.bins[0].selected])
- for (let i = 0; i < 10; i++) { m = startStep(m, 'right').model; seen.add(m.bins[0].selected); assert.ok(carouselWindow(m.bins[0].selected, 9).includes(m.bins[0].selected)) }
+ for (let i = 0; i < 10; i++) { m = startStep(m, 'right').model; seen.add(m.bins[0].selected) }
  assert.equal(seen.size, 10)
+ assert.ok(seen.has(-1), 'None is one of the stops')
+ assert.equal(m.bins[0].selected, wardrobe().bins[0].selected, 'ten steps over nine items and None come back')
 })
 test('four tabs include all 24 colour variants, grid uses three columns and returns to tabs', () => {
  let m = shop()

@@ -112,7 +112,6 @@ export function installShaderCache(prototype: object | undefined = (globalThis a
       return value
     } })
   }
-  installAsyncLitPipelines(prototype, (globalThis as unknown as {
-    GPURenderPassEncoder?: { prototype: object }
-  }).GPURenderPassEncoder?.prototype)
+  const gpu = globalThis as unknown as { GPURenderPassEncoder?: { prototype: object }; GPUCanvasContext?: { prototype: object } }
+  installAsyncLitPipelines(prototype, gpu.GPURenderPassEncoder?.prototype, gpu.GPUCanvasContext?.prototype)
 }

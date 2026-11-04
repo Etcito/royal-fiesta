@@ -5681,14 +5681,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [44, 36],
-                "offsetMax": [182, 136]
+                "offsetMin": [256, 36],
+                "offsetMax": [416, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [32, 42],
-                "offsetMax": [116, 174]
+                "offsetMin": [150, 42],
+                "offsetMax": [270, 174]
               }
             },
             {
@@ -5697,14 +5697,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [47, 80],
-                "offsetMax": [179, 104]
+                "offsetMin": [259, 80],
+                "offsetMax": [413, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [34, 88],
-                "offsetMax": [114, 118]
+                "offsetMin": [152, 88],
+                "offsetMax": [268, 118]
               },
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -5719,194 +5719,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [47, 110],
-                "offsetMax": [179, 134]
+                "offsetMin": [259, 110],
+                "offsetMax": [413, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [34, 145],
-                "offsetMax": [114, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-0-1",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [190, 36],
-                "offsetMax": [328, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [122, 42],
-                "offsetMax": [206, 174]
-              }
-            },
-            {
-              "id": "carousel-name-0-1",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [193, 80],
-                "offsetMax": [325, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [124, 88],
-                "offsetMax": [204, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-0-1",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [193, 110],
-                "offsetMax": [325, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [124, 145],
-                "offsetMax": [204, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-0-2",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [336, 36],
-                "offsetMax": [474, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [212, 42],
-                "offsetMax": [296, 174]
-              }
-            },
-            {
-              "id": "carousel-name-0-2",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [339, 80],
-                "offsetMax": [471, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [214, 88],
-                "offsetMax": [294, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-0-2",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [339, 110],
-                "offsetMax": [471, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [214, 145],
-                "offsetMax": [294, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-0-3",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [482, 36],
-                "offsetMax": [620, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [302, 42],
-                "offsetMax": [386, 174]
-              }
-            },
-            {
-              "id": "carousel-name-0-3",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [485, 80],
-                "offsetMax": [617, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [304, 88],
-                "offsetMax": [384, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-0-3",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [485, 110],
-                "offsetMax": [617, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [304, 145],
-                "offsetMax": [384, 170]
+                "offsetMin": [152, 145],
+                "offsetMax": [268, 170]
               },
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -5921,14 +5741,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [2, 54],
-                "offsetMax": [40, 118]
+                "offsetMin": [196, 54],
+                "offsetMax": [244, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [0, 64],
-                "offsetMax": [30, 154]
+                "offsetMin": [104, 64],
+                "offsetMax": [144, 154]
               },
               "text": "<",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -5943,14 +5763,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [632, 54],
-                "offsetMax": [670, 118]
+                "offsetMin": [428, 54],
+                "offsetMax": [476, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [390, 64],
-                "offsetMax": [420, 154]
+                "offsetMin": [276, 64],
+                "offsetMax": [316, 154]
               },
               "text": ">",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6027,14 +5847,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [44, 36],
-                "offsetMax": [182, 136]
+                "offsetMin": [256, 36],
+                "offsetMax": [416, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [32, 42],
-                "offsetMax": [116, 174]
+                "offsetMin": [150, 42],
+                "offsetMax": [270, 174]
               }
             },
             {
@@ -6043,14 +5863,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [47, 80],
-                "offsetMax": [179, 104]
+                "offsetMin": [259, 80],
+                "offsetMax": [413, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [34, 88],
-                "offsetMax": [114, 118]
+                "offsetMin": [152, 88],
+                "offsetMax": [268, 118]
               },
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6065,194 +5885,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [47, 110],
-                "offsetMax": [179, 134]
+                "offsetMin": [259, 110],
+                "offsetMax": [413, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [34, 145],
-                "offsetMax": [114, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-1-1",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [190, 36],
-                "offsetMax": [328, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [122, 42],
-                "offsetMax": [206, 174]
-              }
-            },
-            {
-              "id": "carousel-name-1-1",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [193, 80],
-                "offsetMax": [325, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [124, 88],
-                "offsetMax": [204, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-1-1",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [193, 110],
-                "offsetMax": [325, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [124, 145],
-                "offsetMax": [204, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-1-2",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [336, 36],
-                "offsetMax": [474, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [212, 42],
-                "offsetMax": [296, 174]
-              }
-            },
-            {
-              "id": "carousel-name-1-2",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [339, 80],
-                "offsetMax": [471, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [214, 88],
-                "offsetMax": [294, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-1-2",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [339, 110],
-                "offsetMax": [471, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [214, 145],
-                "offsetMax": [294, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-1-3",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [482, 36],
-                "offsetMax": [620, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [302, 42],
-                "offsetMax": [386, 174]
-              }
-            },
-            {
-              "id": "carousel-name-1-3",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [485, 80],
-                "offsetMax": [617, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [304, 88],
-                "offsetMax": [384, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-1-3",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [485, 110],
-                "offsetMax": [617, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [304, 145],
-                "offsetMax": [384, 170]
+                "offsetMin": [152, 145],
+                "offsetMax": [268, 170]
               },
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6267,14 +5907,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [2, 54],
-                "offsetMax": [40, 118]
+                "offsetMin": [196, 54],
+                "offsetMax": [244, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [0, 64],
-                "offsetMax": [30, 154]
+                "offsetMin": [104, 64],
+                "offsetMax": [144, 154]
               },
               "text": "<",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6289,14 +5929,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [632, 54],
-                "offsetMax": [670, 118]
+                "offsetMin": [428, 54],
+                "offsetMax": [476, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [390, 64],
-                "offsetMax": [420, 154]
+                "offsetMin": [276, 64],
+                "offsetMax": [316, 154]
               },
               "text": ">",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6373,14 +6013,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [44, 36],
-                "offsetMax": [182, 136]
+                "offsetMin": [256, 36],
+                "offsetMax": [416, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [32, 42],
-                "offsetMax": [116, 174]
+                "offsetMin": [150, 42],
+                "offsetMax": [270, 174]
               }
             },
             {
@@ -6389,14 +6029,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [47, 80],
-                "offsetMax": [179, 104]
+                "offsetMin": [259, 80],
+                "offsetMax": [413, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [34, 88],
-                "offsetMax": [114, 118]
+                "offsetMin": [152, 88],
+                "offsetMax": [268, 118]
               },
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6411,194 +6051,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [47, 110],
-                "offsetMax": [179, 134]
+                "offsetMin": [259, 110],
+                "offsetMax": [413, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [34, 145],
-                "offsetMax": [114, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-2-1",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [190, 36],
-                "offsetMax": [328, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [122, 42],
-                "offsetMax": [206, 174]
-              }
-            },
-            {
-              "id": "carousel-name-2-1",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [193, 80],
-                "offsetMax": [325, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [124, 88],
-                "offsetMax": [204, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-2-1",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [193, 110],
-                "offsetMax": [325, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [124, 145],
-                "offsetMax": [204, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-2-2",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [336, 36],
-                "offsetMax": [474, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [212, 42],
-                "offsetMax": [296, 174]
-              }
-            },
-            {
-              "id": "carousel-name-2-2",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [339, 80],
-                "offsetMax": [471, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [214, 88],
-                "offsetMax": [294, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-2-2",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [339, 110],
-                "offsetMax": [471, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [214, 145],
-                "offsetMax": [294, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-2-3",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [482, 36],
-                "offsetMax": [620, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [302, 42],
-                "offsetMax": [386, 174]
-              }
-            },
-            {
-              "id": "carousel-name-2-3",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [485, 80],
-                "offsetMax": [617, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [304, 88],
-                "offsetMax": [384, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-2-3",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [485, 110],
-                "offsetMax": [617, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [304, 145],
-                "offsetMax": [384, 170]
+                "offsetMin": [152, 145],
+                "offsetMax": [268, 170]
               },
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6613,14 +6073,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [2, 54],
-                "offsetMax": [40, 118]
+                "offsetMin": [196, 54],
+                "offsetMax": [244, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [0, 64],
-                "offsetMax": [30, 154]
+                "offsetMin": [104, 64],
+                "offsetMax": [144, 154]
               },
               "text": "<",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6635,14 +6095,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [632, 54],
-                "offsetMax": [670, 118]
+                "offsetMin": [428, 54],
+                "offsetMax": [476, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [390, 64],
-                "offsetMax": [420, 154]
+                "offsetMin": [276, 64],
+                "offsetMax": [316, 154]
               },
               "text": ">",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6719,14 +6179,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [44, 36],
-                "offsetMax": [182, 136]
+                "offsetMin": [256, 36],
+                "offsetMax": [416, 136]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [32, 42],
-                "offsetMax": [116, 174]
+                "offsetMin": [150, 42],
+                "offsetMax": [270, 174]
               }
             },
             {
@@ -6735,14 +6195,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [47, 80],
-                "offsetMax": [179, 104]
+                "offsetMin": [259, 80],
+                "offsetMax": [413, 104]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [34, 88],
-                "offsetMax": [114, 118]
+                "offsetMin": [152, 88],
+                "offsetMax": [268, 118]
               },
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6757,194 +6217,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [47, 110],
-                "offsetMax": [179, 134]
+                "offsetMin": [259, 110],
+                "offsetMax": [413, 134]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [34, 145],
-                "offsetMax": [114, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-3-1",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [190, 36],
-                "offsetMax": [328, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [122, 42],
-                "offsetMax": [206, 174]
-              }
-            },
-            {
-              "id": "carousel-name-3-1",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [193, 80],
-                "offsetMax": [325, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [124, 88],
-                "offsetMax": [204, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-3-1",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [193, 110],
-                "offsetMax": [325, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [124, 145],
-                "offsetMax": [204, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-3-2",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [336, 36],
-                "offsetMax": [474, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [212, 42],
-                "offsetMax": [296, 174]
-              }
-            },
-            {
-              "id": "carousel-name-3-2",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [339, 80],
-                "offsetMax": [471, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [214, 88],
-                "offsetMax": [294, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-3-2",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [339, 110],
-                "offsetMax": [471, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [214, 145],
-                "offsetMax": [294, 170]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 18,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-3-3",
-              "type": "group",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [482, 36],
-                "offsetMax": [620, 136]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [302, 42],
-                "offsetMax": [386, 174]
-              }
-            },
-            {
-              "id": "carousel-name-3-3",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [485, 80],
-                "offsetMax": [617, 104]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [304, 88],
-                "offsetMax": [384, 118]
-              },
-              "text": "",
-              "font": { "family": "Fredoka", "weight": 700 },
-              "size": 17,
-              "color": "#ffffff",
-              "outline": { "width": 3, "color": "#552372" },
-              "align": "center"
-            },
-            {
-              "id": "carousel-worn-3-3",
-              "type": "label",
-              "rect": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [485, 110],
-                "offsetMax": [617, 134]
-              },
-              "landscape": {
-                "anchorMin": [0, 0],
-                "anchorMax": [0, 0],
-                "offsetMin": [304, 145],
-                "offsetMax": [384, 170]
+                "offsetMin": [152, 145],
+                "offsetMax": [268, 170]
               },
               "text": "",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6959,14 +6239,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [2, 54],
-                "offsetMax": [40, 118]
+                "offsetMin": [196, 54],
+                "offsetMax": [244, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [0, 64],
-                "offsetMax": [30, 154]
+                "offsetMin": [104, 64],
+                "offsetMax": [144, 154]
               },
               "text": "<",
               "font": { "family": "Fredoka", "weight": 700 },
@@ -6981,14 +6261,14 @@
               "rect": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [632, 54],
-                "offsetMax": [670, 118]
+                "offsetMin": [428, 54],
+                "offsetMax": [476, 118]
               },
               "landscape": {
                 "anchorMin": [0, 0],
                 "anchorMax": [0, 0],
-                "offsetMin": [390, 64],
-                "offsetMax": [420, 154]
+                "offsetMin": [276, 64],
+                "offsetMax": [316, 154]
               },
               "text": ">",
               "font": { "family": "Fredoka", "weight": 700 },

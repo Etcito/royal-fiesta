@@ -22,6 +22,8 @@ import type { ZoneNetScene } from '../zone/zoneNetScene.ts'
 import { ShowDirector } from './showDirector.ts'
 import type { ShowFrame } from './showDirector.ts'
 import { loadShowContent } from './showContent.ts'
+import { prepareCourse } from '../render/pipelineGate.ts'
+import type { RoundStage } from '../render/pipelineGate.ts'
 
 const DEFAULT_VOTE_MS = 5000
 const DEFAULT_INTERMISSION_MS = 12000
@@ -42,6 +44,11 @@ export interface ShowModeOptions {
   voteMs?: number
   /** The wait between rounds; the match defaults it to 1500 ms, the show to 12000 ms. */
   intermissionMs?: number
+  /**
+   * Prepared behind the start screen (App preloads the first round with preload()): the round's warm-up draw then
+   * goes one asset at a time, each once the page compiles nothing, until adopt().
+   */
+  background?: boolean
 }
 
 /** Owns the authoritative offline simulation and round canvas; the app owns the stage. */
@@ -59,9 +66,13 @@ export class ShowMode {
   private sampleTick = 0
   private readonly options: ShowModeOptions
   private sounds: string[] = []
+  private background: boolean
+  private look: WornLook | null
 
   private constructor(options: ShowModeOptions) {
     this.options = options
+    this.background = options.background === true
+    this.look = options.look ?? null
     this.memories = []
     this.stages = Array.from(options.views.querySelectorAll('canvas'), canvas => ({ canvas, display: canvas.style.display }))
     this.canvas = options.views.ownerDocument.createElement('canvas')
@@ -95,6 +106,37 @@ export class ShowMode {
       mode.fail(error)
     }
     return mode
+  }
+
+  /**
+   * Loads the first round now (its port, scene and warm-up draw) when the match opens on a course nobody votes for;
+   * false when it opens on a vote. The director holds that round's countdown until it is ready, as for any round.
+   */
+  preload(): boolean {
+    if (this.disposed || this.error !== null || this.activeRound() === null) return false
+    this.loadRound()
+    return true
+  }
+
+  /** True while this show was sized for `views` as it is now (a preloaded show is discarded when the page resized). */
+  fits(views: HTMLElement): boolean {
+    const dpr = views.ownerDocument.defaultView?.devicePixelRatio ?? 1
+    return this.canvas.width === Math.max(1, Math.round(views.clientWidth * dpr))
+      && this.canvas.height === Math.max(1, Math.round(views.clientHeight * dpr))
+  }
+
+  /** Play takes the show prepared behind the start screen: the worn look of that moment, the rest warmed at once. */
+  adopt(look: WornLook | null): this {
+    this.look = look
+    this.background = false
+    return this
+  }
+
+  /** The port and course of the round on screen (RoundGate, the app's countdown guard). */
+  roundStage(): RoundStage | null {
+    const round = this.activeRound()
+    if (this.scene === null || round === null || round.plan.index !== this.index) return null
+    return { port: this.scene.port, course: round.plan.course.id }
   }
 
   get humanCount(): number { return this.options.humans ?? 1 }
@@ -212,7 +254,7 @@ export class ShowMode {
           return local >= 0 ? local : (round.localSeats[0] ?? 0)
         }), orbit: this.options.orbit, course: round.plan.course, createPort: content.createPort,
         assets: content.assets, bean: content.bean,
-        look: round.seatOf.includes(0) ? () => this.options.look ?? null : undefined,
+        look: round.seatOf.includes(0) ? () => this.look : undefined,
         character: content.character, skinned: content.skinned, dressing: content.dressing,
       }))
       if (this.disposed || this.error !== null || this.index !== index) { prepared.dispose(); return }
@@ -222,7 +264,13 @@ export class ShowMode {
       // Mount the near scene before waiting for its animation assets.
       scene.update(round.match, 1, 0)
       await checkAwait(`round ${index}: scene paint and animation`, () => scene.ready())
-      if (!this.disposed && this.error === null && this.index === index) this.director?.worldReady(index)
+      // The shared gate: the warm-up draw of the course while the vote or loading screen is up. Its parts still
+      // compiling draw in vertex colour, so the countdown does not wait for them.
+      const live = (): boolean => !this.disposed && this.error === null && this.index === index
+      const background = this.background
+      await prepareCourse(scene.port, round.plan.course.id, { oneAtATime: background, cancelled: () => !live() || !this.background })
+      if (background && !this.background && live()) await prepareCourse(scene.port, round.plan.course.id)
+      if (live()) this.director?.worldReady(index)
     } catch (error) {
       if (!this.disposed && this.index === index) this.fail(error)
     }

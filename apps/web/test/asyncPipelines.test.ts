@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { asyncPipelineFallbacks, installAsyncLitPipelines, pendingPipelines } from '../src/render/asyncPipelines.ts'
+import { asyncPipelineFallbacks, deviceOfCanvas, fieldReady, installAsyncLitPipelines, materialKey, pendingPipelines } from '../src/render/asyncPipelines.ts'
 
 test('lit pipelines compile concurrently, omit pending draws and bind the resolved pipeline', async () => {
   const pending: { resolve(value: object): void; promise: Promise<object> }[] = []
@@ -48,6 +48,74 @@ test('lit pipelines compile concurrently, omit pending draws and bind the resolv
   assert.equal(pass.draws, 2)
   device.createRenderPipeline({ label: 'one-shot pass', layout })
   assert.equal(device.sync, 1, 'unrelated pipelines retain native semantics')
+})
+
+// Owner 2026-11-04: start-screen cosmetics, then course assets, showed at about 5% opacity for seconds. Every variant of a
+// part is a lit pipeline compiled here; the shadow one was ready long before the forward one and drew alone (its shadow
+// and prepass ghost with no surface).
+test('a material draws in no pass until every variant requested for it is compiled; fieldReady needs its forward variant', async () => {
+  const pending = new Map<string, () => void>()
+  class Device {
+    createShaderModule(descriptor: { code: string }): object { return { code: descriptor.code } }
+    createPipelineLayout(_descriptor: unknown): object { return {} }
+    createRenderPipeline(_descriptor: unknown): object { return {} }
+    createRenderPipelineAsync(descriptor: { vertex: { module: { code: string } } }): Promise<object> {
+      return new Promise<object>(done => { pending.set(descriptor.vertex.module.code, () => done({})) })
+    }
+  }
+  class Pass {
+    draws = 0
+    setPipeline(_value: unknown): void {}
+    drawIndexed(): void { this.draws++ }
+  }
+  class Context {
+    canvas = {}
+    configure(_config: unknown): void {}
+  }
+  installAsyncLitPipelines(Device.prototype, Pass.prototype, Context.prototype)
+  const device = new Device()
+  const context = new Context()
+  context.configure({ device })
+  assert.equal(deviceOfCanvas(context.canvas), device)
+  const layout = device.createPipelineLayout({ bindGroupLayouts: [] })
+  const body = (part: string): string => `// sdff: part ${part}\nfn material_main() {}\n`
+  const variant = (part: string, pass: string): object => {
+    const code = `// raa variant: pass ${pass}, msaa 1\n\n// raa section: prelude\n\n// raa section: material\n${body(part)}\n// raa section: pass ${pass}\n`
+    return device.createRenderPipeline({ label: 'raa.lit.pipeline', layout, vertex: { module: device.createShaderModule({ code }) } })
+  }
+  const settle = async (part: string, pass: string): Promise<void> => {
+    const found = [...pending].find(([code]) => code.includes(`part ${part}\n`) && code.startsWith(`// raa variant: pass ${pass},`))
+    assert.ok(found, `${part} ${pass}`)
+    found[1]()
+    pending.delete(found[0])
+    await new Promise(resolve => setTimeout(resolve, 0))
+  }
+  const frame = (pipelines: object[]): number => {
+    const pass = new Pass()
+    for (const pipeline of pipelines) { pass.setPipeline(pipeline); pass.drawIndexed() }
+    return pass.draws
+  }
+  const hat = materialKey(body('hat'))
+  const shadow = variant('hat', 'Shadow')
+  assert.equal(fieldReady(device, hat), false)
+  await settle('hat', 'Shadow')
+  assert.equal(fieldReady(device, hat), false, 'a shadow variant alone is not the part drawn')
+  const forward = variant('hat', 'Forward')
+  const prepass = variant('hat', 'Prepass')
+  assert.equal(frame([shadow, prepass, forward]), 0, 'the compiled shadow never draws while the forward variant compiles')
+  await settle('hat', 'Forward')
+  assert.equal(frame([shadow, prepass, forward]), 0, 'nor while the prepass compiles')
+  assert.equal(fieldReady(device, hat), false)
+  await settle('hat', 'Prepass')
+  assert.equal(fieldReady(device, hat), true)
+  assert.equal(frame([shadow, prepass, forward]), 3)
+  assert.equal(fieldReady({}, hat), false, 'another device compiles its own pipelines')
+  const late = variant('hat', 'Transparent')
+  assert.equal(frame([shadow, prepass, forward, late]), 3, 'once drawn, a variant requested later omits only its own draws')
+  assert.equal(fieldReady(device, hat), true)
+  await settle('hat', 'Transparent')
+  assert.equal(frame([late]), 1)
+  assert.equal(pendingPipelines(), 0)
 })
 
 test('validation errors surface and only internal backend errors use the sync fallback', async () => {

@@ -1,4 +1,4 @@
-import { cosmeticOf, cosmeticName, carouselWindow } from '@royal-fiesta/game/flow/startScreen'
+import { cosmeticOf, cosmeticName } from '@royal-fiesta/game/flow/startScreen'
 // The caller owns input and advances this view once per frame with the latest wardrobe model.
 import type { StartScreenModel } from '@royal-fiesta/game/flow/startScreen'
 import type { StartScene, CourseDressing } from '@royal-fiesta/game/content'
@@ -58,8 +58,14 @@ const YAW_PER_MS = 0.0002
 // upper part of its carousel cell (the lower part holds the WORN / SELECT label) and fitted to it.
 const CAROUSEL_DEPTH = 0.55
 const CAROUSEL_TOP = 0.72
-const CAROUSEL_FILL = 0.78
-const CAROUSEL_ACTIVE_FILL = 1
+const CAROUSEL_FILL = 0.9
+// Each carousel shows only its selected cosmetic, still, turned this far from facing the camera so its depth reads
+// (owner 2026-11-04: "celui actif et les flèches pour en changer, pas besoin de les faire tourner").
+const CAROUSEL_YAW = -0.45
+// The one carousel cell of a bin (the arrows either side of it change the selection).
+export function carouselCell(bin: number): string {
+  return `carousel-${bin}-0`
+}
 // A cosmetic without known bounds: centred on its origin, about a penguin's head wide.
 const FALLBACK_BOUNDS = { min: [-0.6, -0.6, -0.6] as Vec3T, max: [0.6, 0.6, 0.6] as Vec3T }
 
@@ -91,17 +97,13 @@ function present(host: UaaHost, model: StartScreenModel, wallet?: StartArt['wall
   }
   model.bins.forEach((bin, index) => {
     props[`bin-${bin.slot}`] = { text: cosmeticName(bin.items[bin.selected]), visible: true }
-    const cells = carouselWindow(bin.selected, bin.items.length)
-    for (let j = 0; j < 4; j++) {
-      const at = cells[j]
-      const exists = at !== undefined
-      const id = exists && at >= 0 ? bin.items[at] : undefined
-      const active = model.focus === 'bins' && model.bin === index && at === bin.selected
-      // The cell is an empty group: the cosmetic itself is drawn in 3D behind canvas#ui (mountStartScreen).
-      props[`carousel-${index}-${j}`] = { visible: exists }
-      props[`carousel-name-${index}-${j}`] = { text: exists ? cosmeticName(id) : '', visible: exists && !id }
-      props[`carousel-worn-${index}-${j}`] = { text: at === bin.worn ? 'WORN' : active ? 'SELECT' : '', visible: exists }
-    }
+    // The one cell is an empty group: the selected cosmetic itself is drawn in 3D behind canvas#ui (mountStartScreen);
+    // 'None' (nothing selected) is written in it.
+    const id = bin.selected >= 0 ? bin.items[bin.selected] : undefined
+    const active = model.focus === 'bins' && model.bin === index
+    props[carouselCell(index)] = { visible: true }
+    props[`carousel-name-${index}-0`] = { text: cosmeticName(id), visible: id === undefined }
+    props[`carousel-worn-${index}-0`] = { text: bin.selected === bin.worn ? 'WORN' : active ? 'SELECT' : '', visible: true }
   })
   PALETTE.forEach((_, index) => {
     props[`palette-${index}`] = {
@@ -144,8 +146,13 @@ export function mountStartScreen(
     : port.registerAsset(art.character.id, art.character)
   const assets = new Map<string, number>()
   const worn = new Map<StartScreenModel['bins'][number]['slot'], { id: string; instance: number; mount: Vec3T; skinned: boolean }>()
-  // The carousel cells' 3D cosmetics, per cell `<bin>-<column>`.
-  const carousel = new Map<string, { id: string; instance: number }>()
+  // The carousels' 3D cosmetics, per bin.
+  const carousel = new Map<number, { id: string; instance: number }>()
+  const posed = art.skinned !== undefined && port.setPose !== undefined && port.registerSkinned !== undefined
+  // A skinned cosmetic in a carousel is posed (still, at rest) like the worn one: an unposed instance draws RAA's rest
+  // variant of its pipelines and the worn, posed one another set, so wearing it compiled every part's pipelines again
+  // and it took seconds to appear on the penguin (owner 2026-11-04). Posed, the worn copy reuses the carousel's.
+  const restPose = posed ? restPoseSkin(art.skinned!.skin.rig as unknown as Parameters<typeof restPoseSkin>[0]) : null
   let penguin = port.createInstance(character, PALETTE[model.colour])
   let colour = model.colour
   let current = model
@@ -197,7 +204,7 @@ export function mountStartScreen(
     const portrait = size !== null && size.height > size.width
     const camera: CameraPose = { ...art.scene?.camera, eye: [origin[0], origin[1] + 0.7, origin[2] + (portrait ? 12 : 6.2)], target: [origin[0], origin[1] + (portrait ? 0.3 : 0.1), origin[2]], fovYDeg: 38, near: 0.1, far: 500 }
     if (visible) port.setCamera(0, camera)
-    drawCarousels(next, camera, size, yaw)
+    drawCarousels(next, camera, size)
   }
 
   function viewSize(): { width: number; height: number } | null {
@@ -219,49 +226,45 @@ export function mountStartScreen(
     return asset
   }
 
-  // Each visible carousel cell holding a cosmetic shows that cosmetic's 3D asset, turning with the penguin,
-  // on the camera ray through the cell (canvas#ui and the stage canvas cover the same page). The selected
-  // cell of the focused bin is drawn larger. A cell without a laid-out rect (first frame) draws nothing.
-  function drawCarousels(next: StartScreenModel, camera: CameraPose, size: { width: number; height: number } | null, yaw: number): void {
-    const keep = new Set<string>()
+  // Each bin's carousel shows its selected cosmetic's 3D asset, still, on the camera ray through its one cell
+  // (canvas#ui and the stage canvas cover the same page); the arrows either side change it. A bin with nothing
+  // selected, or whose cell has no laid-out rect yet (first frame), draws nothing.
+  function drawCarousels(next: StartScreenModel, camera: CameraPose, size: { width: number; height: number } | null): void {
+    const keep = new Set<number>()
     if (size !== null && size.width > 0 && size.height > 0) {
       const ray = cameraRay(camera, size)
+      const yaw = (art.scene?.spot.yawDeg ?? 0) * Math.PI / 180 + CAROUSEL_YAW
+      const rotation: QuatT = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
       next.bins.forEach((bin, index) => {
-        const cells = carouselWindow(bin.selected, bin.items.length)
-        for (let j = 0; j < cells.length; j++) {
-          const at = cells[j]
-          const id = at >= 0 ? bin.items[at] : undefined
-          if (id === undefined) continue
-          const rect = host.widgetRect(`carousel-${index}-${j}`)
-          if (rect === null || rect.w <= 0 || rect.h <= 0) continue
-          const key = `${index}-${j}`
-          let cell = carousel.get(key)
-          if (cell !== undefined && cell.id !== id) {
-            port.destroyInstance(cell.instance)
-            carousel.delete(key)
-            cell = undefined
-          }
-          if (cell === undefined) {
-            const asset = assetOf(id)
-            if (asset === null) continue
-            cell = { id, instance: port.createInstance(asset, cosmeticOf(id)?.tint ?? null) }
-            carousel.set(key, cell)
-          }
-          keep.add(key)
-          const active = next.focus === 'bins' && next.bin === index && at === bin.selected
-          const top = rect.h * CAROUSEL_TOP
-          const { point, worldPerPx } = ray(rect.x + rect.w / 2, rect.y + top / 2)
-          const b = art.bounds?.get(id) ?? FALLBACK_BOUNDS
-          const extent = Math.max(b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2], 1e-3)
-          const scale = Math.min(rect.w, top) * worldPerPx * (active ? CAROUSEL_ACTIVE_FILL : CAROUSEL_FILL) / extent
-          const [cx, cy, cz] = [0, 1, 2].map(axis => (b.min[axis] + b.max[axis]) / 2 * scale)
-          const rotation: QuatT = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
-          port.setTransform(cell.instance, [
-            point[0] - (Math.cos(yaw) * cx + Math.sin(yaw) * cz),
-            point[1] - cy,
-            point[2] - (-Math.sin(yaw) * cx + Math.cos(yaw) * cz),
-          ], rotation, [scale, scale, scale])
+        const id = bin.selected >= 0 ? bin.items[bin.selected] : undefined
+        if (id === undefined) return
+        const rect = host.widgetRect(carouselCell(index))
+        if (rect === null || rect.w <= 0 || rect.h <= 0) return
+        let cell = carousel.get(index)
+        if (cell !== undefined && cell.id !== id) {
+          port.destroyInstance(cell.instance)
+          carousel.delete(index)
+          cell = undefined
         }
+        if (cell === undefined) {
+          const asset = assetOf(id)
+          if (asset === null) return
+          cell = { id, instance: port.createInstance(asset, cosmeticOf(id)?.tint ?? null) }
+          if (restPose !== null && port.skinOf?.(cosmeticOf(id)?.asset ?? id)) port.setPose!(cell.instance, restPose)
+          carousel.set(index, cell)
+        }
+        keep.add(index)
+        const top = rect.h * CAROUSEL_TOP
+        const { point, worldPerPx } = ray(rect.x + rect.w / 2, rect.y + top / 2)
+        const b = art.bounds?.get(id) ?? FALLBACK_BOUNDS
+        const extent = Math.max(b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2], 1e-3)
+        const scale = Math.min(rect.w, top) * worldPerPx * CAROUSEL_FILL / extent
+        const [cx, cy, cz] = [0, 1, 2].map(axis => (b.min[axis] + b.max[axis]) / 2 * scale)
+        port.setTransform(cell.instance, [
+          point[0] - (Math.cos(yaw) * cx + Math.sin(yaw) * cz),
+          point[1] - cy,
+          point[2] - (-Math.sin(yaw) * cx + Math.cos(yaw) * cz),
+        ], rotation, [scale, scale, scale])
       })
     }
     for (const [key, cell] of carousel) {

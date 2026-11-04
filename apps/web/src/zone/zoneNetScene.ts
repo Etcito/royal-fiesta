@@ -62,6 +62,8 @@ export interface ZoneNetScene {
   readonly cameras: readonly SceneView['camera'][]
   readonly camera: SceneView['camera']
   readonly feed: FarFeed
+  /** The port the scene draws on (the pipeline gate warms and checks it). */
+  readonly port: RenderPort
   /** Refreshes the near adapter from the match, then the character scene. */
   update(match: ZoneMatch, alpha: number, dtS: number): void
   render(): void
@@ -130,6 +132,7 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
     get cameras() { return scenes.map(pane => pane.camera) },
     get camera() { return scene.camera },
     feed,
+    port,
     update(match, alpha, dtS) {
       if (disposed) return
       latest = match

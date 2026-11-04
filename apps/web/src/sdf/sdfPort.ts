@@ -19,6 +19,7 @@ import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../rende
 import { raaStatus } from '../render/raaStatus.ts'
 import type { MeshedAsset } from './mamaApi.ts'
 import { installShaderCache } from '../render/shaderCache.ts'
+import { deviceOfCanvas, fieldReady, materialKey } from '../render/asyncPipelines.ts'
 
 export interface ResizablePort extends SkinnedRenderPort {
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
@@ -71,7 +72,10 @@ interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 // per-pixel shading has the one shading material on every sub-mesh (its desc then carries the rest-frame streams).
 // object: the one standard material (white x vertex colour) the part draws while one material per object is on; absent =
 // the part keeps its per-face materials (group tagged off, a player-colour graph, a mesh without colours, or shading).
-interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint; object?: number }
+// field: the materialKey of the part's per-pixel shading function; fallback: the same part as `?normals=vertex` draws it
+// (its per-face materials or one material per object, vertex normals), shown while the shading's pipelines compile.
+interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint; object?: number; field?: string; fallback?: Fallback }
+interface Fallback { mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; object?: number }
 // graph: a material of the part holds input.player_color; multiply: a part with no SDF material (white fallback).
 type PartTint = 'graph' | 'multiply' | 'none'
 // bones/rig/clips only on a skinned visual, carried from the raa-sdfm asset.
@@ -80,7 +84,10 @@ interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
 // asset = the uploaded/handle index this instance was created from (for the live inventory).
-interface Live { asset: number; root: number; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null }
+// fallbacks: the vertex-colour copies of parts whose shading pipelines still compile (index into partNames); each goes
+// the frame its part's shading can draw.
+interface Live { asset: number; root: number; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[] }
+interface LiveFallback { instance: number; node: number; part: PartUpload; index: number }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
   failed: ReadonlyMap<string, string> = new Map(),
@@ -249,25 +256,28 @@ class SdfRenderPort implements ResizablePort {
           continue
         }
         const built = partMesh(part, handles, graph, id)
+        // One material per object: white x the blended vertex colours, with the part's roughness/metallic. A player-colour
+        // part keeps its graph materials (the tint lives in them); a part with its per-pixel shading draws that instead,
+        // and keeps this vertex-colour draw as its fallback while the shading compiles.
+        const object = group.single !== false && built.desc.colors !== undefined && part.look !== undefined && built.tint !== 'graph'
+          ? engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: part.look.roughness, metallic: part.look.metallic }) : undefined
         let desc = built.desc
         let subMeshes = built.subMeshes
         const shaded = this.normals === 'pixel' ? this.shadingMaterial(id, part, payload.materials, graph.size > 0) : null
+        let field: Pick<PartUpload, 'field' | 'fallback'> = {}
         if (shaded !== null) {
           // The rest point and rest frame the field reads (raa-sdfm fieldSurfaceAttributes) replace colours, uvs, tangents.
-          subMeshes = subMeshes.map(sub => ({ ...sub, material: shaded }))
+          subMeshes = subMeshes.map(sub => ({ ...sub, material: shaded.handle }))
           desc = { ...desc, ...fieldSurfaceAttributes(desc.positions, desc.normals), subMeshes }
+          field = { field: materialKey(shaded.wgsl), fallback: {
+            mesh: this.addMesh(engine, built.desc), desc: built.desc, subMeshes: built.subMeshes, ...(object !== undefined ? { object } : {}),
+          } }
         }
         const mesh = this.addMesh(engine, desc)
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
-        // One material per object: white x the blended vertex colours, with the part's roughness/metallic. A player-colour
-        // part keeps its graph materials (the tint lives in them); a part with its per-pixel shading draws that instead.
-        let object: number | undefined
-        if (group.single !== false && shaded === null && desc.colors !== undefined && part.look !== undefined && built.tint !== 'graph') {
-          object = engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: part.look.roughness, metallic: part.look.metallic })
-        }
-        parts.push({ name: part.name, key, mesh, desc, subMeshes, t, r, tint: built.tint, ...(object !== undefined ? { object } : {}) })
+        parts.push({ name: part.name, key, mesh, desc, subMeshes, t, r, tint: built.tint, ...(shaded === null && object !== undefined ? { object } : {}), ...field })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
@@ -293,7 +303,7 @@ class SdfRenderPort implements ResizablePort {
   // refuses the function: the part then keeps its per-face materials and vertex normals. A part with neither shading nor
   // shadingError was not made from an SDF document (MAMA writes one of the two for every meshed part; the zone's far-LOD
   // bean is generated in code): it keeps its vertex normals without a warning.
-  private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): number | null {
+  private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): { handle: number; wgsl: string } | null {
     const where = `${id}#part:${part.name}`
     if (part.shading === undefined) {
       if (part.shadingError !== undefined) warnOnce(where, `vertex normals (${part.shadingError})`)
@@ -307,7 +317,7 @@ class SdfRenderPort implements ResizablePort {
       const s = part.shading
       const handle = this.need().addSurfaceMaterial(s.single ? { function: name, roughness: s.look.roughness, metallic: s.look.metallic } : { function: name, roughness: 0.5 })
       if (graphMode || tintMode === 'graph') this.need().setMaterialTintMode(handle, 'graph')
-      return handle
+      return { handle, wgsl }
     } catch (e) {
       warnOnce(where, `vertex normals (${messageOf(e)})`)
       return null
@@ -339,7 +349,8 @@ class SdfRenderPort implements ResizablePort {
       let max = 0
       for (let i = 0; i < s.joints.length; i++) if (s.joints[i] > max) max = s.joints[i]
       const desc: MeshDesc = { ...part.desc, joints: s.joints, weights: s.weights }
-      return { ...part, desc, mesh: this.addMesh(engine, desc), joints: max + 1 }
+      const fallback = part.fallback === undefined ? {} : { fallback: this.fallbackMesh(engine, part.fallback, { ...part.fallback.desc, joints: s.joints, weights: s.weights }) }
+      return { ...part, desc, mesh: this.addMesh(engine, desc), joints: max + 1, ...fallback }
     })
     if (!parts.some(part => part.joints !== undefined)) refuse(AREA, assetId, 'no skinned part matches a meshed part name; pass the parts of the same raa-sdfm asset')
     const handle = this.uploaded.length
@@ -367,10 +378,10 @@ class SdfRenderPort implements ResizablePort {
     const root = engine.addNode(null)
     const instances: number[] = []
     const skin: SkinSlot[] = []
-    for (const part of parts) {
-      const node = engine.addNode(root, part.t, part.r)
-      const instance = engine.addMeshInstance(node, part.mesh)
-      if (part.object !== undefined) engine.setInstanceMaterial(instance, part.object)
+    const fallbacks: LiveFallback[] = []
+    const add = (node: number, mesh: number, object: number | undefined, part: PartUpload): number => {
+      const instance = engine.addMeshInstance(node, mesh)
+      if (object !== undefined) engine.setInstanceMaterial(instance, object)
       else engine.setSingleMaterial(false, instance)
       // Cosmetic colourways multiply the existing fixed materials on the same mesh.
       // The character keeps its graph-selected skin tint so its beak and feet stay fixed.
@@ -378,11 +389,94 @@ class SdfRenderPort implements ResizablePort {
         engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
         this.tinted.add(instance)
       } else if (this.tinted.delete(instance)) engine.clearInstanceTint(instance)
-      instances.push(instance)
       if (part.joints !== undefined) skin.push({ instance, part })
+      return instance
     }
-    this.live.push({ asset, root, instances, partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [], filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null })
+    const device = this.device()
+    parts.forEach((part, index) => {
+      instances.push(add(engine.addNode(root, part.t, part.r), part.mesh, part.object, part))
+      // While the part's shading pipelines compile, its vertex-colour copy draws in its place (owner 2026-11-04: never
+      // omitted, never a ghost); render() removes the copy the frame the shading can draw.
+      if (part.fallback !== undefined && !fieldReady(device, part.field!)) {
+        const node = engine.addNode(root, part.t, part.r)
+        fallbacks.push({ instance: add(node, part.fallback.mesh, part.fallback.object, part), node, part, index })
+      }
+    })
+    this.live.push({ asset, root, instances, partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [], filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null, fallbacks })
     return this.live.length - 1
+  }
+
+  // The GPUDevice RAA configured this port's canvas with (asyncPipelines tracks its pipelines per device).
+  private gpuDevice: object | undefined
+  private device(): object | undefined {
+    return this.gpuDevice ??= this.canvas === null ? undefined : deviceOfCanvas(this.canvas)
+  }
+
+  /** Parts drawn in vertex colour because their shading pipelines still compile, over the visible instances. */
+  fallbackParts(): number {
+    let count = 0
+    for (const live of this.live) if (live !== null && live.visible) count += live.fallbacks.length
+    return count
+  }
+
+  // Each vertex-colour copy goes the frame its part's shading has every requested pipeline compiled: the shading then
+  // draws in the same render, so the part is never missing and never drawn twice past that frame.
+  private swapFallbacks(engine: SdfEngine): void {
+    const device = this.device()
+    for (const live of this.live) {
+      if (live === null || live.fallbacks.length === 0) continue
+      live.fallbacks = live.fallbacks.filter(copy => {
+        if (!fieldReady(device, copy.part.field!)) return true
+        engine.removeNode(copy.node)
+        this.tinted.delete(copy.instance)
+        live.skin = live.skin.filter(slot => slot.instance !== copy.instance)
+        return false
+      })
+    }
+  }
+
+  /**
+   * The rigid assets the scene on this port has instances of, in upload order (skinned visuals and their rigid bases
+   * left out): a port uploads every meshed asset of the content, a course draws only some of them.
+   */
+  warmableAssets(): string[] {
+    const bases = new Set(this.uploaded.flatMap(entry => entry?.base === undefined ? [] : [entry.base]))
+    const used = new Set(this.live.flatMap(live => live === null ? [] : [live.asset]))
+    return [...this.handleOfId].filter(([, handle]) => {
+      const entry = this.uploaded[handle]
+      return entry !== undefined && entry.bones === undefined && !bases.has(handle) && used.has(handle)
+    }).sort((a, b) => a[1] - b[1]).map(([id]) => id)
+  }
+
+  /**
+   * The warm-up draw of a loading screen: one tiny instance of each listed asset (warmableAssets() when absent) just in
+   * front of the viewport-0 camera, drawn once and removed, so RAA requests now every pipeline their parts need instead
+   * of when they come into view. Skinned visuals are left to their scene: their posed variants need a pose.
+   */
+  warmPipelines(assetIds: readonly string[] = this.warmableAssets()): void {
+    const engine = this.need()
+    const camera = this.lastCamera ?? { eye: [0, 0, 0] as Vec3T, target: [0, 0, -1] as Vec3T, fovYDeg: 60, near: 0.1, far: 100 }
+    if (this.lastCamera === null) this.setCamera(0, camera)
+    const forward = [0, 1, 2].map(i => camera.target[i] - camera.eye[i])
+    const length = Math.hypot(forward[0], forward[1], forward[2]) || 1
+    const ahead = Math.max(camera.near * 4, 0.5)
+    const at: Vec3T = [0, 1, 2].map(i => camera.eye[i] + forward[i] / length * ahead) as unknown as Vec3T
+    const created: number[] = []
+    for (const id of assetIds) {
+      const handle = this.handleOfId.get(id)
+      if (handle === undefined || this.uploaded[handle] === undefined) continue
+      const instance = this.createInstance(handle, null)
+      this.setTransform(instance, at, [0, 0, 0, 1], [1e-3, 1e-3, 1e-3])
+      created.push(instance)
+    }
+    if (created.length === 0) return
+    this.flushPoses(engine)
+    engine.render(performance.now())
+    for (const instance of created) this.destroyInstance(instance)
+  }
+
+  private fallbackMesh(engine: SdfEngine, fallback: Fallback, desc: MeshDesc): Fallback {
+    return { ...fallback, desc, mesh: this.addMesh(engine, desc) }
   }
 
   setTransform(instance: number, t: Vec3T, r: QuatT, s: Vec3T): void {
@@ -407,7 +501,9 @@ class SdfRenderPort implements ResizablePort {
 
   private applyVisibility(live: Live): void {
     const engine = this.need()
-    live.instances.forEach((id, i) => engine.setVisible(id, live.visible && (live.filter === null || live.filter.has(live.partNames[i]))))
+    const shown = (i: number): boolean => live.visible && (live.filter === null || live.filter.has(live.partNames[i]))
+    live.instances.forEach((id, i) => engine.setVisible(id, shown(i)))
+    for (const copy of live.fallbacks) engine.setVisible(copy.instance, shown(copy.index))
   }
 
   destroyInstance(instance: number): void {
@@ -438,12 +534,13 @@ class SdfRenderPort implements ResizablePort {
       this.live[i] = null
       this.posed.delete(i)
     }
+    const all = [...uploaded.parts, ...(uploaded.tintedParts ?? [])]
     if (engine !== null) {
-      for (const part of [...uploaded.parts, ...(uploaded.tintedParts ?? [])]) {
-        try { engine.removeMesh(part.mesh) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
+      for (const mesh of all.flatMap(part => part.fallback === undefined ? [part.mesh] : [part.mesh, part.fallback.mesh])) {
+        try { engine.removeMesh(mesh) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
       }
     }
-    this.meshes -= uploaded.parts.length + (uploaded.tintedParts?.length ?? 0)
+    this.meshes -= all.length + uploaded.parts.filter(part => part.fallback !== undefined).length
     this.uploaded[handle] = undefined
     for (const [name, h] of this.handleOfName) if (h === handle) this.handleOfName.delete(name)
     for (const [id, h] of this.handleOfId) if (h === handle) this.handleOfId.delete(id)
@@ -458,7 +555,11 @@ class SdfRenderPort implements ResizablePort {
     const camera = { eye: [...cam.eye] as [number, number, number], target: [...cam.target] as [number, number, number], fovYDeg: cam.fovYDeg, near: cam.near, far: cam.far, ...(cam.up ? { up: [...cam.up] as [number, number, number] } : {}) }
     if (count === 1) engine.setCamera(camera)
     else engine.setViewportCamera(viewport, camera)
+    if (viewport === 0) this.lastCamera = cam
   }
+
+  // The viewport-0 camera last set (warmPipelines draws in front of it).
+  private lastCamera: CameraPose | null = null
 
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void {
     const engine = this.need()
@@ -480,6 +581,7 @@ class SdfRenderPort implements ResizablePort {
   render(): RenderStats {
     const engine = this.need()
     const t0 = performance.now()
+    this.swapFallbacks(engine)
     this.flushPoses(engine)
     renderFrame(this, () => engine.render(t0))
     const frameMs = performance.now() - t0
@@ -574,7 +676,10 @@ class SdfRenderPort implements ResizablePort {
       const white = this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
       const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? white }))
       const desc = { ...part.desc, subMeshes }
-      return { ...part, desc, subMeshes, mesh: this.addMesh(engine, desc) }
+      if (part.fallback === undefined) return { ...part, desc, subMeshes, mesh: this.addMesh(engine, desc) }
+      const fallbackSubMeshes = part.fallback.subMeshes.map(sub => ({ ...sub, material: sub.material ?? white }))
+      const fallback = this.fallbackMesh(engine, { ...part.fallback, subMeshes: fallbackSubMeshes }, { ...part.fallback.desc, subMeshes: fallbackSubMeshes })
+      return { ...part, desc, subMeshes, mesh: this.addMesh(engine, desc), fallback }
     })
     return uploaded.tintedParts
   }

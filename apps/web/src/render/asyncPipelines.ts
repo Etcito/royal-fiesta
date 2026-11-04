@@ -7,18 +7,123 @@ let internalFallbacks = 0
 export function pendingPipelines(): number { return compiling }
 export function asyncPipelineFallbacks(): number { return internalFallbacks }
 
+// One lit pipeline handle: material = the key of the material function its module was composed from (null when the
+// module is not an RAA lit variant), device = the GPUDevice that compiles it.
+interface State { pipeline?: object; error?: unknown; device: object; material: string | null; pass: string | null }
+// Every lit pipeline requested so far per material function, per device (its shadow, prepass and forward variants);
+// shown once the material has drawn: a variant requested later (a caster entering the shadow map) then only omits its
+// own draws instead of hiding the whole object again.
+interface Material { states: Set<State>; shown: boolean }
+const materialsOf = new WeakMap<object, Map<string, Material>>()
+
+/** The key of a material function's WGSL (the text given to addMaterialFunction, the module's material section). */
+export function materialKey(wgsl: string): string {
+  const text = wgsl.trim()
+  let a = 0x811c9dc5, b = 0x9dc5811c
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    a = Math.imul(a ^ c, 0x01000193)
+    b = Math.imul(b ^ c, 0x01000193) ^ (b >>> 15)
+  }
+  return `${text.length}:${(a >>> 0).toString(16)}${(b >>> 0).toString(16)}`
+}
+
+/**
+ * True when the material function `key` (materialKey of its WGSL) has drawn on `device`, or has a forward variant and
+ * every pipeline requested for it there is compiled: a part's shading then draws whole from this frame on. A true
+ * answer latches the material as shown, so a variant first requested in the frame that swaps its vertex-colour copy
+ * out omits only its own draws.
+ */
+export function fieldReady(device: object | undefined, key: string): boolean {
+  const material = device === undefined ? undefined : materialsOf.get(device)?.get(key)
+  if (material === undefined) return false
+  if (material.shown) return true
+  let forward = false
+  for (const state of material.states) {
+    if (state.pipeline === undefined) return false
+    if (state.pass === 'Forward') forward = true
+  }
+  return material.shown = forward
+}
+
+// The device each canvas was configured with (GPUCanvasContext.configure), for a port to find its pipelines.
+const canvasDevices = new WeakMap<object, object>()
+export function deviceOfCanvas(canvas: object): object | undefined {
+  return canvasDevices.get(canvas)
+}
+
+// The material section of an RAA lit variant module (the material function, between its section line and the next)
+// and the pass of its header line.
+const MATERIAL_SECTION = /^\/\/ raa section: material(?: "[^\n]*")?$/m
+const VARIANT = /^\/\/ raa variant: (?:material .+?, )?pass (\w+)/m
+function moduleInfo(code: string): ModuleInfo | null {
+  const variant = VARIANT.exec(code)
+  if (variant === null) return null
+  const start = MATERIAL_SECTION.exec(code)
+  if (start === null) return null
+  const from = start.index + start[0].length
+  const end = code.indexOf('\n// raa section: ', from)
+  return { material: materialKey(code.slice(from, end < 0 ? code.length : end)), pass: variant[1] }
+}
+interface ModuleInfo { material: string; pass: string }
+
+// A lit draw goes through when its pipeline is compiled and its material has drawn already, or every pipeline
+// requested for that material on its device is compiled (it is then shown from this draw on).
+function drawable(state: State): boolean {
+  if (state.pipeline === undefined) return false
+  if (state.material === null) return true
+  const material = materialsOf.get(state.device)!.get(state.material)!
+  if (material.shown) return true
+  for (const other of material.states) if (other.pipeline === undefined) return false
+  material.shown = true
+  return true
+}
+
 // The release engine asks for lit pipelines synchronously. Keep that handle private to
 // this bridge until WebGPU finishes the async pipeline, and omit its draws meanwhile.
 // Explicit layouts let getBindGroupLayout work immediately. One-shot compute passes and
 // auto-layout pipelines retain their native behaviour; skipping them would lose GPU work.
-export function installAsyncLitPipelines(devicePrototype: object, passPrototype?: object): void {
+//
+// A lit draw is all or nothing per material function (owner 2026-11-04: start-screen cosmetics, then course assets,
+// showed at about 5% opacity for seconds). Every variant of a part (shadow, prepass, forward) is a 'raa.lit.pipeline'
+// and compiles here asynchronously, but the shadow one (no fragment stage) is ready in about a second and the prepass
+// and forward ones (they carry the part's SDF field) in up to tens of seconds. Drawing the ready ones alone left the
+// part's shadow and its prepass depth/normals (ambient occlusion, fog, edges) on screen with no surface: the ghost. So
+// a lit draw goes through only when every pipeline requested for its material function on its device is compiled; a
+// new material's variants all start pending, so the shadow pass, which draws first in a frame, never draws it before
+// its forward variant exists. Meanwhile the SDF port draws the part's vertex-colour copy (sdfPort fallbacks).
+export function installAsyncLitPipelines(devicePrototype: object, passPrototype?: object, contextPrototype?: object): void {
   if (passPrototype === undefined || installed.has(devicePrototype)) return
   installed.add(devicePrototype)
   const layouts = new WeakMap<object, unknown[]>()
-  const handles = new WeakMap<object, { pipeline?: object; error?: unknown }>()
+  const handles = new WeakMap<object, State>()
   const byPromise = new WeakMap<Promise<object>, object>()
-  const waiting = new WeakSet<object>()
+  const modules = new WeakMap<object, ModuleInfo | null>()
+  const current = new WeakMap<object, State>()
   const device = devicePrototype as Prototype
+  const createModule = device.createShaderModule
+  if (typeof createModule === 'function') {
+    device.createShaderModule = function(descriptor: unknown): unknown {
+      const value = createModule.call(this, descriptor)
+      const code = (descriptor as { code?: unknown })?.code
+      if (typeof value === 'object' && value !== null && typeof code === 'string' && !modules.has(value)) modules.set(value, moduleInfo(code))
+      return value
+    }
+  }
+  const infoOf = (desc: Descriptor): ModuleInfo | null => {
+    const stage = (desc.fragment ?? desc.vertex) as { module?: unknown } | undefined
+    return typeof stage?.module === 'object' && stage.module !== null ? modules.get(stage.module) ?? null : null
+  }
+  const context = contextPrototype as Prototype | undefined
+  const configure = context?.configure
+  if (context !== undefined && typeof configure === 'function') {
+    context.configure = function(config: unknown): unknown {
+      const canvas = (this as { canvas?: unknown }).canvas
+      const gpu = (config as { device?: unknown })?.device
+      if (typeof canvas === 'object' && canvas !== null && typeof gpu === 'object' && gpu !== null) canvasDevices.set(canvas, gpu)
+      return configure.call(this, config)
+    }
+  }
   // Dawn rejects a lit pipeline on an invalid layout with only "is invalid due to a previous error" (M1 judge,
   // 4 clients, 2026-10-29). Each layout's own validation error is caught in an error scope and named in that rejection.
   const causes = new WeakMap<object, Promise<string | null>>()
@@ -65,7 +170,15 @@ export function installAsyncLitPipelines(devicePrototype: object, passPrototype?
     const promise = device.createRenderPipelineAsync.call(this, descriptor) as Promise<object>
     const known = byPromise.get(promise)
     if (known !== undefined) return known
-    const state: { pipeline?: object; error?: unknown } = {}
+    const info = infoOf(desc)
+    const state: State = { device: this, material: info?.material ?? null, pass: info?.pass ?? null }
+    if (state.material !== null) {
+      let materials = materialsOf.get(this)
+      if (materials === undefined) materialsOf.set(this, materials = new Map())
+      let material = materials.get(state.material)
+      if (material === undefined) materials.set(state.material, material = { states: new Set(), shown: false })
+      material.states.add(state)
+    }
     const handle = { getBindGroupLayout(index: number): unknown {
       if (groups[index] == null) throw new Error(`Lit pipeline has no bind group layout ${index}`)
       return groups[index]
@@ -99,17 +212,20 @@ export function installAsyncLitPipelines(devicePrototype: object, passPrototype?
   const setPipeline = pass.setPipeline
   pass.setPipeline = function(pipeline: unknown): unknown {
     const state = typeof pipeline === 'object' && pipeline !== null ? handles.get(pipeline) : undefined
-    waiting.delete(this)
-    if (state === undefined) return setPipeline.call(this, pipeline)
+    if (state === undefined) {
+      current.delete(this)
+      return setPipeline.call(this, pipeline)
+    }
     if (state.error !== undefined) throw state.error
+    current.set(this, state)
     if (state.pipeline !== undefined) return setPipeline.call(this, state.pipeline)
-    waiting.add(this)
   }
   for (const name of ['draw', 'drawIndexed', 'drawIndirect', 'drawIndexedIndirect']) {
     const draw = pass[name]
     if (typeof draw !== 'function') continue
     pass[name] = function(...args: unknown[]): unknown {
-      if (!waiting.has(this)) return draw.apply(this, args)
+      const state = current.get(this)
+      if (state === undefined || drawable(state)) return draw.apply(this, args)
     }
   }
 }

@@ -11,6 +11,7 @@ import { checkPose, checkSkin } from '@royal-fiesta/game/render/nullPort'
 import type { SkinnedAssetT } from '@royal-fiesta/game/render/port'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import * as raaSdfm from '@etcito/raa-sdfm'
+import * as asyncPipelines from '../src/render/asyncPipelines.ts'
 
 import type { CameraPose, RenderTarget, Viewport } from '@royal-fiesta/game/render/port'
 
@@ -53,10 +54,11 @@ runInNewContext(compiled, {
     if (id === '../game/checkProgress.ts') return { checkAwait: (_step: string, work: () => Promise<unknown>) => work() }
     if (id === '../render/raaEngine.ts') return { createRaaEngine: async () => initEngine }
     if (id === '../render/shaderCache.ts') return { installShaderCache() {} }
+    if (id === '../render/asyncPipelines.ts') return asyncPipelines
     if (id === '@royal-fiesta/game/render/nullPort') return { checkPose, checkSkin }
     if (id === './materialProgram.ts') return { materialProgram }
     if (id === '@etcito/raa-sdfm') return raaSdfm
-    if (id === '@royal-fiesta/game/render/roundLoad') return { roundStep: (_name: string, fn: () => unknown) => fn() }
+    if (id === '@royal-fiesta/game/render/roundLoad') return { roundStep: (_name: string, fn: () => unknown) => fn(), renderFrame: (_port: unknown, fn: () => unknown) => fn() }
     if (id === '@royal-fiesta/sim/refusal') return { refuse: (...args: unknown[]) => { throw new Error(args.join(':')) } }
     return {}
   },
@@ -328,12 +330,73 @@ test('saved penguin and costume parts draw their per-pixel SDF shading on every 
     port.createInstance(port.registerAsset(id,{id}),null)
     assert.equal(functions.filter(f=>f.startsWith('sdff.')).length,parts.length,`${id}: one shading function per part`)
     const descs=calls.jointStreams as {colors?:Float32Array;uvs?:Float32Array;tangents?:Float32Array;positions:Float32Array;subMeshes:{material?:number}[]}[]
-    for(const desc of descs){
+    // Each part uploads its vertex-colour copy first (drawn while its shading compiles), then its shaded mesh.
+    assert.equal(descs.length,parts.length*2,`${id}: a vertex-colour copy and a shaded mesh per part`)
+    for(let i=0;i<descs.length;i+=2){
+      const fallback=descs[i],desc=descs[i+1]
+      assert.equal(fallback.subMeshes.length,desc.subMeshes.length,`${id}: the copy draws the same sub-meshes`)
       assert.equal(new Set(desc.subMeshes.map(s=>s.material)).size,1,`${id}: every sub-mesh draws the part's shading`)
       assert.equal(desc.colors![0],desc.positions[0],`${id}: the vertex colour carries the rest point`)
       assert.ok(desc.uvs&&desc.tangents,`${id}: rest frame streams`)
     }
   }
+})
+
+// Owner 2026-11-04: while a part's SDF field pipelines compile, the part draws in vertex colour (its `?normals=vertex`
+// copy) and swaps to the field the frame they are compiled: never omitted, never a ghost.
+test('a shaded part draws its vertex-colour copy until every pipeline of its shading is compiled, then swaps', async () => {
+  const root = new URL('../../../', import.meta.url)
+  const id = 'penguin.body'
+  const mesh = decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`, root))))
+  const parts = (mesh.data as { groups: { parts: { meshes: unknown[] }[] }[] }).groups.flatMap(g => g.parts).filter(p => p.meshes.length)
+  const resolvers: (() => void)[] = []
+  class Device {
+    createShaderModule(descriptor: { code: string }): object { return { code: descriptor.code } }
+    createPipelineLayout(_descriptor: unknown): object { return {} }
+    createRenderPipeline(_descriptor: unknown): object { return {} }
+    createRenderPipelineAsync(_descriptor: unknown): Promise<object> { return new Promise(done => resolvers.push(() => done({}))) }
+  }
+  class Pass { setPipeline(): void {} drawIndexed(): void {} }
+  class Context { canvas = new FakeCanvas(); configure(_config: unknown): void {} }
+  asyncPipelines.installAsyncLitPipelines(Device.prototype, Pass.prototype, Context.prototype)
+  const device = new Device(), context = new Context()
+  context.configure({ device })
+  const { engine, calls } = fakeEngine()
+  const shadings: string[] = []
+  const removed: number[] = []
+  Object.assign(engine, {
+    addMaterialFunction(name: string, wgsl: string) { calls.functions++; if (name.startsWith('sdff.')) shadings.push(wgsl) },
+    removeNode(node: number) { removed.push(node) },
+    render() {}, stats: () => ({ drawCalls: 0, triangles: 0, instances: 0 }),
+  })
+  const port = exports.make(new Map([[id, mesh]]))
+  port.engine = engine; port.target = {}
+  Object.assign(port, { canvas: context.canvas })
+  port.createInstance(port.registerAsset(id, { id }), null)
+  assert.equal(shadings.length, parts.length)
+  assert.equal(calls.instances, parts.length * 2, 'each part draws its shading and, meanwhile, its vertex-colour copy')
+  const view = port as unknown as { render(): void; fallbackParts(): number }
+  assert.equal(view.fallbackParts(), parts.length)
+  view.render()
+  assert.deepEqual(removed, [], 'nothing compiled yet: the copies stay')
+  const layout = device.createPipelineLayout({ bindGroupLayouts: [] })
+  const request = (wgsl: string, pass: string) => device.createRenderPipeline({ label: 'raa.lit.pipeline', layout, vertex: { module: device.createShaderModule({
+    code: `// raa variant: material sdff.x, pass ${pass}, msaa 1\n\n// raa section: prelude\n\n// raa section: material "sdff.x"\n${wgsl}\n// raa section: pass ${pass}\n` }) } })
+  for (const wgsl of shadings) { request(wgsl, 'Shadow'); request(wgsl, 'Forward') }
+  resolvers.splice(0, 1).forEach(done => done())
+  await new Promise(resolve => setTimeout(resolve, 0))
+  view.render()
+  assert.deepEqual(removed, [], 'a compiled shadow variant alone does not swap')
+  resolvers.splice(0, 1).forEach(done => done())
+  await new Promise(resolve => setTimeout(resolve, 0))
+  view.render()
+  assert.equal(removed.length, 1, 'the first part swaps the frame its shadow and forward variants are compiled')
+  assert.equal(view.fallbackParts(), parts.length - 1)
+  resolvers.splice(0).forEach(done => done())
+  await new Promise(resolve => setTimeout(resolve, 0))
+  view.render()
+  assert.equal(removed.length, parts.length)
+  assert.equal(view.fallbackParts(), 0)
 })
 
 // Deliverable 4 (owner 2026-11-04): a part MAMA gave no field keeps vertex normals with one warning naming the asset and

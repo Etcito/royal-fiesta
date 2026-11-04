@@ -172,9 +172,3 @@ export function startStep(
       return { model: m, effect: null }
   }
 }
-
-// A window into the carousel; the first logical cell is always the None choice.
-export function carouselWindow(selected: number, count: number, visible = 4): number[] {
-  const start = Math.max(0, Math.min(selected + 1 - Math.floor(visible / 2), count + 1 - visible))
-  return Array.from({ length: Math.min(visible, count + 1) }, (_, i) => start + i - 1)
-}

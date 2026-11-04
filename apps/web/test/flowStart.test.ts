@@ -25,6 +25,7 @@ class RecordingPort extends NullRenderPort {
   readonly created: { instance: number; asset: number; tint: Vec3T | null }[] = []
   readonly destroyed: number[] = []
   readonly transforms = new Map<number, { t: Vec3T; r: QuatT; s: Vec3T }>()
+  skinOf?: (assetId: string) => SkinnedAssetT | undefined
 
   override registerAsset(id: string, asset: PrimsAsset): number {
     this.registered.push(id)
@@ -302,43 +303,74 @@ test('start scene supplies dressing and penguin spot with responsive camera fram
 })
 
 // Owner 2026-11-04: the carousels show the cosmetics themselves in 3D (the asset the penguin wears), with no
-// card and no thumbnail. Each visible cell holding an item gets an instance of the shared asset on the camera
-// ray through the cell, fitted to it; the focused selection is drawn larger.
-test('carousel cells draw each cosmetic as its 3D asset on the camera ray through the cell, no card or thumbnail', async () => {
+// card and no thumbnail; then "le carrousel n'a pas besoin d'en montrer plusieurs. Celui actif et les flèches pour en
+// changer. Pas besoin de les faire tourner": each bin draws only its selected cosmetic, still, in its one cell.
+test('each carousel draws only its selected cosmetic, still, on the camera ray through its one cell', async t => {
+  let now = 0
+  t.mock.method(performance, 'now', () => now)
   const s = await setup()
   const cell = (id: string) => {
-    const m = /^carousel-(\d)-(\d)$/.exec(id)
-    return m === null ? null : { x: 100 + 150 * Number(m[2]), y: 50 + 120 * Number(m[1]), w: 138, h: 100 }
+    const m = /^carousel-(\d)-0$/.exec(id)
+    return m === null ? null : { x: 300, y: 50 + 120 * Number(m[1]), w: 160, h: 100 }
   }
-  s.host.widgetRect = cell
+  const asked = new Set<string>()
+  s.host.widgetRect = id => { asked.add(id); return cell(id) }
   const box = { min: [-0.5, -0.5, -0.5] as Vec3T, max: [0.5, 0.5, 0.5] as Vec3T }
   const bounds = new Map(ids.map(id => [id, box]))
   const size = { width: 800, height: 600 }
   const view = mountStartScreen(s.host, s.model, { ...s.deps, viewSize: () => size }, { ...s.art, bounds })
-  // One penguin, three worn costumes and one carousel item per bin that owns one (the special bin owns none).
+  // One penguin, three worn costumes and the selected item of each bin that has one (the special bin owns none).
   assert.equal(s.port.render().instances, 7)
   assert.deepEqual(s.port.registered, ['penguin.body', ...ids], 'carousel items reuse the worn assets')
-  for (const key of Object.keys(s.props())) assert.ok(!/^(thumb-start|carousel-focus)-/.test(key), `${key} is still set`)
+  assert.ok(![...asked].some(id => !/^carousel-\d-0$/.test(id)), `only the one cell per bin is laid out: ${[...asked]}`)
+  for (const key of Object.keys(s.props())) assert.ok(!/^(thumb-start|carousel-focus)-|^carousel(-name|-worn)?-\d-[1-3]$/.test(key), `${key} is still set`)
   const carouselInstances = s.port.created.slice(4)
-  assert.equal(carouselInstances.length, 3)
+  assert.deepEqual(carouselInstances.map(c => c.asset), s.port.created.slice(1, 4).map(c => c.asset), 'each bin shows its selected item')
   const ray = cameraRay(s.port.lastCamera!, size)
+  const first = new Map<number, QuatT>()
   carouselInstances.forEach(({ instance }, bin) => {
-    // Each bin holds one item: its window is [None, item], so the item sits in column 1.
-    const rect = cell(`carousel-${bin}-1`)!
+    const rect = cell(`carousel-${bin}-0`)!
     const top = rect.h * 0.72
     const { point, worldPerPx } = ray(rect.x + rect.w / 2, rect.y + top / 2)
     const transform = s.port.transforms.get(instance)!
     near(transform.t, point)
-    // The focused bin (head, selected) is drawn at full size, the others smaller.
-    const fill = bin === 0 ? 1 : 0.78
-    near(transform.s, [1, 1, 1].map(() => Math.min(rect.w, top) * worldPerPx * fill))
+    near(transform.s, [1, 1, 1].map(() => Math.min(rect.w, top) * worldPerPx * 0.9))
+    first.set(instance, transform.r)
     const eye = s.port.lastCamera!.eye
     assert.ok(Math.hypot(point[0] - eye[0], point[1] - eye[1], point[2] - eye[2]) < 6.2, 'in front of the penguin')
   })
-  // Without a laid-out cell nothing is drawn there; the cell's instance goes.
-  s.host.widgetRect = id => id === 'carousel-0-1' ? null : cell(id)
+  // Time passes: the penguin turns, the carousel items do not.
+  now = 5000
   view.update(s.model, null)
+  for (const [instance, rotation] of first) near(s.port.transforms.get(instance)!.r, rotation)
+  assert.notDeepEqual(s.port.transforms.get(0)!.r, first.get(carouselInstances[0].instance))
+  // Browsing replaces the bin's one item; nothing selected shows 'None' and draws nothing there.
+  s.model.bins[0].selected = -1
+  view.update(s.model, { action: 'left', effect: null })
   assert.equal(s.port.render().instances, 6)
+  assert.deepEqual(s.props()['carousel-name-0-0'], { text: 'None', visible: true })
+  // Without a laid-out cell nothing is drawn there; the cell's instance goes.
+  s.host.widgetRect = id => id === 'carousel-1-0' ? null : cell(id)
+  view.update(s.model, null)
+  assert.equal(s.port.render().instances, 5)
   view.unmount()
   assert.equal(s.port.render().instances, 0)
+})
+
+// Owner 2026-11-04: wearing a cosmetic took seconds although the carousel already drew it. The worn skinned copy is
+// posed with the penguin, the carousel one was not, and RAA builds other pipelines for a posed mesh: wearing compiled
+// every part again. The carousel now poses its skinned items (still, at rest), so wearing reuses their pipelines.
+test('a skinned cosmetic in a carousel is posed, like the worn one, so wearing it compiles nothing new', async () => {
+  const s = await setup()
+  s.port.skinOf = (id: string) => id === ids[1] ? skin : undefined
+  s.host.widgetRect = id => /^carousel-\d-0$/.test(id) ? { x: 300, y: 100, w: 160, h: 100 } : null
+  const view = mountStartScreen(s.host, s.model, { ...s.deps, viewSize: () => ({ width: 800, height: 600 }) }, {
+    ...s.art, skinned: { assetId: 'penguin.skin', skin, graph: 'unused-at-rest' },
+  })
+  const outfit = s.port.created.filter(c => c.asset === s.port.created[2].asset).map(c => c.instance)
+  assert.equal(outfit.length, 2, 'the worn outfit and its carousel copy')
+  for (const instance of outfit) assert.ok(s.port.poseOf(instance), `instance ${instance} is posed`)
+  const hats = s.port.created.filter(c => c.asset === s.port.created[1].asset).map(c => c.instance)
+  assert.ok(!s.port.poseOf(hats[1]), 'a rigid cosmetic needs no pose')
+  view.unmount()
 })

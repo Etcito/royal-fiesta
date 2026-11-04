@@ -144,8 +144,10 @@ test('wardrobe submits its scene before the UI frame, and a hidden lobby restore
     startView: { setVisible() {}, update() { calls.push('wardrobe camera and instances') } },
     resize() {}, loaded: { ports: [{ render() { calls.push('stage render') } }] },
     host: { frame() { calls.push('UI frame') } },
+    preloadShow() { calls.push('show preload check') },
   })
-  assert.deepEqual(calls, ['wardrobe camera and instances', 'stage render', 'UI frame'])
+  // The first show round preloads behind the start screen, checked after its frame is presented.
+  assert.deepEqual(calls, ['wardrobe camera and instances', 'stage render', 'UI frame', 'show preload check'])
   const visibility: boolean[][] = []
   let hub = true, round = false
   const mode = {

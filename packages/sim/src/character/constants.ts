@@ -151,9 +151,32 @@ export const CarryKind = {
 
 export type CarryKindValue = 0 | 1 | 2 | 3 | 4
 
-export const SURFACE_TUNING: Readonly<Record<Surface, { accel: number; brake: number; maxRun: number; bounce: number }>> = {
+export interface SurfaceTuning { accel: number; brake: number; maxRun: number; bounce: number }
+
+export const SURFACE_TUNING: Readonly<Record<Surface, SurfaceTuning>> = {
   normal: { accel: 1, brake: 1, maxRun: 1, bounce: 0 },
   ice: { accel: 0.25, brake: 0.15, maxRun: 1.1, bounce: 0 },
   mud: { accel: 0.7, brake: 1.2, maxRun: 0.6, bounce: 0 },
   rubber: { accel: 1, brake: 1, maxRun: 1, bounce: 0.6 },
+}
+
+/**
+ * Walking on ice grips with the ground's own friction (owner 2026-11-04, slide-race). At GLARE_ICE.mu
+ * and below (the slide-race's ice roads, μ 0.02) he barely grips: pushing builds speed slowly
+ * (3 m/s², 2 s to a 6 m/s top, below the belly slide), letting go drifts on (2.8 m/s², over 6 m from
+ * top speed) and a turn takes seconds, almost running in place. From ICE_GRIP_MU up (Butterfly
+ * Freeway's ice floor, μ 0.06, raced by bots on foot) SURFACE_TUNING.ice holds; between, it blends.
+ */
+export const GLARE_ICE: Readonly<SurfaceTuning & { mu: number }> = { mu: 0.02, accel: 0.05, brake: 0.04, maxRun: 0.75, bounce: 0 }
+export const ICE_GRIP_MU = 0.06
+
+/** The ice walking tuning on ground of friction `mu`, written into `out`. */
+export function iceWalkTuning(mu: number, out: SurfaceTuning): SurfaceTuning {
+  const ice = SURFACE_TUNING.ice
+  const k = Math.max(0, Math.min(1, (mu - GLARE_ICE.mu) / (ICE_GRIP_MU - GLARE_ICE.mu)))
+  out.accel = GLARE_ICE.accel + (ice.accel - GLARE_ICE.accel) * k
+  out.brake = GLARE_ICE.brake + (ice.brake - GLARE_ICE.brake) * k
+  out.maxRun = GLARE_ICE.maxRun + (ice.maxRun - GLARE_ICE.maxRun) * k
+  out.bounce = ice.bounce
+  return out
 }

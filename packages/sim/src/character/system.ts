@@ -15,7 +15,7 @@ import { pose } from '../vec.ts'
 import type { Vec3 } from '../vec.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
 import { GRAVITY_Y } from '../world.ts'
-import { CHAR, CarryKind, CharMode, SLIDE_STROKE, SURFACE_TUNING, strokeAnimPhase, strokeElapsed, strokeReadyTicks, strokeStartTick, strokeTotalTicks } from './constants.ts'
+import { CHAR, CarryKind, CharMode, SLIDE_STROKE, SURFACE_TUNING, iceWalkTuning, type SurfaceTuning, strokeAnimPhase, strokeElapsed, strokeReadyTicks, strokeStartTick, strokeTotalTicks } from './constants.ts'
 import type { SlideStroke } from './constants.ts'
 import { approach2, turnFacing } from './controller.ts'
 
@@ -83,6 +83,7 @@ const scratchPt = { x: 0, y: 0, z: 0 }
 const scratchHandle = pose()
 const scratchBody: BodyRef = { item: -1, body: -1 }
 const scratchObsV = { x: 0, y: 0, z: 0 }
+const scratchTuning: SurfaceTuning = { accel: 0, brake: 0, maxRun: 0, bounce: 0 }
 let scratchRay: InstanceType<RapierModule['Ray']> | null = null
 
 // #timer in air mode: airborne off a slide (a bump, a lip, a drop), not a jump. The landing returns
@@ -552,7 +553,16 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         }
       }
       this.#groundObstacle[p] = gi
+      // The ground's own friction: the ground item's, else the obstacle's, else the surface table's.
+      let groundFriction = this.#surfaceFriction[surface]
+      if (this.#groundItem[p] >= 0 && mechanisms !== null) {
+        groundFriction = mechanisms.spec()!.items[this.#groundItem[p]].bodies[this.#groundBody[p]].friction
+      } else if (gi >= 0 && obstacles !== null) {
+        groundFriction = obstacles.spec(gi).friction
+      }
       const tuning = SURFACE_TUNING[surface]
+      // Walking on ice grips with that friction: the slide-race's glare ice barely grips at all.
+      const walk = surface === 'ice' ? iceWalkTuning(groundFriction, scratchTuning) : tuning
 
       // Mode machine; ground/air is re-derived each tick from the probe.
       const free: number = grounded ? CharMode.ground : CharMode.air
@@ -607,8 +617,8 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         vz = 0
       } else if (steer) {
         const hasMove = mlen > 0
-        const rate = !grounded ? CHAR.airAccel : hasMove ? CHAR.groundAccel * tuning.accel : CHAR.groundBrake * tuning.brake
-        const maxRun = CHAR.maxRun * (grounded ? tuning.maxRun : 1)
+        const rate = !grounded ? CHAR.airAccel : hasMove ? CHAR.groundAccel * walk.accel : CHAR.groundBrake * walk.brake
+        const maxRun = CHAR.maxRun * (grounded ? walk.maxRun : 1)
         approach2(v.x, v.z, base.x + mx * maxRun, base.z + mz * maxRun, rate * dt, scratchH)
         vx = scratchH.x
         vz = scratchH.z
@@ -668,12 +678,6 @@ export class CharacterSystem implements SimSystem<PlayerInput> {
         let fx = this.#facingX[p]
         let fz = this.#facingZ[p]
         // μ is the capsule's Min combine rule: the lower of the surface table and the ground item.
-        let groundFriction = this.#surfaceFriction[surface]
-        if (this.#groundItem[p] >= 0 && mechanisms !== null) {
-          groundFriction = mechanisms.spec()!.items[this.#groundItem[p]].bodies[this.#groundBody[p]].friction
-        } else if (gi >= 0 && obstacles !== null) {
-          groundFriction = obstacles.spec(gi).friction
-        }
         const mu = Math.min(this.#surfaceFriction[surface], groundFriction)
         const ny = hit.normal.y
         const nx = hit.normal.x

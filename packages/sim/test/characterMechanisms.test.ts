@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { initRapier } from '@gamesaloon/rollback-rapier'
-import { CHAR, CharMode } from '../src/character/constants.ts'
+import { CHAR, CharMode, ICE_GRIP_MU } from '../src/character/constants.ts'
 import { CharacterSystem } from '../src/character/system.ts'
 import type { CharState } from '../src/character/system.ts'
 import type { ResolvedCourse, Surface } from '../src/course.ts'
@@ -55,8 +55,9 @@ function fixture(b: BodySpec, joints: JointSpec[] = [], at = O, levers: LeverSpe
   const out = state()
   return { world, mechanisms, chars, read: () => chars.state(world.ctx, 0, out) }
 }
+// An ice floor at the grip friction, where SURFACE_TUNING.ice holds (glare ice is covered in character.test.ts).
 function floor(surface: Surface, at = O) {
-  return fixture(body({ type: 'fixed', surface, rest: { t: { x: 0, y: -0.5, z: 0 }, r: I },
+  return fixture(body({ type: 'fixed', surface, friction: surface === 'ice' ? ICE_GRIP_MU : 0, rest: { t: { x: 0, y: -0.5, z: 0 }, r: I },
     colliders: [{ shape: 'cuboid', half: { x: 10, y: 0.5, z: 100 }, t: O, r: I }] }), [], at)
 }
 

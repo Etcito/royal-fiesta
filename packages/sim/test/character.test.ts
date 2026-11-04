@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { FIXED_DT, initRapier } from '@gamesaloon/rollback-rapier'
 import type { BodyId, RapierModule } from '@gamesaloon/rollback-rapier'
-import { CHAR, CarryKind, CharMode, SLIDE_STROKE, strokeReadyTicks, strokeStartTick, strokeTotalTicks } from '../src/character/constants.ts'
+import { CHAR, CarryKind, CharMode, GLARE_ICE, SLIDE_STROKE, SURFACE_TUNING, strokeReadyTicks, strokeStartTick, strokeTotalTicks } from '../src/character/constants.ts'
 import type { SlideStroke } from '../src/character/constants.ts'
 import { approach2, turnFacing } from '../src/character/controller.ts'
 import { CharacterSystem, characterBody } from '../src/character/system.ts'
@@ -763,6 +763,25 @@ describe('M4 slide', () => {
     seedSlide(r, speed)
     return r
   }
+
+  it('glare ice (the slide-race roads) barely grips a walk; ice from the grip friction up keeps its tuning', () => {
+    const walk = (friction: number) => {
+      const r = obsRig([surfaceFloor('ice', friction)], v3(0, 0, -40))
+      try {
+        stepN(r, 30, NEUTRAL)
+        const second = hspeed(stepN(r, 60, FORWARD))
+        const top = hspeed(stepN(r, 240, FORWARD))
+        const coast = hspeed(stepN(r, 60, NEUTRAL))
+        return { second, top, coast }
+      } finally { r.world.free() }
+    }
+    const glare = walk(GLARE_ICE.mu), grip = walk(0.06)
+    const near = (a: number, b: number) => Math.abs(a - b) < 0.15
+    assert.ok(near(glare.second, CHAR.groundAccel * GLARE_ICE.accel), `one second of push: ${glare.second} m/s`)
+    assert.ok(near(glare.top, CHAR.maxRun * GLARE_ICE.maxRun), `top ${glare.top}`)
+    assert.ok(near(glare.coast, glare.top - CHAR.groundBrake * GLARE_ICE.brake), `one second of coast: ${glare.coast}`)
+    assert.ok(near(grip.second, CHAR.maxRun * SURFACE_TUNING.ice.maxRun), `grip ice reaches its top in a second: ${grip.second}`)
+  })
 
   it('every grounded dive lands in slide, on a belt as on plain ground', () => {
     // A conveyor adds 4 m/s to the 8 m/s run: the dive carries 12 m/s into the landing.

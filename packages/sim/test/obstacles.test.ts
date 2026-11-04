@@ -11,6 +11,7 @@ import type { Vec3 } from '../src/vec.ts'
 import { FiestaWorld } from '../src/world.ts'
 import type { SimSystem, WorldCtx } from '../src/world.ts'
 import { colliderDesc } from '../src/obstacles/colliders.ts'
+import { colliderVolume, hullVolume } from '../src/mechanisms/bodies.ts'
 import { RefusalError } from '../src/refusal.ts'
 
 const R: RapierModule = await initRapier()
@@ -75,6 +76,27 @@ test('colliderDesc: capsule, cylinder, cone', () => {
     checkTranslation(col)
     sim.free()
   }
+})
+
+test('colliderDesc: convexHull is built by Rapier from the saved corners, the same on two worlds', () => {
+  const points = [-1, 1].flatMap((x) => [-1, 1].flatMap((y) => [-1, 1].flatMap((z) => [x * 0.5, y * 0.25, z])))
+  const c: ColliderSpec = { shape: 'convexHull', points, half: { x: 0.5, y: 0.25, z: 1 }, t, r }
+  const a = build(c), b = build(c)
+  assert.equal(a.col.shape.type, R.ShapeType.ConvexPolyhedron)
+  checkTranslation(a.col)
+  // the 1 x 0.5 x 2 box is 1 m3: Rapier's volume (mass at density 1) and colliderVolume agree
+  assert.ok(Math.abs(a.col.volume() - 1) < 1e-5, String(a.col.volume()))
+  assert.ok(Math.abs(colliderVolume(c) - 1) < 1e-12, String(colliderVolume(c)))
+  assert.equal(a.col.volume(), b.col.volume())
+  a.sim.free()
+  b.sim.free()
+})
+
+test('hullVolume: a regular octahedron, and a cube with extra points on its faces and edges', () => {
+  const oct = [1, 0, 0, -1, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 1, 0, 0, -1]
+  assert.ok(Math.abs(hullVolume(oct) - 4 / 3) < 1e-12, String(hullVolume(oct)))
+  const cube = [-1, 1].flatMap((x) => [-1, 1].flatMap((y) => [-1, 1].flatMap((z) => [x, y, z])))
+  assert.ok(Math.abs(hullVolume([...cube, 0, 0, 1, 1, 1, 0]) - 8) < 1e-12, String(hullVolume([...cube, 0, 0, 1, 1, 1, 0])))
 })
 
 test('colliderDesc: a non-primitive shape is refused', () => {

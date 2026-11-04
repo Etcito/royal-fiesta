@@ -327,3 +327,37 @@ test('scaleColliders refusals', () => {
   refused(() => scaleColliders([rotated], { x: 1, y: 2, z: 1 }, `${FILE}#/obstacles/1/s`), '#/obstacles/1/s')
   refused(() => scaleColliders([cap], { x: 0, y: 0, z: 0 }, `${FILE}#/obstacles/2/s`), '#/obstacles/2/s')
 })
+
+// A unit cube's 8 corners, flat, centred on the collider origin.
+const CUBE = [-1, 1].flatMap((x) => [-1, 1].flatMap((y) => [-1, 1].flatMap((z) => [x * 0.5, y * 0.5, z * 0.5])))
+
+test('parseColliderJson reads a convexHull (SDF Modeler asset v2): corners as saved, half derived', () => {
+  const p = `${FILE}#/collision/0`
+  const c = parseColliderJson({ shape: 'convexHull', t: [0, 1, 0], r: [0, 0, 0, 1], points: CUBE }, p)
+  assert.equal(c.shape, 'convexHull')
+  if (c.shape !== 'convexHull') return
+  assert.deepEqual(c.points, CUBE)
+  assert.deepEqual(c.half, { x: 0.5, y: 0.5, z: 0.5 })
+  assert.deepEqual(c.t, { x: 0, y: 1, z: 0 })
+  refused(() => parseColliderJson({ shape: 'convexHull', points: CUBE.slice(0, 9) }, p), `${p}/points`)
+  refused(() => parseColliderJson({ shape: 'convexHull', points: [...CUBE, 1] }, p), `${p}/points`)
+  refused(() => parseColliderJson({ shape: 'convexHull', points: new Array(65 * 3).fill(0).map((_, i) => i) }, p), `${p}/points`)
+  refused(() => parseColliderJson({ shape: 'convexHull', points: [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0] }, p), `${p}/points`)
+  refused(() => parseColliderJson({ shape: 'convexHull', points: CUBE.map((x, i) => (i === 4 ? Number.NaN : x)) }, p), `${p}/points/4`)
+  refused(() => parseColliderJson({ shape: 'convexHull', points: CUBE, half: [1, 1, 1] }, p), `${p}/half`)
+})
+
+test('scaleColliders: a convexHull scales per axis exactly, its rotation baked into the corners', () => {
+  const long = CUBE.map((x, i) => (i % 3 === 0 ? 2 * x : x))
+  const hull = parseColliderJson({ shape: 'convexHull', t: [1, 0, 0], r: [0, Math.SQRT1_2, 0, Math.SQRT1_2], points: long }, `${FILE}#/c`)
+  const [u] = scaleColliders([hull], { x: 2, y: 2, z: 2 }, `${FILE}#/s`)
+  assert.ok(u.shape === 'convexHull')
+  assert.deepEqual(u.t, { x: 2, y: 0, z: 0 })
+  assert.deepEqual(u.half, { x: 2, y: 1, z: 1 })
+  const [n] = scaleColliders([hull], { x: 1, y: 3, z: 2 }, `${FILE}#/s`)
+  assert.ok(n.shape === 'convexHull')
+  assert.deepEqual(n.r, { x: 0, y: 0, z: 0, w: 1 })
+  assert.deepEqual(n.t, { x: 1, y: 0, z: 0 })
+  // the 90-degree turn about Y puts the hull's long X side (half 1) on Z, then z is doubled: half z = 2
+  assert.ok(Math.abs(n.half.x - 0.5) < 1e-9 && Math.abs(n.half.y - 1.5) < 1e-9 && Math.abs(n.half.z - 2) < 1e-9, JSON.stringify(n.half))
+})

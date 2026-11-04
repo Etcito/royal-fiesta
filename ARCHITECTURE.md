@@ -268,7 +268,7 @@ Validation:
 - Caps: <= 96 obstacles and <= 8 colliders per obstacle. Obstacle ids are unique. Asset names match ^[a-z0-9-]{1,48}$.
 - Refused with a message:
   - an unknown kind;
-  - a trimesh/convexHull/heightfield/polyline shape ("primitive colliders only: the kart study measured 1.25 MB / 12 ms per snapshot for a trimesh track");
+  - a trimesh/heightfield/polyline shape ("primitive colliders only (a convex hull is fine): the kart study measured 1.25 MB / 12 ms per snapshot for a trimesh track");
   - a race without finish;
   - too few spawns;
   - non-finite numbers.
@@ -301,7 +301,7 @@ Param names: the published raa.prims v0 names (raa-assets-tools 0.1.0 schema, re
 
 Each has a local `"t":[x,y,z]` and `"r":[x,y,z,w]`. Y-axis shapes follow Rapier's conventions.
 
-Course colliders (a course's `obstacles[].colliders`, the sim's own form, not raa.prims): flat fields, `{"shape":"cuboid","half":[x,y,z]}`, `roundCuboid` with `half` and `border`, `ball`/`capsule`/`cylinder`/`cone` with `radius` and `halfHeight`, each with optional `t` and `r`.
+Course colliders (a course's `obstacles[].colliders`, the sim's own form, not raa.prims): flat fields, `{"shape":"cuboid","half":[x,y,z]}`, `roundCuboid` with `half` and `border`, `ball`/`capsule`/`cylinder`/`cone` with `radius` and `halfHeight`, each with optional `t` and `r`. A `convexHull` has `points`, its corners flat `[x, y, z, ...]` (4..64, not all in one plane), built by Rapier's own hull (ConvexPolyhedron) from exactly those numbers, so every client gets the same shape; a non-uniform obstacle scale is exact for it (the rotation is baked into the corners). SDF Modeler asset files (`sdfm.game-asset`) write such a collider from a group whose collision mode is Convex hull, and then carry `"version": 2` (version 1 = primitives only; the loader refuses a hull in a v1 file and a v2 file without one).
 
 Derivation when `collision` is absent. Every `op: union` node, including descendants (transforms composed), maps as:
 - box -> cuboid(size/2 * s)

@@ -26,6 +26,24 @@ export type ColliderSpec =
   | { shape: 'capsule'; halfHeight: number; radius: number; t: Vec3; r: Quat }
   | { shape: 'cylinder'; halfHeight: number; radius: number; t: Vec3; r: Quat }
   | { shape: 'cone'; halfHeight: number; radius: number; t: Vec3; r: Quat }
+  // Rapier ConvexPolyhedron built from `points` (flat x, y, z per corner, collider-local) by Rapier's own hull, so
+  // every client builds the same shape from the same saved numbers. `half` is derived, never read from a file: the
+  // largest |coordinate| per axis, a box around t that holds the hull (bounds, camera, audio, bots).
+  | { shape: 'convexHull'; points: number[]; half: Vec3; t: Vec3; r: Quat }
+
+/** Most corners a convexHull collider may have (SDF Modeler's MAX_HULL_POINTS). */
+export const MAX_HULL_POINTS = 64
+
+/** The derived `half` of a convexHull collider from its flat points. */
+export function hullHalf(points: readonly number[]): Vec3 {
+  let x = 0, y = 0, z = 0
+  for (let i = 0; i + 2 < points.length; i += 3) {
+    x = Math.max(x, Math.abs(points[i]))
+    y = Math.max(y, Math.abs(points[i + 1]))
+    z = Math.max(z, Math.abs(points[i + 2]))
+  }
+  return { x, y, z }
+}
 
 export type Motion =
   | { kind: 'static' }

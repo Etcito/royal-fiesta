@@ -195,6 +195,18 @@ test('unknown collider shape keeps the pointer suffix under area asset', async (
   await refused(patched(a => { a.collision = [{ shape: 'trimesh', vertices: [] }] }), '/collision/0/shape')
 })
 
+test('a convexHull collider loads from a version 2 asset; version 1 refuses it, and version 2 needs one', async () => {
+  const cube = [-1, 1].flatMap((x) => [-1, 1].flatMap((y) => [-1, 1].flatMap((z) => [x * 0.5, y * 0.25, z * 0.5])))
+  const hull = { shape: 'convexHull', t: [0, 0.5, 0], r: [0, 0, 0, 1], points: cube }
+  const a = await parseGameAsset(patched((x) => { x.version = 2; x.collision = [hull] }), FILE)
+  assert.equal(a.version, 2)
+  assert.equal(a.collision[0].shape, 'convexHull')
+  await refused(patched((x) => { x.collision = [hull] }), '/version', ['convexHull'])
+  await refused(patched((x) => { x.version = 2 }), '/version')
+  await refused(patched((x) => { x.version = 3 }), '/version')
+  assert.equal((await parseGameAsset(valid(), FILE)).version, 1)
+})
+
 test('more than 8 colliders', async () => {
   await refused(patched(a => { a.collision = Array.from({ length: 9 }, () => ({ shape: 'ball', radius: 1 })) }), '/collision')
 })

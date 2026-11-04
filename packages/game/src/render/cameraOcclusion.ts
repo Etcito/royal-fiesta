@@ -31,6 +31,7 @@ function boxHalf(c: ColliderSpec): [number, number, number] | null {
     case 'roundCuboid': return [c.half.x + c.border, c.half.y + c.border, c.half.z + c.border]
     case 'capsule': return [c.radius, c.halfHeight + c.radius, c.radius]
     case 'cylinder': case 'cone': return [c.radius, c.halfHeight, c.radius]
+    case 'convexHull': return [c.half.x, c.half.y, c.half.z]
     default: return null
   }
 }

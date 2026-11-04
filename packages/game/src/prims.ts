@@ -1,7 +1,7 @@
 // The game's reader of raa.prims v0 (the published format, raa-assets-tools schema/raa.prims.v0.schema.json).
 // Pure data parsing: no Node module, no DOM at import. parsePrims returns the file's own shape, so
 // JSON.stringify(asset) is a valid raa.prims v0 document for @etcito/raa (raaPort.registerAsset).
-import { MAX_COLLIDERS_PER_OBSTACLE } from '@royal-fiesta/sim/course'
+import { hullHalf, MAX_COLLIDERS_PER_OBSTACLE, MAX_HULL_POINTS } from '@royal-fiesta/sim/course'
 import type { ColliderSpec } from '@royal-fiesta/sim/course'
 import { quatMul, quatRotate } from '@royal-fiesta/sim/vec'
 import type { Quat, Vec3 } from '@royal-fiesta/sim/vec'
@@ -26,8 +26,8 @@ export const PRIM_CAPS: { maxNodes: 64; maxDepth: 8; maxMaterials: 32; maxAnchor
 
 const PRIM_KINDS: readonly PrimKind[] = ['sphere', 'box', 'roundBox', 'capsule', 'cylinder', 'cone', 'torus', 'ellipsoid']
 const OPS: readonly PrimNode['op'][] = ['union', 'subtract', 'intersect']
-const NON_PRIMITIVE = ['trimesh', 'convexHull', 'heightfield', 'polyline']
-const PRIMITIVE_ONLY = 'primitive colliders only: the kart study measured 1.25 MB / 12 ms per snapshot for a trimesh track; use cuboid/roundCuboid/ball/capsule/cylinder/cone'
+const NON_PRIMITIVE = ['trimesh', 'heightfield', 'polyline']
+const PRIMITIVE_ONLY = 'primitive colliders only (a convex hull is fine): the kart study measured 1.25 MB / 12 ms per snapshot for a trimesh track; use cuboid/roundCuboid/ball/capsule/cylinder/cone/convexHull'
 const NODE_ID = /^[a-z][a-z0-9_]{0,47}$/
 const MATERIAL_ID = /^[a-z][a-z0-9_]{0,47}$/
 const ANCHOR_NAME = /^[A-Za-z][A-Za-z0-9_]{0,31}$/
@@ -260,6 +260,37 @@ const COLLIDER_FIELDS: Record<string, readonly string[]> = {
   capsule: ['halfHeight', 'radius'],
   cylinder: ['halfHeight', 'radius'],
   cone: ['halfHeight', 'radius'],
+  convexHull: ['points'],
+}
+
+// A convex hull's corners: flat [x, y, z, ...] collider-local, 4..MAX_HULL_POINTS corners, not all in one plane
+// (Rapier builds the hull; a flat set has none). The numbers are used as saved, so every client builds the same hull.
+function hullPoints(v: unknown, ptr: string): number[] {
+  if (!Array.isArray(v) || v.length % 3 !== 0 || v.length / 3 < 4 || v.length / 3 > MAX_HULL_POINTS) {
+    fail(ptr, `points must be 4 to ${MAX_HULL_POINTS} corners as a flat array [x, y, z, x, y, z, ...]; save the asset again from SDF Modeler`)
+  }
+  const out: number[] = []
+  for (let i = 0; i < v.length; i++) {
+    const x: unknown = v[i]
+    if (!isFiniteNum(x)) fail(`${ptr}/${i}`, 'corner coordinate is not a finite number; use finite JSON numbers')
+    out.push(x)
+  }
+  // flat test: largest |(b - a) x (c - a) . (d - a)| over the corners, against the size of the set
+  const n = out.length / 3
+  const p = (i: number, k: number): number => out[3 * i + k] - out[k]
+  let size = 0
+  for (let i = 1; i < n; i++) size = Math.max(size, Math.abs(p(i, 0)) + Math.abs(p(i, 1)) + Math.abs(p(i, 2)))
+  let best = 0, bi = 1, bj = 2
+  for (let i = 1; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const cx = p(i, 1) * p(j, 2) - p(i, 2) * p(j, 1), cy = p(i, 2) * p(j, 0) - p(i, 0) * p(j, 2), cz = p(i, 0) * p(j, 1) - p(i, 1) * p(j, 0)
+    const m = Math.abs(cx) + Math.abs(cy) + Math.abs(cz)
+    if (m > best) { best = m; bi = i; bj = j }
+  }
+  const cx = p(bi, 1) * p(bj, 2) - p(bi, 2) * p(bj, 1), cy = p(bi, 2) * p(bj, 0) - p(bi, 0) * p(bj, 2), cz = p(bi, 0) * p(bj, 1) - p(bi, 1) * p(bj, 0)
+  let vol = 0
+  for (let i = 1; i < n; i++) vol = Math.max(vol, Math.abs(cx * p(i, 0) + cy * p(i, 1) + cz * p(i, 2)))
+  if (!(size > 0) || vol <= 1e-9 * size * size * size) fail(ptr, 'the corners lie in one plane, so they make no convex hull; save the asset again from SDF Modeler')
+  return out
 }
 
 // SDF Modeler's asset_save_game spelling, same meaning (Rapier inner half) as in parsePublishedCollider.
@@ -277,7 +308,7 @@ export function parseColliderJson(j: unknown, path: string): ColliderSpec {
   const shape = j.shape
   if (typeof shape === 'string' && NON_PRIMITIVE.includes(shape)) fail(`${path}/shape`, PRIMITIVE_ONLY)
   if (typeof shape !== 'string' || !Object.hasOwn(COLLIDER_FIELDS, shape)) {
-    fail(`${path}/shape`, `unknown shape ${JSON.stringify(shape)}; use cuboid/roundCuboid/ball/capsule/cylinder/cone`)
+    fail(`${path}/shape`, `unknown shape ${JSON.stringify(shape)}; use cuboid/roundCuboid/ball/capsule/cylinder/cone/convexHull`)
   }
   const fields = COLLIDER_FIELDS[shape]
   const keys = Object.keys(j)
@@ -310,6 +341,10 @@ export function parseColliderJson(j: unknown, path: string): ColliderSpec {
     case 'cuboid': return { shape, half: half(), t, r }
     case 'roundCuboid': return { shape, half: half(), border: positive(j[key('border')], `${path}/${key('border')}`, 'border'), t, r }
     case 'ball': return { shape, radius: positive(j.radius, `${path}/radius`, 'radius'), t, r }
+    case 'convexHull': {
+      const points = hullPoints(j.points, `${path}/points`)
+      return { shape, points, half: hullHalf(points), t, r }
+    }
     default: {
       const s = shape as 'capsule' | 'cylinder' | 'cone'
       const halfHeight = positive(j.halfHeight, `${path}/halfHeight`, 'halfHeight')
@@ -464,7 +499,7 @@ function isIdentity(q: Quat): boolean {
   return Math.abs(q.x) <= EPS && Math.abs(q.y) <= EPS && Math.abs(q.z) <= EPS && Math.abs(Math.abs(q.w) - 1) <= EPS
 }
 
-const NON_UNIFORM = 'non-uniform scale is allowed only for cuboid/roundCuboid colliders; use a uniform s or an explicit colliders override'
+const NON_UNIFORM = 'non-uniform scale is allowed only for cuboid/roundCuboid colliders (and convex hulls); use a uniform s or an explicit colliders override'
 
 // S2 obstacle scale rules; returns new specs and never mutates `cs`.
 export function scaleColliders(cs: ColliderSpec[], s: Vec3, path: string): ColliderSpec[] {
@@ -480,18 +515,32 @@ export function scaleColliders(cs: ColliderSpec[], s: Vec3, path: string): Colli
         case 'cuboid': return { shape: c.shape, half: { x: c.half.x * k, y: c.half.y * k, z: c.half.z * k }, t, r: r(c.r) }
         case 'roundCuboid': return { shape: c.shape, half: { x: c.half.x * k, y: c.half.y * k, z: c.half.z * k }, border: c.border * k, t, r: r(c.r) }
         case 'ball': return { shape: c.shape, radius: c.radius * k, t, r: r(c.r) }
+        case 'convexHull': {
+          const points = c.points.map((x) => x * k)
+          return { shape: c.shape, points, half: hullHalf(points), t, r: r(c.r) }
+        }
         default: return { shape: c.shape, halfHeight: c.halfHeight * k, radius: c.radius * k, t, r: r(c.r) }
       }
     })
   }
-  // A rotated box cannot be scaled per axis exactly, so only axis-aligned boxes qualify.
+  // A rotated box cannot be scaled per axis exactly, so only axis-aligned boxes qualify. A convex hull always can:
+  // the per-axis scale of a hull is the hull of its scaled corners, so its rotation is baked into the corners.
   for (let i = 0; i < cs.length; i++) {
     const c = cs[i]
+    if (c.shape === 'convexHull') continue
     if ((c.shape !== 'cuboid' && c.shape !== 'roundCuboid') || !isIdentity(c.r)) fail(path, NON_UNIFORM)
   }
   const m = Math.min(s.x, s.y, s.z)
   return cs.map((c): ColliderSpec => {
     const t = { x: c.t.x * s.x, y: c.t.y * s.y, z: c.t.z * s.z }
+    if (c.shape === 'convexHull') {
+      const points: number[] = []
+      for (let i = 0; i + 2 < c.points.length; i += 3) {
+        const p = quatRotate(c.r, { x: c.points[i], y: c.points[i + 1], z: c.points[i + 2] }, { x: 0, y: 0, z: 0 })
+        points.push(p.x * s.x, p.y * s.y, p.z * s.z)
+      }
+      return { shape: c.shape, points, half: hullHalf(points), t, r: { x: 0, y: 0, z: 0, w: 1 } }
+    }
     if (c.shape === 'cuboid') return { shape: c.shape, half: { x: c.half.x * s.x, y: c.half.y * s.y, z: c.half.z * s.z }, t, r: r(c.r) }
     if (c.shape === 'roundCuboid') return { shape: c.shape, half: { x: c.half.x * s.x, y: c.half.y * s.y, z: c.half.z * s.z }, border: c.border * m, t, r: r(c.r) }
     return fail(path, NON_UNIFORM)

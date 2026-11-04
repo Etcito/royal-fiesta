@@ -24,6 +24,13 @@ export function colliderDesc(R: RapierModule, c: ColliderSpec): InstanceType<Rap
     case 'cone':
       d = R.ColliderDesc.cone(c.halfHeight, c.radius)
       break
+    case 'convexHull': {
+      // Rapier computes the hull from the saved corners (deterministic build): same numbers, same shape on every client.
+      const hull = R.ColliderDesc.convexHull(new Float32Array(c.points))
+      if (!hull) return refuse('obstacles', 'collider/points', `convexHull of ${c.points.length / 3} corners has no volume; save the asset again from SDF Modeler`)
+      d = hull
+      break
+    }
     default: {
       const bad: never = c
       return refuse('obstacles', 'collider/shape', `unknown shape '${(bad as { shape: unknown }).shape}'; primitive colliders only`)

@@ -65,7 +65,8 @@ export interface AssetPhysicsJson {
 
 export interface GameAsset {
   format: 'sdfm.game-asset'
-  version: 1
+  // 1: primitive colliders only; 2: the collision list holds a convexHull (MAMA ASSET_FILE_VERSION_HULL)
+  version: 1 | 2
   game: 'royal-fiesta'
   id: string
   name: string
@@ -273,7 +274,7 @@ export function assetDocumentText(document: unknown): string {
 }
 
 const ASSET_FILE_KEYS = ['format', 'version', 'game', 'id', 'name', 'category', 'world', 'mesher', 'document', 'collision', 'physics', 'anchors', 'bounds', 'hash'] as const
-const COLLIDER_KEY_ORDER = ['shape', 't', 'r', 'halfExtents', 'borderRadius', 'radius', 'halfHeight']
+const COLLIDER_KEY_ORDER = ['shape', 't', 'r', 'halfExtents', 'borderRadius', 'radius', 'halfHeight', 'points']
 
 /**
  * The asset file text SDF Modeler writes (MAMA serializeAssetFile, the canonical form of every assets/<world>/*.asset.json):
@@ -322,7 +323,7 @@ export async function parseGameAsset(json: unknown, path: string): Promise<GameA
   const o = obj(json, path, '')
   keys(o, TOP_KEYS, ['physics'], path, '')
   if (o.format !== 'sdfm.game-asset') fail(path, '/format', "format must be 'sdfm.game-asset'; write \"format\": \"sdfm.game-asset\"")
-  if (o.version !== 1) fail(path, '/version', 'version must be 1; write "version": 1')
+  if (o.version !== 1 && o.version !== 2) fail(path, '/version', 'version must be 1, or 2 when a collider is a convexHull; save the asset again with SDF Modeler')
   if (o.game !== 'royal-fiesta') fail(path, '/game', "game must be 'royal-fiesta'; write \"game\": \"royal-fiesta\"")
   const id = str(o.id, path, '/id')
   if (!ASSET_ID_RE.test(id)) fail(path, '/id', `id '${id}' does not match ${ASSET_ID_RE.source}; use <world>.<name> such as candy.spinner-bar`)
@@ -352,6 +353,11 @@ export async function parseGameAsset(json: unknown, path: string): Promise<GameA
     fail(path, '/collision', `${o.collision.length} colliders, over ${GAME_ASSET_CAPS.maxColliders}; merge or remove some`)
   }
   const collision = o.collision.map((c, i) => collider(c, path, `/collision/${i}`))
+  const hull = collision.some((c) => c.shape === 'convexHull')
+  if (hull !== (o.version === 2)) {
+    fail(path, '/version', hull ? 'a convexHull collider needs "version": 2; save the asset again with SDF Modeler' : 'version 2 is only for an asset with a convexHull collider; write "version": 1')
+  }
+  const version: 1 | 2 = hull ? 2 : 1
   const physics = parseAssetPhysics(o.physics, collision, path)
 
   const a = obj(o.anchors, path, '/anchors')
@@ -383,7 +389,7 @@ export async function parseGameAsset(json: unknown, path: string): Promise<GameA
   }
 
   return {
-    format: 'sdfm.game-asset', version: 1, game: 'royal-fiesta',
+    format: 'sdfm.game-asset', version, game: 'royal-fiesta',
     id, name, category, world, mesher, document, collision, anchors, bounds: { min, max }, hash,
     ...(physics ? { physics } : {}),
   }

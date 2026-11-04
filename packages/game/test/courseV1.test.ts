@@ -58,6 +58,7 @@ function flat(c: ColliderSpec): Record<string, unknown> {
     case 'cuboid': return { shape: c.shape, half: [c.half.x, c.half.y, c.half.z], t, r }
     case 'roundCuboid': return { shape: c.shape, half: [c.half.x, c.half.y, c.half.z], border: c.border, t, r }
     case 'ball': return { shape: c.shape, radius: c.radius, t, r }
+    case 'convexHull': return { shape: c.shape, points: [...c.points], t, r }
     default: return { shape: c.shape, halfHeight: c.halfHeight, radius: c.radius, t, r }
   }
 }

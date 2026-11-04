@@ -119,6 +119,7 @@ function topY(o: ObstacleSpec): number {
     else if (c.shape === 'roundCuboid') up = c.half.y + c.border
     else if (c.shape === 'ball') up = c.radius
     else if (c.shape === 'capsule') up = c.halfHeight + c.radius
+    else if (c.shape === 'convexHull') up = c.half.y
     else up = c.halfHeight
     top = Math.max(top, o.t.y + c.t.y + up)
   }

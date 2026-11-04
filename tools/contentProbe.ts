@@ -114,6 +114,7 @@ export function colliderAabb(a: AuthoredAsset): Aabb | null {
     else if (c.shape === 'roundCuboid') h = [c.half.x + c.border, c.half.y + c.border, c.half.z + c.border]
     else if (c.shape === 'ball') h = [c.radius, c.radius, c.radius]
     else if (c.shape === 'capsule') h = [c.radius, c.halfHeight + c.radius, c.radius]
+    else if (c.shape === 'convexHull') h = [c.half.x, c.half.y, c.half.z]
     else h = [c.radius, c.halfHeight, c.radius]
     const { x, y, z, w } = c.r
     // Rotation matrix rows; the rotated box extent is |R| times the half extents.

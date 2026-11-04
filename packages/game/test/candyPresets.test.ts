@@ -99,6 +99,7 @@ function colliderPoints(c: ColliderSpec): Vec3[] {
   switch (c.shape) {
     case 'cuboid':
     case 'roundCuboid':
+    case 'convexHull':
       for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
         out.push(v3(t.x + sx * c.half.x, t.y + sy * c.half.y, t.z + sz * c.half.z))
       }

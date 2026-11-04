@@ -215,6 +215,7 @@ function colliderHalf(c: ColliderSpec): Vec3 {
     case 'cuboid': return c.half
     case 'roundCuboid': return { x: c.half.x + c.border, y: c.half.y + c.border, z: c.half.z + c.border }
     case 'ball': return { x: c.radius, y: c.radius, z: c.radius }
+    case 'convexHull': return c.half
     default: return { x: c.radius, y: c.halfHeight, z: c.radius }
   }
 }

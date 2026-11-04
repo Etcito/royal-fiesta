@@ -1,4 +1,5 @@
 import type { ResolvedCourse } from '../course.ts'
+import { dhypot } from '../detmath.ts'
 import type { Vec3 } from '../vec.ts'
 import { quatConj, quatMul, quatRotate, v3 } from '../vec.ts'
 import { animationKind, trackPose } from '../mechanisms/animation.ts'
@@ -50,14 +51,14 @@ export function crossingBlocked(course: ResolvedCourse, pos: Vec3, vel: Vec3,
 
 /** Start an authored bar crossing before contact look-ahead can see its rotating tip. */
 export function rotorJumpAhead(course: ResolvedCourse, pos: Vec3, dx: number, dz: number): boolean {
-  const direction = Math.hypot(dx, dz)
+  const direction = dhypot(dx, dz)
   if (direction === 0 || !course.mechanisms) return false
   for (const a of course.mechanisms.animations) {
     if (!a.keys.some(k => Math.abs(k.r.y) > 0.1) || a.keys.some(k => Math.abs(k.r.x) + Math.abs(k.r.z) > 0.1)) continue
     const body = course.mechanisms.items[a.target.item].bodies[a.target.body]
     // Preserve unmarked walk-through routes; the authored jump marks identify
     // bars that block the intended lane, including narrow elevated walkways.
-    if (!course.path.some(n => n.jump && Math.hypot(n.p.x - body.rest.t.x, n.p.z - body.rest.t.z) < 2)) continue
+    if (!course.path.some(n => n.jump && dhypot(n.p.x - body.rest.t.x, n.p.z - body.rest.t.z) < 2)) continue
     const x = body.rest.t.x - pos.x, z = body.rest.t.z - pos.z
     const along = (x * dx + z * dz) / direction
     const across = Math.abs(x * dz - z * dx) / direction

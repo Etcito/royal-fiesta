@@ -1,8 +1,8 @@
 {
   "format": "royal-fiesta.course",
   "version": 1,
-  "id": "s1-slide-race",
-  "name": "SLIDE-RACE · Glacier Run",
+  "id": "s1-glacier-run",
+  "name": "Glacier Run",
   "world": "ice",
   "kind": "race",
   "queuePad": null,

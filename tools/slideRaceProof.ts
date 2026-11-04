@@ -6,7 +6,7 @@ import type { CharacterView, MatchViewState } from '../packages/sim/src/match/ma
 import { CharMode } from '../packages/sim/src/character/constants.ts'
 import { PlayerStatus } from '../packages/sim/src/match/roundSystem.ts'
 import { neutralInput } from '../packages/sim/src/input.ts'
-const road=(await loadCourseV1File('courses/s1-slide-race.course.json')).sim!
+const road=(await loadCourseV1File('courses/s1-glacier-run.course.json')).sim!
 const survival=(await loadCourseV1File('courses/survival-sprint.course.json')).sim!
 const R=await initRapier(), sim=new MatchSim(R,{seed:7,playerCount:8,humans:Array(8).fill(false),profile:'sprint',courses:[road,survival].sort((a,b)=>a.id<b.id?-1:1)})
 const inputs=Array.from({length:8},()=>neutralInput())

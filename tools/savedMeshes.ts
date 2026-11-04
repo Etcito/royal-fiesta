@@ -1,17 +1,20 @@
 // Validate shipped meshes through the same decoder, compatibility key and payload checks as the browser: decodeMeshBytes,
 // meshCacheKey and meshFileProblem, the code fetchMeshFile runs, so an asset listed here is one the page refuses.
 // `--json` prints the list for SDF Modeler (sdfm.game.json "meshCheck"): the Assets tab shows these assets in red.
+// The build (apps/web prebuild, no flag) re-meshes stale or missing saved meshes first (rebakeSavedMeshes); `--check`
+// only checks.
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseGameAsset } from '../packages/game/src/gameAsset.ts'
 import { meshFileProblem } from '../apps/web/src/sdf/meshFile.ts'
 import type { MeshFileProblemCode } from '../apps/web/src/sdf/meshFile.ts'
-import { decodeMeshBytes } from '../apps/web/src/sdf/meshWire.ts'
+import { decodeMesh, decodeMeshBytes, encodeMesh } from '../apps/web/src/sdf/meshWire.ts'
 import { meshCacheKey } from '../apps/web/src/sdf/meshCache.ts'
 import { meshHasParts, meshRequestOf } from '../apps/web/src/sdf/mamaApi.ts'
-import { buildContentIndex, contentDir } from './content.ts'
+import { buildContentIndex, contentDir, meshCacheDir } from './content.ts'
+import { MeshBaker } from './meshBake.ts'
 
 /** missing: no .mesh; decode: the file cannot be decoded; parts: it lacks the named physics parts; else meshFileProblem. */
 export type SavedMeshCode = 'missing' | 'decode' | 'parts' | 'asset-file' | MeshFileProblemCode
@@ -48,15 +51,52 @@ export async function savedMeshIssues(dir = contentDir()): Promise<{ assets: num
   return { assets: index.assets.length, issues }
 }
 
-export async function checkSavedMeshes(dir = contentDir()): Promise<void> {
+export async function checkSavedMeshes(dir = contentDir(), unbaked: ReadonlyMap<string, string> = new Map()): Promise<void> {
   const { assets, issues } = await savedMeshIssues(dir)
-  if (issues.length) throw new Error(`Invalid saved meshes (${issues.length}/${assets}):\n${issues.map(i => `${i.id}: ${i.reason}`).join('\n')}`)
+  const why = (i: SavedMeshIssue): string => unbaked.has(i.id) ? `${i.reason} (the re-mesh failed: ${unbaked.get(i.id)})` : i.reason
+  if (issues.length) throw new Error(`Invalid saved meshes (${issues.length}/${assets}):\n${issues.map(i => `${i.id}: ${why(i)}`).join('\n')}`)
   console.log(`saved meshes: ${assets}/${assets} valid`)
+}
+
+/**
+ * Re-meshes every asset whose saved mesh is missing or stale (owner 2026-11-04: "stale meshes must be redone when we
+ * build") with MeshBaker, the server mesher tools/wavedash.ts uses (its cache is shared by the clone's worktrees), and
+ * writes each into the content dir as a saved mesh: the meshed asset plus its S16 key, next to the asset file. An asset
+ * whose file does not load is left to the check. Returns why each asset that got no mesh could not be meshed.
+ */
+export async function rebakeSavedMeshes(dir = contentDir(), cache = meshCacheDir()): Promise<Map<string, string>> {
+  const { issues } = await savedMeshIssues(dir)
+  const redo = issues.filter(i => i.code !== 'asset-file')
+  const unbaked = new Map<string, string>()
+  if (redo.length === 0) return unbaked
+  const baker = new MeshBaker(dir, cache, redo.map(i => i.id))
+  await baker.scan()
+  for (const issue of redo) {
+    const key = baker.keyOf.get(issue.id)
+    const base = key === undefined ? null : join(cache, key)
+    if (base === null || !existsSync(base + '.mesh')) {
+      unbaked.set(issue.id, base !== null && existsSync(base + '.failed')
+        ? `${readFileSync(base + '.failed', 'utf8').trim()}; delete ${base}.failed to mesh it again`
+        : 'the mesher wrote no mesh (another process holds its lock)')
+      continue
+    }
+    const target = join(dir, issue.path.replace(/\.asset\.json$/, '.mesh'))
+    writeFileSync(target + '.tmp', encodeMesh({ ...decodeMesh(new Uint8Array(readFileSync(base + '.mesh'))), key }))
+    renameSync(target + '.tmp', target)
+    console.log(`saved mesh: ${issue.id} re-meshed (was: ${issue.reason})`)
+  }
+  return unbaked
+}
+
+/** The build's step (apps/web prebuild): stale or missing saved meshes are re-meshed, then every saved mesh is checked. */
+export async function prebuildSavedMeshes(dir = contentDir(), cache = meshCacheDir()): Promise<void> {
+  await checkSavedMeshes(dir, await rebakeSavedMeshes(dir, cache))
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   if (process.argv.includes('--json')) {
     const { assets, issues } = await savedMeshIssues()
     process.stdout.write(`${JSON.stringify({ format: 'sdfm.mesh-check', version: 1, assets, stale: issues })}\n`)
-  } else await checkSavedMeshes()
+  } else if (process.argv.includes('--check')) await checkSavedMeshes()
+  else await prebuildSavedMeshes()
 }

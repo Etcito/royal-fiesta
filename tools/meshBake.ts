@@ -27,6 +27,8 @@ export class MeshBaker {
   readonly pending = new Set<string>()
   // Cache keys of the assets the last scan covered (the meshes a page of this load set fetches).
   readonly keys = new Set<string>()
+  // The cache key of each asset id the last scan covered (its mesh is <cache>/<key>.mesh, or <key>.failed with why).
+  readonly keyOf = new Map<string, string>()
   private running: Promise<void> | null = null
   private readonly controller = new AbortController()
   stop(): void { this.controller.abort() }
@@ -55,6 +57,7 @@ export class MeshBaker {
       const key = await meshCacheKey(asset, compatibility, async bytes => createHash('sha256').update(bytes).digest('hex'))
       queue.push({ asset, key })
       this.keys.add(key)
+      this.keyOf.set(asset.id, key)
       this.pending.add(key)
     }
     const work = async (): Promise<void> => {

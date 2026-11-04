@@ -45,6 +45,11 @@ export interface RoundRunOptions {
   seed?: number
   /** Print one progress line per simulated second to stderr. */
   progress?: boolean
+  /**
+   * Seats send no input (no bot): every seat stays where it spawned, so a crown final nobody grabs ties every finalist
+   * into a playoff, and that playoff is settled by the season tie order. Deterministic, unlike a same-tick grab.
+   */
+  idle?: boolean
 }
 
 export interface RoundRunReport {
@@ -290,7 +295,8 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
             problems.push(`round ${index}: seat ${round.seatOf[seat]} is not alive at intro`)
           }
         }
-        modeBotInput(domain, memories[round.seatOf[seat]], seat, sampleTicks[peer], out[i])
+        if (o.idle === true) decodeInput(NEUTRAL_CODE, out[i])
+        else modeBotInput(domain, memories[round.seatOf[seat]], seat, sampleTicks[peer], out[i])
       }
       sampleTicks[peer]++
     }
@@ -442,7 +448,7 @@ export async function runRound(o: RoundRunOptions): Promise<RoundRunReport> {
   return { ok: problems.length === 0, problems, rounds: [...rounds], champion }
 }
 
-const USAGE = 'usage: round:run --course <id> [--dir courses] [--seats 60] [--peers 2] [--profile season|sprint] [--target n] [--show] [--seed n]'
+const USAGE = 'usage: round:run --course <id> [--dir courses] [--seats 60] [--peers 2] [--profile season|sprint] [--target n] [--show] [--seed n] [--idle]'
 
 async function runCli(argv: string[]): Promise<number> {
   try {
@@ -456,6 +462,7 @@ async function runCli(argv: string[]): Promise<number> {
       show: { type: 'boolean', default: false },
       seed: { type: 'string' },
       progress: { type: 'boolean', default: false },
+      idle: { type: 'boolean', default: false },
     } })
     if (values.course === undefined || values.course.length === 0) {
       refuse('cli', '--course', `required; ${USAGE}`)
@@ -476,7 +483,7 @@ async function runCli(argv: string[]): Promise<number> {
     const report = await runRound({
       course: values.course, dir: values.dir, seats, peers, profile: values.profile,
       target: values.target === undefined ? undefined : Number(values.target),
-      show: values.show, progress: values.progress, seed: values.seed === undefined ? undefined : Number(values.seed),
+      show: values.show, progress: values.progress, idle: values.idle, seed: values.seed === undefined ? undefined : Number(values.seed),
     })
     for (const problem of report.problems) console.error(`[round-run] ${problem}`)
     console.log(`[round-run] champion=${report.champion}`)

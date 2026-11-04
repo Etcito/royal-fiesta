@@ -82,9 +82,11 @@ describe('roundRun', { concurrency: CPUS }, () => {
   })
 
   it('a final that ties into a playoff plays the playoff and crowns its winner', { timeout: 300_000 }, async () => {
-    // Seed 1: two bots grab the crown on the same tick, so the first round settles as a playoff.
+    // Idle seats: nobody grabs the crown even after overtime, so every finalist goes to the playoff (qualify.ts), and
+    // the playoff, tied again, is settled by the season tie order. A same-tick grab by two bots (seed 1 until the bot
+    // and character changes of 2026-11) is luck, so no bot cohort is relied on for the tie.
     const report = await runRound({
-      course: 's1-q-crown-confection', dir: 'courses', seats: 12, peers: 2, profile: 'season', target: 1,
+      course: 's1-q-crown-confection', dir: 'courses', seats: 2, peers: 2, profile: 'season', target: 1, idle: true,
     })
     assert.equal(report.ok, true, report.problems.join('\n'))
     assert.equal(report.rounds.length, 2)

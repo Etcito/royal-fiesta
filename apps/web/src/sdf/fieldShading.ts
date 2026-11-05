@@ -261,6 +261,209 @@ fn sdfm_posed_normal(in: MaterialInput, g: vec3f) -> vec3f {
 }
 `
 
+// The part's field program as RAA material data (Engine.addMaterialData), read by the ONE fixed evaluator below
+// (owner 2026-11-04: one shader with the SDF as data, no per-part compile). The program's own `wgsl` (straight-line
+// code per operand, 25 KB to over 1 MB on the candy set) is never embedded: RAA refuses a material function over
+// 64 KB. Layout, all f32 (integers stored exactly), offsets from the block base:
+//   [0] version, [1] tree node count, [2] operand table offset, [3] tree offset, [4..6] bounds.min, [7] normal tap
+//   half-step, [8..10] bounds.max, [11] label count, [12 + 8i] label i: colour xyz, roughness, metallic
+//   operand records (PMF_OPERAND_FLOATS each): kind (0 box, 1 grid), label, scale, 0, inv[16] (column-major),
+//     box: half xyz, radius; grid: origin xyz, voxel, size xyz, at xy, range
+//   tree nodes, 4 floats each: op (0 leaf, 1 union, 2 subtract, 3 intersect), operand index or mode (0 hard, 1 round,
+//     2 smooth, 3 chamfer), radius, 0
+const PMF_LABELS_AT = 12
+const PMF_OPERAND_FLOATS = 32
+const PMF_OPERANDS_AT = PMF_LABELS_AT + 8 * MAX_LABELS
+/** The evaluator's stack depth: a program whose postfix tree needs more is drawn with vertex normals (named). */
+export const PMF_STACK = 16
+const TREE_OPS = { leaf: 0, union: 1, subtract: 2, intersect: 3 } as const
+const BLEND_MODES: Record<string, number> = { hard: 0, round: 1, smooth: 2, chamfer: 3 }
+
+/** The deepest stack the program's postfix tree needs, or the reason it is malformed. */
+function treeDepth(program: FieldProgramLike): number | string {
+  let top = 0
+  let depth = 0
+  for (const node of program.tree) {
+    if (node.op === 'leaf') depth = Math.max(depth, ++top)
+    else if (top < 2) return 'field tree operation has fewer than two operands'
+    else top--
+  }
+  return top === 1 ? depth : 'field tree does not leave exactly one value'
+}
+
+/**
+ * The material data words of a field part (layout above), or the reason the fixed evaluator cannot draw it: an
+ * unknown blend mode or a tree deeper than PMF_STACK.
+ */
+export function fieldProgramWords(program: FieldProgramLike): { ok: true; words: Uint32Array } | { ok: false; reason: string } {
+  const depth = treeDepth(program)
+  if (typeof depth === 'string') return { ok: false, reason: depth }
+  if (depth > PMF_STACK) return { ok: false, reason: `field tree needs a stack of ${depth}, more than ${PMF_STACK}` }
+  const treeAt = PMF_OPERANDS_AT + PMF_OPERAND_FLOATS * program.operands.length
+  const floats = new Float32Array(treeAt + 4 * program.tree.length)
+  floats[0] = VERSION
+  floats[1] = program.tree.length
+  floats[2] = PMF_OPERANDS_AT
+  floats[3] = treeAt
+  floats.set(program.bounds.min, 4)
+  floats[7] = fieldStep(program)
+  floats.set(program.bounds.max, 8)
+  const labels = program.labels.slice(0, MAX_LABELS)
+  floats[11] = labels.length
+  labels.forEach((label, i) => {
+    floats.set(label.color, PMF_LABELS_AT + 8 * i)
+    floats[PMF_LABELS_AT + 8 * i + 3] = label.roughness
+    floats[PMF_LABELS_AT + 8 * i + 4] = label.metallic
+  })
+  program.operands.forEach((o, i) => {
+    const at = PMF_OPERANDS_AT + PMF_OPERAND_FLOATS * i
+    floats[at] = o.kind === 'box' ? 0 : 1
+    floats[at + 1] = o.label
+    floats[at + 2] = o.scale
+    floats.set(o.inv, at + 4)
+    if (o.kind === 'box') {
+      floats.set(o.half, at + 20)
+      floats[at + 23] = o.radius
+    } else {
+      floats.set(o.origin, at + 20)
+      floats[at + 23] = o.voxel
+      floats.set(o.size, at + 24)
+      floats.set(o.at, at + 27)
+      floats[at + 29] = o.range
+    }
+  })
+  for (const [k, node] of program.tree.entries()) {
+    const at = treeAt + 4 * k
+    floats[at] = TREE_OPS[node.op]
+    if (node.op === 'leaf') {
+      floats[at + 1] = node.operand
+      continue
+    }
+    const mode = BLEND_MODES[node.mode]
+    if (mode === undefined) return { ok: false, reason: `field blend mode '${node.mode}' has no WGSL port` }
+    floats[at + 1] = mode
+    floats[at + 2] = node.radius
+  }
+  return { ok: true, words: new Uint32Array(floats.buffer) }
+}
+
+/**
+ * The fixed evaluator of a field program in material data at word `db` (fieldProgramWords): MAMA fieldProgramWgsl's
+ * operand distances, blends and label weights, run as a stack machine over the tree instead of emitted per part.
+ */
+export const PMF_INTERPRETER_WGSL = /* wgsl */ `
+fn pmf_f(i: u32) -> f32 { return raa_material_f32(i); }
+fn pmf_u(i: u32) -> u32 { return u32(raa_material_f32(i) + 0.5); }
+fn pmf_v3(i: u32) -> vec3f { return vec3f(raa_material_f32(i), raa_material_f32(i + 1u), raa_material_f32(i + 2u)); }
+
+fn pmf_texel(x: i32, y: i32, range: f32) -> f32 {
+  let t = pmf_grid(x, y);
+  return ((t.r * 255.0 * 256.0 + t.g * 255.0) / 65535.0 * 2.0 - 1.0) * range;
+}
+
+// The distance of the operand record at word r at point p of the part frame.
+fn pmf_operand(r: u32, p: vec3f) -> f32 {
+  let local = vec3f(
+    pmf_f(r + 4u) * p.x + pmf_f(r + 8u) * p.y + pmf_f(r + 12u) * p.z + pmf_f(r + 16u),
+    pmf_f(r + 5u) * p.x + pmf_f(r + 9u) * p.y + pmf_f(r + 13u) * p.z + pmf_f(r + 17u),
+    pmf_f(r + 6u) * p.x + pmf_f(r + 10u) * p.y + pmf_f(r + 14u) * p.z + pmf_f(r + 18u));
+  var d = 0.0;
+  if (pmf_u(r) == 0u) {
+    let radius = pmf_f(r + 23u);
+    let q = abs(local) - (pmf_v3(r + 20u) - vec3f(radius));
+    d = length(max(q, vec3f(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0) - radius;
+  } else {
+    let voxel = pmf_f(r + 23u);
+    let size = pmf_v3(r + 24u);
+    let ax = i32(pmf_u(r + 27u));
+    let ay = i32(pmf_u(r + 28u));
+    let range = pmf_f(r + 29u);
+    let g = (local - pmf_v3(r + 20u)) / voxel - vec3f(0.5);
+    let c = clamp(g, vec3f(0.0), size - vec3f(1.0));
+    let i = vec3i(clamp(floor(c), vec3f(0.0), size - vec3f(2.0)));
+    let t = c - vec3f(i);
+    let sx = i32(size.x);
+    let x0 = ax + i.z * sx + i.x;
+    let x1 = ax + (i.z + 1) * sx + i.x;
+    let y0 = ay + i.y;
+    let d000 = pmf_texel(x0, y0, range);
+    let d100 = pmf_texel(x0 + 1, y0, range);
+    let d010 = pmf_texel(x0, y0 + 1, range);
+    let d110 = pmf_texel(x0 + 1, y0 + 1, range);
+    let d001 = pmf_texel(x1, y0, range);
+    let d101 = pmf_texel(x1 + 1, y0, range);
+    let d011 = pmf_texel(x1, y0 + 1, range);
+    let d111 = pmf_texel(x1 + 1, y0 + 1, range);
+    let e0 = d000 + (d100 - d000) * t.x;
+    let e1 = d010 + (d110 - d010) * t.x;
+    let e2 = d001 + (d101 - d001) * t.x;
+    let e3 = d011 + (d111 - d011) * t.x;
+    let f0 = e0 + (e1 - e0) * t.y;
+    let f1 = e2 + (e3 - e2) * t.y;
+    d = f0 + (f1 - f0) * t.z + length((g - c) * voxel);
+  }
+  return d * pmf_f(r + 2u);
+}
+
+// The field program at word db, at point p: the distance, and the label weights in w.
+fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> f32 {
+  var sd: array<f32, ${PMF_STACK}>;
+  var sw: array<array<f32, 8>, ${PMF_STACK}>;
+  var top = 0u;
+  let count = pmf_u(db + 1u);
+  let operands = db + pmf_u(db + 2u);
+  let tree = db + pmf_u(db + 3u);
+  for (var k = 0u; k < count; k = k + 1u) {
+    let node = tree + 4u * k;
+    let op = pmf_u(node);
+    if (op == 0u) {
+      if (top >= ${PMF_STACK}u) { break; }
+      let r = operands + ${PMF_OPERAND_FLOATS}u * pmf_u(node + 1u);
+      sd[top] = pmf_operand(r, p);
+      let label = pmf_u(r + 1u);
+      for (var s = 0u; s < 8u; s = s + 1u) { sw[top][s] = select(0.0, 1.0, s == label); }
+      top = top + 1u;
+      continue;
+    }
+    if (top < 2u) { break; }
+    let mode = pmf_u(node + 1u);
+    let r = pmf_f(node + 2u);
+    let a = sd[top - 2u];
+    let bd = sd[top - 1u];
+    let av = select(-a, a, op == 1u);
+    let bv = select(bd, -bd, op == 3u);
+    let hard = mode == 0u || r <= 0.0;
+    var blend = min(av, bv);
+    var share = select(0.0, 1.0, bv < av);
+    if (!hard && mode == 2u) {
+      let h = max(r - abs(av - bv), 0.0) / r;
+      blend = blend - r * h * h * 0.25;
+      share = select(0.5 * h, 1.0 - 0.5 * h, bv < av);
+    } else if (!hard && mode == 3u) {
+      let bevel = (av + bv - r) * ${f32(Math.SQRT1_2)};
+      blend = min(min(av, bv), bevel);
+      share = select(share, 0.5, bevel < min(av, bv));
+    } else if (!hard && mode == 1u) {
+      let u = max(vec2f(r - av, r - bv), vec2f(0.0));
+      let ul = length(u);
+      blend = max(r, min(av, bv)) - ul;
+      var gradient = vec2f(0.0);
+      if (ul > 0.0) { gradient = u / ul; }
+      if (min(av, bv) > r) { gradient += select(vec2f(0.0, 1.0), vec2f(1.0, 0.0), av <= bv); }
+      if (gradient.x + gradient.y > 0.0) { share = gradient.y / (gradient.x + gradient.y); }
+    }
+    if (op != 2u) {
+      let h = select(share, 0.5, av == bv);
+      for (var s = 0u; s < 8u; s = s + 1u) { sw[top - 2u][s] = (1.0 - h) * sw[top - 2u][s] + h * sw[top - 1u][s]; }
+    }
+    sd[top - 2u] = select(-blend, blend, op == 1u);
+    top = top - 1u;
+  }
+  for (var s = 0u; s < 8u; s = s + 1u) { (*w)[s] = sw[0][s]; }
+  return sd[0];
+}
+`
+
 /** The field grid as an Engine.addTexture argument, or null when the program has no grid. */
 export function fieldGridTexture(program: FieldProgramLike): { width: number; height: number; data: Uint8Array } | null {
   if (program.grid === null) return null
@@ -283,16 +486,19 @@ export function fieldInstanceParams(texture: number | null, program: FieldProgra
   ]
 }
 
-function colourSums(labels: readonly FieldLabelLike[]): string {
-  const lines = ['  var base = vec3f(0.0);', '  var roughness = 0.0;', '  var metallic = 0.0;']
-  labels.forEach((label, i) => {
-    lines.push(`  base += w[${i}] * vec3f(${label.color.map(f32).join(', ')});`)
-    lines.push(`  roughness += w[${i}] * ${f32(label.roughness)};`)
-    lines.push(`  metallic += w[${i}] * ${f32(label.metallic)};`)
-  })
-  lines.push('  o.base_color = base;', '  o.roughness = roughness;', '  o.metallic = metallic;')
-  return lines.join('\n')
-}
+// The labels' constant looks, read from the part's data block, weighted by the field.
+const COLOUR_SUMS = `  var base = vec3f(0.0);
+  var roughness = 0.0;
+  var metallic = 0.0;
+  for (var i = 0u; i < 8u; i = i + 1u) {
+    let l = db + ${PMF_LABELS_AT}u + 8u * i;
+    base += w[i] * pmf_v3(l);
+    roughness += w[i] * pmf_f(l + 3u);
+    metallic += w[i] * pmf_f(l + 4u);
+  }
+  o.base_color = base;
+  o.roughness = roughness;
+  o.metallic = metallic;`
 
 const MATERIAL_FULL_FIELDS = ['base_color', 'metallic', 'roughness', 'emissive', 'height']
 
@@ -356,23 +562,19 @@ function labelGraphs(graphs: readonly (FieldLabelGraphLike | null)[]): { text: s
   return { text, calls }
 }
 
-function materialSwitch(labels: readonly FieldLabelLike[], graphs: readonly (FieldLabelGraphLike | null)[]): string {
+function materialSwitch(graphs: readonly (FieldLabelGraphLike | null)[]): string {
   const embedded = labelGraphs(graphs)
-  const cases = labels.map((label, i) => {
-    const call = embedded.calls[i] ?? null
-    const ret = call === null
-      ? `return SdfmMaterialFull(vec3f(${label.color.map(f32).join(', ')}), ${f32(label.metallic)}, ${f32(label.roughness)}, vec3f(0.0), 0.0);`
-      : `return ${call};`
-    return `    case ${i}u: { ${ret} }`
-  })
+  // A label without a graph wears its constant look from the data block (default).
+  const cases = embedded.calls.flatMap((call, i) => call === null ? [] : [`    case ${i}u: { return ${call}; }`])
   return `struct SdfmMaterialFull { base_color: vec3f, metallic: f32, roughness: f32, emissive: vec3f, height: f32 }
 
 ${embedded.text}
 
-fn pmf_label(p: vec3f, n: vec3f, i: u32) -> SdfmMaterialFull {
+fn pmf_label(db: u32, p: vec3f, n: vec3f, i: u32) -> SdfmMaterialFull {
+  let l = db + ${PMF_LABELS_AT}u + 8u * i;
   switch i {
 ${cases.join('\n')}
-    default: { return SdfmMaterialFull(vec3f(0.5), 0.0, 0.5, vec3f(0.0), 0.0); }
+    default: { return SdfmMaterialFull(pmf_v3(l), pmf_f(l + 4u), pmf_f(l + 3u), vec3f(0.0), 0.0); }
   }
 }`
 }
@@ -396,21 +598,26 @@ const GRAPH_BLEND = `  // The four heaviest labels, renormalised, so a material 
   var emissive = vec3f(0.0);
   var height = 0.0;
   var total = 0.0;
-  if (i0 >= 0) { let m = pmf_label(p, n, u32(i0)); base += m.base_color * v0; metallic += m.metallic * v0; roughness += m.roughness * v0; emissive += m.emissive * v0; height += m.height * v0; total += v0; }
-  if (i1 >= 0) { let m = pmf_label(p, n, u32(i1)); base += m.base_color * v1; metallic += m.metallic * v1; roughness += m.roughness * v1; emissive += m.emissive * v1; height += m.height * v1; total += v1; }
-  if (i2 >= 0) { let m = pmf_label(p, n, u32(i2)); base += m.base_color * v2; metallic += m.metallic * v2; roughness += m.roughness * v2; emissive += m.emissive * v2; height += m.height * v2; total += v2; }
-  if (i3 >= 0) { let m = pmf_label(p, n, u32(i3)); base += m.base_color * v3; metallic += m.metallic * v3; roughness += m.roughness * v3; emissive += m.emissive * v3; height += m.height * v3; total += v3; }
+  if (i0 >= 0) { let m = pmf_label(db, p, n, u32(i0)); base += m.base_color * v0; metallic += m.metallic * v0; roughness += m.roughness * v0; emissive += m.emissive * v0; height += m.height * v0; total += v0; }
+  if (i1 >= 0) { let m = pmf_label(db, p, n, u32(i1)); base += m.base_color * v1; metallic += m.metallic * v1; roughness += m.roughness * v1; emissive += m.emissive * v1; height += m.height * v1; total += v1; }
+  if (i2 >= 0) { let m = pmf_label(db, p, n, u32(i2)); base += m.base_color * v2; metallic += m.metallic * v2; roughness += m.roughness * v2; emissive += m.emissive * v2; height += m.height * v2; total += v2; }
+  if (i3 >= 0) { let m = pmf_label(db, p, n, u32(i3)); base += m.base_color * v3; metallic += m.metallic * v3; roughness += m.roughness * v3; emissive += m.emissive * v3; height += m.height * v3; total += v3; }
   if (total > 0.0) { base /= total; metallic /= total; roughness /= total; emissive /= total; height /= total; }
   o.base_color = base;
   o.metallic = metallic;
   o.roughness = roughness;
   o.emissive = emissive;`
 
+/** RAA's largest material function source in bytes (raa-shader USER_FN_MAX_BYTES). */
+export const MATERIAL_FUNCTION_MAX_BYTES = 65536
+
 /**
- * The RAA material function of one field part: program.wgsl is embedded, the normal comes from six central
- * distance taps, the mesh normal replaces it only where p leaves program.bounds or the gradient vanishes,
- * and the labels (their constant look, or their embedded MAMA material graphs for the four heaviest) mix per pixel.
- * The returned name keys the material; the text always defines material_main.
+ * The RAA material function of field parts: the fixed evaluator (PMF_INTERPRETER_WGSL) reads the part's program from
+ * its material data block (fieldProgramWords), the normal comes from six central distance taps, the mesh normal
+ * replaces it only where p leaves the program bounds or the gradient vanishes, and the labels (their constant look, or
+ * their embedded MAMA material graphs for the four heaviest) mix per pixel. The text depends only on the label graphs
+ * and debug, so parts with the same graphs share one function; the returned name keys it.
+ * @throws when the text exceeds MATERIAL_FUNCTION_MAX_BYTES (label graphs too large to embed)
  */
 export function fieldMaterialWgsl(src: {
   program: FieldProgramLike
@@ -421,35 +628,32 @@ export function fieldMaterialWgsl(src: {
   const labels = program.labels.slice(0, MAX_LABELS)
   const graphs = labels.map((_, i) => src.labelGraphs[i] ?? null)
   const graph = graphs.some((g) => g !== null)
-  const [minX, minY, minZ] = program.bounds.min
-  const [maxX, maxY, maxZ] = program.bounds.max
   // The label switch and its graphs are module-scope declarations; only the blend runs inside material_main.
-  const declarations = graph ? `${materialSwitch(labels, graphs)}\n\n` : ''
-  const colour = graph ? GRAPH_BLEND : colourSums(labels)
+  const declarations = graph ? `${materialSwitch(graphs)}\n\n` : ''
+  const colour = graph ? GRAPH_BLEND : COLOUR_SUMS
   const debugText = debug
     ? '\n  // ?normalsDebug: the normal lighting receives, 0.5 + n / 2.\n  o.base_color = n * 0.5 + vec3f(0.5);\n  o.metallic = 0.0;\n  o.roughness = 1.0;'
     : ''
-  const wgsl = `// field material (mama.field-program v${program.version}): ${program.functionName}
-${program.wgsl.trim()}
-
+  const wgsl = `// field material (mama.field-program v${VERSION}, the program in material data)
 ${PMF_GRID_HOST_WGSL}
+${PMF_INTERPRETER_WGSL}
 ${POSED_NORMAL_WGSL}
-fn pmf_tap(p: vec3f) -> f32 {
+fn pmf_tap(db: u32, p: vec3f) -> f32 {
   var wt: array<f32, 8>;
-  return ${program.functionName}(p, &wt);
+  return pmf_run(db, p, &wt);
 }
 
 // Six central taps at p +- h * e_i, h = half the smallest grid voxel.
-fn pmf_gradient(p: vec3f, h: f32) -> vec3f {
+fn pmf_gradient(db: u32, p: vec3f, h: f32) -> vec3f {
   let x = vec3f(h, 0.0, 0.0);
   let y = vec3f(0.0, h, 0.0);
   let z = vec3f(0.0, 0.0, h);
-  let d0 = pmf_tap(p - x);
-  let d1 = pmf_tap(p + x);
-  let d2 = pmf_tap(p - y);
-  let d3 = pmf_tap(p + y);
-  let d4 = pmf_tap(p - z);
-  let d5 = pmf_tap(p + z);
+  let d0 = pmf_tap(db, p - x);
+  let d1 = pmf_tap(db, p + x);
+  let d2 = pmf_tap(db, p - y);
+  let d3 = pmf_tap(db, p + y);
+  let d4 = pmf_tap(db, p - z);
+  let d5 = pmf_tap(db, p + z);
   return vec3f(d1 - d0, d3 - d2, d5 - d4) / (2.0 * h);
 }
 
@@ -457,12 +661,13 @@ ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
   var o = raa_default_output(in);
   o.opacity = 1.0;
   let p = in.color.xyz;
+  let db = raa_material_data_base(in.record);
   pmf_grid_texture = u32(in.instance_params[1].w + 0.5);
   pmf_grid_size = vec2<u32>(u32(in.instance_params[2].x + 0.5), u32(in.instance_params[2].y + 0.5));
   var w: array<f32, 8>;
-  let centre = ${program.functionName}(p, &w);
-  let g = pmf_gradient(p, ${f32(fieldStep(program))});
-  let inside = all(p >= vec3f(${f32(minX)}, ${f32(minY)}, ${f32(minZ)})) && all(p <= vec3f(${f32(maxX)}, ${f32(maxY)}, ${f32(maxZ)}));
+  let centre = pmf_run(db, p, &w);
+  let g = pmf_gradient(db, p, pmf_f(db + 7u));
+  let inside = all(p >= pmf_v3(db + 4u)) && all(p <= pmf_v3(db + 8u));
   let glen = length(g);
   var n = normalize(in.normal);
   // The mesh normal only where the field is undefined: local to these fragments.
@@ -472,5 +677,9 @@ ${colour}${debugText}
   return o;
 }
 `
+  const bytes = new TextEncoder().encode(wgsl).length
+  if (bytes > MATERIAL_FUNCTION_MAX_BYTES) {
+    throw new Error(`field shading: the field material needs ${bytes} bytes of WGSL (RAA limit ${MATERIAL_FUNCTION_MAX_BYTES})`)
+  }
   return { functionName: `pmf.${textHash(wgsl)}`, wgsl }
 }

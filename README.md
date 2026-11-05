@@ -74,6 +74,11 @@ generated WGSL use the real shapes the saved meshes carry (an `SdfmCompiledMater
 `sdfm.buffer_<hash>`), never a hand-picked identifier: no local WGSL compiler exists, so a fake input hides
 text the GPU will refuse.
 
+Every RAA material function stays under RAA's 64 KB source limit (`MATERIAL_FUNCTION_MAX_BYTES`) for every saved
+asset, so per-part data never becomes WGSL text: a field program is material data (`addMaterialData`) read by the one
+fixed evaluator (`PMF_INTERPRETER_WGSL`), never its saved straight-line `wgsl` (25 KB to over 1 MB on the candy set).
+A generator of material WGSL is tested over all `assets/**/*.mesh` (as `fieldShading.test.ts` does), not on a fixture.
+
 ## Proofs
 
 Each milestone proof is a Node script run with `--experimental-strip-types`. Proof records are committed under `proofs/mN/`; captures and logs go to the untracked `out/`.

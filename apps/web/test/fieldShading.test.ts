@@ -1,11 +1,14 @@
-// Field shading: structural check, generated material text, grid texture and instance params.
+// Field shading: structural check, generated material text, program data words, grid texture and instance params.
 // No GPU and no MAMA: the program fixture is the structural contract 'mama.field-program'.
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import {
-  PMF_GRID_HOST_WGSL, checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl,
-  type FieldProgramLike,
+  MATERIAL_FUNCTION_MAX_BYTES, PMF_GRID_HOST_WGSL, PMF_INTERPRETER_WGSL, PMF_STACK, checkFieldPart, fieldGridTexture,
+  fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, type FieldLabelGraphLike, type FieldProgramLike,
 } from '../src/sdf/fieldShading.ts'
+import { decodeMesh } from '../src/sdf/meshWire.ts'
 
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 const FUNCTION = 'pmf_eval_0123456789abcdef'
@@ -91,17 +94,64 @@ test('checkFieldPart reports every refusal reason', () => {
   if (!name.ok) assert.match(name.reason, /bad functionName/)
 })
 
-test('fieldMaterialWgsl embeds the evaluator, six taps, the fallback and pmf_grid', () => {
-  const out = fieldMaterialWgsl({ program: program(), labelGraphs: [null, null], debug: false })
-  assert.match(out.wgsl, new RegExp(`${FUNCTION}\\(p, &w\\)`))
-  const taps = out.wgsl.match(/pmf_tap\(p [-+] [xyz]\)/g) ?? []
+test('fieldMaterialWgsl runs the one fixed evaluator over material data, never the program text', () => {
+  const p = program()
+  const out = fieldMaterialWgsl({ program: p, labelGraphs: [null, null], debug: false })
+  assert.ok(!out.wgsl.includes(FUNCTION), 'the per-part program text is not embedded')
+  assert.ok(out.wgsl.includes(PMF_INTERPRETER_WGSL))
+  assert.match(out.wgsl, /let db = raa_material_data_base\(in\.record\);/)
+  assert.match(out.wgsl, /pmf_run\(db, p, &w\)/)
+  const taps = out.wgsl.match(/pmf_tap\(db, p [-+] [xyz]\)/g) ?? []
   assert.equal(taps.length, 6)
   assert.match(out.wgsl, /inside && glen > 1e-6/)
-  assert.match(out.wgsl, /fn pmf_grid\(x: i32, y: i32\) -> vec4f/)
   assert.ok(out.wgsl.includes(PMF_GRID_HOST_WGSL))
   assert.match(out.wgsl, /sdfm_posed_normal/)
-  assert.match(out.wgsl, /base \+= w\[0\] \* vec3f\(1\.0, 0\.0, 0\.0\)/)
-  assert.match(out.wgsl, /roughness \+= w\[1\] \* 0\.7/)
+  assert.match(out.wgsl, /base \+= w\[i\] \* pmf_v3\(l\)/)
+  const words = fieldProgramWords(p)
+  assert.ok(words.ok)
+  if (!words.ok) return
+  const f = new Float32Array(words.words.buffer)
+  assert.deepEqual([f[0], f[1]], [1, p.tree.length])
+  assert.deepEqual([...f.slice(4, 7)], [...p.bounds.min])
+  assert.deepEqual([...f.slice(12, 15)], [1, 0, 0])
+  assert.equal(f[8 + 12 + 3], Math.fround(0.7))
+})
+
+test('fieldProgramWords names a blend mode without a port and a tree deeper than the stack', () => {
+  const mode = program()
+  mode.tree = [{ op: 'leaf', operand: 0 }, { op: 'leaf', operand: 0 }, { op: 'union', mode: 'groove', radius: 0.1 }]
+  const m = fieldProgramWords(mode)
+  assert.equal(m.ok, false)
+  if (!m.ok) assert.match(m.reason, /blend mode 'groove'/)
+  const deep = program()
+  deep.tree = [...Array.from({ length: PMF_STACK + 1 }, () => ({ op: 'leaf' as const, operand: 0 })),
+    ...Array.from({ length: PMF_STACK }, () => ({ op: 'union' as const, mode: 'hard', radius: 0 }))]
+  const d = fieldProgramWords(deep)
+  assert.equal(d.ok, false)
+  if (!d.ok) assert.match(d.reason, /stack of 17/)
+})
+
+// Every saved field part of the shipped worlds draws through a field material RAA accepts (its 64 KB cap).
+test('every saved field part gets a field material under the RAA size limit and fits the evaluator', () => {
+  let parts = 0
+  for (const world of readdirSync('assets')) {
+    if (!statSync(join('assets', world)).isDirectory()) continue
+    for (const file of readdirSync(join('assets', world)).filter(name => name.endsWith('.mesh'))) {
+      const meshed = decodeMesh(new Uint8Array(readFileSync(join('assets', world, file)))) as unknown as { data: { groups: { parts: unknown[] }[]; materials: FieldLabelGraphLike[] } }
+      const byName = new Map(meshed.data.materials.map(m => [m.name, m]))
+      for (const group of meshed.data.groups) for (const part of group.parts) {
+        const check = checkFieldPart(part)
+        if (!check.ok) continue
+        parts++
+        const words = fieldProgramWords(check.program)
+        assert.ok(words.ok, `${file}: ${words.ok ? '' : words.reason}`)
+        const graphs = check.program.labels.map(l => (l.material === null ? null : byName.get(l.material) ?? null))
+        const out = fieldMaterialWgsl({ program: check.program, labelGraphs: graphs, debug: true })
+        assert.ok(new TextEncoder().encode(out.wgsl).length <= MATERIAL_FUNCTION_MAX_BYTES, file)
+      }
+    }
+  }
+  assert.ok(parts > 100, `${parts} saved field parts`)
 })
 
 // A label graph as the saved mesh carries it (SdfmCompiledMaterial): its RAA function is registered under a dotted
@@ -127,9 +177,9 @@ test('fieldMaterialWgsl embeds the label graphs at module scope and blends the h
   assert.ok(!/MaterialFull\(/.test(out.wgsl.replace(/SdfmMaterialFull\(/g, '')), 'MAMA struct names are renamed')
   assert.match(out.wgsl, /PMF_K\[b \+ 1u\]/)
   assert.match(out.wgsl, /case 0u: \{ return pmf_graph_0\(0u, p, p, n, SdfmMatMasks\(0\.5, 1\.0, 1\.0, 0\.0, 1\.0\)\); \}/)
-  assert.match(out.wgsl, /case 1u: \{ return SdfmMaterialFull/)
+  assert.ok(!/case 1u:/.test(out.wgsl), 'a label without a graph reads its look from the data block')
   assert.ok(!out.wgsl.includes('sdfm.'), 'no RAA registry name appears in the WGSL')
-  assert.match(inside, /pmf_label\(p, n, u32\(i0\)\)/)
+  assert.match(inside, /pmf_label\(db, p, n, u32\(i0\)\)/)
 })
 
 test('fieldMaterialWgsl shares one body for the same graph and offsets each label constants', () => {
@@ -148,19 +198,21 @@ test('fieldMaterialWgsl shares one body for the same graph and offsets each labe
   assert.throws(() => fieldMaterialWgsl({ program: p, labelGraphs: [wrong, null], debug: false }), /MaterialFull fields/)
 })
 
-test('fieldMaterialWgsl is deterministic and names depend on labels and debug', () => {
+test('fieldMaterialWgsl is deterministic and names depend on label graphs and debug', () => {
   const a = fieldMaterialWgsl({ program: program(), labelGraphs: [null, null], debug: false })
   const b = fieldMaterialWgsl({ program: program(), labelGraphs: [null, null], debug: false })
   assert.equal(a.functionName, b.functionName)
   assert.equal(a.wgsl, b.wgsl)
 
+  // Label looks live in the data block: parts with other colours share the same function.
   const otherLabels = program()
   otherLabels.labels = [
     { material: null, color: [0, 0, 1], roughness: 0.5, metallic: 0.1 },
     { material: null, color: [0, 1, 0], roughness: 0.7, metallic: 0.2 },
   ]
   const labels = fieldMaterialWgsl({ program: otherLabels, labelGraphs: [null, null], debug: false })
-  assert.notEqual(a.functionName, labels.functionName)
+  assert.equal(a.functionName, labels.functionName)
+  assert.notEqual(a.functionName, fieldMaterialWgsl({ program: program(), labelGraphs: [STRIPES, null], debug: false }).functionName)
 
   const debug = fieldMaterialWgsl({ program: program(), labelGraphs: [null, null], debug: true })
   assert.notEqual(a.functionName, debug.functionName)

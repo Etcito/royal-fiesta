@@ -24,7 +24,7 @@ import { installShaderCache } from '../render/shaderCache.ts'
 import { deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
 import { FIELD_ATLAS_BYTES, fieldGridBytes, partDiag, planFieldAtlas, type FieldAtlasPlan, type PartFieldCost } from './fieldAtlas.ts'
-import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, PMF_GRID_HOST_WGSL } from './fieldShading.ts'
+import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords } from './fieldShading.ts'
 
 export interface ResizablePort extends SkinnedRenderPort {
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
@@ -764,17 +764,26 @@ class SdfRenderPort implements ResizablePort {
       return compiled ?? null
     })
     if (missing) warnOnce(`${key}:missing`, 'a field label names a material not in the saved mesh; its shapes wear the label colour')
-    const material = fieldMaterialWgsl({ program, labelGraphs, debug: this.debugNormals })
-    // The evaluator and the host pmf_grid tap are cached; the complete field material (which embeds both) is registered
-    // as the part's RAA material function.
-    this.addFunction(program.functionName, program.wgsl, false)
-    this.addFunction('pmf_grid', PMF_GRID_HOST_WGSL, false)
+    // One fixed evaluator reads the program from the part's material data (program.wgsl, per-part code up to over 1 MB,
+    // is never registered: RAA refuses a material function over 64 KB); parts with the same label graphs share the text.
+    const words = fieldProgramWords(program)
+    let material: { functionName: string; wgsl: string }
+    try {
+      if (!words.ok) throw new Error(words.reason)
+      material = fieldMaterialWgsl({ program, labelGraphs, debug: this.debugNormals })
+    } catch (e) {
+      if (texture !== null) engine.removeTexture(texture)
+      warnOnce(key, `vertex normals (${messageOf(e)})`)
+      this.recordPart(key, 'vertex', messageOf(e))
+      return null
+    }
     this.addFunction(material.functionName, material.wgsl)
-    const handle = engine.addSurfaceMaterial({ function: material.functionName, roughness: 0.5 })
+    const data = engine.addMaterialData(words.words)
+    const handle = engine.addSurfaceMaterial({ function: material.functionName, data, roughness: 0.5 })
     const graph = graphMode
     if (graph) engine.setMaterialTintMode(handle, 'graph')
     return {
-      handle, wgsl: material.wgsl, graph,
+      handle, wgsl: material.wgsl, data, graph,
       params: fieldInstanceParams(texture, program),
       ...(texture !== null ? { texture } : {}),
     }

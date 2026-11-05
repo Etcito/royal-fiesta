@@ -54,36 +54,125 @@ function assertNoPageErrors(what: string): void {
 // atlas demotions (QB12) and the field refusals MAMA saved with a part. hardShadingFailures keeps every other reason.
 const hardFailures = hardShadingFailures
 
-async function waitPipelines(what: string): Promise<void> {
-  const deadline = Date.now() + WAIT_MS
-  while (pendingPipelines() > 0) {
-    if (Date.now() > deadline) throw new Error(`${what}: ${pendingPipelines()} material pipelines still compiling`)
-    await nextTask()
-  }
-}
-
-// Field shading becomes ready through the renderer, so submit a frame between yields. The bounded wait
-// names the parts still pending instead of guessing a duration.
+// A frame is what asks RAA for a new part's pipelines: a freshly created (skinned) instance requests its variants on
+// its first visible draw, not at upload. Checking the compile count before that frame saw zero and returned, so the
+// next frames (the capture) omitted the draw while its pipeline compiled. Render, yield to the compiler, and report
+// ready only when the port has no pending field part and no pipeline is compiling after a drawn frame. The bounded
+// wait names the parts still pending instead of guessing a duration.
 async function waitShading(port: ResizablePort, what: string): Promise<ShadingReport> {
   const deadline = Date.now() + WAIT_MS
   for (;;) {
+    port.render()
+    await nextTask()
     const report = port.shadingReport()
-    if (report.pending === 0) {
-      await waitPipelines(what)
-      return port.shadingReport()
-    }
+    if (report.pending === 0 && pendingPipelines() === 0) return report
     if (Date.now() > deadline) {
       // The parts it waited on and the pipelines still compiling come first; the named fallbacks (atlas budget, vertex
       // reasons) are reported states, never the reason of the wait, and follow only as a count.
       throw new Error(`${what}: field shading still pending after ${WAIT_MS / 1000} s: ${report.pending} parts ` +
         `(${report.pendingParts.join(', ')}); ${pendingPipelines()} material pipelines compiling; ${report.errors.length} named fallbacks`)
     }
-    port.render()
-    await nextTask()
   }
 }
 
-async function capture(port: ResizablePort, what: string, captures: Captures): Promise<void> {
+// What a capture must show and how to remove it for the background frame. center/radius are a world-space bounding
+// sphere around the subject, projected with the same camera to prove the view is pointed at it.
+interface Subject {
+  camera: CameraPose
+  center: readonly [number, number, number]
+  radius: number
+  // Hides the subject from the next drawn frame and returns the restore for the next capture.
+  hide(): () => void
+}
+
+interface ProjectedBox { x0: number; y0: number; x1: number; y1: number; area: number; centerDepth: number }
+
+// The subject's bounding sphere projected through the camera: the viewport-clipped rectangle of its 8 box corners.
+// A corner behind the near plane uses the near depth (a box that reaches the camera covers the whole view).
+function projectSubject(subject: Subject, width: number, height: number): ProjectedBox | null {
+  const { eye, target, fovYDeg, near } = subject.camera
+  const forward = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]
+  const length = Math.hypot(forward[0], forward[1], forward[2])
+  if (!(length > 1e-9)) return null
+  const f = forward.map(v => v / length)
+  const rightRaw = [f[1] * 0 - f[2] * 1, f[2] * 0 - f[0] * 0, f[0] * 1 - f[1] * 0]
+  const rightLength = Math.hypot(rightRaw[0], rightRaw[1], rightRaw[2])
+  if (!(rightLength > 1e-9)) return null
+  const right = rightRaw.map(v => v / rightLength)
+  const up = [right[1] * f[2] - right[2] * f[1], right[2] * f[0] - right[0] * f[2], right[0] * f[1] - right[1] * f[0]]
+  const tanHalf = Math.tan(fovYDeg * Math.PI / 360)
+  const aspect = width / height
+  const centerDepth = (subject.center[0] - eye[0]) * f[0] + (subject.center[1] - eye[1]) * f[1] + (subject.center[2] - eye[2]) * f[2]
+  if (!(centerDepth > near)) return null
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
+  for (const dx of [-1, 1]) for (const dy of [-1, 1]) for (const dz of [-1, 1]) {
+    const px = subject.center[0] + dx * subject.radius
+    const py = subject.center[1] + dy * subject.radius
+    const pz = subject.center[2] + dz * subject.radius
+    const rel = [px - eye[0], py - eye[1], pz - eye[2]]
+    const depth = Math.max(near, rel[0] * f[0] + rel[1] * f[1] + rel[2] * f[2])
+    const sx = (rel[0] * right[0] + rel[1] * right[1] + rel[2] * right[2]) / (depth * tanHalf * aspect)
+    const sy = (rel[0] * up[0] + rel[1] * up[1] + rel[2] * up[2]) / (depth * tanHalf)
+    const vx = (sx + 1) * 0.5 * width
+    const vy = (1 - sy) * 0.5 * height
+    x0 = Math.min(x0, vx); x1 = Math.max(x1, vx)
+    y0 = Math.min(y0, vy); y1 = Math.max(y1, vy)
+  }
+  const cx0 = Math.max(0, x0), cy0 = Math.max(0, y0), cx1 = Math.min(width, x1), cy1 = Math.min(height, y1)
+  if (!(cx1 - cx0 >= 2 && cy1 - cy0 >= 2)) return null
+  return { x0: cx0, y0: cy0, x1: cx1, y1: cy1, area: (cx1 - cx0) * (cy1 - cy0), centerDepth }
+}
+
+// A share of the frame below this is a background-only capture; the projected subject box must hold a visible share
+// of the changed pixels too, so a camera pointed away cannot pass on background noise.
+const MIN_SUBJECT_SHARE = 0.004
+const MIN_BOX_SHARE = 0.01
+const CHANNEL_DELTA = 16
+
+async function pixelsOf(bytes: Uint8Array): Promise<ImageData> {
+  const bitmap = await createImageBitmap(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' }))
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    if (context === null) throw new Error('fieldShading: no 2D canvas to read a capture')
+    context.drawImage(bitmap, 0, 0)
+    return context.getImageData(0, 0, canvas.width, canvas.height)
+  } finally { bitmap.close() }
+}
+
+// The guard the previous empty penguin frame needed: the subject is in the viewport and its removal changes pixels.
+// Throws before the PNG is added, so the render entry fails with the named error instead of committing an empty frame.
+async function assertSubjectDrawn(what: string, subject: Subject, drawn: Uint8Array, background: Uint8Array): Promise<void> {
+  const a = await pixelsOf(drawn)
+  const b = await pixelsOf(background)
+  const width = a.width, height = a.height
+  const projected = projectSubject(subject, width, height)
+  let changed = 0, inBox = 0
+  if (b.width === width && b.height === height) {
+    const pa = a.data, pb = b.data
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4
+        if (Math.abs(pa[i] - pb[i]) <= CHANNEL_DELTA && Math.abs(pa[i + 1] - pb[i + 1]) <= CHANNEL_DELTA &&
+          Math.abs(pa[i + 2] - pb[i + 2]) <= CHANNEL_DELTA) continue
+        changed++
+        if (projected !== null && x >= projected.x0 && x <= projected.x1 && y >= projected.y0 && y <= projected.y1) inBox++
+      }
+    }
+  }
+  const share = changed / Math.max(1, width * height)
+  const boxShare = projected === null ? 0 : inBox / Math.max(1, projected.area)
+  const viewportShare = projected === null ? 0 : projected.area / Math.max(1, width * height)
+  if (projected === null || viewportShare < 0.01 || share < MIN_SUBJECT_SHARE || boxShare < MIN_BOX_SHARE) {
+    console.warn(`[fieldShading] ${what}: subject ${projected === null ? 'off screen' : `covers ${(viewportShare * 100).toFixed(1)}% of the viewport`}; ` +
+      `${(share * 100).toFixed(2)}% of the pixels differ from the background, ${(boxShare * 100).toFixed(2)}% inside the subject box`)
+    throw new Error(`fieldShading ${what}: subject not in frame`)
+  }
+}
+
+async function capture(port: ResizablePort, what: string, captures: Captures, subject: Subject): Promise<void> {
   const report = port.shadingReport()
   if (report.pending > 0) throw new Error(`${what}: ${report.pending} parts still pending at capture time`)
   if (report.atlasFull > 0) throw new Error(`${what}: ${report.atlasFull} texture.atlas_full errors`)
@@ -95,6 +184,17 @@ async function capture(port: ResizablePort, what: string, captures: Captures): P
   port.render()
   const png = await port.capture()
   if (png === null || png.length === 0) throw new Error(`${what}: the capture is empty`)
+  // The same camera with the subject hidden: the pixels that change are the subject's own draw.
+  const restore = subject.hide()
+  let background: Uint8Array | null = null
+  try {
+    port.render()
+    await nextTask()
+    port.render()
+    background = await port.capture()
+  } finally { restore() }
+  if (background === null || background.length === 0) throw new Error(`${what}: the background capture is empty`)
+  await assertSubjectDrawn(what, subject, png, background)
   captures.files.push({ name: `${what}.png`, blob: new Blob([png as Uint8Array<ArrayBuffer>], { type: 'image/png' }) })
   captures.names.push(`${what}.png`)
 }
@@ -119,6 +219,7 @@ class Stage {
   private readonly mechanismSpecs: { item: MechItem; at: number }[] = []
   private readonly mechanismInst: number[] = []
   private readonly withDecor: boolean
+  private disposed = false
   private readonly rest: Pose = { t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 } }
   private readonly q: Pose = { t: { x: 0, y: 0, z: 0 }, r: { x: 0, y: 0, z: 0, w: 1 } }
 
@@ -194,7 +295,17 @@ class Stage {
     }
   }
 
+  // The guard's background frame: every instance this stage drew leaves the view; the caller restores them.
+  hide(): () => void {
+    if (this.withDecor) this.dressing.leave(this.port)
+    const instances = [...this.obstacleInst, ...this.mechanismInst]
+    for (const instance of instances) this.port.setVisible(instance, false)
+    return () => { for (const instance of instances) this.port.setVisible(instance, true) }
+  }
+
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     if (this.withDecor) this.dressing.leave(this.port)
     for (const instance of [...this.obstacleInst, ...this.mechanismInst]) this.port.destroyInstance(instance)
   }
@@ -254,12 +365,22 @@ async function shootPenguin(port: ResizablePort, content: GameContent, captures:
       mounts.draw([0, 0, 0], [0, 0, 0, 1], [1, 1, 1])
       mounts.setPose(pose, { dtS: 1 / 60 })
     }
-    port.setCamera(0, { eye: [0, 1.1, 2.5], target: [0, 0.55, 0], fovYDeg: 42, near: 0.05, far: 100 })
+    // A close portrait of the whole penguin, cosmetics included: the walking pose and the hat stay inside the frame.
+    const cam: CameraPose = { eye: [0, 0.9, 3.4], target: [0, 0.25, 0], fovYDeg: 52, near: 0.05, far: 100 }
+    const subject: Subject = {
+      camera: cam, center: [0, 0.2, 0], radius: 1.9,
+      hide: () => {
+        port.setVisible(bean, false)
+        mounts.setVisible(false)
+        return () => { port.setVisible(bean, true); mounts.setVisible(true) }
+      },
+    }
+    port.setCamera(0, cam)
     await waitShading(port, 'penguin')
-    await capture(port, 'penguin', captures)
+    await capture(port, 'penguin', captures, subject)
     port.setShading('vertex')
     await waitShading(port, 'penguin-vertex')
-    await capture(port, 'penguin-vertex', captures)
+    await capture(port, 'penguin-vertex', captures, subject)
     port.setShading('field')
   } finally {
     driver?.dispose()
@@ -272,9 +393,10 @@ async function shootPenguin(port: ResizablePort, content: GameContent, captures:
 async function shootWorld(port: ResizablePort, content: GameContent, captures: Captures): Promise<void> {
   const stage = new Stage(port, content, content.hub(), { decor: true })
   try {
-    port.setCamera(0, { eye: [38, 26, 42], target: [0, 1.5, 0], fovYDeg: 60, near: 0.1, far: 500 })
+    const cam: CameraPose = { eye: [38, 26, 42], target: [0, 1.5, 0], fovYDeg: 60, near: 0.1, far: 500 }
+    port.setCamera(0, cam)
     await waitShading(port, 'candy-world')
-    await capture(port, 'candy-world', captures)
+    await capture(port, 'candy-world', captures, { camera: cam, center: [0, 1.5, 0], radius: 40, hide: () => stage.hide() })
   } finally { stage.dispose() }
 }
 
@@ -282,9 +404,10 @@ async function shootScenery(port: ResizablePort, content: GameContent, captures:
   const hub = content.hub()
   const stage = new Stage(port, content, hub, { decor: false, obstacles: [obstacleOf(hub, 'candy.plaza-fountain')], mechanisms: [] })
   try {
-    port.setCamera(0, { eye: [2.4, 1.8, 2.8], target: [0, 0.9, 0], fovYDeg: 55, near: 0.05, far: 200 })
+    const cam: CameraPose = { eye: [2.4, 1.8, 2.8], target: [0, 0.9, 0], fovYDeg: 55, near: 0.05, far: 200 }
+    port.setCamera(0, cam)
     await waitShading(port, 'rounded-scenery')
-    await capture(port, 'rounded-scenery', captures)
+    await capture(port, 'rounded-scenery', captures, { camera: cam, center: [0, 1, 0], radius: 2.6, hide: () => stage.hide() })
   } finally { stage.dispose() }
 }
 
@@ -295,16 +418,17 @@ async function shootMechanisms(port: ResizablePort, content: GameContent, captur
   const place = item.place ?? item
   const target: [number, number, number] = [place.t.x, place.t.y + 1.35, place.t.z]
   const cam: CameraPose = { eye: [target[0] + 4, target[1] + 1.8, target[2] + 4], target, fovYDeg: 65, near: 0.1, far: 300 }
+  const subject: Subject = { camera: cam, center: target, radius: 3.5, hide: () => stage.hide() }
   const stage = new Stage(port, content, course, { decor: false, obstacles: [], mechanisms: [at] })
   try {
     port.setCamera(0, cam)
     await waitShading(port, 'mechanisms-a')
-    await capture(port, 'mechanisms-a', captures)
+    await capture(port, 'mechanisms-a', captures, subject)
     // 30 ticks = 0.5 s of sim time; the hammer's keyframes put a visibly different pose there.
     stage.update(30)
     port.setCamera(0, cam)
     await waitShading(port, 'mechanisms-b')
-    await capture(port, 'mechanisms-b', captures)
+    await capture(port, 'mechanisms-b', captures, subject)
   } finally { stage.dispose() }
 }
 

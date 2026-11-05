@@ -12,48 +12,24 @@
     "assets": 55,
     "failedAssets": [],
     "normals": {
+      "fieldGridScale": 1,
+      "resampledParts": 0,
       "parts": 51,
-      "field": 24,
-      "vertex": 27,
+      "field": 50,
+      "vertex": 1,
       "texture": 0,
       "pending": 0,
       "pendingParts": [],
-      "failed": 27,
+      "failed": 1,
       "refused": [
         "candy.spinner-bar#spinner_bar/bar"
       ],
-      "demoted": 26,
+      "demoted": 0,
       "atlasFull": 0,
-      "bytes": 57026008,
+      "bytes": 20539888,
       "budget": 57042534,
       "errors": [
-        "candy.banner#candy_banner/__root__: atlas budget: smaller parts first",
-        "candy.bounce-pad#candy_bounce_pad/cap: atlas budget: smaller parts first",
-        "candy.bounce-pad#candy_bounce_pad/dome: atlas budget: smaller parts first",
-        "candy.bounce-pad#candy_bounce_pad/ring: atlas budget: smaller parts first",
-        "candy.bounce-pad#candy_bounce_pad/star: atlas budget: smaller parts first",
-        "candy.finish-arch#w_crown/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_crown_jewel0/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_crown_jewel1/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_crown_jewel2/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_l_band/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_l_base/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_l_core/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_l_rim0/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_l_rim1/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_l_rim2/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_r_band/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_r_base/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_r_core/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_r_rim0/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_r_rim1/__root__: atlas budget: smaller parts first",
-        "candy.finish-arch#w_post_r_rim2/__root__: atlas budget: smaller parts first",
-        "candy.moving-platform#candy_moving_platform/pad: atlas budget: smaller parts first",
-        "candy.pendulum-hammer#pendulum_hammer/head: atlas budget: smaller parts first",
-        "candy.seesaw-plank#candy_seesaw_plank/rim_b: atlas budget: smaller parts first",
-        "candy.seesaw-plank#candy_seesaw_plank/rim_f: atlas budget: smaller parts first",
-        "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
-        "candy.spinner-bar#spinner_bar/hub: atlas budget: smaller parts first"
+        "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale"
       ]
     },
     "hardFailures": [],
@@ -62,6 +38,8 @@
       "rounded-scenery.png",
       "penguin.png",
       "penguin-vertex.png",
+      "rounded-scenery-normals.png",
+      "rounded-scenery-vertex.png",
       "mechanisms-a.png",
       "mechanisms-b.png"
     ],
@@ -1506,373 +1484,1332 @@
         "drawn": [
           {
             "key": "candy.banner#candy_banner/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.03491857157221939,
+              0.03491857157221939,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.19499999284744263,
+              0.03886666456858317,
+              0.03491857157221939,
+              0.03491857157221939,
+              0.03491857157221939,
+              0.03491857157221939,
+              0.03491857157221939
+            ]
           },
           {
             "key": "candy.banner#candy_banner/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.03491857157221939,
+              0.03491857157221939,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.05562499910593033,
+              0.19499999284744263,
+              0.03886666456858317,
+              0.03491857157221939,
+              0.03491857157221939,
+              0.03491857157221939,
+              0.03491857157221939,
+              0.03491857157221939
+            ]
           },
           {
             "key": "candy.hot-air-balloon#candy_hot_air_balloon/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.5249999761581421,
+              0.5249999761581421,
+              0.5249999761581421,
+              0.5249999761581421,
+              0.5249999761581421,
+              0.5249999761581421,
+              0.375,
+              0.13750000298023224,
+              0.125,
+              0.11249999701976776,
+              0.11249999701976776,
+              0.11249999701976776,
+              0.11249999701976776,
+              0.06662848837367728,
+              0.06662848837367728
+            ]
           },
           {
             "key": "candy.tower#candy_tower/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.1244372336009771,
+              0.1244372336009771,
+              1.125,
+              0.48500001430511475,
+              0.4699999988079071,
+              0.1244372336009771,
+              0.46101832389831543,
+              0.5,
+              0.4375,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771
+            ]
           },
           {
             "key": "candy.tower#candy_tower/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.1244372336009771,
+              0.1244372336009771,
+              1.125,
+              0.48500001430511475,
+              0.4699999988079071,
+              0.1244372336009771,
+              0.46101832389831543,
+              0.5,
+              0.4375,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771
+            ]
           },
           {
             "key": "candy.tower#candy_tower/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.1244372336009771,
+              0.1244372336009771,
+              1.125,
+              0.48500001430511475,
+              0.4699999988079071,
+              0.1244372336009771,
+              0.46101832389831543,
+              0.5,
+              0.4375,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771,
+              0.1244372336009771
+            ]
           },
           {
             "key": "candy.cloud#candy_cloud/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.875
+            ]
           },
           {
             "key": "candy.cloud#candy_cloud/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.875
+            ]
           },
           {
             "key": "candy.cloud#candy_cloud/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.875
+            ]
           },
           {
             "key": "candy.cloud#candy_cloud/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.875
+            ]
           },
           {
             "key": "candy.slime-pool#candy_slime_pool/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.20166666666666666,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.17499999701976773,
+              0.21250000596046445,
+              0.15000000596046448,
+              0.15000000596046448,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.22366666316986084,
+              1.3624999523162842,
+              1.3624999523162842,
+              1.3624999523162842,
+              1.3624999523162842,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246
+            ]
           },
           {
             "key": "candy.slime-pool#candy_slime_pool/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.20166666666666666,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.17000000178813934,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.17499999701976773,
+              0.21250000596046445,
+              0.15000000596046448,
+              0.15000000596046448,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.22366666316986084,
+              1.3624999523162842,
+              1.3624999523162842,
+              1.3624999523162842,
+              1.3624999523162842,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246,
+              0.14901261709650246
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.floor-tile#candy_floor_tile/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19066665967305502,
+              0.18699999650319418,
+              0.19066665967305502
+            ]
           },
           {
             "key": "candy.wall-block#candy_wall_block/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.18516667366027834,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.18516667366027834,
+              0.17966667016347249
+            ]
           },
           {
             "key": "candy.wall-block#candy_wall_block/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.18516667366027834,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.18516667366027834,
+              0.17966667016347249
+            ]
           },
           {
             "key": "candy.wall-block#candy_wall_block/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.18516667366027834,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.18516667366027834,
+              0.17966667016347249
+            ]
           },
           {
             "key": "candy.wall-block#candy_wall_block/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.18516667366027834,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.18516667366027834,
+              0.17966667016347249
+            ]
           },
           {
             "key": "candy.wall-block#candy_wall_block/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.18516667366027834,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.09166300403281623,
+              0.18516667366027834,
+              0.17966667016347249
+            ]
           },
           {
             "key": "candy.checkpoint-gate#candy_checkpoint_gate/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.06867645925986174,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12833333333333333,
+              0.11733333508173625,
+              0.11,
+              0.07500000298023224,
+              0.06867645925986174
+            ]
           },
           {
             "key": "candy.checkpoint-gate#candy_checkpoint_gate/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.06867645925986174,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12833333333333333,
+              0.11733333508173625,
+              0.11,
+              0.07500000298023224,
+              0.06867645925986174
+            ]
           },
           {
             "key": "candy.checkpoint-gate#candy_checkpoint_gate/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.06867645925986174,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.06867645925986174,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12250000238418579,
+              0.12833333333333333,
+              0.11733333508173625,
+              0.11,
+              0.07500000298023224,
+              0.06867645925986174
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_l_base/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.031166667540868123
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_l_core/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.06966666579246521
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_l_band/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.024566667278607686
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_l_rim0/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19249999523162842
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_l_rim1/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19249999523162842
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_l_rim2/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19249999523162842
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_r_base/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.031166667540868123
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_r_core/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.06966666579246521
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_r_band/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.024566667278607686
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_r_rim0/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19249999523162842
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_r_rim1/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19249999523162842
+            ]
           },
           {
             "key": "candy.finish-arch#w_post_r_rim2/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.19249999523162842
+            ]
           },
           {
             "key": "candy.finish-arch#w_beam/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.17966667016347249
+            ]
           },
           {
             "key": "candy.finish-arch#w_beam_band/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.165
+            ]
           },
           {
             "key": "candy.finish-arch#w_beam_zigzag/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.15766667366027834
+            ]
           },
           {
             "key": "candy.finish-arch#w_crown/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.05775000174840292
+            ]
           },
           {
             "key": "candy.finish-arch#w_crown_tip0/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": []
           },
           {
             "key": "candy.finish-arch#w_crown_tip1/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": []
           },
           {
             "key": "candy.finish-arch#w_crown_tip2/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": []
           },
           {
             "key": "candy.finish-arch#w_crown_tip3/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": []
           },
           {
             "key": "candy.finish-arch#w_crown_tip4/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": []
           },
           {
             "key": "candy.finish-arch#w_crown_jewel0/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.014299999475479127
+            ]
           },
           {
             "key": "candy.finish-arch#w_crown_jewel1/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.014299999475479127
+            ]
           },
           {
             "key": "candy.finish-arch#w_crown_jewel2/__root__",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.014299999475479127
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.spinner-bar#spinner_bar/hub",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.030433332721392314,
+              0.20999999344348907,
+              0.023996104537453142,
+              0.024933333595593767
+            ]
           },
           {
             "key": "candy.spinner-bar#spinner_bar/bar",
@@ -1881,8 +2818,14 @@
           },
           {
             "key": "candy.spinner-bar#spinner_bar/hub",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.030433332721392314,
+              0.20999999344348907,
+              0.023996104537453142,
+              0.024933333595593767
+            ]
           },
           {
             "key": "candy.spinner-bar#spinner_bar/bar",
@@ -1891,8 +2834,14 @@
           },
           {
             "key": "candy.spinner-bar#spinner_bar/hub",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.030433332721392314,
+              0.20999999344348907,
+              0.023996104537453142,
+              0.024933333595593767
+            ]
           },
           {
             "key": "candy.spinner-bar#spinner_bar/bar",
@@ -1901,136 +2850,188 @@
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/rim_low",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07333333333333333
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/base",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07150000174840292
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/rim_top",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07773332913716634
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/pad",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.06416666666666666,
+              0.4000000059604645
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/zigzag",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07333333333333333
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/rim_low",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07333333333333333
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/base",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07150000174840292
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/rim_top",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07773332913716634
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/pad",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.06416666666666666,
+              0.4000000059604645
+            ]
           },
           {
             "key": "candy.moving-platform#candy_moving_platform/zigzag",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07333333333333333
+            ]
           },
           {
             "key": "candy.seesaw-plank#candy_seesaw_plank/plank",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.13933333158493041
+            ]
           },
           {
             "key": "candy.seesaw-plank#candy_seesaw_plank/rim_r",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.14850000699361166
+            ]
           },
           {
             "key": "candy.seesaw-plank#candy_seesaw_plank/rim_l",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.14850000699361166
+            ]
           },
           {
             "key": "candy.seesaw-plank#candy_seesaw_plank/rim_f",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.05866666754086813
+            ]
           },
           {
             "key": "candy.seesaw-plank#candy_seesaw_plank/rim_b",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.05866666754086813
+            ]
           },
           {
             "key": "candy.seesaw-plank#candy_seesaw_plank/zigzag",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.11733333508173625
+            ]
           },
           {
             "key": "candy.bounce-pad#candy_bounce_pad/dome",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.28999999165534973
+            ]
           },
           {
             "key": "candy.bounce-pad#candy_bounce_pad/ring",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.21375000476837158
+            ]
           },
           {
             "key": "candy.bounce-pad#candy_bounce_pad/cap",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.016499999562899274
+            ]
           },
           {
             "key": "candy.bounce-pad#candy_bounce_pad/star",
-            "mode": "vertex",
-            "reason": "atlas budget: smaller parts first"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.014299999475479127,
+              0.014299999475479127,
+              0.01429999947547913
+            ]
           }
         ],
         "normals": {
+          "fieldGridScale": 1,
+          "resampledParts": 0,
           "parts": 51,
-          "field": 24,
-          "vertex": 27,
+          "field": 50,
+          "vertex": 1,
           "texture": 0,
           "pending": 0,
           "pendingParts": [],
-          "failed": 27,
+          "failed": 1,
           "refused": [
             "candy.spinner-bar#spinner_bar/bar"
           ],
-          "demoted": 26,
+          "demoted": 0,
           "atlasFull": 0,
-          "bytes": 57026008,
+          "bytes": 20539888,
           "budget": 57042534,
           "errors": [
-            "candy.banner#candy_banner/__root__: atlas budget: smaller parts first",
-            "candy.bounce-pad#candy_bounce_pad/cap: atlas budget: smaller parts first",
-            "candy.bounce-pad#candy_bounce_pad/dome: atlas budget: smaller parts first",
-            "candy.bounce-pad#candy_bounce_pad/ring: atlas budget: smaller parts first",
-            "candy.bounce-pad#candy_bounce_pad/star: atlas budget: smaller parts first",
-            "candy.finish-arch#w_crown/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_crown_jewel0/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_crown_jewel1/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_crown_jewel2/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_l_band/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_l_base/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_l_core/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_l_rim0/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_l_rim1/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_l_rim2/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_r_band/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_r_base/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_r_core/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_r_rim0/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_r_rim1/__root__: atlas budget: smaller parts first",
-            "candy.finish-arch#w_post_r_rim2/__root__: atlas budget: smaller parts first",
-            "candy.moving-platform#candy_moving_platform/pad: atlas budget: smaller parts first",
-            "candy.pendulum-hammer#pendulum_hammer/head: atlas budget: smaller parts first",
-            "candy.seesaw-plank#candy_seesaw_plank/rim_b: atlas budget: smaller parts first",
-            "candy.seesaw-plank#candy_seesaw_plank/rim_f: atlas budget: smaller parts first",
-            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
-            "candy.spinner-bar#spinner_bar/hub: atlas budget: smaller parts first"
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale"
           ]
         }
       },
@@ -2038,16 +3039,16 @@
         "name": "rounded-scenery",
         "camera": {
           "eye": [
-            4.017921965123909,
-            2.5166565140683588,
-            4.687575625977893
+            0,
+            1.009935777146893,
+            4.547690391557595
           ],
           "target": [
             0,
             1.009935777146893,
             0
           ],
-          "fovYDeg": 55,
+          "fovYDeg": 45,
           "near": 0.05,
           "far": 200
         },
@@ -2066,14 +3067,72 @@
             ]
           }
         ],
-        "area": 0.3396544921401949,
+        "area": 0.5277528940965173,
         "drawn": [
           {
             "key": "candy.plaza-fountain#candy_plaza_fountain/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07333333333333333,
+              0.076266663869222,
+              0.07920000314712523,
+              0.05940000017484029,
+              0.06159999807675679,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.5074999928474426,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924
+            ]
           }
         ],
         "normals": {
+          "fieldGridScale": 1,
+          "resampledParts": 0,
           "parts": 20,
           "field": 18,
           "vertex": 2,
@@ -2087,7 +3146,7 @@
           ],
           "demoted": 0,
           "atlasFull": 0,
-          "bytes": 37829056,
+          "bytes": 12669200,
           "budget": 57042534,
           "errors": [
             "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
@@ -2157,7 +3216,23 @@
         "drawn": [
           {
             "key": "penguin.body#penguin/__root__",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.1979999989271164,
+              0.12499999999999999,
+              0.08671589940786362,
+              0.08671589940786362,
+              0.13921667635440826,
+              0.03156735985210495,
+              0.06499999761581421,
+              0.06499999761581421,
+              0.10000000149011612,
+              0.08749999850988388,
+              0.10000000149011612,
+              0.08749999850988388,
+              0.0949999988079071
+            ]
           },
           {
             "key": "costume.propeller-hat#propeller_hat/__root__",
@@ -2171,6 +3246,8 @@
           }
         ],
         "normals": {
+          "fieldGridScale": 1,
+          "resampledParts": 0,
           "parts": 20,
           "field": 18,
           "vertex": 2,
@@ -2184,7 +3261,7 @@
           ],
           "demoted": 0,
           "atlasFull": 0,
-          "bytes": 37829056,
+          "bytes": 12669200,
           "budget": 57042534,
           "errors": [
             "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
@@ -2255,6 +3332,22 @@
           {
             "key": "penguin.body#penguin/__root__",
             "mode": "vertex",
+            "resampled": false,
+            "gridVoxels": [
+              0.1979999989271164,
+              0.12499999999999999,
+              0.08671589940786362,
+              0.08671589940786362,
+              0.13921667635440826,
+              0.03156735985210495,
+              0.06499999761581421,
+              0.06499999761581421,
+              0.10000000149011612,
+              0.08749999850988388,
+              0.10000000149011612,
+              0.08749999850988388,
+              0.0949999988079071
+            ],
             "reason": "vertex mode"
           },
           {
@@ -2269,6 +3362,8 @@
           }
         ],
         "normals": {
+          "fieldGridScale": 1,
+          "resampledParts": 0,
           "parts": 20,
           "field": 0,
           "vertex": 20,
@@ -2282,7 +3377,7 @@
           ],
           "demoted": 0,
           "atlasFull": 0,
-          "bytes": 37829056,
+          "bytes": 12669200,
           "budget": 57042534,
           "errors": [
             "candy.banner#candy_banner/__root__: vertex mode",
@@ -2305,6 +3400,235 @@
             "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
             "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
             "penguin.body#penguin/__root__: vertex mode"
+          ]
+        }
+      },
+      {
+        "name": "rounded-scenery-normals",
+        "camera": {
+          "eye": [
+            0,
+            1.009935777146893,
+            4.547690391557595
+          ],
+          "target": [
+            0,
+            1.009935777146893,
+            0
+          ],
+          "fovYDeg": 45,
+          "near": 0.05,
+          "far": 200
+        },
+        "bounds": [
+          {
+            "key": "candy.plaza-fountain#candy_plaza_fountain/__root__",
+            "min": [
+              -2.1600000858306885,
+              -0.00012842663272749633,
+              -2.1600000858306885
+            ],
+            "max": [
+              2.1600000858306885,
+              2.0199999809265137,
+              2.1600000858306885
+            ]
+          }
+        ],
+        "area": 0.5277528940965173,
+        "drawn": [
+          {
+            "key": "candy.plaza-fountain#candy_plaza_fountain/__root__",
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.07333333333333333,
+              0.076266663869222,
+              0.07920000314712523,
+              0.05940000017484029,
+              0.06159999807675679,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.5074999928474426,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924
+            ]
+          }
+        ],
+        "normals": {
+          "fieldGridScale": 1,
+          "resampledParts": 0,
+          "parts": 1,
+          "field": 1,
+          "vertex": 0,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 0,
+          "refused": [],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 3391488,
+          "budget": 57042534,
+          "errors": []
+        }
+      },
+      {
+        "name": "rounded-scenery-vertex",
+        "camera": {
+          "eye": [
+            0,
+            1.009935777146893,
+            4.547690391557595
+          ],
+          "target": [
+            0,
+            1.009935777146893,
+            0
+          ],
+          "fovYDeg": 45,
+          "near": 0.05,
+          "far": 200
+        },
+        "bounds": [
+          {
+            "key": "candy.plaza-fountain#candy_plaza_fountain/__root__",
+            "min": [
+              -2.1600000858306885,
+              -0.00012842663272749633,
+              -2.1600000858306885
+            ],
+            "max": [
+              2.1600000858306885,
+              2.0199999809265137,
+              2.1600000858306885
+            ]
+          }
+        ],
+        "area": 0.5277528940965173,
+        "drawn": [
+          {
+            "key": "candy.plaza-fountain#candy_plaza_fountain/__root__",
+            "mode": "vertex",
+            "resampled": false,
+            "gridVoxels": [
+              0.07333333333333333,
+              0.076266663869222,
+              0.07920000314712523,
+              0.05940000017484029,
+              0.06159999807675679,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.5074999928474426,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924,
+              0.055411962332241924
+            ],
+            "reason": "vertex mode"
+          }
+        ],
+        "normals": {
+          "fieldGridScale": 1,
+          "resampledParts": 0,
+          "parts": 1,
+          "field": 0,
+          "vertex": 1,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 0,
+          "refused": [],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 3391488,
+          "budget": 57042534,
+          "errors": [
+            "candy.plaza-fountain#candy_plaza_fountain/__root__: vertex mode"
           ]
         }
       },
@@ -2383,22 +3707,56 @@
         "drawn": [
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           }
         ],
         "normals": {
+          "fieldGridScale": 1,
+          "resampledParts": 0,
           "parts": 19,
           "field": 18,
           "vertex": 1,
@@ -2411,7 +3769,7 @@
           ],
           "demoted": 0,
           "atlasFull": 0,
-          "bytes": 7294328,
+          "bytes": 7258112,
           "budget": 57042534,
           "errors": [
             "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale"
@@ -2493,22 +3851,56 @@
         "drawn": [
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/head",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.04400000174840291,
+              0.03666666666666667,
+              0.03491345323194573,
+              0.03666666666666667,
+              0.03491345323194573
+            ]
           },
           {
             "key": "candy.pendulum-hammer#pendulum_hammer/arm",
-            "mode": "field"
+            "mode": "field",
+            "resampled": false,
+            "gridVoxels": [
+              0.0825,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899,
+              0.04183732328844899
+            ]
           }
         ],
         "normals": {
+          "fieldGridScale": 1,
+          "resampledParts": 0,
           "parts": 19,
           "field": 18,
           "vertex": 1,
@@ -2521,7 +3913,7 @@
           ],
           "demoted": 0,
           "atlasFull": 0,
-          "bytes": 7294328,
+          "bytes": 7258112,
           "budget": 57042534,
           "errors": [
             "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale"
@@ -2535,13 +3927,13 @@
     "phase": "yield: MessageChannel delivered",
     "lastAwaitedStep": "upload paint: candy.spinner-bar",
     "awaitingSteps": [],
-    "sequence": 5510,
-    "heartbeats": 33,
+    "sequence": 7946,
+    "heartbeats": 46,
     "lifecycle": [
       {
         "event": "pageshow",
         "hidden": false,
-        "at": 1793914562880
+        "at": 1793919752503
       }
     ],
     "networkAwaiting": []

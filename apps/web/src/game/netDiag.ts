@@ -11,6 +11,8 @@ export interface NetDiagStats {
   rollbacks: number; maxRollback: number; stallFrames: number; desyncs: number
   confirmedDomains?: Record<number, number>
   peers?: Record<number, MeshPeerStats>
+  /** Zone time sync (ZoneStats): averaged advantage in ticks, its round trip, skipped ticks. */
+  syncAdvantage?: number; syncRttMs?: number; syncSkips?: number
 }
 
 const EVERY_MS = 1000
@@ -38,6 +40,7 @@ export class NetDiag {
     const peers = Object.entries(s.peers ?? {}).map(([peer, link]) => `p${peer} fast:${link.fast} reliable:${link.reliable} ${link.rtt === null ? 'rtt pending' : `${link.rtt.toFixed(1)}ms`}`).join(' | ')
     this.show(`net tick ${s.tick} pred ${s.tick - (Number.isFinite(confirmed) ? confirmed : -1)} rb/s ${((s.rollbacks - this.base.rollbacks) * per).toFixed(0)} max ${s.maxRollback}`
       + ` stall/s ${((s.stallFrames - this.base.stallFrames) * per).toFixed(0)} rtt ${rtt.toFixed(1)}ms delay ${s.delay}`
+      + `${typeof s.syncAdvantage === 'number' ? ` sync adv ${s.syncAdvantage.toFixed(1)} rtt ${(s.syncRttMs ?? 0).toFixed(0)}ms skips ${s.syncSkips ?? 0}` : ''}`
       + ` fps ${(this.frames * per).toFixed(0)} bg/s ${((pumped - this.base.pumped) * per).toFixed(0)}${s.desyncs > 0 ? ` desyncs ${s.desyncs}` : ''}${peers ? ` | ${peers}` : ''}`)
     this.reset(s, pumped, nowMs)
   }

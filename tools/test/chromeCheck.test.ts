@@ -6,7 +6,7 @@ import test from 'node:test'
 import { runInNewContext } from 'node:vm'
 import { BOOT_REFUSAL, run } from '../../apps/web/src/game/checks/boot.ts'
 import type { TourDeps, TourGame } from '../../apps/web/src/game/uiTour.ts'
-import { DEFAULT_GPU_WAIT_S, exitCode, gpuWaitSeconds, makeReport, prepareGpuCopy, takeCheckDiagnostics } from '../chromeCheck.ts'
+import { DEFAULT_GPU_WAIT_S, validateFieldCaptures, exitCode, gpuWaitSeconds, makeReport, prepareGpuCopy, takeCheckDiagnostics } from '../chromeCheck.ts'
 
 test('checkBoot clicks Retry after the deliberate refusal and reaches loading then start', async () => {
   const old = { requestAnimationFrame: globalThis.requestAnimationFrame, window: globalThis.window, MouseEvent: globalThis.MouseEvent, PointerEvent: globalThis.PointerEvent }
@@ -193,4 +193,28 @@ test('startPlain keeps the plain boot and never injects the test inventory switc
     assert.match(html, /data-nmc-plain/)
     assert.match(html, /addEventListener\("error"/)
   } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+
+test('fieldShading requires every downloaded capture and its report entry', () => {
+  const out = mkdtempSync(join(tmpdir(), 'field-captures-'))
+  const captures = ['candy-world.png', 'rounded-scenery.png', 'penguin.png', 'mechanisms-a.png', 'mechanisms-b.png']
+  const report = makeReport({ ok: true, captures, adapter: { vendor: 'nvidia', software: false } }, 'gpu')
+  try {
+    for (const name of captures) writeFileSync(join(out, name), 'capture fixture')
+    assert.doesNotThrow(() => validateFieldCaptures(report, out))
+    for (const name of captures) {
+      rmSync(join(out, name))
+      assert.throws(() => validateFieldCaptures(report, out), error =>
+        error instanceof Error && error.name === 'RefusalError' && error.message.includes(name))
+      writeFileSync(join(out, name), '')
+      assert.throws(() => validateFieldCaptures(report, out), /missing or empty/)
+      writeFileSync(join(out, name), 'capture fixture')
+      report.json = { ok: true, captures: captures.filter(value => value !== name) }
+      assert.throws(() => validateFieldCaptures(report, out), /not listed in report.json/)
+      report.json = { ok: true, captures }
+    }
+    report.json = { ok: true }
+    assert.throws(() => validateFieldCaptures(report, out), /candy-world.png/)
+  } finally { rmSync(out, { recursive: true, force: true }) }
 })

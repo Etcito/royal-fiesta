@@ -12,6 +12,23 @@ import { parseArgs } from 'node:util'
 import { publishDist, renderOp } from '../apps/headless/src/gpuClient.ts'
 import { buildContentIndex, packContent, profileAssetIds } from './content.ts'
 import { MeshBaker } from './meshBake.ts'
+import { refuse } from '../packages/sim/src/refusal.ts'
+
+const FIELD_CAPTURES = ['candy-world.png', 'rounded-scenery.png', 'penguin.png', 'mechanisms-a.png', 'mechanisms-b.png'] as const
+
+/** Validate downloaded files as well as the list that will be copied into the proof. */
+export function validateFieldCaptures(report: Report, out: string): void {
+  const captures = objectOf(report.json).captures
+  for (const name of FIELD_CAPTURES) {
+    const path = join(out, name)
+    if (!Array.isArray(captures) || !captures.includes(name)) {
+      refuse('field-render', path, 'capture is not listed in report.json; regenerate all fieldShading captures')
+    }
+    if (!existsSync(path) || !statSync(path).isFile() || statSync(path).size === 0) {
+      refuse('field-render', path, 'capture is missing or empty; regenerate all fieldShading captures')
+    }
+  }
+}
 
 // The GPU client may not have attached when the card starts; NMC_GPU_WAIT_S bounds that wait, with this
 // harness default (900 s) when the card sets nothing.
@@ -548,10 +565,18 @@ async function main(): Promise<void> {
   const mode: Mode = values.software === true ? 'software' : 'gpu'
   const input: unknown = values.input ? JSON.parse(readFileSync(values.input, 'utf8')) : {}
   let report: Report
+  // An earlier run must not supply a file the current GPU job forgot to return.
+  if (op === 'fieldShading') {
+    for (const name of [...FIELD_CAPTURES, 'report.json']) rmSync(join(out, name), { force: true })
+  }
   try {
     report = mode === 'gpu' ? await gpu(op, input, out) : await software(op, input, out)
   } catch (error) {
     report = makeReport(null, mode, { error: String(error instanceof Error ? error.stack : error) })
+  }
+  if (op === 'fieldShading' && exitCode(op, report, mode) === 0) {
+    try { validateFieldCaptures(report, out) }
+    catch (error) { report.error = String(error) }
   }
   writeFileSync(join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n')
   process.exitCode = exitCode(op, report, mode)

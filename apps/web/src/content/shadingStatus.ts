@@ -24,6 +24,17 @@ function atlasDemotion(error: string): boolean {
   return /atlas budget/i.test(error) || /texture\.atlas_full/i.test(error)
 }
 
+/**
+ * The reasons of a shading report that are real failures: every named reason except the automatic fallbacks (an atlas
+ * demotion, a part drawn vertex because the mode is vertex) and a field refusal MAMA saved with the part (`refused`
+ * names those parts: they draw their mesh normals by design). A program that does not check or a shader that fails stays.
+ */
+export function hardShadingFailures(report: { errors: readonly string[]; refused?: readonly string[] }): string[] {
+  const refused = report.refused ?? []
+  return report.errors.filter(error => !atlasDemotion(error) && !error.endsWith(': vertex mode') &&
+    !refused.some(key => error.startsWith(`${key}: `)))
+}
+
 /** The status line for a shading report and the texture bakes still running, or null when there is nothing to say. */
 export function shadingStatusText(report: ShadingStatusReport, bakesLeft: number, mode: ShadingStatusMode = 'field'): string | null {
   if (report.pending > 0) return `SDF shading: preparing ${report.pending} parts`

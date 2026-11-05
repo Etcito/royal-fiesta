@@ -16,6 +16,7 @@ import { WornMounts } from '@royal-fiesta/game/render/wornLook'
 import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import { pendingPipelines } from '../../render/asyncPipelines.ts'
 import { pickContent } from '../../content/source.ts'
+import { hardShadingFailures } from '../../content/shadingStatus.ts'
 import { skinnedCharacterOf } from '../../content/providers/sdf.ts'
 import type { ResizablePort, ShadingReport } from '../../sdf/sdfPort.ts'
 import { nextTask } from './boot.ts'
@@ -49,13 +50,9 @@ function assertNoPageErrors(what: string): void {
   if (errors.length > 0) throw new Error(`${what}: page error: ${errors[0]}`)
 }
 
-// The report's `failed` counts every named vertex reason, including the atlas-budget fallback this check
-// must accept (QB12). Only a reason other than those two is a real failure.
-function hardFailures(report: ShadingReport): string[] {
-  const benign = (error: string): boolean =>
-    error.endsWith(': atlas budget: smaller parts first') || error.endsWith(': texture.atlas_full')
-  return report.errors.filter(error => !benign(error) && !error.endsWith(': vertex mode'))
-}
+// The report's `failed` counts every named vertex reason, including the fallbacks this check must accept: the
+// atlas demotions (QB12) and the field refusals MAMA saved with a part. hardShadingFailures keeps every other reason.
+const hardFailures = hardShadingFailures
 
 async function waitPipelines(what: string): Promise<void> {
   const deadline = Date.now() + WAIT_MS

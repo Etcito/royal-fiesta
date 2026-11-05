@@ -44,6 +44,11 @@ export interface ShadingReport {
   /** The part keys `pending` counts (visible parts whose field pipeline or bake is not ready), sorted. */
   pendingParts: readonly string[]
   failed: number
+  /**
+   * The part keys MAMA saved with a field refusal (fieldRefusal: a lattice, a deformer, more than 8 materials...): they
+   * draw their mesh normals by design and their reason is in `errors`, a named fallback like the atlas plan's demotions.
+   */
+  refused: readonly string[]
   demoted: number
   atlasFull: number
   bytes: number
@@ -376,6 +381,7 @@ class SdfRenderPort implements ResizablePort {
   // The shading each uploaded part draws with, by plan key, and the named reasons of the vertex ones.
   private readonly shadingOfPart = new Map<string, 'field' | 'vertex' | 'baked'>()
   private readonly shadingErrors = new Map<string, string>()
+  private readonly savedRefusals = new Set<string>()
   // Reasons the baked-texture upload could not draw a part (bakedRefusal, texture.atlas_full), and whether the pinned
   // RAA release even has the textured-material route.
   private readonly textureErrors = new Map<string, string>()
@@ -601,6 +607,7 @@ class SdfRenderPort implements ResizablePort {
     return {
       parts: this.shadingOfPart.size, field, vertex, texture,
       pending: pendingParts.length, pendingParts, failed,
+      refused: [...this.savedRefusals].filter(key => this.shadingErrors.has(key)).sort(),
       demoted: plan.demoted.length, atlasFull: this.atlasFull,
       bytes: plan.bytes, budget: plan.budget, errors,
     }
@@ -610,6 +617,7 @@ class SdfRenderPort implements ResizablePort {
     this.shadingOfPart.set(key, mode)
     if (mode === 'vertex' && reason !== undefined) this.shadingErrors.set(key, reason)
     else this.shadingErrors.delete(key)
+    this.savedRefusals.delete(key)
   }
 
   // A part frame with a scale cannot be a field part: the field lives in mesh space and the frame only carries the
@@ -730,6 +738,7 @@ class SdfRenderPort implements ResizablePort {
     if (!check.ok) {
       warnOnce(key, `vertex normals (${check.reason})`)
       this.recordPart(key, 'vertex', check.reason)
+      if (typeof part.fieldRefusal === 'string' && part.fieldRefusal !== '') this.savedRefusals.add(key)
       return null
     }
     // The field program is in the part's mesh space (before the part frame). A frame that carries a scale would draw

@@ -27,7 +27,7 @@ const PLAYER = 'let c = select(vec3f(0.5), mat_instance_tint.rgb, mat_instance_t
 const FRAME = new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 interface ShadingReportLike {
-  parts: number; field: number; vertex: number; texture: number; pending: number; pendingParts: readonly string[]; failed: number
+  parts: number; field: number; vertex: number; texture: number; pending: number; pendingParts: readonly string[]; failed: number; refused: readonly string[]
   demoted: number; atlasFull: number; bytes: number; budget: number; errors: readonly string[]
 }
 interface Port {
@@ -655,6 +655,8 @@ test('a field part shades from its program and a refused part keeps vertex with 
   assert.equal(report.field, 1)
   assert.equal(report.vertex, 1)
   assert.ok(report.errors.includes('test.field#g/arm: not a Paramesh part'), report.errors.join('\n'))
+  // The saved refusal is a named fallback, listed apart from runtime failures; the field part is not in it.
+  assert.equal(report.refused.join(','), 'test.field#g/arm')
   assert.ok(calls.functions >= 1, 'the field evaluator and material are registered')
 })
 

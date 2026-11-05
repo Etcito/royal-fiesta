@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { shadingStatusText } from '../src/content/shadingStatus.ts'
+import { hardShadingFailures, shadingStatusText } from '../src/content/shadingStatus.ts'
 import type { ShadingStatusReport } from '../src/content/shadingStatus.ts'
 
 function report(overrides: Partial<ShadingStatusReport> = {}): ShadingStatusReport {
@@ -55,4 +55,17 @@ test('a failed part is named in every mode', () => {
 
 test('a clean report has no status line', () => {
   assert.equal(shadingStatusText(report(), 0), null)
+})
+
+test('saved field refusals and atlas demotions are named fallbacks; any other reason is a hard failure', () => {
+  const errors = [
+    'candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale',
+    'a#g/body: atlas budget: smaller parts first',
+    'b#g/arm: vertex mode',
+    'c#g/top: shader failed',
+    'd#g/leg: bad functionName',
+  ]
+  assert.deepEqual(hardShadingFailures({ errors, refused: ['candy.spinner-bar#spinner_bar/bar'] }), ['c#g/top: shader failed', 'd#g/leg: bad functionName'])
+  // Without the port naming it refused, the same reason is a failure: only a saved refusal is accepted.
+  assert.ok(hardShadingFailures({ errors }).includes(errors[0]))
 })

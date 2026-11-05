@@ -1,6 +1,6 @@
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { initRapier } from '@gamesaloon/rollback-rapier'
@@ -21,6 +21,8 @@ before(async () => {
     mkdirSync(dirname(join(fixtureRoot, rel)), { recursive: true })
     writeFileSync(join(fixtureRoot, rel), text)
   }
+  // Cosmetics copied above reference the authored character; placeholder generation must retain that source rig.
+  copyFileSync(join(contentDir(), 'assets/common/penguin.body.asset.json'), join(fixtureRoot, 'assets/common/penguin.body.asset.json'))
   process.env.RF_CONTENT_DIR = fixtureRoot
 })
 after(() => {

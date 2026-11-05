@@ -1,3 +1,5 @@
+import { resolveGameRigs } from '../src/rigReference.ts'
+import { assetSkin } from '../../../apps/web/src/content/cosmeticSkin.ts'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import test from 'node:test'
@@ -114,9 +116,11 @@ test('jiggle option All: the horn swings while the wearer slides, within maxAngl
 
 test('the shipped jester hat: its own armature on the penguin head, both horns swing', async () => {
   const file = JSON.parse(readFileSync(new URL('../../../assets/common/costume.jester-hat.asset.json', import.meta.url), 'utf8'))
-  const rig = file.document.nodes.hat_jester_hat.rig
-  assert.equal(rig.parentBone, 'head')
-  const skin = hatSkin(rig)
+  const body = JSON.parse(readFileSync(new URL('../../../assets/common/penguin.body.asset.json', import.meta.url), 'utf8'))
+  const resolved = await resolveGameRigs(file.document, async () => body.document)
+  const rig = (resolved.nodes as typeof file.document.nodes).hat_jester_hat.rig
+  assert.equal(file.document.nodes.hat_jester_hat.rigRef.extraBones[0].parent, 'head')
+  const skin = assetSkin({ groups: [{ group: 'hat_jester_hat', parts: [{ partId: 'p', ...PART }] }] }, resolved, body.document.nodes.penguin.rig)!
   const rigid = wornPalette(skin, penguinSkin())
   const jiggle = new CosmeticJiggle()
   const frames = await wobble(jiggle, 120, { skin })

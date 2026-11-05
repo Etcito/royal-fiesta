@@ -52,19 +52,18 @@
             "transitionLoops": 1
           }
         },
-        "rig": {
-          "format": "raa.rig",
-          "version": 1,
-          "name": "costume.jester-hat",
-          "parentBone": "head",
-          "bones": [
+        "rigRef": {
+          "game": "royal-fiesta",
+          "id": "penguin.body",
+          "node": "penguin",
+          "extraBones": [
             {
               "name": "hat",
-              "parent": null,
+              "parent": "head",
               "rest": {
                 "t": [
                   0,
-                  0.5,
+                  0,
                   0
                 ],
                 "r": [
@@ -476,5 +475,5 @@
     "min": [-1.060101, 0.619899, -0.36],
     "max": [1.060101, 1.907093, 0.4]
   },
-  "hash": "21579e085982e88e59736edcf099e2717340f4eb2ab79a3e9c7de8e31697f8ac"
+  "hash": "f2a4b52a8b96eaa018a5911484302af291fabafe080a928ac2f016024ca95b3e"
 }

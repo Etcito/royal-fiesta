@@ -1,3 +1,4 @@
+import { validateGameRigReferences } from './rigReference.ts'
 // The game's reader of sdfm.game-asset v1 (S12). Content only: the file stem == id and folder == world
 // rules belong to the scanners (node-content, web-content-v1), so invalid fixtures can live under fixtures/.
 // An obstacle with an empty collision is valid here; course-v1 refuses it when a course uses it as an obstacle.
@@ -215,7 +216,7 @@ export function sdfmText(value: unknown): string {
       // a document node's rig and clips are written as plain JSON.stringify(v, null, 2), re-indented
       const node = 'id' in v && 'kind' in v
       const field = (k: string, x: unknown): string =>
-        node && (k === 'rig' || k === 'clips') ? JSON.stringify(x, null, 2).replace(/\n/g, '\n' + inner) : write(x, inner)
+        node && (k === 'rig' || k === 'clips' || k === 'rigRef') ? JSON.stringify(x, null, 2).replace(/\n/g, '\n' + inner) : write(x, inner)
       return `{\n${ks.map((k) => `${inner}${JSON.stringify(k)}: ${field(k, (v as Record<string, unknown>)[k])}`).join(',\n')}\n${pad}}`
     }
     return JSON.stringify(v)
@@ -266,10 +267,18 @@ function formatJson(v: unknown, pad: string, path: readonly string[], exact: boo
  * drawings maps), a node's rig and clips as plain JSON.stringify(v, null, 2). The asset hash is the sha256 of this text.
  */
 export function assetDocumentText(document: unknown): string {
+  // Hydrated rigs/clips are runtime data. All game writers share the modeler's reference-only save contract.
+  if (isJsonObject(document) && isJsonObject(document.nodes)) document = { ...document,
+    nodes: Object.fromEntries(Object.entries(document.nodes).map(([id, value]) => {
+      if (!isJsonObject(value) || value.rigRef === undefined) return [id, value]
+      const { rig: _rig, clips: _clips, ...saved } = value
+      return [id, saved]
+    })),
+  }
   const exactAt = (p: readonly string[]): boolean =>
     (p.length === 1 && (p[0] === 'surfaces' || p[0] === 'drawings')) ||
     (p.length === 5 && p[0] === 'nodes' && p[2] === 'paramesh' && p[3] === 'shape' && p[4] === 'cage')
-  const jsonAt = (p: readonly string[]): boolean => p.length === 3 && p[0] === 'nodes' && (p[2] === 'rig' || p[2] === 'clips')
+  const jsonAt = (p: readonly string[]): boolean => p.length === 3 && p[0] === 'nodes' && (p[2] === 'rig' || p[2] === 'clips' || p[2] === 'rigRef')
   return formatJson(document, '', [], false, exactAt, jsonAt) + '\n'
 }
 
@@ -377,6 +386,8 @@ export async function parseGameAsset(json: unknown, path: string): Promise<GameA
   for (const axis of ['x', 'y', 'z'] as const) {
     if (min[axis] > max[axis]) fail(path, '/bounds', `min.${axis} ${min[axis]} > max.${axis} ${max[axis]}; make min <= max on each axis`)
   }
+
+  validateGameRigReferences(document)
 
   // Hash last: everything else is cheap and names a more precise pointer.
   const hash = str(o.hash, path, '/hash')

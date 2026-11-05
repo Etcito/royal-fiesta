@@ -1,3 +1,4 @@
+import { resolveGameRigs } from '@royal-fiesta/game/rigReference'
 // Isolated GPU proof using committed meshes, the game animation driver and the production RAA port.
 import { LOCAL_COSMETICS } from '@royal-fiesta/game/flow/startScreen'
 import { nextTask, publishPhase } from '../game/checks/boot.ts'
@@ -23,6 +24,7 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
     docs.set(id, file.document)
     meshed.set(id, await decodeMeshBytes(new Uint8Array(await (await fetch(`./saved/${id}.mesh`)).arrayBuffer())))
   }
+  for (const [id, doc] of docs) docs.set(id, await resolveGameRigs(doc, async (game, sourceId) => game === 'royal-fiesta' ? docs.get(sourceId) ?? null : null))
   if(input.vertexNormals)for(const value of meshed.values())for(const group of (value.data as any).groups)for(const part of group.parts)delete part.shading
   const canvas = document.createElement('canvas'); canvas.width=480;canvas.height=480;document.body.append(canvas)
   const port = await createSdfPort({canvas,width:480,height:480,viewports:[{x:0,y:0,width:480,height:480}]},meshed)

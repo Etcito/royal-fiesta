@@ -1,4 +1,6 @@
 /// <reference types="vite/client" />
+import { resolveGameRigs } from '@royal-fiesta/game/rigReference'
+/// <reference types="vite/client" />
 import { checkAwait } from '../game/checkProgress.ts'
 // V1 data fetched from a content root, with bundled render stand-ins and course dressing.
 // Every import.meta.glob sits in a function body, so Node tests can import this module.
@@ -126,6 +128,12 @@ export function browserGameAssets(options?: ContentOptions): GameAssetResolver {
     if (asset.world !== folder) {
       refuse('assets', `${path}#/world`, `world '${asset.world}' does not match the folder '${folder}'; move the file to assets/${asset.world}/`)
     }
+    asset.document = await resolveGameRigs(asset.document, async (game, sourceId) => {
+      if (game !== asset.game) return null
+      const source = entries.find(e => e.id === sourceId)
+      if (!source) return null
+      return (await parseGameAsset(await read(source.path), source.path)).document
+    })
     return { asset, source: { path, json } }
   }
 

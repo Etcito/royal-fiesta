@@ -1,3 +1,4 @@
+import { resolveGameRigs } from '@royal-fiesta/game/rigReference'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
@@ -311,7 +312,7 @@ test('SDF cosmetic rendering uploads joint streams and submits the penguin matri
 })
 
 
-test('all committed catalog cosmetics upload their saved skin and render with the penguin idle pose', () => {
+test('all committed catalog cosmetics upload their saved skin and render with the penguin idle pose', async () => {
   const root=new URL('../../../',import.meta.url)
   const body=JSON.parse(readFileSync(new URL('assets/common/penguin.body.asset.json',root),'utf8'))
   const owner=Object.values(body.document.nodes).find((n:any)=>n.rig) as any
@@ -322,7 +323,8 @@ test('all committed catalog cosmetics upload their saved skin and render with th
     const data=mesh.data as {groups:{parts:unknown[]}[]}
     const {engine,calls}=fakeEngine(), port=exports.make(new Map([[id,mesh]]))
     port.engine=engine;port.target={}
-    const skin=assetSkin(data,document,owner.rig)!
+    const resolved = await resolveGameRigs(document, async (game,id) => game === body.game && id === body.id ? body.document : null)
+    const skin=assetSkin(data,resolved,owner.rig)!
     const handle=port.registerSkinned(id,skin)
     const instance=port.createInstance(handle,null)
     // The palette the game draws: the penguin pose, or its mount bone for every bone of an own armature (jester hat).

@@ -48,6 +48,11 @@ const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
  * penguin rig, else the mount bone's skin matrix for every bone of the cosmetic's own armature.
  */
 export function wornPalette(skin: SkinnedAssetT | undefined, penguinSkin: Float32Array): Float32Array {
+  if (skin?.sourceBones) {
+    const out = new Float32Array(skin.sourceBones.length * 16)
+    skin.sourceBones.forEach((source, i) => out.set(penguinSkin.subarray(source * 16, source * 16 + 16), i * 16))
+    return out
+  }
   const m = mountOf(skin)
   if (m === null) return penguinSkin
   const out = new Float32Array(m.bones * 16)
@@ -120,7 +125,16 @@ export class CosmeticJiggle {
           let at = 0
           for (const p of stepping) {
             const size = p.skin.rig.bones.length * 16
-            setPose(p.instance, palettes.slice(at, at + size))
+            const sampled = palettes.slice(at, at + size)
+            if (p.skin.sourceBones) {
+              const result = wornPalette(p.skin, p.penguin)
+              // JiggleWorld mounts a rest rig on one animated bone. Keep the inherited palette from the live penguin;
+              // use the spring result only for extra bones on this mount.
+              for (let b = p.skin.inheritedBones!; b < p.skin.rig.bones.length; b++) {
+                if (p.skin.sourceBones[b] === p.skin.mount) result.set(sampled.subarray(b * 16, b * 16 + 16), b * 16)
+              }
+              setPose(p.instance, result)
+            } else setPose(p.instance, sampled)
             at += size
             done.add(p)
           }

@@ -1,3 +1,4 @@
+import { resolveGameRigs } from '../packages/game/src/rigReference.ts'
 // Persistent, bounded server meshing. A lock excludes duplicate work across play and CLI processes.
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, openSync, closeSync, statSync } from 'node:fs'
@@ -51,9 +52,16 @@ export class MeshBaker {
     const timeout = meshTimeoutMs()
     const queue: { asset: GameAsset; key: string }[] = []
     mkdirSync(this.cache, { recursive: true })
-    for (const entry of buildContentIndex(this.dir).assets) {
+    const entries = buildContentIndex(this.dir).assets
+    for (const entry of entries) {
       if (this.only !== undefined && !this.only.has(entry.id)) continue
       const asset = await parseGameAsset(JSON.parse(readFileSync(join(this.dir, entry.path), 'utf8')), entry.path)
+      asset.document = await resolveGameRigs(asset.document, async (game, id) => {
+        const entry = entries.find(e => e.id === id)
+        if (!entry) return null
+        const source = await parseGameAsset(JSON.parse(readFileSync(join(this.dir, entry.path), 'utf8')), entry.path)
+        return source.game === game ? source.document : null
+      })
       const key = await meshCacheKey(asset, compatibility, async bytes => createHash('sha256').update(bytes).digest('hex'))
       queue.push({ asset, key })
       this.keys.add(key)

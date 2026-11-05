@@ -12,7 +12,7 @@ export interface SkinPartT { readonly name: string; readonly skin?: { readonly j
 // `mount`: a cosmetic with its own armature (MAMA rig.parentBone) follows the wearer's bone of that index; its palette
 // has 16 x its own rig.bones.length floats (anim/jiggle.ts wornPalette, CosmeticJiggle). Absent: the rig is the
 // wearer's (a penguin-rig copy) and takes the wearer's skin matrices as they are.
-export interface SkinnedAssetT { readonly rig: SkinRigT; readonly clips?: readonly unknown[]; readonly parts: readonly SkinPartT[]; readonly mount?: number }
+export interface SkinnedAssetT { readonly rig: SkinRigT; readonly clips?: readonly unknown[]; readonly parts: readonly SkinPartT[]; readonly mount?: number; readonly sourceBones?: readonly number[]; readonly inheritedBones?: number }
 export interface RenderStats { frameMs: number; drawCalls: number; triangles: number; instances: number; visible: number }
 // Live state of a port for checks: the asset names it has instances of, the live instance count and the
 // GPU-side handles it holds. Ports without a table omit inventory.

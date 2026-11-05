@@ -88,6 +88,9 @@ export async function fetchMeshFile(url: string, key: string, asset: GameAsset, 
   const problem = meshFileProblem(value, key, asset)
   if (problem !== null) {
     if (problem.code !== 'rules') meshFileStats.stale++
+    // A source armature can change without re-saving its cosmetics. Rebuild skin streams for that current rig.
+    const nodes = (asset.document.nodes ?? {}) as Record<string, { rigRef?: unknown }>
+    if (problem.code === 'algorithm' && Object.values(nodes).some(n => n.rigRef)) return null
     throw new RefusalError('sdf', url, `${problem.message}; re-save the asset in SDF Modeler`)
   }
   meshFileStats.hits++

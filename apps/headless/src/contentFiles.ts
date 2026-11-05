@@ -1,3 +1,4 @@
+import { resolveGameRigs } from '@royal-fiesta/game/rigReference'
 // Node-only v1 content: the assets/<world>/ scanner and cached course v1 loads from courses/.
 import { readdir } from 'node:fs/promises'
 import { loadCourseV1 } from '@royal-fiesta/game/courseV1'
@@ -51,6 +52,10 @@ async function scanAssets(): Promise<Map<string, ResolvedGameAsset>> {
       found.set(asset.id, { asset, source: { path, json } })
     }
   }
+  for (const { asset } of found.values()) asset.document = await resolveGameRigs(asset.document, async (game, id) => {
+    const source = found.get(id)?.asset
+    return source?.game === game ? source.document : null
+  })
   return found
 }
 

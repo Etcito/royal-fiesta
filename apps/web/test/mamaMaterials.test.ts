@@ -128,7 +128,12 @@ test('every content material and MAMA pattern carries its shared shader dependen
     const dir = new URL(`${world.name}/`, assets)
     for (const file of readdirSync(dir).filter(file => file.endsWith('.asset.json'))) {
       const asset = JSON.parse(readFileSync(new URL(file, dir), 'utf8'))
-      const doc = readSdfm(asset.document)
+      const doc = readSdfm(asset.document, (ref: { game: string; id: string }) => {
+        const path = new URL(`common/${ref.id}.asset.json`, assets)
+        if (!existsSync(path)) return null
+        const source = JSON.parse(readFileSync(path, 'utf8'))
+        return source.game === ref.game ? source.document : null
+      })
       for (const id of Object.keys(doc.materials)) {
         const built: Built = buildMaterial(doc, id)
         assert.ok(built.graph, `${asset.id}#${id}: ${JSON.stringify(built.error)}`)

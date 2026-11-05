@@ -1,3 +1,4 @@
+import { resolveGameRigs } from '../packages/game/src/rigReference.ts'
 // Validate shipped meshes through the same decoder, compatibility key and payload checks as the browser: decodeMeshBytes,
 // meshCacheKey and meshFileProblem, the code fetchMeshFile runs, so an asset listed here is one the page refuses.
 // `--json` prints the list for SDF Modeler (sdfm.game.json "meshCheck"): the Assets tab shows these assets in red.
@@ -37,6 +38,12 @@ export async function savedMeshIssues(dir = contentDir()): Promise<{ assets: num
     let asset
     try {
       asset = await parseGameAsset(JSON.parse(readFileSync(join(dir, entry.path), 'utf8')), entry.path)
+      asset.document = await resolveGameRigs(asset.document, async (game, id) => {
+        const entry = index.assets.find(e => e.id === id)
+        if (!entry) return null
+        const source = await parseGameAsset(JSON.parse(readFileSync(join(dir, entry.path), 'utf8')), entry.path)
+        return source.game === game ? source.document : null
+      })
     } catch (error) { issue('asset-file', `the asset file does not load: ${error instanceof Error ? error.message : String(error)}`); continue }
     let value
     try {

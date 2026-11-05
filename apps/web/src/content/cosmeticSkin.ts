@@ -10,11 +10,25 @@ export function assetSkin(data: unknown, document: Record<string, unknown>, peng
     if (part.skin) parts.push({ name, skin: part.skin })
   }
   if (!parts.length) return null
-  const nodes = document.nodes as Record<string, { rig?: SkinRigT & { parentBone?: string }; clips?: unknown[]; asset?: { cosmetic?: { binding: string } } }>
+  const nodes = document.nodes as Record<string, { rig?: SkinRigT & { parentBone?: string }; rigRef?: { extraBones: { name: string; parent: string }[] };  clips?: unknown[]; asset?: { cosmetic?: { binding: string } } }>
   const owner = Object.values(nodes).find(n => n.rig)
   if (!owner?.rig) throw new Error('Skinned asset is missing its rig')
   if (penguin) {
     if (owner.asset?.cosmetic?.binding !== 'penguin') return null
+    if (owner.rigRef) {
+      const indices = new Map(penguin.bones.map((b, i) => [b.name, i]))
+      const sourceBones: number[] = []
+      for (const b of owner.rig.bones) {
+        const at = indices.get(b.name) ?? (b.parent === null ? undefined : indices.get(b.parent))
+        if (at === undefined) throw new Error(`Referenced cosmetic bone '${b.name}' has no penguin ancestor`)
+        sourceBones.push(at)
+        indices.set(b.name, at)
+      }
+      const extra = owner.rigRef.extraBones[0]
+      const mount = extra ? indices.get(extra.name) : undefined
+      return { rig: owner.rig, clips: owner.clips ?? [], parts, sourceBones, inheritedBones: penguin.bones.length,
+        ...(mount === undefined ? {} : { mount }) }
+    }
     const parentBone = owner.rig.parentBone
     if (parentBone !== undefined) {
       // Its own armature (jiggle bones, e.g. a jester hat's horns) mounted on one penguin bone.

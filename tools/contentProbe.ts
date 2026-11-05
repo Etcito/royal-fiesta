@@ -1,5 +1,6 @@
+import { resolveGameRigs } from '../packages/game/src/rigReference.ts'
 // Read-only probes over authored asset files, shared by the content proofs (C2, C3, C6).
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import { repoRoot } from './bricks.ts'
 import { contentPath } from './content.ts'
 import { sharedNodeIds } from './nodeIds.ts'
@@ -39,6 +40,14 @@ export async function loadAssetFile(rel: string, root = repoRoot()): Promise<Aut
   const json = JSON.parse(text) as Record<string, unknown>
   const asset = await parseGameAsset(json, rel)
   await refuseCostumeNodeIdCollisions(rel, json, root)
+  asset.document = await resolveGameRigs(asset.document, async (game, id) => {
+    const entries = await readdir(contentPath('assets', root), { recursive: true, withFileTypes: true })
+    const entry = entries.find(e => e.isFile() && e.name === `${id}.asset.json`)
+    if (!entry) return null
+    const path = `${entry.parentPath}/${entry.name}`
+    const source = await parseGameAsset(JSON.parse(await readFile(path, 'utf8')), path)
+    return source.game === game ? source.document : null
+  })
   return { rel, asset, json }
 }
 

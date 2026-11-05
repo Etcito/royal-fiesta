@@ -30,7 +30,12 @@ test('authored material graphs validate every node parameter and build through M
   const errors: string[] = []
   for (const path of authored) {
     const asset = read(path)
-    const doc = readSdfm(asset.document)
+    const doc = readSdfm(asset.document, (ref: { game: string; id: string }) => {
+      const entry = buildContentIndex(root).assets.find(e => e.id === ref.id)
+      if (!entry) return null
+      const source = read(entry.path)
+      return source.game === ref.game ? source.document : null
+    })
     for (const [id, material] of Object.entries(asset.document.materials ?? {})) {
       // Analysis includes unused nodes, which compilation can prune.
       const analysis = analyzeMaterialGraph(material, id)

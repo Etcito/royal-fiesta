@@ -30,6 +30,7 @@ export interface SdfContent {
 // Module-level, so a second load in the same page answers from memory and reuses the workers.
 let cache: MeshCache | null = null
 let pool: MeshPool | null = null
+let loadedFacade: MamaFacade | null = null
 
 function meshCache(): MeshCache {
   if (cache === null) {
@@ -66,6 +67,16 @@ function meshPool(facade: MamaFacade): MeshPool {
   return pool
 }
 
+/**
+ * Bakes one asset's SDF surfaces into baseColor/normal/orm textures (contract 'baked-part-textures') for the explicit
+ * 'baked' shading. The result is never written to the mesh cache: the cache's normal key holds the unbaked mesh the
+ * next launch loads.
+ */
+export async function bakeTextures(asset: GameAsset): Promise<MeshedAsset> {
+  loadedFacade ??= await loadMamaFacade()
+  return meshPool(loadedFacade).mesh({ ...meshRequestOf(asset), bakedTextures: true }, MESH_LIMIT_S * 1000)
+}
+
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes as Uint8Array<ArrayBuffer>))
   let hex = ''
@@ -90,6 +101,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     previous = end
   }
   const facade = await checkAwait('content: MAMA facade', () => loadMamaFacade())
+  loadedFacade = facade
   mark('MAMA module')
   const { courses, byId } = await checkAwait(`content: courses ${courseId ?? 'all'}`, () => loadV1Courses(onProgress, undefined, courseId))
 

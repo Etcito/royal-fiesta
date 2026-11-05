@@ -11,8 +11,13 @@ import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { MeshedAsset } from '../../sdf/mamaApi.ts'
-import { createSdfPort } from '../../sdf/sdfPort.ts'
-import { loadSdfContent } from '../sdfLoad.ts'
+import { createSdfPort, gameRenderOptions } from '../../sdf/sdfPort.ts'
+import type { GameRenderOptions, ResizablePort, ShadingMode, ShadingReport } from '../../sdf/sdfPort.ts'
+import { loadGraphicsContract, GraphicsSettings } from '../../game/graphicsSettings.ts'
+import type { SettingsStore } from '@royal-fiesta/game/screens/settings'
+import { renderOptions } from '../../render/renderOptions.ts'
+import { bakeTextures, loadSdfContent } from '../sdfLoad.ts'
+import { mountShadingStatus } from '../shadingStatus.ts'
 import { browserGameAssets, standInFrom, v1Dressing } from '../v1Data.ts'
 import { registerCosmeticSkins } from '../cosmeticSkin.ts'
 import penguinGraph from '../../../../../assets/common/penguin.animgraph.json?raw'
@@ -20,6 +25,9 @@ import penguinGraph from '../../../../../assets/common/penguin.animgraph.json?ra
 const HUB_ID = 'hub-plaza'
 const PODIUM_ID = 'podium'
 const CHARACTER_ID = 'penguin.body'
+
+// The load report carries one structured value: the port's shading report under `normals`.
+type ReportValue = number | string | readonly string[] | ShadingReport
 
 interface Loaded {
   courses: CourseV1[]
@@ -30,8 +38,48 @@ interface Loaded {
   meshed: Map<string, MeshedAsset>
   failed: ReadonlyMap<string, string>
   standIns: Map<string, PrimsAsset>
-  report: Record<string, number | string | readonly string[]>
+  report: Record<string, ReportValue>
   skinned: SkinnedCharacter | null
+}
+
+const SHADING_MODES: readonly ShadingMode[] = ['field', 'vertex', 'baked']
+function isShading(value: unknown): value is ShadingMode {
+  return SHADING_MODES.includes(value as ShadingMode)
+}
+
+// Site storage can be refused in a third-party frame: keep the options in memory for this visit, as main.ts does.
+function pageStore(): SettingsStore {
+  try {
+    const storage = globalThis.localStorage
+    storage.getItem('royal-fiesta')
+    return storage
+  } catch {
+    const saved = new Map<string, string>()
+    return { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) }
+  }
+}
+
+// The Graphics page's saved choice (GRAPHICS_KEY, read through the MAMA contract and its legacy aliases).
+async function storedShading(): Promise<ShadingMode | undefined> {
+  try {
+    const contract = await loadGraphicsContract()
+    if (contract === null) return undefined
+    const page = new GraphicsSettings(pageStore(), () => {})
+    page.attach(contract)
+    const shading = page.options.shading
+    return isShading(shading) ? shading : undefined
+  } catch {
+    return undefined
+  }
+}
+
+// The effective port options: the live Graphics choice (or the saved one before the page attaches) plus the address.
+async function effectiveOptions(): Promise<Partial<GameRenderOptions> | undefined> {
+  const live = renderOptions().shading
+  const shading = isShading(live) ? live : await storedShading()
+  if (shading === undefined) return undefined
+  const search = typeof location === 'undefined' ? '' : location.search
+  return gameRenderOptions(search, { shading })
 }
 
 function byIdOrder(a: { id: string }, b: { id: string }): number {
@@ -44,6 +92,13 @@ export class SdfContent implements GameContent {
   readonly id = 'sdf' as const
   private loaded: Loaded | null = null
   private onProgress: (p: LoadProgress) => void = () => {}
+  // One content can feed several ports (one per seat); every live port gets the same shading choice and baked textures.
+  private readonly ports: ResizablePort[] = []
+  private removeStatus: (() => void) | null = null
+  private shading: ShadingMode = 'field'
+  private readonly baked = new Map<string, MeshedAsset>()
+  private readonly bakeQueue: string[] = []
+  private readonly baking = new Set<string>()
 
   // A missing MAMA refuses from loadSdfContent before any fetch; it never falls back to v1.
   async load(profile: ProfileName, onProgress: (p: LoadProgress) => void): Promise<void> {
@@ -147,16 +202,79 @@ export class SdfContent implements GameContent {
   async createPort(target: RenderTarget): Promise<RenderPort> {
     const loaded = this.need('port')
     const start = performance.now()
+    const options = await effectiveOptions()
     const port = await createSdfPort(target, loaded.meshed, loaded.failed, this.onProgress, span => {
       const history = loaded.report.bootTimeline
       loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify(span)]
+    }, undefined, options)
+    this.ports.push(port)
+    if (options?.shading !== undefined) this.shading = options.shading
+    if (this.shading !== 'field') port.setShading(this.shading)
+    for (const [id, meshed] of this.baked) port.addTextured(id, meshed)
+    this.removeStatus ??= mountShadingStatus({
+      report: () => this.ports[0]?.shadingReport() ?? { pending: 0, failed: 0, vertex: 0, errors: [] },
+      bakesLeft: () => this.bakesLeft(),
+      mode: () => this.shading,
     })
+    if (this.shading === 'baked') this.requestTextures()
     await this.registerCosmetics(port, loaded.meshed)
-    attachRoundReport(port, loaded.report)
+    attachRoundReport(port, loaded.report as Record<string, number | string | readonly string[]>)
     const end = performance.now()
     const history = loaded.report.bootTimeline
     loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify({ step: 'RAA init / upload / shader warmup', start, end, ms: end - start })]
+    const dispose = port.dispose.bind(port)
+    port.dispose = () => {
+      const at = this.ports.indexOf(port)
+      if (at >= 0) this.ports.splice(at, 1)
+      if (this.ports.length === 0) {
+        this.removeStatus?.()
+        this.removeStatus = null
+      }
+      dispose()
+    }
     return port
+  }
+
+  /** The Graphics shading choice, applied live: 'baked' first asks the workers for the baked textures of every asset. */
+  setShading(mode: ShadingMode): void {
+    this.shading = mode
+    if (mode === 'baked') this.requestTextures()
+    for (const port of this.ports) port.setShading(mode)
+  }
+
+  private bakesLeft(): number {
+    return this.bakeQueue.length + this.baking.size
+  }
+
+  private requestTextures(): void {
+    const loaded = this.loaded
+    if (loaded === null) return
+    for (const id of [...loaded.meshed.keys()].sort()) {
+      if (this.baked.has(id) || this.baking.has(id) || this.bakeQueue.includes(id)) continue
+      this.bakeQueue.push(id)
+    }
+    this.pumpBakes()
+  }
+
+  // At most two worker bakes at a time; each result is uploaded to every live port as it arrives.
+  private pumpBakes(): void {
+    while (this.baking.size < 2 && this.bakeQueue.length > 0) {
+      const id = this.bakeQueue.shift()!
+      this.baking.add(id)
+      void (async () => {
+        try {
+          const asset = (await browserGameAssets().resolve(id)).asset
+          const meshed = await bakeTextures(asset)
+          this.baked.set(id, meshed)
+          for (const port of this.ports) port.addTextured(id, meshed)
+        } catch (e) {
+          console.warn(`[content] baked textures for ${id} are not drawn: ${e instanceof Error ? e.message : String(e)}`)
+        } finally {
+          this.baking.delete(id)
+          this.pumpBakes()
+        }
+      })()
+    }
   }
 
   /** Registers the skinned cosmetics of `meshed` on `port`; every port that draws worn cosmetics needs it. */
@@ -173,7 +291,10 @@ export class SdfContent implements GameContent {
   }
 
   report(): Record<string, number | string | readonly string[]> {
-    return this.need('report').report
+    const loaded = this.need('report')
+    const port = this.ports[0]
+    if (port !== undefined) loaded.report.normals = port.shadingReport()
+    return loaded.report as Record<string, number | string | readonly string[]>
   }
 }
 

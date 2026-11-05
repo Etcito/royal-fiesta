@@ -8,7 +8,7 @@ import { createNetMatch } from '@royal-fiesta/game/net/netMatch'
 import type { NetMatch } from '@royal-fiesta/game/net/netMatch'
 import { compareHashLogs, ConfirmedHashLog, CostStats, DisplayJumpMeter } from '@royal-fiesta/game/net/metrics'
 import { Pilot } from '@royal-fiesta/game/net/pilot'
-import { netSetup } from '@royal-fiesta/game/net/tuning'
+import { classicNetSetup } from '@royal-fiesta/game/net/tuning'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { matchLogJson } from '@royal-fiesta/sim/match/log'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
@@ -60,7 +60,7 @@ export async function runNetSimCase(c: NetSimCase): Promise<NetRunResult> {
   rapier ??= initRapier()
   const R = await rapier
   const courses = await loadCourses(c.profile)
-  const setup = netSetup(c.seed, c.peers, c.profile, courses)
+  const setup = classicNetSetup(c.seed, c.peers, c.profile, courses)
   const prof = PROFILES[c.profile]
   let cap = 0
   for (const co of courses) cap = Math.max(cap, co.timeLimitS)

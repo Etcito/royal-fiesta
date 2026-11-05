@@ -22,6 +22,8 @@ export interface ZoneFullMatchConfig {
   readonly localPeer: number
   readonly roster: Roster
   readonly seed: number
+  /** Room seat flags; bot brains live inside each rollback domain. */
+  readonly humans?: readonly boolean[]
   readonly courses: readonly ResolvedCourse[]
   readonly season: readonly SchedMap[]
   readonly plan?: readonly number[]
@@ -31,6 +33,8 @@ export interface ZoneFullMatchConfig {
   readonly measurements: ZoneMatchConfig['measurements']
   readonly farSink?: ZoneMatchConfig['farSink']
   readonly profile?: ProfileName
+  /** Network shows include the visible countdown in their deterministic intro. */
+  readonly introTicks?: number
   readonly voteMs?: number
   readonly onVote?: (round: number, candidates: string[]) => void
   readonly intermissionMs?: number
@@ -164,7 +168,7 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
     const choices: number[] = []
     for (const peer of cfg.roster.peers) {
       if (!cfg.roster.live[peer.peer] || rt.closed(peer.peer)) continue
-      for (const seat of peer.seats) if (alive.includes(seat)) choices.push(votes.get(r)?.get(peer.peer) ?? -1)
+      for (const seat of peer.seats) if (alive.includes(seat) && (cfg.humans === undefined || cfg.humans[seat])) choices.push(votes.get(r)?.get(peer.peer) ?? -1)
     }
     const offered = candidates!
     plan = playoffPlan ?? (r === 0 ? cfg.initialRound : undefined) ?? planZoneRound(cfg.courses, show, alive,
@@ -189,13 +193,15 @@ export function createZoneFullMatch(R: RapierModule, cfg: ZoneFullMatchConfig, n
     const zones = cfg.zones.get(course.id)
     if (!zones) refuse('zones', 'createZoneFullMatch.zones', `missing sidecar for ${course.id}; load zones for every course`)
     const match = createZoneMatch(R, {
-      localPeer: cfg.localPeer, roster, course, zones, profile: PROFILES[cfg.profile ?? 'sprint'],
+      localPeer: cfg.localPeer, roster, course, zones, profile: { ...PROFILES[cfg.profile ?? 'sprint'],
+        introTicks: cfg.introTicks ?? PROFILES[cfg.profile ?? 'sprint'].introTicks },
       kind: plan.kind,
       slot: { kind: plan.kind, final: plan.final, finalRule: plan.finalRule, target: plan.target,
         playoff: plan.playoff, roundIndex: plan.index, seed: cfg.seed, teams: plan.teams,
         overtimeTicks: levelOf(course).overtimeTicks,
         openingRanks: Uint16Array.from(seatOf, seat => show.openingRanks[seat]) },
       measurements: cfg.measurements, farSink: cfg.farSink,
+      humans: cfg.humans === undefined ? undefined : seatOf.map(seat => cfg.humans![seat]),
     }, rt)
     round = { plan, match, roster, seatOf, localSeats: local.seats }
   }

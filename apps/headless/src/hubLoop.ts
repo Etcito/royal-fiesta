@@ -1,3 +1,4 @@
+import { loadNetZones } from './files.ts'
 // Headless hub loop: N piloted PlayFlows in one process against the local GameSaloon, at real time.
 import { readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -73,6 +74,7 @@ export async function runHubLoop(server: LocalServer, clients: number): Promise<
     rapier ??= initRapier()
     const R = await rapier
     const courses = await loadSprintCourses()
+    const zones = await loadNetZones(courses)
     const plaza = await loadCourseFile('fixtures/courses/hub-plaza.course.json')
     const ws = globalWsFactory()
     const queued: boolean[] = []
@@ -87,7 +89,7 @@ export async function runHubLoop(server: LocalServer, clients: number): Promise<
       queued.push(false); returning.push(false); back.push(false); inMatch.push(false)
       logs.push(new ConfirmedHashLog()); before.push(new Map()); after.push(new Map())
       const flow = new PlayFlow({
-        R, relayUrl: server.url, ws, hubCode, name: `bot${k}`, colour: k, courses, plaza, partySize: n, now, pilot: true,
+        R, relayUrl: server.url, ws, hubCode, name: `bot${k}`, colour: k, courses, zones, plaza, partySize: n, now, pilot: true,
         log: ev => {
           events.push(ev)
           if (ev.state === 'queued') queued[k] = true

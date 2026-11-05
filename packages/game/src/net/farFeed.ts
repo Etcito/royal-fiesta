@@ -38,6 +38,14 @@ export class FarFeed implements FarSink {
   private readonly seats: SeatEntry[] = []
   private readonly shown: FarEntity[] = []
 
+  /** Round seat ids and ticks restart at every round. */
+  clear(): void {
+    this.bySeat.length = 0
+    this.seats.length = 0
+    this.shown.length = 0
+    this.decoded.length = 0
+  }
+
   far(domain: number, tick: number, stride: number, n: number, entries: FarReader): void {
     const count = decodeFar(entries, n, this.decoded)
     if (!(stride > 0)) return

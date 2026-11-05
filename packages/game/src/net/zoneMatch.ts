@@ -44,6 +44,7 @@ export interface ZoneMatchConfig {
     readonly spareSlots: number
   }>>
   /** Seat-indexed course spawn indices, identical on every peer. */
+  readonly humans?: readonly boolean[]
   readonly spawnIndices?: readonly number[]
   readonly farSink?: FarSink
 }
@@ -87,7 +88,8 @@ function check(cfg: ZoneMatchConfig): void {
       refuse('zones', 'createZoneMatch.roster.peers', 'invalid or duplicate peer; supply distinct supported peer ids')
     }
     peers.add(p.peer)
-    if (p.seats.length < 1 || p.seats.length > 4 || typeof roster.live[p.peer] !== 'boolean') {
+    const humanSeats = cfg.humans === undefined ? p.seats.length : p.seats.filter(seat => cfg.humans![seat]).length
+    if (p.seats.length < 1 || (cfg.humans === undefined && humanSeats < 1) || humanSeats > 4 || typeof roster.live[p.peer] !== 'boolean') {
       refuse('zones', 'createZoneMatch.roster', 'invalid peer seats or liveness; supply 1–4 seats and a live flag per peer')
     }
     for (const seat of p.seats) {
@@ -135,7 +137,7 @@ export function createZoneMatch(R: RapierModule, cfg: ZoneMatchConfig, net: Grou
   const localCells = localSeats.map(seat => unpackControl(controls[seat], { ...localFields }).cell)
   const recipe = createFiestaDomainFactory(R, {
     course: cfg.course, zones: cfg.zones, profile: cfg.profile, kind: cfg.kind,
-    seatCount: cfg.roster.seatCount, spawnIndices: cfg.spawnIndices, slot: cfg.slot,
+    humans: cfg.humans, seatCount: cfg.roster.seatCount, spawnIndices: cfg.spawnIndices, slot: cfg.slot,
   })
   // ZoneSession never disposes a DomainSim (its interface has no dispose): every epoch boundary leaks the states it
   // drops and its rebuild/reset temporaries, so the wasm heap and every Rapier step grow until the match ends.

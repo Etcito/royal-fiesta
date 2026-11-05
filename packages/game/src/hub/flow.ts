@@ -8,12 +8,16 @@ import type { CharacterView, MatchViewState } from '@royal-fiesta/sim/match/matc
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { controlsToInput, emptyControls } from '../client/inputMap.ts'
 import type { RawControls } from '../client/inputMap.ts'
-import { createNetMatch } from '../net/netMatch.ts'
-import type { NetMatch } from '../net/netMatch.ts'
+import { createOnlineMatch } from '../net/onlineMatch.ts'
+import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
+import type { OnlineMatch } from '../net/onlineMatch.ts'
 import { Pilot } from '../net/pilot.ts'
 import { RelayClient } from '../net/relayClient.ts'
 import { parseRelayServerMsg } from '../net/relayProtocol.ts'
-import { RelayTransport } from '../net/relayTransport.ts'
+import { ZoneRelayClient } from '../net/zoneRelayClient.ts'
+import { ZoneRelayTransport } from '../net/zoneRelayTransport.ts'
+import { setupHash } from '@royal-fiesta/sim/match/setup'
+import type { ZoneMatched, ZoneQueuePayload } from '../net/zoneRelayProtocol.ts'
 import { netSetup } from '../net/tuning.ts'
 import type { WsFactory, WsLike } from '../net/ws.ts'
 import { HubPilot } from './hubPilot.ts'
@@ -23,7 +27,6 @@ import type { HubHello, HubState } from './protocol.ts'
 import { QueuePad } from './queuePad.ts'
 import { LobbyTracker } from './lobby.ts'
 import type { LobbyPick, LobbyServerMsg } from './lobby.ts'
-import type { RelayMatched } from '../net/relayProtocol.ts'
 import { RemoteBuffer } from './remotes.ts'
 import type { RemoteView } from './remotes.ts'
 
@@ -31,6 +34,7 @@ export type FlowState = 'connecting' | 'hub' | 'queued' | 'choosing' | 'watching
 export interface FlowEvent { ms: number; client: string; state: FlowState; detail: Record<string, string | number | boolean | number[]> }
 export interface FlowDeps {
   R: RapierModule; relayUrl: string; ws: WsFactory; hubCode: string | 'new'; name: string; colour: number
+  zones: ReadonlyMap<string, ZonesFile>
   courses: readonly ResolvedCourse[]; plaza: ResolvedCourse; partySize: 2 | 3 | 4; now: () => number
   pilot: boolean; log: (ev: FlowEvent) => void
   /**
@@ -41,6 +45,10 @@ export interface FlowDeps {
    * lobby (players and spectators) is drawn from the lobby's presence stream (gamesaloon docs/lobby.md).
    */
   matchmaking?: 'lobby' | 'pad'
+  /** A browser keeps its result presentation while the confirmed network show stays seated. */
+  presentationDone?: () => boolean
+  voteMs?: number
+  intermissionMs?: number
 }
 
 const STEP_S = 1 / 60
@@ -53,10 +61,10 @@ export class PlayFlow {
   private hubSeat = 0
   private hubWorld: HubWorld | null = null
   private hubClient: RelayClient | null = null
-  private matchClient: RelayClient | null = null
+  private matchClient: ZoneRelayClient | null = null
   private matchRoom: MatchRoom | null = null
-  private netMatch: NetMatch | null = null
-  private transport: RelayTransport | null = null
+  private netMatch: OnlineMatch | null = null
+  private transport: ZoneRelayTransport | null = null
   private hubPilot: HubPilot | null = null
   private matchPilot: Pilot | null = null
   private savedLog: MatchLog | null = null
@@ -102,7 +110,7 @@ export class PlayFlow {
     if (!this.hubWorld) throw new RefusalError('hub', 'PlayFlow.hub', 'hub is unavailable; await start() and read it before close()')
     return this.hubWorld
   }
-  get match(): NetMatch | null { return this.netMatch }
+  get match(): OnlineMatch | null { return this.netMatch }
   get lastLog(): MatchLog | null { return this.savedLog }
   /** The lobby being waited in, watched or offered (matchmaking 'lobby'). */
   get lobby(): LobbyTracker { return this.lobbyTracker }
@@ -223,13 +231,13 @@ export class PlayFlow {
             if (this.matchPilot) this.matchPilot.sample(match.sim, out[0])
             else controlsToInput(controls ?? this.idle, match.sim.character(this.matchClient!.seat, this.matchChar).facing, out[0])
           })
-          this.transport!.endFrame()
+          this.transport!.flush()
         }
         if (this.current === 'match' && match.sim.phase(this.view).phase === Phase.podium) this.transition('podium')
         // One peer waits for dissolution so simultaneous finishes cannot race a
         // final bye against the relay clearing cadence on the remaining seat.
         const waitForDissolution = this.matchRoom!.seated && this.matchClient!.seat === this.matchRoom!.lastSeat
-        if (this.current === 'podium' && match.done && !waitForDissolution) {
+        if (this.current === 'podium' && match.done && (this.d.presentationDone?.() ?? true) && !waitForDissolution) {
           this.savedLog = match.log()
           const client = this.matchClient!
           this.matchClient = null
@@ -254,7 +262,8 @@ export class PlayFlow {
     const clients = [this.hubClient, this.matchClient]
     const match = this.netMatch
     const hub = this.hubWorld
-    this.hubClient = this.matchClient = null
+    this.hubClient = null
+    this.matchClient = null
     this.matchRoom = null
     this.netMatch = null
     this.hubWorld = null
@@ -266,7 +275,7 @@ export class PlayFlow {
 
   private async queue(): Promise<void> {
     const d = this.d
-    const client = this.matchClient = new RelayClient(d.relayUrl, url => this.matchSocket(url))
+    const client = this.matchClient = new ZoneRelayClient(d.relayUrl, url => this.matchSocket(url))
     client.onClose(() => {
       if (this.active(client)) this.fail(new RefusalError('hub', d.relayUrl, 'match socket closed; reconnect and queue again'))
     })
@@ -283,7 +292,7 @@ export class PlayFlow {
       if (!this.active(client) || this.cancelling) return
       this.queueRequested = true
       const payload = { g: 'royal-fiesta' as const, v: 1 as const, name: d.name, c: d.colour }
-      let m: RelayMatched
+      let m: ZoneMatched
       if (this.lobbyMode) {
         this.fallingBack = false
         client.onLobby(msg => this.onLobby(client, msg))
@@ -291,15 +300,15 @@ export class PlayFlow {
         try { m = await client.lobby(d.partySize, payload) } catch (e) {
           // No lobby answer in time: this server only has the exact-size queue.
           if (!this.fallingBack || !this.active(client)) throw e
-          m = await client.queue(d.partySize, payload)
+          m = await client.queue(d.partySize, this.queuePayload())
         }
-      } else m = await client.queue(d.partySize, payload)
+      } else m = await client.queue(d.partySize, this.queuePayload())
       if (!this.active(client) || this.cancelling) return
       // A lobby round seats whoever was there (1..partySize humans); bots take the other places.
       const humans = m.players
       const setup = netSetup(m.seed, humans, 'sprint', d.courses)
-      this.transport = new RelayTransport(client, m.youAre, humans, d.now)
-      this.netMatch = createNetMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, this.transport, { cpuMs: d.now })
+      this.transport = new ZoneRelayTransport(client, m.youAre, humans, d.now)
+      this.netMatch = createOnlineMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, d.zones, this.transport, { cpuMs: d.now, voteMs: d.voteMs, intermissionMs: d.intermissionMs })
       if (d.pilot) this.matchPilot = new Pilot(m.youAre, m.seed)
       this.accumulator = 0
       this.lastState = -Infinity
@@ -310,7 +319,13 @@ export class PlayFlow {
     }
   }
 
-  private onLobby(client: RelayClient, msg: LobbyServerMsg): void {
+  private queuePayload(): ZoneQueuePayload {
+    return { g: 'royal-fiesta', v: 1, zones: 1, name: this.d.name, seats: 1, course: 'online-show',
+      tuning: setupHash(netSetup(0, 1, 'sprint', this.d.courses)),
+      m: { cpuMs: 2, bandwidthKbps: 4096, latencyMs: 30, spareSlots: 3 } }
+  }
+
+  private onLobby(client: ZoneRelayClient, msg: LobbyServerMsg): void {
     if (!this.active(client) || client.matched) return
     try {
       const step = this.lobbyTracker.apply(msg, this.d.now())
@@ -369,7 +384,7 @@ export class PlayFlow {
     } catch (e) { if (this.active(client)) this.fail(e) }
   }
 
-  private active(client: RelayClient): boolean {
+  private active(client: ZoneRelayClient): boolean {
     return !this.closed && this.current !== 'failed' && this.matchClient === client
   }
 
@@ -418,7 +433,7 @@ export class PlayFlow {
     // This is the sole hub sender, including RelayClient's control frames.
     socket.send = data => {
       const now = this.d.now()
-      const bye = (JSON.parse(data) as { t: string }).t === 'bye'
+      const bye = typeof data === 'string' && (JSON.parse(data) as { t: string }).t === 'bye'
       while (this.sentAt.length > 0 && now - this.sentAt[0] > 60000) this.sentAt.shift()
       let inSecond = 0
       for (let i = this.sentAt.length - 1; i >= 0 && now - this.sentAt[i] <= 1000; i--) inSecond++
@@ -440,8 +455,10 @@ export class PlayFlow {
     let ended = false
     const port: WsLike = {
       get readyState() { return socket.readyState },
+      get binaryType() { return socket.binaryType },
+      set binaryType(value) { socket.binaryType = value },
       send: data => {
-        const msg = JSON.parse(data) as { t: string }
+        const msg = typeof data === 'string' ? JSON.parse(data) as { t: string } : { t: 'binary' }
         if (ended) {
           if (msg.t === 'queue' && this.matchRoom === room) {
             this.fail(new RefusalError('hub', 'match.queue', 'match socket has already left its room; reconnect and queue on a new socket'))
@@ -481,7 +498,7 @@ export class PlayFlow {
     return port
   }
 
-  private disconnect(client: RelayClient): void {
+  private disconnect(client: RelayClient | ZoneRelayClient): void {
     try { client.bye() } finally { client.close() }
   }
 

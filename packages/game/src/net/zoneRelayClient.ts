@@ -1,6 +1,9 @@
 import type { Roster } from '@gamesaloon/rollback/zones'
 import { RefusalError, refuse } from '@royal-fiesta/sim/refusal'
-import type { WsLike } from './ws.ts'
+import type { LobbyPick, LobbyServerMsg } from '../hub/lobby.ts'
+import { RELAY_MAX_PLAYERS } from './relayProtocol.ts'
+import type { FiestaQueuePayload } from './relayClient.ts'
+import type { WsFactory, WsLike } from './ws.ts'
 import { decodeZoneBinOut, encodeZoneBinIn, isZoneQueuePayload, MAX_ZONE_PEERS, parseZoneServerMsg, ZONE_GAME_ID } from './zoneRelayProtocol.ts'
 import type { ZoneClientMsg, ZoneMatched, ZoneQueue, ZoneQueuePayload, ZoneSeatEvent, ZoneServerMsg } from './zoneRelayProtocol.ts'
 
@@ -44,8 +47,8 @@ interface Pending { t: string; on(m: ZoneServerMsg): boolean; reject(e: Error): 
 
 export class ZoneRelayClient {
   readonly url: string
-  private factory: ZoneWsFactory
-  private ws: ZoneWsLike | null = null
+  private factory: WsFactory
+  private ws: WsLike | null = null
   private open = false
   private closedOnce = false
   private pending: Pending | null = null
@@ -53,6 +56,7 @@ export class ZoneRelayClient {
   private roomData: ZoneRoom | null = null
   private binaryFns: ((sender: number, payload: Uint8Array) => void)[] = []
   private seatFns: ((ev: ZoneSeatEvent) => void)[] = []
+  private lobbyFns: ((m: LobbyServerMsg) => void)[] = []
   private closeFns: (() => void)[] = []
   badFrames = 0
   /** Why the socket closed: the close code and the last unsolicited relay error ('rate limited', ...), or null while open. */
@@ -60,7 +64,7 @@ export class ZoneRelayClient {
   private lastError: string | null = null
   foreignMatches = 0
 
-  constructor(url: string, ws: ZoneWsFactory) { this.url = url; this.factory = ws }
+  constructor(url: string, ws: WsFactory) { this.url = url; this.factory = ws }
   get matched(): ZoneMatched | null { return this.matchedMsg }
   get seat(): number { return this.matchedMsg?.youAre ?? -1 }
 
@@ -134,6 +138,48 @@ export class ZoneRelayClient {
     })
   }
 
+  /** Timed human lobby; the relay starts it as a binary-enabled zone room, including a lone human. */
+  lobby(seats: number, payload: FiestaQueuePayload): Promise<ZoneMatched> {
+    if (this.pending) refuse('relay', 'lobby', `request '${this.pending.t}' is still pending`)
+    return new Promise((resolve, reject) => {
+      this.pending = { t: 'lobby_enter', reject, on: m => {
+        if (m.t !== 'matched') return false
+        if (m.players > RELAY_MAX_PLAYERS || m.opps.some(p => {
+          const other = p as Partial<FiestaQueuePayload> & { zones?: number } | null
+          return !other || other.g !== payload.g || other.v !== payload.v || other.zones !== 1
+        })) refuse('relay', 'lobby.matched', 'incompatible online show; reload all clients on the same build')
+        this.matchedMsg = m
+        resolve(m)
+        return true
+      } }
+      try { this.lobbyAgain(seats, payload) } catch (e) { this.pending = null; reject(e) }
+    })
+  }
+
+  lobbyAgain(seats: number, payload: FiestaQueuePayload, spectate = false): void {
+    if (!Number.isInteger(seats) || seats < 1 || seats > RELAY_MAX_PLAYERS) {
+      refuse('relay', 'lobby.seats', `supply 1..${RELAY_MAX_PLAYERS} human places`)
+    }
+    this.send({ t: 'lobby_enter', game: ZONE_GAME_ID, zones: true, seats, cadence: true,
+      payload: { ...payload, zones: 1 }, ...(spectate ? { spectate: true } : {}) })
+  }
+  lobbyPick(action: LobbyPick, id: string | null): void { this.send({ t: 'lobby_pick', action, id }) }
+  onLobby(fn: (m: LobbyServerMsg) => void): void { this.lobbyFns.push(fn) }
+  presence(a: object): void { if (this.open && !this.matchedMsg) this.send({ t: 'lobby_presence', a }) }
+  abandonLobby(): void {
+    if (this.pending?.t !== 'lobby_enter') return
+    const pending = this.pending
+    this.pending = null
+    pending.reject(new RefusalError('relay', 'lobby_enter', 'server did not answer the timed zone lobby'))
+  }
+  unqueue(): Promise<void> {
+    const pending = this.pending
+    this.pending = null
+    pending?.reject(new RefusalError('relay', 'queue', 'cancelled'))
+    this.send({ t: 'unqueue' })
+    return Promise.resolve()
+  }
+
   room(): ZoneRoom {
     if (!this.roomData) refuse('relay', 'room', 'no accepted zone match; await queue() first')
     return this.roomData
@@ -152,7 +198,7 @@ export class ZoneRelayClient {
   }
   close(): void { this.ws?.close() }
 
-  private socket(path: string): ZoneWsLike {
+  private socket(path: string): WsLike {
     if (!this.ws || !this.open) refuse('relay', path, `socket to ${this.url} is not open; await connect() first`)
     return this.ws
   }
@@ -178,6 +224,14 @@ export class ZoneRelayClient {
       try { if (p.on(m) && this.pending === p) this.pending = null } catch (e) {
         if (this.pending === p) this.pending = null
         p.reject(e instanceof Error ? e : new Error(String(e)))
+      }
+    }
+    if (m.t.startsWith('lobby_')) {
+      for (const fn of this.lobbyFns) fn(m as LobbyServerMsg)
+      if (m.t === 'lobby_error' && !['lobby_closed', 'unknown_lobby', 'not_entered'].includes(m.reason) && this.pending) {
+        const pending = this.pending
+        this.pending = null
+        pending.reject(new RefusalError('relay', pending.t, m.reason))
       }
     }
     if (m.t === 'player_dropped' || m.t === 'player_back' || m.t === 'player_left') {

@@ -8,7 +8,7 @@ import { createMatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { fixtureResolver } from '../src/assets.ts'
 import { matchCourses } from '../src/courseSet.ts'
 import type { CourseEntry } from '../src/courseSet.ts'
-import { netSetup } from '../src/net/tuning.ts'
+import { classicNetSetup } from '../src/net/tuning.ts'
 import type { PrimsAsset } from '../src/prims.ts'
 import { NullRenderPort } from '../src/render/nullPort.ts'
 import { SceneView } from '../src/render/sceneView.ts'
@@ -36,7 +36,7 @@ const TICK_MS = 1000 / 60
 
 // The skin pose submitted for every character at every tick a frame drew, with the display at `hz`.
 async function run(hz: number, seconds: number): Promise<Map<string, Float32Array>> {
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   const port = new NullRenderPort()
   await port.init({ canvas: null, width: 64, height: 36, viewports: [{ x: 0, y: 0, width: 64, height: 36 }] })
   const view = new SceneView({ port, viewport: 0, localPlayer: 0, bean, assets: n => assets.get(n)!, loadingPaint: false, skinned })

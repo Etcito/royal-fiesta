@@ -1,3 +1,5 @@
+import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
+import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { before, test } from 'node:test'
@@ -25,6 +27,7 @@ const FRAME_MS = 1000 / 60
 const realNow = performance.now.bind(performance)
 
 let R: RapierModule
+let zones: Map<string, ZonesFile>
 let courses: ResolvedCourse[]
 let plaza: ResolvedCourse
 
@@ -38,6 +41,7 @@ before(async () => {
     entries.push({ path, json: JSON.parse(await read(path)) as unknown })
   }
   courses = await matchCourses(entries, resolver, 'sprint')
+  zones = new Map(await Promise.all(courses.map(async c => [c.id, await loadZonesFile(c.id, c, read)] as const)))
   const path = 'fixtures/courses/hub-plaza.course.json'
   plaza = await loadCourse(JSON.parse(await read(path)) as unknown, path, resolver)
 })
@@ -69,7 +73,7 @@ class World {
       const send = s.send.bind(s)
       const close = s.close.bind(s)
       s.send = data => {
-        const m = JSON.parse(data) as { t: string; a?: Record<string, unknown> }
+        const m = (typeof data === 'string' ? JSON.parse(data) : { t: 'binary' }) as { t: string; a?: Record<string, unknown> }
         if (s.readyState === 1) rec.sent.push({ ms: this.ms, t: m.t, state: c.flow.state, a: m.a })
         send(data)
       }
@@ -77,7 +81,7 @@ class World {
       return s
     }
     c.flow = new PlayFlow({
-      R, relayUrl: 'loopback://relay', ws, hubCode, name, colour, courses, plaza, partySize,
+      R, relayUrl: 'loopback://relay', ws, hubCode, name, colour, courses, zones, plaza, partySize,
       now: () => this.ms, pilot, log: ev => c.events.push(ev), matchmaking,
     })
     this.clients.push(c)
@@ -186,7 +190,7 @@ async function fullLoop(n: 2 | 3 | 4): Promise<void> {
     const socksAtQueue = clients.map(() => -1)
     const end = w.ms + 400_000
     while (!clients.every(c => c.flow.lastLog !== null && c.flow.state === 'hub')) {
-      assert.ok(w.ms < end, `loop not done; states ${clients.map(c => c.flow.state).join(',')}`)
+      assert.ok(w.ms < end, `loop not done: ${JSON.stringify(clients.map(c => ({ state: c.flow.state, round: c.flow.match?.full.round?.plan.index, rounds: c.flow.match?.full.report.rounds.length, stats: c.flow.match?.zones.stats, result: c.flow.match?.zones.currentLedger?.result })))}`)
       const prev = clients.map(c => c.flow.state)
       await w.step()
       clients.forEach((c, i) => {
@@ -359,7 +363,7 @@ test('lobby: the first player opens a lobby by itself, the next one is put in it
     assert.equal(b.flow.lobby.view.id, a.flow.lobby.view.id)
     await w.until(() => a.flow.lobby.view.names.length === 2, 1000)
     assert.ok(Math.abs(a.flow.lobby.view.startsAt! - b.flow.lobby.view.startsAt!) < 50)
-    // Nobody else comes: the round starts with 2 humans (bots fill the other 6).
+    // Nobody else comes: the round starts with 2 humans (bots fill the other 58).
     await w.until(() => a.flow.state === 'match' && b.flow.state === 'match', 20_000)
     assert.ok(w.ms >= 20_000)
     const seats = [a, b].map(c => c.events.find(e => e.state === 'match')!.detail.seat).sort()
@@ -430,7 +434,7 @@ test('lobby: one shared hub; every member is drawn with its name, colour and mov
     // The default name is told apart by arrival order.
     assert.deepEqual([seenByB.name, seenByB.colour], ['Bean 1', 2])
     assert.deepEqual(a.flow.lobby.view.names, ['Bean 1', 'Bob'])
-    assert.ok(lobbyLines(a.flow.lobby, w.ms).includes('6 bots will fill the empty places'))
+    assert.ok(lobbyLines(a.flow.lobby, w.ms).includes('58 bots will fill the empty places'))
     // Each arrives on its own spawn; Bob walking is seen by Ann.
     const x0 = seenByA.pos.x, z0 = seenByA.pos.z
     assert.ok(Math.hypot(x0 - seenByB.pos.x, z0 - seenByB.pos.z) > 0.5, 'members do not share one spawn')

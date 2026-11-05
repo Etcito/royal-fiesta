@@ -1,4 +1,7 @@
 // Game's typed zone-room subset of gamesaloon-relay src/relay/{protocol,binary}.ts and docs/RELAY.md.
+import type { LobbyServerMsg } from '../hub/lobby.ts'
+import type { RelayLobbyEnter, RelayLobbyLeave, RelayLobbyPick, RelayLobbyPresence } from './relayProtocol.ts'
+import { parseRelayServerMsg } from './relayProtocol.ts'
 import { refuse } from '@royal-fiesta/sim/refusal'
 
 export const ZONE_BIN_KIND = 0x5a
@@ -23,13 +26,13 @@ export interface ZoneQueuePayload {
 
 export type ZoneCreate = { t: 'create'; players?: number; cadence?: boolean; payload?: ZoneQueuePayload; game: typeof ZONE_GAME_ID; zones: true }
 export type ZoneQueue = { t: 'queue'; players: number; cadence: true; payload: ZoneQueuePayload; game: typeof ZONE_GAME_ID; zones: true }
-export type ZoneClientMsg = ZoneCreate | ZoneQueue | { t: 'bye' }
+export type ZoneClientMsg = ZoneCreate | ZoneQueue | { t: 'bye' } | { t: 'unqueue' } | (RelayLobbyEnter & { zones: true }) | RelayLobbyLeave | RelayLobbyPick | RelayLobbyPresence
 export type ZoneMatched = { t: 'matched'; seed: number; hostStarts: boolean; youAre: number; token: string; players: number; opps: unknown[] }
 export type ZoneSeatEvent = { t: 'player_dropped'; seat: number; graceMs: number }
   | { t: 'player_back' | 'player_left'; seat: number }
 export type ZoneServerMsg = ZoneMatched | ZoneSeatEvent | { t: 'room'; code: string }
   | { t: 'waiting'; seat: number; players: number } | { t: 'queued'; estimateMs: number | null }
-  | { t: 'unqueued' | 'pong' | 'opp_left' } | { t: 'error'; reason: string }
+  | LobbyServerMsg | { t: 'unqueued' | 'pong' | 'opp_left' } | { t: 'error'; reason: string }
 
 type Obj = Record<string, unknown>
 function isObj(v: unknown): v is Obj { return typeof v === 'object' && v !== null && !Array.isArray(v) }
@@ -52,6 +55,9 @@ export function parseZoneServerMsg(raw: string): ZoneServerMsg | null {
     if (typeof raw !== 'string') return null
     const m: unknown = JSON.parse(raw)
     if (!isObj(m)) return null
+    if (typeof m.t === 'string' && m.t.startsWith('lobby_')) {
+      return parseRelayServerMsg(raw) as LobbyServerMsg | null
+    }
     let ok = false
     switch (m.t) {
       case 'room': ok = typeof m.code === 'string'; break
@@ -59,7 +65,7 @@ export function parseZoneServerMsg(raw: string): ZoneServerMsg | null {
       case 'queued': ok = m.estimateMs === null || nonnegative(m.estimateMs); break
       case 'matched':
         ok = int(m.seed, 0, 0xffffffff) && typeof m.hostStarts === 'boolean' && seat(m.youAre)
-          && typeof m.token === 'string' && int(m.players, 2, MAX_ZONE_PEERS) && m.youAre < m.players
+          && typeof m.token === 'string' && int(m.players, 1, MAX_ZONE_PEERS) && m.youAre < m.players
           && Array.isArray(m.opps) && m.opps.length === m.players
         break
       case 'player_dropped': ok = seat(m.seat) && nonnegative(m.graceMs); break

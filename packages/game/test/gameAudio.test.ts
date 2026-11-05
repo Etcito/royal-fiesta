@@ -10,7 +10,7 @@ import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
 import { PlayerStatus } from '@royal-fiesta/sim/match/roundSystem'
 import { fixtureResolver } from '../src/assets.ts'
 import { matchCourses } from '../src/courseSet.ts'
-import { netSetup } from '../src/net/tuning.ts'
+import { classicNetSetup } from '../src/net/tuning.ts'
 import { stepSoundId } from '../src/audio/catalog.ts'
 import { CROWD_BED_ID } from '../src/audio/ids.ts'
 import {
@@ -80,7 +80,7 @@ async function loadCourses(): Promise<ResolvedCourse[]> {
 
 test('a headless bot match plays the right S16 movement and flow ids', async () => {
   const courses = await loadCourses()
-  const sim = createMatchSim(R, netSetup(8, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(8, 1, 'sprint', courses))
   const neutral = Array.from({ length: sim.setup.playerCount }, () => neutralInput())
   const scratch: CharacterView = {
     pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 0 },

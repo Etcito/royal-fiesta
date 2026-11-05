@@ -1,3 +1,4 @@
+import { browserZones } from '../client/sources.ts'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import { loadCourse } from '@royal-fiesta/game/course'
 import type { FlowEvent } from '@royal-fiesta/game/hub/flow'
@@ -162,7 +163,7 @@ async function hubLoopCapture(raw: unknown): Promise<OpEnvelope<HubLoopOutput>> 
     Object.defineProperty(performance, 'now', { configurable: true, writable: true, value: now })
     clockInstalled = true
     loop = new InPageHubLoop(R, 4, new LoopbackRelay({ seed: 8 }), {
-      R, courses, plaza, partySize: 4, now, pilot: true,
+      R, courses, zones: browserZones(courses), plaza, partySize: 4, now, pilot: true,
     }, ports.map(gated), { assets, bean: assets('bean') })
     const captures: CaptureOut[] = []
     let hubFrames = 0

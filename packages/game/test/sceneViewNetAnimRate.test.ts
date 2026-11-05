@@ -9,7 +9,7 @@ import { matchCourses } from '../src/courseSet.ts'
 import type { CourseEntry } from '../src/courseSet.ts'
 import { createNetMatch } from '../src/net/netMatch.ts'
 import type { NetMatch } from '../src/net/netMatch.ts'
-import { netSetup } from '../src/net/tuning.ts'
+import { classicNetSetup } from '../src/net/tuning.ts'
 import type { PrimsAsset } from '../src/prims.ts'
 import { NullRenderPort } from '../src/render/nullPort.ts'
 import { SceneView } from '../src/render/sceneView.ts'
@@ -40,7 +40,7 @@ interface Win { match: NetMatch; view: SceneView; hz: number; next: number; subm
 // Two peers of one online round on a simulated network, each window drawing at its own display rate.
 async function run(hzs: number[], seconds: number): Promise<Win[]> {
   const netsim = new NetSim(hzs.length, { seed: 1, rttMs: 20, jitterMs: 0, loss: 0 })
-  const setup = netSetup(7, hzs.length, 'sprint', courses)
+  const setup = classicNetSetup(7, hzs.length, 'sprint', courses)
   const wins: Win[] = []
   for (let p = 0; p < hzs.length; p++) {
     const match = createNetMatch(R, { setup, localPeer: p, humanPeers: hzs.length }, netsim.transport(p))

@@ -10,7 +10,7 @@ import { compareHashLogs, ConfirmedHashLog } from '../net/metrics.ts'
 import { createNetMatch } from '../net/netMatch.ts'
 import type { NetMatch } from '../net/netMatch.ts'
 import { Pilot } from '../net/pilot.ts'
-import { netSetup } from '../net/tuning.ts'
+import { classicNetSetup } from '../net/tuning.ts'
 import type { PrimsAsset } from '../prims.ts'
 import type { RenderPort } from '../render/port.ts'
 import { SceneView } from '../render/sceneView.ts'
@@ -40,7 +40,7 @@ export class InPageMatch {
     if (o.ports.length !== 1 && o.ports.length !== n) {
       refuse('inpage', 'InPageOptions.ports', `has ${o.ports.length} ports for ${n} clients; pass one shared port or one per client`)
     }
-    const setup = netSetup(o.seed, n, o.profile, o.courses)
+    const setup = classicNetSetup(o.seed, n, o.profile, o.courses)
     this.net = new NetSim(n, { seed: o.seed, rttMs: o.net.rttMs, jitterMs: o.net.jitterMs, loss: o.net.loss })
     const shared = o.ports.length === 1 && n > 1
     try {

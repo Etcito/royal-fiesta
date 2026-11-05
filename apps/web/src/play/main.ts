@@ -1,3 +1,4 @@
+import { browserZones } from '../client/sources.ts'
 // play.html entry: the walkable hub. ?server=ws://... plays online; ?mode=inpage runs N piloted clients over a
 // LoopbackRelay; ?mode=ops only installs the GPU client ops. ?content=<id> takes courses, the hub, assets, ports and the
 // (skinned) character from that content provider, as game.html does.
@@ -135,7 +136,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameI
   let failure = ''
   const flow = new PlayFlow({
     R: ctx.R, relayUrl: q.server, ws: globalWsFactory(), hubCode: q.hub, name: q.name, colour: q.colour,
-    courses: ctx.courses, plaza: ctx.plaza, partySize: q.party, now: () => performance.now(), pilot: false,
+    courses: ctx.courses, zones: browserZones(ctx.courses), plaza: ctx.plaza, partySize: q.party, now: () => performance.now(), pilot: false,
     matchmaking: 'lobby',
     log: ev => {
       if (ev.state === 'match' && typeof ev.detail.seat === 'number') seat = ev.detail.seat
@@ -222,7 +223,7 @@ function runOnline(ctx: Ctx, q: Extract<Query, { mode: 'online' }>, input: GameI
 function runInPage(ctx: Ctx, clients: number): void {
   const now = () => performance.now()
   const hub = new InPageHubLoop(ctx.R, clients, new LoopbackRelay(), {
-    R: ctx.R, courses: ctx.courses, plaza: ctx.plaza, partySize: clients as 2 | 3 | 4, now, pilot: true,
+    R: ctx.R, courses: ctx.courses, zones: browserZones(ctx.courses), plaza: ctx.plaza, partySize: clients as 2 | 3 | 4, now, pilot: true,
   }, ctx.ports, { assets: ctx.assets, bean: ctx.bean, skinned: ctx.skinned })
   let shown = ''
   loop(dt => {

@@ -1,3 +1,4 @@
+import { loadNetZones } from '../src/files.ts'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -110,7 +111,7 @@ async function checkInPageLoop(): Promise<CheckResult> {
     // LoopbackRelay rate-limits on performance.now, so it shares deps.now's virtual clock.
     Object.defineProperty(performance, 'now', { configurable: true, writable: true, value: now })
     loop = new InPageHubLoop(R, CLIENTS, new LoopbackRelay({ seed: 8 }), {
-      R, courses, plaza, partySize: CLIENTS, now, pilot: true,
+      R, courses, zones: await loadNetZones(courses), plaza, partySize: CLIENTS, now, pilot: true,
     }, ports, { assets, bean: assets('bean') })
     while (!loop.done && frame < MAX_FRAMES) {
       frame++

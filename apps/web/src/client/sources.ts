@@ -1,3 +1,5 @@
+import { parseZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
+import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 /// <reference types="vite/client" />
 // Browser data sources: fixtures bundled by Vite, the asset store reached through fetch at call time.
 import { fixtureResolver, storeResolver } from '@royal-fiesta/game/assets'
@@ -130,4 +132,20 @@ export async function preloadAssets(courses: readonly ResolvedCourse[], resolver
     if (!asset) refuse('assets', name, `asset '${name}' was not preloaded; add it to a course or to preloadAssets`)
     return asset
   }
+}
+
+const ZONE_SIDECARS = import.meta.glob<string>('../../../../courses/*.zones.json', {
+  query: '?raw', import: 'default', eager: true,
+})
+
+/** Resolve authored zones against the same course objects the lobby will play, before joining a room. */
+export function browserZones(courses: readonly ResolvedCourse[]): Map<string, ZonesFile> {
+  const result = new Map<string, ZonesFile>()
+  for (const course of courses) {
+    const path = `courses/${course.id}.zones.json`
+    const text = ZONE_SIDECARS[GLOB_PREFIX + path]
+    if (text === undefined) refuse('zones', path, 'missing online course sidecar')
+    result.set(course.id, parseZonesFile(JSON.parse(text), path, course))
+  }
+  return result
 }

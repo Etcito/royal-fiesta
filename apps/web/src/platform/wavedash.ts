@@ -1,12 +1,11 @@
 // Wavedash SDK contract (docs/wavedash.md R3, "Loader contract"). The Wavedash shell keeps the game frame hidden
-// behind its own "Still Loading 0%" screen until the game calls Wavedash.init() (which also signals loadComplete);
-// Wavedash.updateLoadProgressZeroToOne(p) drives that screen's bar. The shell injects the global before the page's
-// code runs; off Wavedash there is no global and every call here is a no-op. Nothing here throws: a missing or
-// failing SDK must never stop the game. Pure over an injected global `g` so it runs in Node tests.
+// behind its own "Still Loading 0%" screen until the game calls Wavedash.init() (which also signals loadComplete).
+// The game calls it as its boot starts, so its own loading screen is what the player sees. The shell injects the
+// global before the page's code runs; off Wavedash there is no global and every call here is a no-op. Nothing here
+// throws: a missing or failing SDK must never stop the game. Pure over an injected global `g` so it runs in Node tests.
 
 export interface WavedashSdk {
   init(config?: { debug?: boolean }): unknown
-  updateLoadProgressZeroToOne?(progress: number): void
   getLaunchParams?(): unknown
   // docs.wavedash.com/sdk/players: the signed-in player's display name (sync), and the profile object.
   getUsername?(): unknown
@@ -33,37 +32,22 @@ export function wavedashSdk(g: PageGlobal = globalThis as PageGlobal): WavedashS
   return typeof (sdk as { init?: unknown }).init === 'function' ? sdk as WavedashSdk : null
 }
 
-interface Reported { progress: number; sent: boolean; init: WavedashInit | null }
+interface Reported { init: WavedashInit | null }
 const reported = new WeakMap<object, Reported>()
 
 function stateOf(g: object): Reported {
   let s = reported.get(g)
   if (s === undefined) {
-    s = { progress: 0, sent: false, init: null }
+    s = { init: null }
     reported.set(g, s)
   }
   return s
 }
 
-/** Reports load progress in [0, 1] to the shell's bar: never backwards, never after init(). */
-export function wavedashProgress(fraction: number, g: PageGlobal = globalThis as PageGlobal): void {
-  const sdk = wavedashSdk(g)
-  const s = stateOf(g)
-  if (sdk === null || s.init !== null || typeof sdk.updateLoadProgressZeroToOne !== 'function') return
-  const p = Number.isFinite(fraction) ? Math.min(1, Math.max(0, fraction)) : 0
-  if (s.sent && p <= s.progress) return
-  s.sent = true
-  s.progress = p
-  try {
-    sdk.updateLoadProgressZeroToOne.call(sdk, s.progress)
-  } catch (e) {
-    console.warn('[wavedash] updateLoadProgressZeroToOne failed:', e)
-  }
-}
-
 /**
- * Wavedash.init() once per page: the shell then drops its loading screen and shows the frame. Called when the start
- * screen (or the error screen) is up. Returns what happened; 'absent' off Wavedash. A second call returns the first result.
+ * Wavedash.init() once per page: the shell then drops its loading screen and shows the frame. Called as the boot
+ * starts (the page's own loading screen is up), and again, harmlessly, by the error screens. Returns what happened;
+ * 'absent' off Wavedash. A second call returns the first result.
  */
 export function wavedashReady(g: PageGlobal = globalThis as PageGlobal): WavedashInit {
   const s = stateOf(g)
@@ -73,7 +57,6 @@ export function wavedashReady(g: PageGlobal = globalThis as PageGlobal): Wavedas
     if (onWavedashOrigin(g.location?.hostname ?? '')) console.warn('[wavedash] no Wavedash.init on the Wavedash origin: the shell will keep its loading screen')
     return 'absent'
   }
-  wavedashProgress(1, g)
   try {
     sdk.init.call(sdk, { debug: false })
     s.init = 'called'

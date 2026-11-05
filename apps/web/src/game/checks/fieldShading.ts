@@ -164,11 +164,18 @@ function projectSubject(subject: Subject, width: number, height: number): Projec
   return { x0: cx0, y0: cy0, x1: cx1, y1: cy1, area: (cx1 - cx0) * (cy1 - cy0), centerDepth }
 }
 
-// A share of the frame below this is a background-only capture; the projected subject box must hold a visible share
-// of the changed pixels too, so a camera pointed away cannot pass on background noise.
-const MIN_SUBJECT_SHARE = 0.004
-const MIN_BOX_SHARE = 0.01
+// A drawn subject changes a solid patch of the frame; a background-only capture (the penguin card's empty tan gradient)
+// only drifts, so the guard needs a nearly fully changed cell inside the projected box, not just a diffuse share.
+const MIN_SUBJECT_SHARE = 0.005
+const MIN_BOX_SHARE = 0.02
+const MIN_CELL_SHARE = 0.5
+const MIN_VIEWPORT_SHARE = 0.02
+const COVERAGE_CELLS = 10
 const CHANNEL_DELTA = 16
+// A skinned instance requests its pipeline on its first visible draw and RAA compiles it asynchronously; re-render and
+// re-measure instead of committing the background-only frame that was in flight.
+const SUBJECT_WAIT_MS = 45_000
+const SUBJECT_RETRY_MS = 100
 
 async function pixelsOf(bytes: Uint8Array): Promise<ImageData> {
   const bitmap = await createImageBitmap(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' }))
@@ -183,34 +190,54 @@ async function pixelsOf(bytes: Uint8Array): Promise<ImageData> {
   } finally { bitmap.close() }
 }
 
-// The guard the previous empty penguin frame needed: the subject is in the viewport and its removal changes pixels.
-// Throws before the PNG is added, so the render entry fails with the named error instead of committing an empty frame.
-async function assertSubjectDrawn(what: string, subject: Subject, drawn: Uint8Array, background: Uint8Array): Promise<void> {
+interface Coverage { drawn: boolean; detail: string }
+
+// The subject is in the viewport and its removal changes the pixels inside its projected box. Measured on two frames
+// taken back to back, so a drifting sky cannot pass as a subject: a solid cell of the box must change.
+async function subjectCoverage(subject: Subject, drawn: Uint8Array, background: Uint8Array): Promise<Coverage> {
   const a = await pixelsOf(drawn)
   const b = await pixelsOf(background)
   const width = a.width, height = a.height
   const projected = projectSubject(subject, width, height)
-  let changed = 0, inBox = 0
+  let changed = 0, inBox = 0, solidCell = 0
   if (b.width === width && b.height === height) {
     const pa = a.data, pb = b.data
+    const cells = new Uint32Array(COVERAGE_CELLS * COVERAGE_CELLS)
+    const cellW = projected === null ? 1 : Math.max(1, (projected.x1 - projected.x0) / COVERAGE_CELLS)
+    const cellH = projected === null ? 1 : Math.max(1, (projected.y1 - projected.y0) / COVERAGE_CELLS)
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const i = (y * width + x) * 4
         if (Math.abs(pa[i] - pb[i]) <= CHANNEL_DELTA && Math.abs(pa[i + 1] - pb[i + 1]) <= CHANNEL_DELTA &&
           Math.abs(pa[i + 2] - pb[i + 2]) <= CHANNEL_DELTA) continue
         changed++
-        if (projected !== null && x >= projected.x0 && x <= projected.x1 && y >= projected.y0 && y <= projected.y1) inBox++
+        if (projected !== null && x >= projected.x0 && x < projected.x1 && y >= projected.y0 && y < projected.y1) {
+          inBox++
+          const cx = Math.min(COVERAGE_CELLS - 1, Math.floor((x - projected.x0) / cellW))
+          const cy = Math.min(COVERAGE_CELLS - 1, Math.floor((y - projected.y0) / cellH))
+          cells[cy * COVERAGE_CELLS + cx]++
+        }
       }
     }
+    const cellArea = cellW * cellH
+    for (const count of cells) solidCell = Math.max(solidCell, count / cellArea)
   }
   const share = changed / Math.max(1, width * height)
   const boxShare = projected === null ? 0 : inBox / Math.max(1, projected.area)
   const viewportShare = projected === null ? 0 : projected.area / Math.max(1, width * height)
-  if (projected === null || viewportShare < 0.01 || share < MIN_SUBJECT_SHARE || boxShare < MIN_BOX_SHARE) {
-    console.warn(`[fieldShading] ${what}: subject ${projected === null ? 'off screen' : `covers ${(viewportShare * 100).toFixed(1)}% of the viewport`}; ` +
-      `${(share * 100).toFixed(2)}% of the pixels differ from the background, ${(boxShare * 100).toFixed(2)}% inside the subject box`)
-    throw new Error(`fieldShading ${what}: subject not in frame`)
+  const ok = projected !== null && viewportShare >= MIN_VIEWPORT_SHARE && share >= MIN_SUBJECT_SHARE &&
+    boxShare >= MIN_BOX_SHARE && solidCell >= MIN_CELL_SHARE
+  return {
+    drawn: ok,
+    detail: `subject ${projected === null ? 'off screen' : `covers ${(viewportShare * 100).toFixed(1)}% of the viewport`}; ` +
+      `${(share * 100).toFixed(2)}% of the pixels differ from the background, ${(boxShare * 100).toFixed(2)}% inside it, ` +
+      `solid cell ${(solidCell * 100).toFixed(1)}%`,
   }
+}
+
+function drawFrames(port: ResizablePort): Promise<void> {
+  port.render()
+  return nextTask().then(() => { port.render() })
 }
 
 async function capture(port: ResizablePort, what: string, captures: Captures, subject: Subject): Promise<void> {
@@ -231,24 +258,37 @@ async function capture(port: ResizablePort, what: string, captures: Captures, su
   const failures = hardFailures(report)
   if (failures.length > 0) throw new Error(`${what}: ${failures.join('; ')}`)
   assertNoPageErrors(what)
-  port.render()
-  await nextTask()
-  port.render()
-  const png = await port.capture()
-  if (png === null || png.length === 0) throw new Error(`${what}: the capture is empty`)
-  // The same camera with the subject hidden: the pixels that change are the subject's own draw.
-  const restore = subject.hide()
-  let background: Uint8Array | null = null
-  try {
-    port.render()
-    await nextTask()
-    port.render()
-    background = await port.capture()
-  } finally { restore() }
-  if (background === null || background.length === 0) throw new Error(`${what}: the background capture is empty`)
-  await assertSubjectDrawn(what, subject, png, background)
-  captures.files.push({ name: `${what}.png`, blob: new Blob([png as Uint8Array<ArrayBuffer>], { type: 'image/png' }) })
-  captures.names.push(`${what}.png`)
+  const deadline = Date.now() + SUBJECT_WAIT_MS
+  let last = 'not measured'
+  for (;;) {
+    await drawFrames(port)
+    // The skinned body's lit variants are not part of shadingReport's pending parts (it is an atlas demotion): keep
+    // drawing until the compiler settles before paying for a capture.
+    if (pendingPipelines() > 0) {
+      if (Date.now() > deadline) throw new Error(`${what}: ${pendingPipelines()} material pipelines still compiling after ${SUBJECT_WAIT_MS / 1000} s`)
+      await new Promise(resolve => setTimeout(resolve, SUBJECT_RETRY_MS))
+      continue
+    }
+    const png = await port.capture()
+    if (png === null || png.length === 0) throw new Error(`${what}: the capture is empty`)
+    // The same camera with the subject hidden: the pixels that change are the subject's own draw.
+    const restore = subject.hide()
+    let background: Uint8Array | null = null
+    try {
+      await drawFrames(port)
+      background = await port.capture()
+    } finally { restore() }
+    if (background === null || background.length === 0) throw new Error(`${what}: the background capture is empty`)
+    const coverage = await subjectCoverage(subject, png, background)
+    if (coverage.drawn) {
+      captures.files.push({ name: `${what}.png`, blob: new Blob([png as Uint8Array<ArrayBuffer>], { type: 'image/png' }) })
+      captures.names.push(`${what}.png`)
+      return
+    }
+    last = coverage.detail
+    if (Date.now() > deadline) throw new Error(`${what}: subject not in frame after ${SUBJECT_WAIT_MS / 1000} s: ${last}`)
+    await new Promise(resolve => setTimeout(resolve, SUBJECT_RETRY_MS))
+  }
 }
 
 interface StageOptions {
@@ -352,7 +392,11 @@ class Stage {
     if (this.withDecor) this.dressing.leave(this.port)
     const instances = [...this.obstacleInst, ...this.mechanismInst]
     for (const instance of instances) this.port.setVisible(instance, false)
-    return () => { for (const instance of instances) this.port.setVisible(instance, true) }
+    // leave destroys the decor instances, so the restore recreates them: a capture may be measured more than once.
+    return () => {
+      for (const instance of instances) this.port.setVisible(instance, true)
+      if (this.withDecor) this.dressing.enter(this.port, this.course.id)
+    }
   }
 
   dispose(): void {

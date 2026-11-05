@@ -11,6 +11,7 @@ import {
   fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, type FieldLabelGraphLike, type FieldProgramLike,
 } from '../src/sdf/fieldShading.ts'
 import { decodeMesh } from '../src/sdf/meshWire.ts'
+import { WGSL_RESERVED, wgslReservedNames } from '../src/sdf/wgslReserved.ts'
 
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 const FUNCTION = 'pmf_eval_0123456789abcdef'
@@ -152,8 +153,11 @@ test('every saved field part gets a field material under the RAA size limit and 
         const words = fieldProgramWords(check.program)
         assert.ok(words.ok, `${file}: ${words.ok ? '' : words.reason}`)
         const graphs = check.program.labels.map(l => (l.material === null ? null : byName.get(l.material) ?? null))
-        const out = fieldMaterialWgsl({ program: check.program, labelGraphs: graphs, debug: true })
-        assert.ok(new TextEncoder().encode(out.wgsl).length <= MATERIAL_FUNCTION_MAX_BYTES, file)
+        for (const debug of [false, true]) {
+          const out = fieldMaterialWgsl({ program: check.program, labelGraphs: graphs, debug })
+          assert.ok(new TextEncoder().encode(out.wgsl).length <= MATERIAL_FUNCTION_MAX_BYTES, file)
+          assert.deepEqual(wgslReservedNames(out.wgsl), [], `${file}: WGSL reserved words`)
+        }
       }
     }
   }
@@ -399,7 +403,7 @@ test('rounded scenery rejects the failed distant camera and fills half the frame
   }
 })
 
-test('normal taps respect operand scale and narrow blends after grid resampling', () => {
+test('normal taps respect operand scale, never fall inside one grid voxel, and stop at narrow blends', () => {
   const p = program()
   const step = (p: FieldProgramLike) => {
     const data = fieldProgramWords(p)
@@ -408,25 +412,35 @@ test('normal taps respect operand scale and narrow blends after grid resampling'
   }
   const grid = p.operands[1]
   assert.equal(grid.kind, 'grid')
+  const voxel = (grid as { voxel: number }).voxel
   const scaled = { ...p, operands: [{ ...grid, scale: 0.1 }] }
-  assert.ok(Math.abs(step(scaled) - 0.015) < 1e-8)
+  assert.ok(step(scaled) >= voxel * 0.1 / 2 - 1e-8 && step(scaled) <= voxel * 0.1 + 1e-8, 'taps follow the operand scale')
+  // The plaza fountain: 0.0554 voxels and a 0.04 smooth blend. The step 0.01 of card 7014 put all six taps inside one
+  // voxel, so every voxel lit as a flat facet (judge: 'triangular faceting', run 12143).
+  const fountain = { ...p, operands: [{ ...grid, voxel: 0.0554, scale: 1 }],
+    tree: p.tree.map(n => n.op !== 'leaf' && n.mode !== 'hard' ? { ...n, radius: 0.04 } : n) } as FieldProgramLike
+  assert.ok(Math.abs(step(fountain) - 0.04) < 1e-6, String(step(fountain)))
   const resampled = { ...p, operands: [{ ...grid, voxel: 0.6 }] }
-  assert.ok(Math.abs(step(resampled) - 0.025) < 1e-8, 'resampling must not span the 0.1 blend')
-  // A small curved feature: compare six central taps with its exact radial normal.
-  const point = [0.08, 0.06, 0]
-  const gradientError = (h: number) => {
-    const g = point.map((_, axis) => {
-      const plus = [...point], minus = [...point]
-      plus[axis] += h
-      minus[axis] -= h
-      return (Math.hypot(...plus) - Math.hypot(...minus)) / (2 * h)
-    })
-    const length = Math.hypot(...g)
-    return Math.hypot(...g.map((v, i) => v / length - point[i] / 0.1))
-  }
-  assert.ok(gradientError(step(resampled)) < gradientError(0.6 / 2))
+  assert.ok(Math.abs(step(resampled) - 0.3) < 1e-6, 'never below half a voxel, even across a narrower blend')
+  const fine = { ...p, operands: [{ ...grid, voxel: 0.01 }] }
+  assert.ok(Math.abs(step(fine) - 0.01) < 1e-8, 'one voxel when the blends are wider')
   const wgsl = fieldMaterialWgsl({ program: resampled, labelGraphs: [], debug: false }).wgsl
-  assert.match(wgsl, /pass < 2u/)
+  assert.match(wgsl, /newton < 2u/)
   assert.match(wgsl, /p -= taps.xyz \/ sqrt\(gg\) \* clamp/)
   assert.match(wgsl, /taps = pmf_field\(db, p, h, scale, &w\)/)
+})
+
+// RAA parses material functions with naga, which refuses a reserved word as a name (material.fn_invalid, 'name `pass`
+// is a reserved keyword'): only the GPU run saw it. Every field material variant is checked here.
+test('wgslReservedNames reports reserved words used as names, as naga does, and skips comments', () => {
+  assert.ok(WGSL_RESERVED.has('pass') && !WGSL_RESERVED.has('var') && !WGSL_RESERVED.has('vec3f'))
+  assert.deepEqual(wgslReservedNames('fn f() {\n  for (var pass = 0u; pass < 2u; pass++) {}\n}'), ['2:12 pass', '2:23 pass', '2:34 pass'])
+  assert.deepEqual(wgslReservedNames('// one pass\n/* the final pass */ let x = 0x1fu + 1e3f; let y = v.xyz;'), [])
+})
+
+test('every field material variant (plain, label graphs, normalsDebug) names no WGSL reserved word', () => {
+  for (const labelGraphs of [[null, null], [STRIPES, null]]) for (const debug of [false, true]) {
+    const out = fieldMaterialWgsl({ program: program(), labelGraphs, debug })
+    assert.deepEqual(wgslReservedNames(out.wgsl), [], `graphs ${labelGraphs[0] !== null}, debug ${debug}`)
+  }
 })

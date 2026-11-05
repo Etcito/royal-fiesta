@@ -4,6 +4,8 @@
 // same way a normal-volume normal was. This module validates the payload structurally and never imports
 // MAMA (the upstream field-shading entry point takes a numeric PartShading record instead).
 
+import { wgslReservedNames } from './wgslReserved.ts'
+
 export interface FieldLabelLike {
   material: string | null
   color: readonly [number, number, number]
@@ -190,12 +192,18 @@ export function checkFieldPart(part: unknown): FieldCheck {
   return checkProgram(part.fieldProgram)
 }
 
-/** Keep derivative taps in the part frame and inside narrow colour/shape blends. */
-function fieldStep(program: FieldProgramLike): number {
+/**
+ * The half-step h of the six normal taps, in the part frame. A trilinear grid's gradient is constant along each axis
+ * inside a voxel and jumps at its faces: central taps h < voxel / 2 apart light the inside of every voxel as a flat
+ * facet with a sharp edge (the faceted patches the judge saw at h = 0.01 on 0.055 voxels). From voxel / 2 the
+ * difference is piecewise linear across the whole voxel. Above that, h grows up to one voxel, but not past the
+ * narrowest smooth blend, so a narrow rounded edge keeps its curvature. Labels come from the centre sample only.
+ */
+export function fieldStep(program: FieldProgramLike): number {
   let voxel = Infinity
   for (const operand of program.operands) if (operand.kind === 'grid') voxel = Math.min(voxel, operand.voxel * operand.scale)
   const blend = Math.min(...program.tree.flatMap(n => n.op !== 'leaf' && n.mode !== 'hard' && n.radius > 0 ? [n.radius] : []))
-  if (Number.isFinite(voxel)) return Math.min(voxel / 2, blend / 4)
+  if (Number.isFinite(voxel)) return Math.max(voxel / 2, Math.min(voxel, blend))
   const [ax, ay, az] = program.bounds.min
   const [bx, by, bz] = program.bounds.max
   const diagonal = Math.sqrt((bx - ax) ** 2 + (by - ay) ** 2 + (bz - az) ** 2)
@@ -614,7 +622,8 @@ export const MATERIAL_FUNCTION_MAX_BYTES = 65536
  * replaces it only where p leaves the program bounds or the gradient vanishes, and the labels (their constant look, or
  * their embedded MAMA material graphs for the four heaviest) mix per pixel. The text depends only on the label graphs
  * and debug, so parts with the same graphs share one function; the returned name keys it.
- * @throws when the text exceeds MATERIAL_FUNCTION_MAX_BYTES (label graphs too large to embed)
+ * @throws when the text exceeds MATERIAL_FUNCTION_MAX_BYTES (label graphs too large to embed) or names a WGSL
+ *   reserved word (RAA's parser refuses it: material.fn_invalid)
  */
 export function fieldMaterialWgsl(src: {
   program: FieldProgramLike
@@ -636,7 +645,7 @@ ${PMF_GRID_HOST_WGSL}
 ${PMF_INTERPRETER_WGSL}
 ${POSED_NORMAL_WGSL}
 // The centre run (distance and label weights in w) and six central taps at p +- h * e_i,
-// with h constrained by the grid spacing and blend radii, in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites
+// with h from voxel / 2 to one voxel (fieldStep), in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites
 // (centre + taps) made each field pipeline so large that a level's pipelines were still compiling after 180 s.
 // Returns the gradient in xyz and the centre distance in w.
 fn pmf_field(db: u32, p: vec3f, h: f32, scale: f32, w: ptr<function, array<f32, 8>>) -> vec4f {
@@ -671,9 +680,9 @@ ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
   var taps = vec4f(0.0);
   // Polygon chords lie inside rounded surfaces. Sample the surface, not the chord,
   // or CSG labels and normals switch across the interiors of coarse triangles.
-  for (var pass = 0u; pass < 2u; pass = pass + 1u) {
+  for (var newton = 0u; newton < 2u; newton = newton + 1u) {
     taps = pmf_field(db, p, h, scale, &w);
-    if (pass == 0u) {
+    if (newton == 0u) {
       let gg = dot(taps.xyz, taps.xyz);
       if (gg > 1e-12) {
         // A bounded Newton step cannot jump to a remote component of the field.
@@ -696,6 +705,8 @@ ${colour}${debugText}
   if (bytes > MATERIAL_FUNCTION_MAX_BYTES) {
     throw new Error(`field shading: the field material needs ${bytes} bytes of WGSL (RAA limit ${MATERIAL_FUNCTION_MAX_BYTES})`)
   }
+  const reserved = wgslReservedNames(wgsl)
+  if (reserved.length > 0) throw new Error(`field shading: the field material names WGSL reserved words (${reserved.join(', ')}); RAA refuses it`)
   return { functionName: `pmf.${textHash(wgsl)}`, wgsl }
 }
 

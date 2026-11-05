@@ -82,11 +82,8 @@ Serve a build on `http://localhost:5191` first (the origin the production relay 
 dev lobby that starts 10 s after the first player). It starts N headless Chromes, presses Play in each and prints
 every page's diagnostics line (tick, pred, rb/s, stall/s, rtt, `sync adv/rtt/skips`, fps, mesh peers); `HUNG` means
 a page's main thread did not answer for 4 s. The script owns its browsers and kills them on every exit, so none is
-left rendering. Run it where Chrome runs (Windows: `node \wsl.localhostBUNTU
-OOT
-MC
-EPOSoCAL
-OYAL-FIESTA	OOLSONLINECHROMES.MJS`).
+left rendering. Run it where Chrome runs: on Windows, Node with the repo path, e.g.
+`node \\wsl.localhost\Ubuntu\root\nmc\repos\local\royal-fiesta\tools\onlineChromes.mjs`.
 
 Proof against a local GameSaloon (real time, cases run sequentially):
 

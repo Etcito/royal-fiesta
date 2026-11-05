@@ -73,8 +73,8 @@ import { planCanvases } from '../client/canvases.ts'
 import type { ClientCell } from '../client/canvases.ts'
 import { hudValues } from '../client/hud.ts'
 import type { HudValues } from '../client/hud.ts'
-import { bootFraction, mountLoading } from '../content/loading.ts'
-import { BootStages, wavedashProgress, wavedashReady, wavedashUsername } from '../platform/wavedash.ts'
+import { mountLoading } from '../content/loading.ts'
+import { BootStages, wavedashReady, wavedashUsername } from '../platform/wavedash.ts'
 import { probeWanted, runProbe } from '../platform/probe.ts'
 import { pickContent } from '../content/source.ts'
 import { GameInput, InputDevices } from '../input/input.ts'
@@ -1837,14 +1837,12 @@ class App {
       this.query = q
       const content = pickContent(new URLSearchParams(this.search))
       boot.enter('physics (Rapier wasm)')
-      wavedashProgress(0.03)
       const R = await checkAwait('Rapier initialization', () => initRapier())
       boot.enter('content')
       let phase = ''
       await checkAwait('boot content', () => content.load('sprint', progress => {
         if (this.disposed) return
         if (progress.phase !== phase) boot.enter(`content: ${phase = progress.phase}`)
-        wavedashProgress(bootFraction(progress))
         this.loadingOverlay.show(progress.label, progress.done, progress.total)
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
@@ -1854,7 +1852,6 @@ class App {
       const course = picked !== null && picked.kind === 'hub' ? null : picked
       this.loadingOverlay.show('Creating renderer')
       boot.enter('renderer')
-      wavedashProgress(0.87)
       const { ports, canvases } = await checkAwait('boot render ports', () => this.mountPorts(content, q))
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.
@@ -1879,7 +1876,6 @@ class App {
       this.resizeViews()
       if (q.server === null && q.clients === 1) {
         boot.enter('first frame (pipelines, capture)')
-        wavedashProgress(0.93)
         this.preparedLocal = new LocalMode({ look: () => this.wornLook(), loaded: this.loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) })
         await checkAwait('local scene pipelines and capture', () => this.preparedLocal!.ready())
       }
@@ -1891,9 +1887,7 @@ class App {
       // Lands on the start screen (nav's root), or in the hub for ?course= / ?community=.
       this.run(this.nav.dispatch({ kind: 'loaded' }))
       if (this.roundLoading === null) this.loadingOverlay.hide()
-      // R3: the start screen is up, so the Wavedash shell may show the game now.
       boot.done()
-      wavedashReady()
     } catch (e) {
       console.error(e)
       this.fail(messageOf(e))
@@ -2881,6 +2875,9 @@ try {
     const storage = pageStorage()
     bootStages = new BootStages(showStall)
     boot.enter('ui host (fonts, images, WebGPU)')
+    // R3: game.html's own loading screen (#round-loading) is up from the first byte, so the Wavedash shell shows the
+    // frame now: the player sees the game's title, stage and bar instead of the shell's "Still Loading 0%".
+    wavedashReady()
     start(canvas, { store: storage ?? memoryStore(), padStorage: storage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
   }
 } catch (e) {

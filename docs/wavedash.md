@@ -164,13 +164,16 @@ https://docs.wavedash.com/cli/configuration (retrieved 2026-10-30).
 - The Wavedash shell injects the `Wavedash` global into the frame before the page's code runs, and it keeps the
   frame hidden behind its own loading screen ("Still Loading 0%") until the game calls `Wavedash.init(config)`.
   `init()` is synchronous, returns a boolean, and also calls `loadComplete()`. Without it the game never appears.
-- `Wavedash.updateLoadProgressZeroToOne(p)` (0..1, any number of calls) drives the shell's bar.
+- `Wavedash.updateLoadProgressZeroToOne(p)` (0..1, any number of calls) drives the shell's bar; the game does not
+  use it, since it shows its own loading screen.
 - A plain HTML build has no engine section in `wavedash.toml` (the frame URL then says `engine=CUSTOM`).
   `entrypoint` may name any `.html` file in `upload_dir`, so `game.html` is valid.
 
-The game page implements the contract in `apps/web/src/platform/wavedash.ts`. `App.load` (apps/web/src/game/main.ts)
-reports progress per boot stage and per content phase (`bootFraction`). It calls `init()` once, when the title is
-up, or when the error screen or the boot-failure message is up, so a refusal is never hidden behind the shell.
+The game page implements the contract in `apps/web/src/platform/wavedash.ts`. The page boot (apps/web/src/game/main.ts)
+calls `init()` as it starts: game.html's own loading screen (`#round-loading`: title, stage label, bar) is up from
+the first byte, so the player watches the game load instead of the shell's "Still Loading 0%" (2026-11-05: the
+ui host stage alone takes ~8 s on Wavedash, and the shell sat at 0% through it). The error screen and the
+boot-failure message call it too (a no-op once called), so a refusal is never hidden behind the shell.
 Off Wavedash there is no global and every call is a no-op. A throwing SDK is logged and never stops the game.
 
 Observed on the real frame (2026-10-30, Chrome, playtest pages of build bc44ed8a and of a working V0 build): the

@@ -102,9 +102,13 @@ test('fieldMaterialWgsl runs the one fixed evaluator over material data, never t
   assert.ok(!out.wgsl.includes(FUNCTION), 'the per-part program text is not embedded')
   assert.ok(out.wgsl.includes(PMF_INTERPRETER_WGSL))
   assert.match(out.wgsl, /let db = raa_material_data_base\(in\.record\);/)
-  assert.match(out.wgsl, /pmf_run\(db, p, &w\)/)
-  const taps = out.wgsl.match(/pmf_tap\(db, p [-+] [xyz]\)/g) ?? []
-  assert.equal(taps.length, 6)
+  // The shader compiler inlines every call: the centre run and the six normal taps share ONE pmf_run call site and an
+  // operand ONE pmf_texel site, or a level's field pipelines stay compiling past the capture wait (run 12096).
+  assert.match(out.wgsl, /pmf_field\(db, p, pmf_f\(db \+ 7u\), &w\)/)
+  assert.equal(out.wgsl.match(/= pmf_run\(/g)?.length, 1)
+  assert.equal(out.wgsl.match(/pmf_texel\(/g)?.length, 2, 'one definition, one call')
+  assert.equal(out.wgsl.match(/raa_texture\(/g)?.length, 1)
+  assert.match(out.wgsl, /for \(var t = 0u; t < 7u; t = t \+ 1u\)/)
   assert.match(out.wgsl, /inside && glen > 1e-6/)
   assert.ok(out.wgsl.includes(PMF_GRID_HOST_WGSL))
   assert.match(out.wgsl, /sdfm_posed_normal/)
@@ -181,7 +185,8 @@ test('fieldMaterialWgsl embeds the label graphs at module scope and blends the h
   assert.match(out.wgsl, /case 0u: \{ return pmf_graph_0\(0u, p, p, n, SdfmMatMasks\(0\.5, 1\.0, 1\.0, 0\.0, 1\.0\)\); \}/)
   assert.ok(!/case 1u:/.test(out.wgsl), 'a label without a graph reads its look from the data block')
   assert.ok(!out.wgsl.includes('sdfm.'), 'no RAA registry name appears in the WGSL')
-  assert.match(inside, /pmf_label\(db, p, n, u32\(i0\)\)/)
+  assert.equal(inside.match(/pmf_label\(/g)?.length, 1, 'the four heaviest labels share one pmf_label call site')
+  assert.match(inside, /pmf_label\(db, p, n, u32\(picks\[k\]\)\)/)
 })
 
 test('fieldMaterialWgsl shares one body for the same graph and offsets each label constants', () => {

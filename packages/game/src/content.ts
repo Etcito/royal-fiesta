@@ -25,13 +25,16 @@ export interface StartScene {
   camera: CameraPose
 }
 
+// enter with { decor: false } sets only the course environment: a close-up port that meshed a subset of assets must
+// not be asked to register the course's decor assets.
+export interface CourseDressingOptions { decor?: boolean }
 export interface CourseDressing {
-  enter(port: RenderPort, courseId: string): void
+  enter(port: RenderPort, courseId: string, options?: CourseDressingOptions): void
   leave(port: RenderPort): void
 }
 
 export const NO_DRESSING: CourseDressing = Object.freeze({
-  enter(port: RenderPort, _courseId: string): void {
+  enter(port: RenderPort, _courseId: string, _options?: CourseDressingOptions): void {
     port.setEnvironment(null)
   },
   leave(_port: RenderPort): void {}

@@ -382,24 +382,16 @@ fn pmf_operand(r: u32, p: vec3f) -> f32 {
     let i = vec3i(clamp(floor(c), vec3f(0.0), size - vec3f(2.0)));
     let t = c - vec3f(i);
     let sx = i32(size.x);
-    let x0 = ax + i.z * sx + i.x;
-    let x1 = ax + (i.z + 1) * sx + i.x;
-    let y0 = ay + i.y;
-    let d000 = pmf_texel(x0, y0, range);
-    let d100 = pmf_texel(x0 + 1, y0, range);
-    let d010 = pmf_texel(x0, y0 + 1, range);
-    let d110 = pmf_texel(x0 + 1, y0 + 1, range);
-    let d001 = pmf_texel(x1, y0, range);
-    let d101 = pmf_texel(x1 + 1, y0, range);
-    let d011 = pmf_texel(x1, y0 + 1, range);
-    let d111 = pmf_texel(x1 + 1, y0 + 1, range);
-    let e0 = d000 + (d100 - d000) * t.x;
-    let e1 = d010 + (d110 - d010) * t.x;
-    let e2 = d001 + (d101 - d001) * t.x;
-    let e3 = d011 + (d111 - d011) * t.x;
-    let f0 = e0 + (e1 - e0) * t.y;
-    let f1 = e2 + (e3 - e2) * t.y;
-    d = f0 + (f1 - f0) * t.z + length((g - c) * voxel);
+    // The eight trilinear corners in one loop: a single pmf_texel (raa_texture) call site, since the shader compiler
+    // inlines every call and eight sites per operand made the field pipelines minutes long to compile.
+    var trilinear = 0.0;
+    for (var k = 0u; k < 8u; k = k + 1u) {
+      let o = vec3<u32>(k & 1u, (k >> 1u) & 1u, k >> 2u);
+      let corner = select(vec3f(1.0) - t, t, o == vec3<u32>(1u));
+      let x = ax + (i.z + i32(o.z)) * sx + i.x + i32(o.x);
+      trilinear = trilinear + pmf_texel(x, ay + i.y + i32(o.y), range) * corner.x * corner.y * corner.z;
+    }
+    d = trilinear + length((g - c) * voxel);
   }
   return d * pmf_f(r + 2u);
 }
@@ -597,10 +589,15 @@ const GRAPH_BLEND = `  // The four heaviest labels, renormalised, so a material 
   var emissive = vec3f(0.0);
   var height = 0.0;
   var total = 0.0;
-  if (i0 >= 0) { let m = pmf_label(db, p, n, u32(i0)); base += m.base_color * v0; metallic += m.metallic * v0; roughness += m.roughness * v0; emissive += m.emissive * v0; height += m.height * v0; total += v0; }
-  if (i1 >= 0) { let m = pmf_label(db, p, n, u32(i1)); base += m.base_color * v1; metallic += m.metallic * v1; roughness += m.roughness * v1; emissive += m.emissive * v1; height += m.height * v1; total += v1; }
-  if (i2 >= 0) { let m = pmf_label(db, p, n, u32(i2)); base += m.base_color * v2; metallic += m.metallic * v2; roughness += m.roughness * v2; emissive += m.emissive * v2; height += m.height * v2; total += v2; }
-  if (i3 >= 0) { let m = pmf_label(db, p, n, u32(i3)); base += m.base_color * v3; metallic += m.metallic * v3; roughness += m.roughness * v3; emissive += m.emissive * v3; height += m.height * v3; total += v3; }
+  // One pmf_label call site (it inlines every embedded label graph): the four picks in a loop.
+  var picks = array<i32, 4>(i0, i1, i2, i3);
+  var shares = array<f32, 4>(v0, v1, v2, v3);
+  for (var k = 0u; k < 4u; k = k + 1u) {
+    if (picks[k] < 0) { continue; }
+    let v = shares[k];
+    let m = pmf_label(db, p, n, u32(picks[k]));
+    base += m.base_color * v; metallic += m.metallic * v; roughness += m.roughness * v; emissive += m.emissive * v; height += m.height * v; total += v;
+  }
   if (total > 0.0) { base /= total; metallic /= total; roughness /= total; emissive /= total; height /= total; }
   o.base_color = base;
   o.metallic = metallic;
@@ -637,23 +634,27 @@ export function fieldMaterialWgsl(src: {
 ${PMF_GRID_HOST_WGSL}
 ${PMF_INTERPRETER_WGSL}
 ${POSED_NORMAL_WGSL}
-fn pmf_tap(db: u32, p: vec3f) -> f32 {
+// The centre run (distance and label weights in w) and six central taps at p +- h * e_i, h = half the smallest grid
+// voxel, in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites
+// (centre + taps) made each field pipeline so large that a level's pipelines were still compiling after 180 s.
+// Returns the gradient in xyz and the centre distance in w.
+fn pmf_field(db: u32, p: vec3f, h: f32, w: ptr<function, array<f32, 8>>) -> vec4f {
+  var g = vec3f(0.0);
+  var centre = 0.0;
   var wt: array<f32, 8>;
-  return pmf_run(db, p, &wt);
-}
-
-// Six central taps at p +- h * e_i, h = half the smallest grid voxel.
-fn pmf_gradient(db: u32, p: vec3f, h: f32) -> vec3f {
-  let x = vec3f(h, 0.0, 0.0);
-  let y = vec3f(0.0, h, 0.0);
-  let z = vec3f(0.0, 0.0, h);
-  let d0 = pmf_tap(db, p - x);
-  let d1 = pmf_tap(db, p + x);
-  let d2 = pmf_tap(db, p - y);
-  let d3 = pmf_tap(db, p + y);
-  let d4 = pmf_tap(db, p - z);
-  let d5 = pmf_tap(db, p + z);
-  return vec3f(d1 - d0, d3 - d2, d5 - d4) / (2.0 * h);
+  for (var t = 0u; t < 7u; t = t + 1u) {
+    let axis = (t + 1u) / 2u;
+    let e = vec3f(select(0.0, 1.0, axis == 1u), select(0.0, 1.0, axis == 2u), select(0.0, 1.0, axis == 3u));
+    let s = select(-1.0, 1.0, (t & 1u) == 0u);
+    let d = pmf_run(db, p + e * (s * h), &wt);
+    if (t == 0u) {
+      centre = d;
+      *w = wt;
+    } else {
+      g = g + e * (s * d);
+    }
+  }
+  return vec4f(g / (2.0 * h), centre);
 }
 
 ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
@@ -664,8 +665,8 @@ ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
   pmf_grid_texture = u32(in.instance_params[1].w + 0.5);
   pmf_grid_size = vec2<u32>(u32(in.instance_params[2].x + 0.5), u32(in.instance_params[2].y + 0.5));
   var w: array<f32, 8>;
-  let centre = pmf_run(db, p, &w);
-  let g = pmf_gradient(db, p, pmf_f(db + 7u));
+  let taps = pmf_field(db, p, pmf_f(db + 7u), &w);
+  let g = taps.xyz;
   let inside = all(p >= pmf_v3(db + 4u)) && all(p <= pmf_v3(db + 8u));
   let glen = length(g);
   var n = normalize(in.normal);

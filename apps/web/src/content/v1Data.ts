@@ -4,7 +4,7 @@ import { resolveGameRigs } from '@royal-fiesta/game/rigReference'
 import { checkAwait } from '../game/checkProgress.ts'
 // V1 data fetched from a content root, with bundled render stand-ins and course dressing.
 // Every import.meta.glob sits in a function body, so Node tests can import this module.
-import type { CourseDressing, LoadProgress } from '@royal-fiesta/game/content'
+import type { CourseDressing, CourseDressingOptions, LoadProgress } from '@royal-fiesta/game/content'
 import { loadCourseV1, V0_ASSET_MAP } from '@royal-fiesta/game/courseV1'
 import type { CourseV1, GameAssetResolver, ResolvedGameAsset } from '@royal-fiesta/game/courseV1'
 import { parseGameAsset } from '@royal-fiesta/game/gameAsset'
@@ -238,14 +238,14 @@ export function v1Dressing(courses: readonly CourseV1[], prims: (id: string) => 
   const byId = new Map(courses.map(c => [c.id, c]))
   const entered = new Map<RenderPort, number[][]>()
   return {
-    enter(port: RenderPort, courseId: string): void {
+    enter(port: RenderPort, courseId: string, options?: CourseDressingOptions): void {
       const course = byId.get(courseId)
       if (course === undefined) {
         refuse('content', `courses/${courseId}.course.json`, `unknown v1 course '${courseId}'; use one of: ${[...byId.keys()].sort().join(', ')}`)
       }
       const handles = new Map<string, number>()
       const instances: number[] = []
-      for (const d of course.decor) {
+      for (const d of options?.decor === false ? [] : course.decor) {
         let h = handles.get(d.asset)
         if (h === undefined) {
           h = port.registerAsset(d.asset, prims(d.asset))

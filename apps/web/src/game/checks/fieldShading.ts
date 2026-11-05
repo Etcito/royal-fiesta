@@ -321,8 +321,9 @@ class Stage {
     this.assets = name => content.assets(name)
     this.dressing = content.dressing()
     this.withDecor = options.decor
-    // enter sets the course environment; a close-up leaves at once so its decor instances cannot stay pending.
-    this.dressing.enter(port, course.id)
+    // enter sets the course environment; a close-up enters without decor: its port meshed only its own subjects, so
+    // registering the course decor would refuse ('not meshed') and decor instances would stay pending.
+    this.dressing.enter(port, course.id, { decor: options.decor })
     if (!options.decor) this.dressing.leave(port)
     for (const index of options.obstacles ?? course.obstacles.map((_, i) => i)) {
       const spec = course.obstacles[index]

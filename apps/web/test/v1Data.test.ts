@@ -66,6 +66,22 @@ test('standInFrom without a v0 prims is a roundBox filling the bounds', async ()
   assert.deepEqual(parsePrims(JSON.parse(JSON.stringify(s)), 'stand-in'), s)
 })
 
+test('v1Dressing enter with decor: false sets the environment and registers no decor asset (close-up port)', () => {
+  const asked: string[] = []
+  const prims = (id: string): PrimsAsset => { asked.push(id); throw new Error(`not meshed: ${id}`) }
+  const environment = { sky: 'candy-dusk' }
+  const decor: DecorItem[] = [{ id: 'banner', asset: 'candy.banner', t: [0, 0, 5], r: [0, 0, 0, 1], s: [1, 1, 1] }]
+  const dressing = v1Dressing([course('race', decor, environment)], prims)
+  const port = initPort()
+  dressing.enter(port, 'race', { decor: false })
+  assert.deepEqual(asked, [])
+  assert.equal(port.calls.registerAsset, 0)
+  assert.equal(port.calls.createInstance, 0)
+  assert.deepEqual(port.lastEnvironment, environment)
+  dressing.leave(port)
+  assert.equal(port.render().instances, 0)
+})
+
 test('v1Dressing creates one instance per decor item, passes the environment and leave destroys them', async () => {
   const tree = await gameAsset('candy.lolly-tree', { min: [-1, 0, -1], max: [1, 3, 1] })
   const rock = await gameAsset('candy.gum-rock', { min: [-1, 0, -1], max: [1, 1, 1] })

@@ -42,7 +42,7 @@ import { QueuePad } from '@royal-fiesta/game/hub/queuePad'
 import { DEFAULT_NAME, LOCAL_LOBBY_WAIT_S, LocalCountdown, cleanName, lobbyLines } from '@royal-fiesta/game/hub/lobby'
 import type { LobbyPick } from '@royal-fiesta/game/hub/lobby'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
-import { CLASSIC_NET_PLAYERS, classicNetSetup, NET_PLAYERS } from '@royal-fiesta/game/net/tuning'
+import { classicNetSetup, NET_PLAYERS } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory, type WsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
@@ -298,7 +298,7 @@ type FrameLoop = (frame: (dtS: number) => void, interval?: () => number) => () =
 // the uiTour op's in-memory store and its own frame steps. beforeLoad runs as each load starts; a throw fails
 // that load as any load failure does (the uiTour op refuses the boot load so it can reach 'loading' with Retry).
 /** Penguins in a show started from Play: you and 59 bots (owner 2026-11-05); ?seats= / ?bots= change it. */
-const DEFAULT_SHOW_SEATS = CLASSIC_NET_PLAYERS
+const DEFAULT_SHOW_SEATS = NET_PLAYERS
 
 interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number; starterInventory?: boolean }
 
@@ -1093,7 +1093,7 @@ class OnlineMode implements Mode {
   // The shared hub: every lobby member's name over its bean.
   private readonly tags: NameTags | null
   private readonly localName: string
-  /** Penguins of the online show, bots included: ?bots= or CLASSIC_NET_PLAYERS (8). */
+  /** Penguins of the online show, bots included: ?bots= or NET_PLAYERS (60). */
   private readonly seats: number
   // Steps the flow while the window draws no frames (hidden or behind the other window), see netPump.ts.
   private readonly pump: NetPump
@@ -1117,7 +1117,7 @@ class OnlineMode implements Mode {
     const { R, content, ports, show } = c.loaded
     const q = c.q
     if (show === null) refuse('game', 'online.show', 'the online show content is not loaded; reload the page')
-    this.seats = q.bots ?? CLASSIC_NET_PLAYERS
+    this.seats = q.bots ?? NET_PLAYERS
     this.localName = onlineName(q.name)
     this.names = playerNames(0, this.localName)
     this.flow = new PlayFlow({

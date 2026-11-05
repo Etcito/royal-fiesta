@@ -51,14 +51,14 @@ function memoryStore(initial: string | null = null) {
   return { data, getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => { data.set(k, v) } }
 }
 
-test('the Graphics page lists the contract rows (Royal Fiesta LOW defaults), the unavailable ones disabled with their reason', () => {
+test('the Graphics page lists the contract rows (Royal Fiesta MEDIUM defaults), the unavailable ones disabled with their reason', () => {
   const page = new GraphicsSettings(memoryStore(), () => {})
   page.attach(contract())
   page.openPage()
   const model = page.model('hint')
   assert.equal(model.title, 'Graphics')
   assert.deepEqual(model.buttons.map(b => b.label),
-    ['Frame rate: 60 fps', 'Show FPS: Off', 'Surface shading: Vertex', 'Baked: unavailable', 'LOD offset: unavailable', 'Back'])
+    ['Frame rate: 60 fps', 'Show FPS: Off', 'Surface shading: Field', 'Baked: unavailable', 'LOD offset: unavailable', 'Back'])
   const props = page.props()
   assert.deepEqual([0, 1, 2, 3, 4].map(i => props[`row-${i}`].disabled), [false, false, false, true, true])
   assert.match(model.lines[0], /^Unavailable - Baked: needs the UV bake; LOD offset: one level$/)
@@ -74,15 +74,15 @@ test('a row press steps, saves and applies the option; a disabled row does nothi
   assert.equal(page.options.frameRate, 'vmax')
   assert.equal(page.activate(1), true)
   assert.equal(page.options.showFps, true)
-  assert.deepEqual(JSON.parse(store.data.get(GRAPHICS_KEY)!), { frameRate: 'vmax', showFps: true, shading: 'vertex', lodOffset: 0 })
+  assert.deepEqual(JSON.parse(store.data.get(GRAPHICS_KEY)!), { frameRate: 'vmax', showFps: true, shading: 'field', lodOffset: 0 })
   assert.equal(page.activate(3), false)
   assert.equal(page.activate(4), false)
   assert.equal(applied.length, 3)
   page.activate(2)
-  assert.equal(page.options.shading, 'field', 'stepping skips the unavailable Baked choice')
+  assert.equal(page.options.shading, 'vertex')
   assert.match(page.model('').lines[0], /Applies when the next scene loads\.$/)
   page.activate(2)
-  assert.equal(page.options.shading, 'vertex')
+  assert.equal(page.options.shading, 'field', 'stepping skips the unavailable Baked choice')
 })
 
 test('saved choices load through the contract; refused ones fall back to their default', () => {

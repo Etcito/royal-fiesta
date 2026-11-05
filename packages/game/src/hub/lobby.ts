@@ -219,8 +219,8 @@ export class LocalCountdown {
   reset(): void { this.elapsed = 0 }
 }
 
-/** Hub overlay lines for a lobby view. */
-export function lobbyLines(t: LobbyTracker, now: number): string[] {
+/** Hub overlay lines for a lobby view; `seats` is the round's penguin count (?bots=, default 8). */
+export function lobbyLines(t: LobbyTracker, now: number, seats = NET_PLAYERS): string[] {
   const v = t.view
   const left = t.secondsLeft(now)
   const who = v.names.length ? v.names.join(', ') : ''
@@ -231,7 +231,7 @@ export function lobbyLines(t: LobbyTracker, now: number): string[] {
       return ['Joining a lobby...']
     }
     case 'player':
-      return [`Lobby ${v.names.length}/${v.seats} - round starts in ${left ?? 0} s`, who, ...watchers(v), botsLine(v.names.length)]
+      return [`Lobby ${v.names.length}/${v.seats} - round starts in ${left ?? 0} s`, who, ...watchers(v), botsLine(v.names.length, seats)]
     case 'spectator':
       return v.phase === 'waiting'
         ? [`Spectating a lobby: ${v.names.length}/${v.seats} - round in ${left ?? 0} s`, who, ...watchers(v)]
@@ -239,9 +239,9 @@ export function lobbyLines(t: LobbyTracker, now: number): string[] {
   }
 }
 
-/** The round always has NET_PLAYERS beans: bots take the places the humans leave. */
-export function botsLine(humans: number): string {
-  const bots = Math.max(0, NET_PLAYERS - humans)
+/** The round always has `seats` beans (NET_PLAYERS unless the page sizes it): bots take the places the humans leave. */
+export function botsLine(humans: number, seats = NET_PLAYERS): string {
+  const bots = Math.max(0, seats - humans)
   return bots === 0 ? 'No bots: every place is a player' : `${bots} bot${bots === 1 ? '' : 's'} will fill the empty places`
 }
 

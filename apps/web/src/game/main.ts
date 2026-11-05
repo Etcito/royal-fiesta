@@ -1299,7 +1299,7 @@ class OnlineMode implements Mode {
     if (flow.hubCode !== null) lines.push(`Hub ${flow.hubCode} - ${this.localName}`)
     if (state === 'connecting') lines.push('Connecting...')
     else if (state === 'hub') lines.push('Joining a lobby...')
-    else if (state === 'queued' || state === 'choosing' || state === 'watching') lines.push(...lobbyLines(flow.lobby, performance.now()))
+    else if (state === 'queued' || state === 'choosing' || state === 'watching') lines.push(...lobbyLines(flow.lobby, performance.now(), this.seats))
     else if (state === 'returning') lines.push('Back to the hub...')
     else if (flow.match !== null) lines.push(`Round ${this.presenter.view.roundIndex + 1}: ${this.presenter.view.qualifiedCount} qualified`)
     if (this.note.length > 0) lines.push(this.note)

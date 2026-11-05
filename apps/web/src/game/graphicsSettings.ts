@@ -66,6 +66,13 @@ export class GraphicsSettings {
     } catch (e) {
       console.warn(`[graphics] saved options unreadable (${e instanceof Error ? e.message : String(e)}); using the defaults`)
     }
+    // These two names were used by an earlier saved shading preference.
+    if (typeof saved === 'object' && saved !== null && !Array.isArray(saved)) {
+      const record = saved as Record<string, unknown>
+      if (record.shading === 'sdf' || record.shading === 'texture') {
+        saved = { ...record, shading: record.shading === 'sdf' ? 'field' : 'baked' }
+      }
+    }
     const { options, issues } = contract.validate(saved)
     for (const issue of issues) console.warn(`[graphics] ${issue.key}: ${issue.message}`)
     this.values = { ...options }

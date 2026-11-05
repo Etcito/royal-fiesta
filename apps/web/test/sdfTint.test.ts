@@ -31,6 +31,8 @@ interface ShadingReportLike {
   demoted: number; atlasFull: number; bytes: number; budget: number; errors: readonly string[]
 }
 interface Port {
+  worldBounds(): { key: string; min: number[]; max: number[] }[]
+  setTransform(id: number, t: readonly number[], r: readonly number[], s: readonly number[]): void
   render(): void
   setShading(mode: 'field' | 'vertex' | 'baked'): void
   addTextured(assetId: string, meshed: unknown): void
@@ -1102,4 +1104,30 @@ test('baked texture: a skinned textured member receives the same pose', () => {
   assert.deepEqual(Array.from(calls.skinPoses[0].ids), [first, first + 1, first + 2], 'the textured member gets a skin slot')
   port.setShading('baked')
   assert.equal(calls.visibility.get(first + 2), true)
+})
+
+
+test('isolated mechanism scene keeps both saved hammer fields and bounds follow the current pose', () => {
+  const id = 'candy.pendulum-hammer'
+  const mesh = decodeMesh(new Uint8Array(readFileSync(new URL(`../../../assets/candy/${id}.mesh`, import.meta.url))))
+  const port = exports.make(new Map([[id, mesh]]))
+  const { engine } = fakeEngine()
+  port.engine = { ...engine, setTransform() {} }
+  port.target = {}
+  const instance = port.createInstance(port.registerAsset(id, { id }), null)
+  assert.equal(port.shadingReport().demoted, 0, 'unrelated worlds must not spend a close-up scene atlas')
+  assert.equal(port.shadingReport().field, 2, 'head and arm retain per-fragment fields')
+  const rest = port.worldBounds()
+  assert.equal(rest.length, 2, 'hidden colliders have no mesh bounds')
+  port.setTransform(instance, [7, 3, -2], [0, 0, 1, 0], [1, 1, 1])
+  const posed = port.worldBounds()
+  for (let i = 0; i < rest.length; i++) {
+    assert.ok(Math.abs(posed[i].min[0] - (7 - rest[i].max[0])) < 1e-6)
+    assert.ok(Math.abs(posed[i].max[1] - (3 - rest[i].min[1])) < 1e-6)
+    assert.ok(Math.abs(posed[i].min[2] - (rest[i].min[2] - 2)) < 1e-6)
+  }
+  port.setPartFilter(instance, ['head'])
+  assert.equal(port.worldBounds().length, 1)
+  port.setVisible(instance, false)
+  assert.equal(port.worldBounds().length, 0)
 })

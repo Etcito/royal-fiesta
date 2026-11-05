@@ -26,7 +26,10 @@ import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } 
 import { FIELD_ATLAS_BYTES, fieldGridBytes, partDiag, planFieldAtlas, type FieldAtlasPlan, type PartFieldCost } from './fieldAtlas.ts'
 import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords } from './fieldShading.ts'
 
+export interface PartWorldBounds { key: string; min: number[]; max: number[] }
+
 export interface ResizablePort extends SkinnedRenderPort {
+  worldBounds(): PartWorldBounds[]
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
   setPartFilter(instance: number, parts: readonly string[] | null): void
   shadingReport(): ShadingReport
@@ -278,7 +281,7 @@ interface SkinSlot { instance: number; part: PosePart }
 // fallbacks: resident vertex-colour copies (index into partNames), hidden once their shading can draw.
 // textured: the baked-texture member per part (addTextured), shown only in 'baked' mode.
 // bakes: the bake of each instance's part (null = not a baked part).
-interface Live { asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null }
+interface Live { transform?: number[]; asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null }
 interface LiveFallback { instance: number; part: PartUpload; index: number; ready: boolean; failed: boolean }
 interface LiveTextured { instance: number; part: PartUpload; index: number }
 
@@ -1130,7 +1133,46 @@ class SdfRenderPort implements ResizablePort {
 
   setTransform(instance: number, t: Vec3T, r: QuatT, s: Vec3T): void {
     const live = this.liveOf(instance, 'setTransform')
+    const matrix = trMatrix(t, r)
+    for (let c = 0; c < 3; c++) for (let row = 0; row < 3; row++) matrix[c * 4 + row] *= s[c]
+    live.transform = matrix
     this.need().setTransform(live.root, [t[0], t[1], t[2]], [r[0], r[1], r[2], r[3]], [s[0], s[1], s[2]])
+  }
+
+  // Capture-time only: use the same part frames and skin matrices as the draw.
+  worldBounds(): PartWorldBounds[] {
+    const bounds: PartWorldBounds[] = []
+    for (const live of this.live) {
+      if (live === null || !live.visible) continue
+      const uploaded = this.uploaded[live.asset]!
+      for (const part of uploaded.parts) {
+        if (live.filter !== null && !live.filter.has(part.name)) continue
+        const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity]
+        const frame = trMatrix(part.t, part.r)
+        const root = live.transform ?? trMatrix([0, 0, 0], [0, 0, 0, 1])
+        const skin = live.pose !== null && part.joints !== undefined ? partPose(live.pose, part) : null
+        const d = part.desc
+        for (let i = 0; i < d.positions.length / 3; i++) {
+          let v = [...d.positions.subarray(i * 3, i * 3 + 3), 1]
+          if (skin !== null && d.joints !== undefined && d.weights !== undefined) {
+            const rest = v
+            v = [0, 0, 0, 0]
+            for (let j = 0; j < 4; j++) {
+              const bone = d.joints[i * 4 + j], weight = d.weights[i * 4 + j]
+              const q = mul4(Array.from(skin.subarray(bone * 16, bone * 16 + 16)), rest)
+              for (let axis = 0; axis < 4; axis++) v[axis] += q[axis] * weight
+            }
+          }
+          const world = mul4(root, mul4(frame, v))
+          for (let axis = 0; axis < 3; axis++) {
+            min[axis] = Math.min(min[axis], world[axis])
+            max[axis] = Math.max(max[axis], world[axis])
+          }
+        }
+        if (Number.isFinite(min[0])) bounds.push({ key: part.reportKey ?? part.key, min, max })
+      }
+    }
+    return bounds
   }
 
   setVisible(instance: number, visible: boolean): void {

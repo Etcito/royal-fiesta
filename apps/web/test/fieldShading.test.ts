@@ -1,3 +1,5 @@
+import { runInNewContext } from 'node:vm'
+import { transpileModule, ModuleKind } from 'typescript'
 // Field shading: structural check, generated material text, program data words, grid texture and instance params.
 // No GPU and no MAMA: the program fixture is the structural contract 'mama.field-program'.
 import assert from 'node:assert/strict'
@@ -245,4 +247,25 @@ test('fieldInstanceParams keeps the volume layout with the grid handle', () => {
   assert.equal(none[7], 0)
   assert.equal(none[8], 0)
   assert.equal(none[12], 0)
+})
+
+
+test('capture bounds guard rejects clipped, empty and distant poses and fits both hammer poses', () => {
+  const source = readFileSync(new URL('../src/game/checks/fieldShading.ts', import.meta.url), 'utf8')
+  const functions = source.slice(source.indexOf('function boundCorners('), source.indexOf('function pageErrors()'))
+  const compiled = transpileModule('const WIDTH = 1920, HEIGHT = 1080\n' + functions, {
+    compilerOptions: { module: ModuleKind.CommonJS },
+  }).outputText
+  const exports: any = {}
+  runInNewContext(compiled, { exports })
+  const camera = { eye: [4, 3, 4], target: [0, 1, 0], fovYDeg: 60, near: 0.1, far: 500 }
+  const bounds = [{ key: 'arm', min: [-0.3, 0, -0.3], max: [0.3, 7, 0.3] },
+    { key: 'head', min: [-2, -1, -1], max: [2, 1, 1] }]
+  assert.throws(() => exports.guardFraming('empty', camera, []), /bounds.empty/)
+  assert.throws(() => exports.guardFraming('clipped', camera, bounds), /bounds.outside/)
+  assert.throws(() => exports.guardFraming('small', { ...camera, eye: [100, 100, 100] }, bounds), /bounds.small/)
+  for (const pose of [bounds, bounds.map(b => ({ ...b, min: b.min.map(v => v + 5), max: b.max.map(v => v + 5) }))]) {
+    const fitted = exports.fitBounds(camera, pose)
+    assert.ok(exports.guardFraming('posed', fitted, pose) >= 0.15)
+  }
 })

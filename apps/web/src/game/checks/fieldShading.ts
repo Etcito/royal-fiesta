@@ -1,7 +1,6 @@
 // fieldShading (game.html?test=1): the whole SDF candy world loaded through the real content provider and
 // rendered by the real RAA port. Every capture waits on the port's field shading report, never on a fixed
 // sleep: the GPU client runs the page in an off-screen frame where requestAnimationFrame is unreliable.
-import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ObstacleSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { MechItem } from '@royal-fiesta/sim/mechanismSpec'
 import type { Pose } from '@royal-fiesta/sim/vec'
@@ -17,8 +16,8 @@ import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import { pendingPipelines } from '../../render/asyncPipelines.ts'
 import { pickContent } from '../../content/source.ts'
 import { hardShadingFailures } from '../../content/shadingStatus.ts'
-import { skinnedCharacterOf } from '../../content/providers/sdf.ts'
-import type { ResizablePort, ShadingReport } from '../../sdf/sdfPort.ts'
+import { SdfContent, skinnedCharacterOf } from '../../content/providers/sdf.ts'
+import { gameRenderOptions, type PartWorldBounds, type ResizablePort, type ShadingReport } from '../../sdf/sdfPort.ts'
 import { nextTask } from './boot.ts'
 import type { TourDeps } from '../uiTour.ts'
 
@@ -27,17 +26,58 @@ export const name = 'fieldShading'
 const WIDTH = 1920
 const HEIGHT = 1080
 const WAIT_MS = 180_000
-const HUB_ID = 'hub-plaza'
 const MECH_COURSE = 'race-hammer-hill'
 
 interface OpFile { name: string; blob: Blob }
-interface Captures { files: OpFile[]; names: string[] }
+interface Captures { files: OpFile[]; names: string[]; observations: unknown[] }
 
-function characterAt(pos: [number, number, number], vel: [number, number], facing: [number, number]): CharState {
-  return {
-    pos: { x: pos[0], y: pos[1], z: pos[2] }, vel: { x: vel[0], y: 0, z: vel[1] },
-    facing: { x: facing[0], z: facing[1] }, mode: 0, grounded: true, groundObstacle: -1, knockbacks: 0, teleportTick: 0,
+function boundCorners(bounds: readonly PartWorldBounds[]): number[][] {
+  return bounds.flatMap(b => Array.from({ length: 8 }, (_, i) => [0, 1, 2].map(a => i & (1 << a) ? b.max[a] : b.min[a])))
+}
+
+function projectBounds(camera: CameraPose, bounds: readonly PartWorldBounds[]) {
+  const f = camera.target.map((v, a) => v - camera.eye[a])
+  const length = Math.hypot(...f)
+  for (let a = 0; a < 3; a++) f[a] /= length
+  const right = [-f[2], 0, f[0]]
+  const rl = Math.hypot(...right)
+  for (let a = 0; a < 3; a++) right[a] /= rl
+  const up = [right[1]*f[2]-right[2]*f[1], right[2]*f[0]-right[0]*f[2], right[0]*f[1]-right[1]*f[0]]
+  const dot = (a: number[], b: number[]) => a.reduce((sum, v, i) => sum + v * b[i], 0)
+  const tan = Math.tan(camera.fovYDeg * Math.PI / 360)
+  return boundCorners(bounds).map(p => {
+    const q = p.map((v, a) => v - camera.eye[a]), z = dot(q, f)
+    return [dot(q, right) / (z * tan * WIDTH / HEIGHT), dot(q, up) / (z * tan), z]
+  })
+}
+
+export function guardFraming(name: string, camera: CameraPose, bounds: readonly PartWorldBounds[]): number {
+  const points = projectBounds(camera, bounds)
+  if (points.length === 0) throw new Error(`fieldShading.bounds.empty: ${name}`)
+  if (points.some(p => !p.every(Number.isFinite) || Math.abs(p[0]) > 0.96 || Math.abs(p[1]) > 0.96 || p[2] <= camera.near || p[2] >= camera.far)) {
+    throw new Error(`fieldShading.bounds.outside: ${name}; frame every meshed part with a margin`)
   }
+  const area = (Math.max(...points.map(p => p[0])) - Math.min(...points.map(p => p[0]))) *
+    (Math.max(...points.map(p => p[1])) - Math.min(...points.map(p => p[1]))) / 4
+  if (area < 0.15) throw new Error(`fieldShading.bounds.small: ${name}; projected area ${area}`)
+  return area
+}
+
+export function fitBounds(camera: CameraPose, bounds: readonly PartWorldBounds[]): CameraPose {
+  const points = boundCorners(bounds)
+  if (points.length === 0) throw new Error('fieldShading.bounds.empty: cannot fit camera')
+  const target = [0, 1, 2].map(a => (Math.min(...points.map(p => p[a])) + Math.max(...points.map(p => p[a]))) / 2) as [number, number, number]
+  const direction = camera.eye.map((v, a) => v - camera.target[a])
+  const length = Math.hypot(...direction)
+  const at = (distance: number): CameraPose => ({ ...camera, target, eye: direction.map((v, a) => target[a] + v / length * distance) as [number, number, number] })
+  let low = camera.near, high = camera.far * 0.5
+  for (let i = 0; i < 50; i++) {
+    const mid = (low + high) / 2
+    const fits = projectBounds(at(mid), bounds).every(p => p[2] > camera.near && Math.abs(p[0]) <= 0.9 && Math.abs(p[1]) <= 0.9)
+    if (fits) high = mid
+    else low = mid
+  }
+  return at(high)
 }
 
 function pageErrors(): string[] {
@@ -173,7 +213,10 @@ async function assertSubjectDrawn(what: string, subject: Subject, drawn: Uint8Ar
 }
 
 async function capture(port: ResizablePort, what: string, captures: Captures, subject: Subject): Promise<void> {
+  const bounds = port.worldBounds()
+  const area = guardFraming(what, subject.camera, bounds)
   const report = port.shadingReport()
+  captures.observations.push({ name: what, camera: subject.camera, bounds, area, normals: report })
   if (report.pending > 0) throw new Error(`${what}: ${report.pending} parts still pending at capture time`)
   if (report.atlasFull > 0) throw new Error(`${what}: ${report.atlasFull} texture.atlas_full errors`)
   const failures = hardFailures(report)
@@ -366,7 +409,8 @@ async function shootPenguin(port: ResizablePort, content: GameContent, captures:
       mounts.setPose(pose, { dtS: 1 / 60 })
     }
     // A close portrait of the whole penguin, cosmetics included: the walking pose and the hat stay inside the frame.
-    const cam: CameraPose = { eye: [0, 0.9, 3.4], target: [0, 0.25, 0], fovYDeg: 52, near: 0.05, far: 100 }
+    const initial: CameraPose = { eye: [0, 0.9, 3.4], target: [0, 0.25, 0], fovYDeg: 52, near: 0.05, far: 100 }
+    const cam = fitBounds(initial, port.worldBounds())
     const subject: Subject = {
       camera: cam, center: [0, 0.2, 0], radius: 1.9,
       hide: () => {
@@ -393,7 +437,8 @@ async function shootPenguin(port: ResizablePort, content: GameContent, captures:
 async function shootWorld(port: ResizablePort, content: GameContent, captures: Captures): Promise<void> {
   const stage = new Stage(port, content, content.hub(), { decor: true })
   try {
-    const cam: CameraPose = { eye: [38, 26, 42], target: [0, 1.5, 0], fovYDeg: 60, near: 0.1, far: 500 }
+    const initial: CameraPose = { eye: [38, 26, 42], target: [0, 1.5, 0], fovYDeg: 60, near: 0.1, far: 500 }
+    const cam = fitBounds(initial, port.worldBounds())
     port.setCamera(0, cam)
     await waitShading(port, 'candy-world')
     await capture(port, 'candy-world', captures, { camera: cam, center: [0, 1.5, 0], radius: 40, hide: () => stage.hide() })
@@ -404,7 +449,8 @@ async function shootScenery(port: ResizablePort, content: GameContent, captures:
   const hub = content.hub()
   const stage = new Stage(port, content, hub, { decor: false, obstacles: [obstacleOf(hub, 'candy.plaza-fountain')], mechanisms: [] })
   try {
-    const cam: CameraPose = { eye: [2.4, 1.8, 2.8], target: [0, 0.9, 0], fovYDeg: 55, near: 0.05, far: 200 }
+    const initial: CameraPose = { eye: [2.4, 1.8, 2.8], target: [0, 0.9, 0], fovYDeg: 55, near: 0.05, far: 200 }
+    const cam = fitBounds(initial, port.worldBounds())
     port.setCamera(0, cam)
     await waitShading(port, 'rounded-scenery')
     await capture(port, 'rounded-scenery', captures, { camera: cam, center: [0, 1, 0], radius: 2.6, hide: () => stage.hide() })
@@ -417,23 +463,27 @@ async function shootMechanisms(port: ResizablePort, content: GameContent, captur
   const item = course.mechanisms!.items[at]
   const place = item.place ?? item
   const target: [number, number, number] = [place.t.x, place.t.y + 1.35, place.t.z]
-  const cam: CameraPose = { eye: [target[0] + 4, target[1] + 1.8, target[2] + 4], target, fovYDeg: 65, near: 0.1, far: 300 }
-  const subject: Subject = { camera: cam, center: target, radius: 3.5, hide: () => stage.hide() }
-  const stage = new Stage(port, content, course, { decor: false, obstacles: [], mechanisms: [at] })
+  const initial: CameraPose = { eye: [target[0] + 4, target[1] + 1.8, target[2] + 4], target, fovYDeg: 65, near: 0.1, far: 300 }
+  const other = course.mechanisms!.items.findIndex((_, i) => i !== at)
+  if (other < 0) throw new Error('mechanisms: missing second moving part')
+  const stage = new Stage(port, content, course, { decor: false, obstacles: [], mechanisms: [at, other] })
   try {
-    port.setCamera(0, cam)
-    await waitShading(port, 'mechanisms-a')
-    await capture(port, 'mechanisms-a', captures, subject)
-    // 30 ticks = 0.5 s of sim time; the hammer's keyframes put a visibly different pose there.
-    stage.update(30)
-    port.setCamera(0, cam)
-    await waitShading(port, 'mechanisms-b')
-    await capture(port, 'mechanisms-b', captures, subject)
+    for (const [name, tick] of [['mechanisms-a', 0], ['mechanisms-b', 30]] as const) {
+      stage.update(tick)
+      const cam = fitBounds(initial, port.worldBounds())
+      port.setCamera(0, cam)
+      await waitShading(port, name)
+      const failures = port.shadingReport().errors.filter(e => e.startsWith('candy.pendulum-hammer#') && !e.endsWith(': vertex mode'))
+      if (failures.length) throw new Error(`mechanisms.field: ${failures.join('; ')}`)
+      await capture(port, name, captures, { camera: cam, center: cam.target, radius: 8, hide: () => stage.hide() })
+    }
   } finally { stage.dispose() }
 }
 
-export async function run(_input: unknown, deps: TourDeps): Promise<{ json: Record<string, unknown>; files: OpFile[] }> {
-  const captures: Captures = { files: [], names: [] }
+export async function run(input: unknown, deps: TourDeps): Promise<{ json: Record<string, unknown>; files: OpFile[] }> {
+  const captures: Captures = { files: [], names: [], observations: [] }
+  const search = typeof input === 'object' && input !== null && 'search' in input ? String(input.search) : ''
+  const options = gameRenderOptions(search)
   const canvas = document.createElement('canvas')
   canvas.width = WIDTH
   canvas.height = HEIGHT
@@ -443,30 +493,40 @@ export async function run(_input: unknown, deps: TourDeps): Promise<{ json: Reco
   try {
     await content.load('sprint', () => {})
     assertNoPageErrors('content load')
-    port = await content.createPort({ canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }) as ResizablePort
-    // The default Graphics choice, whatever the page address says: the captures prove the field shading.
-    port.setShading('field')
-    await shootWorld(port, content, captures)
-    await shootScenery(port, content, captures)
-    await shootPenguin(port, content, captures)
+    let worldNormals: ShadingReport | null = null
+    if (!search) {
+      port = await content.createPort({ canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }) as ResizablePort
+      port.setShading('field')
+      await shootWorld(port, content, captures)
+      await shootScenery(port, content, captures)
+      await shootPenguin(port, content, captures)
+      worldNormals = port.shadingReport()
+      port.dispose()
+      port = null
+    }
+    if (!(content instanceof SdfContent)) throw new Error('mechanisms: SDF content required')
+    // A close-up is its own scene: unrelated worlds must not consume this scene's atlas.
+    const ids = [...new Set(content.course(MECH_COURSE).mechanisms!.items.map(item => item.asset))]
+    port = await content.createPort({ canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }, options, ids) as ResizablePort
     await shootMechanisms(port, content, captures)
     assertNoPageErrors('captures')
     const reported = content.report()
-    const normals = (reported.normals as unknown as ShadingReport | undefined) ?? port.shadingReport()
-    if (normals.field === 0) throw new Error('the whole world drew no field-shaded part')
+    const normals = worldNormals ?? port.shadingReport()
+    if (options.shading !== 'vertex' && normals.field === 0) throw new Error('the whole world drew no field-shaded part')
     const failures = hardFailures(normals)
     if (failures.length > 0) throw new Error(`field shading failed: ${failures.join('; ')}`)
     return {
       json: {
         ok: true,
         content: content.id,
-        shading: 'field',
+        shading: options.shading,
         adapter: await deps.adapter(),
         assets: reported.assets,
         failedAssets: reported.failed,
         normals,
         hardFailures: failures,
         captures: captures.names,
+        observations: captures.observations,
       },
       files: captures.files,
     }

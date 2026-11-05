@@ -199,11 +199,12 @@ export class SdfContent implements GameContent {
     return this.assets(CHARACTER_ID)
   }
 
-  async createPort(target: RenderTarget): Promise<RenderPort> {
+  async createPort(target: RenderTarget, overrides?: Partial<GameRenderOptions>, assetIds?: readonly string[]): Promise<RenderPort> {
     const loaded = this.need('port')
     const start = performance.now()
-    const options = await effectiveOptions()
-    const port = await createSdfPort(target, loaded.meshed, loaded.failed, this.onProgress, span => {
+    const options = { ...await effectiveOptions(), ...overrides }
+    const meshed = assetIds === undefined ? loaded.meshed : new Map([...loaded.meshed].filter(([id]) => assetIds.includes(id)))
+    const port = await createSdfPort(target, meshed, loaded.failed, this.onProgress, span => {
       const history = loaded.report.bootTimeline
       loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify(span)]
     }, undefined, options)
@@ -217,7 +218,7 @@ export class SdfContent implements GameContent {
       mode: () => this.shading,
     })
     if (this.shading === 'baked') this.requestTextures()
-    await this.registerCosmetics(port, loaded.meshed)
+    await this.registerCosmetics(port, meshed)
     attachRoundReport(port, loaded.report as Record<string, number | string | readonly string[]>)
     const end = performance.now()
     const history = loaded.report.bootTimeline

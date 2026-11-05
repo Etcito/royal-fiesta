@@ -1,3 +1,5 @@
+import { nodeRtcBackend, closeNodeRtc } from '../../../apps/headless/src/rtcNode.ts'
+import { SIGNAL, decodeZoneSignal, ZONE_BIN_IN_HEADER } from '../src/net/zoneRelayProtocol.ts'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { loadCourse } from '../src/course.ts'
 import { botsLine } from '../src/hub/lobby.ts'
@@ -282,7 +284,7 @@ test('online solo lobby fills 59 deterministic bots in bounded Rapier domains an
   }
 })
 
-test('two lobby clients finish the same 60-seat zone show over a relay with equal confirmed domain hashes', { timeout: 180000 }, async () => {
+test('two lobby clients finish the same 60-seat zone show over a direct WebRTC mesh with equal confirmed domain hashes', { timeout: 180000 }, async () => {
   const realNow = performance.now.bind(performance)
   let clock = 0
   performance.now = () => clock
@@ -300,6 +302,10 @@ test('two lobby clients finish the same 60-seat zone show over a relay with equa
   let maxDomains = 0
   const failures: unknown[] = []
   let binaryFrames = 0
+  let relayZoneFrames = 0
+  let relayFramesAfterMesh = 0
+  const relaySignalKindsAfterMesh: Record<string, number> = {}
+  const meshStats: unknown[] = []
   const entries: Record<string, unknown>[] = []
   const factory = relayUrl ? globalWsFactory() : relay.factory()
   try {
@@ -312,14 +318,23 @@ test('two lobby clients finish the same 60-seat zone show over a relay with equa
           socket.send = data => {
             if (typeof data === 'string') {
               const frame = JSON.parse(data) as Record<string, unknown>
-              assert.notEqual(frame.t, 'act', 'online traffic uses binary zones')
+              assert.notEqual(frame.t, 'act', 'online game traffic uses DataChannels')
               if (frame.t === 'lobby_enter') entries.push(frame)
-            } else binaryFrames++
+            } else {
+              binaryFrames++
+              const signal = decodeZoneSignal(data.subarray(ZONE_BIN_IN_HEADER))
+              if (data[ZONE_BIN_IN_HEADER] !== SIGNAL || !signal) relayZoneFrames++
+              if (flows.length === 2 && flows.every(f => f.match !== null)) {
+                relayFramesAfterMesh++
+                const kind = signal?.kind ?? 'ZONE'
+                relaySignalKindsAfterMesh[kind] = (relaySignalKindsAfterMesh[kind] ?? 0) + 1
+              }
+            }
             send(data)
           }
           return socket
         }, hubCode: 'new', name: `Human ${peer}`,
-        colour: peer, courses, zones: onlineZones, plaza, partySize: 4, now: () => clock, pilot: true,
+        colour: peer, rtc: nodeRtcBackend(), courses, zones: onlineZones, plaza, partySize: 4, now: () => relayUrl ? realNow() : clock, pilot: true,
         matchmaking: 'lobby', log: ev => { if (ev.state === 'failed') failures.push(ev.detail) } }))
     }
     await Promise.all(flows.map(flow => flow.start()))
@@ -344,7 +359,11 @@ test('two lobby clients finish the same 60-seat zone show over a relay with equa
             if (hash !== undefined) hashes[peer].set(`${match.full.round?.plan.index ?? -1}:${id}:${tick}`, hash)
           }
         }
+        assert.ok(match.session.stats.rollbacks >= match.zones!.stats.rollbacks)
+        assert.ok(match.session.stats.stallFrames >= match.zones!.stats.stallFrames)
+        assert.equal(match.session.stats.rtt, flows[peer].mesh!.rtt)
         if (match.full.done) {
+          meshStats[peer] = { peers: structuredClone(flows[peer].mesh!.peers), ...flows[peer].mesh!.stats }
           finalLogs[peer] = JSON.stringify(match.log())
           counters[peer] = { tick: match.session.stats.tick, rollbacks: match.session.stats.rollbacks,
             resimTicks: match.session.stats.resimTicks, desyncs: match.session.stats.desyncs, stalls: match.session.stats.stallFrames,
@@ -358,7 +377,9 @@ test('two lobby clients finish the same 60-seat zone show over a relay with equa
     }
     assert.ok(finalLogs[0] && finalLogs[1], `both clients finished: ${JSON.stringify(flows.map(f => ({state:f.state, rounds:f.match?.full.report.rounds.length, stats:f.match?.zones?.stats})))}`)
     assert.equal(finalLogs[0], finalLogs[1])
-    assert.ok(binaryFrames > 0)
+    assert.ok(binaryFrames > 0, 'relay introduces peers with binary SIGNAL frames')
+    assert.equal(relayZoneFrames, 0, 'zero zone game frames through the relay, including setup')
+    assert.ok(flows.every(flow => Object.values(flow.mesh!.peers).every(link => link.rtt !== null && link.fast === 'open' && link.reliable === 'open')))
     assert.equal(entries.length, 2)
     assert.ok(entries.every(frame => frame.zones === true && frame.game === 'royal-fiesta' && frame.seats === 4))
     let compared = 0, physicsCompared = 0
@@ -372,12 +393,13 @@ test('two lobby clients finish the same 60-seat zone show over a relay with equa
     assert.ok(maxDomains > 1)
     assert.ok(counters.every(stats => stats.desyncs === 0 && stats.resultMismatches === 0 && stats.rounds > 1))
     costs.sort((a, b) => a - b)
-    console.log(JSON.stringify({ online60: { realtime, relay: relayUrl ?? 'LoopbackRelay', humans: 2, bots: 58, compared, physicsCompared, maxDomains, binaryFrames,
+    console.log(JSON.stringify({ online60: { realtime, relay: relayUrl ?? 'LoopbackRelay', humans: 2, bots: 58, compared, physicsCompared, maxDomains, binaryFrames, relayZoneFrames, relayFramesAfterMesh, relaySignalKindsAfterMesh, meshStats,
       frameSimMsMean: costs.reduce((a, b) => a + b, 0) / costs.length,
       frameSimMsP99: costs[Math.floor(costs.length * 0.99)], frameSimMsMax: costs.at(-1),
       wallMs: realNow() - wallStart, counters } }))
   } finally {
     for (const flow of flows) flow.close()
+    closeNodeRtc()
     relay.pump()
     performance.now = realNow
   }

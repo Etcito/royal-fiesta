@@ -1,3 +1,4 @@
+import { nodeRtcBackend } from './rtcNode.ts'
 import { loadNetZones } from './files.ts'
 // Headless hub loop: N piloted PlayFlows in one process against the local GameSaloon, at real time.
 import { readdir, writeFile } from 'node:fs/promises'
@@ -89,7 +90,7 @@ export async function runHubLoop(server: LocalServer, clients: number): Promise<
       queued.push(false); returning.push(false); back.push(false); inMatch.push(false)
       logs.push(new ConfirmedHashLog()); before.push(new Map()); after.push(new Map())
       const flow = new PlayFlow({
-        R, relayUrl: server.url, ws, hubCode, name: `bot${k}`, colour: k, courses, zones, plaza, partySize: n, now, pilot: true,
+        R, rtc: nodeRtcBackend(), relayUrl: server.url, ws, hubCode, name: `bot${k}`, colour: k, courses, zones, plaza, partySize: n, now, pilot: true,
         log: ev => {
           events.push(ev)
           if (ev.state === 'queued') queued[k] = true

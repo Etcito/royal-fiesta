@@ -1,3 +1,4 @@
+import { RtcNetwork } from './rtcFake.ts'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import assert from 'node:assert/strict'
@@ -57,6 +58,7 @@ class World {
   logSeen = 0
   readonly relay: LoopbackRelay
   readonly clients: Client[] = []
+  readonly rtc = new RtcNetwork()
   constructor(seed: number, lobby?: { waitMs?: number }) {
     this.relay = new LoopbackRelay({ seed, lobby })
     // A plain swap: mock.method would record every call, and Rapier reads the clock too.
@@ -81,7 +83,7 @@ class World {
       return s
     }
     c.flow = new PlayFlow({
-      R, relayUrl: 'loopback://relay', ws, hubCode, name, colour, courses, zones, plaza, partySize,
+      R, rtc: this.rtc.backend(this.clients.length), relayUrl: 'loopback://relay', ws, hubCode, name, colour, courses, zones, plaza, partySize,
       now: () => this.ms, pilot, log: ev => c.events.push(ev), matchmaking,
     })
     this.clients.push(c)

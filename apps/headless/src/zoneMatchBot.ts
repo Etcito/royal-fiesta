@@ -1,5 +1,6 @@
+import { nodeRtcBackend } from './rtcNode.ts'
 import { showMaps } from '@royal-fiesta/game/net/zoneRounds'
-// Headless full-match zone peer: 1-4 local seats driven by the course-following takeover bot over a relay or loopback.
+// Headless full-match zone peer: 1-4 local seats driven by the course-following takeover bot over a direct mesh or loopback.
 import { realpathSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
@@ -15,7 +16,7 @@ import { createZoneFullMatch } from '@royal-fiesta/game/net/zoneFullMatch'
 import type { ZoneFullMatch, ZoneFullRound } from '@royal-fiesta/game/net/zoneFullMatch'
 import { globalZoneWsFactory, ZoneRelayClient } from '@royal-fiesta/game/net/zoneRelayClient'
 import type { ZoneQueuePayload } from '@royal-fiesta/game/net/zoneRelayProtocol'
-import { ZoneRelayTransport } from '@royal-fiesta/game/net/zoneRelayTransport'
+import { ZoneMeshTransport } from '@royal-fiesta/game/net/zoneMeshTransport'
 import { mergeZoneTuning } from '@royal-fiesta/game/net/zoneTuning'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
 import type { BrainMemory } from '@royal-fiesta/sim/bots/brain'
@@ -186,7 +187,7 @@ export async function runZoneMatchBot(options: ZoneMatchBotOptions): Promise<Zon
   options.signal?.throwIfAborted()
 
   let client: ZoneRelayClient | null = null
-  let relayTransport: ZoneRelayTransport | null = null
+  let meshTransport: ZoneMeshTransport | null = null
   let transport: GroupTransport
   let roster: Roster
   let localPeer: number
@@ -206,8 +207,8 @@ export async function runZoneMatchBot(options: ZoneMatchBotOptions): Promise<Zon
       localPeer = room.localPeer
       measurements = room.measurements
       seed = room.seed
-      relayTransport = new ZoneRelayTransport(client, localPeer, options.net.players, () => performance.now())
-      transport = relayTransport
+      meshTransport = await ZoneMeshTransport.connect(client, nodeRtcBackend(), () => performance.now())
+      transport = meshTransport
     } else {
       roster = options.net.roster
       localPeer = options.net.localPeer
@@ -303,6 +304,7 @@ export async function runZoneMatchBot(options: ZoneMatchBotOptions): Promise<Zon
       try { client.bye() } catch {}
       try { client.close() } catch {}
     }
+    meshTransport?.close()
     full.dispose()
     resolveDone()
   }
@@ -320,7 +322,6 @@ export async function runZoneMatchBot(options: ZoneMatchBotOptions): Promise<Zon
       refuse('zone', 'zoneMatchBot.frame.dtS', `${dtS} is not a non-negative number; pass the frame time in seconds`)
     }
     full.frame(dtS, sample)
-    if (relayTransport !== null) relayTransport.flush()
     noteRound()
     playedS += dtS
     if (full.done) {

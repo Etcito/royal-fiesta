@@ -5,7 +5,7 @@ interface Packet { peer: number; ch: NetChannel; data: Uint8Array }
 type ResultListener = (peer: number, round: number, payload: Uint8Array) => void
 type VoteListener = (peer: number, round: number, choice: number) => void
 
-/** Keeps successive round sessions isolated while sharing one relay room. */
+/** Keeps successive round sessions isolated while sharing one group transport. */
 export class RoundTransport implements GroupTransport {
   stale = 0
   malformed = 0

@@ -556,7 +556,8 @@ async function main(): Promise<void> {
   writeFileSync(join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n')
   process.exitCode = exitCode(op, report, mode)
   console.log(JSON.stringify(report))
-  if (report.error !== undefined) console.error(`HARNESS ERROR (full):\n${report.error}`)
+  // The condition goes on the header line itself: a reader that keeps only the first error line still sees it.
+  if (report.error !== undefined) console.error(`HARNESS ERROR (full): ${report.error}`)
   if (report.pageErrors.length > 0) console.error(`FIRST PAGE ERROR (full):\n${report.pageErrors[0]}`)
   else if (report.consoleErrors.length > 0) console.error(`FIRST CONSOLE ERROR (full):\n${report.consoleErrors[0]}`)
 }

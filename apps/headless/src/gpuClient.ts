@@ -35,6 +35,13 @@ function stderrOutput(stderr: string): string {
   return stderr.trim() ? `\nGPU client stderr:\n${safe(stderr.trim())}` : ''
 }
 
+// The page's first error line of the client's stderr ('Error: ...'), lifted onto the refusal's first line so a reader
+// of only that line sees the condition, not the job's progress lines.
+function firstErrorLine(stderr: string): string {
+  const line = stderr.split('\n').find(l => /^\s*(?:Error|[A-Za-z]+Error):/.test(l))
+  return line === undefined ? '' : `: ${safe(line.trim())}`
+}
+
 function fail(where: string, what: string): never {
   return refuse(AREA, safe(where), what)
 }
@@ -75,7 +82,7 @@ async function run(args: string[], where: string): Promise<string> {
     const reason = e instanceof Error && e.message === 'timeout'
       ? `exceeded ${Math.ceil(timeout / 1000)} seconds; increase NMC_GPU_WAIT_S if the render needs more time`
       : e instanceof Error && e.message.startsWith('exit:')
-        ? `exited with status ${e.message.slice(5)}`
+        ? `exited with status ${e.message.slice(5)}${firstErrorLine(stderr)}`
         : 'could not start; check that NMC_GPU_CLIENT names an accessible Node script'
     fail(where, `${reason}${stderrOutput(stderr)}`)
   })

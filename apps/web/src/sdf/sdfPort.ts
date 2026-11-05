@@ -41,6 +41,8 @@ export interface ShadingReport {
   vertex: number
   texture: number
   pending: number
+  /** The part keys `pending` counts (visible parts whose field pipeline or bake is not ready), sorted. */
+  pendingParts: readonly string[]
   failed: number
   demoted: number
   atlasFull: number
@@ -477,8 +479,8 @@ class SdfRenderPort implements ResizablePort {
       device: () => this.device(),
       field,
       textureSize: scale => contract.bakeTextureSize(scale, this.options),
-      // The baked parts show (their vertex copy goes the frame their pipelines are compiled).
-      onChange: () => this.swapFallbacks(),
+      // A baked part's own draw shows now, so RAA requests its pipelines; its vertex copy goes the frame they are compiled.
+      onChange: () => this.swapFallbacks(true),
       onFailed: (part, why) => warnOnce(`${part.label}:bake`, `vertex colours (${why})`),
       onRun: s => console.info(`[sdf-port] baked ${s.parts} parts (${s.failed} kept vertex colours) in ${s.ms.toFixed(0)} ms: ${s.textures} textures, ${(s.bytes / 1048576).toFixed(1)} MB, ${s.pipelines} bake pipelines`),
     })
@@ -595,9 +597,10 @@ class SdfRenderPort implements ResizablePort {
     if (this.shading === 'vertex') for (const [key, mode] of this.shadingOfPart) if (mode !== 'vertex') errors.push(`${key}: vertex mode`)
     errors.sort()
     const failed = [...this.shadingErrors.values()].filter(reason => reason !== 'vertex mode').length
+    const pendingParts = this.pendingKeys()
     return {
       parts: this.shadingOfPart.size, field, vertex, texture,
-      pending: this.fallbackParts(), failed,
+      pending: pendingParts.length, pendingParts, failed,
       demoted: plan.demoted.length, atlasFull: this.atlasFull,
       bytes: plan.bytes, budget: plan.budget, errors,
     }
@@ -1014,8 +1017,12 @@ class SdfRenderPort implements ResizablePort {
 
   /** Visible parts waiting for their field pipeline or bake, counted once across instances. */
   fallbackParts(): number {
+    return this.pendingKeys().length
+  }
+
+  private pendingKeys(): string[] {
     const pending = new Set<string>()
-    if (this.shading === 'vertex') return 0
+    if (this.shading === 'vertex') return []
     for (const live of this.live) {
       if (live === null || !live.visible) continue
       // A textured member covers its part in 'baked' mode, so that part is not waiting on its field.
@@ -1027,7 +1034,7 @@ class SdfRenderPort implements ResizablePort {
         }
       }
     }
-    return pending.size
+    return [...pending].sort()
   }
 
   setShading(mode: ShadingMode): void {
@@ -1101,6 +1108,8 @@ class SdfRenderPort implements ResizablePort {
       created.push(instance)
     }
     if (created.length === 0) return
+    // A field rejected since the last frame is hidden before this draw (a visible failed member throws at setPipeline).
+    this.swapFallbacks()
     this.flushPoses(engine)
     engine.render(performance.now())
     for (const instance of created) this.destroyInstance(instance)
@@ -1145,7 +1154,11 @@ class SdfRenderPort implements ResizablePort {
         engine.setVisible(bake.instance, shown(i))
         return
       }
-      engine.setVisible(id, shown(i) && (copy === undefined || (this.shading !== 'vertex' && copy.ready)))
+      // A pending field member stays visible: RAA requests a pipeline only for a visible draw, so a hidden member never
+      // becomes ready. asyncPipelines omits its draws (every pass) until all its variants compile, and its copy covers
+      // the part meanwhile. A part still baking stays hidden (its textures are not in yet); a failed one keeps its copy.
+      const fieldShown = copy === undefined || (this.shading !== 'vertex' && !copy.failed && (copy.ready || this.baked(copy.part.bake)))
+      engine.setVisible(id, shown(i) && fieldShown)
       if (copy !== undefined) engine.setVisible(copy.instance, shown(i) && (this.shading === 'vertex' || !copy.ready))
       if (bake !== undefined) engine.setVisible(bake.instance, false)
     })

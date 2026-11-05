@@ -76,8 +76,10 @@ async function waitShading(port: ResizablePort, what: string): Promise<ShadingRe
       return port.shadingReport()
     }
     if (Date.now() > deadline) {
-      const pending = report.errors.length > 0 ? report.errors.join('; ') : `${report.pending} parts`
-      throw new Error(`${what}: field shading still pending: ${pending}`)
+      // The parts it waited on and the pipelines still compiling come first; the named fallbacks (atlas budget, vertex
+      // reasons) are reported states, never the reason of the wait, and follow only as a count.
+      throw new Error(`${what}: field shading still pending after ${WAIT_MS / 1000} s: ${report.pending} parts ` +
+        `(${report.pendingParts.join(', ')}); ${pendingPipelines()} material pipelines compiling; ${report.errors.length} named fallbacks`)
     }
     port.render()
     await nextTask()

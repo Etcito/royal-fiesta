@@ -27,7 +27,7 @@ const PLAYER = 'let c = select(vec3f(0.5), mat_instance_tint.rgb, mat_instance_t
 const FRAME = new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 interface ShadingReportLike {
-  parts: number; field: number; vertex: number; texture: number; pending: number; failed: number
+  parts: number; field: number; vertex: number; texture: number; pending: number; pendingParts: readonly string[]; failed: number
   demoted: number; atlasFull: number; bytes: number; budget: number; errors: readonly string[]
 }
 interface Port {
@@ -822,7 +822,7 @@ function controlledField(id: string) {
   return { ...setup, state }
 }
 
-test('pending field pairs show the copy, swap on the next ready render and switch shading live', () => {
+test('pending field pairs draw both members (RAA requests the field pipeline), swap on the next ready render and switch shading live', () => {
   const { port, calls, handle, state } = controlledField('test.live')
   const h = handle()
   const first = calls.nextInstance
@@ -837,17 +837,18 @@ test('pending field pairs show the copy, swap on the next ready render and switc
   const fieldSource = [...calls.functionSources].find(([name]) => name.startsWith('pmf.'))?.[1]
   assert.ok(fieldSource)
   assert.equal(state.keys[0], asyncPipelines.materialKey(fieldSource), 'readiness matches the WGSL RAA composes')
-  pair(false, true)
+  pair(true, true)
   port.setShading('vertex')
   pair(false, true)
   assert.equal(port.shadingReport().pending, 0)
   port.setShading('field')
-  pair(false, true)
+  pair(true, true)
   assert.equal(port.shadingReport().pending, 1)
+  assert.deepEqual([...port.shadingReport().pendingParts], ['test.live#g/body'], 'the report names the part it waits on')
   port.render()
-  pair(false, true)
+  pair(true, true)
   state.current = { status: 'ready' }
-  pair(false, true)
+  pair(true, true)
   port.render()
   pair(true, false)
   assert.equal(port.shadingReport().pending, 0)
@@ -886,6 +887,25 @@ test('pending field pairs show the copy, swap on the next ready render and switc
   assert.equal(calls.removedMeshes.length, 2, 'both field and vertex meshes are freed once')
   assert.equal(new Set(calls.removedMeshes).size, 2)
   assert.deepEqual(calls.removedTextures, [101])
+})
+
+// RAA asks for a lit pipeline only when it draws a visible instance (raa-lit draw_lit over camera_draws), so a field
+// member hidden while pending would never compile and the part would wait forever (fieldShading op, run 11992: 180 s).
+test('a pending field member stays drawn until RAA has compiled its pipeline from that draw', () => {
+  const { port, calls, handle } = controlledField('test.requested')
+  const first = calls.nextInstance
+  port.createInstance(handle(), null)
+  let requested = false
+  readiness.set((port as unknown as { gpuDevice: object }).gpuDevice, () => ({ status: requested ? 'ready' : 'pending' }))
+  for (let frame = 0; frame < 3 && !requested; frame++) {
+    requested = calls.visibility.get(first) === true
+    port.render()
+  }
+  assert.ok(requested, 'the field member is visible while pending, so its pipeline is requested')
+  port.render()
+  assert.equal(port.shadingReport().pending, 0)
+  assert.equal(calls.visibility.get(first), true)
+  assert.equal(calls.visibility.get(first + 1), false)
 })
 
 test('a failed field keeps its vertex copy and reports the shader rejection by part key', () => {

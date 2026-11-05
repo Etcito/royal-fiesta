@@ -23,10 +23,28 @@ import type { MeshedAsset } from './mamaApi.ts'
 import { installShaderCache } from '../render/shaderCache.ts'
 import { deviceOfCanvas, fieldReady, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
+import { FIELD_ATLAS_BYTES, fieldGridBytes, partDiag, planFieldAtlas, type FieldAtlasPlan, type PartFieldCost } from './fieldAtlas.ts'
+import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, PMF_GRID_HOST_WGSL } from './fieldShading.ts'
 
 export interface ResizablePort extends SkinnedRenderPort {
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
   setPartFilter(instance: number, parts: readonly string[] | null): void
+  shadingReport(): ShadingReport
+}
+
+/** What this upload drew with which shading, plus every part that could not keep its field, named. */
+export interface ShadingReport {
+  parts: number
+  field: number
+  vertex: number
+  texture: number
+  pending: number
+  failed: number
+  demoted: number
+  atlasFull: number
+  bytes: number
+  budget: number
+  errors: readonly string[]
 }
 
 // Release declarations may lag the sibling's m20/m21 API.
@@ -46,11 +64,17 @@ const AREA = 'sdf'
 const WHERE = 'sdf-port'
 
 /**
- * How Paramesh surfaces are shaded: 'pixel' (default) evaluates the part's SDF field per fragment (its stored shading,
- * @etcito/raa-sdfm fieldPartShading, the same material as SDF Modeler's Game view: the field's gradient as the
- * normal and the shapes' materials mixed by the field, whatever the mesh density; nothing baked); 'vertex' keeps the
- * saved per-face materials and the interpolated vertex normals. `?normals=vertex` in the page address picks 'vertex';
- * otherwise the Graphics setting (MAMA's `shading`, 'vertex' = Vertex) does, for the ports created after it changed.
+ * How Paramesh surfaces are shaded. 'sdf' (default) evaluates the part's field program per fragment (the field's
+ * gradient as the normal and the labels' looks mixed per pixel, nothing baked); 'vertex' keeps the saved per-face
+ * (or one-per-object) materials and the interpolated vertex normals; 'texture' draws the baked texture shading.
+ * The landed MAMA render options spell these 'field' | 'vertex' | 'baked'.
+ */
+export type ShadingMode = 'sdf' | 'vertex' | 'texture'
+export interface GameRenderOptions { shading: ShadingMode; normalsDebug: boolean; atlasBytes?: number }
+
+/**
+ * The normals choice as render/renderOptions.ts names it: 'pixel' is the per-pixel field (ShadingMode 'sdf'), and
+ * `?normals=vertex` in the page address forces 'vertex'.
  */
 export type NormalsMode = 'pixel' | 'vertex'
 export function normalsMode(search: string = typeof location === 'undefined' ? '' : location.search): NormalsMode {
@@ -67,26 +91,48 @@ interface RenderContract {
 // The render options the port applies when it uploads (the engine-side ones are render/renderOptions.ts').
 const PORT_OPTIONS = ['shading', 'bakeTexelDensity', 'bakeMaxSize'] as const
 
+function shadingModeOf(value: unknown): ShadingMode | null {
+  return value === 'sdf' || value === 'vertex' || value === 'texture' ? value : null
+}
+// The landed MAMA option names this port applies ('field' is the per-pixel SDF, 'baked' the texture shading).
+function shadingToContract(mode: ShadingMode): RfGameRenderOptions['shading'] {
+  return mode === 'vertex' ? 'vertex' : mode === 'texture' ? 'baked' : 'field'
+}
+
+/**
+ * The chosen port options first, then the page address: `?normals=vertex` forces 'vertex' and `?normalsDebug`
+ * turns on the normal look. The default is 'sdf' (the part's field program evaluated per fragment).
+ */
+export function gameRenderOptions(search?: string, chosen?: Partial<GameRenderOptions>): GameRenderOptions
 /**
  * The upload options of a port (MAMA core/game/render-options.ts; owner 2026-11-04: the graphics options are MAMA's):
  * `given` (the player's Graphics settings) with the page address on top (`?shading=field|vertex|baked`,
  * `?bakeTexelDensity=`, `?bakeMaxSize=`; `?normals=vertex` is `shading=vertex`). Permissive: a bad value keeps its
  * default with one console warning. Without MAMA (public clone) every part keeps its vertex normals.
  */
-export function gameRenderOptions(contract: RenderContract | null, given: unknown = undefined,
-  search: string = typeof location === 'undefined' ? '' : location.search): RfGameRenderOptions {
-  if (contract === null) return { shading: 'vertex', bakeTexelDensity: 0, bakeMaxSize: 0 }
+export function gameRenderOptions(contract: RenderContract | null, given?: unknown, search?: string): RfGameRenderOptions
+export function gameRenderOptions(a: RenderContract | string | null = '', b?: unknown,
+  c?: string): RfGameRenderOptions | GameRenderOptions {
+  if (typeof a === 'string') {
+    const params = new URLSearchParams(a)
+    const chosen = isRecord(b) ? b as Partial<GameRenderOptions> : {}
+    let shading = shadingModeOf(chosen.shading) ?? 'sdf'
+    if (params.get('normals') === 'vertex') shading = 'vertex'
+    return { shading, normalsDebug: params.has('normalsDebug') || chosen.normalsDebug === true }
+  }
+  const search = c ?? (typeof location === 'undefined' ? '' : location.search)
+  if (a === null) return { shading: 'vertex', bakeTexelDensity: 0, bakeMaxSize: 0 }
   const params = new URLSearchParams(search)
-  const record = typeof given === 'object' && given !== null && !Array.isArray(given) ? given as Record<string, unknown> : {}
+  const record = isRecord(b) ? b : {}
   const merged: Record<string, unknown> = {}
   for (const key of PORT_OPTIONS) if (record[key] !== undefined) merged[key] = record[key]
   if (params.get('normals') === 'vertex') merged.shading = 'vertex'
-  for (const spec of contract.specs) {
+  for (const spec of a.specs) {
     const v = params.get(spec.key)
     if (v === null || !(PORT_OPTIONS as readonly string[]).includes(spec.key)) continue
     merged[spec.key] = spec.kind === 'number' ? Number(v) : v
   }
-  const { options, issues } = contract.validate(merged)
+  const { options, issues } = a.validate(merged)
   for (const issue of issues) warnOnce(`render-options:${issue.key}`, `${issue.message}; ${issue.fix}`)
   return options
 }
@@ -99,9 +145,22 @@ const MAX_MATERIALS = 1024
 
 // The payload of apps/web/src/sdf/mama/worker.ts: MAMA parts with per-material meshes.
 interface PayloadMesh { material: string | null; positions: Float32Array; normals: Float32Array; uvs: Float32Array | null; indices: Uint32Array; colors?: Float32Array }
-// shading: the part's per-pixel shading (MAMA field-program.ts savedPartShading, saved mesh format 3), or shadingError: why
-// it has none. colors/look/single: one material per object (mama/singleMaterial.ts), on browser-meshed parts only.
-interface PayloadPart { partId: string; name: string; frame: Float64Array; meshes: PayloadMesh[]; shading?: SdfmPartShading; shadingError?: string; look?: { roughness: number; metallic: number } }
+// fieldProgram/fieldRefusal: MAMA's per-part SDF field (contract 'mama.field-program') or why it has none; a part saved
+// before field programs carries neither. shading/shadingError: the earlier per-pixel shading record (saved format 3-4),
+// kept so meshes saved before the field-program contract still shade. colors/look/single: one material per object
+// (mama/singleMaterial.ts), on browser-meshed parts only. normalVolume is an old payload field and is ignored.
+interface PayloadPart {
+  partId: string
+  name: string
+  frame: Float64Array
+  meshes: PayloadMesh[]
+  fieldProgram?: unknown
+  fieldRefusal?: string
+  shading?: SdfmPartShading
+  shadingError?: string
+  look?: { roughness: number; metallic: number }
+  normalVolume?: unknown
+}
 interface PayloadGroup { group: string; parts: PayloadPart[]; single?: boolean }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 
@@ -113,8 +172,36 @@ interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
 // field: the materialKey of the part's per-pixel shading function; fallback: the same part as `?normals=vertex` draws it
 // (its per-face materials or one material per object, vertex normals), shown while the shading's pipelines compile.
 // bake: a part the 'baked' shading draws from its textures (raa-sdfm's bake scheduler; shared by the skinned and tinted
-// copies of the part).
-interface PartUpload { name: string; key: string; mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; t: [number, number, number]; r: [number, number, number, number]; joints?: number; tint: PartTint; object?: number; field?: string; fallback?: Fallback; bake?: SdfmBakedPart }
+// copies of the part). params: the 16 field instance params (bounds and the grid handle); texture: the RAA atlas id of
+// that grid, freed with the upload.
+interface PartUpload {
+  name: string
+  key: string
+  mesh: number
+  desc: MeshDesc
+  subMeshes: SubMeshDesc[]
+  t: [number, number, number]
+  r: [number, number, number, number]
+  joints?: number
+  tint: PartTint
+  object?: number
+  field?: string
+  fallback?: Fallback
+  bake?: SdfmBakedPart
+  params?: number[]
+  texture?: number
+}
+// What shadingMaterial built for one part: field materials carry the instance params (and their grid texture);
+// the earlier shading record also carries its material data block and can be baked into its UV atlas.
+interface ShadedMaterial {
+  handle: number
+  wgsl: string
+  data?: number
+  graph: boolean
+  params?: number[]
+  texture?: number
+  bakeable?: boolean
+}
 interface Fallback { mesh: number; desc: MeshDesc; subMeshes: SubMeshDesc[]; object?: number }
 // graph: a material of the part holds input.player_color; multiply: a part with no SDF material (white fallback).
 type PartTint = 'graph' | 'multiply' | 'none'
@@ -136,12 +223,16 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   failed: ReadonlyMap<string, string> = new Map(),
   onProgress: (p: LoadProgress) => void = () => {},
   onTiming: (span: { step: string; start: number; end: number; ms: number }) => void = () => {},
-  given: unknown = renderOptions()): Promise<ResizablePort> {
+  given: unknown = renderOptions(), options?: Partial<GameRenderOptions>): Promise<ResizablePort> {
   const status = await raaStatus()
   if (!status.available) refuse(AREA, WHERE, status.reason)
   const mama = await mamaShading()
-  // The shading and bake options of this upload: the player's Graphics settings (applied when the next scene loads).
-  const port = new SdfRenderPort(meshed, failed, mama.field, gameRenderOptions(mama.render, given), mama.render)
+  // The chosen port options first, then the player's Graphics settings and the page address.
+  const search = typeof location === 'undefined' ? '' : location.search
+  const chosen = typeof options?.shading === 'string' ? { ...(isRecord(given) ? given : {}), shading: shadingToContract(options.shading) } : given
+  const render = gameRenderOptions(mama.render, chosen, search)
+  const debug = normalsDebug(search) || options?.normalsDebug === true
+  const port = new SdfRenderPort(meshed, failed, mama.field, render, mama.render, options?.atlasBytes, debug)
   const start = performance.now()
   await checkAwait('RAA port initialization', () => port.init(target))
   const end = performance.now()
@@ -217,7 +308,15 @@ class SdfRenderPort implements ResizablePort {
   // vertex normals and colours, 'baked' its normal and material baked at load into textures in its UV atlas.
   private readonly options: RfGameRenderOptions
   private readonly contract: RenderContract | null
-  private readonly debugNormals = normalsDebug()
+  private readonly debugNormals: boolean
+  // The whole-world field plan (fieldAtlas) computed once before any upload, and the budget it was planned with.
+  private atlasPlan: FieldAtlasPlan | null = null
+  private readonly atlasBytes: number
+  // RAA texture.atlas_full errors caught at upload; such a part draws vertex and is named in the report.
+  private atlasFull = 0
+  // The shading each uploaded part draws with, by plan key, and the named reasons of the vertex ones.
+  private readonly shadingOfPart = new Map<string, 'field' | 'vertex' | 'texture'>()
+  private readonly shadingErrors = new Map<string, string>()
   // GPU handles this port created, for the live inventory (the baked textures are the bake scheduler's).
   private meshes = 0
   // The bake scheduler (raa-sdfm): the parts created instances asked to bake, the run working through them, the atlas
@@ -230,12 +329,14 @@ class SdfRenderPort implements ResizablePort {
 
   constructor(meshed: ReadonlyMap<string, MeshedAsset>, failed: ReadonlyMap<string, string> = new Map(), field: string | null = null,
     render: RfGameRenderOptions = { shading: normalsMode() === 'vertex' ? 'vertex' : 'field', bakeTexelDensity: 0, bakeMaxSize: 0 },
-    contract: RenderContract | null = null) {
+    contract: RenderContract | null = null, atlasBytes: number = FIELD_ATLAS_BYTES, debug: boolean = normalsDebug()) {
     this.meshed = meshed
     this.failed = failed
     this.field = field
     this.options = render
     this.contract = contract
+    this.atlasBytes = Number.isFinite(atlasBytes) && atlasBytes >= 0 ? atlasBytes : FIELD_ATLAS_BYTES
+    this.debugNormals = debug
   }
 
   async init(target: RenderTarget): Promise<void> {
@@ -268,6 +369,9 @@ class SdfRenderPort implements ResizablePort {
   // Upload data only. The renderer requests pipelines for visible draws during gameplay;
   // off-screen course and costume shaders do not delay the first frame.
   async prepare(onProgress: (p: LoadProgress) => void, onTiming: (span: { step: string; start: number; end: number; ms: number }) => void): Promise<void> {
+    // The whole world's field grid budget is decided once, before a single upload: the parts that keep their field
+    // are the ones whose grid textures fit RAA's atlas, cheapest/smallest demoted first (fieldAtlas planFieldAtlas).
+    this.planAtlas()
     const ids = [...this.meshed.keys()].sort()
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i]
@@ -369,6 +473,59 @@ class SdfRenderPort implements ResizablePort {
     return handle
   }
 
+  // The whole-world field plan (fieldAtlas): every part with a valid field program costs its grid texture's bytes,
+  // and planFieldAtlas demotes the smallest/cheapest parts until the world fits RAA's atlas. Computed once, before
+  // the first upload; registerAsset ensures it exists even when a caller skips prepare().
+  private planAtlas(): FieldAtlasPlan {
+    if (this.atlasPlan !== null) return this.atlasPlan
+    const costs: PartFieldCost[] = []
+    for (const id of [...this.meshed.keys()].sort()) {
+      const meshed = this.meshed.get(id)!
+      const payload = payloadOf(id, meshed)
+      for (const group of payload.groups) {
+        for (const part of group.parts) {
+          if (part.meshes.length === 0) continue
+          const check = checkFieldPart(part)
+          if (!check.ok) continue
+          costs.push({
+            key: fieldKey(id, group.group, part.partId),
+            diag: partDiag(part.meshes.map(mesh => ({ positions: mesh.positions }))),
+            bytes: fieldGridBytes(check.program.grid),
+          })
+        }
+      }
+    }
+    this.atlasPlan = planFieldAtlas(costs, this.atlasBytes)
+    return this.atlasPlan
+  }
+
+  /** What the upload drew with which shading and every part that could not keep its field, named and sorted. */
+  shadingReport(): ShadingReport {
+    const plan = this.atlasPlan ?? planFieldAtlas([], this.atlasBytes)
+    let field = 0
+    let vertex = 0
+    let texture = 0
+    for (const mode of this.shadingOfPart.values()) {
+      if (mode === 'field') field++
+      else if (mode === 'texture') texture++
+      else vertex++
+    }
+    const errors = [...this.shadingErrors].map(([key, reason]) => `${key}: ${reason}`).sort()
+    const failed = [...this.shadingErrors.values()].filter(reason => reason !== 'vertex mode').length
+    return {
+      parts: this.shadingOfPart.size, field, vertex, texture,
+      pending: this.fallbackParts(), failed,
+      demoted: plan.demoted.length, atlasFull: this.atlasFull,
+      bytes: plan.bytes, budget: plan.budget, errors,
+    }
+  }
+
+  private recordPart(key: string, mode: 'field' | 'vertex' | 'texture', reason?: string): void {
+    this.shadingOfPart.set(key, mode)
+    if (mode === 'vertex' && reason !== undefined) this.shadingErrors.set(key, reason)
+    else this.shadingErrors.delete(key)
+  }
+
   // Mirrors @etcito/raa-sdfm's upload: one mesh per part with one sub-mesh per MAMA material, each
   // drawn with its own surface material built from the compiled graph; a part with its per-pixel shading draws the one
   // shading material on every sub-mesh instead (shadingMaterial).
@@ -376,10 +533,13 @@ class SdfRenderPort implements ResizablePort {
     const payload = payloadOf(id, meshed)
     const engine = this.need()
     const handles = new Map<string, number>()
+    // The compiled material function name of each payload material, for a field program's label -> function map.
+    const functionsByName = new Map<string, string>()
     const graph = new Set<string>()
     for (const compiled of payload.materials) {
       const mapped = mapCompiled(compiled, id)
       this.addFunction(mapped.functionName, mapped.wgsl)
+      functionsByName.set(compiled.name, mapped.functionName)
       handles.set(compiled.name, engine.addSurfaceMaterial({ ...mapped.desc }))
       if (usesPlayerColour(compiled, mapped)) graph.add(compiled.name)
     }
@@ -404,28 +564,32 @@ class SdfRenderPort implements ResizablePort {
           ? engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: part.look.roughness, metallic: part.look.metallic }) : undefined
         let desc = built.desc
         let subMeshes = built.subMeshes
-        const shaded = this.options.shading !== 'vertex' ? this.shadingMaterial(id, part, payload.materials, graph.size > 0) : null
-        let field: Pick<PartUpload, 'field' | 'fallback' | 'bake'> = {}
+        const fieldPartKey = fieldKey(id, group.group, part.partId)
+        const shaded = this.shadingMaterial(id, fieldPartKey, part, payload.materials, functionsByName, graph.size > 0)
+        let field: Pick<PartUpload, 'field' | 'fallback' | 'bake' | 'params' | 'texture'> = {}
         if (shaded !== null) {
           const fallback = { mesh: this.addMesh(engine, built.desc), desc: built.desc, subMeshes: built.subMeshes, ...(object !== undefined ? { object } : {}) }
           // 'baked': a field-shaded part with its UV atlas draws its baked textures (bakeParts) on a mesh with the atlas uvs
           // and the bake tangents, through the one shared baked material; a part whose material takes the player colour
           // keeps its field shading (a baked colour cannot follow the tint).
           const d = built.desc
-          const scheduler = this.options.shading === 'baked' && !shaded.graph && d.uvs !== undefined ? this.bakeScheduler() : null
+          const scheduler = this.options.shading === 'baked' && shaded.bakeable === true && !shaded.graph && d.uvs !== undefined ? this.bakeScheduler() : null
           if (scheduler !== null) {
-            engine.removeMaterialData(shaded.data)
+            if (shaded.data !== undefined) engine.removeMaterialData(shaded.data)
             const bake = scheduler.prepare({ shading: part.shading!, materials: payload.materials, positions: d.positions, normals: d.normals,
               uvs: d.uvs!, indices: d.indices, label: `${id}#part:${part.name}` })
             subMeshes = subMeshes.map(sub => ({ ...sub, material: bake.material }))
             desc = { positions: d.positions, normals: d.normals, uvs: d.uvs, tangents: bake.tangents, indices: d.indices, subMeshes }
             field = { field: materialKey(BAKED_MATERIAL_WGSL), fallback, bake }
+            this.recordPart(fieldPartKey, 'texture')
           } else {
-            data.push(shaded.data)
+            if (shaded.data !== undefined) data.push(shaded.data)
             // The rest point and rest frame the field reads (raa-sdfm fieldSurfaceAttributes) replace colours, uvs, tangents.
             subMeshes = subMeshes.map(sub => ({ ...sub, material: shaded.handle }))
             desc = { ...desc, ...fieldSurfaceAttributes(desc.positions, desc.normals), subMeshes }
-            field = { field: materialKey(shaded.wgsl), fallback }
+            field = { field: materialKey(shaded.wgsl), fallback, ...(shaded.params !== undefined ? { params: shaded.params } : {}),
+              ...(shaded.texture !== undefined ? { texture: shaded.texture } : {}) }
+            this.recordPart(fieldPartKey, 'field')
           }
         }
         const mesh = this.addMesh(engine, desc)
@@ -439,35 +603,108 @@ class SdfRenderPort implements ResizablePort {
     return { assetId: id, parts, ...(emptyParts.length > 0 ? { emptyParts } : {}), ...(data.length > 0 ? { data } : {}) }
   }
 
-  // Registers a material function once per name (a name is the hash of its code).
-  private addFunction(name: string, wgsl: string): void {
+  // Registers a material function once per name (a name is the hash of its code). `register` false caches a WGSL
+  // piece (the field evaluator and the pmf_grid host tap, which RAA only accepts inside a material_main).
+  private addFunction(name: string, wgsl: string, register = true): void {
     const known = this.functions.get(name)
     if (known !== undefined && known !== wgsl) refuse(AREA, WHERE, `material program hash collision: ${name}`)
     if (known !== undefined) return
-    try {
-      this.need().addMaterialFunction(name, wgsl)
-    } catch (e) {
-      if (raaCode(e) !== 'material.fn_duplicate') throw e
+    if (register) {
+      try {
+        this.need().addMaterialFunction(name, wgsl)
+      } catch (e) {
+        if (raaCode(e) !== 'material.fn_duplicate') throw e
+      }
     }
     this.functions.set(name, wgsl)
   }
 
-  // The per-pixel material of a part (owner 2026-11-04: normals and materials from the SDF in the shader, nothing
-  // baked): its stored shading drawn by raa-sdfm fieldPartShading, the same code as SDF Modeler's Game view: ONE
-  // interpreter function for every part whose materials are constant (the pipelines do not grow with the course), the
-  // part itself a block of RAA material data words (its field program, operands, frame) named by the record's `data`. Null,
-  // with one console warning naming the asset and part, when MAMA could not give the part a field (shadingError) or RAA
-  // refuses the function: the part then keeps its per-face materials and vertex normals. A part with neither shading nor
-  // shadingError was not made from an SDF document (MAMA writes one of the two for every meshed part; the zone's far-LOD
-  // bean is generated in code): it keeps its vertex normals without a warning.
-  private shadingMaterial(id: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[], graphMode: boolean): { handle: number; wgsl: string; data: number; graph: boolean } | null {
+  // The material a part draws with for the current mode: a valid field program in the plan's field set gets the new
+  // per-fragment field material (fieldShading.ts), a part with the earlier saved shading keeps that record's material,
+  // and everything else keeps its per-face materials or one material per object with vertex normals.
+  private shadingMaterial(id: string, key: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[],
+    functionsByName: ReadonlyMap<string, string>, graphMode: boolean): ShadedMaterial | null {
+    if (hasFieldContract(part)) return this.fieldProgramMaterial(key, part, functionsByName, graphMode)
+    if (this.options.shading === 'vertex') {
+      this.recordPart(key, 'vertex', 'vertex mode')
+      return null
+    }
+    return this.recordShadingMaterial(id, key, part, materials, graphMode)
+  }
+
+  // The field program path (contract 'mama.field-program'): six central taps for the normal, the mesh normal only
+  // where the field is undefined, and the labels' looks mixed per pixel. The grid texture is added to RAA's atlas; an
+  // atlas_full error demotes this part to vertex and is never thrown.
+  private fieldProgramMaterial(key: string, part: PayloadPart, functionsByName: ReadonlyMap<string, string>,
+    graphMode: boolean): ShadedMaterial | null {
+    if (this.options.shading === 'vertex') {
+      this.recordPart(key, 'vertex', 'vertex mode')
+      return null
+    }
+    const check = checkFieldPart(part)
+    if (!check.ok) {
+      warnOnce(key, `vertex normals (${check.reason})`)
+      this.recordPart(key, 'vertex', check.reason)
+      return null
+    }
+    const program = check.program
+    if (!this.planAtlas().field.has(key)) {
+      const reason = 'atlas budget: smaller parts first'
+      warnOnce(key, `vertex normals (${reason})`)
+      this.recordPart(key, 'vertex', reason)
+      return null
+    }
+    const engine = this.need()
+    const grid = fieldGridTexture(program)
+    let texture: number | null = null
+    if (grid !== null) {
+      try {
+        texture = engine.addTexture(grid)
+      } catch (e) {
+        if (raaCode(e) !== 'texture.atlas_full') throw e
+        this.atlasFull++
+        console.error(`[sdf-port] texture.atlas_full ${key}`)
+        this.recordPart(key, 'vertex', 'texture.atlas_full')
+        return null
+      }
+    }
+    let missing = false
+    const labelFunctions = program.labels.map(label => {
+      if (label.material === null) return null
+      const name = functionsByName.get(label.material)
+      if (name === undefined) missing = true
+      return name ?? null
+    })
+    if (missing) warnOnce(`${key}:missing`, 'a field label names a material not in the saved mesh; its shapes wear the label colour')
+    const material = fieldMaterialWgsl({ program, labelFunctions, debug: this.debugNormals })
+    // The evaluator and the host pmf_grid tap are cached; the complete field material (which embeds both) is registered
+    // as the part's RAA material function.
+    this.addFunction(program.functionName, program.wgsl, false)
+    this.addFunction('pmf_grid', PMF_GRID_HOST_WGSL, false)
+    this.addFunction(material.functionName, material.wgsl)
+    const handle = engine.addSurfaceMaterial({ function: material.functionName, roughness: 0.5 })
+    const graph = graphMode
+    if (graph) engine.setMaterialTintMode(handle, 'graph')
+    return {
+      handle, wgsl: material.wgsl, graph,
+      params: fieldInstanceParams(texture, program),
+      ...(texture !== null ? { texture } : {}),
+    }
+  }
+
+  // The earlier per-pixel shading record (saved mesh formats 3-4) drawn by raa-sdfm fieldPartShading. A part with
+  // neither shading nor shadingError was not made from an SDF document: it keeps vertex normals without a warning.
+  private recordShadingMaterial(id: string, key: string, part: PayloadPart,
+    materials: readonly SdfmCompiledMaterial[], graphMode: boolean): ShadedMaterial | null {
     const where = `${id}#part:${part.name}`
     if (part.shading === undefined) {
       if (part.shadingError !== undefined) warnOnce(where, `vertex normals (${part.shadingError})`)
+      this.recordPart(key, 'vertex', part.shadingError ?? 'no field program (saved before field shading); re-save the asset')
       return null
     }
     if (this.field === null) {
       warnOnce(where, 'vertex normals (this build has no MAMA field evaluator)')
+      this.recordPart(key, 'vertex', 'no field program (saved before field shading); re-save the asset')
       return null
     }
     const engine = this.need()
@@ -481,10 +718,11 @@ class SdfRenderPort implements ResizablePort {
       const handle = engine.addSurfaceMaterial(s.single ? { function: name, data, roughness: s.look.roughness, metallic: s.look.metallic } : { function: name, data, roughness: 0.5 })
       const graph = graphMode || tintMode === 'graph'
       if (graph) engine.setMaterialTintMode(handle, 'graph')
-      return { handle, wgsl, data, graph }
+      return { handle, wgsl, data, graph, bakeable: true }
     } catch (e) {
       if (data !== null) engine.removeMaterialData(data)
       warnOnce(where, `vertex normals (${messageOf(e)})`)
+      this.recordPart(key, 'vertex', messageOf(e))
       return null
     }
   }
@@ -546,6 +784,7 @@ class SdfRenderPort implements ResizablePort {
     const fallbacks: LiveFallback[] = []
     const add = (node: number, mesh: number, object: number | undefined, part: PartUpload): number => {
       const instance = engine.addMeshInstance(node, mesh)
+      if (part.params !== undefined) engine.setInstanceParams(instance, part.params)
       if (object !== undefined) engine.setInstanceMaterial(instance, object)
       else engine.setSingleMaterial(false, instance)
       // Cosmetic colourways multiply the existing fixed materials on the same mesh.
@@ -715,6 +954,8 @@ class SdfRenderPort implements ResizablePort {
       }
     }
     if (engine !== null) for (const base of uploaded.data ?? []) engine.removeMaterialData(base)
+    // A field part's grid texture goes back to RAA's atlas with the upload.
+    if (engine !== null) for (const part of all) if (part.texture !== undefined) engine.removeTexture(part.texture)
     this.meshes -= all.length + uploaded.parts.filter(part => part.fallback !== undefined).length
     this.uploaded[handle] = undefined
     for (const [name, h] of this.handleOfName) if (h === handle) this.handleOfName.delete(name)
@@ -935,6 +1176,17 @@ function mul4(m: readonly number[], v: readonly number[]): number[] {
   const out = [0, 0, 0, 0]
   for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) out[r] += m[c * 4 + r] * v[c]
   return out
+}
+
+// The field atlas key of one payload part: the plan and the shading report name parts this way.
+function fieldKey(assetId: string, group: string, partId: string): string {
+  return `${assetId}#${group}/${partId}`
+}
+
+// A part that carries the field-program contract (a program or MAMA's refusal); older parts carry the earlier shading
+// record or neither.
+function hasFieldContract(part: PayloadPart): boolean {
+  return part.fieldProgram !== undefined || part.fieldRefusal !== undefined
 }
 
 function payloadOf(id: string, meshed: MeshedAsset): Payload {

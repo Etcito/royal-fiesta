@@ -18,7 +18,7 @@ import { ensureMesher, setMesherWasm } from '@etcito/mama/core/paramesh/runtime.
 import { inlinePool } from '@etcito/mama/core/compute/pool.ts'
 import { partColouring, singleMaterialOf } from './singleMaterial.ts'
 import type { GroupMesher, SdfDocument } from '@etcito/mama/core/doc/types.ts'
-import { meshedPartShading, type PartShading } from '@etcito/mama/core/paramesh/field-program.ts'
+import { meshedParameshPartShading, type ParameshPartShading } from '@etcito/mama/core/paramesh/field-program.ts'
 
 // MaterialFull fields in declaration order (MAMA core/material-graph/wgsl-parts.ts). The renderer
 // reads exactly these names out of every compiled graph material.
@@ -37,7 +37,7 @@ interface PayloadMesh {
 // S18 joint/weight streams of a skinned part, in the vertex order the render port concatenates its meshes.
 interface PayloadSkin { joints: Uint16Array; weights: Float32Array }
 
-// shading: the part's per-pixel shading (MAMA field-program.ts meshedPartShading, the record a saved mesh part stores: field
+// shading: the part's per-pixel shading (MAMA field-program.ts meshedParameshPartShading, the record a saved mesh part stores: field
 // program + operand labels; nothing baked), drawn by @etcito/raa-sdfm fieldPartShading; shadingError: why it has none.
 interface PayloadPart {
   partId: string
@@ -45,7 +45,7 @@ interface PayloadPart {
   frame: Float64Array
   meshes: PayloadMesh[]
   skin?: PayloadSkin
-  shading?: PartShading
+  shading?: ParameshPartShading
   shadingError?: string
   /** The part's one roughness/metallic for one material per object (with the meshes' colors). */
   look?: { roughness: number; metallic: number }
@@ -212,7 +212,7 @@ function toPayload(results: readonly AssetMeshResult[], doc: SdfDocument, assetI
       const colouring = part.source && part.program ? partColouring(part.source.doc, part.source.mesh, part.program) : null
       if (colouring) for (const b of built) b.mesh.colors = colouring.colors(b.mesh)
       // The same per-pixel shading SDF Modeler stores in a saved mesh (no normal volume is ever baked here).
-      const shading = built.length ? meshedPartShading(doc, result.group, part) : null
+      const shading = built.length ? meshedParameshPartShading(doc, result.group, part) : null
       if (shading && 'shading' in shading) for (const o of shading.shading.operands) {
         if (o.material !== null && !materials.has(o.material) && !result.materials.some((m: BuiltMaterial) => m.id === o.material) && doc.materials?.[o.material]) {
           materials.set(o.material, buildMaterial(doc, o.material))

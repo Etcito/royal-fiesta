@@ -15,6 +15,8 @@ import { PALETTE } from '@royal-fiesta/game/render/palette'
 import * as raaSdfm from '@etcito/raa-sdfm'
 import * as asyncPipelines from '../src/render/asyncPipelines.ts'
 import * as renderOptions from '../src/render/renderOptions.ts'
+import * as fieldAtlas from '../src/sdf/fieldAtlas.ts'
+import * as fieldShading from '../src/sdf/fieldShading.ts'
 
 import type { CameraPose, RenderTarget, Viewport } from '@royal-fiesta/game/render/port'
 
@@ -24,8 +26,13 @@ const PLAIN = 'return MaterialFull(vec3f(1.0, 0.5, 0.1), 0.0, 0.5, vec3f(0.0), 0
 const PLAYER = 'let c = select(vec3f(0.5), mat_instance_tint.rgb, mat_instance_tint_set > 0.5); return MaterialFull(c, 0.0, 0.5, vec3f(0.0), 0.0);'
 const FRAME = new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
+interface ShadingReportLike {
+  parts: number; field: number; vertex: number; texture: number; pending: number; failed: number
+  demoted: number; atlasFull: number; bytes: number; budget: number; errors: readonly string[]
+}
 interface Port {
   engine: unknown; target: unknown
+  shadingReport(): ShadingReportLike
   skinOf(id: string): SkinnedAssetT | undefined
   registerSkinned(id: string, skin: SkinnedAssetT): number
   setPose(id: number, pose: Float32Array): void
@@ -46,6 +53,7 @@ const source = readFileSync(new URL('../src/sdf/sdfPort.ts', import.meta.url), '
 const FIELD = 'struct PmfSample { d: f32, g: vec3f, la: u32, lb: u32, t: f32 }\nfn pmf_eval(base: u32, p: vec3f) -> PmfSample { return PmfSample(0.0, p, 0u, 0u, 0.0); }'
 const compiled = transpileModule(source + `\nexports.make = (meshed) => new SdfRenderPort(meshed, new Map(), ${JSON.stringify(FIELD)})\n` +
   `exports.makeWith = (meshed, render, contract) => new SdfRenderPort(meshed, new Map(), ${JSON.stringify(FIELD)}, render, contract)\n` +
+  `exports.makeWithAtlas = (meshed, atlasBytes) => new SdfRenderPort(meshed, new Map(), null, undefined, null, atlasBytes)\n` +
   'exports.gameRenderOptions = gameRenderOptions\n', {
   compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
 }).outputText
@@ -61,11 +69,16 @@ interface Contract {
 const exports = {} as {
   make(meshed: ReadonlyMap<string, unknown>): Port
   makeWith(meshed: ReadonlyMap<string, unknown>, render: RenderOptions, contract: Contract): Port
-  gameRenderOptions(contract: Contract | null, given?: unknown, search?: string): RenderOptions
+  makeWithAtlas(meshed: ReadonlyMap<string, unknown>, atlasBytes: number): Port
+  gameRenderOptions: {
+    (search?: string, chosen?: { shading?: string; normalsDebug?: boolean }): { shading: string; normalsDebug: boolean }
+    (contract: Contract | null, given?: unknown, search?: string): RenderOptions
+  }
 }
 const warnings: string[] = []
+const errors: string[] = []
 runInNewContext(compiled, {
-  console: { ...console, warn: (...args: unknown[]) => { warnings.push(args.join(' ')) } },
+  console: { ...console, warn: (...args: unknown[]) => { warnings.push(args.join(' ')) }, error: (...args: unknown[]) => { errors.push(args.join(' ')) } },
   HTMLCanvasElement: FakeCanvas, exports, Float32Array, Float64Array, Uint32Array, performance, setTimeout, clearTimeout, URLSearchParams,
   require(id: string): unknown {
     if (id === '../game/checkProgress.ts') return { checkAwait: (_step: string, work: () => Promise<unknown>) => work() }
@@ -75,6 +88,8 @@ runInNewContext(compiled, {
     if (id === '../render/renderOptions.ts') return renderOptions
     if (id === '@royal-fiesta/game/render/nullPort') return { checkPose, checkSkin }
     if (id === './materialProgram.ts') return { materialProgram }
+    if (id === './fieldAtlas.ts') return fieldAtlas
+    if (id === './fieldShading.ts') return fieldShading
     if (id === '@etcito/raa-sdfm') return raaSdfm
     if (id === '@royal-fiesta/game/render/roundLoad') return { roundStep: (_name: string, fn: () => unknown) => fn(), renderFrame: (_port: unknown, fn: () => unknown) => fn() }
     if (id === '@royal-fiesta/sim/refusal') return { refuse: (...args: unknown[]) => { throw new Error(args.join(':')) } }
@@ -94,6 +109,26 @@ function part(name: string, materialName: string | null) {
   }] }
 }
 
+const IDENTITY16 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+const FIELD_NAME = 'pmf_eval_0123456789abcdef'
+// A structurally valid field program (contract 'mama.field-program') for the port tests.
+function fieldProgram(over: Record<string, unknown> = {}) {
+  return {
+    format: 'mama.field-program', version: 1,
+    bounds: { min: [-1, -1, -1], max: [1, 1, 1] },
+    labels: [{ material: null, color: [1, 0.4, 0.2], roughness: 0.5, metallic: 0 }],
+    operands: [{ kind: 'box', label: 0, inv: IDENTITY16, scale: 1, half: [1, 1, 1], radius: 0 }],
+    tree: [{ op: 'leaf', operand: 0 }],
+    grid: null as null | { width: number; height: number; texels: Uint8Array },
+    functionName: FIELD_NAME,
+    wgsl: `fn ${FIELD_NAME}(p: vec3f, w: ptr<function, array<f32, 8>>) -> f32 { return 1.0; }`,
+    ...over,
+  }
+}
+function gridProgram(side = 4) {
+  return fieldProgram({ grid: { width: side, height: side, texels: new Uint8Array(side * side * 4) } })
+}
+
 // The fake engine records the calls; instance ids are handed out in order, mesh instances
 // remember their mesh so a test can tell which part an instance draws.
 function fakeEngine() {
@@ -107,6 +142,8 @@ function fakeEngine() {
     tints: new Map<number, number[][]>(), cleared: [] as number[], modes: new Map<number, string>(),
     meshOf: new Map<number, number>(), meshIds: [] as number[], nextInstance: 1000,
     single: [] as unknown[][], objectMaterials: new Map<number, number | null>(), descs: [] as Record<string, unknown>[],
+    textures: [] as { width: number; height: number; data: Uint8Array }[], removedTextures: [] as number[],
+    instanceParams: [] as { instance: number; params: number[] }[],
   }
   const engine = {
     resize(...args: number[]) { calls.sizes.push(args) },
@@ -119,6 +156,9 @@ function fakeEngine() {
     addSurfaceMaterial(desc: Record<string, unknown>) { calls.surfaces++; calls.descs.push(desc); return ++next },
     addMaterialData(words: Uint32Array) { calls.data.push(words); return 4 + calls.data.slice(0, -1).reduce((n, w) => n + w.length, 0) },
     removeMaterialData(base: number) { calls.freed.push(base) },
+    addTexture(texture: { width: number; height: number; data: Uint8Array }) { calls.textures.push(texture); return 100 + calls.textures.length },
+    removeTexture(id: number) { calls.removedTextures.push(id) },
+    setInstanceParams(instance: number, params: number[]) { calls.instanceParams.push({ instance, params: Array.from(params) }) },
     setSkinPoses(ids: Uint32Array, matrices: Float32Array) { calls.skinPoses.push({ ids, matrices }) },
     addMesh(desc: unknown) { calls.jointStreams.push(desc); calls.meshes++; const id = ++next; calls.meshIds.push(id); return id },
     addNode() { return ++next },
@@ -137,6 +177,24 @@ function portFor(id: string, materials: unknown[], parts: unknown[], single?: bo
   const meshed = new Map([[id, { assetId: id, data: { materials, groups: [{ group: 'g', parts, ...(single === undefined ? {} : { single }) }] } }]])
   const { engine, calls } = fakeEngine()
   const port = exports.make(meshed)
+  port.engine = engine
+  port.target = {}
+  return { port, calls, handle: () => port.registerAsset(id, { id }) }
+}
+
+function portWithAtlas(id: string, materials: unknown[], parts: unknown[], atlasBytes: number) {
+  const meshed = new Map([[id, { assetId: id, data: { materials, groups: [{ group: 'g', parts }] } }]])
+  const { engine, calls } = fakeEngine()
+  const port = exports.makeWithAtlas(meshed, atlasBytes)
+  port.engine = engine
+  port.target = {}
+  return { port, calls, handle: () => port.registerAsset(id, { id }) }
+}
+
+function portWithRender(id: string, materials: unknown[], parts: unknown[], render: RenderOptions) {
+  const meshed = new Map([[id, { assetId: id, data: { materials, groups: [{ group: 'g', parts }] } }]])
+  const { engine, calls } = fakeEngine()
+  const port = exports.makeWith(meshed, render, CONTRACT)
   port.engine = engine
   port.target = {}
   return { port, calls, handle: () => port.registerAsset(id, { id }) }
@@ -499,6 +557,78 @@ test('game render options: settings, then the page address on top; a bad value k
   assert.ok(warnings.slice(before).some(w => w.includes('render-options:shading')))
   // No MAMA (a public clone): vertex normals.
   assert.equal(exports.gameRenderOptions(null, { shading: 'baked' }, '').shading, 'vertex')
+})
+
+// The field program path (contract 'mama.field-program'): a part with a valid program shades per fragment through
+// fieldShading.ts, a refused part keeps vertex normals and is named in the shading report.
+test('a field part shades from its program and a refused part keeps vertex with its reason', async () => {
+  const body = { ...part('body', 'skin'), fieldProgram: fieldProgram() }
+  const arm = { ...part('arm', 'skin'), fieldRefusal: 'not a Paramesh part' }
+  const { port, calls, handle } = portFor('test.field', [material('skin', PLAIN)], [body, arm])
+  await port.prepare(() => {}, () => {})
+  port.createInstance(handle(), null)
+  const report = port.shadingReport()
+  assert.equal(report.parts, 2)
+  assert.equal(report.field, 1)
+  assert.equal(report.vertex, 1)
+  assert.ok(report.errors.includes('test.field#g/arm: not a Paramesh part'), report.errors.join('\n'))
+  assert.ok(calls.functions >= 1, 'the field evaluator and material are registered')
+})
+
+// An atlas_full addTexture demotes that one part to vertex: it is counted, named and logged, and never thrown.
+test('texture.atlas_full demotes the part to vertex and is logged, never thrown', async () => {
+  const body = { ...part('body', 'skin'), fieldProgram: gridProgram() }
+  const { port, calls, handle } = portFor('test.full', [material('skin', PLAIN)], [body])
+  ;(port.engine as { addTexture: () => number }).addTexture = () => { throw { code: 'texture.atlas_full' } }
+  const before = errors.length
+  await assert.doesNotReject(port.prepare(() => {}, () => {}))
+  port.createInstance(handle(), null)
+  const report = port.shadingReport()
+  assert.equal(report.atlasFull, 1)
+  assert.equal(report.field, 0)
+  assert.equal(report.vertex, 1)
+  assert.equal(calls.textures.length, 0)
+  assert.ok(errors.slice(before).includes('[sdf-port] texture.atlas_full test.full#g/body'), errors.join('\n'))
+})
+
+// The field atlas plan runs once over the world before any upload: a budget that fits one grid demotes the
+// smaller-diagonal part first.
+test('a too-small atlas budget demotes the smaller-diagonal part first', async () => {
+  const meshOf = (name: string, side: number) => ({
+    ...part(name, 'skin'), meshes: [{ ...part(name, 'skin').meshes[0], positions: new Float32Array([0, 0, 0, side, 0, 0, 0, side, 0]) }],
+  })
+  const small = { ...meshOf('small', 1), fieldProgram: gridProgram() }
+  const big = { ...meshOf('big', 3), fieldProgram: gridProgram() }
+  const bytes = 4 * 4 * 4
+  const { port, calls, handle } = portWithAtlas('test.budget', [material('skin', PLAIN)], [small, big], bytes)
+  await port.prepare(() => {}, () => {})
+  port.createInstance(handle(), null)
+  const report = port.shadingReport()
+  assert.equal(report.demoted, 1)
+  assert.equal(report.field, 1)
+  assert.equal(report.vertex, 1)
+  assert.equal(report.bytes, bytes)
+  assert.equal(report.budget, bytes)
+  assert.equal(calls.textures.length, 1)
+  assert.ok(report.errors.includes('test.budget#g/small: atlas budget: smaller parts first'), report.errors.join('\n'))
+})
+
+// ?normals=vertex forces the vertex path: no field grid texture and every part vertex, named 'vertex mode'.
+test('?normals=vertex gives zero textures and every part vertex', async () => {
+  const chosen = exports.gameRenderOptions('?normals=vertex', { shading: 'sdf' })
+  assert.equal(chosen.shading, 'vertex')
+  assert.equal(exports.gameRenderOptions('', {}).shading, 'sdf')
+  assert.equal(exports.gameRenderOptions('?normalsDebug', {}).normalsDebug, true)
+  const body = { ...part('body', 'skin'), fieldProgram: gridProgram() }
+  const { port, calls, handle } = portWithRender('test.vertex', [material('skin', PLAIN)], [body],
+    { shading: 'vertex', bakeTexelDensity: 0, bakeMaxSize: 0 })
+  await port.prepare(() => {}, () => {})
+  port.createInstance(handle(), null)
+  const report = port.shadingReport()
+  assert.equal(calls.textures.length, 0)
+  assert.equal(report.field, 0)
+  assert.equal(report.vertex, report.parts)
+  assert.ok(report.errors.some(line => line.endsWith(': vertex mode')), report.errors.join('\n'))
 })
 
 /** A recording stand-in for a GPUDevice: draws nothing, maps readback buffers filled with a pattern. */

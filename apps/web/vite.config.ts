@@ -22,7 +22,7 @@ function rfMama(): Plugin {
   const target = mama.kind !== 'absent' && existsSync(MAMA_IMPL) ? MAMA_IMPL : MAMA_ABSENT
   return {
     name: 'rf-mama',
-    resolveId(id) {
+    resolveId(id: string) {
       if (id === 'virtual:rf-mama') return target
       return null
     },
@@ -46,7 +46,7 @@ function rfAssetData(): Plugin {
   }
 }
 
-type Alias = { find: string; replacement: string }
+type Alias = { find: string | RegExp; replacement: string }
 
 // The local RAA checkout carries its packages under packages/<name>; read the names from their
 // manifests instead of hard-coding paths that a release may move.
@@ -71,6 +71,9 @@ const alias: Alias[] = ['game', 'sim'].map(name => ({ find: `@royal-fiesta/${nam
 if (mama.kind !== 'absent') {
   alias.push({ find: '@etcito/mama', replacement: join(mama.dir, 'src') })
   alias.push({ find: 'manifold-3d', replacement: join(mama.dir, 'node_modules', 'manifold-3d') })
+  // MAMA's Paramesh field imports its generated base64 module as ./field-wasm-bytes.js; build-procgen writes it into
+  // dist/core/paramesh next to the compiled file, so point that import at dist (the app reads MAMA's sources).
+  alias.push({ find: /^\.\/field-wasm-bytes\.js$/, replacement: join(mama.dir, 'dist', 'core', 'paramesh', 'field-wasm-bytes.js') })
 }
 const raa = raaLocal()
 if (raa.active && raa.dir !== null) {

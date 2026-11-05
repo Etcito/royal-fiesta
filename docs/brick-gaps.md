@@ -28,6 +28,17 @@ attempts. Two limits remain:
   variant meshes. A `setInstanceTint(instance, [r, g, b])` binding would remove those
   per-tint material and mesh variants.
 
+### Baked-texture surface material (M2)
+
+The pinned RAA release has no built-in surface material that samples a baseColor/normal/orm
+triple. Its textured route is `Engine.addTexture` plus a user `material_main` that calls
+`raa_texture`; the three texture ids live in the material-data block of one registered
+function (`rf.textured`, `apps/web/src/sdf/sdfPort.ts`). A part whose upload hits
+`texture.atlas_full` keeps its field/vertex pair and is named in the shading report. If a
+future pin drops `addTexture`, `addMaterialFunction` or `addSurfaceMaterial`, the explicit
+baked choice is refused with `baked: RAA has no textured surface material
+(docs/brick-gaps.md)` and the current mode stays.
+
 ## raa-sdfm: SDF tour prerequisites
 
 ### Shared material shader prelude (card 5301)

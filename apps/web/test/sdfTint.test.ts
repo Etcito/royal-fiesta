@@ -32,7 +32,8 @@ interface ShadingReportLike {
 }
 interface Port {
   render(): void
-  setShading(mode: 'sdf' | 'vertex' | 'texture'): void
+  setShading(mode: 'field' | 'vertex' | 'baked'): void
+  addTextured(assetId: string, meshed: unknown): void
   releaseAsset(handle: number): void
   engine: unknown; target: unknown
   shadingReport(): ShadingReportLike
@@ -697,9 +698,9 @@ test('a too-small atlas budget demotes the smaller-diagonal part first', async (
 
 // Vertex mode keeps fields resident so switching to SDF can reuse the upload.
 test('?normals=vertex shows every part vertex and keeps the field resident', async () => {
-  const chosen = exports.gameRenderOptions('?normals=vertex', { shading: 'sdf' })
+  const chosen = exports.gameRenderOptions('?normals=vertex', { shading: 'field' })
   assert.equal(chosen.shading, 'vertex')
-  assert.equal(exports.gameRenderOptions('', {}).shading, 'sdf')
+  assert.equal(exports.gameRenderOptions('', {}).shading, 'field')
   assert.equal(exports.gameRenderOptions('?normalsDebug', {}).normalsDebug, true)
   const body = { ...part('body', 'skin'), fieldProgram: gridProgram() }
   const { port, calls, handle } = portWithRender('test.vertex', [material('skin', PLAIN)], [body],
@@ -822,7 +823,7 @@ test('pending field pairs show the copy, swap on the next ready render and switc
   port.setShading('vertex')
   pair(false, true)
   assert.equal(port.shadingReport().pending, 0)
-  port.setShading('sdf')
+  port.setShading('field')
   pair(false, true)
   assert.equal(port.shadingReport().pending, 1)
   port.render()
@@ -845,10 +846,9 @@ test('pending field pairs show the copy, swap on the next ready render and switc
   pair(false, true)
   assert.equal(port.shadingReport().vertex, 1)
   assert.equal(calls.removedTextures.length, 0, 'field textures stay resident')
-  port.setShading('texture')
-  pair(false, true)
-  assert.ok(port.shadingReport().errors.includes('texture: no baked textures loaded'))
-  port.setShading('sdf')
+  port.setShading('baked')
+  pair(true, false)
+  port.setShading('field')
   pair(true, false)
   port.setVisible(instance, false)
   pair(false, false)
@@ -862,7 +862,7 @@ test('pending field pairs show the copy, swap on the next ready render and switc
   pair(false, false)
   port.setPartFilter(instance, null)
   pair(false, true)
-  port.setShading('sdf')
+  port.setShading('field')
   pair(true, false)
   port.releaseAsset(h)
   assert.equal(calls.removedMeshes.length, 2, 'both field and vertex meshes are freed once')
@@ -886,7 +886,7 @@ test('a failed field keeps its vertex copy and reports the shader rejection by p
   assert.equal(report.failed, 1)
   assert.ok(report.errors.includes('test.shader-failed#g/body: shader invalid layout; previous error: too many bindings'))
   port.setShading('vertex')
-  port.setShading('sdf')
+  port.setShading('field')
   assert.equal(calls.visibility.get(first), false)
   assert.equal(calls.visibility.get(first + 1), true)
   port.setVisible(instance, false)
@@ -920,7 +920,7 @@ test('a pending skinned pair receives poses on both members and keeps its last p
   port.setPose(instance, matrices)
   port.render()
   assert.deepEqual(Array.from(calls.skinPoses[1].ids), [first, first + 1])
-  port.setShading('sdf')
+  port.setShading('field')
   assert.equal(calls.visibility.get(first), true)
   assert.equal(calls.visibility.get(first + 1), false)
   port.releaseAsset(h)
@@ -941,4 +941,125 @@ test('a field pair keeps its vertex object material and the field material on th
   const vertexMaterial = calls.objectMaterials.get(first + 1)
   assert.ok(vertexMaterial !== undefined && vertexMaterial !== null)
   assert.equal(JSON.stringify(calls.surfaceOf.get(vertexMaterial)), JSON.stringify({ color: [1, 1, 1], roughness: 0.3, metallic: 0.1 }))
+})
+
+// The explicit 'baked' choice (contract 'baked-part-textures'): the worker's baked baseColor/normal/orm maps drive a
+// third member per part, shown only in 'baked' mode; the field/vertex pair stays resident.
+function bakedData(over: Record<string, unknown> = {}) {
+  return {
+    positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+    normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
+    uvs: new Float32Array([0, 0, 1, 0, 0, 1]),
+    tangents: new Float32Array([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]),
+    indices: new Uint32Array([0, 1, 2]),
+    baseColor: { width: 1, height: 1, data: new Uint8Array([255, 0, 0, 255]) },
+    normal: { width: 1, height: 1, data: new Uint8Array([128, 128, 255, 255]) },
+    orm: { width: 1, height: 1, data: new Uint8Array([255, 128, 0, 255]) },
+    ...over,
+  }
+}
+
+function portWithBaked(id: string, body: Record<string, unknown>) {
+  const meshed = new Map([[id, { assetId: id, data: { materials: [material('skin', PLAIN)], groups: [{ group: 'g', parts: [body] }] } }]])
+  const { engine, calls } = fakeEngine()
+  const port = exports.make(meshed)
+  port.engine = engine
+  port.target = {}
+  const device = {}
+  const state: { current: asyncPipelines.PipelineReadiness } = { current: { status: 'ready' } }
+  readiness.set(device, () => state.current)
+  Object.assign(port, { gpuDevice: device })
+  return { port, calls, meshed, state, handle: () => port.registerAsset(id, { id }) }
+}
+
+test('baked texture: addTextured adds a textured member per part; baked mode shows it and leaving hides it', () => {
+  const id = 'test.baked'
+  const body = { ...part('body', 'skin'), fieldProgram: fieldProgram(), baked: bakedData() }
+  const { port, calls, meshed, handle } = portWithBaked(id, body)
+  const h = handle()
+  const first = calls.nextInstance
+  port.createInstance(h, [0.2, 0.4, 0.8])
+  assert.equal(calls.instances, 2, 'the field/vertex pair')
+  assert.equal(calls.textures.length, 0, 'nothing is baked before addTextured')
+  port.addTextured(id, meshed.get(id))
+  assert.equal(calls.instances, 3, 'a third member per part')
+  const textured = first + 2
+  assert.equal(calls.nodes.get(textured), calls.nodes.get(first), 'the textured member shares the part node')
+  assert.deepEqual(calls.tints.get(textured), calls.tints.get(first), 'the tint reaches the textured member')
+  assert.equal(calls.textures.length, 3, 'baseColor, normal and orm')
+  assert.ok(calls.functionSources.has('rf.textured'), 'the one textured material function is registered')
+  assert.equal(calls.visibility.get(textured), false, 'hidden while the field draws')
+  port.render()
+  assert.equal(calls.visibility.get(first), true)
+  assert.equal(calls.visibility.get(first + 1), false)
+  port.setShading('baked')
+  assert.equal(calls.visibility.get(first), false)
+  assert.equal(calls.visibility.get(first + 1), false)
+  assert.equal(calls.visibility.get(textured), true)
+  const report = port.shadingReport()
+  assert.equal(report.texture, 1)
+  assert.equal(report.field, 0)
+  assert.equal(report.pending, 0)
+  port.setShading('field')
+  assert.equal(calls.visibility.get(first), true)
+  assert.equal(calls.visibility.get(textured), false)
+  assert.equal(port.shadingReport().texture, 0)
+  port.releaseAsset(h)
+  assert.equal(calls.removedMeshes.length, 3, 'the field, vertex and textured meshes are freed')
+  assert.deepEqual([...calls.removedTextures].sort(), [101, 102, 103], 'the three baked textures are freed')
+})
+
+test('baked texture: texture.atlas_full keeps the field pair and names the error', () => {
+  const id = 'test.baked-full'
+  const body = { ...part('body', 'skin'), fieldProgram: fieldProgram(), baked: bakedData() }
+  const { port, calls, meshed, handle } = portWithBaked(id, body)
+  const h = handle()
+  const first = calls.nextInstance
+  port.createInstance(h, null)
+  ;(port.engine as { addTexture: () => number }).addTexture = () => { throw { code: 'texture.atlas_full' } }
+  const before = errors.length
+  port.addTextured(id, meshed.get(id))
+  assert.equal(calls.instances, 2, 'no textured member is added')
+  const report = port.shadingReport()
+  assert.equal(report.atlasFull, 1)
+  assert.ok(report.errors.includes(`${id}#g/body: texture.atlas_full`), report.errors.join('\n'))
+  assert.ok(errors.slice(before).includes(`[sdf-port] texture.atlas_full ${id}#g/body`))
+  port.render()
+  assert.equal(calls.visibility.get(first), true)
+  assert.equal(calls.visibility.get(first + 1), false)
+  port.setShading('baked')
+  assert.equal(calls.visibility.get(first), true, 'the part keeps the field rule')
+  assert.equal(calls.visibility.get(first + 1), false)
+})
+
+test('baked texture: a bakedRefusal part stays on its field pair with the reason named', () => {
+  const id = 'test.baked-refused'
+  const body = { ...part('body', 'skin'), fieldProgram: fieldProgram(), bakedRefusal: 'bakeMeshTextures: no source' }
+  const { port, calls, meshed, handle } = portWithBaked(id, body)
+  port.createInstance(handle(), null)
+  port.addTextured(id, meshed.get(id))
+  assert.equal(calls.instances, 2)
+  assert.ok(port.shadingReport().errors.includes(`${id}#g/body: bakeMeshTextures: no source`), port.shadingReport().errors.join('\n'))
+})
+
+test('baked texture: a skinned textured member receives the same pose', () => {
+  const id = 'test.baked-skin'
+  const body = { ...part('body', 'skin'), fieldProgram: fieldProgram(), baked: bakedData({
+    joints: new Uint16Array(12), weights: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]),
+  }) }
+  const { port, calls, meshed } = portWithBaked(id, body)
+  const skin: SkinnedAssetT = { rig: { name: 'penguin', bones: [{ name: 'root', parent: null }] }, parts: [{ name: 'body', skin: {
+    joints: new Uint16Array(12), weights: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]),
+  } }] }
+  const h = port.registerSkinned(id, skin)
+  const first = calls.nextInstance
+  const instance = port.createInstance(h, null)
+  port.addTextured(id, meshed.get(id))
+  assert.equal(calls.instances, 3)
+  const matrices = Float32Array.from(FRAME); matrices[13] = 0.7
+  port.setPose(instance, matrices)
+  port.render()
+  assert.deepEqual(Array.from(calls.skinPoses[0].ids), [first, first + 1, first + 2], 'the textured member gets a skin slot')
+  port.setShading('baked')
+  assert.equal(calls.visibility.get(first + 2), true)
 })

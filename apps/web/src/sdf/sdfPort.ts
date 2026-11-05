@@ -31,6 +31,7 @@ export interface ResizablePort extends SkinnedRenderPort {
   setPartFilter(instance: number, parts: readonly string[] | null): void
   shadingReport(): ShadingReport
   setShading(mode: ShadingMode): void
+  addTextured(assetId: string, meshed: MeshedAsset): void
 }
 
 /** What this upload drew with which shading, plus every part that could not keep its field, named. */
@@ -65,16 +66,16 @@ const AREA = 'sdf'
 const WHERE = 'sdf-port'
 
 /**
- * How Paramesh surfaces are shaded. 'sdf' (default) evaluates the part's field program per fragment (the field's
+ * How Paramesh surfaces are shaded. 'field' (default) evaluates the part's field program per fragment (the field's
  * gradient as the normal and the labels' looks mixed per pixel, nothing baked); 'vertex' keeps the saved per-face
- * (or one-per-object) materials and the interpolated vertex normals; 'texture' draws the baked texture shading.
- * The landed MAMA render options spell these 'field' | 'vertex' | 'baked'.
+ * (or one-per-object) materials and the interpolated vertex normals; 'baked' draws the baked baseColor/normal/orm
+ * textures. These are the landed MAMA render option names.
  */
-export type ShadingMode = 'sdf' | 'vertex' | 'texture'
+export type ShadingMode = 'field' | 'vertex' | 'baked'
 export interface GameRenderOptions { shading: ShadingMode; normalsDebug: boolean; atlasBytes?: number }
 
 /**
- * The normals choice as render/renderOptions.ts names it: 'pixel' is the per-pixel field (ShadingMode 'sdf'), and
+ * The normals choice as render/renderOptions.ts names it: 'pixel' is the per-pixel field (ShadingMode 'field'), and
  * `?normals=vertex` in the page address forces 'vertex'.
  */
 export type NormalsMode = 'pixel' | 'vertex'
@@ -93,16 +94,16 @@ interface RenderContract {
 const PORT_OPTIONS = ['shading', 'bakeTexelDensity', 'bakeMaxSize'] as const
 
 function shadingModeOf(value: unknown): ShadingMode | null {
-  return value === 'sdf' || value === 'vertex' || value === 'texture' ? value : null
+  return value === 'field' || value === 'vertex' || value === 'baked' ? value : null
 }
 // The landed MAMA option names this port applies ('field' is the per-pixel SDF, 'baked' the texture shading).
 function shadingToContract(mode: ShadingMode): RfGameRenderOptions['shading'] {
-  return mode === 'vertex' ? 'vertex' : mode === 'texture' ? 'baked' : 'field'
+  return mode
 }
 
 /**
  * The chosen port options first, then the page address: `?normals=vertex` forces 'vertex' and `?normalsDebug`
- * turns on the normal look. The default is 'sdf' (the part's field program evaluated per fragment).
+ * turns on the normal look. The default is 'field' (the part's field program evaluated per fragment).
  */
 export function gameRenderOptions(search?: string, chosen?: Partial<GameRenderOptions>): GameRenderOptions
 /**
@@ -117,7 +118,7 @@ export function gameRenderOptions(a: RenderContract | string | null = '', b?: un
   if (typeof a === 'string') {
     const params = new URLSearchParams(a)
     const chosen = isRecord(b) ? b as Partial<GameRenderOptions> : {}
-    let shading = shadingModeOf(chosen.shading) ?? 'sdf'
+    let shading = shadingModeOf(chosen.shading) ?? 'field'
     if (params.get('normals') === 'vertex') shading = 'vertex'
     return { shading, normalsDebug: params.has('normalsDebug') || chosen.normalsDebug === true }
   }
@@ -144,8 +145,41 @@ function normalsDebug(search: string = typeof location === 'undefined' ? '' : lo
 const MAX_INSTANCES = 4096
 const MAX_MATERIALS = 1024
 
+// A baked part's surface: baseColor (sRGB), tangent-space normal and orm from three atlas textures whose ids live in the
+// part's material-data block. RAA has no built-in baseColor/normal/orm surface material; its textured route is
+// addTexture plus a user material_main calling raa_texture (docs/brick-gaps.md).
+const TEXTURED_FUNCTION = 'rf.textured'
+const TEXTURED_MATERIAL_WGSL = `fn material_main(in: MaterialInput) -> MaterialOutput {
+  var o = raa_default_output(in);
+  let b = raa_material_data_base(in.record);
+  let colour = raa_texture(raa_material_word(b), in.uv);
+  let normal = raa_texture(raa_material_word(b + 1u), in.uv);
+  let orm = raa_texture(raa_material_word(b + 2u), in.uv);
+  o.base_color = raa_srgb_to_linear(colour.rgb);
+  o.normal = raa_perturb_normal(in.normal, in.tangent, normal.xyz * 2.0 - 1.0);
+  o.ao = orm.r;
+  o.roughness = orm.g;
+  o.metallic = orm.b;
+  return o;
+}`
+
 // The payload of apps/web/src/sdf/mama/worker.ts: MAMA parts with per-material meshes.
 interface PayloadMesh { material: string | null; positions: Float32Array; normals: Float32Array; uvs: Float32Array | null; indices: Uint32Array; colors?: Float32Array }
+// The contract 'baked-part-textures' (MAMA worker, MeshRequest.bakedTextures): the part's baked surfaces and maps in
+// its MESH space. A part whose bake failed carries bakedRefusal instead; parts without triangles carry neither.
+interface BakedImage { width: number; height: number; data: Uint8Array }
+interface BakedTextures {
+  positions: Float32Array
+  normals: Float32Array
+  uvs: Float32Array
+  tangents: Float32Array
+  indices: Uint32Array
+  joints?: Uint16Array
+  weights?: Float32Array
+  baseColor: BakedImage
+  normal: BakedImage
+  orm: BakedImage
+}
 // fieldProgram/fieldRefusal: MAMA's per-part SDF field (contract 'mama.field-program') or why it has none; a part saved
 // before field programs carries neither. shading/shadingError: the earlier per-pixel shading record (saved format 3-4),
 // kept so meshes saved before the field-program contract still shade. colors/look/single: one material per object
@@ -161,6 +195,8 @@ interface PayloadPart {
   shadingError?: string
   look?: { roughness: number; metallic: number }
   normalVolume?: unknown
+  baked?: BakedTextures
+  bakedRefusal?: string
 }
 interface PayloadGroup { group: string; parts: PayloadPart[]; single?: boolean }
 interface Payload { groups: PayloadGroup[]; materials: SdfmCompiledMaterial[] }
@@ -192,6 +228,20 @@ interface PartUpload {
   bake?: SdfmBakedPart
   params?: number[]
   texture?: number
+  textured?: TexturedPart
+}
+// A part's baked-texture draw (addTextured): its mesh, the part's surface material (the shared textured function with
+// a data block naming three texture ids) and the textures themselves, freed with the upload.
+interface TexturedPart {
+  mesh: number
+  desc: MeshDesc
+  subMeshes: SubMeshDesc[]
+  material: number
+  data: number
+  textures: number[]
+  t: [number, number, number]
+  r: [number, number, number, number]
+  joints?: number
 }
 // What shadingMaterial built for one part: field materials carry the instance params (and their grid texture);
 // the earlier shading record also carries its material data block and can be baked into its UV atlas.
@@ -212,13 +262,18 @@ type PartTint = 'graph' | 'multiply' | 'none'
 // data: the field-shading data blocks (RAA material data words) this upload added, freed with it (a baked part's block and
 // textures are the bake scheduler's, given back when the upload is released).
 interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]; tintedParts?: PartUpload[]; bones?: number; rig?: SkinRigT; clips?: readonly unknown[]; base?: number; data?: number[] }
-interface SkinSlot { instance: number; part: PartUpload }
+// The pose transform of one drawn member: the rig poses asset space, and the member's mesh lives in its frame.
+interface PosePart { joints?: number; t: [number, number, number]; r: [number, number, number, number] }
+interface SkinSlot { instance: number; part: PosePart }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
 // asset = the uploaded/handle index this instance was created from (for the live inventory).
+// nodes: the per-part node each member of the pair (and the textured one) hangs under.
 // fallbacks: resident vertex-colour copies (index into partNames), hidden once their shading can draw.
+// textured: the baked-texture member per part (addTextured), shown only in 'baked' mode.
 // bakes: the bake of each instance's part (null = not a baked part).
-interface Live { asset: number; root: number; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; bakes: (SdfmBakedPart | null)[] }
+interface Live { asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null }
 interface LiveFallback { instance: number; part: PartUpload; index: number; ready: boolean; failed: boolean }
+interface LiveTextured { instance: number; part: PartUpload; index: number }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
   failed: ReadonlyMap<string, string> = new Map(),
@@ -317,8 +372,12 @@ class SdfRenderPort implements ResizablePort {
   // RAA texture.atlas_full errors caught at upload; such a part draws vertex and is named in the report.
   private atlasFull = 0
   // The shading each uploaded part draws with, by plan key, and the named reasons of the vertex ones.
-  private readonly shadingOfPart = new Map<string, 'field' | 'vertex' | 'texture'>()
+  private readonly shadingOfPart = new Map<string, 'field' | 'vertex' | 'baked'>()
   private readonly shadingErrors = new Map<string, string>()
+  // Reasons the baked-texture upload could not draw a part (bakedRefusal, texture.atlas_full), and whether the pinned
+  // RAA release even has the textured-material route.
+  private readonly textureErrors = new Map<string, string>()
+  private texturedMissing = false
   // GPU handles this port created, for the live inventory (the baked textures are the bake scheduler's).
   private meshes = 0
   // The bake scheduler (raa-sdfm): the parts created instances asked to bake, the run working through them, the atlas
@@ -336,7 +395,7 @@ class SdfRenderPort implements ResizablePort {
     this.failed = failed
     this.field = field
     this.options = render
-    this.shading = render.shading === 'vertex' ? 'vertex' : render.shading === 'baked' ? 'texture' : 'sdf'
+    this.shading = render.shading === 'vertex' ? 'vertex' : render.shading === 'baked' ? 'baked' : 'field'
     this.contract = contract
     this.atlasBytes = Number.isFinite(atlasBytes) && atlasBytes >= 0 ? atlasBytes : FIELD_ATLAS_BYTES
     this.debugNormals = debug
@@ -505,19 +564,34 @@ class SdfRenderPort implements ResizablePort {
     return this.atlasPlan
   }
 
+  // The parts that got a baked-texture member (addTextured), by their report key.
+  private texturedKeys(): Set<string> {
+    const keys = new Set<string>()
+    for (const entry of this.uploaded) {
+      if (entry === undefined) continue
+      for (const part of entry.parts) {
+        if (part.textured !== undefined && part.reportKey !== undefined) keys.add(part.reportKey)
+      }
+    }
+    return keys
+  }
+
   /** What the upload drew with which shading and every part that could not keep its field, named and sorted. */
   shadingReport(): ShadingReport {
     const plan = this.atlasPlan ?? planFieldAtlas([], this.atlasBytes)
+    const textured = this.texturedKeys()
     let field = 0
     let vertex = 0
     let texture = 0
-    for (const mode of this.shadingOfPart.values()) {
+    for (const [key, mode] of this.shadingOfPart) {
       if (this.shading === 'vertex') vertex++
+      else if (this.shading === 'baked' && textured.has(key)) texture++
+      else if (mode === 'baked') texture++
       else if (mode === 'field') field++
-      else if (mode === 'texture') texture++
       else vertex++
     }
-    const errors = [...this.shadingErrors].map(([key, reason]) => `${key}: ${reason}`)
+    const errors = [...this.shadingErrors, ...this.textureErrors].map(([key, reason]) => `${key}: ${reason}`)
+    if (this.texturedMissing) errors.push('baked: RAA has no textured surface material (docs/brick-gaps.md)')
     if (this.shading === 'vertex') for (const [key, mode] of this.shadingOfPart) if (mode !== 'vertex') errors.push(`${key}: vertex mode`)
     errors.sort()
     const failed = [...this.shadingErrors.values()].filter(reason => reason !== 'vertex mode').length
@@ -529,7 +603,7 @@ class SdfRenderPort implements ResizablePort {
     }
   }
 
-  private recordPart(key: string, mode: 'field' | 'vertex' | 'texture', reason?: string): void {
+  private recordPart(key: string, mode: 'field' | 'vertex' | 'baked', reason?: string): void {
     this.shadingOfPart.set(key, mode)
     if (mode === 'vertex' && reason !== undefined) this.shadingErrors.set(key, reason)
     else this.shadingErrors.delete(key)
@@ -598,7 +672,7 @@ class SdfRenderPort implements ResizablePort {
             subMeshes = subMeshes.map(sub => ({ ...sub, material: bake.material }))
             desc = { positions: d.positions, normals: d.normals, uvs: d.uvs, tangents: bake.tangents, indices: d.indices, subMeshes }
             field = { field: materialKey(BAKED_MATERIAL_WGSL), fallback, bake }
-            this.recordPart(fieldPartKey, 'texture')
+            this.recordPart(fieldPartKey, 'baked')
           } else {
             if (shaded.data !== undefined) data.push(shaded.data)
             // The rest point and rest frame the field reads (raa-sdfm fieldSurfaceAttributes) replace colours, uvs, tangents.
@@ -799,6 +873,25 @@ class SdfRenderPort implements ResizablePort {
     this.posed.add(instance)
   }
 
+  // Adds one drawn member of a live instance under `node`: the part material (or the object/single one), the tint and,
+  // for a skinned member, its pose slot. A textured member uses its own baked mesh and joint streams.
+  private addMember(live: Live, node: number, mesh: number, object: number | undefined, part: PartUpload,
+    pose: PosePart, tint: Vec3T | null, params?: number[]): number {
+    const engine = this.need()
+    const instance = engine.addMeshInstance(node, mesh)
+    if (params !== undefined) engine.setInstanceParams(instance, params)
+    if (object !== undefined) engine.setInstanceMaterial(instance, object)
+    else engine.setSingleMaterial(false, instance)
+    // Cosmetic colourways multiply the existing fixed materials on the same mesh.
+    // The character keeps its graph-selected skin tint so its beak and feet stay fixed.
+    if (tint !== null && (part.tint !== 'none' || this.uploaded[live.asset]!.assetId.startsWith('costume.'))) {
+      engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
+      this.tinted.add(instance)
+    } else if (this.tinted.delete(instance)) engine.clearInstanceTint(instance)
+    if (pose.joints !== undefined) live.skin.push({ instance, part: pose })
+    return instance
+  }
+
   createInstance(asset: number, tint: Vec3T | null): number {
     const uploaded = this.uploaded[asset]
     if (uploaded === undefined) refuse(AREA, WHERE, `createInstance: unknown asset handle ${asset}; register the asset first with registerAsset`)
@@ -806,39 +899,103 @@ class SdfRenderPort implements ResizablePort {
     const parts = tint === null ? uploaded.parts : this.tintableParts(uploaded)
     const engine = this.need()
     const root = engine.addNode(null)
-    const instances: number[] = []
-    const skin: SkinSlot[] = []
-    const fallbacks: LiveFallback[] = []
-    const add = (node: number, mesh: number, object: number | undefined, part: PartUpload): number => {
-      const instance = engine.addMeshInstance(node, mesh)
-      if (part.params !== undefined) engine.setInstanceParams(instance, part.params)
-      if (object !== undefined) engine.setInstanceMaterial(instance, object)
-      else engine.setSingleMaterial(false, instance)
-      // Cosmetic colourways multiply the existing fixed materials on the same mesh.
-      // The character keeps its graph-selected skin tint so its beak and feet stay fixed.
-      if (tint !== null && (part.tint !== 'none' || uploaded.assetId.startsWith('costume.'))) {
-        engine.setInstanceTint(instance, [tint[0], tint[1], tint[2], 1])
-        this.tinted.add(instance)
-      } else if (this.tinted.delete(instance)) engine.clearInstanceTint(instance)
-      if (part.joints !== undefined) skin.push({ instance, part })
-      return instance
-    }
+    const live: Live = { asset, root, nodes: [], instances: [], partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [],
+      filter: null, visible: true, bones: uploaded.bones ?? 0, skin: [], pose: null, fallbacks: [], textured: [], bakes: [], tint }
     parts.forEach((part, index) => {
       const node = engine.addNode(root, part.t, part.r)
-      instances.push(add(node, part.mesh, part.object, part))
-      // Keep both members resident for live shading switches; only one draws in a frame.
+      live.nodes.push(node)
+      live.instances.push(this.addMember(live, node, part.mesh, part.object, part, part, tint, part.params))
+      // Keep every resident member for live shading switches; only one draws in a frame.
       if (part.fallback !== undefined) {
-        fallbacks.push({ instance: add(node, part.fallback.mesh, part.fallback.object, { ...part, params: undefined }),
+        live.fallbacks.push({ instance: this.addMember(live, node, part.fallback.mesh, part.fallback.object, part, part, tint),
           part, index, ready: false, failed: false })
       }
+      if (part.textured !== undefined) {
+        live.textured.push({ instance: this.addMember(live, node, part.textured.mesh, undefined, part, part.textured, tint), part, index })
+      }
     })
-    const bakes = parts.map(part => part.bake ?? null)
-    const live: Live = { asset, root, instances, partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [], filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null, fallbacks, bakes }
+    live.bakes = parts.map(part => part.bake ?? null)
     this.live.push(live)
     this.updateFallbacks(live)
     this.applyVisibility(live)
-    if (bakes.some(slot => slot !== null)) this.queueBakes(parts)
+    if (live.bakes.some(slot => slot !== null)) this.queueBakes(parts)
     return this.live.length - 1
+  }
+
+  // The explicit 'baked' choice's data path: the MAMA worker's baked baseColor/normal/orm textures (contract
+  // 'baked-part-textures'). Each part that has them uploads a mesh from its baked positions/normals/uvs/tangents
+  // (plus its baked joints/weights), three atlas textures and one surface material; every live instance of the asset
+  // gets the textured member under its part node, with the same tint and skin slot. A part whose bake failed
+  // (bakedRefusal) or whose texture does not fit (texture.atlas_full) keeps its field/vertex pair, and the reason is
+  // named in the report.
+  addTextured(assetId: string, meshed: MeshedAsset): void {
+    const handle = this.handleOfId.get(assetId)
+    if (handle === undefined) refuse(AREA, assetId, 'addTextured: register the asset before adding its baked textures')
+    const uploaded = this.uploaded[handle]
+    if (uploaded === undefined) return
+    const engine = this.need()
+    // The pinned RAA release's textured route: addTexture + a user material function sampling it. Without it the
+    // choice stays visible and named, and the current mode is kept (setShading checks this too).
+    if (typeof engine.addTexture !== 'function' || typeof engine.addMaterialFunction !== 'function' || typeof engine.addSurfaceMaterial !== 'function') {
+      this.texturedMissing = true
+      return
+    }
+    this.addFunction(TEXTURED_FUNCTION, TEXTURED_MATERIAL_WGSL)
+    const payload = payloadOf(assetId, meshed)
+    for (const group of payload.groups) {
+      for (const part of group.parts) {
+        if (part.meshes.length === 0) continue
+        const key = fieldKey(assetId, group.group, part.partId)
+        const target = uploaded.parts.find(entry => entry.reportKey === key)
+        if (target === undefined) continue
+        if (part.bakedRefusal !== undefined) {
+          this.textureErrors.set(key, part.bakedRefusal)
+          continue
+        }
+        const baked = part.baked
+        if (baked === undefined) continue
+        if (target.textured === undefined) {
+          const textures: number[] = []
+          try {
+            textures.push(engine.addTexture(baked.baseColor), engine.addTexture(baked.normal), engine.addTexture(baked.orm))
+          } catch (e) {
+            for (const texture of textures) engine.removeTexture(texture)
+            if (raaCode(e) !== 'texture.atlas_full') throw e
+            this.atlasFull++
+            console.error(`[sdf-port] texture.atlas_full ${key}`)
+            this.textureErrors.set(key, 'texture.atlas_full')
+            continue
+          }
+          const data = engine.addMaterialData(Uint32Array.from(textures))
+          const material = engine.addSurfaceMaterial({ function: TEXTURED_FUNCTION, data })
+          const subMeshes: SubMeshDesc[] = [{ first: 0, count: baked.indices.length, material }]
+          let joints: number | undefined
+          if (baked.joints !== undefined && baked.weights !== undefined) {
+            let max = 0
+            for (let i = 0; i < baked.joints.length; i++) if (baked.joints[i] > max) max = baked.joints[i]
+            joints = max + 1
+          }
+          const desc: MeshDesc = { positions: baked.positions, normals: baked.normals, uvs: baked.uvs, tangents: baked.tangents,
+            indices: baked.indices, subMeshes,
+            ...(baked.joints !== undefined && baked.weights !== undefined ? { joints: baked.joints, weights: baked.weights } : {}) }
+          const { t, r } = frameToTr(part.frame)
+          target.textured = { mesh: this.addMesh(engine, desc), desc, subMeshes, material, data, textures, t, r, ...(joints !== undefined ? { joints } : {}) }
+          this.textureErrors.delete(key)
+          // The tinted copy of a part (tintableParts) draws the same textured member.
+          for (const copy of uploaded.tintedParts ?? []) if (copy.key === target.key) copy.textured = target.textured
+        }
+        const textured = target.textured
+        if (textured === undefined) continue
+        const index = uploaded.parts.indexOf(target)
+        for (const live of this.live) {
+          if (live === null || live.asset !== handle || live.textured.some(entry => entry.index === index)) continue
+          const node = live.nodes[index]
+          if (node === undefined) continue
+          live.textured.push({ instance: this.addMember(live, node, textured.mesh, undefined, target, textured, live.tint), part: target, index })
+          this.applyVisibility(live)
+        }
+      }
+    }
   }
 
   // The GPUDevice RAA configured this port's canvas with (asyncPipelines tracks its pipelines per device).
@@ -853,7 +1010,10 @@ class SdfRenderPort implements ResizablePort {
     if (this.shading === 'vertex') return 0
     for (const live of this.live) {
       if (live === null || !live.visible) continue
+      // A textured member covers its part in 'baked' mode, so that part is not waiting on its field.
+      const textured = new Set(live.textured.map(entry => entry.index))
       for (const copy of live.fallbacks) {
+        if (this.shading === 'baked' && textured.has(copy.index)) continue
         if (!copy.ready && !copy.failed && (live.filter === null || live.filter.has(copy.part.name))) {
           pending.add(copy.part.reportKey!)
         }
@@ -863,9 +1023,14 @@ class SdfRenderPort implements ResizablePort {
   }
 
   setShading(mode: ShadingMode): void {
-    if (mode === 'texture') {
-      this.shadingErrors.set('texture', 'no baked textures loaded')
-      return
+    // The choice stays visible and named: a release without the textured route keeps the current mode.
+    if (mode === 'baked') {
+      const engine = this.engine
+      if (this.texturedMissing || (engine !== null && (typeof engine.addTexture !== 'function' ||
+        typeof engine.addMaterialFunction !== 'function' || typeof engine.addSurfaceMaterial !== 'function'))) {
+        this.texturedMissing = true
+        return
+      }
     }
     this.shading = mode
     this.swapFallbacks(true)
@@ -961,11 +1126,21 @@ class SdfRenderPort implements ResizablePort {
     const engine = this.need()
     const shown = (i: number): boolean => live.visible && (live.filter === null || live.filter.has(live.partNames[i]))
     const copies = new Map(live.fallbacks.map(copy => [copy.index, copy]))
+    const textured = new Map(live.textured.map(entry => [entry.index, entry]))
     live.instances.forEach((id, i) => {
       const copy = copies.get(i)
+      const bake = textured.get(i)
+      // 'baked' mode: the textured member covers the part where one exists; other parts keep the field rule.
+      if (this.shading === 'baked' && bake !== undefined) {
+        engine.setVisible(id, false)
+        if (copy !== undefined) engine.setVisible(copy.instance, false)
+        engine.setVisible(bake.instance, shown(i))
+        return
+      }
       engine.setVisible(id, shown(i) && (copy === undefined || (this.shading !== 'vertex' && copy.ready)))
+      if (copy !== undefined) engine.setVisible(copy.instance, shown(i) && (this.shading === 'vertex' || !copy.ready))
+      if (bake !== undefined) engine.setVisible(bake.instance, false)
     })
-    for (const copy of live.fallbacks) engine.setVisible(copy.instance, shown(copy.index) && (this.shading === 'vertex' || !copy.ready))
   }
 
   destroyInstance(instance: number): void {
@@ -1000,7 +1175,9 @@ class SdfRenderPort implements ResizablePort {
     // Its bakes: a waiting one is dropped, a done one gives its textures and texels back to the atlas (a skinned visual
     // shares its rigid base's bakes; releasing twice is a no-op).
     if (engine !== null) for (const part of uploaded.parts) if (part.bake !== undefined) this.scheduler?.release(part.bake)
-    const meshesOf = (parts: PartUpload[]): number[] => parts.flatMap(part => part.fallback === undefined ? [part.mesh] : [part.mesh, part.fallback.mesh])
+    const meshesOf = (parts: PartUpload[]): number[] => parts.flatMap(part => [part.mesh,
+      ...(part.fallback === undefined ? [] : [part.fallback.mesh]),
+      ...(part.textured === undefined ? [] : [part.textured.mesh])])
     const meshes = new Set(meshesOf(all))
     // A skinned upload borrows unskinned parts and textures from its rigid base.
     const base = uploaded.base === undefined ? undefined : this.uploaded[uploaded.base]
@@ -1010,10 +1187,14 @@ class SdfRenderPort implements ResizablePort {
         try { engine.removeMesh(mesh) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
       }
     }
-    if (engine !== null) for (const base of uploaded.data ?? []) engine.removeMaterialData(base)
-    // A field part's grid texture goes back to RAA's atlas with the upload.
-    if (engine !== null && uploaded.base === undefined) {
-      for (const texture of new Set(all.flatMap(part => part.texture === undefined ? [] : [part.texture]))) engine.removeTexture(texture)
+    const bakedData = all.flatMap(part => part.textured === undefined ? [] : [part.textured.data])
+    if (engine !== null) for (const base of new Set([...(uploaded.data ?? []), ...bakedData])) engine.removeMaterialData(base)
+    // A field part's grid texture goes back to RAA's atlas with the upload. A skinned upload shares its base's field
+    // textures (the base frees them once); its own baked-texture members are freed here.
+    if (engine !== null) {
+      const fieldTextures = uploaded.base === undefined ? all.flatMap(part => part.texture === undefined ? [] : [part.texture]) : []
+      const bakedTextures = all.flatMap(part => part.textured === undefined ? [] : part.textured.textures)
+      for (const texture of new Set([...fieldTextures, ...bakedTextures])) engine.removeTexture(texture)
     }
     this.meshes -= meshes.size
     this.uploaded[handle] = undefined
@@ -1201,7 +1382,7 @@ function viewRects(width: number, height: number, viewports: Viewport[]): Viewpo
 
 // The rig poses the asset space; a part mesh lives in its frame F, so each skin matrix S becomes
 // F^-1 * S * F (identity frames skip this).
-function partPose(pose: Float32Array, part: PartUpload): Float32Array {
+function partPose(pose: Float32Array, part: PosePart): Float32Array {
   const out = pose.slice(0, 16 * part.joints!)
   const [x, y, z, w] = part.r
   if (part.t.every(v => v === 0) && x === 0 && y === 0 && z === 0) return out

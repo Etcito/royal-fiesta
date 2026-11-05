@@ -11,6 +11,7 @@ import { buildMaterial, readSdfm } from '@etcito/mama/sdfm.ts'
 import type { BuiltMaterial } from '@etcito/mama/sdfm.ts'
 import { meshAssets } from '@etcito/mama/core/game/mesh-assets.ts'
 import type { AssetMeshResult } from '@etcito/mama/core/game/mesh-assets.ts'
+import { bakeMeshTextures } from '@etcito/mama/core/bake/mesh-bake.ts'
 import { BASE_WGSL, HELPERS } from '@etcito/mama/core/material-graph/helpers.ts'
 import { COMMON_NO_PROGRAM_WGSL } from '@etcito/mama/gpu/wgsl/common.ts'
 import { sha256Hex } from '@etcito/mama/core/image/sha256.ts'
@@ -37,6 +38,22 @@ interface PayloadMesh {
 // S18 joint/weight streams of a skinned part, in the vertex order the render port concatenates its meshes.
 interface PayloadSkin { joints: Uint16Array; weights: Float32Array }
 
+// The contract 'baked-part-textures': the part's baked surfaces and maps in its MESH space. Set only when the request
+// asks for bakedTextures; a part whose bake fails carries bakedRefusal instead.
+interface BakedImage { width: number; height: number; data: Uint8Array }
+interface BakedTextures {
+  positions: Float32Array
+  normals: Float32Array
+  uvs: Float32Array
+  tangents: Float32Array
+  indices: Uint32Array
+  joints?: Uint16Array
+  weights?: Float32Array
+  baseColor: BakedImage
+  normal: BakedImage
+  orm: BakedImage
+}
+
 // fieldProgram: the part's SDF field in its MESH space (MAMA's contract 'mama.field-program'), drawn by the
 // per-fragment field material; fieldRefusal: why a part has none. Only a part with triangles carries one.
 interface PayloadPart {
@@ -47,6 +64,8 @@ interface PayloadPart {
   skin?: PayloadSkin
   fieldProgram?: FieldProgram
   fieldRefusal?: string
+  baked?: BakedTextures
+  bakedRefusal?: string
   /** The part's one roughness/metallic for one material per object (with the meshes' colors). */
   look?: { roughness: number; metallic: number }
 }
@@ -229,6 +248,62 @@ function toPayload(results: readonly AssetMeshResult[], doc: SdfDocument, assetI
   return { data: { groups, materials: [...materials.values()] }, parts, triangles }
 }
 
+// Bake the part's SDF onto its very mesh (MAMA bakeMeshTextures): the unwrapped mesh with MikkTSpace tangents and
+// the baseColor / normal / orm maps. Skin rides the unwrap through MeshBake.source (unwrapped -> input vertex).
+async function bakePart(part: AssetMeshResult['parts'][number]): Promise<BakedTextures> {
+  const source = part.source
+  if (source === undefined) throw new Error('the part has no bake source')
+  const bake = await bakeMeshTextures(source.doc, source.mesh, source.compile, { pool: inlinePool(), maps: ['baseColor', 'normal', 'orm'] })
+  const mesh = bake.mesh
+  if (mesh.tangents === undefined) throw new Error('the bake produced no tangents')
+  const { baseColor, normal, orm } = bake.maps
+  if (baseColor === undefined || normal === undefined || orm === undefined) {
+    throw new Error('the bake did not produce the baseColor, normal and orm maps')
+  }
+  const baked: BakedTextures = {
+    positions: mesh.positions,
+    normals: mesh.normals,
+    uvs: mesh.uvs,
+    tangents: mesh.tangents,
+    indices: mesh.indices,
+    baseColor: { width: baseColor.width, height: baseColor.height, data: baseColor.data },
+    normal: { width: normal.width, height: normal.height, data: normal.data },
+    orm: { width: orm.width, height: orm.height, data: orm.data },
+  }
+  if (source.skin !== undefined) {
+    const vertices = mesh.positions.length / 3
+    const joints = new Uint16Array(vertices * 4)
+    const weights = new Float32Array(vertices * 4)
+    for (let i = 0; i < vertices; i++) {
+      const v = bake.source[i]
+      joints.set(source.skin.joints.subarray(v * 4, v * 4 + 4), i * 4)
+      weights.set(source.skin.weights.subarray(v * 4, v * 4 + 4), i * 4)
+    }
+    baked.joints = joints
+    baked.weights = weights
+  }
+  return baked
+}
+
+// Attach baked textures to the payload parts that were meshed from a source (results and groups share their order).
+async function attachBaked(results: readonly AssetMeshResult[], data: BuiltPayload): Promise<void> {
+  for (let g = 0; g < results.length; g++) {
+    const result = results[g]
+    const group = data.groups[g]
+    if (group === undefined) continue
+    for (let p = 0; p < result.parts.length; p++) {
+      const part = result.parts[p]
+      const payloadPart = group.parts[p]
+      if (payloadPart === undefined || payloadPart.meshes.length === 0 || part.source === undefined) continue
+      try {
+        payloadPart.baked = await bakePart(part)
+      } catch (e) {
+        payloadPart.bakedRefusal = e instanceof Error ? e.message : String(e)
+      }
+    }
+  }
+}
+
 function transferOf(groups: readonly PayloadGroup[]): ArrayBuffer[] {
   const buffers = new Set<ArrayBuffer>()
   const add = (array: ArrayBufferView): void => {
@@ -243,6 +318,18 @@ function transferOf(groups: readonly PayloadGroup[]): ArrayBuffer[] {
       }
       const grid = part.fieldProgram?.grid
       if (grid !== undefined && grid !== null) add(grid.texels)
+      if (part.baked !== undefined) {
+        add(part.baked.positions)
+        add(part.baked.normals)
+        add(part.baked.uvs)
+        add(part.baked.tangents)
+        add(part.baked.indices)
+        if (part.baked.joints !== undefined) add(part.baked.joints)
+        if (part.baked.weights !== undefined) add(part.baked.weights)
+        add(part.baked.baseColor.data)
+        add(part.baked.normal.data)
+        add(part.baked.orm.data)
+      }
       for (const mesh of part.meshes) {
         add(mesh.positions)
         add(mesh.normals)
@@ -282,6 +369,7 @@ export async function meshRequest(req: MeshRequest): Promise<MeshedAsset> {
     throw new RefusalError('sdf', req.assetId, 'the document has no group with a game asset; save the asset from SDF Modeler or mark its group as a game asset')
   }
   const { data, parts, triangles } = toPayload(results, doc, req.assetId)
+  if (req.bakedTextures === true) await attachBaked(results, data)
   const materials: SdfmCompiledMaterial[] = []
   for (const material of data.materials) materials.push(await toPayloadMaterial(material))
   return {

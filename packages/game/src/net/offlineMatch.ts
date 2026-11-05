@@ -22,7 +22,7 @@ export function createOfflineMatch(R: RapierModule, cfg: FiestaDomainFactoryConf
   const eventView: ShadowView = { count: 1, fromDomain: () => 1, reader: () => new SnapReader(events.bytes()) }
   const stats: ZoneMatch['stats'] = { tick: 0, confirmedTick: { 0: 0, 1: 0 }, delay: 0, frames: 0,
     rollbacks: 0, maxRollback: 0, resimTicks: 0, stallFrames: 0, desyncs: 0, malformed: 0,
-    lostPeers: [], sleepTransitions: 0 }
+    lostPeers: [], sleepTransitions: 0, syncSkips: 0, syncAdvantage: 0, syncRttMs: 0 }
   let accumulator = 0
   let disposed = false
   return {

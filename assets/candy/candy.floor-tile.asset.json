@@ -244,6 +244,7 @@
         "id": "pad",
         "name": "pad",
         "kind": "group",
+        "view": "normalMaterial",
         "children": [
           "pad_body",
           "pad_dome"
@@ -347,6 +348,7 @@
         "id": "zigzag",
         "name": "zigzag",
         "kind": "group",
+        "view": "normalMaterial",
         "children": [
           "zz_z",
           "zz_x",
@@ -716,7 +718,7 @@
   "anchors": {},
   "bounds": {
     "min": [-5.25, -1, -5.25],
-    "max": [5.25, 0.98, 5.25]
+    "max": [5.25, 0.88, 5.25]
   },
-  "hash": "f0eed27554eb7a815b9e6553c0a6da3d6292899ea58d6837262a2ff768fa48a2"
+  "hash": "2a9f204f8e6d836df461b9a027429785efc34fd4bb34f49e2e0db96b35cf132c"
 }

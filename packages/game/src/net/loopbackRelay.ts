@@ -1,6 +1,7 @@
 // In-memory GameSaloon relay: mirrors gamesaloon src/relay/hub.ts message by message (tests, in-page hub, M6 conformance).
 import { Rng } from '@gamesaloon/rollback'
-import type { WsFactory, WsLike } from './ws.ts'
+import type { ZoneWsFactory, ZoneWsLike } from './zoneRelayClient.ts'
+import { ZONE_BIN_KIND, ZONE_BIN_IN_HEADER, RELAY_MAX_BIN_BYTES, RELAY_BIN_RATE_PER_SEC } from './zoneRelayProtocol.ts'
 import { CADENCE_RATE_PER_MIN as CAD_MIN, CADENCE_RATE_PER_SEC as CAD_SEC, RELAY_MAX_ACT_DEPTH, RELAY_MAX_ACT_ITEMS } from './relayProtocol.ts'
 import { RELAY_MAX_ACT_KEYS, RELAY_MAX_MSG_BYTES, RELAY_MAX_PLAYERS, RELAY_RATE_PER_SEC } from './relayProtocol.ts'
 
@@ -16,21 +17,21 @@ const LOBBY_TYPES: readonly unknown[] = ['lobby_enter', 'lobby_pick', 'lobby_lea
 // gamesaloon messages.ts MAX_PRESENCE_STATE: a presence state is a pose, not content.
 const MAX_PRESENCE_STATE = 256
 interface Lobby {
-  id: string; key: string; seats: number; cadence: boolean; phase: 'waiting' | 'playing'; openedAt: number; startsAt: number
+  id: string; key: string; seats: number; cadence: boolean; zones: boolean; phase: 'waiting' | 'playing'; openedAt: number; startsAt: number
   members: { id: number; payload: unknown }[]; spectators: Set<number>; room: string | null; seed: number
   // Presence keys (arrival order, never reused) and the spectators' payloads, as gamesaloon lobby.ts.
   keys: Map<number, number>; nextKey: number; specPayloads: Map<number, unknown>
 }
-interface LobbyWant { key: string; game: string; seats: number; cadence: boolean; payload: unknown }
+interface LobbyWant { key: string; game: string; seats: number; cadence: boolean; zones: boolean; payload: unknown }
 
 type Obj = Record<string, unknown>
-interface Client { id: number; sock: Sock; room: string | null; cadence: boolean; invalid: number; times: number[] }
+interface Client { id: number; sock: Sock; room: string | null; cadence: boolean; invalid: number; times: number[]; binTimes: number[] }
 interface Room {
-  code: string; players: number; cadence: boolean; started: boolean; seats: (number | null)[]
+  code: string; players: number; cadence: boolean; zones: boolean; started: boolean; seats: (number | null)[]
   payloads: unknown[]; recv: number[]; down: (number | null)[]; gone: boolean[]
 }
 interface Waiter { id: number; payload: unknown; since: number }
-interface Sock extends WsLike { readonly id: number; state: number }
+interface Sock extends ZoneWsLike { readonly id: number; state: number }
 // open/out/sclose reach the client, in/cclose the server; one FIFO keeps the order a real socket pair would.
 type Item = { k: 'open' | 'in' | 'out' | 'cclose' | 'sclose'; s: Sock; data?: unknown; code?: number; reason?: string }
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -82,10 +83,10 @@ export class LoopbackRelay {
     this.lobbyOpts = opts?.lobby ? { waitMs: opts.lobby.waitMs ?? 60_000, minPlayers: opts.lobby.minPlayers ?? 1 } : null
   }
 
-  factory(): WsFactory {
+  factory(): ZoneWsFactory {
     return (_url) => {
       const s: Sock = {
-        id: this.nextId++, state: 0, onopen: null, onmessage: null, onclose: null, onerror: null,
+        binaryType: 'arraybuffer', id: this.nextId++, state: 0, onopen: null, onmessage: null, onclose: null, onerror: null,
         get readyState() { return s.state },
         // Like a browser WebSocket: an error while connecting, a silent discard once closing.
         send: (data) => {
@@ -98,7 +99,7 @@ export class LoopbackRelay {
         },
       }
       this.enqueue({ k: 'open', s })
-      this.clients.set(s.id, { id: s.id, sock: s, room: null, cadence: false, invalid: 0, times: [] })
+      this.clients.set(s.id, { id: s.id, sock: s, room: null, cadence: false, invalid: 0, times: [], binTimes: [] })
       return s
     }
   }
@@ -127,6 +128,7 @@ export class LoopbackRelay {
     const c = this.clients.get(id)
     if (!c) return
     const now = this.now()
+    if (raw instanceof Uint8Array) return this.binary(c, raw, now)
     // Over the limit the hub answers 'rate limited' and closes the socket.
     if (this.rateLimited(c, now)) { this.error(id, 'rate limited'); return this.closeClient(c) }
     // Binary, oversize, non-JSON, non-object or unknown-type frames (hub extensions; none here) are invalid.
@@ -142,6 +144,29 @@ export class LoopbackRelay {
       return this.dropInvalid(c)
     }
     this.dispatch(c, m, now)
+  }
+  private binary(c: Client, raw: Uint8Array, now: number): void {
+    const room = this.rooms.get(c.room ?? '')
+    if (!room?.zones || !room.started || raw.length < ZONE_BIN_IN_HEADER || raw.length > RELAY_MAX_BIN_BYTES || raw[0] !== ZONE_BIN_KIND) {
+      return this.dropInvalid(c)
+    }
+    c.binTimes = c.binTimes.filter(t => now - t <= 1000)
+    c.binTimes.push(now)
+    if (c.binTimes.length > RELAY_BIN_RATE_PER_SEC) { this.error(c.id, 'rate limited'); return this.closeClient(c) }
+    const sender = room.seats.indexOf(c.id)
+    const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength)
+    const lo = view.getUint32(2, true), hi = view.getUint32(6, true)
+    const frame = new Uint8Array(2 + raw.length - ZONE_BIN_IN_HEADER)
+    frame[0] = ZONE_BIN_KIND; frame[1] = sender
+    frame.set(raw.subarray(ZONE_BIN_IN_HEADER), 2)
+    room.seats.forEach((id, seat) => {
+      const mask = seat < 32 ? lo : hi
+      const dest = id === null ? undefined : this.clients.get(id)
+      if (dest && seat !== sender && ((lo === 0 && hi === 0) || ((mask >>> (seat & 31)) & 1))) {
+        this.serverLog.push({ to: dest.id, t: 'binary' })
+        this.enqueue({ k: 'out', s: dest.sock, data: frame })
+      }
+    })
   }
   private dispatch(c: Client, m: Obj, now: number): void {
     const t = m.t
@@ -184,7 +209,7 @@ export class LoopbackRelay {
   private queue(c: Client, m: Obj, now: number): void {
     for (const list of this.waitLists.values()) if (list.some((e) => e.id === c.id)) return
     const players = (m.players as number | undefined) ?? 2
-    const key = `${players}|${m.cadence ? 1 : 0}`
+    const key = `${players}|${m.cadence ? 1 : 0}|${m.zones ? m.game : 'legacy'}`
     const list = (this.waitLists.get(key) ?? []).filter((e) => this.clients.has(e.id))
     this.waitLists.set(key, list)
     list.push({ id: c.id, payload: m.payload ?? null, since: now })
@@ -196,14 +221,14 @@ export class LoopbackRelay {
     if (!list.length) this.waitLists.delete(key)
     for (const e of seated) this.recentWaitsMs.push(now - e.since)
     this.recentWaitsMs.splice(0, this.recentWaitsMs.length - 50)
-    const room = this.makeRoom(`q${++this.quickSeq}`, players, !!m.cadence)
+    const room = this.makeRoom(`q${++this.quickSeq}`, players, !!m.cadence, m.zones === true)
     seated.forEach((e, i) => { room.seats[i] = e.id; room.payloads[i] = e.payload })
     this.startRoom(room)
   }
-  private makeRoom(code: string, players: number, cadence: boolean): Room {
+  private makeRoom(code: string, players: number, cadence: boolean, zones = false): Room {
     const fill = <T>(v: T): T[] => new Array<T>(players).fill(v)
     const room: Room = {
-      code, players, cadence, started: false, seats: fill<number | null>(null),
+      code, players, cadence, zones, started: false, seats: fill<number | null>(null),
       payloads: fill<unknown>(null), recv: fill(0), down: fill<number | null>(null), gone: fill(false),
     }
     this.rooms.set(code, room)
@@ -263,7 +288,7 @@ export class LoopbackRelay {
       if (room.down[side] !== null) continue
       room.down[side] = this.now() + RESUME_GRACE_MS
       const graceMs = RESUME_GRACE_MS
-      this.broadcast(room, room.players === 2 ? { t: 'opp_dropped', graceMs } : { t: 'player_dropped', seat: side, graceMs }, side)
+      this.broadcast(room, room.players === 2 && !room.zones ? { t: 'opp_dropped', graceMs } : { t: 'player_dropped', seat: side, graceMs }, side)
     }
   }
   private endSeat(room: Room, side: number): void {
@@ -271,7 +296,7 @@ export class LoopbackRelay {
     room.gone[side] = true
     this.unseat(room.seats[side])
     room.seats[side] = null
-    if (room.players > 2) {
+    if (room.zones || room.players > 2) {
       this.broadcast(room, { t: 'player_left', seat: side }, side)
       if (room.gone.filter((g) => !g).length > 1) return
     }
@@ -317,7 +342,8 @@ export class LoopbackRelay {
     if (m.t === 'lobby_enter') {
       const seats = m.seats
       if (typeof m.game !== 'string' || !isInt(seats, 1, RELAY_MAX_PLAYERS)) return this.dropInvalid(c)
-      const want: LobbyWant = { key: `${m.game}|${seats}|${m.cadence ? 1 : 0}`, game: m.game, seats: seats as number, cadence: m.cadence === true, payload: m.payload ?? null }
+      if (m.zones === true && m.game !== 'royal-fiesta') return this.send(c.id, { t: 'lobby_error', reason: 'unknown game' })
+      const want: LobbyWant = { key: `${m.game}|${seats}|${m.cadence ? 1 : 0}|${m.zones ? 'zones' : 'legacy'}`, game: m.game, seats: seats as number, cadence: m.cadence === true, zones: m.zones === true, payload: m.payload ?? null }
       this.lobbyLeave(c.id, now)
       const open = [...this.lobbies.values()].filter((l) => l.key === want.key).sort((a, b) => a.openedAt - b.openedAt)
       if (!open.length) return this.openLobby(c.id, want, now)
@@ -372,7 +398,7 @@ export class LoopbackRelay {
   }
   private openLobby(id: number, want: LobbyWant, now: number): void {
     const l: Lobby = {
-      id: `L${++this.lobbySeq}`, key: want.key, seats: want.seats, cadence: want.cadence, phase: 'waiting', openedAt: now,
+      id: `L${++this.lobbySeq}`, key: want.key, seats: want.seats, cadence: want.cadence, zones: want.zones, phase: 'waiting', openedAt: now,
       startsAt: now + this.lobbyOpts!.waitMs, members: [{ id, payload: want.payload }], spectators: new Set(), room: null, seed: 0,
       keys: new Map([[id, 0]]), nextKey: 1, specPayloads: new Map(),
     }
@@ -435,7 +461,7 @@ export class LoopbackRelay {
       if (l.phase !== 'waiting') continue
       const full = l.members.length >= l.seats
       if (!full && !(now >= l.startsAt && l.members.length >= this.lobbyOpts.minPlayers)) continue
-      const room = this.makeRoom(`q${++this.quickSeq}`, l.members.length, l.cadence)
+      const room = this.makeRoom(`q${++this.quickSeq}`, l.members.length, l.cadence, l.zones)
       l.members.forEach((e, i) => { room.seats[i] = e.id; room.payloads[i] = e.payload })
       l.phase = 'playing'
       l.room = room.code

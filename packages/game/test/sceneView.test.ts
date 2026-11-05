@@ -15,7 +15,7 @@ import { fixtureResolver } from '../src/assets.ts'
 import type { CourseDressing } from '../src/content.ts'
 import { matchCourses } from '../src/courseSet.ts'
 import type { CourseEntry } from '../src/courseSet.ts'
-import { netSetup } from '../src/net/tuning.ts'
+import { classicNetSetup } from '../src/net/tuning.ts'
 import type { PrimsAsset } from '../src/prims.ts'
 import { NullRenderPort } from '../src/render/nullPort.ts'
 import type { CameraPose, QuatT, RenderPort, Vec3T } from '../src/render/port.ts'
@@ -48,7 +48,7 @@ for (const c of courses) {
 const bean = (await resolver.resolve('bean')).asset
 
 test('SceneView keeps beans and obstacles on the port while the match runs', async () => {
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   const port = new NullRenderPort()
   await port.init({ canvas: null, width: 960, height: 540, viewports: [{ x: 0, y: 0, width: 960, height: 540 }] })
   const used = new Set<string>()
@@ -89,7 +89,7 @@ test('SceneView keeps beans and obstacles on the port while the match runs', asy
 })
 
 test('SceneView uses the camera hook instead of the follow camera on the local player', async () => {
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   // NullRenderPort keeps no camera, so record the last one per viewport.
   class RecordingPort extends NullRenderPort {
     readonly lastCamera = new Map<number, CameraPose>()
@@ -139,7 +139,7 @@ test('SceneView uses the camera hook instead of the follow camera on the local p
 })
 
 test('SceneView leaves the previous dressing and enters the new one on every course change', async () => {
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   const port = new NullRenderPort()
   await port.init({ canvas: null, width: 960, height: 540, viewports: [{ x: 0, y: 0, width: 960, height: 540 }] })
   const log: string[] = []
@@ -174,7 +174,7 @@ test('SceneView leaves the previous dressing and enters the new one on every cou
 })
 
 test('SceneView registers the custom character asset for the character instances', async () => {
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   // NullRenderPort counts registrations only, so record which asset each name got.
   class RecordingPort extends NullRenderPort {
     readonly registered = new Map<string, PrimsAsset>()
@@ -206,7 +206,7 @@ test('prepared local scenes build on the first update without scheduling a loadi
   Object.defineProperty(globalThis, 'requestAnimationFrame', { configurable: true, value: () => { paints++; return 1 } })
   const labels: (string | null)[] = []
   const stop = observeRoundLoad(label => labels.push(label), {})
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   const port = new NullRenderPort()
   await port.init({ canvas: null, width: 640, height: 360, viewports: [{ x: 0, y: 0, width: 640, height: 360 }] })
   const scene = new SceneView({ port, viewport: 0, localPlayer: 0, bean, assets: name => assets.get(name)!, loadingPaint: false })
@@ -277,7 +277,7 @@ class MechanismRecordingPort extends NullRenderPort {
 }
 
 async function mechanismScene(port = new MechanismRecordingPort(), list = mechanismCourses()) {
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', list))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', list))
   await port.init({ canvas: null, width: 640, height: 360, viewports: [{ x: 0, y: 0, width: 640, height: 360 }] })
   const view = new SceneView({ port, viewport: 0, localPlayer: 0, bean, assets: () => bean, loadingPaint: false })
   const inputs = Array.from({ length: sim.setup.playerCount }, () => neutralInput())
@@ -416,7 +416,7 @@ test('SceneView destroys mechanism bodies in reverse order on a course change an
 
     // Enter another course with bodies at their starting positions. Alpha 0 must
     // already show its current pose, with no history from the previous course.
-    fresh = createMatchSim(R, netSetup(5, 1, 'sprint', mechanismCourses()))
+    fresh = createMatchSim(R, classicNetSetup(5, 1, 'sprint', mechanismCourses()))
     fresh.step(inputs)
     view.update(fresh, null, 0, 1 / 60)
     const newInstances = port.created.slice(-2)
@@ -465,7 +465,7 @@ function assertFlippersDown(skin: Float32Array): void {
 
 for (const scenario of ['walking', 'idle', 'podium'] as const) {
   test(`skinned penguin never draws a T pose before load or while ${scenario}`, async () => {
-    const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+    const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
     const port = new NullRenderPort()
     await port.init({ canvas: null, width: 64, height: 36, viewports: [{ x: 0, y: 0, width: 64, height: 36 }] })
     const submitted: { instance: number; skin: Float32Array }[] = []
@@ -519,7 +519,7 @@ for (const scenario of ['walking', 'idle', 'podium'] as const) {
 }
 
 test('skinned cosmetic in all four slots receives the penguin pose and character root, rigid costume keeps its anchor', async () => {
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   const port = new NullRenderPort()
   await port.init({ canvas: null, width: 64, height: 36, viewports: [{ x: 0, y: 0, width: 64, height: 36 }] })
   const posed = new Map<number, Float32Array>(), transforms = new Map<number, unknown[]>()
@@ -561,7 +561,7 @@ test('skinned cosmetic in all four slots receives the penguin pose and character
 })
 
 test('offline crowd culls off-screen instances and restores them on the same camera-turn frame', async () => {
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   const inputs = Array.from({ length: sim.setup.playerCount }, () => neutralInput())
   for (let i = 0; i < 200 && sim.course() === null; i++) sim.step(inputs)
   const port = new NullRenderPort()

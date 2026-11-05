@@ -3,7 +3,8 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 
 export interface WsLike {
   readonly readyState: number
-  send(data: string): void
+  binaryType?: 'arraybuffer' | 'blob'
+  send(data: string | Uint8Array): void
   close(code?: number, reason?: string): void
   onopen: (() => void) | null
   onmessage: ((e: { data: unknown }) => void) | null
@@ -14,8 +15,9 @@ export interface WsLike {
 export type WsFactory = (url: string) => WsLike
 
 interface GlobalWs {
+  binaryType: 'arraybuffer' | 'blob'
   readyState: number
-  send(data: string): void
+  send(data: string | Uint8Array): void
   close(code?: number, reason?: string): void
   onopen: ((e: unknown) => void) | null
   onmessage: ((e: { data: unknown }) => void) | null
@@ -34,8 +36,11 @@ export function globalWsFactory(): WsFactory {
 }
 
 function wrap(sock: GlobalWs): WsLike {
+  sock.binaryType = 'arraybuffer'
   const w: WsLike = {
     get readyState() { return sock.readyState },
+    get binaryType() { return sock.binaryType },
+    set binaryType(value) { if (value) sock.binaryType = value },
     send(data) { sock.send(data) },
     close(code, reason) { sock.close(code, reason) },
     onopen: null,

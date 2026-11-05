@@ -20,7 +20,7 @@ test('player in a lobby: countdown from the server, names, never reset by a late
   // Bob arrives 20 s later: the server's remaining time keeps the same end.
   t.apply({ t: 'lobby_state', id: 'L1', phase: 'waiting', role: 'player', seat: 0, players: [A, B], seats: 4, startsInMs: 40_000, waitMs: 60_000 }, 21_000)
   assert.equal(t.secondsLeft(21_000), 40)
-  assert.deepEqual(lobbyLines(t, 21_000), ['Lobby 2/4 - round starts in 40 s', 'Ann, Bob', '6 bots will fill the empty places'])
+  assert.deepEqual(lobbyLines(t, 21_000), ['Lobby 2/4 - round starts in 40 s', 'Ann, Bob', '58 bots will fill the empty places'])
 })
 
 test('choice from an older server: answered at once with the default, no card', () => {
@@ -126,7 +126,7 @@ test('shared hub roster: the presence key, players then spectators, default name
     { k: 3, role: 'spectator', name: 'Bean 4', colour: 3 },
   ])
   assert.deepEqual(t.view.names, ['Bean 1', 'Bob'])
-  assert.deepEqual(lobbyLines(t, 0), ['Lobby 2/4 - round starts in 30 s', 'Bean 1, Bob', 'Watching: Bean 4', '6 bots will fill the empty places'])
+  assert.deepEqual(lobbyLines(t, 0), ['Lobby 2/4 - round starts in 30 s', 'Bean 1, Bob', 'Watching: Bean 4', '58 bots will fill the empty places'])
   // A presence frame changes nothing in the view.
   assert.deepEqual(t.apply({ t: 'lobby_presence', id: 'L1', from: 0, a: { k: 'st' } }, 0), { kind: 'none' })
   assert.equal(t.view.members.length, 3)
@@ -141,9 +141,9 @@ test('names: control characters dropped, 24 characters, the default and an empty
   assert.equal(displayName({ name: '   ' }, 4), 'Bean 5')
   assert.equal(displayName(null, 1), 'Bean 2')
   assert.equal(cleanName(' Kev\u0000in '), 'Kevin')
-  assert.equal(botsLine(1), '7 bots will fill the empty places')
-  assert.equal(botsLine(7), '1 bot will fill the empty places')
-  assert.equal(botsLine(8), 'No bots: every place is a player')
+  assert.equal(botsLine(1), '59 bots will fill the empty places')
+  assert.equal(botsLine(59), '1 bot will fill the empty places')
+  assert.equal(botsLine(60), 'No bots: every place is a player')
   assert.deepEqual(parseRelayServerMsg('{"t":"lobby_presence","id":"L1","from":2,"a":{"k":"st"}}'), { t: 'lobby_presence', id: 'L1', from: 2, a: { k: 'st' } })
   assert.equal(parseRelayServerMsg('{"t":"lobby_presence","id":"L1","from":-1,"a":{}}'), null)
 })

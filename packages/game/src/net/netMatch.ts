@@ -9,13 +9,13 @@ import { MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { setupHash } from '@royal-fiesta/sim/match/setup'
 import type { MatchSetup } from '@royal-fiesta/sim/match/setup'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import { FIESTA_TUNING, NET_PLAYERS } from './tuning.ts'
+import { FIESTA_TUNING, CLASSIC_NET_PLAYERS } from './tuning.ts'
 
 export interface NetMatchConfig { setup: MatchSetup; localPeer: number; humanPeers: number }
 
 export interface NetMatch {
   readonly sim: MatchSim
-  readonly session: RollbackSession<PlayerInput>
+  readonly session: Pick<RollbackSession<PlayerInput>, 'stats' | 'smoother' | 'confirmedHash'>
   frame(dtS: number, sample: (out: PlayerInput[]) => void): number
   readonly done: boolean
   log(): MatchLog
@@ -24,13 +24,13 @@ export interface NetMatch {
 
 function check(cfg: NetMatchConfig): void {
   const { setup, localPeer, humanPeers } = cfg
-  if (setup.playerCount !== NET_PLAYERS) {
-    refuse('net', 'createNetMatch.setup.playerCount', `${setup.playerCount} is not ${NET_PLAYERS}; build the setup with netSetup`)
+  if (setup.playerCount !== CLASSIC_NET_PLAYERS) {
+    refuse('net', 'createNetMatch.setup.playerCount', `${setup.playerCount} is not ${CLASSIC_NET_PLAYERS}; build the setup with netSetup`)
   }
   if (!Number.isInteger(localPeer) || localPeer < 0 || localPeer >= humanPeers) {
     refuse('net', 'createNetMatch.localPeer', `${localPeer} is outside 0..${humanPeers - 1}; pass this peer's rank among the human peers`)
   }
-  for (let i = 0; i < NET_PLAYERS; i++) {
+  for (let i = 0; i < CLASSIC_NET_PLAYERS; i++) {
     if (setup.humans[i] !== i < humanPeers) {
       refuse('net', `createNetMatch.setup.humans/${i}`, `is ${setup.humans[i]} but humanPeers is ${humanPeers}; humans must be players 0..humanPeers-1 (use netSetup)`)
     }
@@ -45,7 +45,7 @@ export function createNetMatch(R: RapierModule, cfg: NetMatchConfig, net: NetTra
   const session = simStep(sim, 'Rollback session start', () => new RollbackSession<PlayerInput>(sim, {
     ...FIESTA_TUNING,
     localPeer: cfg.localPeer,
-    playerCount: NET_PLAYERS,
+    playerCount: CLASSIC_NET_PLAYERS,
     peers: evenPeers(cfg.humanPeers, 1),
     codec: inputCodec,
     dumpInfo: () => ({ setupHash: hex8(setupHash(setup)), seed: setup.seed, profile: setup.profile }),

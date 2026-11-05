@@ -11,7 +11,7 @@ import { CosmeticJiggle, JIGGLE_DISTANCE, setJiggleQuality, wornPalette } from '
 import { fixtureResolver } from '../src/assets.ts'
 import { matchCourses } from '../src/courseSet.ts'
 import type { CourseEntry } from '../src/courseSet.ts'
-import { netSetup } from '../src/net/tuning.ts'
+import { classicNetSetup } from '../src/net/tuning.ts'
 import type { PrimsAsset } from '../src/prims.ts'
 import { NullRenderPort } from '../src/render/nullPort.ts'
 import type { QuatT, SkinnedAssetT, SkinRigT, Vec3T } from '../src/render/port.ts'
@@ -186,7 +186,7 @@ const hatAsset = { ...bean, id: 'test.hat' } as PrimsAsset
 // Every snapshot of a 5-player match where everyone wears the hat, and the hat palettes the view drew.
 async function match(quality: 'all' | 'off'): Promise<{ snapshots: Uint8Array[]; palettes: Float32Array[]; stepped: number }> {
   setJiggleQuality(quality)
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, classicNetSetup(5, 1, 'sprint', courses))
   const port = new NullRenderPort()
   await port.init({ canvas: null, width: 64, height: 36, viewports: [{ x: 0, y: 0, width: 64, height: 36 }] })
   const view = new SceneView({

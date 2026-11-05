@@ -93,7 +93,8 @@ function scriptedWs(): { factory: WsFactory; frames: Frame[]; urls: string[] } {
     const socket: WsLike & { readyState: number } = {
       readyState: 0, onopen: null, onmessage: null, onclose: null, onerror: null,
       send(data) {
-        const frame = JSON.parse(data) as Frame
+        if (typeof data !== 'string') throw new Error('economy expects JSON text')
+      const frame = JSON.parse(data) as Frame
         frames.push(frame)
         const reply = frame.t === 'auth'
           ? { t: 'authed', player_id: 'guest-player' }

@@ -20,7 +20,8 @@ import { finishCrossed, gateCrossed, newRouteState, readRoute, routeDistanceMm, 
 import type { RouteState } from '../season/route.ts'
 import { dueRespawn, newRespawnState, nextSlot, readRespawn, respawnSlot, scheduleRespawn, writeRespawn } from '../season/respawn.ts'
 import type { RespawnState } from '../season/respawn.ts'
-import { writeBlob } from '../world.ts'
+import { readBlob, writeBlob } from '../world.ts'
+import { DomainBot } from './domainBot.ts'
 import type { SimSystem, WorldCtx } from '../world.ts'
 import { cellOf } from './cells.ts'
 import { encodeFar } from './farState.ts'
@@ -37,6 +38,7 @@ export interface FiestaDomainConfig {
   /** Roster-indexed spawn assignments; defaults to seat modulo course spawn count. */
   readonly spawnIndices?: readonly number[]
   /** Rebuilds retain the imported body poses and then read the character trailer. */
+  readonly humans?: readonly boolean[]
   readonly placeSeats?: boolean
 }
 
@@ -70,6 +72,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
   readonly #prevY: Float64Array
   readonly #before: Float64Array
   readonly #spawn: SpawnPoint = { t: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 } }
+  readonly #bots: (DomainBot | null)[]
   readonly #states: SeatState[] = []
   readonly #eventPool: FiestaEvent[] = []
   readonly #events: FiestaEvent[] = []
@@ -85,6 +88,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.#config = config
     this.#seats = inner.spec.seats.slice()
     const n = this.#seats.length
+    this.#bots = this.#seats.map(seat => config.humans?.[seat] === false ? new DomainBot(config.schedule.seed, seat) : null)
     this.#status = new Uint8Array(n).fill(PlayerStatus.alive)
     this.#checkpoint = new Int16Array(n)
     this.features = createFeatures(config.course, config.course.id)
@@ -348,6 +352,12 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
         this.#before[p * 3 + 1] = pos.y
         this.#before[p * 3 + 2] = pos.z
       }
+      for (let p = 0; p < this.#seats.length; p++) {
+        const bot = this.#bots[p]
+        if (bot !== null && !frozen && this.#status[p] === PlayerStatus.alive) {
+          this.characters.override(p, bot.sample(this.#config.course, this.#charState(p)))
+        }
+      }
       this.characters.preStep(this.ctx, inputs)
       for (let i = 0; i < this.features.length; i++) {
         try {
@@ -501,6 +511,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
       w.i16(this.#checkpoint[p])
       w.f64(this.#prevY[p])
     }
+    for (const bot of this.#bots) bot?.snapshot(w)
     writeRoute(w, this.#route)
     writeRespawn(w, this.#respawn)
     for (let i = 0; i < this.features.length; i++) this.features[i].snapshot(w)
@@ -520,6 +531,7 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
         this.#checkpoint[p] = r.i16()
         this.#prevY[p] = r.f64()
       }
+      for (const bot of this.#bots) bot?.restore(r)
       readRoute(r, this.#route)
       readRespawn(r, this.#respawn)
       this.restoreFeatures(r)
@@ -549,7 +561,11 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.#featureLoops.clear()
   }
 
-  hash(): number { return this.inner.hash() }
+  hash(): number {
+    this.#writer.reset()
+    for (const bot of this.#bots) bot?.snapshot(this.#writer)
+    return fnv1a32(this.#writer.bytes(), this.inner.hash())
+  }
 
   /** Blob(inner export), u16 seats, (u16 seat, player, u8 status, i16 checkpoint,
    * i16 stage, u8 lap, u8 finished, i32 waitUntil, i32 protectUntil, f64 prevY),
@@ -603,6 +619,12 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     w.i32(this.#respawn.waitUntil[p])
     w.i32(this.#respawn.protectUntil[p])
     w.f64(this.#prevY[p])
+    if (this.#config.humans !== undefined) {
+      const bot = this.#bots[p]
+      const state = new SnapWriter()
+      bot?.snapshot(state)
+      writeBlob(w, state.bytes())
+    }
   }
 
   #readStatus(r: SnapReader, p: number): void {
@@ -614,6 +636,10 @@ export class FiestaDomain implements DomainSim<PlayerInput> {
     this.#respawn.waitUntil[p] = r.i32()
     this.#respawn.protectUntil[p] = r.i32()
     this.#prevY[p] = r.f64()
+    if (this.#config.humans !== undefined) {
+      const state = new SnapReader(readBlob(r))
+      this.#bots[p]?.restore(state)
+    }
   }
 
   /** Factory handoffs read the seat id first, then restore this seat's trailer block. */

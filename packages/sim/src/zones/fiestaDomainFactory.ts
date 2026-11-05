@@ -41,6 +41,7 @@ export interface FiestaDomainFactoryConfig {
     readonly openingRanks?: Uint16Array | null
   }
   /** Roster seats; every domain gets its own subset in spec.seats. */
+  readonly humans?: readonly boolean[]
   readonly seatCount: number
   /** Roster-indexed spawn index into course.spawns; defaults to the seat id (seatSpawn: rows behind past the spawns). */
   readonly spawnIndices?: readonly number[]
@@ -84,7 +85,7 @@ export function createFiestaDomainFactory(
     zones: config.zones,
     schedule,
     spawnIndices: config.spawnIndices,
-    placeSeats,
+    placeSeats, humans: config.humans,
   })
   // Consumes the seat blocks of sources that this domain does not keep.
   const sink = new CharacterSystem({ playerCount: 1 })
@@ -210,6 +211,7 @@ function applyTrailers(
         r.i32() // waitUntil
         r.i32() // protectUntil
         r.f64() // prevY
+        if (config.humans !== undefined) readBlob(r)
       }
     }
     const seesawCount = r.u16()

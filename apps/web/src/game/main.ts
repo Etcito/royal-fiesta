@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { browserZones } from '../client/sources.ts'
 import { localPlayerCount } from './localPlayers.ts'
 import { localBotCount } from './localBots.ts'
 import startSeasonJson from '../../../../courses/season.json?raw'
@@ -6,7 +7,7 @@ import { DEFAULT_LOBBY_BOTS } from '@royal-fiesta/game/hub/hubBots'
 import { playerLook } from '../play/playerLook.ts'
 import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import { checkAwait, checkPhase } from './checkProgress.ts'
-// game.html entry: start -> lobby -> offline show -> start; course and network games keep their V1 flow.
+// game.html entry: start -> lobby -> show. Online shows share one zone relay room through the final.
 // The hub and its matches run in-page with bots, or on the relay when ?server= is given; ?clients=2..4 runs
 // that many piloted clients over a LoopbackRelay. Content comes from pickContent, input only from GameInput.
 // ?players=1..4 (alias ?local=) reserves local human seats in one split-screen canvas; works with ?course= and ?bots=.
@@ -41,7 +42,7 @@ import { QueuePad } from '@royal-fiesta/game/hub/queuePad'
 import { DEFAULT_NAME, LOCAL_LOBBY_WAIT_S, LocalCountdown, cleanName, lobbyLines } from '@royal-fiesta/game/hub/lobby'
 import type { LobbyPick } from '@royal-fiesta/game/hub/lobby'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
-import { netSetup } from '@royal-fiesta/game/net/tuning'
+import { classicNetSetup, NET_PLAYERS } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory, type WsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
@@ -109,7 +110,12 @@ import { mountElimShow } from '../screens/elimShow.ts'
 import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
 import type { ShowModeOptions } from './showMode.ts'
+import { ShowDirector } from './showDirector.ts'
 import type { ShowFrame } from './showDirector.ts'
+import type { OnlineMatch } from '@royal-fiesta/game/net/onlineMatch'
+import { attachZoneNetScene } from '../zone/zoneNetScene.ts'
+import type { ZoneNetScene } from '../zone/zoneNetScene.ts'
+import { ZoneFeatures } from '../zone/zoneLobbyPlay.ts'
 import { EconomyScreens } from './economyScreens.ts'
 import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { BootOptions, TourGame } from './uiTour.ts'
@@ -468,6 +474,9 @@ class MatchPresenter {
   private readonly c: ModeCtx
   private readonly stage: PodiumStage
   private scene: SceneView | null = null
+  private zoneScene: ZoneNetScene | null = null
+  private zoneFeatures: ZoneFeatures | null = null
+  private zoneRound = -1
   private podium: number[] | null = null
 
   constructor(c: ModeCtx) {
@@ -499,6 +508,27 @@ class MatchPresenter {
     })
   }
 
+  drawZone(match: OnlineMatch, seat: number, dt: number): void {
+    const round = match.full.round
+    if (round === null) return
+    if (round.plan.index !== this.zoneRound) {
+      this.end()
+      this.zoneRound = round.plan.index
+      const { content, ports, canvases } = this.c.loaded
+      const follow = round.seatOf.indexOf(seat)
+      this.zoneScene = attachZoneNetScene({ canvas: canvases[0], course: round.plan.course,
+        createPort: async () => ports[0], disposePort: false, feed: match.feed,
+        assets: name => content.assets(name), bean: content.character(), character: content.character(),
+        skinned: skinnedCharacterOf(content), dressing: content.dressing(), orbit: this.c.orbit,
+        loadingPaint: !this.c.prepared, look: follow >= 0 ? this.c.look : undefined,
+      }, ports[0], round.seatOf.length, follow >= 0 ? follow : round.localSeats[0] ?? 0)
+      this.zoneFeatures = new ZoneFeatures(ports[0], name => content.assets(name))
+    }
+    this.zoneScene?.update(round.match, 1, dt)
+    const follow = round.seatOf.indexOf(seat)
+    this.zoneFeatures?.update(round.match.domains.find(domain => domain.seats.includes(follow)))
+  }
+
   // podium: the places to show once known (null before). The HUD is drawn by the app's screen rules.
   draw(sim: MatchSim, smoother: Parameters<SceneView['update']>[1], alpha: number, dt: number, podium: readonly number[] | null): void {
     if (podium !== null && podium.length > 0 && this.podium === null) {
@@ -517,6 +547,11 @@ class MatchPresenter {
   end(): void {
     this.scene?.dispose()
     this.scene = null
+    this.zoneScene?.dispose()
+    this.zoneScene = null
+    this.zoneFeatures?.dispose()
+    this.zoneFeatures = null
+    this.zoneRound = -1
     this.podium = null
     this.podiumS = 0
     this.stage.hide()
@@ -801,7 +836,7 @@ class LocalMode implements Mode {
     const seed = Date.now() >>> 0
     const courses = course !== null
       ? courseSetup(seed, course, content.playlist()).courses
-      : netSetup(seed, seats, 'sprint', content.playlist()).courses
+      : classicNetSetup(seed, seats, 'sprint', content.playlist()).courses
     // ?tune=1 hands the live-tuned belly stroke to this local sim only (online matches keep the defaults).
     const slideStroke = strokeTuningFromUrl() ?? undefined
     const match = startup('Local round', () => new LocalMatch({ R, seats, seed, profile: 'sprint', courses, slideStroke }))
@@ -1085,23 +1120,36 @@ class OnlineMode implements Mode {
   private readonly moved = emptyControls()
   // The shared hub: every lobby member's name over its bean.
   private readonly tags: NameTags | null
-  private readonly name: string
+  private readonly localName: string
   // Steps the flow while the window draws no frames (hidden or behind the other window), see netPump.ts.
   private readonly pump: NetPump
   private readonly netDiag = new NetDiag()
+
+  readonly show = { models: null as ShowFrame | null, cues: (): string[] => this.cueQueue.splice(0) }
+  private readonly cueQueue: string[] = []
+  private director: ShowDirector | null = null
+  private showMatch: OnlineMatch | null = null
+  elapsedMs = 0
+  round = 0
+  get localSeat(): number { return this.seat }
+  name = (seat: number): string => this.names[seat] ?? `Bot ${seat + 1}`
+  action(action: Action): void { this.stepShow(0, action) }
+  pickVote(index: number): void { this.cueQueue.push(...this.director?.pick(index) ?? []) }
+  hoverVote(index: number): void { this.cueQueue.push(...this.director?.hover(index) ?? []) }
 
   constructor(c: ModeCtx, server: string) {
     this.c = c
     this.pump = new NetPump(dt => this.background(dt))
     const { R, content, ports } = c.loaded
     const q = c.q
-    this.name = onlineName(q.name)
-    this.names = playerNames(0, this.name)
+    this.localName = onlineName(q.name)
+    this.names = playerNames(0, this.localName)
     this.flow = new PlayFlow({
-      R, relayUrl: server, ws: diagWs(globalWsFactory()), hubCode: q.hub, name: this.name, colour: q.colour,
-      courses: content.playlist(), plaza: content.hub(), partySize: q.party, now: () => performance.now(), pilot: false,
+      R, relayUrl: server, ws: diagWs(globalWsFactory()), hubCode: q.hub, name: this.localName, colour: q.colour,
+      courses: content.playlist(), zones: browserZones(content.playlist()), plaza: content.hub(), partySize: q.party, now: () => performance.now(), pilot: false,
       // GameSaloon timed lobbies: the hub enters one by itself; no pad, no key.
-      matchmaking: 'lobby',
+      matchmaking: 'lobby', voteMs: 5000, intermissionMs: 12000,
+      presentationDone: () => this.show.models?.finished === true,
       log: ev => {
         if (ev.state === 'match' && typeof ev.detail.seat === 'number') this.seat = ev.detail.seat
         if (ev.state === 'failed') this.failure = String(ev.detail.message ?? 'the relay connection failed')
@@ -1123,14 +1171,14 @@ class OnlineMode implements Mode {
   // This client as the lobby shows it ('Bean 2' for a default name), else its own name.
   private shownName(): string {
     const v = this.flow.lobby.view
-    return v.members.find(m => m.k === v.you)?.name ?? this.name
+    return v.members.find(m => m.k === v.you)?.name ?? this.localName
   }
 
   // The round's names: the lobby's players in seat order (the server seats them in lobby order), bots after them.
   private roundNames(): string[] {
     const players = this.flow.lobby.view.members.filter(m => m.role === 'player')
-    if (players.length === 0) return playerNames(this.seat, this.name)
-    return Array.from({ length: PLAYERS }, (_, p) => (p < players.length ? players[p].name : `Bot ${p + 1}`))
+    if (players.length === 0) return Array.from({ length: NET_PLAYERS }, (_, seat) => seat === this.seat ? this.localName : `Bot ${seat + 1}`)
+    return Array.from({ length: NET_PLAYERS }, (_, p) => (p < players.length ? players[p].name : `Bot ${p + 1}`))
   }
 
   sim(): MatchSim | null {
@@ -1172,7 +1220,29 @@ class OnlineMode implements Mode {
   // A NetPump step: the flow advances with idle controls (the window has no focus) and nothing is drawn.
   private background(dtS: number): void {
     this.flow.frame(dtS, null, 0)
+    this.stepShow(dtS)
     this.sampleNet(performance.now(), false)
+  }
+
+  private stepShow(dtS: number, action: Action | null = null): void {
+    const match = this.flow.match
+    if (match !== this.showMatch) {
+      this.showMatch = match
+      this.director = match === null ? null : new ShowDirector(match.full, id => {
+        const course = this.c.loaded.content.playlist().find(course => course.id === id)
+        return { name: course?.name ?? id, kind: course?.kind === 'survival' ? 'survival' : 'race' }
+      }, this.name, this.seat, 5000, 3000)
+      this.show.models = null
+    }
+    if (!this.director || !match) return
+    const round = match.full.round
+    if (round) this.director.worldReady(round.plan.index)
+    const before = this.show.models
+    const models = this.director.step(action, dtS * 1000)
+    this.elapsedMs = models.screen === before?.screen ? this.elapsedMs + dtS * 1000 : 0
+    if (models.results !== before?.results && models.results) this.round++
+    this.show.models = models
+    this.cueQueue.push(...models.sounds)
   }
 
   private sampleNet(nowMs: number, drawn: boolean): void {
@@ -1192,6 +1262,7 @@ class OnlineMode implements Mode {
     flow.frame(this.pump.frame(f.dt), f.paused ? null : inCharacterFrame(f.world, facing, this.moved), f.paused ? 0 : f.emote)
     this.sampleNet(now, true)
     const match = flow.match
+    this.stepShow(f.dt)
     const sim = match?.sim ?? null
     if (sim !== this.viewed) {
       this.viewed = sim
@@ -1202,7 +1273,7 @@ class OnlineMode implements Mode {
         this.hubView.setVisible(true)
       } else {
         this.hubView.setVisible(false)
-        this.presenter.begin(this.seat)
+        this.presenter.end()
         this.names = this.roundNames()
       }
     }
@@ -1210,8 +1281,9 @@ class OnlineMode implements Mode {
     let screen: GameScreen = 'hub'
     if (match !== null) {
       const v = match.sim.phase(this.presenter.view)
-      this.presenter.draw(match.sim, match.session.smoother, 1, f.paused ? 0 : f.dt, v.phase >= Phase.podium ? v.podium : null)
-      screen = matchScreen(v, match.sim.character(this.seat, this.cv).status, this.presenter.onPodium)
+      screen = this.show.models?.screen ?? matchScreen(v, match.sim.character(this.seat, this.cv).status, false)
+      if (['countdown', 'round', 'spectate'].includes(screen)) this.presenter.drawZone(match, this.seat, f.dt)
+      else this.presenter.end()
     } else if (inHub(flow.state)) {
       this.hubView.update(flow.hub.state(this.local), this.c.q.colour, flow.remotes(now), flow.hub.tick, f.dt, flow.hub.emote(now))
     }
@@ -1226,7 +1298,7 @@ class OnlineMode implements Mode {
     const state = flow.state
     if (this.presenter.places !== null) return [...podiumLines(this.presenter.places, this.names), this.note]
     const lines: string[] = []
-    if (flow.hubCode !== null) lines.push(`Hub ${flow.hubCode} - ${this.name}`)
+    if (flow.hubCode !== null) lines.push(`Hub ${flow.hubCode} - ${this.localName}`)
     if (state === 'connecting') lines.push('Connecting...')
     else if (state === 'hub') lines.push('Joining a lobby...')
     else if (state === 'queued' || state === 'choosing' || state === 'watching') lines.push(...lobbyLines(flow.lobby, performance.now()))
@@ -1260,7 +1332,7 @@ class InPageMode implements Mode {
     this.c = c
     const { R, content, ports } = c.loaded
     this.hub = new InPageHubLoop(R, c.q.clients, new LoopbackRelay(), {
-      R, courses: content.playlist(), plaza: content.hub(), partySize: c.q.clients as 2 | 3 | 4, now: () => performance.now(), pilot: true,
+      R, courses: content.playlist(), zones: browserZones(content.playlist()), plaza: content.hub(), partySize: c.q.clients as 2 | 3 | 4, now: () => performance.now(), pilot: true,
     }, ports, { assets: name => content.assets(name), bean: content.character(), character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content) })
   }
 
@@ -2319,7 +2391,7 @@ class App {
       this.roundGate.frame(screen, mode.roundStage())
       this.run(nav.dispatch({ kind: 'game', screen }))
       if (mode instanceof LocalMode && mode.showRequested) void this.startShow()
-      if (mode instanceof ShowAdapter) {
+      if (mode instanceof ShowAdapter || mode instanceof OnlineMode) {
         for (const cue of mode.show.cues()) this.sound.cue(cue)
         if (mode.finished && nav.screen === 'endScreen') this.run(nav.dispatch({ kind: 'action', action: 'confirm' }))
       } else if (mode.finished) {
@@ -2381,7 +2453,7 @@ class App {
   private drawShow(): boolean {
     const mode = this.mode
     const loaded = this.loaded
-    if (!(mode instanceof ShowAdapter) || loaded === null) return false
+    if (!(mode instanceof ShowAdapter || mode instanceof OnlineMode) || loaded === null) return false
     const screen = this.nav.screen
     const models = mode.show.models
     if (models === null || models.screen !== screen) return false
@@ -2389,7 +2461,7 @@ class App {
     const stage = loaded.ports[0]
     const deps = {
       cue: (id: string): void => { if (id.startsWith('flow.crown-')) this.sound.cue(id) },
-      look: this.wornLook(), stage, character: loaded.content.character(), names: mode.name, localSeat: 0, parent: this.screens,
+      look: this.wornLook(), stage, character: loaded.content.character(), names: mode.name, localSeat: mode instanceof OnlineMode ? mode.localSeat : 0, parent: this.screens,
     }
     // The director calls this screen countdown during its load hold. Do not mount the countdown
     // renderer or draw the legacy sim countdown until worldReady has released that hold.
@@ -2422,7 +2494,7 @@ class App {
         this.showView = { screen, update: () => view.update(mode.show.models!.endScreen!, mode.elapsedMs), unmount: () => view.unmount() }
       } else if (screen === 'podium' && models.endScreen !== null) {
         const podium = new PodiumStage({
-          look: place => models.endScreen!.podium[place]?.seat === 0 ? deps.look : null, port: stage, viewport: 0, bean: deps.character, block: loaded.content.assets('wall-block'), layout: loaded.content.podium(),
+          look: place => models.endScreen!.podium[place]?.seat === deps.localSeat ? deps.look : null, port: stage, viewport: 0, bean: deps.character, block: loaded.content.assets('wall-block'), layout: loaded.content.podium(),
         })
         // Palette indices draw the podium; the look hook above uses the actual room seat.
         podium.show(models.endScreen.podium.map(p => p.seat % PALETTE.length))
@@ -2496,7 +2568,7 @@ class App {
     if (this.drawShow()) {
       this.resize()
       this.host.frame(this.uiNowMs)
-      if (this.mode instanceof ShowAdapter && this.mode.show.models !== null) this.showLoading(this.mode.show.models)
+      if ((this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode) && this.mode.show.models !== null) this.showLoading(this.mode.show.models)
       return
     }
     const mode = this.mode
@@ -2626,7 +2698,7 @@ class App {
       this.run(this.nav.dispatch({ kind: 'back' }))
       return
     }
-    if (this.mode instanceof ShowAdapter && (this.nav.screen === 'result' || this.nav.screen === 'endScreen')) {
+    if ((this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode) && (this.nav.screen === 'result' || this.nav.screen === 'endScreen')) {
       const action = flowAction(ev)
       if (action === 'confirm') {
         this.mode.action(action)
@@ -2634,7 +2706,7 @@ class App {
       }
     }
     // The vote cards take the pointer: hovering focuses, clicking votes the card under it.
-    if (this.nav.screen === 'vote' && ev.k === 'click' && this.mode instanceof ShowAdapter) {
+    if (this.nav.screen === 'vote' && ev.k === 'click' && (this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode)) {
       const index = this.voteIndexAt(ev.x, ev.y)
       if (index !== null) {
         this.mode.pickVote(index)
@@ -2646,7 +2718,7 @@ class App {
       else {
         const action = flowAction(ev)
         if (action !== null) {
-          if (this.mode instanceof ShowAdapter) this.mode.action(action)
+          if (this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode) this.mode.action(action)
           else this.run(this.nav.dispatch({ kind: 'action', action }))
         }
       }
@@ -2676,7 +2748,7 @@ class App {
     if (p === null || (this.pointer !== null && p.x === this.pointer.x && p.y === this.pointer.y)) return
     this.pointer = { x: p.x, y: p.y }
     this.host.input({ kind: 'pointer', phase: 'move', x: p.x, y: p.y })
-    if (this.nav.screen === 'vote' && this.mode instanceof ShowAdapter) {
+    if (this.nav.screen === 'vote' && (this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode)) {
       const index = this.voteIndexAt(p.x, p.y)
       if (index !== null) this.mode.hoverVote(index)
     }
@@ -2684,7 +2756,7 @@ class App {
 
   // The vote card under a pointer position (GameInput's overlay backing px): the candidate index, or null.
   private voteIndexAt(x: number, y: number): number | null {
-    if (!(this.mode instanceof ShowAdapter)) return null
+    if (!(this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode)) return null
     const model = this.mode.show.models?.vote
     if (model == null) return null
     const dpr = window.devicePixelRatio || 1
@@ -2705,7 +2777,7 @@ class App {
       this.startButton(cmd.action)
       return
     }
-    if (cmd.k === 'action' && cmd.action === 'confirm' && this.mode instanceof ShowAdapter
+    if (cmd.k === 'action' && cmd.action === 'confirm' && (this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode)
       && (this.nav.screen === 'result' || this.nav.screen === 'endScreen')) {
       this.mode.action('confirm')
       return

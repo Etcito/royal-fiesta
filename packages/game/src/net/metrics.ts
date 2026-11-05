@@ -28,7 +28,7 @@ export class ConfirmedHashLog {
   }
 
   /** Stores the hash of every tick confirmed since the previous call. Call at least every 100 ticks. */
-  record(session: RollbackSession<PlayerInput>): void {
+  record(session: Pick<RollbackSession<PlayerInput>, 'stats' | 'confirmedHash'>): void {
     const confirmed = session.stats.confirmedTick
     const fresh = confirmed - this.lastRecorded
     if (fresh <= 0) return

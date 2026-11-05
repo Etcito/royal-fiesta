@@ -20,6 +20,10 @@ import { browserAssetResolver, preloadAssets } from '../client/sources.ts'
 
 export interface ZoneNetSceneOptions {
   canvas: HTMLCanvasElement
+  /** A lobby show can share its already loaded stage port and its match's FAR feed. */
+  feed?: FarFeed
+  disposePort?: boolean
+  loadingPaint?: boolean
   /** One followed round seat per local human viewport. */
   followSeats?: number[]
   /** Shared with the input owner; standalone zone viewers may own their camera. */
@@ -100,14 +104,21 @@ export async function prepareZoneNetScene(options: ZoneNetSceneOptions): Promise
     dispose() {
       if (attached) return
       attached = true
-      port.dispose()
+      if (options.disposePort !== false) port.dispose()
     },
   }
 }
 
+/** Attach the same zone presentation to a stage whose port/assets the game loaded before entering its lobby. */
+export function attachZoneNetScene(options: ZoneNetSceneOptions, port: RenderPort, seats: number, follow: number): ZoneNetScene {
+  if (!options.assets) throw new Error('[zone] attachZoneNetScene requires loaded assets')
+  const bean = options.bean ?? options.assets('bean')
+  return attachScene(options, port, options.assets, bean, options.character ?? bean, seats, follow)
+}
+
 function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (name: string) => PrimsAsset,
   bean: PrimsAsset, character: PrimsAsset, seatCount: number, localSeat: number): ZoneNetScene {
-  const feed = new FarFeed()
+  const feed = options.feed ?? new FarFeed()
   const adapter = new DomainSceneSim(options.course, seatCount)
   const orbit = options.orbit ?? new OrbitCamera()
   orbit.reset(0)
@@ -119,7 +130,7 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
       const cell = layout[viewport]
       return (options.canvas.width / options.canvas.height) * cell.width / cell.height
     } : undefined,
-    look: options.look, costumes: options.costumes, wardrobe: options.wardrobe,
+    loadingPaint: options.loadingPaint, look: options.look, costumes: options.costumes, wardrobe: options.wardrobe,
     // Third-person orbit around the local seat, so the near pack and nearby far rows stay in frame.
     camera: viewport === 0 ? (focus, dt, clip) => orbit.pose(focus, dt, clip) : undefined,
   }))
@@ -158,7 +169,7 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
       if (disposed) return
       disposed = true
       for (const pane of scenes) pane.dispose()
-      port.dispose()
+      if (options.disposePort !== false) port.dispose()
     },
   }
 }

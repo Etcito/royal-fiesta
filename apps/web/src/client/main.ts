@@ -18,7 +18,7 @@ import { RelayTransport } from '@royal-fiesta/game/net/relayTransport'
 import { browserRtcBackend } from '@royal-fiesta/game/net/rtcBackend'
 import { RoomsClient } from '@royal-fiesta/game/net/roomsClient'
 import { fiestaLocalPlayer } from '@royal-fiesta/game/net/roomsProtocol'
-import { netSetup } from '@royal-fiesta/game/net/tuning'
+import { classicNetSetup } from '@royal-fiesta/game/net/tuning'
 import { WebRtcTransport } from '@royal-fiesta/game/net/webrtcTransport'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
@@ -146,7 +146,7 @@ function runInPage(ctx: Ctx, controls: () => RawControls): void {
 
 // One networked client: NetMatch + SceneView for the local player, driven by the keyboard/gamepad or a Pilot.
 function runNet(ctx: Ctx, net: NetTransport, localPeer: number, humanPeers: number, seed: number, controls: () => RawControls, endFrame: () => void): void {
-  const setup = netSetup(seed, humanPeers, ctx.q.profile, ctx.courses)
+  const setup = classicNetSetup(seed, humanPeers, ctx.q.profile, ctx.courses)
   const match: NetMatch = createNetMatch(ctx.R, { setup, localPeer, humanPeers }, net, { cpuMs: () => performance.now() })
   const view = new SceneView({ port: ctx.ports[0], viewport: 0, localPlayer: localPeer, assets: ctx.assets, bean: ctx.bean, skinned: ctx.skinned })
   const pilot = ctx.q.pilot ? new Pilot(localPeer, seed) : null

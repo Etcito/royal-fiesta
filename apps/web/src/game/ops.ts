@@ -1,3 +1,4 @@
+import { browserZones } from '../client/sources.ts'
 // GPU client ops of the player page (game.html?mode=ops): controlsProbe (proofs/m15/controls.json, S17) and
 // gameCapture (S10 captures plus events and content.report(), S17). Both refuse when RAA is unavailable:
 // captures are only ever RAA renders. Input goes through the real input module (GameInput, controlsToInput,
@@ -808,7 +809,7 @@ class NetDriver implements Driver {
     this.view = new SingleView(port, content)
     this.flow = new PlayFlow({
       R, relayUrl: server, ws: globalWsFactory(), hubCode: 'new', name: 'Probe', colour: 0,
-      courses: content.playlist(), plaza: content.hub(), partySize: 2, now: () => performance.now(), pilot: true,
+      courses: content.playlist(), zones: browserZones(content.playlist()), plaza: content.hub(), partySize: 2, now: () => performance.now(), pilot: true,
       log: (ev: FlowEvent) => {
         if (ev.state === 'match' && typeof ev.detail.seat === 'number') this.seat = ev.detail.seat
         if (ev.state === 'failed') this.failure = String(ev.detail.message ?? 'the relay connection failed')
@@ -896,7 +897,7 @@ class MultiDriver implements Driver {
     this.now = now
     const clients = ports.length
     this.loop = new InPageHubLoop(R, clients, new LoopbackRelay({ seed: 8 }), {
-      R, courses: content.playlist(), plaza: content.hub(), partySize: clients as 2 | 4, now, pilot: true,
+      R, courses: content.playlist(), zones: browserZones(content.playlist()), plaza: content.hub(), partySize: clients as 2 | 4, now, pilot: true,
     }, ports.map(gated), { assets: name => content.assets(name), bean: content.character(), character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content) })
   }
 

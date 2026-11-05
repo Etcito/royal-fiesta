@@ -1,3 +1,4 @@
+import { loadNetZones } from '../src/files.ts'
 // Two real-time clients use the existing hub harness assets and relay, stopping after startup.
 import assert from 'node:assert/strict'
 import { readdir } from 'node:fs/promises'
@@ -33,7 +34,7 @@ const asset = (name: string): PrimsAsset => {
   return value
 }
 const loop = new InPageHubLoop(R, 2, new LoopbackRelay({ seed: 8 }), {
-  R, courses, plaza, partySize: 2, now: () => performance.now(), pilot: true,
+  R, courses, zones: await loadNetZones(courses), plaza, partySize: 2, now: () => performance.now(), pilot: true,
 }, ports, { assets: asset, bean: asset('bean') })
 const start = performance.now()
 let frames = 0

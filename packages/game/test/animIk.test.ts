@@ -140,7 +140,7 @@ const { createMatchSim } = await import('@royal-fiesta/sim/match/matchSim')
 const { neutralInput } = await import('@royal-fiesta/sim/input')
 const { fixtureResolver } = await import('../src/assets.ts')
 const { matchCourses } = await import('../src/courseSet.ts')
-const { netSetup } = await import('../src/net/tuning.ts')
+const { classicNetSetup } = await import('../src/net/tuning.ts')
 const { ikInputs } = await import('../src/render/sceneView.ts')
 type View = import('@royal-fiesta/sim/match/matchSim').CharacterView
 
@@ -204,8 +204,8 @@ test('integration: simulation state is identical with IK enabled or bypassed', a
   const paths = readdirSync(dir).filter(n => n.endsWith('.course.json')).sort().map(n => `fixtures/courses/${n}`)
   const entries = await Promise.all(paths.map(async path => ({ path, json: JSON.parse(await read(path)) as unknown })))
   const courses = await matchCourses(entries, fixtureResolver(read), 'sprint')
-  const setup = netSetup(5, 2, 'sprint', courses), n = setup.playerCount, ids = [...Array(n).keys()]
-  const sims = [createMatchSim(R, setup), createMatchSim(R, netSetup(5, 2, 'sprint', courses))]
+  const setup = classicNetSetup(5, 2, 'sprint', courses), n = setup.playerCount, ids = [...Array(n).keys()]
+  const sims = [createMatchSim(R, setup), createMatchSim(R, classicNetSetup(5, 2, 'sprint', courses))]
   const drivers = [await AnimDriver.load(graphJson, rigJson, clipsJson), await AnimDriver.load(graphJson, rigJson, clipsJson, { ik: false })]
   try {
     const inputs = ids.map(() => neutralInput())

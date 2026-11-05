@@ -322,6 +322,7 @@ function scriptedWs(script: (frame: Frame) => Frame | undefined = answer, autoOp
     readyState: 0, onopen: null, onmessage: null, onclose: null, onerror: null,
     send(data) {
       assert.equal(socket.readyState, 1)
+      if (typeof data !== 'string') throw new Error('economy expects JSON text')
       const frame = JSON.parse(data) as Frame
       frames.push(frame)
       const reply = frame.t === 'auth'

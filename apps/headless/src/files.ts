@@ -1,3 +1,4 @@
+import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 // Node-only file access: repo-relative paths, fixture assets and cached course loads.
 import { createHash } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
@@ -86,4 +87,9 @@ export async function loadAllCourses(filter?: (c: ResolvedCourse) => boolean): P
   const kept = filter ? loaded.filter(filter) : loaded
   // Load order is part of determinism: code-unit order by id.
   return kept.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+}
+
+export async function loadNetZones(courses: readonly ResolvedCourse[]) {
+  return new Map(await Promise.all(courses.map(async course =>
+    [course.id, await loadZonesFile(course.id, course, readRepoText)] as const)))
 }

@@ -12,7 +12,7 @@ import { RelayClient } from '@royal-fiesta/game/net/relayClient'
 import { RelayTransport } from '@royal-fiesta/game/net/relayTransport'
 import { RoomsClient } from '@royal-fiesta/game/net/roomsClient'
 import { fiestaLocalPlayer } from '@royal-fiesta/game/net/roomsProtocol'
-import { netSetup } from '@royal-fiesta/game/net/tuning'
+import { classicNetSetup } from '@royal-fiesta/game/net/tuning'
 import { WebRtcTransport } from '@royal-fiesta/game/net/webrtcTransport'
 import { globalWsFactory } from '@royal-fiesta/game/net/ws'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
@@ -109,7 +109,7 @@ export async function runRealCase(server: LocalServer, c: RealCase): Promise<Net
       }))
       transports.sort((a, b) => (a as WebRtcTransport).selfPeer - (b as WebRtcTransport).selfPeer)
     }
-    const setup = netSetup(seed, c.clients, c.profile, courses)
+    const setup = classicNetSetup(seed, c.clients, c.profile, courses)
     const prof = PROFILES[c.profile]
     let cap = 0
     for (const co of courses) cap = Math.max(cap, co.timeLimitS)

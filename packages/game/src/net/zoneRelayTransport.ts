@@ -61,8 +61,8 @@ export class ZoneRelayTransport implements GroupTransport {
 
   constructor(client: ZoneRelayClient, selfPeer: number, peerCount: number, now: () => number, options: { batch?: boolean } = {}) {
     this.batching = options.batch !== false
-    if (!Number.isInteger(peerCount) || peerCount < 2 || peerCount > MAX_ZONE_PEERS) {
-      refuse('relay', 'peerCount', `${peerCount} is outside 2..${MAX_ZONE_PEERS}; pass the zone peer count`)
+    if (!Number.isInteger(peerCount) || peerCount < 1 || peerCount > MAX_ZONE_PEERS) {
+      refuse('relay', 'peerCount', `${peerCount} is outside 1..${MAX_ZONE_PEERS}; pass the zone peer count`)
     }
     if (!Number.isInteger(selfPeer) || selfPeer < 0 || selfPeer >= peerCount) {
       refuse('relay', 'selfPeer', `${selfPeer} is outside 0..${peerCount - 1}; pass matched.youAre`)

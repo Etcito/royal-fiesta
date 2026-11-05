@@ -18,10 +18,9 @@ export function assetSkin(data: unknown, document: Record<string, unknown>, peng
     if (owner.asset?.cosmetic?.binding !== 'penguin') return null
     if (owner.rigRef) {
       const sourceBones = rigReferenceSourceBones(owner.rig.bones, penguin.bones)
-      const jiggle = owner.rigRef.extraBones.find(b => b.jiggle !== undefined)
-      const mount = jiggle ? sourceBones[owner.rig.bones.findIndex(b => b.name === jiggle.name)] : undefined
-      return { rig: owner.rig, clips: owner.clips ?? [], parts, sourceBones, inheritedBones: penguin.bones.length,
-        ...(mount === undefined ? {} : { mount }) }
+      // A referenced rig follows the complete live penguin palette, including each extra bone's own ancestor.
+      // It is not a rest armature mounted on the first jiggle bone's ancestor.
+      return { rig: owner.rig, clips: owner.clips ?? [], parts, sourceBones, inheritedBones: penguin.bones.length }
     }
     const parentBone = owner.rig.parentBone
     if (parentBone !== undefined) {

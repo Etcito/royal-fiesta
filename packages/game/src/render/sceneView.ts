@@ -14,7 +14,7 @@ import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
 import type { AnimDriver, CharacterObservation, CharacterPose } from '../anim/driver.ts'
-import { CosmeticJiggle } from '../anim/jiggle.ts'
+import { CosmeticJiggle, hasJiggle, wornPalette } from '../anim/jiggle.ts'
 import { applyWalkPose, restPose, walkBones, walkPose, newWalkState } from '../anim/walkCycle.ts'
 import { NO_DRESSING } from '../content.ts'
 import type { CourseDressing } from '../content.ts'
@@ -908,10 +908,12 @@ export class SceneView {
       const skin = w.spec.skin ?? this.port.skinOf?.(w.spec.asset.id)
       if (skin && this.port.setPose && this.port.registerSkinned) {
         const t: Vec3T = [d[0], d[1], d[2]]
-        if (skin.mount !== undefined) {
-          // Its own armature on a penguin bone: the mount bone's pose, its jiggle bones swung by the frame's batch.
-          this.jiggle.add(w.instance, skin, posed?.skin ?? this.restSkin ?? IDENTITY4_SKIN, t, yaw, UNIT, localWearer, distance2)
-        } else this.port.setPose(w.instance, posed?.skin ?? restPoseSkin(skin.rig as unknown as Parameters<typeof restPoseSkin>[0]))
+        const palette = posed?.skin ?? this.restSkin ?? (skin.mount !== undefined ? IDENTITY4_SKIN
+          : restPoseSkin(skin.rig as unknown as Parameters<typeof restPoseSkin>[0]))
+        if (skin.mount !== undefined || hasJiggle(skin)) {
+          // Referenced rigs follow the full live palette; legacy armatures follow their mount bone.
+          this.jiggle.add(w.instance, skin, palette, t, yaw, UNIT, localWearer, distance2)
+        } else this.port.setPose(w.instance, wornPalette(skin, palette))
         this.port.setTransform(w.instance, t, yaw, UNIT)
         continue
       }

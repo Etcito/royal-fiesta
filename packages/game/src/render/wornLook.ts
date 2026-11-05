@@ -1,7 +1,7 @@
 // The wardrobe's bin slots are independent of rig attachment slot names. Keep every selected piece.
 import type { PrimsAsset } from '../prims.ts'
 import type { RenderPort, SkinnedAssetT, Vec3T, QuatT } from './port.ts'
-import { CosmeticJiggle, wornPalette } from '../anim/jiggle.ts'
+import { CosmeticJiggle, hasJiggle, wornPalette } from '../anim/jiggle.ts'
 
 export interface WornLook {
   colour: number
@@ -45,7 +45,7 @@ export class WornMounts {
     let queued = false
     for (const item of this.items) {
       if (!item.skinned) continue
-      if (jiggle !== undefined && item.skin?.mount !== undefined) {
+      if (jiggle !== undefined && item.skin && (item.skin.mount !== undefined || hasJiggle(item.skin))) {
         const batch = jiggle.batch ?? (this.own ??= new CosmeticJiggle())
         this.batch = batch
         batch.add(item.instance, item.skin, matrices, t, r, s, jiggle.localWearer ?? true, jiggle.distance2 ?? 0)

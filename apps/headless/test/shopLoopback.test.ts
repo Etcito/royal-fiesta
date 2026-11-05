@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { Agent, createServer, get } from 'node:http'
 import type { Server } from 'node:http'
 import { join } from 'node:path'
-import { brickDir, repoRoot } from '../../../tools/bricks.ts'
+import { brickDir, brickSkip, missingBrick, repoRoot } from '../../../tools/bricks.ts'
 import { startGameSaloon, type LocalServer } from '../src/gamesaloon.ts'
 import { createEconomyClient } from '@royal-fiesta/game/economy/client'
 import { RARITY_TICKETS, type CatalogItem } from '@royal-fiesta/game/economy/contract'
@@ -17,7 +17,6 @@ import type { Action } from '@royal-fiesta/game/screens/nav'
 // Loopback of the economy client against a local gamesaloon (memory store) that imports
 // economy/royal-fiesta.economy.json and verifies Wavedash user JWTs against a JWKS served here.
 const SKIP = 'gamesaloon-public not found: clone it next to this repo or set GAMESALOON_DIR'
-const REQUIRE = process.env.RF_REQUIRE_GAMESALOON === '1'
 
 let dir: string | null = null
 try { dir = brickDir('gamesaloon-public') } catch {}
@@ -71,10 +70,10 @@ function stopJwks(server: Server): Promise<void> {
 }
 
 test('economy client loopback: shop buy, gift and claim, commission against gamesaloon', {
-  skip: dir === null && !REQUIRE ? SKIP : false,
+  skip: brickSkip(dir === null ? SKIP : null),
   timeout: 300_000,
 }, async () => {
-  if (dir === null) assert.fail(`${SKIP} (RF_REQUIRE_GAMESALOON=1)`)
+  if (dir === null) assert.fail(missingBrick(SKIP))
   const started = Date.now()
   const economyPath = join(repoRoot(), 'economy', 'royal-fiesta.economy.json')
   const config = JSON.parse(readFileSync(economyPath, 'utf8')) as EconomyFile

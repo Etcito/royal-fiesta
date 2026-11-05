@@ -1,4 +1,5 @@
 import { contentDir } from '../../../tools/content.ts'
+import { brickSkip, missingBrick } from '../../../tools/bricks.ts'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
@@ -99,9 +100,10 @@ test('helper discovery order does not change the material key or WGSL', async ()
 
 const mama = new URL('../../../.bricks/MAMA/dist/', import.meta.url)
 const present = existsSync(new URL('sdfm.js', mama))
-if (!present) console.info('INFO material coverage skipped: built .bricks/MAMA is absent')
+const MAMA_SKIP = 'built .bricks/MAMA is absent (no dist/sdfm.js): run npm run bricks -- fetch mama, then npm run build in it'
 
-test('every content material and MAMA pattern carries its shared shader dependencies', { skip: !present }, async () => {
+test('every content material and MAMA pattern carries its shared shader dependencies', { skip: brickSkip(present ? null : MAMA_SKIP) }, async () => {
+  if (!present) assert.fail(missingBrick(MAMA_SKIP))
   const helpers: Helpers = await import(new URL('core/material-graph/helpers.js', mama).href)
   const { COMMON_NO_PROGRAM_WGSL: common } = await import(new URL('gpu/wgsl/common.js', mama).href)
   const { readSdfm, buildMaterial } = await import(new URL('sdfm.js', mama).href)

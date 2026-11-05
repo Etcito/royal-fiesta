@@ -52,6 +52,23 @@ export function brickDir(name: BrickName): string | null {
   return null
 }
 
+// A test that needs a local brick (gamesaloon-public next to the repo, a built .bricks/MAMA) skips without it on a
+// developer machine, and FAILS when the run decides a push: RF_REQUIRE_BRICKS=1, or NMC_PUSH_GATE=1 (set by the
+// nomorechat push gate, whose prepared tree provides the bricks). A silent skip hid a red shop test until 65ffb57.
+export function bricksRequired(): boolean {
+  return process.env.RF_REQUIRE_BRICKS === '1' || process.env.NMC_PUSH_GATE === '1'
+}
+
+// The `skip` option of such a test: the reason while the brick is missing and not required, else false (the test
+// runs and its body fails on the missing brick through missingBrick).
+export function brickSkip(reason: string | null): string | false {
+  return reason !== null && !bricksRequired() ? reason : false
+}
+
+export function missingBrick(reason: string): string {
+  return `${reason} (required here: RF_REQUIRE_BRICKS=1 or NMC_PUSH_GATE=1)`
+}
+
 export interface BrickPin { repo: string; commit: string }
 
 const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/

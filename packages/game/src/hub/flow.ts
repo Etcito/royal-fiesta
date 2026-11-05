@@ -20,7 +20,7 @@ import { ZoneMeshTransport } from '../net/zoneMeshTransport.ts'
 import type { RtcBackend } from '../net/rtcBackend.ts'
 import { setupHash } from '@royal-fiesta/sim/match/setup'
 import type { ZoneMatched, ZoneQueuePayload } from '../net/zoneRelayProtocol.ts'
-import { netSetup } from '../net/tuning.ts'
+import { netSetup, NET_PLAYERS } from '../net/tuning.ts'
 import type { WsFactory, WsLike } from '../net/ws.ts'
 import { HubPilot } from './hubPilot.ts'
 import { HubWorld } from './hubWorld.ts'
@@ -53,6 +53,8 @@ export interface FlowDeps {
   presentationDone?: () => boolean
   rtc?: RtcBackend
   meshTimeoutMs?: number
+  /** Seats of the online show, bots included (default NET_PLAYERS); every peer of a lobby passes the same count. */
+  seats?: number
   voteMs?: number
   intermissionMs?: number
 }
@@ -314,7 +316,7 @@ export class PlayFlow {
       if (!this.active(client) || this.cancelling) return
       // A lobby round seats whoever was there (1..partySize humans); bots take the other places.
       const humans = m.players
-      const setup = netSetup(m.seed, humans, 'sprint', d.courses)
+      const setup = netSetup(m.seed, humans, 'sprint', d.courses, Math.max(humans, d.seats ?? NET_PLAYERS))
       const transport = await ZoneMeshTransport.connect(client, d.rtc, d.now, {
         timeoutMs: d.meshTimeoutMs, onProgress: mesh => { this.transport = mesh },
       })
@@ -333,7 +335,7 @@ export class PlayFlow {
 
   private queuePayload(): ZoneQueuePayload {
     return { g: 'royal-fiesta', v: 1, zones: 1, name: this.d.name, seats: 1, course: 'online-show',
-      tuning: setupHash(netSetup(0, 1, 'sprint', this.d.courses)),
+      tuning: setupHash(netSetup(0, 1, 'sprint', this.d.courses, this.d.seats ?? NET_PLAYERS)),
       m: { cpuMs: 2, bandwidthKbps: 4096, latencyMs: 30, spareSlots: 3 } }
   }
 

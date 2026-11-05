@@ -29,25 +29,26 @@ export interface OnlineMatch extends NetMatch {
   readonly zones: ZoneMatch | null
 }
 
-/** Humans keep their lobby seat numbers; deterministic bots fill the room to 60. */
-export function onlineRoster(humans: number): Roster {
+/** Humans keep their lobby seat numbers; deterministic bots fill the room to `seats` (60 by default). */
+export function onlineRoster(humans: number, seats = NET_PLAYERS): Roster {
   if (!Number.isInteger(humans) || humans < 1 || humans > RELAY_MAX_PLAYERS) {
     refuse('net', 'onlineRoster.humans', `supply 1..${RELAY_MAX_PLAYERS} relay humans`)
   }
   const peers = Array.from({ length: humans }, (_, peer) => ({ peer, seats: [peer] }))
-  for (let seat = humans; seat < NET_PLAYERS; seat++) peers[(seat - humans) % humans].seats.push(seat)
-  return { seatCount: NET_PLAYERS, peers, live: peers.map(() => true) }
+  for (let seat = humans; seat < seats; seat++) peers[(seat - humans) % humans].seats.push(seat)
+  return { seatCount: seats, peers, live: peers.map(() => true) }
 }
 
 /** The existing zone show coordinator owns rounds, votes, elimination and result agreement over the direct group transport. */
 export function createOnlineMatch(R: RapierModule, cfg: NetMatchConfig, sidecars: ReadonlyMap<string, ZonesFile>, net: GroupTransport,
   opts: { rtt?: Record<number, number>; cpuMs?: () => number; season?: readonly SchedMap[]; voteMs?: number; intermissionMs?: number } = {}): OnlineMatch {
   const { setup, humanPeers, localPeer } = cfg
-  const roster = onlineRoster(humanPeers)
-  if (!Number.isInteger(localPeer) || localPeer < 0 || localPeer >= humanPeers || setup.playerCount !== NET_PLAYERS ||
-      setup.humans.length !== NET_PLAYERS || setup.humans.some((human, seat) => human !== (seat < humanPeers))) {
-    refuse('net', 'createOnlineMatch.setup', 'supply a 60-seat setup with relay humans first and a local human peer')
+  if (!Number.isInteger(localPeer) || localPeer < 0 || localPeer >= humanPeers || !Number.isInteger(setup.playerCount) ||
+      setup.playerCount < humanPeers || setup.playerCount > NET_PLAYERS ||
+      setup.humans.length !== setup.playerCount || setup.humans.some((human, seat) => human !== (seat < humanPeers))) {
+    refuse('net', 'createOnlineMatch.setup', `supply a setup of ${humanPeers}..${NET_PLAYERS} seats with relay humans first and a local human peer`)
   }
+  const roster = onlineRoster(humanPeers, setup.playerCount)
   const profile = { ...PROFILES[setup.profile], introTicks: 180 }
   const feed = new FarFeed()
   const measurements = Object.fromEntries(roster.peers.map(p => [p.peer,
@@ -83,7 +84,7 @@ export function createOnlineMatch(R: RapierModule, cfg: NetMatchConfig, sidecars
     const last = results.at(-1)
     if (!full.done || !last) refuse('net', 'onlineMatch.log', 'wait for the confirmed show result')
     saved = { format: 'royal-fiesta.matchlog', version: 0, seed: setup.seed, profile: setup.profile,
-      playerCount: NET_PLAYERS, humans: [...setup.humans], setupHash: hex8(setupHash(setup)),
+      playerCount: setup.playerCount, humans: [...setup.humans], setupHash: hex8(setupHash(setup)),
       // MatchLog is the classic race/survival summary; full.report retains every season rule and score.
       rounds: results.map(result => ({ index: result.index, kind: result.kind === 'survival' ? 'survival' : 'race',
         final: result.final, course: result.course, startTick: profile.introTicks, endTick: result.endTick,
@@ -156,7 +157,7 @@ class OnlineRoundView extends DomainSceneSim {
   private readonly full: ZoneFullMatch
   private readonly config: NetMatchConfig['setup']
   constructor(round: ZoneFullRound | null, full: ZoneFullMatch, setup: NetMatchConfig['setup']) {
-    super(round?.plan.course ?? setup.courses[0], round?.seatOf.length ?? NET_PLAYERS)
+    super(round?.plan.course ?? setup.courses[0], round?.seatOf.length ?? setup.playerCount)
     this.round = round; this.full = full; this.config = setup
     Object.assign(this.setup, setup)
   }

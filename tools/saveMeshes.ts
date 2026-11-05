@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -6,8 +7,9 @@ import type { GameAsset } from '../packages/game/src/gameAsset.ts'
 import { parseGameAsset } from '../packages/game/src/gameAsset.ts'
 import { resolveGameRigs } from '../packages/game/src/rigReference.ts'
 import type { MeshedAsset } from '../apps/web/src/sdf/mamaApi.ts'
+import { meshRequestOf } from '../apps/web/src/sdf/mamaApi.ts'
 import { meshCacheKey } from '../apps/web/src/sdf/meshCache.ts'
-import { encodeMesh } from '../apps/web/src/sdf/meshWire.ts'
+import { decodeMesh, encodeMesh } from '../apps/web/src/sdf/meshWire.ts'
 import { MAMA_ABSENT_PREFIX, mamaSource } from './bricks.ts'
 import { buildContentIndex, contentDir } from './content.ts'
 import { meshTimeoutMs } from './meshBake.ts'
@@ -16,6 +18,20 @@ export interface SavedMeshResult { id: string; path: string; status: 'saved' | '
 
 type Options = { dir?: string; worlds?: readonly string[]; ids?: readonly string[]; jobs?: number; mesh?: (asset: GameAsset) => Promise<MeshedAsset>; compatibility?: string }
 type NodeMesher = { meshCompatibility(): Promise<string>; meshGameAsset(asset: GameAsset, options: { timeoutMs: number }): Promise<MeshedAsset> }
+
+// The names a saved mesh must keep: the asset's physics parts and every part the previous saved mesh still has.
+function namedParts(value: MeshedAsset): Set<string> {
+  const groups = (value.data as { groups?: { parts?: { name?: unknown }[] }[] } | null)?.groups ?? []
+  return new Set(groups.flatMap(group => (group.parts ?? []).map(part => part.name)).filter((name): name is string => typeof name === 'string'))
+}
+
+function previousParts(path: string): Set<string> {
+  try {
+    return namedParts(decodeMesh(new Uint8Array(readFileSync(path))))
+  } catch {
+    return new Set()
+  }
+}
 
 export async function saveMeshes(opts: Options = {}): Promise<SavedMeshResult[]> {
   const dir = opts.dir ?? contentDir()
@@ -52,6 +68,10 @@ export async function saveMeshes(opts: Options = {}): Promise<SavedMeshResult[]>
         })
         const key = await meshCacheKey(asset, compatibility, async bytes => createHash('sha256').update(bytes).digest('hex'))
         const value = await mesh(asset)
+        const expected = new Set([...(meshRequestOf(asset).parts ?? []), ...previousParts(target)])
+        const saved = namedParts(value)
+        const missing = [...expected].filter(name => !saved.has(name))
+        if (missing.length > 0) throw new Error(`the meshed asset lacks named physics parts (${missing.join(', ')}); the mesher merged parts or dropped their names`)
         const groups = (value.data as { groups: { parts: { fieldProgram?: unknown; fieldRefusal?: unknown }[] }[] }).groups
         const parts = groups.flatMap(group => group.parts)
         const bytes = encodeMesh({ ...value, key })

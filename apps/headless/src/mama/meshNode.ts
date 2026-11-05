@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url'
 import type { GameAsset } from '@royal-fiesta/game/gameAsset'
 import { RefusalError, refuse, isRefusal } from '@royal-fiesta/sim/refusal'
 import { MAMA_ABSENT_PREFIX, mamaSource, raaSdfmVersion } from '../../../../tools/bricks.ts'
+import { meshRequestOf } from '../../../web/src/sdf/mamaApi.ts'
 import type { MeshedAsset, MeshRequest } from '../../../web/src/sdf/mamaApi.ts'
 
 type WorkerModule = typeof import('../../../web/src/sdf/mama/worker.ts')
@@ -99,9 +100,10 @@ function worker(): Promise<WorkerModule> {
   return loaded
 }
 
-export function meshRequestOf(asset: GameAsset): MeshRequest {
-  return { assetId: asset.id, hash: asset.hash, mesher: asset.mesher, document: asset.document }
-}
+// The page's request (mamaApi.ts), physics parts included: a private copy here dropped them, so a Node mesher path
+// (tools/savedMeshes.ts via MeshBaker, tools/saveMeshes.ts via meshGameAsset) meshed mechanism assets as one part and
+// the saved-mesh check refused them ("saved mesh lacks named physics parts", 2026-11-05).
+export { meshRequestOf }
 
 export interface MeshNodeOptions { timeoutMs?: number }
 

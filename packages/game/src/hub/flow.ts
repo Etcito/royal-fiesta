@@ -10,6 +10,7 @@ import { controlsToInput, emptyControls } from '../client/inputMap.ts'
 import type { RawControls } from '../client/inputMap.ts'
 import { createOnlineMatch } from '../net/onlineMatch.ts'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
+import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
 import type { OnlineMatch } from '../net/onlineMatch.ts'
 import { Pilot } from '../net/pilot.ts'
 import { RelayClient } from '../net/relayClient.ts'
@@ -35,6 +36,8 @@ export interface FlowEvent { ms: number; client: string; state: FlowState; detai
 export interface FlowDeps {
   R: RapierModule; relayUrl: string; ws: WsFactory; hubCode: string | 'new'; name: string; colour: number
   zones: ReadonlyMap<string, ZonesFile>
+  /** The show's schedule (the season maps); one slot per course when absent. */
+  season?: readonly SchedMap[]
   courses: readonly ResolvedCourse[]; plaza: ResolvedCourse; partySize: 2 | 3 | 4; now: () => number
   pilot: boolean; log: (ev: FlowEvent) => void
   /**
@@ -308,7 +311,7 @@ export class PlayFlow {
       const humans = m.players
       const setup = netSetup(m.seed, humans, 'sprint', d.courses)
       this.transport = new ZoneRelayTransport(client, m.youAre, humans, d.now)
-      this.netMatch = createOnlineMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, d.zones, this.transport, { cpuMs: d.now, voteMs: d.voteMs, intermissionMs: d.intermissionMs })
+      this.netMatch = createOnlineMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, d.zones, this.transport, { cpuMs: d.now, season: d.season, voteMs: d.voteMs, intermissionMs: d.intermissionMs })
       if (d.pilot) this.matchPilot = new Pilot(m.youAre, m.seed)
       this.accumulator = 0
       this.lastState = -Infinity

@@ -47,7 +47,7 @@ export function installContentOverlay(files: Readonly<Record<string, string>>): 
   gameAssets = null
 }
 
-function mergeOverlayIndex(base: ContentIndexV1, files: ReadonlyMap<string, string>): ContentIndexV1 {
+function mergeOverlayIndex(base: ContentIndexV1, files: Map<string, string>): ContentIndexV1 {
   const merged: ContentIndexV1 = { assets: [...base.assets], courses: [...base.courses], audio: [...(base.audio ?? [])] }
   for (const [path, text] of files) {
     const course = /^courses\/([a-z0-9-]+)\.course\.json$/.exec(path)
@@ -61,9 +61,11 @@ function mergeOverlayIndex(base: ContentIndexV1, files: ReadonlyMap<string, stri
     const metadata = JSON.parse(text) as { hash?: unknown; category?: string }
     const hash = metadata.hash
     if (typeof hash !== 'string') refuse('community', path, 'the asset has no hash')
+    // An asset the game ships is the game's: the pack carries the copy its author saw, and the game's assets evolve
+    // (re-saved in SDF Modeler) after levels are published. Refusing such a pack broke every published level at once.
     const same = merged.assets.find(a => a.id === asset[2])
     if (same !== undefined) {
-      if (same.hash !== hash) refuse('community', path, `the game has an asset '${asset[2]}' with other content; the level cannot load`)
+      if (same.hash !== hash && same.path === path) files.delete(path)
       continue
     }
     merged.assets.push({ id: asset[2], world: asset[1], path, hash, ...(metadata.category ? { category: metadata.category } : {}) })

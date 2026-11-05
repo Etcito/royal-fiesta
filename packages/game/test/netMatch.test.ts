@@ -255,8 +255,8 @@ test('online solo lobby fills 59 deterministic bots in bounded Rapier domains an
           if (initial === null) initial = z
           if (z > initial + 1) moved = true
         }
-        assert.ok(match.zones.domains.every(domain => domain.seats.length <= 8))
-        assert.ok(match.zones.worlds <= match.zones.heldStates)
+        assert.ok(match.zones!.domains.every(domain => domain.seats.length <= 8))
+        assert.ok(match.zones!.worlds <= match.zones!.heldStates)
         if (match.full.done) break
       }
       relay.pump()
@@ -335,12 +335,12 @@ test('two lobby clients finish the same 60-seat zone show over a relay with equa
         if (!match) continue
         assert.equal(match.sim.setup.playerCount, 60)
         assert.equal(match.sim.setup.humans.filter(Boolean).length, 2)
-        maxDomains = Math.max(maxDomains, match.zones.domains.length)
+        maxDomains = Math.max(maxDomains, match.zones!.domains.length)
         // Include all shared physics domains and the global ledger, across epoch handoffs.
-        for (const id of [0, ...match.zones.domains.map(domain => domain.inner.spec.id)]) {
-          const confirmed = match.zones.stats.confirmedTick[id] ?? -1
+        for (const id of [0, ...match.zones!.domains.map(domain => domain.inner.spec.id)]) {
+          const confirmed = match.zones!.stats.confirmedTick[id] ?? -1
           for (let tick = Math.max(0, confirmed - 12); tick <= confirmed; tick++) {
-            const hash = match.zones.confirmedHash(id, tick)
+            const hash = match.zones!.confirmedHash(id, tick)
             if (hash !== undefined) hashes[peer].set(`${match.full.round?.plan.index ?? -1}:${id}:${tick}`, hash)
           }
         }
@@ -356,7 +356,7 @@ test('two lobby clients finish the same 60-seat zone show over a relay with equa
       assert.deepEqual(failures, [])
       if (finalLogs[0] && finalLogs[1]) break
     }
-    assert.ok(finalLogs[0] && finalLogs[1], `both clients finished: ${JSON.stringify(flows.map(f => ({state:f.state, rounds:f.match?.full.report.rounds.length, stats:f.match?.zones.stats})))}`)
+    assert.ok(finalLogs[0] && finalLogs[1], `both clients finished: ${JSON.stringify(flows.map(f => ({state:f.state, rounds:f.match?.full.report.rounds.length, stats:f.match?.zones?.stats})))}`)
     assert.equal(finalLogs[0], finalLogs[1])
     assert.ok(binaryFrames > 0)
     assert.equal(entries.length, 2)

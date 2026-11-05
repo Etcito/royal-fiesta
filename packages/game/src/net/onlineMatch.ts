@@ -25,8 +25,8 @@ import { encodeRoundResult, showMaps } from './zoneRounds.ts'
 export interface OnlineMatch extends NetMatch {
   readonly full: ZoneFullMatch
   readonly feed: FarFeed
-  /** Current round, or the last round during voting / after elimination. */
-  readonly zones: ZoneMatch
+  /** Current round, or the last round during voting / after elimination; null during the opening vote. */
+  readonly zones: ZoneMatch | null
 }
 
 /** Humans keep their lobby seat numbers; deterministic bots fill the room to 60. */
@@ -61,12 +61,13 @@ export function createOnlineMatch(R: RapierModule, cfg: NetMatchConfig, sidecars
     courses: setup.courses, zones, season: opts.season ?? showMaps(setup.courses), profile: setup.profile,
     measurements, farSink: feed, introTicks: profile.introTicks, voteMs: opts.voteMs, intermissionMs: opts.intermissionMs,
     onVote: () => feed.clear() }, net)
+  // Null while the opening map is voted (a browser show offers three maps first; a one-map playlist plays at once).
   let round = full.round
-  if (!round) refuse('net', 'createOnlineMatch.opening', 'the show must start with an opening round')
-  let lastZones = round.match
+  let lastZones: ZoneMatch | null = round?.match ?? null
   let view = new OnlineRoundView(round, full, setup)
-  view.refresh(round.match.domains, round.match.stats.tick, feed)
-  const stats: NetStats = { ...round.match.stats, confirmedTick: -1, rtt: {}, lastFrameSimMs: 0 }
+  if (round) view.refresh(round.match.domains, round.match.stats.tick, feed)
+  const stats: NetStats = { tick: 0, delay: 0, rollbacks: 0, maxRollback: 0, resimTicks: 0, stallFrames: 0, frames: 0,
+    desyncs: 0, malformed: 0, lostPeers: [], ...round?.match.stats, confirmedTick: -1, rtt: {}, lastFrameSimMs: 0 }
   const cpuMs = opts.cpuMs ?? (() => performance.now())
   const totals = { rollbacks: 0, resimTicks: 0, stallFrames: 0, desyncs: 0, frames: 0 }
   let tickOffset = 0
@@ -150,17 +151,18 @@ export function createOnlineMatch(R: RapierModule, cfg: NetMatchConfig, sidecars
 }
 
 class OnlineRoundView extends DomainSceneSim {
-  private readonly round: ZoneFullRound
+  // null: the opening vote, before any round (the view then shows the playlist's first course, every seat waiting).
+  private readonly round: ZoneFullRound | null
   private readonly full: ZoneFullMatch
   private readonly config: NetMatchConfig['setup']
-  constructor(round: ZoneFullRound, full: ZoneFullMatch, setup: NetMatchConfig['setup']) {
-    super(round.plan.course, round.seatOf.length)
+  constructor(round: ZoneFullRound | null, full: ZoneFullMatch, setup: NetMatchConfig['setup']) {
+    super(round?.plan.course ?? setup.courses[0], round?.seatOf.length ?? NET_PLAYERS)
     this.round = round; this.full = full; this.config = setup
     Object.assign(this.setup, setup)
   }
 
   override character(roomSeat: number, out: CharacterView): CharacterView {
-    const seat = this.round.seatOf.indexOf(roomSeat)
+    const seat = this.round ? this.round.seatOf.indexOf(roomSeat) : roomSeat
     super.character(seat, out)
     if (seat < 0) out.status = PlayerStatus.eliminated
     return out
@@ -170,7 +172,7 @@ class OnlineRoundView extends DomainSceneSim {
     const profile = { ...PROFILES[this.config.profile], introTicks: 180 }
     const current = this.full.round
     const ledger = current?.match.currentLedger
-    const plan = current?.plan ?? this.round.plan
+    const plan = current?.plan ?? this.round?.plan ?? null
     let alive = 0, qualified = 0
     for (let seat = 0; seat < (current?.seatOf.length ?? 0); seat++) {
       if (ledger?.status(seat) === PlayerStatus.alive) alive++
@@ -178,10 +180,10 @@ class OnlineRoundView extends DomainSceneSim {
     }
     return Object.assign(out, { tick: this.tick, phase: this.full.done ? Phase.podium : this.full.candidates ? Phase.intermission :
       ledger?.over ? Phase.roundEnd : this.tick < profile.introTicks ? Phase.intro : Phase.playing,
-      courseIndex: plan.courseIndex, phaseTicksLeft: Math.max(0, profile.introTicks - this.tick), roundIndex: plan.index,
-      roundKind: plan.kind === 'survival' ? 'survival' : 'race', final: plan.final,
-      roundTicksLeft: Math.max(0, profile.introTicks + roundTicks(plan.course, profile) - this.tick),
-      alive, qualifiedCount: qualified, target: plan.target, winner: this.full.champion ?? -1,
+      courseIndex: plan?.courseIndex ?? 0, phaseTicksLeft: Math.max(0, profile.introTicks - this.tick), roundIndex: plan?.index ?? 0,
+      roundKind: plan?.kind === 'survival' ? 'survival' : 'race', final: plan?.final ?? false,
+      roundTicksLeft: plan ? Math.max(0, profile.introTicks + roundTicks(plan.course, profile) - this.tick) : 0,
+      alive, qualifiedCount: qualified, target: plan?.target ?? 0, winner: this.full.champion ?? -1,
       podium: this.full.done ? this.full.report.rounds.at(-1)?.ranking.slice(0, 3) ?? [] : [] })
   }
 }

@@ -9,7 +9,7 @@
   "mesher": {
     "output": "paramesh",
     "params": {
-      "fieldResolution": 16,
+      "fieldResolution": 32,
       "subdivisions": 4,
       "transitionLoops": 1
     }
@@ -44,7 +44,7 @@
         "mesher": {
           "output": "paramesh",
           "params": {
-            "fieldResolution": 16,
+            "fieldResolution": 32,
             "subdivisions": 4,
             "transitionLoops": 1
           }
@@ -298,6 +298,7 @@
         "id": "target",
         "name": "target",
         "kind": "group",
+        "view": "normalMaterial",
         "children": [
           "ring",
           "dot"
@@ -495,6 +496,7 @@
         "id": "zigzag",
         "name": "zigzag",
         "kind": "group",
+        "view": "normalMaterial",
         "children": [
           "zz_ring",
           "zz_clip"
@@ -724,8 +726,8 @@
   ],
   "anchors": {},
   "bounds": {
-    "min": [-6.2, -1, -6.2],
-    "max": [6.2, 0.98, 6.2]
+    "min": [-6.18288, -1, -6.14],
+    "max": [6.18288, 0.98, 6.14]
   },
-  "hash": "6a3262c522b1408983b7da58b53d21eb06c46b9841bbe236c708fdc4729f6f6b"
+  "hash": "46b8b3d4ad1ad0742c86b893ff0f10490b9f18c0ae81c6da7b5adba8e9929421"
 }

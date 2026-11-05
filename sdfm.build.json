@@ -2,17 +2,8 @@
   "format": "sdfm.build",
   "version": 1,
   "courses": [
-    "candy-seesaw-run",
     "hub-plaza",
-    "ice-slide-gates",
-    "jungle-crane-crossing",
-    "mech-lab",
-    "neon-piston-alley",
-    "obstacle-gallery",
     "podium",
-    "race-bean-dash",
-    "race-hammer-hill",
-    "race-sprint",
     "s1-b-butterfly-freeway",
     "s1-c1-diamond-citadel",
     "s1-c2-tidal-relay",
@@ -23,9 +14,6 @@
     "s1-glacier-run",
     "s1-i-honeycomb-heights",
     "s1-q-crown-confection",
-    "start-season1",
-    "survival-hammer-ring",
-    "survival-spin-zone",
-    "survival-sprint"
+    "start-season1"
   ]
 }

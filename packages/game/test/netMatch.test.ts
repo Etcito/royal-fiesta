@@ -226,7 +226,7 @@ test('online setup fills 60 seats after the relay humans, without increasing the
   assert.equal(botsLine(2), '58 bots will fill the empty places')
 })
 
-test('online solo lobby fills 59 deterministic bots in bounded Rapier domains and completes the show', async () => {
+test('online solo lobby fills 59 deterministic bots in one whole-world Rapier domain and completes the show', async () => {
   const realNow = performance.now.bind(performance)
   let clock = 0
   performance.now = () => clock
@@ -257,7 +257,7 @@ test('online solo lobby fills 59 deterministic bots in bounded Rapier domains an
           if (initial === null) initial = z
           if (z > initial + 1) moved = true
         }
-        assert.ok(match.zones!.domains.every(domain => domain.seats.length <= 8))
+        assert.equal(match.zones!.domains.length, 1, 'the whole world is one domain')
         assert.ok(match.zones!.worlds <= match.zones!.heldStates)
         if (match.full.done) break
       }
@@ -390,7 +390,7 @@ test('two lobby clients finish the same 60-seat zone show over a direct WebRTC m
       if (key.split(':')[1] !== '0') physicsCompared++
     }
     assert.ok(physicsCompared > 500, `compared ${physicsCompared} physics domain hashes`)
-    assert.ok(maxDomains > 1)
+    assert.equal(maxDomains, 1, 'both peers simulate the whole world as one domain')
     assert.ok(counters.every(stats => stats.desyncs === 0 && stats.resultMismatches === 0 && stats.rounds > 1))
     costs.sort((a, b) => a - b)
     console.log(JSON.stringify({ online60: { realtime, relay: relayUrl ?? 'LoopbackRelay', humans: 2, bots: 58, compared, physicsCompared, maxDomains, binaryFrames, relayZoneFrames, relayFramesAfterMesh, relaySignalKindsAfterMesh, meshStats,

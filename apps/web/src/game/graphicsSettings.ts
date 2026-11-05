@@ -34,6 +34,10 @@ export interface GraphicsContract {
 
 // The settings screen has 18 row slots (ui/screens.ui-doc.json row-0..row-17).
 const ROW_SLOTS = 18
+// Royal Fiesta starts on LOW (owner 2026-11-05): a saved choice still wins, MAMA's defaults fill the other keys.
+export const LOW_DEFAULTS: Readonly<Record<string, unknown>> = Object.freeze({
+  shading: 'vertex', aoQuality: 0, renderScale: 0.75, postBloom: false, postGrading: false, jiggle: 'local',
+})
 // Options applied by the upload: a change shows when the next scene loads.
 const ON_NEXT_LOAD = new Set(['shading', 'bakeTexelDensity', 'bakeMaxSize'])
 
@@ -66,7 +70,8 @@ export class GraphicsSettings {
     } catch (e) {
       console.warn(`[graphics] saved options unreadable (${e instanceof Error ? e.message : String(e)}); using the defaults`)
     }
-    const { options, issues } = contract.validate(saved)
+    const base = saved !== null && typeof saved === 'object' && !Array.isArray(saved) ? saved : {}
+    const { options, issues } = contract.validate({ ...LOW_DEFAULTS, ...base })
     for (const issue of issues) console.warn(`[graphics] ${issue.key}: ${issue.message}`)
     this.values = { ...options }
     this.onChange(this.values)

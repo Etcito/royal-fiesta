@@ -41,8 +41,10 @@ for (let i = 0; i < clients; i++) {
   // One profile per debugging port, reused by every run: nothing piles up and nothing must be deleted at exit.
   const dir = join(tmpdir(), `rf-online-chrome-${port}`)
   const url = `${o.url}?server=${encodeURIComponent(o.server)}&name=${name}&bots=${o.bots}`
+  // No --disable-background-timer-throttling / --disable-renderer-backgrounding: they hid the throttled background
+  // page of two players on one machine (2026-11-05), which is the case these runs must show.
   browsers.push(spawn(o.chrome, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, '--no-first-run',
-    '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--enable-unsafe-webgpu', '--window-size=960,540', url],
+    '--enable-unsafe-webgpu', '--window-size=960,540', url],
   { stdio: 'ignore' }))
   pages.push({ name, port })
 }

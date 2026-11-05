@@ -10,13 +10,17 @@ import type { ZoneSignal } from './zoneRelayProtocol.ts'
 
 type Packet = { peer: number; ch: NetChannel; data: Uint8Array }
 type Channels = { fast: RtcChannel; reliable: RtcChannel }
-export interface MeshPeerStats { fast: 'connecting' | 'open' | 'closed'; reliable: 'connecting' | 'open' | 'closed'; rtt: number | null }
+export interface MeshPeerStats {
+  fast: 'connecting' | 'open' | 'closed'; reliable: 'connecting' | 'open' | 'closed'; rtt: number | null
+  /** Why the pair closed: the peer's own reason when it left on purpose, else what failed here. */
+  reason?: string
+}
 interface Link {
   rtc: RtcPeer; channels?: Channels; closed: boolean; receivedSdp: boolean; ready: boolean
   ping: { id: number; at: number } | null; lastPing: number
   parts: Map<string, { data: Uint8Array; offsets: Set<number>; size: number; at: number }>
 }
-const DATA = 0, PING = 1, PONG = 2, READY = 3
+const DATA = 0, PING = 1, PONG = 2, READY = 3, CLOSE = 4
 // Safe across browser SCTP implementations. Large snapshots are rebuilt on the same DataChannel.
 const CHUNK = 16 * 1024, HEADER = 13, MAX_PACKET = 32 * 1024 * 1024
 const DEFAULT_ICE: IceServer[] = [{ urls: ['stun:stun.l.google.com:19302'] }]
@@ -100,8 +104,17 @@ export class ZoneMeshTransport implements GroupTransport {
     return this.allClosed || (peer !== this.selfPeer && (this.links.get(peer)?.closed ?? true))
   }
 
-  close(): void {
+  /** Closes every pair; each open peer first gets `reason` (CLOSE frame) so its page can say why this one left. */
+  close(reason = 'left the game'): void {
     if (this.allClosed) return
+    const text = new TextEncoder().encode(reason.slice(0, 400))
+    for (const link of this.links.values()) {
+      if (link.closed || !link.channels?.reliable.open) continue
+      const frame = new Uint8Array(1 + text.length)
+      frame[0] = CLOSE
+      frame.set(text, 1)
+      try { link.channels.reliable.send(frame) } catch { /* the pair is going anyway */ }
+    }
     this.allClosed = true
     this.rejectConnect?.(new RefusalError('webrtc', 'mesh', `peer ${this.selfPeer} cancelled the mesh start`))
     this.unsubscribe()
@@ -120,7 +133,10 @@ export class ZoneMeshTransport implements GroupTransport {
 
   private fail(peer: number, error: unknown): void {
     if (this.allClosed || this.links.get(peer)?.closed) return
-    const refusal = new RefusalError('webrtc', `mesh/${this.selfPeer}<->${peer}`, String(error))
+    const reason = error instanceof Error ? error.message : String(error)
+    if (this.peers[peer]) this.peers[peer].reason = reason
+    console.error(`[mesh] p${this.selfPeer} lost p${peer}: ${reason}`)
+    const refusal = new RefusalError('webrtc', `mesh/${this.selfPeer}<->${peer}`, reason)
     if (this.rejectConnect) this.rejectConnect(refusal)
     else this.closePeer(peer)
   }
@@ -158,6 +174,7 @@ export class ZoneMeshTransport implements GroupTransport {
         opened.push(rtc.channels().then(channels => {
           if (this.allClosed) return
           link.channels = channels
+          console.info(`[mesh] p${this.selfPeer}<->p${peer} channels open`)
           for (const ch of ['fast', 'reliable'] as const) {
             this.peers[peer][ch] = 'open'
             channels[ch].onClose(() => this.fail(peer, `channel ${ch} closed`))
@@ -229,6 +246,7 @@ export class ZoneMeshTransport implements GroupTransport {
   private receive(peer: number, ch: NetChannel, frame: Uint8Array): void {
     const link = this.links.get(peer)!
     if (frame[0] === READY && frame.length === 1 && ch === 'reliable') { link.ready = true; this.checkReady(); return }
+    if (frame[0] === CLOSE && ch === 'reliable') { this.fail(peer, `p${peer} left: ${new TextDecoder().decode(frame.subarray(1))}`); return }
     if ((frame[0] === PING || frame[0] === PONG) && frame.length === 5 && ch === 'fast') {
       const id = new DataView(frame.buffer, frame.byteOffset, frame.byteLength).getUint32(1, true)
       if (frame[0] === PING) { const pong = frame.slice(); pong[0] = PONG; link.channels!.fast.send(pong) }

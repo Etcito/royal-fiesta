@@ -52,7 +52,7 @@ export interface ZoneQueuePayload {
 
 export type ZoneCreate = { t: 'create'; players?: number; cadence?: boolean; payload?: ZoneQueuePayload; game: typeof ZONE_GAME_ID; zones: true }
 export type ZoneQueue = { t: 'queue'; players: number; cadence: true; payload: ZoneQueuePayload; game: typeof ZONE_GAME_ID; zones: true }
-export type ZoneClientMsg = ZoneCreate | ZoneQueue | { t: 'bye' } | { t: 'unqueue' } | (RelayLobbyEnter & { zones: true }) | RelayLobbyLeave | RelayLobbyPick | RelayLobbyPresence
+export type ZoneClientMsg = ZoneCreate | ZoneQueue | { t: 'bye' } | { t: 'unqueue' } | { t: 'ping' } | (RelayLobbyEnter & { zones: true }) | RelayLobbyLeave | RelayLobbyPick | RelayLobbyPresence
 export type ZoneMatched = { t: 'matched'; seed: number; hostStarts: boolean; youAre: number; token: string; players: number; opps: unknown[] }
 export type ZoneSeatEvent = { t: 'player_dropped'; seat: number; graceMs: number }
   | { t: 'player_back' | 'player_left'; seat: number }

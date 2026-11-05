@@ -54,10 +54,12 @@ export function createOnlineMatch(R: RapierModule, cfg: NetMatchConfig, sidecars
   const measurements = Object.fromEntries(roster.peers.map(p => [p.peer,
     // Shared deterministic capacity: eight seats per physics domain, independent of local frame timing.
     { cpuMs: 2, bandwidthKbps: 4096, latencyMs: 30, spareSlots: 3 }]))
-  // Timed lobbies have at most four humans. Replicate their bounded domains on every lobby peer so changing
-  // packs rebuild from local confirmed states, without a cycle of cross-peer-only snapshot dependencies.
+  // Whole world on every peer: every seat and every field cell is near every other (rEnter/rExit cover the grid)
+  // and no capacity splits them, so the round is one seat domain that each lobby peer simulates on the same
+  // tick, with one frontier. Zones never split an online show into packs that advance on their own.
   const zones = new Map([...sidecars].map(([id, sidecar]) => [id, { ...sidecar,
-    tuning: { ...sidecar.tuning, replicas: humanPeers, untouchedReplicas: humanPeers } }]))
+    tuning: { ...sidecar.tuning, replicas: humanPeers, untouchedReplicas: humanPeers, rEnter: 0xffff, rExit: 0xffff,
+      capacityByCpuClass: sidecar.tuning.capacityByCpuClass.map(() => setup.playerCount) } }]))
   const full = createZoneFullMatch(R, { localPeer, roster, humans: setup.humans, seed: setup.seed,
     courses: setup.courses, zones, season: opts.season ?? showMaps(setup.courses), profile: setup.profile,
     measurements, farSink: feed, introTicks: profile.introTicks, voteMs: opts.voteMs, intermissionMs: opts.intermissionMs,

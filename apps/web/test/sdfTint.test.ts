@@ -142,6 +142,7 @@ function fakeEngine() {
     tints: new Map<number, number[][]>(), cleared: [] as number[], modes: new Map<number, string>(),
     meshOf: new Map<number, number>(), meshIds: [] as number[], nextInstance: 1000,
     single: [] as unknown[][], objectMaterials: new Map<number, number | null>(), descs: [] as Record<string, unknown>[],
+    surfaceOf: new Map<number, Record<string, unknown>>(),
     textures: [] as { width: number; height: number; data: Uint8Array }[], removedTextures: [] as number[],
     instanceParams: [] as { instance: number; params: number[] }[],
   }
@@ -153,7 +154,7 @@ function fakeEngine() {
     setVisible(id: number, visible: boolean) { calls.visibility.set(id, visible) },
     setLight() {}, setAmbient() {},
     addMaterialFunction() { calls.functions++ },
-    addSurfaceMaterial(desc: Record<string, unknown>) { calls.surfaces++; calls.descs.push(desc); return ++next },
+    addSurfaceMaterial(desc: Record<string, unknown>) { calls.surfaces++; calls.descs.push(desc); const id = ++next; calls.surfaceOf.set(id, desc); return id },
     addMaterialData(words: Uint32Array) { calls.data.push(words); return 4 + calls.data.slice(0, -1).reduce((n, w) => n + w.length, 0) },
     removeMaterialData(base: number) { calls.freed.push(base) },
     addTexture(texture: { width: number; height: number; data: Uint8Array }) { calls.textures.push(texture); return 100 + calls.textures.length },
@@ -369,6 +370,74 @@ test('SDF cosmetic rendering uploads joint streams and submits the penguin matri
   assert.deepEqual(Array.from(calls.skinPoses[0].matrices),Array.from(matrices))
 })
 
+
+// Owner 2026-11-05: a field part keeps its field shading when it is skinned. registerSkinned adds joints/weights to the
+// part's mesh while the rest point and rest frame stay in mesh space (the space of the field program), the field
+// material stays on every sub-mesh and the instance params reach the skinned instance; sdfm_posed_normal then carries
+// the rest-space gradient through the skin, so the posed penguin and its worn cosmetics shade from their fields.
+test('a skinned field part keeps its field material, instance params and rest streams', () => {
+  const body = { ...part('body', 'skin'), fieldProgram: gridProgram() }
+  const { port, calls } = portFor('test.skinned-field', [material('skin', PLAIN)], [body])
+  const skin: SkinnedAssetT = { rig: { name: 'penguin', bones: [{ name: 'root', parent: null }] }, parts: [{ name: 'body', skin: {
+    joints: new Uint16Array(12), weights: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]),
+  } }] }
+  const handle = port.registerSkinned('test.skinned-field', skin)
+  const fieldHandle = [...calls.surfaceOf].find(([, desc]) => typeof desc.function === 'string' && desc.function.startsWith('pmf.'))?.[0]
+  assert.ok(fieldHandle !== undefined, 'the field material is built')
+  const skinned = calls.jointStreams.filter((d: any) => d.joints !== undefined) as {
+    joints: Uint16Array; weights: Float32Array; positions: Float32Array
+    colors?: Float32Array; uvs?: Float32Array; tangents?: Float32Array; subMeshes: { material?: number }[]
+  }[]
+  const field = skinned.find(d => d.subMeshes.length > 0 && d.subMeshes.every(s => s.material === fieldHandle))
+  assert.ok(field !== undefined, 'the skinned field mesh keeps the field material on every sub-mesh')
+  assert.equal(field.joints, skin.parts[0].skin!.joints)
+  assert.equal(field.weights, skin.parts[0].skin!.weights)
+  assert.ok(field.colors !== undefined && field.uvs !== undefined && field.tangents !== undefined, 'the rest point and rest frame streams are kept')
+  assert.deepEqual(Array.from(field.colors!.subarray(0, 3)), Array.from(field.positions.subarray(0, 3)), 'the rest point stays mesh-space')
+  const first = calls.nextInstance
+  const instance = port.createInstance(handle, null)
+  const params = calls.instanceParams.find(p => p.instance === first)
+  assert.ok(params !== undefined, 'the skinned field instance gets its instance params')
+  assert.equal(params.params[8], 4, 'the params name the field grid image width')
+  const matrices = Float32Array.from(FRAME); matrices[13] = 0.4
+  port.setPose(instance, matrices)
+  port.flushPoses(port.engine)
+  assert.equal(calls.skinPoses.length, 1)
+  assert.ok(Array.from(calls.skinPoses[0].ids).includes(first), 'the skinned field instance is posed through flushPoses')
+})
+
+// A 'multiply' field part is tinted through its own field material: the tinted draw is the field twin of the white
+// surface, never a vertex-coloured white copy (no white surface and no second mesh are built for the colourway).
+test('a tinted multiply field part draws the field twin, not a white vertex copy', () => {
+  const body = { ...part('body', null), fieldProgram: fieldProgram() }
+  const { port, calls, handle } = portFor('test.tint-field', [], [body])
+  const h = handle()
+  const meshes = calls.meshes, surfaces = calls.surfaces
+  const fieldHandle = [...calls.surfaceOf].find(([, desc]) => typeof desc.function === 'string' && desc.function.startsWith('pmf.'))?.[0]
+  const first = calls.nextInstance
+  port.createInstance(h, [0.9, 0.2, 0.4])
+  assert.deepEqual(calls.tints.get(first), [[0.9, 0.2, 0.4, 1]], 'the colourway tint multiplies the field material')
+  assert.equal(calls.surfaces, surfaces, 'no white surface is added for a field part')
+  assert.equal(calls.meshes, meshes, 'the tinted instance reuses the field mesh')
+  const mesh = calls.meshOf.get(first)!
+  const desc = calls.jointStreams[calls.meshIds.indexOf(mesh)] as { subMeshes: { material?: number }[] }
+  assert.ok(desc.subMeshes.length > 0 && desc.subMeshes.every(s => s.material === fieldHandle), 'the tinted draw keeps the field material')
+})
+
+// MAMA's part frame carries rotation and translation only. A frame with a scale cannot be a field part (the field lookup
+// stays in mesh space while the drawn part would be scaled): it draws vertex and is named once in console and report.
+test('a field part with a scaled frame falls back to vertex with that named error', () => {
+  const frame = new Float64Array(FRAME); frame[0] = 2; frame[5] = 2; frame[10] = 2
+  const body = { ...part('body', 'skin'), frame, fieldProgram: fieldProgram() }
+  const { port, handle } = portFor('test.scale', [material('skin', PLAIN)], [body])
+  const before = warnings.length
+  handle()
+  const report = port.shadingReport()
+  assert.equal(report.field, 0)
+  assert.equal(report.vertex, 1)
+  assert.ok(report.errors.includes('test.scale#g/body: field frame has scale; mesh normals'), report.errors.join('\n'))
+  assert.ok(warnings.slice(before).includes('[sdf-port] test.scale#g/body: field frame has scale; mesh normals'), warnings.slice(before).join('\n'))
+})
 
 test('all committed catalog cosmetics upload their saved skin and render with the penguin idle pose', async () => {
   const root=new URL('../../../',import.meta.url)

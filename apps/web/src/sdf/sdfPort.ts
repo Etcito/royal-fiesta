@@ -485,6 +485,9 @@ class SdfRenderPort implements ResizablePort {
       for (const group of payload.groups) {
         for (const part of group.parts) {
           if (part.meshes.length === 0) continue
+          // A frame with a scale draws vertex (fieldProgramMaterial names it): its grid is never uploaded, so it never
+          // costs atlas bytes and never demotes a part that can keep its field.
+          if (frameHasScale(part.frame)) continue
           const check = checkFieldPart(part)
           if (!check.ok) continue
           costs.push({
@@ -524,6 +527,14 @@ class SdfRenderPort implements ResizablePort {
     this.shadingOfPart.set(key, mode)
     if (mode === 'vertex' && reason !== undefined) this.shadingErrors.set(key, reason)
     else this.shadingErrors.delete(key)
+  }
+
+  // A part frame with a scale cannot be a field part: the field lives in mesh space and the frame only carries the
+  // part's rotation and translation. It draws vertex normals and is named in the report and once in the console.
+  private fieldFrameError(key: string): void {
+    const reason = 'field frame has scale; mesh normals'
+    warnOnce(key, reason)
+    this.recordPart(key, 'vertex', reason)
   }
 
   // Mirrors @etcito/raa-sdfm's upload: one mesh per part with one sub-mesh per MAMA material, each
@@ -647,6 +658,12 @@ class SdfRenderPort implements ResizablePort {
       this.recordPart(key, 'vertex', check.reason)
       return null
     }
+    // The field program is in the part's mesh space (before the part frame). A frame that carries a scale would draw
+    // the part scaled while its field lookup stays unscaled, so that part is named and draws vertex instead.
+    if (frameHasScale(part.frame)) {
+      this.fieldFrameError(key)
+      return null
+    }
     const program = check.program
     if (!this.planAtlas().field.has(key)) {
       const reason = 'atlas budget: smaller parts first'
@@ -707,6 +724,10 @@ class SdfRenderPort implements ResizablePort {
       this.recordPart(key, 'vertex', 'no field program (saved before field shading); re-save the asset')
       return null
     }
+    if (frameHasScale(part.frame)) {
+      this.fieldFrameError(key)
+      return null
+    }
     const engine = this.need()
     let data: number | null = null
     try {
@@ -751,7 +772,15 @@ class SdfRenderPort implements ResizablePort {
       }
       let max = 0
       for (let i = 0; i < s.joints.length; i++) if (s.joints[i] > max) max = s.joints[i]
-      const desc: MeshDesc = { ...part.desc, joints: s.joints, weights: s.weights }
+      // A field part reads its rest point (colour xyz) and rest frame (uv + colour w, tangent) in the part's mesh
+      // space, the space of the field program. Rebuild them from the mesh-space positions/normals so the skinned mesh
+      // keeps them whatever the rigid desc carried, and the field material's sdfm_posed_normal carries the gradient
+      // through the skin (never the posed or the baked streams). The field material stays on the sub-meshes and the
+      // instance params on the part, so createInstance still sets them on the skinned instance.
+      const rested = part.field !== undefined && part.bake === undefined
+        ? { ...part.desc, ...fieldSurfaceAttributes(part.desc.positions, part.desc.normals) }
+        : part.desc
+      const desc: MeshDesc = { ...rested, joints: s.joints, weights: s.weights }
       const fallback = part.fallback === undefined ? {} : { fallback: this.fallbackMesh(engine, part.fallback, { ...part.fallback.desc, joints: s.joints, weights: s.weights }) }
       return { ...part, desc, mesh: this.addMesh(engine, desc), joints: max + 1, ...fallback }
     })
@@ -1095,6 +1124,9 @@ class SdfRenderPort implements ResizablePort {
     const engine = this.need()
     uploaded.tintedParts = uploaded.parts.map(part => {
       if (part.tint !== 'multiply') return part
+      // A field-shaded part already draws a material the colourway tint multiplies (RAA's multiply tint): its tinted
+      // copy is the field part itself, the field twin of the white tint surface, never a vertex-coloured white copy.
+      if (part.field !== undefined) return part
       const white = this.whiteSurface ??= engine.addSurfaceMaterial({ color: [1, 1, 1], roughness: 0.6 })
       const subMeshes = part.subMeshes.map(sub => ({ ...sub, material: sub.material ?? white }))
       const desc = { ...part.desc, subMeshes }
@@ -1282,6 +1314,16 @@ function partMesh(part: PayloadPart, handles: ReadonlyMap<string, number>, graph
   const tint: PartTint = materials.some(m => m !== null && graph.has(m)) ? 'graph'
     : graph.size === 0 && materials.every(m => m === null) ? 'multiply' : 'none'
   return { desc, subMeshes, tint }
+}
+
+// Whether a MAMA part frame carries a scale. MAMA's part frames are rotation + translation (AssetMeshPart.frame); an
+// older frame may hold a scale, which frameToTr does not carry, so a field part cannot be looked up in its space.
+function frameHasScale(f: Float64Array): boolean {
+  for (let c = 0; c < 3; c++) {
+    const length = Math.hypot(f[c * 4], f[c * 4 + 1], f[c * 4 + 2])
+    if (!(Math.abs(length - 1) <= 1e-4)) return true
+  }
+  return false
 }
 
 // Translation and rotation of a column-major 4x4 MAMA part frame; a frame scale is not carried.

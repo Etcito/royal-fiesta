@@ -7,6 +7,8 @@ let internalFallbacks = 0
 export function pendingPipelines(): number { return compiling }
 export function asyncPipelineFallbacks(): number { return internalFallbacks }
 
+export type PipelineReadiness = { status: 'pending' } | { status: 'ready' } | { status: 'failed'; reason: string }
+
 // One lit pipeline handle: material = the key of the material function its module was composed from (null when the
 // module is not an RAA lit variant), device = the GPUDevice that compiles it.
 interface State { pipeline?: object; error?: unknown; device: object; material: string | null; pass: string | null }
@@ -35,15 +37,27 @@ export function materialKey(wgsl: string): string {
  * out omits only its own draws.
  */
 export function fieldReady(device: object | undefined, key: string): boolean {
+  return fieldReadiness(device, key).status === 'ready'
+}
+
+/** Device-scoped readiness of the variants composed from materialKey(WGSL), including layout rejection causes. */
+export function fieldReadiness(device: object | undefined, key: string): PipelineReadiness {
   const material = device === undefined ? undefined : materialsOf.get(device)?.get(key)
-  if (material === undefined) return false
-  if (material.shown) return true
+  if (material === undefined) return { status: 'pending' }
+  if (material.shown) return { status: 'ready' }
+  for (const state of material.states) {
+    if (state.error !== undefined) {
+      const error = state.error as { message?: unknown }
+      return { status: 'failed', reason: typeof error?.message === 'string' ? error.message : String(state.error) }
+    }
+  }
   let forward = false
   for (const state of material.states) {
-    if (state.pipeline === undefined) return false
+    if (state.pipeline === undefined) return { status: 'pending' }
     if (state.pass === 'Forward') forward = true
   }
-  return material.shown = forward
+  material.shown = forward
+  return { status: forward ? 'ready' : 'pending' }
 }
 
 // The device each canvas was configured with (GPUCanvasContext.configure), for a port to find its pipelines.

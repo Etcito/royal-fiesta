@@ -21,7 +21,7 @@ import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../rende
 import { raaStatus } from '../render/raaStatus.ts'
 import type { MeshedAsset } from './mamaApi.ts'
 import { installShaderCache } from '../render/shaderCache.ts'
-import { deviceOfCanvas, fieldReady, materialKey } from '../render/asyncPipelines.ts'
+import { deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
 import { FIELD_ATLAS_BYTES, fieldGridBytes, partDiag, planFieldAtlas, type FieldAtlasPlan, type PartFieldCost } from './fieldAtlas.ts'
 import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, PMF_GRID_HOST_WGSL } from './fieldShading.ts'
@@ -30,6 +30,7 @@ export interface ResizablePort extends SkinnedRenderPort {
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
   setPartFilter(instance: number, parts: readonly string[] | null): void
   shadingReport(): ShadingReport
+  setShading(mode: ShadingMode): void
 }
 
 /** What this upload drew with which shading, plus every part that could not keep its field, named. */
@@ -186,6 +187,7 @@ interface PartUpload {
   tint: PartTint
   object?: number
   field?: string
+  reportKey?: string
   fallback?: Fallback
   bake?: SdfmBakedPart
   params?: number[]
@@ -213,11 +215,10 @@ interface Uploaded { assetId: string; parts: PartUpload[]; emptyParts?: string[]
 interface SkinSlot { instance: number; part: PartUpload }
 // pose = this character's own copy of its last setPose; null draws the rest pose.
 // asset = the uploaded/handle index this instance was created from (for the live inventory).
-// fallbacks: the vertex-colour copies of parts whose shading pipelines still compile (index into partNames); each goes
-// the frame its part's shading can draw. bakes: the bake of each instance's part (null = not a baked part); a baked
-// part's instance is hidden until its textures are baked.
+// fallbacks: resident vertex-colour copies (index into partNames), hidden once their shading can draw.
+// bakes: the bake of each instance's part (null = not a baked part).
 interface Live { asset: number; root: number; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; bakes: (SdfmBakedPart | null)[] }
-interface LiveFallback { instance: number; node: number; part: PartUpload; index: number }
+interface LiveFallback { instance: number; part: PartUpload; index: number; ready: boolean; failed: boolean }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
   failed: ReadonlyMap<string, string> = new Map(),
@@ -307,6 +308,7 @@ class SdfRenderPort implements ResizablePort {
   // The game render options (MAMA render-options.ts): shading 'field' draws each part's SDF per pixel, 'vertex' its
   // vertex normals and colours, 'baked' its normal and material baked at load into textures in its UV atlas.
   private readonly options: RfGameRenderOptions
+  private shading: ShadingMode
   private readonly contract: RenderContract | null
   private readonly debugNormals: boolean
   // The whole-world field plan (fieldAtlas) computed once before any upload, and the budget it was planned with.
@@ -334,6 +336,7 @@ class SdfRenderPort implements ResizablePort {
     this.failed = failed
     this.field = field
     this.options = render
+    this.shading = render.shading === 'vertex' ? 'vertex' : render.shading === 'baked' ? 'texture' : 'sdf'
     this.contract = contract
     this.atlasBytes = Number.isFinite(atlasBytes) && atlasBytes >= 0 ? atlasBytes : FIELD_ATLAS_BYTES
     this.debugNormals = debug
@@ -416,7 +419,7 @@ class SdfRenderPort implements ResizablePort {
       field,
       textureSize: scale => contract.bakeTextureSize(scale, this.options),
       // The baked parts show (their vertex copy goes the frame their pipelines are compiled).
-      onChange: () => { for (const live of this.live) if (live !== null && live.bakes.some(slot => slot !== null)) this.applyVisibility(live) },
+      onChange: () => this.swapFallbacks(),
       onFailed: (part, why) => warnOnce(`${part.label}:bake`, `vertex colours (${why})`),
       onRun: s => console.info(`[sdf-port] baked ${s.parts} parts (${s.failed} kept vertex colours) in ${s.ms.toFixed(0)} ms: ${s.textures} textures, ${(s.bytes / 1048576).toFixed(1)} MB, ${s.pipelines} bake pipelines`),
     })
@@ -509,11 +512,14 @@ class SdfRenderPort implements ResizablePort {
     let vertex = 0
     let texture = 0
     for (const mode of this.shadingOfPart.values()) {
-      if (mode === 'field') field++
+      if (this.shading === 'vertex') vertex++
+      else if (mode === 'field') field++
       else if (mode === 'texture') texture++
       else vertex++
     }
-    const errors = [...this.shadingErrors].map(([key, reason]) => `${key}: ${reason}`).sort()
+    const errors = [...this.shadingErrors].map(([key, reason]) => `${key}: ${reason}`)
+    if (this.shading === 'vertex') for (const [key, mode] of this.shadingOfPart) if (mode !== 'vertex') errors.push(`${key}: vertex mode`)
+    errors.sort()
     const failed = [...this.shadingErrors.values()].filter(reason => reason !== 'vertex mode').length
     return {
       parts: this.shadingOfPart.size, field, vertex, texture,
@@ -607,7 +613,7 @@ class SdfRenderPort implements ResizablePort {
         const { t, r } = frameToTr(part.frame)
         const key = keys.has(part.name) ? `${group.group}/${part.partId}` : part.name
         keys.add(key)
-        parts.push({ name: part.name, key, mesh, desc, subMeshes, t, r, tint: built.tint, ...(shaded === null && object !== undefined ? { object } : {}), ...field })
+        parts.push({ name: part.name, key, reportKey: fieldPartKey, mesh, desc, subMeshes, t, r, tint: built.tint, ...(shaded === null && object !== undefined ? { object } : {}), ...field })
       }
     }
     if (parts.length === 0) refuse(AREA, id, 'the meshed payload has no parts; save a game-asset group in SDF Modeler and remesh')
@@ -636,10 +642,6 @@ class SdfRenderPort implements ResizablePort {
   private shadingMaterial(id: string, key: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[],
     functionsByName: ReadonlyMap<string, string>, graphMode: boolean): ShadedMaterial | null {
     if (hasFieldContract(part)) return this.fieldProgramMaterial(key, part, functionsByName, graphMode)
-    if (this.options.shading === 'vertex') {
-      this.recordPart(key, 'vertex', 'vertex mode')
-      return null
-    }
     return this.recordShadingMaterial(id, key, part, materials, graphMode)
   }
 
@@ -648,10 +650,6 @@ class SdfRenderPort implements ResizablePort {
   // atlas_full error demotes this part to vertex and is never thrown.
   private fieldProgramMaterial(key: string, part: PayloadPart, functionsByName: ReadonlyMap<string, string>,
     graphMode: boolean): ShadedMaterial | null {
-    if (this.options.shading === 'vertex') {
-      this.recordPart(key, 'vertex', 'vertex mode')
-      return null
-    }
     const check = checkFieldPart(part)
     if (!check.ok) {
       warnOnce(key, `vertex normals (${check.reason})`)
@@ -825,23 +823,21 @@ class SdfRenderPort implements ResizablePort {
       if (part.joints !== undefined) skin.push({ instance, part })
       return instance
     }
-    const device = this.device()
     parts.forEach((part, index) => {
-      instances.push(add(engine.addNode(root, part.t, part.r), part.mesh, part.object, part))
-      // While the part's shading pipelines compile (or its textures bake), its vertex-colour copy draws in its place (owner
-      // 2026-11-04: never omitted, never a ghost); render() removes the copy the frame the shading can draw.
-      if (part.fallback !== undefined && !(this.baked(part.bake) && fieldReady(device, part.field!))) {
-        const node = engine.addNode(root, part.t, part.r)
-        fallbacks.push({ instance: add(node, part.fallback.mesh, part.fallback.object, part), node, part, index })
+      const node = engine.addNode(root, part.t, part.r)
+      instances.push(add(node, part.mesh, part.object, part))
+      // Keep both members resident for live shading switches; only one draws in a frame.
+      if (part.fallback !== undefined) {
+        fallbacks.push({ instance: add(node, part.fallback.mesh, part.fallback.object, { ...part, params: undefined }),
+          part, index, ready: false, failed: false })
       }
     })
     const bakes = parts.map(part => part.bake ?? null)
     const live: Live = { asset, root, instances, partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [], filter: null, visible: true, bones: uploaded.bones ?? 0, skin, pose: null, fallbacks, bakes }
     this.live.push(live)
-    if (bakes.some(slot => slot !== null)) {
-      this.applyVisibility(live)
-      this.queueBakes(parts)
-    }
+    this.updateFallbacks(live)
+    this.applyVisibility(live)
+    if (bakes.some(slot => slot !== null)) this.queueBakes(parts)
     return this.live.length - 1
   }
 
@@ -851,26 +847,49 @@ class SdfRenderPort implements ResizablePort {
     return this.gpuDevice ??= this.canvas === null ? undefined : deviceOfCanvas(this.canvas)
   }
 
-  /** Parts drawn in vertex colour because their shading pipelines still compile, over the visible instances. */
+  /** Visible parts waiting for their field pipeline or bake, counted once across instances. */
   fallbackParts(): number {
-    let count = 0
-    for (const live of this.live) if (live !== null && live.visible) count += live.fallbacks.length
-    return count
+    const pending = new Set<string>()
+    if (this.shading === 'vertex') return 0
+    for (const live of this.live) {
+      if (live === null || !live.visible) continue
+      for (const copy of live.fallbacks) {
+        if (!copy.ready && !copy.failed && (live.filter === null || live.filter.has(copy.part.name))) {
+          pending.add(copy.part.reportKey!)
+        }
+      }
+    }
+    return pending.size
   }
 
-  // Each vertex-colour copy goes the frame its part's shading has every requested pipeline compiled: the shading then
-  // draws in the same render, so the part is never missing and never drawn twice past that frame.
-  private swapFallbacks(engine: SdfEngine): void {
-    const device = this.device()
+  setShading(mode: ShadingMode): void {
+    if (mode === 'texture') {
+      this.shadingErrors.set('texture', 'no baked textures loaded')
+      return
+    }
+    this.shading = mode
+    this.swapFallbacks(true)
+  }
+
+  private updateFallbacks(live: Live): boolean {
+    let changed = false
+    for (const copy of live.fallbacks) {
+      if (copy.ready || copy.failed) continue
+      const state = fieldReadiness(this.device(), copy.part.field!)
+      if (state.status === 'failed') {
+        copy.failed = true
+        this.shadingErrors.set(copy.part.reportKey!, `shader ${state.reason}`)
+      } else if (state.status === 'ready' && this.baked(copy.part.bake)) copy.ready = true
+      changed ||= copy.ready || copy.failed
+    }
+    return changed
+  }
+
+  // Readiness is latched: a new pass variant cannot put a swapped part back on its copy.
+  private swapFallbacks(force = false): void {
     for (const live of this.live) {
-      if (live === null || live.fallbacks.length === 0) continue
-      live.fallbacks = live.fallbacks.filter(copy => {
-        if (!this.baked(copy.part.bake) || !fieldReady(device, copy.part.field!)) return true
-        engine.removeNode(copy.node)
-        this.tinted.delete(copy.instance)
-        live.skin = live.skin.filter(slot => slot.instance !== copy.instance)
-        return false
-      })
+      if (live === null) continue
+      if (this.updateFallbacks(live) || force) this.applyVisibility(live)
     }
   }
 
@@ -941,8 +960,12 @@ class SdfRenderPort implements ResizablePort {
   private applyVisibility(live: Live): void {
     const engine = this.need()
     const shown = (i: number): boolean => live.visible && (live.filter === null || live.filter.has(live.partNames[i]))
-    live.instances.forEach((id, i) => engine.setVisible(id, shown(i) && this.baked(live.bakes[i])))
-    for (const copy of live.fallbacks) engine.setVisible(copy.instance, shown(copy.index))
+    const copies = new Map(live.fallbacks.map(copy => [copy.index, copy]))
+    live.instances.forEach((id, i) => {
+      const copy = copies.get(i)
+      engine.setVisible(id, shown(i) && (copy === undefined || (this.shading !== 'vertex' && copy.ready)))
+    })
+    for (const copy of live.fallbacks) engine.setVisible(copy.instance, shown(copy.index) && (this.shading === 'vertex' || !copy.ready))
   }
 
   destroyInstance(instance: number): void {
@@ -957,8 +980,8 @@ class SdfRenderPort implements ResizablePort {
   releaseAsset(handle: number): void {
     const uploaded = this.uploaded[handle]
     if (uploaded === undefined) return
-    if (uploaded.base !== undefined) this.releaseUpload(uploaded.base)
     this.releaseUpload(handle)
+    if (uploaded.base !== undefined) this.releaseUpload(uploaded.base)
   }
 
   private releaseUpload(handle: number): void {
@@ -977,15 +1000,22 @@ class SdfRenderPort implements ResizablePort {
     // Its bakes: a waiting one is dropped, a done one gives its textures and texels back to the atlas (a skinned visual
     // shares its rigid base's bakes; releasing twice is a no-op).
     if (engine !== null) for (const part of uploaded.parts) if (part.bake !== undefined) this.scheduler?.release(part.bake)
+    const meshesOf = (parts: PartUpload[]): number[] => parts.flatMap(part => part.fallback === undefined ? [part.mesh] : [part.mesh, part.fallback.mesh])
+    const meshes = new Set(meshesOf(all))
+    // A skinned upload borrows unskinned parts and textures from its rigid base.
+    const base = uploaded.base === undefined ? undefined : this.uploaded[uploaded.base]
+    if (base !== undefined) for (const mesh of meshesOf([...base.parts, ...(base.tintedParts ?? [])])) meshes.delete(mesh)
     if (engine !== null) {
-      for (const mesh of all.flatMap(part => part.fallback === undefined ? [part.mesh] : [part.mesh, part.fallback.mesh])) {
+      for (const mesh of meshes) {
         try { engine.removeMesh(mesh) } catch (e) { if (raaCode(e) !== 'api.unknown_handle') throw e }
       }
     }
     if (engine !== null) for (const base of uploaded.data ?? []) engine.removeMaterialData(base)
     // A field part's grid texture goes back to RAA's atlas with the upload.
-    if (engine !== null) for (const part of all) if (part.texture !== undefined) engine.removeTexture(part.texture)
-    this.meshes -= all.length + uploaded.parts.filter(part => part.fallback !== undefined).length
+    if (engine !== null && uploaded.base === undefined) {
+      for (const texture of new Set(all.flatMap(part => part.texture === undefined ? [] : [part.texture]))) engine.removeTexture(texture)
+    }
+    this.meshes -= meshes.size
     this.uploaded[handle] = undefined
     for (const [name, h] of this.handleOfName) if (h === handle) this.handleOfName.delete(name)
     for (const [id, h] of this.handleOfId) if (h === handle) this.handleOfId.delete(id)
@@ -1028,7 +1058,7 @@ class SdfRenderPort implements ResizablePort {
   render(): RenderStats {
     const engine = this.need()
     const t0 = performance.now()
-    this.swapFallbacks(engine)
+    this.swapFallbacks()
     this.flushPoses(engine)
     renderFrame(this, () => engine.render(t0))
     const frameMs = performance.now() - t0

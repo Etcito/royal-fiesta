@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { asyncPipelineFallbacks, deviceOfCanvas, fieldReady, installAsyncLitPipelines, materialKey, pendingPipelines } from '../src/render/asyncPipelines.ts'
+import { asyncPipelineFallbacks, deviceOfCanvas, fieldReadiness, fieldReady, installAsyncLitPipelines, materialKey, pendingPipelines } from '../src/render/asyncPipelines.ts'
 
 test('lit pipelines compile concurrently, omit pending draws and bind the resolved pipeline', async () => {
   const pending: { resolve(value: object): void; promise: Promise<object> }[] = []
@@ -97,6 +97,7 @@ test('a material draws in no pass until every variant requested for it is compil
   }
   const hat = materialKey(body('hat'))
   const shadow = variant('hat', 'Shadow')
+  assert.deepEqual(fieldReadiness(device, hat), { status: 'pending' })
   assert.equal(fieldReady(device, hat), false)
   await settle('hat', 'Shadow')
   assert.equal(fieldReady(device, hat), false, 'a shadow variant alone is not the part drawn')
@@ -107,6 +108,7 @@ test('a material draws in no pass until every variant requested for it is compil
   assert.equal(frame([shadow, prepass, forward]), 0, 'nor while the prepass compiles')
   assert.equal(fieldReady(device, hat), false)
   await settle('hat', 'Prepass')
+  assert.deepEqual(fieldReadiness(device, hat), { status: 'ready' })
   assert.equal(fieldReady(device, hat), true)
   assert.equal(frame([shadow, prepass, forward]), 3)
   assert.equal(fieldReady({}, hat), false, 'another device compiles its own pipelines')
@@ -153,6 +155,7 @@ test('a lit pipeline rejected on an invalid layout names the layout\'s own valid
   const scopes: (string | null)[][] = []
   const promises: Promise<object>[] = []
   class Device {
+    createShaderModule(_descriptor: { code: string }): object { return {} }
     pushErrorScope(_filter: string): void { scopes.push([]) }
     popErrorScope(): Promise<{ message: string } | null> {
       const errors = scopes.pop() ?? []
@@ -180,9 +183,15 @@ test('a lit pipeline rejected on an invalid layout names the layout\'s own valid
   const log = console.error
   console.error = (m: string) => { errors.push(m) }
   try {
-    const failed = device.createRenderPipeline({ label: 'raa.lit.pipeline', layout })
+    const wgsl = 'fn field_material() {}'
+    const module = device.createShaderModule({ code: `// raa variant: pass Forward, msaa 1\n// raa section: material \"field_material\"\n${wgsl}\n// raa section: pass Forward\n` })
+    const failed = device.createRenderPipeline({ label: 'raa.lit.pipeline', layout, vertex: { module } })
+    assert.deepEqual(fieldReadiness(device, materialKey(wgsl)), { status: 'pending' })
     await Promise.allSettled(promises)
     while (pendingPipelines() > 0) await new Promise(resolve => setTimeout(resolve, 0))
+    const readiness = fieldReadiness(device, materialKey(wgsl))
+    assert.equal(readiness.status, 'failed')
+    assert.ok(readiness.status === 'failed' && readiness.reason.includes('previous error: createBindGroupLayout \"raa.lit.extra\": exceeds maxStorageBuffersPerShaderStage (8)'))
     assert.throws(() => new Pass().setPipeline(failed), (e: unknown) => {
       const error = e as Error & { reason?: string }
       return error.reason === 'validation' && error.message.includes('is invalid due to a previous error')

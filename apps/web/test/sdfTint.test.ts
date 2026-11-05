@@ -31,6 +31,9 @@ interface ShadingReportLike {
   demoted: number; atlasFull: number; bytes: number; budget: number; errors: readonly string[]
 }
 interface Port {
+  render(): void
+  setShading(mode: 'sdf' | 'vertex' | 'texture'): void
+  releaseAsset(handle: number): void
   engine: unknown; target: unknown
   shadingReport(): ShadingReportLike
   skinOf(id: string): SkinnedAssetT | undefined
@@ -75,6 +78,7 @@ const exports = {} as {
     (contract: Contract | null, given?: unknown, search?: string): RenderOptions
   }
 }
+const readiness = new WeakMap<object, (key: string) => asyncPipelines.PipelineReadiness>()
 const warnings: string[] = []
 const errors: string[] = []
 runInNewContext(compiled, {
@@ -84,7 +88,8 @@ runInNewContext(compiled, {
     if (id === '../game/checkProgress.ts') return { checkAwait: (_step: string, work: () => Promise<unknown>) => work() }
     if (id === '../render/raaEngine.ts') return { createRaaEngine: async () => initEngine }
     if (id === '../render/shaderCache.ts') return { installShaderCache() {} }
-    if (id === '../render/asyncPipelines.ts') return asyncPipelines
+    if (id === '../render/asyncPipelines.ts') return { ...asyncPipelines, fieldReadiness: (device: object | undefined, key: string) =>
+      (device === undefined ? undefined : readiness.get(device))?.(key) ?? asyncPipelines.fieldReadiness(device, key) }
     if (id === '../render/renderOptions.ts') return renderOptions
     if (id === '@royal-fiesta/game/render/nullPort') return { checkPose, checkSkin }
     if (id === './materialProgram.ts') return { materialProgram }
@@ -135,9 +140,10 @@ function fakeEngine() {
   let next = 0
   const calls = {
     views: [] as Viewport[][], sizes: [] as number[][], cameras: [] as number[],
-    visibility: new Map<number, boolean>(),
+    visibility: new Map<number, boolean>(), nodes: new Map<number, number>(), removedMeshes: [] as number[],
     skinPoses: [] as { ids: Uint32Array; matrices: Float32Array }[],
     jointStreams: [] as unknown[],
+    functionSources: new Map<string, string>(),
     functions: 0, surfaces: 0, meshes: 0, instances: 0, data: [] as Uint32Array[], freed: [] as number[],
     tints: new Map<number, number[][]>(), cleared: [] as number[], modes: new Map<number, string>(),
     meshOf: new Map<number, number>(), meshIds: [] as number[], nextInstance: 1000,
@@ -147,13 +153,15 @@ function fakeEngine() {
     instanceParams: [] as { instance: number; params: number[] }[],
   }
   const engine = {
+    render() {}, stats: () => ({ drawCalls: 0, triangles: 0, instances: calls.instances }),
+    removeMesh(id: number) { calls.removedMeshes.push(id) },
     resize(...args: number[]) { calls.sizes.push(args) },
     setViewports(views: Viewport[]) { calls.views.push(Array.from(views, v => ({ ...v }))) },
     setCamera() { calls.cameras.push(-1) },
     setViewportCamera(index: number) { calls.cameras.push(index) },
     setVisible(id: number, visible: boolean) { calls.visibility.set(id, visible) },
     setLight() {}, setAmbient() {},
-    addMaterialFunction() { calls.functions++ },
+    addMaterialFunction(name: string, wgsl: string) { calls.functionSources.set(name, wgsl); calls.functions++ },
     addSurfaceMaterial(desc: Record<string, unknown>) { calls.surfaces++; calls.descs.push(desc); const id = ++next; calls.surfaceOf.set(id, desc); return id },
     addMaterialData(words: Uint32Array) { calls.data.push(words); return 4 + calls.data.slice(0, -1).reduce((n, w) => n + w.length, 0) },
     removeMaterialData(base: number) { calls.freed.push(base) },
@@ -164,7 +172,7 @@ function fakeEngine() {
     addMesh(desc: unknown) { calls.jointStreams.push(desc); calls.meshes++; const id = ++next; calls.meshIds.push(id); return id },
     addNode() { return ++next },
     removeNode() {},
-    addMeshInstance(_node: number, mesh: number) { calls.instances++; const id = calls.nextInstance++; calls.meshOf.set(id, mesh); return id },
+    addMeshInstance(node: number, mesh: number) { calls.nodes.set(calls.nextInstance, node); calls.instances++; const id = calls.nextInstance++; calls.meshOf.set(id, mesh); return id },
     setInstanceTint(id: number, rgba: number[]) { calls.tints.set(id, [...(calls.tints.get(id) ?? []), Array.from(rgba)]) },
     clearInstanceTint(id: number) { calls.cleared.push(id) },
     setMaterialTintMode(handle: number, mode: string) { calls.modes.set(handle, mode) },
@@ -549,12 +557,17 @@ test('a shaded part draws its vertex-colour copy until every pipeline of its sha
   resolvers.splice(0, 1).forEach(done => done())
   await new Promise(resolve => setTimeout(resolve, 0))
   view.render()
-  assert.equal(removed.length, partsOf(names[0]), 'the parts of the first function swap the frame its shadow and forward variants are compiled')
+  assert.equal([...calls.visibility.values()].filter(shown => !shown).length, parts.length, 'each pair has exactly one visible member')
+  assert.deepEqual(removed, [], 'copies stay resident for live shading switches')
   assert.equal(view.fallbackParts(), parts.length - partsOf(names[0]))
   resolvers.splice(0).forEach(done => done())
   await new Promise(resolve => setTimeout(resolve, 0))
   view.render()
-  assert.equal(removed.length, parts.length)
+  assert.deepEqual(removed, [])
+  for (let i = 0; i < parts.length; i++) {
+    assert.equal(calls.visibility.get(1000 + i * 2), true)
+    assert.equal(calls.visibility.get(1001 + i * 2), false)
+  }
   assert.equal(view.fallbackParts(), 0)
 })
 
@@ -682,8 +695,8 @@ test('a too-small atlas budget demotes the smaller-diagonal part first', async (
   assert.ok(report.errors.includes('test.budget#g/small: atlas budget: smaller parts first'), report.errors.join('\n'))
 })
 
-// ?normals=vertex forces the vertex path: no field grid texture and every part vertex, named 'vertex mode'.
-test('?normals=vertex gives zero textures and every part vertex', async () => {
+// Vertex mode keeps fields resident so switching to SDF can reuse the upload.
+test('?normals=vertex shows every part vertex and keeps the field resident', async () => {
   const chosen = exports.gameRenderOptions('?normals=vertex', { shading: 'sdf' })
   assert.equal(chosen.shading, 'vertex')
   assert.equal(exports.gameRenderOptions('', {}).shading, 'sdf')
@@ -694,7 +707,7 @@ test('?normals=vertex gives zero textures and every part vertex', async () => {
   await port.prepare(() => {}, () => {})
   port.createInstance(handle(), null)
   const report = port.shadingReport()
-  assert.equal(calls.textures.length, 0)
+  assert.equal(calls.textures.length, 1)
   assert.equal(report.field, 0)
   assert.equal(report.vertex, report.parts)
   assert.ok(report.errors.some(line => line.endsWith(': vertex mode')), report.errors.join('\n'))
@@ -746,6 +759,7 @@ test('baked shading: the first instance bakes each field part and its baked draw
   })
   const port = exports.makeWith(new Map([[id, mesh]]), { shading: 'baked', bakeTexelDensity: 256, bakeMaxSize: 512 }, CONTRACT)
   const device = bakeDevice()
+  readiness.set(device, () => ({ status: 'ready' }))
   Object.assign(port, { engine, target: {}, gpuDevice: device })
   await port.prepare(() => {}, () => {})
   const view = port as unknown as { bakes(): { parts: number; failed: number; textures: number }; bakesDone(): Promise<void>; inventory(): { textures: number } }
@@ -777,4 +791,154 @@ test('baked shading: the first instance bakes each field part and its baked draw
   await view.bakesDone()
   assert.equal(view.bakes().parts, stats.parts)
   assert.equal(textures.length, stats.textures)
+})
+
+function controlledField(id: string) {
+  const body = { ...part('body', null), fieldProgram: gridProgram() }
+  const setup = portFor(id, [], [body])
+  const device = {}
+  const state: { current: asyncPipelines.PipelineReadiness; keys: string[] } = { current: { status: 'pending' }, keys: [] }
+  readiness.set(device, key => { state.keys.push(key); return state.current })
+  Object.assign(setup.port, { gpuDevice: device })
+  return { ...setup, state }
+}
+
+test('pending field pairs show the copy, swap on the next ready render and switch shading live', () => {
+  const { port, calls, handle, state } = controlledField('test.live')
+  const h = handle()
+  const first = calls.nextInstance
+  const instance = port.createInstance(h, [0.2, 0.4, 0.8])
+  const pair = (field: boolean, vertex: boolean) => {
+    assert.equal(calls.visibility.get(first), field)
+    assert.equal(calls.visibility.get(first + 1), vertex)
+  }
+  assert.equal(calls.nodes.get(first), calls.nodes.get(first + 1), 'both members share the part node')
+  assert.deepEqual(calls.tints.get(first), calls.tints.get(first + 1), 'the tint reaches both members')
+  assert.equal(port.shadingReport().pending, 1)
+  const fieldSource = [...calls.functionSources].find(([name]) => name.startsWith('pmf.'))?.[1]
+  assert.ok(fieldSource)
+  assert.equal(state.keys[0], asyncPipelines.materialKey(fieldSource), 'readiness matches the WGSL RAA composes')
+  pair(false, true)
+  port.setShading('vertex')
+  pair(false, true)
+  assert.equal(port.shadingReport().pending, 0)
+  port.setShading('sdf')
+  pair(false, true)
+  assert.equal(port.shadingReport().pending, 1)
+  port.render()
+  pair(false, true)
+  state.current = { status: 'ready' }
+  pair(false, true)
+  port.render()
+  pair(true, false)
+  assert.equal(port.shadingReport().pending, 0)
+  const another = calls.nextInstance
+  port.createInstance(h, null)
+  assert.equal(calls.instances, 4, 'even a ready material creates both resident members')
+  assert.equal(calls.visibility.get(another), true)
+  assert.equal(calls.visibility.get(another + 1), false)
+  assert.ok(state.keys.every(key => key === state.keys[0]), 'the material query uses one stable key')
+  state.current = { status: 'pending' }
+  port.render()
+  pair(true, false)
+  port.setShading('vertex')
+  pair(false, true)
+  assert.equal(port.shadingReport().vertex, 1)
+  assert.equal(calls.removedTextures.length, 0, 'field textures stay resident')
+  port.setShading('texture')
+  pair(false, true)
+  assert.ok(port.shadingReport().errors.includes('texture: no baked textures loaded'))
+  port.setShading('sdf')
+  pair(true, false)
+  port.setVisible(instance, false)
+  pair(false, false)
+  port.render()
+  pair(false, false)
+  port.setVisible(instance, true)
+  port.setPartFilter(instance, [])
+  pair(false, false)
+  port.setShading('vertex')
+  port.render()
+  pair(false, false)
+  port.setPartFilter(instance, null)
+  pair(false, true)
+  port.setShading('sdf')
+  pair(true, false)
+  port.releaseAsset(h)
+  assert.equal(calls.removedMeshes.length, 2, 'both field and vertex meshes are freed once')
+  assert.equal(new Set(calls.removedMeshes).size, 2)
+  assert.deepEqual(calls.removedTextures, [101])
+})
+
+test('a failed field keeps its vertex copy and reports the shader rejection by part key', () => {
+  const { port, calls, handle, state } = controlledField('test.shader-failed')
+  const h = handle()
+  const first = calls.nextInstance
+  const instance = port.createInstance(h, null)
+  port.createInstance(h, null)
+  assert.equal(port.shadingReport().pending, 1, 'two instances of the same part count once')
+  state.current = { status: 'failed', reason: 'invalid layout; previous error: too many bindings' }
+  port.render()
+  assert.equal(calls.visibility.get(first), false)
+  assert.equal(calls.visibility.get(first + 1), true)
+  const report = port.shadingReport()
+  assert.equal(report.pending, 0)
+  assert.equal(report.failed, 1)
+  assert.ok(report.errors.includes('test.shader-failed#g/body: shader invalid layout; previous error: too many bindings'))
+  port.setShading('vertex')
+  port.setShading('sdf')
+  assert.equal(calls.visibility.get(first), false)
+  assert.equal(calls.visibility.get(first + 1), true)
+  port.setVisible(instance, false)
+  assert.equal(calls.visibility.get(first + 1), false)
+  port.setVisible(instance, true)
+  port.setPartFilter(instance, [])
+  port.render()
+  assert.equal(calls.visibility.get(first), false)
+  assert.equal(calls.visibility.get(first + 1), false)
+})
+
+test('a pending skinned pair receives poses on both members and keeps its last pose when switched', () => {
+  const { port, calls, state } = controlledField('test.skin-pair')
+  const skin: SkinnedAssetT = { rig: { name: 'penguin', bones: [{ name: 'root', parent: null }] }, parts: [{ name: 'body', skin: {
+    joints: new Uint16Array(12), weights: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]),
+  } }] }
+  const h = port.registerSkinned('test.skin-pair', skin)
+  const first = calls.nextInstance
+  const instance = port.createInstance(h, [0.1, 0.2, 0.3])
+  const matrices = Float32Array.from(FRAME); matrices[13] = 0.6
+  port.setPose(instance, matrices)
+  port.render()
+  assert.deepEqual(Array.from(calls.skinPoses[0].ids), [first, first + 1])
+  assert.deepEqual(Array.from(calls.skinPoses[0].matrices), [...matrices, ...matrices])
+  state.current = { status: 'ready' }
+  port.render()
+  port.setShading('vertex')
+  assert.equal(calls.visibility.get(first), false)
+  assert.equal(calls.visibility.get(first + 1), true)
+  matrices[13] = 0.9
+  port.setPose(instance, matrices)
+  port.render()
+  assert.deepEqual(Array.from(calls.skinPoses[1].ids), [first, first + 1])
+  port.setShading('sdf')
+  assert.equal(calls.visibility.get(first), true)
+  assert.equal(calls.visibility.get(first + 1), false)
+  port.releaseAsset(h)
+  assert.equal(calls.removedMeshes.length, 4, 'both rigid and skinned pairs are freed')
+  assert.equal(new Set(calls.removedMeshes).size, 4)
+  assert.deepEqual(calls.removedTextures, [101], 'the base owns the shared field texture')
+})
+
+test('a field pair keeps its vertex object material and the field material on their respective members', () => {
+  const mesh = part('body', 'paint')
+  const body = { ...mesh, fieldProgram: fieldProgram(), look: { roughness: 0.3, metallic: 0.1 },
+    meshes: mesh.meshes.map(m => ({ ...m, colors: new Float32Array([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]) })) }
+  const { port, calls, handle } = portFor('test.single-pair', [material('paint', PLAIN)], [body])
+  const first = calls.nextInstance
+  port.createInstance(handle(), null)
+  assert.equal(calls.objectMaterials.has(first), false, 'the field draw keeps its per-fragment material')
+  assert.ok(calls.single.some(([on, id]) => on === false && id === first))
+  const vertexMaterial = calls.objectMaterials.get(first + 1)
+  assert.ok(vertexMaterial !== undefined && vertexMaterial !== null)
+  assert.equal(JSON.stringify(calls.surfaceOf.get(vertexMaterial)), JSON.stringify({ color: [1, 1, 1], roughness: 0.3, metallic: 0.1 }))
 })

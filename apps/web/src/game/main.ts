@@ -53,7 +53,7 @@ import { RoundGate } from '../render/pipelineGate.ts'
 import type { RoundStage } from '../render/pipelineGate.ts'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
-import { skinnedCharacterOf } from '../content/providers/sdf.ts'
+import { SdfContent, skinnedCharacterOf } from '../content/providers/sdf.ts'
 import { menuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
 import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, backTogglesPause, flowAction } from '@royal-fiesta/game/screens/nav'
@@ -116,6 +116,8 @@ import type { BootOptions, TourGame } from './uiTour.ts'
 import { GraphicsSettings, loadGraphicsContract } from './graphicsSettings.ts'
 import { FpsCounter, FramePacer, frameInterval } from './framePacing.ts'
 import { setRenderOptions } from '../render/renderOptions.ts'
+import { gameRenderOptions } from '../sdf/sdfPort.ts'
+import type { ShadingMode } from '../sdf/sdfPort.ts'
 
 interface Query {
   players: number | null
@@ -1451,6 +1453,8 @@ class App {
   // The Graphics page and options (MAMA's render-options contract) and the FPS counter they show.
   private readonly graphics: GraphicsSettings
   private readonly fps: FpsCounter
+  // The shading mode already pushed to the loaded SDF content (the page address applied on top).
+  private liveShading: ShadingMode | null = null
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
@@ -1563,6 +1567,7 @@ class App {
     this.graphics = new GraphicsSettings(env.store, options => {
       setRenderOptions(options)
       this.fps.setVisible(options.showFps === true)
+      this.applyShading(options.shading)
     })
     void loadGraphicsContract().then(contract => { if (!this.disposed) this.graphics.attach(contract) })
     // A coarse pointer or ?touch=1 mounts the virtual joystick and buttons over #views; seat 0 is touch.
@@ -2720,6 +2725,18 @@ class App {
       else if (row.kind === 'graphics') this.graphics.openPage()
       else this.apply(adjust(this.settings, row, 1))
     }
+  }
+
+  // The Graphics shading row applies to the SDF content already on screen, without reloading it; `?normals=vertex`
+  // still wins for the session. Before the first load the provider reads the same options for its new port.
+  private applyShading(value: unknown): void {
+    const content = this.loaded?.content
+    const chosen: ShadingMode | null = value === 'field' || value === 'vertex' || value === 'baked' ? value : null
+    if (!(content instanceof SdfContent) || chosen === null) return
+    const { shading } = gameRenderOptions(this.search, { shading: chosen })
+    if (shading === this.liveShading) return
+    this.liveShading = shading
+    content.setShading(shading)
   }
 
   private apply(next: Settings): void {

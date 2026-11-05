@@ -86,10 +86,20 @@ function mechanism(id: string): string {
   return dir
 }
 
+// The saved mesh a re-save made before the mesher kept physics parts: the whole asset as one part named after the group.
+async function writeMerged(dir: string, id: string): Promise<GameAsset> {
+  const asset = await parseGameAsset(JSON.parse(readFileSync(join(dir, `assets/candy/${id}.asset.json`), 'utf8')), `assets/candy/${id}.asset.json`)
+  const merged: MeshedAsset = { assetId: asset.id, hash: asset.hash, mesher: asset.mesher.output, parts: 1, triangles: 0, transfer: [], data: { groups: [{ parts: [{ name: 'Spinner Bar', meshes: [] }] }] } }
+  writeFileSync(join(dir, `assets/candy/${id}.mesh`), encodeMesh(merged))
+  return asset
+}
+
 test('a mechanism asset keeps its named physics parts with field programs on', async () => {
   if (mamaSource().kind === 'absent') return
   const dir = mechanism('candy.spinner-bar')
   try {
+    // Card 6927 run 11943: the previous save was merged, and its 'Spinner Bar' name refused the correct split.
+    await writeMerged(dir, 'candy.spinner-bar')
     const results = await saveMeshes({ dir, ids: ['candy.spinner-bar'], jobs: 1 })
     assert.equal(results.length, 1)
     assert.equal(results[0].status, 'saved', results[0].reason)
@@ -121,5 +131,21 @@ test('refuses to write a mesh that drops the named physics parts', async () => {
     assert.equal(results[0].status, 'failed')
     assert.match(results[0].reason!, /lacks named physics parts/)
     assert.deepEqual(readFileSync(target), before)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('a merged previous save does not refuse the split mesh that restores the physics parts', async () => {
+  const dir = mechanism('candy.spinner-bar')
+  try {
+    const asset = await writeMerged(dir, 'candy.spinner-bar')
+    const names = meshRequestOf(asset).parts ?? []
+    const split: MeshedAsset = { assetId: asset.id, hash: asset.hash, mesher: asset.mesher.output, parts: names.length, triangles: 0, transfer: [], data: { groups: [{ parts: names.map(name => ({ name, meshes: [] })) }] } }
+    const results = await saveMeshes({ dir, ids: ['candy.spinner-bar'], jobs: 1, compatibility: 'test', mesh: async () => split })
+    assert.equal(results[0].status, 'saved', results[0].reason)
+    // A valid previous save still guards its own names: dropping one of them is refused.
+    const fewer: MeshedAsset = { ...split, data: { groups: [{ parts: names.slice(1).map(name => ({ name, meshes: [] })) }] } }
+    const again = await saveMeshes({ dir, ids: ['candy.spinner-bar'], jobs: 1, compatibility: 'test', mesh: async () => fewer })
+    assert.equal(again[0].status, 'failed')
+    assert.match(again[0].reason!, /lacks named physics parts/)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })

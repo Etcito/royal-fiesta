@@ -19,7 +19,7 @@ export interface SavedMeshResult { id: string; path: string; status: 'saved' | '
 type Options = { dir?: string; worlds?: readonly string[]; ids?: readonly string[]; jobs?: number; mesh?: (asset: GameAsset) => Promise<MeshedAsset>; compatibility?: string }
 type NodeMesher = { meshCompatibility(): Promise<string>; meshGameAsset(asset: GameAsset, options: { timeoutMs: number }): Promise<MeshedAsset> }
 
-// The names a saved mesh must keep: the asset's physics parts and every part the previous saved mesh still has.
+// The names a saved mesh must keep: the asset's physics parts and every part a valid previous saved mesh still has.
 function namedParts(value: MeshedAsset): Set<string> {
   const groups = (value.data as { groups?: { parts?: { name?: unknown }[] }[] } | null)?.groups ?? []
   return new Set(groups.flatMap(group => (group.parts ?? []).map(part => part.name)).filter((name): name is string => typeof name === 'string'))
@@ -68,7 +68,11 @@ export async function saveMeshes(opts: Options = {}): Promise<SavedMeshResult[]>
         })
         const key = await meshCacheKey(asset, compatibility, async bytes => createHash('sha256').update(bytes).digest('hex'))
         const value = await mesh(asset)
-        const expected = new Set([...(meshRequestOf(asset).parts ?? []), ...previousParts(target)])
+        // A previous save that lacks a physics part was merged by the mesher bug (one part named after the group,
+        // committed by a re-save before 018a348): its names are not a reference, or the correct split is refused.
+        const physics = meshRequestOf(asset).parts ?? []
+        const previous = previousParts(target)
+        const expected = new Set([...physics, ...(physics.every(name => previous.has(name)) ? previous : [])])
         const saved = namedParts(value)
         const missing = [...expected].filter(name => !saved.has(name))
         if (missing.length > 0) throw new Error(`the meshed asset lacks named physics parts (${missing.join(', ')}); the mesher merged parts or dropped their names`)

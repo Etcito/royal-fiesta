@@ -255,8 +255,7 @@ fn sdfm_posed_normal(in: MaterialInput, g: vec3f) -> vec3f {
   let t = normalize(tw);
   let bw = cross(n, t) * select(-1.0, 1.0, in.tangent.w >= 0.0);
   var m = normalize(dot(g, tr) * t + dot(g, br) * bw + dot(g, nr) * n);
-  let d = dot(m, in.view_dir);
-  if (d < 0.02 && dot(n, in.view_dir) > 0.0) { m = normalize(m + in.view_dir * (0.02 - d)); }
+  // Keep the SDF gradient intact; a view-dependent nudge adds a visible seam at grazing angles.
   return m;
 }
 `

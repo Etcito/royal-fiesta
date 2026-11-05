@@ -407,6 +407,25 @@ class Stage {
   }
 }
 
+function mechanismArcBounds(stage: Stage, port: ResizablePort, endTick: number): PartWorldBounds[] {
+  const swept = new Map<string, PartWorldBounds>()
+  for (let tick = 0; tick <= endTick; tick++) {
+    stage.update(tick)
+    for (const bound of port.worldBounds()) {
+      const prior = swept.get(bound.key)
+      if (prior === undefined) {
+        swept.set(bound.key, { key: bound.key, min: [...bound.min], max: [...bound.max] })
+        continue
+      }
+      for (let axis = 0; axis < 3; axis++) {
+        prior.min[axis] = Math.min(prior.min[axis]!, bound.min[axis]!)
+        prior.max[axis] = Math.max(prior.max[axis]!, bound.max[axis]!)
+      }
+    }
+  }
+  return [...swept.values()]
+}
+
 function obstacleOf(course: ResolvedCourse, asset: string): number {
   const index = course.obstacles.findIndex(spec => spec.asset === asset)
   if (index < 0) throw new Error(`course '${course.id}' has no '${asset}' obstacle`)
@@ -523,9 +542,17 @@ async function shootMechanisms(port: ResizablePort, content: GameContent, captur
   if (other < 0) throw new Error('mechanisms: missing second moving part')
   const stage = new Stage(port, content, course, { decor: false, obstacles: [], mechanisms: [at, other] })
   try {
+    const arcTicks = Math.max(1, ...course.mechanisms!.animations
+      .filter(animation => animation.target.item === at || animation.target.item === other)
+      .map(animation => {
+        const end = animation.keys[animation.keys.length - 1]?.tick ?? 0
+        return animation.loop === 'pingpong' ? end * 2 : end
+      }))
+    const arcBounds = mechanismArcBounds(stage, port, arcTicks)
+    const cam = fitBounds(initial, arcBounds)
+    guardFraming('mechanisms swing arc', cam, arcBounds)
     for (const [name, tick] of [['mechanisms-a', 0], ['mechanisms-b', 30]] as const) {
       stage.update(tick)
-      const cam = fitBounds(initial, port.worldBounds())
       port.setCamera(0, cam)
       await waitShading(port, name)
       const failures = port.shadingReport().errors.filter(e => e.startsWith('candy.pendulum-hammer#') && !e.endsWith(': vertex mode'))

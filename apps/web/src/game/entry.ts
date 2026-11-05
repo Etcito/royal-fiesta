@@ -3,7 +3,7 @@
 // calls wait for the real implementation, so failures surface through the GPU client.
 const names = [
   'botPerf', 'localPads', 'controlsProbe', 'gameCapture', 'roundCapture', 'uiTour', 'flowTour', 'zoneCapture', 'zoneLobbyCapture',
-  'zoneLobbyPair', 'zoneSplitPair', 'countdowns', 'lobbyUnload', 'wardrobe', 'vote', 'm13Flow', 'shopEconomy', 'startPlain', 'cameraLook', 'animPerf', 'cosmeticThumbs', 'shopScreens', 'screensPreview',
+  'zoneLobbyPair', 'zoneSplitPair', 'countdowns', 'lobbyUnload', 'wardrobe', 'vote', 'm13Flow', 'shopEconomy', 'startPlain', 'cameraLook', 'animPerf', 'cosmeticThumbs', 'shopScreens', 'screensPreview', 'fieldShading',
 ] as const
 const ops: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
 let game: Promise<unknown>

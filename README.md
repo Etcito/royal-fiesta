@@ -84,6 +84,9 @@ every saved part of its world (field, MAMA refusal, atlas demotion, scaled frame
 through the same pure decisions as `SdfRenderPort`; it exits 1 on a part the GPU op would fail on and runs before the
 GPU job in `.nmc/commands.json` `field-render`. A card that adds a GPU check op gives it such a static preflight over
 the real saved world, and runs the op once on the GPU client over that world before it is marked done.
+A card that edits the `fieldShading` op, field material, field atlas or SDF port is done only after the whole
+`field-build` -> `field-render` chain ran green; the op reports every failing capture of the job together
+(`docs/shader-cache.md`, fieldShading rules).
 
 ## Proofs
 

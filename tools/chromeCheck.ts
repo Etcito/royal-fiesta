@@ -583,6 +583,11 @@ async function main(): Promise<void> {
   console.log(JSON.stringify(report))
   // The condition goes on the header line itself: a reader that keeps only the first error line still sees it.
   if (report.error !== undefined) console.error(`HARNESS ERROR (full): ${report.error}`)
+  // fieldShading runs every capture in one job and lists every failure (ok: false): print all, not the first.
+  const opFailures = objectOf(report.json).failures
+  if (op === 'fieldShading' && Array.isArray(opFailures) && opFailures.length > 0) {
+    console.error(`FIELD SHADING FAILURES (${opFailures.length}, all in this run):\n${opFailures.map(f => `- ${String(f)}`).join('\n')}`)
+  }
   if (report.pageErrors.length > 0) console.error(`FIRST PAGE ERROR (full):\n${report.pageErrors[0]}`)
   else if (report.consoleErrors.length > 0) console.error(`FIRST CONSOLE ERROR (full):\n${report.consoleErrors[0]}`)
 }

@@ -1,6 +1,10 @@
 // fieldShading (game.html?test=1): the whole SDF candy world loaded through the real content provider and
 // rendered by the real RAA port. Every capture waits on the port's field shading report, never on a fixed
 // sleep: the GPU client runs the page in an off-screen frame where requestAnimationFrame is unreliable.
+// Every capture runs in the one job and the report lists every failure (ok: false, `failures`). For cards that change
+// this file, sdf/fieldShading.ts, sdf/fieldAtlas.ts or sdf/sdfPort.ts: a camera is fitted to the bounds of what the
+// capture shows (guardFraming measures the captured pose, never a swept arc), fieldShading.test.ts pins each framing
+// with guardFraming, and the card is done only after the whole field-build -> field-render chain ran green.
 import type { ObstacleSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { MechItem } from '@royal-fiesta/sim/mechanismSpec'
 import type { Pose } from '@royal-fiesta/sim/vec'
@@ -29,7 +33,16 @@ const WAIT_MS = 180_000
 const MECH_COURSE = 'race-hammer-hill'
 
 interface OpFile { name: string; blob: Blob }
-interface Captures { files: OpFile[]; names: string[]; observations: unknown[] }
+interface Captures { files: OpFile[]; names: string[]; observations: unknown[]; failures: string[] }
+
+// Every capture runs even when an earlier one fails: one GPU job names every remaining failure (framing guard,
+// pending parts, hard shading failures) instead of one failure per GPU run. The op still fails (ok: false).
+async function attempt(captures: Captures, what: string, step: () => Promise<void>): Promise<void> {
+  try { await step() } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    captures.failures.push(message.includes(what) ? message : `${what}: ${message}`)
+  }
+}
 
 function boundCorners(bounds: readonly PartWorldBounds[]): number[][] {
   return bounds.flatMap(b => Array.from({ length: 8 }, (_, i) => [0, 1, 2].map(a => i & (1 << a) ? b.max[a] : b.min[a])))
@@ -408,25 +421,6 @@ class Stage {
   }
 }
 
-function mechanismArcBounds(stage: Stage, port: ResizablePort, endTick: number): PartWorldBounds[] {
-  const swept = new Map<string, PartWorldBounds>()
-  for (let tick = 0; tick <= endTick; tick++) {
-    stage.update(tick)
-    for (const bound of port.worldBounds()) {
-      const prior = swept.get(bound.key)
-      if (prior === undefined) {
-        swept.set(bound.key, { key: bound.key, min: [...bound.min], max: [...bound.max] })
-        continue
-      }
-      for (let axis = 0; axis < 3; axis++) {
-        prior.min[axis] = Math.min(prior.min[axis]!, bound.min[axis]!)
-        prior.max[axis] = Math.max(prior.max[axis]!, bound.max[axis]!)
-      }
-    }
-  }
-  return [...swept.values()]
-}
-
 function obstacleOf(course: ResolvedCourse, asset: string): number {
   const index = course.obstacles.findIndex(spec => spec.asset === asset)
   if (index < 0) throw new Error(`course '${course.id}' has no '${asset}' obstacle`)
@@ -493,11 +487,15 @@ async function shootPenguin(port: ResizablePort, content: GameContent, captures:
       },
     }
     port.setCamera(0, cam)
-    await waitShading(port, 'penguin')
-    await capture(port, 'penguin', captures, subject)
+    await attempt(captures, 'penguin', async () => {
+      await waitShading(port, 'penguin')
+      await capture(port, 'penguin', captures, subject)
+    })
     port.setShading('vertex')
-    await waitShading(port, 'penguin-vertex')
-    await capture(port, 'penguin-vertex', captures, subject)
+    await attempt(captures, 'penguin-vertex', async () => {
+      await waitShading(port, 'penguin-vertex')
+      await capture(port, 'penguin-vertex', captures, subject)
+    })
     port.setShading('field')
   } finally {
     driver?.dispose()
@@ -543,28 +541,27 @@ async function shootMechanisms(port: ResizablePort, content: GameContent, captur
   if (other < 0) throw new Error('mechanisms: missing second moving part')
   const stage = new Stage(port, content, course, { decor: false, obstacles: [], mechanisms: [at, other] })
   try {
-    const arcTicks = Math.max(1, ...course.mechanisms!.animations
-      .filter(animation => animation.target.item === at || animation.target.item === other)
-      .map(animation => {
-        const end = animation.keys[animation.keys.length - 1]?.tick ?? 0
-        return animation.loop === 'pingpong' ? end * 2 : end
-      }))
-    const arcBounds = mechanismArcBounds(stage, port, arcTicks)
-    const cam = fitBounds(initial, arcBounds)
-    guardFraming('mechanisms swing arc', cam, arcBounds)
-    for (const [name, tick] of [['mechanisms-a', 0], ['mechanisms-b', 30]] as const) {
-      stage.update(tick)
-      port.setCamera(0, cam)
-      await waitShading(port, name)
-      const failures = port.shadingReport().errors.filter(e => e.startsWith('candy.pendulum-hammer#') && !e.endsWith(': vertex mode'))
-      if (failures.length) throw new Error(`mechanisms.field: ${failures.join('; ')}`)
-      await capture(port, name, captures, { camera: cam, center: cam.target, radius: 8, hide: () => stage.hide() })
+    // One camera for both captures, fitted to the two captured poses only. The whole swing arc (+-60 degrees, both
+    // hammers) is about twice as wide as a pose: framing it left each captured pose at 0.09..0.12 of the view, under
+    // the capture guard's 0.15 (run 12108).
+    const poses = [['mechanisms-a', 0], ['mechanisms-b', 30]] as const
+    const posed = poses.flatMap(([, tick]) => { stage.update(tick); return port.worldBounds() })
+    const cam = fitBounds(initial, posed)
+    for (const [name, tick] of poses) {
+      await attempt(captures, name, async () => {
+        stage.update(tick)
+        port.setCamera(0, cam)
+        await waitShading(port, name)
+        const failures = port.shadingReport().errors.filter(e => e.startsWith('candy.pendulum-hammer#') && !e.endsWith(': vertex mode'))
+        if (failures.length) throw new Error(`mechanisms.field: ${failures.join('; ')}`)
+        await capture(port, name, captures, { camera: cam, center: cam.target, radius: 8, hide: () => stage.hide() })
+      })
     }
   } finally { stage.dispose() }
 }
 
 export async function run(input: unknown, deps: TourDeps): Promise<{ json: Record<string, unknown>; files: OpFile[] }> {
-  const captures: Captures = { files: [], names: [], observations: [] }
+  const captures: Captures = { files: [], names: [], observations: [], failures: [] }
   const search = typeof input === 'object' && input !== null && 'search' in input ? String(input.search) : ''
   const options = gameRenderOptions(search)
   const canvas = document.createElement('canvas')
@@ -572,49 +569,52 @@ export async function run(input: unknown, deps: TourDeps): Promise<{ json: Recor
   canvas.height = HEIGHT
   document.body.appendChild(canvas)
   const content = pickContent(new URLSearchParams({ content: 'sdf' }))
-  let port: ResizablePort | null = null
+  const target = { canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }
   try {
     await content.load('sprint', () => {})
     assertNoPageErrors('content load')
     if (!(content instanceof SdfContent)) throw new Error('fieldShading: SDF content required')
-    let worldNormals: ShadingReport | null = null
+    const sdf = content
+    // Each scene owns its port; a failed scene disposes it and the next scene still runs (attempt).
+    const scene = async (what: string, renderOptions: Parameters<SdfContent['createPort']>[1], assets: readonly string[],
+      shoot: (port: ResizablePort) => Promise<void>): Promise<void> => attempt(captures, what, async () => {
+      const port = await sdf.createPort(target, renderOptions, [...assets]) as ResizablePort
+      try { await shoot(port) } finally { port.dispose() }
+    })
+    let normals: ShadingReport | null = null
     if (!search) {
-      const target = { canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }
-      const level = content.captureLevel(MECH_COURSE)
-      port = await content.createPort(target, { shading: 'field' }, level.assets) as ResizablePort
-      await shootWorld(port, content, captures)
-      worldNormals = port.shadingReport()
-      port.dispose()
-      port = null
+      await scene('candy-world', { shading: 'field' }, content.captureLevel(MECH_COURSE).assets, async port => {
+        try { await shootWorld(port, content, captures) } finally { normals = port.shadingReport() }
+      })
       // Close views retain their own subjects and do not consume the race level's atlas.
       const portraitAssets = [...content.captureLevel(content.hub().id).assets,
         'penguin.body', 'costume.propeller-hat', 'costume.fish-scarf']
-      port = await content.createPort(target, { shading: 'field' }, portraitAssets) as ResizablePort
-      await shootScenery(port, content, captures)
-      await shootPenguin(port, content, captures)
-      port.dispose()
-      port = null
+      await scene('portraits (rounded-scenery, penguin)', { shading: 'field' }, portraitAssets, async port => {
+        await attempt(captures, 'rounded-scenery', () => shootScenery(port, content, captures))
+        await shootPenguin(port, content, captures)
+      })
     }
-    if (!(content instanceof SdfContent)) throw new Error('mechanisms: SDF content required')
     // A close-up is its own scene: unrelated worlds must not consume this scene's atlas.
     const ids = [...new Set(content.course(MECH_COURSE).mechanisms!.items.map(item => item.asset))]
-    port = await content.createPort({ canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }, options, ids) as ResizablePort
-    await shootMechanisms(port, content, captures)
-    assertNoPageErrors('captures')
+    await scene('mechanisms', options, ids, async port => {
+      try { await shootMechanisms(port, content, captures) } finally { normals ??= port.shadingReport() }
+    })
+    await attempt(captures, 'captures', async () => assertNoPageErrors('captures'))
     const reported = content.report()
-    const normals = worldNormals ?? port.shadingReport()
-    if (options.shading !== 'vertex' && normals.field === 0) throw new Error('the whole world drew no field-shaded part')
-    const failures = hardFailures(normals)
-    if (failures.length > 0) throw new Error(`field shading failed: ${failures.join('; ')}`)
+    const world = normals as ShadingReport | null
+    if (world !== null && options.shading !== 'vertex' && world.field === 0) captures.failures.push('the whole world drew no field-shaded part')
+    const failures = world === null ? [] : hardFailures(world)
+    if (failures.length > 0) captures.failures.push(`field shading failed: ${failures.join('; ')}`)
     return {
       json: {
-        ok: true,
+        ok: captures.failures.length === 0,
+        ...(captures.failures.length === 0 ? {} : { failures: captures.failures }),
         content: content.id,
         shading: options.shading,
         adapter: await deps.adapter(),
         assets: reported.assets,
         failedAssets: reported.failed,
-        normals,
+        normals: world,
         hardFailures: failures,
         captures: captures.names,
         observations: captures.observations,
@@ -622,7 +622,6 @@ export async function run(input: unknown, deps: TourDeps): Promise<{ json: Recor
       files: captures.files,
     }
   } finally {
-    port?.dispose()
     canvas.remove()
   }
 }

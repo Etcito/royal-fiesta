@@ -275,6 +275,50 @@ test('capture bounds guard rejects clipped, empty and distant poses and fits bot
   }
 })
 
+test('mechanisms camera: one camera fitted to the two captured hammer poses clears the guard; the whole swing arc does not', () => {
+  const source = readFileSync(new URL('../src/game/checks/fieldShading.ts', import.meta.url), 'utf8')
+  const functions = source.slice(source.indexOf('function boundCorners('), source.indexOf('function pageErrors()'))
+  const exports: any = {}
+  runInNewContext(transpileModule('const WIDTH = 1920, HEIGHT = 1080\n' + functions, {
+    compilerOptions: { module: ModuleKind.CommonJS },
+  }).outputText, { exports })
+  // race-hammer-hill hammer-1 (hanging) and hammer-2 (at 55 degrees): world bounds of run 12107 at tick 0 and tick 30.
+  const a = [{ key: 'h1/head', min: [-1.54, 0.65, 17], max: [1.54, 2.65, 19] }, { key: 'h1/arm', min: [-0.42, 2.44, 17.52], max: [0.42, 7.35, 18.48] },
+    { key: 'h2/head', min: [2.99, 2.92, 21], max: [6.19, 6.35, 23] }, { key: 'h2/arm', min: [-0.15, 4.85, 21.52], max: [4.07, 8.08, 22.48] }]
+  const b = [{ key: 'h1/head', min: [2.78, 2.09, 17], max: [6.04, 5.51, 19] }, { key: 'h1/arm', min: [-0.16, 4.06, 17.52], max: [3.94, 7.47, 18.48] },
+    { key: 'h2/head', min: [-0.13, 1.16, 21], max: [3.16, 3.78, 23] }, { key: 'h2/arm', min: [-0.33, 3.18, 21.52], max: [1.61, 7.96, 22.48] }]
+  const target = [2.3, 4.35, 20]
+  const initial = { eye: [target[0] + 4, target[1] + 1.8, target[2] + 4], target, fovYDeg: 65, near: 0.1, far: 300 }
+  const camera = exports.fitBounds(initial, [...a, ...b])
+  for (const pose of [a, b]) assert.ok(exports.guardFraming('mechanisms', camera, pose) >= 0.15)
+  // The +-60 degree swing of both hammers about their pivot (0, 8.4): the run-12108 framing, refused by the guard.
+  const arc = a.slice(0, 2).flatMap(box => [17, 21].map(z => {
+    const swept = { key: box.key, min: [Infinity, Infinity, box.min[2] - 17 + z], max: [-Infinity, -Infinity, box.max[2] - 17 + z] }
+    for (let deg = -60; deg <= 60; deg += 2) {
+      const r = deg * Math.PI / 180
+      for (const x of [box.min[0], box.max[0]]) for (const y of [box.min[1], box.max[1]]) {
+        const px = x * Math.cos(r) - (y - 8.4) * Math.sin(r), py = 8.4 + x * Math.sin(r) + (y - 8.4) * Math.cos(r)
+        swept.min[0] = Math.min(swept.min[0], px); swept.max[0] = Math.max(swept.max[0], px)
+        swept.min[1] = Math.min(swept.min[1], py); swept.max[1] = Math.max(swept.max[1], py)
+      }
+    }
+    return swept
+  }))
+  assert.throws(() => exports.guardFraming('mechanisms-a', exports.fitBounds(initial, arc), a), /bounds.small/)
+  assert.match(source, /const posed = poses\.flatMap/)
+  assert.doesNotMatch(source, /mechanismArcBounds/)
+})
+
+test('fieldShading collects every capture failure in one run and still fails', () => {
+  const source = readFileSync(new URL('../src/game/checks/fieldShading.ts', import.meta.url), 'utf8')
+  assert.match(source, /ok: captures\.failures\.length === 0/)
+  for (const what of ['penguin', 'penguin-vertex']) assert.ok(source.includes(`attempt(captures, '${what}'`), what)
+  assert.ok(source.includes('attempt(captures, name, async'))
+  const check = readFileSync(new URL('../../../tools/chromeCheck.ts', import.meta.url), 'utf8')
+  assert.ok(check.includes('out.ok === false'))
+  assert.ok(check.includes('FIELD SHADING FAILURES'))
+})
+
 
 test('world capture guard refuses missing repeated draws, unnamed fallbacks and unfinished swaps', async () => {
   const { assertCompleteFieldCapture: guard } = await import('../src/content/shadingStatus.ts')

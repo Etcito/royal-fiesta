@@ -224,13 +224,13 @@
     "phase": "yield: MessageChannel delivered",
     "lastAwaitedStep": "upload paint: penguin.body",
     "awaitingSteps": [],
-    "sequence": 7720,
-    "heartbeats": 23,
+    "sequence": 2588,
+    "heartbeats": 21,
     "lifecycle": [
       {
         "event": "pageshow",
         "hidden": false,
-        "at": 1793900551249
+        "at": 1793902449061
       }
     ],
     "networkAwaiting": []

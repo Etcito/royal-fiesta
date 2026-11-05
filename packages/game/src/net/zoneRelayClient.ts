@@ -64,11 +64,16 @@ export class ZoneRelayClient {
   /** Why the socket closed: the close code and the last unsolicited relay error ('rate limited', ...), or null while open. */
   closeCause: string | null = null
   private lastError: string | null = null
+  /** Round trip of the last relay ping (ms), for the lobby diagnostics; null before the first pong. */
+  private rttMs: number | null = null
+  private pingAt = 0
+  private pinger: ReturnType<typeof setInterval> | null = null
   foreignMatches = 0
 
   constructor(url: string, ws: WsFactory) { this.url = url; this.factory = ws }
   get matched(): ZoneMatched | null { return this.matchedMsg }
   get seat(): number { return this.matchedMsg?.youAre ?? -1 }
+  get relayRtt(): number | null { return this.rttMs }
 
   connect(timeoutMs = 5000): Promise<void> {
     if (this.ws) refuse('relay', this.url, 'connect() was already called; create one ZoneRelayClient per socket')
@@ -90,6 +95,12 @@ export class ZoneRelayClient {
           settled = true
           clearTimeout(timer)
           this.open = true
+          // The relay answers ping with pong: one in flight at a time, every 2 s, while the socket is open.
+          this.pinger = setInterval(() => {
+            if (!this.open || this.pingAt !== 0) return
+            this.pingAt = performance.now()
+            try { this.send({ t: 'ping' }) } catch { this.pingAt = 0 }
+          }, 2000)
           resolve()
         }
         ws.onerror = () => fail('socket error before open')
@@ -227,6 +238,11 @@ export class ZoneRelayClient {
     }
     const m = parseZoneServerMsg(data)
     if (!m) { this.badFrames++; return }
+    if (m.t === 'pong' && this.pingAt !== 0) {
+      this.rttMs = performance.now() - this.pingAt
+      this.pingAt = 0
+      return
+    }
     const p = this.pending
     if (!p && m.t === 'error') this.lastError = m.reason
     if (p) {
@@ -257,6 +273,8 @@ export class ZoneRelayClient {
     if (this.closedOnce) return
     this.closedOnce = true
     this.open = false
+    if (this.pinger !== null) clearInterval(this.pinger)
+    this.pinger = null
     const p = this.pending
     this.pending = null
     p?.reject(new RefusalError('relay', p.t, `socket to ${this.url} closed before the reply; reconnect and retry`))

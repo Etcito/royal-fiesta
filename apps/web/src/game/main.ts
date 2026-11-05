@@ -42,7 +42,7 @@ import { QueuePad } from '@royal-fiesta/game/hub/queuePad'
 import { DEFAULT_NAME, LOCAL_LOBBY_WAIT_S, LocalCountdown, cleanName, lobbyLines } from '@royal-fiesta/game/hub/lobby'
 import type { LobbyPick } from '@royal-fiesta/game/hub/lobby'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
-import { classicNetSetup, NET_PLAYERS } from '@royal-fiesta/game/net/tuning'
+import { CLASSIC_NET_PLAYERS, classicNetSetup, NET_PLAYERS } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory, type WsFactory } from '@royal-fiesta/game/net/ws'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
@@ -300,7 +300,7 @@ type FrameLoop = (frame: (dtS: number) => void, interval?: () => number) => () =
 // the uiTour op's in-memory store and its own frame steps. beforeLoad runs as each load starts; a throw fails
 // that load as any load failure does (the uiTour op refuses the boot load so it can reach 'loading' with Retry).
 /** Penguins in a show started from Play: you and 59 bots (owner 2026-11-05); ?seats= / ?bots= change it. */
-const DEFAULT_SHOW_SEATS = 60
+const DEFAULT_SHOW_SEATS = CLASSIC_NET_PLAYERS
 
 interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number; starterInventory?: boolean }
 
@@ -1095,7 +1095,7 @@ class OnlineMode implements Mode {
   // The shared hub: every lobby member's name over its bean.
   private readonly tags: NameTags | null
   private readonly localName: string
-  /** Penguins of the online show, bots included: ?bots= or NET_PLAYERS. */
+  /** Penguins of the online show, bots included: ?bots= or CLASSIC_NET_PLAYERS (8). */
   private readonly seats: number
   // Steps the flow while the window draws no frames (hidden or behind the other window), see netPump.ts.
   private readonly pump: NetPump
@@ -1119,7 +1119,7 @@ class OnlineMode implements Mode {
     const { R, content, ports, show } = c.loaded
     const q = c.q
     if (show === null) refuse('game', 'online.show', 'the online show content is not loaded; reload the page')
-    this.seats = q.bots ?? NET_PLAYERS
+    this.seats = q.bots ?? CLASSIC_NET_PLAYERS
     this.localName = onlineName(q.name)
     this.names = playerNames(0, this.localName)
     this.flow = new PlayFlow({
@@ -1145,8 +1145,18 @@ class OnlineMode implements Mode {
     this.presenter = new MatchPresenter(c)
     const canvas = c.loaded.canvases[0]
     this.tags = typeof document === 'undefined' || canvas === undefined ? null : new NameTags(canvas)
+    // Two pages on one machine: the hidden one runs on the NetPump worker clock (bg/s); log each switch with the tick.
+    if (typeof document !== 'undefined') {
+      this.onVisibility = () => console.info(`[online] page ${document.visibilityState} at tick ${this.flow.match?.sim.tick ?? '-'} (${this.flow.state})`)
+      this.onPageHide = () => this.flow.close('its page was closed')
+      document.addEventListener('visibilitychange', this.onVisibility)
+      addEventListener('pagehide', this.onPageHide)
+    }
     void this.flow.start()
   }
+
+  private onVisibility: (() => void) | null = null
+  private onPageHide: (() => void) | null = null
 
   // This client as the lobby shows it ('Bean 2' for a default name), else its own name.
   private shownName(): string {
@@ -1165,13 +1175,16 @@ class OnlineMode implements Mode {
     return this.flow.match?.sim ?? null
   }
 
-  // Lobby id, own presence key, player count and member names for the diagnostics line.
+  // Lobby id, start countdown, relay round trip and every member by presence key (two pages of one account share a
+  // name) for the diagnostics line; the mesh peers follow once the round's channels open.
   private diag(): void {
     const v = this.flow.lobby.view
-    const names = v.members.map(m => m.name).join(',')
-    LobbyDiag.get().setLobby(`lobby ${v.id ?? '-'} you ${v.you ?? '-'} n=${v.members.length || v.names.length} [${names || v.names.join(',')}] ${this.flow.state}`)
+    const names = v.members.map(m => `${m.name}#${m.k}${m.k === v.you ? '(you)' : ''}${m.role === 'spectator' ? '(watching)' : ''}`).join(' ')
+    const starts = v.startsAt === null ? '' : ` starts in ${Math.max(0, Math.ceil((v.startsAt - performance.now()) / 1000))}s`
+    const rtt = this.flow.relayRtt
+    LobbyDiag.get().setLobby(`lobby ${v.id ?? '-'}${starts} relay rtt ${rtt === null ? '-' : `${rtt.toFixed(0)}ms`} | ${v.members.length || v.names.length} players: ${names || v.names.join(' ')} | ${this.flow.state}`)
     LobbyDiag.get().setMesh(Object.entries(this.flow.mesh?.peers ?? {}).map(([peer, link]) =>
-      `p${peer} fast:${link.fast} reliable:${link.reliable} rtt ${link.rtt === null ? 'pending' : `${link.rtt.toFixed(1)}ms`}`).join(' | '))
+      `p${peer} fast:${link.fast} reliable:${link.reliable} rtt ${link.rtt === null ? 'pending' : `${link.rtt.toFixed(1)}ms`}${link.reason ? ` (${link.reason})` : ''}`).join(' | '))
   }
 
   hud(): HudState | null {
@@ -1193,8 +1206,11 @@ class OnlineMode implements Mode {
     this.flow.pick(p === 'default' ? this.flow.lobby.defaultPick() : p)
   }
 
+  // Leave closes the flow: the other pages get 'left the match' and a bot takes the seat. The app then opens a
+  // fresh online hub (Effect.leaveMatch).
   leaveMatch(): void {
-    if (this.flow.match !== null) this.note = 'An online match cannot be left; it returns to the hub when it ends'
+    console.info(`[online] leaving at tick ${this.flow.match?.sim.tick ?? '-'} (${this.flow.state})`)
+    this.flow.close('the player left the match')
   }
 
   // A NetPump step: the flow advances with idle controls (the window has no focus) and nothing is drawn.
@@ -1285,7 +1301,7 @@ class OnlineMode implements Mode {
     if (flow.hubCode !== null) lines.push(`Hub ${flow.hubCode} - ${this.localName}`)
     if (state === 'connecting') lines.push('Connecting...')
     else if (state === 'hub') lines.push('Joining a lobby...')
-    else if (state === 'queued' || state === 'choosing' || state === 'watching') lines.push(...lobbyLines(flow.lobby, performance.now()))
+    else if (state === 'queued' || state === 'choosing' || state === 'watching') lines.push(...lobbyLines(flow.lobby, performance.now(), this.seats))
     else if (state === 'returning') lines.push('Back to the hub...')
     else if (flow.match !== null) lines.push(`Round ${this.presenter.view.roundIndex + 1}: ${this.presenter.view.qualifiedCount} qualified`)
     if (this.note.length > 0) lines.push(this.note)
@@ -1298,6 +1314,8 @@ class OnlineMode implements Mode {
     this.showMode?.dispose()
     this.showMode = null
     this.flow.close()
+    if (this.onVisibility !== null) document.removeEventListener('visibilitychange', this.onVisibility)
+    if (this.onPageHide !== null) removeEventListener('pagehide', this.onPageHide)
     this.presenter.dispose()
     this.hubView.dispose()
     this.tags?.dispose()
@@ -1874,6 +1892,7 @@ class App {
       else if (fx === Effect.pickDefault) this.mode?.pick?.('default')
       else if (fx === Effect.leaveMatch) {
         if (this.mode instanceof ShowAdapter || this.mode === null) this.startMode()
+        else if (this.mode instanceof OnlineMode) { this.mode.leaveMatch(); this.startOnline() }
         else this.mode?.leaveMatch()
       }
       else if (fx === Effect.leaveGame) this.stopMode()

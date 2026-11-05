@@ -32,14 +32,20 @@ class BrowserChannel implements RtcChannel {
       if (this.pending) this.pending.push(bytes)
       else for (const fn of this.msgFns) fn(bytes)
     }
-    dc.onclose = () => { for (const fn of this.closeFns) fn() }
+    dc.onerror = (e) => console.error(`[rtc] channel ${label} error: ${(e as RTCErrorEvent).error?.message ?? 'unknown'} (buffered ${dc.bufferedAmount} B)`)
+    dc.onclose = () => {
+      console.warn(`[rtc] channel ${label} closed (buffered ${dc.bufferedAmount} B)`)
+      for (const fn of this.closeFns) fn()
+    }
   }
 
   get open(): boolean { return this.dc.readyState === 'open' }
 
   send(data: Uint8Array): void {
     if (!this.open) throw new RefusalError('webrtc', `channel.${this.label}`, `send while ${this.dc.readyState}; wait for channels() and stop sending after close`)
-    this.dc.send(data as Uint8Array<ArrayBuffer>)
+    try { this.dc.send(data as Uint8Array<ArrayBuffer>) } catch (e) {
+      throw new RefusalError('webrtc', `channel.${this.label}`, `send of ${data.length} B refused with ${this.dc.bufferedAmount} B buffered: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
 
   onMessage(fn: (data: Uint8Array) => void): void {
@@ -71,7 +77,11 @@ class BrowserPeer implements RtcPeer {
       const out = c ? { candidate: c.candidate, sdpMid: c.sdpMid, sdpMLineIndex: c.sdpMLineIndex } : null
       for (const fn of this.iceFns) fn(out)
     }
-    this.pc.onconnectionstatechange = () => { if (this.pc.connectionState === 'failed') this.fail('connection failed; check the ICE servers and the network') }
+    this.pc.onconnectionstatechange = () => {
+      console.info(`[rtc] connection ${this.pc.connectionState} (ice ${this.pc.iceConnectionState})`)
+      if (this.pc.connectionState === 'failed') this.fail('connection failed; check the ICE servers and the network')
+    }
+    this.pc.oniceconnectionstatechange = () => console.info(`[rtc] ice ${this.pc.iceConnectionState}`)
     if (!initiator) this.pc.ondatachannel = (e) => this.track(e.channel)
     else {
       this.track(this.pc.createDataChannel('fast', { ordered: false, maxRetransmits: 0 }))

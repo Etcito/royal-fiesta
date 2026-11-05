@@ -120,6 +120,8 @@ export class PlayFlow {
   }
   get match(): OnlineMatch | null { return this.netMatch }
   get mesh(): ZoneMeshTransport | null { return this.transport }
+  /** Round trip to the GameSaloon relay (lobby, signaling), null before it is measured. */
+  get relayRtt(): number | null { return this.matchClient?.relayRtt ?? null }
   get lastLog(): MatchLog | null { return this.savedLog }
   /** The lobby being waited in, watched or offered (matchmaking 'lobby'). */
   get lobby(): LobbyTracker { return this.lobbyTracker }
@@ -253,7 +255,7 @@ export class PlayFlow {
           this.matchRoom = null
           match.dispose()
           this.netMatch = null
-          this.transport?.close()
+          this.transport?.close('the show ended')
           this.transport = null
           this.matchPilot = null
           this.transition('returning')
@@ -265,7 +267,8 @@ export class PlayFlow {
 
   remotes(nowMs: number): RemoteView[] { return this.buffer.sample(nowMs) }
 
-  close(): void {
+  /** Ends everything; `reason` reaches the mesh peers (the failure message when the flow failed). */
+  close(reason = 'left the game'): void {
     if (this.closed) return
     this.closed = true
     const clients = [this.hubClient, this.matchClient]
@@ -276,7 +279,7 @@ export class PlayFlow {
     this.matchRoom = null
     this.netMatch = null
     this.hubWorld = null
-    this.transport?.close()
+    this.transport?.close(reason)
     this.transport = null
     for (const release of [...clients.map(client => () => { if (client) this.disconnect(client) }), () => match?.dispose(), () => hub?.free()]) {
       try { release() } catch (e) { this.fail(e) }
@@ -523,7 +526,8 @@ export class PlayFlow {
 
   private fail(e: unknown): void {
     if (this.closed || this.current === 'failed') return
-    this.transition('failed', { message: e instanceof Error ? e.message : String(e) })
-    this.close()
+    const message = e instanceof Error ? e.message : String(e)
+    this.transition('failed', { message })
+    this.close(`its game failed: ${message}`)
   }
 }

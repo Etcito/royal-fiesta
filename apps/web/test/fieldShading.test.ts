@@ -269,3 +269,21 @@ test('capture bounds guard rejects clipped, empty and distant poses and fits bot
     assert.ok(exports.guardFraming('posed', fitted, pose) >= 0.15)
   }
 })
+
+
+test('world capture guard refuses missing repeated draws, unnamed fallbacks and unfinished swaps', async () => {
+  const { assertCompleteFieldCapture: guard } = await import('../src/content/shadingStatus.ts')
+  const expected = ['candy.tower#g/body', 'candy.tower#g/body', 'candy.floor#g/base']
+  const draws = expected.map(key => ({ key, mode: 'field', reason: undefined as string | undefined }))
+  assert.doesNotThrow(() => guard(expected, draws))
+  assert.throws(() => guard(expected, draws.slice(1)), /missing candy.tower/)
+  assert.throws(() => guard(expected, [...draws, draws[0]]), /unexpected candy.tower/)
+  draws[0].mode = 'vertex'
+  assert.throws(() => guard(expected, draws), /unnamed vertex fallback/)
+  draws[0].reason = 'field pipeline pending'
+  assert.throws(() => guard(expected, draws), /field pipeline pending/)
+  draws[0].reason = 'atlas budget: smaller parts first'
+  assert.doesNotThrow(() => guard(expected, draws), 'runtime fallback must retain and name the geometry')
+  draws[0].reason = 'operand with a lattice, deformer or non-uniform scale'
+  assert.doesNotThrow(() => guard(expected, draws))
+})

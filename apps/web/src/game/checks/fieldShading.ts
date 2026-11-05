@@ -15,7 +15,7 @@ import { WornMounts } from '@royal-fiesta/game/render/wornLook'
 import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import { pendingPipelines } from '../../render/asyncPipelines.ts'
 import { pickContent } from '../../content/source.ts'
-import { hardShadingFailures } from '../../content/shadingStatus.ts'
+import { assertCompleteFieldCapture, hardShadingFailures } from '../../content/shadingStatus.ts'
 import { SdfContent, skinnedCharacterOf } from '../../content/providers/sdf.ts'
 import { gameRenderOptions, type PartWorldBounds, type ResizablePort, type ShadingReport } from '../../sdf/sdfPort.ts'
 import { nextTask } from './boot.ts'
@@ -123,6 +123,7 @@ interface Subject {
   radius: number
   // Hides the subject from the next drawn frame and returns the restore for the next capture.
   hide(): () => void
+  expectedParts?: readonly string[]
 }
 
 interface ProjectedBox { x0: number; y0: number; x1: number; y1: number; area: number; centerDepth: number }
@@ -216,7 +217,15 @@ async function capture(port: ResizablePort, what: string, captures: Captures, su
   const bounds = port.worldBounds()
   const area = guardFraming(what, subject.camera, bounds)
   const report = port.shadingReport()
-  captures.observations.push({ name: what, camera: subject.camera, bounds, area, normals: report })
+  const drawn = port.drawnParts()
+  if (subject.expectedParts !== undefined) {
+    console.info(`[fieldShading] ${what}: expected ${subject.expectedParts.length}, drawn ${drawn.length}, ` +
+      `field ${drawn.filter(p => p.mode === 'field').length}, fallback ${drawn.filter(p => p.mode !== 'field').length}; ` +
+      `atlas demoted ${report.demoted}, saved refusals ${report.refused.length}; ` +
+      drawn.filter(p => p.mode !== 'field').map(p => `${p.key}: ${p.reason ?? 'UNNAMED'}`).join('; '))
+    assertCompleteFieldCapture(subject.expectedParts, drawn)
+  }
+  captures.observations.push({ name: what, camera: subject.camera, bounds, area, drawn, normals: report })
   if (report.pending > 0) throw new Error(`${what}: ${report.pending} parts still pending at capture time`)
   if (report.atlasFull > 0) throw new Error(`${what}: ${report.atlasFull} texture.atlas_full errors`)
   const failures = hardFailures(report)
@@ -434,14 +443,16 @@ async function shootPenguin(port: ResizablePort, content: GameContent, captures:
   }
 }
 
-async function shootWorld(port: ResizablePort, content: GameContent, captures: Captures): Promise<void> {
-  const stage = new Stage(port, content, content.hub(), { decor: true })
+async function shootWorld(port: ResizablePort, content: SdfContent, captures: Captures): Promise<void> {
+  const level = content.captureLevel(MECH_COURSE)
+  const stage = new Stage(port, content, content.course(MECH_COURSE), { decor: true })
   try {
     const initial: CameraPose = { eye: [38, 26, 42], target: [0, 1.5, 0], fovYDeg: 60, near: 0.1, far: 500 }
     const cam = fitBounds(initial, port.worldBounds())
     port.setCamera(0, cam)
     await waitShading(port, 'candy-world')
-    await capture(port, 'candy-world', captures, { camera: cam, center: [0, 1.5, 0], radius: 40, hide: () => stage.hide() })
+    await capture(port, 'candy-world', captures, { camera: cam, center: cam.target, radius: 100,
+      expectedParts: level.parts, hide: () => stage.hide() })
   } finally { stage.dispose() }
 }
 
@@ -493,14 +504,22 @@ export async function run(input: unknown, deps: TourDeps): Promise<{ json: Recor
   try {
     await content.load('sprint', () => {})
     assertNoPageErrors('content load')
+    if (!(content instanceof SdfContent)) throw new Error('fieldShading: SDF content required')
     let worldNormals: ShadingReport | null = null
     if (!search) {
-      port = await content.createPort({ canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }) as ResizablePort
-      port.setShading('field')
+      const target = { canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }
+      const level = content.captureLevel(MECH_COURSE)
+      port = await content.createPort(target, { shading: 'field' }, level.assets) as ResizablePort
       await shootWorld(port, content, captures)
+      worldNormals = port.shadingReport()
+      port.dispose()
+      port = null
+      // Close views retain their own subjects and do not consume the race level's atlas.
+      const portraitAssets = [...content.captureLevel(content.hub().id).assets,
+        'penguin.body', 'costume.propeller-hat', 'costume.fish-scarf']
+      port = await content.createPort(target, { shading: 'field' }, portraitAssets) as ResizablePort
       await shootScenery(port, content, captures)
       await shootPenguin(port, content, captures)
-      worldNormals = port.shadingReport()
       port.dispose()
       port = null
     }

@@ -80,3 +80,20 @@ export function mountShadingStatus(source: ShadingStatusSource): () => void {
     element.remove()
   }
 }
+
+/** Compare multisets: repeated placements must each have a draw, not just one upload. */
+export function assertCompleteFieldCapture(expected: readonly string[], drawn: readonly {
+  key: string; mode: string; reason?: string
+}[]): void {
+  const left = [...expected]
+  const errors: string[] = []
+  for (const part of drawn) {
+    const at = left.indexOf(part.key)
+    if (at < 0) errors.push(`unexpected ${part.key}`)
+    else left.splice(at, 1)
+    if (part.mode !== 'field' && !part.reason?.trim()) errors.push(`${part.key}: unnamed ${part.mode} fallback`)
+    if (part.reason === 'field pipeline pending') errors.push(`${part.key}: field pipeline pending`)
+  }
+  errors.push(...left.map(key => `missing ${key}`))
+  if (errors.length) throw new Error(`fieldShading incomplete (${drawn.length}/${expected.length} parts): ${errors.join('; ')}`)
+}

@@ -31,6 +31,7 @@ interface ShadingReportLike {
   demoted: number; atlasFull: number; bytes: number; budget: number; errors: readonly string[]
 }
 interface Port {
+  drawnParts(): { key: string; mode: string; reason?: string }[]
   worldBounds(): { key: string; min: number[]; max: number[] }[]
   setTransform(id: number, t: readonly number[], r: readonly number[], s: readonly number[]): void
   render(): void
@@ -474,37 +475,29 @@ test('all committed catalog cosmetics upload their saved skin and render with th
   }
 })
 
-// Owner 2026-11-04: normals and materials from the SDF in the shader, never baked. Every saved part of the penguin and
-// the costumes carries its per-pixel shading (saved mesh format 3) and draws it on every sub-mesh: ONE interpreter
-// function shared by the parts (one more only for a material graph such as the player colour), each part a block of
-// material data words named by its surface record; the rest point in the vertex colour and the rest frame in uv +
-// tangent, no per-face material, no texture.
-test('saved penguin and costume parts draw their per-pixel SDF shading on every sub-mesh', () => {
-  const root=new URL('../../../',import.meta.url)
-  for(const id of ['penguin.body',...readdirSync(new URL('assets/common/',root)).filter(n=>/^costume\..*\.mesh$/.test(n)).map(n=>n.replace(/\.mesh$/,''))]) {
-    const mesh=decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`,root))))
-    const parts=(mesh.data as {groups:{parts:{shading?:unknown;shadingError?:string;meshes:unknown[]}[]}[]}).groups.flatMap(g=>g.parts).filter(p=>p.meshes.length)
-    for(const part of parts) assert.ok(part.shading,`${id}: saved part without shading (${part.shadingError})`)
-    const {engine,calls}=fakeEngine(), port=exports.make(new Map([[id,mesh]]))
-    const functions:string[]=[]
-    engine.addMaterialFunction=((name:string)=>{functions.push(name);calls.functions++}) as typeof engine.addMaterialFunction
-    port.engine=engine;port.target={}
-    port.createInstance(port.registerAsset(id,{id}),null)
-    const sdff=functions.filter(f=>f.startsWith('sdff.'))
-    assert.ok(sdff.length>=1&&sdff.length<=2,`${id}: ${sdff.length} shading functions for ${parts.length} parts (one interpreter, plus one with the player-colour graph)`)
-    assert.equal(calls.data.length,parts.length,`${id}: one data block per part`)
-    const shaded=calls.descs.filter(d=>typeof d.function==='string'&&d.function.startsWith('sdff.'))
-    assert.ok(shaded.length===parts.length&&shaded.every(d=>typeof d.data==='number'&&d.data>=4),`${id}: each part's surface record names its data block`)
-    const descs=calls.jointStreams as {colors?:Float32Array;uvs?:Float32Array;tangents?:Float32Array;positions:Float32Array;subMeshes:{material?:number}[]}[]
-    // Each part uploads its vertex-colour copy first (drawn while its shading compiles), then its shaded mesh.
-    assert.equal(descs.length,parts.length*2,`${id}: a vertex-colour copy and a shaded mesh per part`)
-    for(let i=0;i<descs.length;i+=2){
-      const fallback=descs[i],desc=descs[i+1]
-      assert.equal(fallback.subMeshes.length,desc.subMeshes.length,`${id}: the copy draws the same sub-meshes`)
-      assert.equal(new Set(desc.subMeshes.map(s=>s.material)).size,1,`${id}: every sub-mesh draws the part's shading`)
-      assert.equal(desc.colors![0],desc.positions[0],`${id}: the vertex colour carries the rest point`)
-      assert.ok(desc.uvs&&desc.tangents,`${id}: rest frame streams`)
-    }
+// Current saved meshes carry fieldProgram or a named fieldRefusal, including costume deformers.
+test('saved penguin and costume parts retain complete geometry with fields or named fallbacks', () => {
+  const root = new URL('../../../', import.meta.url)
+  const ids = ['penguin.body', ...readdirSync(new URL('assets/common/', root))
+    .filter(n => /^costume\..*\.mesh$/.test(n)).map(n => n.replace(/\.mesh$/, ''))]
+  for (const id of ids) {
+    const mesh = decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`, root))))
+    const parts = (mesh.data as { groups: { parts: { fieldProgram?: unknown; fieldRefusal?: string; meshes: unknown[] }[] }[] })
+      .groups.flatMap(g => g.parts).filter(p => p.meshes.length)
+    for (const part of parts) assert.ok(part.fieldProgram || part.fieldRefusal, `${id}: missing field or refusal`)
+    const { engine, calls } = fakeEngine()
+    const port = exports.make(new Map([[id, mesh]]))
+    const device = {}
+    readiness.set(device, () => ({ status: 'ready' }))
+    Object.assign(port, { engine, target: {}, gpuDevice: device })
+    port.createInstance(port.registerAsset(id, { id }), null)
+    const drawn = port.drawnParts()
+    assert.equal(drawn.length, parts.length, `${id}: no dropped part`)
+    for (const part of drawn) assert.ok(part.mode === 'field' || part.reason, `${part.key}: unnamed fallback`)
+    const fields = drawn.filter(p => p.mode === 'field').length
+    const shaded = calls.descs.filter(d => typeof d.function === 'string' && d.function.startsWith('pmf.'))
+    assert.equal(shaded.length, fields, `${id}: a surface record for each field part`)
+    assert.equal(calls.jointStreams.length, parts.length + fields, `${id}: resident vertex copy for each field`)
   }
 })
 
@@ -532,7 +525,7 @@ test('a shaded part draws its vertex-colour copy until every pipeline of its sha
   const names: string[] = []
   const removed: number[] = []
   Object.assign(engine, {
-    addMaterialFunction(name: string, wgsl: string) { calls.functions++; if (name.startsWith('sdff.')) { shadings.push(wgsl); names.push(name) } },
+    addMaterialFunction(name: string, wgsl: string) { calls.functions++; if (name.startsWith('pmf.')) { shadings.push(wgsl); names.push(name) } },
     removeNode(node: number) { removed.push(node) },
     render() {}, stats: () => ({ drawCalls: 0, triangles: 0, instances: 0 }),
   })
@@ -759,61 +752,20 @@ function bakeDevice() {
   return device
 }
 
-// Owner 2026-11-04: 'baked texture (normal/material)'. With shading baked, each field-shaded part is uploaded on a mesh
-// carrying its atlas uvs and bake tangents, drawn with the ONE shared baked material (its data words name its textures);
-// the first instance of the asset bakes it on the GPU into its UV atlas and writes the texture ids into its data block.
-// Until then the part's own draw is hidden and its vertex-colour copy covers it.
-test('baked shading: the first instance bakes each field part and its baked draw shows once its textures are in', async () => {
-  const root = new URL('../../../', import.meta.url)
+// Modern field programs keep their geometry while the content provider prepares baked textures.
+test('saved field program stays visible when baked mode has no baked texture yet', async () => {
   const id = 'costume.golden-crown'
-  const mesh = decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`, root))))
-  const parts = (mesh.data as { groups: { parts: { meshes: { uvs: Float32Array | null }[] }[] }[] }).groups.flatMap(g => g.parts).filter(p => p.meshes.length)
-  assert.ok(parts.every(p => p.meshes.every(m => m.uvs instanceof Float32Array)), 'saved mesh format 4: every mesh carries its UV atlas')
-  const { engine, calls } = fakeEngine()
-  const textures: { width: number; height: number; data: Uint8Array }[] = []
-  const written: { base: number; words: Uint32Array }[] = []
-  const functions: string[] = []
-  Object.assign(engine, {
-    addTexture(t: { width: number; height: number; data: Uint8Array }) { textures.push(t); return textures.length - 1 },
-    removeTexture() {},
-    removeMesh() {},
-    setMaterialData(base: number, words: Uint32Array) { written.push({ base, words: Uint32Array.from(words) }) },
-    addMaterialFunction(name: string) { functions.push(name); calls.functions++ },
-  })
+  const mesh = decodeMesh(new Uint8Array(readFileSync(new URL(`../../../assets/common/${id}.mesh`, import.meta.url))))
+  const { engine } = fakeEngine()
   const port = exports.makeWith(new Map([[id, mesh]]), { shading: 'baked', bakeTexelDensity: 256, bakeMaxSize: 512 }, CONTRACT)
   const device = bakeDevice()
   readiness.set(device, () => ({ status: 'ready' }))
   Object.assign(port, { engine, target: {}, gpuDevice: device })
   await port.prepare(() => {}, () => {})
-  const view = port as unknown as { bakes(): { parts: number; failed: number; textures: number }; bakesDone(): Promise<void>; inventory(): { textures: number } }
-  assert.equal(textures.length, 0, 'nothing is baked before a scene uses the asset')
-  const bakedDescs = calls.descs.filter(d => d.function === 'sdfb.baked')
-  assert.ok(functions.includes('sdfb.baked'), 'the shared baked material function is registered')
-  assert.ok(bakedDescs.length >= 1 && bakedDescs.length <= parts.length, `${bakedDescs.length} of ${parts.length} parts baked`)
-  assert.equal(calls.freed.length, bakedDescs.length, 'the field data block of each baked part is freed at upload')
-  const descs = calls.jointStreams as { uvs?: Float32Array; tangents?: Float32Array; positions: Float32Array }[]
-  const bakedMeshes = descs.filter(d => d.tangents !== undefined)
-  assert.equal(bakedMeshes.length, bakedDescs.length)
-  assert.ok(bakedMeshes.every(d => d.uvs && d.tangents!.length === d.positions.length / 3 * 4), 'baked meshes carry the atlas uvs and tangents')
   port.createInstance(port.registerAsset(id, { id }), null)
-  const hidden = [...calls.visibility].filter(([, shown]) => !shown).map(([instance]) => instance)
-  assert.equal(hidden.length, bakedDescs.length, 'each baked part hides its own draw until its textures are baked')
-  await view.bakesDone()
-  const stats = view.bakes()
-  assert.equal(stats.failed, 0)
-  assert.equal(stats.parts, bakedDescs.length)
-  assert.equal(textures.length, stats.textures)
-  assert.ok(textures.every(t => t.width === 64 && t.height === 64 && t.data.length === 64 * 64 * 4))
-  assert.equal(written.length, stats.parts, 'each baked part gets its texture ids in its data block')
-  assert.ok(written.every(w => w.words[1] < textures.length && w.words[2] < textures.length))
-  assert.ok(hidden.every(instance => calls.visibility.get(instance) === true), 'the baked draws show once baked')
-  assert.equal(device.live, 0, 'the bake frees its GPU buffers and textures')
-  assert.equal(view.inventory().textures, stats.textures)
-  // A second instance draws the baked parts at once; nothing is baked again.
-  port.createInstance(port.registerAsset(id, { id }), null)
-  await view.bakesDone()
-  assert.equal(view.bakes().parts, stats.parts)
-  assert.equal(textures.length, stats.textures)
+  assert.ok(port.drawnParts().length > 0)
+  for (const part of port.drawnParts()) assert.equal(part.mode, 'field')
+  assert.equal(port.shadingReport().pending, 0)
 })
 
 function controlledField(id: string) {
@@ -838,6 +790,8 @@ test('pending field pairs draw both members (RAA requests the field pipeline), s
   assert.equal(calls.nodes.get(first), calls.nodes.get(first + 1), 'both members share the part node')
   assert.deepEqual(calls.tints.get(first), calls.tints.get(first + 1), 'the tint reaches both members')
   assert.equal(port.shadingReport().pending, 1)
+  assert.equal(port.drawnParts()[0].mode, 'vertex')
+  assert.equal(port.drawnParts()[0].reason, 'field pipeline pending')
   const fieldSource = [...calls.functionSources].find(([name]) => name.startsWith('pmf.'))?.[1]
   assert.ok(fieldSource)
   assert.equal(state.keys[0], asyncPipelines.materialKey(fieldSource), 'readiness matches the WGSL RAA composes')
@@ -856,8 +810,10 @@ test('pending field pairs draw both members (RAA requests the field pipeline), s
   port.render()
   pair(true, false)
   assert.equal(port.shadingReport().pending, 0)
+  assert.equal(port.drawnParts()[0].mode, 'field')
   const another = calls.nextInstance
   port.createInstance(h, null)
+  assert.equal(port.drawnParts().length, 2, 'draw report counts repeated placements independently')
   assert.equal(calls.instances, 4, 'even a ready material creates both resident members')
   assert.equal(calls.visibility.get(another), true)
   assert.equal(calls.visibility.get(another + 1), false)

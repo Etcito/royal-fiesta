@@ -143,6 +143,29 @@ export class SdfContent implements GameContent {
 
   meshData(): Pick<Loaded, 'meshed' | 'failed'> { return this.need('meshes') }
 
+  /** Expected instance parts come from the level, independently of the renderer's uploads. */
+  captureLevel(id: string): { parts: string[]; assets: string[]; instances: number } {
+    const loaded = this.need('capture level')
+    const course = loaded.byId.get(id)
+    if (!course?.sim) throw new Error(`fieldShading: missing level ${id}`)
+    const sim = course.sim
+    const placements = [...course.decor, ...sim.obstacles, ...(sim.mechanisms?.items ?? [])]
+    const parts: string[] = []
+    for (const place of placements) {
+      const mesh = loaded.meshed.get(place.asset)
+      if (!mesh) throw new Error(`fieldShading: missing ${place.asset}: ${loaded.failed.get(place.asset) ?? 'not loaded'}`)
+      const payload = mesh.data as { groups: { group: string; parts: {
+        partId: string; meshes: { positions: Float32Array }[]
+      }[] }[] }
+      for (const group of payload.groups) for (const part of group.parts) {
+        if (part.meshes.some(m => m.positions.length > 0)) parts.push(`${place.asset}#${group.group}/${part.partId}`)
+      }
+    }
+    console.info(`[fieldShading] ${id}: ${placements.length} authored instances, ${parts.length} authored parts; ` +
+      `${sim.obstacles.length} obstacles, ${course.decor.length} decorations, ${sim.mechanisms?.items.length ?? 0} mechanisms`)
+    return { parts, assets: [...new Set(placements.map(p => p.asset))], instances: placements.length }
+  }
+
   // The skinned character for SceneView (S18 skin and the S19 penguin graph); undefined keeps the rigid one.
   skinned(): SkinnedCharacter | undefined {
     return this.need('skinned').skinned ?? undefined

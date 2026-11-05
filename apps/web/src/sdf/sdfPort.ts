@@ -29,6 +29,7 @@ import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgs
 export interface PartWorldBounds { key: string; min: number[]; max: number[] }
 
 export interface ResizablePort extends SkinnedRenderPort {
+  drawnParts(): { key: string; mode: ShadingMode; reason?: string }[]
   worldBounds(): PartWorldBounds[]
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
   setPartFilter(instance: number, parts: readonly string[] | null): void
@@ -1139,6 +1140,29 @@ class SdfRenderPort implements ResizablePort {
     this.need().setTransform(live.root, [t[0], t[1], t[2]], [r[0], r[1], r[2], r[3]], [s[0], s[1], s[2]])
   }
 
+  /** Actual visible instance members, including the resident copy while its pipeline compiles. */
+  drawnParts(): { key: string; mode: ShadingMode; reason?: string }[] {
+    const drawn: { key: string; mode: ShadingMode; reason?: string }[] = []
+    for (const live of this.live) {
+      if (live === null || !live.visible) continue
+      this.uploaded[live.asset]!.parts.forEach((part, index) => {
+        if (live.filter !== null && !live.filter.has(part.name)) return
+        const key = part.reportKey ?? part.key
+        const copy = live.fallbacks.find(c => c.index === index)
+        let mode: ShadingMode = this.shadingOfPart.get(key) ?? 'vertex'
+        let reason = this.shadingErrors.get(key)
+        if (this.shading === 'vertex') { mode = 'vertex'; reason = 'vertex mode' }
+        else if (this.shading === 'baked' && live.textured.some(t => t.index === index)) mode = 'baked'
+        else if (copy !== undefined && !copy.ready) {
+          mode = 'vertex'
+          reason = copy.failed ? reason : 'field pipeline pending'
+        }
+        drawn.push({ key, mode, ...(reason === undefined ? {} : { reason }) })
+      })
+    }
+    return drawn
+  }
+
   // Capture-time only: use the same part frames and skin matrices as the draw.
   worldBounds(): PartWorldBounds[] {
     const bounds: PartWorldBounds[] = []
@@ -1304,6 +1328,8 @@ class SdfRenderPort implements ResizablePort {
   // Everything is checked before the engine is touched, so a refusal never applies half an environment.
   setEnvironment(env: Readonly<Record<string, unknown>> | null): void {
     applyCourseEnvironment(this.need(), env, AREA, 'SdfRenderPort.setEnvironment')
+    if (env?.post === 'candy') this.need().setSky({ preset: 'day', zenith: [0.12, 0.42, 0.95],
+      horizon: [0.62, 0.82, 1], ground: [0.55, 0.22, 0.48], horizonSoftness: 0.8 })
     this.post = env !== null && env.post !== undefined && env.post !== null
     this.applyOptions()
   }

@@ -93,6 +93,33 @@ export function fitBounds(camera: CameraPose, bounds: readonly PartWorldBounds[]
   return at(high)
 }
 
+// Summed projected screen area of every part's box: how large the parts are drawn, not only their union.
+function partsArea(camera: CameraPose, bounds: readonly PartWorldBounds[]): number {
+  let sum = 0
+  for (const b of bounds) {
+    const p = projectBounds(camera, [b])
+    sum += (Math.max(...p.map(q => q[0])) - Math.min(...p.map(q => q[0]))) * (Math.max(...p.map(q => q[1])) - Math.min(...p.map(q => q[1]))) / 4
+  }
+  return sum
+}
+
+// A whole level is a long thin strip: from one fixed diagonal it fills the frame as a thin line and every part is a
+// few pixels (judge: 'so distant ... cannot be confirmed at this scale'). Every candidate direction still fits the
+// whole level (fitBounds); the one that draws the parts largest wins.
+export function fitWorld(camera: CameraPose, bounds: readonly PartWorldBounds[]): CameraPose {
+  let best: CameraPose | null = null, bestArea = -1
+  for (let azimuth = 0; azimuth < 360; azimuth += 15) {
+    for (const elevation of [35, 45, 55]) {
+      const a = azimuth * Math.PI / 180, e = elevation * Math.PI / 180
+      const eye = [Math.cos(e) * Math.sin(a), Math.sin(e), Math.cos(e) * Math.cos(a)].map((v, i) => camera.target[i] + v * 50) as [number, number, number]
+      const fitted = fitBounds({ ...camera, eye }, bounds)
+      const area = partsArea(fitted, bounds)
+      if (area > bestArea) { best = fitted; bestArea = area }
+    }
+  }
+  return best!
+}
+
 function pageErrors(): string[] {
   const check = (window as { __nmcCheck?: { pageErrors?: unknown } }).__nmcCheck
   return Array.isArray(check?.pageErrors) ? check.pageErrors.filter((e): e is string => typeof e === 'string') : []
@@ -509,8 +536,8 @@ async function shootWorld(port: ResizablePort, content: SdfContent, captures: Ca
   const level = content.captureLevel(MECH_COURSE)
   const stage = new Stage(port, content, content.course(MECH_COURSE), { decor: true })
   try {
-    const initial: CameraPose = { eye: [38, 26, 42], target: [0, 1.5, 0], fovYDeg: 60, near: 0.1, far: 500 }
-    const cam = fitBounds(initial, port.worldBounds())
+    const initial: CameraPose = { eye: [38, 26, 42], target: [0, 1.5, 0], fovYDeg: 45, near: 0.1, far: 500 }
+    const cam = fitWorld(initial, port.worldBounds())
     port.setCamera(0, cam)
     await waitShading(port, 'candy-world')
     await capture(port, 'candy-world', captures, { camera: cam, center: cam.target, radius: 100,

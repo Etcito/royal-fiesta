@@ -309,6 +309,29 @@ test('mechanisms camera: one camera fitted to the two captured hammer poses clea
   assert.doesNotMatch(source, /mechanismArcBounds/)
 })
 
+test('candy-world camera: the whole level stays in frame and its parts are drawn larger than from the fixed diagonal', () => {
+  const source = readFileSync(new URL('../src/game/checks/fieldShading.ts', import.meta.url), 'utf8')
+  const functions = source.slice(source.indexOf('function boundCorners('), source.indexOf('function pageErrors()'))
+  const exports: any = {}
+  runInNewContext(transpileModule('const WIDTH = 1920, HEIGHT = 1080\n' + functions + '\nexports.partsArea = partsArea', {
+    compilerOptions: { module: ModuleKind.CommonJS },
+  }).outputText, { exports })
+  // race-hammer-hill as run 12111 drew it: floor tiles and walls along z 0..136, towers and balloons out to x +-30.
+  const level: any[] = []
+  for (let z = 0; z < 136; z += 20) {
+    level.push({ key: 'floor', min: [-5.2, 0, z], max: [5.2, 1.9, z + 18] })
+    for (const x of [-6.1, 4.9]) level.push({ key: 'wall', min: [x, 0, z], max: [x + 1.2, 2, z + 18] })
+  }
+  for (const [x, z] of [[24, 26], [-25, 70], [27, 104]]) level.push({ key: 'tower', min: [x - 2.3, 0, z - 2.3], max: [x + 2.3, 14, z + 2.3] })
+  level.push({ key: 'balloon', min: [-32, 10, 40], max: [-26, 18, 46] }, { key: 'cloud', min: [10, 24, 90], max: [18, 29, 96] })
+  const initial = { eye: [38, 26, 42], target: [0, 1.5, 0], fovYDeg: 45, near: 0.1, far: 500 }
+  const world = exports.fitWorld(initial, level)
+  assert.ok(exports.guardFraming('candy-world', world, level) >= 0.15)
+  const diagonal = exports.fitBounds({ ...initial, fovYDeg: 60 }, level)
+  assert.ok(exports.partsArea(world, level) > 1.3 * exports.partsArea(diagonal, level))
+  assert.match(source, /const cam = fitWorld\(initial, port\.worldBounds\(\)\)/)
+})
+
 test('fieldShading collects every capture failure in one run and still fails', () => {
   const source = readFileSync(new URL('../src/game/checks/fieldShading.ts', import.meta.url), 'utf8')
   assert.match(source, /ok: captures\.failures\.length === 0/)

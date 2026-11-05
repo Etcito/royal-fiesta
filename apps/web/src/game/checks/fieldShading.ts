@@ -86,6 +86,7 @@ async function waitShading(port: ResizablePort, what: string): Promise<ShadingRe
 async function capture(port: ResizablePort, what: string, captures: Captures): Promise<void> {
   const report = port.shadingReport()
   if (report.pending > 0) throw new Error(`${what}: ${report.pending} parts still pending at capture time`)
+  if (report.atlasFull > 0) throw new Error(`${what}: ${report.atlasFull} texture.atlas_full errors`)
   const failures = hardFailures(report)
   if (failures.length > 0) throw new Error(`${what}: ${failures.join('; ')}`)
   assertNoPageErrors(what)

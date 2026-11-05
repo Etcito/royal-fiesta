@@ -1093,6 +1093,8 @@ class OnlineMode implements Mode {
   // The shared hub: every lobby member's name over its bean.
   private readonly tags: NameTags | null
   private readonly localName: string
+  /** Penguins of the online show, bots included: ?bots= or NET_PLAYERS. */
+  private readonly seats: number
   // Steps the flow while the window draws no frames (hidden or behind the other window), see netPump.ts.
   private readonly pump: NetPump
   private readonly netDiag = new NetDiag()
@@ -1115,6 +1117,7 @@ class OnlineMode implements Mode {
     const { R, content, ports, show } = c.loaded
     const q = c.q
     if (show === null) refuse('game', 'online.show', 'the online show content is not loaded; reload the page')
+    this.seats = q.bots ?? NET_PLAYERS
     this.localName = onlineName(q.name)
     this.names = playerNames(0, this.localName)
     this.flow = new PlayFlow({
@@ -1122,6 +1125,8 @@ class OnlineMode implements Mode {
       courses: show.courses, zones: show.zones, season: show.season, plaza: content.hub(), partySize: q.party, now: () => performance.now(), pilot: false,
       // GameSaloon timed lobbies: the hub enters one by itself; no pad, no key.
       matchmaking: 'lobby', voteMs: 5000, intermissionMs: 12000,
+      // ?bots= (total penguins) shrinks the online show too; both pages of a lobby pass the same value.
+      seats: this.seats,
       presentationDone: () => this.show.models?.finished === true,
       log: ev => {
         if (ev.state === 'match' && typeof ev.detail.seat === 'number') this.seat = ev.detail.seat
@@ -1150,8 +1155,8 @@ class OnlineMode implements Mode {
   // The round's names: the lobby's players in seat order (the server seats them in lobby order), bots after them.
   private roundNames(): string[] {
     const players = this.flow.lobby.view.members.filter(m => m.role === 'player')
-    if (players.length === 0) return Array.from({ length: NET_PLAYERS }, (_, seat) => seat === this.seat ? this.localName : `Bot ${seat + 1}`)
-    return Array.from({ length: NET_PLAYERS }, (_, p) => (p < players.length ? players[p].name : `Bot ${p + 1}`))
+    if (players.length === 0) return Array.from({ length: this.seats }, (_, seat) => seat === this.seat ? this.localName : `Bot ${seat + 1}`)
+    return Array.from({ length: this.seats }, (_, p) => (p < players.length ? players[p].name : `Bot ${p + 1}`))
   }
 
   sim(): MatchSim | null {
@@ -1208,7 +1213,7 @@ class OnlineMode implements Mode {
       if (match !== null && show !== null && this.c.views !== undefined) {
         this.names = this.roundNames()
         this.showMode = ShowMode.online({ R, views: this.c.views, orbit: this.c.orbit, look: this.c.look?.() ?? null,
-          seats: NET_PLAYERS, seed: 0, localName: this.localName, localSeat: this.seat, name: this.name,
+          seats: this.seats, seed: 0, localName: this.localName, localSeat: this.seat, name: this.name,
           voteMs: 5000, intermissionMs: 12000 }, match.full, show)
       }
     }

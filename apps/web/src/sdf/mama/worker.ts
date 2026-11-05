@@ -18,7 +18,7 @@ import { ensureMesher, setMesherWasm } from '@etcito/mama/core/paramesh/runtime.
 import { inlinePool } from '@etcito/mama/core/compute/pool.ts'
 import { partColouring, singleMaterialOf } from './singleMaterial.ts'
 import type { GroupMesher, SdfDocument } from '@etcito/mama/core/doc/types.ts'
-import { meshedParameshPartShading, type ParameshPartShading } from '@etcito/mama/core/paramesh/field-program.ts'
+import type { FieldProgram } from '@etcito/mama/core/paramesh/field-program.ts'
 
 // MaterialFull fields in declaration order (MAMA core/material-graph/wgsl-parts.ts). The renderer
 // reads exactly these names out of every compiled graph material.
@@ -37,16 +37,16 @@ interface PayloadMesh {
 // S18 joint/weight streams of a skinned part, in the vertex order the render port concatenates its meshes.
 interface PayloadSkin { joints: Uint16Array; weights: Float32Array }
 
-// shading: the part's per-pixel shading (MAMA field-program.ts meshedParameshPartShading, the record a saved mesh part stores: field
-// program + operand labels; nothing baked), drawn by @etcito/raa-sdfm fieldPartShading; shadingError: why it has none.
+// fieldProgram: the part's SDF field in its MESH space (MAMA's contract 'mama.field-program'), drawn by the
+// per-fragment field material; fieldRefusal: why a part has none. Only a part with triangles carries one.
 interface PayloadPart {
   partId: string
   name: string
   frame: Float64Array
   meshes: PayloadMesh[]
   skin?: PayloadSkin
-  shading?: ParameshPartShading
-  shadingError?: string
+  fieldProgram?: FieldProgram
+  fieldRefusal?: string
   /** The part's one roughness/metallic for one material per object (with the meshes' colors). */
   look?: { roughness: number; metallic: number }
 }
@@ -211,15 +211,17 @@ function toPayload(results: readonly AssetMeshResult[], doc: SdfDocument, assetI
       // One material per object: the shapes' material colours blended at the smooth rims, per vertex.
       const colouring = part.source && part.program ? partColouring(part.source.doc, part.source.mesh, part.program) : null
       if (colouring) for (const b of built) b.mesh.colors = colouring.colors(b.mesh)
-      // The same per-pixel shading SDF Modeler stores in a saved mesh (no normal volume is ever baked here).
-      const shading = built.length ? meshedParameshPartShading(doc, result.group, part) : null
-      if (shading && 'shading' in shading) for (const o of shading.shading.operands) {
-        if (o.material !== null && !materials.has(o.material) && !result.materials.some((m: BuiltMaterial) => m.id === o.material) && doc.materials?.[o.material]) {
-          materials.set(o.material, buildMaterial(doc, o.material))
+      // Every part with triangles carries MAMA's field program (or its refusal): field labels name the materials
+      // the shader mixes, so compile any the sub-meshes did not already use.
+      const program = built.length ? part.fieldProgram : undefined
+      if (program) for (const label of program.labels) {
+        if (label.material !== null && !materials.has(label.material) && !result.materials.some((m: BuiltMaterial) => m.id === label.material) && doc.materials?.[label.material]) {
+          materials.set(label.material, buildMaterial(doc, label.material))
         }
       }
       payloadParts.push({ partId: part.partId, name: part.name, frame: part.frame, meshes: built.map(m => m.mesh), ...(skin ? { skin } : {}),
-        ...(shading ?? {}), ...(colouring ? { look: colouring.look(built.map(b => b.mesh)) } : {}) })
+        ...(program ? { fieldProgram: program } : {}), ...(part.fieldRefusal !== undefined ? { fieldRefusal: part.fieldRefusal } : {}),
+        ...(colouring ? { look: colouring.look(built.map(b => b.mesh)) } : {}) })
     }
     groups.push({ group: result.group, parts: payloadParts, single: singleMaterialOf(doc, result.group) })
     for (const built of result.materials) if (!materials.has(built.id)) materials.set(built.id, built)
@@ -239,6 +241,8 @@ function transferOf(groups: readonly PayloadGroup[]): ArrayBuffer[] {
         add(part.skin.joints)
         add(part.skin.weights)
       }
+      const grid = part.fieldProgram?.grid
+      if (grid !== undefined && grid !== null) add(grid.texels)
       for (const mesh of part.meshes) {
         add(mesh.positions)
         add(mesh.normals)
@@ -271,8 +275,8 @@ export async function meshRequest(req: MeshRequest): Promise<MeshedAsset> {
   applyAssetMesher(doc, req.mesher)
   await ensureMesherOnce()
   const results = req.parts !== undefined && req.parts.length > 0
-    ? await meshByParts(doc, req.parts, req.assetId, { normalVolumes: false, programs: true })
-    : await meshAssets(doc, { pool: inlinePool(), normalVolumes: false, programs: true })
+    ? await meshByParts(doc, req.parts, req.assetId, { programs: true, fieldPrograms: true })
+    : await meshAssets(doc, { pool: inlinePool(), programs: true, fieldPrograms: true })
   throwFirstRefusal(results, doc, req.assetId)
   if (results.length === 0) {
     throw new RefusalError('sdf', req.assetId, 'the document has no group with a game asset; save the asset from SDF Modeler or mark its group as a game asset')

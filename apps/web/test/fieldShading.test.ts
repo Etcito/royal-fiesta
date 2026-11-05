@@ -104,7 +104,7 @@ test('fieldMaterialWgsl runs the one fixed evaluator over material data, never t
   assert.match(out.wgsl, /let db = raa_material_data_base\(in\.record\);/)
   // The shader compiler inlines every call: the centre run and the six normal taps share ONE pmf_run call site and an
   // operand ONE pmf_texel site, or a level's field pipelines stay compiling past the capture wait (run 12096).
-  assert.match(out.wgsl, /pmf_field\(db, p, pmf_f\(db \+ 7u\) \* scale, scale, &w\)/)
+  assert.match(out.wgsl, /pmf_field\(db, p, h, scale, &w\)/)
   assert.equal(out.wgsl.match(/= pmf_run\(/g)?.length, 1)
   assert.equal(out.wgsl.match(/pmf_texel\(/g)?.length, 2, 'one definition, one call')
   assert.equal(out.wgsl.match(/raa_texture\(/g)?.length, 1)
@@ -375,4 +375,58 @@ test('uniform frame scale accepts rotations and rejects shear, reflection and un
   assert.equal(uniformFieldFrameScale(reflected), null)
   const invalid = [...frame]; invalid[10] = NaN
   assert.equal(uniformFieldFrameScale(invalid), null)
+})
+
+test('rounded scenery rejects the failed distant camera and fills half the frame with the close camera', () => {
+  const source = readFileSync(new URL('../src/game/checks/fieldShading.ts', import.meta.url), 'utf8')
+  const functions = source.slice(source.indexOf('function boundCorners('), source.indexOf('function pageErrors()'))
+  const exports: any = {}
+  runInNewContext(transpileModule('const WIDTH = 1920, HEIGHT = 1080\n' + functions, {
+    compilerOptions: { module: ModuleKind.CommonJS },
+  }).outputText, { exports })
+  const bounds = [{ key: 'candy.plaza-fountain', min: [-2.16, 0, -2.16], max: [2.16, 2.02, 2.16] }]
+  const previous = { eye: [4.0179, 2.5167, 4.6876], target: [0, 1.0099, 0], fovYDeg: 55, near: 0.05, far: 200 }
+  assert.throws(() => exports.guardFraming('rounded-scenery', previous, bounds), /minimum 0.4/)
+  const saved = decodeMesh(new Uint8Array(readFileSync(new URL('../../../assets/candy/candy.plaza-fountain.mesh', import.meta.url))))
+  const data = saved.data as { groups: { parts: { meshes: { positions: Float32Array }[] }[] }[] }
+  const surface = data.groups.flatMap(g => g.parts.flatMap(p => p.meshes.flatMap(m =>
+    Array.from({ length: m.positions.length / 3 }, (_, i) => Array.from(m.positions.subarray(i * 3, i * 3 + 3))))))
+  const drawnBounds = bounds.map(b => ({ ...b, surface }))
+  const camera = exports.sceneryCamera(drawnBounds)
+  assert.ok(exports.guardFraming('rounded-scenery', camera, drawnBounds) >= 0.5)
+  for (const suffix of ['normals', 'vertex']) {
+    assert.ok(exports.guardFraming('rounded-scenery-' + suffix, camera, drawnBounds) >= 0.5)
+  }
+})
+
+test('normal taps respect operand scale and narrow blends after grid resampling', () => {
+  const p = program()
+  const step = (p: FieldProgramLike) => {
+    const data = fieldProgramWords(p)
+    assert.ok(data.ok)
+    return new Float32Array(data.words.buffer)[7]
+  }
+  const grid = p.operands[1]
+  assert.equal(grid.kind, 'grid')
+  const scaled = { ...p, operands: [{ ...grid, scale: 0.1 }] }
+  assert.ok(Math.abs(step(scaled) - 0.015) < 1e-8)
+  const resampled = { ...p, operands: [{ ...grid, voxel: 0.6 }] }
+  assert.ok(Math.abs(step(resampled) - 0.025) < 1e-8, 'resampling must not span the 0.1 blend')
+  // A small curved feature: compare six central taps with its exact radial normal.
+  const point = [0.08, 0.06, 0]
+  const gradientError = (h: number) => {
+    const g = point.map((_, axis) => {
+      const plus = [...point], minus = [...point]
+      plus[axis] += h
+      minus[axis] -= h
+      return (Math.hypot(...plus) - Math.hypot(...minus)) / (2 * h)
+    })
+    const length = Math.hypot(...g)
+    return Math.hypot(...g.map((v, i) => v / length - point[i] / 0.1))
+  }
+  assert.ok(gradientError(step(resampled)) < gradientError(0.6 / 2))
+  const wgsl = fieldMaterialWgsl({ program: resampled, labelGraphs: [], debug: false }).wgsl
+  assert.match(wgsl, /pass < 2u/)
+  assert.match(wgsl, /p -= taps.xyz \/ sqrt\(gg\) \* clamp/)
+  assert.match(wgsl, /taps = pmf_field\(db, p, h, scale, &w\)/)
 })

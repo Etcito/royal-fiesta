@@ -26,11 +26,11 @@ import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } 
 import { FIELD_ATLAS_BYTES, partDiag, planFieldAtlas, planFieldPrograms, type FieldAtlasPlan, type PartFieldProgram } from './fieldAtlas.ts'
 import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, uniformFieldFrameScale } from './fieldShading.ts'
 
-export interface PartWorldBounds { key: string; min: number[]; max: number[] }
+export interface PartWorldBounds { key: string; min: number[]; max: number[]; surface?: number[][] }
 
 export interface ResizablePort extends SkinnedRenderPort {
-  drawnParts(): { key: string; mode: ShadingMode; reason?: string }[]
-  worldBounds(): PartWorldBounds[]
+  drawnParts(): { key: string; mode: ShadingMode; reason?: string; resampled?: boolean; gridVoxels?: number[] }[]
+  worldBounds(includeSurface?: boolean): PartWorldBounds[]
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
   setPartFilter(instance: number, parts: readonly string[] | null): void
   shadingReport(): ShadingReport
@@ -381,6 +381,7 @@ class SdfRenderPort implements ResizablePort {
   private readonly debugNormals: boolean
   // The whole-world field plan (fieldAtlas) computed once before any upload, and the budget it was planned with.
   private atlasPlan: FieldAtlasPlan | null = null
+  private fieldGridDetails = new Map<string, { resampled: boolean; gridVoxels: number[] }>()
   private gridPlan: ReturnType<typeof planFieldPrograms> | null = null
   private readonly atlasBytes: number
   // RAA texture.atlas_full errors caught at upload; such a part draws vertex and is named in the report.
@@ -576,6 +577,14 @@ class SdfRenderPort implements ResizablePort {
     }
     this.gridPlan = planFieldPrograms(costs, this.atlasBytes)
     this.atlasPlan = this.gridPlan.plan
+    for (const part of costs) {
+      const program = this.gridPlan.programs.get(part.key)!
+      this.fieldGridDetails.set(part.key, {
+        resampled: program.operands.some((o, i) => o.kind === 'grid' &&
+          o.voxel !== (part.program.operands[i] as { voxel?: number }).voxel),
+        gridVoxels: program.operands.flatMap(o => o.kind === 'grid' ? [o.voxel * o.scale] : []),
+      })
+    }
     console.info(`[sdf-port] field grids: repacked ${this.gridPlan.repackedBytes} bytes, scale ${this.gridPlan.fieldGridScale}, final ${this.atlasPlan.bytes} bytes (${this.gridPlan.resampledParts} resampled parts)`)
     return this.atlasPlan
   }
@@ -1147,8 +1156,8 @@ class SdfRenderPort implements ResizablePort {
   }
 
   /** Actual visible instance members, including the resident copy while its pipeline compiles. */
-  drawnParts(): { key: string; mode: ShadingMode; reason?: string }[] {
-    const drawn: { key: string; mode: ShadingMode; reason?: string }[] = []
+  drawnParts(): { key: string; mode: ShadingMode; reason?: string; resampled?: boolean; gridVoxels?: number[] }[] {
+    const drawn: { key: string; mode: ShadingMode; reason?: string; resampled?: boolean; gridVoxels?: number[] }[] = []
     for (const live of this.live) {
       if (live === null || !live.visible) continue
       this.uploaded[live.asset]!.parts.forEach((part, index) => {
@@ -1163,14 +1172,14 @@ class SdfRenderPort implements ResizablePort {
           mode = 'vertex'
           reason = copy.failed ? reason : 'field pipeline pending'
         }
-        drawn.push({ key, mode, ...(reason === undefined ? {} : { reason }) })
+        drawn.push({ key, mode, ...this.fieldGridDetails.get(key), ...(reason === undefined ? {} : { reason }) })
       })
     }
     return drawn
   }
 
   // Capture-time only: use the same part frames and skin matrices as the draw.
-  worldBounds(): PartWorldBounds[] {
+  worldBounds(includeSurface = false): PartWorldBounds[] {
     const bounds: PartWorldBounds[] = []
     for (const live of this.live) {
       if (live === null || !live.visible) continue
@@ -1178,6 +1187,7 @@ class SdfRenderPort implements ResizablePort {
       for (const part of uploaded.parts) {
         if (live.filter !== null && !live.filter.has(part.name)) continue
         const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity]
+        const surface: number[][] = []
         const frame = trMatrix(part.t, part.r)
         const root = live.transform ?? trMatrix([0, 0, 0], [0, 0, 0, 1])
         const skin = live.pose !== null && part.joints !== undefined ? partPose(live.pose, part) : null
@@ -1194,12 +1204,13 @@ class SdfRenderPort implements ResizablePort {
             }
           }
           const world = mul4(root, mul4(frame, v))
+          if (includeSurface) surface.push(world.slice(0, 3))
           for (let axis = 0; axis < 3; axis++) {
             min[axis] = Math.min(min[axis], world[axis])
             max[axis] = Math.max(max[axis], world[axis])
           }
         }
-        if (Number.isFinite(min[0])) bounds.push({ key: part.reportKey ?? part.key, min, max })
+        if (Number.isFinite(min[0])) bounds.push({ key: part.reportKey ?? part.key, min, max, ...(includeSurface ? { surface } : {}) })
       }
     }
     return bounds

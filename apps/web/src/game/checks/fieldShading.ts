@@ -45,7 +45,7 @@ async function attempt(captures: Captures, what: string, step: () => Promise<voi
 }
 
 function boundCorners(bounds: readonly PartWorldBounds[]): number[][] {
-  return bounds.flatMap(b => Array.from({ length: 8 }, (_, i) => [0, 1, 2].map(a => i & (1 << a) ? b.max[a] : b.min[a])))
+  return bounds.flatMap(b => b.surface ?? Array.from({ length: 8 }, (_, i) => [0, 1, 2].map(a => i & (1 << a) ? b.max[a] : b.min[a])))
 }
 
 function projectBounds(camera: CameraPose, bounds: readonly PartWorldBounds[]) {
@@ -72,7 +72,8 @@ export function guardFraming(name: string, camera: CameraPose, bounds: readonly 
   }
   const area = (Math.max(...points.map(p => p[0])) - Math.min(...points.map(p => p[0]))) *
     (Math.max(...points.map(p => p[1])) - Math.min(...points.map(p => p[1]))) / 4
-  if (area < 0.15) throw new Error(`fieldShading.bounds.small: ${name}; projected area ${area}`)
+  const minimum = name.startsWith('rounded-scenery') ? 0.4 : 0.15
+  if (area < minimum) throw new Error(`fieldShading.bounds.small: ${name}; projected area ${area}; minimum ${minimum}`)
   return area
 }
 
@@ -91,6 +92,11 @@ export function fitBounds(camera: CameraPose, bounds: readonly PartWorldBounds[]
     else low = mid
   }
   return at(high)
+}
+
+// Fit the drawn vertices, not the empty near/top corners of a rounded part's box.
+export function sceneryCamera(bounds: readonly PartWorldBounds[]): CameraPose {
+  return fitBounds({ eye: [0, 1, 6], target: [0, 1, 0], fovYDeg: 45, near: 0.05, far: 200 }, bounds)
 }
 
 // Summed projected screen area of every part's box: how large the parts are drawn, not only their union.
@@ -281,14 +287,17 @@ function drawFrames(port: ResizablePort): Promise<void> {
 }
 
 async function capture(port: ResizablePort, what: string, captures: Captures, subject: Subject): Promise<void> {
-  const bounds = port.worldBounds()
+  const bounds = port.worldBounds(what.startsWith('rounded-scenery'))
   const area = guardFraming(what, subject.camera, bounds)
   const report = port.shadingReport()
   const drawn = port.drawnParts()
-  if (what === 'rounded-scenery') {
+  if (what.startsWith('rounded-scenery')) {
+    for (const part of drawn) console.info(`[fieldShading] ${what}: ${JSON.stringify(part)}`)
+  }
+  if (what.startsWith('rounded-scenery') && what !== 'rounded-scenery-vertex') {
     if (drawn.length === 0) throw new Error('rounded-scenery: no drawn field parts')
-    const fallback = drawn.filter(p => p.mode !== 'field' || p.reason)
-    if (fallback.length) throw new Error(`rounded-scenery: field shading required: ${fallback.map(p => `${p.key}: ${p.reason ?? p.mode}`).join('; ')}`)
+    const fallback = drawn.filter(p => p.mode !== 'field' || p.reason || p.resampled)
+    if (fallback.length) throw new Error(`rounded-scenery: field shading required: ${fallback.map(p => `${p.key}: ${p.reason ?? (p.resampled ? 'uniform grid resampling' : p.mode)}`).join('; ')}`)
   }
   if (subject.expectedParts !== undefined) {
     console.info(`[fieldShading] ${what}: expected ${subject.expectedParts.length}, drawn ${drawn.length}, ` +
@@ -297,7 +306,7 @@ async function capture(port: ResizablePort, what: string, captures: Captures, su
       drawn.filter(p => p.mode !== 'field').map(p => `${p.key}: ${p.reason ?? 'UNNAMED'}`).join('; '))
     assertCompleteFieldCapture(subject.expectedParts, drawn)
   }
-  captures.observations.push({ name: what, camera: subject.camera, bounds, area, drawn, normals: report })
+  captures.observations.push({ name: what, camera: subject.camera, bounds: bounds.map(({ surface, ...box }) => box), area, drawn, normals: report })
   if (report.pending > 0) throw new Error(`${what}: ${report.pending} parts still pending at capture time`)
   if (report.atlasFull > 0) throw new Error(`${what}: ${report.atlasFull} texture.atlas_full errors`)
   const failures = hardFailures(report)
@@ -550,15 +559,14 @@ async function shootWorld(port: ResizablePort, content: SdfContent, captures: Ca
   } finally { stage.dispose() }
 }
 
-async function shootScenery(port: ResizablePort, content: GameContent, captures: Captures): Promise<void> {
+async function shootScenery(port: ResizablePort, content: GameContent, captures: Captures, what = 'rounded-scenery'): Promise<void> {
   const hub = content.hub()
   const stage = new Stage(port, content, hub, { decor: false, obstacles: [obstacleOf(hub, 'candy.plaza-fountain')], mechanisms: [] })
   try {
-    const initial: CameraPose = { eye: [2.4, 1.8, 2.8], target: [0, 0.9, 0], fovYDeg: 55, near: 0.05, far: 200 }
-    const cam = fitBounds(initial, port.worldBounds())
+    const cam = sceneryCamera(port.worldBounds(true))
     port.setCamera(0, cam)
     await waitShading(port, 'rounded-scenery')
-    await capture(port, 'rounded-scenery', captures, { camera: cam, center: [0, 1, 0], radius: 2.6, hide: () => stage.hide() })
+    await capture(port, what, captures, { camera: cam, center: [0, 1, 0], radius: 2.6, hide: () => stage.hide() })
   } finally { stage.dispose() }
 }
 
@@ -625,6 +633,10 @@ export async function run(input: unknown, deps: TourDeps): Promise<{ json: Recor
         await attempt(captures, 'rounded-scenery', () => shootScenery(port, content, captures))
         await shootPenguin(port, content, captures)
       })
+      for (const [suffix, query] of [['normals', '?normalsDebug'], ['vertex', '?normals=vertex']] as const) {
+        await scene(`rounded-scenery-${suffix}`, gameRenderOptions(query), ['candy.plaza-fountain'], port =>
+          shootScenery(port, content, captures, `rounded-scenery-${suffix}`))
+      }
     }
     // A close-up is its own scene: unrelated worlds must not consume this scene's atlas.
     const ids = [...new Set(content.course(MECH_COURSE).mechanisms!.items.map(item => item.asset))]

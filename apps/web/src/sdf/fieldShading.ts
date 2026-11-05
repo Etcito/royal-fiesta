@@ -190,11 +190,12 @@ export function checkFieldPart(part: unknown): FieldCheck {
   return checkProgram(part.fieldProgram)
 }
 
-/** The half-step of the six normal taps: half the smallest grid voxel, or 1e-3 of the bounds diagonal. */
+/** Keep derivative taps in the part frame and inside narrow colour/shape blends. */
 function fieldStep(program: FieldProgramLike): number {
   let voxel = Infinity
-  for (const operand of program.operands) if (operand.kind === 'grid') voxel = Math.min(voxel, operand.voxel)
-  if (Number.isFinite(voxel)) return voxel / 2
+  for (const operand of program.operands) if (operand.kind === 'grid') voxel = Math.min(voxel, operand.voxel * operand.scale)
+  const blend = Math.min(...program.tree.flatMap(n => n.op !== 'leaf' && n.mode !== 'hard' && n.radius > 0 ? [n.radius] : []))
+  if (Number.isFinite(voxel)) return Math.min(voxel / 2, blend / 4)
   const [ax, ay, az] = program.bounds.min
   const [bx, by, bz] = program.bounds.max
   const diagonal = Math.sqrt((bx - ax) ** 2 + (by - ay) ** 2 + (bz - az) ** 2)
@@ -634,8 +635,8 @@ export function fieldMaterialWgsl(src: {
 ${PMF_GRID_HOST_WGSL}
 ${PMF_INTERPRETER_WGSL}
 ${POSED_NORMAL_WGSL}
-// The centre run (distance and label weights in w) and six central taps at p +- h * e_i, h = half the smallest grid
-// voxel, in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites
+// The centre run (distance and label weights in w) and six central taps at p +- h * e_i,
+// with h constrained by the grid spacing and blend radii, in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites
 // (centre + taps) made each field pipeline so large that a level's pipelines were still compiling after 180 s.
 // Returns the gradient in xyz and the centre distance in w.
 fn pmf_field(db: u32, p: vec3f, h: f32, scale: f32, w: ptr<function, array<f32, 8>>) -> vec4f {
@@ -660,13 +661,26 @@ fn pmf_field(db: u32, p: vec3f, h: f32, scale: f32, w: ptr<function, array<f32, 
 ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
   var o = raa_default_output(in);
   o.opacity = 1.0;
-  let p = in.color.xyz;
+  var p = in.color.xyz;
   let db = raa_material_data_base(in.record);
   pmf_grid_texture = u32(in.instance_params[1].w + 0.5);
   pmf_grid_size = vec2<u32>(u32(in.instance_params[2].x + 0.5), u32(in.instance_params[2].y + 0.5));
   var w: array<f32, 8>;
   let scale = in.instance_params[0].w;
-  let taps = pmf_field(db, p, pmf_f(db + 7u) * scale, scale, &w);
+  let h = pmf_f(db + 7u) * scale;
+  var taps = vec4f(0.0);
+  // Polygon chords lie inside rounded surfaces. Sample the surface, not the chord,
+  // or CSG labels and normals switch across the interiors of coarse triangles.
+  for (var pass = 0u; pass < 2u; pass = pass + 1u) {
+    taps = pmf_field(db, p, h, scale, &w);
+    if (pass == 0u) {
+      let gg = dot(taps.xyz, taps.xyz);
+      if (gg > 1e-12) {
+        // A bounded Newton step cannot jump to a remote component of the field.
+        p -= taps.xyz / sqrt(gg) * clamp(taps.w / sqrt(gg), -2.0 * h, 2.0 * h);
+      }
+    }
+  }
   let g = taps.xyz;
   let inside = all(p / scale >= pmf_v3(db + 4u)) && all(p / scale <= pmf_v3(db + 8u));
   let glen = length(g);

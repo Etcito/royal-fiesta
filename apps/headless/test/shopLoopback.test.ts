@@ -9,7 +9,7 @@ import { brickDir, repoRoot } from '../../../tools/bricks.ts'
 import { startGameSaloon, type LocalServer } from '../src/gamesaloon.ts'
 import { createEconomyClient } from '@royal-fiesta/game/economy/client'
 import { RARITY_TICKETS, type CatalogItem } from '@royal-fiesta/game/economy/contract'
-import { shopModel, shopStep } from '@royal-fiesta/game/flow/shop'
+import { SHOP_COLUMNS, shopModel, shopStep } from '@royal-fiesta/game/flow/shop'
 import { GIFT_MESSAGE } from '@royal-fiesta/game/flow/inbox'
 import { commissionModel, commissionStep } from '@royal-fiesta/game/flow/commission'
 import type { Action } from '@royal-fiesta/game/screens/nav'
@@ -138,11 +138,20 @@ test('economy client loopback: shop buy, gift and claim, commission against game
     assert.ok(meA.coins >= price, `coins ${meA.coins} after ${rounds} qualify rounds, price ${price}`)
     assert.ok(meA.tickets >= 3, `tickets ${meA.tickets} after 3 win rounds`)
 
-    // Keyboard arrows/Enter and pad d-pad/A reach shopStep as these actions (flowAction, screens/nav.ts).
+    // Keyboard arrows/Enter and pad d-pad/A reach shopStep as these actions (flowAction, screens/nav.ts). The shop opens
+    // on the tab bar: right to the item's slot tab, down into its grid of SHOP_COLUMNS, down/right to the item, then
+    // confirm opens the confirmation and a second confirm buys.
     let shop = shopModel((await A.catalog()).items, meA)
-    const moves: Action[] = [...Array<Action>(row).fill('down'), ...Array<Action>(column).fill('right')]
+    const moves: Action[] = [
+      ...Array<Action>(row).fill('right'), 'down',
+      ...Array<Action>(Math.floor(column / SHOP_COLUMNS)).fill('down'), ...Array<Action>(column % SHOP_COLUMNS).fill('right'),
+    ]
     for (const action of moves) shop = shopStep(shop, action).model
-    const step = shopStep(shop, 'confirm')
+    assert.deepEqual(shop.focus, [row, column])
+    const asked = shopStep(shop, 'confirm')
+    assert.equal(asked.buy, null)
+    assert.deepEqual(asked.model.confirm, { itemId: item.id, currency: 'coins' })
+    const step = shopStep(asked.model, 'confirm')
     assert.deepEqual(step.buy, { itemId: item.id, currency: 'coins' })
     const remainingBefore = shop.slots[row].items[column].remaining
     const bought = await A.buy(step.buy!.itemId, step.buy!.currency)

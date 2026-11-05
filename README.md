@@ -79,6 +79,12 @@ asset, so per-part data never becomes WGSL text: a field program is material dat
 fixed evaluator (`PMF_INTERPRETER_WGSL`), never its saved straight-line `wgsl` (25 KB to over 1 MB on the candy set).
 A generator of material WGSL is tested over all `assets/**/*.mesh` (as `fieldShading.test.ts` does), not on a fixture.
 
+`tools/fieldPreflight.ts` lists, in about a second and with no browser, what the `fieldShading` GPU op will report for
+every saved part of its world (field, MAMA refusal, atlas demotion, scaled frame, invalid program, material over 64 KB),
+through the same pure decisions as `SdfRenderPort`; it exits 1 on a part the GPU op would fail on and runs before the
+GPU job in `.nmc/commands.json` `field-render`. A card that adds a GPU check op gives it such a static preflight over
+the real saved world, and runs the op once on the GPU client over that world before it is marked done.
+
 ## Proofs
 
 Each milestone proof is a Node script run with `--experimental-strip-types`. Proof records are committed under `proofs/mN/`; captures and logs go to the untracked `out/`.

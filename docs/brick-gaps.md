@@ -352,3 +352,17 @@ Groups that kept their mesher before a6b1b47, with the reason Paramesh gave (for
 - candy.bounce-pad (lowpoly): the cylinder rim holds detail shapes.
 - candy.spinner-bar (lowpoly), candy.slime-pool (lowpoly), costume.pineapple-suit (poly): deformers.
 - penguin.body (quad), costume.fish-scarf (poly): a forced Paramesh run did not finish in 900 s.
+
+## raa-sdfm: field shading hooks
+
+Pinned raa-sdfm has `field-shading.js`, but it exports `fieldPartShading` and the WGSL text
+`FIELD_FRAME_WGSL` / `FIELD_NORMAL_WGSL`, not JavaScript bindings named `sdff_normal` and
+`sdfm_posed_normal`. Its `fieldPartShading` also reads MAMA's numeric `PartShading` record
+(program words, operands, `PmfSample` gradient) rather than the packed `mama.field-program`
+payload (`functionName`, `wgsl`, labels, operands, tree, grid) this step stores on a payload
+part. `apps/web/src/sdf/fieldShading.ts` therefore rebuilds the field material on the payload
+contract: six central taps of the part's `pmf_eval` for the normal, `sdfm_posed_normal`'s
+rest-frame carry through the instance and skin transforms (same construction as the retired
+normal-volume hooks), `pmf_grid` over RAA's texture atlas, and the label/graph blend per pixel.
+The brick is unchanged; when raa-sdfm exports callable field-shading hooks for this payload
+shape, the module can delegate to them.

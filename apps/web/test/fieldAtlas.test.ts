@@ -91,3 +91,86 @@ test('grid bytes are whole rgba8 texels of RAA\'s atlas', () => {
   assert.equal(fieldGridBytes({ width: 4096, height: 2 }), 4096 * 2 * 4)
   assert.equal(fieldGridBytes({ width: 256, height: 256 }), 256 * 256 * 4)
 })
+
+import { planFieldPrograms, repackFieldProgram, sampleFieldGrid } from '../src/sdf/fieldAtlas.ts'
+import type { FieldProgramLike, FieldGridOperandLike } from '../src/sdf/fieldShading.ts'
+
+function gridProgram(shape: 'sphere' | 'box'): FieldProgramLike {
+  const size = 40, voxel = 0.1, range = 5
+  const op: FieldGridOperandLike = { kind: 'grid', label: 0, scale: 1,
+    inv: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    origin: [-2, -2, -2], size: [size, size, size], voxel, range, at: [3, 2] }
+  const width = size * size + 8, height = size * 3
+  const texels = new Uint8Array(width * height * 4)
+  for (let y = 0; y < size; y++) for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) {
+    const p = [x, y, z].map(v => -2 + (v + 0.5) * voxel)
+    const q = p.map(v => Math.abs(v) - 1)
+    const d = shape === 'sphere' ? Math.hypot(...p) - 1 : Math.hypot(...q.map(v => Math.max(0, v))) + Math.min(0, Math.max(...q))
+    const encoded = Math.round((d / range * 0.5 + 0.5) * 65535)
+    const at = ((op.at[1] + y) * width + op.at[0] + z * size + x) * 4
+    texels.set([encoded >> 8, encoded & 255, 0, 255], at)
+  }
+  return { format: 'mama.field-program', version: 1, bounds: { min: [-2, -2, -2], max: [2, 2, 2] },
+    labels: [{ material: null, color: [1, 1, 1], roughness: 0.5, metallic: 0 }], operands: [op],
+    tree: [{ op: 'leaf', operand: 0 }], grid: { width, height, texels }, functionName: 'pmf_eval_0123456789abcdef', wgsl: '' }
+}
+
+test('lossless shelf repack preserves every operand texel without changing the source', () => {
+  const original = gridProgram('sphere')
+  const op = original.operands[0] as FieldGridOperandLike
+  original.operands = [op, { ...op, size: [20, 32, 20] }, { ...op, size: [16, 32, 16] }]
+  const saved = original.grid!.texels.slice()
+  const packed = repackFieldProgram(original)
+  assert.ok(fieldGridBytes(packed.grid) < fieldGridBytes(original.grid))
+  assert.ok(packed.grid!.width <= 4096)
+  for (let i = 0; i < original.operands.length; i++) {
+    const a = original.operands[i] as FieldGridOperandLike, b = packed.operands[i] as FieldGridOperandLike
+    for (let y = 0; y < a.size[1]; y++) {
+      const src = ((a.at[1] + y) * original.grid!.width + a.at[0]) * 4
+      const dst = ((b.at[1] + y) * packed.grid!.width + b.at[0]) * 4
+      assert.deepEqual(packed.grid!.texels.subarray(dst, dst + a.size[0] * a.size[2] * 4), saved.subarray(src, src + a.size[0] * a.size[2] * 4))
+    }
+  }
+  assert.deepEqual(original.grid!.texels, saved)
+  assert.deepEqual(op.at, [3, 2])
+})
+
+for (const shape of ['sphere', 'box'] as const) test(`resampled ${shape} distances stay within one new voxel`, () => {
+  const original = gridProgram(shape)
+  const sampled = repackFieldProgram(original, 12, 2)
+  const old = original.operands[0] as FieldGridOperandLike, op = sampled.operands[0] as FieldGridOperandLike
+  assert.equal(op.voxel, 0.2)
+  for (let z = -2.5; z <= 2.5; z += 0.37) for (let y = -2.5; y <= 2.5; y += 0.39) for (let x = -2.5; x <= 2.5; x += 0.41) {
+    const p = [x, y, z]
+    assert.ok(Math.abs(sampleFieldGrid(original.grid!, old, p) - sampleFieldGrid(sampled.grid!, op, p)) <= op.voxel)
+  }
+})
+
+test('global scale is deterministic, fits within one percent of its failing bound, and respects floors', () => {
+  const program = gridProgram('sphere')
+  const parts = [{ key: 'a', diag: 12, program }, { key: 'b', diag: 12, program }]
+  const budget = 180000
+  const a = planFieldPrograms(parts, budget), b = planFieldPrograms([...parts].reverse(), budget)
+  assert.equal(a.fieldGridScale, b.fieldGridScale)
+  assert.ok(a.fieldGridScale > 1)
+  assert.equal(a.plan.demoted.length, 0)
+  assert.ok(a.plan.bytes <= budget)
+  const below = repackFieldProgram(program, 12, a.fieldGridScale / 1.01)
+  assert.ok(fieldGridBytes(below.grid) * 2 > budget)
+  const floor = planFieldPrograms(parts, 0)
+  const op = floor.programs.get('a')!.operands[0] as FieldGridOperandLike
+  assert.ok(Math.max(...op.size) >= 16)
+  assert.ok(op.voxel <= 12 / 32)
+  assert.deepEqual(floor.plan.demoted, ['a', 'b'])
+})
+
+
+test('lossless fit needs no resampling and runtime grids are cached separately from saved data', () => {
+  const program = gridProgram('box')
+  const plan = planFieldPrograms([{ key: 'box', diag: 12, program }], 40 ** 3 * 4)
+  assert.equal(plan.fieldGridScale, 1)
+  assert.equal(plan.resampledParts, 0)
+  assert.equal(plan.plan.demoted.length, 0)
+  assert.equal(plan.programs.get('box'), repackFieldProgram(program, 12, 1))
+  assert.notEqual(plan.programs.get('box')!.grid!.texels, program.grid!.texels)
+})

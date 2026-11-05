@@ -285,6 +285,11 @@ async function capture(port: ResizablePort, what: string, captures: Captures, su
   const area = guardFraming(what, subject.camera, bounds)
   const report = port.shadingReport()
   const drawn = port.drawnParts()
+  if (what === 'rounded-scenery') {
+    if (drawn.length === 0) throw new Error('rounded-scenery: no drawn field parts')
+    const fallback = drawn.filter(p => p.mode !== 'field' || p.reason)
+    if (fallback.length) throw new Error(`rounded-scenery: field shading required: ${fallback.map(p => `${p.key}: ${p.reason ?? p.mode}`).join('; ')}`)
+  }
   if (subject.expectedParts !== undefined) {
     console.info(`[fieldShading] ${what}: expected ${subject.expectedParts.length}, drawn ${drawn.length}, ` +
       `field ${drawn.filter(p => p.mode === 'field').length}, fallback ${drawn.filter(p => p.mode !== 'field').length}; ` +

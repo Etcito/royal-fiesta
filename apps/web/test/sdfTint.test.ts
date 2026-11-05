@@ -135,7 +135,7 @@ function fieldProgram(over: Record<string, unknown> = {}) {
   }
 }
 function gridProgram(side = 4) {
-  return fieldProgram({ grid: { width: side, height: side, texels: new Uint8Array(side * side * 4) } })
+  return fieldProgram({ operands: [{ kind: 'grid', label: 0, inv: IDENTITY16, scale: 1, origin: [-1, -1, -1], voxel: 1, size: [2, side, 2], at: [0, 0], range: 4 }], grid: { width: side, height: side, texels: new Uint8Array(side * side * 4) } })
 }
 
 // The fake engine records the calls; instance ids are handed out in order, mesh instances
@@ -436,19 +436,27 @@ test('a tinted multiply field part draws the field twin, not a white vertex copy
   assert.ok(desc.subMeshes.length > 0 && desc.subMeshes.every(s => s.material === fieldHandle), 'the tinted draw keeps the field material')
 })
 
-// MAMA's part frame carries rotation and translation only. A frame with a scale cannot be a field part (the field lookup
-// stays in mesh space while the drawn part would be scaled): it draws vertex and is named once in console and report.
-test('a field part with a scaled frame falls back to vertex with that named error', () => {
+test('a uniform frame scales geometry and field lookup together', () => {
   const frame = new Float64Array(FRAME); frame[0] = 2; frame[5] = 2; frame[10] = 2
   const body = { ...part('body', 'skin'), frame, fieldProgram: fieldProgram() }
-  const { port, handle } = portFor('test.scale', [material('skin', PLAIN)], [body])
-  const before = warnings.length
-  handle()
+  const { port, calls, handle } = portFor('test.scale', [material('skin', PLAIN)], [body])
+  port.createInstance(handle(), null)
   const report = port.shadingReport()
-  assert.equal(report.field, 0)
-  assert.equal(report.vertex, 1)
-  assert.ok(report.errors.includes('test.scale#g/body: field frame has scale; mesh normals'), report.errors.join('\n'))
-  assert.ok(warnings.slice(before).includes('[sdf-port] test.scale#g/body: field frame has scale; mesh normals'), warnings.slice(before).join('\n'))
+  assert.equal(report.field, 1)
+  assert.equal(report.vertex, 0)
+  assert.equal(report.errors.length, 0)
+  assert.ok(calls.instanceParams.some(p => p.params[3] === 2))
+  const mesh = calls.jointStreams[0] as { positions: Float32Array }
+  assert.deepEqual(Array.from(mesh.positions), Array.from(body.meshes[0].positions, v => v * 2))
+})
+
+test('a non-uniform field frame still refuses with the part name', () => {
+  const frame = new Float64Array(FRAME); frame[0] = 2
+  const body = { ...part('body', 'skin'), frame, fieldProgram: fieldProgram() }
+  const { port, handle } = portFor('test.scale', [material('skin', PLAIN)], [body])
+  handle()
+  assert.equal(port.shadingReport().vertex, 1)
+  assert.ok(port.shadingReport().errors.includes('test.scale#g/body: field frame has non-uniform scale; mesh normals'))
 })
 
 test('all committed catalog cosmetics upload their saved skin and render with the penguin idle pose', async () => {

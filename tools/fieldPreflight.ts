@@ -9,11 +9,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
-  MATERIAL_FUNCTION_MAX_BYTES, checkFieldPart, fieldMaterialWgsl, fieldProgramWords,
+  MATERIAL_FUNCTION_MAX_BYTES, uniformFieldFrameScale, checkFieldPart, fieldMaterialWgsl, fieldProgramWords,
 } from '../apps/web/src/sdf/fieldShading.ts'
 import type { FieldLabelGraphLike } from '../apps/web/src/sdf/fieldShading.ts'
-import { fieldGridBytes, partDiag, planFieldAtlas } from '../apps/web/src/sdf/fieldAtlas.ts'
-import type { PartFieldCost } from '../apps/web/src/sdf/fieldAtlas.ts'
+import { partDiag, planFieldPrograms } from '../apps/web/src/sdf/fieldAtlas.ts'
+import type { PartFieldProgram } from '../apps/web/src/sdf/fieldAtlas.ts'
 import { decodeMesh } from '../apps/web/src/sdf/meshWire.ts'
 import { buildContentIndex, contentDir, profileAssetIds } from './content.ts'
 
@@ -25,6 +25,10 @@ export interface PreflightAsset {
   data: { groups: { group: string; parts: unknown[] }[]; materials: unknown[] }
 }
 export interface PreflightReport {
+  fieldGridScale: number
+  resampledParts: number
+  repackedBytes: number
+  bytes: number
   assets: number
   parts: PreflightPart[]
   /** The parts the GPU op would fail on (hardShadingFailures), with their full reason. */
@@ -41,20 +45,10 @@ interface PartLike {
   fieldRefusal?: unknown
 }
 
-// sdfPort frameHasScale: a part frame with a column of length != 1.
-function frameHasScale(f: ArrayLike<number> | undefined): boolean {
-  if (f === undefined) return false
-  for (let c = 0; c < 3; c++) {
-    const length = Math.hypot(f[c * 4], f[c * 4 + 1], f[c * 4 + 2])
-    if (!(Math.abs(length - 1) <= 1e-4)) return true
-  }
-  return false
-}
-
 /** Every field-contract part of `assets` as the SDF port would shade it, in asset/group/part order. */
 export function fieldPreflight(assets: readonly PreflightAsset[], budget?: number): PreflightReport {
   const parts: PreflightPart[] = []
-  const costs: PartFieldCost[] = []
+  const costs: PartFieldProgram[] = []
   const candidates: { key: string; part: PartLike; byName: Map<string, FieldLabelGraphLike> }[] = []
   for (const asset of [...assets].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
     const byName = new Map((asset.data.materials as FieldLabelGraphLike[]).map(m => [m.name, m]))
@@ -70,26 +64,27 @@ export function fieldPreflight(assets: readonly PreflightAsset[], budget?: numbe
           parts.push({ key, mode: refused ? 'refused' : 'invalid', reason: check.reason })
           continue
         }
-        if (frameHasScale(part.frame)) {
-          parts.push({ key, mode: 'scaled', reason: 'the part frame carries a scale; its field lookup would stay unscaled' })
+        if (uniformFieldFrameScale(part.frame) === null) {
+          parts.push({ key, mode: 'scaled', reason: 'field frame has non-uniform scale; mesh normals' })
           continue
         }
-        costs.push({ key, diag: partDiag(part.meshes), bytes: fieldGridBytes(check.program.grid) })
+        costs.push({ key, diag: partDiag(part.meshes), program: check.program })
         candidates.push({ key, part, byName })
       }
     }
   }
-  const plan = planFieldAtlas(costs, budget)
+  const gridPlan = planFieldPrograms(costs, budget)
+  const plan = gridPlan.plan
   for (const { key, part, byName } of candidates) {
     if (!plan.field.has(key)) { parts.push({ key, mode: 'demoted', reason: 'atlas budget: smaller parts first' }); continue }
     const check = checkFieldPart(part)
     if (!check.ok) continue
-    const words = fieldProgramWords(check.program)
+    const words = fieldProgramWords(gridPlan.programs.get(key)!)
     if (!words.ok) { parts.push({ key, mode: 'invalid', reason: words.reason }); continue }
     const graphs = check.program.labels.map(l => (l.material === null ? null : byName.get(l.material) ?? null))
     try {
       // debug adds the ?normalsDebug lines: the larger of the two texts the page can register.
-      const out = fieldMaterialWgsl({ program: check.program, labelGraphs: graphs, debug: true })
+      const out = fieldMaterialWgsl({ program: gridPlan.programs.get(key)!, labelGraphs: graphs, debug: true })
       const bytes = new TextEncoder().encode(out.wgsl).length
       if (bytes > MATERIAL_FUNCTION_MAX_BYTES) {
         parts.push({ key, mode: 'material', reason: `material function ${out.functionName}: ${bytes} bytes, more than ${MATERIAL_FUNCTION_MAX_BYTES}` })
@@ -102,7 +97,8 @@ export function fieldPreflight(assets: readonly PreflightAsset[], budget?: numbe
     parts.push({ key, mode: 'field', reason: '' })
   }
   parts.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
-  return { assets: assets.length, parts, hard: parts.filter(p => HARD.has(p.mode)) }
+  return { assets: assets.length, parts, hard: parts.filter(p => HARD.has(p.mode)),
+    fieldGridScale: gridPlan.fieldGridScale, resampledParts: gridPlan.resampledParts, repackedBytes: gridPlan.repackedBytes, bytes: plan.bytes }
 }
 
 // The fieldShading op's world: the profile's SDF load set (its costumes included) and the penguin it poses.
@@ -126,6 +122,7 @@ async function main(): Promise<void> {
   const report = fieldPreflight(await preflightAssets(profile))
   if (args.includes('--json')) console.log(JSON.stringify(report, null, 2))
   else {
+    console.info(`field grids: repacked ${report.repackedBytes} bytes, scale ${report.fieldGridScale}, final ${report.bytes} bytes (${report.resampledParts} resampled parts)`)
     const count = (mode: PreflightMode): number => report.parts.filter(p => p.mode === mode).length
     console.log(`field preflight (${profile}): ${report.assets} assets, ${report.parts.length} field-contract parts: ` +
       `${count('field')} field, ${count('refused')} refused, ${count('demoted')} atlas-demoted, ${report.hard.length} hard`)

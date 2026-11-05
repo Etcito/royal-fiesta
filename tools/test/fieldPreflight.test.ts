@@ -45,14 +45,15 @@ test('fieldPreflight names every part outcome at once: field, refused, atlas-dem
   assert.match(report.parts.find(p => p.key === 'a#g/warped')!.reason, /lattice/)
 })
 
-test('fieldPreflight demotes the smallest parts first when the grids exceed the atlas budget', () => {
+test('fieldPreflight demotes the smallest parts first when the repacked grids exceed the atlas budget', () => {
+  // Each 4x4x4 operand costs 256 bytes after stripping the saved 64x64 padding.
   const big = new Float32Array([0, 0, 0, 10, 10, 10])
   const report = fieldPreflight([
     asset('a', [
       { partId: 'small', frame: Float64Array.from(IDENTITY), meshes: MESH, fieldProgram: program(64) },
       { partId: 'large', frame: Float64Array.from(IDENTITY), meshes: [{ positions: big }], fieldProgram: program(64) },
     ]),
-  ], 64 * 64 * 4)
+  ], 4 * 4 * 4 * 4)
   const mode = Object.fromEntries(report.parts.map(p => [p.key, p.mode]))
   assert.deepEqual(mode, { 'a#g/large': 'field', 'a#g/small': 'demoted' })
   assert.equal(report.hard.length, 0)

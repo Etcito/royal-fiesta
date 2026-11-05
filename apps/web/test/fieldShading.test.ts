@@ -104,7 +104,7 @@ test('fieldMaterialWgsl runs the one fixed evaluator over material data, never t
   assert.match(out.wgsl, /let db = raa_material_data_base\(in\.record\);/)
   // The shader compiler inlines every call: the centre run and the six normal taps share ONE pmf_run call site and an
   // operand ONE pmf_texel site, or a level's field pipelines stay compiling past the capture wait (run 12096).
-  assert.match(out.wgsl, /pmf_field\(db, p, pmf_f\(db \+ 7u\), &w\)/)
+  assert.match(out.wgsl, /pmf_field\(db, p, pmf_f\(db \+ 7u\) \* scale, scale, &w\)/)
   assert.equal(out.wgsl.match(/= pmf_run\(/g)?.length, 1)
   assert.equal(out.wgsl.match(/pmf_texel\(/g)?.length, 2, 'one definition, one call')
   assert.equal(out.wgsl.match(/raa_texture\(/g)?.length, 1)
@@ -358,4 +358,21 @@ test('world capture guard refuses missing repeated draws, unnamed fallbacks and 
   assert.doesNotThrow(() => guard(expected, draws), 'runtime fallback must retain and name the geometry')
   draws[0].reason = 'operand with a lattice, deformer or non-uniform scale'
   assert.doesNotThrow(() => guard(expected, draws))
+})
+
+
+import { uniformFieldFrameScale } from '../src/sdf/fieldShading.ts'
+
+test('uniform frame scale accepts rotations and rejects shear, reflection and unequal axes', () => {
+  const frame = [0, 2, 0, 0, -2, 0, 0, 0, 0, 0, 2, 0, 3, 4, 5, 1]
+  assert.equal(uniformFieldFrameScale(frame), 2)
+  assert.equal(uniformFieldFrameScale(undefined), 1)
+  const unequal = [...frame]; unequal[10] = 3
+  assert.equal(uniformFieldFrameScale(unequal), null)
+  const shear = [...frame]; shear[4] = 0; shear[5] = 2
+  assert.equal(uniformFieldFrameScale(shear), null)
+  const reflected = [...frame]; reflected[10] = -2
+  assert.equal(uniformFieldFrameScale(reflected), null)
+  const invalid = [...frame]; invalid[10] = NaN
+  assert.equal(uniformFieldFrameScale(invalid), null)
 })

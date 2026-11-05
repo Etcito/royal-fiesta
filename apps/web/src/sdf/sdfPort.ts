@@ -23,8 +23,8 @@ import type { MeshedAsset } from './mamaApi.ts'
 import { installShaderCache } from '../render/shaderCache.ts'
 import { deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
-import { FIELD_ATLAS_BYTES, fieldGridBytes, partDiag, planFieldAtlas, type FieldAtlasPlan, type PartFieldCost } from './fieldAtlas.ts'
-import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords } from './fieldShading.ts'
+import { FIELD_ATLAS_BYTES, partDiag, planFieldAtlas, planFieldPrograms, type FieldAtlasPlan, type PartFieldProgram } from './fieldAtlas.ts'
+import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, uniformFieldFrameScale } from './fieldShading.ts'
 
 export interface PartWorldBounds { key: string; min: number[]; max: number[] }
 
@@ -40,6 +40,8 @@ export interface ResizablePort extends SkinnedRenderPort {
 
 /** What this upload drew with which shading, plus every part that could not keep its field, named. */
 export interface ShadingReport {
+  fieldGridScale: number
+  resampledParts: number
   parts: number
   field: number
   vertex: number
@@ -379,6 +381,7 @@ class SdfRenderPort implements ResizablePort {
   private readonly debugNormals: boolean
   // The whole-world field plan (fieldAtlas) computed once before any upload, and the budget it was planned with.
   private atlasPlan: FieldAtlasPlan | null = null
+  private gridPlan: ReturnType<typeof planFieldPrograms> | null = null
   private readonly atlasBytes: number
   // RAA texture.atlas_full errors caught at upload; such a part draws vertex and is named in the report.
   private atlasFull = 0
@@ -552,27 +555,28 @@ class SdfRenderPort implements ResizablePort {
   // the first upload; registerAsset ensures it exists even when a caller skips prepare().
   private planAtlas(): FieldAtlasPlan {
     if (this.atlasPlan !== null) return this.atlasPlan
-    const costs: PartFieldCost[] = []
+    const costs: PartFieldProgram[] = []
     for (const id of [...this.meshed.keys()].sort()) {
       const meshed = this.meshed.get(id)!
       const payload = payloadOf(id, meshed)
       for (const group of payload.groups) {
         for (const part of group.parts) {
           if (part.meshes.length === 0) continue
-          // A frame with a scale draws vertex (fieldProgramMaterial names it): its grid is never uploaded, so it never
-          // costs atlas bytes and never demotes a part that can keep its field.
-          if (frameHasScale(part.frame)) continue
+          // Unsupported frames never upload a grid or displace a field-capable part.
+          if (uniformFieldFrameScale(part.frame) === null) continue
           const check = checkFieldPart(part)
           if (!check.ok) continue
           costs.push({
             key: fieldKey(id, group.group, part.partId),
             diag: partDiag(part.meshes.map(mesh => ({ positions: mesh.positions }))),
-            bytes: fieldGridBytes(check.program.grid),
+            program: check.program,
           })
         }
       }
     }
-    this.atlasPlan = planFieldAtlas(costs, this.atlasBytes)
+    this.gridPlan = planFieldPrograms(costs, this.atlasBytes)
+    this.atlasPlan = this.gridPlan.plan
+    console.info(`[sdf-port] field grids: repacked ${this.gridPlan.repackedBytes} bytes, scale ${this.gridPlan.fieldGridScale}, final ${this.atlasPlan.bytes} bytes (${this.gridPlan.resampledParts} resampled parts)`)
     return this.atlasPlan
   }
 
@@ -609,6 +613,7 @@ class SdfRenderPort implements ResizablePort {
     const failed = [...this.shadingErrors.values()].filter(reason => reason !== 'vertex mode').length
     const pendingParts = this.pendingKeys()
     return {
+      fieldGridScale: this.gridPlan?.fieldGridScale ?? 1, resampledParts: this.gridPlan?.resampledParts ?? 0,
       parts: this.shadingOfPart.size, field, vertex, texture,
       pending: pendingParts.length, pendingParts, failed,
       refused: [...this.savedRefusals].filter(key => this.shadingErrors.has(key)).sort(),
@@ -624,10 +629,8 @@ class SdfRenderPort implements ResizablePort {
     this.savedRefusals.delete(key)
   }
 
-  // A part frame with a scale cannot be a field part: the field lives in mesh space and the frame only carries the
-  // part's rotation and translation. It draws vertex normals and is named in the report and once in the console.
-  private fieldFrameError(key: string): void {
-    const reason = 'field frame has scale; mesh normals'
+  // Non-uniform field frames remain named vertex fallbacks.
+  private fieldFrameError(key: string, reason = 'field frame has non-uniform scale; mesh normals'): void {
     warnOnce(key, reason)
     this.recordPart(key, 'vertex', reason)
   }
@@ -662,6 +665,10 @@ class SdfRenderPort implements ResizablePort {
           continue
         }
         const built = partMesh(part, handles, graph, id)
+        const frameScale = uniformFieldFrameScale(part.frame)
+        if (hasFieldContract(part) && frameScale !== null && frameScale !== 1) {
+          for (let i = 0; i < built.desc.positions.length; i++) built.desc.positions[i] *= frameScale
+        }
         // One material per object: white x the blended vertex colours, with the part's roughness/metallic. A player-colour
         // part keeps its graph materials (the tint lives in them); a part with its per-pixel shading draws that instead,
         // and keeps this vertex-colour draw as its fallback while the shading compiles.
@@ -745,19 +752,18 @@ class SdfRenderPort implements ResizablePort {
       if (typeof part.fieldRefusal === 'string' && part.fieldRefusal !== '') this.savedRefusals.add(key)
       return null
     }
-    // The field program is in the part's mesh space (before the part frame). A frame that carries a scale would draw
-    // the part scaled while its field lookup stays unscaled, so that part is named and draws vertex instead.
-    if (frameHasScale(part.frame)) {
+    // Uniform frames scale both mesh positions and the distance evaluator; other scales remain refused.
+    if (uniformFieldFrameScale(part.frame) === null) {
       this.fieldFrameError(key)
       return null
     }
-    const program = check.program
     if (!this.planAtlas().field.has(key)) {
       const reason = 'atlas budget: smaller parts first'
       warnOnce(key, `vertex normals (${reason})`)
       this.recordPart(key, 'vertex', reason)
       return null
     }
+    const program = this.gridPlan!.programs.get(key)!
     const engine = this.need()
     const grid = fieldGridTexture(program)
     let texture: number | null = null
@@ -800,7 +806,7 @@ class SdfRenderPort implements ResizablePort {
     if (graph) engine.setMaterialTintMode(handle, 'graph')
     return {
       handle, wgsl: material.wgsl, data, graph,
-      params: fieldInstanceParams(texture, program),
+      params: fieldInstanceParams(texture, program, uniformFieldFrameScale(part.frame) ?? 1),
       ...(texture !== null ? { texture } : {}),
     }
   }
@@ -821,7 +827,7 @@ class SdfRenderPort implements ResizablePort {
       return null
     }
     if (frameHasScale(part.frame)) {
-      this.fieldFrameError(key)
+      this.fieldFrameError(key, 'field frame has scale; mesh normals')
       return null
     }
     const engine = this.need()

@@ -462,15 +462,15 @@ export function fieldGridTexture(program: FieldProgramLike): { width: number; he
 }
 
 /**
- * The 16 Engine.setInstanceParams floats of a field part: bounds.min and 0, then the grid handle in the
+ * The 16 Engine.setInstanceParams floats of a field part: bounds.min and uniform frame scale, then the grid handle in the
  * volume layout's texture slot, the image width and height, and the "grid is set" flag at p3.x.
  */
-export function fieldInstanceParams(texture: number | null, program: FieldProgramLike): number[] {
+export function fieldInstanceParams(texture: number | null, program: FieldProgramLike, scale = 1): number[] {
   const grid = program.grid
   const handle = texture ?? 0
   const [x, y, z] = program.bounds.min
   return [
-    x, y, z, 0,
+    x, y, z, scale,
     0, 0, 0, handle,
     grid === null ? 0 : grid.width, grid === null ? 0 : grid.height, 0, 0,
     grid !== null && handle > 0 ? 1 : 0, 0, 0, 0,
@@ -638,7 +638,7 @@ ${POSED_NORMAL_WGSL}
 // voxel, in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites
 // (centre + taps) made each field pipeline so large that a level's pipelines were still compiling after 180 s.
 // Returns the gradient in xyz and the centre distance in w.
-fn pmf_field(db: u32, p: vec3f, h: f32, w: ptr<function, array<f32, 8>>) -> vec4f {
+fn pmf_field(db: u32, p: vec3f, h: f32, scale: f32, w: ptr<function, array<f32, 8>>) -> vec4f {
   var g = vec3f(0.0);
   var centre = 0.0;
   var wt: array<f32, 8>;
@@ -646,7 +646,7 @@ fn pmf_field(db: u32, p: vec3f, h: f32, w: ptr<function, array<f32, 8>>) -> vec4
     let axis = (t + 1u) / 2u;
     let e = vec3f(select(0.0, 1.0, axis == 1u), select(0.0, 1.0, axis == 2u), select(0.0, 1.0, axis == 3u));
     let s = select(-1.0, 1.0, (t & 1u) == 0u);
-    let d = pmf_run(db, p + e * (s * h), &wt);
+    let d = pmf_run(db, (p + e * (s * h)) / scale, &wt) * scale;
     if (t == 0u) {
       centre = d;
       *w = wt;
@@ -665,9 +665,10 @@ ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
   pmf_grid_texture = u32(in.instance_params[1].w + 0.5);
   pmf_grid_size = vec2<u32>(u32(in.instance_params[2].x + 0.5), u32(in.instance_params[2].y + 0.5));
   var w: array<f32, 8>;
-  let taps = pmf_field(db, p, pmf_f(db + 7u), &w);
+  let scale = in.instance_params[0].w;
+  let taps = pmf_field(db, p, pmf_f(db + 7u) * scale, scale, &w);
   let g = taps.xyz;
-  let inside = all(p >= pmf_v3(db + 4u)) && all(p <= pmf_v3(db + 8u));
+  let inside = all(p / scale >= pmf_v3(db + 4u)) && all(p / scale <= pmf_v3(db + 8u));
   let glen = length(g);
   var n = normalize(in.normal);
   // The mesh normal only where the field is undefined: local to these fragments.
@@ -682,4 +683,20 @@ ${colour}${debugText}
     throw new Error(`field shading: the field material needs ${bytes} bytes of WGSL (RAA limit ${MATERIAL_FUNCTION_MAX_BYTES})`)
   }
   return { functionName: `pmf.${textHash(wgsl)}`, wgsl }
+}
+
+/** Positive uniform frame scale; shear and non-uniform frames remain refused. */
+export function uniformFieldFrameScale(f: ArrayLike<number> | undefined): number | null {
+  if (f === undefined) return 1
+  const lengths = [0, 1, 2].map(c => Math.hypot(f[c * 4], f[c * 4 + 1], f[c * 4 + 2]))
+  const s = lengths[0]
+  if (!Number.isFinite(s) || s <= 0 || lengths.some(v => Math.abs(v / s - 1) > 1e-4)) return null
+  for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) {
+    let dot = 0
+    for (let r = 0; r < 3; r++) dot += f[a * 4 + r] * f[b * 4 + r]
+    if (Math.abs(dot / (s * s)) > 1e-4) return null
+  }
+  const determinant = f[0] * (f[5] * f[10] - f[6] * f[9])
+    - f[4] * (f[1] * f[10] - f[2] * f[9]) + f[8] * (f[1] * f[6] - f[2] * f[5])
+  return determinant > 0 ? s : null
 }

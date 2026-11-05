@@ -7,6 +7,7 @@ import { createSdfPort } from './sdfPort.ts'
 import { decodeMeshBytes } from './meshWire.ts'
 import { assetSkin } from '../content/cosmeticSkin.ts'
 import { AnimDriver } from '@royal-fiesta/game/anim/driver'
+import { loadAnimBrick } from '@royal-fiesta/game/anim/brick'
 import { WornMounts } from '@royal-fiesta/game/render/wornLook'
 import type { MeshedAsset } from './mamaApi.ts'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
@@ -33,6 +34,15 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
   const owner=Object.values(docs.get('penguin.body').nodes).find((n:any)=>n.rig) as any
   const {bindings,smooth,...rig}=owner.rig
   const graph=await (await fetch('./penguin.animgraph.json')).text()
+  const brick = await loadAnimBrick(), rigHandle = brick.loadRig(JSON.stringify(rig))
+  // A transient FK pose, sampled by the same WASM clip evaluator as Modeler pose mode.
+  const qz = (degrees: number) => [0,0,Math.sin(degrees*Math.PI/360),Math.cos(degrees*Math.PI/360)]
+  const raised = brick.loadClip(rigHandle, JSON.stringify({ format:'raa.clip',version:2,name:'raised-arms',rig:rig.name,
+    lengthTicks:60,loop:false,rootMotion:'none',events:[],tracks:[
+      ...[['upper.l',65],['upper.r',-65],['lower.l',20],['lower.r',-20]].map(([bone,angle]) => ({bone,channel:'rotation',keys:[{tick:0,v:qz(Number(angle)),interp:'CONSTANT'}]})),
+      {bone:'head',channel:'rotation',keys:[{tick:0,v:[0,Math.sin(.3),0,Math.cos(.3)],interp:'CONSTANT'},
+        {tick:30,v:[0,-Math.sin(.3),0,Math.cos(.3)],interp:'CONSTANT'}]},
+    ] }))
   const mounts=new WornMounts(port), files:{name:string;blob:Blob}[]=[],records:unknown[]=[]
   try {
     for (const id of manifest) {
@@ -40,7 +50,7 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
       if(!skin || !skin.parts.length)throw Error(id+': no skin')
       port.registerSkinned(id,skin)
       mounts.sync({colour:0,items:[{asset:{id} as PrimsAsset,mount:[0,0,0],tint:null}]})
-      for (const [clip,mode] of [['walk',0],['dive-slide',2]] as const) {
+      for (const [clip,mode] of [['walk',0],['raised-arms',0]] as const) {
         const driver=await AnimDriver.load(graph,JSON.stringify(rig),owner.clips.map((c:unknown)=>JSON.stringify(c)),{ik:false})
         const sheet=document.createElement('canvas');sheet.width=960;sheet.height=480
         const ctx=sheet.getContext('2d')!
@@ -48,7 +58,7 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
           for(let tick=0;tick<=42;tick++) {
             driver.observeTick(tick,[{id:0,mode,grounded:mode===0,surface:'normal',vel:{x:4,y:0,z:0},emote:0}])
             if(tick!==18&&tick!==42)continue
-            const pose=driver.pose(0)!.skin
+            const pose=clip==='raised-arms' ? brick.sampleClip(raised,tick).skin : driver.pose(0)!.skin
             port.setPose(bodyInstance,pose);mounts.setPose(pose)
             port.setTransform(bodyInstance,[0,0,0],[0,0,0,1],[1,1,1]);mounts.draw([0,0,0],[0,0,0,1],[1,1,1])
             port.setCamera(0,{eye:[-3,1.5,5],target:[0,0.25,0],fovYDeg:42,near:0.1,far:100})
@@ -74,7 +84,7 @@ async function skinProof(input: {vertexNormals?: boolean; items?: string[]} = {}
       }
     }
     return {json:{records,adapter:{vendor:info.vendor,architecture:info.architecture,description:info.description},inventory:port.inventory?.()},files}
-  }finally{mounts.dispose();port.dispose();canvas.remove()}
+  }finally{raised.free();rigHandle.free();mounts.dispose();port.dispose();canvas.remove()}
 }
 
 async function cosmeticThumbs() {

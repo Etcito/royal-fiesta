@@ -255,6 +255,17 @@
                   "factor": 1
                 }
               ]
+            },
+            {
+              "source": {
+                "shape": "hat_head_band"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
             }
           ],
           "smooth": 0.2
@@ -370,7 +381,7 @@
       },
       "hat_left_bell": {
         "id": "hat_left_bell",
-        "name": "left_bell",
+        "name": "right_bell",
         "kind": "sphere",
         "transform": {
           "position": [-0.7, 1.17, 0.02]
@@ -386,7 +397,7 @@
       },
       "hat_left_bell_mouth": {
         "id": "hat_left_bell_mouth",
-        "name": "left_bell_mouth",
+        "name": "right_bell_mouth",
         "kind": "sphere",
         "transform": {
           "position": [0, -0.045, 0.064]
@@ -399,7 +410,7 @@
       },
       "hat_right_bell": {
         "id": "hat_right_bell",
-        "name": "right_bell",
+        "name": "left_bell",
         "kind": "sphere",
         "transform": {
           "position": [0.7, 1.17, 0.02]
@@ -415,7 +426,7 @@
       },
       "hat_right_bell_mouth": {
         "id": "hat_right_bell_mouth",
-        "name": "right_bell_mouth",
+        "name": "left_bell_mouth",
         "kind": "sphere",
         "transform": {
           "position": [0, -0.045, 0.064]
@@ -466,14 +477,14 @@
   },
   "collision": [],
   "anchors": {
-    "head": {
+    "jester_hat_head": {
       "t": [0, 0.8, 0],
       "r": [0, 0, 0, 1]
     }
   },
   "bounds": {
-    "min": [-1.060101, 0.619899, -0.36],
-    "max": [1.060101, 1.907093, 0.4]
+    "min": [-1.055885, 0.925, -0.36],
+    "max": [1.055885, 1.907557, 0.4]
   },
-  "hash": "f2a4b52a8b96eaa018a5911484302af291fabafe080a928ac2f016024ca95b3e"
+  "hash": "d8de2d502fa71b3f0a22d6bb30849dc33b45dccb613fc0c3c04a16ca7029eaa9"
 }

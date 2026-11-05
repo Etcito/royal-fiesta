@@ -53,7 +53,19 @@
           "id": "penguin.body",
           "node": "penguin",
           "extraBones": [],
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "group": "penguin_clearance"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": true
@@ -1985,8 +1997,8 @@
     }
   },
   "bounds": {
-    "min": [-0.492181, -0.2111, -0.68913],
-    "max": [0.584156, 0.632624, 0.73073]
+    "min": [-0.460803, -0.2112, -0.68926],
+    "max": [0.584366, 0.630531, 0.73086]
   },
-  "hash": "546cb7762ead793084b575bbf0c9782883e1f7cc62d0a6d9e3badf431032952e"
+  "hash": "a77e36bf5bd7a996a7b98f0b80111707c7be9de80662552dd116e98366133134"
 }

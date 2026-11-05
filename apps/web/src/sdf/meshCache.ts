@@ -15,9 +15,10 @@ const DB_VERSION = 1
 /** The key of MAMA's meshFileKey: sha256 of `<asset hash>|<canonical mesher>|<MAMA MESH_COMPATIBILITY>`. */
 export async function meshCacheKey(a: GameAsset, meshCompatibility: string, sha256Hex: (b: Uint8Array) => Promise<string>): Promise<string> {
   if (meshCompatibility === '') throw new RefusalError('sdf', 'MESH_COMPATIBILITY', 'no mesh compatibility version; it comes from the pinned MAMA (docs/bricks.md)')
-  const nodes = (a.document?.nodes ?? {}) as Record<string, { rigRef?: unknown; rig?: unknown }>
+  const nodes = (a.document?.nodes ?? {}) as Record<string, { rigRef?: unknown; rig?: unknown; asset?: { cosmetic?: { binding?: string } } }>
   const refs = Object.entries(nodes).filter(([, n]) => n.rigRef).sort(([a], [b]) => a.localeCompare(b)).map(([id, n]) => [id, n.rig])
-  const dependency = refs.length ? `|rig:${canonicalJson(refs)}` : ''
+  const cosmetic = Object.values(nodes).some(n => n.asset?.cosmetic?.binding === 'penguin')
+  const dependency = (refs.length ? `|rig:${canonicalJson(refs)}` : '') + (cosmetic ? '|cosmeticSkin:1' : '')
   const material = `${a.hash}|${canonicalJson(a.mesher)}|${meshCompatibility}${dependency}`
   return sha256Hex(new TextEncoder().encode(material))
 }

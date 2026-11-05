@@ -1,4 +1,5 @@
 import type { RenderPort, SkinnedAssetT, SkinPartT, SkinRigT } from '@royal-fiesta/game/render/port'
+import { rigReferenceSourceBones } from '@royal-fiesta/game/rigReference'
 
 /** Part names follow the SDF port upload, including its duplicate-name disambiguation. */
 export function assetSkin(data: unknown, document: Record<string, unknown>, penguin?: SkinRigT): SkinnedAssetT | null {
@@ -10,22 +11,15 @@ export function assetSkin(data: unknown, document: Record<string, unknown>, peng
     if (part.skin) parts.push({ name, skin: part.skin })
   }
   if (!parts.length) return null
-  const nodes = document.nodes as Record<string, { rig?: SkinRigT & { parentBone?: string }; rigRef?: { extraBones: { name: string; parent: string }[] };  clips?: unknown[]; asset?: { cosmetic?: { binding: string } } }>
+  const nodes = document.nodes as Record<string, { rig?: SkinRigT & { parentBone?: string }; rigRef?: { extraBones: { name: string; parent: string; jiggle?: unknown }[] };  clips?: unknown[]; asset?: { cosmetic?: { binding: string } } }>
   const owner = Object.values(nodes).find(n => n.rig)
   if (!owner?.rig) throw new Error('Skinned asset is missing its rig')
   if (penguin) {
     if (owner.asset?.cosmetic?.binding !== 'penguin') return null
     if (owner.rigRef) {
-      const indices = new Map(penguin.bones.map((b, i) => [b.name, i]))
-      const sourceBones: number[] = []
-      for (const b of owner.rig.bones) {
-        const at = indices.get(b.name) ?? (b.parent === null ? undefined : indices.get(b.parent))
-        if (at === undefined) throw new Error(`Referenced cosmetic bone '${b.name}' has no penguin ancestor`)
-        sourceBones.push(at)
-        indices.set(b.name, at)
-      }
-      const extra = owner.rigRef.extraBones[0]
-      const mount = extra ? indices.get(extra.name) : undefined
+      const sourceBones = rigReferenceSourceBones(owner.rig.bones, penguin.bones)
+      const jiggle = owner.rigRef.extraBones.find(b => b.jiggle !== undefined)
+      const mount = jiggle ? sourceBones[owner.rig.bones.findIndex(b => b.name === jiggle.name)] : undefined
       return { rig: owner.rig, clips: owner.clips ?? [], parts, sourceBones, inheritedBones: penguin.bones.length,
         ...(mount === undefined ? {} : { mount }) }
     }

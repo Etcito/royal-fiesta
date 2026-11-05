@@ -10,7 +10,7 @@
     "output": "paramesh",
     "params": {
       "fieldResolution": 16,
-      "subdivisions": 4,
+      "subdivisions": 5,
       "transitionLoops": 1
     }
   },
@@ -44,7 +44,7 @@
           "output": "paramesh",
           "params": {
             "fieldResolution": 16,
-            "subdivisions": 4,
+            "subdivisions": 5,
             "transitionLoops": 1
           }
         },
@@ -53,7 +53,107 @@
           "id": "penguin.body",
           "node": "penguin",
           "extraBones": [],
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "shape": "shell"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "shell_hem"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "lattice_cw_ring"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "lattice_ccw_ring"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "strap"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "crown_base"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "leaf_mid"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "leaf_outer"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "leaf_inner"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": true
@@ -711,5 +811,5 @@
     "min": [-0.635, -0.756, -0.6625],
     "max": [0.635, 1.2705, 0.6625]
   },
-  "hash": "7422905096a9011ea7b5ed9b7aeda65b3324861726655afae5d985317aba022b"
+  "hash": "617c8a4273aa6b0a3b2ad113f1340b4f46c3d82812640ef0d0f37807071660c4"
 }

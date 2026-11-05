@@ -81,6 +81,204 @@
                   "factor": 1
                 }
               ]
+            },
+            {
+              "source": {
+                "shape": "handle"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "grip"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "pommel"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "collar"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "star_core"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "star_p1"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "star_p2"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "star_p3"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "star_p4"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "star_p5"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spark_a"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spark_b"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spark_c"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spark_d"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spark_e"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spark_f"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spark_g"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spark_h"
+              },
+              "bones": [
+                {
+                  "bone": "tip.r",
+                  "factor": 1
+                }
+              ]
             }
           ],
           "smooth": 0.2
@@ -434,5 +632,5 @@
     "min": [-2.03, 0.095, -0.066],
     "max": [-1.21, 1.678, 0.066]
   },
-  "hash": "de6d797ed77614c7b5f709a4a93ae3faba051fbe4e8ca6f5aaba9d00c065dae2"
+  "hash": "d77aa1fba393b5fb5a8e5bd0b737526395c7a43180eb7ab43f7e6cf600a19f74"
 }

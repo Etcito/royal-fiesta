@@ -72,9 +72,241 @@
           "game": "royal-fiesta",
           "id": "penguin.body",
           "node": "penguin",
-          "extraBones": [],
-          "bindings": [],
-          "smooth": 0.2
+          "extraBones": [
+            {
+              "name": "outfit",
+              "parent": "root",
+              "rest": {
+                "t": [
+                  0,
+                  0,
+                  0
+                ],
+                "r": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "s": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            }
+          ],
+          "bindings": [
+            {
+              "source": {
+                "group": "dragon_suit"
+              },
+              "bones": [
+                {
+                  "bone": "outfit",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "left_shoulder"
+              },
+              "bones": [
+                {
+                  "bone": "upper.l",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "onesie_body"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "onesie_hips"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "belly_panel"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "back_spike_0"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "back_spike_1"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "back_spike_2"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "back_spike_3"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "back_spike_4"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tail_0"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tail_1"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tail_2"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tail_3"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tail_4"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tail_5"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tail_6"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tail_7"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "dragon_suit_collar"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            }
+          ]
         },
         "gameCollision": false
       },
@@ -197,7 +429,7 @@
         "name": "left_cuff",
         "kind": "paramesh",
         "transform": {
-          "position": [-0.27, -0.79, 0.015]
+          "position": [0.27, -0.79, 0.015]
         },
         "smooth": 0.055,
         "material": "green",
@@ -233,7 +465,7 @@
         "name": "left_shoulder",
         "kind": "cylinder",
         "transform": {
-          "position": [-0.5, 0.35, 0],
+          "position": [0.5, 0.35, 0],
           "rotation": [0, 0, 90],
           "scale": [1, 1, 0.8]
         },
@@ -250,7 +482,7 @@
         "name": "right_cuff",
         "kind": "paramesh",
         "transform": {
-          "position": [0.27, -0.79, 0.015]
+          "position": [-0.27, -0.79, 0.015]
         },
         "smooth": 0.055,
         "material": "green",
@@ -286,7 +518,7 @@
         "name": "right_shoulder",
         "kind": "cylinder",
         "transform": {
-          "position": [0.5, 0.35, 0],
+          "position": [-0.5, 0.35, 0],
           "rotation": [0, 0, 90],
           "scale": [1, 1, 0.8]
         },
@@ -858,5 +1090,5 @@
     "min": [-0.75, -1.025, -0.931173],
     "max": [0.75, 0.778289, 0.63]
   },
-  "hash": "37b16304dcca8d5c0729482ec2701e1e737abf50fc3c60d38ee912a0d0512407"
+  "hash": "3f662bbcaf104d4c873deb77dcdf72e611c6957d5cee3a5913355c8047cf7d68"
 }

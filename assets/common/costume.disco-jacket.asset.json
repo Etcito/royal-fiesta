@@ -95,7 +95,481 @@
           "id": "penguin.body",
           "node": "penguin",
           "extraBones": [],
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "shape": "outfit_jacket_body"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_front_opening"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_collar_back"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_collar_l"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_collar_r"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_1"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_2"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_3"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_4"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_5"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_6"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_7"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_8"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_9"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_10"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_11"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_12"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_13"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_14"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_15"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_16"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_17"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_18"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_19"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_20"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_21"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_22"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_23"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_24"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_25"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_26"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_27"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_28"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_29"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_30"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_31"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_32"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_33"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_34"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_35"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_36"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_37"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "outfit_sequin_38"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": false
@@ -108,7 +582,6 @@
           "position": [0, -0.02, 0.05],
           "scale": [1, 1, 0.98]
         },
-        "round": 0.07,
         "material": "outfit_m1",
         "params": {
           "height": 0.62,
@@ -763,5 +1236,5 @@
     "min": [-0.711606, -0.58, -0.564],
     "max": [0.711606, 0.663649, 1.03]
   },
-  "hash": "1742f975e0212dec336541b3df534c0cd655e63b2ff1bb3e71741c876d51bd76"
+  "hash": "04a865c09129286e7254e7db9e7e44f1eeed915cba90787a033cf7007758b868"
 }

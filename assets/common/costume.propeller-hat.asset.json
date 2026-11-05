@@ -64,6 +64,17 @@
                   "factor": 1
                 }
               ]
+            },
+            {
+              "source": {
+                "group": "penguin_clearance"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
             }
           ],
           "smooth": 0.2
@@ -2224,5 +2235,5 @@
     "min": [-0.499221, 0.193946, -0.607861],
     "max": [0.499221, 1.361155, 0.518172]
   },
-  "hash": "f87ef6a8c43ba270fb944dbf60406df1b830a0e7b752771a8a6da42a9defda6a"
+  "hash": "2a7cb53732b58ec0eb05618982cb362fda154b65562d358aa8e64b1fb4de9343"
 }

@@ -5,6 +5,20 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 type Obj = Record<string, any>
 export type RigAssetLoader = (game: string, id: string) => Promise<Record<string, unknown> | null>
 
+/** Palette routing only: vertex weights are produced by MAMA, including legacy whole-costume binding handling.
+ * Keep each inherited bone's own pose; extra bones follow their nearest penguin ancestor until jiggle overrides it. */
+export function rigReferenceSourceBones(bones: readonly { name: string; parent: string | null }[],
+  penguin: readonly { name: string }[]): number[] {
+  const indices = new Map(penguin.map((b, i) => [b.name, i]))
+  return bones.map(b => {
+    const inherited = indices.get(b.name)
+    const at = inherited ?? (b.parent === null ? undefined : indices.get(b.parent))
+    if (at === undefined) throw new Error(`Referenced cosmetic bone '${b.name}' has no penguin ancestor`)
+    indices.set(b.name, at)
+    return at
+  })
+}
+
 export function validateGameRigReferences(document: Record<string, unknown>): void {
   const nodes = document.nodes as Record<string, Obj>
   for (const [id, node] of Object.entries(nodes ?? {})) {

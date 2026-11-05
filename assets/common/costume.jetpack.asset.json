@@ -69,7 +69,195 @@
           "id": "penguin.body",
           "node": "penguin",
           "extraBones": [],
-          "bindings": [],
+          "bindings": [
+            {
+              "source": {
+                "shape": "plate"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tank_r"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tank_r_b1"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tank_r_b2"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tank_r_b3"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "knob_r"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "nozzle_r"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "flame_r"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tank_l"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tank_l_b1"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tank_l_b2"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "tank_l_b3"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "knob_l"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "nozzle_l"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "flame_l"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "strap_chest"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "strap_belly"
+              },
+              "bones": [
+                {
+                  "bone": "root",
+                  "factor": 1
+                }
+              ]
+            }
+          ],
           "smooth": 0.2
         },
         "gameCollision": true
@@ -408,5 +596,5 @@
     "min": [-0.5, -0.78, -0.716],
     "max": [0.5, 0.575, 0.44]
   },
-  "hash": "08ef1657b8996845874899776b3cd8c3f0857e0ffb67957526a119b260a1a160"
+  "hash": "1df7786bc354bae80456ca42187f025d71d42388a14d0817a68797a0678716af"
 }

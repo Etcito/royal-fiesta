@@ -84,6 +84,237 @@
                   "factor": 1
                 }
               ]
+            },
+            {
+              "source": {
+                "shape": "band"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spike_1"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spike_2"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spike_3"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spike_4"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "spike_5"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "cap_1"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "cap_2"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "cap_3"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "cap_4"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "cap_5"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_big_1"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_big_2"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_big_3"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_big_4"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_big_5"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_small_1"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_small_2"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_small_3"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_small_4"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
+            },
+            {
+              "source": {
+                "shape": "gem_small_5"
+              },
+              "bones": [
+                {
+                  "bone": "head",
+                  "factor": 1
+                }
+              ]
             }
           ],
           "smooth": 0.2
@@ -508,5 +739,5 @@
     "min": [-0.3908, 0.9275, -0.383],
     "max": [0.3908, 1.35, 0.426]
   },
-  "hash": "9f2cf052a6443fa820f498ef51dca0cb973b0d12cc0fbb7965f6bd3a99457a8b"
+  "hash": "62866f2bc4de1a2a684da38433b50baeb523cdca9e69cce11328ed509d46f45c"
 }

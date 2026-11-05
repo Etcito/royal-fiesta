@@ -3,8 +3,9 @@
 // palettes to the render port. It never touches the simulation, its snapshots or rollback, and nothing in
 // packages/sim imports it.
 //
-// A cosmetic either copies the whole penguin rig (it is posed with the penguin's own skin matrices) or carries its own
-// small armature mounted on a penguin bone (MAMA rig.parentBone; assetSkin records that bone's index as skin.mount).
+// A referenced cosmetic takes the full live penguin pose, with extra bones following their own penguin ancestors.
+// JiggleWorld.setPoseSkin reconstructs that animated pose in WASM every frame, before adding secondary motion.
+// A legacy cosmetic can instead carry a small armature mounted on a penguin bone (rig.parentBone / skin.mount).
 // A mounted armature at rest follows its bone rigidly: every one of its bones gets the penguin skin matrix of the
 // mount bone (wornPalette). Its jiggle bones are stepped by raa-anim's JiggleWorld (Rust/WASM): one world per view,
 // one handle per worn instance, one step call per rendered frame after the main pose.
@@ -36,9 +37,10 @@ export function mountOf(skin: SkinnedAssetT | undefined): { mount: number; bones
   return skin?.mount === undefined ? null : { mount: skin.mount, bones: skin.rig.bones.length }
 }
 
-/** Whether a worn cosmetic has bones that jiggle (its rig is an own armature with a `jiggle` on some bone). */
+/** Whether a worn cosmetic has secondary bones (a referenced rig or a mounted armature) that jiggle. */
 export function hasJiggle(skin: SkinnedAssetT | undefined): boolean {
-  return skin?.mount !== undefined && (skin.rig.bones as readonly { jiggle?: unknown }[]).some(b => b.jiggle !== undefined)
+  return skin !== undefined && (skin.mount !== undefined || skin.sourceBones !== undefined)
+    && (skin.rig.bones as readonly { jiggle?: unknown }[]).some(b => b.jiggle !== undefined)
 }
 
 const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
@@ -106,6 +108,10 @@ export class CosmeticJiggle {
     this.pending = []
     this.stepped = 0
     const active = this.pick(queued, dtS)
+    // A frame with no active chains never calls world.step(), so its serial alone cannot detect the gap.
+    // Discard stale spring state even when quality/distance/a late frame skips the entire batch.
+    const instances = new Set(active.map(p => p.instance))
+    for (const [instance, known] of this.handles) if (!instances.has(instance)) this.world?.reset(known.handle)
     const world = active.length > 0 ? this.ready() : null
     const done = new Set<Pending>()
     if (world !== null) {
@@ -114,8 +120,16 @@ export class CosmeticJiggle {
         const handle = this.handleOf(world, p)
         if (handle === null) continue
         placement(p.t, p.r, p.s, frames, stepping.length * 32)
-        const at = p.skin.mount! * 16
-        frames.set(at + 16 <= p.penguin.length ? p.penguin.subarray(at, at + 16) : IDENTITY, stepping.length * 32 + 16)
+        let mount: Float32Array = IDENTITY
+        if (p.skin.sourceBones) {
+          // Re-pose on EVERY rendered frame, even between sim ticks. WASM reconstructs animated locals from
+          // exactly the palette the body draws; only the spring offset has its own integration clock.
+          world.setPoseSkin(handle, wornPalette(p.skin, p.penguin))
+        } else {
+          const at = p.skin.mount! * 16
+          if (at + 16 <= p.penguin.length) mount = p.penguin.subarray(at, at + 16)
+        }
+        frames.set(mount, stepping.length * 32 + 16)
         handles.push(handle)
         stepping.push(p)
       }
@@ -128,10 +142,10 @@ export class CosmeticJiggle {
             const sampled = palettes.slice(at, at + size)
             if (p.skin.sourceBones) {
               const result = wornPalette(p.skin, p.penguin)
-              // JiggleWorld mounts a rest rig on one animated bone. Keep the inherited palette from the live penguin;
-              // use the spring result only for extra bones on this mount.
+              // Keep inherited matrices byte-identical to the body. All extra bones use the live animated pose
+              // plus secondary motion, including extras attached to different penguin bones.
               for (let b = p.skin.inheritedBones!; b < p.skin.rig.bones.length; b++) {
-                if (p.skin.sourceBones[b] === p.skin.mount) result.set(sampled.subarray(b * 16, b * 16 + 16), b * 16)
+                result.set(sampled.subarray(b * 16, b * 16 + 16), b * 16)
               }
               setPose(p.instance, result)
             } else setPose(p.instance, sampled)

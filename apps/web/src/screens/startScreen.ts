@@ -7,7 +7,7 @@ import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, QuatT, RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { restPoseSkin } from '@royal-fiesta/game/render/sceneView'
-import { CosmeticJiggle, wornPalette } from '@royal-fiesta/game/anim/jiggle'
+import { CosmeticJiggle, hasJiggle, wornPalette } from '@royal-fiesta/game/anim/jiggle'
 import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { Action } from '@royal-fiesta/game/screens/nav'
@@ -208,8 +208,8 @@ export function mountStartScreen(
       for (const item of worn.values()) {
         if (!item.skinned) continue
         const skin = port.skinOf?.(cosmeticOf(item.id)?.asset ?? item.id)
-        if (skin?.mount !== undefined) jiggle.add(item.instance, skin, matrices, origin, rotation, UNIT, true, 0)
-        else port.setPose(item.instance, matrices)
+        if (skin && (skin.mount !== undefined || hasJiggle(skin))) jiggle.add(item.instance, skin, matrices, origin, rotation, UNIT, true, 0)
+        else port.setPose(item.instance, wornPalette(skin, matrices))
       }
       jiggle.flush((now - lastFrame) / 1000, (instance, palette) => port.setPose!(instance, palette))
     }

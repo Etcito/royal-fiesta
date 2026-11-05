@@ -22,6 +22,7 @@ import type { ZoneNetScene } from '../zone/zoneNetScene.ts'
 import { ShowDirector } from './showDirector.ts'
 import type { ShowFrame } from './showDirector.ts'
 import { loadShowContent } from './showContent.ts'
+import type { ShowContent } from './showContent.ts'
 import { prepareCourse } from '../render/pipelineGate.ts'
 import type { RoundStage } from '../render/pipelineGate.ts'
 
@@ -49,9 +50,16 @@ export interface ShowModeOptions {
    * goes one asset at a time, each once the page compiles nothing, until adopt().
    */
   background?: boolean
+  /** The room seat this page plays (online: its lobby seat); 0 offline. */
+  localSeat?: number
+  /** Seat names (online: the lobby's players, then bots); offline names when absent. */
+  name?: (seat: number) => string
 }
 
-/** Owns the authoritative offline simulation and round canvas; the app owns the stage. */
+/**
+ * Owns the show's round canvas: per-round content, port, scene and warm-up draw, and the director's screens. Offline
+ * (create) it also owns and steps the simulation; online (online) the network flow owns and steps the match.
+ */
 export class ShowMode {
   private full: ZoneFullMatch | null = null
   private director: ShowDirector | null = null
@@ -68,6 +76,8 @@ export class ShowMode {
   private sounds: string[] = []
   private background: boolean
   private look: WornLook | null
+  // Online: PlayFlow steps the match and disposes it; this show only presents it.
+  private driven = false
 
   private constructor(options: ShowModeOptions) {
     this.options = options
@@ -107,6 +117,23 @@ export class ShowMode {
     }
     return mode
   }
+
+  /** The online show: the same rounds, screens and loading on a match the network flow steps (OnlineMatch.full). */
+  static online(options: ShowModeOptions, full: ZoneFullMatch, content: ShowContent): ShowMode {
+    const mode = new ShowMode(options)
+    mode.driven = true
+    try {
+      mode.full = full
+      mode.director = new ShowDirector(full, content.info, seat => mode.name(seat), mode.localSeat,
+        options.voteMs ?? DEFAULT_VOTE_MS, PROFILES.sprint.introTicks * 1000 / 60)
+      mode.current = mode.director.step(null, 0)
+    } catch (error) {
+      mode.fail(error)
+    }
+    return mode
+  }
+
+  private get localSeat(): number { return this.options.localSeat ?? 0 }
 
   /**
    * Prepares the show behind the start screen: its content is loaded and its director is on its first round. A first
@@ -167,7 +194,10 @@ export class ShowMode {
       }),
     }
   }
-  private name(seat: number): string { return seat === 0 ? this.options.localName : seat < this.humanCount ? `P${seat + 1}` : `Bot ${seat}` }
+  private name(seat: number): string {
+    if (this.options.name) return this.options.name(seat)
+    return seat === 0 ? this.options.localName : seat < this.humanCount ? `P${seat + 1}` : `Bot ${seat}`
+  }
   get camera() { return this.scene?.camera ?? null }
   get lookCanvas(): HTMLCanvasElement { return this.canvas }
   get failure(): string | null { return this.error }
@@ -197,7 +227,7 @@ export class ShowMode {
       this.sounds.push(...this.current.sounds)
       this.loadRound()
       if (!this.current.hold && !this.finished) {
-        this.full.frame(dt, (round, out) => this.sample(round, out, human))
+        if (!this.driven) this.full.frame(dt, (round, out) => this.sample(round, out, human))
         // Start loading on the vote result, before the next animation frame.
         if (this.activeRound() !== null && this.activeRound()!.plan.index !== this.index) {
           this.current = this.director.step(null, 0)
@@ -257,15 +287,15 @@ export class ShowMode {
       const prepared = await checkAwait(`round ${index}: render port`, () => prepareZoneNetScene({
         canvas: this.canvas, crowdCull: round.seatOf.length > 8,
         followSeats: Array.from({ length: this.humanCount }, (_, k) => {
-          const local = round.seatOf.indexOf(k)
+          const local = round.seatOf.indexOf(this.localSeat + k)
           return local >= 0 ? local : (round.localSeats[0] ?? 0)
         }), orbit: this.options.orbit, course: round.plan.course, createPort: content.createPort,
         assets: content.assets, bean: content.bean,
-        look: round.seatOf.includes(0) ? () => this.look : undefined,
+        look: round.seatOf.includes(this.localSeat) ? () => this.look : undefined,
         character: content.character, skinned: content.skinned, dressing: content.dressing,
       }))
       if (this.disposed || this.error !== null || this.index !== index) { prepared.dispose(); return }
-      const local = round.seatOf.indexOf(0)
+      const local = round.seatOf.indexOf(this.localSeat)
       const scene = prepared.attach(round.seatOf.length, local >= 0 ? local : (round.localSeats[0] ?? 0))
       this.scene = scene
       // Mount the near scene before waiting for its animation assets.
@@ -287,7 +317,7 @@ export class ShowMode {
   private humanDomain() {
     const round = this.activeRound()
     if (round == null) return null
-    const seat = round.seatOf.indexOf(0)
+    const seat = round.seatOf.indexOf(this.localSeat)
     if (seat < 0) return null
     const domain = round.match.domains.find(domain => domain.seats.includes(seat))
     return domain === undefined ? null : { round, seat, domain }
@@ -318,7 +348,7 @@ export class ShowMode {
     }
     return {
       view, names: round.seatOf.map(roomSeat => this.name(roomSeat)), roundTicks: duration,
-      seat, name: this.name(0), status: domain.status(seat), tick: domain.tick,
+      seat, name: this.name(this.localSeat), status: domain.status(seat), tick: domain.tick,
       round: round.plan.index, kind: round.plan.kind, final: round.plan.final,
       target: round.plan.target, entrants: round.seatOf.length,
       result: round.match.currentLedger?.result ?? null,
@@ -342,7 +372,7 @@ export class ShowMode {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
-    this.full?.dispose()
+    if (!this.driven) this.full?.dispose()
     this.full = null
     this.scene?.dispose()
     this.scene = null

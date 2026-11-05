@@ -109,13 +109,11 @@ import { mountCountdown } from '../screens/countdown.ts'
 import { mountElimShow } from '../screens/elimShow.ts'
 import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
+import { loadShowContent } from './showContent.ts'
+import type { ShowContent } from './showContent.ts'
 import type { ShowModeOptions } from './showMode.ts'
-import { ShowDirector } from './showDirector.ts'
 import type { ShowFrame } from './showDirector.ts'
 import type { OnlineMatch } from '@royal-fiesta/game/net/onlineMatch'
-import { attachZoneNetScene } from '../zone/zoneNetScene.ts'
-import type { ZoneNetScene } from '../zone/zoneNetScene.ts'
-import { ZoneFeatures } from '../zone/zoneLobbyPlay.ts'
 import { EconomyScreens } from './economyScreens.ts'
 import type { ElimShowModel } from '@royal-fiesta/game/flow/elimShow'
 import type { BootOptions, TourGame } from './uiTour.ts'
@@ -150,7 +148,8 @@ interface Query {
 type Look = { dx: number; dy: number; rx: number; ry: number }
 
 // Content, physics and one port per client canvas, all ready before any mode starts.
-interface Loaded { R: RapierModule; content: GameContent; ports: RenderPort[]; canvases: HTMLCanvasElement[]; course: ResolvedCourse | null }
+// show: the season maps and zone sidecars of the show (ShowMode), loaded when Play can go online.
+interface Loaded { R: RapierModule; content: GameContent; ports: RenderPort[]; canvases: HTMLCanvasElement[]; course: ResolvedCourse | null; show: ShowContent | null }
 
 const STEP_S = 1 / 60
 const PLAYERS = 8
@@ -460,6 +459,8 @@ class ShowAdapter implements Mode {
 interface ModeCtx {
   look?: () => WornLook | null
   loaded: Loaded; q: Query; orbit: OrbitCamera; prepared?: boolean
+  // The game's views element: an online show adds its round canvas there.
+  views?: HTMLElement
   // Touch controls drive seat 0 and hold it: the local table then has room for one seat only.
   touch: boolean
   // Local play's S26 canvas layout (App.setLayout): one cell per seat, plus the overview cell at 3.
@@ -474,9 +475,6 @@ class MatchPresenter {
   private readonly c: ModeCtx
   private readonly stage: PodiumStage
   private scene: SceneView | null = null
-  private zoneScene: ZoneNetScene | null = null
-  private zoneFeatures: ZoneFeatures | null = null
-  private zoneRound = -1
   private podium: number[] | null = null
 
   constructor(c: ModeCtx) {
@@ -508,27 +506,6 @@ class MatchPresenter {
     })
   }
 
-  drawZone(match: OnlineMatch, seat: number, dt: number): void {
-    const round = match.full.round
-    if (round === null) return
-    if (round.plan.index !== this.zoneRound) {
-      this.end()
-      this.zoneRound = round.plan.index
-      const { content, ports, canvases } = this.c.loaded
-      const follow = round.seatOf.indexOf(seat)
-      this.zoneScene = attachZoneNetScene({ canvas: canvases[0], course: round.plan.course,
-        createPort: async () => ports[0], disposePort: false, feed: match.feed,
-        assets: name => content.assets(name), bean: content.character(), character: content.character(),
-        skinned: skinnedCharacterOf(content), dressing: content.dressing(), orbit: this.c.orbit,
-        loadingPaint: !this.c.prepared, look: follow >= 0 ? this.c.look : undefined,
-      }, ports[0], round.seatOf.length, follow >= 0 ? follow : round.localSeats[0] ?? 0)
-      this.zoneFeatures = new ZoneFeatures(ports[0], name => content.assets(name))
-    }
-    this.zoneScene?.update(round.match, 1, dt)
-    const follow = round.seatOf.indexOf(seat)
-    this.zoneFeatures?.update(round.match.domains.find(domain => domain.seats.includes(follow)))
-  }
-
   // podium: the places to show once known (null before). The HUD is drawn by the app's screen rules.
   draw(sim: MatchSim, smoother: Parameters<SceneView['update']>[1], alpha: number, dt: number, podium: readonly number[] | null): void {
     if (podium !== null && podium.length > 0 && this.podium === null) {
@@ -547,11 +524,6 @@ class MatchPresenter {
   end(): void {
     this.scene?.dispose()
     this.scene = null
-    this.zoneScene?.dispose()
-    this.zoneScene = null
-    this.zoneFeatures?.dispose()
-    this.zoneFeatures = null
-    this.zoneRound = -1
     this.podium = null
     this.podiumS = 0
     this.stage.hide()
@@ -1125,28 +1097,29 @@ class OnlineMode implements Mode {
   private readonly pump: NetPump
   private readonly netDiag = new NetDiag()
 
-  readonly show = { models: null as ShowFrame | null, cues: (): string[] => this.cueQueue.splice(0) }
-  private readonly cueQueue: string[] = []
-  private director: ShowDirector | null = null
+  // The network show's rounds, screens and loading: ShowMode, the in-page show's presenter, on the flow's match.
+  private showMode: ShowMode | null = null
   private showMatch: OnlineMatch | null = null
+  readonly show = { models: null as ShowFrame | null, cues: (): string[] => this.showMode?.cues() ?? [] }
   elapsedMs = 0
   round = 0
   get localSeat(): number { return this.seat }
   name = (seat: number): string => this.names[seat] ?? `Bot ${seat + 1}`
-  action(action: Action): void { this.stepShow(0, action) }
-  pickVote(index: number): void { this.cueQueue.push(...this.director?.pick(index) ?? []) }
-  hoverVote(index: number): void { this.cueQueue.push(...this.director?.hover(index) ?? []) }
+  action(action: Action): void { this.showMode?.frame(0, action, []) }
+  pickVote(index: number): void { this.showMode?.pick(index) }
+  hoverVote(index: number): void { this.showMode?.hover(index) }
 
   constructor(c: ModeCtx, server: string) {
     this.c = c
     this.pump = new NetPump(dt => this.background(dt))
-    const { R, content, ports } = c.loaded
+    const { R, content, ports, show } = c.loaded
     const q = c.q
+    if (show === null) refuse('game', 'online.show', 'the online show content is not loaded; reload the page')
     this.localName = onlineName(q.name)
     this.names = playerNames(0, this.localName)
     this.flow = new PlayFlow({
       R, relayUrl: server, ws: diagWs(globalWsFactory()), hubCode: q.hub, name: this.localName, colour: q.colour,
-      courses: content.playlist(), zones: browserZones(content.playlist()), plaza: content.hub(), partySize: q.party, now: () => performance.now(), pilot: false,
+      courses: show.courses, zones: show.zones, season: show.season, plaza: content.hub(), partySize: q.party, now: () => performance.now(), pilot: false,
       // GameSaloon timed lobbies: the hub enters one by itself; no pad, no key.
       matchmaking: 'lobby', voteMs: 5000, intermissionMs: 12000,
       presentationDone: () => this.show.models?.finished === true,
@@ -1193,7 +1166,8 @@ class OnlineMode implements Mode {
   }
 
   hud(): HudState | null {
-    return this.flow.match === null ? null : { view: this.presenter.view, names: this.names, seat: this.seat }
+    if (this.flow.match === null) return null
+    return this.showMode?.hud() ?? { view: this.presenter.view, names: this.names, seat: this.seat }
   }
 
   // The lobby is entered by itself and its server starts the round: nothing to queue or cancel.
@@ -1202,11 +1176,8 @@ class OnlineMode implements Mode {
 
   roundStage(): RoundStage | null {
     const port = this.c.loaded.ports[0]
-    const sim = this.flow.match?.sim ?? null
-    if (sim === null) return { port, course: 'hub' }
-    if (this.presenter.onPodium) return { port, course: 'podium' }
-    const course = sim.course()
-    return course === null ? null : { port, course: course.id }
+    if (this.flow.match === null) return { port, course: 'hub' }
+    return this.showMode?.roundStage() ?? null
   }
 
   pick(p: LobbyPick | 'default'): void {
@@ -1224,25 +1195,30 @@ class OnlineMode implements Mode {
     this.sampleNet(performance.now(), false)
   }
 
-  private stepShow(dtS: number, action: Action | null = null): void {
+  private stepShow(dtS: number): void {
     const match = this.flow.match
     if (match !== this.showMatch) {
+      this.showMode?.dispose()
+      this.showMode = null
       this.showMatch = match
-      this.director = match === null ? null : new ShowDirector(match.full, id => {
-        const course = this.c.loaded.content.playlist().find(course => course.id === id)
-        return { name: course?.name ?? id, kind: course?.kind === 'survival' ? 'survival' : 'race' }
-      }, this.name, this.seat, 5000, 3000)
       this.show.models = null
+      const { R, show } = this.c.loaded
+      if (match !== null && show !== null && this.c.views !== undefined) {
+        this.names = this.roundNames()
+        this.showMode = ShowMode.online({ R, views: this.c.views, orbit: this.c.orbit, look: this.c.look?.() ?? null,
+          seats: NET_PLAYERS, seed: 0, localName: this.localName, localSeat: this.seat, name: this.name,
+          voteMs: 5000, intermissionMs: 12000 }, match.full, show)
+      }
     }
-    if (!this.director || !match) return
-    const round = match.full.round
-    if (round) this.director.worldReady(round.plan.index)
+    const mode = this.showMode
+    if (mode === null) return
+    mode.frame(dtS, null, [])
+    if (mode.failure !== null && this.failure === null) this.failure = mode.failure
     const before = this.show.models
-    const models = this.director.step(action, dtS * 1000)
-    this.elapsedMs = models.screen === before?.screen ? this.elapsedMs + dtS * 1000 : 0
-    if (models.results !== before?.results && models.results) this.round++
+    const models = mode.models
+    this.elapsedMs = models?.screen === before?.screen ? this.elapsedMs + dtS * 1000 : 0
+    if (models?.results && models.results !== before?.results) this.round++
     this.show.models = models
-    this.cueQueue.push(...models.sounds)
   }
 
   private sampleNet(nowMs: number, drawn: boolean): void {
@@ -1282,8 +1258,6 @@ class OnlineMode implements Mode {
     if (match !== null) {
       const v = match.sim.phase(this.presenter.view)
       screen = this.show.models?.screen ?? matchScreen(v, match.sim.character(this.seat, this.cv).status, false)
-      if (['countdown', 'round', 'spectate'].includes(screen)) this.presenter.drawZone(match, this.seat, f.dt)
-      else this.presenter.end()
     } else if (inHub(flow.state)) {
       this.hubView.update(flow.hub.state(this.local), this.c.q.colour, flow.remotes(now), flow.hub.tick, f.dt, flow.hub.emote(now))
     }
@@ -1311,6 +1285,8 @@ class OnlineMode implements Mode {
   dispose(): void {
     this.pump.dispose()
     this.netDiag.dispose()
+    this.showMode?.dispose()
+    this.showMode = null
     this.flow.close()
     this.presenter.dispose()
     this.hubView.dispose()
@@ -1771,6 +1747,16 @@ class App {
       this.graphics.closePage()
       return
     }
+    // A failed ?community= / ?course= load has no start screen behind it and Retry loads the same level again, so
+    // Back did nothing: it leaves that level for the page without it (the start screen).
+    if (this.nav.screen === 'error' && this.loaded === null) {
+      const next = new URLSearchParams(this.search)
+      if (next.has('community') || next.has('course')) {
+        for (const key of ['community', 'chash', 'course']) next.delete(key)
+        location.search = next.toString()
+        return
+      }
+    }
     this.run(this.nav.dispatch({ kind: 'back' }))
   }
 
@@ -1943,7 +1929,9 @@ class App {
           this.host.setLoading(0, label)
         } else this.loadingOverlay.hide()
       }, content.report())
-      this.loaded = { R, content, ports, canvases, course }
+      // The online show plays the in-page show's season maps and zone sidecars.
+      const show = q.server !== null || this.nav.onlineOnly ? await checkAwait('online show content', () => loadShowContent('sprint')) : null
+      this.loaded = { R, content, ports, canvases, course, show }
       if (ports[0] !== undefined) ports[0] = trackLobbyAssets(ports[0], this.lobbyAssets)
       this.resizeViews()
       if (q.server === null && q.clients === 1) {
@@ -2164,7 +2152,7 @@ class App {
     const q = this.query
     if (loaded === null || q === null) return this.fail(refusal('game', 'start', 'the content is not loaded; retry the load'))
     this.stopMode()
-    const c: ModeCtx = { look: () => this.wornLook(), loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) }
+    const c: ModeCtx = { look: () => this.wornLook(), loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats), views: this.views }
     try {
       const pending = this.pendingRelay
       this.pendingRelay = null

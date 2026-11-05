@@ -190,7 +190,7 @@ async function fullLoop(n: 2 | 3 | 4): Promise<void> {
     const socksAtQueue = clients.map(() => -1)
     const end = w.ms + 400_000
     while (!clients.every(c => c.flow.lastLog !== null && c.flow.state === 'hub')) {
-      assert.ok(w.ms < end, `loop not done: ${JSON.stringify(clients.map(c => ({ state: c.flow.state, round: c.flow.match?.full.round?.plan.index, rounds: c.flow.match?.full.report.rounds.length, stats: c.flow.match?.zones.stats, result: c.flow.match?.zones.currentLedger?.result })))}`)
+      assert.ok(w.ms < end, `loop not done: ${JSON.stringify(clients.map(c => ({ state: c.flow.state, round: c.flow.match?.full.round?.plan.index, rounds: c.flow.match?.full.report.rounds.length, stats: c.flow.match?.zones?.stats, result: c.flow.match?.zones?.currentLedger?.result })))}`)
       const prev = clients.map(c => c.flow.state)
       await w.step()
       clients.forEach((c, i) => {

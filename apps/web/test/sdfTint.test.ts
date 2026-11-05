@@ -658,6 +658,24 @@ test('a field part shades from its program and a refused part keeps vertex with 
   assert.ok(calls.functions >= 1, 'the field evaluator and material are registered')
 })
 
+// A field label naming a saved material (registered by RAA as 'sdfm.buffer_<hash>', not a WGSL identifier) embeds
+// that material's graph in the part's field material instead of calling it by its registry name.
+test('a field label with a saved material embeds its graph and the part still shades from its program', async () => {
+  const labelled = fieldProgram({ labels: [{ material: 'skin', color: [1, 0.4, 0.2], roughness: 0.5, metallic: 0 }] })
+  const body = { ...part('body', 'skin'), fieldProgram: labelled }
+  const { port, calls, handle } = portFor('test.label', [material('skin', PLAIN)], [body])
+  await port.prepare(() => {}, () => {})
+  port.createInstance(handle(), null)
+  const report = port.shadingReport()
+  assert.equal(report.field, 1, report.errors.join('\n'))
+  assert.equal(report.vertex, 0)
+  const fieldMaterial = [...calls.functionSources].find(([name]) => name.startsWith('pmf.'))
+  assert.ok(fieldMaterial, 'the field material is registered')
+  assert.ok(fieldMaterial[1].includes('fn pmf_graph_0('), fieldMaterial[1])
+  assert.ok(fieldMaterial[1].includes('vec3f(1.0, 0.5, 0.1)'), 'the label graph body is embedded')
+  assert.ok(!fieldMaterial[1].includes('sdfm.'), 'no registry name is called')
+})
+
 // An atlas_full addTexture demotes that one part to vertex: it is counted, named and logged, and never thrown.
 test('texture.atlas_full demotes the part to vertex and is logged, never thrown', async () => {
   const body = { ...part('body', 'skin'), fieldProgram: gridProgram() }

@@ -67,6 +67,13 @@ view render always goes to the Windows GPU client. The local SwiftShader route o
 is a manual debugging aid only, never a card command or proof; `m13-lobby-unload` (GPU) is the only
 lobby-unload command.
 
+A card that adds or changes a GPU check op (`apps/web/src/game/checks/`, registered in `entry.ts`) is not done
+when its unit tests pass: it is done when one run of that op on the GPU client against the real saved assets
+passes, or when it names the programmatic card whose `.nmc/commands.json` command runs it. Unit tests of
+generated WGSL use the real shapes the saved meshes carry (an `SdfmCompiledMaterial`, its RAA registry name
+`sdfm.buffer_<hash>`), never a hand-picked identifier: no local WGSL compiler exists, so a fake input hides
+text the GPU will refuse.
+
 ## Proofs
 
 Each milestone proof is a Node script run with `--experimental-strip-types`. Proof records are committed under `proofs/mN/`; captures and logs go to the untracked `out/`.

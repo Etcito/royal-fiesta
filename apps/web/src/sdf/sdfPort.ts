@@ -624,13 +624,12 @@ class SdfRenderPort implements ResizablePort {
     const payload = payloadOf(id, meshed)
     const engine = this.need()
     const handles = new Map<string, number>()
-    // The compiled material function name of each payload material, for a field program's label -> function map.
-    const functionsByName = new Map<string, string>()
+    // Each payload material by name: a field program embeds its labels' graphs (fieldMaterialWgsl).
+    const materialsByName = new Map(payload.materials.map(compiled => [compiled.name, compiled]))
     const graph = new Set<string>()
     for (const compiled of payload.materials) {
       const mapped = mapCompiled(compiled, id)
       this.addFunction(mapped.functionName, mapped.wgsl)
-      functionsByName.set(compiled.name, mapped.functionName)
       handles.set(compiled.name, engine.addSurfaceMaterial({ ...mapped.desc }))
       if (usesPlayerColour(compiled, mapped)) graph.add(compiled.name)
     }
@@ -656,7 +655,7 @@ class SdfRenderPort implements ResizablePort {
         let desc = built.desc
         let subMeshes = built.subMeshes
         const fieldPartKey = fieldKey(id, group.group, part.partId)
-        const shaded = this.shadingMaterial(id, fieldPartKey, part, payload.materials, functionsByName, graph.size > 0)
+        const shaded = this.shadingMaterial(id, fieldPartKey, part, payload.materials, materialsByName, graph.size > 0)
         let field: Pick<PartUpload, 'field' | 'fallback' | 'bake' | 'params' | 'texture'> = {}
         if (shaded !== null) {
           const fallback = { mesh: this.addMesh(engine, built.desc), desc: built.desc, subMeshes: built.subMeshes, ...(object !== undefined ? { object } : {}) }
@@ -714,15 +713,15 @@ class SdfRenderPort implements ResizablePort {
   // per-fragment field material (fieldShading.ts), a part with the earlier saved shading keeps that record's material,
   // and everything else keeps its per-face materials or one material per object with vertex normals.
   private shadingMaterial(id: string, key: string, part: PayloadPart, materials: readonly SdfmCompiledMaterial[],
-    functionsByName: ReadonlyMap<string, string>, graphMode: boolean): ShadedMaterial | null {
-    if (hasFieldContract(part)) return this.fieldProgramMaterial(key, part, functionsByName, graphMode)
+    materialsByName: ReadonlyMap<string, SdfmCompiledMaterial>, graphMode: boolean): ShadedMaterial | null {
+    if (hasFieldContract(part)) return this.fieldProgramMaterial(key, part, materialsByName, graphMode)
     return this.recordShadingMaterial(id, key, part, materials, graphMode)
   }
 
   // The field program path (contract 'mama.field-program'): six central taps for the normal, the mesh normal only
   // where the field is undefined, and the labels' looks mixed per pixel. The grid texture is added to RAA's atlas; an
   // atlas_full error demotes this part to vertex and is never thrown.
-  private fieldProgramMaterial(key: string, part: PayloadPart, functionsByName: ReadonlyMap<string, string>,
+  private fieldProgramMaterial(key: string, part: PayloadPart, materialsByName: ReadonlyMap<string, SdfmCompiledMaterial>,
     graphMode: boolean): ShadedMaterial | null {
     const check = checkFieldPart(part)
     if (!check.ok) {
@@ -758,14 +757,14 @@ class SdfRenderPort implements ResizablePort {
       }
     }
     let missing = false
-    const labelFunctions = program.labels.map(label => {
+    const labelGraphs = program.labels.map(label => {
       if (label.material === null) return null
-      const name = functionsByName.get(label.material)
-      if (name === undefined) missing = true
-      return name ?? null
+      const compiled = materialsByName.get(label.material)
+      if (compiled === undefined) missing = true
+      return compiled ?? null
     })
     if (missing) warnOnce(`${key}:missing`, 'a field label names a material not in the saved mesh; its shapes wear the label colour')
-    const material = fieldMaterialWgsl({ program, labelFunctions, debug: this.debugNormals })
+    const material = fieldMaterialWgsl({ program, labelGraphs, debug: this.debugNormals })
     // The evaluator and the host pmf_grid tap are cached; the complete field material (which embeds both) is registered
     // as the part's RAA material function.
     this.addFunction(program.functionName, program.wgsl, false)

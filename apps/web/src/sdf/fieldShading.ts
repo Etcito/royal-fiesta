@@ -34,6 +34,15 @@ export interface FieldGridOperandLike {
 
 export type FieldOperandLike = FieldBoxOperandLike | FieldGridOperandLike
 
+/** A label's compiled MAMA material graph (the shape of @etcito/raa-sdfm SdfmCompiledMaterial). */
+export interface FieldLabelGraphLike {
+  name: string
+  body: string
+  helpers: readonly { id: string; wgsl: string }[]
+  constants: readonly number[]
+  fields: readonly string[]
+}
+
 export interface FieldGridLike {
   width: number
   height: number
@@ -285,15 +294,80 @@ function colourSums(labels: readonly FieldLabelLike[]): string {
   return lines.join('\n')
 }
 
-function materialSwitch(labels: readonly FieldLabelLike[], names: readonly (string | null)[]): string {
+const MATERIAL_FULL_FIELDS = ['base_color', 'metallic', 'roughness', 'emissive', 'height']
+
+// `text` with every `extra_words[i]` (MAMA's binding-7 constant reads; i is `b + K` or derived from b, such as a ramp's
+// stop offsets) read from the material's inlined constants instead: `PMF_K[i]`, b being the graph's base in PMF_K.
+function constantReads(text: string): string {
+  let out = ''
+  let at = 0
+  for (const m of text.matchAll(/\bextra_words\s*\[/g)) {
+    const start = m.index ?? 0
+    if (start < at) continue
+    let depth = 1
+    let i = start + m[0].length
+    for (; i < text.length && depth > 0; i++) depth += text[i] === '[' ? 1 : text[i] === ']' ? -1 : 0
+    if (depth > 0) throw new Error('field shading: unterminated extra_words read in a label material')
+    out += `${text.slice(at, start)}PMF_K[${constantReads(text.slice(start + m[0].length, i - 1))}]`
+    at = i
+  }
+  return out + text.slice(at)
+}
+
+const structNames = (text: string): string =>
+  text.replace(/\bMaterialFull\b/g, 'SdfmMaterialFull').replace(/\bMatMasks\b/g, 'SdfmMatMasks')
+
+// The label graphs embedded in the field material, as @etcito/raa-sdfm fieldShadingCore embeds them: one function
+// per distinct body, its helpers once by id, every graph's constants in one inlined PMF_K at the graph's base b.
+// A compiled material's RAA function (its name is a registry key such as 'sdfm.buffer_<hash>') defines its own
+// material_main and cannot be called from another material, so the graph text itself is embedded.
+function labelGraphs(graphs: readonly (FieldLabelGraphLike | null)[]): { text: string; calls: (string | null)[] } {
+  const helpers = new Map<string, string>()
+  const bodies: string[] = []
+  const constants: number[] = []
+  const calls = graphs.map((graph) => {
+    if (graph === null) return null
+    if (graph.fields.join() !== MATERIAL_FULL_FIELDS.join()) {
+      throw new Error(`field shading: material '${graph.name}': MaterialFull fields ${graph.fields.join(', ')}; expected ${MATERIAL_FULL_FIELDS.join(', ')}`)
+    }
+    for (const word of graph.constants) {
+      if (!Number.isInteger(word) || word < 0 || word > 0xffffffff) throw new Error(`field shading: material '${graph.name}': constant ${word} is not a u32`)
+    }
+    for (const h of graph.helpers) {
+      const text = structNames(constantReads(h.wgsl)).trim()
+      const known = helpers.get(h.id)
+      if (known !== undefined && known !== text) throw new Error(`field shading: material '${graph.name}': helper '${h.id}' differs from another material's`)
+      helpers.set(h.id, text)
+    }
+    const body = structNames(constantReads(graph.body)).replace(/\s+$/, '')
+    let k = bodies.indexOf(body)
+    if (k < 0) k = bodies.push(body) - 1
+    const base = constants.length
+    constants.push(...graph.constants)
+    return `pmf_graph_${k}(${base}u, p, p, n, SdfmMatMasks(0.5, 1.0, 1.0, 0.0, 1.0))`
+  })
+  const text = [
+    'struct SdfmMatMasks { curvature: f32, cavity: f32, ao: f32, height: f32, proximity: f32 }',
+    ...(constants.length > 0 ? [`const PMF_K = array<u32, ${constants.length}>(${constants.map((w) => `${w}u`).join(', ')});`] : []),
+    ...[...helpers].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([id, text]) => `// MAMA helper ${id}\n${text}`),
+    ...bodies.map((body, k) =>
+      `fn pmf_graph_${k}(b: u32, p: vec3<f32>, pn: vec3<f32>, n: vec3<f32>, mk: SdfmMatMasks) -> SdfmMaterialFull {\n${body}\n}`),
+  ].join('\n\n')
+  return { text, calls }
+}
+
+function materialSwitch(labels: readonly FieldLabelLike[], graphs: readonly (FieldLabelGraphLike | null)[]): string {
+  const embedded = labelGraphs(graphs)
   const cases = labels.map((label, i) => {
-    const name = names[i] ?? null
-    const call = name === null
+    const call = embedded.calls[i] ?? null
+    const ret = call === null
       ? `return SdfmMaterialFull(vec3f(${label.color.map(f32).join(', ')}), ${f32(label.metallic)}, ${f32(label.roughness)}, vec3f(0.0), 0.0);`
-      : `return ${name}(p, n);`
-    return `    case ${i}u: { ${call} }`
+      : `return ${call};`
+    return `    case ${i}u: { ${ret} }`
   })
   return `struct SdfmMaterialFull { base_color: vec3f, metallic: f32, roughness: f32, emissive: vec3f, height: f32 }
+
+${embedded.text}
 
 fn pmf_label(p: vec3f, n: vec3f, i: u32) -> SdfmMaterialFull {
   switch i {
@@ -335,26 +409,23 @@ const GRAPH_BLEND = `  // The four heaviest labels, renormalised, so a material 
 /**
  * The RAA material function of one field part: program.wgsl is embedded, the normal comes from six central
  * distance taps, the mesh normal replaces it only where p leaves program.bounds or the gradient vanishes,
- * and the labels (their constant look, or their compiled material functions for the four heaviest) mix per pixel.
+ * and the labels (their constant look, or their embedded MAMA material graphs for the four heaviest) mix per pixel.
  * The returned name keys the material; the text always defines material_main.
  */
 export function fieldMaterialWgsl(src: {
   program: FieldProgramLike
-  labelFunctions: readonly (string | null)[]
+  labelGraphs: readonly (FieldLabelGraphLike | null)[]
   debug: boolean
 }): { functionName: string; wgsl: string } {
   const { program, debug } = src
   const labels = program.labels.slice(0, MAX_LABELS)
-  const names = labels.map((_, i) => src.labelFunctions[i] ?? null)
-  for (const name of names) {
-    if (name !== null && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
-      throw new Error(`field shading: '${name}' is not a compiled material function name`)
-    }
-  }
-  const graph = names.some((name) => name !== null)
+  const graphs = labels.map((_, i) => src.labelGraphs[i] ?? null)
+  const graph = graphs.some((g) => g !== null)
   const [minX, minY, minZ] = program.bounds.min
   const [maxX, maxY, maxZ] = program.bounds.max
-  const colour = graph ? `${materialSwitch(labels, names)}\n\n${GRAPH_BLEND}` : colourSums(labels)
+  // The label switch and its graphs are module-scope declarations; only the blend runs inside material_main.
+  const declarations = graph ? `${materialSwitch(labels, graphs)}\n\n` : ''
+  const colour = graph ? GRAPH_BLEND : colourSums(labels)
   const debugText = debug
     ? '\n  // ?normalsDebug: the normal lighting receives, 0.5 + n / 2.\n  o.base_color = n * 0.5 + vec3f(0.5);\n  o.metallic = 0.0;\n  o.roughness = 1.0;'
     : ''
@@ -382,7 +453,7 @@ fn pmf_gradient(p: vec3f, h: f32) -> vec3f {
   return vec3f(d1 - d0, d3 - d2, d5 - d4) / (2.0 * h);
 }
 
-fn material_main(in: MaterialInput) -> MaterialOutput {
+${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
   var o = raa_default_output(in);
   o.opacity = 1.0;
   let p = in.color.xyz;

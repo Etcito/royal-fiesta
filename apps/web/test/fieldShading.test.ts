@@ -92,7 +92,7 @@ test('checkFieldPart reports every refusal reason', () => {
 })
 
 test('fieldMaterialWgsl embeds the evaluator, six taps, the fallback and pmf_grid', () => {
-  const out = fieldMaterialWgsl({ program: program(), labelFunctions: [null, null], debug: false })
+  const out = fieldMaterialWgsl({ program: program(), labelGraphs: [null, null], debug: false })
   assert.match(out.wgsl, new RegExp(`${FUNCTION}\\(p, &w\\)`))
   const taps = out.wgsl.match(/pmf_tap\(p [-+] [xyz]\)/g) ?? []
   assert.equal(taps.length, 6)
@@ -104,17 +104,53 @@ test('fieldMaterialWgsl embeds the evaluator, six taps, the fallback and pmf_gri
   assert.match(out.wgsl, /roughness \+= w\[1\] \* 0\.7/)
 })
 
-test('fieldMaterialWgsl blends graph materials with a switch of the heaviest labels', () => {
-  const out = fieldMaterialWgsl({ program: program(), labelFunctions: ['mat_candy', null], debug: false })
-  assert.match(out.wgsl, /struct SdfmMaterialFull/)
-  assert.match(out.wgsl, /switch i \{/)
-  assert.match(out.wgsl, /case 0u: \{ return mat_candy\(p, n\); \}/)
+// A label graph as the saved mesh carries it (SdfmCompiledMaterial): its RAA function is registered under a dotted
+// registry name ('sdfm.buffer_<hash>'), so the field material embeds the graph text, never a call by that name.
+const STRIPES = {
+  name: 'candy_stripes',
+  body: 'let t = bitcast<f32>(extra_words[b + 1u]); return MaterialFull(stripe(p.x, t), bitcast<f32>(extra_words[b + 0u]), 0.4, vec3f(0.0), 0.0);',
+  helpers: [{ id: 'stripe', wgsl: 'fn stripe(x: f32, t: f32) -> vec3f { return vec3f(fract(x * t)); }' }],
+  constants: [0, 1065353216],
+  fields: ['base_color', 'metallic', 'roughness', 'emissive', 'height'],
+}
+
+test('fieldMaterialWgsl embeds the label graphs at module scope and blends the heaviest labels', () => {
+  const out = fieldMaterialWgsl({ program: program(), labelGraphs: [STRIPES, null], debug: false })
+  const main = out.wgsl.indexOf('fn material_main(')
+  const before = out.wgsl.slice(0, main)
+  const inside = out.wgsl.slice(main)
+  for (const decl of ['struct SdfmMaterialFull', 'struct SdfmMatMasks', 'fn stripe(', 'fn pmf_graph_0(', 'fn pmf_label(', 'const PMF_K = array<u32, 2>(0u, 1065353216u);']) {
+    assert.ok(before.includes(decl), `${decl} is declared before material_main`)
+    assert.ok(!inside.includes(decl), `${decl} is not declared inside material_main`)
+  }
+  assert.ok(!out.wgsl.includes('extra_words'), 'constant reads go to PMF_K')
+  assert.ok(!/MaterialFull\(/.test(out.wgsl.replace(/SdfmMaterialFull\(/g, '')), 'MAMA struct names are renamed')
+  assert.match(out.wgsl, /PMF_K\[b \+ 1u\]/)
+  assert.match(out.wgsl, /case 0u: \{ return pmf_graph_0\(0u, p, p, n, SdfmMatMasks\(0\.5, 1\.0, 1\.0, 0\.0, 1\.0\)\); \}/)
   assert.match(out.wgsl, /case 1u: \{ return SdfmMaterialFull/)
+  assert.ok(!out.wgsl.includes('sdfm.'), 'no RAA registry name appears in the WGSL')
+  assert.match(inside, /pmf_label\(p, n, u32\(i0\)\)/)
+})
+
+test('fieldMaterialWgsl shares one body for the same graph and offsets each label constants', () => {
+  const p = program()
+  p.labels = [
+    { material: 'candy_stripes', color: [1, 0, 0], roughness: 0.5, metallic: 0.1 },
+    { material: 'candy_stripes_b', color: [0, 1, 0], roughness: 0.7, metallic: 0.2 },
+  ]
+  const other = { ...STRIPES, name: 'candy_stripes_b', constants: [7, 8] }
+  const out = fieldMaterialWgsl({ program: p, labelGraphs: [STRIPES, other], debug: false })
+  assert.equal(out.wgsl.match(/fn pmf_graph_\d+\(/g)?.length, 1)
+  assert.equal(out.wgsl.match(/fn stripe\(/g)?.length, 1)
+  assert.match(out.wgsl, /const PMF_K = array<u32, 4>\(0u, 1065353216u, 7u, 8u\);/)
+  assert.match(out.wgsl, /case 1u: \{ return pmf_graph_0\(2u,/)
+  const wrong = { ...STRIPES, fields: ['base_color'] }
+  assert.throws(() => fieldMaterialWgsl({ program: p, labelGraphs: [wrong, null], debug: false }), /MaterialFull fields/)
 })
 
 test('fieldMaterialWgsl is deterministic and names depend on labels and debug', () => {
-  const a = fieldMaterialWgsl({ program: program(), labelFunctions: [null, null], debug: false })
-  const b = fieldMaterialWgsl({ program: program(), labelFunctions: [null, null], debug: false })
+  const a = fieldMaterialWgsl({ program: program(), labelGraphs: [null, null], debug: false })
+  const b = fieldMaterialWgsl({ program: program(), labelGraphs: [null, null], debug: false })
   assert.equal(a.functionName, b.functionName)
   assert.equal(a.wgsl, b.wgsl)
 
@@ -123,10 +159,10 @@ test('fieldMaterialWgsl is deterministic and names depend on labels and debug', 
     { material: null, color: [0, 0, 1], roughness: 0.5, metallic: 0.1 },
     { material: null, color: [0, 1, 0], roughness: 0.7, metallic: 0.2 },
   ]
-  const labels = fieldMaterialWgsl({ program: otherLabels, labelFunctions: [null, null], debug: false })
+  const labels = fieldMaterialWgsl({ program: otherLabels, labelGraphs: [null, null], debug: false })
   assert.notEqual(a.functionName, labels.functionName)
 
-  const debug = fieldMaterialWgsl({ program: program(), labelFunctions: [null, null], debug: true })
+  const debug = fieldMaterialWgsl({ program: program(), labelGraphs: [null, null], debug: true })
   assert.notEqual(a.functionName, debug.functionName)
   assert.match(debug.wgsl, /o\.base_color = n \* 0\.5 \+ vec3f\(0\.5\)/)
 })

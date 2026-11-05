@@ -3,8 +3,34 @@ import type { LobbyServerMsg } from '../hub/lobby.ts'
 import type { RelayLobbyEnter, RelayLobbyLeave, RelayLobbyPick, RelayLobbyPresence } from './relayProtocol.ts'
 import { parseRelayServerMsg } from './relayProtocol.ts'
 import { refuse } from '@royal-fiesta/sim/refusal'
+import type { SignalData } from './roomsProtocol.ts'
 
 export const ZONE_BIN_KIND = 0x5a
+// Application payload kind inside the relay's opaque 0x5a routing envelope. Zone game packets never use it.
+export const SIGNAL = 0x53
+export type ZoneSignal = SignalData | { kind: 'abort'; reason: string }
+
+export function encodeZoneSignal(signal: ZoneSignal): Uint8Array {
+  const json = new TextEncoder().encode(JSON.stringify(signal))
+  const out = new Uint8Array(1 + json.length)
+  out[0] = SIGNAL
+  out.set(json, 1)
+  return out
+}
+
+export function decodeZoneSignal(payload: Uint8Array): ZoneSignal | null {
+  if (payload[0] !== SIGNAL) return null
+  try {
+    const s = JSON.parse(new TextDecoder().decode(payload.subarray(1))) as Record<string, unknown> | null
+    if (!s || typeof s !== 'object') return null
+    if ((s.kind === 'offer' || s.kind === 'answer') && typeof s.sdp === 'string') return s as ZoneSignal
+    if (s.kind === 'ice-end') return { kind: 'ice-end' }
+    if (s.kind === 'abort' && typeof s.reason === 'string') return { kind: 'abort', reason: s.reason }
+    if (s.kind === 'ice' && typeof s.candidate === 'string' && (s.sdpMid === null || typeof s.sdpMid === 'string')
+      && (s.sdpMLineIndex === null || (Number.isInteger(s.sdpMLineIndex) && Number(s.sdpMLineIndex) >= 0))) return s as ZoneSignal
+  } catch { /* Malformed signaling stays out of RTC callbacks. */ }
+  return null
+}
 export const ZONE_BIN_IN_HEADER = 10
 export const ZONE_BIN_OUT_HEADER = 2
 export const MAX_ZONE_PEERS = 64

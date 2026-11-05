@@ -1019,6 +1019,7 @@ class LobbyDiag {
   private relay = 'none'
   private conn = 'idle'
   private lobby = ''
+  private mesh = ''
   private last = ''
 
   private constructor() {
@@ -1042,9 +1043,10 @@ class LobbyDiag {
   setRelay(host: string): void { this.relay = host; this.render() }
   setConn(s: string): void { this.conn = s; this.render() }
   setLobby(s: string): void { this.lobby = s; this.render() }
+  setMesh(s: string): void { this.mesh = s; this.render() }
 
   private render(): void {
-    const text = `${this.build} | relay ${this.relay} | ${this.conn}${this.lobby ? ` | ${this.lobby}` : ''}`
+    const text = `${this.build} | relay ${this.relay} | ${this.conn}${this.lobby ? ` | ${this.lobby}` : ''}${this.mesh ? ` | ${this.mesh}` : ''}`
     if (this.el !== null) this.el.textContent = text
     if (text !== this.last) {
       this.last = text
@@ -1163,6 +1165,8 @@ class OnlineMode implements Mode {
     const v = this.flow.lobby.view
     const names = v.members.map(m => m.name).join(',')
     LobbyDiag.get().setLobby(`lobby ${v.id ?? '-'} you ${v.you ?? '-'} n=${v.members.length || v.names.length} [${names || v.names.join(',')}] ${this.flow.state}`)
+    LobbyDiag.get().setMesh(Object.entries(this.flow.mesh?.peers ?? {}).map(([peer, link]) =>
+      `p${peer} fast:${link.fast} reliable:${link.reliable} rtt ${link.rtt === null ? 'pending' : `${link.rtt.toFixed(1)}ms`}`).join(' | '))
   }
 
   hud(): HudState | null {
@@ -1224,7 +1228,8 @@ class OnlineMode implements Mode {
   private sampleNet(nowMs: number, drawn: boolean): void {
     const match = this.flow.match
     if (match === null) this.netDiag.clear()
-    else this.netDiag.sample(match.session.stats, this.pump.pumped, nowMs, drawn)
+    else this.netDiag.sample({ ...match.session.stats, confirmedDomains: match.zones?.stats.confirmedTick,
+      peers: this.flow.mesh?.peers }, this.pump.pumped, nowMs, drawn)
   }
 
   frame(f: FrameIn): GameScreen {

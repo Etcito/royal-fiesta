@@ -39,9 +39,9 @@ export function onlineRoster(humans: number): Roster {
   return { seatCount: NET_PLAYERS, peers, live: peers.map(() => true) }
 }
 
-/** The existing zone show coordinator owns rounds, votes, elimination and result agreement over one binary room. */
+/** The existing zone show coordinator owns rounds, votes, elimination and result agreement over the direct group transport. */
 export function createOnlineMatch(R: RapierModule, cfg: NetMatchConfig, sidecars: ReadonlyMap<string, ZonesFile>, net: GroupTransport,
-  opts: { cpuMs?: () => number; season?: readonly SchedMap[]; voteMs?: number; intermissionMs?: number } = {}): OnlineMatch {
+  opts: { rtt?: Record<number, number>; cpuMs?: () => number; season?: readonly SchedMap[]; voteMs?: number; intermissionMs?: number } = {}): OnlineMatch {
   const { setup, humanPeers, localPeer } = cfg
   const roster = onlineRoster(humanPeers)
   if (!Number.isInteger(localPeer) || localPeer < 0 || localPeer >= humanPeers || setup.playerCount !== NET_PLAYERS ||
@@ -67,7 +67,7 @@ export function createOnlineMatch(R: RapierModule, cfg: NetMatchConfig, sidecars
   let view = new OnlineRoundView(round, full, setup)
   if (round) view.refresh(round.match.domains, round.match.stats.tick, feed)
   const stats: NetStats = { tick: 0, delay: 0, rollbacks: 0, maxRollback: 0, resimTicks: 0, stallFrames: 0, frames: 0,
-    desyncs: 0, malformed: 0, lostPeers: [], ...round?.match.stats, confirmedTick: -1, rtt: {}, lastFrameSimMs: 0 }
+    desyncs: 0, malformed: 0, lostPeers: [], ...round?.match.stats, confirmedTick: -1, rtt: opts.rtt ?? {}, lastFrameSimMs: 0 }
   const cpuMs = opts.cpuMs ?? (() => performance.now())
   const totals = { rollbacks: 0, resimTicks: 0, stallFrames: 0, desyncs: 0, frames: 0 }
   let tickOffset = 0

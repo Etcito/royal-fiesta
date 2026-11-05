@@ -9,7 +9,7 @@ import { createZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
 import type { ZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
 import { globalZoneWsFactory, ZoneRelayClient } from '@royal-fiesta/game/net/zoneRelayClient'
 import type { ZoneQueuePayload } from '@royal-fiesta/game/net/zoneRelayProtocol'
-import { ZoneRelayTransport } from '@royal-fiesta/game/net/zoneRelayTransport'
+import { ZoneMeshTransport } from '@royal-fiesta/game/net/zoneMeshTransport'
 import { mergeZoneTuning } from '@royal-fiesta/game/net/zoneTuning'
 import type { RenderPort } from '@royal-fiesta/game/render/port'
 import { SplitScreenLayout, splitRects } from '@royal-fiesta/game/render/splitScreen'
@@ -151,6 +151,7 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
   const featureAudio = new ZoneFeatureAudio(options.courseAudio)
   let removeSeed: (() => void) | undefined
   let layout: SplitScreenLayout | undefined
+  let transport: ZoneMeshTransport | undefined
   let match: ZoneMatch | undefined
   let removeInput: (() => void) | undefined
   let disposed = false
@@ -163,6 +164,7 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
     const remove = removeInput
     removeInput = undefined
     if (remove !== undefined) { try { remove() } catch { /* Keep the cleanup chain going. */ } }
+    transport?.close()
     try { client.bye() } finally {
       try { match?.dispose() } finally {
         try { layout?.dispose() } finally {
@@ -204,7 +206,7 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
     const { localPeer, roster, measurements, seed } = client.room()
     phase(`matched peer ${localPeer} of ${roster.peers.length}`)
     const seats = roster.peers.find(peer => peer.peer === localPeer)!.seats
-    const transport = new ZoneRelayTransport(client, localPeer, roster.peers.length, () => performance.now())
+    const mesh = transport = await ZoneMeshTransport.connect(client, undefined, () => performance.now())
     const feed = new FarFeed()
     const kind = course.kind === 'survival' ? 'survival' : 'race'
     phase('creating match')
@@ -212,7 +214,7 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
       localPeer, roster, course, zones, profile: PROFILES.sprint,
       kind, slot: zoneSlot(kind, roster.seatCount, seed),
       measurements, farSink: feed,
-    }, transport)
+    }, mesh)
     const view = layout = new SplitScreenLayout({
       ports, localSeats: seats, course, seatCount: roster.seatCount, feed,
       assets: content.assets, bean: content.bean, character: content.character,
@@ -334,7 +336,6 @@ export async function mountSplitView(options: SplitViewOptions): Promise<SplitVi
           }
         }
         const alpha = local.frame(dtS, sample)
-        transport.flush()
         view.update(local, alpha, dtS)
         updateFeatures()
         updateInfo()

@@ -4,7 +4,8 @@ import type { LobbyPick, LobbyServerMsg } from '../hub/lobby.ts'
 import { RELAY_MAX_PLAYERS } from './relayProtocol.ts'
 import type { FiestaQueuePayload } from './relayClient.ts'
 import type { WsFactory, WsLike } from './ws.ts'
-import { decodeZoneBinOut, encodeZoneBinIn, isZoneQueuePayload, MAX_ZONE_PEERS, parseZoneServerMsg, ZONE_GAME_ID } from './zoneRelayProtocol.ts'
+import { decodeZoneBinOut, decodeZoneSignal, encodeZoneBinIn, encodeZoneSignal, isZoneQueuePayload, MAX_ZONE_PEERS, parseZoneServerMsg, ZONE_GAME_ID } from './zoneRelayProtocol.ts'
+import type { ZoneSignal } from './zoneRelayProtocol.ts'
 import type { ZoneClientMsg, ZoneMatched, ZoneQueue, ZoneQueuePayload, ZoneSeatEvent, ZoneServerMsg } from './zoneRelayProtocol.ts'
 
 export interface ZoneWsLike extends WsLike {
@@ -54,7 +55,8 @@ export class ZoneRelayClient {
   private pending: Pending | null = null
   private matchedMsg: ZoneMatched | null = null
   private roomData: ZoneRoom | null = null
-  private binaryFns: ((sender: number, payload: Uint8Array) => void)[] = []
+  private signalFn: ((sender: number, signal: ZoneSignal) => void) | null = null
+  private earlySignals: { sender: number; signal: ZoneSignal }[] = []
   private seatFns: ((ev: ZoneSeatEvent) => void)[] = []
   private lobbyFns: ((m: LobbyServerMsg) => void)[] = []
   private closeFns: (() => void)[] = []
@@ -185,16 +187,25 @@ export class ZoneRelayClient {
     return this.roomData
   }
 
-  sendBinary(maskLo: number, maskHi: number, payload: Uint8Array): void {
-    this.socket('binary').send(encodeZoneBinIn(maskLo, maskHi, payload))
+  signal(peer: number, signal: ZoneSignal): void {
+    if (!this.matchedMsg || !Number.isInteger(peer) || peer < 0 || peer >= this.matchedMsg.players || peer === this.seat) {
+      refuse('relay', 'signal.peer', `peer ${peer} is not a remote member of the matched room`)
+    }
+    this.socket('signal').send(encodeZoneBinIn(peer < 32 ? (1 << peer) >>> 0 : 0,
+      peer >= 32 ? (1 << (peer - 32)) >>> 0 : 0, encodeZoneSignal(signal)))
   }
-  onBinary(fn: (sender: number, payload: Uint8Array) => void): void { this.binaryFns.push(fn) }
+  onSignal(fn: (sender: number, signal: ZoneSignal) => void): () => void {
+    this.signalFn = fn
+    for (const { sender, signal } of this.earlySignals.splice(0)) fn(sender, signal)
+    return () => { if (this.signalFn === fn) this.signalFn = null }
+  }
   onSeatEvent(fn: (ev: ZoneSeatEvent) => void): void { this.seatFns.push(fn) }
   onClose(fn: () => void): void { this.closeFns.push(fn) }
   bye(): void {
     if (this.open) this.send({ t: 'bye' })
     this.matchedMsg = null
     this.roomData = null
+    this.earlySignals = []
   }
   close(): void { this.ws?.close() }
 
@@ -207,8 +218,11 @@ export class ZoneRelayClient {
   private handleFrame(data: unknown): void {
     if (typeof data !== 'string') {
       const frame = decodeZoneBinOut(data)
-      if (!frame) { this.badFrames++; return }
-      for (const fn of this.binaryFns) fn(frame.sender, frame.payload)
+      const signal = frame && decodeZoneSignal(frame.payload)
+      if (!frame || !signal || !this.matchedMsg || frame.sender === this.seat || frame.sender >= this.matchedMsg.players) { this.badFrames++; return }
+      if (this.signalFn) this.signalFn(frame.sender, signal)
+      else if (this.earlySignals.length < 1024) this.earlySignals.push({ sender: frame.sender, signal })
+      else this.badFrames++
       return
     }
     const m = parseZoneServerMsg(data)

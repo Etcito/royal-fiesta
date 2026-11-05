@@ -16,7 +16,8 @@ import { Pilot } from '../net/pilot.ts'
 import { RelayClient } from '../net/relayClient.ts'
 import { parseRelayServerMsg } from '../net/relayProtocol.ts'
 import { ZoneRelayClient } from '../net/zoneRelayClient.ts'
-import { ZoneRelayTransport } from '../net/zoneRelayTransport.ts'
+import { ZoneMeshTransport } from '../net/zoneMeshTransport.ts'
+import type { RtcBackend } from '../net/rtcBackend.ts'
 import { setupHash } from '@royal-fiesta/sim/match/setup'
 import type { ZoneMatched, ZoneQueuePayload } from '../net/zoneRelayProtocol.ts'
 import { netSetup } from '../net/tuning.ts'
@@ -50,6 +51,8 @@ export interface FlowDeps {
   matchmaking?: 'lobby' | 'pad'
   /** A browser keeps its result presentation while the confirmed network show stays seated. */
   presentationDone?: () => boolean
+  rtc?: RtcBackend
+  meshTimeoutMs?: number
   voteMs?: number
   intermissionMs?: number
 }
@@ -67,7 +70,7 @@ export class PlayFlow {
   private matchClient: ZoneRelayClient | null = null
   private matchRoom: MatchRoom | null = null
   private netMatch: OnlineMatch | null = null
-  private transport: ZoneRelayTransport | null = null
+  private transport: ZoneMeshTransport | null = null
   private hubPilot: HubPilot | null = null
   private matchPilot: Pilot | null = null
   private savedLog: MatchLog | null = null
@@ -114,6 +117,7 @@ export class PlayFlow {
     return this.hubWorld
   }
   get match(): OnlineMatch | null { return this.netMatch }
+  get mesh(): ZoneMeshTransport | null { return this.transport }
   get lastLog(): MatchLog | null { return this.savedLog }
   /** The lobby being waited in, watched or offered (matchmaking 'lobby'). */
   get lobby(): LobbyTracker { return this.lobbyTracker }
@@ -234,7 +238,6 @@ export class PlayFlow {
             if (this.matchPilot) this.matchPilot.sample(match.sim, out[0])
             else controlsToInput(controls ?? this.idle, match.sim.character(this.matchClient!.seat, this.matchChar).facing, out[0])
           })
-          this.transport!.flush()
         }
         if (this.current === 'match' && match.sim.phase(this.view).phase === Phase.podium) this.transition('podium')
         // One peer waits for dissolution so simultaneous finishes cannot race a
@@ -248,6 +251,7 @@ export class PlayFlow {
           this.matchRoom = null
           match.dispose()
           this.netMatch = null
+          this.transport?.close()
           this.transport = null
           this.matchPilot = null
           this.transition('returning')
@@ -270,6 +274,7 @@ export class PlayFlow {
     this.matchRoom = null
     this.netMatch = null
     this.hubWorld = null
+    this.transport?.close()
     this.transport = null
     for (const release of [...clients.map(client => () => { if (client) this.disconnect(client) }), () => match?.dispose(), () => hub?.free()]) {
       try { release() } catch (e) { this.fail(e) }
@@ -310,8 +315,12 @@ export class PlayFlow {
       // A lobby round seats whoever was there (1..partySize humans); bots take the other places.
       const humans = m.players
       const setup = netSetup(m.seed, humans, 'sprint', d.courses)
-      this.transport = new ZoneRelayTransport(client, m.youAre, humans, d.now)
-      this.netMatch = createOnlineMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, d.zones, this.transport, { cpuMs: d.now, season: d.season, voteMs: d.voteMs, intermissionMs: d.intermissionMs })
+      const transport = await ZoneMeshTransport.connect(client, d.rtc, d.now, {
+        timeoutMs: d.meshTimeoutMs, onProgress: mesh => { this.transport = mesh },
+      })
+      if (!this.active(client) || this.cancelling) { transport.close(); return }
+      this.transport = transport
+      this.netMatch = createOnlineMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, d.zones, this.transport, { rtt: this.transport.rtt, cpuMs: d.now, season: d.season, voteMs: d.voteMs, intermissionMs: d.intermissionMs })
       if (d.pilot) this.matchPilot = new Pilot(m.youAre, m.seed)
       this.accumulator = 0
       this.lastState = -Infinity

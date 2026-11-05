@@ -1,12 +1,16 @@
 // Netcode line under the lobby diagnostics line, while an online round runs: what the rollback session does
 // each second. Read it as: pred = ticks predicted past the last confirmed one, rb/s and max = rollbacks and
 // the deepest one, stall/s = frames the session waited for a peer (should be 0), rtt = round trip to the
-// peers through the relay, delay = input delay ticks, fps = drawn frames, bg/s = steps made while the page
+// peers over the DataChannels, delay = input delay ticks, fps = drawn frames, bg/s = steps made while the page
 // drew nothing (NetPump: the window was hidden or behind another one).
+
+import type { MeshPeerStats } from '@royal-fiesta/game/net/zoneMeshTransport'
 
 export interface NetDiagStats {
   tick: number; confirmedTick: number; delay: number; rtt: Record<number, number>
   rollbacks: number; maxRollback: number; stallFrames: number; desyncs: number
+  confirmedDomains?: Record<number, number>
+  peers?: Record<number, MeshPeerStats>
 }
 
 const EVERY_MS = 1000
@@ -30,9 +34,11 @@ export class NetDiag {
     const per = 1000 / span
     let rtt = 0
     for (const k in s.rtt) rtt = Math.max(rtt, s.rtt[k])
-    this.show(`net tick ${s.tick} pred ${s.tick - s.confirmedTick} rb/s ${((s.rollbacks - this.base.rollbacks) * per).toFixed(0)} max ${s.maxRollback}`
-      + ` stall/s ${((s.stallFrames - this.base.stallFrames) * per).toFixed(0)} rtt ${rtt.toFixed(0)}ms delay ${s.delay}`
-      + ` fps ${(this.frames * per).toFixed(0)} bg/s ${((pumped - this.base.pumped) * per).toFixed(0)}${s.desyncs > 0 ? ` desyncs ${s.desyncs}` : ''}`)
+    const confirmed = s.confirmedDomains ? Math.min(...Object.values(s.confirmedDomains)) : s.confirmedTick
+    const peers = Object.entries(s.peers ?? {}).map(([peer, link]) => `p${peer} fast:${link.fast} reliable:${link.reliable} ${link.rtt === null ? 'rtt pending' : `${link.rtt.toFixed(1)}ms`}`).join(' | ')
+    this.show(`net tick ${s.tick} pred ${s.tick - (Number.isFinite(confirmed) ? confirmed : -1)} rb/s ${((s.rollbacks - this.base.rollbacks) * per).toFixed(0)} max ${s.maxRollback}`
+      + ` stall/s ${((s.stallFrames - this.base.stallFrames) * per).toFixed(0)} rtt ${rtt.toFixed(1)}ms delay ${s.delay}`
+      + ` fps ${(this.frames * per).toFixed(0)} bg/s ${((pumped - this.base.pumped) * per).toFixed(0)}${s.desyncs > 0 ? ` desyncs ${s.desyncs}` : ''}${peers ? ` | ${peers}` : ''}`)
     this.reset(s, pumped, nowMs)
   }
 

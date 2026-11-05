@@ -1,4 +1,5 @@
-// Headless zone peer: 1-4 local seats driven by the course-following takeover bot over a relay or loopback.
+import { nodeRtcBackend } from './rtcNode.ts'
+// Headless zone peer: 1-4 local seats driven by the course-following takeover bot over a direct mesh or loopback.
 import { realpathSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
@@ -14,7 +15,7 @@ import { createZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
 import type { ZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
 import { globalZoneWsFactory, ZoneRelayClient } from '@royal-fiesta/game/net/zoneRelayClient'
 import type { ZoneQueuePayload } from '@royal-fiesta/game/net/zoneRelayProtocol'
-import { ZoneRelayTransport } from '@royal-fiesta/game/net/zoneRelayTransport'
+import { ZoneMeshTransport } from '@royal-fiesta/game/net/zoneMeshTransport'
 import { mergeZoneTuning } from '@royal-fiesta/game/net/zoneTuning'
 import { newMemory } from '@royal-fiesta/sim/bots/brain'
 import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
@@ -157,7 +158,7 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
   const kind = course.kind === 'survival' ? 'survival' : 'race'
 
   let client: ZoneRelayClient | null = null
-  let relayTransport: ZoneRelayTransport | null = null
+  let meshTransport: ZoneMeshTransport | null = null
   let transport: GroupTransport
   let roster: Roster
   let localPeer: number
@@ -175,8 +176,8 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
       roster = room.roster
       localPeer = room.localPeer
       measurements = room.measurements
-      relayTransport = new ZoneRelayTransport(client, localPeer, options.net.players, () => performance.now())
-      transport = relayTransport
+      meshTransport = await ZoneMeshTransport.connect(client, nodeRtcBackend(), () => performance.now())
+      transport = meshTransport
     } else {
       roster = options.net.roster
       localPeer = options.net.localPeer
@@ -239,6 +240,7 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
       try { client.bye() } catch {}
       try { client.close() } catch {}
     }
+    meshTransport?.close()
     match.dispose()
     resolveDone()
   }
@@ -249,7 +251,6 @@ export async function runZoneBot(options: ZoneBotOptions): Promise<ZoneBot> {
       refuse('zone', 'zoneBot.frame.dtS', `${dtS} is not a non-negative number; pass the frame time in seconds`)
     }
     match.frame(dtS, sample)
-    if (relayTransport !== null) relayTransport.flush()
     playedS += dtS
     if (playedS >= options.seconds) stop()
   }

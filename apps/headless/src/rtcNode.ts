@@ -1,5 +1,6 @@
 // RtcBackend for Node, on node-datachannel (libdatachannel). Node-only: lives in apps/headless.
 import { PeerConnection, cleanup } from 'node-datachannel'
+import { networkInterfaces } from 'node:os'
 import type { DataChannel, DescriptionType } from 'node-datachannel'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import type { IceServer } from '@royal-fiesta/game/net/roomsProtocol'
@@ -8,8 +9,10 @@ import type { IceCandidate, RtcBackend, RtcChannel, RtcPeer } from '@royal-fiest
 type Label = 'fast' | 'reliable'
 type Chans = { fast: RtcChannel; reliable: RtcChannel }
 
-// Measured in the sandbox (only `lo`): without a bindAddress libdatachannel gathers no candidate.
-const DEFAULT_BIND = '127.0.0.1'
+// Include the LAN interface when available; a loopback-only runtime still needs an explicit bind.
+function defaultBind(): string {
+  return Object.values(networkInterfaces()).flat().find(address => address?.family === 'IPv4' && !address.internal)?.address ?? '127.0.0.1'
+}
 
 class NodeChannel implements RtcChannel {
   readonly label: Label
@@ -50,6 +53,7 @@ class NodeChannel implements RtcChannel {
 class NodePeer implements RtcPeer {
   private readonly pc: PeerConnection
   private readonly iceFns: ((c: IceCandidate | null) => void)[] = []
+  private pendingIce: (IceCandidate | null)[] = []
   private readonly chans: { fast?: NodeChannel; reliable?: NodeChannel } = {}
   private readonly earlyIce: IceCandidate[] = []
   private readonly descs: { type: DescriptionType; sdp: string }[] = []
@@ -83,7 +87,10 @@ class NodePeer implements RtcPeer {
     }
   }
 
-  private emitIce(c: IceCandidate | null): void { for (const fn of this.iceFns) fn(c) }
+  private emitIce(c: IceCandidate | null): void {
+    if (!this.iceFns.length) this.pendingIce.push(c)
+    else for (const fn of this.iceFns) fn(c)
+  }
 
   private track(dc: DataChannel): void {
     const label = dc.getLabel()
@@ -131,7 +138,10 @@ class NodePeer implements RtcPeer {
     if (!this.closed) { if (this.remoteSet) this.applyIce(c); else this.earlyIce.push(c) }
   }
 
-  onIce(fn: (c: IceCandidate | null) => void): void { this.iceFns.push(fn) }
+  onIce(fn: (c: IceCandidate | null) => void): void {
+    this.iceFns.push(fn)
+    for (const candidate of this.pendingIce.splice(0)) fn(candidate)
+  }
   channels(): Promise<Chans> { return this.ready }
 
   close(): void {
@@ -145,7 +155,7 @@ class NodePeer implements RtcPeer {
 }
 
 export function nodeRtcBackend(opts?: { bindAddress?: string; portRange?: [number, number] }): RtcBackend {
-  const bindAddress = opts?.bindAddress ?? DEFAULT_BIND
+  const bindAddress = opts?.bindAddress ?? defaultBind()
   const range = opts?.portRange
   return {
     createPeer: (iceServers: IceServer[], initiator: boolean) => new NodePeer({

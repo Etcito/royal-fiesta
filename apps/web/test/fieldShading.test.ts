@@ -164,6 +164,64 @@ test('every saved field part gets a field material under the RAA size limit and 
   assert.ok(parts > 100, `${parts} saved field parts`)
 })
 
+// The vertex colours (MAMA meshField) step a colorBlend 'hard' label and draw normalMaterial shapes (the penguin's
+// eyes): a saved field program without them painted the face patch white over the head and lost the eyes (run 12160).
+// A save older than the MAMA field program that carries both fails here, before any GPU run: re-save it.
+test('saved field programs carry the normalMaterial labels and the hard colour blends of their asset', () => {
+  type Node = { id: string; kind: string; view?: string; material?: string | null; colorBlend?: string; children?: string[] }
+  const stale: string[] = []
+  let checked = 0
+  for (const world of readdirSync('assets')) {
+    if (!statSync(join('assets', world)).isDirectory()) continue
+    for (const file of readdirSync(join('assets', world)).filter(name => name.endsWith('.asset.json'))) {
+      const meshFile = join('assets', world, file.replace(/\.asset\.json$/, '.mesh'))
+      let meshed: { data: { groups: { parts: unknown[] }[] } }
+      try { meshed = decodeMesh(new Uint8Array(readFileSync(meshFile))) as unknown as typeof meshed } catch { continue }
+      const nodes = (JSON.parse(readFileSync(join('assets', world, file), 'utf8')) as { document: { nodes: Record<string, Node> } }).document.nodes
+      const below = (id: string): Node[] => { const n = nodes[id]; return n ? [n, ...(n.children ?? []).flatMap(c => below(c))] : [] }
+      const parent = new Map(Object.values(nodes).flatMap(n => (n.children ?? []).map(c => [c, n.id] as const)))
+      // The node and its ancestors, by id and name: a part (named after its node) holds the view shapes below it.
+      const chain = (id: string): string[] => { const n = nodes[id]; const up = parent.get(id); return n ? [n.id, (n as { name?: string }).name ?? '', ...(up ? chain(up) : [])] : [] }
+      const views = Object.values(nodes).filter(n => n.view === 'normalMaterial')
+      const hard = Object.values(nodes).some(n => n.colorBlend === 'hard')
+      for (const group of meshed.data.groups) for (const part of group.parts) {
+        const check = checkFieldPart(part)
+        if (!check.ok) continue
+        checked++
+        const partName = (part as { name?: string }).name ?? ''
+        const viewMaterials = new Set(views.filter(v => chain(v.id).includes(partName)).flatMap(v => below(v.id))
+          .flatMap(n => n.kind !== 'group' && typeof n.material === 'string' ? [n.material] : []))
+        const labels = new Set(check.program.labels.map(l => l.material))
+        const missing = [...viewMaterials].filter(m => !labels.has(m))
+        const name = `${meshFile}#${partName}`
+        if (missing.length) stale.push(`${name}: no label for normalMaterial ${missing.join(', ')}`)
+        if (hard && missing.length === 0 && viewMaterials.size > 0 && !check.program.tree.some(n => n.op !== 'leaf' && n.colour === 'hard')) {
+          stale.push(`${name}: no colour 'hard' tree node`)
+        }
+      }
+    }
+  }
+  assert.ok(checked > 0)
+  assert.deepEqual(stale, [], 'saved before the field program carried them: npm run mesh:save -- <id> with the MAMA pin')
+})
+
+test('a colour hard tree node steps the label to the nearer side; a smooth one follows the blend', () => {
+  const p = program()
+  p.tree = [{ op: 'leaf', operand: 0 }, { op: 'leaf', operand: 1 }, { op: 'union', mode: 'smooth', radius: 0.1, colour: 'hard' }]
+  const words = fieldProgramWords(p)
+  assert.ok(words.ok)
+  if (!words.ok) return
+  const f = new Float32Array(words.words.buffer)
+  const treeAt = f[3]!
+  assert.equal(f[treeAt + 8 + 3], 1)
+  const smooth = fieldProgramWords(program())
+  assert.ok(smooth.ok)
+  if (smooth.ok) assert.equal(new Float32Array(smooth.words.buffer)[treeAt + 8 + 3], 0)
+  assert.match(PMF_INTERPRETER_WGSL, /let h = select\(select\(share, 0\.5, av == bv\), stepped, pmf_f\(node \+ 3u\) > 0\.5\);/)
+  const bad = checkFieldPart(part({ tree: [{ op: 'leaf', operand: 0 }, { op: 'leaf', operand: 1 }, { op: 'union', mode: 'smooth', radius: 0.1, colour: 'soft' as 'hard' }] }))
+  assert.equal(bad.ok, false)
+})
+
 // A label graph as the saved mesh carries it (SdfmCompiledMaterial): its RAA function is registered under a dotted
 // registry name ('sdfm.buffer_<hash>'), so the field material embeds the graph text, never a call by that name.
 const STRIPES = {

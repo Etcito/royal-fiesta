@@ -53,7 +53,7 @@ export interface FieldGridLike {
 
 export type FieldTreeNodeLike =
   | { op: 'leaf'; operand: number }
-  | { op: 'union' | 'subtract' | 'intersect'; mode: string; radius: number }
+  | { op: 'union' | 'subtract' | 'intersect'; mode: string; radius: number; colour?: 'hard' }
 
 export interface FieldProgramLike {
   format: string
@@ -159,6 +159,7 @@ function checkProgram(value: unknown): FieldCheck {
     } else if (node.op === 'union' || node.op === 'subtract' || node.op === 'intersect') {
       if (typeof node.mode !== 'string') return bad('field tree mode is not a string')
       if (typeof node.radius !== 'number' || !Number.isFinite(node.radius) || node.radius < 0) return bad('field tree radius is not a non-negative number')
+      if (node.colour !== undefined && node.colour !== 'hard') return bad(`field tree colour '${String(node.colour)}' is not 'hard'`)
     } else {
       return bad(`field tree op '${String(node.op)}' is not leaf, union, subtract or intersect`)
     }
@@ -278,7 +279,7 @@ fn sdfm_posed_normal(in: MaterialInput, g: vec3f) -> vec3f {
 //   operand records (PMF_OPERAND_FLOATS each): kind (0 box, 1 grid), label, scale, 0, inv[16] (column-major),
 //     box: half xyz, radius; grid: origin xyz, voxel, size xyz, at xy, range
 //   tree nodes, 4 floats each: op (0 leaf, 1 union, 2 subtract, 3 intersect), operand index or mode (0 hard, 1 round,
-//     2 smooth, 3 chamfer), radius, 0
+//     2 smooth, 3 chamfer), radius, colour (1: colorBlend 'hard', the dominant side's label; 0: weights follow the blend)
 const PMF_LABELS_AT = 12
 const PMF_OPERAND_FLOATS = 32
 const PMF_OPERANDS_AT = PMF_LABELS_AT + 8 * MAX_LABELS
@@ -351,6 +352,7 @@ export function fieldProgramWords(program: FieldProgramLike): { ok: true; words:
     if (mode === undefined) return { ok: false, reason: `field blend mode '${node.mode}' has no WGSL port` }
     floats[at + 1] = mode
     floats[at + 2] = node.radius
+    floats[at + 3] = node.colour === 'hard' ? 1 : 0
   }
   return { ok: true, words: new Uint32Array(floats.buffer) }
 }
@@ -453,7 +455,9 @@ fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> f32 {
       if (gradient.x + gradient.y > 0.0) { share = gradient.y / (gradient.x + gradient.y); }
     }
     if (op != 2u) {
-      let h = select(share, 0.5, av == bv);
+      // colorBlend 'hard': the shape stays blended, the label steps to the nearer side (MAMA meshField, vertex colours).
+      let stepped = select(0.0, 1.0, bv < av);
+      let h = select(select(share, 0.5, av == bv), stepped, pmf_f(node + 3u) > 0.5);
       for (var s = 0u; s < 8u; s = s + 1u) { sw[top - 2u][s] = (1.0 - h) * sw[top - 2u][s] + h * sw[top - 1u][s]; }
     }
     sd[top - 2u] = select(-blend, blend, op == 1u);

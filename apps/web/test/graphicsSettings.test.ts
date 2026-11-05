@@ -112,8 +112,8 @@ test('the shading row uses the pinned MAMA choices or the matching fallback stub
   ])
   const page = new GraphicsSettings(memoryStore(), () => {})
   page.attach(contract())
-  assert.equal(page.options.shading, 'vertex')
-  assert.ok(page.model('').buttons.some(button => button.label === 'Surface shading: Vertex'))
+  assert.equal(page.options.shading, 'field', 'Royal Fiesta starts on MEDIUM: SDF per pixel')
+  assert.ok(page.model('').buttons.some(button => button.label === 'Surface shading: SDF per pixel'))
 })
 
 test('the copied test contract matches the pinned MAMA shading spec when available', () => {
@@ -130,7 +130,7 @@ test('rows disable unavailable choices and stepping skips them', () => {
   page.attach(contract())
   const model = page.model('hint')
   assert.deepEqual(model.buttons.map(button => button.label), [
-    'Frame rate: 60 fps', 'Vmax: unavailable', 'Show FPS: Off', 'Surface shading: Vertex', 'LOD offset: unavailable', 'Back',
+    'Frame rate: 60 fps', 'Vmax: unavailable', 'Show FPS: Off', 'Surface shading: SDF per pixel', 'LOD offset: unavailable', 'Back',
   ])
   assert.deepEqual([1, 4].map(index => page.props()[`row-${index}`].disabled), [true, true])
   assert.equal(page.activate(1), false)
@@ -183,14 +183,14 @@ test('invalid saved values use the default, report validation issues, and exclud
 })
 
 
-test('LOW defaults apply to absent settings and saved settings take precedence', () => {
+test('MEDIUM defaults apply to absent settings and saved settings take precedence', () => {
   const received: Record<string, unknown>[] = []
   const c = contract()
   const validate = c.validate
   c.validate = input => { received.push(input as Record<string, unknown>); return validate(input) }
   const page = new GraphicsSettings(memoryStore(JSON.stringify({ shading: 'baked', showFps: true })), () => {})
   page.attach(c)
-  assert.deepEqual(received[0], { shading: 'baked', aoQuality: 0, renderScale: 0.75, postBloom: false, postGrading: false, jiggle: 'local', showFps: true })
+  assert.deepEqual(received[0], { shading: 'baked', aoQuality: 2, renderScale: 1, postBloom: true, postGrading: true, jiggle: 'all', showFps: true })
   assert.equal(page.options.shading, 'baked')
   assert.equal(page.options.showFps, true)
 })

@@ -292,6 +292,9 @@ type FrameLoop = (frame: (dtS: number) => void, interval?: () => number) => () =
 // Where the App keeps its settings and what calls its frames: the page's localStorage and rAF loop, or
 // the uiTour op's in-memory store and its own frame steps. beforeLoad runs as each load starts; a throw fails
 // that load as any load failure does (the uiTour op refuses the boot load so it can reach 'loading' with Retry).
+/** Penguins in a show started from Play: you and 59 bots (owner 2026-11-05); ?seats= / ?bots= change it. */
+const DEFAULT_SHOW_SEATS = 60
+
 interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number; starterInventory?: boolean }
 
 // The page's FrameLoop, on requestAnimationFrame. An op tears the App down before building its own views.
@@ -2136,7 +2139,7 @@ class App {
     return {
       R: loaded.R, views: this.views, orbit: this.orbit, look,
       humans: q.players ?? 1, fixedSeats: q.players !== null,
-      seats: Math.max(q.players ?? 1, q.bots ?? intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? 12, 2, 60)),
+      seats: Math.max(q.players ?? 1, q.bots ?? intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? DEFAULT_SHOW_SEATS, 2, 60)),
       openingCourse: q.course ?? undefined,
       seed: Date.now(), localName: q.name,
       voteMs: q.test ? TEST_VOTE_MS : undefined,

@@ -7,7 +7,7 @@ import test from 'node:test'
 import { gunzipSync } from 'node:zlib'
 import { leakScan } from '../guard.ts'
 import { etcitoBuild } from '../etcitoBuild.ts'
-import { checkUpload, packWavedash, wavedashToml } from '../wavedash.ts'
+import { checkUpload, hasStringLiteral, packWavedash, wavedashToml } from '../wavedash.ts'
 import { RefusalError } from '../../packages/sim/src/refusal.ts'
 import { decodeMesh, decodeMeshBytes } from '../../apps/web/src/sdf/meshWire.ts'
 
@@ -112,6 +112,11 @@ test('packWavedash writes the documented layout and manifest, entry game.html', 
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test('the relay URL is found however the minifier quotes it', () => {
+  for (const q of ['"', "'", '`']) assert.equal(hasStringLiteral(`return ${q}${RELAY}${q}}`, RELAY), true)
+  assert.equal(hasStringLiteral(`// ${RELAY}`, RELAY), false)
 })
 
 test('rf-build.json records only that a default relay was set, never its URL', async () => {

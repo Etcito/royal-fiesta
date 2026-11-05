@@ -108,12 +108,17 @@ export function relayServer(raw = process.env.VITE_RF_SERVER, offline = false): 
   return url
 }
 
+/** `value` as a JS string literal in built code, however the minifier quotes it: Vite 8 writes the relay as a
+ * template literal (`wss://...`), and a double-quote-only search refused a build that carried it. */
+export function hasStringLiteral(code: string, value: string): boolean {
+  return ['"', "'", '`'].some(q => code.includes(q + value + q))
+}
+
 /** The built JavaScript of the upload must carry the relay (an existing dist packed with --skip-build may not). */
 export function checkRelay(upload: string, raw = process.env.VITE_RF_SERVER, offline = false): void {
   const url = relayServer(raw, offline)
   if (url === null) return
-  const literal = JSON.stringify(url)
-  if (!listFiles(upload).filter(file => /\.js$/.test(file)).some(file => readFileSync(join(upload, file), 'utf8').includes(literal))) {
+  if (!listFiles(upload).filter(file => /\.js$/.test(file)).some(file => hasStringLiteral(readFileSync(join(upload, file), 'utf8'), url))) {
     refuse('bricks', 'VITE_RF_SERVER', 'the relay URL is absent from the built JavaScript; rebuild with it in the build environment (npm run wavedash without --skip-build)')
   }
 }
@@ -190,7 +195,7 @@ export async function checkUpload(upload: string, raw = process.env.VITE_RF_AUDI
     if (files.some(file => file.startsWith('audio/') || /\.(wav|mp3|ogg|opus|flac|aac|m4a)$/i.test(file))) {
       refuse('bricks', upload, 'audio must be uploaded separately with npm run audio:upload')
     }
-    if (!files.filter(file => /\.js$/.test(file)).some(file => [JSON.stringify(base), JSON.stringify(base + '/')].some(literal => readFileSync(join(upload, file), 'utf8').includes(literal)))) {
+    if (!files.filter(file => /\.js$/.test(file)).some(file => [base, base + '/'].some(value => hasStringLiteral(readFileSync(join(upload, file), 'utf8'), value)))) {
       refuse('bricks', 'VITE_RF_AUDIO_URL', 'audio URL base is absent from built JavaScript; rebuild with the host environment')
     }
   }

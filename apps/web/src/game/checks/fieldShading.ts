@@ -633,7 +633,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
   const axes = [0, 0, 0, 0], buttons = Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 }))
   const pad = { index: 0, id: 'field-gameplay', connected: true, mapping: 'standard', axes, buttons, timestamp: 0 }
   let connected = false, game: TourGame | undefined
-  const files: OpFile[] = [], observations: unknown[] = []
+  const files: OpFile[] = [], observations: unknown[] = [], problems: string[] = []
   Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => connected ? [pad] : [] })
   try {
     const options = { search: `?${q}`, fieldGameplay: true, atlasBytes: request.atlasBytes,
@@ -659,14 +659,16 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       if (action !== 'start' && (!cam || !bounds.some(b => projectBounds(cam, [b]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1)))) throw new Error(`${action}: no gameplay subject in frame`)
       if (cam) {
         const visible = bounds.filter(b => projectBounds(cam, [b]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1))
-        for (const subject of ['penguin', 'costume.propeller-hat', 'candy.']) if (!visible.some(b => b.key.includes(subject))) throw new Error(`${action}: ${subject} is outside the gameplay view`)
+        // every shot reports ALL its problems in the one resident job (thrown together at the end): one subject per GPU run took
+        // four runs on card 7086; the visible part keys say what the camera did see
+        for (const subject of ['penguin', 'costume.propeller-hat', 'candy.']) if (!visible.some(b => b.key.includes(subject))) problems.push(`${action}: ${subject} is outside the gameplay view (visible: ${[...new Set(visible.map(b => b.key.split('#')[0]))].slice(0, 12).join(', ') || 'nothing'})`)
         // The mechanisms are drawn and move, but a hammer in frame at the spawn is not required: measured on the s1-* courses
         // the nearest hammer is 40 m (cloudstack tower) to 100+ m from the spawn and the run covers a few metres, so no start
         // frame could show one (card 7086, run 12564). It must be a drawn part of the scene in every shot and its bounds must
         // move between the shots (below).
-        if (!bounds.some(b => b.key.includes('pendulum-hammer'))) throw new Error(`${action}: no pendulum-hammer part is drawn (moving mechanisms are required)`)
+        if (!bounds.some(b => b.key.includes('pendulum-hammer'))) problems.push(`${action}: no pendulum-hammer part is drawn (moving mechanisms are required)`)
         const visibleCharacters = s.local!.characters.filter(c => projectBounds(cam, [{ key: 'character', min: [c.pos.x, c.pos.y, c.pos.z], max: [c.pos.x, c.pos.y, c.pos.z] }]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1)).length
-        if (visibleCharacters < 2) throw new Error(`${action}: several characters must be visible`)
+        if (visibleCharacters < 2) problems.push(`${action}: several characters must be visible (${visibleCharacters} in view)`)
       }
       const subjects = [...new Map(bounds.filter(b => /costume.propeller-hat|pendulum-hammer/.test(b.key)).map(b => [b.key, b])).values()]
       const uiShot = createImageBitmap(live.ui)
@@ -701,6 +703,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       }
     }
     const report = state().field.normals
+    if (problems.length) throw new Error(`fieldShading gameplay: ${problems.join('; ')}`)
     if (request.sequence.length > 1) {
       const hammerBounds = observations.map(o => JSON.stringify((o as { subjects: { key: string; min: number[]; max: number[] }[] }).subjects
         .filter(b => b.key.includes('pendulum-hammer')).map(b => [b.key, b.min, b.max])))

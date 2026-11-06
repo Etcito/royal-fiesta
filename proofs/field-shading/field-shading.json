@@ -4031,13 +4031,13 @@
     "phase": "yield: MessageChannel delivered",
     "lastAwaitedStep": "upload paint: candy.spinner-bar",
     "awaitingSteps": [],
-    "sequence": 7856,
-    "heartbeats": 44,
+    "sequence": 7384,
+    "heartbeats": 40,
     "lifecycle": [
       {
         "event": "pageshow",
         "hidden": false,
-        "at": 1793923779423
+        "at": 1793924319724
       }
     ],
     "networkAwaiting": []

@@ -124,7 +124,8 @@ import { GraphicsSettings, loadGraphicsContract } from './graphicsSettings.ts'
 import { FpsCounter, FramePacer, frameInterval } from './framePacing.ts'
 import { setRenderOptions } from '../render/renderOptions.ts'
 import { gameRenderOptions } from '../sdf/sdfPort.ts'
-import type { ShadingMode } from '../sdf/sdfPort.ts'
+import type { ShadingMode, ShadingReport, PartWorldBounds, ResizablePort } from '../sdf/sdfPort.ts'
+import { validateGameplay } from './checks/fieldShading.ts'
 
 interface Query {
   players: number | null
@@ -305,7 +306,7 @@ type FrameLoop = (frame: (dtS: number) => void, interval?: () => number) => () =
 /** Penguins in a show started from Play: you and 59 bots (owner 2026-11-05); ?seats= / ?bots= change it. */
 const DEFAULT_SHOW_SEATS = NET_PLAYERS
 
-interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number; starterInventory?: boolean }
+interface AppEnv { store: SettingsStore; padStorage: Storage | null; loop: FrameLoop; beforeLoad?: () => Promise<void>; showSeats?: number; starterInventory?: boolean; fieldGameplay?: boolean; atlasBytes?: number }
 
 // The page's FrameLoop, on requestAnimationFrame. An op tears the App down before building its own views.
 // A callback the frame cap does not render is skipped (FramePacer, off rAF timestamps); dt is the time since the last
@@ -753,11 +754,11 @@ class LocalMode implements Mode {
     return this.match?.match.sim ?? null
   }
 
-  inspectSeats() {
+  inspectSeats(all = false) {
     return {
       seats: this.seats.seats.map(s => ({ ...s })),
       cameras: this.presenter.cameras().map(camera => camera === null ? null : { ...camera, eye: [...camera.eye], target: [...camera.target] }),
-      characters: Array.from({ length: Math.max(1, this.seats.seats.length) }, (_, k) => {
+      characters: Array.from({ length: all ? PLAYERS : Math.max(1, this.seats.seats.length) }, (_, k) => {
         const c = this.match?.match.sim.character(k, emptyCharView())
         return c === undefined ? null : { ...c, pos: { ...c.pos }, vel: { ...c.vel }, facing: { ...c.facing } }
       }),
@@ -1642,6 +1643,7 @@ class App {
     } catch {
       this.nav.onlineOnly = true // a malformed baked relay: Play refuses with that message, it never plays offline
     }
+    if (env.fieldGameplay && test) this.nav.onlineOnly = false
     LobbyDiag.get().setRelay(this.nav.onlineOnly ? relayHost(bakedOrNull()) : 'none')
     const saved = loadSettings(env.store)
     this.settings = saved.settings
@@ -1697,7 +1699,7 @@ class App {
     let next: 'start' | 'hub' = 'start'
     try {
       const parsed = parseQuery(this.search)
-      if (parsed.course !== null || parsed.community !== null) next = 'hub'
+      if ((parsed.course !== null || parsed.community !== null) && !this.env.fieldGameplay) next = 'hub'
     } catch {
       // The load parses again and shows the refusal.
     }
@@ -1725,6 +1727,7 @@ class App {
     listeners: number
     camera: { yaw: number; pitch: number; rendered: CameraPose | null }
     settingsScene: SettingsSceneFrame | null
+    field?: { graphics: Readonly<Record<string, unknown>>; normals: ShadingReport; bounds: PartWorldBounds[] }
   } {
     const loaded = this.loaded
     const local = this.mode instanceof LocalMode ? this.mode : this.preparedLocal
@@ -1739,10 +1742,12 @@ class App {
       }
     })
     return {
-      local: (this.mode instanceof LocalMode || this.mode instanceof ShowAdapter) ? this.mode.inspectSeats() : null,
+      local: this.mode instanceof LocalMode ? this.mode.inspectSeats(this.env.fieldGameplay) : this.mode instanceof ShowAdapter ? this.mode.inspectSeats() : null,
       mode: this.mode === null ? null : this.mode.constructor.name,
       screen: this.nav.screen,
       hub: { alive, assets: alive ? hub.assets : [], instances: alive ? hub.instances : 0 },
+      ...(this.env.fieldGameplay && this.query?.test && loaded ? { field: { graphics: this.graphics.options,
+        normals: (loaded.ports[0] as ResizablePort).shadingReport(), get bounds() { return (loaded.ports[0] as ResizablePort).worldBounds() } } } : {}),
       ports,
       startView: this.startView !== null,
       sound: this.sound.inventory(),
@@ -1939,6 +1944,7 @@ class App {
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
       }))
+      if (this.env.fieldGameplay && content instanceof SdfContent && content.meshData().failed.size) throw new Error(`fieldShading: failed assets: ${[...content.meshData().failed.keys()].join(', ')}`)
       // ?course=<hub> opens the hub itself: the hub is the lobby, not a round (courseSetup refuses hubs).
       const picked = q.course === null ? null : content.course(q.course)
       const course = picked !== null && picked.kind === 'hub' ? null : picked
@@ -1999,6 +2005,11 @@ class App {
 
   // One canvas and port per client; content.createPort already inits the port on its canvas. Local play
   // (no relay, one client) instead mounts one canvas split into seats by S26's splitLayout.
+  private createPort(content: GameContent, target: Parameters<GameContent['createPort']>[0]) {
+    if (!this.env.fieldGameplay || !this.query?.test || !(content instanceof SdfContent)) return content.createPort(target)
+    return content.createPort(target, { ...gameRenderOptions(this.search, { shading: this.graphics.options.shading as ShadingMode }), atlasBytes: this.env.atlasBytes })
+  }
+
   private async mountPorts(content: GameContent, q: Query): Promise<{ ports: RenderPort[]; canvases: HTMLCanvasElement[] }> {
     this.views.replaceChildren()
     if (q.server === null && q.clients === 1) return this.mountLocalPort(content)
@@ -2012,7 +2023,7 @@ class App {
       for (const cell of plan.cells) {
         const canvas = mountCanvas(this.views, cell)
         canvases.push(canvas)
-        ports.push(await content.createPort({ canvas, width: cell.canvasWidth, height: cell.canvasHeight, viewports: [cell.viewport] }))
+        ports.push(await this.createPort(content, { canvas, width: cell.canvasWidth, height: cell.canvasHeight, viewports: [cell.viewport] }))
       }
     } catch (e) {
       for (const port of ports) port.dispose()
@@ -2038,7 +2049,7 @@ class App {
     this.views.appendChild(canvas)
     this.viewsSizeKey = size.key
     try {
-      const port = await content.createPort({ canvas, width: backing.width, height: backing.height, viewports })
+      const port = await this.createPort(content, { canvas, width: backing.width, height: backing.height, viewports })
       return { ports: [port], canvases: [canvas] }
     } catch (e) {
       this.views.replaceChildren()
@@ -2349,7 +2360,7 @@ class App {
 
   private frame(dt: number): void {
     const nav = this.nav
-    this.uiNowMs += Math.max(0, dt) * 1000
+    this.uiNowMs += this.env.fieldGameplay ? 1000 : Math.max(0, dt) * 1000
     const events = this.input.takeEvents()
     // The remap screen reads the keys itself: they must not also move the uaa settings menu.
     if (this.remap === null) {
@@ -2930,7 +2941,8 @@ async function start(
 // With refuseFirstLoad (the tours only) its boot load is refused before it starts, so the tour reaches 'loading'
 // with a real click on the error screen's Retry (docs/screens.md: page load or Retry after a failed load); that
 // retry is the real load. The check ops boot without it, straight to start.
-async function startForOp(onScreen: (e: UaaScreenChange) => void, options: BootOptions = {}): Promise<TourGame> {
+async function startForOp(onScreen: (e: UaaScreenChange) => void, options: BootOptions & { fieldGameplay?: boolean; atlasBytes?: number } = {}): Promise<TourGame> {
+  if (options.fieldGameplay || options.atlasBytes !== undefined) validateGameplay({ search: options.search, sequence: ['start'], atlasBytes: options.atlasBytes })
   const { views, screens } = pageRoots()
   const ui = document.createElement('canvas')
   ui.id = 'ui'
@@ -2942,7 +2954,7 @@ async function startForOp(onScreen: (e: UaaScreenChange) => void, options: BootO
     store: { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) },
     padStorage: null,
     showSeats: 8,
-    starterInventory: options.starterInventory,
+    starterInventory: options.starterInventory, fieldGameplay: options.fieldGameplay, atlasBytes: options.atlasBytes,
     loop: f => {
       frame = f
       return () => { frame = null }

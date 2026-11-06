@@ -22,8 +22,11 @@ import { pickContent } from '../../content/source.ts'
 import { assertCompleteFieldCapture, hardShadingFailures } from '../../content/shadingStatus.ts'
 import { SdfContent, skinnedCharacterOf } from '../../content/providers/sdf.ts'
 import { gameRenderOptions, type PartWorldBounds, type ResizablePort, type ShadingReport } from '../../sdf/sdfPort.ts'
-import { nextTask } from './boot.ts'
-import type { TourDeps } from '../uiTour.ts'
+import { nextTask, yieldTask } from './boot.ts'
+import { startMounted } from './lobbyUnload.ts'
+import { CharMode } from '@royal-fiesta/sim/character/constants'
+import { FIELD_ATLAS_BYTES } from '../../sdf/fieldAtlas.ts'
+import type { TourDeps, TourGame } from '../uiTour.ts'
 
 export const name = 'fieldShading'
 
@@ -600,7 +603,108 @@ async function shootMechanisms(port: ResizablePort, content: GameContent, captur
   } finally { stage.dispose() }
 }
 
+// Resident requests are deliberately small: ordered actions, real standard-pad input, no sim mutation.
+const ACTIONS = ['start', 'run', 'turn', 'jump', 'dive'] as const
+export function validateGameplay(raw: unknown): { search: string; sequence: string[]; atlasBytes?: number } {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('fieldShading: expected a gameplay request object')
+  const o = raw as Record<string, unknown>, q = new URLSearchParams(String(o.search ?? ''))
+  if (Object.keys(o).some(k => !['search', 'sequence', 'atlasBytes'].includes(k)) || typeof o.search !== 'string' || q.get('test') !== '1') throw new Error('fieldShading: gameplay controls require search with test=1 and known request fields')
+  if (!Array.isArray(o.sequence) || !o.sequence.length || o.sequence.length > ACTIONS.length || o.sequence.some((v, i) => v !== ACTIONS[i])) throw new Error('fieldShading: sequence must be a nonempty prefix of start, run, turn, jump, dive')
+  if (o.atlasBytes !== undefined && (!Number.isInteger(o.atlasBytes) || Number(o.atlasBytes) <= 0 || Number(o.atlasBytes) > FIELD_ATLAS_BYTES)) throw new Error(`fieldShading: atlasBytes must be an integer in 1..${FIELD_ATLAS_BYTES}`)
+  return { search: o.search, sequence: o.sequence as string[], atlasBytes: o.atlasBytes as number | undefined }
+}
+interface ResidentState {
+  local: { characters: { pos: { x: number; y: number; z: number }; vel: { y: number }; mode: number }[]; cameras: CameraPose[] } | null
+  camera: { yaw: number }; field: { normals: ShadingReport; bounds: PartWorldBounds[]; graphics: Record<string, unknown> }
+}
+async function gameplay(raw: unknown, deps: TourDeps) {
+  const request = validateGameplay(raw), q = new URLSearchParams(request.search)
+  for (const key of ['server', 'community', 'clients', 'players', 'bots']) if (q.has(key)) throw new Error(`fieldShading: resident gameplay does not accept ${key}`)
+  q.set('content', 'sdf'); q.set('course', MECH_COURSE)
+  const errors: string[] = [], events = new AbortController()
+  window.addEventListener('error', e => errors.push(String(e.error ?? e.message)), { signal: events.signal })
+  window.addEventListener('unhandledrejection', e => errors.push(String(e.reason)), { signal: events.signal })
+  const roots = ['#views', '#screens'].map(id => document.querySelector<HTMLElement>(id)!), styles = roots.map(r => r.style.cssText)
+  for (const root of roots) { root.style.width = `${WIDTH}px`; root.style.height = `${HEIGHT}px` }
+  const original = Object.getOwnPropertyDescriptor(navigator, 'getGamepads')
+  const axes = [0, 0, 0, 0], buttons = Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 }))
+  const pad = { index: 0, id: 'field-gameplay', connected: true, mapping: 'standard', axes, buttons, timestamp: 0 }
+  let connected = false, game: TourGame | undefined
+  const files: OpFile[] = [], observations: unknown[] = []
+  Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => connected ? [pad] : [] })
+  try {
+    const options = { search: `?${q}`, fieldGameplay: true, atlasBytes: request.atlasBytes,
+      saved: { 'rf.wardrobe': JSON.stringify({ version: 2, colour: 0, worn: { head: 'costume.propeller-hat', bottom: 'costume.fish-scarf' } }) } }
+    game = await deps.boot(() => {}, options)
+    const live = game, state = () => live.inventory() as ResidentState
+    const until = async (what: string, ready: () => boolean, dt = 1 / 60) => {
+      const end = Date.now() + WAIT_MS
+      do {
+        const screen = live.host.currentScreen()
+        if (screen === 'error' || Date.now() > end) throw new Error(`fieldShading: ${what} failed on ${screen}`)
+        live.step(dt); await yieldTask(screen)
+      } while (!ready())
+    }
+    const shoot = async (action: string) => {
+      // Freeze simulation while compilation completes; preserve the action pose and its actual camera.
+      await until(`${action} readiness`, () => state().field.normals.pending === 0 && pendingPipelines() === 0, 0)
+      if (errors.length) throw new Error(`fieldShading page errors: ${errors.join('; ')}`)
+      const report = state().field.normals
+      if (report.atlasFull || hardFailures(report).length || (state().field.graphics.shading === 'field' && q.get('normals') !== 'vertex' && report.field === 0)) throw new Error(`fieldShading: ${action}: ${JSON.stringify(report)}`)
+      live.step(0)
+      const s = state(), cam = s.local?.cameras[0], bounds = s.field.bounds
+      if (action !== 'start' && (!cam || !bounds.some(b => projectBounds(cam, [b]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1)))) throw new Error(`${action}: no gameplay subject in frame`)
+      if (cam) {
+        const visible = bounds.filter(b => projectBounds(cam, [b]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1))
+        for (const subject of ['penguin', 'costume.propeller-hat', 'candy.', 'pendulum-hammer']) if (!visible.some(b => b.key.includes(subject))) throw new Error(`${action}: ${subject} is outside the gameplay view`)
+        const visibleCharacters = s.local!.characters.filter(c => projectBounds(cam, [{ key: 'character', min: [c.pos.x, c.pos.y, c.pos.z], max: [c.pos.x, c.pos.y, c.pos.z] }]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1)).length
+        if (visibleCharacters < 2) throw new Error(`${action}: several characters must be visible`)
+      }
+      const subjects = [...new Map(bounds.filter(b => /costume.propeller-hat|pendulum-hammer/.test(b.key)).map(b => [b.key, b])).values()]
+      const uiShot = createImageBitmap(live.ui)
+      const canvases = [...live.views.querySelectorAll('canvas')].filter(c => getComputedStyle(c).display !== 'none')
+      const box = live.ui.getBoundingClientRect()
+      const snapshots = canvases.map(c => ({ rect: c.getBoundingClientRect(), image: createImageBitmap(c) }))
+      snapshots.push({ rect: box, image: uiShot })
+      const canvas = document.createElement('canvas'); canvas.width = WIDTH; canvas.height = HEIGHT
+      const ctx = canvas.getContext('2d')!
+      for (const shot of snapshots) { const image = await shot.image; ctx.drawImage(image, (shot.rect.x - box.x) * WIDTH / box.width, (shot.rect.y - box.y) * HEIGHT / box.height, shot.rect.width * WIDTH / box.width, shot.rect.height * HEIGHT / box.height); image.close() }
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Empty gameplay capture')), 'image/png'))
+      files.push({ name: `${action}.png`, blob }); observations.push({ action, local: s.local, camera: s.camera, graphics: s.field.graphics, normals: report, subjects })
+    }
+    await until('start', () => live.host.currentScreen() === 'start')
+    await startMounted(live, () => live.host.currentScreen())
+    await shoot('start')
+    if (request.sequence.length > 1) {
+      for (let i = 0; i < 5; i++) { window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', bubbles: true })); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowDown', bubbles: true })) }
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true })); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter', bubbles: true }))
+      await until('round', () => live.host.currentScreen() === 'round' && state().local !== null)
+      connected = true; axes[1] = -1
+      for (const action of request.sequence.slice(1)) {
+        const before = state(), c = before.local!.characters[0]
+        if (action === 'turn') axes[2] = 0.7
+        if (action === 'jump' || action === 'dive') { axes[2] = 0; buttons[action === 'jump' ? 0 : 1].pressed = true }
+        await until(action, () => {
+          const s = state(), now = s.local!.characters[0]
+          return action === 'run' ? Math.hypot(now.pos.x - c.pos.x, now.pos.z - c.pos.z) >= 2 : action === 'turn' ? Math.abs(s.camera.yaw - before.camera.yaw) >= 0.25 : action === 'jump' ? now.vel.y > 0 && now.pos.y > c.pos.y + 0.5 : now.mode === CharMode.dive && now.vel.y <= 0
+        })
+        await shoot(action)
+        buttons[0].pressed = buttons[1].pressed = false
+      }
+    }
+    const report = state().field.normals
+    if (request.atlasBytes !== undefined && request.sequence.length > 1 && report.demoted === 0) throw new Error('Constrained atlas did not exercise fallback')
+    assertNoPageErrors('resident gameplay')
+    return { json: { ok: true, captures: files.map(f => f.name), observations, adapter: await deps.adapter() }, files }
+  } finally {
+    game?.dispose(); events.abort()
+    roots.forEach((root, i) => { root.style.cssText = styles[i] })
+    if (original) Object.defineProperty(navigator, 'getGamepads', original); else Reflect.deleteProperty(navigator, 'getGamepads')
+  }
+}
+
 export async function run(input: unknown, deps: TourDeps): Promise<{ json: Record<string, unknown>; files: OpFile[] }> {
+  if (input && typeof input === 'object' && ('sequence' in input || 'atlasBytes' in input)) return gameplay(input, deps)
   const captures: Captures = { files: [], names: [], observations: [], failures: [] }
   const search = typeof input === 'object' && input !== null && 'search' in input ? String(input.search) : ''
   const options = gameRenderOptions(search)

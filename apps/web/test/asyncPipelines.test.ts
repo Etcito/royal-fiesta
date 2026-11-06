@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { asyncPipelineFallbacks, deviceOfCanvas, fieldReadiness, fieldReady, installAsyncLitPipelines, materialKey, pendingPipelines } from '../src/render/asyncPipelines.ts'
+import { asyncPipelineFallbacks, createPreparationQueue, deviceOfCanvas, fieldReadiness, fieldReady, installAsyncLitPipelines, materialKey, pendingPipelines } from '../src/render/asyncPipelines.ts'
 
 test('lit pipelines compile concurrently, omit pending draws and bind the resolved pipeline', async () => {
   const pending: { resolve(value: object): void; promise: Promise<object> }[] = []
@@ -26,7 +26,9 @@ test('lit pipelines compile concurrently, omit pending draws and bind the resolv
   const group = {}
   const layout = device.createPipelineLayout({ bindGroupLayouts: [group] })
   const a = device.createRenderPipeline({ label: 'raa.lit.pipeline', layout }) as { getBindGroupLayout(index: number): object }
-  const b = device.createRenderPipeline({ label: 'raa.lit.pipeline', layout })
+  const duplicate = device.createRenderPipeline({ label: 'raa.lit.pipeline', layout })
+  assert.equal(duplicate, a, 'a duplicate lit request shares the outstanding pipeline')
+  const b = device.createRenderPipeline({ label: 'raa.lit.pipeline', layout: device.createPipelineLayout({ bindGroupLayouts: [group, group] }) })
   assert.equal(pending.length, 2, 'both compiles started before either completed')
   assert.equal(device.sync, 0)
   assert.equal(a.getBindGroupLayout(0), group)
@@ -48,6 +50,33 @@ test('lit pipelines compile concurrently, omit pending draws and bind the resolv
   assert.equal(pass.draws, 2)
   device.createRenderPipeline({ label: 'one-shot pass', layout })
   assert.equal(device.sync, 1, 'unrelated pipelines retain native semantics')
+})
+
+test('preparation batches share duplicate work and yield to an interactive callback between batches', async () => {
+  const renderer = {}
+  const started: string[] = []
+  const pending: { resolve(value: object): void; reject(error: unknown): void }[] = []
+  const queue = createPreparationQueue({ batch: 2, yield: resume => { setTimeout(resume, 0) } })
+  const work = (key: string) => () => new Promise<object>((resolve, reject) => {
+    started.push(key)
+    pending.push({ resolve, reject })
+  })
+  const first = queue.request(renderer, 'a', work('a'))
+  const duplicate = queue.request(renderer, 'a', work('a'))
+  const second = queue.request(renderer, 'b', work('b'))
+  const third = queue.request(renderer, 'c', work('c'))
+  assert.equal(duplicate, first, 'a duplicate request shares the outstanding preparation')
+  assert.deepEqual(started, ['a', 'b'], 'only one batch starts before the browser gets a turn')
+  let interactive = 0
+  setTimeout(() => { interactive++ }, 0)
+  await new Promise(resolve => setTimeout(resolve, 0))
+  assert.equal(interactive, 1, 'a scheduled interactive callback runs while preparation is pending')
+  assert.deepEqual(started, ['a', 'b', 'c'], 'the next batch resumes after the interactive turn')
+  pending[0].resolve({})
+  pending[1].resolve({})
+  assert.deepEqual(await Promise.all([first, duplicate, second]), [{}, {}, {}])
+  pending[2].reject(new Error('shader failed'))
+  await assert.rejects(third, /shader failed/)
 })
 
 // Owner 2026-11-04: start-screen cosmetics, then course assets, showed at about 5% opacity for seconds. Every variant of a
@@ -191,6 +220,7 @@ test('a lit pipeline rejected on an invalid layout names the layout\'s own valid
     while (pendingPipelines() > 0) await new Promise(resolve => setTimeout(resolve, 0))
     const readiness = fieldReadiness(device, materialKey(wgsl))
     assert.equal(readiness.status, 'failed')
+    assert.equal(fieldReady(device, materialKey(wgsl)), false, 'rejected work never becomes ready')
     assert.ok(readiness.status === 'failed' && readiness.reason.includes('previous error: createBindGroupLayout \"raa.lit.extra\": exceeds maxStorageBuffersPerShaderStage (8)'))
     assert.throws(() => new Pass().setPipeline(failed), (e: unknown) => {
       const error = e as Error & { reason?: string }

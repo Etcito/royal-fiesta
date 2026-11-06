@@ -7,6 +7,71 @@ let internalFallbacks = 0
 export function pendingPipelines(): number { return compiling }
 export function asyncPipelineFallbacks(): number { return internalFallbacks }
 
+// Preparation (shader and pipeline compilation) runs in small batches: a frame that requests many
+// pipelines still returns to the browser between them, so input and animation keep running.
+export type PreparationYield = (resume: () => void) => void
+export interface PreparationQueue {
+  request<T>(renderer: object, key: string, work: () => Promise<T>): Promise<T>
+}
+
+const yieldToInteractiveFrame: PreparationYield = resume => {
+  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<unknown> } }).scheduler
+  if (scheduler !== undefined && typeof scheduler.yield === 'function') {
+    void scheduler.yield().then(resume, resume)
+    return
+  }
+  setTimeout(resume, 0)
+}
+
+/** A batch queue that shares duplicate outstanding work and yields a turn between batches. */
+export function createPreparationQueue(options: { batch?: number; yield?: PreparationYield } = {}): PreparationQueue {
+  const batch = Math.max(1, Math.floor(options.batch ?? 8))
+  const yieldFrame = options.yield ?? yieldToInteractiveFrame
+  const outstanding = new WeakMap<object, Map<string, Promise<unknown>>>()
+  const queue: (() => void)[] = []
+  let pumping = false
+  let scheduled = false
+  let started = 0
+  const pump = (): void => {
+    if (pumping) return
+    pumping = true
+    try {
+      while (queue.length > 0 && started < batch) { started++; queue.shift()!() }
+    } finally {
+      pumping = false
+    }
+    if (!scheduled && (queue.length > 0 || started >= batch)) {
+      scheduled = true
+      yieldFrame(() => { scheduled = false; started = 0; pump() })
+    }
+  }
+  return {
+    request<T>(renderer: object, key: string, work: () => Promise<T>): Promise<T> {
+      let pending = outstanding.get(renderer)
+      if (pending === undefined) outstanding.set(renderer, pending = new Map())
+      const known = pending.get(key)
+      if (known !== undefined) return known as Promise<T>
+      let resolve!: (value: T) => void
+      let reject!: (error: unknown) => void
+      const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail })
+      const finish = (): void => {
+        const jobs = outstanding.get(renderer)
+        if (jobs?.get(key) === promise) jobs.delete(key)
+      }
+      pending.set(key, promise)
+      queue.push(() => {
+        let operation: Promise<T>
+        try { operation = work() } catch (error) { finish(); reject(error); return }
+        void operation.then(value => { finish(); resolve(value) }, error => { finish(); reject(error) })
+      })
+      if (!pumping && !scheduled) pump()
+      return promise
+    },
+  }
+}
+
+const preparation = createPreparationQueue()
+
 export type PipelineReadiness = { status: 'pending' } | { status: 'ready' } | { status: 'failed'; reason: string }
 
 // One lit pipeline handle: material = the key of the material function its module was composed from (null when the
@@ -111,7 +176,8 @@ export function installAsyncLitPipelines(devicePrototype: object, passPrototype?
   installed.add(devicePrototype)
   const layouts = new WeakMap<object, unknown[]>()
   const handles = new WeakMap<object, State>()
-  const byPromise = new WeakMap<Promise<object>, object>()
+  const sources = new WeakMap<object, string>()
+  const pendingHandles = new WeakMap<object, Map<string, object>>()
   const modules = new WeakMap<object, ModuleInfo | null>()
   const current = new WeakMap<object, State>()
   const device = devicePrototype as Prototype
@@ -120,13 +186,39 @@ export function installAsyncLitPipelines(devicePrototype: object, passPrototype?
     device.createShaderModule = function(descriptor: unknown): unknown {
       const value = createModule.call(this, descriptor)
       const code = (descriptor as { code?: unknown })?.code
-      if (typeof value === 'object' && value !== null && typeof code === 'string' && !modules.has(value)) modules.set(value, moduleInfo(code))
+      if (typeof value === 'object' && value !== null && typeof code === 'string') {
+        if (!modules.has(value)) modules.set(value, moduleInfo(code))
+        if (!sources.has(value)) sources.set(value, code)
+      }
       return value
     }
   }
   const infoOf = (desc: Descriptor): ModuleInfo | null => {
     const stage = (desc.fragment ?? desc.vertex) as { module?: unknown } | undefined
     return typeof stage?.module === 'object' && stage.module !== null ? modules.get(stage.module) ?? null : null
+  }
+  // A lit pipeline's work key: every field of its descriptor, with shader modules keyed by their source and layouts by
+  // the identity of their bind group layouts. Two requests for compatible work then share one compilation.
+  const identities = new WeakMap<object, number>()
+  let nextIdentity = 0
+  const identity = (value: object): string => {
+    let id = identities.get(value)
+    if (id === undefined) identities.set(value, id = ++nextIdentity)
+    return `o${id}`
+  }
+  const workKey = (value: unknown, depth = 0): string => {
+    if (value === null || typeof value !== 'object') return typeof value === 'string' ? JSON.stringify(value) : String(value)
+    if (depth > 8) return identity(value)
+    if (Array.isArray(value)) return `[${value.map(item => workKey(item, depth + 1)).join(',')}]`
+    const source = sources.get(value)
+    if (source !== undefined) return `s:${materialKey(source)}`
+    const groups = layouts.get(value)
+    if (groups !== undefined) return `l:[${groups.map(item => workKey(item, depth + 1)).join(',')}]`
+    const proto = Object.getPrototypeOf(value)
+    if (proto === Object.prototype || proto === null) {
+      return `{${Object.keys(value).sort().map(name => `${name}:${workKey((value as Descriptor)[name], depth + 1)}`).join(',')}}`
+    }
+    return identity(value)
   }
   const context = contextPrototype as Prototype | undefined
   const configure = context?.configure
@@ -181,8 +273,10 @@ export function installAsyncLitPipelines(devicePrototype: object, passPrototype?
     const desc = descriptor as Descriptor
     const groups = typeof desc.layout === 'object' && desc.layout !== null ? layouts.get(desc.layout) : undefined
     if (desc.label !== 'raa.lit.pipeline' || groups === undefined) return createPipeline.call(this, descriptor)
-    const promise = device.createRenderPipelineAsync.call(this, descriptor) as Promise<object>
-    const known = byPromise.get(promise)
+    const key = workKey(desc)
+    let pending = pendingHandles.get(this)
+    if (pending === undefined) pendingHandles.set(this, pending = new Map())
+    const known = pending.get(key)
     if (known !== undefined) return known
     const info = infoOf(desc)
     const state: State = { device: this, material: info?.material ?? null, pass: info?.pass ?? null }
@@ -198,28 +292,34 @@ export function installAsyncLitPipelines(devicePrototype: object, passPrototype?
       return groups[index]
     } }
     handles.set(handle, state)
-    byPromise.set(promise, handle)
+    pending.set(key, handle)
     compiling++
-    void promise.then(pipeline => { state.pipeline = pipeline; compiling-- }, error => {
-      // Some release-engine devices reject even trivial async pipelines with an internal
-      // backend error. Retry those through the release API; validation errors stay visible.
-      if ((error as { reason?: string })?.reason === 'internal') {
-        try { state.pipeline = createPipeline.call(this, descriptor) as object; internalFallbacks++ }
-        catch (retryError) { state.error = retryError }
-        compiling--
-        return
-      }
-      const pending = causesOf(desc)
-      if (pending === null) {
-        state.error = error
-        compiling--
-        return
-      }
-      void pending.then(found => {
-        state.error = found.length === 0 ? error : withCauses(error, found)
-        compiling--
+    const finish = (): void => {
+      const handlesOf = pendingHandles.get(this)
+      if (handlesOf?.get(key) === handle) handlesOf.delete(key)
+      compiling--
+    }
+    void preparation.request(this, key, () => device.createRenderPipelineAsync.call(this, descriptor) as Promise<object>)
+      .then(pipeline => { state.pipeline = pipeline; finish() }, error => {
+        // Some release-engine devices reject even trivial async pipelines with an internal
+        // backend error. Retry those through the release API; validation errors stay visible.
+        if ((error as { reason?: string })?.reason === 'internal') {
+          try { state.pipeline = createPipeline.call(this, descriptor) as object; internalFallbacks++ }
+          catch (retryError) { state.error = retryError }
+          finish()
+          return
+        }
+        const pendingCauses = causesOf(desc)
+        if (pendingCauses === null) {
+          state.error = error
+          finish()
+          return
+        }
+        void pendingCauses.then(found => {
+          state.error = found.length === 0 ? error : withCauses(error, found)
+          finish()
+        })
       })
-    })
     return handle
   }
   const pass = passPrototype as Prototype

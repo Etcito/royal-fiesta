@@ -1,9 +1,12 @@
 // Register every page op (public/nmc.gpu.json plus the checks) before loading the game and its potentially
 // failing dependencies: scripts that run at DOMContentLoaded (animBrick, a render transport) find them, and
 // calls wait for the real implementation, so failures surface through the GPU client.
+// Every checks/*.ts op is listed here: the GPU client looks the op up as soon as the page loads, so a check
+// missing from this list is 'Render operation unavailable' (settingsPages, run 12334). gpuEntry.test.ts guards it.
 const names = [
   'botPerf', 'localPads', 'controlsProbe', 'gameCapture', 'roundCapture', 'uiTour', 'flowTour', 'zoneCapture', 'zoneLobbyCapture',
   'zoneLobbyPair', 'zoneSplitPair', 'countdowns', 'lobbyUnload', 'wardrobe', 'vote', 'm13Flow', 'shopEconomy', 'startPlain', 'cameraLook', 'animPerf', 'cosmeticThumbs', 'shopScreens', 'screensPreview', 'fieldShading',
+  'settingsPages', 'checkBoot',
 ] as const
 const ops: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
 let game: Promise<unknown>

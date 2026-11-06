@@ -110,7 +110,12 @@ test('check ops replace the entry placeholders; a placeholder call reaches the c
   runInNewContext(ts.transpile(installChecks, { target: ts.ScriptTarget.ES2022 }), {
     window: page, checks, take: () => { taken++ }, bootGame: () => {}, adapterInfo: async () => ({}), Object, Set, Error,
   })
-  assert.deepEqual(checks.map(check => check.name).sort(), ["animPerf", "botPerf", "cameraLook", "checkBoot", "cosmeticThumbs", "countdowns", "fieldShading", "lobbyUnload", "localPads", "m13Flow", "screensPreview", "shopEconomy", "shopScreens", "startPlain", "vote", "wardrobe"])
+  assert.ok(checks.some(check => check.name === 'settingsPages'), 'settingsPages check module')
+  // Every check op has an entry placeholder from the first script on: the GPU client looks the op up at page
+  // load and refused settingsPages with 'Render operation unavailable' (run 12334) while it was missing here.
+  for (const { name } of checks) {
+    assert.equal((placeholder[name] as unknown as { pending?: boolean } | undefined)?.pending, true, `entry.ts placeholder for check ${name}`)
+  }
   finish()
   const result = await pending
   assert.equal(result.json.name, 'wardrobe')

@@ -196,6 +196,29 @@ test('equal costs use numeric candidate positions beyond index nine', () => {
   assert.deepEqual(planFieldAtlas(parts, 4).demoted, parts.slice(0, 11).map(p => p.key))
 })
 
+test('a resource retained into the next scene keeps its existing admission cost', () => {
+  // The wall is still uploaded for the previous scene when the next one prepares; the later
+  // reference must not count it twice or move it in the cheapest-first order.
+  const parts = [part('kept.floor', 1, 40), part('shared.wall', 2, 20), part('next.ramp', 3, 10), part('shared.wall', 2, 30)]
+  const plan = planFieldAtlas(parts, 60)
+  assert.deepEqual(plan.demoted, ['next.ramp'])
+  assert.deepEqual([...plan.field], ['kept.floor', 'shared.wall'])
+  assert.equal(plan.bytes, 60)
+})
+
+test('retained and next-scene resources share one budget and every part keeps a tier', () => {
+  const retained = [part('old.floor', 4, 30), part('old.wall', 3, 20)]
+  const next = [part('new.ramp', 2, 10), part('new.flag', 1, 5)]
+  const plan = planFieldAtlas([...retained, ...next], 40)
+  // Overflow demotes several cheapest candidates, retained ones included, until the rest fits.
+  assert.deepEqual(plan.demoted, ['new.flag', 'new.ramp', 'old.wall'])
+  assert.deepEqual([...plan.field], ['old.floor'])
+  assert.equal(plan.bytes, 30)
+  // Complete retained geometry: a demoted part changes tier, it is never dropped.
+  assert.deepEqual([...plan.field, ...plan.demoted].sort(), [...retained, ...next].map(p => p.key).sort())
+  assert.equal(new Set(plan.demoted).size, plan.demoted.length)
+})
+
 function slabProgram(size: [number, number, number]): FieldProgramLike {
   const p = gridProgram('box')
   p.operands = [{ ...(p.operands[0] as FieldGridOperandLike), size, at: [0, 0] }]

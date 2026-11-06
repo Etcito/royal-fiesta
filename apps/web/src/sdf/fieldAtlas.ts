@@ -103,10 +103,19 @@ export function planFieldAtlas(parts: readonly PartFieldCost[], budget: number =
   return planAllocations(parts, budget)
 }
 
+// One entry per key, at its first traversal position: a resource retained from the previous
+// scene and referenced again by the next is still one upload and keeps its existing cost,
+// rather than being counted twice or moved by the later reference.
+function firstByKey(parts: readonly Allocation[]): Allocation[] {
+  const unique = new Map<string, Allocation>()
+  for (const part of parts) if (!unique.has(part.key)) unique.set(part.key, part)
+  return [...unique.values()]
+}
+
 function planAllocations(parts: readonly Allocation[], budget: number): FieldAtlasPlan {
   // A key names an uploaded part, shared by all its drawable instances. Demoting that
   // allocation changes their normal tier together; it releases its bytes only once.
-  const unique = [...new Map(parts.map(p => [p.key, p])).values()]
+  const unique = firstByKey(parts)
   const field = new Set<string>()
   let bytes = 0
   for (const part of unique) {

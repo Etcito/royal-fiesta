@@ -554,14 +554,15 @@ class SdfRenderPort implements ResizablePort {
     return handle
   }
 
-  // The whole-world field plan (fieldAtlas): every part with a valid field program costs its grid texture's bytes,
-  // and planFieldAtlas demotes the cheapest allocations until the world fits RAA's atlas. Computed once, before
-  // the first upload; registerAsset ensures it exists even when a caller skips prepare().
-  private planAtlas(): FieldAtlasPlan {
-    if (this.atlasPlan !== null) return this.atlasPlan
+  // Every field-capable part this port retains: the meshed content map plus any asset already uploaded for the
+  // previous scene and kept alive while the next prepares. Each key costs once, so a retained part referenced by
+  // both scenes keeps its existing admission and the next scene joins the same budget.
+  private atlasCandidates(): PartFieldProgram[] {
+    const ids = new Set([...this.meshed.keys(), ...this.uploaded.flatMap(entry => entry === undefined ? [] : [entry.assetId])])
     const costs: PartFieldProgram[] = []
-    for (const id of [...this.meshed.keys()].sort()) {
-      const meshed = this.meshed.get(id)!
+    for (const id of [...ids].sort()) {
+      const meshed = this.meshed.get(id)
+      if (meshed === undefined) continue
       const payload = payloadOf(id, meshed)
       for (const group of payload.groups) {
         for (const part of group.parts) {
@@ -578,6 +579,15 @@ class SdfRenderPort implements ResizablePort {
         }
       }
     }
+    return costs
+  }
+
+  // The whole-world field plan (fieldAtlas): every retained part with a valid field program costs its grid
+  // texture's bytes, and planFieldAtlas demotes the cheapest allocations until the world fits RAA's atlas.
+  // Computed once, before the first upload; registerAsset ensures it exists even when a caller skips prepare().
+  private planAtlas(): FieldAtlasPlan {
+    if (this.atlasPlan !== null) return this.atlasPlan
+    const costs = this.atlasCandidates()
     this.gridPlan = planFieldPrograms(costs, this.atlasBytes)
     this.atlasPlan = this.gridPlan.plan
     for (const part of costs) {

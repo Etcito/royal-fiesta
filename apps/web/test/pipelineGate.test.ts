@@ -6,10 +6,19 @@ import { courseWarmed, prepareCourse, RoundGate, roundStarts } from '../src/rend
 class GatedPort {
   warmed: (readonly string[] | undefined)[] = []
   vertexColour = 0
+  failure: string | null = null
   assets = ['course.ramp', 'course.wall']
   warmPipelines(assetIds?: readonly string[]): void { this.warmed.push(assetIds) }
   warmableAssets(): string[] { return this.assets }
-  fallbackParts(): number { return this.vertexColour }
+  fallbackParts(): number {
+    if (this.failure !== null) throw new Error(this.failure)
+    return this.vertexColour
+  }
+}
+
+async function settle(done: () => boolean): Promise<void> {
+  for (let i = 0; i < 200 && !done(); i++) await new Promise(resolve => setTimeout(resolve, 5))
+  assert.equal(done(), true)
 }
 
 function capture(run: () => void): string[] {
@@ -71,6 +80,30 @@ test('the round gate warms each shown course, hub and podium once and guards eve
   void prepareCourse(show, 'sprint.fall')
   gate.frame('countdown', { port: show, course: 'sprint.fall' })
   assert.equal(show.warmed.length, 1)
+})
+
+// A scene still drawing in vertex colour is not ready, and a preparation that throws stays a visible failure: neither
+// may mark the course warm or clear the loading state.
+test('the round gate keeps a pending scene loading and a failed one failed, never ready', async () => {
+  const states: string[] = []
+  const gate = new RoundGate({ onState: (_course, state, reason) => states.push(reason === undefined ? state : `${state}:${reason}`) })
+  const pending = new GatedPort()
+  pending.vertexColour = 2
+  gate.frame('hub', { port: pending, course: 'hub' })
+  await new Promise(resolve => setTimeout(resolve, 10))
+  assert.equal(gate.state(pending, 'hub'), 'preparing')
+  assert.equal(courseWarmed(pending, 'hub'), false)
+  pending.vertexColour = 0
+  await settle(() => gate.state(pending, 'hub') === 'ready')
+  assert.equal(courseWarmed(pending, 'hub'), true)
+
+  const failing = new GatedPort()
+  failing.failure = 'shader pipeline failed'
+  gate.frame('podium', { port: failing, course: 'podium' })
+  await settle(() => gate.state(failing, 'podium') === 'failed')
+  assert.equal(gate.state(failing, 'podium'), 'failed')
+  assert.equal(courseWarmed(failing, 'podium'), false)
+  assert.ok(states.includes('failed:shader pipeline failed'))
 })
 
 // Every path that shows a course (the voted and the next show rounds, the background first-course preload, local and

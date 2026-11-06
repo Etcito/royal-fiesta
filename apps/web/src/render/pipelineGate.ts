@@ -7,7 +7,8 @@
 //   asset at a time). It resolves once the scene's visible parts no longer draw in vertex colour, and only then marks
 //   the course warm: a cancelled, timed out or failed preparation never counts as ready;
 // - RoundGate: the app's per-frame gate for every mode, roundStarts when a countdown starts and prepareCourse once per
-//   scene shown (a show round already warmed in its prepare is not drawn again);
+//   scene shown (a show round already warmed in its prepare is not drawn again). Its scene stays 'preparing' until the
+//   complete visible scene is up and 'failed' if preparation throws, so a failure is never reported as ready;
 // - roundStarts: the guard, a console.error naming the course and how many parts are still in vertex colour.
 import { pendingPipelines } from './asyncPipelines.ts'
 
@@ -87,18 +88,39 @@ export function roundStarts(course: string, port: unknown): number {
 /** Where a mode draws what is on screen: the port and the course (or 'hub', 'podium') it shows. */
 export interface RoundStage { port: unknown; course: string }
 
+export type RoundGateState = 'idle' | 'preparing' | 'ready' | 'failed'
+
+export interface RoundGateOptions {
+  /** Called when a shown scene starts preparing, becomes complete, or fails: a failure stays visible, never ready. */
+  onState?(course: string, state: Exclude<RoundGateState, 'idle'>, reason?: string): void
+}
+
 // The screens on which a course, the hub or the podium becomes visible.
 const SHOWN = new Set(['countdown', 'hub', 'podium'])
 
 /**
  * The app's gate for every mode (show rounds, local rounds, online and in-page matches, the hub, the podium): call
  * frame() every frame with the game screen and the mode's stage. Entering a countdown runs the guard; entering a
- * countdown, the hub or the podium with a scene not warmed yet on that port runs the warm-up draw.
+ * countdown, the hub or the podium with a scene not warmed yet on that port runs the warm-up draw. Only a completed
+ * preparation marks the scene warm; a pending one stays 'preparing' and a thrown one 'failed'.
  */
 export class RoundGate {
   private screen: string | null = null
   // Entered a shown screen whose stage the mode has not given yet (it is gated on the first frame that has one).
   private pending = false
+  private readonly states = new WeakMap<object, Map<string, 'preparing' | 'failed'>>()
+  private readonly onState: RoundGateOptions['onState']
+
+  constructor(options: RoundGateOptions = {}) {
+    this.onState = options.onState
+  }
+
+  /** The preparation state of `course` on `port` (a completed preparation is 'ready' through courseWarmed). */
+  state(port: unknown, course: string): RoundGateState {
+    if (courseWarmed(port, course)) return 'ready'
+    const states = typeof port === 'object' && port !== null ? this.states.get(port) : undefined
+    return states?.get(course) ?? 'idle'
+  }
 
   frame(screen: string, stage: RoundStage | null): void {
     if (screen !== this.screen) this.pending = SHOWN.has(screen)
@@ -106,10 +128,24 @@ export class RoundGate {
     if (!this.pending || stage === null) return
     this.pending = false
     if (screen === 'countdown') roundStarts(stage.course, stage.port)
-    if (courseWarmed(stage.port, stage.course)) return
-    // A failed preparation stays a visible failure: it never marks the course warm.
-    void prepareCourse(stage.port, stage.course, { waitReady: false }).catch((e: unknown) => {
-      console.error(`[render] round ${stage.course}: preparation failed: ${e instanceof Error ? e.message : String(e)}`)
+    if (this.state(stage.port, stage.course) !== 'idle') return
+    const port = stage.port
+    const set = (state: 'preparing' | 'failed'): void => {
+      if (typeof port !== 'object' || port === null) return
+      let states = this.states.get(port)
+      if (states === undefined) this.states.set(port, states = new Map())
+      states.set(stage.course, state)
+    }
+    set('preparing')
+    this.onState?.(stage.course, 'preparing')
+    // Only the complete visible scene marks the course warm; a failed preparation stays failed and visible.
+    void prepareCourse(port, stage.course).then(() => {
+      this.onState?.(stage.course, 'ready')
+    }, (e: unknown) => {
+      set('failed')
+      const reason = e instanceof Error ? e.message : String(e)
+      this.onState?.(stage.course, 'failed', reason)
+      console.error(`[render] round ${stage.course}: preparation failed: ${reason}`)
     })
   }
 }

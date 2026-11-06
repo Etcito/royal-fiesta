@@ -1635,8 +1635,13 @@ class App {
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
-  // Every mode's course, hub and podium go through this gate (render/pipelineGate.ts).
-  private readonly roundGate = new RoundGate()
+  // Every mode's course, hub and podium go through this gate (render/pipelineGate.ts). A preparation that throws
+  // becomes the visible error screen instead of silently marking the scene ready.
+  private readonly roundGate = new RoundGate({
+    onState: (course, state, reason) => {
+      if (state === 'failed') this.fail(reason ?? `[render] round ${course}: preparation failed`)
+    },
+  })
   private showLoad = 0
   private showView: { screen: Screen; update(): void; unmount(): void } | null = null
   private preparedLocal: LocalMode | null = null

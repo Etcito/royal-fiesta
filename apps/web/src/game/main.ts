@@ -61,7 +61,7 @@ import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, backTogglesPause, flowActio
 import type { Action, EconomyScreen, GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
 import { adjust, cycle, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
 import type { KeyAction, Settings, SettingsStore } from '@royal-fiesta/game/screens/settings'
-import { PAGE_ROWS, SETTINGS_PAGES, pageAfterScreen, pageItems, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
+import { PAGE_ROWS, SETTINGS_CARD_IDS, SETTINGS_PAGES, pageAfterScreen, pageItems, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { neutralInput } from '@royal-fiesta/sim/input'
@@ -1971,7 +1971,8 @@ class App {
         this.settingsScene = new SettingsScene()
         ports[0] = this.settingsScene.wrap(ports[0], content.character().id, () => {
           if (this.nav.screen !== 'settings') return null
-          const panel = this.host.widgetRect(`card-${this.settingsPage}`)
+          // The shown card: Graphics has one per row count (settingsCardId); hidden widgets have no rect.
+          const panel = SETTINGS_CARD_IDS.map(id => this.host.widgetRect(id)).find(rect => rect !== null) ?? null
           return panel === null ? null : { panel, width: this.screens.clientWidth, height: this.screens.clientHeight }
         })
       }

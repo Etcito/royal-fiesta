@@ -1,11 +1,11 @@
-import { PAGE_ROWS, SETTINGS_PAGES, SETTINGS_ROW_SLOTS, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
+import { PAGE_ROWS, SETTINGS_PAGES, SETTINGS_ROW_SLOTS, settingsCardId, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { yieldTask } from './boot.ts'
 import { focusTab } from '../checkSupport/settingsTabs.ts'
 import { capture, pipelinesReady } from './wardrobe.ts'
 import { settingsDraw } from '../../ui/settingsWidgets.ts'
-import { settingsLayoutFailures } from '../checkSupport/settingsLayout.ts'
+import { settingsLayoutFailures, visibleRows } from '../checkSupport/settingsLayout.ts'
 import type { SettingsSceneFrame } from '../settingsScene.ts'
 
 export const name = 'settingsPages'
@@ -128,13 +128,15 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
   }
   const openPage = (page: SettingsPage): Promise<void> => focusTab(page, () => live.host.focused(), press)
   const assertLayout = async (page: SettingsPage, context: string): Promise<void> => {
-    const rows = page === 'graphics' ? SETTINGS_ROW_SLOTS : PAGE_ROWS[page].length
+    // Graphics rows come from MAMA's render-options contract: only the slots it fills are shown (run 12388 asserted
+    // all 14 slots and reported the three hidden ones as undrawn labels).
+    const rows = page === 'graphics' ? visibleRows(props) : PAGE_ROWS[page].length
     const labels = [...SETTINGS_PAGES.map(p => `tab-${p}`), ...Array.from({ length: rows }, (_, i) => `row-${i}`)]
       .map(id => ({ id, text: propText(props, id), rect: live.host.widgetRect(id) }))
     const scene = (live.inventory() as { settingsScene: SettingsSceneFrame | null }).settingsScene
     const failures = settingsLayoutFailures({
       width: live.ui.clientWidth, height: live.ui.clientHeight,
-      panel: live.host.widgetRect(`card-${page}`), player: scene?.bounds ?? null, labels, rows,
+      panel: live.host.widgetRect(settingsCardId(page, rows)), player: scene?.bounds ?? null, labels, rows,
       bindings: page === 'controls' ? PAGE_ROWS.controls.flatMap((r, i) => r.kind === 'key' ? [i] : []) : [],
       toggles: page === 'controls' ? [10] : page === 'gameplay' ? [0]
         : Array.from({ length: rows }, (_, i) => i).filter(i => props[`switch-${i}`]?.visible === true),

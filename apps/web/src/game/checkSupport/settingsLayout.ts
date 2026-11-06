@@ -1,6 +1,7 @@
-import { SETTINGS_PAGES, settingsPanelFraction } from '@royal-fiesta/game/screens/settingsPages'
+import { SETTINGS_PAGES, SETTINGS_ROW_SLOTS, settingsPanelFraction } from '@royal-fiesta/game/screens/settingsPages'
 import type { Rect } from '@royal-fiesta/game/screens/menuModel'
 import type { SettingsDraw } from '../../ui/settingsWidgets.ts'
+import type { WidgetProps } from '../../ui/screenMap.ts'
 
 export interface SettingsLayoutSample {
   width: number
@@ -45,4 +46,11 @@ export function settingsLayoutFailures(s: SettingsLayoutSample): string[] {
       || !s.draw.widgets.some(id => id === `switch-on-${i}` || id === `switch-off-${i}`)) failures.push(`toggle ${i} must draw a switch track and thumb`)
   }
   return failures
+}
+
+/** Leading row slots the screen shows; settingsWidgetProps hides the slots past the page's items. */
+export function visibleRows(props: Record<string, WidgetProps>): number {
+  let rows = 0
+  while (rows < SETTINGS_ROW_SLOTS && props[`row-${rows}`]?.visible === true) rows++
+  return rows
 }

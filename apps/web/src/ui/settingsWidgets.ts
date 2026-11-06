@@ -1,5 +1,5 @@
 import {
-  SETTINGS_PAGES, SETTINGS_ROW_SLOTS, type SettingsItem, type SettingsPage
+  SETTINGS_CARD_IDS, SETTINGS_PAGES, SETTINGS_ROW_SLOTS, settingsCardId, type SettingsItem, type SettingsPage
 } from '@royal-fiesta/game/screens/settingsPages'
 import type { WidgetProps } from './screenMap.ts'
 import { layoutLine, placeInBox, type DrawCommand, type UiRenderer } from '@etcito/uaa'
@@ -20,7 +20,7 @@ export function withSettingsWidgets(renderer: UiRenderer): UiRenderer {
     resize: viewport => renderer.resize(viewport),
     destroy: () => renderer.destroy(),
     render(list) {
-      if (!list.commands.some(c => SETTINGS_PAGES.some(p => c.widget === `card-${p}`))) {
+      if (!list.commands.some(c => SETTINGS_CARD_IDS.includes(c.widget))) {
         drawn = { labels: [], widgets: [] }
         renderer.render(list)
         return
@@ -68,8 +68,9 @@ export function settingsWidgetProps(
   page: SettingsPage, items: readonly SettingsItem[], focused: string | null, backTo: 'start' | 'pause'
 ): Record<string, WidgetProps> {
   const props: Record<string, WidgetProps> = {}
+  const card = settingsCardId(page, Math.min(items.length, SETTINGS_ROW_SLOTS))
+  for (const id of SETTINGS_CARD_IDS) props[id] = { visible: id === card }
   for (const p of SETTINGS_PAGES) {
-    props[`card-${p}`] = { visible: p === page }
     props[`tab-mark-${p}`] = { visible: p === page, value: 1 }
   }
   for (let i = 0; i < SETTINGS_ROW_SLOTS; i++) {

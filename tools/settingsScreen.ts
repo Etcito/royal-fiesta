@@ -87,6 +87,11 @@ export function settingsScreen(): Screen {
     id: `card-${page.id}`, type: 'panel', asset: 'panel.card',
     ...placement(g => [g.card[0], g.card[1], g.card[2], rowBox(g, page.rows - 1)[3] + g.bottomPad])
   }))
+  // Graphics shows as many rows as the render-options contract fills: one card per count (settingsCardId).
+  for (let rows = 0; rows < SETTINGS_ROW_SLOTS; rows++) {
+    widgets.push({ id: `card-graphics-${rows}`, type: 'panel', asset: 'panel.card',
+      ...placement(g => [g.card[0], g.card[1], g.card[2], rowBox(g, rows - 1)[3] + g.bottomPad]) })
+  }
   widgets.push(
     label('title', 'Settings', g => g.title, 30),
     button('back', 'Back', 'back', g => g.back),
@@ -138,7 +143,12 @@ export function main(): void {
   const pattern = /^    \{\n      "id": "settings",[\s\S]*?^    \}/gm
   const matches = [...source.matchAll(pattern)]
   if (matches.length !== 1) throw new Error('Expected exactly one settings screen in ui/screens.ui-doc.json')
-  const replacement = JSON.stringify(settingsScreen(), null, 2).split('\n').map(line => `    ${line}`).join('\n')
+  // Number pairs and innermost objects (rects, fonts, anims) stay on one line: one value per line pushed the document
+  // past the repository's file-size guard.
+  const json = JSON.stringify(settingsScreen(), null, 2)
+    .replace(/\[\s+(-?[\d.]+),\s+(-?[\d.]+)\s+\]/g, '[$1, $2]')
+    .replace(/\{\n[^{}]*?\n\s*\}/g, block => block.replace(/\n\s*/g, ' '))
+  const replacement = json.split('\n').map(line => `    ${line}`).join('\n')
   const output = source.replace(pattern, () => replacement).trimEnd() + '\n'
   JSON.parse(output)
   writeFileSync(`${path}.tmp`, output)

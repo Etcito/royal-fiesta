@@ -37,6 +37,18 @@ export const PAGE_ROWS: Record<'audio' | 'controls' | 'gameplay', readonly Setti
 // Row widgets per page in ui/screens.ui-doc.json.
 export const SETTINGS_ROW_SLOTS = 14
 
+// The panel widget of a page showing `rows` rows. Graphics rows follow MAMA's render-options contract (11 at
+// run 12391, varying with the shown specs), so its card exists once per row count; one card sized for every slot
+// covered three empty rows of the scene and failed 'panel exceeds the area for 11 rows'.
+export function settingsCardId(page: SettingsPage, rows: number): string {
+  return page === 'graphics' && rows < SETTINGS_ROW_SLOTS ? `card-graphics-${Math.max(0, rows)}` : `card-${page}`
+}
+
+export const SETTINGS_CARD_IDS: readonly string[] = [
+  ...SETTINGS_PAGES.map(p => `card-${p}`),
+  ...Array.from({ length: SETTINGS_ROW_SLOTS }, (_, rows) => `card-graphics-${rows}`)
+]
+
 // Maximum at the design aspect ratio; taller/narrower viewports leave still more scene visible.
 // A panel consists of the header/padding plus exactly the page's row pitches.
 export function settingsPanelFraction(rows: number, portrait: boolean): number {

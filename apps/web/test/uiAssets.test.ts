@@ -115,6 +115,7 @@ test('Settings exposes the page, tab and row control widget contract', () => {
     expected.set(`tab-${page}`, 'button')
     expected.set(`tab-mark-${page}`, 'progress')
   }
+  for (let rows = 0; rows < 14; rows++) expected.set(`card-graphics-${rows}`, 'panel')
   for (let i = 0; i < 14; i++) {
     expected.set(`row-${i}`, 'button')
     expected.set(`value-${i}`, 'label')
@@ -170,6 +171,12 @@ test('Settings exposes the page, tab and row control widget contract', () => {
       assert.deepEqual(card.offsetMin, graphics.offsetMin)
       assert.equal(graphics.offsetMax![1] - card.offsetMax![1], (14 - rows) * pitch)
       assert.ok(card.offsetMax![1] > widgets.get(`row-${rows - 1}`)![orientation]!.offsetMax![1])
+    }
+    // Graphics fills as many rows as MAMA's contract shows (11 at run 12391): its card for n rows matches that count.
+    for (let rows = 1; rows < 14; rows++) {
+      const card = widgets.get(`card-graphics-${rows}`)![orientation]!
+      assert.deepEqual(card.offsetMin, graphics.offsetMin)
+      assert.equal(graphics.offsetMax![1] - card.offsetMax![1], (14 - rows) * pitch)
     }
   }
   const hint = widgets.get('hint')!

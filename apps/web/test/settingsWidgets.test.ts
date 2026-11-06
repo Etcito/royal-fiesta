@@ -2,12 +2,12 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
-  SETTINGS_PAGES, SETTINGS_ROW_SLOTS, type SettingsItem
+  SETTINGS_CARD_IDS, SETTINGS_PAGES, SETTINGS_ROW_SLOTS, settingsCardId, type SettingsItem
 } from '../../../packages/game/src/screens/settingsPages.ts'
 import type { DocWidget, ScreensDoc } from '../src/ui/screenMap.ts'
 import { settingsWidgetProps } from '../src/ui/settingsWidgets.ts'
 import { settingsDraw, withSettingsWidgets } from '../src/ui/settingsWidgets.ts'
-import { settingsLayoutFailures, type SettingsLayoutSample } from '../src/game/checkSupport/settingsLayout.ts'
+import { settingsLayoutFailures, visibleRows, type SettingsLayoutSample } from '../src/game/checkSupport/settingsLayout.ts'
 import { projectPlayer, settingsCamera, SettingsScene } from '../src/game/settingsScene.ts'
 import { createFontRegistry, createUi, loadUiDoc, type UiFont } from '@etcito/uaa'
 import { loadAssets } from '../src/ui/uaaHost.ts'
@@ -83,11 +83,20 @@ test('unused slots hide their widgets and only the current card and tab mark are
     for (let i = 1; i < SETTINGS_ROW_SLOTS; i++) {
       for (const kind of ['row', 'value', 'slider', 'switch', 'keycap']) assert.deepEqual(props[`${kind}-${i}`], { visible: false })
     }
+    const card = page === 'graphics' ? 'card-graphics-1' : `card-${page}`
+    for (const id of SETTINGS_CARD_IDS) assert.deepEqual(props[id], { visible: id === card }, id)
     for (const p of SETTINGS_PAGES) {
-      assert.deepEqual(props[`card-${p}`], { visible: p === page })
       assert.deepEqual(props[`tab-mark-${p}`], { visible: p === page, value: 1 })
     }
   }
+})
+
+test('the layout check expects only the rows the Graphics page shows, not every slot (run 12388)', () => {
+  // MAMA's contract filled 11 Graphics rows; asserting all 14 slots reported the hidden 11-13 as undrawn labels.
+  for (const count of [1, 11, SETTINGS_ROW_SLOTS]) {
+    assert.equal(visibleRows(settingsWidgetProps('graphics', Array.from({ length: count }, () => slider), null, 'start')), count)
+  }
+  assert.equal(visibleRows({}), 0)
 })
 
 test('help follows tabs, back, credits, and clears when no relevant widget is focused', () => {
@@ -119,15 +128,16 @@ test('Settings draws readable labels, cap faces and switch thumbs across pause a
         ui.show(from, { animate: false })
         ui.render()
         ui.show('settings', { animate: false })
-        for (const page of SETTINGS_PAGES) {
-          const items = page === 'graphics' ? Array.from({ length: 14 }, () => choice)
+        // Graphics at the 11 rows MAMA's contract filled at run 12391 (the 14-slot card overflowed there) and at 14.
+        for (const [page, count] of [...SETTINGS_PAGES.map(p => [p, 14] as const), ['graphics', 11] as const]) {
+          const items = page === 'graphics' ? Array.from({ length: count }, () => choice)
             : pageItems(page, DEFAULT_SETTINGS, { rebinding: null, reducedMotion: false })
           const props = settingsWidgetProps(page, items, 'row-0', from)
           for (const [id, value] of Object.entries(props)) ui.set(id, value)
           ui.render()
           const labels = [...SETTINGS_PAGES.map(p => ({ id: `tab-${p}`, text: p })),
             ...items.map((item, i) => ({ id: `row-${i}`, text: item.label }))].map(l => ({ ...l, rect: ui.rectOf(l.id) }))
-          const panel = ui.rectOf(`card-${page}`)!
+          const panel = ui.rectOf(settingsCardId(page, items.length))!
           const points: Vec3T[] = []
           for (const x of [-1.74, 1.74]) for (const y of [-1.2, 1.33]) for (const z of [-0.64, 0.64]) points.push([x, y, z])
           const previous: CameraPose = { eye: [0, 4, 7], target: [0, 0, 0], fovYDeg: 38, near: 0.1, far: 500 }
@@ -137,7 +147,12 @@ test('Settings draws readable labels, cap faces and switch thumbs across pause a
             bindings: page === 'controls' ? [0, 1, 2, 3, 4, 5, 6] : [],
             toggles: page === 'controls' ? [10] : page === 'gameplay' ? [0] : [], draw: settingsDraw(),
           }
-          assert.deepEqual(settingsLayoutFailures(sample), [], `${from}/${page}/${width}x${height}`)
+          assert.deepEqual(settingsLayoutFailures(sample), [], `${from}/${page}/${count}/${width}x${height}`)
+          if (page === 'graphics' && count === 11 && width > height) {
+            // The full-slot card at 11 rows (three empty row pitches more) is the run 12391 failure.
+            const full = { ...panel, h: panel.h + 3 * 32 * Math.min(width / 1280, height / 720) }
+            assert.ok(settingsLayoutFailures({ ...sample, panel: full }).includes('panel exceeds the area for 11 rows'))
+          }
           assert.ok(settingsLayoutFailures({ ...sample, player: null }).some(s => s.includes('player')))
           assert.ok(settingsLayoutFailures({ ...sample, player: panel }).includes('panel covers the player'))
           assert.ok(settingsLayoutFailures({ ...sample, panel: { x: 0, y: 0, w: width, h: height } }).some(s => s.includes('area')))

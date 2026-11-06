@@ -127,7 +127,7 @@
   },
   {
     "name": "settings-render-local",
-    "command": "node --experimental-strip-types --test apps/web/test/settingsPagesCheck.test.ts packages/game/test/settingsPages.test.ts",
+    "command": "node --experimental-strip-types --test apps/web/test/settingsPagesCheck.test.ts packages/game/test/settingsPages.test.ts apps/web/test/assetDataKeys.test.ts apps/web/test/gpuEntry.test.ts apps/web/test/settingsWidgets.test.ts",
     "timeout_s": 300
   },
   {

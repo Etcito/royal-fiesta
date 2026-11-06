@@ -635,6 +635,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
   let connected = false, game: TourGame | undefined
   const files: OpFile[] = [], observations: unknown[] = [], problems: string[] = []
   let shots = 0, candyShots = 0, crowdShots = 0
+  const roster: number[][][] = []   // per camera shot: the [x, z] of every character
   Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => connected ? [pad] : [] })
   try {
     const options = { search: `?${q}`, fieldGameplay: true, atlasBytes: request.atlasBytes,
@@ -676,6 +677,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
         // like the scenery: several characters in most shots (below), not in every one: in the air (jump, dive) the camera can frame
         // the player alone while the bots run on (card 7086, run 12607: the only two problems of the shots)
         if (visibleCharacters >= 2) crowdShots++
+        roster.push(s.local!.characters.map(c => [c.pos.x, c.pos.z]))
       }
       const subjects = [...new Map(bounds.filter(b => /costume.propeller-hat|pendulum-hammer/.test(b.key)).map(b => [b.key, b])).values()]
       const uiShot = createImageBitmap(live.ui)
@@ -713,7 +715,15 @@ async function gameplay(raw: unknown, deps: TourDeps) {
     // the scenery and crowd rules judge the COMPLETE sequence (start, run, turn, jump, dive): the atlas-fallback case is only
     // start and run, and its one camera shot ('run', right behind the penguin) has no scenery by nature (card 7086, run 12613)
     const complete = request.sequence.length >= 4
-    if (complete && shots > 0 && crowdShots * 2 < shots) problems.push(`several characters are in view in ${crowdShots} of ${shots} shots (at least half are required)`)
+    // "several moving characters" is a property of the scene, not of every frame: the chase camera (jump, dive, turn) often frames the
+    // player alone (card 7086, run 12621: two or more in view in 1 of 4 shots). Required: at least one shot with two or more in view,
+    // at least two characters in the scene, and at least two of them that moved between the first and the last camera shot.
+    if (complete && shots > 0) {
+      const first = roster[0], last = roster[roster.length - 1]
+      const moving = last.filter((p, i) => first[i] && Math.hypot(p[0] - first[i][0], p[1] - first[i][1]) > 0.5).length
+      if (crowdShots < 1) problems.push(`no shot has two characters in view (0 of ${shots})`)
+      if (last.length < 2 || moving < 2) problems.push(`several moving characters are required: ${last.length} in the scene, ${moving} moved between the first and the last shot`)
+    }
     if (complete && shots > 0 && candyShots * 2 < shots) problems.push(`candy scenery is in view in ${candyShots} of ${shots} shots (at least half are required)`)
     if (problems.length) throw new Error(`fieldShading gameplay: ${problems.join('; ')}`)
     if (request.sequence.length > 1) {

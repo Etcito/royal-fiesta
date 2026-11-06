@@ -74,11 +74,15 @@ async function client(args: string[]): Promise<string> {
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [process.env.NMC_GPU_CLIENT!, ...args], { stdio: ['ignore', 'pipe', 'inherit'] })
-    let output = ''
+    const child = spawn(process.execPath, [process.env.NMC_GPU_CLIENT!, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
+    let output = '', errors = ''
     child.stdout.setEncoding('utf8').on('data', chunk => { output += chunk })
+    child.stderr.setEncoding('utf8').on('data', chunk => { errors += chunk; process.stderr.write(chunk) })
     child.on('error', reject)
-    child.on('close', code => code === 0 ? resolve(output) : reject(new Error(`GPU client exited ${code}`)))
+    // The page's console.warn lines (hundreds, one per vertex-normal part) follow the job's own error in the client's stderr
+    // and the card keeps only the tail: the error that failed the job is repeated LAST (card 7086, run 12564 showed warnings only).
+    child.on('close', code => code === 0 ? resolve(output) : reject(new Error(`GPU client exited ${code}: ` +
+      errors.split('\n').filter(l => /\b(Error|failed|refus)/i.test(l) && !/console\.warn/.test(l)).slice(-6).join(' | ').slice(-1800))))
   })
 }
 async function render(out: string): Promise<void> {

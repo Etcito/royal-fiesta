@@ -100,7 +100,9 @@ test('check ops replace the entry placeholders; a placeholder call reaches the c
   const checks = readdirSync(new URL('../src/game/checks/', import.meta.url))
     .filter(file => file.endsWith('.ts'))
     .map(file => {
-      const name = /export const name = '(\w+)'/.exec(readFileSync(new URL(`../src/game/checks/${file}`, import.meta.url), 'utf8'))![1]
+      const found = /export const name = '(\w+)'/.exec(readFileSync(new URL(`../src/game/checks/${file}`, import.meta.url), 'utf8'))
+      assert.ok(found, `checks/${file} exports no op name: helpers belong in src/game/checkSupport/`)
+      const name = found[1]
       return { name, run: async (input: unknown) => ({ json: { name, input }, files: [] }) }
     })
   const ops = readFileSync(new URL('../src/game/checkOps.ts', import.meta.url), 'utf8')
@@ -128,6 +130,10 @@ test('check ops replace the entry placeholders; a placeholder call reaches the c
   assert.throws(() => runInNewContext(ts.transpile(installChecks, { target: ts.ScriptTarget.ES2022 }), {
     window: page, checks: extra, take() {}, bootGame() {}, adapterInfo: async () => ({}), Object, Set, Error,
   }), /Duplicate check op: extra/)
+  // A helper module in checks/ (no name) is refused with its file, never read as a duplicate op `undefined`.
+  assert.throws(() => runInNewContext(ts.transpile(installChecks, { target: ts.ScriptTarget.ES2022 }), {
+    window: page, checks: { './checks/settingsTabs.ts': { focusTab() {} } }, take() {}, bootGame() {}, adapterInfo: async () => ({}), Object, Set, Error,
+  }), /checks\/settingsTabs\.ts is in checks\/ but exports no op name/)
 })
 
 // GPU countdowns run (card 6541): brickBoot threw 'animBrick requires the game page operations' at

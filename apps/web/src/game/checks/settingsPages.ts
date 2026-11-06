@@ -2,10 +2,10 @@ import { PAGE_ROWS, SETTINGS_PAGES, SETTINGS_ROW_SLOTS, type SettingsPage } from
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { yieldTask } from './boot.ts'
-import { focusTab } from './settingsTabs.ts'
+import { focusTab } from '../checkSupport/settingsTabs.ts'
 import { capture, pipelinesReady } from './wardrobe.ts'
 import { settingsDraw } from '../../ui/settingsWidgets.ts'
-import { settingsLayoutFailures } from './settingsLayout.ts'
+import { settingsLayoutFailures } from '../checkSupport/settingsLayout.ts'
 import type { SettingsSceneFrame } from '../settingsScene.ts'
 
 export const name = 'settingsPages'

@@ -7,7 +7,7 @@ import {
 import type { DocWidget, ScreensDoc } from '../src/ui/screenMap.ts'
 import { settingsWidgetProps } from '../src/ui/settingsWidgets.ts'
 import { settingsDraw, withSettingsWidgets } from '../src/ui/settingsWidgets.ts'
-import { settingsLayoutFailures, type SettingsLayoutSample } from '../src/game/checks/settingsLayout.ts'
+import { settingsLayoutFailures, type SettingsLayoutSample } from '../src/game/checkSupport/settingsLayout.ts'
 import { projectPlayer, settingsCamera, SettingsScene } from '../src/game/settingsScene.ts'
 import { createFontRegistry, createUi, loadUiDoc, type UiFont } from '@etcito/uaa'
 import { loadAssets } from '../src/ui/uaaHost.ts'

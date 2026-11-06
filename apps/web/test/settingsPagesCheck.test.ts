@@ -31,7 +31,7 @@ test('a UI GPU request that never settles rejects naming the resource, requester
 // Run 12350: Up from a Controls row reached tab-audio (uaa focus is spatial), one Right opened Graphics and the
 // Gameplay wait ran out. The walk goes by the focused tab, wherever Up lands.
 test('focusTab reaches the target tab wherever Up lands in the tab row', async () => {
-  const { focusTab } = await import('../src/game/checks/settingsTabs.ts')
+  const { focusTab } = await import('../src/game/checkSupport/settingsTabs.ts')
   const tabs = ['tab-audio', 'tab-graphics', 'tab-controls', 'tab-gameplay']
   for (const landing of tabs) {
     for (const target of ['audio', 'graphics', 'controls', 'gameplay'] as const) {
@@ -51,7 +51,7 @@ test('focusTab reaches the target tab wherever Up lands in the tab row', async (
 
 // Run 12354: focus on back (above the tab row in landscape); Up stayed on back and every page failed.
 test('focusTab goes Down to the tab row when focus is on the header above it', async () => {
-  const { focusTab } = await import('../src/game/checks/settingsTabs.ts')
+  const { focusTab } = await import('../src/game/checkSupport/settingsTabs.ts')
   const tabs = ['tab-audio', 'tab-graphics', 'tab-controls', 'tab-gameplay']
   for (const header of ['back', 'act-credits']) {
     let focus = header

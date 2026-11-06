@@ -22,7 +22,9 @@ export function installCheckOps(take: () => void, bootGame: BootGame): void {
   const ops = window.nmcGpu!.ops as unknown as Record<string, (input: unknown) => ReturnType<CheckModule['run']>>
   // The entry's waiting placeholders (marked pending) are not ops yet: the checks replace them.
   const names = new Set(Object.keys(ops).filter(name => !(ops[name] as { pending?: boolean }).pending))
-  for (const check of Object.values(modules)) {
+  for (const [file, check] of Object.entries(modules)) {
+    // a helper left in checks/ has no `name`: two of them read as one duplicate op `undefined` and no op registered
+    if (typeof check.name !== 'string') throw new Error(`${file} is in checks/ but exports no op name: helpers belong in checkSupport/`)
     if (names.has(check.name)) throw new Error(`Duplicate check op: ${check.name}`)
     names.add(check.name)
   }

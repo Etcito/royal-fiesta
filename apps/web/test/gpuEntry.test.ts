@@ -118,6 +118,26 @@ test('check ops replace the entry placeholders; a placeholder call reaches the c
   for (const { name } of checks) {
     assert.equal((placeholder[name] as unknown as { pending?: boolean } | undefined)?.pending, true, `entry.ts placeholder for check ${name}`)
   }
+  // Ops installed by installGameOps and ops a tools/*.ts script publishes on game.html need the same placeholder:
+  // interactive-start-render published { page: 'game.html', ops: ['interactiveStart'] } and the GPU client
+  // refused it with 'Render operation unavailable' (run 12767) because only checks/*.ts were guarded here.
+  const gameOps = readFileSync(new URL('../src/game/ops.ts', import.meta.url), 'utf8')
+  const installGame = /export function installGameOps\([\s\S]*?\n\}/.exec(gameOps)![0]
+  const installed = [...installGame.matchAll(/gpu\.ops\.(\w+) =/g)].map(m => m[1])
+  assert.ok(installed.includes('interactiveStart'), 'installGameOps installs interactiveStart')
+  const toolsDir = new URL('../../../tools/', import.meta.url)
+  const published = readdirSync(toolsDir).filter(file => file.endsWith('.ts')).flatMap(file => {
+    const text = readFileSync(new URL(file, toolsDir), 'utf8')
+    return [...text.matchAll(/page: 'game\.html', ops: \[([^\]]*)\]/g)]
+      .flatMap(m => [...m[1].matchAll(/'(\w+)'/g)].map(op => ({ file, name: op[1] })))
+  })
+  assert.ok(published.some(op => op.file === 'play.ts' && op.name === 'interactiveStart'), 'play.ts game.html manifest found')
+  for (const name of installed) {
+    assert.equal((placeholder[name] as unknown as { pending?: boolean } | undefined)?.pending, true, `entry.ts placeholder for installGameOps op ${name}`)
+  }
+  for (const { file, name } of published) {
+    assert.equal((placeholder[name] as unknown as { pending?: boolean } | undefined)?.pending, true, `entry.ts placeholder for op ${name} published on game.html by tools/${file}`)
+  }
   finish()
   const result = await pending
   assert.equal(result.json.name, 'wardrobe')

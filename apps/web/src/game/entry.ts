@@ -2,11 +2,13 @@
 // failing dependencies: scripts that run at DOMContentLoaded (animBrick, a render transport) find them, and
 // calls wait for the real implementation, so failures surface through the GPU client.
 // Every checks/*.ts op is listed here: the GPU client looks the op up as soon as the page loads, so a check
-// missing from this list is 'Render operation unavailable' (settingsPages, run 12334). gpuEntry.test.ts guards it.
+// missing from this list is 'Render operation unavailable' (settingsPages, run 12334). The same holds for every op
+// installGameOps installs and every op a tools/*.ts game.html manifest publishes (interactiveStart, run 12767).
+// gpuEntry.test.ts guards all three.
 const names = [
   'botPerf', 'localPads', 'controlsProbe', 'gameCapture', 'roundCapture', 'uiTour', 'flowTour', 'zoneCapture', 'zoneLobbyCapture',
   'zoneLobbyPair', 'zoneSplitPair', 'countdowns', 'lobbyUnload', 'wardrobe', 'vote', 'm13Flow', 'shopEconomy', 'startPlain', 'cameraLook', 'animPerf', 'cosmeticThumbs', 'shopScreens', 'screensPreview', 'fieldShading',
-  'settingsPages', 'checkBoot',
+  'settingsPages', 'checkBoot', 'interactiveStart',
 ] as const
 const ops: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
 let game: Promise<unknown>

@@ -17,7 +17,7 @@ import { observeRoundLoad, startup, renderFrame, simStep } from '@royal-fiesta/g
 import { UaaError } from '@etcito/uaa'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
-import { basisFromFacing, spawnYaw } from '@royal-fiesta/game/client/cameraBasis'
+import { basisFromFacing } from '@royal-fiesta/game/client/cameraBasis'
 import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
 import { controlsToInput, emptyControls, mergeControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
@@ -44,7 +44,7 @@ import type { LobbyPick } from '@royal-fiesta/game/hub/lobby'
 import { LoopbackRelay } from '@royal-fiesta/game/net/loopbackRelay'
 import { classicNetSetup, NET_PLAYERS } from '@royal-fiesta/game/net/tuning'
 import { globalWsFactory, type WsFactory } from '@royal-fiesta/game/net/ws'
-import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
+import { OrbitCamera, SpawnAim } from '@royal-fiesta/game/render/orbitCamera'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, RenderPort, SkinnedAssetT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
@@ -482,8 +482,8 @@ class MatchPresenter {
   private podium: number[] | null = null
   private seat = 0
   private readonly state = emptyViewState()
-  // The course index the orbit was last aimed along (-1: aim on the next draw).
-  private aimed = -1
+  // Aims the orbit along the local seat's spawn on a new course index or after anyone reset the orbit.
+  private readonly aim = new SpawnAim()
 
   constructor(c: ModeCtx) {
     this.c = c
@@ -508,7 +508,7 @@ class MatchPresenter {
     // Each round starts looking along the local seat's spawn (draw, on a new course index).
     orbit.reset(0)
     this.seat = seat
-    this.aimed = -1
+    this.aim.clear()
     this.scene = new SceneView({
       port: ports[0], viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
       character: content.character(), dressing: content.dressing(), camera: (focus, dt, clip) => orbit.pose(focus, dt, clip),
@@ -528,11 +528,7 @@ class MatchPresenter {
       this.stage.update(dt)
       return
     }
-    const ci = sim.phase(this.state).courseIndex
-    if (ci >= 0 && ci !== this.aimed) {
-      this.aimed = ci
-      this.c.orbit.reset(spawnYaw(sim.course()?.spawns, this.seat))
-    }
+    this.aim.update(this.c.orbit, sim.phase(this.state).courseIndex, sim.course()?.spawns, this.seat)
     this.scene?.update(sim, smoother, alpha, dt)
   }
 
@@ -600,8 +596,8 @@ class LocalPresenter {
   private overviewIndex = -1
   private overviewCam: CameraPose | null = null
   private readonly state = emptyViewState()
-  // The course index seat 0's orbit was last aimed along (-1: aim on the next draw).
-  private aimed = -1
+  // Aims seat 0's orbit along its spawn on a new course index or after anyone reset the orbit (App.stopMode).
+  private readonly aim = new SpawnAim()
 
   constructor(c: ModeCtx) {
     this.c = c
@@ -625,7 +621,7 @@ class LocalPresenter {
     const orbit = this.c.orbit
     // Each round starts looking along seat 0's spawn (draw, on a new course index).
     orbit.reset(0)
-    this.aimed = -1
+    this.aim.clear()
     this.seats = seats
     this.scenes = []
     for (let k = 0; k < seats; k++) {
@@ -667,11 +663,7 @@ class LocalPresenter {
       this.stage.update(dt)
       return false
     }
-    const ci = match.sim.phase(this.state).courseIndex
-    if (ci >= 0 && ci !== this.aimed) {
-      this.aimed = ci
-      this.c.orbit.reset(spawnYaw(match.sim.course()?.spawns, 0))
-    }
+    this.aim.update(this.c.orbit, match.sim.phase(this.state).courseIndex, match.sim.course()?.spawns, 0)
     for (const view of this.scenes) view.update(match.sim, null, alpha, dt)
     if (this.seats === 3 && this.c.q.players === null) {
       const ci = match.sim.phase(this.state).courseIndex
@@ -687,12 +679,12 @@ class LocalPresenter {
 
   // The next draw aims seat 0's orbit along its spawn again.
   reaim(): void {
-    this.aimed = -1
+    this.aim.clear()
   }
 
   end(): void {
     this.disposeScenes()
-    this.aimed = -1
+    this.aim.clear()
     this.podium = null
     this.podiumS = 0
     this.overviewIndex = -1

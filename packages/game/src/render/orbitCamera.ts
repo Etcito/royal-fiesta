@@ -1,4 +1,4 @@
-import { cameraBasis, yawTurn } from '../client/cameraBasis.ts'
+import { cameraBasis, spawnYaw, yawTurn } from '../client/cameraBasis.ts'
 import type { Planar, PlanarBasis } from '../client/cameraBasis.ts'
 import type { ArmClip } from './cameraOcclusion.ts'
 import type { CameraPose } from './port.ts'
@@ -53,8 +53,11 @@ export class OrbitCamera {
   private arm = ORBIT_DISTANCE
   // Seconds left before the arm may ease back out (ARM_HOLD_S after the last shortening).
   private hold = 0
+  // Counts reset() calls: a presenter that aimed the orbit sees when someone else reset it since (SpawnAim).
+  resets = 0
 
   reset(yaw = 0): void {
+    this.resets++
     this.yaw = wrapYaw(yaw)
     this.pitch = DEFAULT_PITCH
     this.arm = ORBIT_DISTANCE
@@ -136,5 +139,26 @@ export class OrbitCamera {
     if (amountRad === 0) return
     const f = yawTurn(this.ground(), amountRad)
     this.yaw = wrapYaw(Math.atan2(f.x, f.z))
+  }
+}
+
+// Aims a round's orbit along the seat's course spawn: on every new course index, and again whenever anyone else reset the
+// orbit since this aim. Tracking the course index alone missed the App's stopMode reset(0): with ?course= the prepared
+// LocalMode enqueues and aims at boot, Play then reset the orbit to +Z on the same course index, and the round ran
+// across s1-f-taffy-circuit (spawns face +X) into the side rail (card 7087, run at 3524cca: 90 degrees off the spawn).
+export class SpawnAim {
+  private course = -1
+  private resets = -1
+
+  // The next update aims again.
+  clear(): void {
+    this.course = -1
+  }
+
+  update(orbit: OrbitCamera, courseIndex: number, spawns: readonly { facing: Planar }[] | undefined, seat: number): void {
+    if (courseIndex < 0 || (courseIndex === this.course && orbit.resets === this.resets)) return
+    orbit.reset(spawnYaw(spawns, seat))
+    this.course = courseIndex
+    this.resets = orbit.resets
   }
 }

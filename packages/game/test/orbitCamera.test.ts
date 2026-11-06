@@ -224,3 +224,33 @@ test('spring arm: a posed mechanism body shortens the arm like an obstacle, and 
   cam.reset(0)
   near(dist(cam.pose({ x: 0, y: 0, z: 0 }, 0, clip)), ORBIT_DISTANCE, 'the body moved away: full arm')
 })
+
+test('a round orbit is aimed along the spawn again after anyone reset it on the same course', async () => {
+  const { SpawnAim } = await import('../src/render/orbitCamera.ts')
+  const close = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`)
+  const east = [{ facing: { x: 1, z: 0 } }]
+  const cam = new OrbitCamera(), aim = new SpawnAim()
+  aim.update(cam, -1, east, 0)
+  close(cam.yaw, 0)
+  // the prepared ?course= match draws at boot: aimed along +X
+  aim.update(cam, 0, east, 0)
+  close(cam.yaw, Math.PI / 2)
+  // the player turns: the aim keeps the player's yaw
+  cam.stick(1, 0, 0.5, 5, false)
+  const turned = cam.yaw
+  aim.update(cam, 0, east, 0)
+  close(cam.yaw, turned)
+  // Play: App.stopMode resets the orbit to +Z on the same course index (card 7087): the next draw aims along +X again
+  cam.reset(0)
+  aim.update(cam, 0, east, 0)
+  close(cam.yaw, Math.PI / 2)
+  close(cam.ground().x, 1)
+  // a new course index aims again; clear() aims on the next update
+  cam.stick(1, 0, 0.5, 5, false)
+  aim.update(cam, 1, [{ facing: { x: 0, z: -1 } }], 0)
+  close(Math.abs(cam.yaw), Math.PI)
+  cam.stick(1, 0, 0.5, 5, false)
+  aim.clear()
+  aim.update(cam, 1, east, 0)
+  close(cam.yaw, Math.PI / 2)
+})

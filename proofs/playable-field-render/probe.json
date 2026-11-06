@@ -1,0 +1,91 @@
+{
+  "job_id": "19c81596e22f8f993d6993ae4521f455",
+  "client_id": "868c13ac4a2acbcbaa5298f1",
+  "result": {
+    "ok": true,
+    "captures": [
+      "start.png"
+    ],
+    "observations": [
+      {
+        "action": "start",
+        "local": null,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0.38050637711236485,
+          "rendered": null
+        },
+        "graphics": {
+          "shading": "field",
+          "bakeTexelDensity": 256,
+          "bakeMaxSize": 512,
+          "frameRate": "cap60",
+          "showFps": false,
+          "aoQuality": 2,
+          "lodOffset": 0,
+          "renderScale": 1,
+          "postBloom": true,
+          "postGrading": true,
+          "postStrength": 1,
+          "jiggle": "all"
+        },
+        "normals": {
+          "fieldGridScale": 1.041024482546747,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 103,
+          "vertex": 8,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 8,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 57030784,
+          "budget": 57042534,
+          "errors": [
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale"
+          ]
+        },
+        "subjects": [
+          {
+            "key": "costume.propeller-hat#propeller_hat/__root__",
+            "min": [
+              -1.4316331341323187,
+              0.7208825971833039,
+              2.6588356290485473
+            ],
+            "max": [
+              -1.2309918654863299,
+              0.857261074281745,
+              2.856567790305557
+            ]
+          }
+        ]
+      }
+    ],
+    "adapter": {
+      "vendor": "nvidia",
+      "architecture": "ampere",
+      "description": "",
+      "software": false
+    }
+  }
+}

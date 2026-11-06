@@ -1,0 +1,1467 @@
+{
+  "job_id": "e8dd1d464344b6afa2482f5cec970adf",
+  "client_id": "868c13ac4a2acbcbaa5298f1",
+  "result": {
+    "ok": true,
+    "captures": [
+      "start.png",
+      "run.png",
+      "turn.png",
+      "jump.png",
+      "dive.png"
+    ],
+    "observations": [
+      {
+        "action": "start",
+        "local": null,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0.38050637711236485,
+          "rendered": null
+        },
+        "graphics": {
+          "shading": "field",
+          "bakeTexelDensity": 256,
+          "bakeMaxSize": 512,
+          "frameRate": "cap60",
+          "showFps": false,
+          "aoQuality": 2,
+          "lodOffset": 0,
+          "renderScale": 1,
+          "postBloom": true,
+          "postGrading": true,
+          "postStrength": 1,
+          "jiggle": "all"
+        },
+        "normals": {
+          "fieldGridScale": 1.041024482546747,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 103,
+          "vertex": 8,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 8,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 57030784,
+          "budget": 57042534,
+          "errors": [
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale"
+          ]
+        },
+        "subjects": [
+          {
+            "key": "costume.propeller-hat#propeller_hat/__root__",
+            "min": [
+              -1.4316331341323187,
+              0.7208825971833039,
+              2.6588356290485473
+            ],
+            "max": [
+              -1.2309918654863299,
+              0.857261074281745,
+              2.856567790305557
+            ]
+          }
+        ]
+      },
+      {
+        "action": "run",
+        "local": {
+          "seats": [
+            {
+              "index": 0,
+              "device": "pad:0",
+              "player": 0,
+              "colour": 0
+            }
+          ],
+          "cameras": [
+            {
+              "eye": [
+                -17.200000762939453,
+                4.8499292731285095,
+                34.933319091796875
+              ],
+              "target": [
+                -17.200000762939453,
+                2.0499292731285097,
+                41.933319091796875
+              ],
+              "fovYDeg": 60,
+              "near": 0.1,
+              "far": 500
+            }
+          ],
+          "characters": [
+            {
+              "pos": {
+                "x": -17.200000762939453,
+                "y": 0.8499292731285095,
+                "z": 42.066650390625
+              },
+              "vel": {
+                "x": 0,
+                "y": 2.4783730623312294e-10,
+                "z": 8
+              },
+              "facing": {
+                "x": 0,
+                "z": 1
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -14.338064193725586,
+                "y": 0.8499300479888916,
+                "z": 41.96538543701172
+              },
+              "vel": {
+                "x": 4.7874016761779785,
+                "y": -2.4874680093489587e-10,
+                "z": -6.362204551696777
+              },
+              "facing": {
+                "x": 0.6012650701201057,
+                "z": -0.799049632659614
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -7.613519668579102,
+                "y": 0.84992915391922,
+                "z": 37.19788360595703
+              },
+              "vel": {
+                "x": -7.155417442321777,
+                "y": -0.0000021338464648579247,
+                "z": 3.5777087211608887
+              },
+              "facing": {
+                "x": -0.8944271909999161,
+                "z": 0.44721359549995804
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -6.969049453735352,
+                "y": 0.8499318957328796,
+                "z": 38.44426345825195
+              },
+              "vel": {
+                "x": -7.748027801513672,
+                "y": 0.00007113814353942871,
+                "z": 1.9527559280395508
+              },
+              "facing": {
+                "x": -0.6691306063588581,
+                "z": 0.7431448254773945
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -20.51526641845703,
+                "y": 0.8499301075935364,
+                "z": 37.15210723876953
+              },
+              "vel": {
+                "x": 7.155417442321777,
+                "y": -2.473825588822365e-10,
+                "z": 3.5777087211608887
+              },
+              "facing": {
+                "x": 0.8944271909999161,
+                "z": 0.44721359549995804
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -14.772470474243164,
+                "y": 0.8499283194541931,
+                "z": 38.75957107543945
+              },
+              "vel": {
+                "x": 6.614173412322998,
+                "y": 0,
+                "z": 4.472440719604492
+              },
+              "facing": {
+                "x": 0.8283910875005642,
+                "z": 0.560150163928953
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -12.380350112915039,
+                "y": 0.8499295711517334,
+                "z": 39.70097732543945
+              },
+              "vel": {
+                "x": 4.3056559562683105,
+                "y": 0,
+                "z": 2.6882543563842773
+              },
+              "facing": {
+                "x": 0.9909669140925642,
+                "z": 0.13410658139651616
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -10.028056144714355,
+                "y": 0.8499295115470886,
+                "z": 42.64226531982422
+              },
+              "vel": {
+                "x": -5.228346347808838,
+                "y": -0.000005409121513366699,
+                "z": -6.047244071960449
+              },
+              "facing": {
+                "x": -0.6540300875951081,
+                "z": -0.7564685350497636
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            }
+          ]
+        },
+        "camera": {
+          "yaw": 0,
+          "pitch": 0.38050637711236485,
+          "rendered": null
+        },
+        "graphics": {
+          "shading": "field",
+          "bakeTexelDensity": 256,
+          "bakeMaxSize": 512,
+          "frameRate": "cap60",
+          "showFps": false,
+          "aoQuality": 2,
+          "lodOffset": 0,
+          "renderScale": 1,
+          "postBloom": true,
+          "postGrading": true,
+          "postStrength": 1,
+          "jiggle": "all"
+        },
+        "normals": {
+          "fieldGridScale": 1.041024482546747,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 103,
+          "vertex": 8,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 8,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 57030784,
+          "budget": 57042534,
+          "errors": [
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale"
+          ]
+        },
+        "subjects": [
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/head",
+            "min": [
+              -71.36200231199633,
+              1.232440576056443,
+              26.634745411395432
+            ],
+            "max": [
+              -68.21119409913648,
+              4.369342699547805,
+              29.93125648069441
+            ]
+          },
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/arm",
+            "min": [
+              -73.93865095297704,
+              3.175381817781384,
+              27.814144778592
+            ],
+            "max": [
+              -70.14484635197005,
+              7.027301515342155,
+              28.75185707485522
+            ]
+          },
+          {
+            "key": "costume.propeller-hat#propeller_hat/__root__",
+            "min": [
+              -17.62466812471803,
+              1.6590053228986044,
+              41.59944419592581
+            ],
+            "max": [
+              -16.785329787805182,
+              2.200567002569997,
+              42.42744779343407
+            ]
+          }
+        ]
+      },
+      {
+        "action": "turn",
+        "local": {
+          "seats": [
+            {
+              "index": 0,
+              "device": "pad:0",
+              "player": 0,
+              "colour": 0
+            }
+          ],
+          "cameras": [
+            {
+              "eye": [
+                -15.394577690275806,
+                4.849929690361023,
+                36.26035912420742
+              ],
+              "target": [
+                -17.32906723022461,
+                2.049929690361023,
+                42.98774719238281
+              ],
+              "fovYDeg": 60,
+              "near": 0.1,
+              "far": 500
+            }
+          ],
+          "characters": [
+            {
+              "pos": {
+                "x": -17.36581039428711,
+                "y": 0.849929690361023,
+                "z": 43.11582946777344
+              },
+              "vel": {
+                "x": -2.2047243118286133,
+                "y": -2.483488970028702e-10,
+                "z": 7.685039520263672
+              },
+              "facing": {
+                "x": -0.27576157673509677,
+                "z": 0.9612260674766229
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -13.707735061645508,
+                "y": 0.8499300479888916,
+                "z": 41.10639190673828
+              },
+              "vel": {
+                "x": 4.661417484283447,
+                "y": 0,
+                "z": -6.488188743591309
+              },
+              "facing": {
+                "x": 0.5834735684122697,
+                "z": -0.8121321290062674
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -8.566947937011719,
+                "y": 0.8499293923377991,
+                "z": 37.675148010253906
+              },
+              "vel": {
+                "x": -7.118110179901123,
+                "y": 0.000001604855242476333,
+                "z": 3.5905511379241943
+              },
+              "facing": {
+                "x": -0.8928413569052035,
+                "z": 0.45037130392563357
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -8.002115249633789,
+                "y": 0.8499300479888916,
+                "z": 38.70463943481445
+              },
+              "vel": {
+                "x": -7.7480316162109375,
+                "y": 0,
+                "z": 1.9527559280395508
+              },
+              "facing": {
+                "x": -0.9696769883716442,
+                "z": 0.2443901352806583
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -19.557846069335938,
+                "y": 0.849929928779602,
+                "z": 37.619285583496094
+              },
+              "vel": {
+                "x": 7.181102275848389,
+                "y": 0,
+                "z": 3.464566946029663
+              },
+              "facing": {
+                "x": 0.9006582699717246,
+                "z": 0.4345281127056566
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -13.890573501586914,
+                "y": 0.8499283194541931,
+                "z": 39.35588455200195
+              },
+              "vel": {
+                "x": 6.614173412322998,
+                "y": 0,
+                "z": 4.472440719604492
+              },
+              "facing": {
+                "x": 0.8283910875005642,
+                "z": 0.560150163928953
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -11.43693733215332,
+                "y": 0.8499292731285095,
+                "z": 39.7267951965332
+              },
+              "vel": {
+                "x": 7.975314617156982,
+                "y": -2.482920535840094e-10,
+                "z": -0.6279775500297546
+              },
+              "facing": {
+                "x": 0.9969143347815027,
+                "z": -0.07849719171507895
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -10.737799644470215,
+                "y": 0.8499289155006409,
+                "z": 41.84760284423828
+              },
+              "vel": {
+                "x": -5.4001078605651855,
+                "y": -0.000007036328497633804,
+                "z": -5.9024434089660645
+              },
+              "facing": {
+                "x": -0.6750134620711863,
+                "z": -0.7378054120312966
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            }
+          ]
+        },
+        "camera": {
+          "yaw": -0.28000000000000114,
+          "pitch": 0.38050637711236485,
+          "rendered": null
+        },
+        "graphics": {
+          "shading": "field",
+          "bakeTexelDensity": 256,
+          "bakeMaxSize": 512,
+          "frameRate": "cap60",
+          "showFps": false,
+          "aoQuality": 2,
+          "lodOffset": 0,
+          "renderScale": 1,
+          "postBloom": true,
+          "postGrading": true,
+          "postStrength": 1,
+          "jiggle": "all"
+        },
+        "normals": {
+          "fieldGridScale": 1.041024482546747,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 103,
+          "vertex": 8,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 8,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 57030784,
+          "budget": 57042534,
+          "errors": [
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale"
+          ]
+        },
+        "subjects": [
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/head",
+            "min": [
+              -71.4402461386009,
+              1.16913440251786,
+              26.634745406309463
+            ],
+            "max": [
+              -68.27807661530535,
+              4.292514538522179,
+              29.93125648578038
+            ]
+          },
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/arm",
+            "min": [
+              -73.94324789918872,
+              3.1197203586799636,
+              27.814144788251536
+            ],
+            "max": [
+              -70.20275202227594,
+              7.023956641413437,
+              28.7518570805149
+            ]
+          },
+          {
+            "key": "costume.propeller-hat#propeller_hat/__root__",
+            "min": [
+              -17.804130679367198,
+              1.6749992693116738,
+              42.665167206302556
+            ],
+            "max": [
+              -16.970442801723216,
+              2.2262197636053065,
+              43.487365199983785
+            ]
+          }
+        ]
+      },
+      {
+        "action": "jump",
+        "local": {
+          "seats": [
+            {
+              "index": 0,
+              "device": "pad:0",
+              "player": 0,
+              "colour": 0
+            }
+          ],
+          "cameras": [
+            {
+              "eye": [
+                -15.578293510588306,
+                5.3027074337005615,
+                36.900770501160544
+              ],
+              "target": [
+                -17.51278305053711,
+                2.5027074337005617,
+                43.62815856933594
+              ],
+              "fovYDeg": 60,
+              "near": 0.1,
+              "far": 500
+            }
+          ],
+          "characters": [
+            {
+              "pos": {
+                "x": -17.54952621459961,
+                "y": 1.4020129442214966,
+                "z": 43.75624084472656
+              },
+              "vel": {
+                "x": -2.2047243118286133,
+                "y": 5.833330154418945,
+                "z": 7.685039520263672
+              },
+              "facing": {
+                "x": -0.27576157673509677,
+                "z": 0.9612260674766229
+              },
+              "mode": 1,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -13.240285873413086,
+                "y": 0.8499303460121155,
+                "z": 40.71245574951172
+              },
+              "vel": {
+                "x": 6.547487258911133,
+                "y": 0.000058923666074406356,
+                "z": -2.9608535766601562
+              },
+              "facing": {
+                "x": 0.9939518119010159,
+                "z": -0.10981710075706558
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -9.160125732421875,
+                "y": 0.8499308228492737,
+                "z": 37.97437286376953
+              },
+              "vel": {
+                "x": -7.118110179901123,
+                "y": -0.0000037476420402526855,
+                "z": 3.5905511379241943
+              },
+              "facing": {
+                "x": -0.8928413569052035,
+                "z": 0.45037130392563357
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -8.647790908813477,
+                "y": 0.849929928779602,
+                "z": 38.867374420166016
+              },
+              "vel": {
+                "x": -7.7480316162109375,
+                "y": 2.482920535840094e-10,
+                "z": 1.9527559280395508
+              },
+              "facing": {
+                "x": -0.9696769883716442,
+                "z": 0.2443901352806583
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -18.955612182617188,
+                "y": 0.8499289751052856,
+                "z": 37.90520477294922
+              },
+              "vel": {
+                "x": 7.241401195526123,
+                "y": 0,
+                "z": 3.4003100395202637
+              },
+              "facing": {
+                "x": 0.9051751478030291,
+                "z": 0.42503876505533544
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -13.340761184692383,
+                "y": 0.8499285578727722,
+                "z": 39.73292922973633
+              },
+              "vel": {
+                "x": 6.597830772399902,
+                "y": 0,
+                "z": 4.524226665496826
+              },
+              "facing": {
+                "x": 0.824728851845978,
+                "z": 0.5655283555515278
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -10.772321701049805,
+                "y": 0.8499301075935364,
+                "z": 39.67445755004883
+              },
+              "vel": {
+                "x": 7.975314617156982,
+                "y": -2.4920154828578234e-10,
+                "z": -0.6279775500297546
+              },
+              "facing": {
+                "x": 0.9969143347815027,
+                "z": -0.07849719171507895
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -11.193766593933105,
+                "y": 0.8499293327331543,
+                "z": 41.362281799316406
+              },
+              "vel": {
+                "x": -5.529781341552734,
+                "y": 0.00003326659498270601,
+                "z": -5.781135082244873
+              },
+              "facing": {
+                "x": -0.6912226459673644,
+                "z": -0.7226418571476991
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            }
+          ]
+        },
+        "camera": {
+          "yaw": -0.28000000000000114,
+          "pitch": 0.38050637711236485,
+          "rendered": null
+        },
+        "graphics": {
+          "shading": "field",
+          "bakeTexelDensity": 256,
+          "bakeMaxSize": 512,
+          "frameRate": "cap60",
+          "showFps": false,
+          "aoQuality": 2,
+          "lodOffset": 0,
+          "renderScale": 1,
+          "postBloom": true,
+          "postGrading": true,
+          "postStrength": 1,
+          "jiggle": "all"
+        },
+        "normals": {
+          "fieldGridScale": 1.041024482546747,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 103,
+          "vertex": 8,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 8,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 57030784,
+          "budget": 57042534,
+          "errors": [
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale"
+          ]
+        },
+        "subjects": [
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/head",
+            "min": [
+              -71.59003422887284,
+              1.059798948961341,
+              26.634745413156097
+            ],
+            "max": [
+              -68.40952326624435,
+              4.155439145368493,
+              29.931256478933747
+            ]
+          },
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/arm",
+            "min": [
+              -73.9544027624766,
+              3.022878371562273,
+              27.814144728794897
+            ],
+            "max": [
+              -70.31591070037287,
+              7.021297689949266,
+              28.751857026442792
+            ]
+          },
+          {
+            "key": "costume.propeller-hat#propeller_hat/__root__",
+            "min": [
+              -17.974095016445556,
+              1.9125301279450584,
+              43.23677202163262
+            ],
+            "max": [
+              -17.080183384848894,
+              2.399463407985991,
+              44.10353833285707
+            ]
+          }
+        ]
+      },
+      {
+        "action": "dive",
+        "local": {
+          "seats": [
+            {
+              "index": 0,
+              "device": "pad:0",
+              "player": 0,
+              "colour": 0
+            }
+          ],
+          "cameras": [
+            {
+              "eye": [
+                -16.435387321623462,
+                6.240206241607666,
+                39.88847191717617
+              ],
+              "target": [
+                -18.369876861572266,
+                3.440206241607666,
+                46.61585998535156
+              ],
+              "fovYDeg": 60,
+              "near": 0.1,
+              "far": 500
+            }
+          ],
+          "characters": [
+            {
+              "pos": {
+                "x": -18.418132781982422,
+                "y": 2.239511728286743,
+                "z": 46.78407287597656
+              },
+              "vel": {
+                "x": -2.8954966068267822,
+                "y": -0.1666715443134308,
+                "z": 10.092873573303223
+              },
+              "facing": {
+                "x": -0.27576157673509677,
+                "z": 0.9612260674766229
+              },
+              "mode": 2,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -11.80401611328125,
+                "y": 0.8499305844306946,
+                "z": 40.75856018066406
+              },
+              "vel": {
+                "x": 6.726972579956055,
+                "y": -1.3833232515025884e-7,
+                "z": -0.23193004727363586
+              },
+              "facing": {
+                "x": 0.996269966501975,
+                "z": -0.08629109946080098
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -11.270447731018066,
+                "y": 0.8499299883842468,
+                "z": 38.85716247558594
+              },
+              "vel": {
+                "x": -5.424895286560059,
+                "y": 2.482920535840094e-10,
+                "z": -1.6429665088653564
+              },
+              "facing": {
+                "x": -0.867757267880784,
+                "z": 0.49698825342263087
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -10.55848217010498,
+                "y": 0.8499297499656677,
+                "z": 39.228790283203125
+              },
+              "vel": {
+                "x": -7.04953670501709,
+                "y": -2.482920535840094e-10,
+                "z": 2.2768168449401855
+              },
+              "facing": {
+                "x": -0.9658428372346682,
+                "z": 0.25912856608735
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -16.76068878173828,
+                "y": 0.8499292731285095,
+                "z": 38.86797332763672
+              },
+              "vel": {
+                "x": 7.531091213226318,
+                "y": 0,
+                "z": 2.698641061782837
+              },
+              "facing": {
+                "x": 0.9413864148447652,
+                "z": 0.3373301319860409
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -11.374054908752441,
+                "y": 0.849929928779602,
+                "z": 39.68411636352539
+              },
+              "vel": {
+                "x": 4.31191349029541,
+                "y": -2.482920535840094e-10,
+                "z": 1.9264496564865112
+              },
+              "facing": {
+                "x": 1,
+                "z": 0
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -8.674501419067383,
+                "y": 0.8499311804771423,
+                "z": 39.834571838378906
+              },
+              "vel": {
+                "x": 7.999748229980469,
+                "y": 0.00008569334750063717,
+                "z": -0.0629909485578537
+              },
+              "facing": {
+                "x": 0.9999690013794313,
+                "z": -0.007873771664404972
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -11.09085750579834,
+                "y": 0.8499290943145752,
+                "z": 40.41849899291992
+              },
+              "vel": {
+                "x": 7.520291328430176,
+                "y": 0,
+                "z": 1.3059921264648438
+              },
+              "facing": {
+                "x": -0.04840220234219064,
+                "z": -0.9988279265260988
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            }
+          ]
+        },
+        "camera": {
+          "yaw": -0.28000000000000114,
+          "pitch": 0.38050637711236485,
+          "rendered": null
+        },
+        "graphics": {
+          "shading": "field",
+          "bakeTexelDensity": 256,
+          "bakeMaxSize": 512,
+          "frameRate": "cap60",
+          "showFps": false,
+          "aoQuality": 2,
+          "lodOffset": 0,
+          "renderScale": 1,
+          "postBloom": true,
+          "postGrading": true,
+          "postStrength": 1,
+          "jiggle": "all"
+        },
+        "normals": {
+          "fieldGridScale": 1.041024482546747,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 103,
+          "vertex": 8,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 8,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 57030784,
+          "budget": 57042534,
+          "errors": [
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale"
+          ]
+        },
+        "subjects": [
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/head",
+            "min": [
+              -72.3591637979365,
+              0.6100569170863734,
+              26.63474540239143
+            ],
+            "max": [
+              -69.07507082120412,
+              3.5247077542393104,
+              29.931256489698413
+            ]
+          },
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/arm",
+            "min": [
+              -73.99220960785033,
+              2.602473993516381,
+              27.814144824761264
+            ],
+            "max": [
+              -70.8920955487923,
+              6.989908254482069,
+              28.7518571139433
+            ]
+          },
+          {
+            "key": "costume.propeller-hat#propeller_hat/__root__",
+            "min": [
+              -18.926596991533287,
+              2.6319935673897,
+              46.72568928650931
+            ],
+            "max": [
+              -18.140836228838662,
+              3.1076262755914517,
+              47.64782669201687
+            ]
+          }
+        ]
+      }
+    ],
+    "adapter": {
+      "vendor": "nvidia",
+      "architecture": "ampere",
+      "description": "",
+      "software": false
+    }
+  }
+}

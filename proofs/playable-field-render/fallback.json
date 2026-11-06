@@ -1,0 +1,631 @@
+{
+  "job_id": "6ab27596531ca13b8dea35f0f7d32ab6",
+  "client_id": "868c13ac4a2acbcbaa5298f1",
+  "result": {
+    "ok": true,
+    "captures": [
+      "start.png",
+      "run.png"
+    ],
+    "observations": [
+      {
+        "action": "start",
+        "local": null,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0.38050637711236485,
+          "rendered": null
+        },
+        "graphics": {
+          "shading": "field",
+          "bakeTexelDensity": 256,
+          "bakeMaxSize": 512,
+          "frameRate": "cap60",
+          "showFps": false,
+          "aoQuality": 2,
+          "lodOffset": 0,
+          "renderScale": 1,
+          "postBloom": true,
+          "postGrading": true,
+          "postStrength": 1,
+          "jiggle": "all"
+        },
+        "normals": {
+          "fieldGridScale": 4.0006478662763465,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 5,
+          "vertex": 106,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 106,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 98,
+          "atlasFull": 0,
+          "bytes": 0,
+          "budget": 1,
+          "errors": [
+            "candy.banner#candy_banner/__root__: atlas budget: smaller parts first",
+            "candy.bounce-pad#candy_bounce_pad/cap: atlas budget: smaller parts first",
+            "candy.bounce-pad#candy_bounce_pad/dome: atlas budget: smaller parts first",
+            "candy.bounce-pad#candy_bounce_pad/ring: atlas budget: smaller parts first",
+            "candy.bounce-pad#candy_bounce_pad/star: atlas budget: smaller parts first",
+            "candy.cloud#candy_cloud/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_bolster_l/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_bolster_r/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cap_back/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cap_front/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_0/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_1/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_2/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_3/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_4/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_0/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_1/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_2/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_3/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_4/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_rim/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_zigzag_l/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_zigzag_r/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_beam/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_beam_band/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_beam_zigzag/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_crown/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_crown_jewel0/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_crown_jewel1/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_crown_jewel2/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_band/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_base/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_core/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_rim0/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_rim1/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_rim2/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_band/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_base/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_core/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_rim0/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_rim1/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_rim2/__root__: atlas budget: smaller parts first",
+            "candy.floor-disc#candy_floor_disc/__root__: atlas budget: smaller parts first",
+            "candy.floor-tile#candy_floor_tile/__root__: atlas budget: smaller parts first",
+            "candy.hot-air-balloon#candy_hot_air_balloon/__root__: atlas budget: smaller parts first",
+            "candy.mech-door#candy_mech_door/frame: atlas budget: smaller parts first",
+            "candy.mech-door#candy_mech_door/leaf: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/base: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/block: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/block_cap: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/sleeve_left: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/sleeve_right: atlas budget: smaller parts first",
+            "candy.mech-plate#candy_mech_plate/base: atlas budget: smaller parts first",
+            "candy.mech-plate#candy_mech_plate/plate: atlas budget: smaller parts first",
+            "candy.mech-seesaw#candy_mech_seesaw/base: atlas budget: smaller parts first",
+            "candy.mech-seesaw#candy_mech_seesaw/plank: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/base: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/pad: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/rim_low: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/rim_top: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/zigzag: atlas budget: smaller parts first",
+            "candy.pendulum-hammer#pendulum_hammer/arm: atlas budget: smaller parts first",
+            "candy.pendulum-hammer#pendulum_hammer/head: atlas budget: smaller parts first",
+            "candy.plaza-fountain#candy_plaza_fountain/__root__: atlas budget: smaller parts first",
+            "candy.podium-block#candy_podium_block/__root__: atlas budget: smaller parts first",
+            "candy.prompt-display#candy_prompt_display/__root__: atlas budget: smaller parts first",
+            "candy.queue-pad#candy_queue_pad/__root__: atlas budget: smaller parts first",
+            "candy.ramp-deck#candy_ramp_deck/__root__: atlas budget: smaller parts first",
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "candy.spinner-bar#spinner_bar/hub: atlas budget: smaller parts first",
+            "candy.tower#candy_tower/__root__: atlas budget: smaller parts first",
+            "candy.wall-block#candy_wall_block/__root__: atlas budget: smaller parts first",
+            "costume.cloud-skirt#cloud_skirt/__root__: atlas budget: smaller parts first",
+            "costume.disco-jacket#outfit_disco_jacket/__root__: atlas budget: smaller parts first",
+            "costume.dragon-suit#dragon_suit/__root__: atlas budget: smaller parts first",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.ghost-aura#special_ghost_aura/__root__: atlas budget: smaller parts first",
+            "costume.golden-crown#golden_crown/__root__: atlas budget: smaller parts first",
+            "costume.jester-hat#hat_jester_hat/__root__: atlas budget: smaller parts first",
+            "costume.jetpack#jetpack/__root__: atlas budget: smaller parts first",
+            "costume.neon-sneakers#neon_sneakers/__root__: atlas budget: smaller parts first",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.sparkler-wand#sparkler_wand/__root__: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/beam_snow: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/fixed_bay: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/gate_core: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/gate_fissure: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/gate_slab: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/gate_snow: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_0: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_2: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_4: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_6: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_8: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/post_left: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/post_left_snow: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/post_right: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/post_right_snow: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/top_beam: atlas budget: smaller parts first",
+            "ice.wall-block#ice_wall_block/__root__: atlas budget: smaller parts first",
+            "penguin.body#penguin/__root__: atlas budget: smaller parts first"
+          ]
+        },
+        "subjects": [
+          {
+            "key": "costume.propeller-hat#propeller_hat/__root__",
+            "min": [
+              -1.4316331341323187,
+              0.7208825971833039,
+              2.6588356290485473
+            ],
+            "max": [
+              -1.2309918654863299,
+              0.857261074281745,
+              2.856567790305557
+            ]
+          }
+        ]
+      },
+      {
+        "action": "run",
+        "local": {
+          "seats": [
+            {
+              "index": 0,
+              "device": "pad:0",
+              "player": 0,
+              "colour": 0
+            }
+          ],
+          "cameras": [
+            {
+              "eye": [
+                -6,
+                4.8499292731285095,
+                38.53331756591797
+              ],
+              "target": [
+                -6,
+                2.0499292731285097,
+                45.53331756591797
+              ],
+              "fovYDeg": 60,
+              "near": 0.1,
+              "far": 500
+            }
+          ],
+          "characters": [
+            {
+              "pos": {
+                "x": -6,
+                "y": 0.8499292731285095,
+                "z": 45.666648864746094
+              },
+              "vel": {
+                "x": 0,
+                "y": -2.482920535840094e-10,
+                "z": 8
+              },
+              "facing": {
+                "x": 0,
+                "z": 1
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -12.665674209594727,
+                "y": 0.8499294519424438,
+                "z": 42.090476989746094
+              },
+              "vel": {
+                "x": -1.3858296871185303,
+                "y": 0.000005144129318068735,
+                "z": -7.874015808105469
+              },
+              "facing": {
+                "x": -0.17333584823348938,
+                "z": -0.984862774053917
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -19.263090133666992,
+                "y": 0.8499292731285095,
+                "z": 43.04253387451172
+              },
+              "vel": {
+                "x": 7.181102275848389,
+                "y": 4.547473508864641e-13,
+                "z": -3.464566946029663
+              },
+              "facing": {
+                "x": 0.9006582699717246,
+                "z": -0.4345281127056566
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -11.782383918762207,
+                "y": 0.8499292731285095,
+                "z": 38.76266860961914
+              },
+              "vel": {
+                "x": -6.929133892059326,
+                "y": -2.482920535840094e-10,
+                "z": 3.968503952026367
+              },
+              "facing": {
+                "x": -0.8090169943749473,
+                "z": 0.5877852522924735
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -18.55153465270996,
+                "y": 0.8499312400817871,
+                "z": 37.324256896972656
+              },
+              "vel": {
+                "x": 7.155413627624512,
+                "y": 0.00007678146357648075,
+                "z": 3.5777087211608887
+              },
+              "facing": {
+                "x": 0.8944271909999161,
+                "z": 0.44721359549995804
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -8.664532661437988,
+                "y": 0.8499292731285095,
+                "z": 42.913475036621094
+              },
+              "vel": {
+                "x": -6.723296165466309,
+                "y": -2.482920535840094e-10,
+                "z": -4.335583686828613
+              },
+              "facing": {
+                "x": -0.84041204899222,
+                "z": -0.5419479568267588
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -5.617077350616455,
+                "y": 0.8499302268028259,
+                "z": 38.5480842590332
+              },
+              "vel": {
+                "x": -7.685035705566406,
+                "y": 0.00007122730312403291,
+                "z": 2.1417322158813477
+              },
+              "facing": {
+                "x": -0.9135454576426009,
+                "z": 0.40673664307580054
+              },
+              "mode": 0,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            },
+            {
+              "pos": {
+                "x": -4.511682987213135,
+                "y": 1.1415961980819702,
+                "z": 39.59833908081055
+              },
+              "vel": {
+                "x": 1.0975488424301147,
+                "y": -0.4999988079071045,
+                "z": -10.442480087280273
+              },
+              "facing": {
+                "x": 0.1045284632676535,
+                "z": -0.9945218953682734
+              },
+              "mode": 2,
+              "status": 1,
+              "parked": false,
+              "teleportTick": 0,
+              "strokeTimer": 0,
+              "strokePhase": 1,
+              "strokeStart": 0.5,
+              "slideSpeed": 0,
+              "carry": 0,
+              "slideAir": false,
+              "surface": "normal"
+            }
+          ]
+        },
+        "camera": {
+          "yaw": 0,
+          "pitch": 0.38050637711236485,
+          "rendered": null
+        },
+        "graphics": {
+          "shading": "field",
+          "bakeTexelDensity": 256,
+          "bakeMaxSize": 512,
+          "frameRate": "cap60",
+          "showFps": false,
+          "aoQuality": 2,
+          "lodOffset": 0,
+          "renderScale": 1,
+          "postBloom": true,
+          "postGrading": true,
+          "postStrength": 1,
+          "jiggle": "all"
+        },
+        "normals": {
+          "fieldGridScale": 4.0006478662763465,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 5,
+          "vertex": 106,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 106,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 98,
+          "atlasFull": 0,
+          "bytes": 0,
+          "budget": 1,
+          "errors": [
+            "candy.banner#candy_banner/__root__: atlas budget: smaller parts first",
+            "candy.bounce-pad#candy_bounce_pad/cap: atlas budget: smaller parts first",
+            "candy.bounce-pad#candy_bounce_pad/dome: atlas budget: smaller parts first",
+            "candy.bounce-pad#candy_bounce_pad/ring: atlas budget: smaller parts first",
+            "candy.bounce-pad#candy_bounce_pad/star: atlas budget: smaller parts first",
+            "candy.cloud#candy_cloud/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_bolster_l/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_bolster_r/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cap_back/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cap_front/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_0/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_1/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_2/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_3/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_chevron_4/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_0/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_1/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_2/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_3/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_cushion_4/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_rim/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_zigzag_l/__root__: atlas budget: smaller parts first",
+            "candy.conveyor-belt#w_zigzag_r/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_beam/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_beam_band/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_beam_zigzag/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_crown/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_crown_jewel0/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_crown_jewel1/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_crown_jewel2/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_band/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_base/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_core/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_rim0/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_rim1/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_l_rim2/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_band/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_base/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_core/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_rim0/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_rim1/__root__: atlas budget: smaller parts first",
+            "candy.finish-arch#w_post_r_rim2/__root__: atlas budget: smaller parts first",
+            "candy.floor-disc#candy_floor_disc/__root__: atlas budget: smaller parts first",
+            "candy.floor-tile#candy_floor_tile/__root__: atlas budget: smaller parts first",
+            "candy.hot-air-balloon#candy_hot_air_balloon/__root__: atlas budget: smaller parts first",
+            "candy.mech-door#candy_mech_door/frame: atlas budget: smaller parts first",
+            "candy.mech-door#candy_mech_door/leaf: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/base: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/block: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/block_cap: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/sleeve_left: atlas budget: smaller parts first",
+            "candy.mech-piston#candy_mech_piston/sleeve_right: atlas budget: smaller parts first",
+            "candy.mech-plate#candy_mech_plate/base: atlas budget: smaller parts first",
+            "candy.mech-plate#candy_mech_plate/plate: atlas budget: smaller parts first",
+            "candy.mech-seesaw#candy_mech_seesaw/base: atlas budget: smaller parts first",
+            "candy.mech-seesaw#candy_mech_seesaw/plank: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/base: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/pad: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/rim_low: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/rim_top: atlas budget: smaller parts first",
+            "candy.moving-platform#candy_moving_platform/zigzag: atlas budget: smaller parts first",
+            "candy.pendulum-hammer#pendulum_hammer/arm: atlas budget: smaller parts first",
+            "candy.pendulum-hammer#pendulum_hammer/head: atlas budget: smaller parts first",
+            "candy.plaza-fountain#candy_plaza_fountain/__root__: atlas budget: smaller parts first",
+            "candy.podium-block#candy_podium_block/__root__: atlas budget: smaller parts first",
+            "candy.prompt-display#candy_prompt_display/__root__: atlas budget: smaller parts first",
+            "candy.queue-pad#candy_queue_pad/__root__: atlas budget: smaller parts first",
+            "candy.ramp-deck#candy_ramp_deck/__root__: atlas budget: smaller parts first",
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "candy.spinner-bar#spinner_bar/hub: atlas budget: smaller parts first",
+            "candy.tower#candy_tower/__root__: atlas budget: smaller parts first",
+            "candy.wall-block#candy_wall_block/__root__: atlas budget: smaller parts first",
+            "costume.cloud-skirt#cloud_skirt/__root__: atlas budget: smaller parts first",
+            "costume.disco-jacket#outfit_disco_jacket/__root__: atlas budget: smaller parts first",
+            "costume.dragon-suit#dragon_suit/__root__: atlas budget: smaller parts first",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.ghost-aura#special_ghost_aura/__root__: atlas budget: smaller parts first",
+            "costume.golden-crown#golden_crown/__root__: atlas budget: smaller parts first",
+            "costume.jester-hat#hat_jester_hat/__root__: atlas budget: smaller parts first",
+            "costume.jetpack#jetpack/__root__: atlas budget: smaller parts first",
+            "costume.neon-sneakers#neon_sneakers/__root__: atlas budget: smaller parts first",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.sparkler-wand#sparkler_wand/__root__: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/beam_snow: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/fixed_bay: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/gate_core: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/gate_fissure: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/gate_slab: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/gate_snow: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_0: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_2: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_4: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_6: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_8: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/post_left: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/post_left_snow: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/post_right: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/post_right_snow: atlas budget: smaller parts first",
+            "ice.slide-gate#ice_slide_gate/top_beam: atlas budget: smaller parts first",
+            "ice.wall-block#ice_wall_block/__root__: atlas budget: smaller parts first",
+            "penguin.body#penguin/__root__: atlas budget: smaller parts first"
+          ]
+        },
+        "subjects": [
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/head",
+            "min": [
+              -71.36200231199633,
+              1.232440576056443,
+              26.634745411395432
+            ],
+            "max": [
+              -68.21119409913648,
+              4.369342699547805,
+              29.93125648069441
+            ]
+          },
+          {
+            "key": "candy.pendulum-hammer#pendulum_hammer/arm",
+            "min": [
+              -73.93865095297704,
+              3.175381817781384,
+              27.814144778592
+            ],
+            "max": [
+              -70.14484635197005,
+              7.027301515342155,
+              28.75185707485522
+            ]
+          },
+          {
+            "key": "costume.propeller-hat#propeller_hat/__root__",
+            "min": [
+              -6.424667361778578,
+              1.6590053228986044,
+              45.199442670046906
+            ],
+            "max": [
+              -5.585329024865729,
+              2.200567002569997,
+              46.02744626755516
+            ]
+          }
+        ]
+      }
+    ],
+    "adapter": {
+      "vendor": "nvidia",
+      "architecture": "ampere",
+      "description": "",
+      "software": false
+    }
+  }
+}

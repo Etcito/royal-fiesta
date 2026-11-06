@@ -17,7 +17,7 @@ import { observeRoundLoad, startup, renderFrame, simStep } from '@royal-fiesta/g
 import { UaaError } from '@etcito/uaa'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
-import { basisFromFacing } from '@royal-fiesta/game/client/cameraBasis'
+import { basisFromFacing, spawnYaw } from '@royal-fiesta/game/client/cameraBasis'
 import type { Planar } from '@royal-fiesta/game/client/cameraBasis'
 import { controlsToInput, emptyControls, mergeControls } from '@royal-fiesta/game/client/inputMap'
 import type { RawControls } from '@royal-fiesta/game/client/inputMap'
@@ -480,6 +480,10 @@ class MatchPresenter {
   private readonly stage: PodiumStage
   private scene: SceneView | null = null
   private podium: number[] | null = null
+  private seat = 0
+  private readonly state = emptyViewState()
+  // The course index the orbit was last aimed along (-1: aim on the next draw).
+  private aimed = -1
 
   constructor(c: ModeCtx) {
     this.c = c
@@ -501,8 +505,10 @@ class MatchPresenter {
     this.end()
     const { content, ports } = this.c.loaded
     const orbit = this.c.orbit
-    // Each match starts looking along +Z.
+    // Each round starts looking along the local seat's spawn (draw, on a new course index).
     orbit.reset(0)
+    this.seat = seat
+    this.aimed = -1
     this.scene = new SceneView({
       port: ports[0], viewport: 0, localPlayer: seat, assets: name => content.assets(name), bean: content.character(),
       character: content.character(), dressing: content.dressing(), camera: (focus, dt, clip) => orbit.pose(focus, dt, clip),
@@ -521,6 +527,11 @@ class MatchPresenter {
       this.podiumS += dt
       this.stage.update(dt)
       return
+    }
+    const ci = sim.phase(this.state).courseIndex
+    if (ci >= 0 && ci !== this.aimed) {
+      this.aimed = ci
+      this.c.orbit.reset(spawnYaw(sim.course()?.spawns, this.seat))
     }
     this.scene?.update(sim, smoother, alpha, dt)
   }
@@ -589,6 +600,8 @@ class LocalPresenter {
   private overviewIndex = -1
   private overviewCam: CameraPose | null = null
   private readonly state = emptyViewState()
+  // The course index seat 0's orbit was last aimed along (-1: aim on the next draw).
+  private aimed = -1
 
   constructor(c: ModeCtx) {
     this.c = c
@@ -610,8 +623,9 @@ class LocalPresenter {
     this.end()
     const { content, ports } = this.c.loaded
     const orbit = this.c.orbit
-    // Each match starts looking along +Z.
+    // Each round starts looking along seat 0's spawn (draw, on a new course index).
     orbit.reset(0)
+    this.aimed = -1
     this.seats = seats
     this.scenes = []
     for (let k = 0; k < seats; k++) {
@@ -653,6 +667,11 @@ class LocalPresenter {
       this.stage.update(dt)
       return false
     }
+    const ci = match.sim.phase(this.state).courseIndex
+    if (ci >= 0 && ci !== this.aimed) {
+      this.aimed = ci
+      this.c.orbit.reset(spawnYaw(match.sim.course()?.spawns, 0))
+    }
     for (const view of this.scenes) view.update(match.sim, null, alpha, dt)
     if (this.seats === 3 && this.c.q.players === null) {
       const ci = match.sim.phase(this.state).courseIndex
@@ -666,8 +685,14 @@ class LocalPresenter {
     return false
   }
 
+  // The next draw aims seat 0's orbit along its spawn again.
+  reaim(): void {
+    this.aimed = -1
+  }
+
   end(): void {
     this.disposeScenes()
+    this.aimed = -1
     this.podium = null
     this.podiumS = 0
     this.overviewIndex = -1
@@ -757,6 +782,8 @@ class LocalMode implements Mode {
   inspectSeats(all = false) {
     return {
       seats: this.seats.seats.map(s => ({ ...s })),
+      // seat 0's course spawn facing: the direction the round is run along (null before a course)
+      start: (() => { const f = this.match?.match.sim.course()?.spawns[0]?.facing; return f ? { x: f.x, z: f.z } : null })(),
       cameras: this.presenter.cameras().map(camera => camera === null ? null : { ...camera, eye: [...camera.eye], target: [...camera.target] }),
       characters: Array.from({ length: all ? PLAYERS : Math.max(1, this.seats.seats.length) }, (_, k) => {
         const c = this.match?.match.sim.character(k, emptyCharView())
@@ -801,7 +828,8 @@ class LocalMode implements Mode {
     }
     this.hubLayer.setVisible(false)
     this.matchLayer.setVisible(true)
-    this.c.orbit.reset(0)
+    // The hub moved the orbit since the prepared match was aimed: aim again along seat 0's spawn on the next draw.
+    this.presenter.reaim()
   }
 
   dequeue(): void {}

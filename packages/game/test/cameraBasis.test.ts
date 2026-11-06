@@ -81,3 +81,17 @@ test('NaN or zero facing gives forward (0,1)', () => {
     assert.deepEqual(b.right, { x: -1, z: 0 })
   }
 })
+
+test('a round camera starts along its seat spawn, +Z without one', async () => {
+  const { facingYaw, spawnYaw } = await import('../src/client/cameraBasis.ts')
+  const close = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`)
+  // s1-f-taffy-circuit: yawDeg 90 spawns face +X; the orbit forward (sin yaw, cos yaw) must then be +X
+  const east = [{ facing: { x: 1, z: 0 } }, { facing: { x: 0, z: -1 } }]
+  close(spawnYaw(east, 0), Math.PI / 2)
+  close(Math.sin(spawnYaw(east, 0)), 1)
+  close(Math.abs(spawnYaw(east, 1)), Math.PI)
+  close(spawnYaw(east, 2), Math.PI / 2)
+  close(spawnYaw([], 0), 0)
+  close(spawnYaw(undefined, 3), 0)
+  close(facingYaw({ x: 0, z: 0 }), 0)
+})

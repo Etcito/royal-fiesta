@@ -36,3 +36,17 @@ export function yawTurn(forward: Planar, amountRad: number): Planar {
   // Renormalise so repeated turns never drift off unit length.
   return normalised(b.forward.x * c + b.right.x * s, b.forward.z * c + b.right.z * s)
 }
+
+// The orbit yaw that looks along `facing` (the orbit's forward is (sin yaw, cos yaw), as the sim's yawFacing).
+export function facingYaw(facing: Planar): number {
+  const f = normalised(facing.x, facing.z)
+  return Math.atan2(f.x, f.z)
+}
+
+// The yaw a round's camera starts at: along the seat's course spawn (seatSpawn's facing), +Z without a course.
+// A fixed +Z start sent 'forward' across a course laid along +X (s1-f-taffy-circuit, spawns yawDeg 90): the player ran into
+// the side rail while the bots ran the course (card 7087, run 12645).
+export function spawnYaw(spawns: readonly { facing: Planar }[] | undefined, seat: number): number {
+  if (!spawns || spawns.length === 0) return 0
+  return facingYaw(spawns[seat % spawns.length].facing)
+}

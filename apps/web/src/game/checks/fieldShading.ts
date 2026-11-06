@@ -616,8 +616,26 @@ export function validateGameplay(raw: unknown): { search: string; sequence: stri
   if (o.atlasBytes !== undefined && (!Number.isInteger(o.atlasBytes) || Number(o.atlasBytes) <= 0 || Number(o.atlasBytes) > FIELD_ATLAS_BYTES)) throw new Error(`fieldShading: atlasBytes must be an integer in 1..${FIELD_ATLAS_BYTES}`)
   return { search: o.search, sequence: o.sequence as string[], atlasBytes: o.atlasBytes as number | undefined }
 }
+/**
+ * The run is played along the course: the gameplay camera looks down the course (within 45 degrees of seat 0's spawn facing)
+ * and the player's 'run' advanced along it. Null when it does; otherwise the problem. A camera aimed across a course laid along
+ * +X sent 'forward' into the side rail (card 7087, run 12645): the shots framed the rail and a wall, the candy key test still
+ * passed on the floor tile, and the judge saw no course, no hammers (4/10). Run in every in-play shot, before the judge.
+ */
+export function alongCourse(action: string, start: { x: number; z: number } | null, camera: { eye: readonly number[]; target: readonly number[] },
+  moved: { x: number; z: number } | null): string | null {
+  if (!start || !Math.hypot(start.x, start.z)) return `${action}: the round has no course spawn facing`
+  const sl = Math.hypot(start.x, start.z), fx = camera.target[0] - camera.eye[0], fz = camera.target[2] - camera.eye[2], fl = Math.hypot(fx, fz)
+  const look = fl ? (fx * start.x + fz * start.z) / (fl * sl) : 0
+  if (look < Math.SQRT1_2) return `${action}: the camera looks across the course, not along it (${Math.round(Math.acos(Math.max(-1, Math.min(1, look))) * 180 / Math.PI)} degrees off the spawn facing)`
+  if (moved) {
+    const ml = Math.hypot(moved.x, moved.z), along = ml ? (moved.x * start.x + moved.z * start.z) / (ml * sl) : 0
+    if (along < Math.SQRT1_2) return `${action}: the player ran across the course, not along it (${ml.toFixed(1)} m, ${(along * ml).toFixed(1)} m along the course)`
+  }
+  return null
+}
 interface ResidentState {
-  local: { characters: { pos: { x: number; y: number; z: number }; vel: { y: number }; mode: number }[]; cameras: CameraPose[] } | null
+  local: { characters: { pos: { x: number; y: number; z: number }; vel: { y: number }; mode: number }[]; cameras: CameraPose[]; start: { x: number; z: number } | null } | null
   camera: { yaw: number }; field: { normals: ShadingReport; bounds: PartWorldBounds[]; graphics: Record<string, unknown> }
 }
 async function gameplay(raw: unknown, deps: TourDeps) {
@@ -657,7 +675,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       const report = state().field.normals
       if (report.atlasFull || hardFailures(report).length || (state().field.graphics.shading === 'field' && q.get('normals') !== 'vertex' && report.field === 0)) throw new Error(`fieldShading: ${action}: ${JSON.stringify(report)}`)
       live.step(0)
-      const s = state(), cam = s.local?.cameras[0], bounds = s.field.bounds
+      const s = state(), { local } = s, cam = local?.cameras[0], bounds = s.field.bounds
       if (action !== 'start' && (!cam || !bounds.some(b => projectBounds(cam, [b]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1)))) throw new Error(`${action}: no gameplay subject in frame`)
       if (cam) {
         const visible = bounds.filter(b => projectBounds(cam, [b]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1))
@@ -673,11 +691,11 @@ async function gameplay(raw: unknown, deps: TourDeps) {
         // frame could show one (card 7086, run 12564). It must be a drawn part of the scene in every shot and its bounds must
         // move between the shots (below).
         if (!bounds.some(b => b.key.includes('pendulum-hammer'))) problems.push(`${action}: no pendulum-hammer part is drawn (moving mechanisms are required)`)
-        const visibleCharacters = s.local!.characters.filter(c => projectBounds(cam, [{ key: 'character', min: [c.pos.x, c.pos.y, c.pos.z], max: [c.pos.x, c.pos.y, c.pos.z] }]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1)).length
+        const visibleCharacters = local!.characters.filter(c => projectBounds(cam, [{ key: 'character', min: [c.pos.x, c.pos.y, c.pos.z], max: [c.pos.x, c.pos.y, c.pos.z] }]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1)).length
         // like the scenery: several characters in most shots (below), not in every one: in the air (jump, dive) the camera can frame
         // the player alone while the bots run on (card 7086, run 12607: the only two problems of the shots)
         if (visibleCharacters >= 2) crowdShots++
-        roster.push(s.local!.characters.map(c => [c.pos.x, c.pos.z]))
+        roster.push(local!.characters.map(c => [c.pos.x, c.pos.z]))
       }
       const subjects = [...new Map(bounds.filter(b => /costume.propeller-hat|pendulum-hammer/.test(b.key)).map(b => [b.key, b])).values()]
       const uiShot = createImageBitmap(live.ui)
@@ -689,7 +707,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       const ctx = canvas.getContext('2d')!
       for (const shot of snapshots) { const image = await shot.image; ctx.drawImage(image, (shot.rect.x - box.x) * WIDTH / box.width, (shot.rect.y - box.y) * HEIGHT / box.height, shot.rect.width * WIDTH / box.width, shot.rect.height * HEIGHT / box.height); image.close() }
       const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Empty gameplay capture')), 'image/png'))
-      files.push({ name: `${action}.png`, blob }); observations.push({ action, local: s.local, camera: s.camera, graphics: s.field.graphics, normals: report, subjects })
+      files.push({ name: `${action}.png`, blob }); observations.push({ action, local, camera: s.camera, graphics: s.field.graphics, normals: report, subjects })
     }
     await until('start', () => live.host.currentScreen() === 'start')
     await startMounted(live, () => live.host.currentScreen())
@@ -700,13 +718,17 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       await until('round', () => live.host.currentScreen() === 'round' && state().local !== null)
       connected = true; axes[1] = -1
       for (const action of request.sequence.slice(1)) {
-        const before = state(), c = before.local!.characters[0]
+        const before = state(), { local: was } = before, c = was!.characters[0]
         if (action === 'turn') axes[2] = 0.7
         if (action === 'jump' || action === 'dive') { axes[2] = 0; buttons[action === 'jump' ? 0 : 1].pressed = true }
         await until(action, () => {
-          const s = state(), now = s.local!.characters[0]
+          const s = state(), { local: is } = s, now = is!.characters[0]
           return action === 'run' ? Math.hypot(now.pos.x - c.pos.x, now.pos.z - c.pos.z) >= 2 : action === 'turn' ? Math.abs(s.camera.yaw - before.camera.yaw) >= 0.25 : action === 'jump' ? now.vel.y > 0 && now.pos.y > c.pos.y + 0.5 : now.mode === CharMode.dive && now.vel.y <= 0
         })
+        const after = state().local!
+        // only the run is pushed straight forward; turn (a quarter radian), jump and dive keep the camera test
+        const along = alongCourse(action, after.start, after.cameras[0], action === 'run' ? { x: after.characters[0].pos.x - c.pos.x, z: after.characters[0].pos.z - c.pos.z } : null)
+        if (along) problems.push(along)
         await shoot(action)
         buttons[0].pressed = buttons[1].pressed = false
       }

@@ -53,13 +53,20 @@ const requests = { probe: { search: '?test=1', sequence: ['start'] }, selected: 
 export function preflight(): void {
   const source = readFileSync('apps/web/src/game/checks/fieldShading.ts', 'utf8')
   const snippet = source.slice(source.indexOf('const ACTIONS'), source.indexOf('interface ResidentState'))
-  const api = {} as { validateGameplay(input: unknown): unknown }
+  const api = {} as { validateGameplay(input: unknown): unknown; alongCourse(action: string, start: { x: number; z: number } | null, camera: { eye: readonly number[]; target: readonly number[] }, moved: { x: number; z: number } | null): string | null }
   runInNewContext(transpileModule(snippet, { compilerOptions: { module: ModuleKind.CommonJS } }).outputText, { exports: api, URLSearchParams, FIELD_ATLAS_BYTES })
   for (const request of Object.values(requests)) api.validateGameplay(request)
   api.validateGameplay({ ...requests.selected, search: '?test=1&normals=vertex', atlasBytes: FIELD_ATLAS_BYTES })
   for (const atlasBytes of [0, -1, 0.5, NaN, Infinity, '1', FIELD_ATLAS_BYTES + 1]) assert.throws(() => api.validateGameplay({ ...requests.selected, atlasBytes }))
   for (const request of [{ ...requests.selected, search: '' }, { sequence: ['run'], search: '?test=1' }, { ...requests.selected, extra: true }, { ...requests.selected, sequence: [...sequence, 'oops'] }]) assert.throws(() => api.validateGameplay(request))
-  console.info('Gameplay request preflight passed: ordered controls, test isolation, vertex and atlas limits')
+  // the run is played along the course: s1-f-taffy-circuit spawns face +X (yawDeg 90); run 12645 looked and ran along +Z
+  const alongX = { eye: [-20, 5, 40], target: [-13, 2, 40] }, alongZ = { eye: [-15.6, 4.8, 34.9], target: [-15.6, 2, 41.9] }
+  assert.equal(api.alongCourse('run', { x: 1, z: 0 }, alongX, { x: 2.5, z: 0.2 }), null)
+  assert.equal(api.alongCourse('jump', { x: 1, z: 0 }, alongX, null), null)
+  assert.match(api.alongCourse('run', { x: 1, z: 0 }, alongZ, { x: 0, z: 2.1 }) ?? '', /camera looks across the course/)
+  assert.match(api.alongCourse('run', { x: 1, z: 0 }, alongX, { x: 0.1, z: 2.1 }) ?? '', /ran across the course/)
+  assert.match(api.alongCourse('run', null, alongX, null) ?? '', /no course spawn facing/)
+  console.info('Gameplay request preflight passed: ordered controls, test isolation, vertex and atlas limits, run along the course')
 }
 function check(args: string[]): void {
   const r = spawnSync(process.execPath, ['--experimental-strip-types', ...args], { stdio: 'inherit' })

@@ -710,8 +710,11 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       }
     }
     const report = state().field.normals
-    if (shots > 0 && crowdShots * 2 < shots) problems.push(`several characters are in view in ${crowdShots} of ${shots} shots (at least half are required)`)
-    if (shots > 0 && candyShots * 2 < shots) problems.push(`candy scenery is in view in ${candyShots} of ${shots} shots (at least half are required)`)
+    // the scenery and crowd rules judge the COMPLETE sequence (start, run, turn, jump, dive): the atlas-fallback case is only
+    // start and run, and its one camera shot ('run', right behind the penguin) has no scenery by nature (card 7086, run 12613)
+    const complete = request.sequence.length >= 4
+    if (complete && shots > 0 && crowdShots * 2 < shots) problems.push(`several characters are in view in ${crowdShots} of ${shots} shots (at least half are required)`)
+    if (complete && shots > 0 && candyShots * 2 < shots) problems.push(`candy scenery is in view in ${candyShots} of ${shots} shots (at least half are required)`)
     if (problems.length) throw new Error(`fieldShading gameplay: ${problems.join('; ')}`)
     if (request.sequence.length > 1) {
       const hammerBounds = observations.map(o => JSON.stringify((o as { subjects: { key: string; min: number[]; max: number[] }[] }).subjects

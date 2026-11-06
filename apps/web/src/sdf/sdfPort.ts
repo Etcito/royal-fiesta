@@ -21,7 +21,7 @@ import { applyCourseEnvironment, DEFAULT_LIGHT, DEFAULT_AMBIENT } from '../rende
 import { raaStatus } from '../render/raaStatus.ts'
 import type { MeshedAsset } from './mamaApi.ts'
 import { installShaderCache } from '../render/shaderCache.ts'
-import { deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
+import { createPreparationQueue, deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
 import { FIELD_ATLAS_BYTES, partDiag, planFieldAtlas, planFieldPrograms, type FieldAtlasPlan, type PartFieldProgram } from './fieldAtlas.ts'
 import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, uniformFieldFrameScale } from './fieldShading.ts'
@@ -368,6 +368,9 @@ class SdfRenderPort implements ResizablePort {
   private readonly handleOfName = new Map<string, number>()
   private readonly functions = new Map<string, string>()
   private readonly live: (Live | null)[] = []
+  private readonly warmQueue = createPreparationQueue({ batch: 1 })
+  private readonly warming = new Map<string, Live>()
+  private warmError: Error | null = null
   // Game handles whose pose changed since the last render; flushed as one setSkinPoses batch.
   private readonly posed = new Set<number>()
   // RAA instances given a player colour; a later untinted instance with a reused id clears it.
@@ -1043,14 +1046,21 @@ class SdfRenderPort implements ResizablePort {
     return this.gpuDevice ??= this.canvas === null ? undefined : deviceOfCanvas(this.canvas)
   }
 
-  /** Visible parts waiting for their field pipeline or bake, counted once across instances. */
+  /** Visible parts waiting for warm-up, their field pipeline or bake, counted once across instances. */
   fallbackParts(): number {
+    if (this.warmError !== null) throw this.warmError
     return this.pendingKeys().length
   }
 
   private pendingKeys(): string[] {
     const pending = new Set<string>()
-    if (this.shading === 'vertex') return []
+    for (const live of this.warming.values()) {
+      if (!live.visible || !this.live.includes(live)) continue
+      for (const part of this.uploaded[live.asset]?.parts ?? []) {
+        if (live.filter === null || live.filter.has(part.name)) pending.add(part.reportKey ?? part.key)
+      }
+    }
+    if (this.shading === 'vertex') return [...pending].sort()
     for (const live of this.live) {
       if (live === null || !live.visible) continue
       // A textured member covers its part in 'baked' mode, so that part is not waiting on its field.
@@ -1101,25 +1111,50 @@ class SdfRenderPort implements ResizablePort {
     }
   }
 
-  /**
-   * The rigid assets the scene on this port has instances of, in upload order (skinned visuals and their rigid bases
-   * left out): a port uploads every meshed asset of the content, a course draws only some of them.
-   */
+  /** Only the scene's visible assets, including its characters, in upload order. */
   warmableAssets(): string[] {
-    const bases = new Set(this.uploaded.flatMap(entry => entry?.base === undefined ? [] : [entry.base]))
-    const used = new Set(this.live.flatMap(live => live === null ? [] : [live.asset]))
-    return [...this.handleOfId].filter(([, handle]) => {
+    const used = new Set(this.live.flatMap(live => live === null || !live.visible ||
+      !live.partNames.some(name => live.filter === null || live.filter.has(name)) ? [] : [live.asset]))
+    return [...new Set([...used].sort((a, b) => a - b).flatMap(handle => {
       const entry = this.uploaded[handle]
-      return entry !== undefined && entry.bones === undefined && !bases.has(handle) && used.has(handle)
-    }).sort((a, b) => a[1] - b[1]).map(([id]) => id)
+      return entry === undefined ? [] : [entry.assetId]
+    }))]
   }
 
   /**
-   * The warm-up draw of a loading screen: one tiny instance of each listed asset (warmableAssets() when absent) just in
-   * front of the viewport-0 camera, drawn once and removed, so RAA requests now every pipeline their parts need instead
-   * of when they come into view. Skinned visuals are left to their scene: their posed variants need a pose.
+   * Request the scene's actual material and skin variants on its live renderer. Both draw preparation and GPU
+   * compilation yield through asyncPipelines; the renderer keeps the resulting RAA caches for gameplay.
    */
   warmPipelines(assetIds: readonly string[] = this.warmableAssets()): void {
+    if (this.warmError !== null) throw this.warmError
+    const engine = this.need()
+    const requested = new Set(assetIds)
+    const variants = new Set<string>()
+    for (const source of this.live.slice()) {
+      if (source === null || !source.visible) continue
+      const uploaded = this.uploaded[source.asset]
+      if (uploaded === undefined || !requested.has(uploaded.assetId)) continue
+      if (!source.partNames.some(name => source.filter === null || source.filter.has(name))) continue
+      // Colours and joint matrices are instance data; the presence of tint/pose changes the shader variant.
+      const key = JSON.stringify([this.shading, source.asset, source.tint !== null, source.pose !== null,
+        source.filter === null ? null : [...source.filter].sort()])
+      if (variants.has(key) || this.warming.has(key)) continue
+      variants.add(key)
+      this.warming.set(key, source)
+      void this.warmQueue.request(engine, key, async () => {
+        if (this.engine === engine && source.visible && this.live.includes(source) && this.uploaded[source.asset] !== undefined) {
+          this.warmVariant(source)
+        }
+      }).then(() => { this.warming.delete(key) }, error => {
+        this.warming.delete(key)
+        if (this.engine !== engine) return
+        this.warmError = new Error(`[sdf] prepare ${uploaded.assetId}: ${messageOf(error)}`)
+        this.shadingErrors.set(`${uploaded.assetId}#preparation`, this.warmError.message)
+      })
+    }
+  }
+
+  private warmVariant(source: Live): void {
     const engine = this.need()
     const camera = this.lastCamera ?? { eye: [0, 0, 0] as Vec3T, target: [0, 0, -1] as Vec3T, fovYDeg: 60, near: 0.1, far: 100 }
     if (this.lastCamera === null) this.setCamera(0, camera)
@@ -1127,20 +1162,31 @@ class SdfRenderPort implements ResizablePort {
     const length = Math.hypot(forward[0], forward[1], forward[2]) || 1
     const ahead = Math.max(camera.near * 4, 0.5)
     const at: Vec3T = [0, 1, 2].map(i => camera.eye[i] + forward[i] / length * ahead) as unknown as Vec3T
-    const created: number[] = []
-    for (const id of assetIds) {
-      const handle = this.handleOfId.get(id)
-      if (handle === undefined || this.uploaded[handle] === undefined) continue
-      const instance = this.createInstance(handle, null)
-      this.setTransform(instance, at, [0, 0, 0, 1], [1e-3, 1e-3, 1e-3])
-      created.push(instance)
+    // Bound even meshes whose local origin is far from their geometry, including the posed joint bounds.
+    let extent = 1
+    for (const part of this.uploaded[source.asset]!.parts) {
+      if (source.filter !== null && !source.filter.has(part.name)) continue
+      let local = 1
+      for (const value of part.desc.positions) local = Math.max(local, Math.abs(value))
+      extent = Math.max(extent, local + 2 * Math.max(...part.t.map(Math.abs)))
     }
-    if (created.length === 0) return
-    // A field rejected since the last frame is hidden before this draw (a visible failed member throws at setPipeline).
-    this.swapFallbacks()
-    this.flushPoses(engine)
-    engine.render(performance.now())
-    for (const instance of created) this.destroyInstance(instance)
+    let pose = 1
+    if (source.pose !== null) for (const value of source.pose) pose = Math.max(pose, Math.abs(value))
+    const view = this.target!.viewports[0]
+    const aspect = view === undefined ? 1 : view.width / Math.max(1, view.height)
+    const scale = Math.min(1e-3, ahead * Math.min(1, aspect) * Math.tan(camera.fovYDeg * Math.PI / 360) / (32 * extent * pose))
+    const instance = this.createInstance(source.asset, source.tint)
+    try {
+      this.setPartFilter(instance, source.filter === null ? null : [...source.filter])
+      if (source.pose !== null) this.setPose(instance, source.pose)
+      this.setTransform(instance, at, [0, 0, 0, 1], [scale, scale, scale])
+      // Rejected field members are hidden before a draw; their resident vertex copies still cover them.
+      this.swapFallbacks()
+      this.flushPoses(engine)
+      engine.render(performance.now())
+    } finally {
+      this.destroyInstance(instance)
+    }
   }
 
   private fallbackMesh(engine: SdfEngine, fallback: Fallback, desc: MeshDesc): Fallback {
@@ -1352,6 +1398,7 @@ class SdfRenderPort implements ResizablePort {
   }
 
   render(): RenderStats {
+    if (this.warmError !== null) throw this.warmError
     const engine = this.need()
     const t0 = performance.now()
     this.swapFallbacks()
@@ -1402,6 +1449,7 @@ class SdfRenderPort implements ResizablePort {
     this.canvas = null
     this.target = null
     this.posed.clear()
+    this.warming.clear()
   }
 
   // One RAA setSkinPoses call per frame for every character posed since the last frame. Each part

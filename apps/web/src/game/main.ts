@@ -2625,8 +2625,10 @@ class App {
     return this.hudRoundTicks
   }
 
-  // canvas#ui follows #screens (the whole page) and the device pixel ratio.
+  // canvas#ui follows #screens (the whole page) and the device pixel ratio; the views follow #views here too,
+  // since a frame that runs no rendering steps (the GPU client's off-screen frame) never delivers ResizeObserver.
   private resize(): void {
+    this.resizeViews()
     const w = Math.max(1, this.screens.clientWidth)
     const h = Math.max(1, this.screens.clientHeight)
     const dpr = window.devicePixelRatio || 1

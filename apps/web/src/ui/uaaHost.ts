@@ -151,19 +151,33 @@ interface GpuDeviceLike { destroy(): void }
 interface GpuAdapterLike { requestDevice(): Promise<GpuDeviceLike> }
 interface GpuLike { requestAdapter(opts?: { powerPreference?: string }): Promise<GpuAdapterLike | null> }
 
+// A WebGPU request that never settles would leave the boot hanging with no message: each one gets a deadline on
+// the real clock and then rejects naming the resource, the requester and the page's last check phase.
+export const GPU_REQUEST_DEADLINE_MS = 20000
+export function gpuDeadline<T>(resource: string, request: Promise<T>, ms = GPU_REQUEST_DEADLINE_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const phase = typeof window === 'undefined' ? undefined : (window as { __nmcGpuProgress?: string }).__nmcGpuProgress
+      reject(new Error(`${resource}: no answer within ${ms / 1000} s (requester: createUaaHost; last phase: ${phase ?? 'none'})`))
+    }, ms)
+  })
+  return Promise.race([request, late]).finally(() => clearTimeout(timer))
+}
+
 async function requestDevice(): Promise<GpuDeviceLike> {
   installShaderCache()
   const gpu = typeof navigator === 'undefined' ? undefined : (navigator as { gpu?: GpuLike }).gpu
   if (gpu === undefined) throw new UaaError('GPU_UNAVAILABLE', '', 'WebGPU is not available: this browser exposes no navigator.gpu.')
   let adapter: GpuAdapterLike | null
   try {
-    adapter = await checkAwait('UI GPU adapter', () => gpu.requestAdapter({ powerPreference: 'high-performance' }))
+    adapter = await checkAwait('UI GPU adapter', () => gpuDeadline('UI GPU adapter', gpu.requestAdapter({ powerPreference: 'high-performance' })))
   } catch (e) {
     throw new UaaError('GPU_UNAVAILABLE', '', `WebGPU is not available: requestAdapter failed (${(e as Error).message}).`)
   }
   if (adapter === null) throw new UaaError('GPU_UNAVAILABLE', '', 'WebGPU is not available: no GPU adapter was returned.')
   try {
-    return await checkAwait('UI GPU device', () => adapter!.requestDevice())
+    return await checkAwait('UI GPU device', () => gpuDeadline('UI GPU device', adapter!.requestDevice()))
   } catch (e) {
     throw new UaaError('GPU_UNAVAILABLE', '', `WebGPU is not available: the GPU device could not be created (${(e as Error).message}).`)
   }

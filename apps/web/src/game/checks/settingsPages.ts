@@ -1,7 +1,8 @@
-import { SETTINGS_ROW_SLOTS } from '@royal-fiesta/game/screens/settingsPages'
+import { SETTINGS_ROW_SLOTS, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { yieldTask } from './boot.ts'
+import { focusTab } from './settingsTabs.ts'
 import { capture, pipelinesReady } from './wardrobe.ts'
 
 export const name = 'settingsPages'
@@ -89,8 +90,11 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
     get: (_, id) => typeof id === 'string' ? live.host.widget(id) ?? undefined : undefined,
   })
   const step = async (): Promise<void> => { live.step(1 / 60); await yieldTask(live.host.currentScreen()) }
-  const waitFor = async (predicate: () => boolean, what: string): Promise<void> => {
-    const end = Date.now() + 120000
+  // A UI state follows its key within a few frames. A short deadline per wait keeps one missed state from eating
+  // the page's whole render budget (run 12350: one 120 s miss, then the page timed out before the op returned its
+  // failures); only the first wait also covers the start scene's load.
+  const waitFor = async (predicate: () => boolean, what: string, ms = 15000): Promise<void> => {
+    const end = Date.now() + ms
     while (!predicate()) {
       if (live.host.currentScreen() === 'error' || Date.now() >= end) {
         throw new Error(`${what}: ${live.host.currentScreen()}`)
@@ -106,12 +110,12 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
     await step()
   }
   const focusUntil = async (key: string, predicate: () => boolean, what: string): Promise<void> => {
-    const end = Date.now() + 120000
-    while (!predicate()) {
-      if (Date.now() >= end || live.host.currentScreen() === 'error') throw new Error(`${what}: ${live.host.focused()}`)
+    for (let presses = 0; !predicate(); presses++) {
+      if (presses >= 32 || live.host.currentScreen() === 'error') throw new Error(`${what}: ${live.host.focused()}`)
       await press(key)
     }
   }
+  const openPage = (page: SettingsPage): Promise<void> => focusTab(page, () => live.host.focused(), press)
   const take = async (file: string): Promise<void> => {
     await pipelinesReady(live, file)
     live.step(1 / 60)
@@ -122,7 +126,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
 
   await section('Audio page', async () => {
     await waitFor(() => live.host.currentScreen() === 'start' && props['act-settings']?.visible === true
-      && live.host.widgetRect('act-settings') !== null, 'start screen')
+      && live.host.widgetRect('act-settings') !== null, 'start screen', 120000)
     click(live, 'act-settings')
     await waitFor(() => live.host.currentScreen() === 'settings' && !!props.title?.text, 'settings screen')
     fail('Audio title', propText(props, 'title') === 'Audio')
@@ -138,8 +142,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
   })
 
   await section('Graphics page', async () => {
-    await focusUntil('ArrowUp', () => live.host.focused()?.startsWith('tab-') === true, 'audio tab focus')
-    await press('ArrowRight')
+    await openPage('graphics')
     await waitFor(() => propText(props, 'title') === 'Graphics', 'Graphics page')
     fail('Graphics title', propText(props, 'title') === 'Graphics')
     const lod = Array.from({ length: SETTINGS_ROW_SLOTS }, (_, i) => props[`row-${i}`])
@@ -150,7 +153,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
   })
 
   await section('Controls page', async () => {
-    await press('ArrowRight')
+    await openPage('controls')
     await waitFor(() => propText(props, 'title') === 'Controls', 'Controls page')
     fail('Controls title', propText(props, 'title') === 'Controls')
     await focusUntil('ArrowDown', () => live.host.focused() === 'row-0', 'Forward row focus')
@@ -170,8 +173,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
   })
 
   await section('Gameplay page', async () => {
-    await focusUntil('ArrowUp', () => live.host.focused()?.startsWith('tab-') === true, 'controls tab focus')
-    await press('ArrowRight')
+    await openPage('gameplay')
     await waitFor(() => propText(props, 'title') === 'Gameplay & Accessibility', 'Gameplay page')
     fail('Gameplay credits button', props['act-credits']?.visible === true)
     await take('gameplay')
@@ -187,7 +189,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
     // The start focus order is four wardrobe bins, palette, then Play (uiTour).
     for (let i = 0; i < 5; i++) await press('ArrowDown')
     await press('Enter')
-    await waitFor(() => live.host.currentScreen() === 'hub', 'hub from start')
+    await waitFor(() => live.host.currentScreen() === 'hub', 'hub from start', 120000)
     await press('Escape')
     await waitFor(() => live.host.currentScreen() === 'pause' && props['act-settings']?.visible === true
       && live.host.widgetRect('act-settings') !== null, 'pause screen')

@@ -27,3 +27,24 @@ test('a UI GPU request that never settles rejects naming the resource, requester
     /UI GPU device: no answer within 0\.02 s \(requester: createUaaHost; last phase: none\)/)
   assert.equal(await gpuDeadline('UI GPU adapter', Promise.resolve(7), 20), 7)
 })
+
+// Run 12350: Up from a Controls row reached tab-audio (uaa focus is spatial), one Right opened Graphics and the
+// Gameplay wait ran out. The walk goes by the focused tab, wherever Up lands.
+test('focusTab reaches the target tab wherever Up lands in the tab row', async () => {
+  const { focusTab } = await import('../src/game/checks/settingsTabs.ts')
+  const tabs = ['tab-audio', 'tab-graphics', 'tab-controls', 'tab-gameplay']
+  for (const landing of tabs) {
+    for (const target of ['audio', 'graphics', 'controls', 'gameplay'] as const) {
+      let focus: string = 'row-0'
+      const press = async (key: string): Promise<void> => {
+        const at = tabs.indexOf(focus)
+        if (key === 'ArrowUp') focus = at < 0 ? landing : focus
+        else if (key === 'ArrowRight') focus = tabs[Math.min(at + 1, 3)]
+        else if (key === 'ArrowLeft') focus = tabs[Math.max(at - 1, 0)]
+      }
+      await focusTab(target, () => focus, press)
+      assert.equal(focus, `tab-${target}`, `from ${landing} to ${target}`)
+    }
+  }
+  await assert.rejects(focusTab('gameplay', () => 'row-0', async () => {}, 3), /gameplay: tab row focus: row-0/)
+})

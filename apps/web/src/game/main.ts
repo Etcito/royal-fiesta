@@ -50,7 +50,7 @@ import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { CameraPose, RenderPort, SkinnedAssetT, Vec3T, Viewport } from '@royal-fiesta/game/render/port'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import { pendingPipelines } from '../render/asyncPipelines.ts'
-import { RoundGate } from '../render/pipelineGate.ts'
+import { courseWarmed, prepareCourse, RoundGate } from '../render/pipelineGate.ts'
 import type { RoundStage } from '../render/pipelineGate.ts'
 import { SceneLayer } from '@royal-fiesta/game/render/sceneLayer'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
@@ -76,7 +76,7 @@ import type { ClientCell } from '../client/canvases.ts'
 import { hudValues } from '../client/hud.ts'
 import type { HudValues } from '../client/hud.ts'
 import { mountLoading } from '../content/loading.ts'
-import { BootStages, wavedashReady, wavedashUsername } from '../platform/wavedash.ts'
+import { BootStages, wavedashProgress, wavedashReady, wavedashUsername } from '../platform/wavedash.ts'
 import { probeWanted, runProbe } from '../platform/probe.ts'
 import { pickContent } from '../content/source.ts'
 import { GameInput, InputDevices } from '../input/input.ts'
@@ -469,6 +469,8 @@ interface ModeCtx {
   touch: boolean
   // Local play's S26 canvas layout (App.setLayout): one cell per seat, plus the overview cell at 3.
   setLayout: (seats: number) => void
+  // The visible loading state while a selected round's complete scene is prepared.
+  setLoading?: (label: string | null) => void
 }
 
 // Draws one match on port 0: the SceneView framed by the orbit camera while rounds run, then the
@@ -720,6 +722,9 @@ class LocalMode implements Mode {
   private readonly seats: SeatTable
   private match: LocalRun | null = null
   private prepared: LocalRun | null = null
+  // The round being prepared for Play and the selection it belongs to; a newer selection makes it obsolete.
+  private preparing: { id: number; run: LocalRun; seats: number } | null = null
+  private selection = 0
   private readonly hubLayer: SceneLayer
   private readonly matchLayer: SceneLayer
   private readonly names: string[]
@@ -734,8 +739,11 @@ class LocalMode implements Mode {
   }
 
   setVisible(visible: boolean): void {
-    this.hubLayer.setVisible(visible && this.match === null)
-    this.matchLayer.setVisible(visible && this.match !== null)
+    // The round being prepared is already the live scene: its warm-up draw must stay visible (behind the loading
+    // state) until it is complete, or the yielding preparation tasks would skip it as hidden.
+    const round = this.match !== null || this.preparing != null
+    this.hubLayer.setVisible(visible && !round)
+    this.matchLayer.setVisible(visible && round)
   }
 
   constructor(c: ModeCtx) {
@@ -758,6 +766,10 @@ class LocalMode implements Mode {
     if (!this.startsShow) this.prepareMatch()
     // ?course= goes straight into its round.
     if (c.loaded.course !== null) this.enqueue()
+  }
+
+  get preparingRound(): boolean {
+    return this.preparing != null
   }
 
   get finished(): boolean {
@@ -802,26 +814,75 @@ class LocalMode implements Mode {
       this.showRequested = true
       return
     }
-    if (this.match !== null) return
+    if (this.match !== null || this.preparing !== null) return
     // An unclaimed P1 remains available to the first active device during the round.
     const count = Math.max(1, this.seats.seats.length)
+    let run: LocalRun
     if (count === 1 && this.prepared !== null) {
-      // The prepared 1-seat match is already stepped past its intro and warmed.
-      this.match = this.prepared
+      // The prepared 1-seat match is already stepped past its intro.
+      run = this.prepared
       this.prepared = null
-      this.c.setLayout(1)
     } else {
       this.prepared?.match.dispose()
       this.prepared = null
-      const run = this.buildMatch(count)
-      this.match = run
-      this.c.setLayout(count)
-      this.presenter.begin(run.match, count)
+      run = this.buildMatch(count)
     }
+    // Play keeps a complete visible scene and a clear loading state until the selected round is ready.
+    void this.enterRound(run, count)
+  }
+
+  // Prepare the selected round through its live renderer, then switch to it in one step. The selection token makes an
+  // older preparation unable to open its scene after the player changed seats or left.
+  private async enterRound(run: LocalRun, seats: number): Promise<void> {
+    const id = ++this.selection
+    this.preparing = { id, run, seats }
+    this.c.setLoading?.('Preparing round...')
+    this.presenter.begin(run.match, seats)
     this.hubLayer.setVisible(false)
     this.matchLayer.setVisible(true)
+    this.presenter.draw(run.match, 1, 0, null)
+    renderFrame(this.matchLayer.port, () => this.c.loaded.ports[0].render())
+    const course = run.match.sim.course()
+    let failure: string | null = null
+    try {
+      if (course !== null) await prepareCourse(this.matchLayer.port, course.id, { cancelled: () => this.disposed || this.selection !== id })
+      else while (pendingPipelines() > 0) await new Promise<void>(resolve => setTimeout(resolve, 10))
+    } catch (e) {
+      failure = `[round] ${course?.id ?? 'local'}: ${e instanceof Error ? e.message : String(e)}`
+    }
+    if (this.disposed || (this.selection === id && failure === null && course !== null && !courseWarmed(this.matchLayer.port, course.id))) {
+      failure ??= `[round] ${course?.id ?? 'local'}: preparation did not complete`
+    }
+    if (this.disposed || this.selection !== id) {
+      if (this.preparing?.id === id) this.preparing = null
+      if (!this.disposed) this.restoreHubScene()
+      run.match.dispose()
+      return
+    }
+    if (this.preparing?.id === id) this.preparing = null
+    if (failure !== null) {
+      this.c.setLoading?.(null)
+      this.failure = failure
+      this.restoreHubScene()
+      run.match.dispose()
+      return
+    }
+    this.match = run
+    this.c.setLayout(seats)
+    // Submit the complete round before its loading state goes away: the next frame the player sees is the round.
+    this.presenter.draw(run.match, 1, 0, null)
+    this.c.loaded.ports[0].render()
     // The hub moved the orbit since the prepared match was aimed: aim again along seat 0's spawn on the next draw.
     this.presenter.reaim()
+    this.c.setLoading?.(null)
+  }
+
+  private restoreHubScene(): void {
+    if (this.match !== null || this.preparing !== null) return
+    this.matchLayer.setVisible(false)
+    this.hubLayer.setVisible(true)
+    this.hubView.update(this.hub.state(this.local), this.c.q.colour, this.hub.botViews(), this.hub.tick, 0, this.hub.emote(performance.now()))
+    this.c.loaded.ports[0].render()
   }
 
   dequeue(): void {}
@@ -860,8 +921,8 @@ class LocalMode implements Mode {
     ports[0].render()
   }
 
-  // Async compilation can omit lit draws on the first render. Submit the complete
-  // course once those pipelines exist, and read it back to finish GPU work before Play.
+  // Async compilation can omit lit draws on the first render. Submit the complete course once those pipelines exist,
+  // read it back to finish GPU work, and warm the selected scene through its live renderer before Play.
   async ready(): Promise<void> {
     const { ports } = this.c.loaded
     // Compilation completes independently of presentation. In the GPU host rAF may never fire;
@@ -871,6 +932,8 @@ class LocalMode implements Mode {
     this.matchLayer.setVisible(true)
     const run = this.prepared ?? this.match
     if (run !== null) this.presenter.draw(run.match, 1, 0, null)
+    const course = run?.match.sim?.course()
+    if (course != null) await prepareCourse(this.matchLayer.port, course.id)
     ports[0].render()
     await ports[0].capture()
     if (this.match === null) {
@@ -883,6 +946,7 @@ class LocalMode implements Mode {
   }
 
   roundStage(): RoundStage | null {
+    if (this.preparing !== null) return null
     const run = this.match
     if (run === null) return { port: this.hubLayer.port, course: 'hub' }
     if (this.presenter.onPodium) return { port: this.matchLayer.port, course: 'podium' }
@@ -891,6 +955,8 @@ class LocalMode implements Mode {
   }
 
   leaveMatch(): void {
+    this.selection++
+    this.preparing = null
     const run = this.match
     if (run === null) return
     this.presenter.end()
@@ -936,6 +1002,8 @@ class LocalMode implements Mode {
 
   dispose(): void {
     this.disposed = true
+    this.selection++
+    this.preparing = null
     this.presenter.dispose()
     this.match?.match.dispose()
     this.match = null
@@ -949,6 +1017,11 @@ class LocalMode implements Mode {
     const now = performance.now()
     // A device's join button takes the next free seat while the hub is live; a match freezes the seats.
     if (this.c.q.players === null) claimSeats(this.seats, f.devices, f.deviceCount, !f.paused)
+    // A preparation built for another seat count belongs to a selection that no longer exists.
+    if (this.preparing !== null && this.preparing.seats !== this.seats.seats.length) {
+      this.selection++
+      this.preparing = null
+    }
     if (f.emote !== 0) this.hub.setEmote(f.emote, now)
     if (!f.paused) {
       this.hubAcc = Math.min(this.hubAcc + f.dt, 8 * STEP_S)
@@ -1606,6 +1679,7 @@ class App {
   // Every cosmetic the current catalog offers plus the local ones; buildStartArt mounts each of them.
   private startCosmetics: readonly { id: string; slot: string }[] = []
   private startArt: StartArt | null = null
+  private startCourse: string | null = null
   private startView: StartScreenView | null = null
   private readonly orbit = new OrbitCamera()
   private readonly world = neutralInput()
@@ -1954,12 +2028,14 @@ class App {
       this.query = q
       const content = pickContent(new URLSearchParams(this.search))
       boot.enter('physics (Rapier wasm)')
+      wavedashProgress(0.03)
       const R = await checkAwait('Rapier initialization', () => initRapier())
       boot.enter('content')
       let phase = ''
       await checkAwait('boot content', () => content.load('sprint', progress => {
         if (this.disposed) return
         if (progress.phase !== phase) boot.enter(`content: ${phase = progress.phase}`)
+        wavedashProgress(0.1 + 0.75 * Math.min(1, progress.done / Math.max(1, progress.total)))
         this.loadingOverlay.show(progress.label, progress.done, progress.total)
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
@@ -1970,6 +2046,7 @@ class App {
       const course = picked !== null && picked.kind === 'hub' ? null : picked
       this.loadingOverlay.show('Creating renderer')
       boot.enter('renderer')
+      wavedashProgress(0.9)
       const { ports, canvases } = await checkAwait('boot render ports', () => this.mountPorts(content, q))
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.
@@ -1981,8 +2058,8 @@ class App {
       this.stopRoundLoad = observeRoundLoad(label => {
         checkPhase(`round load: ${label ?? 'ready'}`)
         // Show preparation is background work; its director owns the visible load hold. The show prepared behind
-        // the start screen loads silently too.
-        if (this.mode instanceof ShowAdapter || this.showAhead !== null) return
+        // the start screen loads silently too. A local round keeps the loading state its own preparation set.
+        if (this.mode instanceof ShowAdapter || this.showAhead !== null || (this.mode instanceof LocalMode && this.mode.preparingRound)) return
         this.roundLoading = label
         if (label !== null) {
           this.loadingOverlay.show(label)
@@ -2003,11 +2080,6 @@ class App {
         })
       }
       this.resizeViews()
-      if (q.server === null && q.clients === 1) {
-        boot.enter('first frame (pipelines, capture)')
-        this.preparedLocal = new LocalMode({ look: () => this.wornLook(), loaded: this.loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats) })
-        await checkAwait('local scene pipelines and capture', () => this.preparedLocal!.ready())
-      }
       try {
         await checkAwait('start menu content', () => this.prepareStart(this.loaded!))
       } catch (e) {
@@ -2015,8 +2087,28 @@ class App {
       }
       // Lands on the start screen (nav's root), or in the hub for ?course= / ?community=.
       this.run(this.nav.dispatch({ kind: 'loaded' }))
+      // Initial loading waits only for the complete interactive start scene and its presentation, never for a round.
+      this.draw()
+      const startCourse = this.nav.screen === 'start' ? this.startCourse : null
+      if (startCourse !== null && ports[0] !== undefined) {
+        this.loadingOverlay.show('Heating the start scene')
+        this.host.setLoading(0, 'Heating the start scene')
+        try {
+          await checkAwait('start scene pipelines', async () => {
+            await prepareCourse(ports[0], startCourse)
+            if (!courseWarmed(ports[0], startCourse)) throw new Error(`[render] start scene ${startCourse} did not finish preparing`)
+          })
+        } catch (e) {
+          return this.fail(messageOf(e))
+        }
+      }
       if (this.roundLoading === null) this.loadingOverlay.hide()
       boot.done()
+      this.startSceneReady = true
+      // R3: the complete start scene is up and its controls run, so the Wavedash shell may show the game now.
+      wavedashReady()
+      // The next scene (the show Play starts) prepares in the background while the start menu stays interactive.
+      this.preloadShow()
     } catch (e) {
       console.error(e)
       this.fail(messageOf(e))
@@ -2113,6 +2205,8 @@ class App {
   private async prepareStart(loaded: Loaded): Promise<void> {
     if (loaded.ports[0] === undefined) return
     await this.refreshStart()
+    // The scene initial loading waits for: the start season's course, prepared on the stage port once it is drawn.
+    this.startCourse = this.startArt?.scene?.courseId ?? null
   }
 
   private async refreshStart(): Promise<void> {
@@ -2226,7 +2320,8 @@ class App {
     const q = this.query
     if (loaded === null || q === null) return this.fail(refusal('game', 'start', 'the content is not loaded; retry the load'))
     this.stopMode()
-    const c: ModeCtx = { look: () => this.wornLook(), loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats), views: this.views }
+    const c: ModeCtx = { look: () => this.wornLook(), loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats), views: this.views,
+      setLoading: label => this.setRoundLoading(label) }
     try {
       const pending = this.pendingRelay
       this.pendingRelay = null
@@ -2284,14 +2379,15 @@ class App {
   // canvas and port, so Play starts without the course load. One job at a time: it starts once the start screen
   // compiles nothing, and its warm-up draw goes one asset at a time (ShowModeOptions.background).
   private showAhead: Promise<ShowMode | null> | null = null
+  // Initial loading ends only after the start scene is complete; the show preload waits for it.
+  private startSceneReady = false
 
   private preloadShow(): void {
     const loaded = this.loaded
     const q = this.query
-    if (this.showAhead !== null || this.disposed || loaded === null || q === null || this.startView === null) return
-    // Only when Play starts the in-page show (LocalMode.startsShow, no build default relay); UI checks (?test=1)
-    // step the start screen without it.
-    if (q.server !== null || q.clients !== 1 || (q.course !== null && q.bots === null) || this.nav.onlineOnly || q.test) return
+    if (!this.startSceneReady || this.showAhead !== null || this.disposed || loaded === null || q === null || this.startView === null) return
+    // Only when Play starts the in-page show (LocalMode.startsShow, no build default relay).
+    if (q.server !== null || q.clients !== 1 || (q.course !== null && q.bots === null) || this.nav.onlineOnly) return
     if (pendingPipelines() > 0) return
     this.showAhead = ShowMode.create({ ...this.showOptions(loaded, q, this.wornLook()), background: true }).then(show => {
       if (!this.disposed && show.failure === null && show.preload()) return show
@@ -2488,7 +2584,14 @@ class App {
       return
     }
     const step = startStep(model, action)
+    const changed = step.model.colour !== model.colour
+      || step.model.bins.some((bin, i) => bin.selected !== model.bins[i]?.selected || bin.worn !== model.bins[i]?.worn)
     this.startModel = step.model
+    // A preloaded next scene that wore the old selection is obsolete: Play must not adopt it.
+    if (changed && this.showAhead !== null) {
+      void this.showAhead.then(show => show?.dispose())
+      this.showAhead = null
+    }
     this.startView?.update(step.model, { action, effect: step.effect })
     if (step.effect === 'wear') this.saveWardrobe(step.model)
     else if (step.effect === 'play') this.run(this.nav.dispatch({ kind: 'action', action: 'play' }))
@@ -2503,6 +2606,17 @@ class App {
       return
     }
     this.startAction('confirm', model.focus === action ? model : { ...model, focus: action })
+  }
+
+  // A mode's visible loading state while it prepares the selected round (the app draws it above the scene).
+  private setRoundLoading(label: string | null): void {
+    this.roundLoading = label
+    if (label !== null) {
+      this.loadingOverlay.show(label)
+      this.host.setLoading(0, label)
+    } else if (this.mode instanceof LocalMode) {
+      this.loadingOverlay.hide(true)
+    }
   }
 
   private showLoading(models: ShowFrame): void {
@@ -3053,9 +3167,7 @@ try {
     const storage = pageStorage()
     bootStages = new BootStages(showStall)
     boot.enter('ui host (fonts, images, WebGPU)')
-    // R3: game.html's own loading screen (#round-loading) is up from the first byte, so the Wavedash shell shows the
-    // frame now: the player sees the game's title, stage and bar instead of the shell's "Still Loading 0%".
-    wavedashReady()
+    // The shell stays on its own progress screen until App.load has the complete start scene up (wavedashReady).
     start(canvas, { store: storage ?? memoryStore(), padStorage: storage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
   }
 } catch (e) {

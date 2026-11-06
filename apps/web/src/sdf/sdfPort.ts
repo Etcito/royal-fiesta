@@ -448,7 +448,7 @@ class SdfRenderPort implements ResizablePort {
   // off-screen course and costume shaders do not delay the first frame.
   async prepare(onProgress: (p: LoadProgress) => void, onTiming: (span: { step: string; start: number; end: number; ms: number }) => void): Promise<void> {
     // The whole world's field grid budget is decided once, before a single upload: the parts that keep their field
-    // are the ones whose grid textures fit RAA's atlas, cheapest/smallest demoted first (fieldAtlas planFieldAtlas).
+    // are the ones whose grid textures fit RAA's atlas, cheapest demoted first (fieldAtlas planFieldAtlas).
     this.planAtlas()
     const ids = [...this.meshed.keys()].sort()
     for (let i = 0; i < ids.length; i++) {
@@ -552,7 +552,7 @@ class SdfRenderPort implements ResizablePort {
   }
 
   // The whole-world field plan (fieldAtlas): every part with a valid field program costs its grid texture's bytes,
-  // and planFieldAtlas demotes the smallest/cheapest parts until the world fits RAA's atlas. Computed once, before
+  // and planFieldAtlas demotes the cheapest allocations until the world fits RAA's atlas. Computed once, before
   // the first upload; registerAsset ensures it exists even when a caller skips prepare().
   private planAtlas(): FieldAtlasPlan {
     if (this.atlasPlan !== null) return this.atlasPlan

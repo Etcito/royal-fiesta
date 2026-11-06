@@ -1,7 +1,7 @@
 {
   "MAMA": {
     "repo": "Etcito/MAMA",
-    "commit": "c6b42b7a79b98986db5807ddf478604796b1cd3c"
+    "commit": "c0358d44daa8452c7c078666c1f8ddec5e13fdf7"
   },
   "UAA": {
     "repo": "Etcito/uaa",
@@ -9,6 +9,6 @@
   },
   "RAA": {
     "repo": "Etcito/raa",
-    "commit": "c1a85e19dca857c7b0d81edc25226c421a18ffd2"
+    "commit": "554b0fd54798be0f0dd2bca29a83c72f073a2ce5"
   }
 }

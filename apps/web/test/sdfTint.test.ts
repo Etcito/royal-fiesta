@@ -135,7 +135,7 @@ function fieldProgram(over: Record<string, unknown> = {}) {
   }
 }
 function gridProgram(side = 4) {
-  return fieldProgram({ operands: [{ kind: 'grid', label: 0, inv: IDENTITY16, scale: 1, origin: [-1, -1, -1], voxel: 1, size: [2, side, 2], at: [0, 0], range: 4 }], grid: { width: side, height: side, texels: new Uint8Array(side * side * 4) } })
+  return fieldProgram({ operands: [{ kind: 'grid', label: 0, inv: IDENTITY16, scale: 1, origin: [-1, -1, -1], voxel: 1, size: [2, side, 2], at: [0, 0], range: 4 }], grid: { width: 4, height: side, texels: new Uint8Array(4 * side * 4) } })
 }
 
 // The fake engine records the calls; instance ids are handed out in order, mesh instances
@@ -163,6 +163,7 @@ function fakeEngine() {
     setViewports(views: Viewport[]) { calls.views.push(Array.from(views, v => ({ ...v }))) },
     setCamera() { calls.cameras.push(-1) },
     setViewportCamera(index: number) { calls.cameras.push(index) },
+    setTransform() {},
     setVisible(id: number, visible: boolean) { calls.visibility.set(id, visible) },
     setLight() {}, setAmbient() {},
     addMaterialFunction(name: string, wgsl: string) { calls.functionSources.set(name, wgsl); calls.functions++ },
@@ -663,6 +664,32 @@ test('a field part shades from its program and a refused part keeps vertex with 
   assert.ok(calls.functions >= 1, 'the field evaluator and material are registered')
 })
 
+// The playable path uploads its shared field shader, grid textures and material data once: more instances, moving
+// transforms and camera turns re-use them (no shader rebuild, no repeated data or texture upload).
+test('playable field parts share one shader and keep their upload while instances move and the camera turns', async () => {
+  const meshes = ['body', 'hat', 'scarf'].map(name => ({ ...part(name, 'skin'), fieldProgram: gridProgram() }))
+  const { port, calls, handle } = portFor('test.play', [material('skin', PLAIN)], meshes)
+  await port.prepare(() => {}, () => {})
+  const asset = handle()
+  const first = port.createInstance(asset, [1, 0.42, 0.62])
+  const second = port.createInstance(asset, [0.33, 0.73, 1])
+  const fieldFunctions = () => [...calls.functionSources.keys()].filter(name => name.startsWith('pmf.')).length
+  assert.equal(port.shadingReport().field, 3)
+  assert.equal(fieldFunctions(), 1, 'every part with the same label graphs shares one field material')
+  const uploaded = { functions: calls.functions, data: calls.data.length, textures: calls.textures.length }
+  Object.assign(port, { target: { viewports: [{}] } })
+  for (let frame = 0; frame < 4; frame++) {
+    port.setCamera(0, { eye: [frame, 1, 2], target: [0, 0, 0], fovYDeg: 60, near: 0.1, far: 500 })
+    port.setTransform(first, [frame, 0, 0], [0, 0, 0, 1], [1, 1, 1])
+    port.setTransform(second, [0, frame, 0], [0, 0, 0, 1], [1, 1, 1])
+    port.render()
+  }
+  assert.equal(fieldFunctions(), 1)
+  assert.equal(calls.functions, uploaded.functions, 'no shader is rebuilt')
+  assert.equal(calls.data.length, uploaded.data, 'no material data is re-uploaded')
+  assert.equal(calls.textures.length, uploaded.textures, 'no grid texture is re-uploaded')
+})
+
 // A field label naming a saved material (registered by RAA as 'sdfm.buffer_<hash>', not a WGSL identifier) embeds
 // that material's graph in the part's field material instead of calling it by its registry name.
 test('a field label with a saved material embeds its graph and the part still shades from its program', async () => {
@@ -697,16 +724,16 @@ test('texture.atlas_full demotes the part to vertex and is logged, never thrown'
   assert.ok(errors.slice(before).includes('[sdf-port] texture.atlas_full test.full#g/body'), errors.join('\n'))
 })
 
-// The field atlas plan runs once over the world before any upload: a budget that fits one grid demotes the
-// smaller-diagonal part first.
-test('a too-small atlas budget demotes the smaller-diagonal part first', async () => {
+// The field atlas plan runs once over the world before any upload and demotes by allocation cost: the cheap part
+// with the larger diagonal goes before the expensive small one (the landed fieldAtlas fallback order).
+test('a too-small atlas budget demotes the cheapest part first', async () => {
   const meshOf = (name: string, side: number) => ({
     ...part(name, 'skin'), meshes: [{ ...part(name, 'skin').meshes[0], positions: new Float32Array([0, 0, 0, side, 0, 0, 0, side, 0]) }],
   })
-  const small = { ...meshOf('small', 1), fieldProgram: gridProgram() }
-  const big = { ...meshOf('big', 3), fieldProgram: gridProgram() }
+  const wide = { ...meshOf('wide', 10), fieldProgram: gridProgram(2) }
+  const tiny = { ...meshOf('tiny', 1), fieldProgram: gridProgram(4) }
   const bytes = 4 * 4 * 4
-  const { port, calls, handle } = portWithAtlas('test.budget', [material('skin', PLAIN)], [small, big], bytes)
+  const { port, calls, handle } = portWithAtlas('test.budget', [material('skin', PLAIN)], [wide, tiny], bytes)
   await port.prepare(() => {}, () => {})
   port.createInstance(handle(), null)
   const report = port.shadingReport()
@@ -716,7 +743,7 @@ test('a too-small atlas budget demotes the smaller-diagonal part first', async (
   assert.equal(report.bytes, bytes)
   assert.equal(report.budget, bytes)
   assert.equal(calls.textures.length, 1)
-  assert.ok(report.errors.includes('test.budget#g/small: atlas budget: smaller parts first'), report.errors.join('\n'))
+  assert.ok(report.errors.includes('test.budget#g/wide: atlas budget: smaller parts first'), report.errors.join('\n'))
 })
 
 // Vertex mode keeps fields resident so switching to SDF can reuse the upload.

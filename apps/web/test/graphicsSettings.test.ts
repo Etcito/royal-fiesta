@@ -128,7 +128,7 @@ test('the shading row uses the pinned MAMA choices or the matching fallback stub
   const page = new GraphicsSettings(memoryStore(), () => {})
   page.attach(contract())
   assert.equal(page.options.shading, 'field', 'Royal Fiesta starts on MEDIUM: SDF per pixel')
-  assert.ok(page.model('').buttons.some(button => button.label === 'Surface shading: SDF per pixel'))
+  assert.ok(page.items().some(item => item.label === 'Surface shading' && item.value === 'SDF per pixel'))
 })
 
 test('the copied test contract matches the pinned MAMA shading spec when available', () => {
@@ -143,11 +143,11 @@ test('the copied test contract matches the pinned MAMA shading spec when availab
 test('items expose controls, selectable choice counts and unavailable options', () => {
   const page = new GraphicsSettings(memoryStore(), () => {})
   page.attach(contract())
-  const model = page.model('hint')
-  assert.deepEqual(model.buttons.map(button => button.label), [
+  const notes = page.notes()
+  assert.deepEqual(page.items().map(item => item.value === '' ? item.label : `${item.label}: ${item.value}`), [
     'Frame rate: 60 fps', 'Show FPS: Off', 'Surface shading: SDF per pixel', 'LOD offset: Unavailable',
     'Render scale: 1', 'Bloom: On', 'Colour grading: On', 'Screen strength: 1', 'Ambient occlusion: 2',
-    'Jiggle bones: All', 'Reset graphics to defaults', 'Back',
+    'Jiggle bones: All', 'Reset graphics to defaults',
   ])
   assert.deepEqual(page.items()[0], { label: 'Frame rate', value: '60 fps', control: 'choice', index: 0, count: 1,
     help: 'Frame cap. Unavailable: Vmax - not supported in this test.' })
@@ -155,12 +155,12 @@ test('items expose controls, selectable choice counts and unavailable options', 
   assert.equal(page.items()[1].fraction, 0)
   assert.deepEqual(page.items()[3], { label: 'LOD offset', value: 'Unavailable', control: 'slider',
     help: 'LOD.', fraction: 0, disabled: 'one level' })
-  assert.equal(page.props()['row-3'].disabled, true)
+  assert.equal(page.items()[3].disabled, 'one level')
   assert.equal(page.activate(3), false)
   assert.equal(page.adjust(3, 1), false)
   assert.equal(page.activate(0), true)
   assert.equal(page.options.frameRate, 'cap60')
-  assert.match(model.lines[0]!, /Unavailable - Vmax: not supported in this test; LOD offset: one level/)
+  assert.match(notes, /Unavailable - Vmax: not supported in this test; LOD offset: one level/)
 })
 
 test('shading choices step in MAMA order and show the spec help after a change', () => {
@@ -170,7 +170,7 @@ test('shading choices step in MAMA order and show the spec help after a change',
   page.attach(contract())
   assert.equal(page.activate(2), true)
   assert.equal(page.options.shading, 'baked')
-  assert.equal(page.model('').lines[0], SHADING.help)
+  assert.equal(page.notes(), SHADING.help)
   page.activate(2)
   assert.equal(page.options.shading, 'vertex')
   page.activate(2)
@@ -227,8 +227,8 @@ test('without MAMA the page says so and has no rows', () => {
   assert.equal(page.adjust(0, 1), false)
   assert.equal(page.activate(0), false)
   page.reset()
-  assert.deepEqual(page.model('').buttons.map(button => button.label), ['Back'])
-  assert.match(page.model('').lines[0]!, /MAMA/)
+  assert.deepEqual(page.items(), [])
+  assert.match(page.notes(), /MAMA/)
 })
 
 test('number items use discrete positions; adjustment clamps and activation wraps', () => {
@@ -326,7 +326,7 @@ test('unavailable shading choices keep their contract reason and are skipped in 
   assert.equal(page.options.shading, 'field')
 })
 
-test('row capacity reserves the final item for reset and page state stays compatible', () => {
+test('row capacity reserves the final item for reset', () => {
   const extra: GraphicsSpec[] = Array.from({ length: 20 }, (_, i) => ({
     key: `extra${i}`, section: 'frame', kind: 'toggle', default: false, label: `Extra ${i}`, help: 'Extra option.',
   }))
@@ -334,13 +334,7 @@ test('row capacity reserves the final item for reset and page state stays compat
   page.attach(contract([...SPECS, ...extra]))
   assert.equal(page.items().length, SETTINGS_ROW_SLOTS)
   assert.equal(page.items().at(-1)!.control, 'action')
-  assert.equal(page.isOpen, false)
-  page.openPage()
-  assert.equal(page.isOpen, true)
   page.activate(1)
   assert.equal(page.items()[1].value, 'On')
   assert.equal(page.notes(), 'FPS counter.')
-  page.closePage()
-  assert.equal(page.isOpen, false)
-  assert.match(page.notes(), /^Unavailable - /)
 })

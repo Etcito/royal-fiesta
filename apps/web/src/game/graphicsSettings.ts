@@ -1,9 +1,7 @@
 /// <reference path="../types-mama.d.ts" />
-// Rows, labels, ranges and validation come from MAMA's game render-options contract.
-import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
+// Graphics items for the settings tabs; rows, labels, ranges and validation come from MAMA's render-options contract.
 import type { SettingsStore } from '@royal-fiesta/game/screens/settings'
 import { SETTINGS_ROW_SLOTS, type SettingsItem } from '@royal-fiesta/game/screens/settingsPages'
-import type { WidgetProps } from '../ui/screenMap.ts'
 
 export const GRAPHICS_KEY = 'royal-fiesta.graphics'
 
@@ -57,7 +55,6 @@ function help(spec: GraphicsSpec): string {
 export class GraphicsSettings {
   private contract: GraphicsContract | null = null
   private values: Record<string, unknown> = {}
-  private open = false
   private note: string | null = null
 
   // onChange gets the validated options after the contract loads and after every change.
@@ -99,20 +96,6 @@ export class GraphicsSettings {
     return this.values
   }
 
-  get isOpen(): boolean {
-    return this.open
-  }
-
-  openPage(): void {
-    this.open = true
-    this.note = null
-  }
-
-  closePage(): void {
-    this.open = false
-    this.note = null
-  }
-
   private specs(): GraphicsSpec[] {
     const contract = this.contract
     if (contract === null) return []
@@ -152,26 +135,6 @@ export class GraphicsSettings {
     items.push({ label: 'Reset graphics to defaults', value: '', control: 'action',
       help: 'Puts every graphics option back to its default.' })
     return items
-  }
-
-  // The settings screen as the Graphics page: its rows, a line (the last change's help, else why some choices are
-  // unavailable) and Back (to the settings rows).
-  model(hint: string): MenuModel {
-    const buttons: MenuModel['buttons'] = this.items().map((item, i) => ({
-      label: item.value === '' ? item.label : `${item.label}: ${item.value}`, cmd: { k: 'row', row: i },
-    }))
-    buttons.push({ label: 'Back', cmd: { k: 'back' } })
-    return { screen: 'settings', title: 'Graphics', lines: [this.notes()], buttons, hint, overlay: false }
-  }
-
-  // The disabled state of the unavailable rows (MenuModel buttons carry no state; the uaa widgets do).
-  props(): Record<string, WidgetProps> {
-    const props: Record<string, WidgetProps> = {}
-    this.items().forEach((item, i) => {
-      props[`row-${i}`] = { text: item.value === '' ? item.label : `${item.label}: ${item.value}`,
-        visible: true, disabled: item.disabled !== undefined }
-    })
-    return props
   }
 
   notes(): string {

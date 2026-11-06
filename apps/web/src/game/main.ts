@@ -59,8 +59,9 @@ import { menuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { MenuCmd } from '@royal-fiesta/game/screens/menuModel'
 import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, backTogglesPause, flowAction } from '@royal-fiesta/game/screens/nav'
 import type { Action, EconomyScreen, GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
-import { SETTINGS_ROWS, adjust, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
+import { adjust, cycle, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
 import type { KeyAction, Settings, SettingsStore } from '@royal-fiesta/game/screens/settings'
+import { PAGE_ROWS, SETTINGS_PAGES, pageItems, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { neutralInput } from '@royal-fiesta/sim/input'
@@ -89,6 +90,7 @@ import { InPageHubLoop } from '../play/inpageHub.ts'
 import { SoundDriver } from '../play/sound.ts'
 import { widgetsOf } from '../ui/screenMap.ts'
 import type { ScreensDoc, WidgetProps } from '../ui/screenMap.ts'
+import { settingsWidgetProps } from '../ui/settingsWidgets.ts'
 import { createUaaHost } from '../ui/uaaHost.ts'
 import type { UaaCommand, UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
 import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
@@ -1525,6 +1527,7 @@ function trackLobbyAssets(port: RenderPort, into: Set<number>): RenderPort {
 class App {
   readonly nav = new Nav()
   private settings: Settings
+  private settingsPage: SettingsPage = 'audio'
   private settingsError: string | null
   // The Graphics page and options (MAMA's render-options contract) and the FPS counter they show.
   private readonly graphics: GraphicsSettings
@@ -1769,12 +1772,8 @@ class App {
     else this.activate(c.cmd)
   }
 
-  // Back from the Graphics page returns to the settings rows; any other back is nav's.
+  // Nav returns from every settings page to the screen that opened it.
   private back(): void {
-    if (this.nav.screen === 'settings' && this.graphics.isOpen) {
-      this.graphics.closePage()
-      return
-    }
     // A failed ?community= / ?course= load has no start screen behind it and Retry loads the same level again, so
     // Back did nothing: it leaves that level for the page without it (the start screen).
     if (this.nav.screen === 'error' && this.loaded === null) {
@@ -2546,9 +2545,7 @@ class App {
     // The remap belongs to the settings screen; #touch takes the pointer only where the game does.
     if (this.remap !== null && nav.screen !== 'settings') this.closeRemap()
     this.touchRoot.hidden = this.touch === null || !(nav.live && PLAYING.includes(nav.screen))
-    // The Graphics page belongs to the settings screen: leaving the screen closes it.
-    if (nav.screen !== 'settings' && this.graphics.isOpen) this.graphics.closePage()
-    this.remapButton.hidden = !(nav.screen === 'settings' && this.remap === null && !this.graphics.isOpen)
+    this.remapButton.hidden = !(nav.screen === 'settings' && this.remap === null)
     this.community?.setVisible(nav.screen === 'start')
     // The start screen draws its own penguin layer and presents its own menu; nav still owns leaving it.
     if (nav.screen === 'start') {
@@ -2596,14 +2593,19 @@ class App {
     // The spectate banner has no HUD pills: its lines carry the round and the qualified count.
     if (nav.screen === 'spectate' && values !== null) info = [values.kind, values.qualified ?? '']
     const error = nav.screen === 'settings' ? this.settingsError : nav.error
-    let model = menuModel(this.roundLoading === null ? nav.screen : 'loading', this.roundLoading === null ? nav.actions() : [], { settings: this.settings, rebinding: this.rebinding, error, info })
-    const graphicsPage = model.screen === 'settings' && this.graphics.isOpen
-    if (graphicsPage) model = this.graphics.model(model.hint)
+    const page = this.settingsPage
+    const reducedMotion = nav.screen === 'settings' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    const items = nav.screen !== 'settings' ? [] : page === 'graphics' ? this.graphics.items()
+      : pageItems(page, this.settings, { rebinding: this.rebinding, reducedMotion })
+    const model = menuModel(this.roundLoading === null ? nav.screen : 'loading', this.roundLoading === null ? nav.actions() : [], {
+      settings: this.settings, rebinding: this.rebinding, error, info,
+      page, items, reducedMotion, note: page === 'graphics' ? this.graphics.notes() : undefined,
+    })
     // Overlays leave the pointer to the views (pointer lock on the game canvas); menus take clicks.
     this.screens.style.pointerEvents = model.overlay ? 'none' : 'auto'
     this.resize()
     this.host.present({ ...model, lines: fitLines(model.lines, lineSlots(model.screen)) })
-    if (graphicsPage) this.host.setHud(this.graphics.props())
+    if (model.screen === 'settings') this.host.setHud(settingsWidgetProps(page, items, this.host.focused(), nav.settingsFrom))
     if (hud !== null && values !== null) this.host.setHud(hudWidgets(values, hud.view))
     this.host.frame(this.uiNowMs)
   }
@@ -2744,8 +2746,28 @@ class App {
     if (ev.k === 'back') host.input({ kind: 'back' })
     else if (ev.k === 'emote') this.emote = ev.id
     else if (ev.k === 'focus') host.input({ kind: 'nav', dir: ev.dir < 0 ? 'up' : 'down' })
-    else if (ev.k === 'adjust') host.input({ kind: 'nav', dir: ev.dir < 0 ? 'left' : 'right' })
-    else if (ev.k === 'select') {
+    else if (ev.k === 'adjust') {
+      if (this.nav.screen === 'settings' && this.remap === null) {
+        const focused = host.focused()
+        const rowIndex = focused?.match(/^row-(\d+)$/) ?? null
+        if (rowIndex !== null) {
+          const index = Number(rowIndex[1])
+          if (this.settingsPage === 'graphics') this.graphics.adjust(index, ev.dir)
+          else {
+            const row = PAGE_ROWS[this.settingsPage][index]
+            if (row !== undefined && (row.kind === 'volume' || row.kind === 'bus'
+              || row.kind === 'mouseSensitivity' || row.kind === 'stickSensitivity' || row.kind === 'invertY')) {
+              this.apply(adjust(this.settings, row, ev.dir))
+            }
+          }
+          return
+        }
+        host.input({ kind: 'nav', dir: ev.dir < 0 ? 'left' : 'right' })
+        const nextFocus = host.focused()
+        const page = SETTINGS_PAGES.find(p => nextFocus === `tab-${p}`)
+        if (page !== undefined) this.settingsPage = page
+      } else host.input({ kind: 'nav', dir: ev.dir < 0 ? 'left' : 'right' })
+    } else if (ev.k === 'select') {
       // The hub has no buttons: Enter queues, as the hint says.
       if (this.nav.screen === 'hub') this.run(this.nav.dispatch({ kind: 'action', action: 'queue' }))
       else {
@@ -2801,11 +2823,21 @@ class App {
     }
     if (cmd.k === 'action') this.run(this.nav.dispatch({ kind: 'action', action: cmd.action }))
     else if (cmd.k === 'back') this.back()
-    else if (cmd.k === 'row' && this.nav.screen === 'settings' && this.graphics.isOpen) this.graphics.activate(cmd.row)
-    else if (cmd.k === 'row') {
-      const row = SETTINGS_ROWS[cmd.row]
+    else if (cmd.k === 'tab') this.settingsPage = cmd.page
+    else if (cmd.k === 'row' && this.nav.screen === 'settings') {
+      if (this.settingsPage === 'graphics') {
+        this.graphics.activate(cmd.row)
+        return
+      }
+      const row = PAGE_ROWS[this.settingsPage][cmd.row]
+      if (row === undefined) return
       if (row.kind === 'key') this.pendingRebind = row.action
-      else this.apply(adjust(this.settings, row, 1))
+      else if (row.kind === 'remap') this.openRemap()
+      else if (row.kind === 'reducedMotion') return
+      else if (row.kind === 'reset' && row.scope === 'all') {
+        this.apply(adjust(this.settings, row, 1))
+        this.graphics.reset()
+      } else this.apply(cycle(this.settings, row))
     }
   }
 

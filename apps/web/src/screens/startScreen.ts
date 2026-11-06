@@ -47,6 +47,8 @@ export interface StartScreenStep {
 export interface StartScreenView {
   update(model: StartScreenModel, step: StartScreenStep | null): void
   setVisible(visible: boolean): void
+  // Keep the 3D scene (penguin, worn cosmetics, decor) on screen without the carousels or the start widgets.
+  setBackdrop(on: boolean): void
   unmount(): void
 }
 
@@ -165,6 +167,7 @@ export function mountStartScreen(
   let current = model
   let mounted = true
   let visible = true
+  let backdrop = false
   const started = performance.now()
   // The worn cosmetics' jiggle bones (a jester hat's horns) swing as the turntable turns and the penguin idles.
   const jiggle = new CosmeticJiggle()
@@ -248,7 +251,17 @@ export function mountStartScreen(
   // Each bin's carousel shows its selected cosmetic's 3D asset, still, on the camera ray through its one cell
   // (canvas#ui and the stage canvas cover the same page); the arrows either side change it. A bin with nothing
   // selected, or whose cell has no laid-out rect yet (first frame), draws nothing.
+  function clearCarousels(): void {
+    for (const cell of carousel.values()) port.destroyInstance(cell.instance)
+    carousel.clear()
+  }
+
   function drawCarousels(next: StartScreenModel, camera: CameraPose, size: { width: number; height: number } | null): void {
+    // Behind the settings panel the scene stays, but the carousel cosmetics do not crowd it.
+    if (backdrop) {
+      clearCarousels()
+      return
+    }
     const keep = new Set<number>()
     if (size !== null && size.width > 0 && size.height > 0) {
       const ray = cameraRay(camera, size)
@@ -303,16 +316,27 @@ export function mountStartScreen(
       if (step?.effect === 'play' || step?.effect === 'shop') deps.cue('ui.click')
       else if (step?.action === 'up' || step?.action === 'down' || ((step?.action === 'left' || step?.action === 'right') && next.focus === 'bins') || step?.effect === 'wear') deps.cue('ui.hover')
       draw(next)
-      if (visible) present(host, next, art.wallet)
+      if (visible && !backdrop) present(host, next, art.wallet)
     },
     setVisible(shown) {
       if (!mounted) return
       visible = shown
       layer.setVisible(shown)
       if (shown) {
+        backdrop = false
         draw(current)
         present(host, current, art.wallet)
       }
+    },
+    setBackdrop(on) {
+      if (!mounted) return
+      backdrop = on
+      if (on) {
+        visible = true
+        layer.setVisible(true)
+      }
+      draw(current)
+      if (!on && visible) present(host, current, art.wallet)
     },
     unmount() {
       if (!mounted) return

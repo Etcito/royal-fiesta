@@ -2571,7 +2571,11 @@ class App {
         return
       }
     }
-    this.startView?.setVisible(false)
+    // Settings opened from the start screen keeps the wardrobe scene (penguin, worn cosmetics, decor) behind
+    // its compact panel: no carousels and no start widgets, just the backdrop.
+    const startBackdrop = nav.screen === 'settings' && nav.settingsFrom === 'start' && this.startView !== null
+    if (startBackdrop) this.startView!.setBackdrop(true)
+    else this.startView?.setVisible(false)
     if ((ECONOMY_SCREENS as readonly Screen[]).includes(nav.screen)) {
       this.screens.style.pointerEvents = 'auto'
       this.economyScreens.draw(nav.screen as EconomyScreen)
@@ -2607,6 +2611,8 @@ class App {
     this.host.present({ ...model, lines: fitLines(model.lines, lineSlots(model.screen)) })
     if (model.screen === 'settings') this.host.setHud(settingsWidgetProps(page, items, this.host.focused(), nav.settingsFrom))
     if (hud !== null && values !== null) this.host.setHud(hudWidgets(values, hud.view))
+    // Submit the wardrobe scene's last camera and instances before the panel, so the backdrop is current.
+    if (startBackdrop) this.loaded?.ports[0]?.render()
     this.host.frame(this.uiNowMs)
   }
 

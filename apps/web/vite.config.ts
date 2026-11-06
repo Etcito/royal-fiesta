@@ -31,8 +31,10 @@ function rfMama(): Plugin {
 
 // A module that imports an SDF Modeler asset file (packages/sim/src/character/capsule.ts reads penguin.body's saved
 // capsule) gets only the asset's game data: the document (most of the file, ~1 MB for the penguin) stays in the content
-// pack the page fetches. The sim reads `category` and `collision`; tests and Node read the whole file.
-const ASSET_DATA_KEYS = ['format', 'version', 'game', 'id', 'category', 'collision'] as const
+// pack the page fetches. The sim reads `category` and `collision`, the settings scene `bounds`; tests and Node read the
+// whole file. A key a module reads must be listed (assetDataKeys.test.ts): `bounds` was missing and the settings
+// GPU render died on `penguin.bounds.min` (run 12382) while every Node test read the whole file and passed.
+const ASSET_DATA_KEYS = ['format', 'version', 'game', 'id', 'category', 'collision', 'bounds'] as const
 function rfAssetData(): Plugin {
   return {
     name: 'rf-asset-data',

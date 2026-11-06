@@ -31,19 +31,40 @@ export const DEFAULT_SETTINGS: Settings = {
   invertY: false
 }
 
-// 'graphics' opens the Graphics page (the app's, built from MAMA's render-options contract), which replaced the old
-// Quality row: that low/medium/high value was saved but never applied to any renderer.
-export type SettingsRow = { kind: 'volume' } | { kind: 'bus'; bus: Bus } | { kind: 'graphics' } | { kind: 'mouseSensitivity' | 'stickSensitivity' | 'invertY' } | { kind: 'key'; action: KeyAction } | { kind: 'reset' }
+export type ResetScope = 'audio' | 'controls' | 'all'
 
-export const SETTINGS_ROWS: readonly SettingsRow[] = [
+export type SettingsRow =
+  | { kind: 'volume' }
+  | { kind: 'bus'; bus: Bus }
+  | { kind: 'mouseSensitivity' | 'stickSensitivity' | 'invertY' }
+  | { kind: 'key'; action: KeyAction }
+  | { kind: 'remap' }
+  | { kind: 'reducedMotion' }
+  | { kind: 'reset'; scope: ResetScope }
+
+// The page row lists: audio, controls and gameplay. settingsPages builds PAGE_ROWS from these same lists.
+export const AUDIO_ROWS: readonly SettingsRow[] = [
   { kind: 'volume' },
-  { kind: 'graphics' },
+  ...BUSES.map(bus => ({ kind: 'bus' as const, bus })),
+  { kind: 'reset', scope: 'audio' }
+]
+
+export const CONTROLS_ROWS: readonly SettingsRow[] = [
+  ...KEY_ACTIONS.map(action => ({ kind: 'key' as const, action })),
+  { kind: 'remap' },
   { kind: 'mouseSensitivity' },
   { kind: 'stickSensitivity' },
   { kind: 'invertY' },
-  ...BUSES.map(bus => ({ kind: 'bus' as const, bus })),
-  ...KEY_ACTIONS.map(action => ({ kind: 'key' as const, action })),
-  { kind: 'reset' }
+  { kind: 'reset', scope: 'controls' }
+]
+
+export const GAMEPLAY_ROWS: readonly SettingsRow[] = [
+  { kind: 'reducedMotion' },
+  { kind: 'reset', scope: 'all' }
+]
+
+export const SETTINGS_ROWS: readonly SettingsRow[] = [
+  ...AUDIO_ROWS, ...CONTROLS_ROWS, ...GAMEPLAY_ROWS
 ]
 
 function copy(settings: Settings): Settings {
@@ -111,7 +132,20 @@ export function saveSettings(store: SettingsStore, settings: Settings): void {
 }
 
 export function adjust(settings: Settings, row: SettingsRow, dir: number): Settings {
-  if (row.kind === 'reset') return copy(DEFAULT_SETTINGS)
+  if (row.kind === 'reset') {
+    if (row.scope === 'all') return copy(DEFAULT_SETTINGS)
+    const next = copy(settings)
+    if (row.scope === 'audio') {
+      next.volume = DEFAULT_SETTINGS.volume
+      next.buses = { ...DEFAULT_SETTINGS.buses }
+    } else {
+      next.keys = { ...DEFAULT_SETTINGS.keys }
+      next.mouseSensitivity = DEFAULT_SETTINGS.mouseSensitivity
+      next.stickSensitivity = DEFAULT_SETTINGS.stickSensitivity
+      next.invertY = DEFAULT_SETTINGS.invertY
+    }
+    return next
+  }
   const next = copy(settings)
   if (row.kind === 'volume') next.volume = Math.max(0, Math.min(100, next.volume + Math.sign(dir) * 10))
   if (row.kind === 'bus') {
@@ -122,6 +156,22 @@ export function adjust(settings: Settings, row: SettingsRow, dir: number): Setti
   }
   if (row.kind === 'invertY') next.invertY = !next.invertY
   return next
+}
+
+// Enter or click on a row: adjust up, wrapping a slider to its minimum past its maximum.
+export function cycle(settings: Settings, row: SettingsRow): Settings {
+  if (row.kind === 'volume' && settings.volume >= 100) return { ...copy(settings), volume: 0 }
+  if (row.kind === 'bus' && settings.buses[row.bus] >= 1) {
+    const next = copy(settings)
+    next.buses[row.bus] = 0
+    return next
+  }
+  if ((row.kind === 'mouseSensitivity' || row.kind === 'stickSensitivity') && settings[row.kind] >= 10) {
+    const next = copy(settings)
+    next[row.kind] = 1
+    return next
+  }
+  return adjust(settings, row, 1)
 }
 
 export function rebind(settings: Settings, action: KeyAction, code: string): Settings {
@@ -150,15 +200,21 @@ export function controlsFromKeys(held: ReadonlySet<string>, settings: Settings):
 }
 
 export function describeRow(row: SettingsRow, settings: Settings): string {
-  if (row.kind === 'volume') return `Volume ${settings.volume}%`
-  if (row.kind === 'bus') {
-    const labels: Record<Bus, string> = { music: 'Music', sfx: 'SFX', ui: 'UI', ambience: 'Ambience', crowd: 'Crowd' }
-    return `${labels[row.bus]} volume ${Math.round(settings.buses[row.bus] * 100)}%`
+  switch (row.kind) {
+    case 'volume': return `Volume ${settings.volume}%`
+    case 'bus': {
+      const labels: Record<Bus, string> = { music: 'Music', sfx: 'SFX', ui: 'UI', ambience: 'Ambience', crowd: 'Crowd' }
+      return `${labels[row.bus]} volume ${Math.round(settings.buses[row.bus] * 100)}%`
+    }
+    case 'mouseSensitivity': return `Mouse sensitivity ${settings.mouseSensitivity}`
+    case 'stickSensitivity': return `Stick sensitivity ${settings.stickSensitivity}`
+    case 'invertY': return `Invert Y ${settings.invertY ? 'on' : 'off'}`
+    case 'key': return `${row.action[0].toUpperCase()}${row.action.slice(1)}: ${settings.keys[row.action]}`
+    case 'remap': return 'Controller buttons...'
+    case 'reducedMotion': return 'Reduced motion'
+    case 'reset':
+      if (row.scope === 'audio') return 'Reset audio to defaults'
+      if (row.scope === 'controls') return 'Reset controls to defaults'
+      return 'Reset all settings to defaults'
   }
-  if (row.kind === 'graphics') return 'Graphics...'
-  if (row.kind === 'mouseSensitivity') return `Mouse sensitivity ${settings.mouseSensitivity}`
-  if (row.kind === 'stickSensitivity') return `Stick sensitivity ${settings.stickSensitivity}`
-  if (row.kind === 'invertY') return `Invert Y ${settings.invertY ? 'on' : 'off'}`
-  if (row.kind === 'key') return `${row.action[0].toUpperCase()}${row.action.slice(1)}: ${settings.keys[row.action]}`
-  return 'Reset to defaults'
 }

@@ -28,10 +28,16 @@ test('defaults round-trip through the injected store', () => {
   assert.deepEqual(loadSettings(store), { settings: DEFAULT_SETTINGS, error: null })
 })
 
-test('bus rows follow invert Y in BUSES order and keep the key and reset rows', () => {
-  assert.deepEqual(SETTINGS_ROWS.slice(5, 10), BUSES.map(bus => ({ kind: 'bus', bus })))
-  assert.deepEqual(SETTINGS_ROWS.slice(10), [
-    ...KEY_ACTIONS.map(action => ({ kind: 'key', action })), { kind: 'reset' }
+test('page rows group volume, buses and reset audio, then keys and controls, then gameplay', () => {
+  assert.deepEqual(SETTINGS_ROWS.slice(1, 6), BUSES.map(bus => ({ kind: 'bus', bus })))
+  assert.deepEqual(SETTINGS_ROWS.slice(6), [
+    { kind: 'reset', scope: 'audio' },
+    ...KEY_ACTIONS.map(action => ({ kind: 'key', action })),
+    { kind: 'remap' },
+    { kind: 'mouseSensitivity' }, { kind: 'stickSensitivity' }, { kind: 'invertY' },
+    { kind: 'reset', scope: 'controls' },
+    { kind: 'reducedMotion' },
+    { kind: 'reset', scope: 'all' }
   ])
 })
 
@@ -47,13 +53,13 @@ test('bus adjustment steps one tenth, rounds and clamps without mutating input',
     assert.equal(adjust(up, row, 1).buses[bus], 1)
     assert.equal(adjust(adjust(up, row, 1), row, 1).buses[bus], 1)
     assert.equal(adjust({ ...DEFAULT_SETTINGS, buses: { ...DEFAULT_BUS_VOLUMES, [bus]: 0 } }, row, -1).buses[bus], 0)
-    assert.deepEqual(adjust(up, { kind: 'reset' }, 1), DEFAULT_SETTINGS)
+    assert.deepEqual(adjust(up, { kind: 'reset', scope: 'all' }, 1), DEFAULT_SETTINGS)
   }
   assert.deepEqual(DEFAULT_SETTINGS.buses, DEFAULT_BUS_VOLUMES)
 })
 
 test('describeRow labels each bus and shows its volume percentage', () => {
-  assert.deepEqual(SETTINGS_ROWS.slice(5, 10).map(row => describeRow(row, DEFAULT_SETTINGS)), [
+  assert.deepEqual(SETTINGS_ROWS.slice(1, 6).map(row => describeRow(row, DEFAULT_SETTINGS)), [
     'Music volume 80%', 'SFX volume 80%', 'UI volume 80%', 'Ambience volume 80%', 'Crowd volume 80%'
   ])
   assert.equal(describeRow({ kind: 'bus', bus: 'music' }, adjust(DEFAULT_SETTINGS, { kind: 'bus', bus: 'music' }, -1)), 'Music volume 70%')
@@ -70,7 +76,7 @@ test('legacy saves without buses load independent defaults', () => {
   assert.notStrictEqual(DEFAULT_SETTINGS.buses, DEFAULT_BUS_VOLUMES)
   for (const settings of [
     loadSettings(new MemoryStore()).settings,
-    adjust(DEFAULT_SETTINGS, { kind: 'reset' }, 1),
+    adjust(DEFAULT_SETTINGS, { kind: 'reset', scope: 'all' }, 1),
     rebind(DEFAULT_SETTINGS, 'jump', 'KeyJ')
   ]) {
     assert.deepEqual(settings.buses, DEFAULT_BUS_VOLUMES)
@@ -113,14 +119,16 @@ test('corrupt JSON returns defaults and a visible refusal message', () => {
   assert.match(loaded.error ?? '', /\[settings\]/)
 })
 
-test('adjust clamps volume without mutating input; the Graphics row opens a page and changes nothing here', () => {
+test('adjust clamps volume without mutating input and leaves action rows unchanged', () => {
   const up = adjust({ ...DEFAULT_SETTINGS, volume: 100 }, { kind: 'volume' }, 1)
   assert.equal(up.volume, 100)
   assert.equal(DEFAULT_SETTINGS.volume, 80)
   assert.equal(adjust({ ...DEFAULT_SETTINGS, volume: 0 }, { kind: 'volume' }, -1).volume, 0)
-  assert.deepEqual(adjust(DEFAULT_SETTINGS, { kind: 'graphics' }, 1), DEFAULT_SETTINGS)
-  assert.equal(describeRow({ kind: 'graphics' }, DEFAULT_SETTINGS), 'Graphics...')
-  assert.deepEqual(SETTINGS_ROWS[1], { kind: 'graphics' })
+  for (const row of [{ kind: 'remap' }, { kind: 'reducedMotion' }] as const) {
+    assert.deepEqual(adjust(DEFAULT_SETTINGS, row, 1), DEFAULT_SETTINGS)
+  }
+  assert.equal(describeRow({ kind: 'remap' }, DEFAULT_SETTINGS), 'Controller buttons...')
+  assert.equal(describeRow({ kind: 'reducedMotion' }, DEFAULT_SETTINGS), 'Reduced motion')
 })
 
 test('rebind refuses a duplicate and names the action already holding it', () => {
@@ -170,8 +178,8 @@ test('present invalid camera settings refuse with the field path and fix', () =>
   assert.throws(() => parseSettings({ ...DEFAULT_SETTINGS, invertY: 1 }), /where#\/invertY: must be a boolean; choose true or false/)
 })
 
-test('camera rows follow the Graphics row, step and clamp sensitivity, and toggle invert Y', () => {
-  assert.deepEqual(SETTINGS_ROWS.slice(2, 5), [
+test('camera rows follow the keys and remap row, step and clamp sensitivity, and toggle invert Y', () => {
+  assert.deepEqual(SETTINGS_ROWS.slice(15, 18), [
     { kind: 'mouseSensitivity' }, { kind: 'stickSensitivity' }, { kind: 'invertY' }
   ])
   for (const kind of ['mouseSensitivity', 'stickSensitivity'] as const) {
@@ -186,13 +194,13 @@ test('camera rows follow the Graphics row, step and clamp sensitivity, and toggl
     assert.equal(on.invertY, true)
     assert.equal(adjust(on, { kind: 'invertY' }, dir).invertY, false)
   }
-  assert.deepEqual(SETTINGS_ROWS.slice(2, 5).map(row => describeRow(row, DEFAULT_SETTINGS)), [
+  assert.deepEqual(SETTINGS_ROWS.slice(15, 18).map(row => describeRow(row, DEFAULT_SETTINGS)), [
     'Mouse sensitivity 5', 'Stick sensitivity 5', 'Invert Y off'
   ])
   assert.equal(describeRow({ kind: 'invertY' }, { ...DEFAULT_SETTINGS, invertY: true }), 'Invert Y on')
   const changed = { ...DEFAULT_SETTINGS, mouseSensitivity: 2, stickSensitivity: 9, invertY: true }
   assert.deepEqual(rebind(changed, 'jump', 'KeyJ'), { ...changed, keys: { ...changed.keys, jump: 'KeyJ' } })
-  assert.deepEqual(adjust(changed, { kind: 'reset' }, 1), DEFAULT_SETTINGS)
+  assert.deepEqual(adjust(changed, { kind: 'reset', scope: 'all' }, 1), DEFAULT_SETTINGS)
 })
 
 test('WASD and ZQSD physical codes move unless an alternate belongs to another action', () => {

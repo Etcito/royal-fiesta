@@ -2805,7 +2805,6 @@ class App {
     else {
       const row = SETTINGS_ROWS[cmd.row]
       if (row.kind === 'key') this.pendingRebind = row.action
-      else if (row.kind === 'graphics') this.graphics.openPage()
       else this.apply(adjust(this.settings, row, 1))
     }
   }

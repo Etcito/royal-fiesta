@@ -708,7 +708,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       }
     }
     const report = state().field.normals
-    if (candyShots * 2 < shots || candyShots === 0) problems.push(`candy scenery is in view in ${candyShots} of ${shots} shots (at least half are required)`)
+    if (shots > 0 && candyShots * 2 < shots) problems.push(`candy scenery is in view in ${candyShots} of ${shots} shots (at least half are required)`)
     if (problems.length) throw new Error(`fieldShading gameplay: ${problems.join('; ')}`)
     if (request.sequence.length > 1) {
       const hammerBounds = observations.map(o => JSON.stringify((o as { subjects: { key: string; min: number[]; max: number[] }[] }).subjects

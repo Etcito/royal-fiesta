@@ -3,6 +3,7 @@ import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { RectSpec, Screen, Widget } from '@etcito/uaa'
 import { PAGE_ROWS, SETTINGS_PAGES, SETTINGS_ROW_SLOTS, TAB_LABELS } from '../packages/game/src/screens/settingsPages.ts'
+import { MAX_FILE_BYTES } from './guard.ts'
 
 type Box = [number, number, number, number]
 type Geometry = {
@@ -151,6 +152,11 @@ export function main(): void {
   const replacement = json.split('\n').map(line => `    ${line}`).join('\n')
   const output = source.replace(pattern, () => replacement).trimEnd() + '\n'
   JSON.parse(output)
+  // The guard refuses a tracked file over MAX_FILE_BYTES: fail before the oversized document reaches disk.
+  const bytes = Buffer.byteLength(output, 'utf8')
+  if (bytes > MAX_FILE_BYTES) {
+    throw new Error(`ui/screens.ui-doc.json would be ${bytes} bytes, over the ${MAX_FILE_BYTES}-byte file guard; shrink the settings screen or its formatting`)
+  }
   writeFileSync(`${path}.tmp`, output)
   renameSync(`${path}.tmp`, path)
 }

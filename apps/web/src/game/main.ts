@@ -739,9 +739,8 @@ class LocalMode implements Mode {
   }
 
   setVisible(visible: boolean): void {
-    // The round being prepared is already the live scene: its warm-up draw must stay visible (behind the loading
-    // state) until it is complete, or the yielding preparation tasks would skip it as hidden.
-    const round = this.match !== null || this.preparing != null
+    // SceneLayer prepares hidden instances; retain the complete hub until the round is ready.
+    const round = this.match !== null
     this.hubLayer.setVisible(visible && !round)
     this.matchLayer.setVisible(visible && round)
   }
@@ -838,8 +837,6 @@ class LocalMode implements Mode {
     this.preparing = { id, run, seats }
     this.c.setLoading?.('Preparing round...')
     this.presenter.begin(run.match, seats)
-    this.hubLayer.setVisible(false)
-    this.matchLayer.setVisible(true)
     this.presenter.draw(run.match, 1, 0, null)
     renderFrame(this.matchLayer.port, () => this.c.loaded.ports[0].render())
     const course = run.match.sim.course()
@@ -868,6 +865,8 @@ class LocalMode implements Mode {
       return
     }
     this.match = run
+    this.hubLayer.setVisible(false)
+    this.matchLayer.setVisible(true)
     this.c.setLayout(seats)
     // Submit the complete round before its loading state goes away: the next frame the player sees is the round.
     this.presenter.draw(run.match, 1, 0, null)
@@ -2064,7 +2063,7 @@ class App {
         checkPhase(`round load: ${label ?? 'ready'}`)
         // Show preparation is background work; its director owns the visible load hold. The show prepared behind
         // the start screen loads silently too. A local round keeps the loading state its own preparation set.
-        if (this.mode instanceof ShowAdapter || this.showAhead !== null || (this.mode instanceof LocalMode && this.mode.preparingRound)) return
+        if (this.mode instanceof ShowAdapter || this.showAhead !== null || this.roundLoading === 'Preparing show' || (this.mode instanceof LocalMode && this.mode.preparingRound)) return
         this.roundLoading = label
         if (label !== null) {
           this.loadingOverlay.show(label)
@@ -2407,15 +2406,12 @@ class App {
   private async startShow(): Promise<void> {
     const loaded = this.loaded
     const q = this.query
-    if (loaded === null || q === null) return
+    if (loaded === null || q === null || this.roundLoading === 'Preparing show') return
     const look = this.wornLook()
     const ahead = this.showAhead
     this.showAhead = null
-    this.stopMode()
-    // The show owns its own canvas and port: release the lobby (start view, hub, its assets and sound)
-    // before it registers the first round's assets on its port.
-    this.releaseLobby()
-    const load = this.showLoad
+    if (this.mode instanceof LocalMode) this.mode.showRequested = false
+    const load = ++this.showLoad
     this.roundLoading = 'Preparing show'
     this.loadingOverlay.show(this.roundLoading)
     this.host.setLoading(0, this.roundLoading)
@@ -2427,8 +2423,23 @@ class App {
         show = null
       }
       show = show?.adopt(look) ?? await ShowMode.create(this.showOptions(loaded, q, look))
+      // Advance readiness on the show's own renderer without replacing the complete lobby canvas.
+      const stages = loaded.canvases.map(canvas => canvas.style.display)
+      show.preload()
+      while (!this.disposed && load === this.showLoad && show.failure === null && show.models?.loading) {
+        show.frame(0, null, neutralInput())
+        show.lookCanvas.style.display = 'none'
+        loaded.canvases.forEach((canvas, i) => { canvas.style.display = stages[i] })
+        if (show.models?.loading) await new Promise<void>(resolve => setTimeout(resolve, 10))
+      }
+      const stage = show.roundStage()
+      try {
+        if (stage !== null) await prepareCourse(stage.port, stage.course, { cancelled: () => this.disposed || load !== this.showLoad })
+      } catch (e) { show.dispose(); throw e }
       if (this.disposed || load !== this.showLoad) { show.dispose(); return }
       if (show.failure !== null) { this.fail(show.failure); return }
+      this.stopMode()
+      this.releaseLobby()
       this.roundLoading = null
       this.loadingOverlay.hide()
       this.mode = new ShowAdapter(show, q.name, this.economy, q.test)

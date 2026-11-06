@@ -58,6 +58,11 @@ import { installSplitOps } from '../zone/splitOps.ts'
 import { installZoneOps } from '../zone/zoneOps.ts'
 import { uiTour, tourScreens, FLOW_TOUR_SCREENS, TOUR_SCREENS } from './uiTour.ts'
 import type { BootGame, TourCapture, TourDeps, UiTourOutput } from './uiTour.ts'
+import type { TourGame } from './uiTour.ts'
+import { browserContentIndex } from '../content/v1Data.ts'
+import { nextTask, publishPhase } from './checks/boot.ts'
+import { hardShadingFailures } from '../content/shadingStatus.ts'
+import type { ShadingReport, PartWorldBounds } from '../sdf/sdfPort.ts'
 
 export interface ControlCase { name: string; input: 'KeyD' | 'ArrowRight' | 'stickRight' | 'KeyA' | 'ArrowLeft' | 'stickLeft' | 'mouseRight' | 'rightStickRight'; holdMs: number }
 export interface ControlsProbeInput { width: 1280; height: 720; content: ContentId; course: string; cases: ControlCase[] }
@@ -1242,7 +1247,153 @@ async function flowTour(raw: unknown, deps: TourDeps): Promise<OpResult<UiTourOu
   return { json: { ...tour.json, captures }, files }
 }
 
+// ---- interactiveStart: resident, state-driven start -> selection -> loading -> complete round ----------------
+export interface InteractiveStartInput { test: true; course: string; startCourse: string; phase: 'start' | 'transition' }
+export function validateInteractiveStart(raw: unknown): InteractiveStartInput {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('interactiveStart: expected an object')
+  const o = raw as Record<string, unknown>
+  if (Object.keys(o).some(k => !['test', 'course', 'startCourse', 'phase'].includes(k)) || o.test !== true) throw new Error('interactiveStart: controls require test=true and known fields')
+  if (![o.course, o.startCourse].every(v => typeof v === 'string' && /^[a-z0-9-]{1,40}$/.test(v))) throw new Error('interactiveStart: supply packed course and startCourse ids')
+  if (o.phase !== 'start' && o.phase !== 'transition') throw new Error('interactiveStart: phase must be start or transition')
+  return o as unknown as InteractiveStartInput
+}
+
+// Reject only boxes wholly beyond one frustum plane: a floor can fill the view with every corner off-screen.
+export function interactiveInView(camera: CameraPose, box: { min: readonly number[]; max: readonly number[] }): boolean {
+  const unit = (v: number[]) => { const n = Math.hypot(...v); return v.map(x => x / n) }
+  const cross = (a: readonly number[], b: readonly number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+  const forward = unit(camera.target.map((v, i) => v - camera.eye[i]))
+  const right = unit(cross(forward, camera.up ?? [0, 1, 0])), up = cross(right, forward)
+  const tan = Math.tan(camera.fovYDeg * Math.PI / 360)
+  const points = [0, 1, 2, 3, 4, 5, 6, 7].map(k => {
+    const p = camera.eye.map((v, i) => (k & (1 << i) ? box.max[i] : box.min[i]) - v)
+    const dot = (v: number[]) => v.reduce((n, x, i) => n + x * p[i], 0)
+    return [dot(right), dot(up), dot(forward)]
+  })
+  return ![
+    (p: number[]) => p[2] < camera.near, (p: number[]) => p[2] > camera.far,
+    (p: number[]) => p[0] < -p[2] * tan * 16 / 9, (p: number[]) => p[0] > p[2] * tan * 16 / 9,
+    (p: number[]) => p[1] < -p[2] * tan, (p: number[]) => p[1] > p[2] * tan,
+  ].some(outside => points.every(outside))
+}
+
+interface InteractiveState {
+  startView: boolean; screen: string; hub: { alive: boolean }
+  local: { start: { x: number; z: number } | null; cameras: (CameraPose | null)[]; characters: ({ pos: { x: number; y: number; z: number } } | null)[] } | null
+  field?: { normals: ShadingReport; bounds: PartWorldBounds[] }
+}
+
+async function interactiveStart(raw: unknown, deps: TourDeps): Promise<OpResult<Record<string, unknown>>> {
+  const input = validateInteractiveStart(raw), index = await browserContentIndex()
+  for (const id of [input.course, input.startCourse]) if (!index.courses.some(c => c.id === id)) throw new Error(`interactiveStart: ${id} is absent from the published pack`)
+  const adapter = await deps.adapter()
+  if (adapter.software || /swiftshader|llvmpipe|lavapipe/i.test(JSON.stringify(adapter))) throw new Error('interactiveStart requires real Chrome GPU rendering')
+  const roots = ['#views', '#screens'].map(id => document.querySelector<HTMLElement>(id)!)
+  const styles = roots.map(root => root.style.cssText), errors: string[] = [], abort = new AbortController()
+  window.addEventListener('error', e => errors.push(String(e.error ?? e.message)), { signal: abort.signal })
+  window.addEventListener('unhandledrejection', e => errors.push(String(e.reason)), { signal: abort.signal })
+  for (const root of roots) { root.style.width = '1920px'; root.style.height = '1080px' }
+  const files: OpFile[] = [], events: unknown[] = []
+  let game: TourGame | undefined
+  const deadline = Date.now() + 240_000
+  try {
+    // The start probe keeps the normal background show preload active while changing its selection.
+    const options = { search: `?test=1&content=sdf&players=1&course=${input.course}${input.phase === 'start' ? '&bots=8' : ''}`, fieldGameplay: true, starterInventory: true }
+    game = await deps.boot(e => events.push({ screen: e.to }), options)
+    const live = game, state = () => live.inventory() as InteractiveState
+    const progress = () => {
+      const root = document.querySelector<HTMLElement>('#round-loading')
+      return root && !root.hidden ? root.querySelector('[data-label]')?.textContent ?? '' : ''
+    }
+    const healthy = () => {
+      if (errors.length || live.host.currentScreen() === 'error') throw new Error(`interactiveStart: ${errors.join('; ') || 'game entered error screen'}`)
+      if (Date.now() > deadline) throw new Error(`interactiveStart: state deadline on ${live.host.currentScreen()}: ${progress()}`)
+    }
+    const until = async (what: string, ready: () => boolean, dt = 0) => {
+      publishPhase(`interactiveStart: ${what}`)
+      while (!ready()) { healthy(); publishPhase(`interactiveStart: ${what}`); live.step(dt); await nextTask() }
+      healthy()
+      events.push({ state: what, screen: live.host.currentScreen(), progress: progress() })
+    }
+    const complete = () => state().field !== undefined && state().field!.normals.pending === 0 && (input.phase === 'start' || pendingPipelines() === 0)
+    const key = (code: string) => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }))
+      live.step(1 / 60)
+      window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }))
+    }
+    const shoot = async (name: string, loading = '') => {
+      publishPhase(`interactiveStart: capture ${name}`)
+      healthy()
+      const s = state(), report = s.field?.normals
+      if (!report || (name !== 'loading' && report.pending) || report.atlasFull || hardShadingFailures(report).length) throw new Error(`interactiveStart: incomplete visible ${name}: ${JSON.stringify(report)}`)
+      const bounds = s.field!.bounds
+      if (!bounds.some(b => b.key.includes('candy.')) || !bounds.some(b => b.key.includes('penguin'))) throw new Error(`interactiveStart: ${name} lacks scenery or penguin geometry`)
+      const camera = s.local?.cameras[0]
+      if (name === 'round') for (const subject of ['candy.', 'penguin']) {
+        if (!camera || !bounds.some(b => b.key.includes(subject) && interactiveInView(camera, b))) throw new Error(`interactiveStart: selected round ${subject} is outside its camera`)
+      }
+      // Copy the GPU scene and actual UI canvas in the task that drew them. DOM progress is recorded alongside it.
+      const box = live.ui.getBoundingClientRect()
+      const canvases = [...live.views.querySelectorAll('canvas'), live.ui].filter(c => getComputedStyle(c).display !== 'none')
+      const shots = canvases.map(c => ({ rect: c.getBoundingClientRect(), image: createImageBitmap(c) }))
+      const canvas = document.createElement('canvas'); canvas.width = 1920; canvas.height = 1080
+      const ctx = canvas.getContext('2d')!
+      for (const shot of shots) {
+        const image = await shot.image
+        ctx.drawImage(image, (shot.rect.x - box.x) * 1920 / box.width, (shot.rect.y - box.y) * 1080 / box.height, shot.rect.width * 1920 / box.width, shot.rect.height * 1080 / box.height)
+        image.close()
+      }
+      const png = await pngBlob(canvas, `interactiveStart.${name}`)
+      if (!await nonEmpty(png)) throw new Error(`interactiveStart: empty ${name} capture`)
+      files.push({ name: `${name}.png`, blob: new Blob([png as Uint8Array<ArrayBuffer>], { type: 'image/png' }) })
+      events.push({ capture: name, progress: loading, normals: report, camera, assets: [...new Set(bounds.map(b => b.key.split('#')[0]))] })
+    }
+    await until('complete start', () => live.host.currentScreen() === 'start' && state().startView && complete())
+    // Two opposite selections exercise obsolete preparation and leave the selected wardrobe intact.
+    const bins = (await live.inspect?.())?.bins
+    if (!bins?.[0]?.items.length) throw new Error('interactiveStart: no selectable head item')
+    key('ArrowRight')
+    await until('selection changed', () => complete())
+    const changed = (await live.inspect?.())?.bins?.[0]
+    if (changed?.selected === bins[0].selected) throw new Error('interactiveStart: start selection did not respond')
+    events.push({ state: 'selection responded', pendingPipelines: pendingPipelines() })
+    key('ArrowLeft')
+    await until('latest selection ready', () => complete())
+    if ((await live.inspect?.())?.bins?.[0].selected !== bins[0].selected) throw new Error('interactiveStart: obsolete selection won')
+    live.step(0)
+    await shoot('start')
+    if (input.phase === 'transition') {
+      for (let i = 0; i < 5; i++) key('ArrowDown')
+      key('Enter')
+      // Observe the pending state before yielding; no timer can race past the loading capture.
+      const label = progress()
+      if (!label.includes('Preparing round') || !state().hub.alive) throw new Error('interactiveStart: Play did not retain a loading hub')
+      await shoot('loading', label)
+      await until('complete selected round', () => ['countdown', 'round'].includes(live.host.currentScreen()) && state().local?.start != null && complete())
+      await until('round controls enabled', () => live.host.currentScreen() === 'round', 1 / 60)
+      const before = state().local?.characters[0]?.pos
+      if (!before) throw new Error('interactiveStart: selected round has no player')
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }))
+      try {
+        await until('player input responded', () => {
+          const after = state().local?.characters[0]?.pos
+          return !!after && (after.x !== before.x || after.z !== before.z)
+        }, 1 / 60)
+      } finally { window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true })) }
+      await until('round shading ready', complete)
+      live.step(0)
+      await shoot('round')
+    }
+    healthy()
+    return { json: { ok: true, renderer: 'raa', adapter, course: input.course, captures: files.map(f => f.name), events }, files }
+  } finally {
+    game?.dispose(); abort.abort()
+    roots.forEach((root, i) => { root.style.cssText = styles[i] })
+  }
+}
+
 type GameOps = {
+  interactiveStart(input: unknown): Promise<OpResult<Record<string, unknown>>>
   controlsProbe(input: unknown): Promise<OpResult<ControlsOutput>>
   gameCapture(input: unknown): Promise<OpResult<GameCaptureOutput>>
   uiTour(input: unknown): Promise<OpResult<UiTourOutput>>
@@ -1280,6 +1431,7 @@ export function installGameOps(teardown: () => void, bootGame: BootGame): void {
   }
   gpu.ops.uiTour = input => (take(), uiTour(input, { boot: bootGame, adapter: adapterInfo }))
   gpu.ops.flowTour = input => (take(), flowTour(input, { boot: bootGame, adapter: adapterInfo }))
+  gpu.ops.interactiveStart = input => (take(), interactiveStart(input, { boot: bootGame, adapter: adapterInfo }))
   installZoneOps()
   installZoneLobbyOps()
   installSplitOps()

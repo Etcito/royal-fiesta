@@ -31,10 +31,23 @@ export class SceneLayer {
           this.environment = env
           if (this.visible) port.setEnvironment(env)
         }
+        // Scene preparation (SdfRenderPort, read by render/pipelineGate) is scoped to this layer's instances, so a
+        // selected scene prepares and reports its own parts while hidden behind the visible one.
+        if (key === 'warmableAssets' || key === 'fallbackParts' || key === 'warmPipelines') {
+          const scoped = Reflect.get(port, key, port) as unknown
+          if (typeof scoped !== 'function') return scoped
+          if (key === 'warmPipelines') return (assetIds?: readonly string[]) => scoped.call(port, assetIds, this.scene())
+          return () => scoped.call(port, this.scene())
+        }
         const value = Reflect.get(port, key, port)
         return typeof value === 'function' ? value.bind(port) : value
       },
     })
+  }
+
+  /** The instances this layer shows when visible: the scene its preparation covers, hidden or not. */
+  private scene(): number[] {
+    return [...this.instances].flatMap(([id, shown]) => shown ? [id] : [])
   }
 
   setVisible(visible: boolean): void {

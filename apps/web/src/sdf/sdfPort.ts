@@ -1056,23 +1056,39 @@ class SdfRenderPort implements ResizablePort {
     return this.gpuDevice ??= this.canvas === null ? undefined : deviceOfCanvas(this.canvas)
   }
 
-  /** Visible parts waiting for warm-up, their field pipeline or bake, counted once across instances. */
-  fallbackParts(): number {
-    if (this.warmError !== null) throw this.warmError
-    return this.pendingKeys().length
+  /**
+   * The lives a scene call reads: the visible ones, or with `scene` exactly those instances, hidden or not. A scene
+   * selected behind the visible one (SceneLayer) is prepared and counted through its own instances, so it is never
+   * ready with zero preparation jobs while its field parts are still pending.
+   */
+  private sceneLives(scene?: readonly number[]): Live[] {
+    if (scene === undefined) return this.live.filter((live): live is Live => live !== null && live.visible)
+    return [...new Set(scene)].flatMap(instance => {
+      const live = this.live[instance]
+      return live === null || live === undefined ? [] : [live]
+    })
   }
 
-  private pendingKeys(): string[] {
+  /** Parts of the scene (default: the visible one) waiting for warm-up, their field pipeline or bake, counted once. */
+  fallbackParts(scene?: readonly number[]): number {
+    if (this.warmError !== null) throw this.warmError
+    return this.pendingKeys(scene).length
+  }
+
+  private pendingKeys(scene?: readonly number[]): string[] {
     const pending = new Set<string>()
+    const lives = this.sceneLives(scene)
+    const assets = new Set(lives.map(live => live.asset))
     for (const live of this.warming.values()) {
-      if (!live.visible || !this.live.includes(live)) continue
+      if (!this.live.includes(live) || (scene === undefined ? !live.visible : !assets.has(live.asset))) continue
       for (const part of this.uploaded[live.asset]?.parts ?? []) {
         if (live.filter === null || live.filter.has(part.name)) pending.add(part.reportKey ?? part.key)
       }
     }
     if (this.shading === 'vertex') return [...pending].sort()
-    for (const live of this.live) {
-      if (live === null || !live.visible) continue
+    for (const live of lives) {
+      // A hidden scene is not drawn, so render() is not what latches its parts: latch them here.
+      if (scene !== undefined && this.updateFallbacks(live)) this.applyVisibility(live)
       // A textured member covers its part in 'baked' mode, so that part is not waiting on its field.
       const textured = new Set(live.textured.map(entry => entry.index))
       for (const copy of live.fallbacks) {
@@ -1121,9 +1137,9 @@ class SdfRenderPort implements ResizablePort {
     }
   }
 
-  /** Only the scene's visible assets, including its characters, in upload order. */
-  warmableAssets(): string[] {
-    const used = new Set(this.live.flatMap(live => live === null || !live.visible ||
+  /** Only the scene's assets (default: the visible ones), including its characters, in upload order. */
+  warmableAssets(scene?: readonly number[]): string[] {
+    const used = new Set(this.sceneLives(scene).flatMap(live =>
       !live.partNames.some(name => live.filter === null || live.filter.has(name)) ? [] : [live.asset]))
     return [...new Set([...used].sort((a, b) => a - b).flatMap(handle => {
       const entry = this.uploaded[handle]
@@ -1133,15 +1149,16 @@ class SdfRenderPort implements ResizablePort {
 
   /**
    * Request the scene's actual material and skin variants on its live renderer. Both draw preparation and GPU
-   * compilation yield through asyncPipelines; the renderer keeps the resulting RAA caches for gameplay.
+   * compilation yield through asyncPipelines; the renderer keeps the resulting RAA caches for gameplay. With `scene`,
+   * the variants of those instances even while hidden: the warm-up draw is a visible temporary instance, so the
+   * pipelines a hidden scene needs are requested before it is shown.
    */
-  warmPipelines(assetIds: readonly string[] = this.warmableAssets()): void {
+  warmPipelines(assetIds?: readonly string[], scene?: readonly number[]): void {
     if (this.warmError !== null) throw this.warmError
     const engine = this.need()
-    const requested = new Set(assetIds)
+    const requested = new Set(assetIds ?? this.warmableAssets(scene))
     const variants = new Set<string>()
-    for (const source of this.live.slice()) {
-      if (source === null || !source.visible) continue
+    for (const source of this.sceneLives(scene)) {
       const uploaded = this.uploaded[source.asset]
       if (uploaded === undefined || !requested.has(uploaded.assetId)) continue
       if (!source.partNames.some(name => source.filter === null || source.filter.has(name))) continue
@@ -1152,7 +1169,7 @@ class SdfRenderPort implements ResizablePort {
       variants.add(key)
       this.warming.set(key, source)
       void this.warmQueue.request(engine, key, async () => {
-        if (this.engine === engine && source.visible && this.live.includes(source) && this.uploaded[source.asset] !== undefined) {
+        if (this.engine === engine && (scene !== undefined || source.visible) && this.live.includes(source) && this.uploaded[source.asset] !== undefined) {
           this.warmVariant(source)
         }
       }).then(() => { this.warming.delete(key) }, error => {

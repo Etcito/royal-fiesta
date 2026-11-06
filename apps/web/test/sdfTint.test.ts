@@ -1122,3 +1122,72 @@ test('isolated mechanism scene keeps both saved hammer fields and bounds follow 
   port.setVisible(instance, false)
   assert.equal(port.worldBounds().length, 0)
 })
+
+// Card 7143: a round selected behind the visible hub (its SceneLayer hidden) prepares through its own instances. It was
+// reported ready with zero preparation jobs and revealed with pending field parts; now it stays pending until its
+// field shading is ready, hands off complete, and a failed part keeps its copy while the hub stays untouched.
+test('a hidden selected scene prepares its own field shading before the visibility handoff', async () => {
+  const { SceneLayer } = await import('@royal-fiesta/game/render/sceneLayer')
+  const { prepareCourse, courseWarmed } = await import('../src/render/pipelineGate.ts')
+  const root = new URL('../../../', import.meta.url)
+  const id = 'penguin.body'
+  const mesh = decodeMesh(new Uint8Array(readFileSync(new URL(`assets/common/${id}.mesh`, root))))
+  const scene = (status: 'pending' | 'ready' | 'failed') => {
+    const { engine, calls } = fakeEngine()
+    const port = exports.make(new Map([[id, mesh]]))
+    const device = {}
+    let state: asyncPipelines.PipelineReadiness = { status: 'ready' }
+    readiness.set(device, () => state)
+    Object.assign(port, { engine, target: { viewports: [{ x: 0, y: 0, width: 640, height: 360 }] }, gpuDevice: device })
+    // The course environment is not under test here (its module is a stub in this context).
+    Object.assign(port, { setEnvironment() {} })
+    const hub = new SceneLayer(port as never), round = new SceneLayer(port as never)
+    const handle = port.registerAsset(id, { id })
+    const before = calls.nextInstance
+    hub.port.createInstance(handle, null)
+    const hubMembers = Array.from({ length: calls.nextInstance - before }, (_, i) => before + i)
+    port.render()
+    // The round's field pipelines are still compiling when it is selected; it is created behind the visible hub.
+    state = status === 'failed' ? { status: 'failed', reason: 'bad wgsl' } : { status: 'pending' }
+    round.setVisible(false)
+    const start = calls.nextInstance
+    round.port.createInstance(handle, null)
+    const roundMembers = Array.from({ length: calls.nextInstance - start }, (_, i) => start + i)
+    const gated = round.port as unknown as { warmableAssets(): string[]; fallbackParts(): number }
+    return { port, calls, hub, round, gated, hubMembers, roundMembers, ready: () => { state = { status: 'ready' } } }
+  }
+  const parts = (mesh.data as { groups: { parts: { meshes: unknown[] }[] }[] }).groups.flatMap(g => g.parts).filter(p => p.meshes.length).length
+
+  // Pending preparation: the hidden round is the scene its layer prepares and counts, the hub is complete.
+  const pending = scene('pending')
+  assert.deepEqual([...pending.gated.warmableAssets()], [id], 'the hidden selected scene has preparation work')
+  assert.equal(pending.gated.fallbackParts(), parts, 'its pending field parts are counted while hidden')
+  assert.equal((pending.hub.port as unknown as { fallbackParts(): number }).fallbackParts(), 0)
+  let settled = false
+  const prepared = prepareCourse(pending.round.port, 'round', { timeoutMs: 5_000 }).then(() => { settled = true })
+  await new Promise(resolve => setTimeout(resolve, 200))
+  assert.equal(settled, false, 'never ready while the hidden scene still has pending field parts')
+  assert.ok(pending.roundMembers.every(m => pending.calls.visibility.get(m) === false), 'the selected scene stays hidden while pending')
+  assert.ok(pending.hubMembers.some(m => pending.calls.visibility.get(m) === true), 'the previous scenery stays visible')
+
+  // Successful handoff: once the shading compiles, readiness resolves without a frame and the reveal draws fields only.
+  pending.ready()
+  await prepared
+  assert.equal(courseWarmed(pending.round.port, 'round'), true)
+  pending.hub.setVisible(false)
+  pending.round.setVisible(true)
+  const drawn = pending.port.drawnParts()
+  assert.equal(drawn.length, parts)
+  assert.equal(drawn.filter(p => p.reason === 'field pipeline pending').length, 0, 'no pending field part is revealed')
+
+  // Failure retention: a failed part is not waited on, keeps its vertex copy with its reason; the hub is untouched.
+  const failed = scene('failed')
+  assert.equal(failed.gated.fallbackParts(), 0)
+  assert.ok(failed.roundMembers.every(m => failed.calls.visibility.get(m) === false), 'a failed selected scene stays hidden')
+  assert.ok(failed.hubMembers.some(m => failed.calls.visibility.get(m) === true), 'the previous scenery is retained')
+  failed.hub.setVisible(false)
+  failed.round.setVisible(true)
+  const kept = failed.port.drawnParts()
+  assert.equal(kept.length, parts, 'no dropped part')
+  assert.ok(kept.every(p => p.mode === 'vertex' && p.reason !== undefined), 'each failed part draws its named copy')
+})

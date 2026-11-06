@@ -33,6 +33,8 @@ Run it as `node --experimental-strip-types tools/uiFont.ts fetch|bundle|upload|v
 
 `ui/screens.ui-doc.json` (format `uaa.ui-doc` v1) holds one screen per id in `SCREENS` in `packages/game/src/screens/nav.ts`, and the round HUD is the `round` screen. The navigation state machine itself is unchanged; the screens only draw it.
 
+`tools/settingsScreen.ts` is the source of the Settings screen. Run `node --experimental-strip-types tools/settingsScreen.ts` after changing its portrait/landscape geometry table. It regenerates only Settings, with a card sized to each page, four tabs and fourteen row control slots; the host supplies their text, values and visibility through widget props.
+
 Widget ids are lowercase kebab-case, because uaa ids allow no dots: `title`, `hint`, `line-<i>`, `row-<i>`, `act-<kebab action>`, `back`, and HUD widgets `hud-<name>`. Button `action` strings keep the names used in `nav.ts` and `menuModel.ts`.
 
 `apps/web/src/ui/screenMap.ts` maps a menu model to the screen and widget props. Its test reads the doc and fails, naming the id, when a `SCREENS` id or a widget id or action string that the mapping uses is missing from its screen.

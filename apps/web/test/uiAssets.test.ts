@@ -3,7 +3,6 @@ import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
 import { loadAssets } from '../src/ui/uaaHost.ts'
 import { assetMapping, createFontRegistry, createUi, layoutScreen, loadUiDoc, layoutLine, parseUiAssetText, type AssetCommand, type UiFont, type Widget } from '@etcito/uaa'
-import { DEFAULT_SETTINGS, describeRow, SETTINGS_ROWS } from '@royal-fiesta/game/screens/settings'
 import { containLogo, logoFile } from '../src/ui/logoRenderer.ts'
 import { capsuleMapping, mapCapsule } from '../src/ui/buttonMapping.ts'
 
@@ -67,74 +66,121 @@ test('both button assets keep circular end caps for wide, tall and narrow frames
   }
 })
 
-test('Settings buttons and their focus bounds stay inside the panel cushion in both orientations', () => {
+const settingsPages = { audio: 7, graphics: 14, controls: 12, gameplay: 2 }
+
+test('Settings buttons and their 1.08 focus envelopes stay in each page cushion', () => {
   const screen = doc.screens.find(s => s.id === 'settings')!
   const card = assets.get('panel.card')!
   const cushion = card.states.normal.items.find(i => i.element === 'cushion')!.bounds
   for (const [width, height] of [[360, 640], [720, 1280], [1280, 720], [1920, 1080]]) {
     const layout = layoutScreen(doc, screen, { width, height, pixelRatio: 1, safeArea: { top: 0, right: 0, bottom: 0, left: 0 } })
-    const panel = assetMapping(card.frame, card.nineSlice, layout.rects.get('card')!, layout.dpToPx)
-    const lo = panel.toPx([cushion.min[0], cushion.max[1]])
-    const hi = panel.toPx([cushion.max[0], cushion.min[1]])
-    for (const w of flatten(screen.widgets)) {
-      if (w.type !== 'button') continue
-      const asset = assets.get(w.asset)!
-      const rect = layout.rects.get(w.id)!
-      const command: AssetCommand = { kind: 'asset', widget: w.id, asset, rect, state: 'normal',
-        list: asset.states.normal, mapping: capsuleMapping(asset, rect),
-        opacity: 1, transform: [1, 0, 0, 1, 0, 0], clip: null, slots: [] }
-      const mapped = mapCapsule(command, screen.id, width > height)
-      assert.deepEqual(mapped.rect, rect, 'painting must preserve the pointer target')
-      const mapping = mapped.mapping
-      for (const state of Object.values(asset.states)) for (const p of [state.bounds.min, state.bounds.max]) {
-        const point = mapping.toPx(p)
-        // Include the focus bounce, not just the unanimated button rectangle.
-        const x = rect.x + rect.w / 2 + (point[0] - rect.x - rect.w / 2) * 1.08
-        const y = rect.y + rect.h / 2 + (point[1] - rect.y - rect.h / 2) * 1.08
-        assert.ok(x >= lo[0] && x <= hi[0] && y >= lo[1] && y <= hi[1], `${w.id}/${width}x${height}: outside cushion`)
+    for (const [page, count] of Object.entries(settingsPages)) {
+      for (const w of flatten(screen.widgets)) {
+        if (w.type !== 'button') continue
+        const row = /^row-(\d+)$/.exec(w.id)
+        if (row && Number(row[1]) >= count) continue
+        const panelId = row ? `card-${page}` : 'card-graphics'
+        const panel = assetMapping(card.frame, card.nineSlice, layout.rects.get(panelId)!, layout.dpToPx)
+        const lo = panel.toPx([cushion.min[0], cushion.max[1]])
+        const hi = panel.toPx([cushion.max[0], cushion.min[1]])
+        const rect = layout.rects.get(w.id)!
+        const asset = assets.get(w.asset)!
+        const command: AssetCommand = { kind: 'asset', widget: w.id, asset, rect, state: 'normal',
+          list: asset.states.normal, mapping: capsuleMapping(asset, rect),
+          opacity: 1, transform: [1, 0, 0, 1, 0, 0], clip: null, slots: [] }
+        const mapped = mapCapsule(command, screen.id, width > height)
+        assert.deepEqual(mapped.rect, rect, 'painting must preserve the pointer target')
+        // Check the full pointer target as well as every state's painted focus envelope.
+        const points = [[rect.x, rect.y], [rect.x + rect.w, rect.y + rect.h],
+          ...Object.values(asset.states).flatMap(state => [state.bounds.min, state.bounds.max].map(p => mapped.mapping.toPx(p)))]
+        for (const [px, py] of points) {
+          const x = rect.x + rect.w / 2 + (px - rect.x - rect.w / 2) * 1.08
+          const y = rect.y + rect.h / 2 + (py - rect.y - rect.h / 2) * 1.08
+          assert.ok(x >= lo[0] && x <= hi[0] && y >= lo[1] && y <= hi[1], `${page}/${w.id}/${width}x${height}: outside cushion`)
+        }
       }
     }
   }
 })
 
-test('Settings Back keeps its required document bounds and only insets its own artwork', () => {
+test('Settings exposes the page, tab and row control widget contract', () => {
   const screen = doc.screens.find(s => s.id === 'settings')!
-  const back = screen.widgets.find(w => w.id === 'back')!
-  assert.deepEqual(back.rect.offsetMin, [-180, 470])
-  assert.deepEqual(back.rect.offsetMax, [180, 520])
-  assert.deepEqual(back.landscape!.offsetMin, [140, 214])
-  assert.deepEqual(back.landscape!.offsetMax, [420, 264])
-  const asset = assets.get('button.secondary')!
-  const rect = { x: 780, y: 574, w: 280, h: 50 }
-  const command: AssetCommand = { kind: 'asset', widget: 'back', asset, rect, state: 'focus',
-    list: asset.states.focus, mapping: capsuleMapping(asset, rect),
-    opacity: 1, transform: [1, 0, 0, 1, 0, 0], clip: null, slots: [] }
-  const point = asset.states.focus.bounds.min
-  const original = capsuleMapping(asset, rect).toPx(point)
-  assert.ok(mapCapsule(command, 'settings', true).mapping.toPx(point)[1] < original[1])
-  assert.deepEqual(mapCapsule(command, 'settings', false).mapping.toPx(point), original)
-  assert.deepEqual(mapCapsule(command, 'pause', true).mapping.toPx(point), original)
-  assert.deepEqual(mapCapsule({ ...command, widget: 'row-0' }, 'settings', true).mapping.toPx(point), original)
-})
-
-test('all Settings rows keep their specified labels and portrait/landscape bounds', () => {
-  const screen = doc.screens.find(s => s.id === 'settings')!
-  assert.equal(screen.widgets.filter(w => w.id.startsWith('row-')).length, SETTINGS_ROWS.length)
-  SETTINGS_ROWS.forEach((row, i) => {
-    const w = screen.widgets.find(w => w.id === `row-${i}`)!
-    assert.equal(w.type, 'button')
-    if (w.type !== 'button') return
-    assert.equal(w.action, 'row')
-    assert.equal(w.text!.label, describeRow(row, DEFAULT_SETTINGS))
-    assert.deepEqual(w.rect.offsetMin, [-220, -510 + 52 * i])
-    assert.deepEqual(w.rect.offsetMax, [220, -464 + 52 * i])
-    const k = i % 9, x = i < 9 ? -490 : 20
-    assert.deepEqual(w.landscape!.offsetMin, [x, -260 + 52 * k])
-    assert.deepEqual(w.landscape!.offsetMax, [x + 470, -214 + 52 * k])
-  })
+  const widgets = new Map(screen.widgets.map(w => [w.id, w]))
+  const expected = new Map<string, Widget['type']>([
+    ['title', 'label'], ['back', 'button'], ['act-credits', 'button'],
+    ['line-0', 'label'], ['help', 'label'], ['hint', 'label']
+  ])
+  for (const page of Object.keys(settingsPages)) {
+    expected.set(`card-${page}`, 'panel')
+    expected.set(`tab-${page}`, 'button')
+    expected.set(`tab-mark-${page}`, 'progress')
+  }
+  for (let i = 0; i < 14; i++) {
+    expected.set(`row-${i}`, 'button')
+    expected.set(`value-${i}`, 'label')
+    expected.set(`slider-${i}`, 'progress')
+    expected.set(`switch-${i}`, 'progress')
+  }
+  assert.deepEqual([...widgets.keys()].sort(), [...expected.keys()].sort())
+  assert.equal(screen.initialFocus, 'row-0')
+  for (const [id, type] of expected) {
+    const w = widgets.get(id)!
+    assert.equal(w.type, type, id)
+    if (w.type === 'panel') assert.equal(w.asset, 'panel.card')
+    if (w.type === 'button') {
+      assert.equal(w.asset, 'button.secondary')
+      assert.equal(w.action, id.startsWith('row-') ? 'row' : id === 'act-credits' ? 'credits' : id)
+    }
+    if (w.type === 'progress') {
+      assert.equal(w.track, 'bar.track')
+      assert.equal(w.fill, 'bar.progress')
+      assert.equal(w.value, id.startsWith('tab-mark-') ? 1 : 0)
+    }
+    if (w.type === 'label') {
+      assert.ok(w.size >= (id === 'help' || id === 'hint' ? 20 : 26))
+      assert.equal(w.color, '#5a2a00')
+      if (id.startsWith('value-')) assert.equal(w.align, 'right')
+    }
+  }
+  for (const orientation of ['rect', 'landscape'] as const) {
+    const graphics = widgets.get('card-graphics')![orientation]!
+    const first = widgets.get('row-0')![orientation]!
+    const second = widgets.get('row-1')![orientation]!
+    const pitch = second.offsetMin![1] - first.offsetMin![1]
+    for (let i = 0; i < 14; i++) {
+      const row = widgets.get(`row-${i}`)![orientation]!
+      const value = widgets.get(`value-${i}`)![orientation]!
+      assert.equal(row.offsetMin![0], first.offsetMin![0], 'rows use one column')
+      assert.equal(row.offsetMin![1] - first.offsetMin![1], i * pitch)
+      for (const control of ['slider', 'switch']) {
+        const bar = widgets.get(`${control}-${i}`)![orientation]!
+        assert.ok(bar.offsetMin![0] > row.offsetMax![0] && bar.offsetMax![0] < value.offsetMin![0])
+        assert.equal(bar.offsetMin![1] + bar.offsetMax![1], row.offsetMin![1] + row.offsetMax![1])
+        if (control === 'switch') assert.equal(bar.offsetMax![0] - bar.offsetMin![0], 70)
+      }
+    }
+    for (const page of Object.keys(settingsPages)) {
+      const tab = widgets.get(`tab-${page}`)![orientation]!
+      const mark = widgets.get(`tab-mark-${page}`)![orientation]!
+      assert.ok(mark.offsetMin![1] > tab.offsetMax![1], 'tab marks sit below their buttons')
+    }
+    for (const [page, rows] of Object.entries(settingsPages)) {
+      const card = widgets.get(`card-${page}`)![orientation]!
+      assert.deepEqual(card.offsetMin, graphics.offsetMin)
+      assert.equal(graphics.offsetMax![1] - card.offsetMax![1], (14 - rows) * pitch)
+      assert.ok(card.offsetMax![1] > widgets.get(`row-${rows - 1}`)![orientation]!.offsetMax![1])
+    }
+  }
+  const hint = widgets.get('hint')!
+  assert.equal(hint.type === 'label' && hint.text, 'Up/Down choose - Left/Right adjust or switch page - Enter select - Esc back')
 })
 
 test('Settings Back still focuses and activates at the edge of its full pointer target', () => {
+  const back = doc.screens.find(s => s.id === 'settings')!.widgets.find(w => w.id === 'back')!
+  assert.deepEqual(back.rect.offsetMin, [-274, -574])
+  assert.deepEqual(back.rect.offsetMax, [-164, -522])
+  assert.deepEqual(back.landscape!.offsetMin, [-444, -314])
+  assert.deepEqual(back.landscape!.offsetMax, [-304, -280])
   for (const [width, height] of [[360, 640], [1280, 720]]) {
     const ui = createUi({ doc, assets, fonts: createFontRegistry([]), renderer: null,
       viewport: { width, height, pixelRatio: 1, safeArea: { top: 0, right: 0, bottom: 0, left: 0 } }, nowMs: 0 })

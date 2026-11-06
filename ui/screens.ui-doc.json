@@ -2699,634 +2699,215 @@
       },
       "widgets": [
         {
-          "id": "card",
+          "id": "card-audio",
           "type": "panel",
           "asset": "panel.card",
           "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-340, -620],
-            "offsetMax": [340, 620]
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -320,
+              -620
+            ],
+            "offsetMax": [
+              320,
+              38
+            ]
           },
           "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-600, -350],
-            "offsetMax": [600, 350]
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -500,
+              -350
+            ],
+            "offsetMax": [
+              500,
+              98
+            ]
+          }
+        },
+        {
+          "id": "card-graphics",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -320,
+              -620
+            ],
+            "offsetMax": [
+              320,
+              402
+            ]
           },
-          "anim": {
-            "enter": {
-              "kind": "pop",
-              "duration": 300
-            }
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -500,
+              -350
+            ],
+            "offsetMax": [
+              500,
+              350
+            ]
+          }
+        },
+        {
+          "id": "card-controls",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -320,
+              -620
+            ],
+            "offsetMax": [
+              320,
+              298
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -500,
+              -350
+            ],
+            "offsetMax": [
+              500,
+              278
+            ]
+          }
+        },
+        {
+          "id": "card-gameplay",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -320,
+              -620
+            ],
+            "offsetMax": [
+              320,
+              -222
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -500,
+              -350
+            ],
+            "offsetMax": [
+              500,
+              -82
+            ]
           }
         },
         {
           "id": "title",
           "type": "label",
           "text": "Settings",
-          "font": { "family": "Fredoka", "weight": 700 },
-          "size": 64,
-          "color": "#ffd23f",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 28,
+          "color": "#5a2a00",
           "align": "center",
-          "outline": {
-            "width": 6,
-            "color": "#c2187a"
-          },
           "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-300, -616],
-            "offsetMax": [300, -556]
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -158,
+              -578
+            ],
+            "offsetMax": [
+              158,
+              -522
+            ]
           },
           "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-480, -340],
-            "offsetMax": [480, -270]
-          }
-        },
-        {
-          "id": "row-0",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Volume 80%"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -510],
-            "offsetMax": [220, -464]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -260],
-            "offsetMax": [-20, -214]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-1",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Graphics..."
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -458],
-            "offsetMax": [220, -412]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -208],
-            "offsetMax": [-20, -162]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-2",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Mouse sensitivity 5"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -406],
-            "offsetMax": [220, -360]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -156],
-            "offsetMax": [-20, -110]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-3",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Stick sensitivity 5"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -354],
-            "offsetMax": [220, -308]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -104],
-            "offsetMax": [-20, -58]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-4",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Invert Y off"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -302],
-            "offsetMax": [220, -256]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, -52],
-            "offsetMax": [-20, -6]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-5",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Music volume 80%"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -250],
-            "offsetMax": [220, -204]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 0],
-            "offsetMax": [-20, 46]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-6",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "SFX volume 80%"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -198],
-            "offsetMax": [220, -152]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 52],
-            "offsetMax": [-20, 98]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-7",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "UI volume 80%"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -146],
-            "offsetMax": [220, -100]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 104],
-            "offsetMax": [-20, 150]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-8",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Ambience volume 80%"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -94],
-            "offsetMax": [220, -48]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 156],
-            "offsetMax": [-20, 202]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-9",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Crowd volume 80%"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -42],
-            "offsetMax": [220, 4]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -260],
-            "offsetMax": [490, -214]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-10",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Forward: KeyW"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 10],
-            "offsetMax": [220, 56]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -208],
-            "offsetMax": [490, -162]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-11",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Back: KeyS"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 62],
-            "offsetMax": [220, 108]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -156],
-            "offsetMax": [490, -110]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-12",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Left: KeyA"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 114],
-            "offsetMax": [220, 160]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -104],
-            "offsetMax": [490, -58]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-13",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Right: KeyD"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 166],
-            "offsetMax": [220, 212]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, -52],
-            "offsetMax": [490, -6]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-14",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Jump: Space"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 218],
-            "offsetMax": [220, 264]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 0],
-            "offsetMax": [490, 46]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-15",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Dive: ShiftLeft"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 270],
-            "offsetMax": [220, 316]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 52],
-            "offsetMax": [490, 98]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-16",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Grab: KeyE"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 322],
-            "offsetMax": [220, 368]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 104],
-            "offsetMax": [490, 150]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "row-17",
-          "type": "button",
-          "asset": "button.secondary",
-          "text": {
-            "label": "Reset to defaults"
-          },
-          "action": "row",
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, 374],
-            "offsetMax": [220, 420]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [20, 156],
-            "offsetMax": [490, 202]
-          },
-          "anim": {
-            "focus": {
-              "kind": "bounce",
-              "duration": 200
-            },
-            "press": {
-              "kind": "pop",
-              "duration": 150
-            }
-          }
-        },
-        {
-          "id": "line-0",
-          "type": "label",
-          "text": "",
-          "font": { "family": "Fredoka", "weight": 700 },
-          "size": 26,
-          "color": "#ffffff",
-          "align": "center",
-          "outline": {
-            "width": 4,
-            "color": "#7a1f8c"
-          },
-          "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-220, -552],
-            "offsetMax": [220, -516]
-          },
-          "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-250, 214],
-            "offsetMax": [130, 238]
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -290,
+              -316
+            ],
+            "offsetMax": [
+              290,
+              -280
+            ]
           }
         },
         {
@@ -3338,16 +2919,40 @@
           },
           "action": "back",
           "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-180, 470],
-            "offsetMax": [180, 520]
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -574
+            ],
+            "offsetMax": [
+              -164,
+              -522
+            ]
           },
           "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [140, 214],
-            "offsetMax": [420, 264]
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -314
+            ],
+            "offsetMax": [
+              -304,
+              -280
+            ]
           },
           "anim": {
             "focus": {
@@ -3369,16 +2974,40 @@
           },
           "action": "credits",
           "rect": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-130, 424],
-            "offsetMax": [130, 466]
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              164,
+              -574
+            ],
+            "offsetMax": [
+              274,
+              -522
+            ]
           },
           "landscape": {
-            "anchorMin": [0.5, 0.5],
-            "anchorMax": [0.5, 0.5],
-            "offsetMin": [-490, 210],
-            "offsetMax": [-260, 256]
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              304,
+              -314
+            ],
+            "offsetMax": [
+              444,
+              -280
+            ]
           },
           "anim": {
             "focus": {
@@ -3389,6 +3018,3188 @@
               "kind": "pop",
               "duration": 150
             }
+          }
+        },
+        {
+          "id": "tab-audio",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Audio"
+          },
+          "action": "tab-audio",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -510
+            ],
+            "offsetMax": [
+              -143,
+              -458
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -274
+            ],
+            "offsetMax": [
+              -231,
+              -240
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "tab-mark-audio",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 1,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -266,
+              -452
+            ],
+            "offsetMax": [
+              -151,
+              -449
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -436,
+              -236
+            ],
+            "offsetMax": [
+              -239,
+              -233
+            ]
+          }
+        },
+        {
+          "id": "tab-graphics",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Graphics"
+          },
+          "action": "tab-graphics",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -135,
+              -510
+            ],
+            "offsetMax": [
+              -4,
+              -458
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -219,
+              -274
+            ],
+            "offsetMax": [
+              -6,
+              -240
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "tab-mark-graphics",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 1,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -127,
+              -452
+            ],
+            "offsetMax": [
+              -12,
+              -449
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -211,
+              -236
+            ],
+            "offsetMax": [
+              -14,
+              -233
+            ]
+          }
+        },
+        {
+          "id": "tab-controls",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Controls"
+          },
+          "action": "tab-controls",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              4,
+              -510
+            ],
+            "offsetMax": [
+              135,
+              -458
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              6,
+              -274
+            ],
+            "offsetMax": [
+              219,
+              -240
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "tab-mark-controls",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 1,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              12,
+              -452
+            ],
+            "offsetMax": [
+              127,
+              -449
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              14,
+              -236
+            ],
+            "offsetMax": [
+              211,
+              -233
+            ]
+          }
+        },
+        {
+          "id": "tab-gameplay",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": "Gameplay"
+          },
+          "action": "tab-gameplay",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              143,
+              -510
+            ],
+            "offsetMax": [
+              274,
+              -458
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              231,
+              -274
+            ],
+            "offsetMax": [
+              444,
+              -240
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "tab-mark-gameplay",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 1,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              151,
+              -452
+            ],
+            "offsetMax": [
+              266,
+              -449
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              239,
+              -236
+            ],
+            "offsetMax": [
+              436,
+              -233
+            ]
+          }
+        },
+        {
+          "id": "line-0",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "center",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -440
+            ],
+            "offsetMax": [
+              274,
+              -408
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -230
+            ],
+            "offsetMax": [
+              444,
+              -204
+            ]
+          }
+        },
+        {
+          "id": "help",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#5a2a00",
+          "align": "center",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -402
+            ],
+            "offsetMax": [
+              274,
+              -372
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -204
+            ],
+            "offsetMax": [
+              444,
+              -184
+            ]
+          }
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Up/Down choose - Left/Right adjust or switch page - Enter select - Esc back",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 20,
+          "color": "#5a2a00",
+          "align": "center",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -310,
+              540
+            ],
+            "offsetMax": [
+              310,
+              612
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -600,
+              332
+            ],
+            "offsetMax": [
+              600,
+              358
+            ]
+          }
+        },
+        {
+          "id": "row-0",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -362
+            ],
+            "offsetMax": [
+              -8,
+              -316
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -183
+            ],
+            "offsetMax": [
+              -10,
+              -151
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-0",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              -345
+            ],
+            "offsetMax": [
+              132,
+              -333
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              -173
+            ],
+            "offsetMax": [
+              230,
+              -161
+            ]
+          }
+        },
+        {
+          "id": "switch-0",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              -345
+            ],
+            "offsetMax": [
+              110,
+              -333
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              -173
+            ],
+            "offsetMax": [
+              160,
+              -161
+            ]
+          }
+        },
+        {
+          "id": "value-0",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              -362
+            ],
+            "offsetMax": [
+              280,
+              -316
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              -183
+            ],
+            "offsetMax": [
+              450,
+              -151
+            ]
+          }
+        },
+        {
+          "id": "row-1",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -310
+            ],
+            "offsetMax": [
+              -8,
+              -264
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -147
+            ],
+            "offsetMax": [
+              -10,
+              -115
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-1",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              -293
+            ],
+            "offsetMax": [
+              132,
+              -281
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              -137
+            ],
+            "offsetMax": [
+              230,
+              -125
+            ]
+          }
+        },
+        {
+          "id": "switch-1",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              -293
+            ],
+            "offsetMax": [
+              110,
+              -281
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              -137
+            ],
+            "offsetMax": [
+              160,
+              -125
+            ]
+          }
+        },
+        {
+          "id": "value-1",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              -310
+            ],
+            "offsetMax": [
+              280,
+              -264
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              -147
+            ],
+            "offsetMax": [
+              450,
+              -115
+            ]
+          }
+        },
+        {
+          "id": "row-2",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -258
+            ],
+            "offsetMax": [
+              -8,
+              -212
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -111
+            ],
+            "offsetMax": [
+              -10,
+              -79
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-2",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              -241
+            ],
+            "offsetMax": [
+              132,
+              -229
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              -101
+            ],
+            "offsetMax": [
+              230,
+              -89
+            ]
+          }
+        },
+        {
+          "id": "switch-2",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              -241
+            ],
+            "offsetMax": [
+              110,
+              -229
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              -101
+            ],
+            "offsetMax": [
+              160,
+              -89
+            ]
+          }
+        },
+        {
+          "id": "value-2",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              -258
+            ],
+            "offsetMax": [
+              280,
+              -212
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              -111
+            ],
+            "offsetMax": [
+              450,
+              -79
+            ]
+          }
+        },
+        {
+          "id": "row-3",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -206
+            ],
+            "offsetMax": [
+              -8,
+              -160
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -75
+            ],
+            "offsetMax": [
+              -10,
+              -43
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-3",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              -189
+            ],
+            "offsetMax": [
+              132,
+              -177
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              -65
+            ],
+            "offsetMax": [
+              230,
+              -53
+            ]
+          }
+        },
+        {
+          "id": "switch-3",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              -189
+            ],
+            "offsetMax": [
+              110,
+              -177
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              -65
+            ],
+            "offsetMax": [
+              160,
+              -53
+            ]
+          }
+        },
+        {
+          "id": "value-3",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              -206
+            ],
+            "offsetMax": [
+              280,
+              -160
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              -75
+            ],
+            "offsetMax": [
+              450,
+              -43
+            ]
+          }
+        },
+        {
+          "id": "row-4",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -154
+            ],
+            "offsetMax": [
+              -8,
+              -108
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -39
+            ],
+            "offsetMax": [
+              -10,
+              -7
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-4",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              -137
+            ],
+            "offsetMax": [
+              132,
+              -125
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              -29
+            ],
+            "offsetMax": [
+              230,
+              -17
+            ]
+          }
+        },
+        {
+          "id": "switch-4",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              -137
+            ],
+            "offsetMax": [
+              110,
+              -125
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              -29
+            ],
+            "offsetMax": [
+              160,
+              -17
+            ]
+          }
+        },
+        {
+          "id": "value-4",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              -154
+            ],
+            "offsetMax": [
+              280,
+              -108
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              -39
+            ],
+            "offsetMax": [
+              450,
+              -7
+            ]
+          }
+        },
+        {
+          "id": "row-5",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -102
+            ],
+            "offsetMax": [
+              -8,
+              -56
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              -3
+            ],
+            "offsetMax": [
+              -10,
+              29
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-5",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              -85
+            ],
+            "offsetMax": [
+              132,
+              -73
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              7
+            ],
+            "offsetMax": [
+              230,
+              19
+            ]
+          }
+        },
+        {
+          "id": "switch-5",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              -85
+            ],
+            "offsetMax": [
+              110,
+              -73
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              7
+            ],
+            "offsetMax": [
+              160,
+              19
+            ]
+          }
+        },
+        {
+          "id": "value-5",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              -102
+            ],
+            "offsetMax": [
+              280,
+              -56
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              -3
+            ],
+            "offsetMax": [
+              450,
+              29
+            ]
+          }
+        },
+        {
+          "id": "row-6",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              -50
+            ],
+            "offsetMax": [
+              -8,
+              -4
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              33
+            ],
+            "offsetMax": [
+              -10,
+              65
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-6",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              -33
+            ],
+            "offsetMax": [
+              132,
+              -21
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              43
+            ],
+            "offsetMax": [
+              230,
+              55
+            ]
+          }
+        },
+        {
+          "id": "switch-6",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              -33
+            ],
+            "offsetMax": [
+              110,
+              -21
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              43
+            ],
+            "offsetMax": [
+              160,
+              55
+            ]
+          }
+        },
+        {
+          "id": "value-6",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              -50
+            ],
+            "offsetMax": [
+              280,
+              -4
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              33
+            ],
+            "offsetMax": [
+              450,
+              65
+            ]
+          }
+        },
+        {
+          "id": "row-7",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              2
+            ],
+            "offsetMax": [
+              -8,
+              48
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              69
+            ],
+            "offsetMax": [
+              -10,
+              101
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-7",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              19
+            ],
+            "offsetMax": [
+              132,
+              31
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              79
+            ],
+            "offsetMax": [
+              230,
+              91
+            ]
+          }
+        },
+        {
+          "id": "switch-7",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              19
+            ],
+            "offsetMax": [
+              110,
+              31
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              79
+            ],
+            "offsetMax": [
+              160,
+              91
+            ]
+          }
+        },
+        {
+          "id": "value-7",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              2
+            ],
+            "offsetMax": [
+              280,
+              48
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              69
+            ],
+            "offsetMax": [
+              450,
+              101
+            ]
+          }
+        },
+        {
+          "id": "row-8",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              54
+            ],
+            "offsetMax": [
+              -8,
+              100
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              105
+            ],
+            "offsetMax": [
+              -10,
+              137
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-8",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              71
+            ],
+            "offsetMax": [
+              132,
+              83
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              115
+            ],
+            "offsetMax": [
+              230,
+              127
+            ]
+          }
+        },
+        {
+          "id": "switch-8",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              71
+            ],
+            "offsetMax": [
+              110,
+              83
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              115
+            ],
+            "offsetMax": [
+              160,
+              127
+            ]
+          }
+        },
+        {
+          "id": "value-8",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              54
+            ],
+            "offsetMax": [
+              280,
+              100
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              105
+            ],
+            "offsetMax": [
+              450,
+              137
+            ]
+          }
+        },
+        {
+          "id": "row-9",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              106
+            ],
+            "offsetMax": [
+              -8,
+              152
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              141
+            ],
+            "offsetMax": [
+              -10,
+              173
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-9",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              123
+            ],
+            "offsetMax": [
+              132,
+              135
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              151
+            ],
+            "offsetMax": [
+              230,
+              163
+            ]
+          }
+        },
+        {
+          "id": "switch-9",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              123
+            ],
+            "offsetMax": [
+              110,
+              135
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              151
+            ],
+            "offsetMax": [
+              160,
+              163
+            ]
+          }
+        },
+        {
+          "id": "value-9",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              106
+            ],
+            "offsetMax": [
+              280,
+              152
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              141
+            ],
+            "offsetMax": [
+              450,
+              173
+            ]
+          }
+        },
+        {
+          "id": "row-10",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              158
+            ],
+            "offsetMax": [
+              -8,
+              204
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              177
+            ],
+            "offsetMax": [
+              -10,
+              209
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-10",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              175
+            ],
+            "offsetMax": [
+              132,
+              187
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              187
+            ],
+            "offsetMax": [
+              230,
+              199
+            ]
+          }
+        },
+        {
+          "id": "switch-10",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              175
+            ],
+            "offsetMax": [
+              110,
+              187
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              187
+            ],
+            "offsetMax": [
+              160,
+              199
+            ]
+          }
+        },
+        {
+          "id": "value-10",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              158
+            ],
+            "offsetMax": [
+              280,
+              204
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              177
+            ],
+            "offsetMax": [
+              450,
+              209
+            ]
+          }
+        },
+        {
+          "id": "row-11",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              210
+            ],
+            "offsetMax": [
+              -8,
+              256
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              213
+            ],
+            "offsetMax": [
+              -10,
+              245
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-11",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              227
+            ],
+            "offsetMax": [
+              132,
+              239
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              223
+            ],
+            "offsetMax": [
+              230,
+              235
+            ]
+          }
+        },
+        {
+          "id": "switch-11",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              227
+            ],
+            "offsetMax": [
+              110,
+              239
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              223
+            ],
+            "offsetMax": [
+              160,
+              235
+            ]
+          }
+        },
+        {
+          "id": "value-11",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              210
+            ],
+            "offsetMax": [
+              280,
+              256
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              213
+            ],
+            "offsetMax": [
+              450,
+              245
+            ]
+          }
+        },
+        {
+          "id": "row-12",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              262
+            ],
+            "offsetMax": [
+              -8,
+              308
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              249
+            ],
+            "offsetMax": [
+              -10,
+              281
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-12",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              279
+            ],
+            "offsetMax": [
+              132,
+              291
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              259
+            ],
+            "offsetMax": [
+              230,
+              271
+            ]
+          }
+        },
+        {
+          "id": "switch-12",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              279
+            ],
+            "offsetMax": [
+              110,
+              291
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              259
+            ],
+            "offsetMax": [
+              160,
+              271
+            ]
+          }
+        },
+        {
+          "id": "value-12",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              262
+            ],
+            "offsetMax": [
+              280,
+              308
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              249
+            ],
+            "offsetMax": [
+              450,
+              281
+            ]
+          }
+        },
+        {
+          "id": "row-13",
+          "type": "button",
+          "asset": "button.secondary",
+          "text": {
+            "label": ""
+          },
+          "action": "row",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -274,
+              314
+            ],
+            "offsetMax": [
+              -8,
+              360
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              -444,
+              285
+            ],
+            "offsetMax": [
+              -10,
+              317
+            ]
+          },
+          "anim": {
+            "focus": {
+              "kind": "bounce",
+              "duration": 200
+            },
+            "press": {
+              "kind": "pop",
+              "duration": 150
+            }
+          }
+        },
+        {
+          "id": "slider-13",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              16,
+              331
+            ],
+            "offsetMax": [
+              132,
+              343
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              20,
+              295
+            ],
+            "offsetMax": [
+              230,
+              307
+            ]
+          }
+        },
+        {
+          "id": "switch-13",
+          "type": "progress",
+          "track": "bar.track",
+          "fill": "bar.progress",
+          "value": 0,
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              40,
+              331
+            ],
+            "offsetMax": [
+              110,
+              343
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              90,
+              295
+            ],
+            "offsetMax": [
+              160,
+              307
+            ]
+          }
+        },
+        {
+          "id": "value-13",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              144,
+              314
+            ],
+            "offsetMax": [
+              280,
+              360
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              246,
+              285
+            ],
+            "offsetMax": [
+              450,
+              317
+            ]
           }
         }
       ]

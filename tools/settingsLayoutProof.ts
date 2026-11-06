@@ -29,7 +29,7 @@ function geometry(width: number, height: number) {
   const viewport = { width, height, pixelRatio: 1, safeArea: { top: 0, right: 0, bottom: 0, left: 0 } }
   const layout = layoutScreen(doc, screen, viewport)
   const card = assets.get('panel.card')!
-  const mapping = assetMapping(card.frame, card.nineSlice, layout.rects.get('card')!, layout.dpToPx)
+  const mapping = assetMapping(card.frame, card.nineSlice, layout.rects.get('card-graphics')!, layout.dpToPx)
   const bounds = card.states.normal.items.find(i => i.element === 'cushion')!.bounds
   const lo = mapping.toPx([bounds.min[0], bounds.max[1]])
   const hi = mapping.toPx([bounds.max[0], bounds.min[1]])
@@ -82,7 +82,7 @@ function plot(g: ReturnType<typeof geometry>, x: number, y: number, scale: numbe
 plot(portrait, 24, 120, 0.82)
 plot(landscape, 345, 120, 0.95)
 parts.push('<text x="24" y="104" class="note">Portrait 360 × 640</text>')
-parts.push('<text x="345" y="104" class="note">Landscape 1280 × 720 — all 18 rows</text>')
+parts.push('<text x="345" y="104" class="note">Landscape 1280 × 720 — all 14 row slots</text>')
 parts.push('<text x="24" y="680" class="note">Blue dashed: Back target</text>')
 parts.push('<text x="24" y="710" class="note">Green: all-state paint envelope</text>')
 parts.push('<text x="24" y="740" class="note">including a 1.08× scale guard.</text>')
@@ -96,7 +96,7 @@ parts.push(`<path d="M 0 ${n(edgeY)} H 840" fill="none" stroke="#b16c00" stroke-
 parts.push('</g>')
 parts.push(`<text x="1210" y="890" class="note">Cushion: y = ${n(cushionBottom)} px</text>`)
 parts.push(`<text x="1210" y="920" class="note">Paint: y ≤ ${n(focusBottom)} px</text>`)
-parts.push('<text x="345" y="980" class="note">Document target: [140,214]..[420,264]. Only artwork is inset; pointer and keyboard activation are tested.</text>')
+parts.push('<text x="345" y="980" class="note">Document target: [-444,-314]..[-304,-280]. Pointer and keyboard activation are tested.</text>')
 parts.push('</svg>')
 
 const output = process.argv[2] ?? 'proofs/s3/m3/settings-layout'

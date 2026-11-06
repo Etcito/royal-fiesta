@@ -634,6 +634,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
   const pad = { index: 0, id: 'field-gameplay', connected: true, mapping: 'standard', axes, buttons, timestamp: 0 }
   let connected = false, game: TourGame | undefined
   const files: OpFile[] = [], observations: unknown[] = [], problems: string[] = []
+  let shots = 0, candyShots = 0
   Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => connected ? [pad] : [] })
   try {
     const options = { search: `?${q}`, fieldGameplay: true, atlasBytes: request.atlasBytes,
@@ -661,7 +662,11 @@ async function gameplay(raw: unknown, deps: TourDeps) {
         const visible = bounds.filter(b => projectBounds(cam, [b]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1))
         // every shot reports ALL its problems in the one resident job (thrown together at the end): one subject per GPU run took
         // four runs on card 7086; the visible part keys say what the camera did see
-        for (const subject of ['penguin', 'costume.propeller-hat', 'candy.']) if (!visible.some(b => b.key.includes(subject))) problems.push(`${action}: ${subject} is outside the gameplay view (visible: ${[...new Set(visible.map(b => b.key.split('#')[0]))].slice(0, 12).join(', ') || 'nothing'})`)
+        shots++
+        if (visible.some(b => b.key.includes('candy.'))) candyShots++
+        // the candy scenery is required in most shots (below), not in every one: right behind the penguin on the start straight the
+        // 'run' shot sees only the penguin and its costume (card 7086, run 12600: the only problem of the five shots)
+        for (const subject of ['penguin', 'costume.propeller-hat']) if (!visible.some(b => b.key.includes(subject))) problems.push(`${action}: ${subject} is outside the gameplay view (visible: ${[...new Set(visible.map(b => b.key.split('#')[0]))].slice(0, 12).join(', ') || 'nothing'})`)
         // The mechanisms are drawn and move, but a hammer in frame at the spawn is not required: measured on the s1-* courses
         // the nearest hammer is 40 m (cloudstack tower) to 100+ m from the spawn and the run covers a few metres, so no start
         // frame could show one (card 7086, run 12564). It must be a drawn part of the scene in every shot and its bounds must
@@ -703,6 +708,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       }
     }
     const report = state().field.normals
+    if (candyShots * 2 < shots || candyShots === 0) problems.push(`candy scenery is in view in ${candyShots} of ${shots} shots (at least half are required)`)
     if (problems.length) throw new Error(`fieldShading gameplay: ${problems.join('; ')}`)
     if (request.sequence.length > 1) {
       const hammerBounds = observations.map(o => JSON.stringify((o as { subjects: { key: string; min: number[]; max: number[] }[] }).subjects

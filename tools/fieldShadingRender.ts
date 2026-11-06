@@ -82,7 +82,7 @@ async function client(args: string[]): Promise<string> {
     // The page's console.warn lines (hundreds, one per vertex-normal part) follow the job's own error in the client's stderr
     // and the card keeps only the tail: the error that failed the job is repeated LAST (card 7086, run 12564 showed warnings only).
     child.on('close', code => code === 0 ? resolve(output) : reject(new Error(`GPU client exited ${code}: ` +
-      errors.split('\n').filter(l => /\b(Error|failed|refus)/i.test(l) && !/console\.warn/.test(l)).slice(-6).join(' | ').slice(-1800))))
+      errors.split('\n').filter(l => /^\s*Error: /.test(l)).map(l => l.split(' | page:')[0].slice(0, 700)).slice(-4).join(' | '))))
   })
 }
 async function render(out: string): Promise<void> {

@@ -48,3 +48,30 @@ test('focusTab reaches the target tab wherever Up lands in the tab row', async (
   }
   await assert.rejects(focusTab('gameplay', () => 'row-0', async () => {}, 3), /gameplay: tab row focus: row-0/)
 })
+
+// Run 12354: focus on back (above the tab row in landscape); Up stayed on back and every page failed.
+test('focusTab goes Down to the tab row when focus is on the header above it', async () => {
+  const { focusTab } = await import('../src/game/checks/settingsTabs.ts')
+  const tabs = ['tab-audio', 'tab-graphics', 'tab-controls', 'tab-gameplay']
+  for (const header of ['back', 'act-credits']) {
+    let focus = header
+    const press = async (key: string): Promise<void> => {
+      const at = tabs.indexOf(focus)
+      if (key === 'ArrowDown' && at < 0) focus = 'tab-audio'
+      else if (key === 'ArrowRight') focus = tabs[Math.min(at + 1, 3)]
+    }
+    await focusTab('controls', () => focus, press)
+    assert.equal(focus, 'tab-controls', `from ${header}`)
+  }
+})
+
+test('every settingsPages assertion names what it expected and what the page showed', () => {
+  assert.ok(!/\bfail\(/.test(source), 'no bare label assertions')
+  assert.match(source, /expected \$\{JSON\.stringify\(expected\)\}, found \$\{JSON\.stringify\(actual \?\? null\)\} \(\$\{state\(\)\}\)/)
+  assert.match(source, /not reached within \$\{ms \/ 1000\} s \(\$\{state\(\)\}\)/)
+})
+
+test('the App resets the settings page whenever Settings is entered', () => {
+  const main = readFileSync(new URL('../src/game/main.ts', import.meta.url), 'utf8')
+  assert.match(main, /this\.settingsPage = pageAfterScreen\(this\.drawnScreen, nav\.screen, this\.settingsPage\)\n\s*this\.drawnScreen = nav\.screen/)
+})

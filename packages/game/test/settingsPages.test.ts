@@ -7,7 +7,8 @@ import {
   type Settings, type SettingsStore
 } from '../src/screens/settings.ts'
 import {
-  keyName, PAGE_ROWS, pageItems, rowItem, SETTINGS_ROW_SLOTS, TAB_LABELS, PAGE_TITLES, SETTINGS_PAGES
+  keyName, PAGE_ROWS, pageItems, rowItem, SETTINGS_ROW_SLOTS, TAB_LABELS, PAGE_TITLES, SETTINGS_PAGES,
+  pageAfterScreen
 } from '../src/screens/settingsPages.ts'
 
 const ctx = { rebinding: null, reducedMotion: false }
@@ -165,4 +166,14 @@ test('a save written before the page model loads unchanged through loadSettings'
     },
     error: null
   })
+})
+
+// Run 12354: the landscape pass opened Settings a second time on Gameplay, the page the phone pass left.
+test('pageAfterScreen opens Settings on Audio on entry and keeps the page otherwise', () => {
+  assert.equal(pageAfterScreen('start', 'settings', 'gameplay'), 'audio')
+  assert.equal(pageAfterScreen('pause', 'settings', 'controls'), 'audio')
+  assert.equal(pageAfterScreen(null, 'settings', 'graphics'), 'audio')
+  assert.equal(pageAfterScreen('settings', 'settings', 'controls'), 'controls')
+  assert.equal(pageAfterScreen('credits', 'settings', 'gameplay'), 'gameplay')
+  assert.equal(pageAfterScreen('settings', 'start', 'gameplay'), 'gameplay')
 })

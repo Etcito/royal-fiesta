@@ -79,7 +79,6 @@ function errorText(error: unknown): string {
 
 async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], report: (failure: string) => void): Promise<void> {
   const prefix = portrait ? 'phone-' : ''
-  const fail = (label: string, condition: boolean): void => { if (!condition) report(`${prefix}${label}`) }
   // A missed state is reported and the next section still runs, so one pass lists every failure.
   const section = async (label: string, work: () => Promise<void>): Promise<void> => {
     try { await work() } catch (error) { report(`${prefix}${label}: ${errorText(error)}`) }
@@ -89,6 +88,15 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
   const props = new Proxy({} as Props, {
     get: (_, id) => typeof id === 'string' ? live.host.widget(id) ?? undefined : undefined,
   })
+  // What the page shows, so a failure names it: the screen, the title, the focused widget.
+  const state = (): string =>
+    `screen ${live.host.currentScreen()}, title "${propText(props, 'title')}", focused ${live.host.focused()}`
+  // A missed value reports what was expected and what the page actually had, then the next assertion runs.
+  const expect = (label: string, actual: unknown, expected: unknown): void => {
+    if (actual !== expected) {
+      report(`${prefix}${label}: expected ${JSON.stringify(expected)}, found ${JSON.stringify(actual ?? null)} (${state()})`)
+    }
+  }
   const step = async (): Promise<void> => { live.step(1 / 60); await yieldTask(live.host.currentScreen()) }
   // A UI state follows its key within a few frames. A short deadline per wait keeps one missed state from eating
   // the page's whole render budget (run 12350: one 120 s miss, then the page timed out before the op returned its
@@ -97,7 +105,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
     const end = Date.now() + ms
     while (!predicate()) {
       if (live.host.currentScreen() === 'error' || Date.now() >= end) {
-        throw new Error(`${what}: ${live.host.currentScreen()}`)
+        throw new Error(`${what}: not reached within ${ms / 1000} s (${state()})`)
       }
       await step()
     }
@@ -111,7 +119,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
   }
   const focusUntil = async (key: string, predicate: () => boolean, what: string): Promise<void> => {
     for (let presses = 0; !predicate(); presses++) {
-      if (presses >= 32 || live.host.currentScreen() === 'error') throw new Error(`${what}: ${live.host.focused()}`)
+      if (presses >= 32 || live.host.currentScreen() === 'error') throw new Error(`${what}: not reached in ${presses} presses of ${key} (${state()})`)
       await press(key)
     }
   }
@@ -129,53 +137,53 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
       && live.host.widgetRect('act-settings') !== null, 'start screen', 120000)
     click(live, 'act-settings')
     await waitFor(() => live.host.currentScreen() === 'settings' && !!props.title?.text, 'settings screen')
-    fail('Audio title', propText(props, 'title') === 'Audio')
-    fail('Master volume row', propText(props, 'row-0') === 'Master volume')
-    fail('Master volume value 80%', propText(props, 'value-0') === '80%')
+    expect('Audio title', propText(props, 'title'), 'Audio')
+    expect('Master volume row', propText(props, 'row-0'), 'Master volume')
+    expect('Master volume value 80%', propText(props, 'value-0'), '80%')
     await press('ArrowLeft')
     await waitFor(() => propText(props, 'value-0') === '70%', 'master volume 70%')
-    fail('master volume left adjustment', propText(props, 'value-0') === '70%')
+    expect('master volume left adjustment', propText(props, 'value-0'), '70%')
     await press('ArrowRight')
     await waitFor(() => propText(props, 'value-0') === '80%', 'master volume 80%')
-    fail('master volume right adjustment', propText(props, 'value-0') === '80%')
+    expect('master volume right adjustment', propText(props, 'value-0'), '80%')
     await take('audio')
   })
 
   await section('Graphics page', async () => {
     await openPage('graphics')
     await waitFor(() => propText(props, 'title') === 'Graphics', 'Graphics page')
-    fail('Graphics title', propText(props, 'title') === 'Graphics')
+    expect('Graphics title', propText(props, 'title'), 'Graphics')
     const lod = Array.from({ length: SETTINGS_ROW_SLOTS }, (_, i) => props[`row-${i}`])
       .find(value => value?.visible === true && value.text === 'LOD offset')
-    fail('LOD offset unavailable row', lod?.disabled === true)
-    fail('LOD offset note', propText(props, 'line-0').includes('LOD offset'))
+    expect('LOD offset unavailable row (disabled)', lod === undefined ? 'no visible LOD offset row' : lod.disabled === true, true)
+    expect('LOD offset note (line-0 names LOD offset)', propText(props, 'line-0').includes('LOD offset') || propText(props, 'line-0'), true)
     await take('graphics')
   })
 
   await section('Controls page', async () => {
     await openPage('controls')
     await waitFor(() => propText(props, 'title') === 'Controls', 'Controls page')
-    fail('Controls title', propText(props, 'title') === 'Controls')
+    expect('Controls title', propText(props, 'title'), 'Controls')
     await focusUntil('ArrowDown', () => live.host.focused() === 'row-0', 'Forward row focus')
-    fail('Forward row', propText(props, 'row-0') === 'Forward')
+    expect('Forward row', propText(props, 'row-0'), 'Forward')
     await press('Enter')
     await waitFor(() => propText(props, 'value-0') === '[ Press a key... ]', 'rebind prompt')
-    fail('rebind prompt', propText(props, 'value-0') === '[ Press a key... ]')
+    expect('rebind prompt', propText(props, 'value-0'), '[ Press a key... ]')
     await press('KeyK')
     await waitFor(() => propText(props, 'value-0') === '[ K ]', 'KeyK rebind')
-    fail('KeyK binding', propText(props, 'value-0') === '[ K ]')
+    expect('KeyK binding', propText(props, 'value-0'), '[ K ]')
     await press('Enter')
     await waitFor(() => propText(props, 'value-0') === '[ Press a key... ]', 'restore rebind prompt')
     await press('KeyW')
     await waitFor(() => propText(props, 'value-0') === '[ W ]', 'KeyW restore')
-    fail('KeyW restored', propText(props, 'value-0') === '[ W ]')
+    expect('KeyW restored', propText(props, 'value-0'), '[ W ]')
     await take('controls')
   })
 
   await section('Gameplay page', async () => {
     await openPage('gameplay')
     await waitFor(() => propText(props, 'title') === 'Gameplay & Accessibility', 'Gameplay page')
-    fail('Gameplay credits button', props['act-credits']?.visible === true)
+    expect('Gameplay credits button visible', props['act-credits']?.visible, true)
     await take('gameplay')
   })
 

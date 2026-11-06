@@ -8,14 +8,19 @@ export async function focusTab(
   page: SettingsPage, focused: () => string | null, press: (key: string) => Promise<void>, maxPresses = 32
 ): Promise<void> {
   const tabIndex = (): number => SETTINGS_PAGES.findIndex(p => focused() === `tab-${p}`)
+  // Back and Credits sit above the tab row (run 12354: focus on back, Up stayed there for every page). When Up no
+  // longer moves the focus, the tab row is below it: go Down from there.
+  let key: 'ArrowUp' | 'ArrowDown' = 'ArrowUp'
   for (let presses = 0; tabIndex() < 0; presses++) {
-    if (presses >= maxPresses) throw new Error(`${page}: tab row focus: ${focused()}`)
-    await press('ArrowUp')
+    if (presses >= maxPresses) throw new Error(`${page}: tab row focus: ${focused()} (${presses} presses, last ${key})`)
+    const before = focused()
+    await press(key)
+    if (key === 'ArrowUp' && focused() === before) key = 'ArrowDown'
   }
   const target = SETTINGS_PAGES.indexOf(page)
-  const key = tabIndex() < target ? 'ArrowRight' : 'ArrowLeft'
+  const walk = tabIndex() < target ? 'ArrowRight' : 'ArrowLeft'
   for (let presses = 0; tabIndex() !== target; presses++) {
     if (tabIndex() < 0 || presses >= SETTINGS_PAGES.length) throw new Error(`${page}: tab-${page} focus: ${focused()}`)
-    await press(key)
+    await press(walk)
   }
 }

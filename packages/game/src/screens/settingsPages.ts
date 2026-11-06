@@ -21,6 +21,13 @@ export const TAB_LABELS: Record<SettingsPage, string> = {
   gameplay: 'Gameplay'
 }
 
+// The page Settings shows after a screen change: Audio whenever Settings is entered (from start or pause); back
+// from Credits, or staying on Settings, keeps the page. Run 12354: the second visit opened on the page the first
+// visit left (Gameplay), so the Audio page never showed.
+export function pageAfterScreen(from: string | null, to: string, page: SettingsPage): SettingsPage {
+  return to === 'settings' && from !== 'settings' && from !== 'credits' ? 'audio' : page
+}
+
 export const PAGE_ROWS: Record<'audio' | 'controls' | 'gameplay', readonly SettingsRow[]> = {
   audio: AUDIO_ROWS,
   controls: CONTROLS_ROWS,

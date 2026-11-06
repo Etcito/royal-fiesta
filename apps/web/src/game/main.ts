@@ -61,7 +61,7 @@ import { ECONOMY_SCREENS, Effect, FLOW_SCREENS, Nav, backTogglesPause, flowActio
 import type { Action, EconomyScreen, GameScreen, Screen } from '@royal-fiesta/game/screens/nav'
 import { adjust, cycle, loadSettings, rebind, saveSettings } from '@royal-fiesta/game/screens/settings'
 import type { KeyAction, Settings, SettingsStore } from '@royal-fiesta/game/screens/settings'
-import { PAGE_ROWS, SETTINGS_PAGES, pageItems, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
+import { PAGE_ROWS, SETTINGS_PAGES, pageAfterScreen, pageItems, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { neutralInput } from '@royal-fiesta/sim/input'
@@ -1528,6 +1528,8 @@ class App {
   readonly nav = new Nav()
   private settings: Settings
   private settingsPage: SettingsPage = 'audio'
+  // The screen the last draw() showed: entering Settings opens it on Audio.
+  private drawnScreen: Screen | null = null
   private settingsError: string | null
   // The Graphics page and options (MAMA's render-options contract) and the FPS counter they show.
   private readonly graphics: GraphicsSettings
@@ -2541,6 +2543,8 @@ class App {
   // Presents nav's screen through the uaa host, with the round HUD on the HUD screens, then renders it.
   private draw(): void {
     const nav = this.nav
+    this.settingsPage = pageAfterScreen(this.drawnScreen, nav.screen, this.settingsPage)
+    this.drawnScreen = nav.screen
     if (this.showView?.screen !== nav.screen) this.unmountShowView()
     // The remap belongs to the settings screen; #touch takes the pointer only where the game does.
     if (this.remap !== null && nav.screen !== 'settings') this.closeRemap()

@@ -126,6 +126,11 @@
     ]
   },
   {
+    "name": "settings-render-local",
+    "command": "node --experimental-strip-types --test apps/web/test/settingsPagesCheck.test.ts packages/game/test/settingsPages.test.ts",
+    "timeout_s": 300
+  },
+  {
     "name": "settings-judge-audio",
     "command": "python3 \"$NMC_JUDGE_CLIENT\" out/settings-pages/audio.png --description \"Royal Fiesta settings menu, Audio page, landscape: four labelled page tabs (Audio, Graphics, Controls, Gameplay) with Audio marked as current; rows for Master volume and the Music, SFX, UI, Ambience and Crowd volumes, each with a readable label, a horizontal slider bar and its percentage, plus a Reset audio row; one row visibly focused; Back and Credits buttons; a compact light-yellow frame sized to these rows with the penguin and the 3D candy scene clearly visible around it\" --min-score 6",
     "timeout_s": 300,

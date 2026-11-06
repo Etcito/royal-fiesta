@@ -634,7 +634,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
   const pad = { index: 0, id: 'field-gameplay', connected: true, mapping: 'standard', axes, buttons, timestamp: 0 }
   let connected = false, game: TourGame | undefined
   const files: OpFile[] = [], observations: unknown[] = [], problems: string[] = []
-  let shots = 0, candyShots = 0
+  let shots = 0, candyShots = 0, crowdShots = 0
   Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => connected ? [pad] : [] })
   try {
     const options = { search: `?${q}`, fieldGameplay: true, atlasBytes: request.atlasBytes,
@@ -673,7 +673,9 @@ async function gameplay(raw: unknown, deps: TourDeps) {
         // move between the shots (below).
         if (!bounds.some(b => b.key.includes('pendulum-hammer'))) problems.push(`${action}: no pendulum-hammer part is drawn (moving mechanisms are required)`)
         const visibleCharacters = s.local!.characters.filter(c => projectBounds(cam, [{ key: 'character', min: [c.pos.x, c.pos.y, c.pos.z], max: [c.pos.x, c.pos.y, c.pos.z] }]).some(p => p[2] > cam.near && Math.abs(p[0]) < 1 && Math.abs(p[1]) < 1)).length
-        if (visibleCharacters < 2) problems.push(`${action}: several characters must be visible (${visibleCharacters} in view)`)
+        // like the scenery: several characters in most shots (below), not in every one: in the air (jump, dive) the camera can frame
+        // the player alone while the bots run on (card 7086, run 12607: the only two problems of the shots)
+        if (visibleCharacters >= 2) crowdShots++
       }
       const subjects = [...new Map(bounds.filter(b => /costume.propeller-hat|pendulum-hammer/.test(b.key)).map(b => [b.key, b])).values()]
       const uiShot = createImageBitmap(live.ui)
@@ -708,6 +710,7 @@ async function gameplay(raw: unknown, deps: TourDeps) {
       }
     }
     const report = state().field.normals
+    if (shots > 0 && crowdShots * 2 < shots) problems.push(`several characters are in view in ${crowdShots} of ${shots} shots (at least half are required)`)
     if (shots > 0 && candyShots * 2 < shots) problems.push(`candy scenery is in view in ${candyShots} of ${shots} shots (at least half are required)`)
     if (problems.length) throw new Error(`fieldShading gameplay: ${problems.join('; ')}`)
     if (request.sequence.length > 1) {

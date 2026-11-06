@@ -1,0 +1,92 @@
+{
+  "job_id": "b310e68ad68b22442a634493e28bbee4",
+  "client_id": "08ba61f66891b95bcaa0dcd8",
+  "result": {
+    "ok": true,
+    "renderer": "raa",
+    "adapter": {
+      "vendor": "nvidia",
+      "architecture": "ampere",
+      "description": "",
+      "software": false
+    },
+    "course": "s1-b-butterfly-freeway",
+    "captures": [
+      "start.png"
+    ],
+    "events": [
+      {
+        "screen": "start"
+      },
+      {
+        "state": "complete start",
+        "screen": "start",
+        "progress": "Heating the start scene"
+      },
+      {
+        "state": "selection changed",
+        "screen": "start",
+        "progress": "Heating the start scene"
+      },
+      {
+        "state": "selection responded",
+        "pendingPipelines": 0
+      },
+      {
+        "state": "latest selection ready",
+        "screen": "start",
+        "progress": "Heating the start scene"
+      },
+      {
+        "capture": "start",
+        "progress": "",
+        "normals": {
+          "fieldGridScale": 1.041024482546747,
+          "resampledParts": 87,
+          "parts": 111,
+          "field": 103,
+          "vertex": 8,
+          "texture": 0,
+          "pending": 0,
+          "pendingParts": [],
+          "failed": 8,
+          "refused": [
+            "candy.spinner-bar#spinner_bar/bar",
+            "costume.fish-scarf#extra_fish_scarf/__root__",
+            "costume.pineapple-suit#pineapple_suit/__root__",
+            "costume.propeller-hat#propeller_hat/__root__",
+            "ice.slide-gate#ice_slide_gate/icicle_1",
+            "ice.slide-gate#ice_slide_gate/icicle_3",
+            "ice.slide-gate#ice_slide_gate/icicle_5",
+            "ice.slide-gate#ice_slide_gate/icicle_7"
+          ],
+          "demoted": 0,
+          "atlasFull": 0,
+          "bytes": 57030784,
+          "budget": 57042534,
+          "errors": [
+            "candy.spinner-bar#spinner_bar/bar: operand with a lattice, deformer or non-uniform scale",
+            "costume.fish-scarf#extra_fish_scarf/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.pineapple-suit#pineapple_suit/__root__: operand with a lattice, deformer or non-uniform scale",
+            "costume.propeller-hat#propeller_hat/__root__: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_1: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_3: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_5: operand with a lattice, deformer or non-uniform scale",
+            "ice.slide-gate#ice_slide_gate/icicle_7: operand with a lattice, deformer or non-uniform scale"
+          ]
+        },
+        "assets": [
+          "penguin.body",
+          "candy.banner",
+          "candy.cloud",
+          "candy.hot-air-balloon",
+          "candy.tower",
+          "costume.pineapple-suit",
+          "costume.fish-scarf",
+          "costume.sparkler-wand",
+          "costume.propeller-hat"
+        ]
+      }
+    ]
+  }
+}

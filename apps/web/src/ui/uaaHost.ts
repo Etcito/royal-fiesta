@@ -58,6 +58,7 @@ export interface UaaHost {
   // The widget's rect in CSS px relative to the canvas; null when hidden or not on the current screen.
   widgetRect(id: string): Rect | null
   currentScreen(): string
+  focused(): string | null
   destroy(): void
 }
 
@@ -255,6 +256,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     },
     widgetRect: (id) => ui.rectOf(id),
     currentScreen: () => ui.screen(),
+    focused: () => ui.focused(),
     destroy() {
       if (destroyed) return
       destroyed = true

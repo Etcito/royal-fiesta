@@ -171,7 +171,7 @@ test('start screen worn jiggle follows each idle frame while its carousel copy s
   t.mock.method(performance, 'now', () => now)
   const p = await port()
   const noop = () => {}
-  const host: UaaHost = { present: noop, setHud: noop, setLoading: noop, input: noop, frame: noop, resize: noop, widgetRect: () => ({ x: 100, y: 100, w: 160, h: 100 }), currentScreen: () => 'start', destroy: noop }
+  const host: UaaHost = { present: noop, setHud: noop, setLoading: noop, input: noop, frame: noop, resize: noop, widgetRect: () => ({ x: 100, y: 100, w: 160, h: 100 }), currentScreen: () => 'start', focused: () => null, destroy: noop }
   const model = startScreen([hatAsset.id], LOCAL_COSMETICS, 0, { colour: 0, worn: { head: hatAsset.id } })
   const view = mountStartScreen(host, model, { cue: noop, viewSize: () => ({ width: 800, height: 600 }) }, { port: p, character: asset('penguin'), skinned, costume: () => hatAsset, mounts: new Map([[hatAsset.id, [50, 50, 50] as Vec3T]]), environment: null })
   const bodyId = [...p.instances].find(([, name]) => name === skinned.assetId)![0]

@@ -29,7 +29,7 @@ async function setup() {
     present(menu) { menus.push(menu); calls.push('present') },
     setHud(props) { hud.push(props); calls.push('setHud') },
     setLoading: noop, input: noop, frame: noop, resize: noop, widgetRect: () => null,
-    currentScreen: () => 'shop', destroy: noop,
+    currentScreen: () => 'shop', focused: () => null, destroy: noop,
   }
   const view = mountShop(host, model, { cue(id) { cues.push(id) } })
   return { model, menus, hud, calls, cues, view }

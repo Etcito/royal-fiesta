@@ -75,7 +75,7 @@ async function setup() {
     present(value) { menu = value; presentations++ },
     setHud(value) { props = value },
     setLoading: noop, input: noop, frame: noop, resize: noop, widgetRect: () => null,
-    currentScreen: () => 'start', destroy: noop,
+    currentScreen: () => 'start', focused: () => null, destroy: noop,
   }
   const cues: string[] = []
   const deps = { cue(id: string) { cues.push(id) } }

@@ -27,6 +27,8 @@ export interface PrepareOptions {
   waitReady?: boolean
   /** Give up waiting for the complete visible scene after this long (default 120 s). */
   timeoutMs?: number
+  /** Reports the complete-scene wait: `done` of `total` parts and pipelines prepared (called before the first wait). */
+  progress?: (done: number, total: number) => void
 }
 
 const warmedOn = new WeakMap<object, Set<string>>()
@@ -67,9 +69,13 @@ export async function prepareCourse(port: unknown, course: string, options: Prep
   const waiting = (): number => gated.fallbackParts?.() ?? 0
   const timeoutMs = options.timeoutMs ?? 120_000
   const deadline = Date.now() + timeoutMs
+  let total = 0
   while (true) {
     if (options.cancelled?.()) return
-    if (waiting() + pendingPipelines() === 0) break
+    const left = waiting() + pendingPipelines()
+    total = Math.max(total, left)
+    options.progress?.(total - left, total)
+    if (left === 0) break
     if (Date.now() >= deadline) throw new Error(`[render] ${course}: complete scene preparation timed out after ${Math.round(timeoutMs / 1000)} s`)
     await new Promise<void>(resolve => setTimeout(resolve, 50))
   }

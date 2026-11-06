@@ -256,7 +256,10 @@ async function checkSceneRetention(): Promise<void> {
     let warmed = false, released = false
     const exports = compile(`class Subject { ${method(local, '  setVisible(', '  constructor(')}
       ${method(local, '  private async enterRound(', '  private restoreHubScene(')} }; exports.Subject = Subject`, {
-      prepareCourse: () => gate.promise.then(() => { warmed = true }), courseWarmed: () => warmed,
+      prepareCourse: (_port: unknown, _course: string, o: { progress?: (done: number, total: number) => void }) => {
+        o.progress?.(0, 3)
+        return gate.promise.then(() => { warmed = true })
+      }, courseWarmed: () => warmed,
       renderFrame: (_port: unknown, draw: () => void) => draw(), pendingPipelines: () => 0,
     })
     const subject = new exports.Subject()
@@ -269,7 +272,7 @@ async function checkSceneRetention(): Promise<void> {
     const pending = subject.enterRound({ match: { sim: { course: () => ({ id: 'selected' }) }, dispose: () => { released = true } } }, 1)
     subject.setVisible(true)
     assert.deepEqual(visibility, { hub: true, round: false }, 'pending preparation must retain complete previous scenery on every frame')
-    assert.equal(labels.at(-1), 'Preparing round...')
+    assert.equal(labels.at(-1), 'Preparing round... 0/3', 'Play shows readable preparation progress')
     if (obsolete) subject.selection++
     if (failure) gate.reject(new Error('preparation failed'))
     else gate.resolve()
@@ -339,15 +342,17 @@ async function checkSceneRetention(): Promise<void> {
     messageOf: (e: Error) => e.message, refusal: (...parts: string[]) => parts.join(' '), console,
   })
   const overlay = { label: '', hidden: true }
+  let overScene = false
   const shell = new app.Subject()
   Object.assign(shell, { loaded: {}, query: { server: null, clients: 1 }, mode: null, preparedLocal: null, showAhead: null, roundLoading: null,
     pendingRelay: null, orbit: {}, touchOn: false, views: {}, wornLook: () => null, setLayout() {}, stopMode() {},
     fail: (v: string) => { throw new Error(v) }, host: { setLoading() {} },
-    loadingOverlay: { show: (v: string) => { overlay.label = v; overlay.hidden = false }, hide: () => { overlay.hidden = true } } })
+    loadingOverlay: { show: (v: string, _d?: number, _t?: number, o?: { overScene?: boolean }) => { overlay.label = v; overlay.hidden = false; overScene = o?.overScene === true }, hide: () => { overlay.hidden = true } } })
   notify = label => shell.onRoundLoad(label)
   shell.startMode()
   assert.ok(shell.mode instanceof StubLocal)
   assert.deepEqual(overlay, { label: 'Preparing round...', hidden: false }, 'Play must keep its loading state through the selected round\'s own round-load steps')
+  assert.ok(overScene, 'the round loading panel is compact over the retained hub, not an opaque full-screen cover')
   console.info('Scene retention passed: pending frames, successful local/show handoff, failure and obsolete selection retention, Play loading state')
 }
 

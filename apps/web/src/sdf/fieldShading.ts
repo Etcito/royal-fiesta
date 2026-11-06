@@ -257,13 +257,21 @@ fn pmf_grid(x: i32, y: i32) -> vec4f {
 const POSED_NORMAL_WGSL = /* wgsl */ `
 const PMF_REST_TANGENT_AXIS = vec3f(${[1, 2, 3].map((n) => f32(n / Math.sqrt(14))).join(', ')});
 
-fn sdfm_posed_normal(in: MaterialInput, g: vec3f) -> vec3f {
+fn sdfm_posed_normal(in: MaterialInput, g0: vec3f, a: mat3x3f) -> vec3f {
   let n = normalize(in.normal);
+  // RAA moves the tangent with the model matrix and the normal with its inverse transpose. Under a non-uniform instance
+  // scale (a floor tile at 8 x 1 x 1.6) the rest frame is therefore built in the stretched mesh space: A (fieldStretch,
+  // symmetric) carries tangents, adj(A) = det(A) A^-1 carries the normal and the gradient. A = identity: the rigid carry.
+  var ai = mat3x3f(cross(a[1], a[2]), cross(a[2], a[0]), cross(a[0], a[1]));
+  var at = a;
+  if (!(determinant(a) > 0.0)) { ai = mat3x3f(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0); at = ai; }
+  let g = ai * g0;
   if (dot(g, g) == 0.0) { return n; }
-  let nr0 = vec3f(in.uv, in.color.w);
+  let rest = vec3f(in.uv, in.color.w);
+  let nr0 = ai * rest;
   if (dot(nr0, nr0) < 1e-12) { return n; }
   let nr = normalize(nr0);
-  let tr0 = cross(PMF_REST_TANGENT_AXIS, nr0);
+  let tr0 = at * cross(PMF_REST_TANGENT_AXIS, rest);
   let trp = tr0 - nr * dot(nr, tr0);
   let tw = in.tangent.xyz - n * dot(n, in.tangent.xyz);
   if (dot(trp, trp) < 1e-8 || dot(tw, tw) < 1e-12) { return n; }
@@ -483,18 +491,51 @@ export function fieldGridTexture(program: FieldProgramLike): { width: number; he
 
 /**
  * The 16 Engine.setInstanceParams floats of a field part: bounds.min and uniform frame scale, then the grid handle in the
- * volume layout's texture slot, the image width and height, and the "grid is set" flag at p3.x.
+ * volume layout's texture slot, the image width and height, the "grid is set" flag at p3.x, and the instance stretch
+ * (fieldStretch: p1.xyz the diagonal, p2.zw and p3.y the off-diagonal; identity until setTransform scales the instance).
  */
-export function fieldInstanceParams(texture: number | null, program: FieldProgramLike, scale = 1): number[] {
+export function fieldInstanceParams(texture: number | null, program: FieldProgramLike, scale = 1,
+  stretch: readonly number[] = IDENTITY_STRETCH): number[] {
   const grid = program.grid
   const handle = texture ?? 0
   const [x, y, z] = program.bounds.min
+  const [a00, a11, a22, a01, a02, a12] = stretch
   return [
     x, y, z, scale,
-    0, 0, 0, handle,
-    grid === null ? 0 : grid.width, grid === null ? 0 : grid.height, 0, 0,
-    grid !== null && handle > 0 ? 1 : 0, 0, 0, 0,
+    a00, a11, a22, handle,
+    grid === null ? 0 : grid.width, grid === null ? 0 : grid.height, a01, a02,
+    grid !== null && handle > 0 ? 1 : 0, a12, 0, 0,
   ]
+}
+
+/** [a00, a11, a22, a01, a02, a12] of the identity stretch (an instance with a uniform or unit scale). */
+export const IDENTITY_STRETCH: readonly number[] = Object.freeze([1, 1, 1, 0, 0, 0])
+
+/**
+ * The instance scale `s` seen from the mesh space of a part placed under the instance root by rotation `r` (x, y, z, w):
+ * A = Rᵀ · diag(s) · R, symmetric, as [a00, a11, a22, a01, a02, a12], divided by its largest scale (the shader needs only
+ * directions). The world drawing of the part is (root rotation · R) · A, so its normals turn by A⁻¹, not by a rotation:
+ * without it a floor tile scaled 8 x 1 x 1.6 drew its field normals up to 8x too tilted (dark blotches; card 7087).
+ */
+export function fieldStretch(r: readonly number[], s: readonly number[]): number[] {
+  const [x, y, z, w] = r
+  // column-major rotation: R[row][col]
+  const R = [
+    [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+    [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+    [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+  ]
+  const top = Math.max(...s.map(Math.abs))
+  if (!(top > 0) || !s.every(Number.isFinite)) return [...IDENTITY_STRETCH]
+  const a = (i: number, j: number) => R.reduce((sum, row, k) => sum + row[i] * (s[k] / top) * row[j], 0)
+  return [a(0, 0), a(1, 1), a(2, 2), a(0, 1), a(0, 2), a(1, 2)]
+}
+
+/** `params` (fieldInstanceParams) with the stretch slots replaced. */
+export function withFieldStretch(params: readonly number[], stretch: readonly number[]): number[] {
+  const out = params.slice()
+  ;[out[4], out[5], out[6], out[10], out[11], out[13]] = stretch
+  return out
 }
 
 // The labels' constant looks, read from the part's data block, weighted by the field.
@@ -706,7 +747,9 @@ ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
   let glen = length(g);
   var n = normalize(in.normal);
   // The mesh normal only where the field is undefined: local to these fragments.
-  if (inside && glen > 1e-6) { n = sdfm_posed_normal(in, g / glen); }
+  let ip = in.instance_params;
+  let stretch = mat3x3f(vec3f(ip[1].x, ip[2].z, ip[2].w), vec3f(ip[2].z, ip[1].y, ip[3].y), vec3f(ip[2].w, ip[3].y, ip[1].z));
+  if (inside && glen > 1e-6) { n = sdfm_posed_normal(in, g / glen, stretch); }
   o.normal = n;
 ${colour}${debugText}
   return o;

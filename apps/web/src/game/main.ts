@@ -470,7 +470,7 @@ interface ModeCtx {
   // Local play's S26 canvas layout (App.setLayout): one cell per seat, plus the overview cell at 3.
   setLayout: (seats: number) => void
   // The visible loading state while a selected round's complete scene is prepared.
-  setLoading?: (label: string | null) => void
+  setLoading?: (label: string | null, done?: number, total?: number) => void
 }
 
 // Draws one match on port 0: the SceneView framed by the orbit camera while rounds run, then the
@@ -846,7 +846,12 @@ class LocalMode implements Mode {
     const course = run.match.sim.course()
     let failure: string | null = null
     try {
-      if (course !== null) await prepareCourse(this.matchLayer.port, course.id, { cancelled: () => this.disposed || this.selection !== id })
+      if (course !== null) {
+        await prepareCourse(this.matchLayer.port, course.id, {
+          cancelled: () => this.disposed || this.selection !== id,
+          progress: (done, total) => { if (this.selection === id && total > 0) this.c.setLoading?.(`Preparing round... ${done}/${total}`, done, total) },
+        })
+      }
       else while (pendingPipelines() > 0) await new Promise<void>(resolve => setTimeout(resolve, 10))
     } catch (e) {
       failure = `[round] ${course?.id ?? 'local'}: ${e instanceof Error ? e.message : String(e)}`
@@ -2319,7 +2324,7 @@ class App {
     if (loaded === null || q === null) return this.fail(refusal('game', 'start', 'the content is not loaded; retry the load'))
     this.stopMode()
     const c: ModeCtx = { look: () => this.wornLook(), loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats), views: this.views,
-      setLoading: label => this.setRoundLoading(label) }
+      setLoading: (label, done, total) => this.setRoundLoading(label, done, total) }
     try {
       const pending = this.pendingRelay
       this.pendingRelay = null
@@ -2634,11 +2639,12 @@ class App {
   }
 
   // A mode's visible loading state while it prepares the selected round (the app draws it above the scene).
-  private setRoundLoading(label: string | null): void {
+  // The round prepares behind the retained hub: a compact progress panel keeps that scene visible.
+  private setRoundLoading(label: string | null, done?: number, total?: number): void {
     this.roundLoading = label
     if (label !== null) {
-      this.loadingOverlay.show(label)
-      this.host.setLoading(0, label)
+      this.loadingOverlay.show(label, done, total, { overScene: true })
+      this.host.setLoading(total ? (done ?? 0) / total : 0, label)
     } else if (this.mode instanceof LocalMode) {
       this.loadingOverlay.hide(true)
     }

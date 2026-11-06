@@ -81,7 +81,7 @@ test('runtime atlas fallback retains every drawable part and stays stable during
       if (id === './fieldAtlas.ts') return atlas
       if (id === './fieldShading.ts') return shading
       if (id === '@etcito/raa-sdfm') return { fieldSurfaceAttributes: () => ({}) }
-      if (id === '../render/asyncPipelines.ts') return { materialKey: () => 'field', fieldReadiness: () => ({ status: 'ready' }) }
+      if (id === '../render/asyncPipelines.ts') return { materialKey: () => 'field', fieldReadiness: () => ({ status: 'ready' }), createPreparationQueue: () => ({}) }
       if (id === '@royal-fiesta/game/render/roundLoad') return {
         roundStep: (_: string, fn: () => unknown) => fn(), renderFrame: (_: unknown, fn: () => unknown) => fn(),
       }
@@ -374,6 +374,72 @@ test('fieldGridTexture describes the rgba8 grid, or null without a grid', () => 
   assert.equal(texture?.data.length, 16 * 16 * 4)
   assert.equal(texture?.data, p.grid?.texels)
   assert.equal(fieldGridTexture({ ...p, grid: null }), null)
+})
+
+// The WGSL carry of sdfm_posed_normal in plain numbers: the rest frame built in the stretched space (A tangents, A^-1 normal
+// and gradient), mapped onto the drawn frame RAA interpolates (model * tangent, inverse transpose * normal).
+type V = number[]
+const dot3 = (a: V, b: V) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+const cross3 = (a: V, b: V) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+const unit = (a: V) => a.map(v => v / Math.hypot(...a))
+const sub3 = (a: V, b: V, k: number) => a.map((v, i) => v - b[i] * k)
+const mulM = (m: V[], v: V) => [0, 1, 2].map(r => dot3(m[r], v))   // m as rows
+function stretchRows(st: readonly number[]): V[] {
+  const [a00, a11, a22, a01, a02, a12] = st
+  return [[a00, a01, a02], [a01, a11, a12], [a02, a12, a22]]
+}
+// det * M^-T: its columns are the crosses of M's columns (rows here, so transposed)
+const inverseTranspose = (m: V[]): V[] => {
+  const c = [0, 1, 2].map(j => m.map(r => r[j]))
+  const k = [cross3(c[1], c[2]), cross3(c[2], c[0]), cross3(c[0], c[1])]
+  return [0, 1, 2].map(r => k.map(col => col[r]))
+}
+function carry(stretch: readonly number[], model: V[], rest: V, g0: V): V {
+  const a = stretchRows(stretch)
+  const ai = [cross3(a[1], a[2]), cross3(a[2], a[0]), cross3(a[0], a[1])]   // adj(A), symmetric
+  const axis = unit([1, 2, 3])
+  const modelIT = inverseTranspose(model)
+  // the drawn frame RAA hands the fragment
+  const n = unit(mulM(modelIT, rest)), tw0 = mulM(model, cross3(axis, rest))
+  const t = unit(sub3(tw0, n, dot3(n, tw0))), bw = cross3(n, t)
+  // the rest frame in the stretched space
+  const g = mulM(ai, g0), nr = unit(mulM(ai, rest)), tr0 = mulM(a, cross3(axis, rest))
+  const tr = unit(sub3(tr0, nr, dot3(nr, tr0))), br = cross3(nr, tr)
+  return unit([0, 1, 2].map(i => dot3(g, tr) * t[i] + dot3(g, br) * bw[i] + dot3(g, nr) * n[i]))
+}
+
+test('field normals turn by the inverse of a non-uniform instance scale (floor tile 8 x 1 x 1.6; card 7087 dark blotches)', () => {
+  const yaw = 0.4, part = [0, Math.sin(0.15), 0, Math.cos(0.15)]   // instance yaw, part rotation under the root
+  const s = [8, 1, 1.6]
+  const rot = (q: V): V[] => {
+    const [x, y, z, w] = q
+    return [[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)], [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)], [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]
+  }
+  const mm = (a: V[], b: V[]) => a.map(r => [0, 1, 2].map(c => r[0] * b[0][c] + r[1] * b[1][c] + r[2] * b[2][c]))
+  const root = rot([0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)])
+  const model = mm(mm(root, [[s[0], 0, 0], [0, s[1], 0], [0, 0, s[2]]]), rot(part))
+  const modelIT = inverseTranspose(model)
+  const stretch = shading.fieldStretch(part, s)
+  for (const [rest, g] of [[[0, 1, 0], unit([0.5, 1, 0.2])], [unit([0.3, 1, -0.1]), unit([-0.4, 0.8, 0.5])], [unit([1, 0.2, 0.1]), unit([0.9, 0.1, 0.4])]]) {
+    const want = unit(mulM(modelIT, g))
+    const got = carry(stretch, model, rest, g)
+    assert.ok(dot3(want, got) > 1 - 1e-9, `stretched carry ${got} is the inverse-transpose normal ${want}`)
+  }
+  // the rigid carry (identity stretch) tilts the floor's dome normal far past the drawn surface: the defect that was drawn
+  const rigid = carry(shading.IDENTITY_STRETCH, model, [0, 1, 0], unit([0.5, 1, 0.2]))
+  assert.ok(dot3(rigid, unit(mulM(modelIT, unit([0.5, 1, 0.2])))) < 0.95)
+  // unit and uniform scales keep the identity stretch (the rigid carry, unchanged)
+  assert.deepEqual(shading.fieldStretch(part, [2, 2, 2]).map(v => Math.round(v * 1e9) / 1e9), [1, 1, 1, 0, 0, 0])
+  // the params carry it in the free slots, the volume layout (bounds, handle, image size, flag) stays
+  const p = fieldInstanceParams(7, program())
+  assert.deepEqual([p[4], p[5], p[6], p[10], p[11], p[13]], [1, 1, 1, 0, 0, 0])
+  const q = shading.withFieldStretch(p, stretch)
+  assert.deepEqual([q[4], q[5], q[6], q[10], q[11], q[13]], stretch)
+  assert.deepEqual([q[0], q[1], q[2], q[3], q[7], q[8], q[9], q[12]], [p[0], p[1], p[2], p[3], p[7], p[8], p[9], p[12]])
+  // and material_main reads exactly those slots into the carry
+  const wgsl = fieldMaterialWgsl({ program: program(), labelGraphs: [], debug: false }).wgsl
+  assert.match(wgsl, /mat3x3f\(vec3f\(ip\[1\]\.x, ip\[2\]\.z, ip\[2\]\.w\), vec3f\(ip\[2\]\.z, ip\[1\]\.y, ip\[3\]\.y\), vec3f\(ip\[2\]\.w, ip\[3\]\.y, ip\[1\]\.z\)\)/)
+  assert.match(wgsl, /sdfm_posed_normal\(in, g \/ glen, stretch\)/)
 })
 
 test('fieldInstanceParams keeps the volume layout with the grid handle', () => {

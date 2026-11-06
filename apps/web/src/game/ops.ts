@@ -1283,6 +1283,37 @@ interface InteractiveState {
   field?: { normals: ShadingReport; bounds: PartWorldBounds[] }
 }
 
+// #round-loading (game.html) drawn into a 1920x1080 capture of `box`: its panel, its texts and its progress bar.
+export function drawRoundLoading(ctx: CanvasRenderingContext2D, panel: HTMLElement, box: { x: number; y: number; width: number; height: number }): void {
+  const sx = 1920 / box.width, sy = 1080 / box.height
+  const place = (r: DOMRect) => ({ x: (r.x - box.x) * sx, y: (r.y - box.y) * sy, w: r.width * sx, h: r.height * sy })
+  const p = place(panel.getBoundingClientRect()), style = getComputedStyle(panel)
+  ctx.save()
+  ctx.fillStyle = style.backgroundColor
+  ctx.beginPath()
+  ctx.roundRect(p.x, p.y, p.w, p.h, (parseFloat(style.borderTopLeftRadius) || 0) * sx)
+  ctx.fill()
+  for (const child of panel.children) {
+    if (!(child instanceof HTMLElement) || child.hidden) continue
+    const c = place(child.getBoundingClientRect())
+    if (child instanceof HTMLProgressElement) {
+      const r = c.h / 2, fraction = child.position >= 0 ? child.position : 0.3
+      ctx.fillStyle = '#3a2560'
+      ctx.beginPath(); ctx.roundRect(c.x, c.y, c.w, c.h, r); ctx.fill()
+      ctx.fillStyle = '#ff77c8'
+      ctx.beginPath(); ctx.roundRect(c.x, c.y, Math.max(c.h, c.w * fraction), c.h, r); ctx.fill()
+      continue
+    }
+    const cs = getComputedStyle(child)
+    ctx.font = `${cs.fontWeight} ${parseFloat(cs.fontSize) * sy}px ${cs.fontFamily}`
+    ctx.fillStyle = cs.color
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(child.textContent ?? '', c.x + c.w / 2, c.y + c.h / 2)
+  }
+  ctx.restore()
+}
+
 async function interactiveStart(raw: unknown, deps: TourDeps): Promise<OpResult<Record<string, unknown>>> {
   const input = validateInteractiveStart(raw), index = await browserContentIndex()
   for (const id of [input.course, input.startCourse]) if (!index.courses.some(c => c.id === id)) throw new Error(`interactiveStart: ${id} is absent from the published pack`)
@@ -1328,7 +1359,7 @@ async function interactiveStart(raw: unknown, deps: TourDeps): Promise<OpResult<
       if (!report || (name !== 'loading' && report.pending) || report.atlasFull || hardShadingFailures(report).length) throw new Error(`interactiveStart: incomplete visible ${name}: ${JSON.stringify(report)}`)
       const bounds = s.field!.bounds
       if (!bounds.some(b => b.key.includes('candy.')) || !bounds.some(b => b.key.includes('penguin'))) throw new Error(`interactiveStart: ${name} lacks scenery or penguin geometry`)
-      const camera = s.local?.cameras[0]
+      const { local } = s, camera = local?.cameras[0]
       if (name === 'round') for (const subject of ['candy.', 'penguin']) {
         if (!camera || !bounds.some(b => b.key.includes(subject) && interactiveInView(camera, b))) throw new Error(`interactiveStart: selected round ${subject} is outside its camera`)
       }
@@ -1342,6 +1373,12 @@ async function interactiveStart(raw: unknown, deps: TourDeps): Promise<OpResult<
         const image = await shot.image
         ctx.drawImage(image, (shot.rect.x - box.x) * 1920 / box.width, (shot.rect.y - box.y) * 1080 / box.height, shot.rect.width * 1920 / box.width, shot.rect.height * 1080 / box.height)
         image.close()
+      }
+      // The loading panel is DOM over the retained scene: draw what it shows at its own place, as the player sees it.
+      if (name === 'loading') {
+        const panel = document.querySelector<HTMLElement>('#round-loading')
+        if (!panel || panel.hidden || !panel.classList.contains('over-scene')) throw new Error('interactiveStart: the loading capture has no progress panel over the retained scene')
+        drawRoundLoading(ctx, panel, box)
       }
       const png = await pngBlob(canvas, `interactiveStart.${name}`)
       if (!await nonEmpty(png)) throw new Error(`interactiveStart: empty ${name} capture`)

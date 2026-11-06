@@ -32,6 +32,8 @@
       #round-loading { position: fixed; inset: 0; z-index: 10; display: grid; place-content: center; gap: 20px; text-align: center; background: #1b0f2e; color: #fff; font: 700 22px system-ui, sans-serif; }
       #round-loading[hidden] { display: none; }
       #round-loading progress { width: 320px; max-width: 80vw; accent-color: #ff77c8; }
+      #round-loading.over-scene { inset: auto 0 8vh 0; margin: 0 auto; width: min(560px, 86vw); gap: 12px; padding: 18px 28px; border-radius: 22px; background: rgba(27, 15, 46, 0.82); }
+      #round-loading.over-scene progress { width: 100%; max-width: none; }
     </style>
   </head>
   <body>

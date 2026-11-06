@@ -24,7 +24,7 @@ import { installShaderCache } from '../render/shaderCache.ts'
 import { createPreparationQueue, deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
 import { FIELD_ATLAS_BYTES, partDiag, planFieldAtlas, planFieldPrograms, type FieldAtlasPlan, type PartFieldProgram } from './fieldAtlas.ts'
-import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, uniformFieldFrameScale } from './fieldShading.ts'
+import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, fieldStretch, uniformFieldFrameScale, withFieldStretch } from './fieldShading.ts'
 
 export interface PartWorldBounds { key: string; min: number[]; max: number[]; surface?: number[][] }
 
@@ -284,8 +284,10 @@ interface SkinSlot { instance: number; part: PosePart }
 // fallbacks: resident vertex-colour copies (index into partNames), hidden once their shading can draw.
 // textured: the baked-texture member per part (addTextured), shown only in 'baked' mode.
 // bakes: the bake of each instance's part (null = not a baked part).
-interface Live { transform?: number[]; asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null }
+interface Live { transform?: number[]; scale?: Vec3T; stretched: LiveStretched[]; asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null }
 interface LiveFallback { instance: number; part: PartUpload; index: number; ready: boolean; failed: boolean }
+// A field member: its instance params at unit scale and its part rotation, re-sent with the stretch when the instance scales.
+interface LiveStretched { instance: number; params: number[]; r: QuatT }
 interface LiveTextured { instance: number; part: PartUpload; index: number }
 
 export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<string, MeshedAsset>,
@@ -951,12 +953,14 @@ class SdfRenderPort implements ResizablePort {
     const parts = tint === null ? uploaded.parts : this.tintableParts(uploaded)
     const engine = this.need()
     const root = engine.addNode(null)
-    const live: Live = { asset, root, nodes: [], instances: [], partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [],
+    const live: Live = { stretched: [], asset, root, nodes: [], instances: [], partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [],
       filter: null, visible: true, bones: uploaded.bones ?? 0, skin: [], pose: null, fallbacks: [], textured: [], bakes: [], tint }
     parts.forEach((part, index) => {
       const node = engine.addNode(root, part.t, part.r)
       live.nodes.push(node)
-      live.instances.push(this.addMember(live, node, part.mesh, part.object, part, part, tint, part.params))
+      const member = this.addMember(live, node, part.mesh, part.object, part, part, tint, part.params)
+      live.instances.push(member)
+      if (part.params !== undefined) live.stretched.push({ instance: member, params: part.params, r: part.r })
       // Keep every resident member for live shading switches; only one draws in a frame.
       if (part.fallback !== undefined) {
         live.fallbacks.push({ instance: this.addMember(live, node, part.fallback.mesh, part.fallback.object, part, part, tint),
@@ -1225,6 +1229,11 @@ class SdfRenderPort implements ResizablePort {
     const matrix = trMatrix(t, r)
     for (let c = 0; c < 3; c++) for (let row = 0; row < 3; row++) matrix[c * 4 + row] *= s[c]
     live.transform = matrix
+    // The field normals turn by the inverse of a non-uniform scale: the members' params carry it (fieldStretch).
+    if (live.stretched.length && (live.scale === undefined || live.scale.some((v, i) => v !== s[i]))) {
+      live.scale = [s[0], s[1], s[2]]
+      for (const m of live.stretched) this.need().setInstanceParams(m.instance, withFieldStretch(m.params, fieldStretch(m.r, s)))
+    }
     this.need().setTransform(live.root, [t[0], t[1], t[2]], [r[0], r[1], r[2], r[3]], [s[0], s[1], s[2]])
   }
 

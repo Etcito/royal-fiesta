@@ -4,7 +4,8 @@ import { Nav } from '../src/screens/nav.ts'
 import type { NavEvent } from '../src/screens/nav.ts'
 import { CREDITS, HINTS, controlLines, hitTest, layoutButtons, menuModel, moveFocus, progressLine } from '../src/screens/menuModel.ts'
 import type { MenuCtx } from '../src/screens/menuModel.ts'
-import { DEFAULT_SETTINGS, SETTINGS_ROWS, rebind } from '../src/screens/settings.ts'
+import { DEFAULT_SETTINGS, rebind } from '../src/screens/settings.ts'
+import { PAGE_TITLES, SETTINGS_PAGES, TAB_LABELS } from '../src/screens/settingsPages.ts'
 
 function ctx(over: Partial<MenuCtx> = {}): MenuCtx {
   return { settings: DEFAULT_SETTINGS, rebinding: null, error: null, info: [], ...over }
@@ -24,26 +25,49 @@ test('the root menu is the start screen, its buttons in nav order', () => {
   assert.deepEqual(m.buttons.map((b) => b.cmd), new Nav().actions().map((action) => ({ k: 'action', action })))
 })
 
-test('settings from start has one button per row, Credits and Back, and shows a rebind refusal', () => {
-  let message = ''
-  try {
-    rebind(DEFAULT_SETTINGS, 'jump', 'KeyW')
-  } catch (e) {
-    message = (e as Error).message
-  }
-  assert.match(message, /forward/)
-  const m = modelAt(ctx({ rebinding: 'jump', error: message }), { kind: 'action', action: 'settings' })
+test('settings from start: tabs, the audio page rows, Credits and Back', () => {
+  const m = modelAt(ctx(), { kind: 'action', action: 'settings' })
   assert.equal(m.screen, 'settings')
-  assert.equal(m.buttons.length, SETTINGS_ROWS.length + 2)
-  assert.deepEqual(m.buttons[0].cmd, { k: 'row', row: 0 })
-  assert.equal(m.buttons[0].label, 'Volume 80%')
+  assert.equal(m.buttons.length, 4 + 7 + 1 + 1)
+  assert.deepEqual(m.buttons.slice(0, 4).map((b) => b.cmd), SETTINGS_PAGES.map((page) => ({ k: 'tab', page })))
+  assert.deepEqual(m.buttons.slice(0, 4).map((b) => b.label), SETTINGS_PAGES.map((page) => TAB_LABELS[page]))
+  assert.deepEqual(m.buttons[4], { label: 'Master volume', cmd: { k: 'row', row: 0 } })
   assert.deepEqual(m.buttons.at(-2), { label: 'Credits', cmd: { k: 'action', action: 'credits' } })
   assert.deepEqual(m.buttons.at(-1)!.cmd, { k: 'back' })
   // The settings of a paused game have no Credits.
   const paused = modelAt(ctx(), { kind: 'action', action: 'play' }, { kind: 'back' }, { kind: 'action', action: 'settings' })
-  assert.equal(paused.buttons.length, SETTINGS_ROWS.length + 1)
-  assert.ok(m.lines.includes('Press a key for jump - Esc cancels'))
-  assert.ok(m.lines.includes(message))
+  assert.equal(paused.buttons.length, 4 + 7 + 1)
+  assert.deepEqual(paused.buttons.at(-1)!.cmd, { k: 'back' })
+  assert.deepEqual(paused.lines, [])
+})
+
+test('settings pages have their own rows, titles and page-relative row indexes', () => {
+  for (const page of SETTINGS_PAGES) {
+    const m = modelAt(ctx({ page }), { kind: 'action', action: 'settings' })
+    assert.equal(m.title, PAGE_TITLES[page])
+  }
+  const controls = modelAt(ctx({ page: 'controls' }), { kind: 'action', action: 'play' },
+    { kind: 'back' }, { kind: 'action', action: 'settings' })
+  assert.equal(controls.buttons.length, 4 + 12 + 1)
+  assert.deepEqual(controls.buttons[4], { label: 'Forward', cmd: { k: 'row', row: 0 } })
+  assert.deepEqual(controls.buttons.at(-1)!.cmd, { k: 'back' })
+  const graphics = modelAt(ctx({ page: 'graphics', items: [] }), { kind: 'action', action: 'play' },
+    { kind: 'back' }, { kind: 'action', action: 'settings' })
+  assert.equal(graphics.title, 'Graphics')
+  assert.equal(graphics.buttons.length, 4 + 1)
+  assert.deepEqual(graphics.buttons.at(-1)!.cmd, { k: 'back' })
+  const gameplay = modelAt(ctx({ page: 'gameplay' }), { kind: 'action', action: 'settings' })
+  assert.equal(gameplay.buttons.length, 4 + 2 + 1 + 1)
+})
+
+test('the settings line is the first of prompt, error and note', () => {
+  const open = { kind: 'action', action: 'settings' } as const
+  assert.deepEqual(modelAt(ctx({ rebinding: 'jump', error: 'bad key', note: 'no MAMA' }), open).lines,
+    ['Press a key for jump - Esc cancels'])
+  assert.deepEqual(modelAt(ctx({ error: 'bad key', note: 'no MAMA' }), open).lines, ['bad key'])
+  assert.deepEqual(modelAt(ctx({ error: '', note: 'no MAMA' }), open).lines, ['no MAMA'])
+  assert.deepEqual(modelAt(ctx({ note: 'no MAMA' }), open).lines, ['no MAMA'])
+  assert.deepEqual(modelAt(ctx(), open).lines, [])
 })
 
 test('the error model shows the message', () => {

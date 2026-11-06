@@ -9,6 +9,7 @@ import test from 'node:test'
 import { ACTIONS, Nav, SCREENS, type Action, type Screen } from '@royal-fiesta/game/screens/nav'
 import { menuModel, type MenuCtx } from '@royal-fiesta/game/screens/menuModel'
 import { DEFAULT_SETTINGS } from '@royal-fiesta/game/screens/settings'
+import { SETTINGS_PAGES } from '@royal-fiesta/game/screens/settingsPages'
 import { actionToCmd, cmdWidgetId, hudProps, screenProps, widgetsOf, type ScreensDoc } from '../src/ui/screenMap.ts'
 
 const doc = JSON.parse(readFileSync(new URL('../../../ui/screens.ui-doc.json', import.meta.url), 'utf8')) as ScreensDoc
@@ -68,6 +69,25 @@ test('every nav action maps to act-<kebab> and back', () => {
 test('settings rows: action row plus the widget id give the row index', () => {
   assert.deepEqual(actionToCmd('row', 'row-3'), { k: 'row', row: 3 })
   assert.throws(() => actionToCmd('row'), /unknown uaa action/)
+})
+
+test('settings tabs map to and from their widget ids', () => {
+  for (const page of SETTINGS_PAGES) {
+    assert.equal(cmdWidgetId({ k: 'tab', page }), `tab-${page}`)
+    assert.deepEqual(actionToCmd(`tab-${page}`), { k: 'tab', page })
+    assert.deepEqual(actionToCmd(`tab-${page}`, `tab-${page}`), { k: 'tab', page })
+  }
+  assert.deepEqual(actionToCmd('tab-graphics'), { k: 'tab', page: 'graphics' })
+})
+
+test('screenProps on every settings page model finds all its widgets', () => {
+  for (const page of SETTINGS_PAGES) {
+    const model = menuModel('settings', actionsOf('settings'), ctx({ page }))
+    const out = screenProps(doc, model)
+    for (const b of model.buttons) {
+      assert.deepEqual(out.props[cmdWidgetId(b.cmd)], { text: b.label, visible: true })
+    }
+  }
 })
 
 test('unknown action strings are refused', () => {

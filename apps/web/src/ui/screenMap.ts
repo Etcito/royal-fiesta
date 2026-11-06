@@ -4,6 +4,7 @@
 // the button `action` strings stay the nav.ts/menuModel names. Slot ids come from the doc.
 import { ACTIONS, type Action, type Screen } from '@royal-fiesta/game/screens/nav'
 import type { MenuCmd, MenuModel } from '@royal-fiesta/game/screens/menuModel'
+import type { SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
 import type { MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { hudLines } from '../client/hud.ts'
 
@@ -48,6 +49,7 @@ export function actionWidgetId(action: Action): string {
 export function cmdWidgetId(cmd: MenuCmd): string {
   if (cmd.k === 'action') return actionWidgetId(cmd.action)
   if (cmd.k === 'row') return `row-${cmd.row}`
+  if (cmd.k === 'tab') return `tab-${cmd.page}`
   return 'back'
 }
 
@@ -100,10 +102,20 @@ export function screenProps(doc: ScreensDoc, model: MenuModel): UaaScreen {
   return { screen: model.screen, props }
 }
 
+const TAB_RE = /^tab-(audio|graphics|controls|gameplay)$/
+
+function tabCmd(value: string): MenuCmd | null {
+  const m = TAB_RE.exec(value)
+  return m === null ? null : { k: 'tab', page: m[1] as SettingsPage }
+}
+
 // The menu command of a uaa action string: the button action (nav.ts name) or its widget id.
 // Settings rows all share the action 'row'; the row index comes from the widget id row-<i>.
+// Tabs use their own id as the action, so 'tab-graphics' maps from either argument.
 export function actionToCmd(action: string, widgetId?: string): MenuCmd {
   if (action === 'back') return { k: 'back' }
+  const tab = tabCmd(action) ?? (widgetId === undefined ? null : tabCmd(widgetId))
+  if (tab !== null) return tab
   const row = /^row-(\d+)$/.exec(action === 'row' && widgetId !== undefined ? widgetId : action)
   if (row !== null) return { k: 'row', row: Number(row[1]) }
   for (const a of ACTIONS) {

@@ -2801,8 +2801,8 @@ class App {
     }
     if (cmd.k === 'action') this.run(this.nav.dispatch({ kind: 'action', action: cmd.action }))
     else if (cmd.k === 'back') this.back()
-    else if (this.nav.screen === 'settings' && this.graphics.isOpen) this.graphics.activate(cmd.row)
-    else {
+    else if (cmd.k === 'row' && this.nav.screen === 'settings' && this.graphics.isOpen) this.graphics.activate(cmd.row)
+    else if (cmd.k === 'row') {
       const row = SETTINGS_ROWS[cmd.row]
       if (row.kind === 'key') this.pendingRebind = row.action
       else this.apply(adjust(this.settings, row, 1))

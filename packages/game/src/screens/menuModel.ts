@@ -2,11 +2,16 @@
 // hit test, so browser clicks, keys and the scripted tour share one code path.
 import type { LoadProgress } from '../content.ts'
 import type { Action, Screen } from './nav.ts'
-import { SETTINGS_ROWS, describeRow, type KeyAction, type Settings } from './settings.ts'
+import { type KeyAction, type Settings } from './settings.ts'
+import {
+  PAGE_TITLES, SETTINGS_PAGES, TAB_LABELS, pageItems,
+  type SettingsItem, type SettingsPage,
+} from './settingsPages.ts'
 
 export type MenuCmd =
   | { k: 'action', action: Action }
   | { k: 'row', row: number }
+  | { k: 'tab', page: SettingsPage }
   | { k: 'back' }
 
 export interface MenuButton {
@@ -32,6 +37,13 @@ export interface MenuCtx {
   error: string | null
   // Lines the app computes: queue count, result rows, podium names.
   info: readonly string[]
+  // The settings page shown; audio when absent.
+  page?: SettingsPage
+  // The settings page rows; the page's own rows when absent (graphics has none).
+  items?: readonly SettingsItem[]
+  reducedMotion?: boolean
+  // A status line, e.g. GraphicsSettings.notes().
+  note?: string
 }
 
 export interface Rect {
@@ -141,7 +153,7 @@ export function progressLine(p: LoadProgress | null): string {
 }
 
 export function menuModel(screen: Screen, actions: readonly Action[], ctx: MenuCtx): MenuModel {
-  const title = TITLES[screen]
+  let title = TITLES[screen]
   if (OVERLAY.includes(screen)) {
     const hint = screen === 'hub' ? HINTS.hub : HINTS.hud
     return { screen, title, lines: [...ctx.info], buttons: [], hint, overlay: true }
@@ -155,14 +167,20 @@ export function menuModel(screen: Screen, actions: readonly Action[], ctx: MenuC
       lines.push(...controlLines(ctx.settings))
       break
     case 'settings': {
-      // The rows first, then the screen's actions (Credits, in the settings opened from start), then Back.
+      // Tabs, then the page rows, then the screen's actions (Credits, opened from start), then Back.
+      const page = ctx.page ?? 'audio'
+      title = PAGE_TITLES[page]
+      const items = ctx.items ?? (page === 'graphics' ? [] : pageItems(page, ctx.settings, {
+        rebinding: ctx.rebinding, reducedMotion: ctx.reducedMotion ?? false,
+      }))
       const acts = buttons.splice(0)
-      SETTINGS_ROWS.forEach((row, i) => {
-        buttons.push({ label: describeRow(row, ctx.settings), cmd: { k: 'row', row: i } })
-      })
+      for (const p of SETTINGS_PAGES) buttons.push({ label: TAB_LABELS[p], cmd: { k: 'tab', page: p } })
+      items.forEach((item, i) => buttons.push({ label: item.label, cmd: { k: 'row', row: i } }))
       buttons.push(...acts)
-      if (ctx.rebinding !== null) lines.push(`Press a key for ${ctx.rebinding} - Esc cancels`)
-      if (ctx.error !== null) lines.push(ctx.error)
+      // One status line only: the key prompt, then the refusal, then the note.
+      const prompt = ctx.rebinding === null ? '' : `Press a key for ${ctx.rebinding} - Esc cancels`
+      const status = prompt || ctx.error || ctx.note || ''
+      if (status !== '') lines.push(status)
       break
     }
     case 'error':

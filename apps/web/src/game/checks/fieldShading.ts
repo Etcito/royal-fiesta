@@ -34,6 +34,9 @@ const WIDTH = 1920
 const HEIGHT = 1080
 const WAIT_MS = 180_000
 const MECH_COURSE = 'race-hammer-hill'
+// The resident gameplay boots the real game with `?content=sdf`, whose playlist holds only the s1-* courses:
+// 'race-hammer-hill' is refused there ('unknown or view-only course'; card 7086, runs 12536 and 12548). A candy race with hammers.
+const GAMEPLAY_COURSE = 's1-f-taffy-circuit'
 
 interface OpFile { name: string; blob: Blob }
 interface Captures { files: OpFile[]; names: string[]; observations: unknown[]; failures: string[] }
@@ -620,7 +623,7 @@ interface ResidentState {
 async function gameplay(raw: unknown, deps: TourDeps) {
   const request = validateGameplay(raw), q = new URLSearchParams(request.search)
   for (const key of ['server', 'community', 'clients', 'players', 'bots']) if (q.has(key)) throw new Error(`fieldShading: resident gameplay does not accept ${key}`)
-  q.set('content', 'sdf'); q.set('course', MECH_COURSE)
+  q.set('content', 'sdf'); q.set('course', GAMEPLAY_COURSE)
   const errors: string[] = [], events = new AbortController()
   window.addEventListener('error', e => errors.push(String(e.error ?? e.message)), { signal: events.signal })
   window.addEventListener('unhandledrejection', e => errors.push(String(e.reason)), { signal: events.signal })

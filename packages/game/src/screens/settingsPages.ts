@@ -1,6 +1,6 @@
 import type { Bus } from '../audio/catalog.ts'
 import {
-  AUDIO_ROWS, CONTROLS_ROWS, GAMEPLAY_ROWS, describeRow,
+  AUDIO_ROWS, CONTROLS_ROWS, GAMEPLAY_ROWS,
   type KeyAction, type Settings, type SettingsRow
 } from './settings.ts'
 
@@ -36,6 +36,13 @@ export const PAGE_ROWS: Record<'audio' | 'controls' | 'gameplay', readonly Setti
 
 // Row widgets per page in ui/screens.ui-doc.json.
 export const SETTINGS_ROW_SLOTS = 14
+
+// Maximum at the design aspect ratio; taller/narrower viewports leave still more scene visible.
+// A panel consists of the header/padding plus exactly the page's row pitches.
+export function settingsPanelFraction(rows: number, portrait: boolean): number {
+  return portrait ? 672 * (256 + rows * 44) / (720 * 1280)
+    : 736 * (222 + rows * 32) / (1280 * 720)
+}
 
 export interface SettingsItem {
   label: string
@@ -133,7 +140,7 @@ export function rowItem(row: SettingsRow, settings: Settings, ctx: RowContext): 
   }
   if (row.kind === 'reset') {
     return {
-      label: describeRow(row, settings), value: '', control: 'action',
+      label: row.scope === 'all' ? 'Reset all settings' : `Reset ${row.scope}`, value: '', control: 'action',
       help: row.scope === 'audio'
         ? 'Restores the default volume and bus levels.'
         : row.scope === 'controls'

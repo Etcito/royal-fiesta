@@ -2,6 +2,7 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { RectSpec, Screen, Widget } from '@etcito/uaa'
+import { PAGE_ROWS, SETTINGS_PAGES, SETTINGS_ROW_SLOTS, TAB_LABELS } from '../packages/game/src/screens/settingsPages.ts'
 
 type Box = [number, number, number, number]
 type Geometry = {
@@ -26,43 +27,40 @@ type Geometry = {
 // All coordinates are dp relative to the screen centre, with y down.
 const geometry: Record<'portrait' | 'landscape', Geometry> = {
   portrait: {
-    card: [-320, -620, 320, 402],
-    title: [-158, -578, 158, -522],
-    back: [-274, -574, -164, -522],
-    credits: [164, -574, 274, -522],
-    tabs: [-274, -510, -143, -458], tabGap: 8, markY: -452,
-    status: [-274, -440, 274, -408],
-    help: [-274, -402, 274, -372],
+    card: [-336, 20, 336, 0],
+    title: [-180, 62, 180, 102],
+    back: [-284, 62, -188, 102],
+    credits: [188, 62, 284, 102],
+    tabs: [-284, 114, -148, 154], tabGap: 8, markY: 159,
+    status: [-284, 166, 284, 198],
+    help: [-284, 200, 284, 230],
     hint: [-310, 540, 310, 612],
-    row: [-274, -362, -8, -316], pitch: 52, bottomPad: 42,
-    slider: [16, 132], toggle: [40, 110], value: [144, 280]
+    row: [-284, 238, 20, 278], pitch: 44, bottomPad: 42,
+    slider: [36, 156], toggle: [50, 120], value: [168, 284]
   },
   landscape: {
-    card: [-500, -350, 500, 350],
-    title: [-290, -316, 290, -280],
-    back: [-444, -314, -304, -280],
-    credits: [304, -314, 444, -280],
-    tabs: [-444, -274, -231, -240], tabGap: 12, markY: -236,
-    status: [-444, -230, 444, -204],
-    help: [-444, -204, 444, -184],
+    card: [-126, -350, 610, 0],
+    title: [10, -310, 474, -276],
+    back: [-70, -310, 26, -276],
+    credits: [458, -310, 554, -276],
+    tabs: [-70, -270, 80, -236], tabGap: 8, markY: -231,
+    status: [-90, -225, 574, -201],
+    help: [-90, -201, 574, -177],
     hint: [-600, 332, 600, 358],
-    row: [-444, -183, -10, -151], pitch: 36, bottomPad: 33,
-    slider: [20, 230], toggle: [90, 160], value: [246, 450]
+    row: [-70, -168, 230, -138], pitch: 32, bottomPad: 42,
+    slider: [246, 400], toggle: [280, 350], value: [414, 574]
   }
 }
-const pages = [
-  { id: 'audio', label: 'Audio', rows: 7 },
-  { id: 'graphics', label: 'Graphics', rows: 14 },
-  { id: 'controls', label: 'Controls', rows: 12 },
-  { id: 'gameplay', label: 'Gameplay', rows: 2 }
-]
+const pages = SETTINGS_PAGES.map(id => ({
+  id, label: TAB_LABELS[id], rows: id === 'graphics' ? SETTINGS_ROW_SLOTS : PAGE_ROWS[id].length
+}))
 
-function rect([x0, y0, x1, y1]: Box): RectSpec {
-  return { anchorMin: [0.5, 0.5], anchorMax: [0.5, 0.5], offsetMin: [x0, y0], offsetMax: [x1, y1] }
+function rect([x0, y0, x1, y1]: Box, top = false): RectSpec {
+  return { anchorMin: [0.5, top ? 0 : 0.5], anchorMax: [0.5, top ? 0 : 0.5], offsetMin: [x0, y0], offsetMax: [x1, y1] }
 }
 
 function placement(box: (g: Geometry) => Box) {
-  return { rect: rect(box(geometry.portrait)), landscape: rect(box(geometry.landscape)) }
+  return { rect: rect(box(geometry.portrait), true), landscape: rect(box(geometry.landscape)) }
 }
 
 function button(id: string, text: string, action: string, box: (g: Geometry) => Box): Widget {
@@ -90,7 +88,7 @@ export function settingsScreen(): Screen {
     ...placement(g => [g.card[0], g.card[1], g.card[2], rowBox(g, page.rows - 1)[3] + g.bottomPad])
   }))
   widgets.push(
-    label('title', 'Settings', g => g.title, 28),
+    label('title', 'Settings', g => g.title, 30),
     button('back', 'Back', 'back', g => g.back),
     button('act-credits', 'Credits', 'credits', g => g.credits)
   )
@@ -107,7 +105,7 @@ export function settingsScreen(): Screen {
     label('help', '', g => g.help, 20),
     label('hint', 'Up/Down choose - Left/Right adjust or switch page - Enter select - Esc back', g => g.hint, 20)
   )
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < SETTINGS_ROW_SLOTS; i++) {
     const bar = (g: Geometry, x: [number, number]): Box => {
       const row = rowBox(g, i), y = (row[1] + row[3]) / 2
       return [x[0], y - 6, x[1], y + 6]
@@ -115,7 +113,18 @@ export function settingsScreen(): Screen {
     widgets.push(
       button(`row-${i}`, '', 'row', g => rowBox(g, i)),
       progress(`slider-${i}`, g => bar(g, g.slider)),
-      progress(`switch-${i}`, g => bar(g, g.toggle)),
+      { id: `keycap-${i}`, type: 'panel', asset: 'panel.card',
+        ...placement(g => [g.value[0], rowBox(g, i)[1] - 1, g.value[1], rowBox(g, i)[3] + 1]) },
+      { id: `switch-${i}`, type: 'group', ...placement(g => {
+        const row = rowBox(g, i), y = (row[1] + row[3]) / 2
+        return [g.toggle[0], y - 12, g.toggle[1], y + 12]
+      }), children: [
+        { id: `switch-track-${i}`, type: 'progress', track: 'bar.track', fill: 'bar.progress', value: 1,
+          rect: { anchorMin: [0, 0.25], anchorMax: [1, 0.75], offsetMin: [0, 0], offsetMax: [0, 0] } },
+        ...([0, 1] as const).map(on => ({ id: `switch-${on ? 'on' : 'off'}-${i}`, type: 'icon' as const, asset: 'badge.round',
+          rect: { anchorMin: [on, 0.5] as [number, number], anchorMax: [on, 0.5] as [number, number],
+            offsetMin: [on ? -24 : 0, -12] as [number, number], offsetMax: [on ? 0 : 24, 12] as [number, number] } }))
+      ] },
       label(`value-${i}`, '', g => [g.value[0], rowBox(g, i)[1], g.value[1], rowBox(g, i)[3]], 26, 'right')
     )
   }

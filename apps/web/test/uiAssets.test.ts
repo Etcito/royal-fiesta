@@ -119,7 +119,8 @@ test('Settings exposes the page, tab and row control widget contract', () => {
     expected.set(`row-${i}`, 'button')
     expected.set(`value-${i}`, 'label')
     expected.set(`slider-${i}`, 'progress')
-    expected.set(`switch-${i}`, 'progress')
+    expected.set(`switch-${i}`, 'group')
+    expected.set(`keycap-${i}`, 'panel')
   }
   assert.deepEqual([...widgets.keys()].sort(), [...expected.keys()].sort())
   assert.equal(screen.initialFocus, 'row-0')
@@ -177,10 +178,6 @@ test('Settings exposes the page, tab and row control widget contract', () => {
 
 test('Settings Back still focuses and activates at the edge of its full pointer target', () => {
   const back = doc.screens.find(s => s.id === 'settings')!.widgets.find(w => w.id === 'back')!
-  assert.deepEqual(back.rect.offsetMin, [-274, -574])
-  assert.deepEqual(back.rect.offsetMax, [-164, -522])
-  assert.deepEqual(back.landscape!.offsetMin, [-444, -314])
-  assert.deepEqual(back.landscape!.offsetMax, [-304, -280])
   for (const [width, height] of [[360, 640], [1280, 720]]) {
     const ui = createUi({ doc, assets, fonts: createFontRegistry([]), renderer: null,
       viewport: { width, height, pixelRatio: 1, safeArea: { top: 0, right: 0, bottom: 0, left: 0 } }, nowMs: 0 })

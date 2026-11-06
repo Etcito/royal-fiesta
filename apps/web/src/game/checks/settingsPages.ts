@@ -1,9 +1,12 @@
-import { SETTINGS_ROW_SLOTS, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
+import { PAGE_ROWS, SETTINGS_PAGES, SETTINGS_ROW_SLOTS, type SettingsPage } from '@royal-fiesta/game/screens/settingsPages'
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { yieldTask } from './boot.ts'
 import { focusTab } from './settingsTabs.ts'
 import { capture, pipelinesReady } from './wardrobe.ts'
+import { settingsDraw } from '../../ui/settingsWidgets.ts'
+import { settingsLayoutFailures } from './settingsLayout.ts'
+import type { SettingsSceneFrame } from '../settingsScene.ts'
 
 export const name = 'settingsPages'
 
@@ -124,9 +127,48 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
     }
   }
   const openPage = (page: SettingsPage): Promise<void> => focusTab(page, () => live.host.focused(), press)
-  const take = async (file: string): Promise<void> => {
+  const assertLayout = async (page: SettingsPage, context: string): Promise<void> => {
+    const rows = page === 'graphics' ? SETTINGS_ROW_SLOTS : PAGE_ROWS[page].length
+    const labels = [...SETTINGS_PAGES.map(p => `tab-${p}`), ...Array.from({ length: rows }, (_, i) => `row-${i}`)]
+      .map(id => ({ id, text: propText(props, id), rect: live.host.widgetRect(id) }))
+    const scene = (live.inventory() as { settingsScene: SettingsSceneFrame | null }).settingsScene
+    const failures = settingsLayoutFailures({
+      width: live.ui.clientWidth, height: live.ui.clientHeight,
+      panel: live.host.widgetRect(`card-${page}`), player: scene?.bounds ?? null, labels, rows,
+      bindings: page === 'controls' ? PAGE_ROWS.controls.flatMap((r, i) => r.kind === 'key' ? [i] : []) : [],
+      toggles: page === 'controls' ? [10] : page === 'gameplay' ? [0]
+        : Array.from({ length: rows }, (_, i) => i).filter(i => props[`switch-${i}`]?.visible === true),
+      draw: settingsDraw(),
+    })
+    for (const failure of failures) report(`${prefix}${context}/${page}: ${failure}`)
+    // Read the submitted UI, too: a populated draw list alone cannot detect a missing atlas glyph.
+    const bitmap = await createImageBitmap(live.ui)
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) throw new Error('no readback context for Settings labels')
+    ctx.drawImage(bitmap, 0, 0)
+    bitmap.close()
+    const sx = canvas.width / live.ui.clientWidth, sy = canvas.height / live.ui.clientHeight
+    for (const label of labels) {
+      if (!label.rect) continue
+      const r = label.rect
+      const pixels = ctx.getImageData(Math.floor((r.x + r.w * 0.05) * sx), Math.floor((r.y + r.h * 0.15) * sy),
+        Math.max(1, Math.floor(r.w * 0.9 * sx)), Math.max(1, Math.floor(r.h * 0.7 * sy))).data
+      let ink = false
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] < 150 && pixels[i + 1] < 120 && pixels[i + 2] < 110 && pixels[i + 3] > 128) { ink = true; break }
+      }
+      if (!ink) report(`${prefix}${context}/${page}: ${label.id} has no drawn label pixels`)
+    }
+  }
+  const take = async (file: string, page: SettingsPage): Promise<void> => {
     await pipelinesReady(live, file)
+    // Complete the menu's view-only entry/focus animations without waiting on rAF.
+    live.step(0.4)
     live.step(1 / 60)
+    await assertLayout(page, file.startsWith('pause-') ? 'pause' : 'start')
     // The shared compositor is 16:9; retain the real viewport ratio for phone captures.
     const blob = portrait ? await viewportCapture(live) : (await capture(live)).composite
     files.push({ name: prefix + file + '.png', blob })
@@ -146,7 +188,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
     await press('ArrowRight')
     await waitFor(() => propText(props, 'value-0') === '80%', 'master volume 80%')
     expect('master volume right adjustment', propText(props, 'value-0'), '80%')
-    await take('audio')
+    await take('audio', 'audio')
   })
 
   await section('Graphics page', async () => {
@@ -157,7 +199,7 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
       .find(value => value?.visible === true && value.text === 'LOD offset')
     expect('LOD offset unavailable row (disabled)', lod === undefined ? 'no visible LOD offset row' : lod.disabled === true, true)
     expect('LOD offset note (line-0 names LOD offset)', propText(props, 'line-0').includes('LOD offset') || propText(props, 'line-0'), true)
-    await take('graphics')
+    await take('graphics', 'graphics')
   })
 
   await section('Controls page', async () => {
@@ -177,22 +219,20 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
     await press('KeyW')
     await waitFor(() => propText(props, 'value-0') === '[ W ]', 'KeyW restore')
     expect('KeyW restored', propText(props, 'value-0'), '[ W ]')
-    await take('controls')
+    await take('controls', 'controls')
   })
 
   await section('Gameplay page', async () => {
     await openPage('gameplay')
     await waitFor(() => propText(props, 'title') === 'Gameplay & Accessibility', 'Gameplay page')
     expect('Gameplay credits button visible', props['act-credits']?.visible, true)
-    await take('gameplay')
+    await take('gameplay', 'gameplay')
   })
 
   await section('Back to start', async () => {
     await press('Escape')
     await waitFor(() => live.host.currentScreen() === 'start', 'return to start')
   })
-  if (portrait) return
-
   await section('Pause Controls page', async () => {
     // The start focus order is four wardrobe bins, palette, then Play (uiTour).
     for (let i = 0; i < 5; i++) await press('ArrowDown')
@@ -203,11 +243,24 @@ async function runSize(live: TourGame, portrait: boolean, files: CheckFile[], re
       && live.host.widgetRect('act-settings') !== null, 'pause screen')
     click(live, 'act-settings')
     await waitFor(() => live.host.currentScreen() === 'settings' && !!props.title?.text, 'pause settings')
+    for (const page of SETTINGS_PAGES) {
+      click(live, `tab-${page}`)
+      await step()
+      await take(`pause-${page}`, page)
+    }
+    // Exercise the switch in both positions through real input.
     click(live, 'tab-controls')
-    await waitFor(() => propText(props, 'title') === 'Controls', 'pause Controls page')
-    await take('pause-controls')
+    await step()
+    click(live, 'row-10')
+    await step()
+    expect('Invert Y switched on', propText(props, 'value-10'), 'On')
+    click(live, 'row-10')
+    await step()
+    expect('Invert Y switched off', propText(props, 'value-10'), 'Off')
     await press('Escape')
     await waitFor(() => live.host.currentScreen() === 'pause', 'return to pause')
+    click(live, 'act-leave')
+    await waitFor(() => live.host.currentScreen() === 'start', 'leave hub for next viewport')
   })
 }
 
@@ -224,7 +277,7 @@ export async function run(_input: unknown, deps: TourDeps) {
   let restore = setSize(true)
   let game: TourGame | undefined
   try {
-    game = await deps.boot(() => {}, { plain: true, saved: {} })
+    game = await deps.boot(() => {}, { plain: true, search: '?test=1', saved: {} })
     await runSize(game, true, files, report)
     restore()
     restore = setSize(false)

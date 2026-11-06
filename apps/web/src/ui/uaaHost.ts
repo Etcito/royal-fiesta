@@ -19,6 +19,7 @@ import logo from '../../../../ui/logo.json' with { type: 'json' }
 import { wardrobeAssets } from './wardrobeAssets.ts'
 import { withCosmeticThumbnails } from './cosmeticThumbnails.ts'
 import { withCapsuleButtons } from './buttonMapping.ts'
+import { withSettingsWidgets } from './settingsWidgets.ts'
 
 export interface UaaCommand {
   cmd: MenuCmd
@@ -202,7 +203,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
   let ui: Ui
   try {
     renderer = await checkAwait('UI renderer', () => createWebGpuRenderer(canvas, { device: device as NonNullable<WebGpuRendererOptions['device']> }))
-    renderer = withCapsuleButtons(renderer, () => ui.screen())
+    renderer = withCapsuleButtons(withSettingsWidgets(renderer), () => ui.screen())
     renderer = await checkAwait('UI logo', () => withLogo(renderer!, canvas, device as unknown as LogoDevice, { ...logo, format: logo.format as 'png' | 'svg' }, document.baseURI))
     renderer = await withCosmeticThumbnails(renderer, canvas, device as unknown as LogoDevice, thumbnails)
     const assets = loadAssets(uiAssetTexts())

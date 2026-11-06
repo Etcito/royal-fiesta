@@ -201,5 +201,10 @@
     "after": [
       "settings-render"
     ]
+  },
+  {
+    "name": "settings-layout-local",
+    "command": "node --experimental-strip-types --test apps/web/test/settingsWidgets.test.ts apps/web/test/uiAssets.test.ts apps/web/test/settingsPagesCheck.test.ts",
+    "timeout_s": 300
   }
 ]

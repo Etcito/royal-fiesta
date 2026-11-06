@@ -2705,19 +2705,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -320,
-              -620
+              -336,
+              20
             ],
             "offsetMax": [
-              320,
-              38
+              336,
+              584
             ]
           },
           "landscape": {
@@ -2730,12 +2730,12 @@
               0.5
             ],
             "offsetMin": [
-              -500,
+              -126,
               -350
             ],
             "offsetMax": [
-              500,
-              98
+              610,
+              96
             ]
           }
         },
@@ -2746,19 +2746,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -320,
-              -620
+              -336,
+              20
             ],
             "offsetMax": [
-              320,
-              402
+              336,
+              892
             ]
           },
           "landscape": {
@@ -2771,12 +2771,12 @@
               0.5
             ],
             "offsetMin": [
-              -500,
+              -126,
               -350
             ],
             "offsetMax": [
-              500,
-              350
+              610,
+              320
             ]
           }
         },
@@ -2787,19 +2787,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -320,
-              -620
+              -336,
+              20
             ],
             "offsetMax": [
-              320,
-              298
+              336,
+              804
             ]
           },
           "landscape": {
@@ -2812,12 +2812,12 @@
               0.5
             ],
             "offsetMin": [
-              -500,
+              -126,
               -350
             ],
             "offsetMax": [
-              500,
-              278
+              610,
+              256
             ]
           }
         },
@@ -2828,19 +2828,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -320,
-              -620
+              -336,
+              20
             ],
             "offsetMax": [
-              320,
-              -222
+              336,
+              364
             ]
           },
           "landscape": {
@@ -2853,12 +2853,12 @@
               0.5
             ],
             "offsetMin": [
-              -500,
+              -126,
               -350
             ],
             "offsetMax": [
-              500,
-              -82
+              610,
+              -64
             ]
           }
         },
@@ -2870,25 +2870,25 @@
             "family": "Fredoka",
             "weight": 700
           },
-          "size": 28,
+          "size": 30,
           "color": "#5a2a00",
           "align": "center",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -158,
-              -578
+              -180,
+              62
             ],
             "offsetMax": [
-              158,
-              -522
+              180,
+              102
             ]
           },
           "landscape": {
@@ -2901,12 +2901,12 @@
               0.5
             ],
             "offsetMin": [
-              -290,
-              -316
+              10,
+              -310
             ],
             "offsetMax": [
-              290,
-              -280
+              474,
+              -276
             ]
           }
         },
@@ -2921,19 +2921,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -574
+              -284,
+              62
             ],
             "offsetMax": [
-              -164,
-              -522
+              -188,
+              102
             ]
           },
           "landscape": {
@@ -2946,12 +2946,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -314
+              -70,
+              -310
             ],
             "offsetMax": [
-              -304,
-              -280
+              26,
+              -276
             ]
           },
           "anim": {
@@ -2976,19 +2976,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              164,
-              -574
+              188,
+              62
             ],
             "offsetMax": [
-              274,
-              -522
+              284,
+              102
             ]
           },
           "landscape": {
@@ -3001,12 +3001,12 @@
               0.5
             ],
             "offsetMin": [
-              304,
-              -314
+              458,
+              -310
             ],
             "offsetMax": [
-              444,
-              -280
+              554,
+              -276
             ]
           },
           "anim": {
@@ -3031,19 +3031,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -510
+              -284,
+              114
             ],
             "offsetMax": [
-              -143,
-              -458
+              -148,
+              154
             ]
           },
           "landscape": {
@@ -3056,12 +3056,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -274
+              -70,
+              -270
             ],
             "offsetMax": [
-              -231,
-              -240
+              80,
+              -236
             ]
           },
           "anim": {
@@ -3084,19 +3084,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -266,
-              -452
+              -276,
+              159
             ],
             "offsetMax": [
-              -151,
-              -449
+              -156,
+              162
             ]
           },
           "landscape": {
@@ -3109,12 +3109,12 @@
               0.5
             ],
             "offsetMin": [
-              -436,
-              -236
+              -62,
+              -231
             ],
             "offsetMax": [
-              -239,
-              -233
+              72,
+              -228
             ]
           }
         },
@@ -3129,19 +3129,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -135,
-              -510
+              -140,
+              114
             ],
             "offsetMax": [
               -4,
-              -458
+              154
             ]
           },
           "landscape": {
@@ -3154,12 +3154,12 @@
               0.5
             ],
             "offsetMin": [
-              -219,
-              -274
+              88,
+              -270
             ],
             "offsetMax": [
-              -6,
-              -240
+              238,
+              -236
             ]
           },
           "anim": {
@@ -3182,19 +3182,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -127,
-              -452
+              -132,
+              159
             ],
             "offsetMax": [
               -12,
-              -449
+              162
             ]
           },
           "landscape": {
@@ -3207,12 +3207,12 @@
               0.5
             ],
             "offsetMin": [
-              -211,
-              -236
+              96,
+              -231
             ],
             "offsetMax": [
-              -14,
-              -233
+              230,
+              -228
             ]
           }
         },
@@ -3227,19 +3227,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
               4,
-              -510
+              114
             ],
             "offsetMax": [
-              135,
-              -458
+              140,
+              154
             ]
           },
           "landscape": {
@@ -3252,12 +3252,12 @@
               0.5
             ],
             "offsetMin": [
-              6,
-              -274
+              246,
+              -270
             ],
             "offsetMax": [
-              219,
-              -240
+              396,
+              -236
             ]
           },
           "anim": {
@@ -3280,19 +3280,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
               12,
-              -452
+              159
             ],
             "offsetMax": [
-              127,
-              -449
+              132,
+              162
             ]
           },
           "landscape": {
@@ -3305,12 +3305,12 @@
               0.5
             ],
             "offsetMin": [
-              14,
-              -236
+              254,
+              -231
             ],
             "offsetMax": [
-              211,
-              -233
+              388,
+              -228
             ]
           }
         },
@@ -3325,19 +3325,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              143,
-              -510
+              148,
+              114
             ],
             "offsetMax": [
-              274,
-              -458
+              284,
+              154
             ]
           },
           "landscape": {
@@ -3350,12 +3350,12 @@
               0.5
             ],
             "offsetMin": [
-              231,
-              -274
+              404,
+              -270
             ],
             "offsetMax": [
-              444,
-              -240
+              554,
+              -236
             ]
           },
           "anim": {
@@ -3378,19 +3378,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              151,
-              -452
+              156,
+              159
             ],
             "offsetMax": [
-              266,
-              -449
+              276,
+              162
             ]
           },
           "landscape": {
@@ -3403,12 +3403,12 @@
               0.5
             ],
             "offsetMin": [
-              239,
-              -236
+              412,
+              -231
             ],
             "offsetMax": [
-              436,
-              -233
+              546,
+              -228
             ]
           }
         },
@@ -3426,19 +3426,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -440
+              -284,
+              166
             ],
             "offsetMax": [
-              274,
-              -408
+              284,
+              198
             ]
           },
           "landscape": {
@@ -3451,12 +3451,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -230
+              -90,
+              -225
             ],
             "offsetMax": [
-              444,
-              -204
+              574,
+              -201
             ]
           }
         },
@@ -3474,19 +3474,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -402
+              -284,
+              200
             ],
             "offsetMax": [
-              274,
-              -372
+              284,
+              230
             ]
           },
           "landscape": {
@@ -3499,12 +3499,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -204
+              -90,
+              -201
             ],
             "offsetMax": [
-              444,
-              -184
+              574,
+              -177
             ]
           }
         },
@@ -3522,11 +3522,11 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
               -310,
@@ -3567,19 +3567,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -362
+              -284,
+              238
             ],
             "offsetMax": [
-              -8,
-              -316
+              20,
+              278
             ]
           },
           "landscape": {
@@ -3592,12 +3592,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -183
+              -70,
+              -168
             ],
             "offsetMax": [
-              -10,
-              -151
+              230,
+              -138
             ]
           },
           "anim": {
@@ -3620,19 +3620,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              -345
+              36,
+              252
             ],
             "offsetMax": [
-              132,
-              -333
+              156,
+              264
             ]
           },
           "landscape": {
@@ -3645,37 +3645,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              -173
+              246,
+              -159
             ],
             "offsetMax": [
-              230,
-              -161
+              400,
+              -147
+            ]
+          }
+        },
+        {
+          "id": "keycap-0",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              237
+            ],
+            "offsetMax": [
+              284,
+              279
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              -169
+            ],
+            "offsetMax": [
+              574,
+              -137
             ]
           }
         },
         {
           "id": "switch-0",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              -345
+              50,
+              246
             ],
             "offsetMax": [
-              110,
-              -333
+              120,
+              270
             ]
           },
           "landscape": {
@@ -3688,14 +3726,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              -173
+              280,
+              -165
             ],
             "offsetMax": [
-              160,
-              -161
+              350,
+              -141
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-0",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-0",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-0",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-0",
@@ -3711,19 +3822,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              -362
+              168,
+              238
             ],
             "offsetMax": [
-              280,
-              -316
+              284,
+              278
             ]
           },
           "landscape": {
@@ -3736,12 +3847,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              -183
+              414,
+              -168
             ],
             "offsetMax": [
-              450,
-              -151
+              574,
+              -138
             ]
           }
         },
@@ -3756,19 +3867,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -310
+              -284,
+              282
             ],
             "offsetMax": [
-              -8,
-              -264
+              20,
+              322
             ]
           },
           "landscape": {
@@ -3781,12 +3892,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -147
+              -70,
+              -136
             ],
             "offsetMax": [
-              -10,
-              -115
+              230,
+              -106
             ]
           },
           "anim": {
@@ -3809,19 +3920,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              -293
+              36,
+              296
             ],
             "offsetMax": [
-              132,
-              -281
+              156,
+              308
             ]
           },
           "landscape": {
@@ -3834,37 +3945,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
+              246,
+              -127
+            ],
+            "offsetMax": [
+              400,
+              -115
+            ]
+          }
+        },
+        {
+          "id": "keycap-1",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              281
+            ],
+            "offsetMax": [
+              284,
+              323
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
               -137
             ],
             "offsetMax": [
-              230,
-              -125
+              574,
+              -105
             ]
           }
         },
         {
           "id": "switch-1",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              -293
+              50,
+              290
             ],
             "offsetMax": [
-              110,
-              -281
+              120,
+              314
             ]
           },
           "landscape": {
@@ -3877,14 +4026,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              -137
+              280,
+              -133
             ],
             "offsetMax": [
-              160,
-              -125
+              350,
+              -109
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-1",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-1",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-1",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-1",
@@ -3900,19 +4122,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              -310
+              168,
+              282
             ],
             "offsetMax": [
-              280,
-              -264
+              284,
+              322
             ]
           },
           "landscape": {
@@ -3925,12 +4147,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              -147
+              414,
+              -136
             ],
             "offsetMax": [
-              450,
-              -115
+              574,
+              -106
             ]
           }
         },
@@ -3945,19 +4167,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -258
+              -284,
+              326
             ],
             "offsetMax": [
-              -8,
-              -212
+              20,
+              366
             ]
           },
           "landscape": {
@@ -3970,12 +4192,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -111
+              -70,
+              -104
             ],
             "offsetMax": [
-              -10,
-              -79
+              230,
+              -74
             ]
           },
           "anim": {
@@ -3998,19 +4220,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              -241
+              36,
+              340
             ],
             "offsetMax": [
-              132,
-              -229
+              156,
+              352
             ]
           },
           "landscape": {
@@ -4023,37 +4245,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              -101
+              246,
+              -95
             ],
             "offsetMax": [
-              230,
-              -89
+              400,
+              -83
+            ]
+          }
+        },
+        {
+          "id": "keycap-2",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              325
+            ],
+            "offsetMax": [
+              284,
+              367
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              -105
+            ],
+            "offsetMax": [
+              574,
+              -73
             ]
           }
         },
         {
           "id": "switch-2",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              -241
+              50,
+              334
             ],
             "offsetMax": [
-              110,
-              -229
+              120,
+              358
             ]
           },
           "landscape": {
@@ -4066,14 +4326,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
+              280,
               -101
             ],
             "offsetMax": [
-              160,
-              -89
+              350,
+              -77
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-2",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-2",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-2",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-2",
@@ -4089,19 +4422,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              -258
+              168,
+              326
             ],
             "offsetMax": [
-              280,
-              -212
+              284,
+              366
             ]
           },
           "landscape": {
@@ -4114,12 +4447,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              -111
+              414,
+              -104
             ],
             "offsetMax": [
-              450,
-              -79
+              574,
+              -74
             ]
           }
         },
@@ -4134,19 +4467,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -206
+              -284,
+              370
             ],
             "offsetMax": [
-              -8,
-              -160
+              20,
+              410
             ]
           },
           "landscape": {
@@ -4159,12 +4492,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -75
+              -70,
+              -72
             ],
             "offsetMax": [
-              -10,
-              -43
+              230,
+              -42
             ]
           },
           "anim": {
@@ -4187,19 +4520,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              -189
+              36,
+              384
             ],
             "offsetMax": [
-              132,
-              -177
+              156,
+              396
             ]
           },
           "landscape": {
@@ -4212,37 +4545,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              -65
+              246,
+              -63
             ],
             "offsetMax": [
-              230,
-              -53
+              400,
+              -51
+            ]
+          }
+        },
+        {
+          "id": "keycap-3",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              369
+            ],
+            "offsetMax": [
+              284,
+              411
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              -73
+            ],
+            "offsetMax": [
+              574,
+              -41
             ]
           }
         },
         {
           "id": "switch-3",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              -189
+              50,
+              378
             ],
             "offsetMax": [
-              110,
-              -177
+              120,
+              402
             ]
           },
           "landscape": {
@@ -4255,14 +4626,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              -65
+              280,
+              -69
             ],
             "offsetMax": [
-              160,
-              -53
+              350,
+              -45
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-3",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-3",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-3",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-3",
@@ -4278,19 +4722,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              -206
+              168,
+              370
             ],
             "offsetMax": [
-              280,
-              -160
+              284,
+              410
             ]
           },
           "landscape": {
@@ -4303,12 +4747,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              -75
+              414,
+              -72
             ],
             "offsetMax": [
-              450,
-              -43
+              574,
+              -42
             ]
           }
         },
@@ -4323,19 +4767,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -154
+              -284,
+              414
             ],
             "offsetMax": [
-              -8,
-              -108
+              20,
+              454
             ]
           },
           "landscape": {
@@ -4348,12 +4792,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -39
+              -70,
+              -40
             ],
             "offsetMax": [
-              -10,
-              -7
+              230,
+              -10
             ]
           },
           "anim": {
@@ -4376,19 +4820,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              -137
+              36,
+              428
             ],
             "offsetMax": [
-              132,
-              -125
+              156,
+              440
             ]
           },
           "landscape": {
@@ -4401,37 +4845,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              -29
+              246,
+              -31
             ],
             "offsetMax": [
-              230,
-              -17
+              400,
+              -19
+            ]
+          }
+        },
+        {
+          "id": "keycap-4",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              413
+            ],
+            "offsetMax": [
+              284,
+              455
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              -41
+            ],
+            "offsetMax": [
+              574,
+              -9
             ]
           }
         },
         {
           "id": "switch-4",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              -137
+              50,
+              422
             ],
             "offsetMax": [
-              110,
-              -125
+              120,
+              446
             ]
           },
           "landscape": {
@@ -4444,14 +4926,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              -29
+              280,
+              -37
             ],
             "offsetMax": [
-              160,
-              -17
+              350,
+              -13
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-4",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-4",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-4",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-4",
@@ -4467,19 +5022,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              -154
+              168,
+              414
             ],
             "offsetMax": [
-              280,
-              -108
+              284,
+              454
             ]
           },
           "landscape": {
@@ -4492,12 +5047,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              -39
+              414,
+              -40
             ],
             "offsetMax": [
-              450,
-              -7
+              574,
+              -10
             ]
           }
         },
@@ -4512,19 +5067,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -102
+              -284,
+              458
             ],
             "offsetMax": [
-              -8,
-              -56
+              20,
+              498
             ]
           },
           "landscape": {
@@ -4537,12 +5092,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              -3
+              -70,
+              -8
             ],
             "offsetMax": [
-              -10,
-              29
+              230,
+              22
             ]
           },
           "anim": {
@@ -4565,19 +5120,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              -85
+              36,
+              472
             ],
             "offsetMax": [
-              132,
-              -73
+              156,
+              484
             ]
           },
           "landscape": {
@@ -4590,37 +5145,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              7
+              246,
+              1
             ],
             "offsetMax": [
-              230,
-              19
+              400,
+              13
+            ]
+          }
+        },
+        {
+          "id": "keycap-5",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              457
+            ],
+            "offsetMax": [
+              284,
+              499
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              -9
+            ],
+            "offsetMax": [
+              574,
+              23
             ]
           }
         },
         {
           "id": "switch-5",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              -85
+              50,
+              466
             ],
             "offsetMax": [
-              110,
-              -73
+              120,
+              490
             ]
           },
           "landscape": {
@@ -4633,14 +5226,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              7
+              280,
+              -5
             ],
             "offsetMax": [
-              160,
+              350,
               19
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-5",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-5",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-5",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-5",
@@ -4656,19 +5322,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              -102
+              168,
+              458
             ],
             "offsetMax": [
-              280,
-              -56
+              284,
+              498
             ]
           },
           "landscape": {
@@ -4681,12 +5347,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              -3
+              414,
+              -8
             ],
             "offsetMax": [
-              450,
-              29
+              574,
+              22
             ]
           }
         },
@@ -4701,19 +5367,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              -50
+              -284,
+              502
             ],
             "offsetMax": [
-              -8,
-              -4
+              20,
+              542
             ]
           },
           "landscape": {
@@ -4726,12 +5392,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              33
+              -70,
+              24
             ],
             "offsetMax": [
-              -10,
-              65
+              230,
+              54
             ]
           },
           "anim": {
@@ -4754,110 +5420,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              -33
+              36,
+              516
             ],
             "offsetMax": [
-              132,
-              -21
-            ]
-          },
-          "landscape": {
-            "anchorMin": [
-              0.5,
-              0.5
-            ],
-            "anchorMax": [
-              0.5,
-              0.5
-            ],
-            "offsetMin": [
-              20,
-              43
-            ],
-            "offsetMax": [
-              230,
-              55
-            ]
-          }
-        },
-        {
-          "id": "switch-6",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
-          "rect": {
-            "anchorMin": [
-              0.5,
-              0.5
-            ],
-            "anchorMax": [
-              0.5,
-              0.5
-            ],
-            "offsetMin": [
-              40,
-              -33
-            ],
-            "offsetMax": [
-              110,
-              -21
-            ]
-          },
-          "landscape": {
-            "anchorMin": [
-              0.5,
-              0.5
-            ],
-            "anchorMax": [
-              0.5,
-              0.5
-            ],
-            "offsetMin": [
-              90,
-              43
-            ],
-            "offsetMax": [
-              160,
-              55
-            ]
-          }
-        },
-        {
-          "id": "value-6",
-          "type": "label",
-          "text": "",
-          "font": {
-            "family": "Fredoka",
-            "weight": 700
-          },
-          "size": 26,
-          "color": "#5a2a00",
-          "align": "right",
-          "rect": {
-            "anchorMin": [
-              0.5,
-              0.5
-            ],
-            "anchorMax": [
-              0.5,
-              0.5
-            ],
-            "offsetMin": [
-              144,
-              -50
-            ],
-            "offsetMax": [
-              280,
-              -4
+              156,
+              528
             ]
           },
           "landscape": {
@@ -4874,8 +5449,210 @@
               33
             ],
             "offsetMax": [
-              450,
-              65
+              400,
+              45
+            ]
+          }
+        },
+        {
+          "id": "keycap-6",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              501
+            ],
+            "offsetMax": [
+              284,
+              543
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              23
+            ],
+            "offsetMax": [
+              574,
+              55
+            ]
+          }
+        },
+        {
+          "id": "switch-6",
+          "type": "group",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              50,
+              510
+            ],
+            "offsetMax": [
+              120,
+              534
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              280,
+              27
+            ],
+            "offsetMax": [
+              350,
+              51
+            ]
+          },
+          "children": [
+            {
+              "id": "switch-track-6",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-6",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-6",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "value-6",
+          "type": "label",
+          "text": "",
+          "font": {
+            "family": "Fredoka",
+            "weight": 700
+          },
+          "size": 26,
+          "color": "#5a2a00",
+          "align": "right",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              502
+            ],
+            "offsetMax": [
+              284,
+              542
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              24
+            ],
+            "offsetMax": [
+              574,
+              54
             ]
           }
         },
@@ -4890,19 +5667,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              2
+              -284,
+              546
             ],
             "offsetMax": [
-              -8,
-              48
+              20,
+              586
             ]
           },
           "landscape": {
@@ -4915,12 +5692,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              69
+              -70,
+              56
             ],
             "offsetMax": [
-              -10,
-              101
+              230,
+              86
             ]
           },
           "anim": {
@@ -4943,19 +5720,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              19
+              36,
+              560
             ],
             "offsetMax": [
-              132,
-              31
+              156,
+              572
             ]
           },
           "landscape": {
@@ -4968,37 +5745,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              79
+              246,
+              65
             ],
             "offsetMax": [
-              230,
-              91
+              400,
+              77
+            ]
+          }
+        },
+        {
+          "id": "keycap-7",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              545
+            ],
+            "offsetMax": [
+              284,
+              587
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              55
+            ],
+            "offsetMax": [
+              574,
+              87
             ]
           }
         },
         {
           "id": "switch-7",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              19
+              50,
+              554
             ],
             "offsetMax": [
-              110,
-              31
+              120,
+              578
             ]
           },
           "landscape": {
@@ -5011,14 +5826,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              79
+              280,
+              59
             ],
             "offsetMax": [
-              160,
-              91
+              350,
+              83
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-7",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-7",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-7",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-7",
@@ -5034,19 +5922,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              2
+              168,
+              546
             ],
             "offsetMax": [
-              280,
-              48
+              284,
+              586
             ]
           },
           "landscape": {
@@ -5059,12 +5947,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              69
+              414,
+              56
             ],
             "offsetMax": [
-              450,
-              101
+              574,
+              86
             ]
           }
         },
@@ -5079,19 +5967,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              54
+              -284,
+              590
             ],
             "offsetMax": [
-              -8,
-              100
+              20,
+              630
             ]
           },
           "landscape": {
@@ -5104,12 +5992,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              105
+              -70,
+              88
             ],
             "offsetMax": [
-              -10,
-              137
+              230,
+              118
             ]
           },
           "anim": {
@@ -5132,19 +6020,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              71
+              36,
+              604
             ],
             "offsetMax": [
-              132,
-              83
+              156,
+              616
             ]
           },
           "landscape": {
@@ -5157,37 +6045,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              115
+              246,
+              97
             ],
             "offsetMax": [
-              230,
-              127
+              400,
+              109
+            ]
+          }
+        },
+        {
+          "id": "keycap-8",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              589
+            ],
+            "offsetMax": [
+              284,
+              631
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              87
+            ],
+            "offsetMax": [
+              574,
+              119
             ]
           }
         },
         {
           "id": "switch-8",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              71
+              50,
+              598
             ],
             "offsetMax": [
-              110,
-              83
+              120,
+              622
             ]
           },
           "landscape": {
@@ -5200,14 +6126,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              115
+              280,
+              91
             ],
             "offsetMax": [
-              160,
-              127
+              350,
+              115
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-8",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-8",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-8",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-8",
@@ -5223,19 +6222,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              54
+              168,
+              590
             ],
             "offsetMax": [
-              280,
-              100
+              284,
+              630
             ]
           },
           "landscape": {
@@ -5248,12 +6247,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              105
+              414,
+              88
             ],
             "offsetMax": [
-              450,
-              137
+              574,
+              118
             ]
           }
         },
@@ -5268,19 +6267,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              106
+              -284,
+              634
             ],
             "offsetMax": [
-              -8,
-              152
+              20,
+              674
             ]
           },
           "landscape": {
@@ -5293,12 +6292,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              141
+              -70,
+              120
             ],
             "offsetMax": [
-              -10,
-              173
+              230,
+              150
             ]
           },
           "anim": {
@@ -5321,19 +6320,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              123
+              36,
+              648
             ],
             "offsetMax": [
-              132,
-              135
+              156,
+              660
             ]
           },
           "landscape": {
@@ -5346,37 +6345,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              151
+              246,
+              129
             ],
             "offsetMax": [
-              230,
-              163
+              400,
+              141
+            ]
+          }
+        },
+        {
+          "id": "keycap-9",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              633
+            ],
+            "offsetMax": [
+              284,
+              675
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              119
+            ],
+            "offsetMax": [
+              574,
+              151
             ]
           }
         },
         {
           "id": "switch-9",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              123
+              50,
+              642
             ],
             "offsetMax": [
-              110,
-              135
+              120,
+              666
             ]
           },
           "landscape": {
@@ -5389,14 +6426,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              151
+              280,
+              123
             ],
             "offsetMax": [
-              160,
-              163
+              350,
+              147
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-9",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-9",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-9",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-9",
@@ -5412,19 +6522,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              106
+              168,
+              634
             ],
             "offsetMax": [
-              280,
-              152
+              284,
+              674
             ]
           },
           "landscape": {
@@ -5437,12 +6547,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              141
+              414,
+              120
             ],
             "offsetMax": [
-              450,
-              173
+              574,
+              150
             ]
           }
         },
@@ -5457,19 +6567,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              158
+              -284,
+              678
             ],
             "offsetMax": [
-              -8,
-              204
+              20,
+              718
             ]
           },
           "landscape": {
@@ -5482,12 +6592,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              177
+              -70,
+              152
             ],
             "offsetMax": [
-              -10,
-              209
+              230,
+              182
             ]
           },
           "anim": {
@@ -5510,19 +6620,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              175
+              36,
+              692
             ],
             "offsetMax": [
-              132,
-              187
+              156,
+              704
             ]
           },
           "landscape": {
@@ -5535,37 +6645,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              187
+              246,
+              161
             ],
             "offsetMax": [
-              230,
-              199
+              400,
+              173
+            ]
+          }
+        },
+        {
+          "id": "keycap-10",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              677
+            ],
+            "offsetMax": [
+              284,
+              719
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              151
+            ],
+            "offsetMax": [
+              574,
+              183
             ]
           }
         },
         {
           "id": "switch-10",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              175
+              50,
+              686
             ],
             "offsetMax": [
-              110,
-              187
+              120,
+              710
             ]
           },
           "landscape": {
@@ -5578,14 +6726,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              187
+              280,
+              155
             ],
             "offsetMax": [
-              160,
-              199
+              350,
+              179
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-10",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-10",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-10",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-10",
@@ -5601,19 +6822,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              158
+              168,
+              678
             ],
             "offsetMax": [
-              280,
-              204
+              284,
+              718
             ]
           },
           "landscape": {
@@ -5626,12 +6847,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              177
+              414,
+              152
             ],
             "offsetMax": [
-              450,
-              209
+              574,
+              182
             ]
           }
         },
@@ -5646,19 +6867,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              210
+              -284,
+              722
             ],
             "offsetMax": [
-              -8,
-              256
+              20,
+              762
             ]
           },
           "landscape": {
@@ -5671,12 +6892,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              213
+              -70,
+              184
             ],
             "offsetMax": [
-              -10,
-              245
+              230,
+              214
             ]
           },
           "anim": {
@@ -5699,19 +6920,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              227
+              36,
+              736
             ],
             "offsetMax": [
-              132,
-              239
+              156,
+              748
             ]
           },
           "landscape": {
@@ -5724,37 +6945,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              223
+              246,
+              193
             ],
             "offsetMax": [
-              230,
-              235
+              400,
+              205
+            ]
+          }
+        },
+        {
+          "id": "keycap-11",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              721
+            ],
+            "offsetMax": [
+              284,
+              763
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              183
+            ],
+            "offsetMax": [
+              574,
+              215
             ]
           }
         },
         {
           "id": "switch-11",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              227
+              50,
+              730
             ],
             "offsetMax": [
-              110,
-              239
+              120,
+              754
             ]
           },
           "landscape": {
@@ -5767,14 +7026,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              223
+              280,
+              187
             ],
             "offsetMax": [
-              160,
-              235
+              350,
+              211
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-11",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-11",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-11",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-11",
@@ -5790,19 +7122,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              210
+              168,
+              722
             ],
             "offsetMax": [
-              280,
-              256
+              284,
+              762
             ]
           },
           "landscape": {
@@ -5815,12 +7147,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              213
+              414,
+              184
             ],
             "offsetMax": [
-              450,
-              245
+              574,
+              214
             ]
           }
         },
@@ -5835,19 +7167,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              262
+              -284,
+              766
             ],
             "offsetMax": [
-              -8,
-              308
+              20,
+              806
             ]
           },
           "landscape": {
@@ -5860,12 +7192,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              249
+              -70,
+              216
             ],
             "offsetMax": [
-              -10,
-              281
+              230,
+              246
             ]
           },
           "anim": {
@@ -5888,19 +7220,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              279
+              36,
+              780
             ],
             "offsetMax": [
-              132,
-              291
+              156,
+              792
             ]
           },
           "landscape": {
@@ -5913,37 +7245,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              259
+              246,
+              225
             ],
             "offsetMax": [
-              230,
-              271
+              400,
+              237
+            ]
+          }
+        },
+        {
+          "id": "keycap-12",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              765
+            ],
+            "offsetMax": [
+              284,
+              807
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              215
+            ],
+            "offsetMax": [
+              574,
+              247
             ]
           }
         },
         {
           "id": "switch-12",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              279
+              50,
+              774
             ],
             "offsetMax": [
-              110,
-              291
+              120,
+              798
             ]
           },
           "landscape": {
@@ -5956,14 +7326,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              259
+              280,
+              219
             ],
             "offsetMax": [
-              160,
-              271
+              350,
+              243
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-12",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-12",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-12",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-12",
@@ -5979,19 +7422,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              262
+              168,
+              766
             ],
             "offsetMax": [
-              280,
-              308
+              284,
+              806
             ]
           },
           "landscape": {
@@ -6004,12 +7447,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              249
+              414,
+              216
             ],
             "offsetMax": [
-              450,
-              281
+              574,
+              246
             ]
           }
         },
@@ -6024,19 +7467,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              -274,
-              314
+              -284,
+              810
             ],
             "offsetMax": [
-              -8,
-              360
+              20,
+              850
             ]
           },
           "landscape": {
@@ -6049,12 +7492,12 @@
               0.5
             ],
             "offsetMin": [
-              -444,
-              285
+              -70,
+              248
             ],
             "offsetMax": [
-              -10,
-              317
+              230,
+              278
             ]
           },
           "anim": {
@@ -6077,19 +7520,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              16,
-              331
+              36,
+              824
             ],
             "offsetMax": [
-              132,
-              343
+              156,
+              836
             ]
           },
           "landscape": {
@@ -6102,37 +7545,75 @@
               0.5
             ],
             "offsetMin": [
-              20,
-              295
+              246,
+              257
             ],
             "offsetMax": [
-              230,
-              307
+              400,
+              269
+            ]
+          }
+        },
+        {
+          "id": "keycap-13",
+          "type": "panel",
+          "asset": "panel.card",
+          "rect": {
+            "anchorMin": [
+              0.5,
+              0
+            ],
+            "anchorMax": [
+              0.5,
+              0
+            ],
+            "offsetMin": [
+              168,
+              809
+            ],
+            "offsetMax": [
+              284,
+              851
+            ]
+          },
+          "landscape": {
+            "anchorMin": [
+              0.5,
+              0.5
+            ],
+            "anchorMax": [
+              0.5,
+              0.5
+            ],
+            "offsetMin": [
+              414,
+              247
+            ],
+            "offsetMax": [
+              574,
+              279
             ]
           }
         },
         {
           "id": "switch-13",
-          "type": "progress",
-          "track": "bar.track",
-          "fill": "bar.progress",
-          "value": 0,
+          "type": "group",
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              40,
-              331
+              50,
+              818
             ],
             "offsetMax": [
-              110,
-              343
+              120,
+              842
             ]
           },
           "landscape": {
@@ -6145,14 +7626,87 @@
               0.5
             ],
             "offsetMin": [
-              90,
-              295
+              280,
+              251
             ],
             "offsetMax": [
-              160,
-              307
+              350,
+              275
             ]
-          }
+          },
+          "children": [
+            {
+              "id": "switch-track-13",
+              "type": "progress",
+              "track": "bar.track",
+              "fill": "bar.progress",
+              "value": 1,
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.25
+                ],
+                "anchorMax": [
+                  1,
+                  0.75
+                ],
+                "offsetMin": [
+                  0,
+                  0
+                ],
+                "offsetMax": [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "id": "switch-off-13",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  0,
+                  0.5
+                ],
+                "anchorMax": [
+                  0,
+                  0.5
+                ],
+                "offsetMin": [
+                  0,
+                  -12
+                ],
+                "offsetMax": [
+                  24,
+                  12
+                ]
+              }
+            },
+            {
+              "id": "switch-on-13",
+              "type": "icon",
+              "asset": "badge.round",
+              "rect": {
+                "anchorMin": [
+                  1,
+                  0.5
+                ],
+                "anchorMax": [
+                  1,
+                  0.5
+                ],
+                "offsetMin": [
+                  -24,
+                  -12
+                ],
+                "offsetMax": [
+                  0,
+                  12
+                ]
+              }
+            }
+          ]
         },
         {
           "id": "value-13",
@@ -6168,19 +7722,19 @@
           "rect": {
             "anchorMin": [
               0.5,
-              0.5
+              0
             ],
             "anchorMax": [
               0.5,
-              0.5
+              0
             ],
             "offsetMin": [
-              144,
-              314
+              168,
+              810
             ],
             "offsetMax": [
-              280,
-              360
+              284,
+              850
             ]
           },
           "landscape": {
@@ -6193,12 +7747,12 @@
               0.5
             ],
             "offsetMin": [
-              246,
-              285
+              414,
+              248
             ],
             "offsetMax": [
-              450,
-              317
+              574,
+              278
             ]
           }
         }

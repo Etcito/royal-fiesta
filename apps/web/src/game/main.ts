@@ -91,6 +91,7 @@ import { SoundDriver } from '../play/sound.ts'
 import { widgetsOf } from '../ui/screenMap.ts'
 import type { ScreensDoc, WidgetProps } from '../ui/screenMap.ts'
 import { settingsWidgetProps } from '../ui/settingsWidgets.ts'
+import { SettingsScene, type SettingsSceneFrame } from './settingsScene.ts'
 import { createUaaHost } from '../ui/uaaHost.ts'
 import type { UaaCommand, UaaHost, UaaScreenChange } from '../ui/uaaHost.ts'
 import uiDocText from '../../../../ui/screens.ui-doc.json?raw'
@@ -1528,6 +1529,7 @@ class App {
   readonly nav = new Nav()
   private settings: Settings
   private settingsPage: SettingsPage = 'audio'
+  private settingsScene: SettingsScene | null = null
   // The screen the last draw() showed: entering Settings opens it on Audio.
   private drawnScreen: Screen | null = null
   private settingsError: string | null
@@ -1722,6 +1724,7 @@ class App {
     sound: ReturnType<SoundDriver['inventory']>
     listeners: number
     camera: { yaw: number; pitch: number; rendered: CameraPose | null }
+    settingsScene: SettingsSceneFrame | null
   } {
     const loaded = this.loaded
     const local = this.mode instanceof LocalMode ? this.mode : this.preparedLocal
@@ -1745,6 +1748,7 @@ class App {
       sound: this.sound.inventory(),
       listeners: this.lobbyListeners,
       camera: { yaw: this.orbit.yaw, pitch: this.orbit.pitch, rendered: this.mode instanceof ShowAdapter ? this.mode.show.camera : null },
+      settingsScene: this.settingsScene?.frame ?? null,
     }
   }
 
@@ -1963,6 +1967,14 @@ class App {
       const show = q.server !== null || this.nav.onlineOnly ? await checkAwait('online show content', () => loadShowContent('sprint')) : null
       this.loaded = { R, content, ports, canvases, course, show }
       if (ports[0] !== undefined) ports[0] = trackLobbyAssets(ports[0], this.lobbyAssets)
+      if (ports[0] !== undefined) {
+        this.settingsScene = new SettingsScene()
+        ports[0] = this.settingsScene.wrap(ports[0], content.character().id, () => {
+          if (this.nav.screen !== 'settings') return null
+          const panel = this.host.widgetRect(`card-${this.settingsPage}`)
+          return panel === null ? null : { panel, width: this.screens.clientWidth, height: this.screens.clientHeight }
+        })
+      }
       this.resizeViews()
       if (q.server === null && q.clients === 1) {
         boot.enter('first frame (pipelines, capture)')
@@ -2398,8 +2410,9 @@ class App {
     else Object.assign(this.world, neutralInput())
     // The wardrobe owns the shared stage while open. Keep the prepared lobby
     // alive without advancing or drawing it behind the character preview.
-    this.preparedLocal?.setVisible(nav.screen !== 'start')
-    if (mode instanceof LocalMode) mode.setVisible(nav.screen !== 'start')
+    const wardrobe = nav.screen === 'start' || (nav.screen === 'settings' && nav.settingsFrom === 'start')
+    this.preparedLocal?.setVisible(!wardrobe)
+    if (mode instanceof LocalMode) mode.setVisible(!wardrobe)
     if (mode !== null && nav.live && nav.screen !== 'start') {
       const paused = nav.screen === 'pause' || nav.screen === 'settings'
       const screen = mode.frame({
@@ -2616,7 +2629,7 @@ class App {
     if (model.screen === 'settings') this.host.setHud(settingsWidgetProps(page, items, this.host.focused(), nav.settingsFrom))
     if (hud !== null && values !== null) this.host.setHud(hudWidgets(values, hud.view))
     // Submit the wardrobe scene's last camera and instances before the panel, so the backdrop is current.
-    if (startBackdrop) this.loaded?.ports[0]?.render()
+    if (nav.screen === 'settings') this.loaded?.ports[0]?.render()
     this.host.frame(this.uiNowMs)
   }
 

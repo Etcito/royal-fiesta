@@ -1,12 +1,8 @@
 /// <reference path="../types-mama.d.ts" />
-// The Graphics page of the settings screen (owner 2026-11-04: "these options must be exposed by MAMA"): every row,
-// label, range, default and the validation come from MAMA's game render-options contract
-// (src/core/game/render-options.ts), reached through the private virtual:rf-mama module like the rest of MAMA; this
-// file holds no copy of an option. The choices are saved with the settings store (GRAPHICS_KEY) and pushed to the
-// render ports (render/renderOptions.ts) and the page loop (frame rate, FPS counter) on every change.
-// A full multi-page settings redesign is milestone M5; this page only makes the options reachable and usable.
+// Rows, labels, ranges and validation come from MAMA's game render-options contract.
 import type { MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import type { SettingsStore } from '@royal-fiesta/game/screens/settings'
+import { SETTINGS_ROW_SLOTS, type SettingsItem } from '@royal-fiesta/game/screens/settingsPages'
 import type { WidgetProps } from '../ui/screenMap.ts'
 
 export const GRAPHICS_KEY = 'royal-fiesta.graphics'
@@ -22,6 +18,12 @@ export interface GraphicsSpec {
   default: unknown
   unavailable?: string
   choices?: readonly GraphicsChoice[]
+  min?: number
+  max?: number
+  step?: number
+  unit?: string
+  values?: readonly number[]
+  valueLabels?: readonly string[]
 }
 export interface GraphicsContract {
   specs: readonly GraphicsSpec[]
@@ -32,17 +34,25 @@ export interface GraphicsContract {
   shown(spec: GraphicsSpec, options: object): boolean
 }
 
-// The settings screen has 18 row slots (ui/screens.ui-doc.json row-0..row-17).
-const ROW_SLOTS = 18
 // Royal Fiesta starts on MEDIUM (owner 2026-11-05): SDF shading, medium AO, full render scale, post on. A saved
 // choice (localStorage, GRAPHICS_KEY) still wins; MAMA's defaults fill the other keys.
 export const DEFAULT_GRAPHICS: Readonly<Record<string, unknown>> = Object.freeze({
   shading: 'field', aoQuality: 2, renderScale: 1, postBloom: true, postGrading: true, jiggle: 'all',
 })
 // Options applied by the upload: a change shows when the next scene loads.
-const ON_NEXT_LOAD = new Set(['shading', 'bakeTexelDensity', 'bakeMaxSize'])
+const ON_NEXT_LOAD = new Set(['bakeTexelDensity', 'bakeMaxSize'])
 
-interface Row { label: string; spec: GraphicsSpec | null; disabled: boolean }
+function numberValues(spec: GraphicsSpec): readonly number[] {
+  if (spec.values !== undefined) return spec.values
+  if (spec.min === undefined || spec.max === undefined || spec.step === undefined) return []
+  return Array.from({ length: Math.round((spec.max - spec.min) / spec.step) + 1 },
+    (_, i) => +(spec.min! + i * spec.step!).toFixed(6))
+}
+
+function help(spec: GraphicsSpec): string {
+  return spec.help + (spec.choices ?? []).filter(choice => choice.unavailable !== undefined)
+    .map(choice => ` Unavailable: ${choice.label} - ${choice.unavailable}.`).join('')
+}
 
 export class GraphicsSettings {
   private contract: GraphicsContract | null = null
@@ -103,42 +113,68 @@ export class GraphicsSettings {
     this.note = null
   }
 
-  // The page's rows: the shown options in the contract's section order, then one disabled row per choice the stack
-  // cannot take yet, right after its option.
-  private rows(): Row[] {
+  private specs(): GraphicsSpec[] {
     const contract = this.contract
     if (contract === null) return []
-    const rows: Row[] = []
-    for (const section of contract.sections) {
-      for (const spec of contract.specs) {
-        if (spec.section !== section.id || !contract.shown(spec, this.values)) continue
-        const value = spec.unavailable === undefined ? contract.label(spec, this.values[spec.key]) : 'unavailable'
-        rows.push({ label: `${spec.label}: ${value}`, spec, disabled: spec.unavailable !== undefined })
-        for (const choice of spec.choices ?? []) {
-          if (choice.unavailable !== undefined) rows.push({ label: `${choice.label}: unavailable`, spec: null, disabled: true })
-        }
+    return contract.sections.flatMap(section => contract.specs.filter(spec =>
+      spec.section === section.id && contract.shown(spec, this.values))).slice(0, SETTINGS_ROW_SLOTS - 1)
+  }
+
+  items(): SettingsItem[] {
+    const contract = this.contract
+    if (contract === null) return []
+    const items = this.specs().map((spec): SettingsItem => {
+      const value = this.values[spec.key]
+      const item: SettingsItem = {
+        label: spec.label, value: contract.label(spec, value), help: help(spec),
+        control: spec.kind === 'number' ? 'slider' : spec.kind,
       }
-    }
-    return rows.slice(0, ROW_SLOTS)
+      if (ON_NEXT_LOAD.has(spec.key)) item.nextLoad = true
+      if (spec.kind === 'choice') {
+        const choices = (spec.choices ?? []).filter(choice => choice.unavailable === undefined)
+        item.index = choices.findIndex(choice => choice.value === value)
+        item.count = choices.length
+      } else if (spec.kind === 'toggle') {
+        item.value = value === true ? 'On' : 'Off'
+        item.fraction = value === true ? 1 : 0
+      } else {
+        const values = numberValues(spec)
+        const at = values.findIndex(v => Math.abs(v - (value as number)) < 1e-9)
+        item.fraction = values.length > 1 ? Math.max(0, at) / (values.length - 1) : 0
+      }
+      if (spec.unavailable !== undefined) {
+        item.value = 'Unavailable'
+        item.fraction = 0
+        item.disabled = spec.unavailable
+      }
+      return item
+    })
+    items.push({ label: 'Reset graphics to defaults', value: '', control: 'action',
+      help: 'Puts every graphics option back to its default.' })
+    return items
   }
 
   // The settings screen as the Graphics page: its rows, a line (the last change's help, else why some choices are
   // unavailable) and Back (to the settings rows).
   model(hint: string): MenuModel {
-    const rows = this.rows()
-    const buttons: MenuModel['buttons'] = rows.map((row, i) => ({ label: row.label, cmd: { k: 'row', row: i } }))
+    const buttons: MenuModel['buttons'] = this.items().map((item, i) => ({
+      label: item.value === '' ? item.label : `${item.label}: ${item.value}`, cmd: { k: 'row', row: i },
+    }))
     buttons.push({ label: 'Back', cmd: { k: 'back' } })
-    return { screen: 'settings', title: 'Graphics', lines: [this.line()], buttons, hint, overlay: false }
+    return { screen: 'settings', title: 'Graphics', lines: [this.notes()], buttons, hint, overlay: false }
   }
 
   // The disabled state of the unavailable rows (MenuModel buttons carry no state; the uaa widgets do).
   props(): Record<string, WidgetProps> {
     const props: Record<string, WidgetProps> = {}
-    this.rows().forEach((row, i) => { props[`row-${i}`] = { text: row.label, visible: true, disabled: row.disabled } })
+    this.items().forEach((item, i) => {
+      props[`row-${i}`] = { text: item.value === '' ? item.label : `${item.label}: ${item.value}`,
+        visible: true, disabled: item.disabled !== undefined }
+    })
     return props
   }
 
-  private line(): string {
+  notes(): string {
     if (this.contract === null) return 'Graphics options come from MAMA, which this build does not include.'
     if (this.note !== null) return this.note
     const reasons = this.contract.specs.flatMap(spec => [
@@ -148,23 +184,50 @@ export class GraphicsSettings {
     return reasons.length === 0 ? '' : `Unavailable - ${reasons.join('; ')}`
   }
 
-  // A row press: the option steps to its next value (wrapping), is saved and applied. False when the row does nothing
-  // (a disabled row, or no row there).
-  activate(index: number, dir: 1 | -1 = 1): boolean {
+  adjust(index: number, dir: 1 | -1): boolean {
+    return this.change(index, dir, false)
+  }
+
+  activate(index: number): boolean {
+    const item = this.items()[index]
+    if (item?.control === 'action') { this.reset(); return true }
+    return this.change(index, 1, true)
+  }
+
+  private change(index: number, dir: 1 | -1, wrap: boolean): boolean {
     const contract = this.contract
-    const row = this.rows()[index]
-    if (contract === null || row === undefined || row.spec === null || row.disabled) return false
-    const spec = row.spec
-    const { options } = contract.validate({ ...this.values, [spec.key]: contract.step(spec, this.values[spec.key], dir) })
-    this.values = { ...options }
-    this.note = ON_NEXT_LOAD.has(spec.key) ? `${spec.help} Applies when the next scene loads.` : spec.help
+    const spec = this.specs()[index]
+    if (contract === null || spec === undefined || spec.unavailable !== undefined) return false
+    let value: unknown
+    if (spec.kind === 'number') {
+      const values = numberValues(spec)
+      if (values.length === 0) return false
+      const at = values.findIndex(v => Math.abs(v - (this.values[spec.key] as number)) < 1e-9)
+      const next = at + dir
+      value = values[wrap ? (next + values.length) % values.length : Math.max(0, Math.min(values.length - 1, next))]
+    } else {
+      value = spec.kind === 'toggle' ? !this.values[spec.key] : contract.step(spec, this.values[spec.key], dir)
+    }
+    this.values = { ...contract.validate({ ...this.values, [spec.key]: value }).options }
+    this.note = help(spec) + (ON_NEXT_LOAD.has(spec.key) ? ' Applies when the next scene loads.' : '')
+    this.save()
+    return true
+  }
+
+  reset(): void {
+    if (this.contract === null) return
+    this.values = { ...this.contract.validate(DEFAULT_GRAPHICS).options }
+    this.note = 'Puts every graphics option back to its default.'
+    this.save()
+  }
+
+  private save(): void {
     try {
       this.store.setItem(GRAPHICS_KEY, JSON.stringify(this.values))
     } catch (e) {
       this.note = `Not saved (${e instanceof Error ? e.message : String(e)}); allow site storage to keep settings.`
     }
     this.onChange(this.values)
-    return true
   }
 }
 

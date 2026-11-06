@@ -316,7 +316,39 @@ async function checkSceneRetention(): Promise<void> {
     assert.equal(stopped, !failure && !obsolete)
     if (failure) assert.match(error, /show preparation failed/)
   }
-  console.info('Scene retention passed: pending frames, successful local/show handoff, failure and obsolete selection retention')
+  // Play on a ?course= page: the selected round starts preparing only once the App holds its LocalMode, so the
+  // round-load notifications of that preparation (Course instances, RAA render, ready) keep 'Preparing round...'.
+  const constructor = method(local, '  constructor(', '  openCourse(')
+  assert.ok(constructor.length > 0 && !/this\.enqueue\(/.test(constructor), 'LocalMode must not start its round from its constructor: the App does not hold the mode yet')
+  let notify: (label: string | null) => void = () => {}
+  class StubLocal {
+    preparing = false
+    c: { setLoading(label: string | null): void }
+    constructor(c: StubLocal['c']) { this.c = c; notify('Course instances: warm-up'); notify(null) }
+    get preparingRound() { return this.preparing }
+    openCourse() {
+      this.preparing = true
+      this.c.setLoading('Preparing round...')
+      for (const step of ['Course instances: selected', 'RAA render / pipeline compilation', null]) notify(step)
+    }
+  }
+  const app = compile(`class Subject { ${method(source, '  private startMode(', '  // Play goes online by itself')}
+    ${method(source, '  private onRoundLoad(', '  // A mode\'s visible loading state')}
+    ${method(source, '  private setRoundLoading(', '  private showLoading(')} }; exports.Subject = Subject`, {
+    LocalMode: StubLocal, ShowAdapter: class {}, OnlineMode: class {}, InPageMode: class {}, checkPhase() {},
+    messageOf: (e: Error) => e.message, refusal: (...parts: string[]) => parts.join(' '), console,
+  })
+  const overlay = { label: '', hidden: true }
+  const shell = new app.Subject()
+  Object.assign(shell, { loaded: {}, query: { server: null, clients: 1 }, mode: null, preparedLocal: null, showAhead: null, roundLoading: null,
+    pendingRelay: null, orbit: {}, touchOn: false, views: {}, wornLook: () => null, setLayout() {}, stopMode() {},
+    fail: (v: string) => { throw new Error(v) }, host: { setLoading() {} },
+    loadingOverlay: { show: (v: string) => { overlay.label = v; overlay.hidden = false }, hide: () => { overlay.hidden = true } } })
+  notify = label => shell.onRoundLoad(label)
+  shell.startMode()
+  assert.ok(shell.mode instanceof StubLocal)
+  assert.deepEqual(overlay, { label: 'Preparing round...', hidden: false }, 'Play must keep its loading state through the selected round\'s own round-load steps')
+  console.info('Scene retention passed: pending frames, successful local/show handoff, failure and obsolete selection retention, Play loading state')
 }
 
 async function interactivePreflight(): Promise<InteractiveStartInput> {
@@ -404,6 +436,9 @@ async function renderInteractiveStart(out: string): Promise<void> {
   if (!blankRef) throw new Error('Blank probe publish returned no page_ref')
   await interactiveClient(['probe', input, '--page-ref', blankRef, '-o', join(out, 'blank-result')])
   if (JSON.parse(readFileSync(join(out, 'blank-result/result.json'), 'utf8')).result?.ok !== true) throw new Error('Blank GPU probe failed')
+  // The game fetches its build stamp (LobbyDiag); a published page without one logs a 404 into the job, as the dev server avoids.
+  const stamp = join(dist, 'rf-build.json')
+  if (!existsSync(stamp)) writeFileSync(stamp, JSON.stringify({ commit: null, builtAt: 'dev' }) + '\n')
   const manifest = join(dist, 'nmc.gpu.json'), previous = readFileSync(manifest, 'utf8')
   let pageRef: string
   try {

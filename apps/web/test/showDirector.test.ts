@@ -309,7 +309,7 @@ test('round preparation notifications cannot cover eliminations or votes; only a
   const { stripTypeScriptTypes } = await import('node:module')
   const source = readFileSync(new URL('../src/game/main.ts', import.meta.url), 'utf8')
   // Execute the production observer and overlay presentation with the real director.
-  const observer = source.match(/observeRoundLoad\(label => \{([\s\S]*?)\n      \}, content.report\(\)\)/)![1]
+  const observer = source.match(/  private onRoundLoad\(label: string \| null\): void \{([\s\S]*?)\n  \}/)![1]
   const method = source.match(/  private showLoading\(models: ShowFrame\): void \{[\s\S]*?\n  \}/)![0]
   class ShowAdapter {}
   const Subject = new Function('ShowAdapter', 'checkPhase', stripTypeScriptTypes(`class Subject {

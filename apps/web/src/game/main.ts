@@ -763,8 +763,12 @@ class LocalMode implements Mode {
     })
     this.presenter = new LocalPresenter({ ...c, prepared: true, loaded: { ...c.loaded, ports: [this.matchLayer.port] } })
     if (!this.startsShow) this.prepareMatch()
-    // ?course= goes straight into its round.
-    if (c.loaded.course !== null) this.enqueue()
+  }
+
+  // ?course= goes straight into its round. Called by the App once it holds this mode (never from the constructor):
+  // the round-load notifications of the preparation then see a preparing LocalMode and keep its loading state.
+  openCourse(): void {
+    if (this.c.loaded.course !== null) this.enqueue()
   }
 
   get preparingRound(): boolean {
@@ -2059,17 +2063,7 @@ class App {
         return
       }
       this.stopRoundLoad?.()
-      this.stopRoundLoad = observeRoundLoad(label => {
-        checkPhase(`round load: ${label ?? 'ready'}`)
-        // Show preparation is background work; its director owns the visible load hold. The show prepared behind
-        // the start screen loads silently too. A local round keeps the loading state its own preparation set.
-        if (this.mode instanceof ShowAdapter || this.showAhead !== null || this.roundLoading === 'Preparing show' || (this.mode instanceof LocalMode && this.mode.preparingRound)) return
-        this.roundLoading = label
-        if (label !== null) {
-          this.loadingOverlay.show(label)
-          this.host.setLoading(0, label)
-        } else this.loadingOverlay.hide()
-      }, content.report())
+      this.stopRoundLoad = observeRoundLoad(label => this.onRoundLoad(label), content.report())
       // The online show plays the in-page show's season maps and zone sidecars.
       const show = q.server !== null || this.nav.onlineOnly ? await checkAwait('online show content', () => loadShowContent('sprint')) : null
       this.loaded = { R, content, ports, canvases, course, show }
@@ -2333,8 +2327,10 @@ class App {
       else if (pending !== null) this.mode = new OnlineMode(c, pending)
       else if (q.clients > 1) this.mode = new InPageMode(c)
       else {
-        this.mode = this.preparedLocal ?? new LocalMode(c)
+        const local = this.preparedLocal ?? new LocalMode(c)
         this.preparedLocal = null
+        this.mode = local
+        local.openCourse()
       }
     } catch (e) {
       console.error(e)
@@ -2622,6 +2618,19 @@ class App {
       return
     }
     this.startAction('confirm', model.focus === action ? model : { ...model, focus: action })
+  }
+
+  // A round-load step (render/roundLoad notify) names itself on the loading overlay unless a preparation owns it.
+  private onRoundLoad(label: string | null): void {
+    checkPhase(`round load: ${label ?? 'ready'}`)
+    // Show preparation is background work; its director owns the visible load hold. The show prepared behind
+    // the start screen loads silently too. A local round keeps the loading state its own preparation set.
+    if (this.mode instanceof ShowAdapter || this.showAhead !== null || this.roundLoading === 'Preparing show' || (this.mode instanceof LocalMode && this.mode.preparingRound)) return
+    this.roundLoading = label
+    if (label !== null) {
+      this.loadingOverlay.show(label)
+      this.host.setLoading(0, label)
+    } else this.loadingOverlay.hide()
   }
 
   // A mode's visible loading state while it prepares the selected round (the app draws it above the scene).

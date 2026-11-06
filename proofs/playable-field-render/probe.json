@@ -1,6 +1,6 @@
 {
-  "job_id": "19c81596e22f8f993d6993ae4521f455",
-  "client_id": "868c13ac4a2acbcbaa5298f1",
+  "job_id": "9317fcea7c61ac9cf5de7df6ea52b0bc",
+  "client_id": "3c350266893fd26d4bd437bc",
   "result": {
     "ok": true,
     "captures": [
@@ -11,7 +11,7 @@
         "action": "start",
         "local": null,
         "camera": {
-          "yaw": 0,
+          "yaw": 1.5707963267948966,
           "pitch": 0.38050637711236485,
           "rendered": null
         },

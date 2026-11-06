@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
@@ -14,6 +15,7 @@ import {
   previewInput,
   previewPath,
   resolveStates,
+  sdfmBrickRevisions,
   sdfmDir,
   statesOf,
 } from '../uiPreview.ts'
@@ -131,4 +133,20 @@ test('the transparent preview is composited onto the sky blue', () => {
   assert.equal(edge[3], 255)
   assert.ok(edge[0] > 0x8f && edge[1] > 0xd3 && edge[2] === 0xff, 'half white lightens the sky')
   assert.deepEqual([...out.data.subarray(12, 16)], [0x8f, 0xd3, 0xff, 255])
+})
+
+test('sdfmBrickRevisions names each linked brick at its commit, so a MAMA commit is a new sdfm build', () => {
+  const root = mkdtempSync(join(tmpdir(), 'rf-ui-preview-bricks-'))
+  const git = (dir: string, ...args: string[]) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).trim()
+  const mama = join(root, 'MAMA')
+  mkdirSync(mama)
+  git(mama, 'init', '-q')
+  git(mama, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'one')
+  const sdfm = join(root, 'sdfm')
+  mkdirSync(join(sdfm, 'node_modules'), { recursive: true })
+  symlinkSync(mama, join(sdfm, 'node_modules', 'mama'))
+  const before = sdfmBrickRevisions(sdfm)
+  assert.deepEqual(before, [`/node_modules/mama=${mama}@${git(mama, 'rev-parse', 'HEAD')}`])
+  git(mama, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'two')
+  assert.notDeepEqual(sdfmBrickRevisions(sdfm), before)
 })

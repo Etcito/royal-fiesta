@@ -2,7 +2,8 @@
 // SDF Modeler is driven in process (like tools/renderViews.ts), so its ui_asset_preview runs in Node and returns
 // the PNG bytes; the transparent render is alpha-composited onto ref-1's sky blue for the owner's review.
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -24,6 +25,8 @@ const SDFM_DEPS = ['MAMA', 'NodeGraph', 'TS_PieMenue']
 // What the sdfm Node build needs; the rest of the checkout (fixtures, bench, out) is never read.
 const SDFM_COPY = ['src', 'scripts', 'bin', 'package.json', 'tsconfig.node.json']
 const SDFM_LINK = ['node_modules', 'vendor']
+// The linked bricks the sdfm build compiles against: a build is reused only while all of them are at the same commit.
+const SDFM_BRICKS = ['mama', '@etcito/raa', '@etcito/raa-sdfm', '@etcito/raa-anim', '@etcito/haa', 'haa']
 const BUILD_TIMEOUT_MS = 30 * 60_000
 const LOCK_STALE_MS = 10 * 60_000
 
@@ -267,10 +270,29 @@ const sleep = (ms: number): Promise<void> => new Promise((done) => setTimeout(do
 // A checkout without node_modules (the read-only peer) gets `npm ci` in the temp copy, which links
 // the file: siblings; the checkout itself is never written. Builds share the copy, so a lock keeps
 // parallel previews from installing and compiling over each other.
+function gitHead(dir: string): string {
+  try { return execFileSync('git', ['-C', dir, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() } catch { return 'local' }
+}
+
+/** Each brick the sdfm checkout compiles against (its node_modules links, or the siblings `npm ci` links) at its commit. */
+export function sdfmBrickRevisions(src: string): string[] {
+  const dirs = existsSync(join(src, 'node_modules'))
+    ? SDFM_BRICKS.map((name) => join(src, 'node_modules', name))
+    : SDFM_DEPS.map((name) => join(dirname(src), name))
+  const out: string[] = []
+  for (const dir of dirs) {
+    if (!existsSync(dir)) continue
+    const real = realpathSync(dir)
+    out.push(`${dir.slice(src.length)}=${real}@${gitHead(real)}`)
+  }
+  return out
+}
+
 async function sdfmApi(src: string): Promise<{ createSdfm(): Promise<Sdfm> }> {
-  let head = 'local'
-  try { head = execFileSync('git', ['-C', src, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() } catch {}
-  const dir = join(tmpdir(), `rf-ui-preview-sdfm-${head.slice(0, 12)}`)
+  const head = gitHead(src)
+  // Keyed by the bricks too: a MAMA or raa change under the same sdfm commit is a different build, never the cached one.
+  const bricks = createHash('sha256').update(sdfmBrickRevisions(src).join('\n')).digest('hex').slice(0, 12)
+  const dir = join(tmpdir(), `rf-ui-preview-sdfm-${head.slice(0, 12)}-${bricks}`)
   const build = join(dir, 'sdfm')
   const api = join(build, 'build-node/node/api.js')
   if (!existsSync(join(dir, 'build.done'))) await buildSdfm(src, dir, build, head)
@@ -316,8 +338,12 @@ async function buildSdfm(src: string, dir: string, build: string, head: string):
       execFileSync('npm', ['ci', '--no-audit', '--no-fund', '--ignore-scripts'], { cwd: build, stdio: 'inherit' })
     }
     console.log(`[uiPreview] compiling SDF Modeler ${head.slice(0, 12)} in ${build}`)
-    const proof = await import(pathToFileURL(join(build, 'scripts/lib/proof.mjs')).href) as { compileNode(): void }
-    proof.compileNode()
+    // With onError a compile error throws (the lock is released below); without it compileNode exits the process
+    // and left build.lock behind, so the next preview waited LOCK_STALE_MS on a lock nobody held.
+    const proof = await import(pathToFileURL(join(build, 'scripts/lib/proof.mjs')).href) as {
+      compileNode(onError: (code: string, message: string, fix: string) => never): void
+    }
+    proof.compileNode((code, message, fix) => { throw new Error(`ERROR ${code}: ${message}\nFix: ${fix}`) })
     writeFileSync(done, head)
   } finally {
     rmSync(lock, { recursive: true, force: true })

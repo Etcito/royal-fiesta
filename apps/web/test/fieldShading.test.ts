@@ -1,5 +1,5 @@
 import { runInNewContext } from 'node:vm'
-import { transpileModule, ModuleKind } from 'typescript'
+import { transpileModule, ModuleKind, ScriptTarget } from 'typescript'
 // Field shading: structural check, generated material text, program data words, grid texture and instance params.
 // No GPU and no MAMA: the program fixture is the structural contract 'mama.field-program'.
 import assert from 'node:assert/strict'
@@ -12,6 +12,9 @@ import {
 } from '../src/sdf/fieldShading.ts'
 import { decodeMesh } from '../src/sdf/meshWire.ts'
 import { WGSL_RESERVED, wgslReservedNames } from '../src/sdf/wgslReserved.ts'
+import * as atlas from '../src/sdf/fieldAtlas.ts'
+import * as shading from '../src/sdf/fieldShading.ts'
+import type { ResizablePort } from '../src/sdf/sdfPort.ts'
 
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 const FUNCTION = 'pmf_eval_0123456789abcdef'
@@ -53,6 +56,80 @@ test('checkFieldPart returns a structurally valid program', () => {
   const checked = checkFieldPart(part())
   assert.equal(checked.ok, true)
   if (checked.ok) assert.equal(checked.program.functionName, FUNCTION)
+})
+
+test('missing or stale sampled fields are named vertex fallbacks', () => {
+  for (const over of [{ grid: null }, { version: 2 }, { grid: { width: 1, height: 1, texels: new Uint8Array(4) } }]) {
+    const checked = checkFieldPart(part(over))
+    assert.equal(checked.ok, false)
+    if (!checked.ok) assert.match(checked.reason, /missing|version|outside/)
+  }
+  assert.equal(checkFieldPart({ normalVolume: {}, normalScheme: 'stale' }).ok, false)
+})
+
+test('runtime atlas fallback retains every drawable part and stays stable during movement', () => {
+  // Exercise the actual port without a GPU or its virtual MAMA import.
+  const source = readFileSync(new URL('../src/sdf/sdfPort.ts', import.meta.url), 'utf8')
+  const compiled = transpileModule(source + `\nexports.make = (meshed, budget) => new SdfRenderPort(
+    meshed, new Map(), null, { shading: 'field' }, null, budget, false)`, {
+    compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
+  }).outputText
+  const api = {} as { make(meshed: unknown, budget: number): ResizablePort & { engine: unknown; target: unknown } }
+  runInNewContext(compiled, {
+    exports: api, Float32Array, Float64Array, Uint32Array, performance, console: { info() {}, warn() {} },
+    require(id: string) {
+      if (id === './fieldAtlas.ts') return atlas
+      if (id === './fieldShading.ts') return shading
+      if (id === '@etcito/raa-sdfm') return { fieldSurfaceAttributes: () => ({}) }
+      if (id === '../render/asyncPipelines.ts') return { materialKey: () => 'field', fieldReadiness: () => ({ status: 'ready' }) }
+      if (id === '@royal-fiesta/game/render/roundLoad') return {
+        roundStep: (_: string, fn: () => unknown) => fn(), renderFrame: (_: unknown, fn: () => unknown) => fn(),
+      }
+      return {}
+    },
+  })
+  const cheap = program(), expensive = program()
+  expensive.operands = expensive.operands.map(o => o.kind === 'grid' ? { ...o, size: [8, 4, 4] } : o)
+  expensive.grid = { width: 32, height: 4, texels: new Uint8Array(512) }
+  const saved = cheap.grid!.texels.slice()
+  const programs = [cheap, expensive, null, { ...program(), grid: null }, { ...program(), version: 2 }]
+  const parts = programs.map((fieldProgram, i) => ({ name: `part-${i}`, partId: String(i), fieldProgram,
+    frame: new Float64Array(IDENTITY), normalVolume: {}, normalScheme: 'stale', meshes: [{ material: null,
+      positions: new Float32Array([0, 0, 0, i === 0 ? 10 : 1, 0, 0, 0, 1, 0]), normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
+      indices: new Uint32Array([0, 1, 2]), uvs: null }] }))
+  for (const budget of [768, 512, 0]) {
+    const port = api.make(new Map([['world', { assetId: 'world', data: { materials: [], groups: [{ group: 'g', parts }] } }]]), budget)
+    let next = 0, textures = 0
+    const visible = new Map<number, boolean>()
+    const engine = new Proxy({
+      addTexture() { textures++; return ++next },
+      addMeshInstance() { const id = ++next; visible.set(id, true); return id },
+      setVisible(id: number, on: boolean) { visible.set(id, on) },
+      stats: () => ({ drawCalls: 0, triangles: 0, instances: visible.size }),
+    }, { get: (target, key) => Reflect.get(target, key) ?? (() => ++next) })
+    port.engine = engine
+    port.target = { viewports: [{}] }
+    const handle = port.registerAsset('world', { id: 'world' } as Parameters<ResizablePort['registerAsset']>[1])
+    const instances = [port.createInstance(handle, null), port.createInstance(handle, null)]
+    const report = port.shadingReport()
+    assert.equal(report.atlasFull, 0)
+    assert.equal(report.field, budget === 768 ? 2 : budget === 512 ? 1 : 0)
+    assert.equal(report.bytes, budget)
+    assert.equal(textures, report.field, 'instances share their uploaded textures')
+    assert.equal(port.drawnParts().length, parts.length * 2)
+    assert.equal([...visible.values()].filter(Boolean).length, parts.length * 2)
+    const before = port.drawnParts()
+    if (budget === 512) assert.deepEqual(Array.from(before.slice(0, 2), p => p.mode), ['vertex', 'field'])
+    port.setCamera(0, { eye: [10, 20, 30], target: [0, 0, 0], fovYDeg: 60, near: 0.1, far: 500 })
+    port.setTransform(instances[0], [5, 0, 0], [0, 0, 0, 1], [1, 1, 1])
+    port.render()
+    assert.deepEqual(port.drawnParts(), before)
+    assert.deepEqual(port.shadingReport(), report)
+    port.setShading('vertex')
+    assert.ok(port.drawnParts().every(p => p.mode === 'vertex'))
+    assert.equal([...visible.values()].filter(Boolean).length, parts.length * 2)
+    assert.deepEqual(cheap.grid!.texels, saved)
+  }
 })
 
 test('checkFieldPart reports every refusal reason', () => {

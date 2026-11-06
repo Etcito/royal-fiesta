@@ -168,6 +168,13 @@ function checkProgram(value: unknown): FieldCheck {
     const why = checkGrid(value.grid)
     if (why !== null) return bad(why)
   }
+  for (const operand of operands as FieldOperandLike[]) {
+    if (operand.kind !== 'grid') continue
+    if (value.grid === null) return bad('field grid is missing; using vertex normals')
+    const grid = value.grid as unknown as FieldGridLike
+    if (operand.at[0] + operand.size[0] * operand.size[2] > grid.width ||
+      operand.at[1] + operand.size[1] > grid.height) return bad('field grid operand is outside its saved grid; re-save the asset')
+  }
   if (typeof value.functionName !== 'string' || !FUNCTION_NAME.test(value.functionName)) {
     return bad(`bad functionName '${String(value.functionName)}'; expected pmf_eval_<16 lowercase hex>`)
   }

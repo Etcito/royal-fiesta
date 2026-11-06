@@ -70,13 +70,29 @@ export function partDiag(meshes: readonly { positions: Float32Array }[]): number
   return Math.sqrt(dx * dx + dy * dy + dz * dz)
 }
 
-// Smallest on-screen (diagonal) first, then cheapest grid, then key: stable and locale-free.
-function compareParts(a: PartFieldCost, b: PartFieldCost): number {
-  if (a.diag !== b.diag) return a.diag - b.diag
-  if (a.bytes !== b.bytes) return a.bytes - b.bytes
-  if (a.key < b.key) return -1
-  if (a.key > b.key) return 1
-  return 0
+type Allocation = PartFieldCost & { width?: number; height?: number }
+
+// RAA@6726387 crates/raa-lit/src/textures.rs: shortest fitting shelf, first on ties,
+// in upload order, with ids 1..1023. Area alone does not guarantee an allocation fits.
+function fitsAtlas(parts: readonly Allocation[], field: ReadonlySet<string>): boolean {
+  const shelves: { width: number; height: number }[] = []
+  let top = 0, textures = 0
+  for (const p of parts) {
+    if (!field.has(p.key) || p.bytes <= 0 || p.width === undefined || p.height === undefined) continue
+    if (++textures > 1023 || p.width > ATLAS_SIZE || p.height > ATLAS_SIZE) return false
+    let best: { width: number; height: number } | undefined
+    for (const shelf of shelves) {
+      if (shelf.height >= p.height && shelf.width + p.width <= ATLAS_SIZE &&
+        (best === undefined || shelf.height < best.height)) best = shelf
+    }
+    if (best !== undefined) best.width += p.width
+    else {
+      top += p.height
+      if (top > ATLAS_SIZE) return false
+      shelves.push({ width: p.width, height: p.height })
+    }
+  }
+  return true
 }
 
 /**
@@ -84,16 +100,24 @@ function compareParts(a: PartFieldCost, b: PartFieldCost): number {
  * normals in order until the world fits the budget (FIELD_ATLAS_BYTES by default).
  */
 export function planFieldAtlas(parts: readonly PartFieldCost[], budget: number = FIELD_ATLAS_BYTES): FieldAtlasPlan {
+  return planAllocations(parts, budget)
+}
+
+function planAllocations(parts: readonly Allocation[], budget: number): FieldAtlasPlan {
+  // A key names an uploaded part, shared by all its drawable instances. Demoting that
+  // allocation changes their normal tier together; it releases its bytes only once.
+  const unique = [...new Map(parts.map(p => [p.key, p])).values()]
   const field = new Set<string>()
   let bytes = 0
-  for (const part of parts) {
+  for (const part of unique) {
     field.add(part.key)
     bytes += part.bytes
   }
-  const order = [...parts].sort(compareParts)
+  const order = unique.map((part, position) => ({ part, position }))
+    .sort((a, b) => a.part.bytes - b.part.bytes || a.position - b.position)
   const demoted: string[] = []
-  for (const part of order) {
-    if (bytes <= budget) break
+  for (const { part } of order) {
+    if (bytes <= budget && fitsAtlas(unique, field)) break
     if (part.bytes <= 0) continue
     bytes -= part.bytes
     demoted.push(part.key)
@@ -201,9 +225,10 @@ export function repackFieldProgram(program: FieldProgramLike, diag = 0, factor =
 export function planFieldPrograms(parts: readonly PartFieldProgram[], budget = FIELD_ATLAS_BYTES) {
   const costsAt = (factor: number) => parts.map(p => {
     const packed = packOperands(scaledOperands(p.program, p.diag, factor))
-    return { key: p.key, diag: p.diag, bytes: fieldGridBytes(packed) }
+    return { key: p.key, diag: p.diag, bytes: fieldGridBytes(packed), width: packed.width, height: packed.height }
   })
-  const total = (factor: number) => costsAt(factor).reduce((sum, p) => sum + p.bytes, 0)
+  const total = (factor: number) => [...new Map(costsAt(factor).map(p => [p.key, p.bytes])).values()]
+    .reduce((sum, bytes) => sum + bytes, 0)
   const repackedBytes = total(1)
   let factor = 1
   if (repackedBytes > budget) {
@@ -223,5 +248,5 @@ export function planFieldPrograms(parts: readonly PartFieldProgram[], budget = F
   const programs = new Map(parts.map(p => [p.key, repackFieldProgram(p.program, p.diag, factor)]))
   const resampledParts = parts.filter(p => programs.get(p.key)!.operands.some((o, i) =>
     o.kind === 'grid' && o.voxel !== (p.program.operands[i] as FieldGridOperandLike).voxel)).length
-  return { plan: planFieldAtlas(costsAt(factor), budget), programs, fieldGridScale: factor, resampledParts, repackedBytes }
+  return { plan: planAllocations(costsAt(factor), budget), programs, fieldGridScale: factor, resampledParts, repackedBytes }
 }

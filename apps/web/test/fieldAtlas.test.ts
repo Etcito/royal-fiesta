@@ -16,7 +16,7 @@ function positions(values: number[]): { positions: Float32Array } {
   return { positions: new Float32Array(values) }
 }
 
-test('parts are demoted by diagonal, then bytes, then key', () => {
+test('parts are demoted by allocation bytes, then numeric input position', () => {
   const parts = [
     part('c#0/0', 2, 10),
     part('b#0/0', 1, 20),
@@ -24,7 +24,7 @@ test('parts are demoted by diagonal, then bytes, then key', () => {
     part('d#0/0', 1, 5),
   ]
   const plan = planFieldAtlas(parts, 0)
-  assert.deepEqual(plan.demoted, ['d#0/0', 'a#0/0', 'b#0/0', 'c#0/0'])
+  assert.deepEqual(plan.demoted, ['d#0/0', 'c#0/0', 'b#0/0', 'a#0/0'])
   assert.equal(plan.field.size, 0)
   assert.equal(plan.bytes, 0)
 })
@@ -32,10 +32,10 @@ test('parts are demoted by diagonal, then bytes, then key', () => {
 test('it stops exactly when the total fits', () => {
   const parts = [part('a', 1, 60), part('b', 2, 60), part('c', 3, 10)]
   const plan = planFieldAtlas(parts, 100)
-  assert.deepEqual(plan.demoted, ['a'])
-  assert.equal(plan.bytes, 70)
+  assert.deepEqual(plan.demoted, ['c', 'a'])
+  assert.equal(plan.bytes, 60)
   assert.equal(plan.budget, 100)
-  assert.deepEqual([...plan.field].sort(), ['b', 'c'])
+  assert.deepEqual([...plan.field], ['b'])
   const exact = planFieldAtlas(parts, 130)
   assert.deepEqual(exact.demoted, [])
   assert.equal(exact.bytes, 130)
@@ -173,4 +173,51 @@ test('lossless fit needs no resampling and runtime grids are cached separately f
   assert.equal(plan.plan.demoted.length, 0)
   assert.equal(plan.programs.get('box'), repackFieldProgram(program, 12, 1))
   assert.notEqual(plan.programs.get('box')!.grid!.texels, program.grid!.texels)
+})
+
+test('shared allocation keys cost once and demote every reference together', () => {
+  const shared = part('shared', 1, 40)
+  const parts = [shared, part('unique', 1, 60), shared]
+  assert.equal(planFieldAtlas(parts, 100).demoted.length, 0)
+  const plan = planFieldAtlas(parts, 60)
+  assert.deepEqual(plan.demoted, ['shared'])
+  assert.equal(plan.bytes, 60)
+  assert.deepEqual([...plan.field], ['unique'])
+  const program = slabProgram([2, 2, 2])
+  const instance = { key: 'shared', diag: 0, program }
+  const packed = planFieldPrograms([instance, instance], fieldGridBytes(program.grid))
+  assert.equal(packed.plan.bytes, fieldGridBytes(program.grid))
+  assert.equal(packed.plan.demoted.length, 0)
+  assert.equal(packed.fieldGridScale, 1)
+})
+
+test('equal costs use numeric candidate positions beyond index nine', () => {
+  const parts = Array.from({ length: 12 }, (_, i) => part(`part-${11 - i}`, 12 - i, 4))
+  assert.deepEqual(planFieldAtlas(parts, 4).demoted, parts.slice(0, 11).map(p => p.key))
+})
+
+function slabProgram(size: [number, number, number]): FieldProgramLike {
+  const p = gridProgram('box')
+  p.operands = [{ ...(p.operands[0] as FieldGridOperandLike), size, at: [0, 0] }]
+  p.grid = { width: size[0] * size[2], height: size[1], texels: new Uint8Array(size[0] * size[1] * size[2] * 4) }
+  return p
+}
+
+test('shelf overflow falls back even when texture bytes fit the normal atlas budget', () => {
+  const program = slabProgram([48, 64, 48])
+  const parts = Array.from({ length: 65 }, (_, i) => ({ key: `part-${i}`, diag: 0, program }))
+  const { plan } = planFieldPrograms(parts)
+  assert.ok(fieldGridBytes(program.grid) * parts.length < FIELD_ATLAS_BYTES)
+  assert.deepEqual(plan.demoted, ['part-0'])
+  assert.equal(plan.field.size, 64)
+  assert.equal(plan.bytes, fieldGridBytes(program.grid) * 64, 'distinct uploads of one program still cost separately')
+  assert.deepEqual(planFieldPrograms(parts).plan, plan)
+})
+
+test('texture id exhaustion also falls back before RAA allocation', () => {
+  const program = slabProgram([2, 2, 2])
+  const parts = Array.from({ length: 1024 }, (_, i) => ({ key: `part-${i}`, diag: 0, program }))
+  const { plan } = planFieldPrograms(parts)
+  assert.deepEqual(plan.demoted, ['part-0'])
+  assert.equal(plan.field.size, 1023)
 })

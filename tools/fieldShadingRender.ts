@@ -76,7 +76,7 @@ async function client(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [process.env.NMC_GPU_CLIENT!, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
     let output = '', errors = ''
-    child.stdout.setEncoding('utf8').on('data', chunk => { output += chunk })
+    child.stdout.setEncoding('utf8').on('data', chunk => { output += chunk; errors += chunk })
     child.stderr.setEncoding('utf8').on('data', chunk => { errors += chunk; process.stderr.write(chunk) })
     child.on('error', reject)
     // The page's console.warn lines (hundreds, one per vertex-normal part) follow the job's own error in the client's stderr

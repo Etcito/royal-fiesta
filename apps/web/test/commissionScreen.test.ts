@@ -33,7 +33,7 @@ function setup(tickets = 10) {
     present(menu) { menus.push(menu) }, setHud(props) { hud.push(props) },
     setLoading: noop, input: noop, frame: noop, resize: noop,
     widgetRect: (id) => (id === 'line-2' ? { x: 10, y: 20, w: 300, h: 24 } : null),
-    currentScreen: () => 'commission', focused: () => null, destroy: noop,
+    currentScreen: () => 'commission', focused: () => null, widget: () => null, destroy: noop,
   }
   const f = fakeField()
   let model = commissionModel(tickets)

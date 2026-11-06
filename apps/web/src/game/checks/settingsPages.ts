@@ -1,3 +1,4 @@
+import { SETTINGS_ROW_SLOTS } from '@royal-fiesta/game/screens/settingsPages'
 import type { WidgetProps } from '../../ui/screenMap.ts'
 import type { TourDeps, TourGame } from '../uiTour.ts'
 import { yieldTask } from './boot.ts'
@@ -67,9 +68,11 @@ async function runSize(portrait: boolean, deps: TourDeps, files: CheckFile[], fa
   try {
     game = await deps.boot(() => {}, { plain: true, saved: {} })
     const live = game
-    let props: Props = {}
-    const setHud = live.host.setHud
-    live.host.setHud = values => { props = values; setHud.call(live.host, values) }
+    // present() sets the screen's title, lines and buttons (act-settings on start and pause); setHud() only the
+    // settings rows and tabs. Read what the host last set for each widget, whichever call set it.
+    const props = new Proxy({} as Props, {
+      get: (_, id) => typeof id === 'string' ? live.host.widget(id) ?? undefined : undefined,
+    })
     const step = async (): Promise<void> => { live.step(1 / 60); await yieldTask(live.host.currentScreen()) }
     const waitFor = async (predicate: () => boolean, what: string): Promise<void> => {
       const end = Date.now() + 120000
@@ -102,7 +105,8 @@ async function runSize(portrait: boolean, deps: TourDeps, files: CheckFile[], fa
       files.push({ name: prefix + file + '.png', blob })
     }
 
-    await waitFor(() => live.host.currentScreen() === 'start' && props['act-settings']?.visible === true, 'start screen')
+    await waitFor(() => live.host.currentScreen() === 'start' && props['act-settings']?.visible === true
+      && live.host.widgetRect('act-settings') !== null, 'start screen')
     click(live, 'act-settings')
     await waitFor(() => live.host.currentScreen() === 'settings' && !!props.title?.text, 'settings screen')
     fail('Audio title', propText(props, 'title') === 'Audio')
@@ -120,8 +124,9 @@ async function runSize(portrait: boolean, deps: TourDeps, files: CheckFile[], fa
     await press('ArrowRight')
     await waitFor(() => propText(props, 'title') === 'Graphics', 'Graphics page')
     fail('Graphics title', propText(props, 'title') === 'Graphics')
-    const lod = Object.entries(props).find(([id, value]) => id.startsWith('row-') && value.text === 'LOD offset')
-    fail('LOD offset unavailable row', lod?.[1].disabled === true)
+    const lod = Array.from({ length: SETTINGS_ROW_SLOTS }, (_, i) => props[`row-${i}`])
+      .find(value => value?.visible === true && value.text === 'LOD offset')
+    fail('LOD offset unavailable row', lod?.disabled === true)
     fail('LOD offset note', propText(props, 'line-0').includes('LOD offset'))
     await take('graphics')
 
@@ -157,7 +162,8 @@ async function runSize(portrait: boolean, deps: TourDeps, files: CheckFile[], fa
       await press('Enter')
       await waitFor(() => live.host.currentScreen() === 'hub', 'hub from start')
       await press('Escape')
-      await waitFor(() => live.host.currentScreen() === 'pause', 'pause screen')
+      await waitFor(() => live.host.currentScreen() === 'pause' && props['act-settings']?.visible === true
+        && live.host.widgetRect('act-settings') !== null, 'pause screen')
       click(live, 'act-settings')
       await waitFor(() => live.host.currentScreen() === 'settings' && !!props.title?.text, 'pause settings')
       click(live, 'tab-controls')

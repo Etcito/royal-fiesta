@@ -84,7 +84,7 @@ async function setup(): Promise<Rig> {
     resize: noop,
     widgetRect: id => (id === 'line-2' ? { x: 10, y: 20, w: 300, h: 24 } : null),
     currentScreen: () => menus.at(-1)?.screen ?? 'start',
-    focused: () => null,
+    focused: () => null, widget: () => null,
     destroy: noop,
   }
   const field = fakeField()

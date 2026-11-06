@@ -59,6 +59,8 @@ export interface UaaHost {
   widgetRect(id: string): Rect | null
   currentScreen(): string
   focused(): string | null
+  // The last props present() or setHud() gave the widget (both write the same widget ids); null when never set.
+  widget(id: string): WidgetProps | null
   destroy(): void
 }
 
@@ -257,6 +259,10 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     widgetRect: (id) => ui.rectOf(id),
     currentScreen: () => ui.screen(),
     focused: () => ui.focused(),
+    widget(id) {
+      const key = last.get(id)
+      return key === undefined ? null : JSON.parse(key) as WidgetProps
+    },
     destroy() {
       if (destroyed) return
       destroyed = true

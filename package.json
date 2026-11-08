@@ -29,6 +29,7 @@
     "mesh:save": "node --experimental-strip-types tools/saveMeshes.ts",
     "content:pack": "node --experimental-strip-types tools/content.ts",
     "play": "node --experimental-strip-types tools/play.ts",
+    "play:dev": "RF_PLAY_DEV=1 node --experimental-strip-types tools/play.ts",
     "wavedash": "node --experimental-strip-types tools/wavedash.ts",
     "levels:publish": "node --experimental-strip-types tools/levels/pack.ts",
     "etcito:build": "node --experimental-strip-types tools/etcitoBuild.ts",

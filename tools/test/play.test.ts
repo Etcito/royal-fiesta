@@ -2,14 +2,15 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
+import { createServer as createHttpServer, request } from 'node:http'
 import type { Server } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test, { afterEach } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { play, serveDir } from '../play.ts'
+import { play, playMiddleware, serveDir } from '../play.ts'
 
-const ENV_KEYS = ['RF_PLAY_SKIP_BUILD', 'RF_PLAY_DIST'] as const
+const ENV_KEYS = ['RF_PLAY_SKIP_BUILD', 'RF_PLAY_DIST', 'RF_PLAY_DEV', 'RF_PLAY_PORT'] as const
 const saved = new Map<string, string | undefined>(ENV_KEYS.map((key) => [key, process.env[key]]))
 const temps: string[] = []
 
@@ -23,6 +24,7 @@ afterEach(() => {
 
 // A temp dist served through the two test seams, so no build runs.
 function fakeDist(files: readonly string[]): string {
+  delete process.env.RF_PLAY_DEV
   const dir = mkdtempSync(join(tmpdir(), 'rf-play-'))
   temps.push(dir)
   mkdirSync(join(dir, 'assets'))
@@ -79,6 +81,35 @@ test('play --check answers 200 for game.html, play.html and a built asset', asyn
   assert.equal(value, 0)
   assert.match(out, new RegExp(`play: http://localhost:${port}/game\\.html`))
   assert.match(out, /GET \/assets\/a\.js 200/)
+})
+
+test('static and dev share content, stamp, HEAD, malformed URL and traversal handling', async () => {
+  const dist = fakeDist(['game.html'])
+  for (const dev of [false, true]) {
+    const middleware = playMiddleware(dist, dev)
+    const server = createHttpServer((req, res) => middleware(req, res, dev ? () => res.end('vite fallback') : undefined))
+    await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
+    const base = `http://127.0.0.1:${portOf(server)}`
+    try {
+      const stamp = await fetch(base + '/rf-build.json')
+      assert.deepEqual(await stamp.json(), { commit: null, builtAt: 'dev' })
+      assert.equal(stamp.headers.get('cache-control'), 'no-store')
+      assert.equal(await (await fetch(base + '/rf-build.json', { method: 'HEAD' })).text(), '')
+      assert.equal((await fetch(base + '/content/secret.txt')).status, 404)
+      assert.equal((await fetch(base + '/%ff')).status, 400)
+      // Raw request: fetch/URL would normalize dot segments before sending them.
+      const status = await new Promise<number | undefined>((done, reject) => {
+        request(base, { path: '/..%2fsecret.txt' }, response => { response.resume(); done(response.statusCode) }).on('error', reject).end()
+      })
+      assert.equal(status, 403)
+      const marker = await fetch(base + '/rf-dev.json')
+      assert.equal(marker.status, dev ? 200 : 404)
+      if (dev) assert.deepEqual(await marker.json(), { mode: 'vite', rebuildGame: false })
+    } finally {
+      server.closeAllConnections()
+      await closeServer(server)
+    }
+  }
 })
 
 test('play --check fails when game.html is missing', async () => {

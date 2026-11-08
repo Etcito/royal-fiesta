@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import assert from 'node:assert/strict'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
-import type { Server } from 'node:http'
+import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import { networkInterfaces } from 'node:os'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -13,8 +13,8 @@ import type { InteractiveStartInput } from '../apps/web/src/game/ops.ts'
 import { sceneCamera } from '../packages/game/src/sceneCamera.ts'
 import { quatRotate } from '../packages/sim/src/vec.ts'
 
-// Ported from the V0 M11 play tool, on the public dependency path: the RAA release comes from
-// package.json, so there is no raaBuild step, no sibling and no vite preview.
+// Static builds remain the default. RF_PLAY_DEV=1 serves the same routes through Vite,
+// reading installed file: dependencies in place without rebuilding this game.
 //
 // Test-only seams (internal, never documented for players):
 // - RF_PLAY_SKIP_BUILD=1 skips audio:bake and the web build;
@@ -50,25 +50,39 @@ function run(command: string, args: string[], cwd: string): Promise<number> {
   })
 }
 
-async function build(root: string): Promise<number> {
+async function preparePublic(root: string): Promise<number> {
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
   const bake = await run(npm, ['run', 'audio:bake'], root)
   if (bake !== 0) return bake
-  const fonts = await run(npm, ['run', 'ui:fonts'], root)
-  if (fonts !== 0) return fonts
+  return run(npm, ['run', 'ui:fonts'], root)
+}
+
+async function build(root: string): Promise<number> {
+  const prepared = await preparePublic(root)
+  if (prepared !== 0) return prepared
+  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
   return run(npm, ['run', 'build', '-w', '@royal-fiesta/web'], root)
 }
 
 // S29: content is served live as saved; there is no server-side meshing (S24 meshes in the browser).
-export function serveDir(dist: string): Server {
+export function playMiddleware(dist: string, dev = false) {
   const base = resolve(dist)
-  const server = createServer((req, res) => {
+  return (req: IncomingMessage, res: ServerResponse, next?: () => void): void => {
     let path: string
     try {
       path = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname)
     } catch {
       res.writeHead(400).end('bad request')
       return
+    }
+    if (dev) {
+      res.setHeader('X-RF-Play-Mode', 'vite')
+      res.setHeader('cache-control', 'no-store')
+      if (path === '/rf-dev.json') {
+        res.writeHead(200, { 'content-type': TYPES['.json'] })
+        res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ mode: 'vite', rebuildGame: false }))
+        return
+      }
     }
     if (path === '/content/index.json') {
       try {
@@ -100,6 +114,12 @@ export function serveDir(dist: string): Server {
       res.writeHead(403).end('forbidden')
       return
     }
+    // Vite owns source modules and its explicit filesystem allowlist. Content and
+    // stamps above keep exactly the static server's handlers and refusal rules.
+    if (!live && next) {
+      next()
+      return
+    }
     if (!existsSync(file) || !statSync(file).isFile()) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('not found')
       return
@@ -107,8 +127,11 @@ export function serveDir(dist: string): Server {
     const type = TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream'
     res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' })
     res.end(req.method === 'HEAD' ? undefined : readFileSync(file))
-  })
-  return server
+  }
+}
+
+export function serveDir(dist: string): Server {
+  return createServer(playMiddleware(dist))
 }
 
 // strictPort: a busy port is refused, never replaced by another one.
@@ -137,8 +160,8 @@ function firstJsAsset(dist: string): string | null {
   return js.length > 0 ? `assets/${js[0]}` : null
 }
 
-async function check(dist: string, port: number): Promise<number> {
-  const asset = firstJsAsset(dist)
+async function check(dist: string, port: number, dev = false): Promise<number> {
+  const asset = dev ? '@vite/client' : firstJsAsset(dist)
   if (asset === null) {
     console.error(`[bricks] ${join(dist, 'assets')}: no built JS asset; run npm run build`)
     return 1
@@ -166,25 +189,35 @@ async function check(dist: string, port: number): Promise<number> {
 }
 
 export async function play(opts: { check: boolean; port?: number }): Promise<number> {
-  const port = opts.port ?? DEFAULT_PORT
+  const port = opts.port ?? Number(process.env.RF_PLAY_PORT ?? DEFAULT_PORT)
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     console.error(`[bricks] port ${port}: invalid; use an integer from 1 to 65535`)
     return 1
   }
   const root = repoRoot()
+  const dev = process.env.RF_PLAY_DEV === '1'
   if (process.env.RF_PLAY_SKIP_BUILD !== '1') {
-    const code = await build(root)
+    const code = await (dev ? preparePublic(root) : build(root))
     if (code !== 0) return code
+    if (dev) {
+      // Vite serves public/ directly; prepare the same logo as the build's prebuild.
+      const logo = await run(process.execPath, ['--experimental-strip-types', 'tools/uiLogo.ts', 'bundle'], root)
+      if (logo !== 0) return logo
+    }
   }
   const dist = resolve(process.env.RF_PLAY_DIST ?? join(root, 'apps', 'web', 'dist'))
 
-  const server = serveDir(dist)
+  const vite = dev ? await (await import('./playDev.ts')).devServer(root, port, BIND, playMiddleware(join(root, 'apps/web'), true)) : null
+  const server = vite?.httpServer ?? serveDir(dist)
+  const shutdown = (): Promise<void> => vite ? vite.close() : close(server)
   const refused = await listen(server, port)
   if (refused !== null) {
     console.error(refused)
+    await shutdown()
     return 1
   }
   console.log(`play: http://localhost:${port}/game.html`)
+  if (dev) console.log('play: mode=vite (live dependencies; no game rebuild); GET /rf-dev.json')
   if (BIND !== '127.0.0.1') {
     for (const list of Object.values(networkInterfaces())) {
       for (const net of list ?? []) {
@@ -195,15 +228,15 @@ export async function play(opts: { check: boolean; port?: number }): Promise<num
 
   if (opts.check) {
     try {
-      return await check(dist, port)
+      return await check(dist, port, dev)
     } finally {
-      await close(server)
+      await shutdown()
     }
   }
 
   return new Promise((resolveExit) => {
     const stop = (code: number) => (): void => {
-      void close(server).then(() => resolveExit(code))
+      void shutdown().then(() => resolveExit(code))
     }
     process.once('SIGINT', stop(130))
     process.once('SIGTERM', stop(143))

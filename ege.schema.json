@@ -649,6 +649,91 @@
       ]
     },
     {
+      "name": "feature_door_bank",
+      "fields": [
+        {
+          "name": "break_speed",
+          "type": "f64"
+        },
+        {
+          "name": "door_count",
+          "type": "u32"
+        },
+        {
+          "name": "placed",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "feature_door_bank_door",
+      "fields": [
+        {
+          "name": "owner",
+          "type": "u32"
+        },
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "row",
+          "type": "u32"
+        },
+        {
+          "name": "real",
+          "type": "u32"
+        },
+        {
+          "name": "t",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "size",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "yaw_deg",
+          "type": "f64"
+        },
+        {
+          "name": "solid",
+          "type": "u32"
+        },
+        {
+          "name": "open",
+          "type": "u32"
+        },
+        {
+          "name": "revealed",
+          "type": "u32"
+        },
+        {
+          "name": "open_tick",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "feature_door_bank_debris",
+      "fields": [
+        {
+          "name": "owner",
+          "type": "u32"
+        },
+        {
+          "name": "door",
+          "type": "u32"
+        },
+        {
+          "name": "piece",
+          "type": "i32"
+        }
+      ]
+    },
+    {
       "name": "feature_swim_volume",
       "fields": [
         {

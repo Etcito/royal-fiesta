@@ -299,3 +299,82 @@ test('rollingLog body stays at from before any rolling-log script', async () => 
     round.dispose()
   }
 })
+
+test('doorBank emits door bodies and hidden debris visuals', async () => {
+  const doors = [
+    { t: [-3.5, 1, 8], yawDeg: 0, size: [0.9, 2, 0.3] },
+    { t: [-2.5, 1, 8], yawDeg: 0, size: [0.9, 2, 0.3] },
+  ]
+  const spec: FeatureSpec = { id: 'bank', kind: 'doorBank', params: { rows: [{ doors, real: 1 }], breakSpeed: 3 } }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const emitted = emitBuilds(input)
+  const root = emitted.index('feature/bank')
+  assert.deepEqual(emitted.scene.entities[root].components?.feature_door_bank, {
+    break_speed: 3, door_count: 2, placed: 0,
+  })
+  for (let i = 0; i < 2; i++) {
+    const id = emitted.index(`feature/bank/door/${i}`)
+    assert.equal(id, root + 1 + i)
+    const door = emitted.scene.entities[id]
+    assert.equal(door.body?.type, 'fixed')
+    assert.deepEqual(door.colliders?.[0], { shape: 'box', half_extents: [0.45, 1, 0.15], group: 'static' })
+    assert.equal(door.components?.['ege.body_props'].colliders_enabled, 1)
+    assert.deepEqual(door.components?.feature_door_bank_door, {
+      owner: 0, index: i, row: 0, real: 1, t: doors[i].t, size: doors[i].size,
+      yaw_deg: 0, solid: 0, open: 0, revealed: 0, open_tick: -1,
+    })
+    assert.deepEqual(door.components?.['ege.render'], { shape: 1, color: 0xC98B5A, params: [0.45, 1, 0.15, 0], visible: 1 })
+  }
+  for (let i = 0; i < 6; i++) {
+    const id = emitted.index(`feature/bank/debris/${i}`)
+    assert.equal(id, root + 3 + i)
+    const debris = emitted.scene.entities[id]
+    assert.deepEqual(debris.components?.feature_door_bank_debris, { owner: 0, door: Math.floor(i / 3), piece: i % 3 - 1 })
+    assert.deepEqual(debris.components?.['ege.render'], { shape: 1, color: 0xE8C39E, params: [0, 0, 0, 0], visible: 0 })
+  }
+  emitBuilds(await inputWith('courses/s1-e-sugar-sprint.course.json', null))
+  refusedAt(input, { ...spec, params: { ...spec.params, rows: [{ doors: doors.slice(0, 1), real: 1 }] } }, 'rows/0/doors')
+  refusedAt(input, { ...spec, params: { ...spec.params, rows: [{ doors, real: 2 }] } }, 'rows/0/real')
+  refusedAt(input, { ...spec, params: { ...spec.params, rows: [{ doors: [{ ...doors[0], size: [0.05, 2, 0.3] }, doors[1]], real: 1 }] } }, 'rows/0/doors/0/size/0')
+  refusedAt(input, { ...spec, params: { ...spec.params, breakSpeed: 0 } }, 'breakSpeed')
+})
+
+test('doorBank doors block a running seat before any script', async () => {
+  const spec: FeatureSpec = {
+    id: 'bank', kind: 'doorBank', params: {
+      rows: [{ doors: [
+        { t: [-3.5, 1, 8], yawDeg: 0, size: [0.9, 2, 0.3] },
+        { t: [-2.5, 1, 8], yawDeg: 0, size: [0.9, 2, 0.3] },
+      ], real: 1 }], breakSpeed: 3,
+    },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const engine = await loadEngine()
+  const schema = JSON.parse(readFileSync(new URL('../../../ege.schema.json', import.meta.url), 'utf8'))
+  for (const worldKind of schema.world_kinds) {
+    worldKind.schedule = worldKind.schedule.filter(({ system }: { system: string }) => system !== 'rf.feature.door_bank.pre')
+  }
+  const schemaText = JSON.stringify(schema)
+  const compiled = await (await rfCompiler()).compile(collectRfScripts(), schemaText)
+  assert.deepEqual(compiled.diagnostics.filter(d => d.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  engine.setSchema(schemaText)
+  const scene = emitEngineScene(engine, input)
+  const round = await createEngineRound(engine, schemaText, Uint8Array.from(compiled.wasm), scene, input.course, {
+    profile: 'sprint', seed: 7, humans: [true, false, false, false, false, false, false, false],
+  })
+  try {
+    while (round.tick < 180) {
+      round.step(seat => encodeInput({ moveX: 0, moveZ: seat === 0 && round.tick >= 60 ? 1 : 0, jump: false, dive: false, grab: false }))
+      assert.equal(round.observe().faults, 0)
+      assert.ok(round.observe().seats[0].pos.z < 8)
+    }
+    for (let i = 0; i < 2; i++) {
+      const entity = String(scene.index(`feature/bank/door/${i}`))
+      assert.equal((round.worldState().components['ege.body_props'][entity] as { colliders_enabled: number }).colliders_enabled, 1)
+      assert.equal((round.worldState().components.feature_door_bank_door[entity] as { open: number }).open, 0)
+    }
+  } finally {
+    round.dispose()
+  }
+})

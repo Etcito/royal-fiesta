@@ -17,6 +17,7 @@ const SCHEDULE = [
   'rf.feature.boost_lane.pre',
   'rf.feature.launch_pad.pre',
   'rf.feature.catch_volume.pre',
+  'rf.feature.rolling_log.pre',
   'rf.feature.swim_volume.pre',
   'ege.body.props',
   'ege.physics',
@@ -26,6 +27,7 @@ const SCHEDULE = [
   'rf.feature.marker.post',
   'rf.feature.launch_pad.post',
   'rf.feature.catch_volume.post',
+  'rf.feature.rolling_log.post',
   'rf.feature.tile_field.post',
   'rf.seat.rules',
 ]

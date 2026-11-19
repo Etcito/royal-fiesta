@@ -1103,6 +1103,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.rolling_log.pre",
+          "kind": "script",
+          "reads": ["feature_rolling_log"],
+          "writes": ["ege.transform"],
+          "emits": []
+        },
+        {
           "system": "rf.feature.swim_volume.pre",
           "kind": "script",
           "reads": ["seat", "ege.transform"],
@@ -1164,6 +1171,13 @@
           "kind": "script",
           "reads": ["seat", "gate"],
           "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rolling_log.post",
+          "kind": "script",
+          "reads": ["feature_rolling_log", "seat", "ege.transform"],
+          "writes": ["character", "ege.velocity"],
           "emits": []
         },
         {

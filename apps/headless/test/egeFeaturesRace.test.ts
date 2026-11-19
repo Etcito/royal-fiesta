@@ -252,6 +252,61 @@ test('launchPad records initialize without launching distant seats', async () =>
   }
 })
 
+test('rollingLog moves its log', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'log', kind: 'rollingLog',
+    params: { from: [20, 1, 10], to: [20, 1, 16], radius: 0.6, length: 4, speed: 3, periodS: 6 },
+  }])
+  try {
+    const root = scene.index('feature/log')
+    stepUntil(round, 60, () => code(), () => false)
+    let transform = rec(round, 'ege.transform', root)
+    assert.deepEqual(transform.pos.map((v: number) => Math.round(v * 1000) / 1000), [20, 1, 13])
+    const [x, y, z, w] = transform.rot as number[]
+    assert.ok(Math.abs(Math.hypot(x, y, z, w) - 1) < 1e-3)
+    const axisX = 2 * (x * y - w * z)
+    const axisY = 1 - 2 * (x * x + z * z)
+    const axisZ = 2 * (y * z + w * x)
+    assert.ok(Math.abs(Math.abs(axisX) - 1) < 1e-3)
+    assert.ok(Math.abs(axisY) < 1e-3)
+    assert.ok(Math.abs(axisZ) < 1e-3)
+    stepUntil(round, 150, () => code(), () => false)
+    transform = rec(round, 'ege.transform', root)
+    assert.deepEqual(transform.pos.map((v: number) => Math.round(v * 1000) / 1000), [20, 1, 16])
+  } finally {
+    round.dispose()
+  }
+})
+
+test('rollingLog knocks a seat in its path', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'log', kind: 'rollingLog',
+    params: { from: [-8, 0.9, 0], to: [2, 0.9, 0], radius: 0.6, length: 2, speed: 6, periodS: 10, phaseS: 8 },
+  }], Array(8).fill(true))
+  try {
+    const seat0 = round.observe().seats[0].entity
+    stepUntil(round, 120, () => code(), () => false)
+    const before = round.observe().seats[0]
+    const beforeCharacter = rec(round, 'character', seat0)
+    assert.equal(before.status, 1)
+    assert.ok(round.tick - 1 >= beforeCharacter.protected_until)
+    assert.notEqual(beforeCharacter.mode, 4)
+    assert.equal(beforeCharacter.knockbacks, 0)
+    while (round.tick < 600 && rec(round, 'character', seat0).knockbacks < 1) {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+    }
+    assert.ok(rec(round, 'character', seat0).knockbacks >= 1)
+    if (rec(round, 'character', seat0).mode !== 4) {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+    }
+    assert.equal(rec(round, 'character', seat0).mode, 4)
+  } finally {
+    round.dispose()
+  }
+})
+
 // The pad can fire before physics or on entry in the post-physics pass.
 async function launchScenario(apexM: number, landingRequired: boolean): Promise<void> {
   const { scene, round } = await roundWith('ege-strip', [{

@@ -396,3 +396,49 @@ test('launchPad launches towards its target', async () => {
 test('launchPad preserves ordinary airborne steering', async () => {
   await launchScenario(2, false)
 })
+
+test('doorBank: a fake door opens on a charge and a real one stays', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'bank', kind: 'doorBank', params: {
+      rows: [{ doors: [
+        { t: [-3.5, 1, 8], yawDeg: 0, size: [0.9, 2, 0.3] },
+        { t: [-2.5, 1, 8], yawDeg: 0, size: [0.9, 2, 0.3] },
+      ], real: 1 }],
+      breakSpeed: 3,
+    },
+  }], Array(8).fill(true))
+  try {
+    round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+    const doors = [0, 1].map(i => scene.index(`feature/bank/door/${i}`))
+    const solids = doors.map(entity => rec(round, 'feature_door_bank_door', entity).solid)
+    assert.equal(solids[0] + solids[1], 1)
+    const solid = solids.indexOf(1)
+    const fake = 1 - solid
+    let debrisVisible = false
+    const intro = Number(round.worldState().resources.round.intro_ticks)
+    while (round.tick < intro + 120) {
+      round.step(seat => round.tick >= intro && seat < 2 ? code(0, 1) : code())
+      assert.equal(round.observe().faults, 0)
+      const state = rec(round, 'feature_door_bank_door', doors[fake])
+      if (state.open && round.tick - 1 - state.open_tick < 60) {
+        debrisVisible ||= [0, 1, 2].some(p =>
+          rec(round, 'ege.render', scene.index(`feature/bank/debris/${3 * fake + p}`)).visible === 1)
+      }
+    }
+    const fakeDoor = rec(round, 'feature_door_bank_door', doors[fake])
+    const solidDoor = rec(round, 'feature_door_bank_door', doors[solid])
+    assert.equal(fakeDoor.open, 1)
+    assert.ok(fakeDoor.open_tick >= 0)
+    assert.equal(rec(round, 'ege.body_props', doors[fake]).colliders_enabled, 0)
+    assert.equal(rec(round, 'ege.render', doors[fake]).visible, 0)
+    assert.ok(round.observe().seats[fake].pos.z > 8.5, JSON.stringify(round.observe().seats.slice(0, 2)))
+    assert.equal(solidDoor.open, 0)
+    assert.equal(solidDoor.revealed, 1)
+    assert.equal(rec(round, 'ege.body_props', doors[solid]).colliders_enabled, 1)
+    assert.ok(round.observe().seats[solid].pos.z < 8)
+    assert.ok(debrisVisible)
+  } finally {
+    round.dispose()
+  }
+})

@@ -1195,6 +1195,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.door_bank.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "feature"],
+          "writes": ["feature_door_bank", "feature_door_bank_door", "feature_door_bank_debris", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
           "system": "rf.feature.swim_volume.pre",
           "kind": "script",
           "reads": ["seat", "ege.transform"],

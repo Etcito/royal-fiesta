@@ -80,5 +80,86 @@
       "the light",
       "the course assets"
     ]
+  },
+  {
+    "id": "m4-strip-finish",
+    "milestone": "m4",
+    "filename": "engine-round-strip-penguin-qualified-past-finish-gate.png",
+    "args": {
+      "course": "ege-strip",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 900,
+      "local": "run",
+      "captureAt": "firstFinish",
+      "focus": null
+    },
+    "require": [
+      "nonEmpty eq true",
+      "capturedAt lt 900",
+      "qualified gt 0",
+      "events.finish gt 0",
+      "events.gate gt 0",
+      "faults eq 0"
+    ],
+    "description": "a straight candy floor strip on the engine near its finish end: penguins that crossed the finish area at the end of the strip are gone from the floor while other penguins still run along the strip, all upright; HUD band shows qualified 1 or more",
+    "held_constant": [
+      "the follow camera rule",
+      "the light",
+      "the course assets"
+    ]
+  },
+  {
+    "id": "m4-strip-respawn",
+    "milestone": "m4",
+    "filename": "engine-round-strip-fallen-penguin-respawned-at-start-anchor.png",
+    "args": {
+      "course": "ege-strip",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 900,
+      "local": "sideways",
+      "captureAt": "respawned",
+      "focus": null
+    },
+    "require": [
+      "nonEmpty eq true",
+      "capturedAt lt 900",
+      "events.fall gt 0",
+      "local.status eq 1",
+      "faults eq 0"
+    ],
+    "description": "the followed penguin standing upright again on the candy floor strip near the start line, at its respawn point after falling off the side of the strip, with the other penguins further along the strip; HUD band shows it alive",
+    "held_constant": [
+      "the follow camera rule",
+      "the light",
+      "the course assets"
+    ]
+  },
+  {
+    "id": "m4-race-sprint-gates",
+    "milestone": "m4",
+    "filename": "engine-round-race-sprint-bots-past-first-checkpoint.png",
+    "args": {
+      "course": "race-sprint",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 1200,
+      "local": "run",
+      "captureAt": "end",
+      "focus": null
+    },
+    "require": [
+      "nonEmpty eq true",
+      "events.gate gt 0",
+      "faults eq 0",
+      "alive gt 0"
+    ],
+    "description": "Royal Fiesta race course on the engine later in the round: penguins past the first checkpoint gate among the hammer and door mechanisms; HUD band shows alive, qualified and eliminated counts",
+    "held_constant": [
+      "the follow camera rule",
+      "the light",
+      "the course assets"
+    ]
   }
 ]

@@ -3,7 +3,9 @@ import type { SdfmCompiledMaterial, SdfmMappedMaterial } from '@etcito/raa-sdfm'
 import { shaderHash } from '../render/shaderCache.ts'
 
 // Strip nested WGSL comments before comparing programs. Asset/node names in comments are
-// diagnostics, and must never select a different GPU program.
+// diagnostics, and must never select a different GPU program. Line breaks are kept: RAA's
+// operator-mix guard reads the source line by line, so a program folded onto one line mixes
+// the top-level operators of unrelated statements (pcg_hash's `^` with a `*`) and is refused.
 export function shaderCode(source: string): string {
   let out = ''
   for (let i = 0; i < source.length;) {
@@ -22,7 +24,7 @@ export function shaderCode(source: string): string {
       out += ' '
     } else out += source[i++]
   }
-  return out.replace(/\s+/g, ' ').trim() + '\n'
+  return out.split('\n').map(line => line.replace(/\s+/g, ' ').trim()).filter(line => line !== '').join('\n') + '\n'
 }
 
 export interface MaterialProgram extends SdfmMappedMaterial {

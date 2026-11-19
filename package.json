@@ -34,9 +34,13 @@
     "levels:publish": "node --experimental-strip-types tools/levels/pack.ts",
     "etcito:build": "node --experimental-strip-types tools/etcitoBuild.ts",
     "prepare": "git config core.hooksPath .githooks || true",
-    "ui:thumbs": "node --experimental-strip-types tools/cosmeticThumbs.ts"
+    "ui:thumbs": "node --experimental-strip-types tools/cosmeticThumbs.ts",
+    "ege:build": "node --experimental-strip-types tools/egeScripts.ts build --out out/ege",
+    "ege:bricks": "node --experimental-strip-types tools/egeBricks.ts build"
   },
   "dependencies": {
+    "@etcito/game-engine": "file:../etcito-game-engine/dist/bricks/game-engine",
+    "@etcito/game-engine-compile": "file:../etcito-game-engine/dist/bricks/game-engine-compile",
     "@etcito/raa-anim": "file:../raa/dist/bricks/raa-anim",
     "@etcito/uaa": "file:../uaa"
   },
@@ -44,6 +48,7 @@
     "@etcito/haa-spatial": "file:../haa/packages/haa",
     "@etcito/raa-assets-tools": "https://github.com/Etcito/raa-assets-tools/releases/download/v0.1.0/raa-assets-tools-0.1.0.tgz",
     "@types/node": "^24",
+    "assemblyscript": "0.28.20",
     "sharp": "0.35.5",
     "typescript": "^5.9.3"
   }

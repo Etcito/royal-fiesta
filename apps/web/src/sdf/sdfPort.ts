@@ -36,6 +36,12 @@ export interface ResizablePort extends SkinnedRenderPort {
   shadingReport(): ShadingReport
   setShading(mode: ShadingMode): void
   addTextured(assetId: string, meshed: MeshedAsset): void
+  /**
+   * Handoff: Engine round page: load, scene view, render bridge, composite and live mode takes this:
+   * `ResizablePort.raaEngine` is the raa engine that `SdfRenderPort.init` creates today, returned as `Engine`;
+   * before init it refuses. `createSdfPort` returns the port, and the page calls `raaEngine()` on it to build its RenderBridge.
+   */
+  raaEngine(): Engine
 }
 
 /** What this upload drew with which shading, plus every part that could not keep its field, named. */
@@ -440,6 +446,12 @@ class SdfRenderPort implements ResizablePort {
     // The player's graphics options (AO, render scale, screen effects), now and on every change.
     this.applyOptions()
     this.offOptions = onRenderOptions(() => this.applyOptions())
+  }
+
+  // The raa engine that init created, for a RenderBridge on the same canvas; refuses before init.
+  raaEngine(): Engine {
+    if (this.engine === null) refuse(AREA, WHERE, 'raaEngine before init; await port.init first')
+    return this.engine
   }
 
   // Whether the current environment has a post look (bloom and grading on), for the graphics options.

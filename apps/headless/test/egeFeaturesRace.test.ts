@@ -139,3 +139,50 @@ test('ege-yard-a: the marker is touched and a seat swims in the pool', async () 
     round.dispose()
   }
 })
+
+test('tileField warns, then decays a stepped tile', async () => {
+  const { scene, round } = await roundWith('ege-strip', [
+    {
+      id: 'tiles',
+      kind: 'tileField',
+      params: {
+        tiles: [
+          { t: [-3.5, -0.04, 0], size: [2, 2, 0.1] },
+          { t: [3.5, -0.04, 30], size: [2, 2, 0.1] },
+        ],
+        decayS: 0.5,
+        warnS: 0.5,
+        mode: 'permanent',
+      },
+    },
+  ], Array(8).fill(true))
+  try {
+    const first = scene.index('feature/tiles/tile/0')
+    const second = scene.index('feature/tiles/tile/1')
+    const states: number[] = [rec(round, 'feature_tile_field_tile', first).state]
+    let warningTicks = 0
+    let warningColor = 0
+    while (round.tick < 300 && rec(round, 'feature_tile_field_tile', first).state !== 3) {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+      const tile = rec(round, 'feature_tile_field_tile', first)
+      if (tile.state !== states[states.length - 1]) states.push(tile.state)
+      if (tile.state === 1) {
+        warningTicks++
+        warningColor = rec(round, 'ege.render', first).color
+      }
+    }
+    const firstTile = rec(round, 'feature_tile_field_tile', first)
+    assert.equal(firstTile.state, 3)
+    const render = rec(round, 'ege.render', first)
+    assert.equal(render.visible, 0)
+    assert.equal(rec(round, 'ege.body_props', first).colliders_enabled, 0)
+    assert.equal(rec(round, 'feature_tile_field_tile', second).state, 0)
+    assert.equal(rec(round, 'ege.body_props', second).colliders_enabled, 1)
+    assert.deepEqual(states, [0, 1, 2, 3])
+    assert.equal(warningTicks, 30)
+    assert.equal(warningColor, 0xFF6B9E)
+  } finally {
+    round.dispose()
+  }
+})

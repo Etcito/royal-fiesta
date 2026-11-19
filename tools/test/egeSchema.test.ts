@@ -23,6 +23,7 @@ const SCHEDULE = [
   'rf.character.post',
   'rf.feature.marker.post',
   'rf.feature.catch_volume.post',
+  'rf.feature.tile_field.post',
   'rf.seat.rules',
 ]
 

@@ -980,6 +980,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.tile_field.post",
+          "kind": "script",
+          "reads": ["seat", "character", "round", "feature"],
+          "writes": ["feature_tile_field", "feature_tile_field_tile", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
           "system": "rf.seat.rules",
           "kind": "script",
           "reads": [

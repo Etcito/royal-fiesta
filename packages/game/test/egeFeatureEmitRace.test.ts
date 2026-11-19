@@ -6,7 +6,7 @@ import type { FeatureSpec } from '@royal-fiesta/sim/course'
 import { encodeInput } from '@royal-fiesta/sim/input'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { createEngineRound } from '../src/ege/round.ts'
-import { rfScriptBytes } from '../../../apps/headless/src/egeHarness.ts'
+import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 import { FEATURE_EMITTERS } from '../src/ege/featureEmitters.ts'
 import { emitEngineScene } from '../src/ege/sceneEmitter.ts'
 import type { EmitInput, EmittedScene } from '../src/ege/sceneEmitter.ts'
@@ -277,9 +277,13 @@ test('rollingLog body stays at from before any rolling-log script', async () => 
       system !== 'rf.feature.rolling_log.pre' && system !== 'rf.feature.rolling_log.post')
   }
   const schemaText = JSON.stringify(schema)
+  const compiled = await (await rfCompiler()).compile(collectRfScripts(), schemaText)
+  const errors = compiled.diagnostics.filter(diagnostic => diagnostic.severity === 'error')
+  assert.deepEqual(errors.map(formatRfDiagnostic), [], 'rolling-log isolated-schema compilation errors')
+  assert.ok(compiled.wasm, 'rolling-log isolated-schema compilation produced no wasm')
   engine.setSchema(schemaText)
   const scene = emitEngineScene(engine, input)
-  const round = await createEngineRound(engine, schemaText, await rfScriptBytes(), scene, input.course, {
+  const round = await createEngineRound(engine, schemaText, Uint8Array.from(compiled.wasm), scene, input.course, {
     profile: 'sprint', seed: 7, humans: [true, false, false, false, false, false, false, false],
   })
   try {

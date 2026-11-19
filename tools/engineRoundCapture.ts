@@ -262,11 +262,16 @@ export async function judgeImages(store: string, delivery: string, attempt: numb
         const verdict = JSON.parse(readFileSync(verdictPath, 'utf8')) as Verdict
         if (verdict.pass && verdict.description === row.description && bytes.equals(readFileSync(join(store, 'attempts', String(verdict.attempt), row.filename)))) continue
       } catch { /* No reusable verdict. */ }
-      if (clock() - start >= budget * 1000) { missing++; continue }
-      const score = parseScore(await run(image, row.description))
+      if (clock() - start >= budget * 1000) { missing++; console.error(`engine-round: ${row.id}: judge budget ${budget} s spent before this image`); continue }
+      const answer = await run(image, row.description)
+      const score = parseScore(answer)
       const verdict: Verdict = { filename: row.filename, description: row.description, attempt, score, pass: score !== null && score >= 6 }
       json(verdictPath, verdict)
-      if (!verdict.pass) missing++
+      console.log(`engine-round: ${row.id}: judge score ${score ?? 'none'} (min 6) ${verdict.pass ? 'PASS' : 'FAIL'}`)
+      if (!verdict.pass) {
+        missing++
+        console.error(`engine-round: ${row.id}: JUDGE FAIL ${row.filename}\n${answer.trim()}`)
+      }
     } catch (error) {
       missing++
       console.error(`engine-round: ${row.id}: ${error instanceof Error ? error.message : String(error)}`)

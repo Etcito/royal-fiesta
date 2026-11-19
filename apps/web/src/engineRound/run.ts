@@ -44,6 +44,9 @@ export function parseRunArgs(input: unknown): RoundRunArgs {
   return { course: value.course, profile, seed: seed as number, frames: frames as number, local: local as RoundRunArgs['local'], captureAt: captureAt as RoundRunArgs['captureAt'], focus: focus as string | null }
 }
 
+/** Ticks a firstFinish capture waits after the first finish (the finisher is parked on its finish tick). */
+export const FIRST_FINISH_TICKS = 3
+
 export function localCode(local: RoundRunArgs['local'], tick: number, introTicks: number): number {
   if (tick < introTicks || local === 'idle') return NEUTRAL_CODE
   return encodeInput({ moveX: local === 'sideways' ? 1 : 0, moveZ: local === 'sideways' ? 0 : 1,
@@ -94,7 +97,10 @@ export function createRoundRun(round: EngineRound, args: RoundRunArgs, course: C
     if (respawnTick === -1 && observation.seats[0]?.status === 1 && (r as any).worldState().components.character?.[String(r.scene.seatEntities[0])]?.parked === 0) respawnTick = round.tick
     priorFalls = observation.events.fall ?? 0
     return args.captureAt === 'dive' ? diveTick !== null && round.tick >= diveTick + 10
-      : args.captureAt === 'firstFinish' ? finishTick !== null && round.tick >= finishTick + 60
+      // The first finisher is parked at once; the rest of the field still runs for a few ticks only (ege-strip: the
+      // whole field finished 36 ticks after the first, so a later capture showed an ended round and an empty floor).
+      // Capture while the followed seat still runs, so the follow camera faces the finish with the field around it.
+      : args.captureAt === 'firstFinish' ? finishTick !== null && (round.tick >= finishTick + FIRST_FINISH_TICKS || observation.seats[0]?.status !== 1)
       : args.captureAt === 'respawned' ? respawnTick !== null && respawnTick >= 0 && round.tick >= respawnTick + 30 : false
   }
   return {

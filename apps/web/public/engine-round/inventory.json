@@ -144,7 +144,7 @@
       "course": "race-sprint",
       "profile": "sprint",
       "seed": 7,
-      "frames": 1200,
+      "frames": 540,
       "local": "run",
       "captureAt": "end",
       "focus": null

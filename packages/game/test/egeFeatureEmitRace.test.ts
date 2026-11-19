@@ -87,3 +87,32 @@ test('swimVolume emits a root and a slime-pool visual that build', async () => {
   refusedAt(path, { id: 'pool', kind: 'swimVolume', params: { center: [0, 0, 0], half: [1, -1, 1] } }, 'half')
   refusedAt(path, { id: 'pool', kind: 'swimVolume', params: { center: [0, 0, 0], half: [1, 1, 1], drag: 30 } }, 'drag')
 })
+
+test('catchVolume emits a root resolved to its checkpoint', async () => {
+  const spec: FeatureSpec = {
+    id: 'catch', kind: 'catchVolume', params: { center: [-3.5, 1, 6], half: [1, 1.5, 0.5], respawnStage: 0 },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const emitted = emitBuilds(input)
+  const rootIndex = emitted.index('feature/catch')
+  const visualIndex = emitted.index('feature/catch/visual/0')
+  assert.equal(visualIndex, rootIndex + 1)
+  const root = emitted.scene.entities[rootIndex]
+  const visual = emitted.scene.entities[visualIndex]
+  assert.deepEqual(root.components?.feature, { kind: 3, index: 0, salt: 0x100 })
+  assert.deepEqual(root.components?.feature_catch_volume, {
+    center: [-3.5, 1, 6], half: [1, 1.5, 0.5], respawn_stage: 0, checkpoint: 0,
+    inside: [0, 0, 0, 0, 0, 0, 0, 0],
+  })
+  assert.equal(visual.components?.['ege.render']?.shape, 4)
+  assert.equal(visual.components?.['ege.render']?.color, 0xF2E6D0)
+  assert.equal(visual.components?.['ege.render']?.visible, 0)
+  assert.deepEqual(visual.components?.['ege.render']?.params, [1, 1.5, 0, 0])
+  refusedAt(input, { ...spec, params: { ...spec.params, respawnStage: 3 } }, 'respawnStage')
+  assert.throws(
+    () => FEATURE_EMITTERS.catchVolume({ ...spec, params: { ...spec.params, respawnStage: 3 } }, {
+      course: input.course.sim!, index: 0, path: `courses/${input.course.id}.course.json`, assets: input.assets,
+    }), /no checkpoint at route stage 3; add a checkpoint of that stage/,
+  )
+  refusedAt(input, { ...spec, params: { ...spec.params, respawnStage: 1.5 } }, 'respawnStage')
+})

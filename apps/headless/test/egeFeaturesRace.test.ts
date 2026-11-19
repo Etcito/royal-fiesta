@@ -86,6 +86,27 @@ test('swimVolume sets swim', async () => {
   }
 })
 
+test('catchVolume respawns at its stage', async () => {
+  const { scene, round } = await roundWith('ege-strip', [
+    { id: 'catch', kind: 'catchVolume', params: { center: [-3.5, 1, 6], half: [1, 1.5, 0.5], respawnStage: 0 } },
+  ])
+  try {
+    while (round.observe().phase === 'intro') round.step(() => code())
+    const seat0 = round.observe().seats[0].entity
+    const previousTeleport = rec(round, 'character', seat0).teleport_tick
+    stepUntil(round, 400, () => code(0, 1), () => rec(round, 'character', seat0).teleport_tick > previousTeleport)
+    const character = rec(round, 'character', seat0)
+    assert.equal(character.teleport_tick, round.tick - 1)
+    const [x, , z] = rec(round, 'ege.transform', seat0).pos as number[]
+    assert.ok(Math.abs(x) <= 0.3)
+    assert.ok(Math.abs(z - 15) <= 0.3)
+    assert.equal(rec(round, 'feature_catch_volume', scene.index('feature/catch')).inside[0], 0)
+    assert.equal(rec(round, 'seat', seat0).status, 1)
+  } finally {
+    round.dispose()
+  }
+})
+
 test('ege-yard-a: the marker is touched and a seat swims in the pool', async () => {
   const { scene, round } = await roundWith('ege-yard-a', null)
   try {

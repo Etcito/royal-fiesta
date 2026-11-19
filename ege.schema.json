@@ -464,6 +464,34 @@
       ]
     },
     {
+      "name": "feature_catch_volume",
+      "fields": [
+        {
+          "name": "center",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "half",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "respawn_stage",
+          "type": "u32"
+        },
+        {
+          "name": "checkpoint",
+          "type": "u32"
+        },
+        {
+          "name": "inside",
+          "type": "u32",
+          "count": 8
+        }
+      ]
+    },
+    {
       "name": "feature_swim_volume",
       "fields": [
         {
@@ -832,6 +860,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.catch_volume.pre",
+          "kind": "script",
+          "reads": ["seat", "gate"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
           "system": "rf.feature.swim_volume.pre",
           "kind": "script",
           "reads": ["seat", "ege.transform"],
@@ -879,6 +914,13 @@
             "feature_marker",
             "ege.render"
           ],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.catch_volume.post",
+          "kind": "script",
+          "reads": ["seat", "gate"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
           "emits": []
         },
         {

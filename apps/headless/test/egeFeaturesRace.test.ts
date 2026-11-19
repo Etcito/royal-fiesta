@@ -85,3 +85,36 @@ test('swimVolume sets swim', async () => {
     round.dispose()
   }
 })
+
+test('ege-yard-a: the marker is touched and a seat swims in the pool', async () => {
+  const { scene, round } = await roundWith('ege-yard-a', null)
+  try {
+    while (round.observe().phase === 'intro') {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+    }
+    const markerEntity = scene.index('feature/yard-marker')
+    const poolEntity = scene.index('feature/yard-pool')
+    let maxTouches = rec(round, 'feature_marker', markerEntity).touches
+    while (round.tick < 400) {
+      round.step(seat => seat === 0 ? code(0, 1) : code())
+      assert.equal(round.observe().faults, 0)
+      maxTouches = Math.max(maxTouches, rec(round, 'feature_marker', markerEntity).touches)
+    }
+    assert.ok(maxTouches >= 1)
+    assert.ok(rec(round, 'feature_marker', markerEntity).last_touch_tick >= 0)
+
+    const pool = rec(round, 'feature_swim_volume', poolEntity)
+    const swimmingInside = round.observe().seats.some(seat => {
+      const character = rec(round, 'character', seat.entity)
+      const [x, y, z] = rec(round, 'ege.transform', seat.entity).pos as number[]
+      return character.swim === 1 && pool.inside[seat.seat] === 1 &&
+        x >= pool.center[0] - pool.half[0] && x <= pool.center[0] + pool.half[0] &&
+        y >= pool.center[1] - pool.half[1] && y <= pool.center[1] + pool.half[1] &&
+        z >= pool.center[2] - pool.half[2] && z <= pool.center[2] + pool.half[2]
+    })
+    assert.ok(swimmingInside)
+  } finally {
+    round.dispose()
+  }
+})

@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { loadEngine } from '@etcito/game-engine'
 import type { ColliderSpec } from '@royal-fiesta/sim/course'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
+import { CAPSULE } from '../../sim/src/character/capsule.ts'
+import { seatSpawn } from '../../sim/src/zones/seatSpawn.ts'
 import { assetColliders, engineColliders } from '../src/ege/colliders.ts'
+import { buildEngineAssembly, emitEngineScene } from '../src/ege/sceneEmitter.ts'
+import type { EmitInput } from '../src/ege/sceneEmitter.ts'
 import {
   FEATURE_EMITTERS,
   featureSalt,
@@ -10,6 +16,31 @@ import {
   tintColor,
   visualOf,
 } from '../src/ege/featureEmitters.ts'
+import { loadCourseV1 } from '../src/courseV1.ts'
+import type { CourseV1, GameAssetResolver, ResolvedGameAsset } from '../src/courseV1.ts'
+import { assetFilePath, parseGameAsset } from '../src/gameAsset.ts'
+import type { World } from '../src/gameAsset.ts'
+
+const ROOT = new URL('../../../', import.meta.url)
+const readJson = (path: string): unknown => JSON.parse(readFileSync(new URL(path, ROOT), 'utf8'))
+const assets: GameAssetResolver = {
+  async resolve(id) {
+    const path = assetFilePath(id.split('.')[0] as World, id)
+    const json = readJson(path)
+    return { asset: await parseGameAsset(json, path), source: { path, json } }
+  },
+}
+const engine = await loadEngine()
+engine.setSchema(readFileSync(new URL('../../../ege.schema.json', import.meta.url), 'utf8'))
+
+async function inputOf(id: string): Promise<EmitInput> {
+  const path = `courses/${id}.course.json`
+  const course = await loadCourseV1(readJson(path), path, assets)
+  assert.ok(course.sim)
+  const resolved = new Map<string, ResolvedGameAsset>()
+  for (const assetId of course.assetIds) resolved.set(assetId, await assets.resolve(assetId))
+  return { course, assets: resolved, setup: { profile: 'sprint', seed: 7 } }
+}
 
 const AT = { x: 0, y: 0, z: 0 }
 const IDENTITY = { x: 0, y: 0, z: 0, w: 1 }
@@ -73,4 +104,40 @@ test('visualOf maps a draw asset to its engine shape, params and colour', () => 
 test('tint 2 is the palette blue and the registry starts empty', () => {
   assert.equal(tintColor(2, 0), 0x54BAFF)
   assert.equal(Object.keys(FEATURE_EMITTERS).length, 0)
+})
+
+test('race-sprint emits eight capsule seats and sprint round state', async () => {
+  const input = await inputOf('race-sprint')
+  const emitted = emitEngineScene(engine, input)
+  const sim = input.course.sim
+  assert.ok(sim)
+  assert.equal(emitted.seatEntities.length, 8)
+  for (let i = 0; i < 8; i++) {
+    const entity = emitted.scene.entities[emitted.seatEntities[i]]
+    const collider = entity.colliders?.[0]
+    const spawn: { x: number; y: number; z: number } = seatSpawn(sim, i).t
+    assert.equal(collider?.shape, 'capsule')
+    assert.equal(collider?.radius, CAPSULE.radius)
+    assert.equal(collider?.half_height, CAPSULE.halfHeight)
+    assert.deepEqual(entity.components?.['ege.transform']?.pos, [spawn.x, spawn.y, spawn.z])
+  }
+  assert.equal(emitted.scene.resources?.round?.intro_ticks, 60)
+  assert.equal(emitted.scene.resources?.round?.ended_tick, -1)
+})
+
+test('race-sprint, survival-sprint and hub-plaza create engine worlds', async () => {
+  for (const id of ['race-sprint', 'survival-sprint', 'hub-plaza']) {
+    const emitted = emitEngineScene(engine, await inputOf(id))
+    assert.ok(engine.createWorld(emitted.text) >= 1, id)
+  }
+})
+
+test('building an assembly refuses a course without a simulation part', async () => {
+  const input = await inputOf('race-sprint')
+  const course: CourseV1 = { ...input.course, sim: null }
+  assert.throws(
+    () => buildEngineAssembly({ ...input, course }),
+    (error: unknown) => error instanceof RefusalError &&
+      error.message === '[ege-scene] courses/race-sprint.course.json: the course has no simulation part (kind race); pass a race, survival, hub or gallery course',
+  )
 })

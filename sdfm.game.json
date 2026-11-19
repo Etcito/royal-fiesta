@@ -979,5 +979,7 @@
       },
       "start": null
     }
-  }
+  },
+  "schema": "ege.schema.json",
+  "scripts": "scripts/ege"
 }

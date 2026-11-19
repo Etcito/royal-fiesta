@@ -46,6 +46,10 @@ export interface GameManifest {
   meshCheck?: string
   /** How many players a level hosts, as SDF Modeler shows it (its core/game/level-capacity.ts reads this rule). */
   players?: PlayersRule
+  /** The engine schema file SDF Modeler's modeler reads (its core/game/manifest.ts rules). */
+  schema?: string
+  /** The scripts folder SDF Modeler's modeler compiles (its core/game/manifest.ts rules). */
+  scripts?: string
 }
 
 /** players.kinds.<kind>: the marker counted (spawn by default), the fewest the game accepts, players sharing them. */
@@ -60,7 +64,7 @@ const LINK_TARGETS: readonly LinkTarget['kind'][] = ['motor', 'door', 'spring', 
 
 const TOP_KEYS = ['format', 'version', 'id', 'name', 'folders', 'worlds', 'courseFormat', 'courseVersion', 'markers', 'motions', 'play']
 const FOLDER_KEYS = ['assets', 'courses', 'ui']
-const OPTIONAL_TOP = ['mechanisms', 'level', 'features', 'meshCheck', 'players']
+const OPTIONAL_TOP = ['mechanisms', 'level', 'features', 'meshCheck', 'players', 'schema', 'scripts']
 const WORLDS: readonly World[] = ['candy', 'ice', 'jungle', 'neon', 'common']
 const SCALARS = ['number', 'integer', 'boolean', 'string', 'vec3', 'quat']
 const FIELD_SCHEMA_TYPES: readonly FieldSchemaType[] = ['number', 'integer', 'boolean', 'string', 'vec3', 'enum', 'list', 'object']
@@ -227,6 +231,25 @@ function featureSchemas(v: unknown, path: string): Record<string, Record<string,
   return out
 }
 
+/** A relative POSIX path with no empty, '.' or '..' part, no leading '/', no backslash and no NUL. */
+function plainPath(v: string): boolean {
+  return !v.includes('\\') && !v.includes('\0') && v.split('/').every((s) => s !== '' && s !== '.' && s !== '..')
+}
+
+function schemaFile(v: unknown, path: string): string {
+  if (typeof v !== 'string' || !v.endsWith('.schema.json') || !plainPath(v)) {
+    fail(path, '/schema', 'must be a .schema.json file inside the game folder; set "schema" to a file like "ege.schema.json", using \'/\' and no \'..\'')
+  }
+  return v
+}
+
+function scriptsFolder(v: unknown, path: string): string {
+  if (typeof v !== 'string' || !(v === 'scripts' || (v.startsWith('scripts/') && plainPath(v)))) {
+    fail(path, '/scripts', 'must be scripts or a folder under it; set "scripts" to "scripts" or a folder under it, like "scripts/ege"')
+  }
+  return v
+}
+
 export function parseGameManifest(json: unknown, path: string): GameManifest {
   const m = obj(json, path, '')
   exactKeys(m, TOP_KEYS, path, '', OPTIONAL_TOP)
@@ -243,6 +266,14 @@ export function parseGameManifest(json: unknown, path: string): GameManifest {
   exactKeys(play, ['dev'], path, '/play')
   const dev = text(play.dev, path, '/play/dev')
   if (!dev.includes('{id}')) fail(path, '/play/dev', 'must contain {id}; put {id} where the course id goes')
+  const schema = Object.hasOwn(m, 'schema') ? schemaFile(m.schema, path) : undefined
+  const scripts = Object.hasOwn(m, 'scripts') ? scriptsFolder(m.scripts, path) : undefined
+  if (schema !== undefined && scripts === undefined) {
+    fail(path, '/scripts', 'a schema needs a scripts folder; set both "schema" and "scripts", or remove both')
+  }
+  if (scripts !== undefined && schema === undefined) {
+    fail(path, '/schema', 'a scripts folder needs a schema; set both "schema" and "scripts", or remove both')
+  }
   return {
     format: literal(m.format, 'sdfm.game', path, '/format'),
     version: literal(m.version, 1, path, '/version'),
@@ -266,6 +297,8 @@ export function parseGameManifest(json: unknown, path: string): GameManifest {
     ...(Object.hasOwn(m, 'features') ? { features: featureSchemas(m.features, path) } : {}),
     ...(Object.hasOwn(m, 'meshCheck') ? { meshCheck: text(m.meshCheck, path, '/meshCheck') } : {}),
     ...(Object.hasOwn(m, 'players') ? { players: playersOf(m.players, path) } : {}),
+    ...(schema !== undefined ? { schema } : {}),
+    ...(scripts !== undefined ? { scripts } : {}),
   }
 }
 

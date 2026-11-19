@@ -1,5 +1,5 @@
-import { Column, emit, newRecord, readColumn, readResource, tick, writeResource } from 'ege'
-import { Character, CourseRes, EliminateEvent, FallEvent, FinishEvent, Gate, GateEvent, Home, HomeSpawn, ProgressEvent, RoundRes, Seat } from '../components.gen'
+import { Column, emit, newRecord, readColumn, readResource, setComponent, tick, writeResource } from 'ege'
+import { Character, CourseRes, EgeTransform, EliminateEvent, FallEvent, FinishEvent, Gate, GateEvent, Home, HomeSpawn, ProgressEvent, RoundRes, Seat } from '../components.gen'
 import { releaseGrab } from '../character/grab.as'
 import { inBox } from '../lib/boxes.as'
 import { characterColumn, parkSeat, placeSeat, seatColumn, transformOf } from '../lib/seats.as'
@@ -19,6 +19,15 @@ function resetTeleport(entity: u32, ch: Character, now: i32): void {
 
 function park(entity: u32, ch: Character, seatId: u32, now: i32): void {
   parkSeat(entity, ch, seatId)
+  const t = transformOf(entity)
+  t.pos_0 = <f32>(<f64>seatId * 5.0)
+  t.pos_1 = <f32>(-500.0)
+  t.pos_2 = 0
+  t.rot_0 = 0
+  t.rot_1 = 0
+  t.rot_2 = 0
+  t.rot_3 = 1
+  setComponent(entity, EgeTransform.ID, EgeTransform.SIZE, t)
   resetTeleport(entity, ch, now)
 }
 
@@ -96,6 +105,15 @@ function placeRespawn(entity: u32, seat: Seat, ch: Character, gates: Column<Gate
     tz = respawnSlotZ(bx, bz, fx, fz, slot, course.slots, course.spacing_m)
   }
   placeSeat(entity, ch, tx, by, tz, fx, fz)
+  const t = transformOf(entity)
+  t.pos_0 = <f32>tx
+  t.pos_1 = <f32>(by + ch.stand + 0.01)
+  t.pos_2 = <f32>tz
+  t.rot_0 = 0
+  t.rot_1 = 0
+  t.rot_2 = 0
+  t.rot_3 = 1
+  setComponent(entity, EgeTransform.ID, EgeTransform.SIZE, t)
   ch.parked = 0
   resetTeleport(entity, ch, now)
   seat.wait_until = -1

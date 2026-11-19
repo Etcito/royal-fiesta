@@ -186,3 +186,43 @@ test('tileField warns, then decays a stepped tile', async () => {
     round.dispose()
   }
 })
+
+test('boostLane applies a bounded speed increase after character steering', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'lane', kind: 'boostLane',
+    params: {
+      center: [-3.5, 1, 14], half: [1, 2, 13], yawDeg: 0, boost: 4,
+      durationS: 2, rechargeS: 0, eligibility: 'all',
+    },
+  }])
+  try {
+    const intro = Number(round.worldState().resources.round.intro_ticks)
+    while (round.observe().phase === 'intro') {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+    }
+    const seat0 = round.observe().seats[0].entity
+    let maxSpeed = 0
+    while (round.tick < intro + 90) {
+      round.step(seat => seat === 0 ? code(0, 1) : code())
+      assert.equal(round.observe().faults, 0)
+      const lin = rec(round, 'ege.velocity', seat0).lin as number[]
+      maxSpeed = Math.max(maxSpeed, Math.hypot(lin[0], lin[2]))
+    }
+    const finalLin = rec(round, 'ege.velocity', seat0).lin as number[]
+    const lane = scene.index('feature/lane')
+    const boost = rec(round, 'feature_boost_lane', lane)
+    const activeVisual = rec(round, 'ege.render', lane + 1)
+    assert.ok(maxSpeed > 8.5)
+    assert.ok(maxSpeed <= 12 + 1e-3)
+    assert.ok(Math.abs(Math.hypot(finalLin[0], finalLin[2]) - 9) < 0.1, JSON.stringify({
+      maxSpeed, finalSpeed: Math.hypot(finalLin[0], finalLin[2]), tick: round.tick,
+      boost, character: rec(round, 'character', seat0),
+    }))
+    assert.ok(boost.boost_until[0] > 0)
+    assert.ok(boost.boost_until[0] > round.tick - 1)
+    assert.equal(activeVisual.color, 0x73D966)
+  } finally {
+    round.dispose()
+  }
+})

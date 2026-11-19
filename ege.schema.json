@@ -464,6 +464,55 @@
       ]
     },
     {
+      "name": "feature_boost_lane",
+      "fields": [
+        {
+          "name": "center",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "half",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "yaw_deg",
+          "type": "f64"
+        },
+        {
+          "name": "boost",
+          "type": "f64"
+        },
+        {
+          "name": "duration_s",
+          "type": "f64"
+        },
+        {
+          "name": "recharge_s",
+          "type": "f64"
+        },
+        {
+          "name": "eligibility",
+          "type": "u32"
+        },
+        {
+          "name": "placed",
+          "type": "u32"
+        },
+        {
+          "name": "boost_until",
+          "type": "i32",
+          "count": 8
+        },
+        {
+          "name": "ready_at",
+          "type": "i32",
+          "count": 8
+        }
+      ]
+    },
+    {
       "name": "feature_catch_volume",
       "fields": [
         {
@@ -912,6 +961,22 @@
             "ege.velocity",
             "ege.body_props",
             "ege.mech.grab"
+          ],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.boost_lane.pre",
+          "kind": "script",
+          "reads": [
+            "seat",
+            "character",
+            "round"
+          ],
+          "writes": [
+            "feature_boost_lane",
+            "ege.render",
+            "ege.transform",
+            "ege.velocity"
           ],
           "emits": []
         },

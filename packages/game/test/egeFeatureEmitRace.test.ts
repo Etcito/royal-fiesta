@@ -157,3 +157,35 @@ test('tileField emits one fixed box body per tile', async () => {
   }, 'tiles/0/size/2')
   refusedAt(input, { ...spec, params: { ...spec.params, mode: 'sometimes' } }, 'mode')
 })
+
+test('boostLane emits a root and a conveyor visual', async () => {
+  const spec: FeatureSpec = {
+    id: 'lane', kind: 'boostLane',
+    params: {
+      center: [-3.5, 1, 14], half: [1, 2, 13], yawDeg: 0, boost: 4,
+      durationS: 2, rechargeS: 0, eligibility: 'all',
+    },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const emitted = emitBuilds(input)
+  const rootIndex = emitted.index('feature/lane')
+  const visualIndex = emitted.index('feature/lane/visual/0')
+  assert.equal(visualIndex, rootIndex + 1)
+  const root = emitted.scene.entities[rootIndex]
+  const visual = emitted.scene.entities[visualIndex]
+  assert.deepEqual(root.components?.feature, { kind: 1, index: 0, salt: 0x100 })
+  assert.deepEqual(root.components?.feature_boost_lane, {
+    center: [-3.5, 1, 14], half: [1, 2, 13], yaw_deg: 0, boost: 4,
+    duration_s: 2, recharge_s: 0, eligibility: 0, placed: 0,
+    boost_until: Array(8).fill(0), ready_at: Array(8).fill(0),
+  })
+  assert.deepEqual(root.components?.['ege.transform'], { pos: [-3.5, 1, 14], rot: [0, 0, 0, 1] })
+  assert.deepEqual(visual.components?.['ege.transform'], { pos: [-3.5, 1, 14], rot: [0, 0, 0, 1] })
+  assert.deepEqual(visual.components?.['ege.render'], {
+    shape: 1, color: 0x8C6BD9, visible: 1, params: [1, 2, 13, 0],
+  })
+  refusedAt(input, { ...spec, params: { ...spec.params, yawDeg: 200 } }, 'yawDeg')
+  refusedAt(input, { ...spec, params: { ...spec.params, boost: 11 } }, 'boost')
+  refusedAt(input, { ...spec, params: { ...spec.params, eligibility: 'some' } }, 'eligibility')
+  refusedAt(input, { ...spec, params: { ...spec.params, durationS: 0 } }, 'durationS')
+})

@@ -14,6 +14,7 @@ const SCHEDULE = [
   'ege.mech.joints',
   'rf.round.clock',
   'rf.character.pre',
+  'rf.feature.boost_lane.pre',
   'rf.feature.catch_volume.pre',
   'rf.feature.swim_volume.pre',
   'ege.body.props',

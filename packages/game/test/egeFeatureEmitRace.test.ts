@@ -70,6 +70,23 @@ test('marker emits a root and a floor-disc visual that build', async () => {
   refusedAt(input, { id: 'm', kind: 'marker', params: { t: [0, 0, 4], radiusM: 20 } }, 'radiusM')
 })
 
+test('road emits a data root and s1-glacier-run builds', async () => {
+  const input = await inputWith('courses/s1-glacier-run.course.json', null)
+  const emitted = emitBuilds(input)
+  const rootIndex = emitted.index('feature/glacier-entry')
+  const root = emitted.scene.entities[rootIndex]
+  assert.deepEqual(root.components?.feature, { kind: 21, index: 0, salt: 0x100 })
+  assert.deepEqual(root.components?.feature_road, { width: 14, surface: 1 })
+  assert.deepEqual(root.components?.['ege.transform'], { pos: [0, 32, -8], rot: [0, 0, 0, 1] })
+  assert.deepEqual(emitted.featureEntities.length, 3)
+  const strip = await inputWith('fixtures/ege/ege-strip.course.json', null)
+  const invalid: FeatureSpec = { id: 'r', kind: 'road', params: {} }
+  refusedAt(strip, invalid, '')
+  assert.throws(() => FEATURE_EMITTERS.road(invalid, {
+    course: strip.course.sim!, index: 0, path: `courses/${strip.course.id}.course.json`, assets: strip.assets,
+  }), (error: unknown) => error instanceof RefusalError && error.message.includes('Invalid road sweep'))
+})
+
 test('swimVolume emits a root and a slime-pool visual that build', async () => {
   const spec: FeatureSpec = { id: 'pool', kind: 'swimVolume', params: { center: [-3.5, 0.75, 6], half: [1, 0.75, 2] } }
   const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])

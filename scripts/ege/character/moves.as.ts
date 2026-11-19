@@ -1,5 +1,5 @@
-import { newRecord } from 'ege'
-import { Character } from '../components.gen'
+import { getComponent, isNull, newRecord } from 'ege'
+import { Character, Surface } from '../components.gen'
 import {
   BTN_DIVE_BIT,
   BTN_GRAB_BIT,
@@ -127,9 +127,12 @@ function steerMove(ch: Character, g: Ground, mx: f64, mz: f64, mlen: f64, dt: f6
   out.slideAir = <u32>slideAir
   if (out.wasSliding != 0) ch.slid = 1
   if (steer) {
-    const accel = g.surface == SURFACE_ICE ? iceWalkAccel(g.friction) : surfaceAccel(g.surface)
-    const brake = g.surface == SURFACE_ICE ? iceWalkBrake(g.friction) : surfaceBrake(g.surface)
-    const maxRunTune = g.surface == SURFACE_ICE ? iceWalkMaxRun(g.friction) : surfaceMaxRun(g.surface)
+    const groundSurface = getComponent<Surface>(ch.ground_entity, Surface.ID, Surface.SIZE)
+    const surfaceKind = isNull<Surface>(groundSurface) ? g.surface : groundSurface.kind
+    const friction = isNull<Surface>(groundSurface) ? g.friction : groundSurface.friction
+    const accel = surfaceKind == SURFACE_ICE ? iceWalkAccel(friction) : surfaceAccel(surfaceKind)
+    const brake = surfaceKind == SURFACE_ICE ? iceWalkBrake(friction) : surfaceBrake(surfaceKind)
+    const maxRunTune = surfaceKind == SURFACE_ICE ? iceWalkMaxRun(friction) : surfaceMaxRun(surfaceKind)
     const rate = !grounded ? CHAR_AIR_ACCEL : mlen > 0 ? CHAR_GROUND_ACCEL * accel : CHAR_GROUND_BRAKE * brake
     const maxRun = CHAR_MAX_RUN * (grounded ? maxRunTune : 1.0)
     approach2(out.vx, out.vz, g.baseX + mx * maxRun, g.baseZ + mz * maxRun, rate * dt, scratch)

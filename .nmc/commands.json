@@ -233,5 +233,13 @@
   {"name": "ege-m2-clean", "command": "node --experimental-strip-types tools/engineRoundCapture.ts clean --milestone m2 --page apps/web/dist --out out/engine-round-m2", "timeout_s": 60, "after": ["ege-m2-check"]},
   {"name": "ege-m2-render", "command": "node --experimental-strip-types tools/engineRoundCapture.ts render --milestone m2 --page apps/web/dist --out out/engine-round-m2", "timeout_s": 3600, "after": ["ege-m2-clean"]},
   {"name": "ege-m2-fresh", "command": "node --experimental-strip-types tools/engineRoundCapture.ts fresh --milestone m2 --page apps/web/dist --out out/engine-round-m2", "timeout_s": 300, "after": ["ege-m2-render"]},
-  {"name": "ege-m2-judge", "command": "node --experimental-strip-types tools/engineRoundCapture.ts judge --milestone m2 --page apps/web/dist --out out/engine-round-m2 --budget-s 3300", "timeout_s": 3600, "after": ["ege-m2-render", "ege-m2-fresh"]}
+  {"name": "ege-m2-judge", "command": "node --experimental-strip-types tools/engineRoundCapture.ts judge --milestone m2 --page apps/web/dist --out out/engine-round-m2 --budget-s 3300", "timeout_s": 3600, "after": ["ege-m2-render", "ege-m2-fresh"]},
+  {"name": "ege-m3-build", "command": "npm run build", "timeout_s": 900},
+  {"name": "ege-m3-bricks", "command": "node --experimental-strip-types tools/egeBricks.ts build", "timeout_s": 1800, "after": ["ege-m3-build"]},
+  {"name": "ege-m3-test", "command": "node --experimental-strip-types --test apps/headless/test/egeCharacter.test.ts apps/headless/test/egeRound.test.ts tools/test/egeScripts.test.ts", "timeout_s": 900, "after": ["ege-m3-bricks"]},
+  {"name": "ege-m3-check", "command": "node --experimental-strip-types tools/engineRoundCapture.ts check --milestone m3 --page apps/web/dist --out out/engine-round-m3", "timeout_s": 600, "after": ["ege-m3-build", "ege-m3-bricks"]},
+  {"name": "ege-m3-clean", "command": "node --experimental-strip-types tools/engineRoundCapture.ts clean --milestone m3 --page apps/web/dist --out out/engine-round-m3", "timeout_s": 60, "after": ["ege-m3-check"]},
+  {"name": "ege-m3-render", "command": "node --experimental-strip-types tools/engineRoundCapture.ts render --milestone m3 --page apps/web/dist --out out/engine-round-m3", "timeout_s": 3600, "after": ["ege-m3-clean"]},
+  {"name": "ege-m3-fresh", "command": "node --experimental-strip-types tools/engineRoundCapture.ts fresh --milestone m3 --page apps/web/dist --out out/engine-round-m3", "timeout_s": 300, "after": ["ege-m3-render"]},
+  {"name": "ege-m3-judge", "command": "node --experimental-strip-types tools/engineRoundCapture.ts judge --milestone m3 --page apps/web/dist --out out/engine-round-m3 --budget-s 3300", "timeout_s": 3600, "after": ["ege-m3-render", "ege-m3-fresh"]}
 ]

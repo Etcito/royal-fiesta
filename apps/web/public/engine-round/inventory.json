@@ -28,5 +28,57 @@
       "the light",
       "the course assets"
     ]
+  },
+  {
+    "id": "m3-race-sprint-run",
+    "milestone": "m3",
+    "filename": "engine-round-race-sprint-penguins-running-and-jumping-on-scripts.png",
+    "args": {
+      "course": "race-sprint",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 360,
+      "local": "run",
+      "captureAt": "end",
+      "focus": null
+    },
+    "require": [
+      "nonEmpty eq true",
+      "faults eq 0",
+      "local.travelZ gt 5",
+      "botsMoved ge 4",
+      "upright eq true"
+    ],
+    "description": "Royal Fiesta race course on the engine during play: penguins spread along the candy course running forward, the followed penguin running or in mid-jump above the floor, all upright and none sunk into the floor; HUD band shows playing and the tick",
+    "held_constant": [
+      "the follow camera rule",
+      "the light",
+      "the course assets"
+    ]
+  },
+  {
+    "id": "m3-race-sprint-dive",
+    "milestone": "m3",
+    "filename": "engine-round-race-sprint-followed-penguin-diving-forward.png",
+    "args": {
+      "course": "race-sprint",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 360,
+      "local": "dive",
+      "captureAt": "dive",
+      "focus": null
+    },
+    "require": [
+      "capturedAt lt 360",
+      "local.mode eq 2",
+      "faults eq 0"
+    ],
+    "description": "the followed penguin in a forward belly dive just above the candy floor of the race course, other penguins around it; HUD band shows the mode dive",
+    "held_constant": [
+      "the follow camera rule",
+      "the light",
+      "the course assets"
+    ]
   }
 ]

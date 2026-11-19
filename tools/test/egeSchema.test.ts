@@ -19,6 +19,7 @@ const SCHEDULE = [
   'ege.contact.track',
   'ege.mech.watch',
   'rf.character.post',
+  'rf.feature.marker.post',
   'rf.seat.rules',
 ]
 

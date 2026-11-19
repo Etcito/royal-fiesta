@@ -11,6 +11,7 @@ import { buildEngineAssembly, emitEngineScene } from '../src/ege/sceneEmitter.ts
 import type { EmitInput } from '../src/ege/sceneEmitter.ts'
 import {
   FEATURE_EMITTERS,
+  FEATURE_KIND_RANK,
   featureSalt,
   featureSnake,
   tintColor,
@@ -101,9 +102,9 @@ test('visualOf maps a draw asset to its engine shape, params and colour', () => 
     { shape: 1, params: [1, 0.5, 2, 0], color: 0xF5D0E0 })
 })
 
-test('tint 2 is the palette blue and the registry starts empty', () => {
+test('tint 2 is the palette blue and the registry holds only known kinds', () => {
   assert.equal(tintColor(2, 0), 0x54BAFF)
-  assert.equal(Object.keys(FEATURE_EMITTERS).length, 0)
+  assert.ok(Object.keys(FEATURE_EMITTERS).every((kind) => Object.hasOwn(FEATURE_KIND_RANK, kind)))
 })
 
 test('race-sprint emits eight capsule seats and sprint round state', async () => {
@@ -179,11 +180,11 @@ test('a course cone collider is refused at its course pointer', async () => {
 test('a course feature kind without a registered emitter is refused', async () => {
   const input = await inputOf('s1-e-sugar-sprint')
   assert.ok(input.course.sim)
-  const kind = input.course.sim.features?.[0].kind
-  assert.ok(kind)
+  const course = structuredClone(input.course)
+  course.sim!.features![0].kind = 'notAKind'
   assert.throws(
-    () => buildEngineAssembly(input),
+    () => buildEngineAssembly({ ...input, course }),
     (error: unknown) => error instanceof RefusalError &&
-      error.message === `[ege-scene] courses/s1-e-sugar-sprint.course.json#/features/0/kind: feature kind '${kind}' has no engine emitter; registered: (none)`,
+      error.message === `[ege-scene] courses/s1-e-sugar-sprint.course.json#/features/0/kind: feature kind 'notAKind' has no engine emitter; registered: ${Object.keys(FEATURE_EMITTERS).sort().join(', ')}`,
   )
 })

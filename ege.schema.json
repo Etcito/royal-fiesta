@@ -440,6 +440,28 @@
           "type": "u32"
         }
       ]
+    },
+    {
+      "name": "feature_marker",
+      "fields": [
+        {
+          "name": "t",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "radius_m",
+          "type": "f64"
+        },
+        {
+          "name": "touches",
+          "type": "u32"
+        },
+        {
+          "name": "last_touch_tick",
+          "type": "i32"
+        }
+      ]
     }
   ],
   "resources": [
@@ -808,6 +830,19 @@
             "character",
             "ege.velocity",
             "ege.mech.grab"
+          ],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.marker.post",
+          "kind": "script",
+          "reads": [
+            "seat",
+            "ege.transform"
+          ],
+          "writes": [
+            "feature_marker",
+            "ege.render"
           ],
           "emits": []
         },

@@ -1,10 +1,11 @@
 // E3/E4: the feature registry, kind order, salt, draw-asset visual table and tint colours of the engine round.
-// At milestone 2 the registry is empty; each feature milestone adds one import and one map line per kind.
+// Each feature milestone adds one import and one map line per kind.
 
 import type { FeatureSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { Vec3 } from '@royal-fiesta/sim/vec'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { ResolvedGameAsset } from '../courseV1.ts'
+import { markerEmitter } from './features/marker.ts'
 
 export type RawEntity = {
   name: string
@@ -130,5 +131,6 @@ export function tintColor(tint: number, base: number): number {
   return refuse('ege-scene', `visual/tint/${tint}`, `tint ${tint} has no colour; use 0 for the base colour or 1..4`)
 }
 
-// Empty at milestone 2: each feature milestone adds one import and one map line per kind.
-export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object.freeze({})
+export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object.freeze({
+  marker: markerEmitter,
+})

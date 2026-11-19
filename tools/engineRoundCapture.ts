@@ -1,7 +1,134 @@
-import { readFileSync } from 'node:fs'
-import { refuse } from '../packages/sim/src/refusal.ts'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { execFileSync } from 'node:child_process'
+import { isDeepStrictEqual } from 'node:util'
+import { refuse, isRefusal } from '../packages/sim/src/refusal.ts'
 import { parseRunArgs } from '../apps/web/src/engineRound/run.ts'
 import type { RoundRunArgs } from '../apps/web/src/engineRound/run.ts'
+import { buildContentIndex } from './content.ts'
+import { repoRoot } from './bricks.ts'
+import { harnessRound } from '../apps/headless/src/egeHarness.ts'
+
+const INVENTORY = 'apps/web/public/engine-round/inventory.json'
+const USAGE = 'usage: <check|clean|render|fresh|judge> --milestone <mN> --page <dist dir> --out <dir> [--budget-s <s>]'
+type Build = { commit: string }
+type Kept = { id: string; filename: string; attempt: number }
+
+function json(path: string, value: unknown): void {
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
+}
+
+function inventorySnapshot(row: InventoryRow): unknown {
+  return { id: row.id, filename: row.filename, args: row.args, require: row.require, description: row.description, held_constant: row.held_constant }
+}
+
+/**
+ * Handoff: Capture job part 3: render, fresh, judge and the milestone commands calls keptRows to
+ * reuse unchanged images. It reads the engine-round-store attempts and returns kept rows today.
+ */
+export function keptRows(storeDir: string, rows: InventoryRow[], build: Build): { kept: Kept[]; render: InventoryRow[] } {
+  if (process.env.ENGINE_ROUND_RERENDER_ALL === '1') return { kept: [], render: rows }
+  const attemptsDir = join(storeDir, 'attempts')
+  const attempts = existsSync(attemptsDir) ? readdirSync(attemptsDir).filter(name => /^\d+$/.test(name)).map(Number).sort((a, b) => b - a) : []
+  const kept: Kept[] = []
+  const render: InventoryRow[] = []
+  for (const row of rows) {
+    let found: Kept | undefined
+    for (const attempt of attempts) {
+      const dir = join(attemptsDir, String(attempt))
+      try {
+        const selection = JSON.parse(readFileSync(join(dir, 'selection.json'), 'utf8')) as { build: Build; rows: InventoryRow[] }
+        const prior = selection.rows.find(item => item.id === row.id)
+        const image = join(dir, row.filename)
+        if (selection.build.commit === build.commit && prior && isDeepStrictEqual(inventorySnapshot(prior), inventorySnapshot(row)) && statSync(image).size > 0) {
+          found = { id: row.id, filename: row.filename, attempt }
+          break
+        }
+      } catch { /* An incomplete attempt cannot supply a reusable image. */ }
+    }
+    if (found) kept.push(found)
+    else render.push(row)
+  }
+  return { kept, render }
+}
+
+function options(argv: string[]): { op: string; milestone: string; page: string; out: string } {
+  const [op, ...rest] = argv
+  if (!['check', 'clean', 'render', 'fresh', 'judge'].includes(op ?? '') || rest.length % 2 !== 0) throw new Error(USAGE)
+  const values = new Map<string, string>()
+  for (let i = 0; i < rest.length; i += 2) {
+    if (!['--milestone', '--page', '--out', '--budget-s'].includes(rest[i]) || values.has(rest[i])) throw new Error(USAGE)
+    values.set(rest[i], rest[i + 1])
+  }
+  if (!values.has('--milestone') || !values.has('--page') || !values.has('--out') || values.has('--budget-s') && !Number.isFinite(Number(values.get('--budget-s')))) throw new Error(USAGE)
+  return { op: op!, milestone: values.get('--milestone')!, page: values.get('--page')!, out: values.get('--out')! }
+}
+
+function buildIdentity(): Build {
+  return { commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot(), encoding: 'utf8' }).trim() }
+}
+
+function storeFor(milestone: string, out: string): string {
+  return resolve(process.env.NMC_CACHE_DIR ? join(process.env.NMC_CACHE_DIR, `engine-round-${milestone}`) : out)
+}
+
+async function check(args: ReturnType<typeof options>): Promise<void> {
+  const rows = selectRows(loadInventory(INVENTORY), args.milestone)
+  if (!rows.length) refuse('engine-round', INVENTORY, `no rows for ${args.milestone}`)
+  for (const path of ['engine-round.html', 'engine-round/inventory.json', 'ege/rf-scripts.wasm']) {
+    if (!existsSync(join(args.page, path))) refuse('engine-round', join(args.page, path), 'missing staged page file; build the web page first')
+  }
+  const root = repoRoot()
+  const index = buildContentIndex()
+  const indexIds = new Set(index.courses.map(course => course.id))
+  const build = buildIdentity()
+  for (const row of rows) {
+    const id = row.args.course
+    const fixture = join(root, 'fixtures/ege', `${id}.course.json`)
+    if (!indexIds.has(id) && !existsSync(fixture)) refuse('engine-round', `${INVENTORY}#/${row.id}/args/course`, `course '${id}' is not in content index or fixtures/ege; add it to shipped content`)
+    const { course, round } = await harnessRound(id, { profile: row.args.profile, seed: row.args.seed })
+    try {
+      if (row.args.focus) {
+        const kind = row.args.focus.slice('kind:'.length)
+        const kinds = new Set(course.sim?.features?.map(feature => feature.kind) ?? [])
+        if (!kinds.has(kind as never)) refuse('engine-round', `${INVENTORY}#/${row.id}/args/focus`, `feature kind '${kind}' is not present in course '${id}'`)
+      }
+    } finally { round.dispose() }
+  }
+  json(join(args.out, 'selection.json'), { milestone: args.milestone, build, rows })
+  console.log(`engine-round: check ${rows.length} rows`)
+}
+
+function clean(args: ReturnType<typeof options>): void {
+  const delivery = resolve(args.out)
+  const selectionPath = join(delivery, 'selection.json')
+  if (!existsSync(selectionPath)) refuse('engine-round', selectionPath, 'run check first')
+  const store = storeFor(args.milestone, delivery)
+  const attempts = join(store, 'attempts')
+  mkdirSync(attempts, { recursive: true })
+  const numbers = readdirSync(attempts).filter(name => /^\d+$/.test(name)).map(Number)
+  const attempt = Math.max(0, ...numbers) + 1
+  const attemptDir = join(attempts, String(attempt))
+  mkdirSync(attemptDir, { recursive: true })
+  copyFileSync(selectionPath, join(attemptDir, 'selection.json'))
+  json(join(store, 'current.json'), { attempt })
+}
+
+/** Run the E8 command line. */
+export async function main(argv: string[]): Promise<number> {
+  let args: ReturnType<typeof options>
+  try { args = options(argv) } catch { console.error(USAGE); return 2 }
+  try {
+    if (args.op === 'check') await check(args)
+    else if (args.op === 'clean') clean(args)
+    else { console.error('not implemented in this build'); return 2 }
+    return 0
+  } catch (error) {
+    console.error(isRefusal(error) ? error.message : error instanceof Error ? error.message : String(error))
+    return 1
+  }
+}
 
 export interface InventoryRow {
   id: string
@@ -90,4 +217,8 @@ export function requireProblems(facts: unknown, require: readonly string[]): str
     if (!pass) problems.push(`${rule}: got ${JSON.stringify(value)}`)
   }
   return problems
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
+  process.exitCode = await main(process.argv.slice(2))
 }

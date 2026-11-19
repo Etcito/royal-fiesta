@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { loadInventory, requireProblems, selectRows, type InventoryRow } from '../engineRoundCapture.ts'
+import { keptRows, loadInventory, main, requireProblems, selectRows, type InventoryRow } from '../engineRoundCapture.ts'
 
 function row(overrides: Record<string, unknown> = {}) {
   return { id: 'fiesta', milestone: 'm2', filename: 'fiesta-run.png', args: { course: 'fiesta' }, require: [], description: 'A run', held_constant: [], ...overrides }
@@ -43,4 +43,52 @@ test('requireProblems evaluates E8 operators and nested facts', () => {
 test('selectRows preserves file order for the requested milestone', () => {
   const rows = [row({ id: 'a' }), row({ id: 'b', milestone: 'm3' }), row({ id: 'c' })] as unknown as InventoryRow[]
   assert.deepEqual(selectRows(rows, 'm2').map(item => item.id), ['a', 'c'])
+})
+
+test('keptRows reuses only rows with the same build, description and nonempty image', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'engine-round-store-'))
+  try {
+    const attempt = join(dir, 'attempts/1')
+    mkdirSync(attempt, { recursive: true })
+    const current = row() as unknown as InventoryRow
+    const prior = { ...current }
+    writeFileSync(join(attempt, 'selection.json'), JSON.stringify({ build: { commit: 'abc' }, rows: [prior] }))
+    writeFileSync(join(attempt, current.filename), 'png')
+    assert.deepEqual(keptRows(dir, [current], { commit: 'abc' }).kept, [{ id: 'fiesta', filename: current.filename, attempt: 1 }])
+    assert.equal(keptRows(dir, [{ ...current, description: 'Changed' }], { commit: 'abc' }).render.length, 1)
+    assert.equal(keptRows(dir, [current], { commit: 'def' }).render.length, 1)
+    rmSync(join(attempt, current.filename))
+    assert.equal(keptRows(dir, [current], { commit: 'abc' }).render.length, 1)
+    process.env.ENGINE_ROUND_RERENDER_ALL = '1'
+    assert.deepEqual(keptRows(dir, [current], { commit: 'abc' }).kept, [])
+  } finally {
+    delete process.env.ENGINE_ROUND_RERENDER_ALL
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('clean allocates the next attempt and preserves prior attempt files', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'engine-round-clean-'))
+  const oldCache = process.env.NMC_CACHE_DIR
+  try {
+    const delivery = join(dir, 'delivery')
+    const store = join(dir, 'store/engine-round-m2')
+    mkdirSync(join(store, 'attempts/2'), { recursive: true })
+    mkdirSync(delivery, { recursive: true })
+    writeFileSync(join(store, 'attempts/2/kept.png'), 'old')
+    writeFileSync(join(delivery, 'selection.json'), '{}')
+    process.env.NMC_CACHE_DIR = join(dir, 'store')
+    assert.equal(await main(['clean', '--milestone', 'm2', '--page', 'dist', '--out', delivery]), 0)
+    assert.equal(JSON.parse(readFileSync(join(store, 'current.json'), 'utf8')).attempt, 3)
+    assert.equal(readFileSync(join(store, 'attempts/2/kept.png'), 'utf8'), 'old')
+    assert.ok(existsSync(join(store, 'attempts/3/selection.json')))
+  } finally {
+    if (oldCache === undefined) delete process.env.NMC_CACHE_DIR
+    else process.env.NMC_CACHE_DIR = oldCache
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('main returns usage status when check options are missing', async () => {
+  assert.equal(await main(['check']), 2)
 })

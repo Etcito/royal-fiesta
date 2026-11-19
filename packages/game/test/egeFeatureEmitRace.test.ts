@@ -66,3 +66,24 @@ test('marker emits a root and a floor-disc visual that build', async () => {
   assert.deepEqual(visual.components?.['ege.render']?.params, [1.5, 0.05, 0, 0])
   refusedAt(input, { id: 'm', kind: 'marker', params: { t: [0, 0, 4], radiusM: 20 } }, 'radiusM')
 })
+
+test('swimVolume emits a root and a slime-pool visual that build', async () => {
+  const spec: FeatureSpec = { id: 'pool', kind: 'swimVolume', params: { center: [-3.5, 0.75, 6], half: [1, 0.75, 2] } }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const emitted = emitBuilds(input)
+  const rootIndex = emitted.index('feature/pool')
+  const visualIndex = emitted.index('feature/pool/visual/0')
+  assert.equal(visualIndex, rootIndex + 1)
+  const root = emitted.scene.entities[rootIndex]
+  const visual = emitted.scene.entities[visualIndex]
+  assert.deepEqual(root.components?.feature, { kind: 6, index: 0, salt: 0x100 })
+  assert.deepEqual(root.components?.feature_swim_volume, {
+    center: [-3.5, 0.75, 6], half: [1, 0.75, 2], drag: 2.5, buoyancy: 22,
+    inside: [0, 0, 0, 0, 0, 0, 0, 0],
+  })
+  assert.equal(visual.components?.['ege.render']?.shape, 1)
+  assert.deepEqual(visual.components?.['ege.render']?.params, [1, 0.75, 2, 0])
+  const path = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  refusedAt(path, { id: 'pool', kind: 'swimVolume', params: { center: [0, 0, 0], half: [1, -1, 1] } }, 'half')
+  refusedAt(path, { id: 'pool', kind: 'swimVolume', params: { center: [0, 0, 0], half: [1, 1, 1], drag: 30 } }, 'drag')
+})

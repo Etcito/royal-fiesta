@@ -63,3 +63,25 @@ test('marker counts touches', async () => {
     round.dispose()
   }
 })
+
+test('swimVolume sets swim', async () => {
+  const { scene, round } = await roundWith('ege-strip', [
+    { id: 'swim', kind: 'swimVolume', params: { center: [-3.5, 0.75, 6], half: [1, 0.75, 2] } },
+  ])
+  try {
+    while (round.observe().phase === 'intro') round.step(() => code())
+    const seat0 = round.observe().seats[0].entity
+    const seat4 = round.observe().seats[4].entity
+    stepUntil(round, 400, () => code(0, 1), () => rec(round, 'character', seat0).swim === 1)
+    const swim = rec(round, 'feature_swim_volume', scene.index('feature/swim'))
+    const character0 = rec(round, 'character', seat0)
+    assert.equal(character0.mode, 9)
+    assert.equal(character0.swim_drag, 2.5)
+    assert.equal(character0.swim_buoyancy, 22)
+    assert.equal(swim.inside[0], 1)
+    assert.equal(rec(round, 'character', seat4).swim, 0)
+    assert.equal(swim.inside[4], 0)
+  } finally {
+    round.dispose()
+  }
+})

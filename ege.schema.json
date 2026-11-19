@@ -462,6 +462,34 @@
           "type": "i32"
         }
       ]
+    },
+    {
+      "name": "feature_swim_volume",
+      "fields": [
+        {
+          "name": "center",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "half",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "drag",
+          "type": "f64"
+        },
+        {
+          "name": "buoyancy",
+          "type": "f64"
+        },
+        {
+          "name": "inside",
+          "type": "u32",
+          "count": 8
+        }
+      ]
     }
   ],
   "resources": [
@@ -801,6 +829,13 @@
             "ege.body_props",
             "ege.mech.grab"
           ],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.swim_volume.pre",
+          "kind": "script",
+          "reads": ["seat", "ege.transform"],
+          "writes": ["feature_swim_volume", "character", "ege.velocity"],
           "emits": []
         },
         {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { drawRoundHud, hudLines } from '../src/engineRound/hud.ts'
 import { createReadyGate } from '../src/engineRound/ready.ts'
+import { DRAW_TICKS, SETTLE_FRAMES, runOffline, settle } from '../src/engineRound/pace.ts'
 import type { RoundFacts } from '../src/engineRound/run.ts'
 
 const turn = () => new Promise<void>(resolve => { setTimeout(resolve, 0) })
@@ -70,4 +71,43 @@ test('drawRoundHud records one band and five text lines', () => {
   drawRoundHud(ctx, lines, 1920, 1080)
   assert.deepEqual(rects, [[24, 24, 388, 212]])
   assert.deepEqual(texts, lines.map((line, k) => [line, 48, 40 + 36 * k]))
+})
+
+test('runOffline advances every tick but draws only the first, every DRAW_TICKS-th and the capture tick', async () => {
+  // m4-race-sprint-gates: 1200 ticks to the end. Each drawn frame cost the GPU client ~0.65 s at 1920x1080 once the field
+  // pipelines were compiled, so drawing all 1200 ticks ran past the 295 s page limit (run 16017).
+  const frames = 1200
+  let steps = 0
+  const run = { done: false, step() { if (this.done) return false; steps++; if (steps >= frames) this.done = true; return true } }
+  let advanced = 0
+  const drawn: number[] = []
+  const clock: number[] = []
+  const phases: string[] = []
+  let gpuWaits = 0
+  let firstFrames = 0
+  const page = { advance: () => { advanced++ }, render: () => { drawn.push(advanced) } }
+  const device = { queue: { onSubmittedWorkDone: async () => { gpuWaits++ } } }
+  const ticks = await runOffline(run, page, {
+    tick: done => { clock.push(done) }, firstFrame: async () => { firstFrames++ }, device: () => device, phase: text => { phases.push(text) },
+  }, frames)
+  assert.equal(ticks, frames)
+  assert.equal(advanced, frames)
+  assert.deepEqual(clock, Array.from({ length: frames }, (_, k) => k))
+  assert.deepEqual(drawn, [1, ...Array.from({ length: frames / DRAW_TICKS }, (_, k) => (k + 1) * DRAW_TICKS)])
+  assert.equal(gpuWaits, drawn.length)
+  assert.equal(firstFrames, 1)
+  assert.equal(phases.at(-1), `engine-round: tick ${frames}/${frames}`)
+  // An event capture (dive, firstFinish, respawned) ends between two drawn ticks: its tick is drawn.
+  let n = 0
+  const early = { done: false, step() { if (this.done) return false; n++; if (n >= 77) this.done = true; return true } }
+  const late: number[] = []
+  let count = 0
+  await runOffline(early, { advance: () => { count++ }, render: () => { late.push(count) } }, {
+    tick: () => {}, firstFrame: async () => {}, device: () => undefined, phase: () => {},
+  }, frames)
+  assert.deepEqual(late, [1, 60, 77])
+  const settled: string[] = []
+  await settle({ advance: dt => { settled.push(`a${dt}`) }, render: () => { settled.push('r') } }, device)
+  assert.equal(settled.length, 2 * SETTLE_FRAMES)
+  assert.equal(settled.at(-1), 'r')
 })

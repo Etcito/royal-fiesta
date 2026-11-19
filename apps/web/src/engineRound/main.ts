@@ -24,7 +24,10 @@ import { createReadyGate } from './ready.ts'
 import { createRoundRun, parseRunArgs } from './run.ts'
 import type { RoundFacts, RoundRunArgs } from './run.ts'
 import type { AdapterInfo } from '../nmc/ops.ts'
-import { pendingPipelines } from '../render/asyncPipelines.ts'
+import { deviceOfCanvas, pendingPipelines } from '../render/asyncPipelines.ts'
+import { checkPhase } from '../game/checkProgress.ts'
+import { runOffline, settle } from './pace.ts'
+import type { GpuQueueOwner } from './pace.ts'
 import { registerEngineRoundOps } from './ops.ts'
 
 const WIDTH = 1920
@@ -40,6 +43,11 @@ export interface EngineRoundPage {
   view: SceneView
   port: ResizablePort
   bridge: RenderBridge
+  /** The scene follows the round (sim refresh, view update, bridge sync) without drawing. */
+  advance(dtS: number): void
+  /** Draws the current scene. */
+  render(): void
+  /** advance, then render. */
   drawFrame(dtS: number): void
   composite(facts: RoundFacts): Promise<Uint8Array>
   dispose(): void
@@ -105,13 +113,19 @@ export async function loadEngineRoundPage(args: RoundRunArgs, canvas: HTMLCanvas
   })
   const bridge = new RenderBridge(port.raaEngine())
   let disposed = false
+  const advance = (dtS: number): void => {
+    sim.refresh(round)
+    view.update(sim as unknown as MatchSim, null, 1, dtS)
+    bridge.sync(engine.view(round.world, 1))
+  }
+  const render = (): void => { port.render() }
   return {
     engine, round, scene, course, sim, view, port, bridge,
+    advance,
+    render,
     drawFrame(dtS) {
-      sim.refresh(round)
-      view.update(sim as unknown as MatchSim, null, 1, dtS)
-      bridge.sync(engine.view(round.world, 1))
-      port.render()
+      advance(dtS)
+      render()
     },
     async composite(facts) {
       const png = await port.capture()
@@ -272,18 +286,19 @@ async function engineRound(raw: unknown) {
     let ticks = 0
     Object.defineProperty(performance, 'now', { configurable: true, writable: true, value: () => ticks * (1000 / 60) })
     clockInstalled = true
-    while (run.step()) {
-      current.drawFrame(1 / 60)
-      ticks++
-      if (ticks === 1) await current.view.animationReady()
-      if (ticks % 60 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
-    }
+    const device = () => deviceOfCanvas(canvas) as GpuQueueOwner | undefined
+    ticks = await runOffline(run, current, {
+      tick: done => { ticks = done },
+      firstFrame: () => current.view.animationReady(),
+      device,
+      phase: checkPhase,
+    }, args.frames)
     const deadline = realNow() + 10000
     while (pendingPipelines() > 0) {
       if (realNow() >= deadline) refuse('render', 'raa', `pipeline readiness timed out at engine-round; ${pendingPipelines()} pipelines still pending`)
       await new Promise<void>(resolve => setTimeout(resolve, 10))
     }
-    current.drawFrame(0)
+    await settle(current, device())
     const png = await current.composite(run.facts())
     const pixels = shot.getContext('2d')!.getImageData(0, 0, WIDTH, HEIGHT).data
     const first = `${pixels[0]},${pixels[1]},${pixels[2]}`

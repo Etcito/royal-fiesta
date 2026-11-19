@@ -161,5 +161,131 @@
       "the light",
       "the course assets"
     ]
+  },
+  {
+    "id": "m5-sugar-sprint-door-bank",
+    "milestone": "m5",
+    "filename": "engine-round-sugar-sprint-door-bank-doors-standing-across-lane.png",
+    "args": {
+      "course": "s1-e-sugar-sprint",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 600,
+      "local": "run",
+      "captureAt": "end",
+      "focus": "kind:doorBank"
+    },
+    "require": [
+      "nonEmpty eq true",
+      "faults eq 0",
+      "features.doorBank gt 0"
+    ],
+    "description": "a row of coloured door panels standing across the candy race lane on the engine, some doors broken open by penguins running into them",
+    "held_constant": [
+      "the focus camera rule",
+      "the light",
+      "the course assets"
+    ]
+  },
+  {
+    "id": "m5-diamond-citadel-rolling-logs",
+    "milestone": "m5",
+    "filename": "engine-round-diamond-citadel-logs-rolling-down-slope.png",
+    "args": {
+      "course": "s1-c1-diamond-citadel",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 400,
+      "local": "run",
+      "captureAt": "end",
+      "focus": "kind:rollingLog"
+    },
+    "require": [
+      "nonEmpty eq true",
+      "faults eq 0",
+      "features.rollingLog gt 0",
+      "focus.moved eq true"
+    ],
+    "description": "brown cylinder logs rolling down a candy slope towards running penguins",
+    "held_constant": [
+      "the focus camera rule",
+      "the light",
+      "the course assets"
+    ]
+  },
+  {
+    "id": "m5-butterfly-boost-lane",
+    "milestone": "m5",
+    "filename": "engine-round-butterfly-freeway-boost-lane-strip-on-track.png",
+    "args": {
+      "course": "s1-b-butterfly-freeway",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 600,
+      "local": "run",
+      "captureAt": "end",
+      "focus": "kind:boostLane"
+    },
+    "require": [
+      "nonEmpty eq true",
+      "faults eq 0",
+      "features.boostLane gt 0"
+    ],
+    "description": "a purple boost lane strip on the race track with penguins speeding along it",
+    "held_constant": [
+      "the focus camera rule",
+      "the light",
+      "the course assets"
+    ]
+  },
+  {
+    "id": "m5-spiral-launch-pad",
+    "milestone": "m5",
+    "filename": "engine-round-spiral-launch-pad-and-tile-field.png",
+    "args": {
+      "course": "s1-d-spiral-of-mischief",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 600,
+      "local": "run",
+      "captureAt": "end",
+      "focus": "kind:launchPad"
+    },
+    "require": [
+      "nonEmpty eq true",
+      "faults eq 0",
+      "features.launchPad gt 0"
+    ],
+    "description": "an orange launch pad disc on the course with a field of floor tiles nearby, penguins on or above the pad",
+    "held_constant": [
+      "the focus camera rule",
+      "the light",
+      "the course assets"
+    ]
+  },
+  {
+    "id": "m5-yard-a-swim-marker",
+    "milestone": "m5",
+    "filename": "engine-round-yard-swim-pool-and-marker-disc.png",
+    "args": {
+      "course": "ege-yard-a",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 400,
+      "local": "run",
+      "captureAt": "end",
+      "focus": "kind:swimVolume"
+    },
+    "require": [
+      "nonEmpty eq true",
+      "faults eq 0",
+      "features.swimVolume gt 0"
+    ],
+    "description": "a green slime pool box and a cream marker disc on a candy floor, a penguin swimming in the pool",
+    "held_constant": [
+      "the focus camera rule",
+      "the light",
+      "the course assets"
+    ]
   }
 ]

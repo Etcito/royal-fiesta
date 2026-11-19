@@ -19,6 +19,7 @@ const SCHEDULE = [
   'ege.contact.track',
   'ege.mech.watch',
   'rf.character.post',
+  'rf.seat.rules',
 ]
 
 async function layoutOf() {

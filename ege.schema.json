@@ -810,6 +810,32 @@
             "ege.mech.grab"
           ],
           "emits": []
+        },
+        {
+          "system": "rf.seat.rules",
+          "kind": "script",
+          "reads": [
+            "course",
+            "home_spawn",
+            "path_node"
+          ],
+          "writes": [
+            "round",
+            "seat",
+            "character",
+            "gate",
+            "home",
+            "ege.transform",
+            "ege.velocity",
+            "ege.mech.grab"
+          ],
+          "emits": [
+            "finish",
+            "fall",
+            "eliminate",
+            "gate",
+            "progress"
+          ]
         }
       ]
     }

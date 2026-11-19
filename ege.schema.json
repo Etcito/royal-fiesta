@@ -1,0 +1,445 @@
+{
+  "format": "ege.schema",
+  "version": 1,
+  "input": {
+    "axes": [
+      {
+        "name": "move_x",
+        "bits": 8
+      },
+      {
+        "name": "move_z",
+        "bits": 8
+      }
+    ],
+    "buttons": [
+      "jump",
+      "dive",
+      "grab"
+    ]
+  },
+  "collision_groups": [
+    {
+      "name": "static",
+      "collides_with": [
+        "char",
+        "probe",
+        "debris"
+      ]
+    },
+    {
+      "name": "moving",
+      "collides_with": [
+        "char",
+        "probe",
+        "debris"
+      ]
+    },
+    {
+      "name": "char",
+      "collides_with": [
+        "static",
+        "moving",
+        "char"
+      ]
+    },
+    {
+      "name": "debris",
+      "collides_with": [
+        "static",
+        "moving",
+        "debris"
+      ]
+    },
+    {
+      "name": "probe",
+      "collides_with": [
+        "static",
+        "moving"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "name": "seat",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "player",
+          "type": "u32"
+        },
+        {
+          "name": "status",
+          "type": "u32"
+        },
+        {
+          "name": "team",
+          "type": "u32"
+        },
+        {
+          "name": "spawn",
+          "type": "u32"
+        },
+        {
+          "name": "spawn_t",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "spawn_facing",
+          "type": "f64",
+          "count": 2
+        },
+        {
+          "name": "checkpoint",
+          "type": "i32"
+        },
+        {
+          "name": "prev_y",
+          "type": "f64"
+        },
+        {
+          "name": "before",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "stage",
+          "type": "i32"
+        },
+        {
+          "name": "lap",
+          "type": "u32"
+        },
+        {
+          "name": "finished",
+          "type": "u32"
+        },
+        {
+          "name": "wait_until",
+          "type": "i32"
+        },
+        {
+          "name": "protect_until",
+          "type": "i32"
+        },
+        {
+          "name": "cursor",
+          "type": "u32"
+        },
+        {
+          "name": "kill_request",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "character",
+      "fields": [
+        {
+          "name": "mode",
+          "type": "u32"
+        },
+        {
+          "name": "timer",
+          "type": "i32"
+        },
+        {
+          "name": "coyote",
+          "type": "u32"
+        },
+        {
+          "name": "jump_buffer",
+          "type": "u32"
+        },
+        {
+          "name": "prev_buttons",
+          "type": "u32"
+        },
+        {
+          "name": "dive_used",
+          "type": "u32"
+        },
+        {
+          "name": "grab_target",
+          "type": "i32"
+        },
+        {
+          "name": "grab_ticks",
+          "type": "u32"
+        },
+        {
+          "name": "grab_cooldown",
+          "type": "u32"
+        },
+        {
+          "name": "grab_lever",
+          "type": "i32"
+        },
+        {
+          "name": "facing",
+          "type": "f64",
+          "count": 2
+        },
+        {
+          "name": "grounded",
+          "type": "u32"
+        },
+        {
+          "name": "ground_item",
+          "type": "i32"
+        },
+        {
+          "name": "ground_body",
+          "type": "i32"
+        },
+        {
+          "name": "ground_entity",
+          "type": "entity"
+        },
+        {
+          "name": "ground_obstacle",
+          "type": "i32"
+        },
+        {
+          "name": "knockbacks",
+          "type": "u32"
+        },
+        {
+          "name": "teleport_tick",
+          "type": "i32"
+        },
+        {
+          "name": "protected_until",
+          "type": "i32"
+        },
+        {
+          "name": "slide_speed",
+          "type": "f64"
+        },
+        {
+          "name": "carry",
+          "type": "u32"
+        },
+        {
+          "name": "carry_id",
+          "type": "i32"
+        },
+        {
+          "name": "stroke_timer",
+          "type": "u32"
+        },
+        {
+          "name": "frozen",
+          "type": "u32"
+        },
+        {
+          "name": "parked",
+          "type": "u32"
+        },
+        {
+          "name": "placed",
+          "type": "u32"
+        },
+        {
+          "name": "pre_vel",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "slid",
+          "type": "u32"
+        },
+        {
+          "name": "swim",
+          "type": "u32"
+        },
+        {
+          "name": "swim_drag",
+          "type": "f64"
+        },
+        {
+          "name": "swim_buoyancy",
+          "type": "f64"
+        },
+        {
+          "name": "radius",
+          "type": "f64"
+        },
+        {
+          "name": "half_height",
+          "type": "f64"
+        },
+        {
+          "name": "stand",
+          "type": "f64"
+        }
+      ]
+    },
+    {
+      "name": "gate",
+      "fields": [
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "stage",
+          "type": "i32"
+        },
+        {
+          "name": "center",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "half",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "respawn_t",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "respawn_facing",
+          "type": "f64",
+          "count": 2
+        },
+        {
+          "name": "cursor",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "spawn",
+      "fields": [
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "t",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "facing",
+          "type": "f64",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "home",
+      "fields": [
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "team",
+          "type": "u32"
+        },
+        {
+          "name": "center",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "half",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "cursor",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "home_spawn",
+      "fields": [
+        {
+          "name": "home",
+          "type": "u32"
+        },
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "t",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "facing",
+          "type": "f64",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "path_node",
+      "fields": [
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "p",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "jump",
+          "type": "u32"
+        },
+        {
+          "name": "dive",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "surface",
+      "fields": [
+        {
+          "name": "kind",
+          "type": "u32"
+        },
+        {
+          "name": "friction",
+          "type": "f64"
+        },
+        {
+          "name": "obstacle",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "feature",
+      "fields": [
+        {
+          "name": "kind",
+          "type": "u32"
+        },
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "salt",
+          "type": "u32"
+        }
+      ]
+    }
+  ]
+}

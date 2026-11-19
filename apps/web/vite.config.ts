@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import { mamaSource, raaLocal, raaSdfmVersion, repoRoot, type MamaSource } from '../../tools/bricks.ts'
 import { fixUaaTextShader } from '../../tools/uaaText.ts'
+import { rfEgeScripts } from './src/engineRound/scriptsPlugin.ts'
 
 const webDir = fileURLToPath(new URL('.', import.meta.url))
 const input = Object.fromEntries(
@@ -100,7 +101,7 @@ export default defineConfig({
       if (!id.replaceAll('\\', '/').split('?')[0].endsWith('/uaa/dist/webgpu.js')) return null
       return { code: fixUaaTextShader(code), map: null }
     },
-  }],
+  }, rfEgeScripts()],
   optimizeDeps: { exclude: ['@etcito/uaa/webgpu'] },
   // S15: the resolved MAMA commit and the installed raa-sdfm version are part of the client mesh cache key.
   define: {

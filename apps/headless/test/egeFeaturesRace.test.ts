@@ -227,7 +227,7 @@ test('boostLane applies a bounded speed increase after character steering', asyn
   }
 })
 
-test('launchPad records stay inert before any script', async () => {
+test('launchPad records initialize without launching distant seats', async () => {
   const center = [-3.5, 0.25, 4]
   const { scene, round } = await roundWith('ege-strip', [{
     id: 'pad', kind: 'launchPad',
@@ -237,7 +237,7 @@ test('launchPad records stay inert before any script', async () => {
     stepUntil(round, 30, () => code(), () => false)
     const root = scene.index('feature/pad')
     const pad = rec(round, 'feature_launch_pad', root)
-    assert.equal(pad.placed, 0)
+    assert.equal(pad.placed, 1)
     assert.equal(pad.pad_stage, -1)
     assert.equal(rec(round, 'ege.render', root + 1).shape, 4)
     assert.deepEqual(rec(round, 'ege.transform', root + 1).pos, center)
@@ -250,4 +250,94 @@ test('launchPad records stay inert before any script', async () => {
   } finally {
     round.dispose()
   }
+})
+
+// The pad can fire before physics or on entry in the post-physics pass.
+async function launchScenario(apexM: number, landingRequired: boolean): Promise<void> {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'pad', kind: 'launchPad',
+    params: { center: [-3.5, 0.5, 4], half: [0.8, 0.6, 0.8], target: [-3.5, 0, 14], apexM },
+  }])
+  try {
+    while (round.observe().phase === 'intro') {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+    }
+    const seat = round.observe().seats[0].entity
+    const row = scene.index('feature/pad/seat/0')
+    let start: number[] = []
+    let launchVelocity: number[] = []
+    while (round.tick < 400 && rec(round, 'feature_launch_pad_seat', row).launched < 0) {
+      const before = [...rec(round, 'ege.transform', seat).pos] as number[]
+      const wasInside = rec(round, 'feature_launch_pad_seat', row).inside
+      round.step(s => s === 0 ? code(0, 1) : code())
+      assert.equal(round.observe().faults, 0)
+      if (rec(round, 'feature_launch_pad_seat', row).launched >= 0) {
+        const beforeInBox = Math.abs(before[0] + 3.5) <= 0.8 &&
+          Math.abs(before[1] - 0.5) <= 0.6 && Math.abs(before[2] - 4) <= 0.8
+        start = beforeInBox && !wasInside ? before : [...rec(round, 'ege.transform', seat).pos]
+        launchVelocity = [...rec(round, 'ege.velocity', seat).lin]
+      }
+    }
+    const state = rec(round, 'feature_launch_pad_seat', row)
+    assert.ok(state.launched >= 0, 'seat did not launch by tick 400')
+    // Independent calculation from the position at the pass that fired (launch.ts:65-71).
+    const apexY = Math.max(start[1], 0) + apexM
+    const vy = Math.sqrt(2 * 20 * (apexY - start[1]))
+    const duration = vy / 20 + Math.sqrt(2 * (apexY - 0) / 20)
+    assert.ok(Math.abs(state.flight - Math.ceil(duration * 60)) <= 1)
+    if (!landingRequired) {
+      const expected = [(-3.5 - start[0]) / duration, vy, (14 - start[2]) / duration]
+      for (let i = 0; i < 3; i++) {
+        assert.ok(Math.abs(launchVelocity[i] - expected[i]) < 0.01,
+          `launch velocity ${launchVelocity} expected ${expected}`)
+      }
+    }
+
+    let highestY = start[1]
+    let airborne = false
+    let landing: number[] | undefined
+    let previousVelocity = launchVelocity
+    let previousGrounded = true
+    let steeringSamples = 0
+    for (let i = 0; i < 120; i++) {
+      round.step(s => s === 0 ? code(0, 1) : code())
+      assert.equal(round.observe().faults, 0)
+      const pos = rec(round, 'ege.transform', seat).pos as number[]
+      const velocity = rec(round, 'ege.velocity', seat).lin as number[]
+      const grounded = rec(round, 'character', seat).grounded === 1
+      highestY = Math.max(highestY, pos[1])
+      if (!grounded) airborne = true
+      if (airborne && grounded && !landing) landing = [...pos]
+      // Skip the first airborne transition: its pre-step ground probe can still be grounded.
+      if (!landingRequired && airborne && !grounded && !previousGrounded && !landing) {
+        const dx = -previousVelocity[0]
+        const dz = 8 - previousVelocity[2]
+        const distance = Math.hypot(dx, dz)
+        const factor = distance === 0 ? 0 : Math.min(1, (18 / 60) / distance)
+        assert.ok(Math.abs(velocity[0] - (previousVelocity[0] + dx * factor)) < 0.01)
+        assert.ok(Math.abs(velocity[2] - (previousVelocity[2] + dz * factor)) < 0.01)
+        steeringSamples++
+      }
+      previousVelocity = [...velocity]
+      previousGrounded = grounded
+    }
+    assert.ok(highestY >= start[1] + 1.5, JSON.stringify({ highestY, start, state }))
+    if (landingRequired) {
+      assert.ok(landing, 'seat did not land after becoming airborne')
+      assert.ok(Math.hypot(landing[0] + 3.5, landing[2] - 14) <= 2, `landing: ${landing}`)
+    } else {
+      assert.ok(steeringSamples > 0, 'no unobstructed airborne steering samples')
+    }
+  } finally {
+    round.dispose()
+  }
+}
+
+test('launchPad launches towards its target', async () => {
+  await launchScenario(4, true)
+})
+
+test('launchPad preserves ordinary airborne steering', async () => {
+  await launchScenario(2, false)
 })

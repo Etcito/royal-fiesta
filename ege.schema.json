@@ -1054,6 +1054,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.launch_pad.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "gate", "feature", "ege.transform"],
+          "writes": ["feature_launch_pad", "feature_launch_pad_seat", "ege.velocity"],
+          "emits": []
+        },
+        {
           "system": "rf.feature.catch_volume.pre",
           "kind": "script",
           "reads": ["seat", "gate"],
@@ -1108,6 +1115,13 @@
             "feature_marker",
             "ege.render"
           ],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.launch_pad.post",
+          "kind": "script",
+          "reads": ["seat", "character", "gate", "feature", "ege.transform"],
+          "writes": ["feature_launch_pad", "feature_launch_pad_seat", "ege.velocity"],
           "emits": []
         },
         {

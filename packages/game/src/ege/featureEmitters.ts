@@ -8,6 +8,7 @@ import type { ResolvedGameAsset } from '../courseV1.ts'
 import { markerEmitter } from './features/marker.ts'
 import { catchVolumeEmitter } from './features/catchVolume.ts'
 import { swimVolumeEmitter } from './features/swimVolume.ts'
+import { tileFieldEmitter } from './features/tileField.ts'
 
 export type RawEntity = {
   name: string
@@ -137,4 +138,5 @@ export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object
   marker: markerEmitter,
   catchVolume: catchVolumeEmitter,
   swimVolume: swimVolumeEmitter,
+  tileField: tileFieldEmitter,
 })

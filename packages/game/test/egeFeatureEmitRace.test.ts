@@ -116,3 +116,44 @@ test('catchVolume emits a root resolved to its checkpoint', async () => {
   )
   refusedAt(input, { ...spec, params: { ...spec.params, respawnStage: 1.5 } }, 'respawnStage')
 })
+
+test('tileField emits one fixed box body per tile', async () => {
+  const spec: FeatureSpec = {
+    id: 'tiles', kind: 'tileField',
+    params: {
+      tiles: [
+        { t: [-3.5, -0.04, 0], size: [2, 2, 0.1] },
+        { t: [-3.5, -0.04, 2], size: [2, 2, 0.1] },
+      ],
+      decayS: 0.5, warnS: 0.5, mode: 'reset', resetS: 2,
+    },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const emitted = emitBuilds(input)
+  const root = emitted.scene.entities[emitted.index('feature/tiles')]
+  assert.deepEqual(root.components?.feature, { kind: 8, index: 0, salt: 0x100 })
+  assert.deepEqual(root.components?.feature_tile_field, {
+    warn_s: 0.5, decay_s: 0.5, mode: 0, reset_s: 2, tile_count: 2,
+  })
+  for (let index = 0; index < 2; index++) {
+    const entity = emitted.scene.entities[emitted.index(`feature/tiles/tile/${index}`)]
+    assert.deepEqual(entity.colliders?.[0]?.half_extents, [1, 0.05, 1])
+    assert.deepEqual(entity.components?.feature_tile_field_tile, {
+      owner: 0, index, t: [-3.5, -0.04, index * 2], half: [1, 0.05, 1], state: 0, timer: 0,
+    })
+    assert.equal(entity.body?.type, 'fixed')
+  }
+  const permanent = await inputWith('fixtures/ege/ege-strip.course.json', [{
+    ...spec, params: { ...spec.params, mode: 'permanent', resetS: undefined },
+  }])
+  const permanentScene = emitBuilds(permanent)
+  const permanentRoot = permanentScene.scene.entities[permanentScene.index('feature/tiles')]
+  assert.deepEqual(permanentRoot.components?.feature_tile_field, {
+    warn_s: 0.5, decay_s: 0.5, mode: 1, reset_s: 0, tile_count: 2,
+  })
+  refusedAt(input, { ...spec, params: { ...spec.params, tiles: [] } }, 'tiles')
+  refusedAt(input, {
+    ...spec, params: { ...spec.params, tiles: [{ t: [0, 0, 0], size: [2, 2, 0.01] }] },
+  }, 'tiles/0/size/2')
+  refusedAt(input, { ...spec, params: { ...spec.params, mode: 'sometimes' } }, 'mode')
+})

@@ -518,6 +518,62 @@
           "count": 8
         }
       ]
+    },
+    {
+      "name": "feature_tile_field",
+      "fields": [
+        {
+          "name": "warn_s",
+          "type": "f64"
+        },
+        {
+          "name": "decay_s",
+          "type": "f64"
+        },
+        {
+          "name": "mode",
+          "type": "u32"
+        },
+        {
+          "name": "reset_s",
+          "type": "f64"
+        },
+        {
+          "name": "tile_count",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "feature_tile_field_tile",
+      "fields": [
+        {
+          "name": "owner",
+          "type": "u32"
+        },
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "t",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "half",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "state",
+          "type": "u32"
+        },
+        {
+          "name": "timer",
+          "type": "u32"
+        }
+      ]
     }
   ],
   "resources": [

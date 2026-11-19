@@ -9,6 +9,7 @@ import { markerEmitter } from './features/marker.ts'
 import { boostLaneEmitter } from './features/boostLane.ts'
 import { launchPadEmitter } from './features/launchPad.ts'
 import { catchVolumeEmitter } from './features/catchVolume.ts'
+import { rollingLogEmitter } from './features/rollingLog.ts'
 import { swimVolumeEmitter } from './features/swimVolume.ts'
 import { tileFieldEmitter } from './features/tileField.ts'
 
@@ -141,6 +142,7 @@ export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object
   boostLane: boostLaneEmitter,
   launchPad: launchPadEmitter,
   catchVolume: catchVolumeEmitter,
+  rollingLog: rollingLogEmitter,
   swimVolume: swimVolumeEmitter,
   tileField: tileFieldEmitter,
 })

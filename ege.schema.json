@@ -614,6 +614,41 @@
       ]
     },
     {
+      "name": "feature_rolling_log",
+      "fields": [
+        {
+          "name": "from",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "to",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "radius",
+          "type": "f64"
+        },
+        {
+          "name": "length",
+          "type": "f64"
+        },
+        {
+          "name": "speed",
+          "type": "f64"
+        },
+        {
+          "name": "period_s",
+          "type": "f64"
+        },
+        {
+          "name": "phase_s",
+          "type": "f64"
+        }
+      ]
+    },
+    {
       "name": "feature_swim_volume",
       "fields": [
         {

@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { loadEngine } from '@etcito/game-engine'
 import type { FeatureSpec } from '@royal-fiesta/sim/course'
+import { encodeInput } from '@royal-fiesta/sim/input'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
+import { createEngineRound } from '../src/ege/round.ts'
+import { rfScriptBytes } from '../../../apps/headless/src/egeHarness.ts'
 import { FEATURE_EMITTERS } from '../src/ege/featureEmitters.ts'
 import { emitEngineScene } from '../src/ege/sceneEmitter.ts'
 import type { EmitInput, EmittedScene } from '../src/ege/sceneEmitter.ts'
@@ -227,4 +230,68 @@ test('launchPad emits a pad visual and eight seat records', async () => {
   refusedAt(input, { ...spec, params: { ...spec.params, apexM: 0.1 } }, 'apexM')
   refusedAt(input, { ...spec, params: { ...spec.params, target: [1, 2] } }, 'target')
   refusedAt(input, { ...spec, params: { ...spec.params, recoverOnly: 'yes' } }, 'recoverOnly')
+})
+
+test('rollingLog emits a kinematic cylinder root', async () => {
+  const spec: FeatureSpec = {
+    id: 'log', kind: 'rollingLog',
+    params: { from: [20, 1, 10], to: [20, 1, 16], radius: 0.6, length: 4, speed: 3, periodS: 6 },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const emitted = emitBuilds(input)
+  const rootIndex = emitted.index('feature/log')
+  const root = emitted.scene.entities[rootIndex]
+  assert.deepEqual(root.components?.feature, { kind: 4, index: 0, salt: 0x100 })
+  assert.deepEqual(root.components?.feature_rolling_log, {
+    from: [20, 1, 10], to: [20, 1, 16], radius: 0.6, length: 4, speed: 3, period_s: 6, phase_s: 0,
+  })
+  assert.deepEqual(root.components?.['ege.transform'], { pos: [20, 1, 10], rot: [0, 0, 0, 1] })
+  assert.equal(root.body?.type, 'kinematic_position')
+  assert.deepEqual(root.colliders?.[0], { shape: 'cylinder', radius: 0.6, half_height: 2, group: 'moving' })
+  assert.deepEqual(root.components?.['ege.render'], {
+    shape: 4, color: 0xB0784A, visible: 1, params: [0.6, 2, 0, 0],
+  })
+  assert.equal(emitted.index('feature/log/visual/0'), -1)
+  refusedAt(input, { ...spec, params: { ...spec.params, to: [20, 1, 10] } }, 'to')
+  refusedAt(input, { ...spec, params: { ...spec.params, from: [0, 1, 10], to: [0, 3, 10] } }, 'to')
+  refusedAt(input, { ...spec, params: { ...spec.params, periodS: 1 } }, 'periodS')
+  assert.throws(
+    () => FEATURE_EMITTERS.rollingLog({ ...spec, params: { ...spec.params, periodS: 1 } }, {
+      course: input.course.sim!, index: 0, path: `courses/${input.course.id}.course.json`, assets: input.assets,
+    }),
+    (error: unknown) => error instanceof RefusalError && error.message.includes('12 m round trip'),
+  )
+  refusedAt(input, { ...spec, params: { ...spec.params, radius: 5 } }, 'radius')
+})
+
+test('rollingLog body stays at from before any rolling-log script', async () => {
+  const spec: FeatureSpec = {
+    id: 'log', kind: 'rollingLog',
+    params: { from: [20, 1, 10], to: [20, 1, 16], radius: 0.6, length: 4, speed: 3, periodS: 6 },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const engine = await loadEngine()
+  const schema = JSON.parse(readFileSync(new URL('../../../ege.schema.json', import.meta.url), 'utf8'))
+  for (const worldKind of schema.world_kinds) {
+    worldKind.schedule = worldKind.schedule.filter(({ system }: { system: string }) =>
+      system !== 'rf.feature.rolling_log.pre' && system !== 'rf.feature.rolling_log.post')
+  }
+  const schemaText = JSON.stringify(schema)
+  engine.setSchema(schemaText)
+  const scene = emitEngineScene(engine, input)
+  const round = await createEngineRound(engine, schemaText, await rfScriptBytes(), scene, input.course, {
+    profile: 'sprint', seed: 7, humans: [true, false, false, false, false, false, false, false],
+  })
+  try {
+    const entity = scene.index('feature/log')
+    for (let tick = 0; tick < 30; tick++) {
+      round.step(() => encodeInput({ moveX: 0, moveZ: 0, jump: false, dive: false, grab: false }))
+      assert.equal(round.observe().faults, 0)
+      const transform = round.worldState().components['ege.transform'][String(entity)] as { pos: number[] }
+      assert.ok(transform.pos.every((value, axis) => Math.abs(value - [20, 1, 10][axis]!) <= 1e-3))
+    }
+    assert.equal(round.tick, 30)
+  } finally {
+    round.dispose()
+  }
 })

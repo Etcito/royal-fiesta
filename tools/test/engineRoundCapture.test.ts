@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { keptRows, loadInventory, main, requireProblems, selectRows, type InventoryRow } from '../engineRoundCapture.ts'
+import { judgeImages, keptRows, loadInventory, main, renderOrder, requireProblems, selectRows, type InventoryRow } from '../engineRoundCapture.ts'
 
 function row(overrides: Record<string, unknown> = {}) {
   return { id: 'fiesta', milestone: 'm2', filename: 'fiesta-run.png', args: { course: 'fiesta' }, require: [], description: 'A run', held_constant: [], ...overrides }
@@ -91,4 +91,34 @@ test('clean allocates the next attempt and preserves prior attempt files', async
 
 test('main returns usage status when check options are missing', async () => {
   assert.equal(await main(['check']), 2)
+})
+
+test('renderOrder puts failures before never-rendered rows and prior successes', () => {
+  const rows = [row({ id: 'old' }), row({ id: 'new' }), row({ id: 'failed' })] as unknown as InventoryRow[]
+  assert.deepEqual(renderOrder(rows, ['failed'], ['old']).map(item => item.id), ['failed', 'new', 'old'])
+})
+
+test('judgeImages stops at its budget and reuses identical passing images', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'engine-round-judge-'))
+  try {
+    const delivery = join(dir, 'delivery')
+    const attempt = join(dir, 'attempts/1')
+    mkdirSync(delivery, { recursive: true })
+    mkdirSync(attempt, { recursive: true })
+    const rows = ['a', 'b', 'c'].map(id => row({ id, filename: `${id}.png` })) as unknown as InventoryRow[]
+    for (const item of rows) {
+      writeFileSync(join(delivery, item.filename), item.id)
+      writeFileSync(join(attempt, item.filename), item.id)
+    }
+    let now = 0
+    let calls = 0
+    const runner = async () => { calls++; now += 5000; return 'score: 7' }
+    assert.equal(await judgeImages(dir, delivery, 1, rows, 10, runner, () => now), 1)
+    assert.equal(calls, 2)
+    assert.ok(existsSync(join(dir, 'verdicts/a.png.json')))
+    assert.ok(existsSync(join(dir, 'verdicts/b.png.json')))
+    assert.equal(existsSync(join(dir, 'verdicts/c.png.json')), false)
+    assert.equal(await judgeImages(dir, delivery, 1, rows.slice(0, 1), 10, runner, () => now), 0)
+    assert.equal(calls, 2)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })

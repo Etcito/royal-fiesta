@@ -764,6 +764,24 @@
           "emits": []
         },
         {
+          "system": "rf.character.pre",
+          "kind": "script",
+          "reads": [
+            "seat",
+            "ege.transform",
+            "ege.mover",
+            "surface",
+            "ege.mech.lever"
+          ],
+          "writes": [
+            "character",
+            "ege.velocity",
+            "ege.body_props",
+            "ege.mech.grab"
+          ],
+          "emits": []
+        },
+        {
           "system": "ege.body.props",
           "kind": "engine"
         },
@@ -778,6 +796,20 @@
         {
           "system": "ege.mech.watch",
           "kind": "engine"
+        },
+        {
+          "system": "rf.character.post",
+          "kind": "script",
+          "reads": [
+            "ege.transform",
+            "ege.contacts"
+          ],
+          "writes": [
+            "character",
+            "ege.velocity",
+            "ege.mech.grab"
+          ],
+          "emits": []
         }
       ]
     }

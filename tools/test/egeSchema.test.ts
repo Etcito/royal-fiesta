@@ -13,10 +13,12 @@ const SCHEDULE = [
   'ege.mech.logic',
   'ege.mech.joints',
   'rf.round.clock',
+  'rf.character.pre',
   'ege.body.props',
   'ege.physics',
   'ege.contact.track',
   'ege.mech.watch',
+  'rf.character.post',
 ]
 
 async function layoutOf() {

@@ -23,6 +23,9 @@ import { drawRoundHud, hudLines } from './hud.ts'
 import { createReadyGate } from './ready.ts'
 import { createRoundRun, parseRunArgs } from './run.ts'
 import type { RoundFacts, RoundRunArgs } from './run.ts'
+import type { AdapterInfo } from '../nmc/ops.ts'
+import { pendingPipelines } from '../render/asyncPipelines.ts'
+import { registerEngineRoundOps } from './ops.ts'
 
 const WIDTH = 1920
 const HEIGHT = 1080
@@ -215,3 +218,91 @@ function boot(): void {
 }
 
 boot()
+
+interface InventoryRow { filename: string; args: RoundRunArgs }
+interface EngineRoundFacts extends RoundFacts { nonEmpty: boolean; adapter: AdapterInfo; hardware: boolean; gpuErrors: string[] }
+
+async function adapterInfo(): Promise<AdapterInfo> {
+  const gpu = (navigator as { gpu?: { requestAdapter(options?: { powerPreference?: string }): Promise<{ info?: { vendor?: string; architecture?: string; description?: string; isFallbackAdapter?: boolean }; isFallbackAdapter?: boolean } | null> } }).gpu
+  if (!gpu) refuse('gpu', 'navigator.gpu', 'WebGPU is not exposed by this browser; run the op in the GPU client browser')
+  const adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' })
+  if (adapter === null) refuse('gpu', 'navigator.gpu.requestAdapter', 'no WebGPU adapter; run the op in the GPU client browser')
+  const info = adapter.info ?? {}
+  const vendor = info.vendor ?? ''
+  const architecture = info.architecture ?? ''
+  const description = info.description ?? ''
+  return { vendor, architecture, description, software: info.isFallbackAdapter === true || adapter.isFallbackAdapter === true || /swiftshader/i.test(`${vendor} ${architecture} ${description}`) }
+}
+
+function base64Of(bytes: Uint8Array): string {
+  let value = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) value += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(value)
+}
+
+async function engineRound(raw: unknown) {
+  const args = parseRunArgs(raw)
+  const response = await fetch(new URL('engine-round/inventory.json', document.baseURI))
+  if (!response.ok) refuse('ops', 'engineRound.inventory', `answered ${response.status}; ship engine-round/inventory.json with the page`)
+  const rows = await response.json() as InventoryRow[]
+  const row = rows.find(item => ['course', 'profile', 'seed', 'frames', 'local', 'captureAt', 'focus'].every(key => item.args[key as keyof RoundRunArgs] === args[key as keyof RoundRunArgs]))
+  if (!row) refuse('ops', 'engineRound.input', 'matches no row of engine-round/inventory.json; pass the args of an inventory row')
+  const adapter = await adapterInfo()
+  const gpuErrors: string[] = []
+  const onError = (event: ErrorEvent) => gpuErrors.push(event.message || String(event.error))
+  const onRejection = (event: PromiseRejectionEvent) => gpuErrors.push(String(event.reason))
+  const originalError = console.error
+  console.error = (...values: unknown[]) => { gpuErrors.push(values.map(String).join(' ')); originalError.apply(console, values) }
+  window.addEventListener('error', onError)
+  window.addEventListener('unhandledrejection', onRejection)
+  const canvas = document.createElement('canvas')
+  const shot = document.createElement('canvas')
+  canvas.width = shot.width = WIDTH
+  canvas.height = shot.height = HEIGHT
+  document.body.append(canvas, shot)
+  const realNow = performance.now.bind(performance)
+  const originalNow = Object.getOwnPropertyDescriptor(performance, 'now')
+  let clockInstalled = false
+  const loaded: { page?: EngineRoundPage } = {}
+  try {
+    const gate = createReadyGate(async () => { loaded.page = await loadEngineRoundPage(args, canvas, shot) }, () => {})
+    await gate.ready
+    const current = loaded.page!
+    const run = createRoundRun(current.round, args, current.course)
+    let ticks = 0
+    Object.defineProperty(performance, 'now', { configurable: true, writable: true, value: () => ticks * (1000 / 60) })
+    clockInstalled = true
+    while (run.step()) {
+      current.drawFrame(1 / 60)
+      ticks++
+      if (ticks === 1) await current.view.animationReady()
+      if (ticks % 60 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
+    }
+    const deadline = realNow() + 10000
+    while (pendingPipelines() > 0) {
+      if (realNow() >= deadline) refuse('render', 'raa', `pipeline readiness timed out at engine-round; ${pendingPipelines()} pipelines still pending`)
+      await new Promise<void>(resolve => setTimeout(resolve, 10))
+    }
+    current.drawFrame(0)
+    const png = await current.composite(run.facts())
+    const pixels = shot.getContext('2d')!.getImageData(0, 0, WIDTH, HEIGHT).data
+    const first = `${pixels[0]},${pixels[1]},${pixels[2]}`
+    let nonEmpty = false
+    for (let i = 4; i < pixels.length; i += 4) if (`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}` !== first) { nonEmpty = true; break }
+    const facts: EngineRoundFacts = { ...run.facts(), nonEmpty, adapter, hardware: !adapter.software, gpuErrors }
+    return { json: { facts, capture: { name: row.filename, width: WIDTH, height: HEIGHT, mime: 'image/png' as const, base64: base64Of(png) } }, files: [] as [] }
+  } finally {
+    if (clockInstalled) {
+      if (originalNow) Object.defineProperty(performance, 'now', originalNow)
+      else Reflect.deleteProperty(performance, 'now')
+    }
+    window.removeEventListener('error', onError)
+    window.removeEventListener('unhandledrejection', onRejection)
+    console.error = originalError
+    loaded.page?.dispose()
+    canvas.remove()
+    shot.remove()
+  }
+}
+
+registerEngineRoundOps(engineRound)

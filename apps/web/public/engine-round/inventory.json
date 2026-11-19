@@ -1,0 +1,32 @@
+[
+  {
+    "id": "m2-race-sprint-start",
+    "milestone": "m2",
+    "filename": "engine-round-race-sprint-penguins-waiting-at-start-line.png",
+    "args": {
+      "course": "race-sprint",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 120,
+      "local": "idle",
+      "captureAt": "end",
+      "focus": null
+    },
+    "require": [
+      "nonEmpty eq true",
+      "hardware eq true",
+      "gpuErrors empty",
+      "seats eq 8",
+      "faults eq 0",
+      "tick eq 120",
+      "bodies gt 20",
+      "upright eq true"
+    ],
+    "description": "Royal Fiesta race course race-sprint simulated on the engine: complete smoothly shaded candy course pieces (floor tiles, walls, hammer and door mechanisms) and eight penguins standing upright in a row at the start line, seen from behind the first penguin; a readable HUD band at the top left naming the course, the tick and 8 alive",
+    "held_constant": [
+      "the follow camera rule",
+      "the light",
+      "the course assets"
+    ]
+  }
+]

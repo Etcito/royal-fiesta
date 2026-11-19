@@ -226,3 +226,28 @@ test('boostLane applies a bounded speed increase after character steering', asyn
     round.dispose()
   }
 })
+
+test('launchPad records stay inert before any script', async () => {
+  const center = [-3.5, 0.25, 4]
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'pad', kind: 'launchPad',
+    params: { center, half: [0.8, 0.25, 0.8], target: [-3.5, 0, 12], apexM: 2 },
+  }])
+  try {
+    stepUntil(round, 30, () => code(), () => false)
+    const root = scene.index('feature/pad')
+    const pad = rec(round, 'feature_launch_pad', root)
+    assert.equal(pad.placed, 0)
+    assert.equal(pad.pad_stage, -1)
+    assert.equal(rec(round, 'ege.render', root + 1).shape, 4)
+    assert.deepEqual(rec(round, 'ege.transform', root + 1).pos, center)
+    for (let seat = 0; seat < 8; seat++) {
+      const state = rec(round, 'feature_launch_pad_seat', scene.index(`feature/pad/seat/${seat}`))
+      assert.equal(state.launched, -1)
+      assert.equal(state.inside, 0)
+      assert.equal(state.flight, 0)
+    }
+  } finally {
+    round.dispose()
+  }
+})

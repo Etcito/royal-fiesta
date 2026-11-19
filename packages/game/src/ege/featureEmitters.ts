@@ -7,6 +7,7 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import type { ResolvedGameAsset } from '../courseV1.ts'
 import { markerEmitter } from './features/marker.ts'
 import { boostLaneEmitter } from './features/boostLane.ts'
+import { launchPadEmitter } from './features/launchPad.ts'
 import { catchVolumeEmitter } from './features/catchVolume.ts'
 import { swimVolumeEmitter } from './features/swimVolume.ts'
 import { tileFieldEmitter } from './features/tileField.ts'
@@ -138,6 +139,7 @@ export function tintColor(tint: number, base: number): number {
 export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object.freeze({
   marker: markerEmitter,
   boostLane: boostLaneEmitter,
+  launchPad: launchPadEmitter,
   catchVolume: catchVolumeEmitter,
   swimVolume: swimVolumeEmitter,
   tileField: tileFieldEmitter,

@@ -189,3 +189,42 @@ test('boostLane emits a root and a conveyor visual', async () => {
   refusedAt(input, { ...spec, params: { ...spec.params, eligibility: 'some' } }, 'eligibility')
   refusedAt(input, { ...spec, params: { ...spec.params, durationS: 0 } }, 'durationS')
 })
+
+test('launchPad emits a pad visual and eight seat records', async () => {
+  const spec: FeatureSpec = {
+    id: 'pad', kind: 'launchPad',
+    params: { center: [-3.5, 0.25, 4], half: [0.8, 0.25, 0.8], target: [-3.5, 0, 12], apexM: 2 },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const emitted = emitBuilds(input)
+  const rootIndex = emitted.index('feature/pad')
+  const visualIndex = emitted.index('feature/pad/visual/0')
+  assert.equal(visualIndex, rootIndex + 1)
+  const root = emitted.scene.entities[rootIndex]
+  const visual = emitted.scene.entities[visualIndex]
+  assert.deepEqual(root.components?.feature, { kind: 2, index: 0, salt: 0x100 })
+  assert.deepEqual(root.components?.feature_launch_pad, {
+    center: [-3.5, 0.25, 4], half: [0.8, 0.25, 0.8], target: [-3.5, 0, 12],
+    apex_m: 2, recover_only: 0, pad_stage: -1, placed: 0,
+  })
+  assert.deepEqual(root.components?.['ege.transform'], { pos: [-3.5, 0.25, 4], rot: [0, 0, 0, 1] })
+  assert.deepEqual(visual.components?.['ege.transform'], { pos: [-3.5, 0.25, 4], rot: [0, 0, 0, 1] })
+  assert.deepEqual(visual.components?.['ege.render'], {
+    shape: 4, color: 0xFF8C42, visible: 1, params: [0.8, 0.25, 0, 0],
+  })
+  for (let seat = 0; seat < 8; seat++) {
+    const index = emitted.index(`feature/pad/seat/${seat}`)
+    assert.equal(index, visualIndex + 1 + seat)
+    assert.deepEqual(emitted.scene.entities[index].components?.feature_launch_pad_seat, {
+      owner: 0, seat, inside: 0, launched: -1, flight: 0, last_fall: -1, prev_protected: 0, alive: 1,
+    })
+  }
+  const recoverInput = await inputWith('fixtures/ege/ege-strip.course.json', [
+    { ...spec, params: { ...spec.params, recoverOnly: true } },
+  ])
+  const recover = emitBuilds(recoverInput)
+  assert.equal(recover.scene.entities[recover.index('feature/pad')].components?.feature_launch_pad?.recover_only, 1)
+  refusedAt(input, { ...spec, params: { ...spec.params, apexM: 0.1 } }, 'apexM')
+  refusedAt(input, { ...spec, params: { ...spec.params, target: [1, 2] } }, 'target')
+  refusedAt(input, { ...spec, params: { ...spec.params, recoverOnly: 'yes' } }, 'recoverOnly')
+})

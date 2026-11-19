@@ -513,6 +513,79 @@
       ]
     },
     {
+      "name": "feature_launch_pad",
+      "fields": [
+        {
+          "name": "center",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "half",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "target",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "apex_m",
+          "type": "f64"
+        },
+        {
+          "name": "recover_only",
+          "type": "u32"
+        },
+        {
+          "name": "pad_stage",
+          "type": "i32"
+        },
+        {
+          "name": "placed",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "feature_launch_pad_seat",
+      "fields": [
+        {
+          "name": "owner",
+          "type": "u32"
+        },
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "inside",
+          "type": "u32"
+        },
+        {
+          "name": "launched",
+          "type": "i32"
+        },
+        {
+          "name": "flight",
+          "type": "i32"
+        },
+        {
+          "name": "last_fall",
+          "type": "i32"
+        },
+        {
+          "name": "prev_protected",
+          "type": "u32"
+        },
+        {
+          "name": "alive",
+          "type": "u32"
+        }
+      ]
+    },
+    {
       "name": "feature_catch_volume",
       "fields": [
         {

@@ -126,7 +126,6 @@ export function rf_character_pre(): void {
     let vz = move.vz
     if (frozen) {
       vx = 0
-      vy = 0
       vz = 0
     } else if (mode == MODE_STUNNED) {
       vx = vx0
@@ -136,7 +135,7 @@ export function rf_character_pre(): void {
     ch.pre_vel_0 = vx
     ch.pre_vel_1 = vy
     ch.pre_vel_2 = vz
-    if (frozen) setLinvel(entity, 0, 0, 0)
+    if (frozen) setLinvel(entity, 0, <f32>(vy + GRAVITY_Y * TICK_DT), 0)
     else setLinvel(entity, <f32>vx, <f32>(vy + GRAVITY_Y * TICK_DT), <f32>vz)
   }
   grabPass(characters, now, TICK_DT)

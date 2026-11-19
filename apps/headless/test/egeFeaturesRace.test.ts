@@ -4,13 +4,14 @@ import type { EngineInstance } from '@etcito/game-engine/loader'
 import { loadEngine } from '@etcito/game-engine'
 import type { FeatureSpec } from '@royal-fiesta/sim/course'
 import { encodeInput } from '@royal-fiesta/sim/input'
+import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import { createEngineRound } from '@royal-fiesta/game/ege/round'
 import type { EngineRound } from '@royal-fiesta/game/ege/round'
 import { emitEngineScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import type { EmittedScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
-import { loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
+import { harnessRound, loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
 
 async function roundWith(id: string, specs: FeatureSpec[] | null, humans = [true, false, false, false, false, false, false, false]): Promise<{
@@ -440,5 +441,43 @@ test('doorBank: a fake door opens on a charge and a real one stays', async () =>
     assert.ok(debrisVisible)
   } finally {
     round.dispose()
+  }
+})
+
+test('race feature courses run fault-free and two worlds stay equal', async () => {
+  const cases = [
+    ['ege-yard-a', 'swimVolume'],
+    ['s1-e-sugar-sprint', 'doorBank'],
+    ['s1-c1-diamond-citadel', 'rollingLog'],
+    ['s1-b-butterfly-freeway', 'boostLane'],
+    ['s1-d-spiral-of-mischief', 'launchPad'],
+  ] as const
+  for (const [id, focusKind] of cases) {
+    const { engine, scene, course, round: a } = await harnessRound(id)
+    let b: EngineRound | undefined
+    try {
+      const schema = await readRepoText(RF_EGE_SCHEMA)
+      b = await createEngineRound(engine, schema, await rfScriptBytes(), scene, course, {
+        profile: 'sprint', seed: 7,
+        humans: [true, false, false, false, false, false, false, false],
+      })
+      const feature = course.sim?.features?.find(spec => spec.kind === focusKind)
+      assert.ok(feature, `${id} has no ${focusKind} feature`)
+      assert.ok(scene.index(`feature/${feature.id}`) >= 0, `${id} did not emit ${feature.id}`)
+
+      for (let i = 0; i < 300; i++) {
+        const input = (tick: number) => tick >= PROFILES.sprint.introTicks
+          ? code(0, 1, (tick - PROFILES.sprint.introTicks) % 45 === 0)
+          : code()
+        a.step(seat => seat === 0 ? input(a.tick) : code())
+        b.step(seat => seat === 0 ? input(b!.tick) : code())
+        assert.equal(a.observe().faults, 0, `${id} round a tick ${a.tick}`)
+        assert.equal(b.observe().faults, 0, `${id} round b tick ${b.tick}`)
+      }
+      assert.equal(engine.worldEqual(a.world, b.world), true, `${id} worlds diverged`)
+    } finally {
+      b?.dispose()
+      a.dispose()
+    }
   }
 })

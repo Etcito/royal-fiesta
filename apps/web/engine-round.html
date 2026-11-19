@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Royal Fiesta - Engine round</title>
+    <style>
+      html, body { margin: 0; background: #1b0f2e; color: #fff; font: 14px system-ui, sans-serif; }
+      #stage { position: relative; width: 1920px; height: 1080px; }
+      #view { display: block; width: 1920px; height: 1080px; }
+      #shot { display: none; }
+      #hud { position: absolute; left: 0; top: 0; pointer-events: none; }
+      #status { padding: 4px 12px; }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <canvas id="view" width="1920" height="1080"></canvas>
+    </div>
+    <canvas id="shot" width="1920" height="1080"></canvas>
+    <div id="status">loading</div>
+    <script type="module" src="./src/engineRound/main.ts"></script>
+  </body>
+</html>

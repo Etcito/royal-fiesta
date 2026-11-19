@@ -441,5 +441,345 @@
         }
       ]
     }
+  ],
+  "resources": [
+    {
+      "name": "round",
+      "fields": [
+        {
+          "name": "intro_ticks",
+          "type": "u32"
+        },
+        {
+          "name": "round_ticks",
+          "type": "u32"
+        },
+        {
+          "name": "overtime_ticks",
+          "type": "u32"
+        },
+        {
+          "name": "kind",
+          "type": "u32"
+        },
+        {
+          "name": "final_rule",
+          "type": "u32"
+        },
+        {
+          "name": "phase",
+          "type": "u32"
+        },
+        {
+          "name": "frozen",
+          "type": "u32"
+        },
+        {
+          "name": "ended_tick",
+          "type": "i32"
+        },
+        {
+          "name": "entrants",
+          "type": "u32"
+        },
+        {
+          "name": "alive",
+          "type": "u32"
+        },
+        {
+          "name": "qualified",
+          "type": "u32"
+        },
+        {
+          "name": "eliminated",
+          "type": "u32"
+        },
+        {
+          "name": "trailing_team",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "course",
+      "fields": [
+        {
+          "name": "kill_plane_y",
+          "type": "f64"
+        },
+        {
+          "name": "has_finish",
+          "type": "u32"
+        },
+        {
+          "name": "finish_center",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "finish_half",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "checkpoint_count",
+          "type": "u32"
+        },
+        {
+          "name": "spawn_count",
+          "type": "u32"
+        },
+        {
+          "name": "home_count",
+          "type": "u32"
+        },
+        {
+          "name": "path_count",
+          "type": "u32"
+        },
+        {
+          "name": "respawn_mode",
+          "type": "u32"
+        },
+        {
+          "name": "wait_ticks",
+          "type": "u32"
+        },
+        {
+          "name": "protect_ticks",
+          "type": "u32"
+        },
+        {
+          "name": "slots",
+          "type": "u32"
+        },
+        {
+          "name": "spacing_m",
+          "type": "f64"
+        },
+        {
+          "name": "ordered",
+          "type": "u32"
+        },
+        {
+          "name": "laps",
+          "type": "u32"
+        },
+        {
+          "name": "stage_count",
+          "type": "u32"
+        },
+        {
+          "name": "last_stage",
+          "type": "i32"
+        },
+        {
+          "name": "grab_players",
+          "type": "u32"
+        },
+        {
+          "name": "grab_objects",
+          "type": "u32"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "finish",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "crossing",
+          "type": "u32"
+        },
+        {
+          "name": "lap",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "fall",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "crossing",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "eliminate",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "crossing",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "gate",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "stage",
+          "type": "i32"
+        },
+        {
+          "name": "lap",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "progress",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "distance_mm",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "score",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "a",
+          "type": "i32"
+        },
+        {
+          "name": "b",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "team_score",
+      "fields": [
+        {
+          "name": "team",
+          "type": "u32"
+        },
+        {
+          "name": "a",
+          "type": "i32"
+        },
+        {
+          "name": "b",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "possess",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "a",
+          "type": "i32"
+        },
+        {
+          "name": "b",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "crown",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "a",
+          "type": "i32"
+        },
+        {
+          "name": "b",
+          "type": "i32"
+        }
+      ]
+    }
+  ],
+  "world_kinds": [
+    {
+      "name": "round",
+      "players": 8,
+      "schedule": [
+        {
+          "system": "ege.movers",
+          "kind": "engine"
+        },
+        {
+          "system": "ege.road",
+          "kind": "engine"
+        },
+        {
+          "system": "ege.mech.logic",
+          "kind": "engine"
+        },
+        {
+          "system": "ege.mech.joints",
+          "kind": "engine"
+        },
+        {
+          "system": "rf.round.clock",
+          "kind": "script",
+          "reads": [
+            "course"
+          ],
+          "writes": [
+            "round",
+            "seat",
+            "character",
+            "ege.transform",
+            "ege.velocity"
+          ],
+          "emits": []
+        },
+        {
+          "system": "ege.body.props",
+          "kind": "engine"
+        },
+        {
+          "system": "ege.physics",
+          "kind": "engine"
+        },
+        {
+          "system": "ege.contact.track",
+          "kind": "engine"
+        },
+        {
+          "system": "ege.mech.watch",
+          "kind": "engine"
+        }
+      ]
+    }
   ]
 }

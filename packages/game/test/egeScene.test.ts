@@ -141,3 +141,49 @@ test('building an assembly refuses a course without a simulation part', async ()
       error.message === '[ege-scene] courses/race-sprint.course.json: the course has no simulation part (kind race); pass a race, survival, hub or gallery course',
   )
 })
+
+test('movers expose their course surface and item body entities are indexed', async () => {
+  const input = await inputOf('race-sprint')
+  const emitted = emitEngineScene(engine, input)
+  assert.ok(input.course.sim)
+  assert.equal(emitted.obstacleEntities.length, input.course.sim.obstacles.length)
+  for (let i = 0; i < emitted.obstacleEntities.length; i++) {
+    const entity = emitted.scene.entities[emitted.obstacleEntities[i]]
+    assert.equal(entity.components?.surface?.obstacle, i)
+  }
+  const expected = input.course.sim.mechanisms?.items ?? []
+  assert.equal(emitted.itemBodies.size, expected.reduce((sum, item) => sum + item.bodies.length, 0))
+  for (const item of expected) for (const body of item.bodies) {
+    const key = `${item.id}/${body.id}`
+    assert.ok(key.startsWith(`${item.id}/`))
+    assert.equal(emitted.itemBodies.get(key), emitted.index(key))
+  }
+  assert.ok(engine.createWorld(emitted.text) >= 1)
+})
+
+test('a course cone collider is refused at its course pointer', async () => {
+  const json = readJson('courses/race-sprint.course.json') as { obstacles: { colliders: unknown; s: number[] }[] }
+  json.obstacles[3].colliders = [{ shape: 'cone', radius: 0.5, halfHeight: 0.5 }]
+  json.obstacles[3].s = [1, 1, 1]
+  const path = 'courses/race-sprint.course.json'
+  const course = await loadCourseV1(json, path, assets)
+  const resolved = new Map<string, ResolvedGameAsset>()
+  for (const assetId of course.assetIds) resolved.set(assetId, await assets.resolve(assetId))
+  assert.throws(
+    () => buildEngineAssembly({ course, assets: resolved, setup: { profile: 'sprint', seed: 7 } }),
+    (error: unknown) => error instanceof RefusalError &&
+      error.message.startsWith("[ege-scene] courses/race-sprint.course.json#/obstacles/3/colliders/0/shape: shape 'cone' has no engine collider"),
+  )
+})
+
+test('a course feature kind without a registered emitter is refused', async () => {
+  const input = await inputOf('s1-e-sugar-sprint')
+  assert.ok(input.course.sim)
+  const kind = input.course.sim.features?.[0].kind
+  assert.ok(kind)
+  assert.throws(
+    () => buildEngineAssembly(input),
+    (error: unknown) => error instanceof RefusalError &&
+      error.message === `[ege-scene] courses/s1-e-sugar-sprint.course.json#/features/0/kind: feature kind '${kind}' has no engine emitter; registered: (none)`,
+  )
+})

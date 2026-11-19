@@ -1,6 +1,6 @@
 import type { EgeScene, EngineInstance } from '@etcito/game-engine'
 import { assemblyScene, buildAssembly } from '@etcito/game-engine/formats'
-import type { EgeAssembly } from '@etcito/game-engine/formats'
+import type { AssemblyExtra, AssemblyItem, EgeAssembly, MoverJson } from '@etcito/game-engine/formats'
 import type { LevelSpec, ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { legacyLevel } from '@royal-fiesta/sim/course'
 import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
@@ -10,8 +10,11 @@ import { GRAVITY_Y } from '@royal-fiesta/sim/world'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { seatSpawn } from '@royal-fiesta/sim/zones/seatSpawn'
+import type { ColliderSpec, Surface } from '@royal-fiesta/sim/course'
 import type { CourseV1, ResolvedGameAsset } from '../courseV1.ts'
 import { RF_EGE_WORLD_KIND } from './files.ts'
+import { assetColliders, engineColliders } from './colliders.ts'
+import { FEATURE_EMITTERS } from './featureEmitters.ts'
 import type { RawEntity } from './featureEmitters.ts'
 
 export interface EmitInput {
@@ -46,6 +49,111 @@ const ROUND_KIND_RANK: Readonly<Record<LevelSpec['kind'], number>> = {
 const FINAL_RULE_RANK = { none: 0, crown: 1, lastStanding: 2 } as const
 const RESPAWN_MODE_RANK = { checkpoint: 0, home: 1, none: 2 } as const
 const point = (v: { x: number; y: number; z: number }): [number, number, number] => [v.x, v.y, v.z]
+const tuple = (v: { x: number; y: number; z: number; w?: number }): number[] =>
+  v.w === undefined ? [v.x, v.y, v.z] : [v.x, v.y, v.z, v.w]
+
+const SURFACE_RANK: Readonly<Record<Surface, number>> = { normal: 0, ice: 1, mud: 2, rubber: 3 }
+
+function unscaleColliders(list: readonly ColliderSpec[], s: { x: number; y: number; z: number }): ColliderSpec[] {
+  return list.map((c): ColliderSpec => {
+    const t = { x: c.t.x / s.x, y: c.t.y / s.y, z: c.t.z / s.z }
+    if (c.shape === 'cuboid') return { ...c, half: { x: c.half.x / s.x, y: c.half.y / s.y, z: c.half.z / s.z }, t }
+    if (c.shape === 'roundCuboid') return { ...c, half: { x: c.half.x / s.x, y: c.half.y / s.y, z: c.half.z / s.z }, border: c.border / Math.min(s.x, s.y, s.z), t }
+    if (c.shape === 'convexHull') return c
+    const k = s.x
+    return { ...c, radius: c.radius / k, ...('halfHeight' in c ? { halfHeight: c.halfHeight / k } : {}), t }
+  })
+}
+
+function obstacleSurface(kind: Surface | undefined, friction: number, obstacle: number) {
+  return { kind: SURFACE_RANK[kind ?? 'normal'], friction, obstacle }
+}
+
+function itemBodyNames(sim: ResolvedCourse): { name: string; friction: number; surface: Surface }[] {
+  const out: { name: string; friction: number; surface: Surface }[] = []
+  for (const item of sim.mechanisms?.items ?? []) {
+    for (const body of item.bodies) {
+      out.push({ name: `${item.id}/${body.id}`, friction: body.friction, surface: body.surface })
+    }
+  }
+  return out
+}
+
+function obstacleParts(input: EmitInput, sim: ResolvedCourse): {
+  items: AssemblyItem[]
+  movers: MoverJson[]
+  extras: AssemblyExtra[]
+} {
+  const rawObstacles = input.course.json.obstacles
+  const items: AssemblyItem[] = []
+  if (Array.isArray(rawObstacles)) {
+    for (let i = 0; i < rawObstacles.length; i++) {
+      const value = rawObstacles[i]
+      if (typeof value !== 'object' || value === null) continue
+      const obstacle = value as Record<string, unknown>
+      const id = obstacle.id
+      const assetId = obstacle.asset
+      const resolved = typeof assetId === 'string' ? input.assets.get(assetId) : undefined
+      if (typeof id !== 'string' || typeof assetId !== 'string' || !resolved?.asset.physics) continue
+      const collision = resolved.source.json && typeof resolved.source.json === 'object'
+        ? (resolved.source.json as Record<string, unknown>).collision
+        : undefined
+      const t = obstacle.t as [number, number, number]
+      const r = obstacle.r as [number, number, number, number]
+      const s = obstacle.s as [number, number, number]
+      items.push({
+        id, asset: assetId, t, r, s,
+        collision: assetColliders(Array.isArray(collision) ? collision : [], `courses/${input.course.id}.course.json#/obstacles/${i}/colliders`),
+        physics: resolved.asset.physics,
+      })
+    }
+  }
+  const movers: MoverJson[] = []
+  const extras: AssemblyExtra[] = []
+  for (let i = 0; i < sim.obstacles.length; i++) {
+    const obstacle = sim.obstacles[i]
+    const name = `movers/${obstacle.id}`
+    movers.push({
+      id: obstacle.id,
+      t: tuple(obstacle.t) as [number, number, number],
+      r: tuple(obstacle.r) as [number, number, number, number],
+      s: tuple(obstacle.s) as [number, number, number],
+      friction: obstacle.friction,
+      colliders: engineColliders(unscaleColliders(obstacle.colliders, obstacle.s),
+        `courses/${input.course.id}.course.json#/obstacles/${i}/colliders`),
+      motion: obstacle.motion,
+      ...(obstacle.sweep === undefined ? {} : { sweep: obstacle.sweep }),
+    })
+    extras.push({ entity: name, components: {
+      'ege.render': { shape: 0 },
+      surface: obstacleSurface(obstacle.surface, obstacle.friction, i),
+    } })
+  }
+  for (const body of itemBodyNames(sim)) {
+    extras.push({ entity: body.name, components: {
+      'ege.render': { shape: 0 },
+      surface: obstacleSurface(body.surface, body.friction, -1),
+    } })
+  }
+  return { items, movers, extras }
+}
+
+function featureEntities(input: EmitInput, sim: ResolvedCourse): RawEntity[] {
+  const entities: RawEntity[] = []
+  const features = sim.features ?? []
+  for (let i = 0; i < features.length; i++) {
+    const spec = features[i]
+    const emitter = FEATURE_EMITTERS[spec.kind]
+    if (!emitter) {
+      const registered = Object.keys(FEATURE_EMITTERS).sort()
+      refuse('ege-scene', `courses/${input.course.id}.course.json#/features/${i}/kind`,
+        `feature kind '${spec.kind}' has no engine emitter; registered: ${registered.length ? registered.join(', ') : '(none)'}`)
+    }
+    const emitted = emitter(spec, { course: sim, index: i, path: `courses/${input.course.id}.course.json`, assets: input.assets })
+    entities.push(emitted.root, ...emitted.children)
+  }
+  return entities
+}
 
 function seatAndDataEntities(input: EmitInput, sim: ResolvedCourse, level: LevelSpec): RawEntity[] {
   const entities: RawEntity[] = []
@@ -224,27 +332,35 @@ export function buildEngineAssembly(input: EmitInput): EgeAssembly {
     )
   }
   const level = sim.level ?? legacyLevel(sim)
+  const obstacles = obstacleParts(input, sim)
+  const rawMechanisms = input.course.json.mechanisms
   return buildAssembly({
     worldKind: RF_EGE_WORLD_KIND,
     seed: input.setup.seed >>> 0,
     gravity: [0, GRAVITY_Y, 0],
     resources: resources(input, sim, level),
-    entities: seatAndDataEntities(input, sim, level),
+    entities: [...seatAndDataEntities(input, sim, level), ...featureEntities(input, sim)],
+    items: obstacles.items,
+    movers: obstacles.movers,
+    extras: obstacles.extras,
+    ...(rawMechanisms === undefined || rawMechanisms === null ? {} : { mechanisms: rawMechanisms as EgeAssembly['mechanisms'] }),
   })
 }
 
 export function emitEngineScene(engine: EngineInstance, input: EmitInput): EmittedScene {
   const assembly = buildEngineAssembly(input)
   const built = assemblyScene(engine, assembly)
+  const sim = input.course.sim!
+  const bodies = itemBodyNames(sim)
   return {
     courseId: input.course.id,
     assembly,
     text: built.text,
     scene: built.scene,
     seatEntities: Array.from({ length: 8 }, (_, i) => built.index(`seat/${i}`)),
-    obstacleEntities: [],
-    itemBodies: new Map(),
-    featureEntities: [],
+    obstacleEntities: sim.obstacles.map(obstacle => built.index(`movers/${obstacle.id}`)),
+    itemBodies: new Map(bodies.map(body => [body.name, built.index(body.name)])),
+    featureEntities: (sim.features ?? []).map(feature => built.index(`feature/${feature.id}`)),
     index: built.index,
   }
 }

@@ -241,3 +241,106 @@ test('sweep rejects invalid phase order and jump or walk gaps', async () => {
   invalid([{ atS: 0, pattern: 'block', gapM: 1, speedMps: 1 }], '/gapM: expected a walk-through gap')
   invalid([{ atS: 0, pattern: 'block', gapM: 8, speedMps: 1 }], '/gapM: expected a walk-through gap')
 })
+
+test('memoryTiles emits a 4x4 cell pool with zero cycle symbols, eight seats and cells+1 markers', async () => {
+  const spec: FeatureSpec = {
+    id: 'memory-demo', kind: 'memoryTiles', params: {
+      origin: [2, 3, 4], cols: 4, rows: 4, cellM: 2, symbols: 4, cycles: 3,
+      revealS: 1, hideS: 0.5, choiceS: 2, penaltyS: 0.25,
+    },
+  }
+  const { input } = await inputWith([spec])
+  const ctx = { course: input.course.sim!, index: 3, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets }
+  const entities = FEATURE_EMITTERS.memoryTiles(spec, ctx)
+  assert.deepEqual(entities.root.components?.feature_memory_tiles, {
+    origin: [2, 3, 4], cols: 4, rows: 4, cell_m: 2, symbols: 4, cycles: 3,
+    reveal_s: 1, hide_s: 0.5, choice_s: 2, penalty_s: 0.25,
+    target: 0, cycle: -1, phase: 0, choice_start_tick: 0, finalized: 0, placed: 0,
+  })
+  assert.equal(entities.children.length, 16 + 3 + 8 + 17)
+  for (let index = 0; index < 16; index++) {
+    const cell = entities.children[index]!
+    assert.equal(cell.name, `feature/memory-demo/cell/${index}`)
+    assert.deepEqual(cell.body, { type: 'fixed' })
+    assert.deepEqual(cell.colliders, [{ shape: 'box', half_extents: [1, 1, 1], group: 'static' }])
+    assert.deepEqual(cell.components?.['ege.transform'], { pos: [2, 3, 4], rot: [0, 0, 0, 1] })
+    assert.deepEqual(cell.components?.['ege.box_collider'], { half_extents: [1, 1, 1] })
+    assert.equal(cell.components?.['ege.body_props']?.colliders_enabled, 1)
+    assert.deepEqual(cell.components?.feature_memory_tiles_cell, {
+      owner: 3, index, t: [2, 3, 4], half: [1, 1, 1], state: 0, timer: 0, symbol: 0,
+      cycle_symbols: Array(16).fill(0), cycle_symbols_tail: Array(4).fill(0),
+    })
+  }
+  for (let index = 0; index < 3; index++) {
+    const cycle = entities.children[16 + index]!
+    assert.equal(cycle.name, `feature/memory-demo/cycle/${index}`)
+    assert.deepEqual(cycle.components?.feature_memory_tiles_cycle, { owner: 3, index, target: 0 })
+  }
+  for (let index = 0; index < 8; index++) {
+    const seat = entities.children[16 + 3 + index]!
+    assert.equal(seat.name, `feature/memory-demo/seat/${index}`)
+    assert.deepEqual(seat.components?.feature_memory_tiles_seat, {
+      owner: 3, seat: index, first_correct_tick: -1,
+    })
+  }
+  for (let index = 0; index < 17; index++) {
+    const marker = entities.children[16 + 3 + 8 + index]!
+    assert.equal(marker.name, `feature/memory-demo/marker/${index}`)
+    assert.equal(marker.body, undefined)
+    assert.equal(marker.colliders, undefined)
+    assert.deepEqual(marker.components?.['ege.transform']?.pos, [2, 3, 4])
+    assert.equal(marker.components?.['ege.render']?.visible, 0)
+    assert.deepEqual(marker.components?.feature_memory_tiles_marker, { owner: 3, index })
+  }
+  const emitted = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(emitted.text) >= 1)
+  assert.equal(emitted.index('feature/memory-demo/cell/0'), emitted.index('feature/memory-demo') + 1)
+})
+
+test('memoryTiles emits a 256-cell pool with twenty cycle records and zero-filled split symbols', async () => {
+  const spec: FeatureSpec = {
+    id: 'memory-max', kind: 'memoryTiles', params: {
+      origin: [0, 1, 0], cols: 16, rows: 16, cellM: 0.5, symbols: 6, cycles: 20,
+      revealS: 2, hideS: 1, choiceS: 3,
+    },
+  }
+  const { input } = await inputWith([spec])
+  const ctx = { course: input.course.sim!, index: 0, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets }
+  const entities = FEATURE_EMITTERS.memoryTiles(spec, ctx)
+  assert.equal(entities.children.length, 256 + 20 + 8 + 257)
+  assert.equal(entities.root.components?.feature_memory_tiles.penalty_s, 14)
+  const cycles = entities.children.slice(256, 276)
+  assert.equal(cycles.length, 20)
+  assert.deepEqual(cycles.map(cycle => cycle.components?.feature_memory_tiles_cycle?.target), Array(20).fill(0))
+  const cells = entities.children.slice(0, 256)
+  for (const cell of cells) {
+    const record = cell.components?.feature_memory_tiles_cell
+    const cycleSymbols = record?.cycle_symbols as number[]
+    const tail = record?.cycle_symbols_tail as number[]
+    assert.equal(cycleSymbols.length, 16)
+    assert.equal(tail.length, 4)
+    assert.ok(cycleSymbols.every(value => value === 0))
+    assert.ok(tail.every(value => value === 0))
+  }
+  assert.equal(cells[255]?.components?.feature_memory_tiles_cell?.index, 255)
+  const markers = entities.children.slice(256 + 20 + 8)
+  assert.equal(markers.length, 257)
+  assert.equal(markers[256]?.name, 'feature/memory-max/marker/256')
+  const emitted = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(emitted.text) >= 1)
+})
+
+test('memoryTiles refuses a pool over 256 cells with the engine-pool message', async () => {
+  const spec: FeatureSpec = {
+    id: 'too-big', kind: 'memoryTiles', params: {
+      origin: [0, 0, 0], cols: 17, rows: 16, cellM: 1, symbols: 4, cycles: 1,
+      revealS: 1, hideS: 1, choiceS: 1,
+    },
+  }
+  const { input } = await inputWith([spec])
+  const path = 'fixtures/ege/ege-strip.course.json'
+  const ctx = { course: input.course.sim!, index: 2, path, assets: input.assets }
+  assert.throws(() => FEATURE_EMITTERS.memoryTiles(spec, ctx), (error: unknown) =>
+    error instanceof RefusalError && error.message ===
+      `[ege-scene] ${path}#/features/2/cols: memoryTiles of more than 256 cells has no engine pool in part 1; use at most 256 cells`)
+})

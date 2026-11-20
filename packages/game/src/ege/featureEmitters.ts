@@ -14,6 +14,7 @@ import { doorBankEmitter } from './features/doorBank.ts'
 import { swimVolumeEmitter } from './features/swimVolume.ts'
 import { tileFieldEmitter } from './features/tileField.ts'
 import { hexFieldEmitter } from './features/hexField.ts'
+import { memoryTilesEmitter } from './features/memoryTiles.ts'
 import { annulusEmitter } from './features/annulus.ts'
 import { sweepEmitter } from './features/sweep.ts'
 import { roadEmitter } from './features/road.ts'
@@ -152,6 +153,7 @@ export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object
   swimVolume: swimVolumeEmitter,
   tileField: tileFieldEmitter,
   hexField: hexFieldEmitter,
+  memoryTiles: memoryTilesEmitter,
   annulus: annulusEmitter,
   sweep: sweepEmitter,
   road: roadEmitter,

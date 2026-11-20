@@ -844,6 +844,26 @@
       ]
     },
     {
+      "name": "feature_annulus",
+      "fields": [
+        { "name": "center", "type": "f64", "count": 3 },
+        { "name": "inner_m", "type": "f64" },
+        { "name": "outer_m", "type": "f64" },
+        { "name": "thick_m", "type": "f64" },
+        { "name": "speed_deg_s", "type": "f64" },
+        { "name": "segments", "type": "u32" },
+        { "name": "overtime_ticks", "type": "u32" },
+        { "name": "placed", "type": "u32" }
+      ]
+    },
+    {
+      "name": "feature_annulus_segment",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "index", "type": "u32" }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

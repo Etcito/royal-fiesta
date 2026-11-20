@@ -78,3 +78,56 @@ test('hexField refuses pools over 512 cells', async () => {
     course: input.course.sim!, index: 0, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets,
   }), (error: unknown) => error instanceof RefusalError && error.message.includes('/rings: expected at most 512 cells'))
 })
+
+test('annulus emits a segment pool at the origin with placeholder box records', async () => {
+  const spec: FeatureSpec = {
+    id: 'ring-demo', kind: 'annulus', params: {
+      center: [1, 2, 3], innerM: 2, outerM: 6, thickM: 0.4, speedDegS: 90, segments: 8,
+    },
+  }
+  const { input } = await inputWith([spec])
+  const entities = FEATURE_EMITTERS.annulus(spec, {
+    course: input.course.sim!, index: 3, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets,
+  })
+  assert.equal(entities.children.length, 8)
+  assert.deepEqual(entities.root.components?.feature_annulus, {
+    center: [1, 2, 3], inner_m: 2, outer_m: 6, thick_m: 0.4,
+    speed_deg_s: 90, segments: 8, overtime_ticks: 0, placed: 0,
+  })
+  for (let index = 0; index < entities.children.length; index++) {
+    const child = entities.children[index]!
+    assert.equal(child.name, `feature/ring-demo/segment/${index}`)
+    assert.deepEqual(child.body, { type: 'kinematic_position' })
+    assert.deepEqual(child.components?.['ege.transform']?.pos, [1, 2, 3])
+    assert.deepEqual(child.colliders?.[0]?.half_extents, [1, 1, 1])
+    assert.deepEqual(child.components?.['ege.box_collider'], { half_extents: [1, 1, 1] })
+    assert.deepEqual(child.components?.['ege.render'], {
+      shape: 1, color: 0xF5D0E0, visible: 1, params: [1, 1, 1, 0],
+    })
+    assert.deepEqual(child.components?.feature_annulus_segment, { owner: 3, index })
+  }
+  const emitted = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(emitted.text) >= 1)
+  assert.equal(emitted.index('feature/ring-demo/segment/0'), emitted.index('feature/ring-demo') + 1)
+})
+
+test('annulus refuses a ring narrower than 0.5 m and an out-of-range segment count', async () => {
+  const narrow: FeatureSpec = {
+    id: 'narrow', kind: 'annulus', params: {
+      center: [0, 0, 0], innerM: 2, outerM: 2.4, thickM: 0.4, speedDegS: 0, segments: 8,
+    },
+  }
+  const { input } = await inputWith([narrow])
+  assert.throws(() => FEATURE_EMITTERS.annulus(narrow, {
+    course: input.course.sim!, index: 0, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets,
+  }), (error: unknown) => error instanceof RefusalError && error.message.includes('/outerM: expected outerM > innerM + 0.5 m'))
+
+  const few: FeatureSpec = {
+    id: 'few', kind: 'annulus', params: {
+      center: [0, 0, 0], innerM: 2, outerM: 6, thickM: 0.4, speedDegS: 0, segments: 5,
+    },
+  }
+  assert.throws(() => FEATURE_EMITTERS.annulus(few, {
+    course: input.course.sim!, index: 0, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets,
+  }), (error: unknown) => error instanceof RefusalError && error.message.includes('/segments: expected segments'))
+})

@@ -21,7 +21,7 @@ import type { ResizablePort } from '../sdf/sdfPort.ts'
 import { zoneContent } from '../zone/zoneContent.ts'
 import { drawRoundHud, hudLines } from './hud.ts'
 import { createReadyGate } from './ready.ts'
-import { createRoundRun, parseRunArgs } from './run.ts'
+import { createRoundRun, focusedFeature, parseRunArgs } from './run.ts'
 import type { RoundFacts, RoundRunArgs } from './run.ts'
 import type { AdapterInfo } from '../nmc/ops.ts'
 import { deviceOfCanvas, pendingPipelines } from '../render/asyncPipelines.ts'
@@ -85,11 +85,10 @@ export async function loadEngineRoundPage(args: RoundRunArgs, canvas: HTMLCanvas
   const round = await createEngineRound(engine, schemaText, scripts, scene, course, { ...setup, humans: [true, false, false, false, false, false, false, false] })
   let focus: string | null = null
   if (args.focus !== null) {
-    const kind = args.focus.slice('kind:'.length)
-    focus = course.sim?.features?.find(feature => feature.kind === kind)?.id ?? null
+    focus = focusedFeature(course, args.focus)?.id ?? null
     if (focus === null) {
       round.dispose()
-      refuse(AREA, 'args.focus', `'${args.focus}' names no feature of course '${course.id}'; use a feature kind the course holds`)
+      refuse(AREA, 'args.focus', `'${args.focus}' names no feature of course '${course.id}'; use a feature id or kind the course holds`)
     }
   }
   const target: RenderTarget = { canvas, width: WIDTH, height: HEIGHT, viewports: [{ x: 0, y: 0, width: WIDTH, height: HEIGHT }] }
@@ -208,6 +207,7 @@ function queryArgs(params: URLSearchParams): { live: boolean; args: RoundRunArgs
   params.delete('live')
   const input: Record<string, unknown> = Object.fromEntries(params)
   for (const key of ['seed', 'frames']) if (typeof input[key] === 'string') input[key] = Number(input[key])
+  if (typeof input.runPath === 'string') input.runPath = JSON.parse(input.runPath)
   return { live, args: parseRunArgs(input) }
 }
 
@@ -259,7 +259,7 @@ async function engineRound(raw: unknown) {
   const response = await fetch(new URL('engine-round/inventory.json', document.baseURI))
   if (!response.ok) refuse('ops', 'engineRound.inventory', `answered ${response.status}; ship engine-round/inventory.json with the page`)
   const rows = await response.json() as InventoryRow[]
-  const row = rows.find(item => ['course', 'profile', 'seed', 'frames', 'local', 'captureAt', 'focus'].every(key => item.args[key as keyof RoundRunArgs] === args[key as keyof RoundRunArgs]))
+  const row = rows.find(item => JSON.stringify(parseRunArgs(item.args)) === JSON.stringify(args))
   if (!row) refuse('ops', 'engineRound.input', 'matches no row of engine-round/inventory.json; pass the args of an inventory row')
   const adapter = await adapterInfo()
   const gpuErrors: string[] = []

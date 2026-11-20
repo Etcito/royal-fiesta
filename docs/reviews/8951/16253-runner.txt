@@ -1,0 +1,54 @@
+Execution 16253, tool result 47
+---
+0866389546c6
+EXIT=0
+✔ main returns usage status when check options are missing (0.7938ms)
+✔ renderOrder puts failures before never-rendered rows and prior successes (0.2075ms)
+✔ judgeImages stops at its budget and reuses identical passing images (1.8926ms)
+✔ judgeImages hands the row held_constant list to the judge and re-judges when it changes (1.3632ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 454.19382
+
+Execution 16253, tool result 50
+ apps/web/public/engine-round/inventory.json | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+EXIT=1
+ℹ tests 500
+ℹ pass 490
+ℹ fail 10
+
+Execution 16253, tool result 51
+EXIT=1
+ℹ tests 500
+ℹ pass 490
+ℹ fail 10
+ apps/web/public/engine-round/inventory.json | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+Execution 16253, tool result 53
+same
+EXIT=1
+ℹ tests 500
+ℹ pass 490
+ℹ fail 10
+  11 /tmp/f.corrected
+  11 /tmp/f.pre
+  22 total
+SETS_MATCH
+✖ a fixture match with two listeners does not throw and sets both listener ports
+✖ all 12 costumes save a reference and local bones only, remain valid, and refuse missing source assets/nodes
+✖ both web ports (lobby content and show-round zone content) register the cosmetic skins before presenting the port
+✖ every content material and MAMA pattern carries its shared shader dependencies
+✖ failing tests:
+✖ helper discovery order does not change the material key or WGSL
+✖ shared hash and noise helpers are emitted once even when graph dependencies request them
+✖ start wardrobe mounts all four bins and chosen tint on hub and round local instances
+✖ the App presents uaa frames on its frames clock, not performance.now()
+✖ wardrobe submits its scene before the UI frame, and a hidden lobby restores only its active layer
+✖ worker includes MAMA shared WGSL and hashes it in the material identity

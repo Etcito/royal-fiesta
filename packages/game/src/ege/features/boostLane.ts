@@ -18,6 +18,10 @@ export const boostLaneEmitter: FeatureEmitter = (spec: FeatureSpec, ctx: Feature
   const visual = visualOf('candy.conveyor-belt', {
     x: box.half.x * 2, y: box.half.y * 2, z: box.half.z * 2,
   })
+  // The trigger encloses a runner. The belt sits at its foot and uses the
+  // conveyor asset's 0.25 m collider half-height, capped for shallower lanes.
+  const beltHalfHeight = Math.min(0.25, box.half.y)
+  const yaw = yawDeg * Math.PI / 360
   return {
     root: {
       name: `feature/${spec.id}`,
@@ -38,6 +42,15 @@ export const boostLaneEmitter: FeatureEmitter = (spec: FeatureSpec, ctx: Feature
       components: {
         'ege.transform': { pos: [box.center.x, box.center.y, box.center.z], rot: [0, 0, 0, 1] },
         'ege.render': { shape: visual.shape, color: visual.color, visible: 1, params: visual.params },
+      },
+    }, {
+      name: `feature/${spec.id}/belt`,
+      components: {
+        'ege.transform': {
+          pos: [box.center.x, box.center.y - box.half.y + beltHalfHeight, box.center.z],
+          rot: [0, Math.sin(yaw), 0, Math.cos(yaw)],
+        },
+        'ege.render': { ...visual, params: [box.half.x, beltHalfHeight, box.half.z, 0], visible: 1 },
       },
     }],
   }

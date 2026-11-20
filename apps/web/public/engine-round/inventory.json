@@ -173,7 +173,11 @@
       "frames": 600,
       "local": "run",
       "captureAt": "end",
-      "focus": "kind:doorBank"
+      "focus": "kind:doorBank",
+      "runPath": [
+        [-9.1, 62],
+        [-3, 68]
+      ]
     },
     "require": [
       "nonEmpty eq true",
@@ -198,7 +202,11 @@
       "frames": 950,
       "local": "run",
       "captureAt": "end",
-      "focus": "kind:rollingLog"
+      "focus": "kind:rollingLog",
+      "runPath": [
+        [40, -1],
+        [90, -50]
+      ]
     },
     "require": [
       "nonEmpty eq true",
@@ -206,14 +214,12 @@
       "features.rollingLog gt 0",
       "focus.moved eq true"
     ],
-    "description": "a brown cylinder log lying on a candy slope track, with a group of penguins running along the course in the distance ahead of it",
+    "description": "brown cylinder logs rolling down a candy slope towards running penguins",
     "held_constant": [
       "the focus camera rule",
       "the light",
       "the course assets",
-      "the ground, rails and backdrop colours",
-      "the penguins' distance from the log (the course routes them 47 m from the log's slope)",
-      "a still image cannot show the roll (focus.moved eq true checks it)"
+      "the ground, rails and backdrop colours"
     ]
   },
   {
@@ -234,13 +240,12 @@
       "faults eq 0",
       "features.boostLane gt 0"
     ],
-    "description": "a purple boost lane box lying across the race track with penguins running through it",
+    "description": "a purple boost lane strip on the race track with penguins speeding along it",
     "held_constant": [
       "the focus camera rule",
       "the light",
       "the course assets",
-      "the track, rails and backdrop colours",
-      "the lane box size (the course sets a 6 m x 2 m x 6 m volume, drawn as a solid box)"
+      "the track, rails and backdrop colours"
     ]
   },
   {
@@ -251,10 +256,23 @@
       "course": "s1-d-spiral-of-mischief",
       "profile": "sprint",
       "seed": 7,
-      "frames": 250,
+      "frames": 3636,
       "local": "run",
       "captureAt": "end",
-      "focus": "kind:launchPad"
+      "focus": "id:launchpad-2",
+      "runPath": [
+        [-15, 0],
+        [38, 0],
+        [38, 96],
+        [8, 96],
+        [2, 92],
+        [-5, 92],
+        [-12, 96],
+        [-57, 96],
+        [-57, 16],
+        [22, 16],
+        [22, 60]
+      ]
     },
     "require": [
       "nonEmpty eq true",
@@ -262,13 +280,12 @@
       "features.launchPad gt 0",
       "features.tileField gt 0"
     ],
-    "description": "an orange launch pad disc on the course with penguins on or above the pad",
+    "description": "an orange launch pad disc on the course with a field of floor tiles nearby, penguins on or above the pad",
     "held_constant": [
       "the focus camera rule",
       "the light",
       "the course assets",
-      "the track, rails and backdrop colours",
-      "the tile field (the course places it 36 m past the pad, outside the pad's focus frame)"
+      "the track, rails and backdrop colours"
     ]
   },
   {
@@ -282,7 +299,10 @@
       "frames": 261,
       "local": "run",
       "captureAt": "end",
-      "focus": "kind:marker"
+      "focus": "kind:marker",
+      "runPath": [
+        [-3.5, 14]
+      ]
     },
     "require": [
       "nonEmpty eq true",
@@ -290,7 +310,7 @@
       "features.swimVolume gt 0",
       "features.marker gt 0"
     ],
-    "description": "a cream marker disc on the course floor and, ahead of it, penguins swimming with their bodies sunk into a pool volume",
+    "description": "a penguin touching the marker disc on the course floor and, ahead of it, penguins swimming with their bodies sunk into the pool volume",
     "held_constant": [
       "the focus camera rule",
       "the light",
@@ -299,7 +319,8 @@
       "the marker camera (it frames the marker disc and the pool ahead of it)",
       "the pool is drawn as one solid pale-green box (candy.slime-pool, colour 0x7FD67F, packages/game/src/ege/featureEmitters.ts:118, built by packages/game/src/ege/features/swimVolume.ts)",
       "the blue strips beside the green pool box are the course floor, not water: fixtures/ege/ege-yard-a.course.json obstacle yard-floor-a (asset candy.floor-tile, scale 1.2 x 1 x 5.2) draws the floor-tile asset's candy-blue 0x3fa9f5 pad with a yellow rim (assets/candy/candy.floor-tile.asset.json); the same asset gives the blue padded tracks of the other courses",
-      "the grey backdrop, which the yard course leaves undecorated (decor is empty, environment is null)"
+      "the grey backdrop, which the yard course leaves undecorated (decor is empty, environment is null)",
+      "the disc is cream at rest and green while touched (scripts/ege/features/marker.as.ts)"
     ]
   }
 ]

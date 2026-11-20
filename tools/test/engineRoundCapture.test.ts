@@ -3,6 +3,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { harnessRound } from '../../apps/headless/src/egeHarness.ts'
+import { createRoundRun, focusedFeature } from '../../apps/web/src/engineRound/run.ts'
 import { judgeImages, keptRows, loadInventory, main, renderOrder, requireProblems, selectRows, type InventoryRow } from '../engineRoundCapture.ts'
 
 function row(overrides: Record<string, unknown> = {}) {
@@ -142,4 +144,27 @@ test('judgeImages hands the row held_constant list to the judge and re-judges wh
     assert.equal(await judgeImages(dir, delivery, 1, [changed], 10, runner, () => 0), 0)
     assert.deepEqual(seen[1], ['the light', 'the ground'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('Spiral frames a runner on the pad between the tiles in the race capture', async () => {
+  const rows = loadInventory('apps/web/public/engine-round/inventory.json')
+  const row = rows.find(item => item.id === 'm5-spiral-launch-pad')!
+  const { round, course } = await harnessRound(row.args.course, { profile: row.args.profile, seed: row.args.seed })
+  try {
+    const pad = focusedFeature(course, row.args.focus)!
+    assert.equal(pad.kind, 'launchPad')
+    const run = createRoundRun(round, row.args, course)
+    while (run.step()) {}
+    const facts = run.facts()
+    assert.equal(facts.faults, 0)
+    assert.equal(facts.focus?.id, pad.id)
+    const [x, y, z] = pad.params.center as number[]
+    const [width, , depth] = pad.params.half as number[]
+    assert.ok(round.observe().seats.some(({ pos }) =>
+      Math.abs(pos.x - x) <= width && Math.abs(pos.z - z) <= depth && pos.y >= y))
+    const field = course.sim!.features!.find(feature => feature.kind === 'tileField')!
+    const tiles = field.params.tiles as { t: number[]; size: number[] }[]
+    const lane = tiles.filter(tile => Math.abs(tile.t[0] - x) <= tile.size[0] / 2)
+    assert.ok(lane.some(tile => tile.t[2] < z) && lane.some(tile => tile.t[2] > z))
+  } finally { round.dispose() }
 })

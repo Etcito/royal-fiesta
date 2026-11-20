@@ -14,6 +14,7 @@ export interface RoundRunArgs {
   local: 'idle' | 'run' | 'dive' | 'sideways' | 'grab'
   captureAt: 'end' | 'dive' | 'firstFinish' | 'respawned'
   focus: string | null
+  runPath?: [number, number][]
 }
 
 const events = ['finish', 'fall', 'eliminate', 'gate', 'progress', 'score', 'team_score', 'possess', 'crown']
@@ -27,7 +28,7 @@ function fail(field: string, value: unknown, rule: string): never {
 export function parseRunArgs(input: unknown): RoundRunArgs {
   if (!input || typeof input !== 'object' || Array.isArray(input)) fail('course', input, 'an object with a course id')
   const value = input as Record<string, unknown>
-  for (const key of Object.keys(value)) if (!['course', 'profile', 'seed', 'frames', 'local', 'captureAt', 'focus'].includes(key)) fail(key, value[key], 'only supported argument keys')
+  for (const key of Object.keys(value)) if (!['course', 'profile', 'seed', 'frames', 'local', 'captureAt', 'focus', 'runPath'].includes(key)) fail(key, value[key], 'only supported argument keys')
   if (typeof value.course !== 'string' || !/^[a-z0-9-]{1,40}$/.test(value.course)) fail('course', value.course, 'a course id matching ^[a-z0-9-]{1,40}$')
   const profile = value.profile ?? 'sprint'
   if (profile !== 'standard' && profile !== 'sprint') fail('profile', profile, 'standard or sprint')
@@ -40,8 +41,17 @@ export function parseRunArgs(input: unknown): RoundRunArgs {
   const captureAt = value.captureAt ?? 'end'
   if (typeof captureAt !== 'string' || !captures.includes(captureAt)) fail('captureAt', captureAt, 'end, dive, firstFinish or respawned')
   const focus = value.focus ?? null
-  if (focus !== null && (typeof focus !== 'string' || !/^kind:[A-Za-z]+$/.test(focus))) fail('focus', focus, 'null or kind:<featureKind>')
-  return { course: value.course, profile, seed: seed as number, frames: frames as number, local: local as RoundRunArgs['local'], captureAt: captureAt as RoundRunArgs['captureAt'], focus: focus as string | null }
+  if (focus !== null && (typeof focus !== 'string' || !/^(kind:[A-Za-z]+|id:[a-z0-9-]+)$/.test(focus))) fail('focus', focus, 'null, kind:<featureKind> or id:<featureId>')
+  const path = value.runPath
+  if (path !== undefined && (local !== 'run' || !Array.isArray(path) || !path.length ||
+    !path.every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)))) {
+    fail('runPath', path, 'a nonempty list of [x, z] points with local run')
+  }
+  return { ...(path === undefined ? {} : { runPath: path as [number, number][] }), course: value.course, profile, seed: seed as number, frames: frames as number, local: local as RoundRunArgs['local'], captureAt: captureAt as RoundRunArgs['captureAt'], focus: focus as string | null }
+}
+
+export function focusedFeature(course: CourseV1, focus: string | null) {
+  return course.sim?.features?.find(feature => focus === `id:${feature.id}` || focus === `kind:${feature.kind}`)
 }
 
 /** Ticks a firstFinish capture waits after the first finish (the finisher is parked on its finish tick). */
@@ -85,10 +95,21 @@ export function createRoundRun(round: EngineRound, args: RoundRunArgs, course: C
   let finishTick: number | null = null
   let respawnTick: number | null = null
   let priorFalls = initial.events.fall ?? 0
-  const focusKind = args.focus?.slice(5) ?? null
-  const focusSpec = featureSpecs.find(item => item.kind === focusKind)
-  const focusEntities = focusSpec ? entities.filter(entity => (entity.name ?? '').includes(focusSpec.id)) : []
+  const focusSpec = focusedFeature(course, args.focus)
+  const focusEntities = focusSpec ? entities.filter(entity => entity.name === `feature/${focusSpec.id}` || entity.name?.startsWith(`feature/${focusSpec.id}/`)) : []
   const focusStart = focusEntities.map(entity => ({ id: r.scene.index(entity.name ?? ''), render: entity.components?.['ege.render'] ?? {}, pose: round.poses([r.scene.index(entity.name ?? '')]) }))
+  const introTicks = PROFILES[args.profile].introTicks
+  let waypoint = 0
+  function captureInput(): number {
+    const path = args.runPath
+    if (!path || round.tick < introTicks) return localCode(args.local, round.tick, introTicks)
+    const { x, z } = round.observe().seats[0].pos
+    if (waypoint + 1 < path.length && Math.hypot(path[waypoint][0] - x, path[waypoint][1] - z) < 1) waypoint++
+    const dx = path[waypoint][0] - x
+    const dz = path[waypoint][1] - z
+    const length = Math.max(1, Math.hypot(dx, dz))
+    return encodeInput({ moveX: dx / length, moveZ: dz / length, jump: false, dive: false, grab: false })
+  }
   const shouldCapture = () => {
     const observation = round.observe()
     if (observation.seats[0]?.mode === 2 && diveTick === null) diveTick = round.tick
@@ -107,7 +128,7 @@ export function createRoundRun(round: EngineRound, args: RoundRunArgs, course: C
     get done() { return done },
     step() {
       if (done) return false
-      round.step(() => localCode(args.local, round.tick, PROFILES[args.profile].introTicks))
+      round.step(captureInput)
       if (round.tick >= args.frames || shouldCapture()) { done = true; capturedAt = round.tick }
       return true
     },

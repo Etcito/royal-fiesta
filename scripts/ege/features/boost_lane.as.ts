@@ -2,7 +2,7 @@ import { axis, cos, getComponent, readColumn, readResource, setComponent, setLin
 import { AXIS_MOVE_X, AXIS_MOVE_Z, EgeRender, EgeTransform, FeatureBoostLane, RoundRes } from '../components.gen'
 import { characterColumn, seatColumn } from '../lib/seats.as'
 import { TICK_DT, degToRad, ticksOf } from '../lib/units.as'
-import { Quat4, approach2, quatAxisAngleY, v3 } from '../lib/vec.as'
+import { approach2, v3 } from '../lib/vec.as'
 import { CHAR_GROUND_ACCEL, CHAR_MAX_RUN, GRAVITY_Y, MODE_AIR, MODE_GROUND, MODE_PARKED, MODE_SLIDE } from '../character/constants.as'
 
 // Tint 0 is the base draw selected at packages/sim/src/features/boostLane.ts:118.
@@ -87,13 +87,16 @@ export function rf_feature_boost_lane_pre(): void {
     const yaw = degToRad(feature.yaw_deg)
     if (feature.placed == 0) {
       const visualEntity = root + 1
-      const transform = getComponent<EgeTransform>(visualEntity, EgeTransform.ID, EgeTransform.SIZE)
-      const rotation = quatAxisAngleY(yaw, new Quat4())
-      transform.rot_0 = <f32>rotation.x
-      transform.rot_1 = <f32>rotation.y
-      transform.rot_2 = <f32>rotation.z
-      transform.rot_3 = <f32>rotation.w
+      // Place the active stripe on the permanent purple belt. Only the
+      // stripe changes tint when a seat is boosted.
+      const belt = root + 2
+      const transform = getComponent<EgeTransform>(belt, EgeTransform.ID, EgeTransform.SIZE)
+      const stripe = getComponent<EgeRender>(belt, EgeRender.ID, EgeRender.SIZE)
+      transform.pos_1 += stripe.params_1
+      stripe.params_0 *= 0.25
+      stripe.params_1 = 0.02
       setComponent(visualEntity, EgeTransform.ID, EgeTransform.SIZE, transform)
+      setComponent(visualEntity, EgeRender.ID, EgeRender.SIZE, stripe)
       feature.placed = 1
     }
     const s = sin(-yaw)

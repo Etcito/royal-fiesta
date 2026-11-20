@@ -1,0 +1,25 @@
+engine-round: m5-sugar-sprint-door-bank: judge score 4 (min 6) FAIL
+engine-round: m5-sugar-sprint-door-bank: JUDGE FAIL engine-round-sugar-sprint-door-bank-doors-standing-across-lane.png
+JUDGE FAIL: 4.0/10 (minimum 6.0) on engine-round-sugar-sprint-door-bank-doors-standing-across-lane.png by claude-opus-5-5 (median of [4.0, 4.0, 4.0])
+expected: a row of coloured door panels standing across the candy race lane on the engine, some doors broken open by penguins running into them
+seen: The image shows a blue candy race lane with three rows of plain orange-red rectangular panels standing across the left half of the track, and a candy-striped red/blue wall on the right. Six coloured penguins (teal, orange, green, purple, lilac, blue) are bunched against the front row, and a pink one stands by the striped wall. A HUD at the top left reads 'Sugar Sprint (race)'. The door rows are there, but every panel is intact and the same orange colour. No door is broken, knocked open or missing, and no penguin has gone through one, so the key part of the criterion, doors broken open by penguins, is not shown.
+engine-round: m5-diamond-citadel-rolling-logs: judge score 5 (min 6) FAIL
+engine-round: m5-diamond-citadel-rolling-logs: JUDGE FAIL engine-round-diamond-citadel-logs-rolling-down-slope.png
+JUDGE FAIL: 5.0/10 (minimum 6.0) on engine-round-diamond-citadel-logs-rolling-down-slope.png by claude-opus-5-5 (median of [5.0, 5.0, 5.0])
+expected: brown cylinder logs rolling down a candy slope towards running penguins
+seen: The image shows a glossy blue chute with orange rails running diagonally across a flat magenta ground, under a HUD that reads 'Diamond Citadel (race)'. There is one brown cylinder lying across the chute and casting a dark shadow, and three small hammer-like objects stand in the distance. In the far top-right corner there is a tiny cluster of colourful figures, too small to tell whether they are penguins or whether they are running. The log on a candy-like slope is clear, but you can't see it rolling, and the penguins it should be heading for can't be made out, so the criterion is only partly shown.
+engine-round: m5-butterfly-boost-lane: judge score 3 (min 6) FAIL
+engine-round: m5-butterfly-boost-lane: JUDGE FAIL engine-round-butterfly-freeway-boost-lane-strip-on-track.png
+JUDGE FAIL: 3.0/10 (minimum 6.0) on engine-round-butterfly-freeway-boost-lane-strip-on-track.png by claude-opus-5-5 (median of [3.0, 3.0, 3.0])
+expected: a purple boost lane strip on the race track with penguins speeding along it
+seen: The image shows a blue padded track with orange borders against a magenta background. There is a purple box raised up in the middle of the track, and the HUD reads 'Butterfly Freeway (race)', 'alive 8', 'you: air'. The purple shape is a solid raised block that looks like an obstacle or placeholder, not a flat lane strip set into the track surface. No penguins are visible anywhere, so the boost lane with penguins speeding along it is not shown.
+engine-round: m5-spiral-launch-pad: judge score 4 (min 6) FAIL
+engine-round: m5-spiral-launch-pad: JUDGE FAIL engine-round-spiral-launch-pad-and-tile-field.png
+JUDGE FAIL: 4.0/10 (minimum 6.0) on engine-round-spiral-launch-pad-and-tile-field.png by claude-opus-5-5 (median of [4.0, 4.0, 4.0])
+expected: an orange launch pad disc on the course with a field of floor tiles nearby, penguins on or above the pad
+seen: The image shows a blue course lined with yellow-orange rails over a magenta backdrop. Near the centre sits a raised orange cylindrical disc that casts a shadow, and to the right are some large yellow-framed rectangular panels. A HUD in the top left reads 'Spiral of Mischief (race), tick 600, alive 8'. The orange launch-pad disc is clearly there, and the framed panels might be the tile field, but they don't clearly read as one. No penguins are visible on or above the pad, so a key part of the scene is missing.
+engine-round: m5-yard-a-swim-marker: judge score 2 (min 6) FAIL
+engine-round: m5-yard-a-swim-marker: JUDGE FAIL engine-round-yard-swim-pool-and-marker-disc.png
+JUDGE FAIL: 2.0/10 (minimum 6.0) on engine-round-yard-swim-pool-and-marker-disc.png by claude-opus-5-5 (median of [2.0, 2.0, 2.0])
+expected: a green slime pool box and a cream marker disc on a candy floor, a penguin swimming in the pool
+seen: The image shows a long track with a yellow rim on a grey background. A pale green floor strip runs beside a blue water channel, and a group of coloured bean-shaped characters with raised arms stands at the far end, next to a small white blob figure and a pink character in the air. There is a HUD in the top-left corner reading 'Engine Yard A (race)'. I can't see a green slime pool box: the only liquid is a blue channel, and nothing that looks like a penguin is swimming in it. No cream marker disc is visible either, so the criterion is not shown.

@@ -4,7 +4,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { isDeepStrictEqual } from 'node:util'
 import { refuse, isRefusal } from '../packages/sim/src/refusal.ts'
-import { parseRunArgs } from '../apps/web/src/engineRound/run.ts'
+import { focusedFeature, parseRunArgs } from '../apps/web/src/engineRound/run.ts'
 import type { RoundRunArgs } from '../apps/web/src/engineRound/run.ts'
 import { buildContentIndex, packContent } from './content.ts'
 import { publishDist, renderOp } from '../apps/headless/src/gpuClient.ts'
@@ -94,10 +94,8 @@ async function check(args: ReturnType<typeof options>): Promise<void> {
     if (!indexIds.has(id) && !existsSync(fixture)) refuse('engine-round', `${INVENTORY}#/${row.id}/args/course`, `course '${id}' is not in content index or fixtures/ege; add it to shipped content`)
     const { course, round } = await harnessRound(id, { profile: row.args.profile, seed: row.args.seed })
     try {
-      if (row.args.focus) {
-        const kind = row.args.focus.slice('kind:'.length)
-        const kinds = new Set(course.sim?.features?.map(feature => feature.kind) ?? [])
-        if (!kinds.has(kind as never)) refuse('engine-round', `${INVENTORY}#/${row.id}/args/focus`, `feature kind '${kind}' is not present in course '${id}'`)
+      if (row.args.focus && !focusedFeature(course, row.args.focus)) {
+        refuse('engine-round', `${INVENTORY}#/${row.id}/args/focus`, `'${row.args.focus}' matches no feature of course '${id}'`)
       }
     } finally { round.dispose() }
   }

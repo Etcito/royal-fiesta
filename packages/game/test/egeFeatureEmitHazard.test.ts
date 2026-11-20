@@ -39,7 +39,7 @@ test('hexField emits an origin pool, source dimensions and floor-disc records', 
   const spec: FeatureSpec = {
     id: 'hex-demo', kind: 'hexField', params: {
       origin: [2, 3, 4], layers: 2, layerSpacingM: 1.25, rings: 2,
-      flatM: 5, pointM: 6, thickM: 0.4, warnS: 0.75, decayS: 2,
+      flatM: 5.5, pointM: 6.4, thickM: 0.4, warnS: 0.75, decayS: 2,
       scaleWithEntrants: true,
     },
   }
@@ -49,20 +49,20 @@ test('hexField emits an origin pool, source dimensions and floor-disc records', 
   })
   assert.equal(entities.children.length, 38)
   assert.deepEqual(entities.root.components?.feature_hex_field, {
-    origin: [2, 3, 4], layers: 2, layer_spacing_m: 1.25, rings: 2, flat_m: 5,
-    point_m: 6, thick_m: 0.4, warn_s: 0.75, decay_s: 2, scale_with_entrants: 1, placed: 0,
+    origin: [2, 3, 4], layers: 2, layer_spacing_m: 1.25, rings: 2, flat_m: 5.5,
+    point_m: 6.4, thick_m: 0.4, warn_s: 0.75, decay_s: 2, scale_with_entrants: 1, placed: 0,
   })
   assert.deepEqual(entities.children[0]?.components?.['ege.transform']?.pos, [2, 3, 4])
   assert.deepEqual(entities.children[37]?.components?.['ege.transform']?.pos, [2, 3, 4])
   for (let index = 0; index < entities.children.length; index++) {
     const child = entities.children[index]!
     assert.equal(child.name, `feature/hex-demo/hex/${index}`)
-    assert.deepEqual(child.colliders?.[0]?.half_extents, [3, 0.2, 2.5])
+    assert.deepEqual(child.colliders?.[0]?.half_extents, [3.2, 0.2, 2.75])
     assert.deepEqual(child.components?.feature_hex_field_hex, {
       owner: 3, index, t: [2, 3, 4], state: 0, timer: 0,
     })
     assert.deepEqual(child.components?.['ege.render'], {
-      shape: 4, color: 0xF2E6D0, visible: 1, params: [2.5, 0.2, 0, 0],
+      shape: 4, color: 0xF2E6D0, visible: 1, params: [3.2, 0.2, 0, 0],
     })
   }
   const emitted = emitEngineScene(engine, input)

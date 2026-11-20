@@ -42,6 +42,33 @@ function near(actual: number, expected: number): void {
   assert.ok(Math.abs(actual - expected) <= 1e-6, `${actual} != ${expected}`)
 }
 
+test('hexField radius is pointM / 2 in the emitted record and after the script runs', async () => {
+  // Honeycomb's distinct values: flatM / 2 would give 2.75, the source radius pointM / 2 gives 3.2.
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'hex',
+    kind: 'hexField',
+    params: {
+      origin: [-3.5, -0.04, 0], layers: 1, layerSpacingM: 0.5, rings: 1, flatM: 5.5, pointM: 6.4,
+      thickM: 0.35, warnS: 0.5, decayS: 0.5, scaleWithEntrants: false,
+    },
+  }])
+  try {
+    const emitted = rec(round, 'ege.render', scene.index('feature/hex/hex/0'))
+    near(emitted.params[0], 3.2)
+    near(emitted.params[1], 0.175)
+    round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+    assert.equal(rec(round, 'feature_hex_field', scene.index('feature/hex')).placed, 1)
+    for (let index = 0; index < 7; index++) {
+      const render = rec(round, 'ege.render', scene.index(`feature/hex/hex/${index}`))
+      near(render.params[0], 3.2)
+      near(render.params[1], 0.175)
+    }
+  } finally {
+    round.dispose()
+  }
+})
+
 test('hexField places ring one and layers, then warns and falls under a standing seat', async () => {
   const origin = [-3.5, -0.04, 0]
   const { scene, round } = await roundWith('ege-strip', [{
@@ -75,7 +102,7 @@ test('hexField places ring one and layers, then warns and falls under a standing
       near(transform.pos[0], rootX + layout[index][0])
       near(transform.pos[1], rootY)
       near(transform.pos[2], rootZ + layout[index][1])
-      // The disc is drawn at the centre spacing (flatM / 2 = 1 m radius), not at pointM / 12.
+      // The disc is drawn at the source radius pointM / 2 (hexField.ts:76-78).
       const render = rec(round, 'ege.render', scene.index(`feature/hex/hex/${index}`))
       near(render.params[0], 1)
       near(render.params[1], 0.05)

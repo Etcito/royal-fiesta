@@ -79,8 +79,8 @@ export function rf_feature_hex_field_pre(): void {
       const render = getComponent<EgeRender>(entity, EgeRender.ID, EgeRender.SIZE)
       render.color = HEX_BASE_COLOR
       render.visible = 1
-      // Same radius as the emitter: flat_m / 2, the centre spacing, so discs touch (hexField.ts emitter).
-      render.params_0 = <f32>(feature.flat_m / 2.0)
+      // Same radius as the emitter: point_m / 2, the source's drawn radius (sim hexField.ts:76-78).
+      render.params_0 = <f32>(feature.point_m / 2.0)
       render.params_1 = <f32>(feature.thick_m / 2.0)
       render.params_2 = 0
       render.params_3 = 0

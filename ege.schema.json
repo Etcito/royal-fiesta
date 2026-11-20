@@ -1563,6 +1563,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.carry_item.pre",
+          "kind": "script",
+          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity"],
+          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props"],
+          "emits": []
+        },
+        {
           "system": "rf.feature.hex_field.pre",
           "kind": "script",
           "reads": ["feature", "feature_hex_field", "feature_hex_field_hex"],

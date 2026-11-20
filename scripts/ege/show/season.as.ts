@@ -1,5 +1,5 @@
-import { newRecord, readColumn, setComponent, spawn } from 'ege'
-import { ShowCandidate, ShowSeasonCursor, ShowUsedMap, ShowVote } from '../components.gen'
+import { newRecord, readColumn, setComponent, spawn, tick } from 'ege'
+import { ShowCandidate, ShowPresentation, ShowSeasonCursor, ShowUsedMap, ShowVote } from '../components.gen'
 import {
   Mulberry, ScheduleState, chooseCandidates, commitMap, hasFinal, nextSlotForPlan, readCatalog, readPlan,
   readUsedMaps, reserveFinal, resolveVote,
@@ -101,6 +101,15 @@ export function rf_show_season(): void {
   if (catalog.length == 0) fail('a show season needs show_catalog_entry rows')
   const roundIndex = <i32>cursor.round_index
   const used = readUsedMaps(owner)
+  const presentations = readColumn<ShowPresentation>(ShowPresentation.ID, ShowPresentation.SIZE)
+  if (presentations.count > 1) fail('a rules world has one show_presentation row')
+  // With a presentation row, the season only plans the displayed round while it shows vote.
+  // The scheduler cursor may already describe a later round during results, so it is not enough.
+  if (presentations.count == 1) {
+    const shown = presentations.at(0)
+    if (shown.screen != 0) return
+    if (<i32>shown.round_index != roundIndex) return
+  }
 
   if (cursor.final_map < 0 && roundIndex == 0 && cursor.step == 0 && used.length == 0 &&
       readCandidates(owner, roundIndex).length == 0 && hasFinal(catalog)) {
@@ -131,7 +140,13 @@ export function rf_show_season(): void {
   let selected = candidates[0]
   if (candidates.length > 1) {
     const votes = readVotes(owner, roundIndex)
-    if (votes.length == 0) return
+    if (presentations.count == 1) {
+      // Replacement votes stay open until the stored deadline; abstentions resolve like votes.
+      const shown = presentations.at(0)
+      if (<i32>tick() < <i32>(shown.entered_tick + shown.vote_ticks)) return
+    } else if (votes.length == 0) {
+      return
+    }
     selected = resolveVote(candidates, votes, cursor.rng_state, roundIndex)
   }
 

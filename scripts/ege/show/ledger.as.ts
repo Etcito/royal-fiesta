@@ -1,8 +1,8 @@
 import { Column, despawn, newRecord, readColumn, setComponent, spawn, tick } from 'ege'
 import {
-  EgeZoneInbox, ShowClock, ShowOpeningRank, ShowPending, ShowPublish, ShowResultA, ShowResultB,
-  ShowResultPending, ShowResultSeat, ShowResultTeam, ShowRoundResult, ShowSeasonCursor,
-  ShowTeamContribution,
+  EgeZoneInbox, ShowClock, ShowOpeningRank, ShowPending, ShowPresentation, ShowPublish,
+  ShowResultA, ShowResultB, ShowResultPending, ShowResultSeat, ShowResultTeam, ShowRosterEntry,
+  ShowRoundResult, ShowSeasonCursor, ShowTeamContribution,
 } from '../components.gen'
 import { resolveShowRound, showRoundPoints } from './qualification.as'
 import { advanceCursor, nextSlotForPlan, readCatalog, readPlan, readUsedMaps } from './scheduler.as'
@@ -480,6 +480,90 @@ function scoresDiffer(scores: StaticArray<i32>): bool {
   return false
 }
 
+function sortSeats(values: StaticArray<i32>): void {
+  for (let i: i32 = 1; i < values.length; i++) {
+    const key = values[i]
+    let j = i - 1
+    while (j >= 0 && values[j] > key) {
+      values[j + 1] = values[j]
+      j--
+    }
+    values[j + 1] = key
+  }
+}
+
+function copySeats(values: StaticArray<i32>): StaticArray<i32> {
+  const out = new StaticArray<i32>(values.length)
+  for (let i: i32 = 0; i < values.length; i++) out[i] = values[i]
+  return out
+}
+
+function unionSeats(a: StaticArray<i32>, b: StaticArray<i32>): StaticArray<i32> {
+  const out = new StaticArray<i32>(a.length + b.length)
+  let count: i32 = 0
+  for (let i: i32 = 0; i < a.length; i++) out[count++] = a[i]
+  for (let i: i32 = 0; i < b.length; i++) {
+    if (!containsSeat(out, b[i])) out[count++] = b[i]
+  }
+  const trimmed = new StaticArray<i32>(count)
+  for (let i: i32 = 0; i < count; i++) trimmed[i] = out[i]
+  return trimmed
+}
+
+/** The ascending roster eligible for the next contest: qualified seats rejoined after a replay. */
+function nextRoster(
+  owner: u32, roundIndex: i32, qualified: StaticArray<i32>, disputed: StaticArray<i32> | null,
+  playoffRound: bool, results: Column<ShowRoundResult>,
+): StaticArray<i32> {
+  if (disputed != null) {
+    const only = copySeats(disputed)
+    sortSeats(only)
+    return only
+  }
+  let next = copySeats(qualified)
+  if (playoffRound) {
+    let back = roundIndex - 1
+    while (back >= 0) {
+      let reason: i32 = -1
+      for (let i: u32 = 0; i < results.count; i++) {
+        const row = results.at(i)
+        if (row.owner == owner && <i32>row.index == back) reason = <i32>row.reason
+      }
+      if (reason != <i32>REASON_PLAYOFF) break
+      next = unionSeats(next, storedList(owner, <u32>back, LIST_QUALIFIED))
+      back--
+    }
+  }
+  sortSeats(next)
+  return next
+}
+
+function writeNextRoster(owner: u32, seats: StaticArray<i32>): void {
+  const rows = readColumn<ShowRosterEntry>(ShowRosterEntry.ID, ShowRosterEntry.SIZE)
+  for (let i: u32 = 0; i < rows.count; i++) {
+    const row = rows.at(i)
+    if (row.owner == owner && row.list == 1) despawn(rows.entity(i))
+  }
+  for (let i: i32 = 0; i < seats.length; i++) {
+    const row = newRecord<ShowRosterEntry>(ShowRosterEntry.SIZE)
+    row.owner = owner
+    row.list = 1
+    row.position = <u32>i
+    row.room_seat = <u32>seats[i]
+    setComponent<ShowRosterEntry>(spawn(), ShowRosterEntry.ID, ShowRosterEntry.SIZE, row)
+  }
+}
+
+function rosterCount(owner: u32, list: u32): i32 {
+  const rows = readColumn<ShowRosterEntry>(ShowRosterEntry.ID, ShowRosterEntry.SIZE)
+  let count: i32 = 0
+  for (let i: u32 = 0; i < rows.count; i++) {
+    const row = rows.at(i)
+    if (row.owner == owner && row.list == list) count++
+  }
+  return count
+}
+
 function closeRound(): void {
   const cursors = readColumn<ShowSeasonCursor>(ShowSeasonCursor.ID, ShowSeasonCursor.SIZE)
   if (cursors.count != 1) return
@@ -488,6 +572,14 @@ function closeRound(): void {
   const owner = cursors.entity(0)
   const cursor = cursors.at(0)
   const roundIndex = <i32>cursor.round_index
+  const presentations = readColumn<ShowPresentation>(ShowPresentation.ID, ShowPresentation.SIZE)
+  if (presentations.count > 1) fail('a rules world has one show_presentation row')
+  if (presentations.count == 1) {
+    const shown = presentations.at(0)
+    if (shown.screen != 3 && shown.screen != 4) return
+    if (<i32>shown.round_index != roundIndex) return
+    if (shown.result_index >= 0) return
+  }
   const results = readColumn<ShowRoundResult>(ShowRoundResult.ID, ShowRoundResult.SIZE)
   let previousReason: i32 = -1
   for (let i: u32 = 0; i < results.count; i++) {
@@ -704,6 +796,20 @@ function closeRound(): void {
       row.rank = i + 1
       setComponent<ShowOpeningRank>(spawn(), ShowOpeningRank.ID, ShowOpeningRank.SIZE, row)
     }
+  }
+
+  const next = nextRoster(owner, roundIndex, outcome.qualified, disputedNow, playoffRound, results)
+  writeNextRoster(owner, next)
+  if (presentations.count == 1) {
+    const shown = presentations.at(0)
+    const played = rosterCount(owner, 0)
+    shown.tick = <u32>now
+    shown.screen = 5
+    shown.entered_tick = <u32>now
+    shown.result_index = <i32>roundIndex
+    if (played > 0) shown.seat_count = <u32>played
+    shown.alive_count = <u32>next.length
+    presentations.write()
   }
 
   if (disputedNow != null) {

@@ -613,6 +613,9 @@ const SEASON_RECORDS = [
   'show_clock',
   'show_hub_state',
   'show_hub_occupant',
+  'show_presentation',
+  'show_roster_entry',
+  'show_lifecycle_input',
 ]
 
 test('season cursor keeps the plan in child rows and carries the schedule rng', async () => {
@@ -771,6 +774,84 @@ test('team contributions, pending results and clock state stay bounded', async (
   assert.equal(clock.size, 36)
 })
 
+test('presentation records encode screens, ordered rosters and host facts below 256 bytes', async () => {
+  const layout = await layoutOf()
+  const presentation = declared(layout, 'components', 'show_presentation')
+  assert.deepEqual(presentation.fields, [
+    ['owner', 'entity', 1],
+    ['tick', 'u32', 1],
+    ['round_index', 'u32', 1],
+    ['screen', 'u32', 1],
+    ['entered_tick', 'u32', 1],
+    ['result_index', 'i32', 1],
+    ['seat_count', 'u32', 1],
+    ['alive_count', 'u32', 1],
+    ['vote_ticks', 'u32', 1],
+    ['results_ticks', 'u32', 1],
+    ['podium_ticks', 'u32', 1],
+  ])
+  assert.equal(presentation.size, 44)
+  assert.ok(presentation.size < 256)
+  const roster = declared(layout, 'components', 'show_roster_entry')
+  assert.deepEqual(roster.fields, [
+    ['owner', 'entity', 1],
+    ['list', 'u32', 1],
+    ['position', 'u32', 1],
+    ['room_seat', 'u32', 1],
+  ])
+  assert.equal(roster.size, 16)
+  const input = declared(layout, 'components', 'show_lifecycle_input')
+  assert.deepEqual(input.fields, [
+    ['owner', 'entity', 1],
+    ['ready_round', 'i32', 1],
+    ['confirmed_tick', 'u32', 1],
+  ])
+  assert.equal(input.size, 12)
+})
+
+test('the rules world schedules presentation after ledger and season with real access', async () => {
+  const layout = await layoutOf()
+  const rules = layout.world_kinds.find(kind => kind.name === 'show_rules')
+  assert.ok(rules)
+  const systems = rules.schedule.map(entry => entry.system)
+  const ledger = systems.indexOf('rf.show.ledger')
+  const season = systems.indexOf('rf.show.season')
+  const presentation = systems.indexOf('rf.show.presentation')
+  assert.ok(ledger >= 0 && season > ledger && presentation > season, systems.join(','))
+  const names = new Map(layout.components.map(component => [component.id, component.name]))
+  const access = (system: string, key: 'reads' | 'writes'): string[] => {
+    const entry = rules.schedule.find(candidate => candidate.system === system)
+    assert.ok(entry, system)
+    return entry[key].map(id => names.get(id) as string)
+  }
+  for (const record of ['show_presentation', 'show_roster_entry']) {
+    assert.ok(access('rf.show.ledger', 'reads').includes(record), `ledger reads ${record}`)
+    assert.ok(access('rf.show.ledger', 'writes').includes(record), `ledger writes ${record}`)
+  }
+  assert.ok(access('rf.show.season', 'reads').includes('show_presentation'))
+  assert.deepEqual(access('rf.show.presentation', 'reads'), [
+    'show_presentation',
+    'show_lifecycle_input',
+    'show_clock',
+    'show_round_result',
+    'show_roster_entry',
+    'show_used_map',
+    'show_result_a',
+    'show_result_b',
+    'show_team_contribution',
+    'show_pending',
+  ])
+  assert.deepEqual(access('rf.show.presentation', 'writes'), [
+    'show_presentation',
+    'show_clock',
+    'show_roster_entry',
+    'show_result_a',
+    'show_result_b',
+    'show_team_contribution',
+    'show_pending',
+  ])
+})
+
 test('hub occupancy and wandering state split the root counts from occupant rows', async () => {
   const layout = await layoutOf()
   const hub = declared(layout, 'components', 'show_hub_state')
@@ -907,6 +988,41 @@ test('season records construct in a world and leave undeclared fields at zero', 
   }
   assert.equal(state.components.show_clock[seat].round_ticks, 0)
   assert.equal(state.components.show_hub_occupant[seat].wander_x, 0)
+})
+
+test('presentation, roster and lifecycle records construct and stay snapshot state', async () => {
+  const { engine, layout, world } = await showProbe({
+    format: 'ege.scene',
+    version: 1,
+    world_kind: 'show_probe',
+    seed: 3,
+    entities: [
+      {
+        components: {
+          show_presentation: {
+            owner: 0, tick: 12, round_index: 1, screen: 0, entered_tick: 4, result_index: -1,
+            seat_count: 60, alive_count: 59, vote_ticks: 300, results_ticks: 90, podium_ticks: 150,
+          },
+          show_lifecycle_input: { owner: 0, ready_round: -1, confirmed_tick: 0 },
+        },
+      },
+      { components: { show_roster_entry: { owner: 0, list: 0, position: 0, room_seat: 31 } } },
+      { components: { show_roster_entry: { owner: 0, list: 0, position: 1, room_seat: 59 } } },
+    ],
+  })
+  const state = readWorldState(engine, world, layout)
+  const root = state.entities[0]
+  const presentation = state.components.show_presentation[root]
+  assert.equal(presentation.screen, 0)
+  assert.equal(presentation.round_index, 1)
+  assert.equal(presentation.entered_tick, 4)
+  assert.equal(presentation.result_index, -1)
+  assert.equal(presentation.seat_count, 60)
+  assert.equal(presentation.alive_count, 59)
+  assert.equal(presentation.vote_ticks, 300)
+  assert.equal(state.components.show_lifecycle_input[root].ready_round, -1)
+  const seats = [1, 2].map(index => state.components.show_roster_entry[state.entities[index]])
+  assert.deepEqual(seats.map(row => [row.list, row.position, row.room_seat]), [[0, 0, 31], [0, 1, 59]])
 })
 
 const BOT_RECORDS = [
@@ -2112,7 +2228,7 @@ test('recordShowEvent publishes scores and per-publisher team contributions unde
 })
 
 const SHOW_PLAYERS: Record<string, number> = { round: 8, show_seat: 8, show_field: 8, show_rules: 0, show_hub: 1 }
-const SHOW_SCRIPT_SYSTEMS = ['rf.show.clock', 'rf.show.controls', 'rf.show.bots', 'rf.show.publish', 'rf.show.hub', 'rf.show.ledger', 'rf.show.season']
+const SHOW_SCRIPT_SYSTEMS = ['rf.show.clock', 'rf.show.controls', 'rf.show.bots', 'rf.show.publish', 'rf.show.hub', 'rf.show.ledger', 'rf.show.season', 'rf.show.presentation']
 const SEAT_RESULT_GRANT = ['show_result_a', 'show_result_b']
 
 test('the complete show schedules order controls and bots before character pre and publication after the rules', async () => {
@@ -2133,7 +2249,7 @@ test('the complete show schedules order controls and bots before character pre a
   const hub = names('show_hub')
   assert.ok(hub.indexOf('rf.show.hub') < hub.indexOf('rf.character.pre'))
   assert.ok(!hub.includes('rf.seat.rules') && !hub.includes('rf.show.publish') && !hub.includes('rf.round.clock'))
-  assert.deepEqual(names('show_rules'), ['ege.zone.tally', 'rf.show.ledger', 'rf.show.season'])
+  assert.deepEqual(names('show_rules'), ['ege.zone.tally', 'rf.show.ledger', 'rf.show.season', 'rf.show.presentation'])
 })
 
 test('the seat rules and shared event writer have result and identity access in every world that runs them', () => {

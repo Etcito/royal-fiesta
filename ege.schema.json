@@ -1688,6 +1688,39 @@
         { "name": "ready_at", "type": "i32" },
         { "name": "boost_until", "type": "i32" }
       ]
+    },
+    {
+      "name": "show_presentation",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "tick", "type": "u32" },
+        { "name": "round_index", "type": "u32" },
+        { "name": "screen", "type": "u32" },
+        { "name": "entered_tick", "type": "u32" },
+        { "name": "result_index", "type": "i32" },
+        { "name": "seat_count", "type": "u32" },
+        { "name": "alive_count", "type": "u32" },
+        { "name": "vote_ticks", "type": "u32" },
+        { "name": "results_ticks", "type": "u32" },
+        { "name": "podium_ticks", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_roster_entry",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "list", "type": "u32" },
+        { "name": "position", "type": "u32" },
+        { "name": "room_seat", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_lifecycle_input",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "ready_round", "type": "i32" },
+        { "name": "confirmed_tick", "type": "u32" }
+      ]
     }
   ],
   "resources": [
@@ -2861,15 +2894,22 @@
         {
           "system": "rf.show.ledger",
           "kind": "script",
-          "reads": ["ege.zone.inbox", "show_pending", "show_publish", "show_result_a", "show_result_b", "show_team_contribution", "show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_used_map", "show_clock", "show_round_result", "show_result_seat", "show_result_team", "show_result_pending", "show_opening_rank"],
-          "writes": ["show_pending", "show_publish", "show_result_a", "show_result_b", "show_team_contribution", "show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_used_map", "show_clock", "show_round_result", "show_result_seat", "show_result_team", "show_result_pending", "show_opening_rank"],
+          "reads": ["ege.zone.inbox", "show_pending", "show_publish", "show_result_a", "show_result_b", "show_team_contribution", "show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_used_map", "show_clock", "show_round_result", "show_result_seat", "show_result_team", "show_result_pending", "show_opening_rank", "show_presentation", "show_roster_entry"],
+          "writes": ["show_pending", "show_publish", "show_result_a", "show_result_b", "show_team_contribution", "show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_used_map", "show_clock", "show_round_result", "show_result_seat", "show_result_team", "show_result_pending", "show_opening_rank", "show_presentation", "show_roster_entry"],
           "emits": []
         },
         {
           "system": "rf.show.season",
           "kind": "script",
-          "reads": ["show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_candidate", "show_vote", "show_used_map"],
+          "reads": ["show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_candidate", "show_vote", "show_used_map", "show_presentation"],
           "writes": ["show_season_cursor", "show_candidate", "show_used_map"],
+          "emits": []
+        },
+        {
+          "system": "rf.show.presentation",
+          "kind": "script",
+          "reads": ["show_presentation", "show_lifecycle_input", "show_clock", "show_round_result", "show_roster_entry", "show_used_map", "show_result_a", "show_result_b", "show_team_contribution", "show_pending"],
+          "writes": ["show_presentation", "show_clock", "show_roster_entry", "show_result_a", "show_result_b", "show_team_contribution", "show_pending"],
           "emits": []
         }
       ]

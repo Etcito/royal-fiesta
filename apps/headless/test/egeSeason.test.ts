@@ -14,9 +14,10 @@ import { readRepoText } from '../src/files.ts'
 const PROBE_WORLD = 'season_probe'
 const CLOCK_WORLD = 'show_clock_probe'
 const HUB_WORLD = 'show_hub_probe'
+const RULES_PROBE_WORLD = 'show_rules_probe'
 const PROBE_FILE = 'probe/season.as.ts'
 const PROBE_TEXT = `import { getComponent, isNull, newRecord, readColumn, readResource, setComponent, spawn, tick } from 'ege'
-import { Character, EgeTransform, ProbeOut, SeasonParamsRes, ShowHubOccupant, ShowSeasonCursor } from '../components.gen'
+import { Character, EgeTransform, ProbeOut, SeasonParamsRes, ShowHubOccupant, ShowSeasonCursor, ShowVote } from '../components.gen'
 import {
   Mulberry, RoundSlot, ScheduleState, advanceCursor, chooseCandidates, nextSlotForPlan, nextTarget,
   readCatalog, readPlan, readUsedMaps, resolveVote,
@@ -136,6 +137,25 @@ export function rf_season_probe(): void {
     }
   }
 }
+
+export function rf_vote_probe(): void {
+  // Replaces one displayed-round vote each tick: an early choice 2, then choice 0 from tick 2.
+  const p = readResource<SeasonParamsRes>(SeasonParamsRes.ID, SeasonParamsRes.SIZE)
+  const votes = readColumn<ShowVote>(ShowVote.ID, ShowVote.SIZE)
+  for (let i: u32 = 0; i < votes.count; i++) {
+    const row = votes.at(i)
+    if (<i32>row.round_index != 0 || <i32>row.seat != <u32>p.a) continue
+    row.choice = tick() >= 2 ? 0 : 2
+    votes.write()
+    return
+  }
+  const row = newRecord<ShowVote>(ShowVote.SIZE)
+  row.owner = 0
+  row.round_index = 0
+  row.seat = <u32>p.a
+  row.choice = tick() >= 2 ? 0 : 2
+  setComponent<ShowVote>(spawn(), ShowVote.ID, ShowVote.SIZE, row)
+}
 `
 
 const STAGE = { R1: 1, R2: 2, R3: 4, R4: 8, final: 16 } as const
@@ -240,11 +260,21 @@ function probeSchema(base: string): string {
       kind: 'script',
       reads: [
         'show_season_cursor', 'show_plan_entry', 'show_catalog_entry', 'show_candidate', 'show_vote',
-        'show_used_map', 'season_params',
+        'show_used_map', 'show_presentation', 'season_params',
       ],
       writes: ['show_season_cursor', 'show_candidate', 'show_used_map', 'probe_out'],
       emits: [],
     }],
+  })
+  // The production rules schedule with one probe that replaces the displayed vote each tick.
+  const rules = schema.world_kinds.find((kind: any) => kind.name === 'show_rules')
+  schema.world_kinds.push({
+    name: RULES_PROBE_WORLD,
+    players: 0,
+    schedule: [
+      ...structuredClone(rules.schedule),
+      { system: 'rf.vote_probe', kind: 'script', reads: ['show_vote', 'season_params'], writes: ['show_vote'], emits: [] },
+    ],
   })
   // Test-local show schedules: only the systems this card implements plus the existing character
   // and physics steps, so the show clock and hub run without G6 round closure.
@@ -1007,5 +1037,447 @@ test('hub wandering keeps its seeded target and rng in schema state across resto
     rig.engine.freeWorld(restored)
   } finally {
     rig.engine.freeWorld(world)
+  }
+})
+
+// ---- production show_rules presentation lifecycle (Q7) -------------------------------------------
+
+const RULES_WORLD = 'show_rules'
+const SCREEN = { vote: 0, loading: 1, intro: 2, playing: 3, overtime: 4, results: 5, podium: 6, done: 7 } as const
+
+function rosterEntities(list: number, seats: number[]): any[] {
+  return seats.map((room, position) => ({
+    components: { show_roster_entry: { owner: 0, list, position, room_seat: room } },
+  }))
+}
+
+function rulesResult(over: Record<string, number> = {}): any {
+  return {
+    components: {
+      show_round_result: {
+        owner: 0, index: 0, map: 0, course: 0, kind: 0, final: 0, playoff: 0, end_tick: 4,
+        reason: 0, champion: -1, ranking_count: 1, qualified_count: 1, eliminated_count: 0, team_count: 0,
+        ...over,
+      },
+    },
+  }
+}
+
+interface RulesOptions {
+  presentation?: Record<string, number>
+  lifecycle?: Record<string, number>
+  clock?: Record<string, number>
+  cursor?: Record<string, number>
+  used?: number[]
+  votes?: { seat: number; choice: number }[]
+  roster?: number[]
+  next?: number[]
+  plan?: number[]
+  results?: any[]
+  extra?: any[]
+}
+
+function rulesScene(options: RulesOptions = {}): any[] {
+  const roster = options.roster ?? Array.from({ length: 60 }, (_, room) => room)
+  const next = options.next ?? roster
+  return [
+    cursorEntity({ round_index: 0, alive: roster.length, ...(options.cursor ?? {}) }),
+    ...planEntities(options.plan ?? DEFAULT_PLAN),
+    ...catalogEntities(),
+    ...usedEntities(options.used ?? []),
+    {
+      components: {
+        show_presentation: {
+          owner: 0, tick: 0, round_index: 0, screen: SCREEN.vote, entered_tick: 0, result_index: -1,
+          seat_count: roster.length, alive_count: next.length,
+          vote_ticks: 300, results_ticks: 90, podium_ticks: 150,
+          ...(options.presentation ?? {}),
+        },
+      },
+    },
+    {
+      components: {
+        show_lifecycle_input: { owner: 0, ready_round: -1, confirmed_tick: 0, ...(options.lifecycle ?? {}) },
+      },
+    },
+    {
+      components: {
+        show_clock: {
+          owner: 0, start_tick: -1, end_tick: -1, overtime_end_tick: -1, phase: 0, frozen: 0,
+          intro_ticks: 1, round_ticks: 10, overtime_ticks: 1,
+          ...(options.clock ?? {}),
+        },
+      },
+    },
+    ...rosterEntities(0, roster),
+    ...rosterEntities(1, next),
+    ...(options.votes ?? []).map(vote => ({
+      components: { show_vote: { owner: 0, round_index: 0, seat: vote.seat, choice: vote.choice } },
+    })),
+    ...(options.results ?? []),
+    ...(options.extra ?? []),
+  ]
+}
+
+interface RulesRig {
+  engine: Awaited<ReturnType<typeof loadEngine>>
+  layout: ReturnType<typeof schemaLayout>
+  module: import('@etcito/game-engine/script').ScriptModule
+  host: ScriptHost
+  faults: string[]
+  doc: any
+  world: number
+}
+
+async function rulesRig(options: RulesOptions = {}, worldKind = RULES_WORLD): Promise<RulesRig> {
+  const { engine, layout, wasm } = await setup()
+  const faults: string[] = []
+  const module = await loadScript(engine, wasm, {
+    name: `rf-rules-${moduleSeq++}`,
+    onFault: fault => faults.push(`${fault.system}: ${fault.message}`),
+    onLog: line => faults.push(`log ${line}`),
+  })
+  const doc: any = {
+    format: 'ege.scene', version: 1, world_kind: worldKind, seed: 1, entities: rulesScene(options),
+  }
+  if (worldKind === RULES_PROBE_WORLD) doc.resources = { season_params: { mode: 10, a: 0 } }
+  const world = engine.createWorld(JSON.stringify(doc))
+  return { engine, layout, module, host: new ScriptHost(module), faults, doc, world }
+}
+
+function rulesRows(state: any, name: string): any[] {
+  return Object.values(state?.components?.[name] ?? {}) as any[]
+}
+
+function presentationOf(state: any): any {
+  const rows = rulesRows(state, 'show_presentation')
+  assert.equal(rows.length, 1, 'one show_presentation row')
+  return rows[0]
+}
+
+function rosterOf(state: any, list: number): number[] {
+  return rulesRows(state, 'show_roster_entry')
+    .filter(row => Number(row.list) === list)
+    .sort((a, b) => Number(a.position) - Number(b.position))
+    .map(row => Number(row.room_seat))
+}
+
+function rulesState(rig: RulesRig, world = rig.world): any {
+  return readWorldState(rig.engine, world, rig.layout)
+}
+
+function stepRules(rig: RulesRig, world = rig.world): any {
+  rig.host.stepTick(world, [])
+  assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+  return rulesState(rig, world)
+}
+
+test('the rules world votes to its deadline, loads, and advances the authored clock', async () => {
+  const roster = Array.from({ length: 60 }, (_, room) => room)
+  const rig = await rulesRig({
+    presentation: { vote_ticks: 1 },
+    lifecycle: { ready_round: 0 },
+    clock: { intro_ticks: 1, round_ticks: 10, overtime_ticks: 1 },
+    votes: [{ seat: 0, choice: 1 }],
+    roster,
+  })
+  try {
+    let state = rulesState(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.vote)
+    assert.deepEqual(rosterOf(state, 0), roster)
+    assert.deepEqual(rosterOf(state, 1), roster)
+    assert.equal(rulesRows(state, 'show_used_map').length, 0, 'nothing is committed before the deadline')
+
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.vote, 'the candidates are offered during vote')
+    assert.equal(rulesRows(state, 'show_candidate').length, 3, 'the ordinary round offers three candidates')
+    assert.equal(rulesRows(state, 'show_used_map').length, 0, 'nothing is committed before the deadline')
+
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.loading, 'the deadline commits the voted map and loads')
+    assert.equal(rulesRows(state, 'show_used_map').length, 1)
+    assert.equal(presentationOf(state).round_index, 0, 'the displayed round is separate from the cursor')
+
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.intro, 'matching readiness starts the round clock')
+    const clock = rulesRows(state, 'show_clock')[0]
+    assert.equal(Number(clock.start_tick), 2)
+    assert.equal(Number(clock.end_tick), 2 + 1 + 10)
+    assert.equal(Number(clock.overtime_end_tick), 2 + 1 + 10 + 1)
+
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.playing)
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.playing)
+    assert.equal(rulesRows(state, 'show_used_map').length, 1, 'no duplicate candidate commitment')
+    assert.equal(rulesRows(state, 'show_candidate').length, 3, 'no duplicate candidate rows')
+    assert.equal(rulesRows(state, 'show_round_result').length, 0, 'no closure during play')
+  } finally {
+    rig.engine.freeWorld(rig.world)
+  }
+})
+
+test('a replaced vote before the deadline decides the committed map', async () => {
+  const rig = await rulesRig({ presentation: { vote_ticks: 3 }, lifecycle: { ready_round: 0 } }, RULES_PROBE_WORLD)
+  try {
+    let state = stepRules(rig)
+    const candidates = rulesRows(state, 'show_candidate')
+      .sort((a, b) => Number(a.index) - Number(b.index))
+      .map(row => Number(row.map))
+    assert.equal(candidates.length, 3)
+    state = stepRules(rig)
+    assert.equal(rulesRows(state, 'show_used_map').length, 0, 'the early choice is not committed')
+    state = stepRules(rig)
+    assert.equal(rulesRows(state, 'show_used_map').length, 0, 'the replacement is still before its deadline')
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.loading)
+    const used = rulesRows(state, 'show_used_map').sort((a, b) => Number(a.index) - Number(b.index))
+    assert.deepEqual(used.map(row => Number(row.map)), [candidates[0]], 'the replacement choice wins at the deadline')
+    assert.notEqual(candidates[0], candidates[2])
+  } finally {
+    rig.engine.freeWorld(rig.world)
+  }
+})
+
+test('a round clock past its cap shows overtime until the ledger closes it', async () => {
+  const rig = await rulesRig({
+    presentation: { screen: SCREEN.playing },
+    clock: { start_tick: 0, end_tick: 1, overtime_end_tick: 3, intro_ticks: 0, round_ticks: 1, overtime_ticks: 2 },
+  })
+  try {
+    let state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.playing)
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.overtime)
+    assert.equal(Number(rulesRows(state, 'show_clock')[0].phase), 2)
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.overtime)
+    assert.equal(Number(rulesRows(state, 'show_clock')[0].phase), 2)
+    state = stepRules(rig)
+    assert.equal(Number(rulesRows(state, 'show_clock')[0].phase), 3, 'the overtime boundary freezes the clock')
+    assert.equal(presentationOf(state).screen, SCREEN.overtime, 'overtime stays until a result exists')
+  } finally {
+    rig.engine.freeWorld(rig.world)
+  }
+})
+
+function finishedSeat(room: number, finished: boolean): any {
+  return {
+    components: {
+      show_result_a: {
+        seat: room, status: finished ? 2 : 1, finish_tick: finished ? 5 + room : -1, finish_sub: -1,
+        lap: 0, stage: -1, route_mm: 0, falls: 0, score: 0, last_score_tick: -1,
+      },
+      show_result_b: {
+        hold_ticks: 0, possessing: 0, last_acquire_tick: -1, matches: 0, cross_ticks: 0,
+        out_tick: -1, out_sub: -1, team: 0, opening_rank: 0,
+      },
+    },
+  }
+}
+
+test('the production rules schedule closes a played round and installs its qualified roster', async () => {
+  const roster = [0, 1, 2, 3]
+  const rig = await rulesRig({
+    presentation: { vote_ticks: 1, results_ticks: 1 },
+    lifecycle: { ready_round: 0, confirmed_tick: 1000 },
+    clock: { intro_ticks: 1, round_ticks: 5, overtime_ticks: 1 },
+    plan: [4, 2, 1],
+    roster,
+    next: roster,
+    extra: [0, 1, 2, 3].map(room => finishedSeat(room, room < 2)),
+  })
+  try {
+    stepRules(rig)
+    stepRules(rig)
+    stepRules(rig)
+    let state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.playing)
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.results, 'the ledger closes the played round')
+    assert.equal(rulesRows(state, 'show_round_result').length, 1)
+    assert.equal(Number(rulesRows(state, 'show_round_result')[0].reason), 0, 'the target closes the race')
+    assert.equal(presentationOf(state).result_index, 0)
+    assert.deepEqual(rosterOf(state, 0), [0, 1, 2, 3], 'the played roster is frozen')
+    assert.deepEqual(rosterOf(state, 1), [0, 1], 'the qualified seats are the next roster')
+    state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.vote)
+    assert.equal(presentationOf(state).round_index, 1)
+    assert.equal(presentationOf(state).result_index, -1)
+    assert.deepEqual(rosterOf(state, 0), [0, 1], 'the next contest installs the qualified roster')
+    assert.deepEqual(rosterOf(state, 1), [0, 1])
+    assert.equal(rulesRows(state, 'show_result_a').length, 0, 'the next contest starts from fresh publishers')
+    assert.equal(rulesRows(state, 'show_round_result').length, 1, 'history is preserved')
+  } finally {
+    rig.engine.freeWorld(rig.world)
+  }
+})
+
+test('the vote deadline resolves abstentions with no human vote', async () => {
+  const rig = await rulesRig({ presentation: { vote_ticks: 1 }, lifecycle: { ready_round: 0 } })
+  try {
+    stepRules(rig)
+    const state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.loading)
+    assert.equal(rulesRows(state, 'show_used_map').length, 1)
+  } finally {
+    rig.engine.freeWorld(rig.world)
+  }
+})
+
+test('stale readiness keeps loading and a matching round starts intro', async () => {
+  const stale = await rulesRig({ presentation: { screen: SCREEN.loading }, lifecycle: { ready_round: 7 } })
+  try {
+    let state = stepRules(stale)
+    state = stepRules(stale)
+    assert.equal(presentationOf(state).screen, SCREEN.loading, 'a stale acknowledgement cannot release loading')
+    assert.equal(Number(rulesRows(state, 'show_clock')[0].start_tick), -1, 'the round clock is not initialized')
+  } finally {
+    stale.engine.freeWorld(stale.world)
+  }
+  const matching = await rulesRig({ presentation: { screen: SCREEN.loading }, lifecycle: { ready_round: 0 } })
+  try {
+    const state = stepRules(matching)
+    assert.equal(presentationOf(state).screen, SCREEN.intro)
+    assert.equal(Number(rulesRows(state, 'show_clock')[0].start_tick), 0)
+  } finally {
+    matching.engine.freeWorld(matching.world)
+  }
+})
+
+test('results wait for a strictly confirmed result and a winning champion reaches terminal done', async () => {
+  const result = () => rulesResult({ end_tick: 3, champion: 0, ranking_count: 1, qualified_count: 1 })
+  const atBoundary = await rulesRig({
+    presentation: { screen: SCREEN.results, entered_tick: 0, result_index: 0, results_ticks: 1 },
+    lifecycle: { confirmed_tick: 3 },
+    results: [result()],
+  })
+  try {
+    let state = stepRules(atBoundary)
+    state = stepRules(atBoundary)
+    assert.equal(presentationOf(state).screen, SCREEN.results, 'confirmedTick == endTick never releases results')
+    assert.equal(Number(rulesRows(state, 'show_round_result')[0].champion), 0)
+  } finally {
+    atBoundary.engine.freeWorld(atBoundary.world)
+  }
+  const afterBoundary = await rulesRig({
+    presentation: {
+      screen: SCREEN.results, entered_tick: 0, result_index: 0, results_ticks: 1, podium_ticks: 1,
+    },
+    lifecycle: { confirmed_tick: 4 },
+    results: [result()],
+  })
+  try {
+    let state = stepRules(afterBoundary)
+    state = stepRules(afterBoundary)
+    assert.equal(presentationOf(state).screen, SCREEN.podium, 'confirmedTick == endTick + 1 releases results')
+    state = stepRules(afterBoundary)
+    assert.equal(presentationOf(state).screen, SCREEN.done, 'the winning champion ends the show')
+    state = stepRules(afterBoundary)
+    assert.equal(presentationOf(state).screen, SCREEN.done, 'done is terminal')
+  } finally {
+    afterBoundary.engine.freeWorld(afterBoundary.world)
+  }
+})
+
+test('leaving results installs the sparse next roster and clears the previous cumulative rows', async () => {
+  const stale = [
+    { components: { show_result_a: { seat: 31, status: 1 } } },
+    { components: { show_team_contribution: { owner: 0, feature: 1, team: 0, value: 9, tick: 1 } } },
+  ]
+  const rig = await rulesRig({
+    presentation: { screen: SCREEN.results, entered_tick: 0, result_index: 0, results_ticks: 1 },
+    lifecycle: { confirmed_tick: 6 },
+    next: [31, 59],
+    results: [rulesResult({ end_tick: 5 })],
+    extra: stale,
+  })
+  try {
+    let state = stepRules(rig)
+    assert.equal(presentationOf(state).screen, SCREEN.results)
+    state = stepRules(rig)
+    const presentation = presentationOf(state)
+    assert.equal(presentation.screen, SCREEN.vote)
+    assert.equal(presentation.round_index, 1)
+    assert.equal(presentation.result_index, -1)
+    assert.equal(presentation.seat_count, 2)
+    assert.equal(presentation.alive_count, 2)
+    assert.deepEqual(rosterOf(state, 0), [31, 59])
+    assert.deepEqual(rosterOf(state, 0), rosterOf(state, 1))
+    assert.equal(rulesRows(state, 'show_result_a').length, 0, 'stale cumulative rows are cleared')
+    assert.equal(rulesRows(state, 'show_team_contribution').length, 0)
+    assert.equal(rulesRows(state, 'show_season_cursor')[0].round_index, 0, 'the cursor is not advanced by the screen')
+  } finally {
+    rig.engine.freeWorld(rig.world)
+  }
+})
+
+test('a rules snapshot resumes the same deadlines, screen, roster order and result', async () => {
+  const scenarios: { name: string; options: RulesOptions }[] = [
+    { name: 'vote', options: { presentation: { vote_ticks: 2 }, votes: [{ seat: 0, choice: 2 }] } },
+    { name: 'loading', options: { presentation: { screen: SCREEN.loading }, lifecycle: { ready_round: 0 } } },
+    {
+      name: 'results',
+      options: {
+        presentation: { screen: SCREEN.results, entered_tick: 0, result_index: 0, results_ticks: 1 },
+        lifecycle: { confirmed_tick: 6 },
+        next: [31, 59],
+        results: [rulesResult({ end_tick: 5 })],
+      },
+    },
+    { name: 'podium', options: { presentation: { screen: SCREEN.podium, entered_tick: 0, podium_ticks: 2 } } },
+  ]
+  for (const scenario of scenarios) {
+    const rig = await rulesRig(scenario.options)
+    const restored = rig.engine.createWorld(JSON.stringify(rig.doc))
+    try {
+      const saved = rig.engine.snapshot(rig.world).slice()
+      rig.engine.restore(restored, saved)
+      assert.equal(rulesState(rig, restored).tick, rulesState(rig).tick, scenario.name)
+      let original = rulesState(rig)
+      let replay = rulesState(rig, restored)
+      for (let tick = 0; tick < 3; tick++) {
+        original = stepRules(rig)
+        rig.host.stepTick(restored, [])
+        assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+        replay = rulesState(rig, restored)
+        assert.deepEqual(
+          [presentationOf(replay).screen, presentationOf(replay).round_index,
+            presentationOf(replay).entered_tick, presentationOf(replay).result_index],
+          [presentationOf(original).screen, presentationOf(original).round_index,
+            presentationOf(original).entered_tick, presentationOf(original).result_index],
+          `${scenario.name} tick ${tick}`,
+        )
+        assert.deepEqual(rosterOf(replay, 0), rosterOf(original, 0), `${scenario.name} roster ${tick}`)
+        assert.deepEqual(rosterOf(replay, 1), rosterOf(original, 1), `${scenario.name} next roster ${tick}`)
+        const used = (state: any) => rulesRows(state, 'show_used_map').map(row => Number(row.map))
+        assert.deepEqual(used(replay), used(original), `${scenario.name} maps ${tick}`)
+        assert.deepEqual(
+          rulesRows(replay, 'show_round_result').map(row => Number(row.champion)),
+          rulesRows(original, 'show_round_result').map(row => Number(row.champion)),
+          `${scenario.name} results ${tick}`,
+        )
+        assert.equal(
+          Number(rulesRows(replay, 'show_season_cursor')[0].rng_state),
+          Number(rulesRows(original, 'show_season_cursor')[0].rng_state),
+          `${scenario.name} candidate rng ${tick}`,
+        )
+        assert.deepEqual(
+          rulesRows(replay, 'show_candidate').map(row => Number(row.map)),
+          rulesRows(original, 'show_candidate').map(row => Number(row.map)),
+          `${scenario.name} candidates ${tick}`,
+        )
+      }
+      const savedClock = JSON.stringify(rulesRows(rulesState(rig), 'show_clock').map(row => ({
+        start: row.start_tick, end: row.end_tick, overtime: row.overtime_end_tick,
+      })))
+      const replayClock = JSON.stringify(rulesRows(replay, 'show_clock').map(row => ({
+        start: row.start_tick, end: row.end_tick, overtime: row.overtime_end_tick,
+      })))
+      assert.equal(replayClock, savedClock, `${scenario.name} clock deadlines`)
+    } finally {
+      rig.engine.freeWorld(restored)
+      rig.engine.freeWorld(rig.world)
+    }
   }
 })

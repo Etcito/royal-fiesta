@@ -13,6 +13,7 @@ const LEDGER_WORLD = 'cumulative_ledger_probe'
 const CLOSURE_ACCESS = [
   'show_season_cursor', 'show_plan_entry', 'show_catalog_entry', 'show_used_map', 'show_clock',
   'show_round_result', 'show_result_seat', 'show_result_team', 'show_result_pending', 'show_opening_rank',
+  'show_presentation', 'show_roster_entry',
 ]
 const PROBE_FILE = 'probe/qualification.as.ts'
 const PROBE_TEXT = `import { entityAt, entityCount, newRecord, readResource, setComponent, spawn } from 'ege'
@@ -1174,6 +1175,18 @@ test('survival closes at target, at all-fell and at overtime end', async () => {
   assert.equal(resultsOf(wait.state)[0].end_tick, CAP + OVERTIME)
 })
 
+test('a disputed round publishes only the disputed seats for the replay', async () => {
+  const seats = seatSet(room => room < 6
+    ? { a: { status: 3 }, b: { out_tick: 20, out_sub: 7 } }
+    : { a: { status: 3 }, b: { out_tick: 1 + room, out_sub: 0 } })
+  const { state } = await closeWith(closureEntities({ kind: 1, seats }))
+  assert.equal(resultsOf(state)[0].reason, REASONS.playoff)
+  const entries = rowsOf(state, 'show_roster_entry')
+    .filter(row => Number(row.list) === 1)
+    .sort((a, b) => Number(a.position) - Number(b.position))
+  assert.deepEqual(entries.map(row => Number(row.room_seat)), [0, 1, 2, 3, 4, 5])
+})
+
 test('a survival playoff replays and settles by positive opening rank, advancing the cursor once', async () => {
   const seats = seatSet(room => room < 6
     ? { a: { status: 3 }, b: { out_tick: 20, out_sub: 7, opening_rank: [3, 1, 6, 2, 5, 4][room] } }
@@ -1186,8 +1199,44 @@ test('a survival playoff replays and settles by positive opening rank, advancing
   assert.equal(second.reason, REASONS.allFell)
   assert.deepEqual(listOf(state, 1, 1), [1, 3, 0, 5], 'opening ranks 1,2,3,4 qualify in rank order')
   assert.deepEqual(listOf(state, 1, 2).sort(), [2, 4])
+  const entries = rowsOf(state, 'show_roster_entry')
+    .filter(row => Number(row.list) === 1)
+    .sort((a, b) => Number(a.position) - Number(b.position))
+  assert.deepEqual(entries.map(row => Number(row.room_seat)), [0, 1, 3, 5],
+    'the replay roster rejoins the previously qualified seats')
   const cursor = rowsOf(state, 'show_season_cursor')[0]
   assert.deepEqual([cursor.round_index, cursor.step, cursor.alive], [2, 0, 4], 'a playoff keeps the nominal step')
+})
+
+test('a cut writes the ascending qualified roster for the next contest', async () => {
+  const rooms = Array.from({ length: 16 }, (_, room) => room)
+  const seats = seatSet(room => room < 12
+    ? { a: { status: 2, finish_tick: 5 + room, finish_sub: 0 } }
+    : {}, rooms)
+  const { state } = await closeWith(closureEntities({
+    kind: 0, plan: [16, 8, 1], step: 1, alive: 16, used: [0], seats,
+  }))
+  const [result] = resultsOf(state)
+  assert.equal(result.reason, REASONS.target)
+  assert.deepEqual(listOf(state, 0, 1), Array.from({ length: 12 }, (_, room) => room))
+  assert.equal(rowsOf(state, 'show_season_cursor')[0].alive, 12)
+})
+
+test('a closed round does not close again or duplicate its roster', async () => {
+  const seats = seatSet(room => room < 4 ? { a: { status: 2, finish_tick: 5 + room } } : {})
+  const { engine, layout, host, faults } = await worldHost('rf-close-twice')
+  const world = engine.createWorld(JSON.stringify(sceneOf(LEDGER_WORLD, closureEntities({ kind: 0, seats }))))
+  try {
+    for (let tick = 0; tick < 6; tick++) host.stepTick(world, [])
+    assert.deepEqual(faults, [])
+    const state = readWorldState(engine, world, layout)
+    assert.equal(resultsOf(state).length, 1)
+    assert.equal(rowsOf(state, 'show_used_map').length, 1)
+    assert.equal(listOf(state, 0, 1).length, 4)
+    assert.equal(rowsOf(state, 'show_result_pending').length, 1)
+  } finally {
+    engine.freeWorld(world)
+  }
 })
 
 test('a team round closes on a non-tied cap, with the winning team ranked first', async () => {

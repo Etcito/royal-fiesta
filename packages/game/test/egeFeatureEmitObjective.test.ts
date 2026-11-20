@@ -458,3 +458,91 @@ test('bank scene builds a world with only the root and visual entities', async (
   })
   assert.deepEqual(inside, [])
 })
+
+const captureDemo: FeatureSpec = {
+  id: 'capture-demo', kind: 'captureZone', params: { center: [2, 1, 30], half: [4, 2, 4], captureS: 3 },
+}
+
+test('captureZone records carry the source box, capture seconds and initial state in order', () => {
+  const root = layoutOf('feature_capture_zone')
+  assert.deepEqual(root.fields, [
+    ['center', 'f64', 3], ['half', 'f64', 3], ['capture_s', 'f64', 1], ['owner', 'i32', 1],
+    ['progress_team', 'i32', 1], ['progress', 'u32', 1], ['owned_ticks', 'u32', 1],
+  ])
+  assert.ok(root.size <= 256, `feature_capture_zone is ${root.size} bytes`)
+  const visual = layoutOf('feature_capture_zone_visual')
+  assert.deepEqual(visual.fields, [['owner', 'u32', 1], ['index', 'u32', 1]])
+  assert.ok(visual.size <= 256, `feature_capture_zone_visual is ${visual.size} bytes`)
+})
+
+test('captureZone emits a bodyless root with neutral ownership and one floor-disc visual child', async () => {
+  const input = await inputWith([captureDemo])
+  const emitted = FEATURE_EMITTERS.captureZone(captureDemo, ctxOf(input, 3))
+  assert.equal(emitted.root.name, 'feature/capture-demo')
+  assert.equal(emitted.root.body, undefined)
+  assert.equal(emitted.root.colliders, undefined)
+  assert.deepEqual(emitted.root.components?.feature, { kind: 18, index: 3, salt: 0x103 })
+  assert.deepEqual(emitted.root.components?.feature_capture_zone, {
+    center: [2, 1, 30], half: [4, 2, 4], capture_s: 3,
+    owner: -1, progress_team: -1, progress: 0, owned_ticks: 0,
+  })
+  assert.deepEqual(emitted.root.components?.['ege.transform'], { pos: [2, 1, 30], rot: [0, 0, 0, 1] })
+  assert.equal(emitted.children.length, 1)
+  const visual = emitted.children[0]!
+  assert.equal(visual.name, 'feature/capture-demo/visual/0')
+  assert.equal(visual.body, undefined)
+  assert.equal(visual.colliders, undefined)
+  assert.deepEqual(visual.components?.feature_capture_zone_visual, { owner: 3, index: 0 })
+  assert.deepEqual(visual.components?.['ege.transform'], { pos: [2, 1, 30], rot: [0, 0, 0, 1] })
+  assert.deepEqual(visual.components?.['ege.render'], {
+    shape: 4, color: 0xF2E6D0, visible: 1, params: [8, 2, 0, 0],
+  })
+})
+
+test('captureZone stores capture_s in seconds at both source range endpoints', async () => {
+  const input = await inputWith([captureDemo])
+  const ctx = ctxOf(input, 0)
+  for (const captureS of [0.5, 60]) {
+    const spec: FeatureSpec = { ...captureDemo, params: { ...captureDemo.params, captureS } }
+    const emitted = FEATURE_EMITTERS.captureZone(spec, ctx)
+    assert.equal(emitted.root.components?.feature_capture_zone?.capture_s, captureS)
+  }
+})
+
+test('captureZone refuses missing or out-of-range capture seconds, boxes and half extents', async () => {
+  const input = await inputWith([captureDemo])
+  const ctx = ctxOf(input, 0)
+  const refused = (params: Record<string, unknown>, message: string) => {
+    const bad = { ...captureDemo, params } as FeatureSpec
+    assert.throws(() => FEATURE_EMITTERS.captureZone(bad, ctx),
+      (error: unknown) => error instanceof RefusalError && error.message.includes(message))
+  }
+  refused({ center: [2, 1, 30], half: [4, 2, 4] }, '/captureS: missing captureS')
+  refused({ ...captureDemo.params, captureS: 0.49 }, '/captureS: expected captureS as a finite number in 0.5..60 s')
+  refused({ ...captureDemo.params, captureS: 61 }, '/captureS: expected captureS as a finite number in 0.5..60 s')
+  refused({ ...captureDemo.params, center: undefined }, '/center: missing center')
+  refused({ ...captureDemo.params, half: [4, 0, 4] }, '/half: expected half extents > 0')
+})
+
+test('captureZone scene builds a world with the root and its visual after it', async () => {
+  const input = await inputWith([captureDemo])
+  const scene = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(scene.text) >= 1)
+  assert.equal(scene.index('feature/capture-demo/visual/0'), scene.index('feature/capture-demo') + 1)
+  const root = scene.scene.entities[scene.index('feature/capture-demo')]
+  assert.equal(root?.body, undefined)
+  const visual = scene.scene.entities[scene.index('feature/capture-demo/visual/0')]
+  assert.equal(visual?.body, undefined)
+  assert.equal(visual?.colliders, undefined)
+})
+
+test('captureZone visual owner stays the course feature index while the root has no team owner', async () => {
+  const input = await inputWith([captureDemo])
+  const emitted = FEATURE_EMITTERS.captureZone(captureDemo, ctxOf(input, 0))
+  assert.deepEqual(emitted.root.components?.feature, { kind: 18, index: 0, salt: 0x100 })
+  assert.equal(emitted.root.components?.feature_capture_zone?.owner, -1)
+  assert.equal(emitted.root.components?.feature_capture_zone?.progress_team, -1)
+  assert.equal(emitted.children.length, 1)
+  assert.deepEqual(emitted.children[0]?.components?.feature_capture_zone_visual, { owner: 0, index: 0 })
+  assert.equal(emitted.children[0]?.components?.['ege.render']?.visible, 1)
+})

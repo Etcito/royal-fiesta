@@ -1195,6 +1195,25 @@
       ]
     },
     {
+      "name": "feature_capture_zone",
+      "fields": [
+        { "name": "center", "type": "f64", "count": 3 },
+        { "name": "half", "type": "f64", "count": 3 },
+        { "name": "capture_s", "type": "f64" },
+        { "name": "owner", "type": "i32" },
+        { "name": "progress_team", "type": "i32" },
+        { "name": "progress", "type": "u32" },
+        { "name": "owned_ticks", "type": "u32" }
+      ]
+    },
+    {
+      "name": "feature_capture_zone_visual",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "index", "type": "u32" }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

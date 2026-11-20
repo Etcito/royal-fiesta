@@ -2037,13 +2037,15 @@
             "ege.mover",
             "surface",
             "ege.mech.lever",
-            "show_control"
+            "show_control",
+            "show_character_ref"
           ],
           "writes": [
             "character",
             "ege.velocity",
             "ege.body_props",
-            "ege.mech.grab"
+            "ege.mech.grab",
+            "show_character_ref"
           ],
           "emits": []
         },

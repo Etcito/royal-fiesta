@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url'
 import { loadEngine } from '@etcito/game-engine'
 import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
-import { collectRfScripts, rfCompiler } from '../egeScripts.ts'
+import { generateComponents } from '@etcito/game-engine-compile'
+import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../egeScripts.ts'
 
 const SCHEMA = fileURLToPath(new URL('../../ege.schema.json', import.meta.url))
+const NO_ENTITY = 0xffffffff
 
 const SCHEDULE = [
   'ege.movers',
@@ -54,6 +56,19 @@ const SCHEDULE = [
   'rf.seat.rules',
 ]
 
+// The rf.character.pre access lists of the round world: the G6 lists, plus show_control (read) and
+// show_character_ref (read and write). The probe below copies the production entry itself.
+const CHARACTER_PRE_READS = [
+  'seat',
+  'ege.transform',
+  'ege.mover',
+  'surface',
+  'ege.mech.lever',
+  'show_control',
+  'show_character_ref',
+]
+const CHARACTER_PRE_WRITES = ['character', 'ege.velocity', 'ege.body_props', 'ege.mech.grab', 'show_character_ref']
+
 async function layoutOf() {
   const engine = await loadEngine()
   engine.setSchema(readFileSync(SCHEMA, 'utf8'))
@@ -99,14 +114,20 @@ test('world kind round has 8 players and the schedule in rank order', async () =
   for (const entry of round.schedule) {
     if (entry.kind === 'script') assert.ok(entry.system.startsWith('rf.'), entry.system)
   }
+  const names = new Map(layout.components.map((component): [number, string] => [component.id, component.name]))
+  const loadedPre = round.schedule.find((entry) => entry.system === 'rf.character.pre')
+  assert.ok(loadedPre)
+  assert.deepEqual(loadedPre.reads.map((id) => names.get(id)), CHARACTER_PRE_READS)
+  assert.deepEqual(loadedPre.writes.map((id) => names.get(id)), CHARACTER_PRE_WRITES)
   const sourceSchema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as {
-    world_kinds: { name: string; schedule: { system: string; reads?: string[] }[] }[]
+    world_kinds: { name: string; schedule: { system: string; reads?: string[]; writes?: string[] }[] }[]
   }
   const sourceRound = sourceSchema.world_kinds.find((kind) => kind.name === 'round')
   assert.ok(sourceRound)
   const characterPre = sourceRound.schedule.find((entry) => entry.system === 'rf.character.pre')
   assert.ok(characterPre)
-  assert.ok(characterPre.reads?.includes('show_control'))
+  assert.deepEqual(characterPre.reads, CHARACTER_PRE_READS)
+  assert.deepEqual(characterPre.writes, CHARACTER_PRE_WRITES)
 })
 
 test('seat, character and feature components are declared', async () => {
@@ -294,6 +315,21 @@ test('show character references use entity fields and fit one transferable recor
   assert.equal(refs.size, 16)
 })
 
+test('generated show character reference class carries its id, size and entity fields', async () => {
+  const layout = await layoutOf()
+  const decl = layout.components.find((component) => component.name === 'show_character_ref')
+  assert.ok(decl, 'show_character_ref is declared')
+  const source = generateComponents(layout)
+  const start = source.indexOf('export class ShowCharacterRef {')
+  assert.ok(start >= 0, 'components.gen declares class ShowCharacterRef')
+  const body = source.slice(start, source.indexOf('\n}', start))
+  for (const field of ['owner', 'target', 'lever', 'carry']) {
+    assert.ok(body.includes(`  ${field}: u32;`), `${field} is an entity-typed u32 field`)
+  }
+  assert.ok(body.includes(`static readonly ID: u32 = ${decl.id};`), body)
+  assert.ok(body.includes(`static readonly SIZE: u32 = ${decl.size};`), body)
+})
+
 test('round character pre access tolerates absent show_control with the implemented script', async () => {
   const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as {
     world_kinds: { name: string; players: number; schedule: { system: string }[] }[]
@@ -325,6 +361,65 @@ test('round character pre access tolerates absent show_control with the implemen
   assert.deepEqual(readWorldState(engine, world, layout).components.show_control, {})
   new ScriptHost(module).stepTick(world, Array(8).fill(0))
   assert.equal(module.faultCount, 0)
+})
+
+// The test-local probe script. An absent show_character_ref is a null lookup and is skipped; a present one is
+// read (target) and written (carry). It is compiled with the production scripts and runs under a copy of the
+// production rf.character.pre access lists, so the write needs the writes entry.
+const CHARACTER_REF_PROBE = `import { entityAt, entityCount, getComponent, isNull, setComponent } from 'ege'
+import { ShowCharacterRef } from '../components.gen'
+
+export function rf_probe_character_ref(): void {
+  const count = entityCount()
+  for (let i: u32 = 0; i < count; i++) {
+    const entity = entityAt(i)
+    const ref = getComponent<ShowCharacterRef>(entity, ShowCharacterRef.ID, ShowCharacterRef.SIZE)
+    if (isNull<ShowCharacterRef>(ref)) continue
+    ref.carry = ref.target
+    setComponent<ShowCharacterRef>(entity, ShowCharacterRef.ID, ShowCharacterRef.SIZE, ref)
+  }
+}
+`
+
+test('show character reference lookup is optional and writable under the copied character access lists', async () => {
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as {
+    world_kinds: { name: string; players: number; schedule: { system: string }[] }[]
+  }
+  const round = schema.world_kinds.find((kind) => kind.name === 'round')
+  assert.ok(round)
+  const characterPre = round.schedule.find((entry) => entry.system === 'rf.character.pre')
+  assert.ok(characterPre)
+  // The probe's entry is a copy of the production entry (its reads and writes) under the probe's own system name.
+  const probe = { ...JSON.parse(JSON.stringify(characterPre)), system: 'rf.probe.character_ref' }
+  schema.world_kinds.push({ name: 'character_ref_probe', players: 8, schedule: [probe] })
+
+  const files = [...collectRfScripts(), { name: 'probe/character_ref.as.ts', text: CHARACTER_REF_PROBE }]
+  const compiled = await (await rfCompiler()).compile(files, JSON.stringify(schema))
+  assert.deepEqual(compiled.diagnostics.filter((d) => d.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const engine = await loadEngine()
+  engine.setSchema(JSON.stringify(schema))
+  const module = await loadScript(engine, compiled.wasm, { name: 'rf-scripts' })
+  const layout = schemaLayout(engine)
+  const world = engine.createWorld(JSON.stringify({
+    format: 'ege.scene',
+    version: 1,
+    world_kind: 'character_ref_probe',
+    seed: 1,
+    entities: [
+      // Entity 0 has no show_character_ref: the optional lookup is null and nothing is written.
+      { components: { show_control: { code: 32639 } } },
+      // Entity 1 targets entity 0 and has no carry yet: the probe reads target and writes it into carry.
+      { components: { show_character_ref: { owner: 1, target: 0, lever: NO_ENTITY, carry: NO_ENTITY } } },
+    ],
+  }))
+  const host = new ScriptHost(module)
+  host.stepTick(world, Array(8).fill(0))
+  host.stepTick(world, Array(8).fill(0))
+  assert.equal(module.faultCount, 0, module.faults.map((fault) => fault.message).join('; '))
+  const state = readWorldState(engine, world, layout)
+  assert.equal(state.components.show_character_ref[0], undefined)
+  assert.deepEqual(state.components.show_character_ref[1], { owner: 1, target: 0, lever: NO_ENTITY, carry: 0 })
 })
 
 test('show result records split the cumulative seat counters into two fixed records', async () => {

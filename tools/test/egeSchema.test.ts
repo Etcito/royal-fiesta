@@ -41,6 +41,7 @@ const SCHEDULE = [
   'rf.feature.memory_tiles.post',
   'rf.feature.sweep.post',
   'rf.feature.rising_kill.post',
+  'rf.feature.ball.post',
   'rf.seat.rules',
 ]
 

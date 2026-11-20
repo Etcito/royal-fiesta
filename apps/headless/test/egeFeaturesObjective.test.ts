@@ -10,6 +10,8 @@ import { emitEngineScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import type { EmittedScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
+import { decodeEvents } from '@etcito/game-engine/world-state'
+import { engineCodeOfS1 } from '@royal-fiesta/game/ege/inputCodes'
 import { loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
 
@@ -207,5 +209,136 @@ test('carry refuses an opposing protected home and two worlds stay equal', async
   } finally {
     second.round.dispose()
     first.round.dispose()
+  }
+})
+
+function ballSpec(spawn: [number, number, number], resetS = 30): FeatureSpec {
+  return { id: 'ball', kind: 'ball', params: { spawn, radius: 0.3, mass: 1, resetS } }
+}
+
+function goalSpec(team: number, center: [number, number, number], half: [number, number, number]): FeatureSpec {
+  return { id: 'goal', kind: 'goal', params: { team, center, half } }
+}
+
+function homeLevel(course: CourseV1): void {
+  course.sim!.level!.homes = [
+    {
+      team: 0,
+      box: { center: { x: 10, y: 0.5, z: 10 }, half: { x: 1, y: 0.5, z: 1 } },
+      respawn: [{ t: { x: 10, y: 0, z: 10 }, facing: { x: 0, z: 1 } }],
+    },
+    {
+      team: 1,
+      box: { center: { x: -10, y: 0.5, z: 10 }, half: { x: 1, y: 0.5, z: 1 } },
+      respawn: [{ t: { x: -10, y: 0, z: 10 }, facing: { x: 0, z: 1 } }],
+    },
+  ]
+  course.sim!.level!.respawn.spacingM = 0
+}
+
+function rawStep(round: EngineRound, codeFor: () => number): ReturnType<typeof decodeEvents> {
+  const engineCode = engineCodeOfS1(codeFor())
+  const codes = new Array<number>(8).fill(engineCode)
+  const before = round.tick
+  round.host.stepTick(round.world, codes)
+  return decodeEvents(round.engine.events(round.world, before, round.tick).records, round.layout)
+}
+
+test('a character push rolls the ball and two worlds stay equal', async () => {
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  // The sprint intro drops the ball onto the character capsule; the contact gives it the
+  // horizontal velocity that the first playing steps carry forward.
+  const specs = [ballSpec([-3.5, 10.85, 0.6])]
+  const first = await roundWith('ege-strip', specs, engine)
+  const second = await roundWith('ege-strip', specs, engine)
+  try {
+    const ball = first.scene.index('feature/ball')
+    const spawn = rec(first.round, 'feature_ball', ball).spawn as number[]
+    while (first.round.tick < 61) {
+      first.round.step(() => code())
+      second.round.step(() => code())
+    }
+    assert.equal(engine.worldEqual(first.round.world, second.round.world), true)
+    for (let tick = 0; tick < 20; tick++) {
+      first.round.step(() => code(1))
+      second.round.step(() => code(1))
+      assert.equal(engine.worldEqual(first.round.world, second.round.world), true, `worlds differ at tick ${first.round.tick}`)
+    }
+    const at = rec(first.round, 'ege.transform', ball)
+    near(at.pos[0], spawn[0], 0.35, 'push keeps the ball in its lane')
+    assert.ok(at.pos[2] > spawn[2] + 1, `pushed ball z ${at.pos[2]} from ${spawn[2]}`)
+    assert.equal(first.round.observe().faults, 0)
+    assert.equal(second.round.observe().faults, 0)
+  } finally {
+    second.round.dispose()
+    first.round.dispose()
+  }
+})
+
+test('goal scores 1 minus the defending team once, resets at the source tick and returns alive seats home', async () => {
+  // The ball rests on the character's head at y 2.0; a half height of 0.05 only holds it
+  // because the goal does not shrink Y by the radius.
+  const specs = [ballSpec([-3.5, 2.2, 0]), goalSpec(1, [-3.5, 2.0, 0], [1, 0.05, 1])]
+  const { scene, round } = await roundWithEdit(specs, homeLevel)
+  try {
+    const ball = scene.index('feature/ball')
+    const seat = scene.seatEntities[0]
+    const spawn = rec(round, 'feature_ball', ball).spawn as number[]
+    const events: ReturnType<typeof decodeEvents> = []
+    while (round.tick < 61) events.push(...rawStep(round, () => code()))
+    assert.equal(round.worldState().resources.round.phase, 1)
+    const scored = events.filter((event) => event.kind === 'team_score')
+    assert.equal(scored.length, 1, 'one goal emits one team_score')
+    assert.equal(scored[0].entity, ball)
+    assert.deepEqual(
+      { team: scored[0].fields.team, a: scored[0].fields.a, b: scored[0].fields.b },
+      { team: 0, a: 1, b: 0 },
+    )
+    const pending = rec(round, 'feature_ball', ball).pending as number
+    assert.equal(pending, 60 + 180, 'pending is the source tick plus 180')
+
+    const repeats: ReturnType<typeof decodeEvents> = []
+    for (let tick = 0; tick < 5; tick++) repeats.push(...rawStep(round, () => code()))
+    assert.equal(repeats.filter((event) => event.kind === 'team_score').length, 0, 'a pending goal does not score again')
+    assert.equal(rec(round, 'feature_ball', ball).pending, pending)
+    near(round.poses([ball])[1], 2.0, 0.05, 'the pending ball is still inside the goal')
+
+    for (let tick = 0; tick < 30; tick++) rawStep(round, () => code(1))
+    const pushed = rec(round, 'ege.transform', ball)
+    assert.ok(pushed.pos[2] < spawn[2] - 0.3 || pushed.pos[1] < spawn[1] - 0.3, `ball left its spawn (${pushed.pos})`)
+
+    while (round.tick < pending) rawStep(round, () => code())
+    assert.equal(round.poses([ball])[1] < spawn[1] - 1, true, 'the ball is away just before the reset tick')
+    rawStep(round, () => code())
+    assert.equal(round.tick, pending + 1)
+    assert.equal(rec(round, 'feature_ball', ball).pending, -1, 'the pending score clears on the source reset tick')
+    // Body poses set in the post step reach the physics port on the following step.
+    rawStep(round, () => code())
+    const poses = round.poses([ball, seat])
+    near(poses[0], spawn[0], 1e-4, 'reset spawn x')
+    near(poses[1], spawn[1], 0.01, 'reset spawn y')
+    near(poses[2], spawn[2], 1e-4, 'reset spawn z')
+    const ch = rec(round, 'character', seat)
+    near(poses[23], 10, 1e-3, 'alive seat home x')
+    near(poses[24], ch.stand + 0.01, 0.2, 'alive seat home stand')
+    near(poses[25], 10, 1e-3, 'alive seat home z')
+    assert.equal(round.module.faultCount, 0)
+  } finally {
+    round.dispose()
+  }
+})
+
+test('a goal shrinks X and Z by the ball radius and rejects a ball the unshrunk box would hold', async () => {
+  const specs = [ballSpec([-3.5, 2.2, 0]), goalSpec(0, [-3.5, 2.0, 0], [0.2, 1, 1])]
+  const { scene, round } = await roundWithEdit(specs, homeLevel)
+  try {
+    const ball = scene.index('feature/ball')
+    while (round.tick < 181) round.step(() => code())
+    assert.equal(round.observe().events.team_score, 0, 'the shrunk goal box rejects the ball')
+    assert.equal(rec(round, 'feature_ball', ball).pending, -1)
+    assert.equal(round.observe().faults, 0)
+  } finally {
+    round.dispose()
   }
 })

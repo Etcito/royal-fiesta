@@ -1736,6 +1736,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.ball.post",
+          "kind": "script",
+          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
+          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": ["team_score"]
+        },
+        {
           "system": "rf.seat.rules",
           "kind": "script",
           "reads": [

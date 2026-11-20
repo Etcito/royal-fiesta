@@ -1163,6 +1163,22 @@
       ]
     },
     {
+      "name": "feature_collectible",
+      "fields": [
+        { "name": "value", "type": "u32" },
+        { "name": "regen_s", "type": "f64" }
+      ]
+    },
+    {
+      "name": "feature_collectible_spot",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "index", "type": "u32" },
+        { "name": "t", "type": "f64", "count": 3 },
+        { "name": "ready_tick", "type": "i32" }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

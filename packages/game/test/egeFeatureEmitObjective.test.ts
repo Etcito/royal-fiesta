@@ -277,3 +277,108 @@ test('ball accepts source range endpoints and refuses missing or out-of-range pa
   assert.throws(() => FEATURE_EMITTERS.ball(missingSpawn, ctx),
     (error: unknown) => error instanceof RefusalError && error.message.includes('/spawn'))
 })
+
+function layoutOf(name: string): { size: number; fields: unknown[][] } {
+  const component = schemaLayout(engine).components.find((entry) => entry.name === name)
+  assert.ok(component, `${name} is declared`)
+  return {
+    size: component.size,
+    fields: component.fields.map((field) => [field.name, field.type, field.count]),
+  }
+}
+
+const collectibleDemo: FeatureSpec = {
+  id: 'collectible-demo', kind: 'collectible', params: {
+    spots: [[1, 1, 2], [3, 1, 4], [-2, 1.5, 9]],
+    value: 5,
+    regenS: 12,
+  },
+}
+
+test('collectible records carry value, regen and spot fields within 256 bytes', () => {
+  const root = layoutOf('feature_collectible')
+  assert.deepEqual(root.fields, [['value', 'u32', 1], ['regen_s', 'f64', 1]])
+  assert.ok(root.size <= 256, `feature_collectible is ${root.size} bytes`)
+  const spot = layoutOf('feature_collectible_spot')
+  assert.deepEqual(spot.fields, [
+    ['owner', 'u32', 1], ['index', 'u32', 1], ['t', 'f64', 3], ['ready_tick', 'i32', 1],
+  ])
+  assert.ok(spot.size <= 256, `feature_collectible_spot is ${spot.size} bytes`)
+})
+
+test('collectible emits a bodyless root and one sphere spot child per authored position', async () => {
+  const input = await inputWith([collectibleDemo])
+  const emitted = FEATURE_EMITTERS.collectible(collectibleDemo, ctxOf(input, 5))
+  assert.equal(emitted.root.name, 'feature/collectible-demo')
+  assert.equal(emitted.root.body, undefined)
+  assert.equal(emitted.root.colliders, undefined)
+  assert.deepEqual(emitted.root.components?.feature, { kind: 16, index: 5, salt: 0x105 })
+  assert.deepEqual(emitted.root.components?.feature_collectible, { value: 5, regen_s: 12 })
+  assert.deepEqual(emitted.root.components?.['ege.transform'], { pos: [0, 0, 0], rot: [0, 0, 0, 1] })
+  assert.deepEqual(emitted.children.map((child) => child.name), [
+    'feature/collectible-demo/spot/0', 'feature/collectible-demo/spot/1', 'feature/collectible-demo/spot/2',
+  ])
+  const spots = [[1, 1, 2], [3, 1, 4], [-2, 1.5, 9]]
+  for (let index = 0; index < spots.length; index++) {
+    const child = emitted.children[index]!
+    assert.equal(child.body, undefined)
+    assert.equal(child.colliders, undefined)
+    assert.deepEqual(child.components?.feature_collectible_spot, {
+      owner: 5, index, t: spots[index], ready_tick: 0,
+    })
+    assert.deepEqual(child.components?.['ege.transform'], { pos: spots[index], rot: [0, 0, 0, 1] })
+    assert.deepEqual(child.components?.['ege.render'], {
+      shape: 2, color: 0xF2E6D0, visible: 1, params: [0.3, 0, 0, 0],
+    })
+  }
+})
+
+test('collectible pool size equals the authored spot count at both list endpoints', async () => {
+  const input = await inputWith([collectibleDemo])
+  const ctx = ctxOf(input, 0)
+  const one: FeatureSpec = {
+    ...collectibleDemo, params: { spots: [[0, 0, 0]], value: 1, regenS: 0.1 },
+  }
+  const oneEmitted = FEATURE_EMITTERS.collectible(one, ctx)
+  assert.equal(oneEmitted.children.length, 1)
+  assert.deepEqual(oneEmitted.root.components?.feature_collectible, { value: 1, regen_s: 0.1 })
+  const full: FeatureSpec = {
+    ...collectibleDemo,
+    params: { spots: Array.from({ length: 64 }, (_, i) => [i, 1, 0]), value: 100, regenS: 600 },
+  }
+  const fullEmitted = FEATURE_EMITTERS.collectible(full, ctx)
+  assert.equal(fullEmitted.children.length, 64)
+  assert.equal(fullEmitted.children[63]?.name, 'feature/collectible-demo/spot/63')
+  assert.deepEqual(fullEmitted.children[63]?.components?.feature_collectible_spot, {
+    owner: 0, index: 63, t: [63, 1, 0], ready_tick: 0,
+  })
+  assert.deepEqual(fullEmitted.root.components?.feature_collectible, { value: 100, regen_s: 600 })
+})
+
+test('collectible refuses spot counts, positions, value and regen outside the source ranges', async () => {
+  const input = await inputWith([collectibleDemo])
+  const ctx = ctxOf(input, 0)
+  const refused = (params: Record<string, unknown>, message: string) => {
+    const bad = { ...collectibleDemo, params } as FeatureSpec
+    assert.throws(() => FEATURE_EMITTERS.collectible(bad, ctx),
+      (error: unknown) => error instanceof RefusalError && error.message.includes(message))
+  }
+  refused({ ...collectibleDemo.params, spots: [] }, '/spots: expected 1..64 spots entries, got 0')
+  refused({ ...collectibleDemo.params, spots: Array.from({ length: 65 }, () => [0, 1, 0]) },
+    '/spots: expected 1..64 spots entries, got 65')
+  refused({ ...collectibleDemo.params, spots: [[1, 2]] }, '/spots/0: expected [x,y,z] in metres')
+  refused({ ...collectibleDemo.params, value: 0 }, '/value: expected value as a finite number in 1..100')
+  refused({ ...collectibleDemo.params, value: 101 }, '/value: expected value as a finite number in 1..100')
+  refused({ ...collectibleDemo.params, value: 2.5 }, '/value: expected value as a whole number in 1..100')
+  refused({ ...collectibleDemo.params, regenS: 0.05 }, '/regenS: expected regenS as a finite number in 0.1..600 s')
+  refused({ ...collectibleDemo.params, regenS: 601 }, '/regenS: expected regenS as a finite number in 0.1..600 s')
+  refused({ ...collectibleDemo.params, value: undefined }, '/value: missing value')
+})
+
+test('collectible scene builds a world with each spot visual after its root', async () => {
+  const input = await inputWith([collectibleDemo])
+  const scene = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(scene.text) >= 1)
+  assert.equal(scene.index('feature/collectible-demo/spot/0'), scene.index('feature/collectible-demo') + 1)
+  assert.equal(scene.index('feature/collectible-demo/spot/2'), scene.index('feature/collectible-demo') + 3)
+})

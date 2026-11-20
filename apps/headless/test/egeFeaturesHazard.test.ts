@@ -920,3 +920,29 @@ test('two worlds with all five hazard kinds stay equal under identical input cod
     b.dispose()
   }
 })
+
+test('ege-yard-b runs sweep, annulus and memory hazards for 600 ticks with live visuals', async () => {
+  const { scene, course, round } = await harnessRound('ege-yard-b')
+  try {
+    const features = course.sim!.features!
+    for (const kind of ['annulus', 'sweep', 'memoryTiles']) assert.equal(features.filter(f => f.kind === kind).length, 1, kind)
+    const state = round.worldState().components
+    assert.equal(Object.keys(state.feature_memory_tiles_cell).length, 16)
+    assert.equal(Object.keys(state.feature_annulus_segment).length, 6)
+    assert.equal(Object.keys(state.feature_sweep_part).length, 2)
+    for (let tick = 0; tick < 600; tick++) {
+      round.step(seat => (seat === 0 && round.tick > 60 ? encodeInput({ moveX: 0, moveZ: 1, jump: false, dive: false, grab: false }) : code()))
+    }
+    assert.equal(round.observe().faults, 0)
+    const after = round.worldState().components
+    for (const name of ['feature_annulus_segment', 'feature_sweep_part', 'feature_memory_tiles_cell']) {
+      for (const id of Object.keys(after[name])) assert.ok((after['ege.box_collider'][id].half_extents as number[]).some((h: number) => h !== 1), `${name} placeholder half`)
+    }
+    const markers = [...Array(16).keys()].map(i => rec(round, 'ege.render', scene.index(`feature/yard-memory/marker/${i}`)))
+    assert.ok(markers.some(m => m.visible === 1 && m.color !== 0xFF6B9E), 'tinted memory discs visible at tick 600')
+    const bars = [0, 1].filter(i => rec(round, 'ege.render', scene.index(`feature/yard-sweep/part/${i}`)).visible === 1)
+    assert.ok(bars.length > 0, 'live sweep bars visible')
+  } finally {
+    round.dispose()
+  }
+})

@@ -1,0 +1,201 @@
+{
+  "format": "royal-fiesta.course",
+  "version": 1,
+  "id": "ege-yard-c",
+  "name": "Engine Yard C",
+  "world": "candy",
+  "kind": "race",
+  "spawns": [
+    {
+      "t": [-3.5, 0, 0],
+      "yawDeg": 0
+    },
+    {
+      "t": [-2.5, 0, 0],
+      "yawDeg": 0
+    },
+    {
+      "t": [-1.5, 0, 0],
+      "yawDeg": 0
+    },
+    {
+      "t": [-0.5, 0, 0],
+      "yawDeg": 0
+    },
+    {
+      "t": [0.5, 0, 0],
+      "yawDeg": 0
+    },
+    {
+      "t": [1.5, 0, 0],
+      "yawDeg": 0
+    },
+    {
+      "t": [2.5, 0, 0],
+      "yawDeg": 0
+    },
+    {
+      "t": [3.5, 0, 0],
+      "yawDeg": 0
+    }
+  ],
+  "checkpoints": [
+    {
+      "center": [0, 1.5, 38],
+      "half": [5, 2, 1],
+      "respawn": {
+        "t": [0, 0, 38],
+        "yawDeg": 0
+      }
+    }
+  ],
+  "finish": {
+    "center": [0, 1.5, 46],
+    "half": [5, 2, 1]
+  },
+  "killPlaneY": -10,
+  "queuePad": null,
+  "obstacles": [
+    {
+      "id": "yard-floor-c",
+      "asset": "candy.floor-tile",
+      "t": [0, -0.5, 22],
+      "r": [0, 0, 0, 1],
+      "s": [2.4, 1, 5.2],
+      "motion": {
+        "kind": "static"
+      },
+      "friction": 0.5,
+      "colliders": null
+    }
+  ],
+  "decor": [],
+  "environment": null,
+  "podium": null,
+  "profiles": ["standard", "sprint"],
+  "path": [
+    {
+      "p": [0, 1, 0],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [0, 1, 22],
+      "jump": false,
+      "dive": false
+    },
+    {
+      "p": [0, 1, 46],
+      "jump": false,
+      "dive": false
+    }
+  ],
+  "regions": [],
+  "timeLimitS": 60,
+  "level": {
+    "season": "s1",
+    "map": null,
+    "kind": "race",
+    "finalRule": null,
+    "stages": ["R1"],
+    "capacity": 8,
+    "usual": [8],
+    "quota": null,
+    "timeCapS": 60,
+    "overtimeS": 0,
+    "respawn": {
+      "mode": "checkpoint",
+      "waitS": 1,
+      "protectS": 2,
+      "slots": 8,
+      "spacingM": 1.2
+    },
+    "route": {
+      "ordered": true,
+      "laps": 1,
+      "stages": [0]
+    },
+    "teams": null,
+    "homes": [],
+    "groups": []
+  },
+  "features": [
+    {
+      "kind": "ball",
+      "id": "yard-ball",
+      "spawn": [0, 0.3, 20],
+      "radius": 0.3,
+      "mass": 1,
+      "resetS": 30
+    },
+    {
+      "kind": "goal",
+      "id": "yard-goal-0",
+      "team": 0,
+      "center": [-5, 1.5, 22],
+      "half": [0.5, 1.5, 2]
+    },
+    {
+      "kind": "goal",
+      "id": "yard-goal-1",
+      "team": 1,
+      "center": [5, 1.5, 22],
+      "half": [0.5, 1.5, 2]
+    },
+    {
+      "kind": "collectible",
+      "id": "yard-pickup",
+      "spots": [
+        [-2, 0.5, 25],
+        [-1, 0.5, 25],
+        [0, 0.5, 25]
+      ],
+      "value": 1,
+      "regenS": 5
+    },
+    {
+      "kind": "captureZone",
+      "id": "yard-capture",
+      "center": [0, 0.5, 17.5],
+      "half": [2, 0.5, 1.5],
+      "captureS": 5
+    },
+    {
+      "kind": "bank",
+      "id": "yard-bank-0",
+      "center": [-4.5, 0.5, 17.5],
+      "half": [1.5, 0.5, 1.5],
+      "team": 0
+    },
+    {
+      "kind": "bank",
+      "id": "yard-bank-1",
+      "center": [4.5, 0.5, 17.5],
+      "half": [1.5, 0.5, 1.5],
+      "team": 1
+    },
+    {
+      "kind": "carryItem",
+      "id": "yard-carry",
+      "asset": "candy.floor-disc",
+      "spawns": [
+        [-2, 0.35, 22.5]
+      ],
+      "resetS": 8,
+      "homes": []
+    },
+    {
+      "kind": "tailSet",
+      "id": "yard-tails",
+      "count": "half",
+      "spawn": [0, 0.5, 26],
+      "immunityS": 2
+    },
+    {
+      "kind": "crown",
+      "id": "yard-crown",
+      "t": [2.5, 1, 23],
+      "grabRangeM": 1
+    }
+  ]
+}

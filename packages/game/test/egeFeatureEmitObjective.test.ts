@@ -8,6 +8,7 @@ import { FEATURE_KINDS } from '@royal-fiesta/sim/features/catalog'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { FEATURE_EMITTERS } from '../src/ege/featureEmitters.ts'
 import { emitEngineScene } from '../src/ege/sceneEmitter.ts'
+import { focusCamera } from '../src/ege/sceneSim.ts'
 import type { EmitInput } from '../src/ege/sceneEmitter.ts'
 import { loadCourseV1 } from '../src/courseV1.ts'
 import type { CourseV1, GameAssetResolver, ResolvedGameAsset } from '../src/courseV1.ts'
@@ -726,4 +727,78 @@ test('all 22 feature kinds are registered and the shipped crown course construct
   for (const id of course.assetIds) resolved.set(id, await assets.resolve(id))
   const scene = emitEngineScene(engine, { course, assets: resolved, setup: { profile: 'sprint', seed: 7 } })
   assert.ok(engine.createWorld(scene.text) >= 1)
+})
+
+// ---- ege-yard-c: the complete objective yard, loaded through the real loader ----
+type Box = { min: number[]; max: number[] }
+const YARD = 'fixtures/ege/ege-yard-c.course.json'
+const ASPECT = 16 / 9
+const sub = (a: number[], b: number[]) => a.map((v, i) => v - b[i])
+const dot = (a: number[], b: number[]) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+const cross = (a: number[], b: number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+const unit = (a: number[]) => a.map((v) => v / Math.hypot(a[0], a[1], a[2]))
+
+// Frustum planes (inward normals) of a focusCamera pose; a box overlaps when no plane has it fully outside.
+function frustumPlanes(cam: ReturnType<typeof focusCamera>): { n: number[]; d: number }[] {
+  const f = unit(sub([...cam.target], [...cam.eye]))
+  const r = unit(cross(f, [0, 1, 0]))
+  const u = cross(r, f)
+  const t = Math.tan((cam.fovYDeg * Math.PI) / 360)
+  const planes = [
+    { n: f, o: cam.eye.map((v, i) => v + f[i] * cam.near) },
+    { n: f.map((v) => -v), o: cam.eye.map((v, i) => v + f[i] * cam.far) },
+    { n: unit(cross(u, f.map((v, i) => f[i] + r[i] * t * ASPECT))), o: [...cam.eye] },
+    { n: unit(cross(f.map((v, i) => f[i] - r[i] * t * ASPECT), u)), o: [...cam.eye] },
+    { n: unit(cross(f.map((v, i) => f[i] + u[i] * t), r)), o: [...cam.eye] },
+    { n: unit(cross(r, f.map((v, i) => f[i] - u[i] * t))), o: [...cam.eye] },
+  ]
+  return planes.map((p) => ({ n: p.n, d: -dot(p.n, p.o) }))
+}
+
+function overlapsView(box: Box, cam: ReturnType<typeof focusCamera>): boolean {
+  return frustumPlanes(cam).every((p) => {
+    const far = [0, 1, 2].map((i) => (p.n[i] >= 0 ? box.max[i] : box.min[i]))
+    return dot(p.n, far) + p.d >= 0
+  })
+}
+
+const around = (c: number[], h: number[]): Box => ({ min: c.map((v, i) => v - h[i]), max: c.map((v, i) => v + h[i]) })
+
+test('ege-yard-c holds one of each objective kind and its objects overlap the ball focus camera', async () => {
+  const loaded = await loadCourseV1(readJson(YARD), YARD, assets)
+  assert.ok(loaded.sim)
+  const specs = loaded.sim.features ?? []
+  const ofKind = (kind: string) => specs.filter((spec) => spec.kind === kind)
+  const counts = { carryItem: 1, ball: 1, collectible: 1, captureZone: 1, tailSet: 1, crown: 1, goal: 2, bank: 2 }
+  for (const [kind, count] of Object.entries(counts)) assert.equal(ofKind(kind).length, count, kind)
+  assert.deepEqual(ofKind('goal').map((spec) => spec.params.team), [0, 1])
+  assert.deepEqual(ofKind('bank').map((spec) => spec.params.team), [0, 1])
+  assert.equal(loaded.sim.spawns.length, 8)
+  assert.ok(loaded.sim.checkpoints.length >= 1)
+  const resolved = new Map<string, ResolvedGameAsset>()
+  for (const id of loaded.assetIds) resolved.set(id, await assets.resolve(id))
+  const scene = emitEngineScene(engine, { course: loaded, assets: resolved, setup: { profile: 'sprint', seed: 7 } })
+  assert.ok(engine.createWorld(scene.text) >= 1)
+  for (const name of ['feature/yard-ball', 'feature/yard-goal-0', 'feature/yard-goal-1', 'feature/yard-bank-0',
+    'feature/yard-bank-1', 'feature/yard-carry/item/0', 'feature/yard-pickup/spot/2', 'feature/yard-capture/visual/0',
+    'feature/yard-tails/seat/7', 'feature/yard-crown/visual/0']) assert.ok(scene.index(name) >= 0, name)
+  assert.equal(scene.index('feature/yard-pickup/spot/3'), -1)
+
+  const num = (v: unknown) => v as number[]
+  const ball = num(ofKind('ball')[0].params.spawn)
+  const cam = focusCamera({ x: ball[0], y: ball[1], z: ball[2] })
+  const required: [string, Box][] = [
+    ['ball', around(ball, [0.3, 0.3, 0.3])],
+    ...ofKind('goal').map((s, i): [string, Box] => [`goal ${i}`, around(num(s.params.center), num(s.params.half))]),
+    ...ofKind('bank').map((s, i): [string, Box] => [`bank ${i}`, around(num(s.params.center), num(s.params.half))]),
+    ['capture', around(num(ofKind('captureZone')[0].params.center), num(ofKind('captureZone')[0].params.half))],
+    ...(ofKind('collectible')[0].params.spots as number[][]).map((s, i): [string, Box] => [`spot ${i}`, around(s, [0.25, 0.25, 0.25])]),
+    ['carry item', around(num((ofKind('carryItem')[0].params.spawns as number[][])[0]), [0.35, 0.35, 0.35])],
+    ['tail seat', around(num(ofKind('tailSet')[0].params.spawn), [0.5, 0.5, 0.5])],
+    ['crown', around(num(ofKind('crown')[0].params.t), [0.25, 0.25, 0.25])],
+  ]
+  for (const [label, box] of required) assert.ok(overlapsView(box, cam), `${label} overlaps the view volume`)
+  // The check is real: an object behind the camera and one far to the side are outside.
+  assert.equal(overlapsView(around([0, 1, -30], [1, 1, 1]), cam), false)
+  assert.equal(overlapsView(around([300, 1, 20], [1, 1, 1]), cam), false)
 })

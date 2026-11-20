@@ -1208,3 +1208,28 @@ test('the cap reset returns every alive seat to the CP1 respawn slots on the sou
     rig.first.dispose()
   }
 })
+
+test('ege-yard-c runs every objective kind with faults 0 and identical worlds for identical codes', async () => {
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  const first = await roundWith('ege-yard-c', null, engine, ALL_HUMAN)
+  const second = await roundWith('ege-yard-c', null, engine, ALL_HUMAN)
+  try {
+    const features = Object.values(first.round.worldState().components.feature) as any[]
+    const kinds = features.map((record) => record.kind as number).sort((a, b) => a - b)
+    // ranks: carryItem 7, ball 14, goal 15 x2, collectible 16, bank 17 x2, captureZone 18, tailSet 19, crown 20
+    assert.deepEqual(kinds, [7, 14, 15, 15, 16, 17, 17, 18, 19, 20])
+    for (let tick = 0; tick < 200; tick++) {
+      const c = code(tick % 90 < 45 ? 1 : 0, tick % 40 < 5)
+      rawStep(first.round, () => c)
+      rawStep(second.round, () => c)
+      if (tick % 20 === 0) assert.equal(engine.worldEqual(first.round.world, second.round.world), true, `tick ${tick}`)
+    }
+    assert.equal(engine.worldEqual(first.round.world, second.round.world), true)
+    assert.equal(first.round.observe().faults, 0)
+    assert.equal(second.round.observe().faults, 0)
+  } finally {
+    second.round.dispose()
+    first.round.dispose()
+  }
+})

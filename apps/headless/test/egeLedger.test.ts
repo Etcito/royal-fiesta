@@ -8,6 +8,8 @@ import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools
 import { readRepoText } from '../src/files.ts'
 
 const PROBE_WORLD = 'qualification_probe'
+const PUBLISH_WORLD = 'cumulative_publish_probe'
+const LEDGER_WORLD = 'cumulative_ledger_probe'
 const PROBE_FILE = 'probe/qualification.as.ts'
 const PROBE_TEXT = `import { entityAt, entityCount, newRecord, readResource, setComponent, spawn } from 'ege'
 import { ProbeOut, ProbeParamsRes } from '../components.gen'
@@ -151,6 +153,28 @@ function probeSchema(base: string): string {
       kind: 'script',
       reads: ['show_result_a', 'show_result_b', 'probe_params'],
       writes: ['probe_out'],
+      emits: [],
+    }],
+  })
+  schema.world_kinds.push({
+    name: PUBLISH_WORLD,
+    players: 8,
+    schedule: [{
+      system: 'rf.show.publish',
+      kind: 'script',
+      reads: ['show_result_a', 'show_result_b', 'show_seat_identity', 'show_team_contribution', 'ege.zone.id', 'ege.zone.outbox'],
+      writes: ['ege.zone.id', 'ege.zone.outbox'],
+      emits: [],
+    }],
+  })
+  schema.world_kinds.push({
+    name: LEDGER_WORLD,
+    players: 0,
+    schedule: [{
+      system: 'rf.show.ledger',
+      kind: 'script',
+      reads: ['ege.zone.inbox', 'show_pending', 'show_publish', 'show_result_a', 'show_result_b', 'show_team_contribution'],
+      writes: ['show_pending', 'show_publish', 'show_result_a', 'show_result_b', 'show_team_contribution'],
       emits: [],
     }],
   })
@@ -644,5 +668,300 @@ test('equal helper inputs produce equal ranks and points across independent worl
     assert.equal(second.faultCount, 0, faultText(second))
     assert.deepEqual(second.rows, first.rows)
     assert.ok(values(first, 1).includes(59), 'seat 59 is ranked')
+  }
+})
+
+interface OutboxEntry { key: number; kind: number; value: number; tick: number }
+
+function sceneOf(worldKind: string, entities: any[]): any {
+  return { format: 'ege.scene', version: 1, world_kind: worldKind, seed: 1, entities }
+}
+
+async function worldHost(label: string) {
+  const { engine, layout, wasm } = await setup()
+  const faults: string[] = []
+  const module = await loadScript(engine, wasm, {
+    name: label,
+    onFault: fault => faults.push(`${fault.system}: ${fault.message}`),
+    onLog: line => faults.push(`log ${line}`),
+  })
+  return { engine, layout, module, host: new ScriptHost(module), faults }
+}
+
+function outboxOf(engine: Awaited<ReturnType<typeof loadEngine>>, world: number): OutboxEntry[] {
+  const exportFn = (engine.exports as any).ege_zone_outbox as ((world: number) => number) | undefined
+  assert.ok(exportFn, 'the engine build exports ege_zone_outbox')
+  const len = engine.check(exportFn(world))
+  const bytes = engine.resultBytes().slice()
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const count = view.getUint16(0, true)
+  const entries: OutboxEntry[] = []
+  for (let i = 0; i < count; i++) {
+    const at = 2 + i * 16
+    entries.push({
+      key: view.getUint32(at, true),
+      kind: view.getUint32(at + 4, true),
+      value: view.getUint32(at + 8, true),
+      tick: view.getUint32(at + 12, true),
+    })
+  }
+  return entries
+}
+
+function rowsOf(state: any, name: string): any[] {
+  return Object.values(state.components[name] ?? {}) as any[]
+}
+
+function showSeat(room: number, roundSeat: number, over: { a?: any; b?: any } = {}): any {
+  const entity = seatEntity(room, over)
+  entity.components.show_seat_identity = {
+    room_seat: room, round_seat: roundSeat, input_slot: -1, bot: 1,
+  }
+  return entity
+}
+
+function seatBatch(room: number, tick: number, over: Record<number, number> = {}): OutboxEntry[] {
+  const base = [room, 1, -1, -1, 0, -1, 0, 0, 0, -1, 0, 0, -1, 0, 0, -1, -1, -1, 0]
+  return base.map((fallback, field) => ({
+    key: 65536 + room * 32 + field,
+    kind: field,
+    value: (over[field] ?? fallback) >>> 0,
+    tick,
+  }))
+}
+
+function inboxEntities(entries: OutboxEntry[], source: number): any[] {
+  return entries.map(entry => ({
+    components: {
+      'ege.zone.inbox': {
+        source, key: entry.key, kind: entry.kind, value: entry.value, tick: entry.tick,
+      },
+    },
+  }))
+}
+
+function ledgerWorld(engine: Awaited<ReturnType<typeof loadEngine>>, entries: OutboxEntry[], source = 3): number {
+  return engine.createWorld(JSON.stringify(sceneOf(LEDGER_WORLD, inboxEntities(entries, source))))
+}
+
+function injectInbox(
+  engine: Awaited<ReturnType<typeof loadEngine>>, layout: ReturnType<typeof schemaLayout>, world: number,
+  entries: OutboxEntry[], source: number,
+): void {
+  const sourceWorld = ledgerWorld(engine, entries, source)
+  try {
+    const ids = readWorldState(engine, sourceWorld, layout).entities
+    const bytes = engine.exportEntities(sourceWorld, ids, false)
+    engine.importEntities(world, bytes)
+  } finally {
+    engine.freeWorld(sourceWorld)
+  }
+}
+
+test('rf_show_publish writes complete nineteen-field seat batches and team contribution keys', async () => {
+  const { engine, layout, host, faults } = await worldHost('rf-publish')
+  const world = engine.createWorld(JSON.stringify(sceneOf(PUBLISH_WORLD, [
+    showSeat(4, 2, {
+      a: { status: 2, finish_tick: 90, finish_sub: 20, lap: 3, stage: 4, route_mm: 5, falls: 1, score: 55, last_score_tick: 40 },
+      b: { hold_ticks: 12, possessing: 1, last_acquire_tick: 30, matches: 4, cross_ticks: 9, out_tick: -1, out_sub: -1, team: 1, opening_rank: 2 },
+    }),
+    showSeat(59, 0, {
+      a: { status: 0, finish_tick: -1, finish_sub: -1, lap: 5, stage: 8, route_mm: 1200, falls: 2, score: -4, last_score_tick: 77 },
+      b: { hold_ticks: 0, possessing: 0, last_acquire_tick: -1, matches: 0, cross_ticks: 3, out_tick: 9, out_sub: -1, team: 0, opening_rank: 0 },
+    }),
+    { components: { show_team_contribution: { owner: 0, feature: 3, team: 1, value: -7, tick: 4 } } },
+  ])))
+  try {
+    host.stepTick(world, Array(8).fill(0))
+    assert.deepEqual(faults, [])
+    const entries = outboxOf(engine, world)
+    assert.equal(entries.length, 39)
+    const byKey = new Map(entries.map(entry => [entry.key, entry]))
+    const state = readWorldState(engine, world, layout)
+    const seats = [4, 59]
+    for (const room of seats) {
+      const index = seats.indexOf(room)
+      const entity = state.entities[index]
+      const a = state.components.show_result_a[entity]
+      const b = state.components.show_result_b[entity]
+      const expected = [
+        room, a.status, a.finish_tick, a.finish_sub, a.lap, a.stage, a.route_mm, a.falls,
+        a.score, a.last_score_tick, b.hold_ticks, b.possessing, b.last_acquire_tick, b.matches,
+        b.cross_ticks, b.out_tick, b.out_sub, b.team, b.opening_rank,
+      ]
+      for (let field = 0; field < 19; field++) {
+        const entry = byKey.get(65536 + room * 32 + field)
+        assert.ok(entry, `seat ${room} field ${field}`)
+        assert.equal(entry.kind, field)
+        assert.equal(entry.value, Number(expected[field]) >>> 0, `seat ${room} field ${field}`)
+        assert.equal(entry.tick, 0)
+      }
+    }
+    const team = byKey.get(131072 + 3 * 32 + 1)
+    assert.ok(team, 'team contribution key')
+    assert.equal(team.kind, 1)
+    assert.equal(team.value, (-7) >>> 0)
+    assert.equal(team.tick, 0)
+    host.stepTick(world, Array(8).fill(0))
+    assert.deepEqual(faults, [])
+    assert.deepEqual(outboxOf(engine, world), entries)
+  } finally {
+    engine.freeWorld(world)
+  }
+})
+
+test('the ledger assembles out-of-order batches, retains incomplete ones and restores accepted state', async () => {
+  const { engine, layout, host, faults } = await worldHost('rf-ledger-order')
+  const complete5 = seatBatch(4, 5, { 2: 50, 8: 10 })
+  const complete7 = seatBatch(4, 7, {
+    2: 70, 3: 11, 4: 2, 5: 3, 6: 40, 7: 1, 8: 30, 9: 60,
+    10: 5, 11: 1, 12: 55, 13: 2, 14: 7, 17: 0, 18: 1,
+  })
+  const partial9 = seatBatch(4, 9, { 2: 90, 8: 44, 13: 5 }).slice(0, 9)
+  const shuffled = [...partial9, ...complete7.slice(10), ...complete5, ...complete7.slice(0, 10)]
+  const world = ledgerWorld(engine, shuffled, 3)
+  try {
+    host.stepTick(world, [])
+    assert.deepEqual(faults, [])
+    let state = readWorldState(engine, world, layout)
+    const seats = rowsOf(state, 'show_result_a')
+    assert.equal(seats.length, 1, 'one stable seat identity')
+    assert.equal(seats[0].seat, 4)
+    assert.equal(seats[0].finish_tick, 70)
+    assert.equal(seats[0].score, 30)
+    assert.equal(seats[0].last_score_tick, 60)
+    const publishes = rowsOf(state, 'show_publish')
+    assert.equal(publishes.length, 19)
+    for (const row of publishes) assert.equal(row.tick, 7)
+    const partial = rowsOf(state, 'show_pending').filter(row => row.tick === 9)
+    assert.equal(partial.length, 9, 'only the incomplete fields wait')
+    assert.equal(partial.some(row => row.kind === 8), true)
+
+    const rest = seatBatch(4, 9, {
+      2: 90, 3: 12, 4: 3, 5: 4, 6: 10, 7: 2, 8: 44, 9: 80,
+      10: 6, 11: 0, 12: -1, 13: 5, 14: 9, 17: 0, 18: 1,
+    }).slice(9)
+    injectInbox(engine, layout, world, rest, 4)
+    host.stepTick(world, [])
+    assert.deepEqual(faults, [])
+    state = readWorldState(engine, world, layout)
+    assert.equal(rowsOf(state, 'show_result_a')[0].finish_tick, 90)
+    assert.equal(rowsOf(state, 'show_result_a')[0].score, 44)
+    for (const row of rowsOf(state, 'show_publish')) assert.equal(row.tick, 9)
+
+    host.stepTick(world, [])
+    assert.deepEqual(faults, [])
+    state = readWorldState(engine, world, layout)
+    assert.equal(rowsOf(state, 'show_result_a')[0].finish_tick, 90)
+    assert.equal(rowsOf(state, 'show_result_a')[0].score, 44)
+
+    const snapshot = engine.snapshot(world).slice()
+    const restored = engine.createWorld(JSON.stringify(sceneOf(LEDGER_WORLD, [])))
+    try {
+      engine.restore(restored, snapshot)
+      let copy = readWorldState(engine, restored, layout)
+      assert.equal(rowsOf(copy, 'show_result_a')[0].finish_tick, 90)
+      for (const row of rowsOf(copy, 'show_publish')) assert.equal(row.tick, 9)
+      host.stepTick(restored, [])
+      assert.deepEqual(faults, [])
+      copy = readWorldState(engine, restored, layout)
+      assert.equal(rowsOf(copy, 'show_result_a')[0].finish_tick, 90)
+
+      injectInbox(engine, layout, restored, seatBatch(4, 12, { 1: 2, 2: 120, 8: 88 }), 9)
+      host.stepTick(restored, [])
+      assert.deepEqual(faults, [])
+      copy = readWorldState(engine, restored, layout)
+      const changed = rowsOf(copy, 'show_result_a')
+      assert.equal(changed.length, 1, 'a source-domain change keeps the stable seat')
+      assert.equal(changed[0].finish_tick, 120)
+      assert.equal(changed[0].score, 88)
+      for (const row of rowsOf(copy, 'show_publish')) assert.equal(row.tick, 12)
+    } finally {
+      engine.freeWorld(restored)
+    }
+  } finally {
+    engine.freeWorld(world)
+  }
+})
+
+test('the ledger keeps signed team contributions once per publisher and restores them', async () => {
+  const { engine, layout, host, faults } = await worldHost('rf-ledger-team')
+  const firstKey = 131072 + 1 * 32 + 0
+  const secondKey = 131072 + 2 * 32 + 1
+  const world = ledgerWorld(engine, [
+    { key: firstKey, kind: 0, value: (-5) >>> 0, tick: 4 },
+    { key: secondKey, kind: 1, value: 7 >>> 0, tick: 4 },
+    { key: firstKey, kind: 0, value: (-5) >>> 0, tick: 4 },
+  ], 3)
+  try {
+    host.stepTick(world, [])
+    assert.deepEqual(faults, [])
+    let rows = rowsOf(readWorldState(engine, world, layout), 'show_team_contribution')
+      .sort((a, b) => a.feature - b.feature)
+    assert.equal(rows.length, 2, 'a repeated delivery is not a second publisher')
+    assert.deepEqual(
+      rows.map(row => [row.feature, row.team, row.value, row.tick]),
+      [[1, 0, -5, 4], [2, 1, 7, 4]],
+    )
+
+    injectInbox(engine, layout, world, [{ key: firstKey, kind: 0, value: (-9) >>> 0, tick: 9 }], 6)
+    host.stepTick(world, [])
+    assert.deepEqual(faults, [])
+    injectInbox(engine, layout, world, [{ key: firstKey, kind: 0, value: 100 >>> 0, tick: 5 }], 7)
+    host.stepTick(world, [])
+    assert.deepEqual(faults, [])
+    rows = rowsOf(readWorldState(engine, world, layout), 'show_team_contribution')
+      .sort((a, b) => a.feature - b.feature)
+    assert.deepEqual(
+      rows.map(row => [row.feature, row.team, row.value, row.tick]),
+      [[1, 0, -9, 9], [2, 1, 7, 4]],
+      'newer cumulative values replace and older ones change nothing',
+    )
+
+    const snapshot = engine.snapshot(world).slice()
+    const restored = engine.createWorld(JSON.stringify(sceneOf(LEDGER_WORLD, [])))
+    try {
+      engine.restore(restored, snapshot)
+      const copy = rowsOf(readWorldState(engine, restored, layout), 'show_team_contribution')
+        .sort((a, b) => a.feature - b.feature)
+      assert.deepEqual(
+        copy.map(row => [row.feature, row.team, row.value, row.tick]),
+        [[1, 0, -9, 9], [2, 1, 7, 4]],
+      )
+    } finally {
+      engine.freeWorld(restored)
+    }
+  } finally {
+    engine.freeWorld(world)
+  }
+})
+
+test('conflicting complete values and team contributions refuse instead of awarding twice', async () => {
+  const seatHost = await worldHost('rf-ledger-seat-conflict')
+  const conflicting = [
+    ...seatBatch(4, 7, { 8: 10 }),
+    ...seatBatch(4, 7, { 8: 11 }),
+  ]
+  const seatWorld = ledgerWorld(seatHost.engine, conflicting, 3)
+  try {
+    seatHost.host.stepTick(seatWorld, [])
+    assert.ok(seatHost.faults.some(fault => fault.includes('conflicting')), seatHost.faults.join(' | '))
+    assert.equal(seatHost.module.faultCount > 0, true)
+  } finally {
+    seatHost.engine.freeWorld(seatWorld)
+  }
+
+  const teamHost = await worldHost('rf-ledger-team-conflict')
+  const key = 131072 + 1 * 32 + 0
+  const teamWorld = ledgerWorld(teamHost.engine, [
+    { key, kind: 0, value: 5 >>> 0, tick: 4 },
+    { key, kind: 0, value: 6 >>> 0, tick: 4 },
+  ], 3)
+  try {
+    teamHost.host.stepTick(teamWorld, [])
+    assert.ok(teamHost.faults.some(fault => fault.includes('conflicting')), teamHost.faults.join(' | '))
+    assert.equal(teamHost.module.faultCount > 0, true)
+  } finally {
+    teamHost.engine.freeWorld(teamWorld)
   }
 })

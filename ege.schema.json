@@ -1214,6 +1214,26 @@
       ]
     },
     {
+      "name": "feature_tail_set",
+      "fields": [
+        { "name": "count", "type": "i32" },
+        { "name": "spawn", "type": "f64", "count": 3 },
+        { "name": "immunity_s", "type": "f64" },
+        { "name": "assigned", "type": "u32" },
+        { "name": "free_tails", "type": "u32" }
+      ]
+    },
+    {
+      "name": "feature_tail_set_seat",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "seat", "type": "u32" },
+        { "name": "has_tail", "type": "u32" },
+        { "name": "immune_until", "type": "i32" },
+        { "name": "prev_grab", "type": "u32" }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

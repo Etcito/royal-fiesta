@@ -546,3 +546,113 @@ test('captureZone visual owner stays the course feature index while the root has
   assert.deepEqual(emitted.children[0]?.components?.feature_capture_zone_visual, { owner: 0, index: 0 })
   assert.equal(emitted.children[0]?.components?.['ege.render']?.visible, 1)
 })
+
+const tailDemo: FeatureSpec = {
+  id: 'tails-demo', kind: 'tailSet', params: { count: 'half', spawn: [0, 2, 0], immunityS: 2 },
+}
+
+test('tailSet records carry count, spawn, immunity and empty seat state in order', () => {
+  const root = layoutOf('feature_tail_set')
+  assert.deepEqual(root.fields, [
+    ['count', 'i32', 1], ['spawn', 'f64', 3], ['immunity_s', 'f64', 1],
+    ['assigned', 'u32', 1], ['free_tails', 'u32', 1],
+  ])
+  assert.ok(root.size <= 256, `feature_tail_set is ${root.size} bytes`)
+  const seat = layoutOf('feature_tail_set_seat')
+  assert.deepEqual(seat.fields, [
+    ['owner', 'u32', 1], ['seat', 'u32', 1], ['has_tail', 'u32', 1],
+    ['immune_until', 'i32', 1], ['prev_grab', 'u32', 1],
+  ])
+  assert.ok(seat.size <= 256, `feature_tail_set_seat is ${seat.size} bytes`)
+})
+
+test('tailSet emits half as -1, eight empty seats and a hidden floor-disc per seat', async () => {
+  const input = await inputWith([tailDemo])
+  const emitted = FEATURE_EMITTERS.tailSet(tailDemo, ctxOf(input, 3))
+  assert.equal(emitted.root.name, 'feature/tails-demo')
+  assert.equal(emitted.root.body, undefined)
+  assert.equal(emitted.root.colliders, undefined)
+  assert.deepEqual(emitted.root.components?.feature, { kind: 19, index: 3, salt: 0x103 })
+  assert.deepEqual(emitted.root.components?.feature_tail_set, {
+    count: -1, spawn: [0, 2, 0], immunity_s: 2, assigned: 0, free_tails: 0,
+  })
+  assert.deepEqual(emitted.root.components?.['ege.transform'], { pos: [0, 2, 0], rot: [0, 0, 0, 1] })
+  assert.deepEqual(emitted.children.map((child) => child.name), [
+    'feature/tails-demo/seat/0', 'feature/tails-demo/seat/1', 'feature/tails-demo/seat/2',
+    'feature/tails-demo/seat/3', 'feature/tails-demo/seat/4', 'feature/tails-demo/seat/5',
+    'feature/tails-demo/seat/6', 'feature/tails-demo/seat/7',
+  ])
+  for (let seat = 0; seat < 8; seat++) {
+    const child = emitted.children[seat]!
+    assert.equal(child.body, undefined)
+    assert.equal(child.colliders, undefined)
+    assert.deepEqual(child.components?.feature_tail_set_seat, {
+      owner: 3, seat, has_tail: 0, immune_until: 0, prev_grab: 0,
+    })
+    assert.deepEqual(child.components?.['ege.transform'], { pos: [0, 2, 0], rot: [0, 0, 0, 1] })
+    assert.deepEqual(child.components?.['ege.render'], {
+      shape: 4, color: 0x73D966, visible: 0, params: [0.5, 0.06, 0, 0],
+    })
+  }
+})
+
+test('tailSet keeps an integer count 1..30 instead of half', async () => {
+  const input = await inputWith([tailDemo])
+  const ctx = ctxOf(input, 0)
+  for (const count of [1, 30]) {
+    const spec: FeatureSpec = { ...tailDemo, params: { ...tailDemo.params, count } }
+    const emitted = FEATURE_EMITTERS.tailSet(spec, ctx)
+    assert.equal(emitted.root.components?.feature_tail_set?.count, count)
+    assert.equal(emitted.children.length, 8)
+  }
+})
+
+test('tailSet refuses count values outside half or the 1..30 integer range', async () => {
+  const input = await inputWith([tailDemo])
+  const ctx = ctxOf(input, 0)
+  const message = "/count: expected count as 'half' or an integer 1..30"
+  const refused = (count: unknown) => {
+    const spec = { ...tailDemo, params: { ...tailDemo.params, count } } as FeatureSpec
+    assert.throws(() => FEATURE_EMITTERS.tailSet(spec, ctx),
+      (error: unknown) => error instanceof RefusalError && error.message.includes(message))
+  }
+  refused(0)
+  refused(31)
+  refused(2.5)
+  refused('all')
+  refused(undefined)
+})
+
+test('tailSet stores immunity in seconds at both endpoints and refuses a missing value', async () => {
+  const input = await inputWith([tailDemo])
+  const ctx = ctxOf(input, 0)
+  for (const immunityS of [0, 30]) {
+    const spec: FeatureSpec = { ...tailDemo, params: { ...tailDemo.params, immunityS } }
+    const emitted = FEATURE_EMITTERS.tailSet(spec, ctx)
+    assert.equal(emitted.root.components?.feature_tail_set?.immunity_s, immunityS)
+  }
+  const refused = (params: Record<string, unknown>, text: string) => {
+    const spec = { ...tailDemo, params } as FeatureSpec
+    assert.throws(() => FEATURE_EMITTERS.tailSet(spec, ctx),
+      (error: unknown) => error instanceof RefusalError && error.message.includes(text))
+  }
+  refused({ count: 'half', spawn: [0, 2, 0] }, '/immunityS: missing immunityS')
+  refused({ ...tailDemo.params, immunityS: -0.1 }, '/immunityS: expected immunityS as a finite number in 0..30 s')
+  refused({ ...tailDemo.params, immunityS: 30.1 }, '/immunityS: expected immunityS as a finite number in 0..30 s')
+  refused({ count: 'half', immunityS: 2 }, '/spawn: missing spawn')
+  refused({ ...tailDemo.params, spawn: [0, 2] }, '/spawn: expected [x,y,z] in metres')
+})
+
+test('tailSet scene builds a world with the root and its eight seat children', async () => {
+  const input = await inputWith([tailDemo])
+  const scene = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(scene.text) >= 1)
+  assert.equal(scene.index('feature/tails-demo/seat/0'), scene.index('feature/tails-demo') + 1)
+  assert.equal(scene.index('feature/tails-demo/seat/7'), scene.index('feature/tails-demo') + 8)
+  const root = scene.scene.entities[scene.index('feature/tails-demo')]
+  assert.equal(root?.body, undefined)
+  const seat = scene.scene.entities[scene.index('feature/tails-demo/seat/0')]
+  assert.equal(seat?.body, undefined)
+  assert.equal(seat?.colliders, undefined)
+  assert.equal(seat?.components?.['ege.render']?.visible, 0)
+})

@@ -1270,6 +1270,71 @@
           "type": "u32"
         }
       ]
+    },
+    {
+      "name": "show_seat_identity",
+      "fields": [
+        { "name": "room_seat", "type": "u32" },
+        { "name": "round_seat", "type": "u32" },
+        { "name": "input_slot", "type": "i32" },
+        { "name": "bot", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_control",
+      "fields": [
+        { "name": "code", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_result_a",
+      "fields": [
+        { "name": "seat", "type": "i32" },
+        { "name": "status", "type": "i32" },
+        { "name": "finish_tick", "type": "i32" },
+        { "name": "finish_sub", "type": "i32" },
+        { "name": "lap", "type": "i32" },
+        { "name": "stage", "type": "i32" },
+        { "name": "route_mm", "type": "i32" },
+        { "name": "falls", "type": "i32" },
+        { "name": "score", "type": "i32" },
+        { "name": "last_score_tick", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_result_b",
+      "fields": [
+        { "name": "hold_ticks", "type": "i32" },
+        { "name": "possessing", "type": "u32" },
+        { "name": "last_acquire_tick", "type": "i32" },
+        { "name": "matches", "type": "i32" },
+        { "name": "cross_ticks", "type": "i32" },
+        { "name": "out_tick", "type": "i32" },
+        { "name": "out_sub", "type": "i32" },
+        { "name": "team", "type": "i32" },
+        { "name": "opening_rank", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_publish",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "seat", "type": "u32" },
+        { "name": "field", "type": "u32" },
+        { "name": "value", "type": "i32" },
+        { "name": "tick", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_pending",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "source", "type": "u32" },
+        { "name": "key", "type": "u32" },
+        { "name": "kind", "type": "u32" },
+        { "name": "value", "type": "i32" },
+        { "name": "tick", "type": "i32" }
+      ]
     }
   ],
   "resources": [

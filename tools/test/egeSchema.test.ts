@@ -4,6 +4,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { loadEngine } from '@etcito/game-engine'
 import { schemaLayout } from '@etcito/game-engine/script'
+import { readWorldState } from '@etcito/game-engine/world-state'
 
 const SCHEMA = fileURLToPath(new URL('../../ege.schema.json', import.meta.url))
 
@@ -211,4 +212,215 @@ test('match event carries seat, a and b after the nine original events', async (
     ['a', 'i32', 1],
     ['b', 'i32', 1],
   ])
+})
+
+const SHOW_RECORDS = [
+  'show_seat_identity',
+  'show_control',
+  'show_result_a',
+  'show_result_b',
+  'show_publish',
+  'show_pending',
+]
+
+async function showProbe(scene: unknown) {
+  // A test-local world kind whose schedule copies the G6 round entries verbatim: only systems that
+  // already exist, so this card introduces no schedule reference of its own.
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as {
+    world_kinds: { name: string; players: number; schedule: unknown[] }[]
+  }
+  const round = schema.world_kinds.find((kind) => kind.name === 'round')
+  assert.ok(round, 'the G6 round world kind is declared')
+  schema.world_kinds.push({
+    name: 'show_probe',
+    players: 8,
+    schedule: JSON.parse(JSON.stringify(round.schedule)),
+  })
+  const engine = await loadEngine()
+  engine.setSchema(JSON.stringify(schema))
+  const layout = schemaLayout(engine)
+  const world = engine.createWorld(JSON.stringify(scene))
+  return { engine, layout, world }
+}
+
+function fieldType(fields: (string | number)[][], name: string): string {
+  const field = fields.find(([field]) => field === name)
+  assert.ok(field, `${name} is declared`)
+  assert.equal(typeof field[1], 'string')
+  return field[1] as string
+}
+
+test('show seat identity and control records separate seats from entity references', async () => {
+  const layout = await layoutOf()
+  const identity = declared(layout, 'components', 'show_seat_identity')
+  assert.deepEqual(identity.fields, [
+    ['room_seat', 'u32', 1],
+    ['round_seat', 'u32', 1],
+    ['input_slot', 'i32', 1],
+    ['bot', 'u32', 1],
+  ])
+  assert.deepEqual(identity.offsets, [
+    ['room_seat', 0],
+    ['round_seat', 4],
+    ['input_slot', 8],
+    ['bot', 12],
+  ])
+  assert.equal(identity.size, 16)
+  const control = declared(layout, 'components', 'show_control')
+  assert.deepEqual(control.fields, [['code', 'u32', 1]])
+  assert.equal(control.size, 4)
+})
+
+test('show result records split the cumulative seat counters into two fixed records', async () => {
+  const layout = await layoutOf()
+  const a = declared(layout, 'components', 'show_result_a')
+  assert.deepEqual(a.fields, [
+    ['seat', 'i32', 1],
+    ['status', 'i32', 1],
+    ['finish_tick', 'i32', 1],
+    ['finish_sub', 'i32', 1],
+    ['lap', 'i32', 1],
+    ['stage', 'i32', 1],
+    ['route_mm', 'i32', 1],
+    ['falls', 'i32', 1],
+    ['score', 'i32', 1],
+    ['last_score_tick', 'i32', 1],
+  ])
+  assert.equal(a.size, 40)
+  const b = declared(layout, 'components', 'show_result_b')
+  assert.deepEqual(b.fields, [
+    ['hold_ticks', 'i32', 1],
+    ['possessing', 'u32', 1],
+    ['last_acquire_tick', 'i32', 1],
+    ['matches', 'i32', 1],
+    ['cross_ticks', 'i32', 1],
+    ['out_tick', 'i32', 1],
+    ['out_sub', 'i32', 1],
+    ['team', 'i32', 1],
+    ['opening_rank', 'i32', 1],
+  ])
+  assert.equal(b.size, 36)
+  for (const record of [a, b]) assert.ok(record.size <= 256, `${record.size} bytes`)
+})
+
+test('show result records keep absent ticks, stage and team signed', async () => {
+  const layout = await layoutOf()
+  const a = declared(layout, 'components', 'show_result_a').fields
+  const b = declared(layout, 'components', 'show_result_b').fields
+  for (const name of ['finish_tick', 'finish_sub', 'last_score_tick', 'stage']) {
+    assert.equal(fieldType(a, name), 'i32', name)
+  }
+  for (const name of ['last_acquire_tick', 'out_tick', 'out_sub', 'team']) {
+    assert.equal(fieldType(b, name), 'i32', name)
+  }
+  assert.equal(fieldType(b, 'opening_rank'), 'i32')
+  assert.equal(fieldType(b, 'possessing'), 'u32')
+})
+
+test('show publication and pending records own their seat entity', async () => {
+  const layout = await layoutOf()
+  const publish = declared(layout, 'components', 'show_publish')
+  assert.deepEqual(publish.fields, [
+    ['owner', 'entity', 1],
+    ['seat', 'u32', 1],
+    ['field', 'u32', 1],
+    ['value', 'i32', 1],
+    ['tick', 'i32', 1],
+  ])
+  assert.equal(publish.offsets[0][1], 0)
+  assert.equal(publish.size, 20)
+  const pending = declared(layout, 'components', 'show_pending')
+  assert.deepEqual(pending.fields, [
+    ['owner', 'entity', 1],
+    ['source', 'u32', 1],
+    ['key', 'u32', 1],
+    ['kind', 'u32', 1],
+    ['value', 'i32', 1],
+    ['tick', 'i32', 1],
+  ])
+  assert.equal(pending.offsets[0][1], 0)
+  assert.equal(pending.size, 24)
+})
+
+test('show records use scalar fields so arrays above sixteen stay child records', async () => {
+  const layout = await layoutOf()
+  for (const name of SHOW_RECORDS) {
+    const entry = layout.components.find((component) => component.name === name)
+    assert.ok(entry, `${name} is declared`)
+    for (const field of entry.fields) assert.equal(field.count, 1, `${name}.${field.name}`)
+    assert.ok(entry.size <= 256, `${name} is ${entry.size} bytes`)
+  }
+})
+
+test('show records initialize absence to -1 in a constructed world and keep child ownership', async () => {
+  const { engine, layout, world } = await showProbe({
+    format: 'ege.scene',
+    version: 1,
+    world_kind: 'show_probe',
+    seed: 1,
+    entities: [
+      { components: { show_publish: { owner: 1, seat: 59, field: 0, value: -1, tick: 0 } } },
+      {
+        components: {
+          show_seat_identity: { room_seat: 59, round_seat: 0, input_slot: -1, bot: 4 },
+          show_control: { code: 32639 },
+          show_result_a: {
+            seat: 59,
+            status: 1,
+            finish_tick: -1,
+            finish_sub: -1,
+            lap: 0,
+            stage: -1,
+            route_mm: 0,
+            falls: 0,
+            score: 0,
+            last_score_tick: -1,
+          },
+          show_result_b: {
+            hold_ticks: 0,
+            possessing: 0,
+            last_acquire_tick: -1,
+            matches: 0,
+            cross_ticks: 0,
+            out_tick: -1,
+            out_sub: -1,
+            team: -1,
+            opening_rank: 0,
+          },
+        },
+      },
+      {
+        components: {
+          show_pending: { owner: 1, source: 3, key: 59, kind: 0, value: -1, tick: 0 },
+        },
+      },
+    ],
+  })
+  const state = readWorldState(engine, world, layout)
+  const seat = state.entities[1]
+  assert.equal(seat, 1)
+  const identity = state.components.show_seat_identity[seat]
+  assert.deepEqual(identity, { room_seat: 59, round_seat: 0, input_slot: -1, bot: 4 })
+  assert.deepEqual(state.components.show_control[seat], { code: 32639 })
+  const a = state.components.show_result_a[seat]
+  assert.equal(a.status, 1)
+  for (const name of ['finish_tick', 'finish_sub', 'last_score_tick', 'stage']) {
+    assert.equal(a[name], -1, name)
+  }
+  for (const name of ['lap', 'route_mm', 'falls', 'score']) assert.equal(a[name], 0, name)
+  const b = state.components.show_result_b[seat]
+  for (const name of ['last_acquire_tick', 'out_tick', 'out_sub', 'team']) {
+    assert.equal(b[name], -1, name)
+  }
+  for (const name of ['hold_ticks', 'possessing', 'matches', 'cross_ticks', 'opening_rank']) {
+    assert.equal(b[name], 0, name)
+  }
+  const publish = state.components.show_publish[state.entities[0]]
+  assert.equal(publish.owner, seat)
+  assert.equal(publish.seat, 59)
+  assert.equal(publish.value, -1)
+  const pending = state.components.show_pending[state.entities[2]]
+  assert.equal(pending.owner, seat)
+  assert.equal(pending.source, 3)
+  assert.equal(pending.value, -1)
 })

@@ -1,5 +1,5 @@
 import { Column, getComponent, isNull, newRecord, readColumn, setComponent, setLinvel } from 'ege'
-import { Character, EgeMechGrab, EgeMechLever, EgeTransform } from '../components.gen'
+import { Character, EgeMechGrab, EgeMechLever, EgeTransform, ShowCharacterRef } from '../components.gen'
 import { BTN_GRAB_BIT, CHAR_GRABBER_MAX_SPEED, CHAR_GRAB_CONE_DOT, CHAR_GRAB_COOLDOWN_TICKS, CHAR_GRAB_RANGE, CHAR_GRAB_SLOW, CHAR_MASS, GRAVITY_Y, MODE_AIR, MODE_GROUND, MODE_GRABBING, NO_ENTITY } from './constants.as'
 
 /**
@@ -100,6 +100,36 @@ export function grabPass(characters: Column<Character>, now: i32, dt: f64): void
     }
     const speed = Math.sqrt(ch.pre_vel_0 * ch.pre_vel_0 + ch.pre_vel_2 * ch.pre_vel_2)
     if (speed > CHAR_GRABBER_MAX_SPEED) scaleHorizontal(entity, ch, CHAR_GRABBER_MAX_SPEED / speed, dt)
+  }
+}
+
+// show_character_ref child records own the entity-typed grab target and lever of their character
+// (owner). Engine transfer remaps those fields; the numeric character fields mirror them for
+// this tick. NO_ENTITY stands for "no reference", which the character stores as -1.
+function entityOrNone(entity: u32): i32 {
+  return entity == NO_ENTITY ? -1 : <i32>entity
+}
+
+export function pullGrabRefs(characters: Column<Character>, refs: Column<ShowCharacterRef>): void {
+  for (let r: u32 = 0; r < refs.count; r++) {
+    const ref = refs.at(r)
+    const row = characters.find(ref.owner)
+    if (row < 0) continue
+    const ch = characters.at(<u32>row)
+    ch.grab_target = entityOrNone(ref.target)
+    ch.grab_lever = entityOrNone(ref.lever)
+  }
+}
+
+// carry belongs to the feature owners that synchronize it; this pass leaves it unchanged.
+export function pushGrabRefs(characters: Column<Character>, refs: Column<ShowCharacterRef>): void {
+  for (let r: u32 = 0; r < refs.count; r++) {
+    const ref = refs.at(r)
+    const row = characters.find(ref.owner)
+    if (row < 0) continue
+    const ch = characters.at(<u32>row)
+    ref.target = ch.grab_target >= 0 ? <u32>ch.grab_target : NO_ENTITY
+    ref.lever = ch.grab_lever >= 0 ? <u32>ch.grab_lever : NO_ENTITY
   }
 }
 

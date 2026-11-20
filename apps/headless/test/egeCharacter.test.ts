@@ -12,14 +12,20 @@ import { readRepoText } from '../src/files.ts'
 const code = (moveZ = 0, buttons: Partial<{ jump: boolean; dive: boolean; grab: boolean }> = {}) =>
   encodeInput({ moveX: 0, moveZ, jump: false, dive: false, grab: false, ...buttons })
 
-async function relocated(id: string, edit: (course: any) => void, humans = Array(8).fill(true)) {
+async function relocated(id: string, edit: (course: any) => void, humans = Array(8).fill(true), patch?: (doc: any, scene: import('@royal-fiesta/game/ege/sceneEmitter').EmittedScene) => void) {
   const { course, assets } = await loadEgeCourse(id)
   const copy = structuredClone(course)
   edit(copy)
   const engine = await loadEngine()
   const schema = await readRepoText(RF_EGE_SCHEMA)
   engine.setSchema(schema)
-  const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  let scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  if (patch) {
+    // Scene text is the engine's JSON entity list; entity ids are list indices.
+    const doc = JSON.parse(scene.text)
+    patch(doc, scene)
+    scene = { ...scene, text: JSON.stringify(doc) }
+  }
   const round = await createEngineRound(engine, schema, await rfScriptBytes(), scene, copy, { profile: 'sprint', seed: 7, humans })
   return { engine, scene, course: copy, round }
 }
@@ -252,6 +258,76 @@ test('player and lever grabs attach and release', async () => {
     assert.ok(ch.grab_cooldown >= 55)
     assert.equal(grab.held, 0)
   } finally { lever.round.dispose() }
+})
+
+test('show_control replaces the SDK slot on the shared movement path', async () => {
+  const intro = PROFILES.sprint.introTicks
+  const forward = await relocated('race-sprint', () => {}, undefined, (doc, scene) => {
+    doc.entities[scene.seatEntities[0]].components.show_control = { code: code(1) }
+  })
+  try {
+    // SDK input points backwards; the seat's show_control must win.
+    play(forward.round, intro + 30, tick => tick >= intro ? code(-1) : NEUTRAL_CODE)
+    const obs = observe(forward.round, forward.scene)
+    assert.ok(obs.seats[0].vel.z > 7.9, `show_control forward speed ${obs.seats[0].vel.z}`)
+    assert.ok(Math.abs(Math.hypot(obs.seats[0].vel.x, obs.seats[0].vel.z) - 8) < 0.05)
+  } finally { forward.round.dispose() }
+
+  const neutral = await relocated('race-sprint', () => {}, undefined, (doc, scene) => {
+    doc.entities[scene.seatEntities[0]].components.show_control = { code: NEUTRAL_CODE }
+  })
+  try {
+    play(neutral.round, intro + 30, tick => tick >= intro ? code(1) : NEUTRAL_CODE)
+    const obs = observe(neutral.round, neutral.scene)
+    assert.ok(Math.hypot(obs.seats[0].vel.x, obs.seats[0].vel.z) < 0.05, 'neutral show_control ignores SDK axes')
+    const ch = neutral.round.worldState().components.character[String(obs.seats[0].entity)] as any
+    assert.equal(ch.prev_buttons, 0)
+  } finally { neutral.round.dispose() }
+})
+
+test('a show_control jump held from the start is stored without a repeated press edge', async () => {
+  const intro = PROFILES.sprint.introTicks
+  const jump = await relocated('race-sprint', () => {}, undefined, (doc, scene) => {
+    doc.entities[scene.seatEntities[0]].components.show_control = { code: code(0, { jump: true }) }
+  })
+  try {
+    play(jump.round, intro + 40, () => NEUTRAL_CODE)
+    const y0 = observe(jump.round, jump.scene).seats[0].pos.y
+    let high = 0
+    for (let i = 0; i < 60; i++) {
+      jump.round.step(() => NEUTRAL_CODE)
+      const obs = observe(jump.round, jump.scene)
+      high = Math.max(high, obs.seats[0].pos.y - y0)
+    }
+    // The button was already down on the first tick, so no press edge exists after the intro.
+    assert.ok(high < 0.5, `held show_control jump must not re-press: rise ${high}`)
+    const ch = jump.round.worldState().components.character[String(jump.scene.seatEntities[0])] as any
+    assert.equal(ch.prev_buttons, 1)
+  } finally { jump.round.dispose() }
+})
+
+test('grab target is mirrored into show_character_ref for the grabbing character', async () => {
+  const intro = PROFILES.sprint.introTicks
+  const grab = await relocated('race-sprint', c => {
+    c.sim.spawns[1].t = { ...c.sim.spawns[0].t, z: c.sim.spawns[0].t.z + 0.8 }
+    c.sim.spawns[1].facing = { x: 0, z: 1 }
+  }, undefined, (doc, scene) => {
+    doc.entities.push({ components: { show_character_ref: { owner: scene.seatEntities[0], target: 0xFFFFFFFF, lever: 0xFFFFFFFF, carry: 0xFFFFFFFF } } })
+  })
+  try {
+    play(grab.round, intro, () => NEUTRAL_CODE)
+    for (let i = 0; i < 10; i++) {
+      grab.round.step(seat => seat === 0 && grab.round.tick >= intro ? code(0, { grab: true }) : NEUTRAL_CODE)
+      if (observe(grab.round, grab.scene).seats[0].mode === 5) break
+    }
+    assert.equal(observe(grab.round, grab.scene).seats[0].mode, 5)
+    const refs = Object.values(grab.round.worldState().components.show_character_ref as Record<string, any>)
+    const ref = refs.find(item => item.owner === grab.scene.seatEntities[0])
+    assert.ok(ref, 'show_character_ref child exists')
+    assert.equal(ref.target, grab.scene.seatEntities[1])
+    assert.equal(ref.lever, 0xFFFFFFFF)
+    assert.equal(ref.carry, 0xFFFFFFFF)
+  } finally { grab.round.dispose() }
 })
 
 test('spinner contact stuns, and repeated input runs are deterministic', async () => {

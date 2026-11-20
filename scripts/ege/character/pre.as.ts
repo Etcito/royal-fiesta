@@ -1,5 +1,5 @@
-import { axis, button, getComponent, isNull, setComponent, setLinvel, tick } from 'ege'
-import { AXIS_MOVE_X, AXIS_MOVE_Z, BUTTON_DIVE, BUTTON_GRAB, BUTTON_JUMP, Character, EgeBodyProps, EgeTransform, EgeVelocity } from '../components.gen'
+import { axis, button, getComponent, isNull, readColumn, setComponent, setLinvel, tick } from 'ege'
+import { AXIS_MOVE_X, AXIS_MOVE_Z, BUTTON_DIVE, BUTTON_GRAB, BUTTON_JUMP, Character, EgeBodyProps, EgeTransform, EgeVelocity, ShowCharacterRef, ShowControl } from '../components.gen'
 import { characterColumn, seatColumn, transformOf, velocityOf } from '../lib/seats.as'
 import { TICK_DT } from '../lib/units.as'
 import {
@@ -17,11 +17,28 @@ import {
   PROTECTED_FILTER
 } from './constants.as'
 import { newGround, probeGround } from './ground.as'
-import { grabPass, holdLever, releaseGrab, startLeverGrab } from './grab.as'
+import { grabPass, holdLever, pullGrabRefs, pushGrabRefs, releaseGrab, startLeverGrab } from './grab.as'
 import { newMove, settleTimer, stepMoves } from './moves.as'
+
+// S1 wire code (sim/input): moveX bits 0..7, moveZ bits 8..15, jump 16, dive 17, grab 18.
+// Axis bytes decode as clamp(byte,0,254)-127 divided by 127; see packages/sim/src/input.ts.
+function controlAxis(code: u32, shift: u32): f64 {
+  let v: u32 = (code >> shift) & 0xFF
+  if (v > 254) v = 254
+  return <f64>(<i32>v - 127) / 127.0
+}
+
+function controlButtons(code: u32): u32 {
+  let b: u32 = 0
+  if ((code & 0x10000) != 0) b |= BTN_JUMP_BIT
+  if ((code & 0x20000) != 0) b |= BTN_DIVE_BIT
+  if ((code & 0x40000) != 0) b |= BTN_GRAB_BIT
+  return b
+}
 
 export function rf_character_pre(): void {
   const characters = characterColumn()
+  const refs = readColumn<ShowCharacterRef>(ShowCharacterRef.ID, ShowCharacterRef.SIZE)
   const now = tick()
   if (now == 0) {
     for (let i: u32 = 0; i < characters.count; i++) {
@@ -33,6 +50,9 @@ export function rf_character_pre(): void {
       ch.ground_obstacle = -1
     }
   }
+  // Entity-typed grab references are authoritative in show_character_ref, so a rebuilt domain
+  // reads its remapped ids before the controller uses them.
+  pullGrabRefs(characters, refs)
 
   const seats = seatColumn()
   const ground = newGround()
@@ -54,10 +74,20 @@ export function rf_character_pre(): void {
     const seatRow = seats.find(entity)
     if (seatRow < 0) continue
     const player = seats.at(<u32>seatRow).player
-    let mx: f64 = frozen ? 0.0 : <f64>axis(player, AXIS_MOVE_X)
-    let mz: f64 = frozen ? 0.0 : <f64>axis(player, AXIS_MOVE_Z)
+    // show_control, when the seat carries it, replaces the SDK slot for every control source.
+    const control = getComponent<ShowControl>(entity, ShowControl.ID, ShowControl.SIZE)
+    let mx: f64 = 0.0
+    let mz: f64 = 0.0
     let buttons: u32 = 0
-    if (!frozen) {
+    if (!isNull<ShowControl>(control)) {
+      if (!frozen) {
+        mx = controlAxis(control.code, 0)
+        mz = controlAxis(control.code, 8)
+        buttons = controlButtons(control.code)
+      }
+    } else if (!frozen) {
+      mx = <f64>axis(player, AXIS_MOVE_X)
+      mz = <f64>axis(player, AXIS_MOVE_Z)
       if (button(player, BUTTON_JUMP)) buttons |= BTN_JUMP_BIT
       if (button(player, BUTTON_DIVE)) buttons |= BTN_DIVE_BIT
       if (button(player, BUTTON_GRAB)) buttons |= BTN_GRAB_BIT
@@ -139,5 +169,7 @@ export function rf_character_pre(): void {
     else setLinvel(entity, <f32>vx, <f32>(vy + GRAVITY_Y * TICK_DT), <f32>vz)
   }
   grabPass(characters, now, TICK_DT)
+  pushGrabRefs(characters, refs)
   characters.write()
+  refs.write()
 }

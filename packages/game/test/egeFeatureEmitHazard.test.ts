@@ -131,3 +131,63 @@ test('annulus refuses a ring narrower than 0.5 m and an out-of-range segment cou
     course: input.course.sim!, index: 0, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets,
   }), (error: unknown) => error instanceof RefusalError && error.message.includes('/segments: expected segments'))
 })
+
+test('sweep emits root-relative phases and a fixed placeholder pool', async () => {
+  const spec: FeatureSpec = { id: 'sweep-demo', kind: 'sweep', params: {
+    center: [2, 3, 4], lengthM: 8, telegraphS: 0.25, pattern: 'laser', heightM: 0.5,
+    gapM: 2, speedDegS: 90, speedMps: 3,
+    phases: [{ atS: 0, heightM: 0.7 }, { atS: 1.25, pattern: 'bars' }, { atS: 2, pattern: 'block' }],
+  } }
+  const { input } = await inputWith([spec])
+  const ctx = { course: input.course.sim!, index: 3, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets }
+  const entities = FEATURE_EMITTERS.sweep(spec, ctx)
+  assert.deepEqual(entities.root.components?.feature_sweep, {
+    center: [2, 3, 4], length_m: 8, telegraph_s: 0.25, phase_count: 3, part_count: 2,
+    overtime_ticks: 0, active: 0, effective: 0, live: 0, just_live: 0, cos: 1, sin: 0, slide: 0, placed: 0,
+  })
+  for (const [index, child] of entities.children.slice(0, 3).entries()) {
+    assert.equal(child.name, `feature/sweep-demo/phase/${index}`)
+    assert.deepEqual(child.components?.feature_sweep_phase, {
+      owner: 3, index, at_s: [0, 1.25, 2][index], pattern: [0, 2, 1][index],
+      height_m: index === 0 ? 0.7 : 0.5, gap_m: 2, speed_deg_s: 90, speed_mps: 3,
+    })
+  }
+  for (const [index, child] of entities.children.slice(3).entries()) {
+    assert.equal(child.name, `feature/sweep-demo/part/${index}`)
+    assert.deepEqual(child.body, { type: 'kinematic_position' })
+    assert.deepEqual(child.components?.['ege.transform']?.pos, [2, 3, 4])
+    assert.deepEqual(child.colliders, [{ shape: 'box', half_extents: [1, 1, 1], group: 'moving' }])
+    assert.deepEqual(child.components?.['ege.box_collider'], { half_extents: [1, 1, 1] })
+    assert.deepEqual(child.components?.feature_sweep_part, { owner: 3, index, half: [1, 1, 1] })
+    assert.deepEqual(child.components?.['ege.render'], { shape: 1, color: 0xE04F5F, params: [1, 1, 1, 0], visible: 1 })
+    assert.equal(child.components?.['ege.body_props']?.colliders_enabled, 1)
+  }
+  assert.equal(entities.children.length, 5)
+  const emitted = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(emitted.text) >= 1)
+  assert.ok(emitted.index('feature/sweep-demo/part/0') > emitted.index('feature/sweep-demo/phase/2'))
+  const laser = { ...spec, params: { ...spec.params, phases: [{ atS: 0 }, { atS: 1 }] } }
+  assert.equal(FEATURE_EMITTERS.sweep(laser, ctx).root.components?.feature_sweep.part_count, 1)
+  assert.equal(FEATURE_EMITTERS.sweep(laser, ctx).children.length, 3)
+})
+
+test('sweep rejects invalid phase order and jump or walk gaps', async () => {
+  const spec: FeatureSpec = { id: 'invalid', kind: 'sweep', params: {
+    center: [0, 0, 0], lengthM: 8, telegraphS: 0, pattern: 'laser', heightM: 0.5,
+    gapM: 2, speedDegS: 90, phases: [{ atS: 0 }],
+  } }
+  const { input } = await inputWith([spec])
+  const ctx = { course: input.course.sim!, index: 0, path: 'course', assets: input.assets }
+  const invalid = (phases: unknown[], message: string) => {
+    const candidate = { ...spec, params: { ...spec.params, phases } }
+    assert.throws(() => FEATURE_EMITTERS.sweep(candidate, ctx),
+      (error: unknown) => error instanceof RefusalError && error.message.includes(message))
+  }
+  invalid([{ atS: 1 }], '/atS: expected phases starting at 0')
+  invalid([{ atS: 0 }, { atS: 0 }], '/atS: expected phases starting at 0')
+  invalid([{ atS: 0 }, { atS: 0.001 }, { atS: 0.002 }], '/atS: expected phases starting at 0')
+  invalid([{ atS: 0, heightM: 0.8 }], '/heightM: expected low bar top')
+  invalid([{ atS: 0, pattern: 'bars', gapM: 1 }], '/gapM: expected heightM + gapM')
+  invalid([{ atS: 0, pattern: 'block', gapM: 1, speedMps: 1 }], '/gapM: expected a walk-through gap')
+  invalid([{ atS: 0, pattern: 'block', gapM: 8, speedMps: 1 }], '/gapM: expected a walk-through gap')
+})

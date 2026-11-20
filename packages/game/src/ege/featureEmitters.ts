@@ -15,6 +15,7 @@ import { swimVolumeEmitter } from './features/swimVolume.ts'
 import { tileFieldEmitter } from './features/tileField.ts'
 import { hexFieldEmitter } from './features/hexField.ts'
 import { annulusEmitter } from './features/annulus.ts'
+import { sweepEmitter } from './features/sweep.ts'
 import { roadEmitter } from './features/road.ts'
 
 export type RawEntity = {
@@ -152,5 +153,6 @@ export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object
   tileField: tileFieldEmitter,
   hexField: hexFieldEmitter,
   annulus: annulusEmitter,
+  sweep: sweepEmitter,
   road: roadEmitter,
 })

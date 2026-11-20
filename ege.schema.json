@@ -1142,6 +1142,19 @@
       ]
     },
     {
+      "name": "feature_ball",
+      "fields": [
+        { "name": "spawn", "type": "f64", "count": 3 },
+        { "name": "radius", "type": "f64" },
+        { "name": "mass", "type": "f64" },
+        { "name": "reset_s", "type": "f64" },
+        { "name": "pending", "type": "i32" },
+        { "name": "anchor_tick", "type": "i32" },
+        { "name": "anchor", "type": "f64", "count": 3 },
+        { "name": "placed", "type": "u32" }
+      ]
+    },
+    {
       "name": "feature_goal",
       "fields": [
         { "name": "team", "type": "u32" },

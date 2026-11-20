@@ -217,3 +217,63 @@ test('goal scene builds a world with the goal root and visual as entities', asyn
   assert.ok(engine.createWorld(scene.text) >= 1)
   assert.equal(scene.index('feature/goal-demo/visual/0'), scene.index('feature/goal-demo') + 1)
 })
+
+const ballDemo: FeatureSpec = {
+  id: 'ball-demo', kind: 'ball', params: { spawn: [1, 2, 3], radius: 1.25, mass: 42, resetS: 9 },
+}
+
+test('ball record declares the source parameters and initial state in order', () => {
+  const component = schemaLayout(engine).components.find((entry) => entry.name === 'feature_ball')
+  assert.ok(component)
+  assert.deepEqual(component.fields.map((field) => [field.name, field.type, field.count]), [
+    ['spawn', 'f64', 3], ['radius', 'f64', 1], ['mass', 'f64', 1], ['reset_s', 'f64', 1],
+    ['pending', 'i32', 1], ['anchor_tick', 'i32', 1], ['anchor', 'f64', 3], ['placed', 'u32', 1],
+  ])
+  assert.ok(component.size <= 256)
+})
+
+test('ball emits a CCD dynamic sphere with source mass, exact groups and initial state', async () => {
+  const input = await inputWith([ballDemo])
+  const emitted = FEATURE_EMITTERS.ball(ballDemo, ctxOf(input, 3))
+  assert.equal(emitted.root.name, 'feature/ball-demo')
+  assert.deepEqual(emitted.children, [])
+  assert.deepEqual(emitted.root.body, { type: 'dynamic', ccd: true })
+  assert.deepEqual(emitted.root.colliders, [{ shape: 'sphere', radius: 1.25, density: 0, group: 'moving' }])
+  assert.deepEqual(emitted.root.components?.feature, { kind: 14, index: 3, salt: 0x103 })
+  assert.deepEqual(emitted.root.components?.feature_ball, {
+    spawn: [1, 2, 3], radius: 1.25, mass: 42, reset_s: 9,
+    pending: -1, anchor_tick: 0, anchor: [1, 2, 3], placed: 0,
+  })
+  assert.deepEqual(emitted.root.components?.['ege.transform'], { pos: [1, 2, 3], rot: [0, 0, 0, 1] })
+  assert.deepEqual(emitted.root.components?.['ege.render'], { shape: 0 })
+  assert.deepEqual(emitted.root.components?.['ege.body_props'], {
+    lock_rotations: 0, additional_mass: 42, friction_combine: 0,
+    groups_override: 1, memberships: 2, filter: 15, colliders_enabled: 1,
+  })
+  const scene = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(scene.text) >= 1)
+  const built = scene.scene.entities[scene.index('feature/ball-demo')]
+  assert.equal(built?.body?.type, 'dynamic')
+  assert.equal(built?.body?.ccd, true)
+  assert.equal(built?.colliders?.[0]?.radius, 1.25)
+  assert.equal(built?.colliders?.[0]?.density, 0)
+})
+
+test('ball accepts source range endpoints and refuses missing or out-of-range parameters', async () => {
+  const input = await inputWith([ballDemo])
+  const ctx = ctxOf(input, 0)
+  for (const [key, min, max] of [['radius', 0.3, 3], ['mass', 0.1, 500], ['resetS', 1, 120]] as const) {
+    for (const value of [min, max]) {
+      const spec = { ...ballDemo, params: { ...ballDemo.params, [key]: value } }
+      assert.doesNotThrow(() => FEATURE_EMITTERS.ball(spec, ctx))
+    }
+    for (const value of [min - 0.01, max + 0.01, undefined]) {
+      const spec = { ...ballDemo, params: { ...ballDemo.params, [key]: value } } as FeatureSpec
+      assert.throws(() => FEATURE_EMITTERS.ball(spec, ctx),
+        (error: unknown) => error instanceof RefusalError && error.message.includes(`/${key}`))
+    }
+  }
+  const missingSpawn = { ...ballDemo, params: { ...ballDemo.params, spawn: undefined } } as FeatureSpec
+  assert.throws(() => FEATURE_EMITTERS.ball(missingSpawn, ctx),
+    (error: unknown) => error instanceof RefusalError && error.message.includes('/spawn'))
+})

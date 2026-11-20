@@ -62,10 +62,10 @@ test('marker counts touches', async () => {
     const far = rec(round, 'feature_marker', scene.index('feature/far'))
     assert.ok(near.touches >= 1)
     assert.equal(near.last_touch_tick, round.tick - 1)
-    assert.equal(rec(round, 'ege.render', scene.index('feature/near') + 1).color, 0x73D966)
+    assert.equal(rec(round, 'ege.render', scene.index('feature/near')).color, 0x73D966)
     assert.equal(far.touches, 0)
     assert.equal(far.last_touch_tick, -1)
-    assert.equal(rec(round, 'ege.render', scene.index('feature/far') + 1).color, 0xF2E6D0)
+    assert.equal(rec(round, 'ege.render', scene.index('feature/far')).color, 0xF2E6D0)
   } finally {
     round.dispose()
   }

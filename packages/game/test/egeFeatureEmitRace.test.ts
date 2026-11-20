@@ -54,19 +54,16 @@ function refusedAt(input: EmitInput, spec: FeatureSpec, key: string): void {
   )
 }
 
-test('marker emits a root and a floor-disc visual that build', async () => {
+test('marker keeps its floor-disc visual on the identified feature root', async () => {
   const spec: FeatureSpec = { id: 'm', kind: 'marker', params: { t: [0, 0.5, 4], radiusM: 1.5 } }
   const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
   const emitted = emitBuilds(input)
   const rootIndex = emitted.index('feature/m')
-  const visualIndex = emitted.index('feature/m/visual/0')
-  assert.equal(visualIndex, rootIndex + 1)
   const root = emitted.scene.entities[rootIndex]
-  const visual = emitted.scene.entities[visualIndex]
   assert.deepEqual(root.components?.feature, { kind: 0, index: 0, salt: 0x100 })
   assert.deepEqual(root.components?.feature_marker?.t, [0, 0.5, 4])
-  assert.equal(visual.components?.['ege.render']?.shape, 4)
-  assert.deepEqual(visual.components?.['ege.render']?.params, [1.5, 0.05, 0, 0])
+  assert.equal(root.components?.['ege.render']?.shape, 4)
+  assert.deepEqual(root.components?.['ege.render']?.params, [1.5, 0.05, 0, 0])
   refusedAt(input, { id: 'm', kind: 'marker', params: { t: [0, 0, 4], radiusM: 20 } }, 'radiusM')
 })
 

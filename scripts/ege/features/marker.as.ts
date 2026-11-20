@@ -24,10 +24,9 @@ export function rf_feature_marker_post(): void {
     }
     marker.touches = touches
     if (touches > 0) marker.last_touch_tick = now
-    const visualEntity = entity + 1
-    const render = getComponent<EgeRender>(visualEntity, EgeRender.ID, EgeRender.SIZE)
+    const render = getComponent<EgeRender>(entity, EgeRender.ID, EgeRender.SIZE)
     render.color = touches > 0 ? MARKER_TOUCH_COLOR : MARKER_BASE_COLOR
-    setComponent(visualEntity, EgeRender.ID, EgeRender.SIZE, render)
+    setComponent(entity, EgeRender.ID, EgeRender.SIZE, render)
   }
   features.write()
 }

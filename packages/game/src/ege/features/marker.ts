@@ -15,15 +15,10 @@ export const markerEmitter: FeatureEmitter = (spec: FeatureSpec, ctx: FeatureEmi
         feature: { kind: 0, index: ctx.index, salt: featureSalt(ctx.index) },
         feature_marker: { t: [t.x, t.y, t.z], radius_m: radiusM, touches: 0, last_touch_tick: -1 },
         'ege.transform': { pos: [t.x, t.y, t.z], rot: [0, 0, 0, 1] },
-      },
-    },
-    children: [{
-      name: `feature/${spec.id}/visual/0`,
-      components: {
-        'ege.transform': { pos: [t.x, t.y, t.z], rot: [0, 0, 0, 1] },
         'ege.render': { shape: visual.shape, color: visual.color, visible: 1, params: visual.params },
       },
-    }],
+    },
+    children: [],
   }
 }
 

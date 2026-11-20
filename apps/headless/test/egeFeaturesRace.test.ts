@@ -2,6 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { EngineInstance } from '@etcito/game-engine/loader'
 import { loadEngine } from '@etcito/game-engine'
+import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
+import type { ScriptModule } from '@etcito/game-engine/script'
+import { readWorldState } from '@etcito/game-engine/world-state'
+import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 import type { FeatureSpec } from '@royal-fiesta/sim/course'
 import { encodeInput } from '@royal-fiesta/sim/input'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
@@ -479,5 +483,264 @@ test('race feature courses run fault-free and two worlds stay equal', async () =
       b?.dispose()
       a.dispose()
     }
+  }
+})
+
+// Test-local show world: only the character systems and the two race features run,
+// so seats 7, 37 and 59 exercise the show path without the complete show schedule.
+const SHOW_FEATURE_WORLD = 'show_feature_probe'
+const SHOW_INPUTS = [0, 0, 0, 0, 0, 0, 0, 0]
+let showSchema: Promise<string> | undefined
+let showScripts: Promise<Uint8Array> | undefined
+
+function showFeatureSchema(): Promise<string> {
+  showSchema ??= readRepoText(RF_EGE_SCHEMA).then(text => {
+    const schema = JSON.parse(text)
+    schema.world_kinds.push({
+      name: SHOW_FEATURE_WORLD,
+      players: 8,
+      schedule: [
+        {
+          system: 'rf.character.pre', kind: 'script',
+          reads: ['seat', 'ege.transform', 'ege.mover', 'surface', 'ege.mech.lever', 'show_control', 'show_character_ref'],
+          writes: ['character', 'ege.velocity', 'ege.body_props', 'ege.mech.grab', 'show_character_ref'], emits: [],
+        },
+        {
+          system: 'rf.feature.boost_lane.show_pre', kind: 'script',
+          reads: ['seat', 'character', 'feature', 'round', 'show_control', 'show_feature_cooldown'],
+          writes: ['feature_boost_lane', 'show_feature_cooldown', 'ege.render', 'ege.transform', 'ege.velocity'], emits: [],
+        },
+        {
+          system: 'rf.feature.launch_pad.pre', kind: 'script',
+          reads: ['seat', 'character', 'gate', 'feature', 'ege.transform'],
+          writes: ['feature_launch_pad', 'feature_launch_pad_seat', 'ege.velocity'], emits: [],
+        },
+        { system: 'ege.body.props', kind: 'engine' },
+        { system: 'ege.box.collider', kind: 'engine' },
+        { system: 'ege.physics', kind: 'engine' },
+        { system: 'ege.contact.track', kind: 'engine' },
+        {
+          system: 'rf.character.post', kind: 'script',
+          reads: ['ege.transform', 'ege.contacts'],
+          writes: ['character', 'ege.velocity', 'ege.mech.grab'], emits: [],
+        },
+        {
+          system: 'rf.feature.launch_pad.post', kind: 'script',
+          reads: ['seat', 'character', 'gate', 'feature', 'ege.transform'],
+          writes: ['feature_launch_pad', 'feature_launch_pad_seat', 'ege.velocity'], emits: [],
+        },
+      ],
+    })
+    return JSON.stringify(schema)
+  })
+  return showSchema
+}
+
+function showScriptBytes(schemaText: string): Promise<Uint8Array> {
+  showScripts ??= (async () => {
+    const compiled = await (await rfCompiler()).compile(collectRfScripts(), schemaText)
+    assert.deepEqual(compiled.diagnostics.filter(d => d.severity === 'error').map(formatRfDiagnostic), [])
+    assert.ok(compiled.wasm, 'show feature compilation produced no wasm')
+    return Uint8Array.from(compiled.wasm)
+  })()
+  return showScripts
+}
+
+async function showRig(
+  specs: FeatureSpec[],
+  patch?: (doc: any, scene: EmittedScene) => void,
+): Promise<{
+  engine: EngineInstance
+  world: number
+  host: ScriptHost
+  module: ScriptModule
+  scene: EmittedScene
+  doc: any
+  layout: ReturnType<typeof schemaLayout>
+  faults: string[]
+}> {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = specs
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  const seatOf = Array.from({ length: 60 }, (_, seat) => seat)
+  const scene = emitEngineScene(engine, {
+    course: copy, assets, setup: { profile: 'sprint', seed: 7 },
+    show: { worldKind: 'show_field', seatOf, inputSlots: seatOf.map(() => -1), humans: seatOf.map(() => false) },
+  })
+  const doc = JSON.parse(scene.text)
+  doc.world_kind = SHOW_FEATURE_WORLD
+  doc.resources.round.phase = 1
+  doc.resources.round.frozen = 0
+  doc.resources.round.intro_ticks = 0
+  for (let seat = 0; seat < 60; seat++) {
+    const row = doc.entities[scene.seatEntities[seat]]
+    row.components.seat.status = 0
+    row.components.character.placed = 1
+    row.components.character.frozen = 0
+    row.components['ege.transform'].pos = [0, -50, 0]
+  }
+  patch?.(doc, scene)
+  const schemaText = await showFeatureSchema()
+  engine.setSchema(schemaText)
+  const world = engine.createWorld(JSON.stringify(doc))
+  const faults: string[] = []
+  const module = await loadScript(engine, await showScriptBytes(schemaText), {
+    name: 'rf-show', onFault: fault => faults.push(`${fault.system}: ${fault.message}`),
+  })
+  const host = new ScriptHost(module)
+  return { engine, world, host, module, scene, doc, layout: schemaLayout(engine), faults }
+}
+
+function stepShow(
+  rig: { engine: unknown; world: number; host: ScriptHost; module: ScriptModule; faults: string[] },
+  ticks: number,
+): void {
+  for (let i = 0; i < ticks; i++) {
+    rig.host.stepTick(rig.world, SHOW_INPUTS)
+    assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+  }
+}
+
+function cooldownOf(state: any, featureIndex: number, character: number): any {
+  const rows = Object.values(state.components.show_feature_cooldown as Record<string, any>)
+  return rows.find(row => row.index === featureIndex && row.character === character)
+}
+
+test('show boost cooldowns are independent for seats 7, 37 and 59 and bounded', async () => {
+  const lane = {
+    id: 'lane', kind: 'boostLane',
+    params: {
+      center: [-3.5, 1, 14], half: [1, 2, 13], yawDeg: 0, boost: 4,
+      durationS: 2, rechargeS: 0, eligibility: 'all',
+    },
+  } as FeatureSpec
+  // Seat 37 starts before the lane and drives into it a few ticks after 7 and 59 fire.
+  const spots: Record<number, number[]> = { 7: [-3.5, 0.91, 12], 37: [-3.5, 0.91, 0.2], 59: [-3.7, 0.91, 13.5] }
+  const rig = await showRig([lane], (doc, scene) => {
+    for (const seat of [7, 37, 59]) {
+      const row = doc.entities[scene.seatEntities[seat]]
+      row.components.seat.status = 1
+      row.components['ege.transform'].pos = spots[seat]
+      row.components.show_control = { code: code(0, 1) }
+    }
+  })
+  try {
+    let maxSpeed = 0
+    for (let i = 0; i < 30; i++) {
+      stepShow(rig, 1)
+      const state = readWorldState(rig.engine, rig.world, rig.layout)
+      const lin = state.components['ege.velocity'][String(rig.scene.seatEntities[7])].lin as number[]
+      maxSpeed = Math.max(maxSpeed, Math.hypot(lin[0], lin[2]))
+    }
+    const state = readWorldState(rig.engine, rig.world, rig.layout)
+    const seven = cooldownOf(state, 0, rig.scene.seatEntities[7])
+    const thirtySeven = cooldownOf(state, 0, rig.scene.seatEntities[37])
+    const fiftyNine = cooldownOf(state, 0, rig.scene.seatEntities[59])
+    assert.ok(seven && thirtySeven && fiftyNine, 'one cooldown row per show seat')
+    assert.notEqual(seven, thirtySeven)
+    assert.notEqual(seven, fiftyNine)
+    assert.ok(seven.boost_until > 0)
+    assert.ok(fiftyNine.boost_until > 0)
+    assert.ok(thirtySeven.boost_until > 0, 'seat 37 fired after entering the lane')
+    assert.ok(thirtySeven.boost_until > seven.boost_until, 'each seat keeps its own boost window')
+    assert.ok(maxSpeed > 8.5, `bounded boost raised the speed (${maxSpeed})`)
+    assert.ok(maxSpeed <= 12 + 1e-3, `boost stayed bounded (${maxSpeed})`)
+
+    // Snapshot restore carries the seat-owned timer state into a fresh world.
+    const bytes = rig.engine.snapshot(rig.world)
+    const restored = rig.engine.createWorld(JSON.stringify(rig.doc))
+    try {
+      rig.engine.restore(restored, bytes)
+      const copy = readWorldState(rig.engine, restored, rig.layout)
+      const restoredSeven = cooldownOf(copy, 0, rig.scene.seatEntities[7])
+      assert.equal(restoredSeven.boost_until, seven.boost_until)
+      assert.equal(restoredSeven.ready_at, seven.ready_at)
+      rig.host.stepTick(restored, SHOW_INPUTS)
+      assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+    } finally {
+      rig.engine.freeWorld(restored)
+    }
+
+    // The entity-owned row itself transfers through EGT1 with its timer values intact.
+    const rowEntity = Number(Object.entries(state.components.show_feature_cooldown as Record<string, any>)
+      .find(([, row]) => row.index === 0 && row.character === rig.scene.seatEntities[37])![0])
+    const egt = rig.engine.exportEntities(rig.world, [rowEntity], false)
+    const target = await showRig([])
+    try {
+      const ids = target.engine.importEntities(target.world, egt)
+      const moved = readWorldState(target.engine, target.world, target.layout)
+        .components.show_feature_cooldown[String(ids[0])]
+      assert.equal(moved.boost_until, thirtySeven.boost_until)
+      assert.equal(moved.ready_at, thirtySeven.ready_at)
+    } finally {
+      target.engine.freeWorld(target.world)
+      target.module.dispose()
+    }
+  } finally {
+    rig.engine.freeWorld(rig.world)
+    rig.module.dispose()
+  }
+})
+
+test('show launch pad completes a high-seat launch and keeps ballistic placement', async () => {
+  const pad = {
+    id: 'pad', kind: 'launchPad',
+    params: { center: [-3.5, 0.5, 4], half: [0.8, 0.6, 0.8], target: [-3.5, 0, 14], apexM: 4 },
+  } as FeatureSpec
+  const rig = await showRig([pad], (doc, scene) => {
+    const row = doc.entities[scene.seatEntities[59]]
+    row.components.seat.status = 1
+    row.components['ege.transform'].pos = [-3.5, 0.91, 4]
+    row.components.show_control = { code: code(0, 1) }
+  })
+  try {
+    const seat = rig.scene.seatEntities[59]
+    const launchRow = rig.scene.index('feature/pad/seat/59')
+    let state: any = readWorldState(rig.engine, rig.world, rig.layout)
+    let launched: any = state.components.feature_launch_pad_seat[String(launchRow)]
+    let start: number[] = []
+    let launchVelocity: number[] = []
+    let ticks = 0
+    while (launched.launched < 0 && ticks < 60) {
+      const before = [...state.components['ege.transform'][String(seat)].pos] as number[]
+      stepShow(rig, 1)
+      state = readWorldState(rig.engine, rig.world, rig.layout)
+      launched = state.components.feature_launch_pad_seat[String(launchRow)]
+      if (launched.launched >= 0) {
+        start = before
+        launchVelocity = [...state.components['ege.velocity'][String(seat)].lin]
+      }
+      ticks++
+    }
+    assert.ok(launched.launched >= 0, 'seat 59 did not launch')
+    assert.ok(launched.flight > 0)
+    // Ballistic placement from packages/sim/src/features/launch.ts:65-71, lifted toward the
+    // authored target; air steering runs afterwards and may bend the flight.
+    const apexY = Math.max(start[1], 0) + 4
+    const vy = Math.sqrt(2 * 20 * (apexY - start[1]))
+    const duration = vy / 20 + Math.sqrt(2 * (apexY - 0) / 20)
+    assert.ok(Math.abs(launchVelocity[1] - vy) < 0.01, `launch vy ${launchVelocity[1]} vs ${vy}`)
+    assert.ok(Math.abs(launched.flight - Math.ceil(duration * 60)) <= 1)
+    let highest = start[1]
+    let airborne = false
+    let landing: number[] | undefined
+    for (let i = 0; i < 180 && !landing; i++) {
+      stepShow(rig, 1)
+      state = readWorldState(rig.engine, rig.world, rig.layout)
+      const pos = state.components['ege.transform'][String(seat)].pos as number[]
+      const grounded = state.components.character[String(seat)].grounded === 1
+      highest = Math.max(highest, pos[1])
+      if (!grounded) airborne = true
+      if (airborne && grounded) landing = [...pos]
+    }
+    assert.ok(highest >= start[1] + 2, `flight rose to ${highest}`)
+    assert.ok(landing, 'seat did not land after becoming airborne')
+    assert.ok(Math.hypot(landing[0] + 3.5, landing[2] - 14) <= 2.5, `landing ${JSON.stringify(landing)}`)
+    assert.deepEqual(state.components.feature_launch_pad_seat[String(rig.scene.index('feature/pad/seat/7'))].launched, -1)
+  } finally {
+    rig.engine.freeWorld(rig.world)
+    rig.module.dispose()
   }
 })

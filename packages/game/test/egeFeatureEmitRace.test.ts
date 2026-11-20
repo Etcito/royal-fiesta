@@ -249,6 +249,57 @@ test('launchPad emits a pad visual and eight seat records', async () => {
   refusedAt(input, { ...spec, params: { ...spec.params, recoverOnly: 'yes' } }, 'recoverOnly')
 })
 
+test('boostLane show worlds build with the G6 cooldown storage preserved', async () => {
+  const spec: FeatureSpec = {
+    id: 'lane', kind: 'boostLane',
+    params: {
+      center: [-3.5, 1, 14], half: [1, 2, 13], yawDeg: 0, boost: 4,
+      durationS: 2, rechargeS: 0, eligibility: 'all',
+    },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const seatOf = Array.from({ length: 60 }, (_, seat) => seat)
+  const show = {
+    worldKind: 'show_field' as const,
+    seatOf,
+    inputSlots: seatOf.map(() => -1),
+    humans: seatOf.map(() => false),
+  }
+  const emitted = emitBuilds({ ...input, show })
+  const rootIndex = emitted.index('feature/lane')
+  assert.equal(emitted.index('feature/lane/visual/0'), rootIndex + 1)
+  const round = emitBuilds(input)
+  const roundRoot = round.scene.entities[round.index('feature/lane')].components?.feature_boost_lane
+  assert.deepEqual(roundRoot?.boost_until, Array(8).fill(0))
+  assert.deepEqual(roundRoot?.ready_at, Array(8).fill(0))
+})
+
+test('launchPad show worlds emit one seat row per roster seat', async () => {
+  const spec: FeatureSpec = {
+    id: 'pad', kind: 'launchPad',
+    params: { center: [-3.5, 0.25, 4], half: [0.8, 0.25, 0.8], target: [-3.5, 0, 12], apexM: 2 },
+  }
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', [spec])
+  const seatOf = Array.from({ length: 60 }, (_, seat) => seat)
+  const show = {
+    worldKind: 'show_field' as const,
+    seatOf,
+    inputSlots: seatOf.map(() => -1),
+    humans: seatOf.map(() => false),
+  }
+  const emitted = emitBuilds({ ...input, show })
+  const visualIndex = emitted.index('feature/pad/visual/0')
+  const seat59 = emitted.index('feature/pad/seat/59')
+  assert.equal(seat59, visualIndex + 1 + 59)
+  assert.deepEqual(emitted.scene.entities[seat59].components?.feature_launch_pad_seat, {
+    owner: 0, seat: 59, inside: 0, launched: -1, flight: 0, last_fall: -1, prev_protected: 0, alive: 1,
+  })
+  assert.equal(emitted.index('feature/pad/seat/60'), -1)
+  const round = emitBuilds(input)
+  assert.equal(round.index('feature/pad/seat/8'), -1)
+  assert.ok(round.index('feature/pad/seat/7') > 0)
+})
+
 test('rollingLog emits a kinematic cylinder root', async () => {
   const spec: FeatureSpec = {
     id: 'log', kind: 'rollingLog',

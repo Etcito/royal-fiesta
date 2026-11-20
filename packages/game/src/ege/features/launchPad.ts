@@ -20,7 +20,9 @@ export const launchPadEmitter: FeatureEmitter = (spec: FeatureSpec, ctx: Feature
       'ege.render': { shape: visual.shape, color: visual.color, visible: 1, params: [box.half.x, box.half.y, 0, 0] },
     },
   }]
-  for (let seat = 0; seat < 8; seat++) {
+  const show = ctx.worldKind !== undefined && ctx.worldKind !== 'round'
+  const seatCount = show ? ctx.seatCount ?? 8 : 8
+  for (let seat = 0; seat < seatCount; seat++) {
     children.push({
       name: `feature/${spec.id}/seat/${seat}`,
       components: {

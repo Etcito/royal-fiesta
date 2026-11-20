@@ -155,6 +155,10 @@ function updateTeamScore(entity: u32, team: u32, a: i32): void {
  * accumulates into the feature's `ShowTeamContribution` row instead. `a`/`b` keep the entry point
  * payload meanings: finish crossing/lap, gate stage/lap, progress distance, and the event record's
  * own a/b for score, team_score, possess, crown and match.
+ *
+ * One writer serves G6 and show schedules: every schedule that runs it (round included) is granted
+ * show_result_a/show_result_b, and the discriminator is the data, not a seat count: an empty
+ * ShowResultA column (a round world) emits the G6 event only; show scenes author the rows.
  */
 export function recordShowEvent(kind: u32, entity: u32, seat: u32, a: i32, b: i32): void {
   emitOriginal(kind, entity, seat, a, b)

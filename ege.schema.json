@@ -2311,28 +2311,9 @@
         {
           "system": "rf.seat.rules",
           "kind": "script",
-          "reads": [
-            "course",
-            "home_spawn",
-            "path_node"
-          ],
-          "writes": [
-            "round",
-            "seat",
-            "character",
-            "gate",
-            "home",
-            "ege.transform",
-            "ege.velocity",
-            "ege.mech.grab"
-          ],
-          "emits": [
-            "finish",
-            "fall",
-            "eliminate",
-            "gate",
-            "progress"
-          ]
+          "reads": ["course", "home_spawn", "path_node", "show_seat_identity", "show_result_a", "show_result_b"],
+          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab", "show_result_a", "show_result_b"],
+          "emits": ["finish", "fall", "eliminate", "gate", "progress"]
         }
       ]
     },
@@ -2345,10 +2326,24 @@
         { "system": "ege.mech.logic", "kind": "engine" },
         { "system": "ege.mech.joints", "kind": "engine" },
         {
-          "system": "rf.round.clock",
+          "system": "rf.show.clock",
           "kind": "script",
-          "reads": ["course"],
-          "writes": ["round", "seat", "character", "ege.transform", "ege.velocity"],
+          "reads": ["round", "show_clock"],
+          "writes": ["show_clock", "round", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.show.controls",
+          "kind": "script",
+          "reads": ["show_seat_identity", "show_control"],
+          "writes": ["show_control"],
+          "emits": []
+        },
+        {
+          "system": "rf.show.bots",
+          "kind": "script",
+          "reads": ["show_seat_identity", "show_control", "bot_seat", "bot_memory", "bot_skill", "bot_behaviour", "bot_rule", "bot_route", "bot_route_waypoint", "show_nav_node", "show_nav_region", "show_nav_edge", "ege.transform", "ege.mover", "character", "ege.mech.signal", "ege.mech.lever", "feature", "feature_hex_field", "feature_hex_field_hex", "bot_reaction", "bot_reaction_chunk"],
+          "writes": ["bot_memory", "bot_skill", "bot_reaction", "bot_reaction_chunk", "bot_route", "bot_route_region", "bot_route_edge", "bot_route_waypoint", "show_control"],
           "emits": []
         },
         {
@@ -2359,10 +2354,10 @@
           "emits": []
         },
         {
-          "system": "rf.feature.boost_lane.pre",
+          "system": "rf.feature.boost_lane.show_pre",
           "kind": "script",
-          "reads": ["seat", "character", "round"],
-          "writes": ["feature_boost_lane", "ege.render", "ege.transform", "ege.velocity"],
+          "reads": ["seat", "character", "feature", "round", "show_control", "show_feature_cooldown"],
+          "writes": ["feature_boost_lane", "show_feature_cooldown", "ege.render", "ege.transform", "ege.velocity"],
           "emits": []
         },
         {
@@ -2576,9 +2571,16 @@
         {
           "system": "rf.seat.rules",
           "kind": "script",
-          "reads": ["course", "home_spawn", "path_node"],
-          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["course", "home_spawn", "path_node", "show_seat_identity", "show_result_a", "show_result_b"],
+          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab", "show_result_a", "show_result_b"],
           "emits": ["finish", "fall", "eliminate", "gate", "progress"]
+        },
+        {
+          "system": "rf.show.publish",
+          "kind": "script",
+          "reads": ["show_result_a", "show_result_b", "show_seat_identity", "show_team_contribution", "ege.zone.id", "ege.zone.outbox"],
+          "writes": ["ege.zone.id", "ege.zone.outbox"],
+          "emits": []
         },
         { "system": "ege.zone.track", "kind": "engine" }
       ]
@@ -2592,10 +2594,24 @@
         { "system": "ege.mech.logic", "kind": "engine" },
         { "system": "ege.mech.joints", "kind": "engine" },
         {
-          "system": "rf.round.clock",
+          "system": "rf.show.clock",
           "kind": "script",
-          "reads": ["course"],
-          "writes": ["round", "seat", "character", "ege.transform", "ege.velocity"],
+          "reads": ["round", "show_clock"],
+          "writes": ["show_clock", "round", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.show.controls",
+          "kind": "script",
+          "reads": ["show_seat_identity", "show_control"],
+          "writes": ["show_control"],
+          "emits": []
+        },
+        {
+          "system": "rf.show.bots",
+          "kind": "script",
+          "reads": ["show_seat_identity", "show_control", "bot_seat", "bot_memory", "bot_skill", "bot_behaviour", "bot_rule", "bot_route", "bot_route_waypoint", "show_nav_node", "show_nav_region", "show_nav_edge", "ege.transform", "ege.mover", "character", "ege.mech.signal", "ege.mech.lever", "feature", "feature_hex_field", "feature_hex_field_hex", "bot_reaction", "bot_reaction_chunk"],
+          "writes": ["bot_memory", "bot_skill", "bot_reaction", "bot_reaction_chunk", "bot_route", "bot_route_region", "bot_route_edge", "bot_route_waypoint", "show_control"],
           "emits": []
         },
         {
@@ -2606,10 +2622,10 @@
           "emits": []
         },
         {
-          "system": "rf.feature.boost_lane.pre",
+          "system": "rf.feature.boost_lane.show_pre",
           "kind": "script",
-          "reads": ["seat", "character", "round"],
-          "writes": ["feature_boost_lane", "ege.render", "ege.transform", "ege.velocity"],
+          "reads": ["seat", "character", "feature", "round", "show_control", "show_feature_cooldown"],
+          "writes": ["feature_boost_lane", "show_feature_cooldown", "ege.render", "ege.transform", "ege.velocity"],
           "emits": []
         },
         {
@@ -2823,9 +2839,16 @@
         {
           "system": "rf.seat.rules",
           "kind": "script",
-          "reads": ["course", "home_spawn", "path_node"],
-          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["course", "home_spawn", "path_node", "show_seat_identity", "show_result_a", "show_result_b"],
+          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab", "show_result_a", "show_result_b"],
           "emits": ["finish", "fall", "eliminate", "gate", "progress"]
+        },
+        {
+          "system": "rf.show.publish",
+          "kind": "script",
+          "reads": ["show_result_a", "show_result_b", "show_seat_identity", "show_team_contribution", "ege.zone.id", "ege.zone.outbox"],
+          "writes": ["ege.zone.id", "ege.zone.outbox"],
+          "emits": []
         },
         { "system": "ege.zone.track", "kind": "engine" }
       ]
@@ -2834,7 +2857,21 @@
       "name": "show_rules",
       "players": 0,
       "schedule": [
-        { "system": "ege.zone.tally", "kind": "engine" }
+        { "system": "ege.zone.tally", "kind": "engine" },
+        {
+          "system": "rf.show.ledger",
+          "kind": "script",
+          "reads": ["ege.zone.inbox", "show_pending", "show_publish", "show_result_a", "show_result_b", "show_team_contribution", "show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_used_map", "show_clock", "show_round_result", "show_result_seat", "show_result_team", "show_result_pending", "show_opening_rank"],
+          "writes": ["show_pending", "show_publish", "show_result_a", "show_result_b", "show_team_contribution", "show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_used_map", "show_clock", "show_round_result", "show_result_seat", "show_result_team", "show_result_pending", "show_opening_rank"],
+          "emits": []
+        },
+        {
+          "system": "rf.show.season",
+          "kind": "script",
+          "reads": ["show_season_cursor", "show_plan_entry", "show_catalog_entry", "show_candidate", "show_vote", "show_used_map"],
+          "writes": ["show_season_cursor", "show_candidate", "show_used_map"],
+          "emits": []
+        }
       ]
     },
     {
@@ -2846,10 +2883,10 @@
         { "system": "ege.mech.logic", "kind": "engine" },
         { "system": "ege.mech.joints", "kind": "engine" },
         {
-          "system": "rf.round.clock",
+          "system": "rf.show.hub",
           "kind": "script",
-          "reads": ["course"],
-          "writes": ["round", "seat", "character", "ege.transform", "ege.velocity"],
+          "reads": ["course", "seat", "character", "ege.transform", "show_seat_identity", "show_control", "show_hub_state", "show_hub_occupant"],
+          "writes": ["show_control", "show_hub_state", "show_hub_occupant", "seat", "character", "ege.transform", "ege.velocity"],
           "emits": []
         },
         {
@@ -2860,10 +2897,10 @@
           "emits": []
         },
         {
-          "system": "rf.feature.boost_lane.pre",
+          "system": "rf.feature.boost_lane.show_pre",
           "kind": "script",
-          "reads": ["seat", "character", "round"],
-          "writes": ["feature_boost_lane", "ege.render", "ege.transform", "ege.velocity"],
+          "reads": ["seat", "character", "feature", "round", "show_control", "show_feature_cooldown"],
+          "writes": ["feature_boost_lane", "show_feature_cooldown", "ege.render", "ege.transform", "ege.velocity"],
           "emits": []
         },
         {
@@ -3073,13 +3110,6 @@
           "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["crown"]
-        },
-        {
-          "system": "rf.seat.rules",
-          "kind": "script",
-          "reads": ["course", "home_spawn", "path_node"],
-          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab"],
-          "emits": ["finish", "fall", "eliminate", "gate", "progress"]
         },
         { "system": "ege.zone.track", "kind": "engine" }
       ]

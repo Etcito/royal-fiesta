@@ -2110,3 +2110,66 @@ test('recordShowEvent publishes scores and per-publisher team contributions unde
     }
   }
 })
+
+const SHOW_PLAYERS: Record<string, number> = { round: 8, show_seat: 8, show_field: 8, show_rules: 0, show_hub: 1 }
+const SHOW_SCRIPT_SYSTEMS = ['rf.show.clock', 'rf.show.controls', 'rf.show.bots', 'rf.show.publish', 'rf.show.hub', 'rf.show.ledger', 'rf.show.season']
+const SEAT_RESULT_GRANT = ['show_result_a', 'show_result_b']
+
+test('the complete show schedules order controls and bots before character pre and publication after the rules', async () => {
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  const names = (world: string) => schema.world_kinds.find((kind) => kind.name === world)!.schedule.map((entry) => entry.system)
+  assert.deepEqual(schema.world_kinds.map((kind) => [kind.name, kind.players]), Object.entries(SHOW_PLAYERS))
+  assert.deepEqual(names('round'), SCHEDULE, 'the G6 round schedule is retained')
+  for (const world of ['show_seat', 'show_field']) {
+    const systems = names(world)
+    const at = (system: string) => systems.indexOf(system)
+    assert.ok(at('rf.show.clock') >= 0 && at('rf.show.clock') < at('rf.show.controls'), world)
+    assert.ok(at('rf.show.controls') < at('rf.show.bots') && at('rf.show.bots') < at('rf.character.pre'), world)
+    assert.equal(at('rf.round.clock'), -1, world)
+    assert.ok(at('rf.feature.boost_lane.show_pre') >= 0 && at('rf.feature.boost_lane.pre') === -1, world)
+    assert.ok(at('rf.character.post') < at('rf.seat.rules') && at('rf.seat.rules') < at('rf.show.publish'), world)
+    assert.ok(at('rf.feature.crown.post') < at('rf.show.publish') && at('ege.zone.track') === systems.length - 1, world)
+  }
+  const hub = names('show_hub')
+  assert.ok(hub.indexOf('rf.show.hub') < hub.indexOf('rf.character.pre'))
+  assert.ok(!hub.includes('rf.seat.rules') && !hub.includes('rf.show.publish') && !hub.includes('rf.round.clock'))
+  assert.deepEqual(names('show_rules'), ['ege.zone.tally', 'rf.show.ledger', 'rf.show.season'])
+})
+
+test('the seat rules and shared event writer have result and identity access in every world that runs them', () => {
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  for (const world of ['round', 'show_seat', 'show_field']) {
+    const entry = schema.world_kinds.find((kind) => kind.name === world)!.schedule.find((item) => item.system === 'rf.seat.rules')!
+    for (const name of [...SEAT_RESULT_GRANT, 'show_seat_identity']) assert.ok(entry.reads!.includes(name), `${world} reads ${name}`)
+    for (const name of SEAT_RESULT_GRANT) assert.ok(entry.writes!.includes(name), `${world} writes ${name}`)
+  }
+  const boost = schema.world_kinds.find((kind) => kind.name === 'show_seat')!.schedule.find((item) => item.system === 'rf.feature.boost_lane.show_pre')!
+  assert.ok(boost.reads!.includes('show_feature_cooldown') && boost.writes!.includes('show_feature_cooldown'))
+})
+
+test('all five world kinds construct through the real layout and the whole compiled set loads with every scheduled export', async () => {
+  const schemaText = readFileSync(SCHEMA, 'utf8')
+  const schema = JSON.parse(schemaText) as AccessSchema
+  const compiled = await (await rfCompiler()).compile(collectRfScripts(), schemaText)
+  assert.deepEqual(compiled.diagnostics.filter((d) => d.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const exported = new Set(WebAssembly.Module.exports(await WebAssembly.compile(compiled.wasm as Uint8Array<ArrayBuffer>)).map((item) => item.name))
+  for (const kind of schema.world_kinds) {
+    for (const entry of kind.schedule.filter((item) => item.kind === 'script')) {
+      assert.ok(exported.has(entry.system.replaceAll('.', '_')), `${kind.name}: ${entry.system} export`)
+    }
+  }
+  for (const system of SHOW_SCRIPT_SYSTEMS) assert.ok(schema.world_kinds.some((kind) => kind.schedule.some((item) => item.system === system)), system)
+  const engine = await loadEngine()
+  engine.setSchema(schemaText)
+  const module = await loadScript(engine, compiled.wasm, { name: 'rf-scripts' })
+  const layout = schemaLayout(engine)
+  for (const [kind, players] of Object.entries(SHOW_PLAYERS)) {
+    const declaredKind = layout.world_kinds.find((item) => item.name === kind)
+    assert.ok(declaredKind, kind)
+    assert.equal(declaredKind.players, players, kind)
+    const world = engine.createWorld(JSON.stringify({ format: 'ege.scene', version: 1, world_kind: kind, seed: 1, entities: [] }))
+    engine.freeWorld(world)
+  }
+  assert.equal(module.faultCount, 0)
+})

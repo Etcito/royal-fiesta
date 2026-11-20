@@ -4,13 +4,19 @@ import { loadEngine } from '@etcito/game-engine'
 import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
+import { emitEngineScene } from '@royal-fiesta/game/ege/sceneEmitter'
+import type { EmittedScene } from '@royal-fiesta/game/ege/sceneEmitter'
+import { encodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
+import { loadEgeCourse } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
 
 const PROBE_WORLD = 'season_probe'
+const CLOCK_WORLD = 'show_clock_probe'
+const HUB_WORLD = 'show_hub_probe'
 const PROBE_FILE = 'probe/season.as.ts'
-const PROBE_TEXT = `import { newRecord, readColumn, readResource, setComponent, spawn } from 'ege'
-import { ProbeOut, SeasonParamsRes, ShowSeasonCursor } from '../components.gen'
+const PROBE_TEXT = `import { getComponent, isNull, newRecord, readColumn, readResource, setComponent, spawn, tick } from 'ege'
+import { Character, EgeTransform, ProbeOut, SeasonParamsRes, ShowHubOccupant, ShowSeasonCursor } from '../components.gen'
 import {
   Mulberry, RoundSlot, ScheduleState, advanceCursor, chooseCandidates, nextSlotForPlan, nextTarget,
   readCatalog, readPlan, readUsedMaps, resolveVote,
@@ -105,6 +111,29 @@ export function rf_season_probe(): void {
     const value = rng.int(p.a, p.b)
     emit(1, 0, value)
     emit(2, 0, <i32>rng.state)
+  }
+  if (p.mode == 8) {
+    const occupants = readColumn<ShowHubOccupant>(ShowHubOccupant.ID, ShowHubOccupant.SIZE)
+    const row = occupants.find(<u32>p.a)
+    if (row >= 0) {
+      const occupant = occupants.at(<u32>row)
+      occupant.active = (tick() & 1) == 0 ? 1 : 0
+      occupants.write()
+    }
+  }
+  if (p.mode == 9) {
+    // Probe instrumentation: copy one seat's engine transform and character flags into sim-lane rows.
+    const tr = getComponent<EgeTransform>(<u32>p.a, EgeTransform.ID, EgeTransform.SIZE)
+    const characters = readColumn<Character>(Character.ID, Character.SIZE)
+    const chRow = characters.find(<u32>p.a)
+    if (!isNull<EgeTransform>(tr)) {
+      emit(1, <u32>tick(), <i32>Math.round(<f64>tr.pos_2 * 1000.0))
+      emit(2, <u32>tick(), <i32>Math.round(<f64>tr.pos_1 * 1000.0))
+    }
+    if (chRow >= 0) {
+      emit(3, <u32>tick(), <i32>characters.at(<u32>chRow).placed)
+      emit(4, <u32>tick(), <i32>characters.at(<u32>chRow).parked)
+    }
   }
 }
 `
@@ -216,6 +245,54 @@ function probeSchema(base: string): string {
       writes: ['show_season_cursor', 'show_candidate', 'show_used_map', 'probe_out'],
       emits: [],
     }],
+  })
+  // Test-local show schedules: only the systems this card implements plus the existing character
+  // and physics steps, so the show clock and hub run without G6 round closure.
+  const round = schema.world_kinds.find((kind: any) => kind.name === 'round').schedule
+  const entry = (system: string) => structuredClone(round.find((row: any) => row.system === system))
+  schema.world_kinds.push({
+    name: CLOCK_WORLD,
+    players: 8,
+    schedule: [{
+      system: 'rf.show.clock',
+      kind: 'script',
+      reads: ['round', 'show_clock'],
+      writes: ['show_clock', 'round', 'seat', 'character', 'ege.transform', 'ege.velocity'],
+      emits: [],
+    }],
+  })
+  schema.world_kinds.push({
+    name: HUB_WORLD,
+    players: 1,
+    schedule: [
+      { system: 'ege.movers', kind: 'engine' },
+      {
+        system: 'rf.show.hub',
+        kind: 'script',
+        reads: [
+          'course', 'seat', 'character', 'ege.transform', 'show_seat_identity', 'show_control',
+          'show_hub_state', 'show_hub_occupant',
+        ],
+        writes: [
+          'show_control', 'show_hub_state', 'show_hub_occupant', 'seat', 'character',
+          'ege.transform', 'ege.velocity',
+        ],
+        emits: [],
+      },
+      entry('rf.character.pre'),
+      { system: 'ege.body.props', kind: 'engine' },
+      { system: 'ege.box.collider', kind: 'engine' },
+      { system: 'ege.physics', kind: 'engine' },
+      { system: 'ege.contact.track', kind: 'engine' },
+      entry('rf.character.post'),
+      {
+        system: 'rf.season_probe',
+        kind: 'script',
+        reads: ['season_params', 'show_hub_occupant', 'ege.transform', 'character'],
+        writes: ['show_hub_occupant', 'probe_out'],
+        emits: [],
+      },
+    ],
   })
   return JSON.stringify(schema)
 }
@@ -676,4 +753,259 @@ test('invalid season inputs trap with an actionable message', async () => {
     [cursorEntity(), cursorEntity(), ...planEntities(DEFAULT_PLAN), ...catalogEntities()],
     'one show_season_cursor row',
   )
+})
+
+interface ShowDoc {
+  engine: Awaited<ReturnType<typeof loadEngine>>
+  layout: ReturnType<typeof schemaLayout>
+  wasm: Uint8Array
+  scene: EmittedScene
+  doc: any
+}
+
+async function showDocument(
+  worldKind: 'show_field' | 'show_hub', world: string, seatOf: number[], inputSlots: number[], humans: boolean[],
+): Promise<ShowDoc> {
+  const { engine, layout, wasm } = await setup()
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = []
+  const scene = emitEngineScene(engine, {
+    course: copy, assets, setup: { profile: 'sprint', seed: 7 },
+    show: { worldKind, seatOf, inputSlots, humans },
+  })
+  const doc = JSON.parse(scene.text)
+  doc.world_kind = world
+  doc.resources ??= {}
+  doc.resources.season_params = { mode: 0 }
+  return { engine, layout, wasm, scene, doc }
+}
+
+function showRows(state: any, name: string): any[] {
+  return Object.values(state?.components?.[name] ?? {}) as any[]
+}
+
+async function showHost(rig: ShowDoc): Promise<{ world: number; host: ScriptHost; module: import('@etcito/game-engine/script').ScriptModule; faults: string[] }> {
+  const faults: string[] = []
+  const module = await loadScript(rig.engine, rig.wasm, {
+    name: `rf-season-show-${moduleSeq++}`,
+    onFault: fault => faults.push(`${fault.system}: ${fault.message}`),
+    onLog: line => faults.push(`log ${line}`),
+  })
+  const world = rig.engine.createWorld(JSON.stringify(rig.doc))
+  return { world, host: new ScriptHost(module), module, faults }
+}
+
+function stepShow(
+  rig: { host: ScriptHost; world: number; module: { faultCount: number }; faults: string[] }, code: number, players = 1,
+): void {
+  rig.host.stepTick(rig.world, Array(players).fill(code))
+  assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+}
+
+function lastProbe(state: any, code: number): number {
+  const rows = showRows(state, 'probe_out')
+    .filter(row => Number(row.code) === code)
+    .sort((a, b) => Number(a.seq) - Number(b.seq))
+  return rows.length ? Number(rows[rows.length - 1].value) : Number.NaN
+}
+
+const MOVE_FORWARD = encodeInput({ moveX: 0, moveZ: 1, jump: false, dive: false, grab: false })
+
+test('the show clock owns its timer and walks intro, playing, overtime and ended phases', async () => {
+  const seats = [0, 1, 2, 3]
+  const rig = await showDocument('show_field', CLOCK_WORLD, seats, seats.map(() => -1), seats.map(() => false))
+  rig.doc.entities.push({ components: { show_clock: {
+    owner: 0, start_tick: -1, end_tick: -1, overtime_end_tick: -1, phase: 0, frozen: 0,
+    intro_ticks: 2, round_ticks: 4, overtime_ticks: 2,
+  } } })
+  const clockEntity = rig.doc.entities.length - 1
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    const phases: number[] = []
+    const frozen: number[] = []
+    const roundPhases: number[] = []
+    for (let i = 0; i < 9; i++) {
+      stepShow({ host, world, module, faults }, NEUTRAL_CODE, 8)
+      const state = readWorldState(rig.engine, world, rig.layout)
+      const clock = state.components.show_clock[String(clockEntity)] as any
+      phases.push(Number(clock.phase))
+      frozen.push(Number(clock.frozen))
+      roundPhases.push(Number((state.resources.round as any).phase))
+    }
+    assert.deepEqual(phases, [0, 0, 1, 1, 1, 1, 2, 2, 3])
+    assert.deepEqual(frozen, [1, 1, 0, 0, 0, 0, 0, 0, 1])
+    assert.deepEqual(roundPhases, phases)
+    const state = readWorldState(rig.engine, world, rig.layout)
+    const clock = state.components.show_clock[String(clockEntity)] as any
+    assert.equal(Number(clock.start_tick), 0)
+    assert.equal(Number(clock.end_tick), 6)
+    assert.equal(Number(clock.overtime_end_tick), 8)
+    assert.equal(Number((state.resources.round as any).intro_ticks), 2)
+    assert.equal(Number((state.resources.round as any).round_ticks), 4)
+    assert.equal(Number((state.resources.round as any).overtime_ticks), 2)
+    for (let seat = 0; seat < seats.length; seat++) {
+      const character = state.components.character[String(rig.scene.seatEntities[seat])] as any
+      assert.equal(Number(character.placed), 1, `seat ${seat} placed`)
+      assert.equal(Number(character.frozen), 1, `seat ${seat} frozen after the end`)
+    }
+  } finally {
+    rig.engine.freeWorld(world)
+  }
+})
+
+test('the show clock seeds missing durations from the round and ignores an absent clock', async () => {
+  const seats = [0, 1]
+  const rig = await showDocument('show_field', CLOCK_WORLD, seats, seats.map(() => -1), seats.map(() => false))
+  rig.doc.entities.push({ components: { show_clock: {
+    owner: 0, start_tick: -1, end_tick: -1, overtime_end_tick: -1, phase: 0, frozen: 0,
+    intro_ticks: 0, round_ticks: 0, overtime_ticks: 0,
+  } } })
+  const clockEntity = rig.doc.entities.length - 1
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    stepShow({ host, world, module, faults }, NEUTRAL_CODE, 8)
+    const state = readWorldState(rig.engine, world, rig.layout)
+    const clock = state.components.show_clock[String(clockEntity)] as any
+    const round = state.resources.round as any
+    assert.equal(Number(clock.intro_ticks), Number(round.intro_ticks))
+    assert.equal(Number(clock.round_ticks), Number(round.round_ticks))
+    assert.equal(Number(clock.overtime_ticks), Number(round.overtime_ticks))
+    assert.equal(Number(clock.end_tick), Number(clock.start_tick) + Number(clock.intro_ticks) + Number(clock.round_ticks))
+  } finally {
+    rig.engine.freeWorld(world)
+  }
+  const noClock = await showDocument('show_field', CLOCK_WORLD, seats, seats.map(() => -1), seats.map(() => false))
+  const absent = await showHost(noClock)
+  try {
+    stepShow({ host: absent.host, world: absent.world, module: absent.module, faults: absent.faults }, NEUTRAL_CODE, 8)
+    const state = readWorldState(noClock.engine, absent.world, noClock.layout)
+    assert.equal(showRows(state, 'show_clock').length, 0)
+  } finally {
+    noClock.engine.freeWorld(absent.world)
+  }
+})
+
+test('the hub drives local control and moves the human forward', async () => {
+  const rig = await showDocument('show_hub', HUB_WORLD, [0], [0], [true])
+  rig.doc.entities.push({ components: { show_hub_state: {
+    owner: 0, occupants: 0, humans: 0, bots: 0, tick: 0, rng_state: 7,
+  } } })
+  const seat = rig.scene.seatEntities[0]
+  rig.doc.resources.season_params = { mode: 9, a: seat }
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    stepShow({ host, world, module, faults }, NEUTRAL_CODE)
+    const neutral = readWorldState(rig.engine, world, rig.layout)
+    assert.equal(Number((neutral.components.show_control as any)[String(seat)].code), NEUTRAL_CODE)
+    const start = lastProbe(neutral, 1)
+    for (let i = 0; i < 30; i++) stepShow({ host, world, module, faults }, MOVE_FORWARD)
+    const moved = readWorldState(rig.engine, world, rig.layout)
+    const end = lastProbe(moved, 1)
+    assert.ok(end > start + 1000, `local forward movement ${start}mm -> ${end}mm`)
+    assert.equal(Number((moved.components.seat as any)[String(seat)].status), 1, 'hub seats stay alive')
+  } finally {
+    rig.engine.freeWorld(world)
+  }
+})
+
+test('the hub recovers a fallen local character without eliminating it', async () => {
+  const rig = await showDocument('show_hub', HUB_WORLD, [0], [0], [true])
+  rig.doc.entities.push({ components: { show_hub_state: { owner: 0, occupants: 1, humans: 1, bots: 0, tick: 0, rng_state: 7 } } })
+  rig.doc.entities.push({ components: { show_hub_occupant: {
+    owner: 0, room_seat: 0, round_seat: 0, kind: 0, emote: 0, active: 1,
+    wander_x: 0, wander_z: 0, wander_tick: 120, rng_state: 9,
+  } } })
+  const seat = rig.scene.seatEntities[0]
+  const spawn = rig.doc.entities[seat].components['ege.transform'].pos
+  rig.doc.entities[seat].components['ege.transform'].pos = [spawn[0], -20, spawn[2]]
+  rig.doc.resources.season_params = { mode: 9, a: seat }
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    stepShow({ host, world, module, faults }, NEUTRAL_CODE)
+    const state = readWorldState(rig.engine, world, rig.layout)
+    const height = lastProbe(state, 2)
+    assert.ok(height > -2000, `recovered height ${height}mm`)
+    assert.equal(lastProbe(state, 3), 1, 'the recovered character is placed')
+    assert.equal(lastProbe(state, 4), 0, 'the recovered character is not parked')
+    assert.equal(Number((state.components.seat as any)[String(seat)].status), 1, 'a hub fall is not an elimination')
+  } finally {
+    rig.engine.freeWorld(world)
+  }
+})
+
+test('hub occupancy follows queue entry and exit without closing the show', async () => {
+  const rig = await showDocument('show_hub', HUB_WORLD, [0], [0], [true])
+  rig.doc.entities.push({ components: { show_hub_state: { owner: 0, occupants: 0, humans: 0, bots: 0, tick: 0, rng_state: 7 } } })
+  rig.doc.entities.push({ components: { show_hub_occupant: {
+    owner: 0, room_seat: 0, round_seat: 0, kind: 0, emote: 0, active: 0,
+    wander_x: 0, wander_z: 0, wander_tick: 120, rng_state: 9,
+  } } })
+  const human = rig.doc.entities.length - 1
+  rig.doc.entities.push({ components: { show_hub_occupant: {
+    owner: 0, room_seat: 1, round_seat: 0, kind: 1, emote: 0, active: 1,
+    wander_x: 0, wander_z: 0, wander_tick: 120, rng_state: 11,
+  } } })
+  rig.doc.resources.season_params = { mode: 8, a: human }
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    const humans: number[] = []
+    const occupants: number[] = []
+    for (let i = 0; i < 6; i++) {
+      stepShow({ host, world, module, faults }, NEUTRAL_CODE)
+      const state = readWorldState(rig.engine, world, rig.layout)
+      const hub = showRows(state, 'show_hub_state')[0]
+      humans.push(Number(hub.humans))
+      occupants.push(Number(hub.occupants))
+      assert.equal(Number(hub.bots), 1, 'the active bot stays queued')
+      assert.equal(Number((state.resources.round as any).phase), 0, 'the hub never closes a round')
+      const seat = (state.components.seat as any)[String(rig.scene.seatEntities[0])]
+      assert.equal(Number(seat.status), 1, 'no competitive status')
+    }
+    assert.deepEqual([...new Set(humans)].sort((a, b) => a - b), [0, 1], `queue entry/exit humans ${humans}`)
+    assert.deepEqual([...new Set(occupants)].sort((a, b) => a - b), [1, 2], `queue occupancy ${occupants}`)
+  } finally {
+    rig.engine.freeWorld(world)
+  }
+})
+
+test('hub wandering keeps its seeded target and rng in schema state across restore', async () => {
+  const rig = await showDocument('show_hub', HUB_WORLD, [0], [0], [true])
+  rig.doc.entities.push({ components: { show_hub_state: { owner: 0, occupants: 1, humans: 0, bots: 1, tick: 0, rng_state: 7 } } })
+  rig.doc.entities.push({ components: { show_hub_occupant: {
+    owner: 0, room_seat: 1, round_seat: 0, kind: 1, emote: 0, active: 1,
+    wander_x: 0, wander_z: 0, wander_tick: 0, rng_state: 0x1234,
+  } } })
+  const bot = rig.doc.entities.length - 1
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    stepShow({ host, world, module, faults }, NEUTRAL_CODE)
+    const first = readWorldState(rig.engine, world, rig.layout)
+    const firstBot = (first.components.show_hub_occupant as any)[String(bot)]
+    assert.ok(Number(firstBot.wander_x) !== 0 || Number(firstBot.wander_z) !== 0, 'the bot picked a wander target')
+    assert.equal(Number(firstBot.wander_tick), 120)
+    const saved = rig.engine.snapshot(world).slice()
+    for (let i = 0; i < 5; i++) stepShow({ host, world, module, faults }, NEUTRAL_CODE)
+    const later = readWorldState(rig.engine, world, rig.layout)
+    const laterBot = (later.components.show_hub_occupant as any)[String(bot)]
+
+    const restored = rig.engine.createWorld(JSON.stringify(rig.doc))
+    rig.engine.restore(restored, saved)
+    stepShow({ host, world: restored, module, faults }, NEUTRAL_CODE)
+    const replay = readWorldState(rig.engine, restored, rig.layout)
+    const replayBot = (replay.components.show_hub_occupant as any)[String(bot)]
+    assert.equal(Number(replayBot.wander_x), Number(firstBot.wander_x))
+    assert.equal(Number(replayBot.wander_z), Number(firstBot.wander_z))
+    assert.equal(Number(replayBot.rng_state), Number(firstBot.rng_state))
+    assert.equal(Number(replayBot.wander_tick), Number(firstBot.wander_tick))
+    for (let i = 0; i < 4; i++) stepShow({ host, world: restored, module, faults }, NEUTRAL_CODE)
+    const replayLater = readWorldState(rig.engine, restored, rig.layout)
+    const replayLaterBot = (replayLater.components.show_hub_occupant as any)[String(bot)]
+    assert.equal(Number(replayLaterBot.wander_x), Number(laterBot.wander_x))
+    assert.equal(Number(replayLaterBot.wander_z), Number(laterBot.wander_z))
+    assert.equal(Number(replayLaterBot.rng_state), Number(laterBot.rng_state))
+    rig.engine.freeWorld(restored)
+  } finally {
+    rig.engine.freeWorld(world)
+  }
 })

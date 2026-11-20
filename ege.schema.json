@@ -1704,6 +1704,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.tail_set.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform"],
+          "writes": ["feature_tail_set", "feature_tail_set_seat", "character"],
+          "emits": ["possess"]
+        },
+        {
           "system": "ege.body.props",
           "kind": "engine"
         },
@@ -1840,6 +1847,13 @@
           "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
           "writes": ["feature_capture_zone", "ege.render"],
           "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.tail_set.post",
+          "kind": "script",
+          "reads": ["feature", "feature_tail_set", "feature_tail_set_seat", "seat", "ege.transform", "ege.render"],
+          "writes": ["ege.render", "ege.transform"],
+          "emits": []
         },
         {
           "system": "rf.seat.rules",

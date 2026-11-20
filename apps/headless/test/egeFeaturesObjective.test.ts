@@ -799,3 +799,206 @@ test('a new capture leader resets progress carried from another team', async () 
     rig.first.dispose()
   }
 })
+
+function tailSpec(count: 'half' | number, spawn: [number, number, number], immunityS = 1): FeatureSpec {
+  return { id: 'tails-demo', kind: 'tailSet', params: { count, spawn, immunityS } }
+}
+
+interface TailRig { engine: EngineInstance; scene: EmittedScene; first: EngineRound; second: EngineRound }
+
+async function tailRig(
+  spec: FeatureSpec,
+  edit?: (doc: any, scene: EmittedScene) => void,
+): Promise<TailRig> {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = [spec]
+  const engine = await loadEngine()
+  const schema = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schema)
+  const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  const doc = JSON.parse(scene.text)
+  doc.gravity = [0, 0, 0]
+  edit?.(doc, scene)
+  const modified = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: ALL_HUMAN }
+  const first = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  const second = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  return { engine, scene, first, second }
+}
+
+function tailSteps(rig: TailRig, n: number, grab: boolean, events?: ReturnType<typeof decodeEvents>): void {
+  for (let tick = 0; tick < n; tick++) {
+    const records = rawStep(rig.first, () => code(0, grab))
+    rawStep(rig.second, () => code(0, grab))
+    if (events) events.push(...records)
+  }
+}
+
+function placeSeatAt(doc: any, scene: EmittedScene, seat: number, t: [number, number, number]): void {
+  doc.entities[scene.seatEntities[seat]].components.seat.spawn_t = t
+}
+
+function tailSeat(doc: any, scene: EmittedScene, id: string, seat: number): any {
+  return doc.entities[scene.index(`feature/${id}/seat/${seat}`)].components.feature_tail_set_seat
+}
+
+function tailFeature(doc: any, scene: EmittedScene, id: string): any {
+  return doc.entities[scene.index(`feature/${id}`)].components.feature_tail_set
+}
+
+test('half the seats receive a tail on the first round tick and the rest stay empty', async () => {
+  const rig = await tailRig(tailSpec('half', [20, 0, 20]))
+  try {
+    tailSteps(rig, 60, false)
+    const root = rig.scene.index('feature/tails-demo')
+    assert.equal(rec(rig.first, 'feature_tail_set', root).assigned, 0, 'no assignment during the intro')
+    tailSteps(rig, 1, false)
+    const feature = rec(rig.first, 'feature_tail_set', root)
+    assert.deepEqual(
+      { assigned: feature.assigned, count: feature.count, free_tails: feature.free_tails },
+      { assigned: 1, count: -1, free_tails: 0 },
+    )
+    let holders = 0
+    for (let seat = 0; seat < 8; seat++) {
+      const state = rec(rig.first, 'feature_tail_set_seat', rig.scene.index(`feature/tails-demo/seat/${seat}`))
+      const ch = rec(rig.first, 'character', rig.scene.seatEntities[seat])
+      const visual = rec(rig.first, 'ege.render', rig.scene.index(`feature/tails-demo/seat/${seat}`))
+      assert.equal(state.has_tail === 1 ? 1 : 0, visual.visible, `seat ${seat} visual follows its tail`)
+      if (state.has_tail !== 1) {
+        assert.equal(ch.carry, 0, `seat ${seat} holds nothing`)
+        continue
+      }
+      holders++
+      assert.equal(ch.carry, 3, `seat ${seat} carries the tail kind`)
+      assert.equal(ch.carry_id, 0)
+    }
+    assert.equal(holders, 4, 'floor(8 / 2) seats hold a tail')
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})
+
+test('a valid grab transfers one tail with exact possess payloads', async () => {
+  const rig = await tailRig(tailSpec('half', [50, 50, 50]), (doc, scene) => {
+    placeSeatAt(doc, scene, 0, [0, 0, 0])
+    placeSeatAt(doc, scene, 1, [0.5, 0, 0])
+    for (let seat = 2; seat < 8; seat++) placeSeatAt(doc, scene, seat, [10 + seat, 0, 0])
+    tailFeature(doc, scene, 'tails-demo').assigned = 1
+    tailSeat(doc, scene, 'tails-demo', 0).has_tail = 1
+    const holder = doc.entities[scene.seatEntities[0]].components.character
+    holder.carry = 3
+    holder.carry_id = 0
+  })
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    tailSteps(rig, 60, false)
+    tailSteps(rig, 1, true, events)
+    assert.equal(rig.first.tick, 61)
+    const moved = events.filter((event) => event.kind === 'possess')
+    assert.equal(moved.length, 2, 'one holder loses and one grabber gains')
+    const lost = moved.find((event) => event.fields.seat === 0)
+    const gained = moved.find((event) => event.fields.seat === 1)
+    assert.ok(lost && gained, 'both seat possess events are present')
+    assert.deepEqual({ a: lost.fields.a, b: lost.fields.b }, { a: 0, b: 0 })
+    assert.deepEqual({ a: gained.fields.a, b: gained.fields.b }, { a: 1, b: 0 })
+    assert.equal(lost.entity, rig.scene.seatEntities[0])
+    assert.equal(gained.entity, rig.scene.seatEntities[1])
+
+    const from = rec(rig.first, 'feature_tail_set_seat', rig.scene.index('feature/tails-demo/seat/0'))
+    const to = rec(rig.first, 'feature_tail_set_seat', rig.scene.index('feature/tails-demo/seat/1'))
+    assert.deepEqual({ has_tail: from.has_tail, immune_until: from.immune_until }, { has_tail: 0, immune_until: 0 })
+    assert.deepEqual({ has_tail: to.has_tail, immune_until: to.immune_until }, { has_tail: 1, immune_until: 120 })
+    const loser = rec(rig.first, 'character', rig.scene.seatEntities[0])
+    const winner = rec(rig.first, 'character', rig.scene.seatEntities[1])
+    assert.deepEqual({ carry: loser.carry, carry_id: loser.carry_id }, { carry: 0, carry_id: -1 })
+    assert.deepEqual({ carry: winner.carry, carry_id: winner.carry_id }, { carry: 3, carry_id: 0 })
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})
+
+test('the gatherer immunity blocks an early repeat grab', async () => {
+  const rig = await tailRig(tailSpec('half', [50, 50, 50], 1), (doc, scene) => {
+    placeSeatAt(doc, scene, 0, [0, 0, 0])
+    placeSeatAt(doc, scene, 1, [0.5, 0, 0])
+    for (let seat = 2; seat < 8; seat++) placeSeatAt(doc, scene, seat, [10 + seat, 0, 0])
+    tailFeature(doc, scene, 'tails-demo').assigned = 1
+    tailSeat(doc, scene, 'tails-demo', 0).has_tail = 1
+  })
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    tailSteps(rig, 60, false)
+    tailSteps(rig, 1, true, events)
+    assert.equal(events.filter((event) => event.kind === 'possess').length, 2, 'the first grab transfers the tail')
+    // Release for one tick, then press again while seat 1 is still immune.
+    tailSteps(rig, 1, false)
+    tailSteps(rig, 1, true, events)
+    assert.equal(rig.first.tick, 63)
+    assert.equal(events.filter((event) => event.kind === 'possess').length, 2, 'an immune holder is not stolen back')
+    const holder = rec(rig.first, 'feature_tail_set_seat', rig.scene.index('feature/tails-demo/seat/1'))
+    assert.equal(holder.has_tail, 1, 'seat 1 keeps the tail through the immunity window')
+    assert.equal(rec(rig.first, 'feature_tail_set_seat', rig.scene.index('feature/tails-demo/seat/0')).has_tail, 0)
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})
+
+test('a dead holder frees its tail and a nearby grabber restores possession', async () => {
+  const rig = await tailRig(tailSpec('half', [0.5, 0.9, 0]), (doc, scene) => {
+    placeSeatAt(doc, scene, 0, [0, 0, 0])
+    placeSeatAt(doc, scene, 1, [0.5, 0, 0])
+    for (let seat = 2; seat < 8; seat++) placeSeatAt(doc, scene, seat, [10 + seat, 0, 0])
+    const feature = tailFeature(doc, scene, 'tails-demo')
+    feature.assigned = 1
+    // The free pile sits at the picker's own feet so the spawn range covers it.
+    const stand = doc.entities[scene.seatEntities[1]].components.character.stand
+    feature.spawn = [0.5, stand + 0.01, 0]
+    tailSeat(doc, scene, 'tails-demo', 0).has_tail = 1
+    const dead = doc.entities[scene.seatEntities[0]].components
+    dead.seat.status = 0
+    dead.character.carry = 3
+    dead.character.carry_id = 0
+    const picker = doc.entities[scene.seatEntities[1]].components.character
+    picker.carry = 0
+    picker.carry_id = -1
+  })
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    tailSteps(rig, 60, false)
+    const root = rig.scene.index('feature/tails-demo')
+    assert.equal(rec(rig.first, 'feature_tail_set', root).free_tails, 1, 'the death dropped the tail to the pile')
+    const dead = rec(rig.first, 'feature_tail_set_seat', rig.scene.index('feature/tails-demo/seat/0'))
+    assert.equal(dead.has_tail, 0)
+    assert.equal(rec(rig.first, 'character', rig.scene.seatEntities[0]).carry, 0)
+
+    tailSteps(rig, 1, false)
+    assert.equal(rec(rig.first, 'feature_tail_set', root).free_tails, 1, 'the free tail waits for a grabber')
+    tailSteps(rig, 1, true, events)
+    assert.equal(rec(rig.first, 'feature_tail_set', root).free_tails, 0, 'the pickup empties the pile')
+    const picked = rec(rig.first, 'feature_tail_set_seat', rig.scene.index('feature/tails-demo/seat/1'))
+    assert.equal(picked.has_tail, 1, 'the nearby seat now holds the tail')
+    assert.equal(rec(rig.first, 'character', rig.scene.seatEntities[1]).carry, 3)
+    const gains = events.filter((event) => event.kind === 'possess' && event.fields.seat === 1)
+    assert.equal(gains.length, 1)
+    assert.deepEqual({ a: gains[0].fields.a, b: gains[0].fields.b }, { a: 1, b: 0 })
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})

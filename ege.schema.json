@@ -2103,8 +2103,8 @@
         {
           "system": "rf.feature.carry_item.pre",
           "kind": "script",
-          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity"],
-          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props"],
+          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity", "show_seat_identity", "show_feature_membership", "show_character_ref", "ege.zone.id"],
+          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props", "show_feature_membership", "show_character_ref", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2283,8 +2283,8 @@
         {
           "system": "rf.feature.bank.post",
           "kind": "script",
-          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform"],
-          "writes": ["feature_bank_inside"],
+          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform", "feature", "show_seat_identity", "show_character_ref", "ege.zone.id", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_bank_inside", "ege.zone.id", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
@@ -2403,8 +2403,8 @@
         {
           "system": "rf.feature.carry_item.pre",
           "kind": "script",
-          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity"],
-          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props"],
+          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity", "show_seat_identity", "show_feature_membership", "show_character_ref", "ege.zone.id"],
+          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props", "show_feature_membership", "show_character_ref", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2548,8 +2548,8 @@
         {
           "system": "rf.feature.bank.post",
           "kind": "script",
-          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform"],
-          "writes": ["feature_bank_inside"],
+          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform", "feature", "show_seat_identity", "show_character_ref", "ege.zone.id", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_bank_inside", "ege.zone.id", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
@@ -2650,8 +2650,8 @@
         {
           "system": "rf.feature.carry_item.pre",
           "kind": "script",
-          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity"],
-          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props"],
+          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity", "show_seat_identity", "show_feature_membership", "show_character_ref", "ege.zone.id"],
+          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props", "show_feature_membership", "show_character_ref", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2795,8 +2795,8 @@
         {
           "system": "rf.feature.bank.post",
           "kind": "script",
-          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform"],
-          "writes": ["feature_bank_inside"],
+          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform", "feature", "show_seat_identity", "show_character_ref", "ege.zone.id", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_bank_inside", "ege.zone.id", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
@@ -2904,8 +2904,8 @@
         {
           "system": "rf.feature.carry_item.pre",
           "kind": "script",
-          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity"],
-          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props"],
+          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity", "show_seat_identity", "show_feature_membership", "show_character_ref", "ege.zone.id"],
+          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props", "show_feature_membership", "show_character_ref", "ege.zone.id"],
           "emits": []
         },
         {
@@ -3049,8 +3049,8 @@
         {
           "system": "rf.feature.bank.post",
           "kind": "script",
-          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform"],
-          "writes": ["feature_bank_inside"],
+          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform", "feature", "show_seat_identity", "show_character_ref", "ege.zone.id", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_bank_inside", "ege.zone.id", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {

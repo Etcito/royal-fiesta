@@ -1602,3 +1602,257 @@ test('recordShowEvent runs under every production memory tiles access list and a
     engine.freeWorld(bare)
   }
 })
+
+/**
+ * Handoff: G7.1 Identity, inputs and world construction: transfer carried objects and bank membership:
+ * CARRY_ITEM_ACCESS pins the access lists ege.schema.json grants today to rf.feature.carry_item.pre in round,
+ * show_seat, show_field and show_hub: the existing grants first, then reads of show_seat_identity and reads and
+ * writes of show_feature_membership, show_character_ref (the carried entity reference) and ege.zone.id for the
+ * dynamically created carry membership rows. BANK_ACCESS pins rf.feature.bank.post: the existing grants first,
+ * then reads of feature, show_seat_identity and show_character_ref, and reads and writes of ege.zone.id for the
+ * feature_bank_inside rows plus show_result_a, show_result_b and show_team_contribution, which recordShowEvent
+ * reads and updates for team_score contributions. Schedule order and emitted events are unchanged.
+ */
+const CARRY_ITEM_ACCESS = {
+  reads: [
+    'course', 'feature', 'seat', 'character', 'feature_carry_item', 'feature_carry_item_item',
+    'feature_carry_item_home', 'feature_carry_item_seat', 'ege.transform', 'ege.velocity',
+    'show_seat_identity', 'show_feature_membership', 'show_character_ref', 'ege.zone.id',
+  ],
+  writes: [
+    'feature_carry_item', 'feature_carry_item_item', 'feature_carry_item_seat', 'character', 'ege.transform',
+    'ege.velocity', 'ege.body_props', 'show_feature_membership', 'show_character_ref', 'ege.zone.id',
+  ],
+  emits: [] as string[],
+}
+const BANK_ACCESS = {
+  reads: [
+    'round', 'feature_bank', 'feature_bank_inside', 'seat', 'character', 'ege.transform',
+    'feature', 'show_seat_identity', 'show_character_ref', 'ege.zone.id',
+    'show_result_a', 'show_result_b', 'show_team_contribution',
+  ],
+  writes: ['feature_bank_inside', 'ege.zone.id', 'show_result_a', 'show_result_b', 'show_team_contribution'],
+  emits: ['team_score'],
+}
+const OBJECTIVE_ACCESS: Record<string, typeof BANK_ACCESS> = {
+  'rf.feature.carry_item.pre': CARRY_ITEM_ACCESS,
+  'rf.feature.bank.post': BANK_ACCESS,
+}
+const OBJECTIVE_WORLDS = ['round', 'show_seat', 'show_field', 'show_hub']
+
+test('carry item and bank entries grant membership, zone identity, reference and result access in every world', async () => {
+  const layout = await layoutOf()
+  // Resource grants are encoded as resource id + 0x8000, component grants as component ids.
+  const componentNames = new Map(layout.components.map((decl): [number, string] => [decl.id, decl.name]))
+  const resourceNames = new Map(layout.resources.map((decl): [number, string] => [decl.id, decl.name]))
+  const resolve = (id: number): string | undefined =>
+    id >= 0x8000 ? resourceNames.get(id - 0x8000) : componentNames.get(id)
+  const eventName = (id: number): string | undefined => layout.events.find((event) => event.id === id)?.name
+  const source = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  for (const world of OBJECTIVE_WORLDS) {
+    const authored = source.world_kinds.find((kind) => kind.name === world)
+    const loaded = layout.world_kinds.find((kind) => kind.name === world)
+    assert.ok(authored && loaded, world)
+    for (const [system, access] of Object.entries(OBJECTIVE_ACCESS)) {
+      const entries: AccessSchema['world_kinds'][number]['schedule'] =
+        authored.schedule.filter((entry) => entry.system === system)
+      assert.equal(entries.length, 1, `${world} ${system}`)
+      assert.deepEqual(
+        { reads: entries[0].reads, writes: entries[0].writes, emits: entries[0].emits }, access, `${world} ${system}`)
+      const loadedEntry: Layout['world_kinds'][number]['schedule'][number] | undefined =
+        loaded.schedule.find((entry) => entry.system === system)
+      assert.ok(loadedEntry, `${world} ${system}`)
+      assert.deepEqual(loadedEntry.reads.map((id: number) => resolve(id)), access.reads, `${world} ${system}`)
+      assert.deepEqual(loadedEntry.writes.map((id: number) => resolve(id)), access.writes, `${world} ${system}`)
+      assert.deepEqual(loadedEntry.emits.map((id: number) => eventName(id)), access.emits, `${world} ${system}`)
+    }
+  }
+  const round = source.world_kinds.find((kind) => kind.name === 'round')
+  assert.deepEqual(round?.schedule.map((entry) => entry.system), SCHEDULE)
+})
+
+// The objective access probe runs under each production carry item and bank entry, copied verbatim into a probe
+// world kind. For every seat it creates one membership row per carry feature (show_feature_membership) and per
+// bank and item (feature_bank_inside, with entity-typed owner and item), attaches an ege.zone.id taken from the
+// seat's physical anchor at once and reuses existing rows on later ticks. The carry probe copies the carried
+// item entity into show_character_ref.carry. The bank probe reads that reference back and reports a team_score
+// contribution through the real recordShowEvent. The probe's zone ids only exercise access: the allocation
+// itself belongs to the feature scripts.
+const OBJECTIVE_ACCESS_PROBE = `import { getComponent, isNull, newRecord, readColumn, setComponent, spawn, tick } from 'ege'
+import {
+  EgeZoneId, Feature, FeatureBank, FeatureBankInside, FeatureCarryItemItem, ShowCharacterRef,
+  ShowFeatureMembership, ShowSeatIdentity, TeamScoreEvent,
+} from '../components.gen'
+import { recordShowEvent } from '../lib/show_events.as'
+
+function attach(entity: u32, index: u32, room: u32, anchor: EgeZoneId): void {
+  const zone = newRecord<EgeZoneId>(EgeZoneId.SIZE)
+  zone.id = <u32>(<u64>0x40000000 + <u64>index * 64 + <u64>room)
+  zone.owner = anchor.owner
+  zone.group = anchor.group
+  setComponent<EgeZoneId>(entity, EgeZoneId.ID, EgeZoneId.SIZE, zone)
+}
+
+export function rf_probe_objective_carry_pre(): void {
+  const seats = readColumn<ShowSeatIdentity>(ShowSeatIdentity.ID, ShowSeatIdentity.SIZE)
+  const items = readColumn<FeatureCarryItemItem>(FeatureCarryItemItem.ID, FeatureCarryItemItem.SIZE)
+  const rows = readColumn<ShowFeatureMembership>(ShowFeatureMembership.ID, ShowFeatureMembership.SIZE)
+  const refs = readColumn<ShowCharacterRef>(ShowCharacterRef.ID, ShowCharacterRef.SIZE)
+  for (let s: u32 = 0; s < seats.count; s++) {
+    const character = seats.entity(s)
+    const room = seats.at(s).room_seat
+    const anchor = getComponent<EgeZoneId>(character, EgeZoneId.ID, EgeZoneId.SIZE)
+    if (isNull<EgeZoneId>(anchor)) continue
+    for (let i: u32 = 0; i < items.count; i++) {
+      const index = items.at(i).owner
+      const feature = items.entity(i)
+      let found = false
+      for (let r: u32 = 0; r < rows.count; r++) {
+        const row = rows.at(r)
+        if (row.index != index || row.character != character) continue
+        row.inside = row.inside + 1
+        found = true
+      }
+      const ref = refs.find(character)
+      if (ref >= 0) refs.at(<u32>ref).carry = feature
+      if (found) continue
+      const entity = spawn()
+      const row = newRecord<ShowFeatureMembership>(ShowFeatureMembership.SIZE)
+      row.owner = character
+      row.feature = feature
+      row.character = character
+      row.index = index
+      row.inside = 1
+      setComponent<ShowFeatureMembership>(entity, ShowFeatureMembership.ID, ShowFeatureMembership.SIZE, row)
+      attach(entity, index, room, anchor)
+    }
+  }
+  rows.write()
+  refs.write()
+}
+
+export function rf_probe_objective_bank_post(): void {
+  const seats = readColumn<ShowSeatIdentity>(ShowSeatIdentity.ID, ShowSeatIdentity.SIZE)
+  const banks = readColumn<FeatureBank>(FeatureBank.ID, FeatureBank.SIZE)
+  const inside = readColumn<FeatureBankInside>(FeatureBankInside.ID, FeatureBankInside.SIZE)
+  const refs = readColumn<ShowCharacterRef>(ShowCharacterRef.ID, ShowCharacterRef.SIZE)
+  for (let s: u32 = 0; s < seats.count; s++) {
+    const character = seats.entity(s)
+    const room = seats.at(s).room_seat
+    const anchor = getComponent<EgeZoneId>(character, EgeZoneId.ID, EgeZoneId.SIZE)
+    const ref = refs.find(character)
+    if (isNull<EgeZoneId>(anchor) || ref < 0) continue
+    const item = refs.at(<u32>ref).carry
+    for (let b: u32 = 0; b < banks.count; b++) {
+      const owner = banks.entity(b)
+      let found = false
+      for (let i: u32 = 0; i < inside.count; i++) {
+        const record = inside.at(i)
+        if (record.owner == owner && record.item == item) found = true
+      }
+      if (found) continue
+      const team = banks.at(b).team
+      const entity = spawn()
+      const record = newRecord<FeatureBankInside>(FeatureBankInside.SIZE)
+      record.owner = owner
+      record.item = item
+      record.team = team
+      setComponent<FeatureBankInside>(entity, FeatureBankInside.ID, FeatureBankInside.SIZE, record)
+      attach(entity, getComponent<Feature>(owner, Feature.ID, Feature.SIZE).index, room, anchor)
+      if (tick() == 0) recordShowEvent(TeamScoreEvent.ID, owner, <u32>team, 1, 0)
+    }
+  }
+}
+`
+
+const OBJECTIVE_SEAT = {
+  show_seat_identity: { room_seat: 59, round_seat: 1, input_slot: -1, bot: 1 },
+  'ege.zone.id': { id: 60, owner: 1, group: 60 },
+  show_character_ref: { owner: 0, target: NO_ENTITY, lever: NO_ENTITY, carry: NO_ENTITY },
+  show_result_a: {
+    seat: 59, status: 1, finish_tick: -1, finish_sub: -1, lap: 0, stage: -1,
+    route_mm: 0, falls: 0, score: 0, last_score_tick: -1,
+  },
+  show_result_b: {
+    hold_ticks: 0, possessing: 0, last_acquire_tick: -1, matches: 0, cross_ticks: 0,
+    out_tick: -1, out_sub: -1, team: 1, opening_rank: 0,
+  },
+}
+
+test('an objective probe creates zone-identified membership rows, syncs carry and contributes under each production access list', async () => {
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  const probes: { world: string; system: string; probe: string; kind: string }[] = []
+  for (const world of OBJECTIVE_WORLDS) {
+    const kind = schema.world_kinds.find((candidate) => candidate.name === world)
+    assert.ok(kind, world)
+    for (const [system, probe] of [
+      ['rf.feature.carry_item.pre', 'rf.probe.objective_carry_pre'],
+      ['rf.feature.bank.post', 'rf.probe.objective_bank_post'],
+    ]) {
+      const entry = kind.schedule.find((candidate) => candidate.system === system)
+      assert.ok(entry, `${world} ${system}`)
+      const probeKind = `${probe.replace('rf.probe.', 'probe_')}_${world}`
+      probes.push({ world, system, probe, kind: probeKind })
+      schema.world_kinds.push({ name: probeKind, players: 8, schedule: [{ ...JSON.parse(JSON.stringify(entry)), system: probe }] })
+    }
+  }
+  const files = [...collectRfScripts(), { name: 'probe/objective_access.as.ts', text: OBJECTIVE_ACCESS_PROBE }]
+    .sort((a, b) => Buffer.compare(Buffer.from(a.name), Buffer.from(b.name)))
+  const compiled = await (await rfCompiler()).compile(files, JSON.stringify(schema))
+  assert.deepEqual(compiled.diagnostics.filter((d) => d.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const engine = await loadEngine()
+  engine.setSchema(JSON.stringify(schema))
+  const module = await loadScript(engine, compiled.wasm, { name: 'rf-scripts' })
+  const layout = schemaLayout(engine)
+  for (const { world, system, kind } of probes) {
+    const label = `${world} ${system}`
+    const carry = system === 'rf.feature.carry_item.pre'
+    const entities = carry
+      ? [
+          // Entity 0: room seat 59 at round seat 1, its physical anchor identity {60, 1, 60}.
+          { components: OBJECTIVE_SEAT },
+          // Entity 1: an item of the carry feature with authored index 7, held by round seat 1.
+          { components: { feature_carry_item_item: { owner: 7, index: 0, spawn: [0, 1, 0], holder: 1, last_touch_tick: -1, last_hand: [0, 0, 0] } } },
+        ]
+      : [
+          // Entity 0: the same seat, already carrying entity 2.
+          { components: { ...OBJECTIVE_SEAT, show_character_ref: { ...OBJECTIVE_SEAT.show_character_ref, carry: 2 } } },
+          // Entity 1: a team-one bank with authored feature index 9.
+          { components: { feature: { kind: 17, index: 9, salt: 0x109 }, feature_bank: { center: [0, 0, 0], half: [1, 1, 1], team: 1 } } },
+          // Entity 2: the carried item.
+          { components: {} },
+        ]
+    const created = engine.createWorld(JSON.stringify({ format: 'ege.scene', version: 1, world_kind: kind, seed: 1, entities }))
+    try {
+      const host = new ScriptHost(module)
+      host.stepTick(created, Array(8).fill(0))
+      host.stepTick(created, Array(8).fill(0))
+      assert.equal(module.faultCount, 0, module.faults.map((fault) => fault.message).join('; '))
+      const state = readWorldState(engine, created, layout)
+      const zones = state.components['ege.zone.id']
+      if (carry) {
+        const rows = Object.entries(state.components.show_feature_membership)
+        assert.equal(rows.length, 1, label)
+        const [entity, row] = rows[0]
+        assert.deepEqual(row, { owner: 0, feature: 1, character: 0, index: 7, inside: 2 }, label)
+        assert.deepEqual(zones[entity], { id: 0x40000000 + 7 * 64 + 59, owner: 1, group: 60 }, label)
+        assert.deepEqual(state.components.show_character_ref[0], { owner: 0, target: NO_ENTITY, lever: NO_ENTITY, carry: 1 }, label)
+      } else {
+        const rows = Object.entries(state.components.feature_bank_inside)
+        assert.equal(rows.length, 1, label)
+        const [entity, row] = rows[0]
+        assert.deepEqual(row, { owner: 1, item: 2, team: 1 }, label)
+        assert.deepEqual(zones[entity], { id: 0x40000000 + 9 * 64 + 59, owner: 1, group: 60 }, label)
+        const events = decodeEvents(engine.events(created, 0, engine.tick(created)).records, layout)
+          .filter((event) => event.kind === 'team_score')
+        assert.deepEqual(events.map((event) => [event.entity, event.fields]), [[1, { team: 1, a: 1, b: 0 }]], label)
+        assert.deepEqual(Object.values(state.components.show_team_contribution), [
+          { owner: 1, feature: 9, team: 1, value: 1, tick: 0 },
+        ], label)
+      }
+    } finally {
+      engine.freeWorld(created)
+    }
+  }
+})

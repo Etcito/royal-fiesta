@@ -55,6 +55,7 @@ export class EngineRound {
   readonly host: ScriptHost
   readonly layout: SchemaLayout
   readonly scene: EmittedScene
+  private board: WorldState
   private current: RoundObservation
   private readonly bots: (DomainBot | null)[]
   private readonly events: Record<string, number>
@@ -80,7 +81,8 @@ export class EngineRound {
     this.course = course
     this.bots = setup.humans.map((human, seat) => human ? null : new DomainBot(setup.seed, seat))
     this.events = Object.fromEntries(layout.events.map(({ name }) => [name, 0]))
-    this.current = observeRound(readWorldState(engine, world, layout), scene, module.faultCount, this.events)
+    this.board = readWorldState(engine, world, layout)
+    this.current = observeRound(this.board, scene, module.faultCount, this.events)
   }
 
   get tick(): number {
@@ -89,12 +91,13 @@ export class EngineRound {
 
   step(human: (seat: number) => number): void {
     const codes = new Array<number>(8)
+    const routes = new Map<string, ResolvedCourse>()
     for (let seat = 0; seat < 8; seat++) {
       const bot = this.bots[seat]
       const code = bot === null
         ? human(seat)
         : this.course && (this.current.phase === 'playing' || this.current.phase === 'overtime') && this.current.seats[seat].status === PlayerStatus.alive
-          ? bot.sample(this.course, charStateOf(this.current.seats[seat]))
+          ? bot.sample(this.botCourse(this.course, seat, routes), charStateOf(this.current.seats[seat]))
           : NEUTRAL_CODE
       codes[seat] = engineCodeOfS1(code)
     }
@@ -105,7 +108,32 @@ export class EngineRound {
     for (const event of decodeEvents(records, this.layout)) {
       this.events[event.kind] = (this.events[event.kind] ?? 0) + 1
     }
-    this.current = observeRound(readWorldState(this.engine, this.world, this.layout), this.scene, this.module.faultCount, this.events)
+    this.board = readWorldState(this.engine, this.world, this.layout)
+    this.current = observeRound(this.board, this.scene, this.module.faultCount, this.events)
+  }
+
+  // Like hexField.botTarget, the survival brain seeks solid cells on the
+  // current deck. The authored route also contains nodes on vanished tiles.
+  private botCourse(course: ResolvedCourse, seat: number, routes: Map<string, ResolvedCourse>): ResolvedCourse {
+    const cells = this.board.components.feature_hex_field_hex
+    if (course.kind !== 'survival' || !cells) return course
+    const character = this.board.components.character[this.scene.seatEntities[seat]]
+    const support = cells[Number(character.ground_entity)]
+    if (!character.grounded || !support) return course
+    const y = (support.t as number[])[1]
+    const key = `${support.owner}/${y}`
+    const cached = routes.get(key)
+    if (cached) return cached
+    const path = []
+    for (const cell of Object.values(cells)) {
+      const [x, height, z] = cell.t as number[]
+      if (cell.owner === support.owner && height === y && cell.state === 0) {
+        path.push({ p: { x, y, z }, jump: false, dive: false })
+      }
+    }
+    const route = path.length ? { ...course, path } : course
+    routes.set(key, route)
+    return route
   }
 
   observe(): RoundObservation {

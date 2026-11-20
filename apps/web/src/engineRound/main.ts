@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { loadEngine } from '@etcito/game-engine'
 import type { EngineInstance } from '@etcito/game-engine/loader'
-import { RenderBridge } from '@etcito/game-engine/render'
+import { roundRenderBridge } from './hexTiles.ts'
 import wasmUrl from '@etcito/game-engine/wasm/ege.wasm?url'
 import { RF_EGE_SCRIPTS_URL } from '@royal-fiesta/game/ege/files'
 import type { EmittedScene } from '@royal-fiesta/game/ege/sceneEmitter'
@@ -42,7 +42,7 @@ export interface EngineRoundPage {
   sim: EngineSceneSim
   view: SceneView
   port: ResizablePort
-  bridge: RenderBridge
+  bridge: ReturnType<typeof roundRenderBridge>
   /** The scene follows the round (sim refresh, view update, bridge sync) without drawing. */
   advance(dtS: number): void
   /** Draws the current scene. */
@@ -110,7 +110,7 @@ export async function loadEngineRoundPage(args: RoundRunArgs, canvas: HTMLCanvas
       return focusCamera({ x: pose[0], y: pose[1], z: pose[2] })
     },
   })
-  const bridge = new RenderBridge(port.raaEngine())
+  const bridge = roundRenderBridge(port.raaEngine(), scene.scene)
   let disposed = false
   const advance = (dtS: number): void => {
     sim.refresh(round)

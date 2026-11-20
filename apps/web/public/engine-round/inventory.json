@@ -334,7 +334,15 @@
       "frames": 900,
       "local": "run",
       "captureAt": "end",
-      "focus": "kind:hexField"
+      "focus": "kind:hexField",
+      "runPath": [
+        [-14.289, 8.25],
+        [0, 16.5],
+        [14.289, 8.25],
+        [14.289, -8.25],
+        [9.526, -19.25],
+        [4.763, 2.75]
+      ]
     },
     "require": [
       "nonEmpty eq true",

@@ -13,6 +13,9 @@ import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
 import { harnessRound, loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
+import { roundRenderBridge } from '../../web/src/engineRound/hexTiles.ts'
+import { createRoundRun, parseRunArgs } from '../../web/src/engineRound/run.ts'
+import { focusCamera } from '@royal-fiesta/game/ege/sceneSim'
 
 async function roundWith(id: string, specs: FeatureSpec[] | null, humans = [true, false, false, false, false, false, false, false], sharedEngine?: EngineInstance): Promise<{
   engine: EngineInstance; scene: EmittedScene; course: CourseV1; round: EngineRound
@@ -870,6 +873,92 @@ test('rising kill follows round time, warns, clamps and kills below its plane', 
     assert.equal(rec(lethal.round, 'seat', lethal.round.observe().seats[0].entity).kill_request, 1)
   } finally {
     lethal.round.dispose()
+  }
+})
+
+test('Honeycomb submits six-sided decks and grounded penguins can be seen through dropped tiles', async () => {
+  const inventory = JSON.parse(await readRepoText('apps/web/public/engine-round/inventory.json'))
+  const args = parseRunArgs(inventory.find((row: { id: string }) => row.id === 'm6-honeycomb-hex-field').args)
+  const { engine, scene, course, round } = await harnessRound(args.course, args)
+  const nodes: { pos: number[]; scale: number[]; parent: number | null }[] = []
+  const tiles: { node: number; color: number; visible: boolean }[] = []
+  const unitMesh = 1
+  const board = roundRenderBridge({
+    addMesh(desc) {
+      const ring = []
+      for (let i = 0; i < desc.positions.length; i += 3) {
+        if (desc.positions[i + 1] === Math.fround(.45)) ring.push([desc.positions[i], desc.positions[i + 2]])
+      }
+      assert.deepEqual(ring, [[1, 0], [.5, 1], [-.5, 1], [-1, 0], [-.5, -1], [.5, -1]])
+      return unitMesh
+    },
+    primitiveMesh: () => 0,
+    addNode(parent, pos = [0, 0, 0], _rot, scale = [1, 1, 1]) {
+      return nodes.push({ parent, pos: Array.from(pos), scale: Array.from(scale) }) - 1
+    },
+    setTransforms(ids, trs) {
+      ids.forEach((id, i) => { nodes[id].pos = Array.from(trs.subarray(i * 10, i * 10 + 3)) })
+    },
+    addMaterial(desc) {
+      const [r, g, b] = desc.color!
+      return (Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255)
+    },
+    addInstance(node, mesh, color) {
+      return mesh === unitMesh ? tiles.push({ node, color, visible: true }) - 1 : -1
+    },
+    setVisible(id, visible) { if (id >= 0) tiles[id].visible = visible },
+    removeNode() {}, removeMesh() {},
+  }, scene.scene)
+  try {
+    const run = createRoundRun(round, args, course)
+    while (run.step()) {}
+    board.sync(engine.view(round.world, 1))
+    const surfaces = tiles.map(tile => {
+      const node = nodes[tile.node]
+      const [x, y, z] = nodes[node.parent!].pos
+      const [radius, halfHeight, flat] = node.scale
+      near(radius, 3.2)
+      near(halfHeight, .175)
+      near(flat, 2.75)
+      return { ...tile, x, z, top: y + halfHeight, radius, flat }
+    })
+    const field = round.poses([scene.index('feature/honeycomb')])
+    const camera = focusCamera({ x: field[0], y: field[1], z: field[2] })
+    const [ex, ey, ez] = camera.eye
+    const floor = surfaces.filter(tile => tile.visible)
+    // Intersect the line from the focus camera with each higher hex face.
+    // A solid directly below a gap can still be occluded in the oblique view.
+    function crossesFace(tile: typeof surfaces[number], top: number, x: number, y: number, z: number) {
+      if (top <= y || top >= ey) return false
+      const t = (top - ey) / (y - ey)
+      const dx = Math.abs(ex + (x - ex) * t - tile.x)
+      const dz = Math.abs(ez + (z - ez) * t - tile.z)
+      return dz <= tile.flat && dx / tile.radius + dz / (2 * tile.flat) <= 1
+    }
+    const [, ty, tz] = camera.target
+    const fy = (ty - ey) / Math.hypot(ty - ey, tz - ez)
+    const fz = (tz - ez) / Math.hypot(ty - ey, tz - ez)
+    function inSight(x: number, y: number, z: number) {
+      const depth = fy * (y - ey) + fz * (z - ez)
+      const halfHeight = depth * Math.tan(camera.fovYDeg * Math.PI / 360)
+      return Math.abs(x - ex) < halfHeight * 16 / 9 &&
+        Math.abs(fz * (y - ey) - fy * (z - ez)) < halfHeight &&
+        !floor.some(tile => crossesFace(tile, tile.top, x, y, z))
+    }
+    const upperHoles = surfaces.filter(tile => !tile.visible && tile.color === 0xF2E6D0)
+    const upperTop = field[1] + .175
+    assert.ok(floor.some(tile => tile.color === 0x70CFCE && inSight(tile.x, tile.top, tile.z) &&
+      upperHoles.some(hole => crossesFace(hole, upperTop, tile.x, tile.top, tile.z))),
+    'a middle-deck face is visible through a dropped upper tile')
+    assert.ok(floor.some(tile => tile.color === 0xFF6B9E && inSight(tile.x, tile.top, tile.z)),
+      'a warning face is visible')
+    const visible = round.observe().seats.filter(({ status, grounded, pos }) =>
+      status === 1 && grounded && inSight(pos.x, pos.y, pos.z))
+    assert.ok(visible.length > 1, 'multiple grounded penguins in the unobstructed focus view')
+    assert.equal(round.observe().faults, 0)
+  } finally {
+    board.dispose()
+    round.dispose()
   }
 })
 

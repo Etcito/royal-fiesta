@@ -493,3 +493,127 @@ test('traversal helper traps an unresolved path node but -1 never reads one', as
   assert.equal(neutral.components.traversal_probe['34'].code, 0)
   assert.equal(neutral.components.traversal_probe['34'].neutral, 0)
 })
+
+const brainProbePath = 'probe/bots_brain.as.ts'
+const brainProbeSource = `import { tick } from 'ege'
+import { rf_show_controls, rf_show_bots } from '../bots/brain.as'
+export function rf_bots_controls_probe(): void { rf_show_controls() }
+export function rf_bots_brain_probe(): void { rf_show_bots() }
+`
+
+function brainSchemaText(): string {
+  const schema = JSON.parse(readFileSync(new URL('../../../ege.schema.json', import.meta.url), 'utf8'))
+  const reads = ['show_seat_identity', 'show_control', 'bot_seat', 'bot_memory', 'bot_skill', 'bot_behaviour', 'bot_rule', 'bot_route', 'bot_route_waypoint', 'show_nav_node', 'show_nav_region', 'show_nav_edge', 'ege.transform', 'ege.mover', 'character', 'ege.mech.signal', 'ege.mech.lever', 'feature', 'feature_hex_field', 'feature_hex_field_hex', 'bot_reaction', 'bot_reaction_chunk']
+  schema.world_kinds.push({ name: 'bots_brain_probe', players: 8, schedule: [
+    { system: 'rf.bots.controls_probe', kind: 'script', reads: ['show_seat_identity', 'show_control'], writes: ['show_control'], emits: [] },
+    { system: 'rf.bots.brain_probe', kind: 'script', reads, writes: ['bot_memory', 'bot_skill', 'bot_reaction', 'bot_reaction_chunk', 'bot_route', 'bot_route_region', 'bot_route_edge', 'bot_route_waypoint', 'show_control'], emits: [] },
+  ] })
+  return JSON.stringify(schema)
+}
+
+let brainWasmPromise: Promise<Uint8Array> | null = null
+function brainWasm(): Promise<Uint8Array> {
+  brainWasmPromise ??= compileBrainWasm(brainSchemaText())
+  return brainWasmPromise
+}
+
+async function compileBrainWasm(schema: string): Promise<Uint8Array> {
+    const files = [...collectRfScripts(), { name: brainProbePath, text: brainProbeSource }]
+      .sort((a, b) => Buffer.compare(Buffer.from(a.name), Buffer.from(b.name)))
+    const result = await (await rfCompiler()).compile(files, schema)
+    const errors = result.diagnostics.filter(d => d.severity === 'error')
+    assert.equal(errors.length, 0, errors.map(formatRfDiagnostic).join('\n'))
+    assert.ok(result.wasm)
+    return result.wasm
+}
+
+function brainScene(delay = 0) {
+  const entities: any[] = Array.from({ length: 35 }, () => ({ components: {} }))
+  entities.push({ components: {
+    show_seat_identity: { room_seat: 47, round_seat: 47, input_slot: -1, bot: 1 },
+    show_control: { code: 0x1234 },
+    bot_seat: { owner: 35, character: 35, behaviour: 36 },
+    bot_memory: { owner: 35, rng_state: 7, ticks: 0, wait_ticks: 0, path_index: 0, stuck_ticks: 0, last_x: 0, last_z: 0, wobble: 0 },
+  } })
+  entities.push({ components: { bot_behaviour: { owner: NO_ENTITY, index: 0, decision_ticks: 1, reaction_ticks: delay, wobble_ticks: 45, stuck_ticks: 30, preference: 0, advance_m: 1.5, arrive_m: 0.5, rule_count: 0 } } })
+  return { format: 'ege.scene' as const, version: 1 as const, world_kind: 'bots_brain_probe', seed: 7, entities }
+}
+
+async function runBrain(delay: number, steps: number) {
+  const engine = await loadEngine()
+  engine.setSchema(brainSchemaText())
+  const module = await loadScript(engine, await brainWasm(), { name: 'bots-brain-probe' })
+  const world = engine.createWorld(brainScene(delay))
+  const host = new ScriptHost(module)
+  for (let i = 0; i < steps; i++) host.stepTick(world, Array(8).fill(0))
+  const components = readWorldState(engine, world, schemaLayout(engine)).components
+  assert.equal(module.faultCount, 0, JSON.stringify(module.faults[0]))
+  return { engine, world, module, host, components }
+}
+
+test('bot brain preserves neutral no-route output and reaction delay endpoints', async () => {
+  const immediate = await runBrain(0, 1)
+  assert.equal(immediate.components.show_control['35'].code, 0)
+  assert.equal(Object.values(immediate.components.bot_route ?? {}).length, 0)
+  const delayed = await runBrain(120, 121)
+  assert.equal(delayed.components.bot_reaction['36']?.code_count ?? Object.values(delayed.components.bot_reaction).find((r: any) => r.owner === 35)?.code_count, 120)
+  assert.equal(delayed.components.show_control['35'].code, 0)
+})
+
+test('show human controls copy the assigned SDK slot and leave bot controls alone at high seat ids', async () => {
+  const schema = JSON.parse(brainSchemaText())
+  const worldKind = schema.world_kinds.find((kind: any) => kind.name === 'bots_brain_probe')
+  worldKind.schedule = [worldKind.schedule[0]]
+  const entities: any[] = Array.from({ length: 35 }, () => ({ components: {} }))
+  entities.push({ components: { show_seat_identity: { room_seat: 50, round_seat: 50, input_slot: 6, bot: 0 }, show_control: { code: 1 } } })
+  entities.push({ components: { show_seat_identity: { room_seat: 59, round_seat: 59, input_slot: -1, bot: 1 }, show_control: { code: 0x55 } } })
+  const engine = await loadEngine()
+  const controlsSchema = JSON.stringify(schema)
+  engine.setSchema(controlsSchema)
+  const module = await loadScript(engine, await compileBrainWasm(controlsSchema), { name: 'bots-control-probe' })
+  const world = engine.createWorld({ format: 'ege.scene', version: 1, world_kind: 'bots_brain_probe', seed: 7, entities })
+  new ScriptHost(module).stepTick(world, Array.from({ length: 8 }, (_, slot) => slot * 101))
+  const controls = readWorldState(engine, world, schemaLayout(engine)).components.show_control
+  assert.equal(controls['35'].code, 606)
+  assert.equal(controls['36'].code, 0x55)
+  assert.equal(module.faultCount, 0, JSON.stringify(module.faults[0]))
+})
+
+test('pending bot reaction chunks remain equal after snapshot restore and entity transfer', async () => {
+  const source = await runBrain(120, 121)
+  const layout = schemaLayout(source.engine)
+  const snapshot = source.engine.snapshot(source.world)
+  const restored = source.engine.createWorld(JSON.stringify(brainScene(120)))
+  source.engine.restore(restored, snapshot)
+  const before = readWorldState(source.engine, source.world, layout).components
+  const owned = [35, 36, ...Object.entries(before.bot_reaction).filter(([, row]: any) => row.owner === 35).map(([entity]) => Number(entity)),
+    ...Object.entries(before.bot_reaction_chunk).filter(([, row]: any) => row.owner === 35).map(([entity]) => Number(entity))]
+  const blank = { ...brainScene(120), entities: [] }
+  const transferred = source.engine.createWorld(JSON.stringify(blank))
+  try {
+    const moved = source.engine.importEntities(transferred, source.engine.exportEntities(source.world, owned, true))
+    const movedSeat = moved[0]
+    const live = source.components
+    const replay = readWorldState(source.engine, restored, layout).components
+    const transfer = readWorldState(source.engine, transferred, layout).components
+    const liveSeat = '35'
+    const replaySeat = '35'
+    assert.ok(replay.show_control[replaySeat], JSON.stringify({ replaySeat, keys: Object.keys(replay.show_control), liveSeat, liveKeys: Object.keys(live.show_control) }))
+    assert.equal(replay.show_control[replaySeat].code, live.show_control[liveSeat].code)
+    assert.equal(replay.bot_memory[replaySeat].rng_state, live.bot_memory[liveSeat].rng_state)
+    assert.equal(Object.values(replay.bot_reaction).find((row: any) => row.owner === Number(replaySeat))?.code_count,
+      Object.values(live.bot_reaction).find((row: any) => row.owner === Number(liveSeat))?.code_count)
+    const movedQueue: any = Object.values(transfer.bot_reaction)[0]
+    assert.ok(movedQueue, JSON.stringify({ movedSeat, moved, bot_reaction: transfer.bot_reaction, owned }))
+    assert.equal(movedQueue.code_count, 120)
+    const transferredSeat = Object.keys(transfer.bot_seat)[0]
+    assert.equal(transfer.show_control[transferredSeat].code, live.show_control[liveSeat].code)
+    assert.equal(transfer.bot_memory[transferredSeat].rng_state, live.bot_memory[liveSeat].rng_state)
+    assert.equal(source.module.faultCount, 0, JSON.stringify(source.module.faults[0]))
+  } finally {
+    source.engine.freeWorld(restored)
+    source.engine.freeWorld(transferred)
+    source.engine.freeWorld(source.world)
+    source.module.dispose()
+  }
+})

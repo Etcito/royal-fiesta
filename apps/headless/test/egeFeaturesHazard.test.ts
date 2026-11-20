@@ -213,3 +213,126 @@ test('annulus rotates at speedDegS and carries a grounded seat', async () => {
     round.dispose()
   }
 })
+
+test('sweep moves its fixed pool through laser, bars and block phases', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'sweep', kind: 'sweep',
+    params: {
+      center: [-0.5, -3.9, 0], lengthM: 10, telegraphS: 0.1,
+      pattern: 'laser', heightM: 0.5, gapM: 2, speedDegS: 90, speedMps: 4,
+      phases: [
+        { atS: 0 },
+        { atS: 1, pattern: 'bars', gapM: 2 },
+        { atS: 2, pattern: 'block', heightM: 4, gapM: 2 },
+        { atS: 5, pattern: 'laser' },
+      ],
+    },
+  }])
+  try {
+    const root = scene.index('feature/sweep')
+    const ids = [0, 1].map(index => scene.index(`feature/sweep/part/${index}`))
+    const advance = (target: number): void => {
+      while (round.tick < target) round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+      assert.deepEqual(Object.keys(round.worldState().components.feature_sweep_part).map(Number).sort((a, b) => a - b), ids)
+      for (const id of ids) {
+        const part = rec(round, 'feature_sweep_part', id)
+        const half = rec(round, 'ege.box_collider', id).half_extents as number[]
+        const render = rec(round, 'ege.render', id)
+        for (let axis = 0; axis < 3; axis++) {
+          closeTo(half[axis], part.half[axis], 1e-6, 'part collider')
+          closeTo(render.params[axis], half[axis], 1e-6, 'render collider')
+        }
+      }
+    }
+    advance(1)
+    assert.equal(rec(round, 'feature_sweep', root).placed, 1)
+    assert.equal(rec(round, 'ege.body_props', ids[0]).colliders_enabled, 0)
+    assert.equal(rec(round, 'ege.render', ids[1]).visible, 0)
+    advance(67)
+    assert.equal(rec(round, 'feature_sweep', root).live, 1)
+    assert.equal(rec(round, 'ege.body_props', ids[0]).colliders_enabled, 1)
+    assert.equal(rec(round, 'ege.body_props', ids[1]).colliders_enabled, 0)
+    advance(97)
+    const laser = rec(round, 'feature_sweep', root)
+    closeTo(laser.cos, Math.cos(Math.PI / 4), 1e-5, 'rotation cos')
+    closeTo(laser.sin, Math.sin(Math.PI / 4), 1e-5, 'rotation sin')
+    closeTo(rec(round, 'ege.transform', ids[0]).rot[1], Math.sin(Math.PI / 8), 1e-5, 'rotation quaternion')
+    advance(121)
+    assert.equal(rec(round, 'feature_sweep', root).active, 1)
+    assert.equal(rec(round, 'feature_sweep', root).live, 0)
+    assert.equal(rec(round, 'ege.render', ids[1]).visible, 1)
+    assert.equal(rec(round, 'ege.body_props', ids[1]).colliders_enabled, 0)
+    advance(127)
+    assert.equal(rec(round, 'ege.body_props', ids[1]).colliders_enabled, 1)
+    advance(181)
+    assert.equal(rec(round, 'feature_sweep', root).active, 2)
+    for (const id of ids) {
+      const half = rec(round, 'feature_sweep_part', id).half as number[]
+      assert.deepEqual(half, [2, 2, 0.05])
+    }
+    advance(217)
+    closeTo(rec(round, 'feature_sweep', root).slide, 2, 1e-6, 'block outward slide')
+    advance(307)
+    closeTo(rec(round, 'feature_sweep', root).slide, 2, 1e-6, 'block returning slide')
+    advance(361)
+    assert.equal(rec(round, 'feature_sweep', root).active, 3)
+    assert.equal(rec(round, 'ege.render', ids[1]).visible, 0)
+    assert.equal(rec(round, 'ege.body_props', ids[1]).colliders_enabled, 0)
+  } finally {
+    round.dispose()
+  }
+})
+
+test('sweep block transition applies the new collider boundary to physics', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'wall', kind: 'sweep',
+    params: {
+      center: [-2.1, -3.9, 0], lengthM: 10, telegraphS: 0,
+      pattern: 'laser', heightM: 0.5, gapM: 2, speedDegS: 0, speedMps: 0,
+      phases: [{ atS: 0 }, { atS: 0.05, pattern: 'block', heightM: 4, speedMps: 0 }],
+    },
+  }])
+  try {
+    const part = scene.index('feature/wall/part/0')
+    while (round.tick < 68) round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+    const seat = round.observe().seats[0].entity
+    assert.equal(rec(round, 'character', seat).ground_entity, part)
+    assert.notEqual(rec(round, 'character', round.observe().seats[2].entity).ground_entity, part)
+  } finally {
+    round.dispose()
+  }
+})
+
+test('laser-only sweep keeps one part and deterministic state', async () => {
+  const { engine, scene, course, round: a } = await roundWith('ege-strip', [{
+    id: 'laser', kind: 'sweep',
+    params: {
+      center: [0, 2, 0], lengthM: 10, telegraphS: 0,
+      pattern: 'laser', heightM: 0.5, gapM: 2, speedDegS: 90, speedMps: 0,
+      phases: [{ atS: 0 }],
+    },
+  }])
+  let b: EngineRound | undefined
+  try {
+    b = await createEngineRound(engine, await readRepoText(RF_EGE_SCHEMA), await rfScriptBytes(), scene, course, {
+      profile: 'sprint', seed: 7, humans: [true, false, false, false, false, false, false, false],
+    })
+    const root = scene.index('feature/laser')
+    const part = scene.index('feature/laser/part/0')
+    for (let i = 0; i < 90; i++) {
+      a.step(() => code())
+      b.step(() => code())
+      assert.deepEqual(Object.keys(a.worldState().components.feature_sweep_part).map(Number), [part])
+      if (i === 60) assert.equal(rec(a, 'feature_sweep', root).live, 0)
+      if (i === 61) assert.equal(rec(a, 'feature_sweep', root).live, 1)
+    }
+    assert.equal(a.observe().faults, 0)
+    assert.equal(b.observe().faults, 0)
+    assert.equal(engine.worldEqual(a.world, b.world), true)
+  } finally {
+    b?.dispose()
+    a.dispose()
+  }
+})

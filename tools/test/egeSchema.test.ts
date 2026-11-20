@@ -22,6 +22,7 @@ const SCHEDULE = [
   'rf.feature.swim_volume.pre',
   'rf.feature.hex_field.pre',
   'rf.feature.annulus.pre',
+  'rf.feature.sweep.pre',
   'ege.body.props',
   'ege.box.collider',
   'ege.physics',

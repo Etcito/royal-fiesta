@@ -1399,6 +1399,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.sweep.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part"],
+          "writes": ["feature_sweep", "feature_sweep_part", "ege.transform", "ege.render", "ege.body_props", "ege.box_collider"],
+          "emits": []
+        },
+        {
           "system": "ege.body.props",
           "kind": "engine"
         },

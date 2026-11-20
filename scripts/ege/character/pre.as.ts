@@ -22,6 +22,8 @@ import { newMove, settleTimer, stepMoves } from './moves.as'
 
 // S1 wire code (sim/input): moveX bits 0..7, moveZ bits 8..15, jump 16, dive 17, grab 18.
 // Axis bytes decode as clamp(byte,0,254)-127 divided by 127; see packages/sim/src/input.ts.
+// A show_control.code of 0 is therefore a full diagonal (-1,-1), not neutral: scene construction seeds
+// SHOW_CONTROL_NEUTRAL (32639) instead of relying on the record's default. See ege/sceneEmitter.ts.
 function controlAxis(code: u32, shift: u32): f64 {
   let v: u32 = (code >> shift) & 0xFF
   if (v > 254) v = 254

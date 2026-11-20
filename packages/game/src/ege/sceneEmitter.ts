@@ -38,18 +38,33 @@ export type ShowSceneMetadata = {
 // - Physical seat anchor: id roomSeat+1 (1..60), numeric owner roundSeat, group roomSeat+1. The seat capsule is the
 //   body of its own group, so nonphysical seat-owned children carrying the same group follow it through the engine's
 //   zone create/rebuild belongs rule (the anchor's numeric owner selects the domain).
-// - G7.3 cumulative publishers use 65536+roomSeat*32+fieldRank and team contributions start at 131072.
+// - The seat's nonphysical child row (character references, bot memory and bot route) is id 61+roomSeat (61..120),
+//   same owner and group as the anchor; the seat capsule stays the group's authoritative physical member.
+// - G7.3 cumulative publishers use 65536+roomSeat*32+fieldRank (65536..67455 for rooms 0..59 and 19 fields) and team
+//   contributions start at 131072; the scene emits the seat publishers and reserves the team range against collisions.
 // - show_feature_membership rows: id 0x40000000+authoredFeatureIndex*64+roomSeat, owner roundSeat, group roomSeat+1,
 //   with authoredFeatureIndex 0..16777215 and roomSeat 0..59. The interval 0x40000000..0x7fffffff is reserved
 //   exclusively for these rows; the scene emits no template membership rows, so emitEngineScene refuses any emitted
 //   zone id inside it. Rows are created at runtime by the owning feature scripts, which attach this identity
 //   immediately and reuse a transferred row by authored feature index plus live character entity.
 // Course features carry no zone identity and are never grouped with seats.
+//
+// show_control.code is an S1 wire code: the value 0 encodes both axes as -1 (a full diagonal), not neutral. The scene
+// therefore seeds SHOW_CONTROL_NEUTRAL (32639, S1 neutral) rather than relying on the record's default of 0.
 export const SHOW_ROOM_SEAT_LAST = 59
+export const SHOW_CONTROL_NEUTRAL = 32639
+export const SHOW_SEAT_CHILD_ZONE_FIRST = 61
+export const SHOW_SEAT_CHILD_ZONE_LAST = 120
+export const SHOW_PUBLISH_ZONE_FIRST = 65536
+export const SHOW_PUBLISH_STRIDE = 32
+export const SHOW_PUBLISH_FIELD_COUNT = 19
+export const SHOW_PUBLISH_ZONE_LAST = SHOW_PUBLISH_ZONE_FIRST + (SHOW_ROOM_SEAT_LAST + 1) * SHOW_PUBLISH_STRIDE - 1
+export const SHOW_TEAM_ZONE_FIRST = 131072
 export const SHOW_MEMBERSHIP_ZONE_FIRST = 0x40000000
 export const SHOW_MEMBERSHIP_ZONE_LAST = 0x7fffffff
 export const SHOW_MEMBERSHIP_SEAT_STRIDE = 64
 export const SHOW_MEMBERSHIP_FEATURE_LAST = 16777215
+const NO_ENTITY = 0xffffffff
 
 export type ShowZoneIdentity = { id: number; owner: number; group: number }
 
@@ -91,6 +106,30 @@ export function showMembershipZone(authoredFeatureIndex: number, roomSeat: numbe
   if (!Number.isSafeInteger(id) || !isShowMembershipZoneId(id)) {
     refuse('ege-scene', path, `membership zone id ${id} leaves the reserved interval; keep the feature index and room seat in range`)
   }
+  return { id: id >>> 0, owner: seat.owner, group: seat.group }
+}
+
+/** The identity of a seat's nonphysical child row: id 61+roomSeat, same numeric owner and group as its anchor. */
+export function showSeatChildZone(roomSeat: number, roundSeat: number, path = 'show/seat'): ShowZoneIdentity {
+  const seat = showSeatZone(roomSeat, roundSeat, path)
+  return { id: (SHOW_SEAT_CHILD_ZONE_FIRST + roomSeat) >>> 0, owner: seat.owner, group: seat.group }
+}
+
+/** Whether `id` lies in the seat-cumulative publisher interval emitted by complete scene ownership. */
+export function isShowPublishZoneId(id: number): boolean {
+  return id >= SHOW_PUBLISH_ZONE_FIRST && id <= SHOW_PUBLISH_ZONE_LAST
+}
+
+/**
+ * The identity of one of a seat's nineteen cumulative publishers: id 65536+roomSeat*32+fieldRank, numeric owner
+ * roundSeat and the anchor's group. The publish script writes the field value only through this stable child.
+ */
+export function showPublishZone(roomSeat: number, fieldRank: number, roundSeat: number, path = 'show/publish'): ShowZoneIdentity {
+  const seat = showSeatZone(roomSeat, roundSeat, path)
+  if (!Number.isInteger(fieldRank) || fieldRank < 0 || fieldRank >= SHOW_PUBLISH_FIELD_COUNT) {
+    refuse('ege-scene', `${path}/fieldRank`, `invalid field rank ${fieldRank}; use an integer in 0..${SHOW_PUBLISH_FIELD_COUNT - 1}`)
+  }
+  const id = SHOW_PUBLISH_ZONE_FIRST + roomSeat * SHOW_PUBLISH_STRIDE + fieldRank
   return { id: id >>> 0, owner: seat.owner, group: seat.group }
 }
 
@@ -246,8 +285,11 @@ function validateShow(input: EmitInput): void {
 function seatAndDataEntities(input: EmitInput, sim: ResolvedCourse, level: LevelSpec): RawEntity[] {
   const entities: RawEntity[] = []
   const capsule = input.capsule ?? CAPSULE
+  const seatEntities: number[] = []
   for (let i = 0; i < (input.show?.seatOf.length ?? 8); i++) {
     const spawn = seatSpawn(sim, i)
+    const seatEntity = entities.length
+    seatEntities.push(seatEntity)
     entities.push({
       name: `seat/${i}`,
       body: { type: 'dynamic', gravity_scale: 0, can_sleep: false, ccd: false },
@@ -264,7 +306,7 @@ function seatAndDataEntities(input: EmitInput, sim: ResolvedCourse, level: Level
         ...(input.show ? {
           'ege.zone.id': showSeatZone(input.show.seatOf[i], i, `courses/${input.course.id}.course.json#/show/seatOf/${i}`),
           show_seat_identity: { room_seat: input.show.seatOf[i], round_seat: i, input_slot: input.show.inputSlots[i], bot: input.show.humans[i] ? 0 : 1 },
-          show_control: { code: 0 },
+          show_control: { code: SHOW_CONTROL_NEUTRAL },
           show_result_a: { seat: i, status: 1, finish_tick: -1, finish_sub: -1, lap: 0, stage: -1, route_mm: 0, falls: 0, score: 0, last_score_tick: -1 },
           show_result_b: { hold_ticks: 0, possessing: 0, last_acquire_tick: -1, matches: 0, cross_ticks: 0, out_tick: -1, out_sub: -1, team: -1, opening_rank: -1 },
         } : {}),
@@ -310,6 +352,58 @@ function seatAndDataEntities(input: EmitInput, sim: ResolvedCourse, level: Level
         },
       },
     })
+  }
+  if (input.show) {
+    const show = input.show
+    for (let i = 0; i < show.seatOf.length; i++) {
+      const seatEntity = seatEntities[i]
+      entities.push({
+        name: `show/seat/${i}`,
+        components: {
+          'ege.zone.id': showSeatChildZone(show.seatOf[i], i, `courses/${input.course.id}.course.json#/show/seatOf/${i}`),
+          show_character_ref: { owner: seatEntity, target: NO_ENTITY, lever: NO_ENTITY, carry: NO_ENTITY },
+          ...(show.humans[i] ? {} : {
+            bot_memory: {
+              owner: seatEntity,
+              rng_state: input.setup.seed >>> 0,
+              ticks: 0,
+              wait_ticks: 0,
+              path_index: 0,
+              stuck_ticks: 0,
+              last_x: 0,
+              last_z: 0,
+              wobble: 0,
+            },
+            bot_route: {
+              owner: seatEntity,
+              preference: 0,
+              seed: 0,
+              plan_tick: -1,
+              next_plan_tick: 0,
+              cost: 0,
+              reachable: 0,
+              region_count: 0,
+              edge_count: 0,
+              waypoint_count: 0,
+            },
+          }),
+        },
+      })
+    }
+    // The rules world owns no live seats and the hub has no competitive ledger, so only the two playable show kinds
+    // publish. Each seat's nineteen cumulative fields are nonphysical children of its anchor group, one stable id each.
+    if (show.worldKind !== 'show_hub') {
+      for (let i = 0; i < show.seatOf.length; i++) {
+        for (let field = 0; field < SHOW_PUBLISH_FIELD_COUNT; field++) {
+          entities.push({
+            name: `show/publish/${i}/${field}`,
+            components: {
+              'ege.zone.id': showPublishZone(show.seatOf[i], field, i, `courses/${input.course.id}.course.json#/show/seatOf/${i}`),
+            },
+          })
+        }
+      }
+    }
   }
   for (let i = 0; i < sim.checkpoints.length; i++) {
     const gate = sim.checkpoints[i]
@@ -443,36 +537,74 @@ export function buildEngineAssembly(input: EmitInput): EgeAssembly {
   })
 }
 
+function expectedSeatRow(ownership: readonly ShowOwnershipMetadata[], entity: number, expected: ShowZoneIdentity, label: string): void {
+  const found = ownership.find(row => row.entity === entity)
+  if (!found || found.zoneId !== expected.id || found.owner !== expected.owner || found.group !== expected.group) {
+    refuse('ege-scene', `entities/${entity}/components/ege.zone.id`, `${label} has no seat-owned identity; emit id ${expected.id}, owner ${expected.owner}, group ${expected.group}`)
+  }
+}
+
 /**
  * The copied ownership metadata of a converted show scene, in scene entity order: one row per actual ege.zone.id
- * record (`entity` is the template scene index, not a live handle). Refuses invalid or duplicate ids, ids inside the
- * reserved show_feature_membership interval and a seat `seat/<roundSeat>` whose record differs from showSeatZone.
+ * record (`entity` is the template scene index, not a live handle). Refuses invalid or duplicate ids, ids in another
+ * family's reserved interval, a seat or seat child whose record differs from the allocation, and a nonzero group
+ * without a physical member. `featureCount` reserves the G7.3 team-publisher interval for the authored features.
  */
-export function showSceneOwnership(scene: EgeScene, seatOf: readonly number[]): ShowOwnershipMetadata[] {
+export function showSceneOwnership(scene: EgeScene, seatOf: readonly number[], featureCount = 0): ShowOwnershipMetadata[] {
   const ownership: ShowOwnershipMetadata[] = []
   const zoneIds = new Set<number>()
+  const physicalGroups = new Set<number>()
   for (const [entity, row] of scene.entities.entries()) {
     const zone = row.components?.['ege.zone.id']
     if (!zone) continue
     const { id, owner, group } = zone
+    const at = `entities/${entity}/components/ege.zone.id`
     if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0 || id > 0xffffffff || zoneIds.has(id) ||
         typeof owner !== 'number' || !Number.isInteger(owner) || owner < 0 || owner > 0xffffffff ||
         typeof group !== 'number' || !Number.isInteger(group) || group < 0 || group > 0xffffffff) {
-      refuse('ege-scene', `entities/${entity}/components/ege.zone.id`, 'invalid or duplicate zone identity; provide unique nonzero u32 ids and u32 owner and group')
+      refuse('ege-scene', at, 'invalid or duplicate zone identity; provide unique nonzero u32 ids and u32 owner and group')
     }
     if (isShowMembershipZoneId(id)) {
-      refuse('ege-scene', `entities/${entity}/components/ege.zone.id/id`, `zone id ${id} conflicts with the show_feature_membership interval ${SHOW_MEMBERSHIP_ZONE_FIRST}..${SHOW_MEMBERSHIP_ZONE_LAST}; emit ids below ${SHOW_MEMBERSHIP_ZONE_FIRST}`)
+      refuse('ege-scene', `${at}/id`, `zone id ${id} conflicts with the show_feature_membership interval ${SHOW_MEMBERSHIP_ZONE_FIRST}..${SHOW_MEMBERSHIP_ZONE_LAST}; emit ids below ${SHOW_MEMBERSHIP_ZONE_FIRST}`)
+    }
+    if (id >= SHOW_SEAT_CHILD_ZONE_FIRST && id <= SHOW_SEAT_CHILD_ZONE_LAST) {
+      const roomSeat = id - SHOW_SEAT_CHILD_ZONE_FIRST
+      const roundSeat = seatOf.indexOf(roomSeat)
+      const expected = roundSeat < 0 ? null : showSeatChildZone(roomSeat, roundSeat)
+      if (!expected || owner !== expected.owner || group !== expected.group) {
+        refuse('ege-scene', at, `zone id ${id} is not a valid seat-child identity; use id ${SHOW_SEAT_CHILD_ZONE_FIRST}+roomSeat with its round-seat owner and anchor group`)
+      }
+    }
+    if (isShowPublishZoneId(id)) {
+      const offset = id - SHOW_PUBLISH_ZONE_FIRST
+      const roomSeat = Math.floor(offset / SHOW_PUBLISH_STRIDE)
+      const field = offset % SHOW_PUBLISH_STRIDE
+      const roundSeat = seatOf.indexOf(roomSeat)
+      if (roundSeat < 0 || field >= SHOW_PUBLISH_FIELD_COUNT) {
+        refuse('ege-scene', at, `zone id ${id} is not a valid seat-cumulative publisher; use ${SHOW_PUBLISH_ZONE_FIRST}+roomSeat*${SHOW_PUBLISH_STRIDE}+field for an emitted seat and field 0..${SHOW_PUBLISH_FIELD_COUNT - 1}`)
+      }
+      const expected = showPublishZone(roomSeat, field, roundSeat)
+      if (owner !== expected.owner || group !== expected.group) {
+        refuse('ege-scene', at, `zone id ${id} is not a valid seat-cumulative publisher; use its round-seat owner ${expected.owner} and anchor group ${expected.group}`)
+      }
+    }
+    if (featureCount > 0 && id >= SHOW_TEAM_ZONE_FIRST && id < SHOW_TEAM_ZONE_FIRST + featureCount * SHOW_PUBLISH_STRIDE) {
+      refuse('ege-scene', at, `zone id ${id} conflicts with the team contribution publisher interval ${SHOW_TEAM_ZONE_FIRST}..${SHOW_TEAM_ZONE_FIRST + featureCount * SHOW_PUBLISH_STRIDE - 1}; the scene emits no template team publishers`)
     }
     zoneIds.add(id)
+    if (row.body) physicalGroups.add(group)
     ownership.push({ entity, zoneId: id, owner: owner === 0xffff ? null : owner, group })
   }
-  for (const [roundSeat, roomSeat] of seatOf.entries()) {
-    const expected = showSeatZone(roomSeat, roundSeat)
-    const entity = scene.entities.findIndex(row => row.name === `seat/${roundSeat}`)
-    const found = ownership.find(row => row.entity === entity)
-    if (!found || found.zoneId !== expected.id || found.owner !== expected.owner || found.group !== expected.group) {
-      refuse('ege-scene', `entities/${entity}/components/ege.zone.id`, `seat ${roomSeat} has no anchor identity; emit id ${expected.id}, owner ${expected.owner}, group ${expected.group}`)
+  for (const row of ownership) {
+    if (row.group !== 0 && !physicalGroups.has(row.group)) {
+      refuse('ege-scene', `entities/${row.entity}/components/ege.zone.id/group`, `group ${row.group} has no physical anchor; give the authoritative seat or feature body the same group`)
     }
+  }
+  for (const [roundSeat, roomSeat] of seatOf.entries()) {
+    const anchor = scene.entities.findIndex(row => row.name === `seat/${roundSeat}`)
+    expectedSeatRow(ownership, anchor, showSeatZone(roomSeat, roundSeat), `seat ${roomSeat}`)
+    const child = scene.entities.findIndex(row => row.name === `show/seat/${roundSeat}`)
+    expectedSeatRow(ownership, child, showSeatChildZone(roomSeat, roundSeat), `seat ${roomSeat} child`)
   }
   return ownership
 }
@@ -488,12 +620,41 @@ export function emitEngineScene(engine: EngineInstance, input: EmitInput): Emitt
   const sim = input.course.sim!
   const bodies = itemBodyNames(sim)
   const seatEntities = Array.from({ length: input.show?.seatOf.length ?? 8 }, (_, i) => built.index(`seat/${i}`))
-  const ownership = input.show ? showSceneOwnership(built.scene, input.show.seatOf) : []
+  let text = built.text
+  if (input.show) {
+    // Entity-typed child references are resolved against the converted scene, never a pre-conversion index: rebuild
+    // them from the seat's scene name and mirror a real change back into the assembly the caller receives.
+    let remapped = false
+    for (let i = 0; i < input.show.seatOf.length; i++) {
+      const seat = built.index(`seat/${i}`)
+      const child = built.index(`show/seat/${i}`)
+      const components = built.scene.entities[child]?.components
+      if (!components) continue
+      for (const name of ['show_character_ref', 'bot_memory', 'bot_route']) {
+        const record = components[name]
+        if (record !== undefined && typeof record.owner === 'number' && record.owner !== seat) {
+          record.owner = seat
+          remapped = true
+        }
+      }
+    }
+    if (remapped) {
+      text = JSON.stringify(built.scene)
+      const patched = new Map(built.scene.entities.flatMap((row, index) => row.name === undefined ? [] : [[row.name, index] as const]))
+      for (const entity of (assembly.entities ?? []) as { name?: unknown; components?: unknown }[]) {
+        if (typeof entity.name !== 'string') continue
+        const index = patched.get(entity.name)
+        if (index !== undefined) entity.components = built.scene.entities[index].components
+      }
+    }
+  }
+  const featureCount = sim.features?.length ?? 0
+  const ownership = input.show ? showSceneOwnership(built.scene, input.show.seatOf, featureCount) : []
   return {
     ...(input.show ? { show: { worldKind: input.show.worldKind, seats: input.show.seatOf.map((roomSeat, roundSeat) => ({ roomSeat, roundSeat, inputSlot: input.show!.inputSlots[roundSeat], entity: seatEntities[roundSeat] })), ownership } } : {}),
     courseId: input.course.id,
     assembly,
-    text: built.text,
+    text,
     scene: built.scene,
     seatEntities,
     obstacleEntities: sim.obstacles.map(obstacle => built.index(`movers/${obstacle.id}`)),

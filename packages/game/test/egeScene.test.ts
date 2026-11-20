@@ -15,13 +15,24 @@ import {
   buildEngineAssembly,
   emitEngineScene,
   isShowMembershipZoneId,
+  isShowPublishZoneId,
   showMembershipZone,
+  showPublishZone,
   showSceneOwnership,
+  showSeatChildZone,
   showSeatZone,
+  SHOW_CONTROL_NEUTRAL,
   SHOW_MEMBERSHIP_FEATURE_LAST,
   SHOW_MEMBERSHIP_SEAT_STRIDE,
   SHOW_MEMBERSHIP_ZONE_FIRST,
   SHOW_MEMBERSHIP_ZONE_LAST,
+  SHOW_PUBLISH_FIELD_COUNT,
+  SHOW_PUBLISH_STRIDE,
+  SHOW_PUBLISH_ZONE_FIRST,
+  SHOW_PUBLISH_ZONE_LAST,
+  SHOW_SEAT_CHILD_ZONE_FIRST,
+  SHOW_SEAT_CHILD_ZONE_LAST,
+  SHOW_TEAM_ZONE_FIRST,
 } from '../src/ege/sceneEmitter.ts'
 import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 import type { EmitInput } from '../src/ege/sceneEmitter.ts'
@@ -205,6 +216,15 @@ test('a course feature kind without a registered emitter is refused', async () =
   )
 })
 
+function zoneRowsOf(scene: { entities: readonly { components?: Record<string, Record<string, unknown>> }[] }) {
+  return scene.entities.flatMap((row, entity) => {
+    const zone = row.components?.['ege.zone.id']
+    if (!zone) return []
+    const owner = zone.owner as number
+    return [{ entity, zoneId: zone.id as number, owner: owner === 0xffff ? null : owner, group: zone.group as number }]
+  })
+}
+
 test('show scenes emit sparse stable identities and copied ownership metadata', async () => {
   const input = await inputOf('race-sprint')
   const show = { worldKind: 'show_field' as const, seatOf: [2, 40, 59], inputSlots: [7, -1, 1], humans: [true, false, true] }
@@ -212,12 +232,40 @@ test('show scenes emit sparse stable identities and copied ownership metadata', 
   assert.deepEqual(emitted.show, {
     worldKind: 'show_field',
     seats: show.seatOf.map((roomSeat, roundSeat) => ({ roomSeat, roundSeat, inputSlot: show.inputSlots[roundSeat], entity: emitted.seatEntities[roundSeat] })),
-    ownership: emitted.seatEntities.map((entity, i) => ({ entity, zoneId: show.seatOf[i] + 1, owner: i, group: show.seatOf[i] + 1 })),
+    ownership: zoneRowsOf(emitted.scene),
   })
+  assert.deepEqual(emitted.show?.ownership, showSceneOwnership(emitted.scene, show.seatOf, input.course.sim!.features?.length ?? 0))
+  // The seat anchors stay the first ownership rows; every attached child and cumulative publisher follows its anchor.
+  const anchored = show.seatOf.map((roomSeat, roundSeat) => ({ entity: emitted.seatEntities[roundSeat], zoneId: roomSeat + 1, owner: roundSeat, group: roomSeat + 1 }))
+  assert.deepEqual(emitted.show?.ownership.slice(0, anchored.length), anchored)
   for (const [i, entity] of emitted.seatEntities.entries()) {
-    assert.deepEqual(emitted.scene.entities[entity].components?.show_seat_identity,
+    const seat = emitted.scene.entities[entity]
+    assert.deepEqual(seat.components?.show_seat_identity,
       { room_seat: show.seatOf[i], round_seat: i, input_slot: show.inputSlots[i], bot: show.humans[i] ? 0 : 1 })
+    // Explicit neutral control: a raw zero would decode as a full diagonal (-1,-1), not standstill.
+    assert.deepEqual(seat.components?.show_control, { code: SHOW_CONTROL_NEUTRAL })
+    const child = emitted.scene.entities[emitted.index(`show/seat/${i}`)]
+    assert.deepEqual(child.components?.['ege.zone.id'], showSeatChildZone(show.seatOf[i], i))
+    assert.deepEqual(child.components?.show_character_ref, { owner: entity, target: 0xffffffff, lever: 0xffffffff, carry: 0xffffffff })
+    if (show.humans[i]) {
+      assert.equal(child.components?.bot_memory, undefined)
+      assert.equal(child.components?.bot_route, undefined)
+    } else {
+      assert.deepEqual(child.components?.bot_memory, {
+        owner: entity, rng_state: 7, ticks: 0, wait_ticks: 0, path_index: 0, stuck_ticks: 0, last_x: 0, last_z: 0, wobble: 0,
+      })
+      assert.deepEqual(child.components?.bot_route, {
+        owner: entity, preference: 0, seed: 0, plan_tick: -1, next_plan_tick: 0, cost: 0, reachable: 0,
+        region_count: 0, edge_count: 0, waypoint_count: 0,
+      })
+    }
+    for (let field = 0; field < SHOW_PUBLISH_FIELD_COUNT; field++) {
+      const publisher = emitted.scene.entities[emitted.index(`show/publish/${i}/${field}`)]
+      assert.deepEqual(publisher.components?.['ege.zone.id'], showPublishZone(show.seatOf[i], field, i))
+    }
   }
+  // No feature is zoned: authored feature data is reconstructed from the scene in every island.
+  for (const feature of emitted.featureEntities) assert.equal(emitted.scene.entities[feature].components?.['ege.zone.id'], undefined)
   show.seatOf[0] = 3
   assert.equal(emitted.show?.seats[0].roomSeat, 2)
   const empty = emitEngineScene(engine, { ...input, show: { worldKind: 'show_hub', seatOf: [], inputSlots: [], humans: [] } })
@@ -297,12 +345,17 @@ test('seat anchors join their membership group and conflicting zone identities a
   const emitted = emitEngineScene(engine, { ...input, show })
   // The text, the scene and the copied metadata describe the same ownership, ordered by scene entity index.
   const fromText = JSON.parse(emitted.text) as typeof emitted.scene
-  assert.deepEqual(showSceneOwnership(fromText, show.seatOf), emitted.show?.ownership)
-  assert.deepEqual(emitted.show?.ownership.map(row => row.entity), [...emitted.seatEntities].sort((a, b) => a - b))
+  const featureCount = input.course.sim!.features?.length ?? 0
+  assert.deepEqual(showSceneOwnership(fromText, show.seatOf, featureCount), emitted.show?.ownership)
+  assert.deepEqual(emitted.show?.ownership.map(row => row.entity), zoneRowsOf(emitted.scene).map(row => row.entity))
+  assert.deepEqual(emitted.show?.ownership.slice(0, 2).map(row => row.entity), emitted.seatEntities)
   for (const [roundSeat, entity] of emitted.seatEntities.entries()) {
     const zone = emitted.scene.entities[entity].components?.['ege.zone.id']
     assert.deepEqual(zone, { id: show.seatOf[roundSeat] + 1, owner: roundSeat, group: show.seatOf[roundSeat] + 1 })
     assert.ok(emitted.scene.entities[entity].body, 'the group anchor is physical')
+    const child = emitted.index(`show/seat/${roundSeat}`)
+    assert.equal(emitted.scene.entities[child].body, undefined, 'the seat child is nonphysical')
+    assert.deepEqual(emitted.scene.entities[child].components?.['ege.zone.id'], showSeatChildZone(show.seatOf[roundSeat], roundSeat))
   }
   for (const feature of emitted.featureEntities) assert.equal(emitted.scene.entities[feature].components?.['ege.zone.id'], undefined)
   const withZone = (id: number, owner: number, group: number) => {
@@ -315,12 +368,53 @@ test('seat anchors join their membership group and conflicting zone identities a
     withZone(showMembershipZone(3, 59, 1).id, 1, 60),
     withZone(SHOW_MEMBERSHIP_ZONE_LAST, 0xffff, 0),
     withZone(60, 0xffff, 0),
+    // A child or publisher id with another family's owner/group is a collision, not a silent renaming.
+    withZone(SHOW_SEAT_CHILD_ZONE_FIRST, 1, 60),
+    withZone(SHOW_SEAT_CHILD_ZONE_LAST, 1, 1),
+    withZone(SHOW_PUBLISH_ZONE_FIRST, 1, 60),
+    withZone(SHOW_PUBLISH_ZONE_LAST, 1, 60),
   ]
-  for (const scene of conflicts) assert.throws(() => showSceneOwnership(scene, show.seatOf), RefusalError)
+  for (const scene of conflicts) assert.throws(() => showSceneOwnership(scene, show.seatOf, featureCount), RefusalError)
+  assert.throws(() => showSceneOwnership(withZone(SHOW_TEAM_ZONE_FIRST, 0, 1), show.seatOf, 1), RefusalError)
   const lostAnchor = structuredClone(emitted.scene)
   lostAnchor.entities[emitted.seatEntities[1]].components!['ege.zone.id'] = { id: 60, owner: 1, group: 0 }
   assert.throws(() => showSceneOwnership(lostAnchor, show.seatOf), RefusalError)
-  assert.equal(showSceneOwnership(withZone(SHOW_MEMBERSHIP_ZONE_FIRST - 1, 0xffff, 0), show.seatOf).length, 3)
+  const lostChild = structuredClone(emitted.scene)
+  delete lostChild.entities[emitted.index('show/seat/1')].components!['ege.zone.id']
+  assert.throws(() => showSceneOwnership(lostChild, show.seatOf), RefusalError)
+  const noOwner = showSceneOwnership(withZone(SHOW_MEMBERSHIP_ZONE_FIRST - 1, 0xffff, 0), show.seatOf, featureCount)
+  assert.equal(noOwner.length, emitted.show!.ownership.length + 1)
+  assert.equal(noOwner.at(-1)?.owner, null, 'the engine NO_OWNER sentinel maps to null')
+})
+
+test('seat children and cumulative publishers use collision-free stable ranges', () => {
+  assert.equal(SHOW_CONTROL_NEUTRAL, 32639)
+  assert.equal(SHOW_SEAT_CHILD_ZONE_FIRST, 61)
+  assert.equal(SHOW_SEAT_CHILD_ZONE_LAST, 120)
+  assert.equal(SHOW_PUBLISH_ZONE_FIRST, 65536)
+  assert.equal(SHOW_PUBLISH_STRIDE, 32)
+  assert.equal(SHOW_PUBLISH_FIELD_COUNT, 19)
+  assert.equal(SHOW_PUBLISH_ZONE_LAST, 67455)
+  assert.equal(SHOW_TEAM_ZONE_FIRST, 131072)
+  assert.deepEqual(showSeatChildZone(0, 0), { id: 61, owner: 0, group: 1 })
+  assert.deepEqual(showSeatChildZone(59, 2), { id: 120, owner: 2, group: 60 })
+  assert.deepEqual(showPublishZone(0, 0, 0), { id: 65536, owner: 0, group: 1 })
+  assert.deepEqual(showPublishZone(59, 18, 2), { id: 65536 + 59 * 32 + 18, owner: 2, group: 60 })
+  assert.ok(isShowPublishZoneId(65536))
+  assert.ok(isShowPublishZoneId(67455))
+  assert.equal(isShowPublishZoneId(65535), false)
+  assert.equal(isShowPublishZoneId(67456), false)
+  // The families do not overlap the membership reservation or one another.
+  assert.ok(SHOW_PUBLISH_ZONE_LAST < SHOW_TEAM_ZONE_FIRST)
+  assert.ok(SHOW_TEAM_ZONE_FIRST < SHOW_MEMBERSHIP_ZONE_FIRST)
+  assert.ok(SHOW_SEAT_CHILD_ZONE_LAST < SHOW_PUBLISH_ZONE_FIRST)
+  assert.equal(showSeatChildZone(59, 2).id < showPublishZone(0, 0, 0).id, true)
+  for (const [room, round, field] of [[-1, 0, 0], [60, 0, 0], [0, 60, 0], [0, 0.5, 0], [0, 0, -1], [0, 0, 19], [0, 0, 1.5]]) {
+    assert.throws(() => showPublishZone(room, field, round), RefusalError, `${room}/${round}/${field}`)
+  }
+  for (const [room, round] of [[-1, 0], [60, 0], [0, 60], [0, 0.5]]) {
+    assert.throws(() => showSeatChildZone(room, round), RefusalError, `${room}/${round}`)
+  }
 })
 
 // Test-local runtime insertion of seat-anchored catch-volume membership rows; production creation stays with the
@@ -471,6 +565,98 @@ test('a seat-anchored membership row keeps its zone identity through zone transf
       assert.equal(zone.group, 60)
     }
     assert.equal(module.faultCount, 0, module.faults.map(fault => fault.message).join('; '))
+    factory.release(source)
+  } finally {
+    factory.dispose()
+  }
+})
+
+// The ownership probe kind tracks zones without running scripts, so a split/merge moves the emitted template only.
+function ownershipProbeSchema(): string {
+  const schema = JSON.parse(readFileSync(new URL('../../../ege.schema.json', import.meta.url), 'utf8')) as {
+    world_kinds: { name: string; players: number; schedule: { system: string; kind: string }[] }[]
+  }
+  schema.world_kinds.push({
+    name: 'ownership_probe',
+    players: 8,
+    schedule: [{ system: 'ege.zone.track', kind: 'engine' }],
+  })
+  return JSON.stringify(schema)
+}
+
+test('split and merge move each seat child and cumulative publisher with its anchor exactly once', async () => {
+  const schemaText = ownershipProbeSchema()
+  const probeEngine = await loadEngine()
+  probeEngine.setSchema(schemaText)
+  const layout = schemaLayout(probeEngine)
+  const input = await inputOf('s1-f-taffy-circuit')
+  const show = { worldKind: 'show_seat' as const, seatOf: [3, 17, 59], inputSlots: [0, -1, -1], humans: [true, false, false] }
+  const emitted = emitEngineScene(probeEngine, { ...input, show })
+  const factory = new EngineDomainFactory({
+    engine: probeEngine,
+    scenes: { seat: { ...emitted.scene, world_kind: 'ownership_probe' } },
+    grid: { cols: 1, rows: 1, cellSize: 4096, originX: -2048, originZ: -2048 },
+    inputPlayers: spec => spec.seats.map(roundSeat => show.inputSlots[roundSeat]),
+  })
+  const exportOf = (sim: ReturnType<EngineDomainFactory['create']>) => {
+    const writer = new SnapWriter()
+    sim.exportEntities(writer)
+    return writer.bytes()
+  }
+  const checkSeat = (state: ReturnType<typeof readWorldState>, roundSeat: number) => {
+    const components = state.components as unknown as Record<string, Record<string, { [field: string]: number }>>
+    const seatEntry = Object.entries(components.show_seat_identity).find(([, identity]) => identity.round_seat === roundSeat)
+    assert.ok(seatEntry, `round seat ${roundSeat} is present`)
+    const seatEntity = Number(seatEntry[0])
+    const roomSeat = seatEntry[1].room_seat
+    assert.deepEqual(components['ege.zone.id'][seatEntity], showSeatZone(roomSeat, roundSeat))
+    const refs = Object.entries(components.show_character_ref).filter(([, ref]) => ref.owner === seatEntity)
+    assert.equal(refs.length, 1, `round seat ${roundSeat} has one character reference`)
+    assert.deepEqual(refs[0][1], { owner: seatEntity, target: 0xffffffff, lever: 0xffffffff, carry: 0xffffffff })
+    const child = components['ege.zone.id'][Number(refs[0][0])]
+    assert.deepEqual(child, showSeatChildZone(roomSeat, roundSeat))
+    if (!show.humans[roundSeat]) {
+      const memory = Object.entries(components.bot_memory).filter(([, row]) => row.owner === seatEntity)
+      assert.equal(memory.length, 1)
+      const route = Object.entries(components.bot_route).filter(([, row]) => row.owner === seatEntity)
+      assert.equal(route.length, 1)
+      assert.equal(route[0][1].plan_tick, -1)
+    }
+    const publishers = Object.entries(components['ege.zone.id'])
+      .filter(([, zone]) => isShowPublishZoneId(zone.id) && zone.group === roomSeat + 1)
+      .map(([, zone]) => zone.id)
+      .sort((a, b) => a - b)
+    assert.deepEqual(publishers, Array.from({ length: SHOW_PUBLISH_FIELD_COUNT }, (_, field) => showPublishZone(roomSeat, field, roundSeat).id))
+    return seatEntity
+  }
+
+  try {
+    const source = factory.create({ id: 1, kind: 'seat', cells: [], seats: [0, 1, 2], replicas: [0] }, 0)
+    const before = readWorldState(probeEngine, source.world, layout)
+    for (let roundSeat = 0; roundSeat < show.seatOf.length; roundSeat++) checkSeat(before, roundSeat)
+    assert.equal(Object.keys(before.components.show_seat_identity).length, show.seatOf.length)
+
+    // Split: transfer only room seat 59 (round seat 2) into a fresh domain.
+    const split = factory.rebuild({ id: 2, kind: 'field', cells: [], seats: [2], replicas: [0] }, source.tick, [new SnapReader(exportOf(source))])
+    const moved = readWorldState(probeEngine, split.world, layout)
+    assert.deepEqual(Object.values(moved.components.show_seat_identity).map(row => row.room_seat), [59])
+    const movedSeat = checkSeat(moved, 2)
+    assert.equal(movedSeat, Object.keys(moved.components.show_seat_identity).map(Number)[0])
+
+    // Merge: two single-seat domains export their live entities; the rebuilt domain holds both groups once.
+    const partA = factory.create({ id: 3, kind: 'seat', cells: [], seats: [0], replicas: [0] }, 0)
+    const partB = factory.create({ id: 4, kind: 'seat', cells: [], seats: [2], replicas: [0] }, 0)
+    const merged = factory.rebuild({ id: 5, kind: 'field', cells: [], seats: [0, 2], replicas: [0] }, 0,
+      [new SnapReader(exportOf(partA)), new SnapReader(exportOf(partB))])
+    const both = readWorldState(probeEngine, merged.world, layout)
+    const bothComponents = both.components as unknown as Record<string, Record<string, { [field: string]: number }>>
+    assert.deepEqual(Object.values(bothComponents.show_seat_identity).map(row => row.room_seat).sort((a, b) => a - b), [3, 59])
+    const seats = [checkSeat(both, 0), checkSeat(both, 2)]
+    assert.equal(new Set(seats).size, 2)
+    const zones = Object.values(bothComponents['ege.zone.id']).map(zone => zone.id)
+    assert.equal(zones.length, new Set(zones).size, 'no duplicate zone ids after merge')
+    factory.release(partA)
+    factory.release(partB)
     factory.release(source)
   } finally {
     factory.dispose()

@@ -1,9 +1,10 @@
 import { Column, emit, newRecord, readColumn, readResource, setComponent, tick, writeResource } from 'ege'
-import { Character, CourseRes, EgeTransform, EliminateEvent, FallEvent, FinishEvent, Gate, GateEvent, Home, HomeSpawn, ProgressEvent, RoundRes, Seat } from '../components.gen'
+import { Character, CourseRes, EgeTransform, EliminateEvent, FallEvent, FinishEvent, Gate, GateEvent, Home, HomeSpawn, ProgressEvent, RoundRes, Seat, ShowSeatIdentity } from '../components.gen'
 import { releaseGrab } from '../character/grab.as'
 import { inBox } from '../lib/boxes.as'
 import { characterColumn, parkSeat, placeSeat, seatColumn, transformOf } from '../lib/seats.as'
-import { dueRespawn, nextCursor, nextSlot, respawnSlotX, respawnSlotZ, scheduleRespawn } from './respawn.as'
+import { recordShowEvent } from '../lib/show_events.as'
+import { dueRespawn, nextCursor, nextSlot, respawnCursor, respawnSlotX, respawnSlotZ, scheduleRespawn } from './respawn.as'
 import { FINISH_DONE, FINISH_LAP, gateCrossed, finishCrossed, routeDistanceMm, subTick, ROUTE_NOT_CROSSED } from './route.as'
 
 function resetTeleport(entity: u32, ch: Character, now: i32): void {
@@ -38,7 +39,62 @@ function emitFall<T>(eventId: u32, size: u32, entity: u32, seatId: u32, crossing
   emit<T>(eventId, entity, payload, size)
 }
 
-function placeRespawn(entity: u32, seat: Seat, ch: Character, gates: Column<Gate>, homes: Column<Home>, homeSpawns: Column<HomeSpawn>, course: CourseRes, now: i32): void {
+/**
+ * The stable room seat of `entity`. G6 keeps the round seat it always used; a show
+ * island maps the local round seat through its transferable `show_seat_identity`
+ * so cumulative records and events stay keyed by the seat that survives compaction.
+ */
+function stableSeat(show: bool, entity: u32, fallback: u32): u32 {
+  if (!show) return fallback
+  const identities = readColumn<ShowSeatIdentity>(ShowSeatIdentity.ID, ShowSeatIdentity.SIZE)
+  const row = identities.find(entity)
+  return row >= 0 ? identities.at(<u32>row).room_seat : fallback
+}
+
+function writeFall<T>(eventId: u32, size: u32, entity: u32, seatId: u32, crossing: u32, show: bool): void {
+  if (show) {
+    recordShowEvent(eventId, entity, seatId, <i32>crossing, 0)
+    return
+  }
+  emitFall<T>(eventId, size, entity, seatId, crossing)
+}
+
+function writeGate(entity: u32, seatId: u32, stage: i32, lap: u32, show: bool): void {
+  if (show) {
+    recordShowEvent(GateEvent.ID, entity, seatId, stage, <i32>lap)
+    return
+  }
+  const event = newRecord<GateEvent>(GateEvent.SIZE)
+  event.seat = seatId
+  event.stage = stage
+  event.lap = lap
+  emit<GateEvent>(GateEvent.ID, entity, event, GateEvent.SIZE)
+}
+
+function writeFinish(entity: u32, seatId: u32, crossing: u32, lap: u32, show: bool): void {
+  if (show) {
+    recordShowEvent(FinishEvent.ID, entity, seatId, <i32>crossing, <i32>lap)
+    return
+  }
+  const event = newRecord<FinishEvent>(FinishEvent.SIZE)
+  event.seat = seatId
+  event.crossing = crossing
+  event.lap = lap
+  emit<FinishEvent>(FinishEvent.ID, entity, event, FinishEvent.SIZE)
+}
+
+function writeProgress(entity: u32, seatId: u32, distanceMm: i32, show: bool): void {
+  if (show) {
+    recordShowEvent(ProgressEvent.ID, entity, seatId, distanceMm, 0)
+    return
+  }
+  const event = newRecord<ProgressEvent>(ProgressEvent.SIZE)
+  event.seat = seatId
+  event.distance_mm = distanceMm
+  emit<ProgressEvent>(ProgressEvent.ID, entity, event, ProgressEvent.SIZE)
+}
+
+function placeRespawn(entity: u32, seat: Seat, ch: Character, gates: Column<Gate>, homes: Column<Home>, homeSpawns: Column<HomeSpawn>, course: CourseRes, now: i32, show: bool): void {
   let bx = seat.spawn_t_0
   let by = seat.spawn_t_1
   let bz = seat.spawn_t_2
@@ -81,22 +137,30 @@ function placeRespawn(entity: u32, seat: Seat, ch: Character, gates: Column<Gate
     }
   }
 
-  let cursor: u32 = seat.cursor
-  if (anchorKind == 0) cursor = gates.at(anchor).cursor
-  else if (anchorKind == 1) cursor = homes.at(anchor).cursor
-  const slot = nextSlot(cursor, course.slots)
-  const updatedCursor = nextCursor(slot, course.slots)
-  if (anchorKind == 0) {
-    if (updatedCursor != cursor) {
-      gates.at(anchor).cursor = updatedCursor
-      gates.write()
-    }
-  } else if (anchorKind == 1) {
-    if (updatedCursor != cursor) {
-      homes.at(anchor).cursor = updatedCursor
-      homes.write()
-    }
-  } else seat.cursor = updatedCursor
+  // A show island stores the anchor cursor on the seat record, not on the
+  // immutable gate/home entities, so it transfers with the character. G6 keeps
+  // the shared per-anchor cursor exactly as before.
+  let slot: u32
+  if (show) {
+    slot = respawnCursor(seat, course.slots)
+  } else {
+    let cursor: u32 = seat.cursor
+    if (anchorKind == 0) cursor = gates.at(anchor).cursor
+    else if (anchorKind == 1) cursor = homes.at(anchor).cursor
+    slot = nextSlot(cursor, course.slots)
+    const updatedCursor = nextCursor(slot, course.slots)
+    if (anchorKind == 0) {
+      if (updatedCursor != cursor) {
+        gates.at(anchor).cursor = updatedCursor
+        gates.write()
+      }
+    } else if (anchorKind == 1) {
+      if (updatedCursor != cursor) {
+        homes.at(anchor).cursor = updatedCursor
+        homes.write()
+      }
+    } else seat.cursor = updatedCursor
+  }
 
   let tx = bx
   let tz = bz
@@ -122,17 +186,18 @@ function placeRespawn(entity: u32, seat: Seat, ch: Character, gates: Column<Gate
   seat.prev_y = by + ch.stand + 0.01
 }
 
-function fall(seat: Seat, ch: Character, entity: u32, crossing: u32, now: i32, course: CourseRes, gates: Column<Gate>, homes: Column<Home>, homeSpawns: Column<HomeSpawn>): void {
+function fall(seat: Seat, ch: Character, entity: u32, crossing: u32, now: i32, course: CourseRes, gates: Column<Gate>, homes: Column<Home>, homeSpawns: Column<HomeSpawn>, show: bool): void {
+  const seatId = stableSeat(show, entity, seat.seat)
   if (course.respawn_mode == 2) {
     seat.status = 3
-    emitFall<EliminateEvent>(EliminateEvent.ID, EliminateEvent.SIZE, entity, seat.seat, crossing)
+    writeFall<EliminateEvent>(EliminateEvent.ID, EliminateEvent.SIZE, entity, seatId, crossing, show)
     park(entity, ch, seat.seat, now)
     return
   }
-  emitFall<FallEvent>(FallEvent.ID, FallEvent.SIZE, entity, seat.seat, crossing)
+  writeFall<FallEvent>(FallEvent.ID, FallEvent.SIZE, entity, seatId, crossing, show)
   park(entity, ch, seat.seat, now)
   scheduleRespawn(seat, now, course.wait_ticks, course.protect_ticks)
-  if (dueRespawn(seat.wait_until, now)) placeRespawn(entity, seat, ch, gates, homes, homeSpawns, course, now)
+  if (dueRespawn(seat.wait_until, now)) placeRespawn(entity, seat, ch, gates, homes, homeSpawns, course, now, show)
 }
 
 export function rf_seat_rules(): void {
@@ -141,6 +206,11 @@ export function rf_seat_rules(): void {
   const course = readResource<CourseRes>(CourseRes.ID, CourseRes.SIZE)
   if (round.frozen != 0) return
   const seats = seatColumn()
+  // A G6 round is exactly eight entrants and eight seat entities. A show island
+  // (the 60-seat roster, a field island or the hub) reports cumulative results
+  // through the shared event writer and leaves qualification and closure to the
+  // rules domain.
+  const show = round.entrants != 8 || seats.count > 8
   const characters = characterColumn()
   const gates = readColumn<Gate>(Gate.ID, Gate.SIZE)
   const homes = readColumn<Home>(Home.ID, Home.SIZE)
@@ -153,7 +223,7 @@ export function rf_seat_rules(): void {
     if (row >= 0 && seat.status == 1) {
       const ch = characters.at(<u32>row)
       const transform = transformOf(entity)
-      fall(seat, ch, entity, subTick(seat.prev_y, <f64>transform.pos_1, course.kill_plane_y), now, course, gates, homes, homeSpawns)
+      fall(seat, ch, entity, subTick(seat.prev_y, <f64>transform.pos_1, course.kill_plane_y), now, course, gates, homes, homeSpawns, show)
     }
     seat.kill_request = 0
   }
@@ -166,7 +236,7 @@ export function rf_seat_rules(): void {
     if (row < 0) continue
     const ch = characters.at(<u32>row)
     if (seat.wait_until >= 0) {
-      if (dueRespawn(seat.wait_until, now)) placeRespawn(entity, seat, ch, gates, homes, homeSpawns, course, now)
+      if (dueRespawn(seat.wait_until, now)) placeRespawn(entity, seat, ch, gates, homes, homeSpawns, course, now, show)
       continue
     }
     const transform = transformOf(entity)
@@ -180,22 +250,14 @@ export function rf_seat_rules(): void {
       if (stage == ROUTE_NOT_CROSSED) continue
       seat.stage = stage
       seat.checkpoint = <i32>gate.index
-      const event = newRecord<GateEvent>(GateEvent.SIZE)
-      event.seat = seat.seat
-      event.stage = stage
-      event.lap = seat.lap
-      emit<GateEvent>(GateEvent.ID, entity, event, GateEvent.SIZE)
+      writeGate(entity, stableSeat(show, entity, seat.seat), stage, seat.lap, show)
     }
     if (course.has_finish != 0 && inBox(course.finish_center_0, course.finish_center_1, course.finish_center_2, course.finish_half_0, course.finish_half_1, course.finish_half_2, x, y, z)) {
       const result = finishCrossed(course.ordered, course.laps, course.last_stage, seat.stage, seat.lap)
       if (result == FINISH_LAP) {
         seat.lap++
         seat.stage = -1
-        const event = newRecord<GateEvent>(GateEvent.SIZE)
-        event.seat = seat.seat
-        event.stage = seat.stage
-        event.lap = seat.lap
-        emit<GateEvent>(GateEvent.ID, entity, event, GateEvent.SIZE)
+        writeGate(entity, stableSeat(show, entity, seat.seat), seat.stage, seat.lap, show)
       } else if (result == FINISH_DONE) {
         seat.finished = 1
         let crossing: u32 = 0
@@ -210,25 +272,18 @@ export function rf_seat_rules(): void {
           if (part > crossing) crossing = part
         }
         seat.status = 2
-        const event = newRecord<FinishEvent>(FinishEvent.SIZE)
-        event.seat = seat.seat
-        event.crossing = crossing
-        event.lap = seat.lap
-        emit<FinishEvent>(FinishEvent.ID, entity, event, FinishEvent.SIZE)
+        writeFinish(entity, stableSeat(show, entity, seat.seat), crossing, seat.lap, show)
         park(entity, ch, seat.seat, now)
         continue
       }
     }
     if (y < course.kill_plane_y) {
-      fall(seat, ch, entity, subTick(seat.prev_y, y, course.kill_plane_y), now, course, gates, homes, homeSpawns)
+      fall(seat, ch, entity, subTick(seat.prev_y, y, course.kill_plane_y), now, course, gates, homes, homeSpawns, show)
       continue
     }
     seat.prev_y = y
     if ((round.kind == 0 || round.kind == 6) && (now - <i32>round.intro_ticks) % 30 == 0) {
-      const event = newRecord<ProgressEvent>(ProgressEvent.SIZE)
-      event.seat = seat.seat
-      event.distance_mm = routeDistanceMm(seat.stage, x, y, z)
-      emit<ProgressEvent>(ProgressEvent.ID, entity, event, ProgressEvent.SIZE)
+      writeProgress(entity, stableSeat(show, entity, seat.seat), routeDistanceMm(seat.stage, x, y, z), show)
     }
   }
 
@@ -241,7 +296,7 @@ export function rf_seat_rules(): void {
     else if (status == 2) round.qualified++
     else if (status == 3) round.eliminated++
   }
-  if (round.alive == 0 && (round.phase == 1 || round.phase == 2)) {
+  if (!show && round.alive == 0 && (round.phase == 1 || round.phase == 2)) {
     round.phase = 3
     round.ended_tick = now
   }

@@ -48,3 +48,14 @@ export function nextSlot(cursor: u32, slots: u32): u32 {
 export function nextCursor(slot: u32, slots: u32): u32 {
   return (slot + 1) % respawnSlotCount(slots)
 }
+
+/**
+ * Advances the anchor cursor stored on the seat itself, so the cursor follows the
+ * character entity across an island transfer instead of living on the immutable
+ * course gate/home records. Returns the slot to place this respawn in.
+ */
+export function respawnCursor(seat: Seat, slots: u32): u32 {
+  const slot = nextSlot(seat.cursor, slots)
+  seat.cursor = nextCursor(slot, slots)
+  return slot
+}

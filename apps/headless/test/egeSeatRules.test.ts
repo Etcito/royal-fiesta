@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { decodeEvents } from '@etcito/game-engine/world-state'
+import { decodeEvents, readWorldState } from '@etcito/game-engine/world-state'
+import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
 import { createEngineRound } from '@royal-fiesta/game/ege/round'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
 import { emitEngineScene } from '@royal-fiesta/game/ege/sceneEmitter'
@@ -9,6 +10,7 @@ import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import { loadEngine } from '@etcito/game-engine'
 import { harnessRound, loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
+import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 
 const code = (moveX = 0, moveZ = 0) => encodeInput({ moveX, moveZ, jump: false, dive: false, grab: false })
 
@@ -64,7 +66,9 @@ test('seat route and respawn helpers match hand-derived values', async () => {
   }
 
   assert.equal(fn.subTick(2, -2, 1), 16384)
+  assert.equal(fn.subTick(1, 0, 0.5), 32768)
   assert.equal(fn.subTick(3, 3, 0), 0)
+  assert.equal(fn.subTick(7, 7, 3), 0)
   assert.equal(fn.subTick(0, -1, 5), 0)
   assert.equal(fn.subTick(10, 0, -5), 65535)
   assert.equal(fn.respawnSlotCount(0), 1)
@@ -81,6 +85,13 @@ test('seat route and respawn helpers match hand-derived values', async () => {
   near('slot 9 z', fn.respawnSlotZ(0, 15, 0, 1, 9, 8, 1.2), 16.2)
   near('rotated slot 0 x', fn.respawnSlotX(2, 3, 1, 0, 0, 12, 1), 3)
   near('rotated slot 0 z', fn.respawnSlotZ(2, 3, 1, 0, 0, 12, 1), 1.5)
+  // Four columns by three rows: every one of the twelve spread slots, hand-derived.
+  const spreadX = [1.8, 0.6, -0.6, -1.8, 1.8, 0.6, -0.6, -1.8, 1.8, 0.6, -0.6, -1.8]
+  const spreadZ = [16.2, 16.2, 16.2, 16.2, 15, 15, 15, 15, 13.8, 13.8, 13.8, 13.8]
+  for (let slot = 0; slot < 12; slot++) {
+    near(`spread ${slot} x`, fn.respawnSlotX(0, 15, 0, 1, slot, 12, 1.2), spreadX[slot])
+    near(`spread ${slot} z`, fn.respawnSlotZ(0, 15, 0, 1, slot, 12, 1.2), spreadZ[slot])
+  }
   assert.equal(fn.nextSlot(9, 8), 1)
   assert.equal(fn.nextSlot(3, 0), 0)
   assert.equal(fn.nextCursor(7, 8), 0)
@@ -244,5 +255,273 @@ test('two worlds stepped with the same codes stay equal for 600 ticks', async ()
   } finally {
     b?.dispose()
     a.dispose()
+  }
+})
+
+const SEAT_RULES_WORLD = 'seat_rules_probe'
+const NEUTRAL_INPUTS = [0, 0, 0, 0, 0, 0, 0, 0]
+
+async function seatRulesSchema(): Promise<string> {
+  const schema = JSON.parse(await readRepoText(RF_EGE_SCHEMA))
+  schema.world_kinds.push({
+    name: SEAT_RULES_WORLD,
+    players: 8,
+    schedule: [{
+      system: 'rf.seat.rules',
+      kind: 'script',
+      reads: ['course', 'home_spawn', 'path_node', 'show_seat_identity', 'show_result_a', 'show_result_b', 'feature'],
+      writes: ['round', 'seat', 'character', 'gate', 'home', 'ege.transform', 'ege.velocity', 'ege.mech.grab', 'show_result_a', 'show_result_b', 'show_team_contribution'],
+      emits: ['finish', 'fall', 'eliminate', 'gate', 'progress'],
+    }],
+  })
+  return JSON.stringify(schema)
+}
+
+type Overrides = Record<string, any>
+
+function seatEntity(room: number, over: Overrides = {}): any {
+  const round = over.roundSeat ?? 0
+  return {
+    body: { type: 'dynamic', gravity_scale: 0, can_sleep: false },
+    components: {
+      seat: {
+        seat: round, player: round, status: 1, team: 0, spawn: 0,
+        spawn_t: [0, 0, 15], spawn_facing: [0, 1], checkpoint: -1,
+        prev_y: 0.91, before: [0, 0.91, 0], stage: -1, lap: 0, finished: 0,
+        wait_until: -1, protect_until: -1, cursor: 0, kill_request: 0,
+        ...(over.seat ?? {}),
+      },
+      character: {
+        mode: 1, facing: [0, 1], grounded: 0, ground_item: -1, ground_obstacle: -1, ground_body: -1,
+        grab_target: -1, grab_lever: -1, protected_until: -1, parked: 0, placed: 1,
+        stand: 0.9, radius: 0.4, half_height: 0.45, carry: 0, carry_id: -1,
+      },
+      'ege.transform': { pos: over.pos ?? [0, 0.91, 15], rot: [0, 0, 0, 1] },
+      show_seat_identity: { room_seat: room, round_seat: round, input_slot: -1, bot: 1 },
+      show_control: { code: 0 },
+      show_result_a: {
+        seat: over.resultSeat ?? room, status: 1, finish_tick: -1, finish_sub: -1, lap: 0,
+        stage: -1, route_mm: 0, falls: 0, score: 0, last_score_tick: -1,
+      },
+      show_result_b: {
+        hold_ticks: 0, possessing: 0, last_acquire_tick: -1, matches: 0, cross_ticks: 0,
+        out_tick: -1, out_sub: -1, team: 0, opening_rank: 0,
+      },
+      ...(over.components ?? {}),
+    },
+  }
+}
+
+function routeProbeResources(over: Overrides = {}): any {
+  return {
+    round: {
+      intro_ticks: over.intro ?? 0, round_ticks: 600, overtime_ticks: 0, kind: over.kind ?? 0,
+      final_rule: 0, phase: 1, frozen: 0, ended_tick: -1, entrants: over.entrants ?? 8,
+      alive: 0, qualified: 0, eliminated: 0, trailing_team: -1,
+    },
+    course: {
+      kill_plane_y: -10, has_finish: over.hasFinish ? 1 : 0,
+      finish_center: over.finish ?? [0, 0, 0], finish_half: over.finishHalf ?? [1, 1, 1],
+      checkpoint_count: over.checkpointCount ?? 0, spawn_count: 1, home_count: 0,
+      path_count: over.pathCount ?? 0, respawn_mode: over.respawnMode ?? 0,
+      wait_ticks: over.waitTicks ?? 0, protect_ticks: over.protectTicks ?? 120,
+      slots: over.slots ?? 8, spacing_m: over.spacing ?? 1.2,
+      ordered: over.ordered ? 1 : 0, laps: 1,
+      stage_count: over.stageCount ?? 0, last_stage: over.lastStage ?? -1,
+      grab_players: 0, grab_objects: 0,
+    },
+  }
+}
+
+function probeScene(over: Overrides = {}): any {
+  const entities: any[] = over.entities ?? []
+  return {
+    format: 'ege.scene', version: 1, world_kind: SEAT_RULES_WORLD, seed: 1,
+    resources: routeProbeResources(over.resources ?? {}),
+    entities,
+  }
+}
+
+let probeBytes: Promise<Uint8Array> | null = null
+
+function probeScripts(schema: string): Promise<Uint8Array> {
+  probeBytes ??= (async () => {
+    const result = await (await rfCompiler()).compile(collectRfScripts(), schema)
+    const errors = result.diagnostics.filter(diagnostic => diagnostic.severity === 'error')
+    assert.equal(errors.length, 0, errors.map(formatRfDiagnostic).join('\n'))
+    assert.ok(result.wasm)
+    return result.wasm as Uint8Array
+  })()
+  return probeBytes
+}
+
+async function probeWorld(scene: any, schema: string) {
+  const engine = await loadEngine()
+  engine.setSchema(schema)
+  const layout = schemaLayout(engine)
+  const faults: string[] = []
+  const module = await loadScript(engine, await probeScripts(schema), { name: 'rf-scripts', onFault: fault => faults.push(`${fault.system}: ${fault.message}`), onLog: line => faults.push(`log ${line}`) })
+  const host = new ScriptHost(module)
+  const world = engine.createWorld(scene)
+  return { engine, layout, module, host, world, scene, faults }
+}
+
+test('show finishes report the stable room seat and terminal events apply once', async () => {
+  const schema = await seatRulesSchema()
+  const above = await probeWorld(probeScene({
+    resources: { entrants: 60, hasFinish: true },
+    entities: [seatEntity(59, { pos: [0, 0.91, 0] })],
+  }), schema)
+  try {
+    above.host.stepTick(above.world, NEUTRAL_INPUTS)
+    assert.equal(above.module.faultCount, 0, above.faults.join(' | '))
+    const state = readWorldState(above.engine, above.world, above.layout)
+    const entity = state.entities[0]
+    assert.equal(state.components.seat[entity].status, 2)
+    assert.equal(state.components.show_result_a[entity].seat, 59)
+    assert.equal(state.components.show_result_a[entity].status, 2)
+    assert.equal(state.components.show_result_a[entity].finish_tick, 0)
+    const readFinish = () => decodeEvents(above.engine.events(above.world, 0, above.engine.tick(above.world)).records, above.layout)
+      .filter(event => event.kind === 'finish')
+    const first = readFinish()
+    assert.equal(first.length, 1)
+    assert.equal(Number(first[0].fields.seat), 59)
+    let later = 0
+    for (let i = 0; i < 6; i++) {
+      above.host.stepTick(above.world, NEUTRAL_INPUTS)
+      later += readFinish().length
+    }
+    assert.equal(above.module.faultCount, 0, above.faults.join(' | '))
+    assert.equal(later, 0)
+    const after = readWorldState(above.engine, above.world, above.layout)
+    assert.equal(after.components.show_result_a[entity].status, 2)
+    assert.equal(after.components.show_result_a[entity].finish_tick, 0)
+    // The rules domain owns show closure, so the local world never ends the round.
+    assert.equal(after.resources.round.phase, 1)
+    assert.equal(after.resources.round.ended_tick, -1)
+  } finally {
+    above.engine.freeWorld(above.world)
+    above.module.dispose()
+  }
+})
+
+test('show eliminations use the room seat and apply once', async () => {
+  const schema = await seatRulesSchema()
+  const probe = await probeWorld(probeScene({
+    resources: { entrants: 60, respawnMode: 2 },
+    entities: [seatEntity(40, { pos: [0, -20, 15], seat: { kill_request: 1 } })],
+  }), schema)
+  try {
+    probe.host.stepTick(probe.world, NEUTRAL_INPUTS)
+    assert.equal(probe.module.faultCount, 0, probe.faults.join(' | '))
+    const state = readWorldState(probe.engine, probe.world, probe.layout)
+    const entity = state.entities[0]
+    assert.equal(state.components.seat[entity].status, 3)
+    assert.equal(state.components.show_result_a[entity].seat, 40)
+    assert.equal(state.components.show_result_a[entity].status, 3)
+    assert.equal(state.components.show_result_b[entity].out_tick, 0)
+    const readEliminated = () => decodeEvents(probe.engine.events(probe.world, 0, probe.engine.tick(probe.world)).records, probe.layout)
+      .filter(event => event.kind === 'eliminate')
+    const first = readEliminated()
+    assert.equal(first.length, 1)
+    assert.equal(Number(first[0].fields.seat), 40)
+    let later = 0
+    for (let i = 0; i < 4; i++) {
+      probe.host.stepTick(probe.world, NEUTRAL_INPUTS)
+      later += readEliminated().length
+    }
+    assert.equal(probe.module.faultCount, 0, probe.faults.join(' | '))
+    assert.equal(later, 0)
+  } finally {
+    probe.engine.freeWorld(probe.world)
+    probe.module.dispose()
+  }
+})
+
+test('the remaining route projection matches a hand-derived distance', async () => {
+  const schema = await seatRulesSchema()
+  const scene = probeScene({
+    resources: { entrants: 8, pathCount: 4, checkpointCount: 1, stageCount: 1, lastStage: 0, ordered: true },
+    entities: [
+      seatEntity(0, { pos: [2, 0.91, 5] }),
+      { components: { gate: { index: 0, stage: 0, center: [0, 0, 10], half: [1, 1, 1], respawn_t: [0, 0, 10], respawn_facing: [0, 1], cursor: 0 } } },
+      ...[0, 1, 2, 3].map(i => ({ components: { path_node: { index: i, p: [0, 0, i * 10] } } })),
+    ],
+  })
+  const probe = await probeWorld(scene, schema)
+  try {
+    probe.host.stepTick(probe.world, NEUTRAL_INPUTS)
+    assert.equal(probe.module.faultCount, 0, probe.faults.join(' | '))
+    const progress = decodeEvents(probe.engine.events(probe.world, 0, probe.engine.tick(probe.world)).records, probe.layout)
+      .filter(event => event.kind === 'progress')
+    assert.equal(progress.length, 1)
+    // Path 0 -> 10 m; the seat sits at z = 5, half way along the first segment.
+    assert.equal(Number(progress[0].fields.distance_mm), 5000)
+  } finally {
+    probe.engine.freeWorld(probe.world)
+    probe.module.dispose()
+  }
+})
+
+test('a transferred seat keeps its anchor cursor and respawns in its slot', async () => {
+  const schema = await seatRulesSchema()
+  const options = { entrants: 60, waitTicks: 1, protectTicks: 120, slots: 8, spacing: 1.2 }
+  const from = await probeWorld(probeScene({
+    resources: options,
+    entities: [seatEntity(40, { pos: [1, -20, 5], seat: { cursor: 3, kill_request: 1 } })],
+  }), schema)
+  const to = await probeWorld(probeScene({ resources: options, entities: [{ body: { type: 'fixed' }, components: { 'ege.transform': { pos: [0, -1, 0] } } }] }), schema)
+  try {
+    const entity = readWorldState(from.engine, from.world, from.layout).entities[0]
+    const bytes = from.engine.exportEntities(from.world, [entity], true)
+    const ids = to.engine.importEntities(to.world, bytes)
+    assert.equal(ids.length, 1)
+    to.host.stepTick(to.world, NEUTRAL_INPUTS)
+    to.host.stepTick(to.world, NEUTRAL_INPUTS)
+    assert.equal(to.module.faultCount, 0, to.faults.join(' | '))
+    const state = readWorldState(to.engine, to.world, to.layout)
+    const moved = ids[0]
+    const seat = state.components.seat[moved]
+    assert.equal(seat.cursor, 4)
+    assert.equal(seat.wait_until, -1)
+    assert.equal(seat.protect_until, 121)
+    assert.equal(state.components.character[moved].protected_until, 121)
+    assert.equal(state.components.show_result_a[moved].falls, 1)
+    const pos = state.components['ege.transform'][moved].pos as number[]
+    assert.ok(Math.abs(pos[0] - -1.8) <= 1e-6, `x ${pos[0]}`)
+    assert.ok(Math.abs(pos[2] - 16.2) <= 1e-6, `z ${pos[2]}`)
+  } finally {
+    from.engine.freeWorld(from.world)
+    to.engine.freeWorld(to.world)
+    from.module.dispose()
+  }
+})
+
+test('equal show inputs produce equal state across two worlds', async () => {
+  const schema = await seatRulesSchema()
+  const scene = probeScene({
+    resources: { entrants: 60, hasFinish: true },
+    entities: [
+      seatEntity(40, { pos: [0, 0.91, 0] }),
+      seatEntity(59, { roundSeat: 1, pos: [2, 0.91, 5], seat: { cursor: 5 } }),
+    ],
+  })
+  const a = await probeWorld(scene, schema)
+  const bModule = await loadScript(a.engine, await probeScripts(schema), { name: 'rf-scripts-b' })
+  const bHost = new ScriptHost(bModule)
+  const worldB = a.engine.createWorld(scene)
+  try {
+    for (let i = 0; i < 30; i++) {
+      a.host.stepTick(a.world, NEUTRAL_INPUTS)
+      bHost.stepTick(worldB, NEUTRAL_INPUTS)
+    }
+    assert.equal(a.module.faultCount, 0, a.faults.join(' | '))
+    assert.equal(bModule.faultCount, 0)
+    assert.equal(a.engine.worldEqual(a.world, worldB), true)
+  } finally {
+    a.engine.freeWorld(worldB)
+    a.engine.freeWorld(a.world)
+    bModule.dispose()
+    a.module.dispose()
   }
 })

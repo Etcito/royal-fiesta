@@ -13,7 +13,7 @@ import type { CourseV1 } from '@royal-fiesta/game/courseV1'
 import { decodeEvents } from '@etcito/game-engine/world-state'
 import { engineCodeOfS1 } from '@royal-fiesta/game/ege/inputCodes'
 import { harnessRound, loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
-import { createRoundRun } from '../../web/src/engineRound/run.ts'
+import { createRoundRun, parseRunArgs } from '../../web/src/engineRound/run.ts'
 import type { RoundRunArgs } from '../../web/src/engineRound/run.ts'
 import { readRepoText } from '../src/files.ts'
 
@@ -1236,9 +1236,16 @@ test('ege-yard-c runs every objective kind with faults 0 and identical worlds fo
   }
 })
 
+async function inventoryArgs(id: string): Promise<RoundRunArgs> {
+  const rows = JSON.parse(await readRepoText('apps/web/public/engine-round/inventory.json')) as { id: string; args: unknown }[]
+  const row = rows.find(item => item.id === id)
+  assert.ok(row, `inventory row ${id}`)
+  return parseRunArgs(row.args)
+}
+
 // The authored approach of s1-q-crown-confection, flattened to the [x, z] waypoints the page's
-// runPath follows. The crown sits at [289, 13, 72]; capturing at 2280 puts every penguin on the
-// final climb a few metres short of it while the crown is still on its tower.
+// runPath follows. The crown sits at [289, 13, 72] on the course's raised final deck; capturing at
+// 2280 puts every penguin on that deck around the crown while the crown is still untaken.
 const CROWN_APPROACH: [number, number][] = [
   [29.2, 72], [45, 72], [51, 72], [59, 63.6], [71, 51], [91, 30], [125, 33.5],
   [156, 30], [187, 26.5], [220, 30], [240, 51], [258, 70], [263, 72], [276, 72], [289, 72],
@@ -1249,17 +1256,15 @@ const SURVIVAL_PATH: [number, number][] = [
   [-14.289, 8.25], [0, 16.5], [14.289, 8.25], [14.289, -8.25], [9.526, -19.25], [4.763, 2.75],
 ]
 
-test('the crown capture arguments keep the crown on its tower with penguins on the climbing approach', async () => {
-  const args: RoundRunArgs = {
-    course: 's1-q-crown-confection', profile: 'sprint', seed: 7, frames: 2280, local: 'run',
-    captureAt: 'end', focus: 'kind:crown', runPath: CROWN_APPROACH,
-  }
+test('the crown capture arguments keep the crown on the final deck with the penguins gathered around it', async () => {
+  const args = await inventoryArgs('m7-crown-confection-crown')
+  assert.deepEqual(args.runPath, CROWN_APPROACH)
   const { scene, course, round } = await harnessRound('s1-q-crown-confection')
   const run = createRoundRun(round, args, course)
   try {
     while (run.step()) {}
     const facts = run.facts()
-    assert.equal(facts.tick, 2280)
+    assert.equal(facts.tick, args.frames)
     assert.equal(facts.phase, 'playing')
     assert.equal(facts.faults, 0)
     assert.equal(facts.features.crown, 1)
@@ -1270,30 +1275,49 @@ test('the crown capture arguments keep the crown on its tower with penguins on t
     near(facts.local.pos[2], 71.98, 0.6, 'followed seat approach z')
     const seats = round.observe().seats
     for (let seat = 0; seat < seats.length; seat++) {
-      assert.ok(seats[seat].pos.x >= 277 && seats[seat].pos.x <= 291, `seat ${seat} on the climbing approach`)
+      assert.ok(seats[seat].pos.x >= 277 && seats[seat].pos.x <= 291, `seat ${seat} on the final deck approach`)
       near(seats[seat].pos.y, 12.85, 0.05, `seat ${seat} approach height`)
     }
     const crown = rec(round, 'feature_crown', scene.index('feature/crown-1'))
-    assert.equal(crown.taken, 0, 'the crown remains on its tower')
-    near(crown.t[0], 289, 1e-3, 'crown tower x')
-    near(crown.t[1], 13, 1e-3, 'crown tower y')
-    near(crown.t[2], 72, 1e-3, 'crown tower z')
+    assert.equal(crown.taken, 0, 'the crown remains untaken on its deck')
+    near(crown.t[0], 289, 1e-3, 'crown deck x')
+    near(crown.t[1], 13, 1e-3, 'crown deck y')
+    near(crown.t[2], 72, 1e-3, 'crown deck z')
   } finally {
     round.dispose()
   }
 })
 
-test('the survival capture arguments keep the playing phase with the followed seat on remaining hex floor', async () => {
-  const args: RoundRunArgs = {
-    course: 's1-i-honeycomb-heights', profile: 'sprint', seed: 7, frames: 900, local: 'run',
-    captureAt: 'end', focus: null, runPath: SURVIVAL_PATH,
+test('the yard capture arguments frame the ball and the objective props in the playing round', async () => {
+  const args = await inventoryArgs('m7-yard-c-objects')
+  const { scene, course, round } = await harnessRound('ege-yard-c')
+  const run = createRoundRun(round, args, course)
+  try {
+    while (run.step()) {}
+    const facts = run.facts()
+    assert.equal(facts.tick, args.frames)
+    assert.equal(facts.phase, 'playing', 'the yard is still playing at the capture tick')
+    assert.equal(facts.faults, 0)
+    assert.equal(facts.alive, 8)
+    assert.deepEqual(facts.features, { ball: 1, goal: 2, collectible: 1, captureZone: 1, bank: 2, carryItem: 1, tailSet: 1, crown: 1 })
+    const ball = round.poses([scene.index('feature/yard-ball')])
+    near(ball[1], 0.3, 0.05, 'the ball sits on the yard floor at the capture tick')
+    near(ball[2], 20, 0.1, 'the ball is back at its spawn for the focus camera')
+    for (const seat of round.observe().seats) assert.ok(seat.pos.z > 15 && seat.pos.z < 30, `seat ${seat.seat} stands among the yard props (z ${seat.pos.z})`)
+  } finally {
+    round.dispose()
   }
+})
+
+test('the survival capture arguments keep the followed seat upright on an upper hex deck', async () => {
+  const args = await inventoryArgs('m7-demo-survival-honeycomb')
+  assert.deepEqual(args.runPath, SURVIVAL_PATH)
   const { course, round } = await harnessRound('s1-i-honeycomb-heights')
   const run = createRoundRun(round, args, course)
   try {
     while (run.step()) {}
     const facts = run.facts()
-    assert.equal(facts.tick, 900)
+    assert.equal(facts.tick, args.frames)
     assert.equal(facts.phase, 'playing', 'the survival round is still playing')
     assert.equal(facts.faults, 0)
     assert.ok(facts.botsMoved >= 4, `botsMoved ${facts.botsMoved}`)
@@ -1301,9 +1325,9 @@ test('the survival capture arguments keep the playing phase with the followed se
     assert.equal(facts.features.hexField, 1)
     assert.equal(facts.local.mode, 0, 'the followed penguin stands on a floor disc')
     assert.equal(facts.local.status, 1)
-    near(facts.local.pos[0], 4.767, 0.6, 'followed seat hex x')
-    near(facts.local.pos[1], 1.019, 0.05, 'followed seat hex floor height')
-    near(facts.local.pos[2], 2.747, 0.6, 'followed seat hex z')
+    assert.ok(facts.local.pos[1] >= 12, `followed seat is on an upper deck, not the floor below (y ${facts.local.pos[1]})`)
+    near(facts.local.pos[1], 13, 0.05, 'followed seat upper hex height')
+    assert.equal(round.observe().seats[0].grounded, true, 'followed seat stands on a remaining hex')
     assert.equal(round.observe().alive, 8)
   } finally {
     round.dispose()

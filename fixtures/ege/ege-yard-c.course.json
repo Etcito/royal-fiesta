@@ -53,7 +53,7 @@
     "center": [0, 1.5, 46],
     "half": [5, 2, 1]
   },
-  "killPlaneY": -10,
+  "killPlaneY": -0.5,
   "queuePad": null,
   "obstacles": [
     {
@@ -156,7 +156,7 @@
     {
       "kind": "captureZone",
       "id": "yard-capture",
-      "center": [0, 0.5, 17.5],
+      "center": [0, 0.5, 12],
       "half": [2, 0.5, 1.5],
       "captureS": 5
     },

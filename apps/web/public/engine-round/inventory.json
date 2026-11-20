@@ -398,7 +398,7 @@
     "course": "ege-yard-c",
     "profile": "sprint",
     "seed": 7,
-    "frames": 600,
+    "frames": 273,
     "local": "run",
     "captureAt": "end",
     "focus": "kind:ball"
@@ -503,11 +503,12 @@
     "faults eq 0",
     "features.crown gt 0"
   ],
-  "description": "the final course with the gold crown sphere on its tower and penguins climbing towards it",
+  "description": "the final course's candy deck with the gold crown sphere floating just above it and the eight penguins gathered on the deck near the crown; HUD band shows race, playing and the alive count",
   "held_constant": [
     "the light",
     "the focus camera rule",
     "the course assets",
+    "the authored final deck (a flat platform; the course draws no separate tower geometry)",
     "Emit the crown and contender distance state",
     "Run crown grabs and overtime resets"
   ]
@@ -548,7 +549,7 @@
     "course": "s1-i-honeycomb-heights",
     "profile": "sprint",
     "seed": 7,
-    "frames": 900,
+    "frames": 750,
     "local": "run",
     "captureAt": "end",
     "focus": null,

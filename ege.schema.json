@@ -2335,6 +2335,754 @@
           ]
         }
       ]
+    },
+    {
+      "name": "show_seat",
+      "players": 8,
+      "schedule": [
+        { "system": "ege.movers", "kind": "engine" },
+        { "system": "ege.road", "kind": "engine" },
+        { "system": "ege.mech.logic", "kind": "engine" },
+        { "system": "ege.mech.joints", "kind": "engine" },
+        {
+          "system": "rf.round.clock",
+          "kind": "script",
+          "reads": ["course"],
+          "writes": ["round", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.character.pre",
+          "kind": "script",
+          "reads": ["seat", "ege.transform", "ege.mover", "surface", "ege.mech.lever", "show_control", "show_character_ref"],
+          "writes": ["character", "ege.velocity", "ege.body_props", "ege.mech.grab", "show_character_ref"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.boost_lane.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "round"],
+          "writes": ["feature_boost_lane", "ege.render", "ege.transform", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.launch_pad.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "gate", "feature", "ege.transform"],
+          "writes": ["feature_launch_pad", "feature_launch_pad_seat", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.catch_volume.pre",
+          "kind": "script",
+          "reads": ["seat", "gate"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rolling_log.pre",
+          "kind": "script",
+          "reads": ["feature_rolling_log"],
+          "writes": ["ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.door_bank.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "feature"],
+          "writes": ["feature_door_bank", "feature_door_bank_door", "feature_door_bank_debris", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.swim_volume.pre",
+          "kind": "script",
+          "reads": ["seat", "ege.transform"],
+          "writes": ["feature_swim_volume", "character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.carry_item.pre",
+          "kind": "script",
+          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity"],
+          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.hex_field.pre",
+          "kind": "script",
+          "reads": ["feature", "feature_hex_field", "feature_hex_field_hex"],
+          "writes": ["feature_hex_field", "feature_hex_field_hex", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.memory_tiles.pre",
+          "kind": "script",
+          "reads": ["feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_marker"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "ege.transform", "ege.render", "ege.box_collider", "ege.body_props"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.annulus.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_annulus", "feature_annulus_segment", "seat", "character", "ege.transform"],
+          "writes": ["feature_annulus", "ege.transform", "ege.render", "ege.box_collider", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.sweep.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part"],
+          "writes": ["feature_sweep", "feature_sweep_part", "ege.transform", "ege.render", "ege.body_props", "ege.box_collider"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rising_kill.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_rising_kill", "feature_rising_kill_visual"],
+          "writes": ["feature_rising_kill", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.collectible.pre",
+          "kind": "script",
+          "reads": [],
+          "writes": [],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.tail_set.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform"],
+          "writes": ["feature_tail_set", "feature_tail_set_seat", "character"],
+          "emits": ["possess"]
+        },
+        { "system": "ege.body.props", "kind": "engine" },
+        { "system": "ege.box.collider", "kind": "engine" },
+        { "system": "ege.physics", "kind": "engine" },
+        { "system": "ege.contact.track", "kind": "engine" },
+        { "system": "ege.mech.watch", "kind": "engine" },
+        {
+          "system": "rf.character.post",
+          "kind": "script",
+          "reads": ["ege.transform", "ege.contacts"],
+          "writes": ["character", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.marker.post",
+          "kind": "script",
+          "reads": ["seat", "ege.transform"],
+          "writes": ["feature_marker", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.launch_pad.post",
+          "kind": "script",
+          "reads": ["seat", "character", "gate", "feature", "ege.transform"],
+          "writes": ["feature_launch_pad", "feature_launch_pad_seat", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.catch_volume.post",
+          "kind": "script",
+          "reads": ["seat", "gate"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rolling_log.post",
+          "kind": "script",
+          "reads": ["feature_rolling_log", "seat", "ege.transform"],
+          "writes": ["character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.tile_field.post",
+          "kind": "script",
+          "reads": ["seat", "character", "round", "feature"],
+          "writes": ["feature_tile_field", "feature_tile_field_tile", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.hex_field.post",
+          "kind": "script",
+          "reads": ["seat", "character", "round", "feature", "feature_hex_field", "feature_hex_field_hex"],
+          "writes": ["feature_hex_field", "feature_hex_field_hex", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.memory_tiles.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": ["match"]
+        },
+        {
+          "system": "rf.feature.sweep.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part", "seat", "character", "ege.transform"],
+          "writes": ["seat", "character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rising_kill.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_rising_kill", "feature_rising_kill_visual", "seat", "character", "ege.transform"],
+          "writes": ["feature_rising_kill", "seat", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.ball.post",
+          "kind": "script",
+          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
+          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.collectible.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_collectible_spot", "ege.render"],
+          "emits": ["score"]
+        },
+        {
+          "system": "rf.feature.bank.post",
+          "kind": "script",
+          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform"],
+          "writes": ["feature_bank_inside"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.capture_zone.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_capture_zone", "ege.render"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.tail_set.post",
+          "kind": "script",
+          "reads": ["feature", "feature_tail_set", "feature_tail_set_seat", "seat", "ege.transform", "ege.render"],
+          "writes": ["ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.crown.post",
+          "kind": "script",
+          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render"],
+          "emits": ["crown"]
+        },
+        {
+          "system": "rf.seat.rules",
+          "kind": "script",
+          "reads": ["course", "home_spawn", "path_node"],
+          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": ["finish", "fall", "eliminate", "gate", "progress"]
+        },
+        { "system": "ege.zone.track", "kind": "engine" }
+      ]
+    },
+    {
+      "name": "show_field",
+      "players": 8,
+      "schedule": [
+        { "system": "ege.movers", "kind": "engine" },
+        { "system": "ege.road", "kind": "engine" },
+        { "system": "ege.mech.logic", "kind": "engine" },
+        { "system": "ege.mech.joints", "kind": "engine" },
+        {
+          "system": "rf.round.clock",
+          "kind": "script",
+          "reads": ["course"],
+          "writes": ["round", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.character.pre",
+          "kind": "script",
+          "reads": ["seat", "ege.transform", "ege.mover", "surface", "ege.mech.lever", "show_control", "show_character_ref"],
+          "writes": ["character", "ege.velocity", "ege.body_props", "ege.mech.grab", "show_character_ref"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.boost_lane.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "round"],
+          "writes": ["feature_boost_lane", "ege.render", "ege.transform", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.launch_pad.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "gate", "feature", "ege.transform"],
+          "writes": ["feature_launch_pad", "feature_launch_pad_seat", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.catch_volume.pre",
+          "kind": "script",
+          "reads": ["seat", "gate"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rolling_log.pre",
+          "kind": "script",
+          "reads": ["feature_rolling_log"],
+          "writes": ["ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.door_bank.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "feature"],
+          "writes": ["feature_door_bank", "feature_door_bank_door", "feature_door_bank_debris", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.swim_volume.pre",
+          "kind": "script",
+          "reads": ["seat", "ege.transform"],
+          "writes": ["feature_swim_volume", "character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.carry_item.pre",
+          "kind": "script",
+          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity"],
+          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.hex_field.pre",
+          "kind": "script",
+          "reads": ["feature", "feature_hex_field", "feature_hex_field_hex"],
+          "writes": ["feature_hex_field", "feature_hex_field_hex", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.memory_tiles.pre",
+          "kind": "script",
+          "reads": ["feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_marker"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "ege.transform", "ege.render", "ege.box_collider", "ege.body_props"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.annulus.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_annulus", "feature_annulus_segment", "seat", "character", "ege.transform"],
+          "writes": ["feature_annulus", "ege.transform", "ege.render", "ege.box_collider", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.sweep.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part"],
+          "writes": ["feature_sweep", "feature_sweep_part", "ege.transform", "ege.render", "ege.body_props", "ege.box_collider"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rising_kill.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_rising_kill", "feature_rising_kill_visual"],
+          "writes": ["feature_rising_kill", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.collectible.pre",
+          "kind": "script",
+          "reads": [],
+          "writes": [],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.tail_set.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform"],
+          "writes": ["feature_tail_set", "feature_tail_set_seat", "character"],
+          "emits": ["possess"]
+        },
+        { "system": "ege.body.props", "kind": "engine" },
+        { "system": "ege.box.collider", "kind": "engine" },
+        { "system": "ege.physics", "kind": "engine" },
+        { "system": "ege.contact.track", "kind": "engine" },
+        { "system": "ege.mech.watch", "kind": "engine" },
+        {
+          "system": "rf.character.post",
+          "kind": "script",
+          "reads": ["ege.transform", "ege.contacts"],
+          "writes": ["character", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.marker.post",
+          "kind": "script",
+          "reads": ["seat", "ege.transform"],
+          "writes": ["feature_marker", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.launch_pad.post",
+          "kind": "script",
+          "reads": ["seat", "character", "gate", "feature", "ege.transform"],
+          "writes": ["feature_launch_pad", "feature_launch_pad_seat", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.catch_volume.post",
+          "kind": "script",
+          "reads": ["seat", "gate"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rolling_log.post",
+          "kind": "script",
+          "reads": ["feature_rolling_log", "seat", "ege.transform"],
+          "writes": ["character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.tile_field.post",
+          "kind": "script",
+          "reads": ["seat", "character", "round", "feature"],
+          "writes": ["feature_tile_field", "feature_tile_field_tile", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.hex_field.post",
+          "kind": "script",
+          "reads": ["seat", "character", "round", "feature", "feature_hex_field", "feature_hex_field_hex"],
+          "writes": ["feature_hex_field", "feature_hex_field_hex", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.memory_tiles.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": ["match"]
+        },
+        {
+          "system": "rf.feature.sweep.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part", "seat", "character", "ege.transform"],
+          "writes": ["seat", "character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rising_kill.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_rising_kill", "feature_rising_kill_visual", "seat", "character", "ege.transform"],
+          "writes": ["feature_rising_kill", "seat", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.ball.post",
+          "kind": "script",
+          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
+          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.collectible.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_collectible_spot", "ege.render"],
+          "emits": ["score"]
+        },
+        {
+          "system": "rf.feature.bank.post",
+          "kind": "script",
+          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform"],
+          "writes": ["feature_bank_inside"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.capture_zone.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_capture_zone", "ege.render"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.tail_set.post",
+          "kind": "script",
+          "reads": ["feature", "feature_tail_set", "feature_tail_set_seat", "seat", "ege.transform", "ege.render"],
+          "writes": ["ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.crown.post",
+          "kind": "script",
+          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render"],
+          "emits": ["crown"]
+        },
+        {
+          "system": "rf.seat.rules",
+          "kind": "script",
+          "reads": ["course", "home_spawn", "path_node"],
+          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": ["finish", "fall", "eliminate", "gate", "progress"]
+        },
+        { "system": "ege.zone.track", "kind": "engine" }
+      ]
+    },
+    {
+      "name": "show_rules",
+      "players": 0,
+      "schedule": [
+        { "system": "ege.zone.tally", "kind": "engine" }
+      ]
+    },
+    {
+      "name": "show_hub",
+      "players": 1,
+      "schedule": [
+        { "system": "ege.movers", "kind": "engine" },
+        { "system": "ege.road", "kind": "engine" },
+        { "system": "ege.mech.logic", "kind": "engine" },
+        { "system": "ege.mech.joints", "kind": "engine" },
+        {
+          "system": "rf.round.clock",
+          "kind": "script",
+          "reads": ["course"],
+          "writes": ["round", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.character.pre",
+          "kind": "script",
+          "reads": ["seat", "ege.transform", "ege.mover", "surface", "ege.mech.lever", "show_control", "show_character_ref"],
+          "writes": ["character", "ege.velocity", "ege.body_props", "ege.mech.grab", "show_character_ref"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.boost_lane.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "round"],
+          "writes": ["feature_boost_lane", "ege.render", "ege.transform", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.launch_pad.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "gate", "feature", "ege.transform"],
+          "writes": ["feature_launch_pad", "feature_launch_pad_seat", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.catch_volume.pre",
+          "kind": "script",
+          "reads": ["seat", "gate"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rolling_log.pre",
+          "kind": "script",
+          "reads": ["feature_rolling_log"],
+          "writes": ["ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.door_bank.pre",
+          "kind": "script",
+          "reads": ["seat", "character", "feature"],
+          "writes": ["feature_door_bank", "feature_door_bank_door", "feature_door_bank_debris", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.swim_volume.pre",
+          "kind": "script",
+          "reads": ["seat", "ege.transform"],
+          "writes": ["feature_swim_volume", "character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.carry_item.pre",
+          "kind": "script",
+          "reads": ["course", "feature", "seat", "character", "feature_carry_item", "feature_carry_item_item", "feature_carry_item_home", "feature_carry_item_seat", "ege.transform", "ege.velocity"],
+          "writes": ["feature_carry_item", "feature_carry_item_item", "feature_carry_item_seat", "character", "ege.transform", "ege.velocity", "ege.body_props"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.hex_field.pre",
+          "kind": "script",
+          "reads": ["feature", "feature_hex_field", "feature_hex_field_hex"],
+          "writes": ["feature_hex_field", "feature_hex_field_hex", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.memory_tiles.pre",
+          "kind": "script",
+          "reads": ["feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_marker"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "ege.transform", "ege.render", "ege.box_collider", "ege.body_props"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.annulus.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_annulus", "feature_annulus_segment", "seat", "character", "ege.transform"],
+          "writes": ["feature_annulus", "ege.transform", "ege.render", "ege.box_collider", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.sweep.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part"],
+          "writes": ["feature_sweep", "feature_sweep_part", "ege.transform", "ege.render", "ege.body_props", "ege.box_collider"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rising_kill.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_rising_kill", "feature_rising_kill_visual"],
+          "writes": ["feature_rising_kill", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.collectible.pre",
+          "kind": "script",
+          "reads": [],
+          "writes": [],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.tail_set.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform"],
+          "writes": ["feature_tail_set", "feature_tail_set_seat", "character"],
+          "emits": ["possess"]
+        },
+        { "system": "ege.body.props", "kind": "engine" },
+        { "system": "ege.box.collider", "kind": "engine" },
+        { "system": "ege.physics", "kind": "engine" },
+        { "system": "ege.contact.track", "kind": "engine" },
+        { "system": "ege.mech.watch", "kind": "engine" },
+        {
+          "system": "rf.character.post",
+          "kind": "script",
+          "reads": ["ege.transform", "ege.contacts"],
+          "writes": ["character", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.marker.post",
+          "kind": "script",
+          "reads": ["seat", "ege.transform"],
+          "writes": ["feature_marker", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.launch_pad.post",
+          "kind": "script",
+          "reads": ["seat", "character", "gate", "feature", "ege.transform"],
+          "writes": ["feature_launch_pad", "feature_launch_pad_seat", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.catch_volume.post",
+          "kind": "script",
+          "reads": ["seat", "gate"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rolling_log.post",
+          "kind": "script",
+          "reads": ["feature_rolling_log", "seat", "ege.transform"],
+          "writes": ["character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.tile_field.post",
+          "kind": "script",
+          "reads": ["seat", "character", "round", "feature"],
+          "writes": ["feature_tile_field", "feature_tile_field_tile", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.hex_field.post",
+          "kind": "script",
+          "reads": ["seat", "character", "round", "feature", "feature_hex_field", "feature_hex_field_hex"],
+          "writes": ["feature_hex_field", "feature_hex_field_hex", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.memory_tiles.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": ["match"]
+        },
+        {
+          "system": "rf.feature.sweep.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part", "seat", "character", "ege.transform"],
+          "writes": ["seat", "character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rising_kill.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_rising_kill", "feature_rising_kill_visual", "seat", "character", "ege.transform"],
+          "writes": ["feature_rising_kill", "seat", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.ball.post",
+          "kind": "script",
+          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
+          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.collectible.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_collectible_spot", "ege.render"],
+          "emits": ["score"]
+        },
+        {
+          "system": "rf.feature.bank.post",
+          "kind": "script",
+          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform"],
+          "writes": ["feature_bank_inside"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.capture_zone.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_capture_zone", "ege.render"],
+          "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.tail_set.post",
+          "kind": "script",
+          "reads": ["feature", "feature_tail_set", "feature_tail_set_seat", "seat", "ege.transform", "ege.render"],
+          "writes": ["ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.crown.post",
+          "kind": "script",
+          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render"],
+          "emits": ["crown"]
+        },
+        {
+          "system": "rf.seat.rules",
+          "kind": "script",
+          "reads": ["course", "home_spawn", "path_node"],
+          "writes": ["round", "seat", "character", "gate", "home", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "emits": ["finish", "fall", "eliminate", "gate", "progress"]
+        },
+        { "system": "ege.zone.track", "kind": "engine" }
+      ]
     }
   ]
 }

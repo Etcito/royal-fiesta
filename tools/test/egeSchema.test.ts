@@ -130,6 +130,23 @@ test('world kind round has 8 players and the schedule in rank order', async () =
   assert.deepEqual(characterPre.writes, CHARACTER_PRE_WRITES)
 })
 
+test('show physics worlds track zones and the zero-input rules world tallies them', async () => {
+  const layout = await layoutOf()
+  for (const [name, players] of [['show_seat', 8], ['show_field', 8], ['show_hub', 1]] as const) {
+    const kind = layout.world_kinds.find(kind => kind.name === name)
+    assert.ok(kind, name)
+    assert.equal(kind.players, players)
+    const systems = kind.schedule.map(entry => entry.system)
+    const physics = systems.indexOf('ege.physics')
+    assert.ok(physics >= 0 && systems.indexOf('ege.zone.track') > physics, name)
+  }
+  const rules = layout.world_kinds.find(kind => kind.name === 'show_rules')
+  assert.ok(rules)
+  assert.equal(rules.players, 0)
+  assert.ok(rules.schedule.some(entry => entry.system === 'ege.zone.tally'))
+  assert.ok(rules.schedule.every(entry => entry.system !== 'ege.physics'))
+})
+
 test('seat, character and feature components are declared', async () => {
   const names = (await layoutOf()).components.map((component) => component.name)
   for (const name of ['seat', 'character', 'feature']) assert.ok(names.includes(name), name)

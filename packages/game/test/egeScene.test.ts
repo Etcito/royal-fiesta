@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { loadEngine } from '@etcito/game-engine'
+import { schemaLayout } from '@etcito/game-engine/script'
+import { readWorldState } from '@etcito/game-engine/world-state'
 import type { ColliderSpec } from '@royal-fiesta/sim/course'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { CAPSULE } from '../../sim/src/character/capsule.ts'
@@ -190,16 +192,9 @@ test('a course feature kind without a registered emitter is refused', async () =
 })
 
 test('show scenes emit sparse stable identities and copied ownership metadata', async () => {
-  const schema = readJson('ege.schema.json') as { world_kinds: { name: string; players: number; schedule: unknown[] }[] }
-  const round = schema.world_kinds[0]
-  for (const name of ['show_seat', 'show_field', 'show_hub']) {
-    schema.world_kinds.push({ ...round, name, players: name === 'show_hub' ? 1 : 8, schedule: [...round.schedule, { system: 'ege.zone.track', kind: 'engine' }] })
-  }
-  const showEngine = await loadEngine()
-  showEngine.setSchema(JSON.stringify(schema))
   const input = await inputOf('race-sprint')
   const show = { worldKind: 'show_field' as const, seatOf: [2, 40, 59], inputSlots: [7, -1, 1], humans: [true, false, true] }
-  const emitted = emitEngineScene(showEngine, { ...input, show })
+  const emitted = emitEngineScene(engine, { ...input, show })
   assert.deepEqual(emitted.show, {
     worldKind: 'show_field',
     seats: show.seatOf.map((roomSeat, roundSeat) => ({ roomSeat, roundSeat, inputSlot: show.inputSlots[roundSeat], entity: emitted.seatEntities[roundSeat] })),
@@ -211,12 +206,39 @@ test('show scenes emit sparse stable identities and copied ownership metadata', 
   }
   show.seatOf[0] = 3
   assert.equal(emitted.show?.seats[0].roomSeat, 2)
-  const empty = emitEngineScene(showEngine, { ...input, show: { worldKind: 'show_hub', seatOf: [], inputSlots: [], humans: [] } })
+  const empty = emitEngineScene(engine, { ...input, show: { worldKind: 'show_hub', seatOf: [], inputSlots: [], humans: [] } })
   assert.deepEqual(empty.show, { worldKind: 'show_hub', seats: [], ownership: [] })
   assert.equal(Object.hasOwn(emitEngineScene(engine, input), 'show'), false)
-  const all = emitEngineScene(showEngine, { ...input, show: { worldKind: 'show_seat', seatOf: Array.from({ length: 60 }, (_, i) => i), inputSlots: Array(60).fill(-1), humans: Array(60).fill(false) } })
-  assert.equal(all.show?.seats[59].roomSeat, 59)
-  assert.equal(all.show?.seats.length, 60)
+})
+
+test('the authored show_seat world loads all 60 zone identities with zero, one or two humans', async () => {
+  const input = await inputOf('race-sprint')
+  const layout = schemaLayout(engine)
+  const seatOf = Array.from({ length: 60 }, (_, i) => i)
+  for (const humanSeats of [[], [59], [2, 59]]) {
+    const humans = seatOf.map(seat => humanSeats.includes(seat))
+    const inputSlots = seatOf.map(seat => humans[seat] ? (seat === 59 ? 7 : 1) : -1)
+    const emitted = emitEngineScene(engine, { ...input, show: { worldKind: 'show_seat', seatOf, inputSlots, humans } })
+    assert.equal(emitted.show?.seats.length, 60)
+    assert.equal(emitted.show.seats[59].roomSeat, 59)
+    const world = engine.createWorld(emitted.text)
+    try {
+      const { components } = readWorldState(engine, world, layout)
+      const identities = Object.entries(components.show_seat_identity)
+      const roomSeats = new Set<number>()
+      for (const [entity, identity] of identities) {
+        const seat = identity.room_seat
+        assert.ok(typeof seat === 'number' && seatOf.includes(seat))
+        roomSeats.add(seat)
+        assert.deepEqual(identity, { room_seat: seat, round_seat: seat, input_slot: inputSlots[seat], bot: humans[seat] ? 0 : 1 })
+        assert.deepEqual(components['ege.zone.id'][entity], { id: seat + 1, owner: seat, group: 0 })
+      }
+      assert.equal(identities.length, 60)
+      assert.equal(roomSeats.size, 60)
+    } finally {
+      engine.freeWorld(world)
+    }
+  }
 })
 
 test('show roster rejects malformed or conflicting mappings', async () => {

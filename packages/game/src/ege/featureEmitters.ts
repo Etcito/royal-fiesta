@@ -12,6 +12,7 @@ import { catchVolumeEmitter } from './features/catchVolume.ts'
 import { rollingLogEmitter } from './features/rollingLog.ts'
 import { doorBankEmitter } from './features/doorBank.ts'
 import { swimVolumeEmitter } from './features/swimVolume.ts'
+import { carryItemEmitter } from './features/carryItem.ts'
 import { tileFieldEmitter } from './features/tileField.ts'
 import { hexFieldEmitter } from './features/hexField.ts'
 import { memoryTilesEmitter } from './features/memoryTiles.ts'
@@ -152,6 +153,7 @@ export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object
   rollingLog: rollingLogEmitter,
   doorBank: doorBankEmitter,
   swimVolume: swimVolumeEmitter,
+  carryItem: carryItemEmitter,
   tileField: tileFieldEmitter,
   hexField: hexFieldEmitter,
   memoryTiles: memoryTilesEmitter,

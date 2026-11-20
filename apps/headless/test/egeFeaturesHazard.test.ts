@@ -438,3 +438,196 @@ test('survival laser eliminates the seat it hits', async () => {
     round.dispose()
   }
 })
+
+const MASK64 = (1n << 64n) - 1n
+const GAMMA = 0x9E3779B97F4A7C15n
+
+// Engine splitmix64 stream of crates/ege-core/src/rng.rs, seeded like World::rng_next.
+function mix64(z: bigint): bigint {
+  let h = (z ^ (z >> 30n)) & MASK64
+  h = (h * 0xBF58476D1CE4E5B9n) & MASK64
+  h = (h ^ (h >> 27n)) & MASK64
+  h = (h * 0x94D049BB133111EBn) & MASK64
+  return (h ^ (h >> 31n)) & MASK64
+}
+
+function expectedCycles(seed: number, salt: number, count: number, cycles: number, symbols: number): {
+  cells: number[]; target: number
+}[] {
+  let state = mix64((BigInt(seed) + (BigInt(salt) + 1n) * GAMMA) & MASK64)
+  const next = (): number => {
+    state = (state + GAMMA) & MASK64
+    return Number((mix64(state) >> 32n) & 0xFFFFFFFFn)
+  }
+  const out: { cells: number[]; target: number }[] = []
+  for (let c = 0; c < cycles; c++) {
+    const cells: number[] = []
+    for (let i = 0; i < count; i++) cells.push(next() % symbols)
+    out.push({ cells, target: next() % symbols })
+  }
+  return out
+}
+
+function cycleSymbol(cell: any, cycle: number): number {
+  return cycle < 16 ? cell.cycle_symbols[cycle] : cell.cycle_symbols_tail[cycle - 16]
+}
+
+function memoryParams(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    origin: [0, 0.1, -6], cols: 4, rows: 4, cellM: 2, symbols: 4, cycles: 20,
+    revealS: 0.1, hideS: 0.1, choiceS: 0.2, penaltyS: 14, ...overrides,
+  }
+}
+
+test('memoryTiles places cells at cellM half sizes, first-step collision and marker poses', async () => {
+  const origin = [-3.5, 0.1, 0]
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'memory-demo', kind: 'memoryTiles',
+    params: memoryParams({ origin, cols: 4, rows: 4 }),
+  }])
+  try {
+    const root = scene.index('feature/memory-demo')
+    round.step(() => code())
+    round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+    assert.equal(rec(round, 'feature_memory_tiles', root).placed, 1)
+    for (let index = 0; index < 16; index++) {
+      const column = index % 4
+      const row = Math.floor(index / 4)
+      const entity = scene.index(`feature/memory-demo/cell/${index}`)
+      const t = rec(round, 'ege.transform', entity).pos as number[]
+      near(t[0], origin[0] + column * 2)
+      near(t[1], origin[1])
+      near(t[2], origin[2] + row * 2)
+      const cell = rec(round, 'feature_memory_tiles_cell', entity)
+      assert.deepEqual(cell.t, [origin[0] + column * 2, origin[1], origin[2] + row * 2])
+      for (let axis = 0; axis < 3; axis++) closeTo(cell.half[axis], [0.95, 0.2, 0.95][axis], 1e-6, 'cell half')
+      const collider = rec(round, 'ege.box_collider', entity).half_extents as number[]
+      const render = rec(round, 'ege.render', entity)
+      for (let axis = 0; axis < 3; axis++) {
+        closeTo(collider[axis], [0.95, 0.2, 0.95][axis], 1e-6, 'collider half')
+        closeTo(render.params[axis], collider[axis], 1e-6, 'render half')
+      }
+      assert.equal(render.visible, 1)
+      assert.equal(render.color, 0xF5D0E0)
+      assert.equal(rec(round, 'ege.body_props', entity).colliders_enabled, 1)
+      assert.equal(cell.state, 0)
+    }
+    const obs = round.observe()
+    assert.equal(rec(round, 'character', obs.seats[0].entity).ground_entity, scene.index('feature/memory-demo/cell/0'))
+    assert.equal(rec(round, 'character', obs.seats[2].entity).ground_entity, scene.index('feature/memory-demo/cell/1'))
+
+    const marker = scene.index('feature/memory-demo/marker/0')
+    const at = rec(round, 'ege.transform', marker).pos as number[]
+    near(at[0], origin[0])
+    near(at[1], origin[1] + 0.2 + 0.3)
+    near(at[2], origin[2])
+    const markerRender = rec(round, 'ege.render', marker)
+    closeTo(markerRender.params[0], 1, 1e-6, 'marker radius')
+    closeTo(markerRender.params[1], 0.05, 1e-6, 'marker half height')
+    assert.equal(markerRender.params[2], 0)
+    assert.equal(markerRender.visible, 0)
+    const far = rec(round, 'ege.transform', scene.index('feature/memory-demo/marker/16')).pos as number[]
+    near(far[0], origin[0] + 3)
+    near(far[1], origin[1] + 0.3)
+    near(far[2], origin[2] + 6 + 1 + 0.5)
+  } finally {
+    round.dispose()
+  }
+})
+
+test('memoryTiles writes the deterministic twenty-cycle source sequence into both split arrays', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'memory-full', kind: 'memoryTiles', params: memoryParams({ origin: [0, 0.1, -6] }),
+  }])
+  try {
+    round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+    const expected = expectedCycles(7, 256, 16, 20, 4)
+    for (let cycle = 0; cycle < 20; cycle++) {
+      const target = rec(round, 'feature_memory_tiles_cycle', scene.index(`feature/memory-full/cycle/${cycle}`)).target
+      assert.equal(target, expected[cycle].target, `cycle ${cycle} target`)
+      for (let index = 0; index < 16; index++) {
+        const cell = rec(round, 'feature_memory_tiles_cell', scene.index(`feature/memory-full/cell/${index}`))
+        assert.equal(cycleSymbol(cell, cycle), expected[cycle].cells[index], `cycle ${cycle} cell ${index}`)
+        assert.ok(cycleSymbol(cell, cycle) >= 0 && cycleSymbol(cell, cycle) < 4, 'symbol in range')
+      }
+    }
+    const first = rec(round, 'feature_memory_tiles_cell', scene.index('feature/memory-full/cell/0'))
+    assert.equal(first.cycle_symbols.length, 16)
+    assert.equal(first.cycle_symbols_tail.length, 4)
+    assert.deepEqual(first.cycle_symbols, expected.slice(0, 16).map(cycle => cycle.cells[0]))
+    assert.deepEqual(first.cycle_symbols_tail, expected.slice(16, 20).map(cycle => cycle.cells[0]))
+    assert.equal(first.cycle_symbols[15], expected[15].cells[0], 'cycle 15 stays in the first array')
+    assert.equal(first.cycle_symbols_tail[0], expected[16].cells[0], 'cycle 16 starts the tail')
+    assert.equal(first.cycle_symbols_tail[3], expected[19].cells[0], 'cycle 19 ends the tail')
+  } finally {
+    round.dispose()
+  }
+})
+
+test('memoryTiles leaves the unused cycle slots zero for a shorter configuration', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'memory-short', kind: 'memoryTiles',
+    params: memoryParams({ origin: [0, 0.1, -6], cols: 2, rows: 2, symbols: 3, cycles: 3 }),
+  }])
+  try {
+    round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+    const expected = expectedCycles(7, 256, 4, 3, 3)
+    const cells = round.worldState().components.feature_memory_tiles_cycle
+    assert.equal(Object.keys(cells).length, 3)
+    for (let index = 0; index < 4; index++) {
+      const cell = rec(round, 'feature_memory_tiles_cell', scene.index(`feature/memory-short/cell/${index}`))
+      assert.deepEqual(cell.cycle_symbols.slice(0, 3), expected.map(cycle => cycle.cells[index]))
+      assert.deepEqual(cell.cycle_symbols.slice(3), Array(13).fill(0))
+      assert.deepEqual(cell.cycle_symbols_tail, [0, 0, 0, 0])
+    }
+    for (let cycle = 0; cycle < 3; cycle++) {
+      const target = rec(round, 'feature_memory_tiles_cycle', scene.index(`feature/memory-short/cycle/${cycle}`)).target
+      assert.equal(target, expected[cycle].target)
+    }
+  } finally {
+    round.dispose()
+  }
+})
+
+test('memoryTiles keeps its generated symbols across repeated pre runs and two worlds stay equal', async () => {
+  const { engine, scene, course, round: a } = await roundWith('ege-strip', [{
+    id: 'memory-stable', kind: 'memoryTiles', params: memoryParams({ origin: [0, 0.1, -6] }),
+  }])
+  let b: EngineRound | undefined
+  const symbols = (round: EngineRound): number[] => {
+    const out: number[] = []
+    for (let cycle = 0; cycle < 20; cycle++) {
+      out.push(rec(round, 'feature_memory_tiles_cycle', scene.index(`feature/memory-stable/cycle/${cycle}`)).target)
+      for (let index = 0; index < 16; index++) {
+        const cell = rec(round, 'feature_memory_tiles_cell', scene.index(`feature/memory-stable/cell/${index}`))
+        out.push(cycleSymbol(cell, cycle))
+      }
+    }
+    return out
+  }
+  try {
+    b = await createEngineRound(engine, await readRepoText(RF_EGE_SCHEMA), await rfScriptBytes(), scene, course, {
+      profile: 'sprint', seed: 7, humans: [true, false, false, false, false, false, false, false],
+    })
+    a.step(() => code())
+    b.step(() => code())
+    const first = symbols(a)
+    assert.equal(a.observe().faults, 0)
+    assert.equal(b.observe().faults, 0)
+    for (let tick = 0; tick < 130; tick++) {
+      a.step(() => code())
+      b.step(() => code())
+    }
+    assert.equal(a.observe().faults, 0)
+    assert.equal(b.observe().faults, 0)
+    assert.deepEqual(symbols(a), first, 'no repeated RNG initialization')
+    assert.deepEqual(symbols(b), first)
+    assert.equal(engine.worldEqual(a.world, b.world), true)
+  } finally {
+    b?.dispose()
+    a.dispose()
+  }
+})

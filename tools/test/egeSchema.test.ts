@@ -21,6 +21,7 @@ const SCHEDULE = [
   'rf.feature.door_bank.pre',
   'rf.feature.swim_volume.pre',
   'rf.feature.hex_field.pre',
+  'rf.feature.memory_tiles.pre',
   'rf.feature.annulus.pre',
   'rf.feature.sweep.pre',
   'ege.body.props',

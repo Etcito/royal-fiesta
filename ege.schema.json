@@ -1467,6 +1467,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.memory_tiles.pre",
+          "kind": "script",
+          "reads": ["feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_marker"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "ege.transform", "ege.render", "ege.box_collider", "ege.body_props"],
+          "emits": []
+        },
+        {
           "system": "rf.feature.annulus.pre",
           "kind": "script",
           "reads": ["round", "feature", "feature_annulus", "feature_annulus_segment", "seat", "character", "ege.transform"],

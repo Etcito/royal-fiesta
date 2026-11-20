@@ -48,6 +48,7 @@ const SCHEDULE = [
   'rf.feature.bank.post',
   'rf.feature.capture_zone.post',
   'rf.feature.tail_set.post',
+  'rf.feature.crown.post',
   'rf.seat.rules',
 ]
 

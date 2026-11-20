@@ -1002,3 +1002,209 @@ test('a dead holder frees its tail and a nearby grabber restores possession', as
     rig.first.dispose()
   }
 })
+
+function crownSpec(t: [number, number, number], grabRangeM = 1): FeatureSpec {
+  return { id: 'crown-demo', kind: 'crown', params: { t, grabRangeM } }
+}
+
+interface CrownRig { engine: EngineInstance; scene: EmittedScene; first: EngineRound; second: EngineRound }
+
+async function crownRig(
+  spec: FeatureSpec,
+  edit?: (doc: any, scene: EmittedScene) => void,
+): Promise<CrownRig> {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = [spec]
+  const engine = await loadEngine()
+  const schema = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schema)
+  const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  const doc = JSON.parse(scene.text)
+  doc.gravity = [0, 0, 0]
+  edit?.(doc, scene)
+  const modified = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: ALL_HUMAN }
+  const first = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  const second = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  return { engine, scene, first, second }
+}
+
+function crownDoc(doc: any, scene: EmittedScene, id: string): any {
+  return doc.entities[scene.index(`feature/${id}`)].components.feature_crown
+}
+
+function crownSeatDoc(doc: any, scene: EmittedScene, id: string, seat: number): any {
+  return doc.entities[scene.index(`feature/${id}/seat/${seat}`)].components.feature_crown_seat
+}
+
+function crownSteps(rig: CrownRig, n: number, grab: boolean, events?: ReturnType<typeof decodeEvents>): void {
+  for (let tick = 0; tick < n; tick++) {
+    const records = rawStep(rig.first, () => code(0, grab))
+    rawStep(rig.second, () => code(0, grab))
+    if (events) events.push(...records)
+  }
+}
+
+test('a grab within range emits the crown with sub-tick 0 and the taken tint', async () => {
+  // Seat 0 stands with its body centre at feet + stand + 0.01 = 0.86; the crown sits there too.
+  const rig = await crownRig(crownSpec([-3.5, 0.86, 0]), doc => {
+    doc.resources.round.intro_ticks = 0
+  })
+  const root = rig.scene.index('feature/crown-demo')
+  const visual = rig.scene.index('feature/crown-demo/visual/0')
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    assert.equal(rec(rig.first, 'ege.render', visual).color, 0xFFD140, 'an untaken crown keeps the tower base colour')
+    crownSteps(rig, 1, true, events)
+    const crowns = events.filter((event) => event.kind === 'crown')
+    assert.equal(crowns.length, 1, 'the first post-step crossing reports the grab')
+    assert.equal(crowns[0].entity, rig.scene.seatEntities[0], 'the crown event belongs to the seat entity')
+    assert.deepEqual(
+      { seat: crowns[0].fields.seat, a: crowns[0].fields.a, b: crowns[0].fields.b },
+      { seat: 0, a: 0, b: 0 },
+      'the initialised previous distance keeps the sub-tick at 0',
+    )
+    assert.equal(rec(rig.first, 'feature_crown', root).taken, 1)
+    assert.equal(rec(rig.first, 'ege.render', visual).color, 0x73D966, 'the taken crown shows tint 4')
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})
+
+test('simultaneous contenders retain both crown events on the first grab tick', async () => {
+  // Seats 0 and 1 spawn at x -3.5 and -2.5; the crown sits halfway at x -3.0, so both are inside
+  // the one metre grab range on the same tick.
+  const rig = await crownRig(crownSpec([-3.0, 0.86, 0]), doc => {
+    doc.resources.round.intro_ticks = 0
+  })
+  const root = rig.scene.index('feature/crown-demo')
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    crownSteps(rig, 1, true, events)
+    const crowns = events.filter((event) => event.kind === 'crown')
+    assert.equal(crowns.length, 2, 'both contenders are reported before taken flips')
+    const bySeat = new Map(crowns.map((event) => [event.fields.seat, event]))
+    assert.equal(bySeat.get(0)!.entity, rig.scene.seatEntities[0])
+    assert.equal(bySeat.get(1)!.entity, rig.scene.seatEntities[1])
+    for (const seat of [0, 1]) {
+      assert.deepEqual({ a: bySeat.get(seat)!.fields.a, b: bySeat.get(seat)!.fields.b }, { a: 0, b: 0 })
+    }
+    assert.equal(rec(rig.first, 'feature_crown', root).taken, 1)
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})
+
+test('an out-of-range or protected grab does not emit the crown', async () => {
+  const far = await crownRig(crownSpec([50, 0.86, 50]), doc => {
+    doc.resources.round.intro_ticks = 0
+  })
+  const farEvents: ReturnType<typeof decodeEvents> = []
+  try {
+    crownSteps(far, 3, true, farEvents)
+    assert.equal(farEvents.filter((event) => event.kind === 'crown').length, 0, 'a far crown is not grabbable')
+    assert.equal(rec(far.first, 'feature_crown', far.scene.index('feature/crown-demo')).taken, 0)
+    assert.equal(far.engine.worldEqual(far.first.world, far.second.world), true)
+    assert.equal(far.first.observe().faults, 0)
+    assert.equal(far.second.observe().faults, 0)
+  } finally {
+    far.second.dispose()
+    far.first.dispose()
+  }
+
+  const guarded = await crownRig(crownSpec([-3.5, 0.86, 0]), (doc, scene) => {
+    doc.resources.round.intro_ticks = 0
+    doc.entities[scene.seatEntities[0]].components.character.protected_until = 10000
+  })
+  const guardedEvents: ReturnType<typeof decodeEvents> = []
+  try {
+    crownSteps(guarded, 3, true, guardedEvents)
+    assert.equal(guardedEvents.filter((event) => event.kind === 'crown').length, 0, 'a protected seat cannot grab')
+    assert.equal(rec(guarded.first, 'feature_crown', guarded.scene.index('feature/crown-demo')).taken, 0)
+    assert.equal(guarded.engine.worldEqual(guarded.first.world, guarded.second.world), true)
+    assert.equal(guarded.first.observe().faults, 0)
+    assert.equal(guarded.second.observe().faults, 0)
+  } finally {
+    guarded.second.dispose()
+    guarded.first.dispose()
+  }
+})
+
+test('the crossing sub-tick interpolates the previous distance inside the grab range', async () => {
+  // With range 1, previous distance 2 and current distance 0.5, the source maps the crossed share
+  // round(65535 * (2 - 1) / (2 - 0.5)) = round(65535 * 2 / 3) = 43690.
+  const rig = await crownRig(crownSpec([0, 5.86 - 1 / 180, 0]), (doc, scene) => {
+    doc.resources.round.intro_ticks = 0
+    for (let seat = 1; seat < 8; seat++) {
+      doc.entities[scene.seatEntities[seat]].components.seat.spawn_t = [100 + seat, 0, 0]
+    }
+    const holder = doc.entities[scene.seatEntities[0]].components
+    holder.character.placed = 1
+    holder['ege.transform'].pos = [0, 5.86, 0.5]
+    const crown = crownDoc(doc, scene, 'crown-demo')
+    crown.placed = 1
+    crown.next_reset_tick = 100000
+    crownSeatDoc(doc, scene, 'crown-demo', 0).prev_dist = 2
+  })
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    crownSteps(rig, 1, true, events)
+    const crowns = events.filter((event) => event.kind === 'crown')
+    assert.equal(crowns.length, 1)
+    assert.equal(crowns[0].fields.a, 43690, 'the hand-derived crossing sub-tick')
+    assert.equal(crowns[0].fields.b, 0)
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})
+
+test('the cap reset returns every alive seat to the CP1 respawn slots on the source tick', async () => {
+  // CP1 respawn is [0, 0, 15] facing +Z, slots 8 at 1.2 m apart. Slot 0 is (1.8, 0, 16.2) and
+  // slot 7 is (-1.8, 0, 15). With intro 0 and a three-tick cap the reset runs at pre-step tick 3.
+  const rig = await crownRig(crownSpec([100, 0.86, 0]), doc => {
+    doc.resources.round.intro_ticks = 0
+    doc.resources.round.round_ticks = 3
+    doc.resources.round.overtime_ticks = 0
+  })
+  const root = rig.scene.index('feature/crown-demo')
+  const seat0State = rig.scene.index('feature/crown-demo/seat/0')
+  const seat7State = rig.scene.index('feature/crown-demo/seat/7')
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    crownSteps(rig, 3, false, events)
+    assert.equal(rig.first.tick, 3)
+    near(rec(rig.first, 'feature_crown_seat', seat0State).prev_dist, 103.5, 1e-3,
+      'before the cap the previous distance still points from the spawn')
+    assert.equal(events.filter((event) => event.kind === 'crown').length, 0)
+    crownSteps(rig, 1, false, events)
+    assert.equal(rig.first.tick, 4)
+    near(rec(rig.first, 'feature_crown_seat', seat0State).prev_dist, Math.hypot(98.2, 0.86, 16.2), 1e-3,
+      'seat 0 resets through the first source slot')
+    near(rec(rig.first, 'feature_crown_seat', seat7State).prev_dist, Math.hypot(101.8, 0.86, 15), 1e-3,
+      'seat 7 resets through the eighth source slot')
+    const at = rec(rig.first, 'ege.transform', rig.scene.seatEntities[0])
+    near(at.pos[0], 1.8, 1e-3, 'seat 0 slot x')
+    near(at.pos[1], 0.86, 0.02, 'seat 0 slot stand')
+    near(at.pos[2], 16.2, 1e-3, 'seat 0 slot z')
+    assert.equal(rec(rig.first, 'feature_crown', root).next_reset_tick, 603)
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})

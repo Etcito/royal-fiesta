@@ -1881,6 +1881,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.crown.post",
+          "kind": "script",
+          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render"],
+          "emits": ["crown"]
+        },
+        {
           "system": "rf.seat.rules",
           "kind": "script",
           "reads": [

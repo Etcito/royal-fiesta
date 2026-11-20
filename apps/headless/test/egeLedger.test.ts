@@ -10,6 +10,10 @@ import { readRepoText } from '../src/files.ts'
 const PROBE_WORLD = 'qualification_probe'
 const PUBLISH_WORLD = 'cumulative_publish_probe'
 const LEDGER_WORLD = 'cumulative_ledger_probe'
+const CLOSURE_ACCESS = [
+  'show_season_cursor', 'show_plan_entry', 'show_catalog_entry', 'show_used_map', 'show_clock',
+  'show_round_result', 'show_result_seat', 'show_result_team', 'show_result_pending', 'show_opening_rank',
+]
 const PROBE_FILE = 'probe/qualification.as.ts'
 const PROBE_TEXT = `import { entityAt, entityCount, newRecord, readResource, setComponent, spawn } from 'ege'
 import { ProbeOut, ProbeParamsRes } from '../components.gen'
@@ -173,8 +177,14 @@ function probeSchema(base: string): string {
     schedule: [{
       system: 'rf.show.ledger',
       kind: 'script',
-      reads: ['ege.zone.inbox', 'show_pending', 'show_publish', 'show_result_a', 'show_result_b', 'show_team_contribution'],
-      writes: ['show_pending', 'show_publish', 'show_result_a', 'show_result_b', 'show_team_contribution'],
+      reads: [
+        'ege.zone.inbox', 'show_pending', 'show_publish', 'show_result_a', 'show_result_b', 'show_team_contribution',
+        ...CLOSURE_ACCESS,
+      ],
+      writes: [
+        'show_pending', 'show_publish', 'show_result_a', 'show_result_b', 'show_team_contribution',
+        ...CLOSURE_ACCESS,
+      ],
       emits: [],
     }],
   })
@@ -964,4 +974,319 @@ test('conflicting complete values and team contributions refuse instead of award
   } finally {
     teamHost.engine.freeWorld(teamWorld)
   }
+})
+
+// ---- round closure -------------------------------------------------------------------------------
+
+const REASONS = { target: 0, timeCap: 1, lastStanding: 2, allFell: 3, overtime: 4, teamWin: 5, score: 6, crown: 7, playoff: 8 }
+const SEED = 21
+const CAP = 3
+const OVERTIME = 2
+
+interface Closure {
+  kind: number
+  finalRule?: number
+  plan?: number[]
+  step?: number
+  alive?: number
+  used?: number[]
+  seats: any[]
+  contributions?: [number, number, number][]
+  cursorOver?: Record<string, number>
+}
+
+function closureEntities(c: Closure): any[] {
+  const plan = c.plan ?? [8, 4, 2, 1]
+  const used = c.used ?? [0]
+  const catalog = used.map((map, index) => ({
+    components: {
+      show_catalog_entry: {
+        owner: 0, index: map, course: 40 + map, kind: c.kind, final_rule: c.finalRule ?? 0,
+        stages: 0x1f, team: c.kind === 2 ? 1 : 0, cut: 0,
+      },
+    },
+    index,
+  }))
+  return [
+    {
+      components: {
+        show_season_cursor: {
+          owner: 0, step: c.step ?? 0, alive: c.alive ?? 8, team_rounds: 0, round_index: 0, rng_state: SEED,
+          final_map: -1, last_kind: -1, previous: -1, ...(c.cursorOver ?? {}),
+        },
+      },
+    },
+    ...plan.map((nominal, index) => ({ components: { show_plan_entry: { owner: 0, index, nominal } } })),
+    ...catalog.map(entry => ({ components: entry.components })),
+    ...used.map((map, index) => ({ components: { show_used_map: { owner: 0, index, map } } })),
+    {
+      components: {
+        show_clock: {
+          owner: 0, start_tick: 0, end_tick: -1, overtime_end_tick: -1, phase: 1, frozen: 0,
+          intro_ticks: 0, round_ticks: CAP, overtime_ticks: OVERTIME,
+        },
+      },
+    },
+    ...(c.contributions ?? []).map(([feature, team, value]) => ({
+      components: { show_team_contribution: { owner: 0, feature, team, value, tick: 1 } },
+    })),
+    ...c.seats,
+  ]
+}
+
+function seatSet(patch: (room: number) => { a?: any; b?: any }, rooms = [0, 1, 2, 3, 4, 5, 6, 7]): any[] {
+  return rooms.map(room => seatEntity(room, patch(room)))
+}
+
+function resultsOf(state: any): any[] {
+  return rowsOf(state, 'show_round_result').sort((x, y) => Number(x.index) - Number(y.index))
+}
+
+function listOf(state: any, result: number, list: number): number[] {
+  return rowsOf(state, 'show_result_seat')
+    .filter(row => Number(row.result) === result && Number(row.list) === list)
+    .sort((x, y) => Number(x.position) - Number(y.position))
+    .map(row => Number(row.seat))
+}
+
+function pointsOf(state: any, result: number): number[] {
+  return rowsOf(state, 'show_result_seat')
+    .filter(row => Number(row.result) === result && Number(row.list) === 0)
+    .sort((x, y) => Number(x.position) - Number(y.position))
+    .map(row => Number(row.points))
+}
+
+/** Steps until `count` results exist (or `limit` ticks pass); faults must stay empty. */
+async function closeWith(
+  entities: any[], count = 1, limit = 12, between?: (engine: any, layout: any, world: number, tick: number) => void,
+) {
+  const { engine, layout, host, faults } = await worldHost(`rf-close-${moduleSeq++}`)
+  const world = engine.createWorld(JSON.stringify(sceneOf(LEDGER_WORLD, entities)))
+  try {
+    let state = readWorldState(engine, world, layout)
+    for (let t = 0; t < limit && resultsOf(state).length < count; t++) {
+      between?.(engine, layout, world, t)
+      host.stepTick(world, [])
+      state = readWorldState(engine, world, layout)
+    }
+    assert.deepEqual(faults, [])
+    return { state, engine, layout, world, host, faults }
+  } finally {
+    engine.freeWorld(world)
+  }
+}
+
+test('a race closes at target with points, opening ranks and a restored cursor', async () => {
+  const finish: Record<number, number> = { 2: 10, 0: 11, 3: 12, 1: 13 }
+  const route: Record<number, number> = { 5: 100, 4: 200, 6: 300, 7: 400 }
+  const seats = seatSet(room => room in finish
+    ? { a: { status: 2, finish_tick: finish[room], finish_sub: 0, lap: 1 } }
+    : { a: { route_mm: route[room] } })
+  const { state, engine, layout, world, host, faults } = await (async () => {
+    const { engine, layout, host, faults } = await worldHost('rf-close-race')
+    const world = engine.createWorld(JSON.stringify(sceneOf(LEDGER_WORLD, closureEntities({ kind: 0, seats }))))
+    host.stepTick(world, [])
+    const state = readWorldState(engine, world, layout)
+    const copy = engine.snapshot(world).slice()
+    host.stepTick(world, [])
+    // restore and a further tick leave exactly one result behind
+    const restored = engine.createWorld(JSON.stringify(sceneOf(LEDGER_WORLD, [])))
+    engine.restore(restored, copy)
+    host.stepTick(restored, [])
+    assert.equal(resultsOf(readWorldState(engine, restored, layout)).length, 1)
+    engine.freeWorld(restored)
+    return { state, engine, layout, world, host, faults }
+  })()
+  try {
+    assert.deepEqual(faults, [])
+    const [result] = resultsOf(state)
+    assert.equal(resultsOf(state).length, 1)
+    assert.equal(result.kind, 0)
+    assert.equal(result.reason, REASONS.target)
+    assert.equal(result.end_tick, 0)
+    assert.equal(result.course, 40)
+    assert.equal(result.playoff, 0)
+    assert.equal(result.champion, -1)
+    assert.deepEqual(listOf(state, 0, 0), [2, 0, 3, 1, 5, 4, 6, 7])
+    assert.deepEqual(listOf(state, 0, 1), [2, 0, 3, 1])
+    assert.deepEqual(listOf(state, 0, 2), [5, 4, 6, 7])
+    assert.deepEqual(pointsOf(state, 0), [8, 7, 6, 5, 0, 0, 0, 0])
+    const openings = rowsOf(state, 'show_opening_rank').sort((x, y) => Number(x.rank) - Number(y.rank))
+    assert.deepEqual(openings.map(row => Number(row.seat)), [2, 0, 3, 1, 5, 4, 6, 7])
+    const pending = rowsOf(state, 'show_result_pending')
+    assert.equal(pending.length, 1)
+    assert.equal(pending[0].confirmed, 0, 'authoritative results stay pending until confirmed')
+    const cursor = rowsOf(state, 'show_season_cursor')[0]
+    assert.deepEqual([cursor.round_index, cursor.step, cursor.alive], [1, 1, 4])
+  } finally {
+    engine.freeWorld(world)
+    void layout
+    void host
+  }
+})
+
+test('absent clock, empty roster and an unplayed round leave results absent', async () => {
+  const { state } = await closeWith(closureEntities({ kind: 0, seats: [] }), 1, 6)
+  assert.equal(resultsOf(state).length, 0)
+  const alone = closureEntities({ kind: 0, seats: seatSet(() => ({}), [0, 1, 2, 3, 4, 5, 6, 7]) })
+  const noClock = alone.filter(e => !e.components.show_clock)
+  assert.equal(resultsOf((await closeWith(noClock, 1, 6)).state).length, 0)
+  const early = await closeWith(alone, 1, 3)
+  assert.equal(resultsOf(early.state).length, 0, 'a race with no finisher waits for its cap')
+  assert.equal(rowsOf(early.state, 'show_result_pending').length, 0)
+})
+
+test('a race with too few finishers closes at the time cap', async () => {
+  const seats = seatSet(room => room < 2 ? { a: { status: 2, finish_tick: 5 + room, finish_sub: 0 } } : {})
+  const { state } = await closeWith(closureEntities({ kind: 0, seats }))
+  const [result] = resultsOf(state)
+  assert.equal(result.reason, REASONS.timeCap)
+  assert.equal(result.end_tick, CAP)
+  assert.deepEqual(listOf(state, 0, 0).slice(0, 2), [0, 1])
+})
+
+test('survival closes at target, at all-fell and at overtime end', async () => {
+  const out = (room: number) => ({ a: { status: 3 }, b: { out_tick: 10 + room, out_sub: 0 } })
+  const four = await closeWith(closureEntities({ kind: 1, seats: seatSet(room => room < 4 ? {} : out(room)) }))
+  assert.equal(resultsOf(four.state)[0].reason, REASONS.target)
+  assert.deepEqual(listOf(four.state, 0, 1), [0, 1, 2, 3].sort((a, b) => listOf(four.state, 0, 0).indexOf(a) - listOf(four.state, 0, 0).indexOf(b)))
+  assert.equal(resultsOf(four.state)[0].end_tick, 0)
+
+  const none = await closeWith(closureEntities({ kind: 1, seats: seatSet(out) }))
+  assert.equal(resultsOf(none.state)[0].reason, REASONS.allFell)
+  assert.deepEqual(listOf(none.state, 0, 0), [7, 6, 5, 4, 3, 2, 1, 0], 'latest exit ranks first')
+
+  // Six seats fall together across the quota of four: the places are disputed, not awarded.
+  const tie = (room: number) => room < 6
+    ? { a: { status: 3 }, b: { out_tick: 20, out_sub: 7 } }
+    : { a: { status: 3 }, b: { out_tick: 1 + room, out_sub: 0 } }
+  const six = await closeWith(closureEntities({ kind: 1, seats: seatSet(tie) }))
+  assert.equal(resultsOf(six.state)[0].reason, REASONS.playoff)
+  assert.deepEqual(listOf(six.state, 0, 3).sort(), [0, 1, 2, 3, 4, 5])
+  assert.deepEqual(listOf(six.state, 0, 1), [])
+  assert.equal(resultsOf(six.state)[0].end_tick, 0)
+
+  // Alive seats still above the target wait for overtime to end.
+  const wait = await closeWith(closureEntities({
+    kind: 1, seats: seatSet(room => room < 6 ? {} : out(room)),
+  }))
+  assert.equal(resultsOf(wait.state)[0].reason, REASONS.overtime)
+  assert.equal(resultsOf(wait.state)[0].end_tick, CAP + OVERTIME)
+})
+
+test('a survival playoff replays and settles by positive opening rank, advancing the cursor once', async () => {
+  const seats = seatSet(room => room < 6
+    ? { a: { status: 3 }, b: { out_tick: 20, out_sub: 7, opening_rank: [3, 1, 6, 2, 5, 4][room] } }
+    : { a: { status: 3 }, b: { out_tick: 1 + room, out_sub: 0 } })
+  const { state } = await closeWith(closureEntities({ kind: 1, used: [0, 1], seats }), 2, 16)
+  const [first, second] = resultsOf(state)
+  assert.equal(first.reason, REASONS.playoff)
+  assert.equal(first.playoff, 0)
+  assert.equal(second.playoff, 1)
+  assert.equal(second.reason, REASONS.allFell)
+  assert.deepEqual(listOf(state, 1, 1), [1, 3, 0, 5], 'opening ranks 1,2,3,4 qualify in rank order')
+  assert.deepEqual(listOf(state, 1, 2).sort(), [2, 4])
+  const cursor = rowsOf(state, 'show_season_cursor')[0]
+  assert.deepEqual([cursor.round_index, cursor.step, cursor.alive], [2, 0, 4], 'a playoff keeps the nominal step')
+})
+
+test('a team round closes on a non-tied cap, with the winning team ranked first', async () => {
+  const seats = seatSet(room => ({ b: { team: room < 4 ? 0 : 1, opening_rank: room + 1 } }))
+  const { state } = await closeWith(closureEntities({
+    kind: 2, seats, contributions: [[1, 0, 5], [1, 1, 3]],
+  }))
+  const [result] = resultsOf(state)
+  assert.equal(result.reason, REASONS.teamWin)
+  assert.equal(result.end_tick, CAP)
+  assert.equal(result.team_count, 2)
+  assert.deepEqual(listOf(state, 0, 1).sort(), [0, 1, 2, 3])
+  assert.deepEqual(pointsOf(state, 0).slice(0, 4), [8, 8, 8, 8], 'winning-team members hold rank one')
+  const teams = rowsOf(state, 'show_result_team').filter(row => Number(row.result) === 0)
+  assert.deepEqual(teams.map(row => Number(row.score)).sort(), [3, 5])
+})
+
+test('a team tie enters overtime; a score change closes it, otherwise the tie boundary decides', async () => {
+  const seats = (ranks: number[]) => seatSet(room => ({ b: { team: room < 4 ? 0 : 1, opening_rank: ranks[room] } }))
+  const tied: [number, number, number][] = [[1, 0, 4], [1, 1, 4]]
+  const change = await closeWith(closureEntities({ kind: 2, seats: seats([1, 2, 3, 4, 5, 6, 7, 8]), contributions: tied }), 1, 12,
+    (engine, layout, world, t) => {
+      if (t === 4) injectInbox(engine, layout, world, [{ key: 131072 + 32 + 1, kind: 0, value: 6, tick: 5 }], 3)
+    })
+  assert.equal(resultsOf(change.state)[0].reason, REASONS.teamWin)
+  assert.equal(resultsOf(change.state)[0].end_tick, 4)
+  assert.equal(change.state.components.show_result_team !== undefined, true)
+
+  const low = await closeWith(closureEntities({ kind: 2, seats: seats([1, 2, 3, 4, 5, 6, 7, 8]), contributions: tied }))
+  assert.equal(resultsOf(low.state)[0].reason, REASONS.overtime)
+  assert.equal(resultsOf(low.state)[0].end_tick, CAP + OVERTIME)
+  assert.deepEqual(listOf(low.state, 0, 1).sort(), [0, 1, 2, 3], 'lower opening-rank sum wins')
+
+  const high = await closeWith(closureEntities({ kind: 2, seats: seats([5, 6, 7, 8, 1, 2, 3, 4]), contributions: tied }))
+  assert.deepEqual(listOf(high.state, 0, 1).sort(), [4, 5, 6, 7])
+
+  const seeded = await closeWith(closureEntities({ kind: 2, seats: seats([0, 0, 0, 0, 0, 0, 0, 0]), contributions: tied }))
+  const first = referenceSeedOrder(SEED, 0, 0) <= referenceSeedOrder(SEED, 0, 1) ? [0, 1, 2, 3] : [4, 5, 6, 7]
+  assert.deepEqual(listOf(seeded.state, 0, 1).sort(), first, 'seed order decides equal opening sums')
+})
+
+test('collection, hunt and logic rounds close at the cap on their own ordering', async () => {
+  const collection = await closeWith(closureEntities({
+    kind: 3, seats: seatSet(room => ({ a: { score: [5, 9, 9, 1, 0, 0, 2, 3][room], last_score_tick: [1, 8, 4, 1, -1, -1, 2, 2][room] } })),
+  }))
+  assert.equal(resultsOf(collection.state)[0].reason, REASONS.score)
+  assert.equal(resultsOf(collection.state)[0].end_tick, CAP)
+  assert.deepEqual(listOf(collection.state, 0, 0).slice(0, 4), [2, 1, 0, 7], 'score, then earlier last score')
+
+  const hunt = await closeWith(closureEntities({
+    kind: 4, seats: seatSet(room => ({ b: { hold_ticks: [9, 9, 4, 0, 0, 0, 0, 7][room], possessing: room === 1 ? 1 : 0, last_acquire_tick: room } })),
+  }))
+  assert.deepEqual(listOf(hunt.state, 0, 0).slice(0, 4), [1, 0, 7, 2], 'hold ticks, possession, then acquisition')
+
+  const logic = await closeWith(closureEntities({
+    kind: 5, seats: seatSet(room => ({ b: { matches: [2, 5, 5, 1, 0, 0, 0, 0][room], cross_ticks: [0, 9, 3, 0, 0, 0, 0, 0][room] } })),
+  }))
+  assert.deepEqual(listOf(logic.state, 0, 0).slice(0, 4), [2, 1, 0, 3], 'matches, then fewer crossing ticks')
+  assert.equal(resultsOf(logic.state)[0].reason, REASONS.score)
+})
+
+test('finals: crown and last-standing outcomes, a tied crown and simultaneous exits dispute the place', async () => {
+  const plan = { kind: 6, plan: [8, 4, 2, 1], step: 2 }
+  const crown = await closeWith(closureEntities({
+    ...plan, finalRule: 1, seats: seatSet(room => room === 3 ? { a: { status: 2, finish_tick: 7, finish_sub: 4 } } : {}),
+  }))
+  const crowned = resultsOf(crown.state)[0]
+  assert.deepEqual([crowned.reason, crowned.champion, crowned.final, crowned.kind], [REASONS.crown, 3, 1, 6])
+
+  const tiedCrown = await closeWith(closureEntities({
+    ...plan, finalRule: 1, seats: seatSet(room => room === 3 || room === 5 ? { a: { status: 2, finish_tick: 7, finish_sub: 4 } } : {}),
+  }))
+  const dispute = resultsOf(tiedCrown.state)[0]
+  assert.deepEqual([dispute.reason, dispute.champion], [REASONS.playoff, -1])
+  assert.deepEqual(listOf(tiedCrown.state, 0, 3).sort(), [3, 5])
+
+  const last = await closeWith(closureEntities({
+    ...plan, finalRule: 2, seats: seatSet(room => room === 6 ? {} : { a: { status: 3 }, b: { out_tick: 10 + room, out_sub: 0 } }),
+  }))
+  const standing = resultsOf(last.state)[0]
+  assert.deepEqual([standing.reason, standing.champion, standing.end_tick], [REASONS.lastStanding, 6, 0])
+
+  const pair = seatSet(room => room < 2 ? {} : { a: { status: 3 }, b: { out_tick: 1, out_sub: 0 } })
+  const both = await closeWith(closureEntities({ ...plan, finalRule: 2, seats: pair }), 1, 12,
+    (engine, layout, world, t) => {
+      if (t !== 1) return
+      const batch = (room: number) => seatBatch(room, 6, { 1: 3, 15: 5, 16: 100, 2: -1 })
+      injectInbox(engine, layout, world, [...batch(0), ...batch(1)], 3)
+    })
+  const simultaneous = resultsOf(both.state)[0]
+  assert.deepEqual([simultaneous.reason, simultaneous.champion], [REASONS.playoff, -1])
+  assert.deepEqual(listOf(both.state, 0, 3).sort(), [0, 1], 'a complete batch of exits stays disputed')
+  assert.equal(simultaneous.end_tick, 1)
+})
+
+test('equal closure inputs produce equal results across independent worlds', async () => {
+  const seats = () => seatSet(room => ({ a: { score: room % 3 }, b: { opening_rank: 8 - room } }))
+  const one = await closeWith(closureEntities({ kind: 3, seats: seats() }))
+  const two = await closeWith(closureEntities({ kind: 3, seats: seats() }))
+  assert.deepEqual(listOf(one.state, 0, 0), listOf(two.state, 0, 0))
+  assert.deepEqual(pointsOf(one.state, 0), pointsOf(two.state, 0))
 })

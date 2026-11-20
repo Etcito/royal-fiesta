@@ -1,7 +1,12 @@
-import { Column, despawn, newRecord, readColumn, setComponent, spawn } from 'ege'
+import { Column, despawn, newRecord, readColumn, setComponent, spawn, tick } from 'ege'
 import {
-  EgeZoneInbox, ShowPending, ShowPublish, ShowResultA, ShowResultB, ShowTeamContribution,
+  EgeZoneInbox, ShowClock, ShowOpeningRank, ShowPending, ShowPublish, ShowResultA, ShowResultB,
+  ShowResultPending, ShowResultSeat, ShowResultTeam, ShowRoundResult, ShowSeasonCursor,
+  ShowTeamContribution,
 } from '../components.gen'
+import { resolveShowRound, showRoundPoints } from './qualification.as'
+import { advanceCursor, nextSlotForPlan, readCatalog, readPlan, readUsedMaps } from './scheduler.as'
+import { resolveShowTeamTie } from './teams.as'
 
 // G7.3 cumulative ingestion. The engine hands every outbox entry of a source domain to the rules
 // world as an ege.zone.inbox row {source, key, kind, value, tick} (engine
@@ -194,6 +199,11 @@ function applyBatch(
  * cumulative records into show_result_a, show_result_b, show_publish and show_team_contribution.
  */
 export function rf_show_ledger(): void {
+  ingest()
+  closeRound()
+}
+
+function ingest(): void {
   const inbox = readColumn<EgeZoneInbox>(EgeZoneInbox.ID, EgeZoneInbox.SIZE)
   if (inbox.count == 0) return
   const aRows = readColumn<ShowResultA>(ShowResultA.ID, ShowResultA.SIZE)
@@ -362,4 +372,367 @@ export function rf_show_ledger(): void {
     fragment.entry = writePending(fragment.source, key, <u32>fragment.field, fragment.value, fragment.tick)
     fragment.stored = true
   }
+}
+
+// Round closure (G7.2). Reason rank: target=0,timeCap=1,lastStanding=2,allFell=3,overtime=4,teamWin=5,
+// score=6,crown=7,playoff=8. Kind rank: race=0..logic=5,final=6; final-rule rank none=0,crown=1,lastStanding=2.
+const REASON_TARGET: u32 = 0
+const REASON_TIME_CAP: u32 = 1
+const REASON_LAST_STANDING: u32 = 2
+const REASON_ALL_FELL: u32 = 3
+const REASON_OVERTIME: u32 = 4
+const REASON_TEAM_WIN: u32 = 5
+const REASON_SCORE: u32 = 6
+const REASON_CROWN: u32 = 7
+const REASON_PLAYOFF: u32 = 8
+const KIND_TEAM_RANK: i32 = 2
+const KIND_FINAL_RANK: i32 = 6
+const BASELINE: u32 = 0xffffffff
+const LIST_RANKING: u32 = 0
+const LIST_QUALIFIED: u32 = 1
+const LIST_ELIMINATED: u32 = 2
+const LIST_PLAYOFF: u32 = 3
+
+function containsSeat(values: StaticArray<i32>, value: i32): bool {
+  for (let i: i32 = 0; i < values.length; i++) if (values[i] == value) return true
+  return false
+}
+
+function writeSeatRow(owner: u32, result: u32, list: u32, position: i32, seat: i32, points: i32): void {
+  const row = newRecord<ShowResultSeat>(ShowResultSeat.SIZE)
+  row.owner = owner
+  row.result = result
+  row.list = list
+  row.position = <u32>position
+  row.seat = <u32>seat
+  row.points = points
+  setComponent<ShowResultSeat>(spawn(), ShowResultSeat.ID, ShowResultSeat.SIZE, row)
+}
+
+function writeSeatList(owner: u32, result: u32, list: u32, seats: StaticArray<i32>): void {
+  for (let i: i32 = 0; i < seats.length; i++) writeSeatRow(owner, result, list, i, seats[i], 0)
+}
+
+/** Seat list of one stored result, in position order. */
+function storedList(owner: u32, result: u32, list: u32): StaticArray<i32> {
+  const rows = readColumn<ShowResultSeat>(ShowResultSeat.ID, ShowResultSeat.SIZE)
+  let count: i32 = 0
+  for (let i: u32 = 0; i < rows.count; i++) {
+    const row = rows.at(i)
+    if (row.owner == owner && row.result == result && row.list == list) count++
+  }
+  const out = new StaticArray<i32>(count)
+  for (let i: u32 = 0; i < rows.count; i++) {
+    const row = rows.at(i)
+    if (row.owner != owner || row.result != result || row.list != list) continue
+    if (<i32>row.position < count) out[<i32>row.position] = <i32>row.seat
+  }
+  return out
+}
+
+/** Sums the cumulative per-publisher contributions into one score per contiguous team id. */
+function teamScoresOf(count: i32): StaticArray<i32> {
+  const scores = new StaticArray<i32>(count)
+  const rows = readColumn<ShowTeamContribution>(ShowTeamContribution.ID, ShowTeamContribution.SIZE)
+  for (let i: u32 = 0; i < rows.count; i++) {
+    const row = rows.at(i)
+    if (row.team < <u32>count) scores[<i32>row.team] += row.value
+  }
+  return scores
+}
+
+function clearBaseline(): void {
+  const rows = readColumn<ShowResultTeam>(ShowResultTeam.ID, ShowResultTeam.SIZE)
+  for (let i: u32 = 0; i < rows.count; i++) {
+    if (rows.at(i).result == BASELINE) despawn(rows.entity(i))
+  }
+}
+
+function baselineCount(): i32 {
+  const rows = readColumn<ShowResultTeam>(ShowResultTeam.ID, ShowResultTeam.SIZE)
+  let count: i32 = 0
+  for (let i: u32 = 0; i < rows.count; i++) if (rows.at(i).result == BASELINE) count++
+  return count
+}
+
+function baselineScore(team: i32): i32 {
+  const rows = readColumn<ShowResultTeam>(ShowResultTeam.ID, ShowResultTeam.SIZE)
+  for (let i: u32 = 0; i < rows.count; i++) {
+    const row = rows.at(i)
+    if (row.result == BASELINE && row.team == <u32>team) return row.score
+  }
+  return 0
+}
+
+function writeBaseline(owner: u32, scores: StaticArray<i32>): void {
+  for (let i: i32 = 0; i < scores.length; i++) {
+    const row = newRecord<ShowResultTeam>(ShowResultTeam.SIZE)
+    row.owner = owner
+    row.result = BASELINE
+    row.team = <u32>i
+    row.score = scores[i]
+    setComponent<ShowResultTeam>(spawn(), ShowResultTeam.ID, ShowResultTeam.SIZE, row)
+  }
+}
+
+function scoresDiffer(scores: StaticArray<i32>): bool {
+  for (let i: i32 = 1; i < scores.length; i++) if (scores[i] != scores[0]) return true
+  return false
+}
+
+function closeRound(): void {
+  const cursors = readColumn<ShowSeasonCursor>(ShowSeasonCursor.ID, ShowSeasonCursor.SIZE)
+  if (cursors.count != 1) return
+  const clocks = readColumn<ShowClock>(ShowClock.ID, ShowClock.SIZE)
+  if (clocks.count != 1) return
+  const owner = cursors.entity(0)
+  const cursor = cursors.at(0)
+  const roundIndex = <i32>cursor.round_index
+  const results = readColumn<ShowRoundResult>(ShowRoundResult.ID, ShowRoundResult.SIZE)
+  let previousReason: i32 = -1
+  for (let i: u32 = 0; i < results.count; i++) {
+    const row = results.at(i)
+    if (row.owner != owner) continue
+    if (<i32>row.index == roundIndex) return
+    if (<i32>row.index == roundIndex - 1) previousReason = <i32>row.reason
+  }
+  const used = readUsedMaps(owner)
+  if (used.length <= roundIndex) return
+  const plan = readPlan(owner)
+  const slot = nextSlotForPlan(plan, <i32>cursor.step, <i32>cursor.alive, <i32>cursor.team_rounds)
+  if (slot == null) return
+  const catalog = readCatalog(owner)
+  let mapRow: i32 = -1
+  for (let i: i32 = 0; i < catalog.length; i++) if (catalog[i].index == used[roundIndex]) mapRow = i
+  if (mapRow < 0) fail('the played map is missing from show_catalog_entry')
+  const entry = catalog[mapRow]
+
+  const playoffRound = previousReason == <i32>REASON_PLAYOFF
+  let kind = entry.kind
+  const finalRule = entry.finalRule
+  const isFinal = slot.final || kind == KIND_FINAL_RANK
+  if (isFinal && finalRule != 0) kind = KIND_FINAL_RANK
+  else if (kind == KIND_FINAL_RANK) kind = 0
+  if (kind == KIND_FINAL_RANK && finalRule == 0) fail('a final requires crown or lastStanding')
+
+  // Seats of this round: the disputed seats of a playoff round, otherwise every cumulative record.
+  const aRows = readColumn<ShowResultA>(ShowResultA.ID, ShowResultA.SIZE)
+  const bRows = readColumn<ShowResultB>(ShowResultB.ID, ShowResultB.SIZE)
+  let disputed = new StaticArray<i32>(0)
+  if (playoffRound) disputed = storedList(owner, <u32>(roundIndex - 1), LIST_PLAYOFF)
+  const seats = new StaticArray<u32>(<i32>aRows.count)
+  let count: i32 = 0
+  for (let i: u32 = 0; i < aRows.count; i++) {
+    const room = aRows.at(i).seat
+    if (playoffRound && !containsSeat(disputed, room)) continue
+    seats[count++] = aRows.entity(i)
+  }
+  if (count == 0) return
+  const live = new StaticArray<u32>(count)
+  for (let i: i32 = 0; i < count; i++) live[i] = seats[i]
+
+  let alive: i32 = 0
+  let finished: i32 = 0
+  let teamCount: i32 = 0
+  for (let i: i32 = 0; i < count; i++) {
+    const a = aRows.at(<u32>aRows.find(live[i]))
+    const b = bRows.at(<u32>bRows.find(live[i]))
+    if (a.status == 1) alive++
+    if (a.finish_tick >= 0) finished++
+    if (b.team + 1 > teamCount) teamCount = b.team + 1
+  }
+  let teamScores = new StaticArray<i32>(0)
+  if (kind == KIND_TEAM_RANK) teamScores = teamScoresOf(teamCount)
+
+  // Target: the slot target, minus seats already qualified by earlier disputed rounds of this step.
+  let target = slot.target
+  if (playoffRound) {
+    let back = roundIndex - 1
+    while (back >= 0) {
+      let reason: i32 = -1
+      let qualifiedCount: i32 = 0
+      for (let i: u32 = 0; i < results.count; i++) {
+        const row = results.at(i)
+        if (row.owner == owner && <i32>row.index == back) {
+          reason = <i32>row.reason
+          qualifiedCount = <i32>row.qualified_count
+        }
+      }
+      if (reason != <i32>REASON_PLAYOFF) break
+      target -= qualifiedCount
+      back--
+    }
+  }
+  if (target > count) target = count
+  if (target < 1) target = 1
+
+  const clock = clocks.at(0)
+  const now = <i32>tick()
+  const rel = now - clock.start_tick
+  const intro = <i32>clock.intro_ticks
+  const capTick = intro + <i32>clock.round_ticks
+  const overtimeEnd = capTick + <i32>clock.overtime_ticks
+  if (rel < intro) return
+  const atCap = rel >= capTick
+  const atOvertimeEnd = rel >= overtimeEnd
+
+  let reason: i32 = -1
+  if (kind == 0) {
+    if (finished >= target) reason = <i32>REASON_TARGET
+    else if (atCap) reason = <i32>REASON_TIME_CAP
+  } else if (kind == 1) {
+    if (alive <= target) reason = alive == 0 ? <i32>REASON_ALL_FELL : <i32>REASON_TARGET
+    else if (atOvertimeEnd) reason = <i32>REASON_OVERTIME
+  } else if (kind == KIND_TEAM_RANK) {
+    if (atCap) {
+      if (baselineCount() == 0) {
+        if (scoresDiffer(teamScores)) reason = <i32>REASON_TEAM_WIN
+        else writeBaseline(owner, teamScores)
+      } else {
+        for (let t: i32 = 0; t < teamScores.length; t++) {
+          if (teamScores[t] != baselineScore(t)) reason = <i32>REASON_TEAM_WIN
+        }
+        if (reason < 0 && atOvertimeEnd) reason = <i32>REASON_OVERTIME
+      }
+    }
+  } else if (kind == KIND_FINAL_RANK) {
+    if (finalRule == 1) {
+      if (finished > 0) reason = <i32>REASON_CROWN
+    } else if (alive <= 1) {
+      reason = <i32>REASON_LAST_STANDING
+    }
+    if (reason < 0 && atOvertimeEnd) reason = <i32>REASON_OVERTIME
+  } else if (atCap) {
+    reason = <i32>REASON_SCORE
+  }
+  if (reason < 0) return
+
+  const seed = cursor.rng_state
+  // A tied top team is settled by the team tie boundary; the winner gets a unit bonus only in the
+  // copy handed to qualification, never in the stored scores.
+  let adjusted = teamScores
+  if (kind == KIND_TEAM_RANK && teamScores.length > 0) {
+    let best = teamScores[0]
+    let tied: i32 = 0
+    for (let t: i32 = 0; t < teamScores.length; t++) if (teamScores[t] > best) best = teamScores[t]
+    for (let t: i32 = 0; t < teamScores.length; t++) if (teamScores[t] == best) tied++
+    if (tied > 1) {
+      const sums = new StaticArray<i32>(teamScores.length)
+      for (let i: i32 = 0; i < count; i++) {
+        const b = bRows.at(<u32>bRows.find(live[i]))
+        if (b.team >= 0) sums[b.team] += b.opening_rank
+      }
+      let leader: i32 = -1
+      let leaderGain: i32 = 0
+      let leaderTied = false
+      if (baselineCount() > 0) {
+        for (let t: i32 = 0; t < teamScores.length; t++) {
+          const gain = teamScores[t] - baselineScore(t)
+          if (gain > leaderGain) { leader = t; leaderGain = gain; leaderTied = false }
+          else if (gain == leaderGain && gain > 0) leaderTied = true
+        }
+        if (leaderTied) leader = -1
+      }
+      const winner = resolveShowTeamTie(teamScores, leader, sums, seed, roundIndex)
+      adjusted = new StaticArray<i32>(teamScores.length)
+      for (let t: i32 = 0; t < teamScores.length; t++) adjusted[t] = teamScores[t]
+      adjusted[winner] += 1
+    }
+  }
+  const outcome = resolveShowRound(kind, finalRule, target, live, adjusted, seed, roundIndex, playoffRound)
+  const disputedNow = outcome.playoff
+  const finalReason = disputedNow == null ? <u32>reason : REASON_PLAYOFF
+
+  const result = newRecord<ShowRoundResult>(ShowRoundResult.SIZE)
+  result.owner = owner
+  result.index = <u32>roundIndex
+  result.map = <u32>entry.index
+  result.course = entry.course
+  result.kind = <u32>kind
+  result.final = <u32>(isFinal ? 1 : 0)
+  result.playoff = <u32>(playoffRound ? 1 : 0)
+  result.end_tick = now
+  result.reason = finalReason
+  let champion = outcome.champion
+  if (isFinal && disputedNow == null && outcome.qualified.length == 1) champion = outcome.qualified[0]
+  result.champion = champion
+  result.ranking_count = <u32>outcome.ranking.length
+  result.qualified_count = <u32>outcome.qualified.length
+  result.eliminated_count = <u32>outcome.eliminated.length
+  result.team_count = <u32>teamScores.length
+  setComponent<ShowRoundResult>(spawn(), ShowRoundResult.ID, ShowRoundResult.SIZE, result)
+  const id = <u32>roundIndex
+  for (let i: i32 = 0; i < outcome.ranking.length; i++) {
+    const room = outcome.ranking[i]
+    let rank = i + 1
+    if (kind == KIND_TEAM_RANK) {
+      for (let k: i32 = 0; k < count; k++) {
+        const a = aRows.at(<u32>aRows.find(live[k]))
+        if (a.seat == room && bRows.at(<u32>bRows.find(live[k])).team == outcome.teamWinner) rank = 1
+      }
+    }
+    const points = showRoundPoints(rank, count, containsSeat(outcome.qualified, room))
+    writeSeatRow(owner, id, LIST_RANKING, i, room, points)
+  }
+  writeSeatList(owner, id, LIST_QUALIFIED, outcome.qualified)
+  writeSeatList(owner, id, LIST_ELIMINATED, outcome.eliminated)
+  if (disputedNow != null) writeSeatList(owner, id, LIST_PLAYOFF, disputedNow)
+  for (let t: i32 = 0; t < teamScores.length; t++) {
+    const row = newRecord<ShowResultTeam>(ShowResultTeam.SIZE)
+    row.owner = owner
+    row.result = id
+    row.team = <u32>t
+    row.score = teamScores[t]
+    setComponent<ShowResultTeam>(spawn(), ShowResultTeam.ID, ShowResultTeam.SIZE, row)
+  }
+  const pending = newRecord<ShowResultPending>(ShowResultPending.SIZE)
+  pending.owner = owner
+  pending.index = id
+  pending.end_tick = now
+  pending.reason = finalReason
+  pending.confirmed = 0
+  setComponent<ShowResultPending>(spawn(), ShowResultPending.ID, ShowResultPending.SIZE, pending)
+  clearBaseline()
+
+  // Opening race ranks are recorded once and preserved across rounds.
+  const openings = readColumn<ShowOpeningRank>(ShowOpeningRank.ID, ShowOpeningRank.SIZE)
+  if (kind == 0 && openings.count == 0) {
+    for (let i: i32 = 0; i < outcome.ranking.length; i++) {
+      const row = newRecord<ShowOpeningRank>(ShowOpeningRank.SIZE)
+      row.owner = owner
+      row.seat = <u32>outcome.ranking[i]
+      row.rank = i + 1
+      setComponent<ShowOpeningRank>(spawn(), ShowOpeningRank.ID, ShowOpeningRank.SIZE, row)
+    }
+  }
+
+  if (disputedNow != null) {
+    cursor.round_index = <u32>(roundIndex + 1)
+  } else {
+    let qualifiedTotal = outcome.qualified.length
+    let back = roundIndex - 1
+    while (playoffRound && back >= 0) {
+      let reasonBack: i32 = -1
+      let qualifiedBack: i32 = 0
+      for (let i: u32 = 0; i < results.count; i++) {
+        const row = results.at(i)
+        if (row.owner == owner && <i32>row.index == back) {
+          reasonBack = <i32>row.reason
+          qualifiedBack = <i32>row.qualified_count
+        }
+      }
+      if (reasonBack != <i32>REASON_PLAYOFF) break
+      qualifiedTotal += qualifiedBack
+      back--
+    }
+    slot.playoff = playoffRound
+    const advance = advanceCursor(
+      <i32>cursor.step, <i32>cursor.team_rounds, roundIndex, slot, qualifiedTotal, kind == KIND_TEAM_RANK,
+    )
+    cursor.step = <u32>advance.step
+    cursor.alive = <u32>advance.alive
+    cursor.team_rounds = <u32>advance.teamRounds
+    cursor.round_index = <u32>advance.roundIndex
+  }
+  cursors.write()
 }

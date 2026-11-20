@@ -1275,6 +1275,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.annulus.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_annulus", "feature_annulus_segment", "seat", "character", "ege.transform"],
+          "writes": ["feature_annulus", "ege.transform", "ege.render", "ege.box_collider", "ege.velocity"],
+          "emits": []
+        },
+        {
           "system": "ege.body.props",
           "kind": "engine"
         },

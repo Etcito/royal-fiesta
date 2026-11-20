@@ -1287,6 +1287,15 @@
       ]
     },
     {
+      "name": "show_character_ref",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "target", "type": "entity" },
+        { "name": "lever", "type": "entity" },
+        { "name": "carry", "type": "entity" }
+      ]
+    },
+    {
       "name": "show_result_a",
       "fields": [
         { "name": "seat", "type": "i32" },
@@ -2027,7 +2036,8 @@
             "ege.transform",
             "ege.mover",
             "surface",
-            "ege.mech.lever"
+            "ege.mech.lever",
+            "show_control"
           ],
           "writes": [
             "character",

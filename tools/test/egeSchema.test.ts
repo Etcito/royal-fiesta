@@ -3,8 +3,9 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { loadEngine } from '@etcito/game-engine'
-import { schemaLayout } from '@etcito/game-engine/script'
+import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
+import { collectRfScripts, rfCompiler } from '../egeScripts.ts'
 
 const SCHEMA = fileURLToPath(new URL('../../ege.schema.json', import.meta.url))
 
@@ -98,6 +99,14 @@ test('world kind round has 8 players and the schedule in rank order', async () =
   for (const entry of round.schedule) {
     if (entry.kind === 'script') assert.ok(entry.system.startsWith('rf.'), entry.system)
   }
+  const sourceSchema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as {
+    world_kinds: { name: string; schedule: { system: string; reads?: string[] }[] }[]
+  }
+  const sourceRound = sourceSchema.world_kinds.find((kind) => kind.name === 'round')
+  assert.ok(sourceRound)
+  const characterPre = sourceRound.schedule.find((entry) => entry.system === 'rf.character.pre')
+  assert.ok(characterPre)
+  assert.ok(characterPre.reads?.includes('show_control'))
 })
 
 test('seat, character and feature components are declared', async () => {
@@ -217,6 +226,7 @@ test('match event carries seat, a and b after the nine original events', async (
 const SHOW_RECORDS = [
   'show_seat_identity',
   'show_control',
+  'show_character_ref',
   'show_result_a',
   'show_result_b',
   'show_publish',
@@ -269,6 +279,52 @@ test('show seat identity and control records separate seats from entity referenc
   const control = declared(layout, 'components', 'show_control')
   assert.deepEqual(control.fields, [['code', 'u32', 1]])
   assert.equal(control.size, 4)
+})
+
+test('show character references use entity fields and fit one transferable record', async () => {
+  const layout = await layoutOf()
+  const refs = declared(layout, 'components', 'show_character_ref')
+  assert.deepEqual(refs.fields, [
+    ['owner', 'entity', 1],
+    ['target', 'entity', 1],
+    ['lever', 'entity', 1],
+    ['carry', 'entity', 1],
+  ])
+  assert.deepEqual(refs.offsets, [['owner', 0], ['target', 4], ['lever', 8], ['carry', 12]])
+  assert.equal(refs.size, 16)
+})
+
+test('round character pre access tolerates absent show_control with the implemented script', async () => {
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as {
+    world_kinds: { name: string; players: number; schedule: { system: string }[] }[]
+  }
+  const round = schema.world_kinds.find((kind) => kind.name === 'round')
+  assert.ok(round)
+  const characterPre = round.schedule.find((entry) => entry.system === 'rf.character.pre')
+  assert.ok(characterPre)
+  schema.world_kinds.push({
+    name: 'character_optional_probe',
+    players: 8,
+    schedule: [JSON.parse(JSON.stringify(characterPre))],
+  })
+
+  const compiled = await (await rfCompiler()).compile(collectRfScripts(), JSON.stringify(schema))
+  assert.equal(compiled.diagnostics.filter((diagnostic) => diagnostic.severity === 'error').length, 0)
+  assert.ok(compiled.wasm)
+  const engine = await loadEngine()
+  engine.setSchema(JSON.stringify(schema))
+  const module = await loadScript(engine, compiled.wasm, { name: 'rf-scripts' })
+  const layout = schemaLayout(engine)
+  const world = engine.createWorld(JSON.stringify({
+    format: 'ege.scene',
+    version: 1,
+    world_kind: 'character_optional_probe',
+    seed: 1,
+    entities: [],
+  }))
+  assert.deepEqual(readWorldState(engine, world, layout).components.show_control, {})
+  new ScriptHost(module).stepTick(world, Array(8).fill(0))
+  assert.equal(module.faultCount, 0)
 })
 
 test('show result records split the cumulative seat counters into two fixed records', async () => {
@@ -364,6 +420,7 @@ test('show records initialize absence to -1 in a constructed world and keep chil
         components: {
           show_seat_identity: { room_seat: 59, round_seat: 0, input_slot: -1, bot: 4 },
           show_control: { code: 32639 },
+          show_character_ref: { owner: 1, target: 0, lever: 0, carry: 0 },
           show_result_a: {
             seat: 59,
             status: 1,
@@ -402,6 +459,9 @@ test('show records initialize absence to -1 in a constructed world and keep chil
   const identity = state.components.show_seat_identity[seat]
   assert.deepEqual(identity, { room_seat: 59, round_seat: 0, input_slot: -1, bot: 4 })
   assert.deepEqual(state.components.show_control[seat], { code: 32639 })
+  assert.deepEqual(state.components.show_character_ref[seat], {
+    owner: seat, target: 0, lever: 0, carry: 0,
+  })
   const a = state.components.show_result_a[seat]
   assert.equal(a.status, 1)
   for (const name of ['finish_tick', 'finish_sub', 'last_score_tick', 'stage']) {

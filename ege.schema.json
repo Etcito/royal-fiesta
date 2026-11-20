@@ -2075,8 +2075,8 @@
         {
           "system": "rf.feature.catch_volume.pre",
           "kind": "script",
-          "reads": ["seat", "gate"],
-          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["seat", "gate", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2096,8 +2096,8 @@
         {
           "system": "rf.feature.swim_volume.pre",
           "kind": "script",
-          "reads": ["seat", "ege.transform"],
-          "writes": ["feature_swim_volume", "character", "ege.velocity"],
+          "reads": ["seat", "ege.transform", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_swim_volume", "character", "ege.velocity", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2213,8 +2213,8 @@
         {
           "system": "rf.feature.catch_volume.post",
           "kind": "script",
-          "reads": ["seat", "gate"],
-          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["seat", "gate", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2375,8 +2375,8 @@
         {
           "system": "rf.feature.catch_volume.pre",
           "kind": "script",
-          "reads": ["seat", "gate"],
-          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["seat", "gate", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2396,8 +2396,8 @@
         {
           "system": "rf.feature.swim_volume.pre",
           "kind": "script",
-          "reads": ["seat", "ege.transform"],
-          "writes": ["feature_swim_volume", "character", "ege.velocity"],
+          "reads": ["seat", "ege.transform", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_swim_volume", "character", "ege.velocity", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2485,8 +2485,8 @@
         {
           "system": "rf.feature.catch_volume.post",
           "kind": "script",
-          "reads": ["seat", "gate"],
-          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["seat", "gate", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2622,8 +2622,8 @@
         {
           "system": "rf.feature.catch_volume.pre",
           "kind": "script",
-          "reads": ["seat", "gate"],
-          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["seat", "gate", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2643,8 +2643,8 @@
         {
           "system": "rf.feature.swim_volume.pre",
           "kind": "script",
-          "reads": ["seat", "ege.transform"],
-          "writes": ["feature_swim_volume", "character", "ege.velocity"],
+          "reads": ["seat", "ege.transform", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_swim_volume", "character", "ege.velocity", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2732,8 +2732,8 @@
         {
           "system": "rf.feature.catch_volume.post",
           "kind": "script",
-          "reads": ["seat", "gate"],
-          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["seat", "gate", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2876,8 +2876,8 @@
         {
           "system": "rf.feature.catch_volume.pre",
           "kind": "script",
-          "reads": ["seat", "gate"],
-          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["seat", "gate", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2897,8 +2897,8 @@
         {
           "system": "rf.feature.swim_volume.pre",
           "kind": "script",
-          "reads": ["seat", "ege.transform"],
-          "writes": ["feature_swim_volume", "character", "ege.velocity"],
+          "reads": ["seat", "ege.transform", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_swim_volume", "character", "ege.velocity", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {
@@ -2986,8 +2986,8 @@
         {
           "system": "rf.feature.catch_volume.post",
           "kind": "script",
-          "reads": ["seat", "gate"],
-          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab"],
+          "reads": ["seat", "gate", "feature", "show_seat_identity", "show_feature_membership", "ege.zone.id"],
+          "writes": ["feature_catch_volume", "character", "ege.transform", "ege.velocity", "ege.mech.grab", "show_feature_membership", "ege.zone.id"],
           "emits": []
         },
         {

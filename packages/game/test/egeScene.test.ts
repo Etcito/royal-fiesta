@@ -2,14 +2,28 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { loadEngine } from '@etcito/game-engine'
-import { schemaLayout } from '@etcito/game-engine/script'
+import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
+import { EngineDomainFactory } from '@etcito/game-engine/zones'
+import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { ColliderSpec } from '@royal-fiesta/sim/course'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { CAPSULE } from '../../sim/src/character/capsule.ts'
 import { seatSpawn } from '../../sim/src/zones/seatSpawn.ts'
 import { assetColliders, engineColliders } from '../src/ege/colliders.ts'
-import { buildEngineAssembly, emitEngineScene } from '../src/ege/sceneEmitter.ts'
+import {
+  buildEngineAssembly,
+  emitEngineScene,
+  isShowMembershipZoneId,
+  showMembershipZone,
+  showSceneOwnership,
+  showSeatZone,
+  SHOW_MEMBERSHIP_FEATURE_LAST,
+  SHOW_MEMBERSHIP_SEAT_STRIDE,
+  SHOW_MEMBERSHIP_ZONE_FIRST,
+  SHOW_MEMBERSHIP_ZONE_LAST,
+} from '../src/ege/sceneEmitter.ts'
+import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 import type { EmitInput } from '../src/ege/sceneEmitter.ts'
 import {
   FEATURE_EMITTERS,
@@ -198,7 +212,7 @@ test('show scenes emit sparse stable identities and copied ownership metadata', 
   assert.deepEqual(emitted.show, {
     worldKind: 'show_field',
     seats: show.seatOf.map((roomSeat, roundSeat) => ({ roomSeat, roundSeat, inputSlot: show.inputSlots[roundSeat], entity: emitted.seatEntities[roundSeat] })),
-    ownership: emitted.seatEntities.map((entity, i) => ({ entity, zoneId: show.seatOf[i] + 1, owner: i, group: 0 })),
+    ownership: emitted.seatEntities.map((entity, i) => ({ entity, zoneId: show.seatOf[i] + 1, owner: i, group: show.seatOf[i] + 1 })),
   })
   for (const [i, entity] of emitted.seatEntities.entries()) {
     assert.deepEqual(emitted.scene.entities[entity].components?.show_seat_identity,
@@ -231,7 +245,7 @@ test('the authored show_seat world loads all 60 zone identities with zero, one o
         assert.ok(typeof seat === 'number' && seatOf.includes(seat))
         roomSeats.add(seat)
         assert.deepEqual(identity, { room_seat: seat, round_seat: seat, input_slot: inputSlots[seat], bot: humans[seat] ? 0 : 1 })
-        assert.deepEqual(components['ege.zone.id'][entity], { id: seat + 1, owner: seat, group: 0 })
+        assert.deepEqual(components['ege.zone.id'][entity], { id: seat + 1, owner: seat, group: seat + 1 })
       }
       assert.equal(identities.length, 60)
       assert.equal(roomSeats.size, 60)
@@ -254,4 +268,211 @@ test('show roster rejects malformed or conflicting mappings', async () => {
     { worldKind: 'show_hub', seatOf: [1], inputSlots: [1], humans: [true] },
   ]
   for (const show of cases) assert.throws(() => buildEngineAssembly({ ...input, show }), RefusalError)
+})
+
+test('membership zone ids follow the reserved allocation with checked boundaries', () => {
+  assert.equal(SHOW_MEMBERSHIP_ZONE_FIRST, 0x40000000)
+  assert.equal(SHOW_MEMBERSHIP_ZONE_LAST, 0x7fffffff)
+  assert.equal(SHOW_MEMBERSHIP_SEAT_STRIDE, 64)
+  assert.equal(SHOW_MEMBERSHIP_FEATURE_LAST, 16777215)
+  assert.deepEqual(showMembershipZone(0, 0, 0), { id: 0x40000000, owner: 0, group: 1 })
+  assert.deepEqual(showMembershipZone(2, 59, 2), { id: 0x40000000 + 2 * 64 + 59, owner: 2, group: 60 })
+  const last = showMembershipZone(16777215, 59, 59)
+  assert.deepEqual(last, { id: 0x7ffffffb, owner: 59, group: 60 })
+  assert.ok(isShowMembershipZoneId(last.id))
+  // Adjacent features never overlap: the last seat of one feature sits below the first seat of the next.
+  assert.ok(showMembershipZone(7, 59, 0).id < showMembershipZone(8, 0, 0).id)
+  assert.deepEqual(showSeatZone(59, 2), { id: 60, owner: 2, group: 60 })
+  assert.equal(isShowMembershipZoneId(0x3fffffff), false)
+  assert.equal(isShowMembershipZoneId(0x80000000), false)
+  assert.equal(isShowMembershipZoneId(65536 + 59 * 32 + 18), false)
+  for (const [index, room, round] of [[16777216, 0, 0], [-1, 0, 0], [1.5, 0, 0], [Number.NaN, 0, 0], [2 ** 53, 0, 0], [0, 60, 0], [0, -1, 0], [0, 0, 60], [0, 0.5, 0]]) {
+    assert.throws(() => showMembershipZone(index, room, round), RefusalError, `${index}/${room}/${round}`)
+  }
+})
+
+test('seat anchors join their membership group and conflicting zone identities are refused', async () => {
+  const input = await inputOf('race-sprint')
+  const show = { worldKind: 'show_seat' as const, seatOf: [0, 59], inputSlots: [-1, -1], humans: [false, false] }
+  const emitted = emitEngineScene(engine, { ...input, show })
+  // The text, the scene and the copied metadata describe the same ownership, ordered by scene entity index.
+  const fromText = JSON.parse(emitted.text) as typeof emitted.scene
+  assert.deepEqual(showSceneOwnership(fromText, show.seatOf), emitted.show?.ownership)
+  assert.deepEqual(emitted.show?.ownership.map(row => row.entity), [...emitted.seatEntities].sort((a, b) => a - b))
+  for (const [roundSeat, entity] of emitted.seatEntities.entries()) {
+    const zone = emitted.scene.entities[entity].components?.['ege.zone.id']
+    assert.deepEqual(zone, { id: show.seatOf[roundSeat] + 1, owner: roundSeat, group: show.seatOf[roundSeat] + 1 })
+    assert.ok(emitted.scene.entities[entity].body, 'the group anchor is physical')
+  }
+  for (const feature of emitted.featureEntities) assert.equal(emitted.scene.entities[feature].components?.['ege.zone.id'], undefined)
+  const withZone = (id: number, owner: number, group: number) => {
+    const scene = structuredClone(emitted.scene)
+    scene.entities.push({ name: 'probe', components: { 'ege.zone.id': { id, owner, group } } })
+    return scene
+  }
+  const conflicts = [
+    withZone(SHOW_MEMBERSHIP_ZONE_FIRST, 0, 1),
+    withZone(showMembershipZone(3, 59, 1).id, 1, 60),
+    withZone(SHOW_MEMBERSHIP_ZONE_LAST, 0xffff, 0),
+    withZone(60, 0xffff, 0),
+  ]
+  for (const scene of conflicts) assert.throws(() => showSceneOwnership(scene, show.seatOf), RefusalError)
+  const lostAnchor = structuredClone(emitted.scene)
+  lostAnchor.entities[emitted.seatEntities[1]].components!['ege.zone.id'] = { id: 60, owner: 1, group: 0 }
+  assert.throws(() => showSceneOwnership(lostAnchor, show.seatOf), RefusalError)
+  assert.equal(showSceneOwnership(withZone(SHOW_MEMBERSHIP_ZONE_FIRST - 1, 0xffff, 0), show.seatOf).length, 3)
+})
+
+// Test-local runtime insertion of seat-anchored catch-volume membership rows; production creation stays with the
+// catch/swim feature scripts. A row is reused by authored feature index plus live character entity, its feature
+// reference is refreshed to the current feature entity and `inside` counts the ticks the row has been stepped.
+const MEMBERSHIP_PROBE = `import { getComponent, isNull, newRecord, readColumn, setComponent, spawn } from 'ege'
+import { EgeZoneId, Feature, ShowFeatureMembership, ShowSeatIdentity } from '../components.gen'
+
+export function rf_probe_membership(): void {
+  const seats = readColumn<ShowSeatIdentity>(ShowSeatIdentity.ID, ShowSeatIdentity.SIZE)
+  const features = readColumn<Feature>(Feature.ID, Feature.SIZE)
+  const rows = readColumn<ShowFeatureMembership>(ShowFeatureMembership.ID, ShowFeatureMembership.SIZE)
+  for (let s: u32 = 0; s < seats.count; s++) {
+    const character = seats.entity(s)
+    const room = seats.at(s).room_seat
+    const anchor = getComponent<EgeZoneId>(character, EgeZoneId.ID, EgeZoneId.SIZE)
+    if (isNull<EgeZoneId>(anchor)) continue
+    for (let f: u32 = 0; f < features.count; f++) {
+      const feature = features.at(f)
+      if (feature.kind != 3) continue
+      let found = false
+      for (let r: u32 = 0; r < rows.count; r++) {
+        const row = rows.at(r)
+        if (row.index != feature.index || row.character != character) continue
+        row.feature = features.entity(f)
+        row.inside = row.inside + 1
+        found = true
+      }
+      if (found) continue
+      if (feature.index > 16777215 || room > 59) continue
+      const id: u64 = <u64>0x40000000 + <u64>feature.index * 64 + <u64>room
+      if (id > 0x7fffffff) continue
+      const entity = spawn()
+      const row = newRecord<ShowFeatureMembership>(ShowFeatureMembership.SIZE)
+      row.owner = character
+      row.feature = features.entity(f)
+      row.character = character
+      row.index = feature.index
+      row.inside = 1
+      setComponent<ShowFeatureMembership>(entity, ShowFeatureMembership.ID, ShowFeatureMembership.SIZE, row)
+      const zone = newRecord<EgeZoneId>(EgeZoneId.SIZE)
+      zone.id = <u32>id
+      zone.owner = anchor.owner
+      zone.group = anchor.group
+      setComponent<EgeZoneId>(entity, EgeZoneId.ID, EgeZoneId.SIZE, zone)
+    }
+  }
+  rows.write()
+}
+`
+
+const NO_SHADOWS = { count: 0, fromDomain: () => 0, reader: () => new SnapReader(new Uint8Array(0)) }
+
+test('a seat-anchored membership row keeps its zone identity through zone transfer and rebuild', async () => {
+  const schema = JSON.parse(readFileSync(new URL('../../../ege.schema.json', import.meta.url), 'utf8')) as {
+    world_kinds: { name: string; players: number; schedule: { system: string; kind: string }[] }[]
+  }
+  const showSeat = schema.world_kinds.find(kind => kind.name === 'show_seat')
+  const catchPre = showSeat?.schedule.find(entry => entry.system === 'rf.feature.catch_volume.pre')
+  assert.ok(catchPre)
+  // The probe runs under a copy of the production catch-volume access lists in a zone-tracking world kind.
+  schema.world_kinds.push({
+    name: 'membership_probe',
+    players: 8,
+    schedule: [
+      { ...structuredClone(catchPre), system: 'rf.probe.membership' },
+      { system: 'ege.physics', kind: 'engine' },
+      { system: 'ege.zone.track', kind: 'engine' },
+    ],
+  })
+  const schemaText = JSON.stringify(schema)
+  const files = [...collectRfScripts(), { name: 'probe/membership.as.ts', text: MEMBERSHIP_PROBE }]
+  const compiled = await (await rfCompiler()).compile(files, schemaText)
+  assert.deepEqual(compiled.diagnostics.filter(d => d.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const probeEngine = await loadEngine()
+  probeEngine.setSchema(schemaText)
+  const module = await loadScript(probeEngine, compiled.wasm, { name: 'rf-scripts' })
+  const layout = schemaLayout(probeEngine)
+
+  const input = await inputOf('s1-f-taffy-circuit')
+  const show = { worldKind: 'show_seat' as const, seatOf: [3, 17, 59], inputSlots: [0, -1, -1], humans: [true, false, false] }
+  const emitted = emitEngineScene(probeEngine, { ...input, show })
+  const catchFeatures = emitted.featureEntities.filter(entity => emitted.scene.entities[entity].components?.feature?.kind === 3)
+  assert.ok(catchFeatures.length >= 1)
+  const featureIndex = (entity: number) => emitted.scene.entities[entity].components?.feature?.index as number
+  const host = new ScriptHost(module)
+  const factory = new EngineDomainFactory({
+    engine: probeEngine,
+    scenes: { seat: { ...emitted.scene, world_kind: 'membership_probe' } },
+    grid: { cols: 1, rows: 1, cellSize: 4096, originX: -2048, originZ: -2048 },
+    runner: () => host,
+    inputPlayers: spec => spec.seats.map(roundSeat => show.inputSlots[roundSeat]),
+  })
+  const step = (sim: ReturnType<EngineDomainFactory['create']>) => {
+    for (let i = 0; i < sim.spec.seats.length; i++) factory.codec.decode(0, 0)
+    sim.step([], NO_SHADOWS)
+  }
+  const rowsOf = (world: number) => {
+    const state = readWorldState(probeEngine, world, layout)
+    const seatOfRoom = new Map(Object.entries(state.components.show_seat_identity).map(([entity, identity]) => [identity.room_seat as number, Number(entity)]))
+    const rows = Object.entries(state.components.show_feature_membership).map(([entity, row]) => ({ entity: Number(entity), row, zone: state.components['ege.zone.id'][entity] }))
+    return { state, seatOfRoom, rows }
+  }
+
+  try {
+    const source = factory.create({ id: 1, kind: 'seat', cells: [], seats: [0, 1, 2], replicas: [0] }, 0)
+    step(source)
+    const before = rowsOf(source.world)
+    assert.equal(before.rows.length, show.seatOf.length * catchFeatures.length)
+    for (const [roundSeat, room] of show.seatOf.entries()) {
+      const character = before.seatOfRoom.get(room)
+      assert.ok(character !== undefined)
+      assert.deepEqual(before.state.components['ege.zone.id'][character], showSeatZone(room, roundSeat))
+      for (const feature of catchFeatures) {
+        const matches: typeof before.rows = before.rows.filter(({ row }) => row.character === character && row.index === featureIndex(feature))
+        assert.equal(matches.length, 1)
+        assert.deepEqual(matches[0].row, { owner: character, feature, character, index: featureIndex(feature), inside: 1 })
+        assert.deepEqual(matches[0].zone, showMembershipZone(featureIndex(feature), room, roundSeat))
+      }
+    }
+
+    // Transfer room seat 59 (round seat 2) alone into another domain built from the source export.
+    const exported = new SnapWriter()
+    source.exportEntities(exported)
+    const target = factory.rebuild({ id: 2, kind: 'field', cells: [], seats: [2], replicas: [0] }, source.tick, [new SnapReader(exported.bytes())])
+    const moved = rowsOf(target.world)
+    const character = moved.seatOfRoom.get(59)
+    assert.ok(character !== undefined)
+    assert.deepEqual([...moved.seatOfRoom.keys()], [59])
+    assert.deepEqual(moved.state.components['ege.zone.id'][character], { id: 60, owner: 2, group: 60 })
+    assert.equal(moved.rows.length, catchFeatures.length)
+    for (const feature of catchFeatures) {
+      const matches: typeof moved.rows = moved.rows.filter(({ row }) => row.index === featureIndex(feature))
+      assert.equal(matches.length, 1)
+      // Entity references are remapped onto the rebuilt character; the static feature keeps its scene entity.
+      assert.deepEqual(matches[0].row, { owner: character, feature, character, index: featureIndex(feature), inside: 1 })
+      assert.deepEqual(matches[0].zone, { id: 0x40000000 + featureIndex(feature) * 64 + 59, owner: 2, group: 60 })
+    }
+
+    // Stepping the rebuilt domain reuses the transferred row instead of creating a second one.
+    step(target)
+    const after = rowsOf(target.world)
+    assert.equal(after.rows.length, catchFeatures.length)
+    for (const { row, zone } of after.rows) {
+      assert.equal(row.character, character)
+      assert.equal(row.inside, 2)
+      assert.equal(zone.group, 60)
+    }
+    assert.equal(module.faultCount, 0, module.faults.map(fault => fault.message).join('; '))
+    factory.release(source)
+  } finally {
+    factory.dispose()
+  }
 })

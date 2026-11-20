@@ -1295,3 +1295,152 @@ test('bot and feature records are simulation-lane snapshot state within 256 byte
     }
   }
 })
+
+const MEMBERSHIP_READS = ['feature', 'show_seat_identity', 'show_feature_membership', 'ege.zone.id']
+const MEMBERSHIP_WRITES = ['show_feature_membership', 'ege.zone.id']
+const CATCH_ACCESS = {
+  reads: ['seat', 'gate', ...MEMBERSHIP_READS],
+  writes: ['feature_catch_volume', 'character', 'ege.transform', 'ege.velocity', 'ege.mech.grab', ...MEMBERSHIP_WRITES],
+}
+/**
+ * Handoff: G7.1 Identity, inputs and world construction: install complete show schedules: MEMBERSHIP_ACCESS pins the
+ * access lists ege.schema.json grants today to the shared rf.feature.catch_volume.pre/.post and
+ * rf.feature.swim_volume.pre entries of round, show_seat, show_field and show_hub: the existing grants first, then
+ * reads of feature, show_seat_identity, show_feature_membership and ege.zone.id and writes of
+ * show_feature_membership and ege.zone.id for seat-anchored membership creation. The schedule order is unchanged.
+ */
+const MEMBERSHIP_ACCESS: Record<string, { reads: string[]; writes: string[] }> = {
+  'rf.feature.catch_volume.pre': CATCH_ACCESS,
+  'rf.feature.catch_volume.post': CATCH_ACCESS,
+  'rf.feature.swim_volume.pre': {
+    reads: ['seat', 'ege.transform', ...MEMBERSHIP_READS],
+    writes: ['feature_swim_volume', 'character', 'ege.velocity', ...MEMBERSHIP_WRITES],
+  },
+}
+const MEMBERSHIP_WORLDS = ['round', 'show_seat', 'show_field', 'show_hub']
+
+type AccessSchema = { world_kinds: { name: string; players: number; schedule: { system: string; kind: string; reads?: string[]; writes?: string[] }[] }[] }
+
+test('shared catch and swim entries grant membership creation and zone identity access in every world', async () => {
+  const layout = await layoutOf()
+  const names = new Map(layout.components.map((component): [number, string] => [component.id, component.name]))
+  const source = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  for (const world of MEMBERSHIP_WORLDS) {
+    const loaded = layout.world_kinds.find((kind) => kind.name === world)
+    const authored = source.world_kinds.find((kind) => kind.name === world)
+    assert.ok(loaded && authored, world)
+    for (const [system, access] of Object.entries(MEMBERSHIP_ACCESS)) {
+      const entry: AccessSchema['world_kinds'][number]['schedule'][number] | undefined =
+        authored.schedule.find((candidate) => candidate.system === system)
+      const loadedEntry: Layout['world_kinds'][number]['schedule'][number] | undefined =
+        loaded.schedule.find((candidate) => candidate.system === system)
+      assert.ok(entry, `${world} ${system}`)
+      assert.ok(loadedEntry, `${world} ${system}`)
+      assert.deepEqual({ reads: entry.reads, writes: entry.writes }, access, `${world} ${system}`)
+      assert.deepEqual(loadedEntry.reads.map((id: number) => names.get(id)), access.reads, `${world} ${system}`)
+      assert.deepEqual(loadedEntry.writes.map((id: number) => names.get(id)), access.writes, `${world} ${system}`)
+    }
+  }
+  const round = source.world_kinds.find((kind) => kind.name === 'round')
+  assert.deepEqual(round?.schedule.map((entry) => entry.system), SCHEDULE)
+})
+
+// The focused access probe: under one copied production entry it creates a show_feature_membership row for each
+// seat and feature on demand, attaches its ege.zone.id {0x40000000 + index*64 + room_seat, anchor owner, anchor
+// group} immediately and reuses an existing row by feature index plus character.
+const MEMBERSHIP_ACCESS_PROBE = `import { getComponent, isNull, newRecord, readColumn, setComponent, spawn } from 'ege'
+import { EgeZoneId, Feature, ShowFeatureMembership, ShowSeatIdentity } from '../components.gen'
+
+function probe(): void {
+  const seats = readColumn<ShowSeatIdentity>(ShowSeatIdentity.ID, ShowSeatIdentity.SIZE)
+  const features = readColumn<Feature>(Feature.ID, Feature.SIZE)
+  const rows = readColumn<ShowFeatureMembership>(ShowFeatureMembership.ID, ShowFeatureMembership.SIZE)
+  for (let s: u32 = 0; s < seats.count; s++) {
+    const character = seats.entity(s)
+    const room = seats.at(s).room_seat
+    const anchor = getComponent<EgeZoneId>(character, EgeZoneId.ID, EgeZoneId.SIZE)
+    if (isNull<EgeZoneId>(anchor)) continue
+    for (let f: u32 = 0; f < features.count; f++) {
+      const index = features.at(f).index
+      let found = false
+      for (let r: u32 = 0; r < rows.count; r++) {
+        const row = rows.at(r)
+        if (row.index != index || row.character != character) continue
+        row.inside = row.inside + 1
+        found = true
+      }
+      if (found || index > 16777215 || room > 59) continue
+      const entity = spawn()
+      const row = newRecord<ShowFeatureMembership>(ShowFeatureMembership.SIZE)
+      row.owner = character
+      row.feature = features.entity(f)
+      row.character = character
+      row.index = index
+      row.inside = 1
+      setComponent<ShowFeatureMembership>(entity, ShowFeatureMembership.ID, ShowFeatureMembership.SIZE, row)
+      const zone = newRecord<EgeZoneId>(EgeZoneId.SIZE)
+      zone.id = <u32>(<u64>0x40000000 + <u64>index * 64 + <u64>room)
+      zone.owner = anchor.owner
+      zone.group = anchor.group
+      setComponent<EgeZoneId>(entity, EgeZoneId.ID, EgeZoneId.SIZE, zone)
+    }
+  }
+  rows.write()
+}
+
+export function rf_probe_membership_catch_pre(): void { probe() }
+export function rf_probe_membership_catch_post(): void { probe() }
+export function rf_probe_membership_swim_pre(): void { probe() }
+`
+
+test('a membership probe creates rows and zone identities under each copied production access list', async () => {
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  const showSeat = schema.world_kinds.find((kind) => kind.name === 'show_seat')
+  assert.ok(showSeat)
+  const probes: [string, string][] = [
+    ['rf.feature.catch_volume.pre', 'rf.probe.membership_catch_pre'],
+    ['rf.feature.catch_volume.post', 'rf.probe.membership_catch_post'],
+    ['rf.feature.swim_volume.pre', 'rf.probe.membership_swim_pre'],
+  ]
+  for (const [system, probe] of probes) {
+    const entry = showSeat.schedule.find((candidate) => candidate.system === system)
+    assert.ok(entry, system)
+    schema.world_kinds.push({ name: probe.replace('rf.probe.', 'probe_'), players: 8, schedule: [{ ...JSON.parse(JSON.stringify(entry)), system: probe }] })
+  }
+  const files = [...collectRfScripts(), { name: 'probe/membership_access.as.ts', text: MEMBERSHIP_ACCESS_PROBE }]
+  const compiled = await (await rfCompiler()).compile(files, JSON.stringify(schema))
+  assert.deepEqual(compiled.diagnostics.filter((d) => d.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const engine = await loadEngine()
+  engine.setSchema(JSON.stringify(schema))
+  const module = await loadScript(engine, compiled.wasm, { name: 'rf-scripts' })
+  const layout = schemaLayout(engine)
+  for (const [, probe] of probes) {
+    const world = engine.createWorld(JSON.stringify({
+      format: 'ege.scene',
+      version: 1,
+      world_kind: probe.replace('rf.probe.', 'probe_'),
+      seed: 1,
+      entities: [
+        // Entity 0: room seat 59 at round seat 1, its physical anchor identity {60, 1, 60}.
+        { components: { show_seat_identity: { room_seat: 59, round_seat: 1, input_slot: -1, bot: 1 }, 'ege.zone.id': { id: 60, owner: 1, group: 60 } } },
+        // Entity 1: authored feature index 5.
+        { components: { feature: { kind: 3, index: 5, salt: 0x103 } } },
+      ],
+    }))
+    try {
+      const host = new ScriptHost(module)
+      host.stepTick(world, Array(8).fill(0))
+      host.stepTick(world, Array(8).fill(0))
+      assert.equal(module.faultCount, 0, module.faults.map((fault) => fault.message).join('; '))
+      const state = readWorldState(engine, world, layout)
+      const rows = Object.entries(state.components.show_feature_membership)
+      assert.equal(rows.length, 1, probe)
+      const [entity, row] = rows[0]
+      assert.deepEqual(row, { owner: 0, feature: 1, character: 0, index: 5, inside: 2 })
+      assert.deepEqual(state.components['ege.zone.id'][entity], { id: 0x40000000 + 5 * 64 + 59, owner: 1, group: 60 })
+    } finally {
+      engine.freeWorld(world)
+    }
+  }
+})

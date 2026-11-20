@@ -33,6 +33,67 @@ export type ShowSceneMetadata = {
   ownership: readonly ShowOwnershipMetadata[]
 }
 
+// Show zone identity allocation (an internal convention implementing the G7.1 transfer contract, not a gameplay
+// rule or wire format). Every value is computed and range-checked as an exact JS number before u32 conversion.
+// - Physical seat anchor: id roomSeat+1 (1..60), numeric owner roundSeat, group roomSeat+1. The seat capsule is the
+//   body of its own group, so nonphysical seat-owned children carrying the same group follow it through the engine's
+//   zone create/rebuild belongs rule (the anchor's numeric owner selects the domain).
+// - G7.3 cumulative publishers use 65536+roomSeat*32+fieldRank and team contributions start at 131072.
+// - show_feature_membership rows: id 0x40000000+authoredFeatureIndex*64+roomSeat, owner roundSeat, group roomSeat+1,
+//   with authoredFeatureIndex 0..16777215 and roomSeat 0..59. The interval 0x40000000..0x7fffffff is reserved
+//   exclusively for these rows; the scene emits no template membership rows, so emitEngineScene refuses any emitted
+//   zone id inside it. Rows are created at runtime by the owning feature scripts, which attach this identity
+//   immediately and reuse a transferred row by authored feature index plus live character entity.
+// Course features carry no zone identity and are never grouped with seats.
+export const SHOW_ROOM_SEAT_LAST = 59
+export const SHOW_MEMBERSHIP_ZONE_FIRST = 0x40000000
+export const SHOW_MEMBERSHIP_ZONE_LAST = 0x7fffffff
+export const SHOW_MEMBERSHIP_SEAT_STRIDE = 64
+export const SHOW_MEMBERSHIP_FEATURE_LAST = 16777215
+
+export type ShowZoneIdentity = { id: number; owner: number; group: number }
+
+function seatIndex(value: number, field: string, path: string): void {
+  if (!Number.isInteger(value) || value < 0 || value > SHOW_ROOM_SEAT_LAST) {
+    refuse('ege-scene', `${path}/${field}`, `invalid ${field} ${value}; use an integer in 0..${SHOW_ROOM_SEAT_LAST}`)
+  }
+}
+
+/**
+ * Handoff: G7.1 Identity, inputs and world construction: assign complete scene ownership: showSeatZone returns the
+ * physical seat anchor identity {id: roomSeat+1, owner: roundSeat, group: roomSeat+1} that seatAndDataEntities emits
+ * today; the scene ownership entry point remains the Handoff at sceneEmitter.ts:481 emitEngineScene.
+ */
+export function showSeatZone(roomSeat: number, roundSeat: number, path = 'show/seat'): ShowZoneIdentity {
+  seatIndex(roomSeat, 'roomSeat', path)
+  seatIndex(roundSeat, 'roundSeat', path)
+  return { id: (roomSeat + 1) >>> 0, owner: roundSeat >>> 0, group: (roomSeat + 1) >>> 0 }
+}
+
+/** Whether `id` lies in the interval reserved exclusively for show_feature_membership rows. */
+export function isShowMembershipZoneId(id: number): boolean {
+  return id >= SHOW_MEMBERSHIP_ZONE_FIRST && id <= SHOW_MEMBERSHIP_ZONE_LAST
+}
+
+/**
+ * Handoff: G7.1 Identity, inputs and world construction: scale catch and swimming membership: showMembershipZone
+ * validates and returns the ege.zone.id {id: 0x40000000+authoredFeatureIndex*64+roomSeat, owner: roundSeat,
+ * group: roomSeat+1} of a seat-owned show_feature_membership row; the catch/swim scripts attach the same values to the
+ * rows they create (owner and character = live character entity, index = authored feature index, feature = current
+ * feature entity). The scene emits no such rows and refuses emitted ids in the reserved interval.
+ */
+export function showMembershipZone(authoredFeatureIndex: number, roomSeat: number, roundSeat: number, path = 'show/membership'): ShowZoneIdentity {
+  if (!Number.isInteger(authoredFeatureIndex) || authoredFeatureIndex < 0 || authoredFeatureIndex > SHOW_MEMBERSHIP_FEATURE_LAST) {
+    refuse('ege-scene', `${path}/authoredFeatureIndex`, `invalid authored feature index ${authoredFeatureIndex}; use an integer in 0..${SHOW_MEMBERSHIP_FEATURE_LAST}`)
+  }
+  const seat = showSeatZone(roomSeat, roundSeat, path)
+  const id = SHOW_MEMBERSHIP_ZONE_FIRST + authoredFeatureIndex * SHOW_MEMBERSHIP_SEAT_STRIDE + roomSeat
+  if (!Number.isSafeInteger(id) || !isShowMembershipZoneId(id)) {
+    refuse('ege-scene', path, `membership zone id ${id} leaves the reserved interval; keep the feature index and room seat in range`)
+  }
+  return { id: id >>> 0, owner: seat.owner, group: seat.group }
+}
+
 export interface EmittedScene {
   show?: ShowSceneMetadata
   courseId: string
@@ -201,7 +262,7 @@ function seatAndDataEntities(input: EmitInput, sim: ResolvedCourse, level: Level
       }],
       components: {
         ...(input.show ? {
-          'ege.zone.id': { id: input.show.seatOf[i] + 1, owner: i, group: 0 },
+          'ege.zone.id': showSeatZone(input.show.seatOf[i], i, `courses/${input.course.id}.course.json#/show/seatOf/${i}`),
           show_seat_identity: { room_seat: input.show.seatOf[i], round_seat: i, input_slot: input.show.inputSlots[i], bot: input.show.humans[i] ? 0 : 1 },
           show_control: { code: 0 },
           show_result_a: { seat: i, status: 1, finish_tick: -1, finish_sub: -1, lap: 0, stage: -1, route_mm: 0, falls: 0, score: 0, last_score_tick: -1 },
@@ -383,6 +444,40 @@ export function buildEngineAssembly(input: EmitInput): EgeAssembly {
 }
 
 /**
+ * The copied ownership metadata of a converted show scene, in scene entity order: one row per actual ege.zone.id
+ * record (`entity` is the template scene index, not a live handle). Refuses invalid or duplicate ids, ids inside the
+ * reserved show_feature_membership interval and a seat `seat/<roundSeat>` whose record differs from showSeatZone.
+ */
+export function showSceneOwnership(scene: EgeScene, seatOf: readonly number[]): ShowOwnershipMetadata[] {
+  const ownership: ShowOwnershipMetadata[] = []
+  const zoneIds = new Set<number>()
+  for (const [entity, row] of scene.entities.entries()) {
+    const zone = row.components?.['ege.zone.id']
+    if (!zone) continue
+    const { id, owner, group } = zone
+    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0 || id > 0xffffffff || zoneIds.has(id) ||
+        typeof owner !== 'number' || !Number.isInteger(owner) || owner < 0 || owner > 0xffffffff ||
+        typeof group !== 'number' || !Number.isInteger(group) || group < 0 || group > 0xffffffff) {
+      refuse('ege-scene', `entities/${entity}/components/ege.zone.id`, 'invalid or duplicate zone identity; provide unique nonzero u32 ids and u32 owner and group')
+    }
+    if (isShowMembershipZoneId(id)) {
+      refuse('ege-scene', `entities/${entity}/components/ege.zone.id/id`, `zone id ${id} conflicts with the show_feature_membership interval ${SHOW_MEMBERSHIP_ZONE_FIRST}..${SHOW_MEMBERSHIP_ZONE_LAST}; emit ids below ${SHOW_MEMBERSHIP_ZONE_FIRST}`)
+    }
+    zoneIds.add(id)
+    ownership.push({ entity, zoneId: id, owner: owner === 0xffff ? null : owner, group })
+  }
+  for (const [roundSeat, roomSeat] of seatOf.entries()) {
+    const expected = showSeatZone(roomSeat, roundSeat)
+    const entity = scene.entities.findIndex(row => row.name === `seat/${roundSeat}`)
+    const found = ownership.find(row => row.entity === entity)
+    if (!found || found.zoneId !== expected.id || found.owner !== expected.owner || found.group !== expected.group) {
+      refuse('ege-scene', `entities/${entity}/components/ege.zone.id`, `seat ${roomSeat} has no anchor identity; emit id ${expected.id}, owner ${expected.owner}, group ${expected.group}`)
+    }
+  }
+  return ownership
+}
+
+/**
  * Handoff: G7.1 Identity, inputs and world construction: assign complete scene ownership: emitEngineScene
  * (engine: EngineInstance, input: EmitInput): EmittedScene, exported here, attaches copied metadata after
  * assembly conversion; scene entities and their ege.zone.id records provide the state and keys.
@@ -393,20 +488,7 @@ export function emitEngineScene(engine: EngineInstance, input: EmitInput): Emitt
   const sim = input.course.sim!
   const bodies = itemBodyNames(sim)
   const seatEntities = Array.from({ length: input.show?.seatOf.length ?? 8 }, (_, i) => built.index(`seat/${i}`))
-  const ownership: ShowOwnershipMetadata[] = []
-  const zoneIds = new Set<number>()
-  if (input.show) for (const [entity, row] of built.scene.entities.entries()) {
-    const zone = row.components?.['ege.zone.id']
-    if (!zone) continue
-    const { id, owner, group } = zone
-    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0 || id > 0xffffffff || zoneIds.has(id) ||
-        typeof owner !== 'number' || !Number.isInteger(owner) || owner < 0 || owner > 0xffffffff ||
-        typeof group !== 'number' || !Number.isInteger(group) || group < 0 || group > 0xffffffff) {
-      refuse('ege-scene', `entities/${entity}/components/ege.zone.id`, 'invalid or duplicate zone identity; provide unique nonzero u32 ids and u32 owner and group')
-    }
-    zoneIds.add(id)
-    ownership.push({ entity, zoneId: id, owner: owner === 0xffff ? null : owner, group })
-  }
+  const ownership = input.show ? showSceneOwnership(built.scene, input.show.seatOf) : []
   return {
     ...(input.show ? { show: { worldKind: input.show.worldKind, seats: input.show.seatOf.map((roomSeat, roundSeat) => ({ roomSeat, roundSeat, inputSlot: input.show!.inputSlots[roundSeat], entity: seatEntities[roundSeat] })), ownership } } : {}),
     courseId: input.course.id,

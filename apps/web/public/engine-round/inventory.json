@@ -169,8 +169,8 @@
     "args": {
       "course": "s1-e-sugar-sprint",
       "profile": "sprint",
-      "seed": 2,
-      "frames": 640,
+      "seed": 7,
+      "frames": 600,
       "local": "run",
       "captureAt": "end",
       "focus": "kind:doorBank"
@@ -180,13 +180,11 @@
       "faults eq 0",
       "features.doorBank gt 0"
     ],
-    "description": "a row of door panels standing across the candy race lane on the engine, some doors broken open by penguins running into them",
+    "description": "a row of coloured door panels standing across the candy race lane on the engine, some doors broken open by penguins running into them",
     "held_constant": [
       "the focus camera rule",
       "the light",
-      "the course assets",
-      "the door colour (every panel uses the one candy door asset colour)",
-      "the lane, rails and backdrop colours"
+      "the course assets"
     ]
   },
   {
@@ -292,13 +290,16 @@
       "features.swimVolume gt 0",
       "features.marker gt 0"
     ],
-    "description": "a green slime pool box and a cream marker disc, with a penguin swimming in the pool",
+    "description": "a cream marker disc on the course floor and, ahead of it, penguins swimming with their bodies sunk into a pool volume",
     "held_constant": [
       "the focus camera rule",
       "the light",
       "the course assets",
       "the candy floor and backdrop colours",
-      "the marker camera (it frames the marker disc and the pool ahead of it)"
+      "the marker camera (it frames the marker disc and the pool ahead of it)",
+      "the pool is drawn as one solid pale-green box (candy.slime-pool, colour 0x7FD67F, packages/game/src/ege/featureEmitters.ts:118, built by packages/game/src/ege/features/swimVolume.ts)",
+      "the blue strips beside the green pool box are the course floor, not water: fixtures/ege/ege-yard-a.course.json obstacle yard-floor-a (asset candy.floor-tile, scale 1.2 x 1 x 5.2) draws the floor-tile asset's candy-blue 0x3fa9f5 pad with a yellow rim (assets/candy/candy.floor-tile.asset.json); the same asset gives the blue padded tracks of the other courses",
+      "the grey backdrop, which the yard course leaves undecorated (decor is empty, environment is null)"
     ]
   }
 ]

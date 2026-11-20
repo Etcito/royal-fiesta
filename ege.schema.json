@@ -1226,6 +1226,10 @@
           "kind": "engine"
         },
         {
+          "system": "ege.box.collider",
+          "kind": "engine"
+        },
+        {
           "system": "ege.physics",
           "kind": "engine"
         },

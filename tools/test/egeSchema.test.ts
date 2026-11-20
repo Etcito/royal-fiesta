@@ -21,6 +21,7 @@ const SCHEDULE = [
   'rf.feature.door_bank.pre',
   'rf.feature.swim_volume.pre',
   'ege.body.props',
+  'ege.box.collider',
   'ege.physics',
   'ege.contact.track',
   'ege.mech.watch',
@@ -83,4 +84,14 @@ test('world kind round has 8 players and the schedule in rank order', async () =
 test('seat, character and feature components are declared', async () => {
   const names = (await layoutOf()).components.map((component) => component.name)
   for (const name of ['seat', 'character', 'feature']) assert.ok(names.includes(name), name)
+})
+
+test('box collider has the engine-provided three-float layout', async () => {
+  const component = (await layoutOf()).components.find((entry) => entry.name === 'ege.box_collider')
+  assert.ok(component, 'engine component ege.box_collider is declared')
+  const field = component.fields.find((entry) => entry.name === 'half_extents')
+  assert.ok(field, 'half_extents field is declared')
+  assert.equal(component.size, 12)
+  assert.deepEqual([field.type, field.count, field.offset], ['f32', 3, 0])
+  assert.deepEqual(Array.from({ length: field.count }, (_, index) => field.offset + index * 4), [0, 4, 8])
 })

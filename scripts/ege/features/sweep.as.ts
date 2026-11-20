@@ -1,5 +1,8 @@
 import { cos, getComponent, pose, readColumn, readResource, setComponent, setPose, sin, tick } from 'ege'
 import { EgeBodyProps, EgeBoxCollider, EgeRender, EgeTransform, Feature, FeatureSweep, FeatureSweepPart, FeatureSweepPhase, RoundRes } from '../components.gen'
+import { knockSeat } from '../character/bump.as'
+import { MODE_STUNNED } from '../character/constants.as'
+import { characterColumn, seatColumn } from '../lib/seats.as'
 import { degToRad, ticksOf } from '../lib/units.as'
 
 // packages/sim/src/features/sweeps.ts:29 uses a 0.1 m thick bar.
@@ -96,4 +99,73 @@ export function rf_feature_sweep_pre(): void {
   }
   parts.write()
   features.write()
+}
+
+function clamp(n: f64, lo: f64, hi: f64): f64 {
+  return Math.max(lo, Math.min(hi, n))
+}
+
+// packages/sim/src/features/sweeps.ts:170-212: consult the active phase's bar and either
+// knock the seat with the source's (8 horizontal, 4 up) vector or request a lethal fall.
+export function rf_feature_sweep_post(): void {
+  const round = readResource<RoundRes>(RoundRes.ID, RoundRes.SIZE)
+  const features = readColumn<FeatureSweep>(FeatureSweep.ID, FeatureSweep.SIZE)
+  const phases = readColumn<FeatureSweepPhase>(FeatureSweepPhase.ID, FeatureSweepPhase.SIZE)
+  const parts = readColumn<FeatureSweepPart>(FeatureSweepPart.ID, FeatureSweepPart.SIZE)
+  const seats = seatColumn()
+  const characters = characterColumn()
+  const now = <i32>tick()
+  for (let i: u32 = 0; i < features.count; i++) {
+    const feature = features.at(i)
+    if (feature.live == 0) continue
+    const owner = getComponent<Feature>(features.entity(i), Feature.ID, Feature.SIZE).index
+    let pattern: u32 = 0
+    for (let j: u32 = 0; j < phases.count; j++) {
+      const phase = phases.at(j)
+      if (phase.owner == owner && phase.index == feature.active) pattern = phase.pattern
+    }
+    // packages/sim/src/features/sweeps.ts:174: only survival and last-standing rounds make the laser lethal.
+    const lethal = pattern == 0 && (round.kind == 1 || round.final_rule == 2)
+    for (let s: u32 = 0; s < seats.count; s++) {
+      const seat = seats.at(s)
+      if (seat.status != 1) continue
+      const entity = seats.entity(s)
+      const row = characters.find(entity)
+      if (row < 0) continue
+      const ch = characters.at(<u32>row)
+      if (now < ch.protected_until) continue
+      if (!lethal && ch.mode == MODE_STUNNED) continue
+      const at = getComponent<EgeTransform>(entity, EgeTransform.ID, EgeTransform.SIZE)
+      for (let j: u32 = 0; j < parts.count; j++) {
+        const part = parts.at(j)
+        if (part.owner != owner) continue
+        if (part.index == 1 && pattern == 0) continue
+        const t = getComponent<EgeTransform>(parts.entity(j), EgeTransform.ID, EgeTransform.SIZE)
+        const dx = <f64>at.pos_0 - <f64>t.pos_0
+        const dz = <f64>at.pos_2 - <f64>t.pos_2
+        // Rotate the seat into the bar's frame; half extents are the pre system's written pool sizes.
+        const x = dx * feature.cos - dz * feature.sin
+        const z = dx * feature.sin + dz * feature.cos
+        const nx = x - clamp(x, -part.half_0, part.half_0)
+        const nz = z - clamp(z, -part.half_2, part.half_2)
+        // Distance from the character's vertical capsule segment to the cuboid.
+        const ny = Math.max(0.0, Math.abs(<f64>at.pos_1 - <f64>t.pos_1) - ch.half_height - part.half_1)
+        const reach = ch.radius + 0.05
+        if (nx * nx + ny * ny + nz * nz > reach * reach) continue
+        if (lethal) seat.kill_request = 1
+        else {
+          const d = Math.sqrt(nx * nx + nz * nz)
+          const ux = d > 1e-9 ? nx / d : 0.0
+          const uz = d > 1e-9 ? nz / d : (z < 0.0 ? -1.0 : 1.0)
+          knockSeat(entity, ch,
+            8.0 * (ux * feature.cos + uz * feature.sin),
+            4.0,
+            8.0 * (-ux * feature.sin + uz * feature.cos), now)
+        }
+        break
+      }
+    }
+  }
+  characters.write()
+  seats.write()
 }

@@ -1488,6 +1488,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.sweep.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part", "seat", "character", "ege.transform"],
+          "writes": ["seat", "character", "ege.velocity"],
+          "emits": []
+        },
+        {
           "system": "rf.seat.rules",
           "kind": "script",
           "reads": [

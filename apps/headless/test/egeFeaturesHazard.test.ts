@@ -295,7 +295,8 @@ test('sweep block transition applies the new collider boundary to physics', asyn
   }])
   try {
     const part = scene.index('feature/wall/part/0')
-    while (round.tick < 68) round.step(() => code())
+    // The post knock lifts the seat off the block; observe the first grounded step after the transition.
+    while (round.tick < 66) round.step(() => code())
     assert.equal(round.observe().faults, 0)
     const seat = round.observe().seats[0].entity
     assert.equal(rec(round, 'character', seat).ground_entity, part)
@@ -334,5 +335,106 @@ test('laser-only sweep keeps one part and deterministic state', async () => {
   } finally {
     b?.dispose()
     a.dispose()
+  }
+})
+
+async function roundWithEdit(specs: FeatureSpec[] | null, edit: (course: any) => void): Promise<{
+  engine: EngineInstance; scene: EmittedScene; course: CourseV1; round: EngineRound
+}> {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  if (specs !== null) copy.sim!.features = specs
+  edit(copy)
+  const engine = await loadEngine()
+  const schema = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schema)
+  const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  const round = await createEngineRound(engine, schema, await rfScriptBytes(), scene, copy, {
+    profile: 'sprint', seed: 7, humans: [true, false, false, false, false, false, false, false],
+  })
+  return { engine, scene, course: copy, round }
+}
+
+function inputX(moveX: number): number {
+  return encodeInput({ moveX, moveZ: 0, jump: false, dive: false, grab: false })
+}
+
+test('sweep knocks a respawned seat after protection and spares it while protected', async () => {
+  const { scene, round } = await roundWithEdit([{
+    id: 'knock', kind: 'sweep',
+    params: {
+      center: [-8.5, 0.35, 0], lengthM: 10, telegraphS: 1,
+      pattern: 'laser', heightM: 0.5, gapM: 2, speedDegS: 0, speedMps: 0,
+      phases: [{ atS: 0 }],
+    },
+  }], course => {
+    course.sim.level.respawn.protectTicks = 300
+    course.sim.level.respawn.slots = 1
+    course.sim.level.respawn.spacingM = 0
+  })
+  try {
+    const seatEntity = round.observe().seats[0].entity
+    let fell = false
+    while (round.tick < 400 && !fell) {
+      round.step(seat => seat === 0 ? inputX(-1) : code())
+      assert.equal(round.observe().faults, 0)
+      fell = rec(round, 'character', seatEntity).parked === 1
+    }
+    assert.ok(fell, `seat 0 did not fall by tick ${round.tick}`)
+    while (round.tick < 600 && rec(round, 'seat', seatEntity).wait_until >= 0) {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+    }
+    assert.equal(rec(round, 'feature_sweep', scene.index('feature/knock')).live, 1)
+    const protectUntil = rec(round, 'seat', seatEntity).protect_until as number
+    assert.ok(protectUntil > round.tick, `respawned seat is protected until ${protectUntil} at ${round.tick}`)
+    while (round.tick < protectUntil - 2) {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+      assert.equal(rec(round, 'character', seatEntity).knockbacks, 0)
+    }
+    while (round.tick < protectUntil + 60 && rec(round, 'character', seatEntity).knockbacks === 0) {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+    }
+    assert.equal(rec(round, 'character', seatEntity).knockbacks, 1)
+    assert.equal(rec(round, 'character', seatEntity).mode, 4)
+    round.step(() => code())
+    const velocity = rec(round, 'ege.velocity', seatEntity).lin as number[]
+    closeTo(Math.hypot(velocity[0], velocity[2]), 8, 0.5, 'knock horizontal')
+    assert.ok(velocity[1] > 3 && velocity[1] <= 4.1, `knock vertical ${velocity[1]}`)
+  } finally {
+    round.dispose()
+  }
+})
+
+test('survival laser eliminates the seat it hits', async () => {
+  const { scene, round } = await roundWithEdit([{
+    id: 'lethal', kind: 'sweep',
+    params: {
+      center: [-8.5, 0.35, 0], lengthM: 10, telegraphS: 0.1,
+      pattern: 'laser', heightM: 0.5, gapM: 2, speedDegS: 0, speedMps: 0,
+      phases: [{ atS: 0 }],
+    },
+  }], course => {
+    course.kind = 'survival'
+    course.sim.level.kind = 'survival'
+    course.sim.level.finalRule = null
+    course.sim.level.respawn.mode = 'none'
+  })
+  try {
+    const seatEntity = round.observe().seats[0].entity
+    let eliminated = false
+    while (round.tick < 200 && !eliminated) {
+      round.step(() => code())
+      assert.equal(round.observe().faults, 0)
+      eliminated = round.observe().seats[0].status === 3
+    }
+    assert.ok(eliminated, `seat 0 not eliminated by tick ${round.tick}`)
+    assert.ok(round.observe().eliminated >= 1)
+    assert.equal(rec(round, 'character', seatEntity).parked, 1)
+    assert.equal(rec(round, 'feature_sweep', scene.index('feature/lethal')).live, 1)
+  } finally {
+    round.dispose()
   }
 })

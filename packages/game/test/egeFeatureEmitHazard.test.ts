@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { loadEngine } from '@etcito/game-engine'
+import { schemaLayout } from '@etcito/game-engine/script'
 import type { FeatureSpec } from '@royal-fiesta/sim/course'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { FEATURE_EMITTERS } from '../src/ege/featureEmitters.ts'
@@ -130,6 +131,55 @@ test('annulus refuses a ring narrower than 0.5 m and an out-of-range segment cou
   assert.throws(() => FEATURE_EMITTERS.annulus(few, {
     course: input.course.sim!, index: 0, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets,
   }), (error: unknown) => error instanceof RefusalError && error.message.includes('/segments: expected segments'))
+})
+
+test('sweep root, phase and part records carry their declared fields within 256 bytes', () => {
+  const components = schemaLayout(engine).components
+  const layout = (name: string) => {
+    const component = components.find((entry) => entry.name === name)
+    assert.ok(component, `${name} is declared`)
+    return {
+      size: component.size,
+      fields: component.fields.map((field) => [field.name, field.type, field.count]),
+    }
+  }
+  const sweep = layout('feature_sweep')
+  assert.deepEqual(sweep.fields, [
+    ['center', 'f64', 3],
+    ['length_m', 'f64', 1],
+    ['telegraph_s', 'f64', 1],
+    ['phase_count', 'u32', 1],
+    ['part_count', 'u32', 1],
+    ['overtime_ticks', 'u32', 1],
+    ['active', 'u32', 1],
+    ['effective', 'f64', 1],
+    ['live', 'u32', 1],
+    ['just_live', 'u32', 1],
+    ['cos', 'f64', 1],
+    ['sin', 'f64', 1],
+    ['slide', 'f64', 1],
+    ['placed', 'u32', 1],
+  ])
+  assert.ok(sweep.size <= 256, `feature_sweep is ${sweep.size} bytes`)
+  const phase = layout('feature_sweep_phase')
+  assert.deepEqual(phase.fields, [
+    ['owner', 'u32', 1],
+    ['index', 'u32', 1],
+    ['at_s', 'f64', 1],
+    ['pattern', 'u32', 1],
+    ['height_m', 'f64', 1],
+    ['gap_m', 'f64', 1],
+    ['speed_deg_s', 'f64', 1],
+    ['speed_mps', 'f64', 1],
+  ])
+  assert.ok(phase.size <= 256, `feature_sweep_phase is ${phase.size} bytes`)
+  const part = layout('feature_sweep_part')
+  assert.deepEqual(part.fields, [
+    ['owner', 'u32', 1],
+    ['index', 'u32', 1],
+    ['half', 'f64', 3],
+  ])
+  assert.ok(part.size <= 256, `feature_sweep_part is ${part.size} bytes`)
 })
 
 test('sweep emits root-relative phases and a fixed placeholder pool', async () => {

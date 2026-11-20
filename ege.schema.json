@@ -1039,6 +1039,73 @@
       ]
     },
     {
+      "name": "feature_rising_kill",
+      "fields": [
+        {
+          "name": "start_y",
+          "type": "f64"
+        },
+        {
+          "name": "end_y",
+          "type": "f64"
+        },
+        {
+          "name": "start_s",
+          "type": "f64"
+        },
+        {
+          "name": "rise_mps",
+          "type": "f64"
+        },
+        {
+          "name": "clock",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "half_m",
+          "type": "f64"
+        },
+        {
+          "name": "overtime_ticks",
+          "type": "u32"
+        },
+        {
+          "name": "kill_y",
+          "type": "f64"
+        },
+        {
+          "name": "left_s",
+          "type": "f64"
+        },
+        {
+          "name": "fraction",
+          "type": "f64"
+        },
+        {
+          "name": "rising",
+          "type": "u32"
+        },
+        {
+          "name": "placed",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "feature_rising_kill_visual",
+      "fields": [
+        {
+          "name": "owner",
+          "type": "u32"
+        },
+        {
+          "name": "index",
+          "type": "u32"
+        }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

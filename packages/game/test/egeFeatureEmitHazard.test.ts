@@ -344,3 +344,48 @@ test('memoryTiles refuses a pool over 256 cells with the engine-pool message', a
     error instanceof RefusalError && error.message ===
       `[ege-scene] ${path}#/features/2/cols: memoryTiles of more than 256 cells has no engine pool in part 1; use at most 256 cells`)
 })
+
+test('risingKill emits a plane and clock visual pair with owner indices and source defaults', async () => {
+  const spec: FeatureSpec = {
+    id: 'rise-demo', kind: 'risingKill', params: {
+      startY: -4, endY: 20, startS: 5, riseMps: 0.5, clock: { t: [3, 6, -2] },
+    },
+  }
+  const { input } = await inputWith([spec])
+  const entities = FEATURE_EMITTERS.risingKill(spec, {
+    course: input.course.sim!, index: 4, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets,
+  })
+  assert.equal(entities.root.name, 'feature/rise-demo')
+  assert.deepEqual(entities.root.components?.feature, { kind: 13, index: 4, salt: 0x104 })
+  assert.deepEqual(entities.root.components?.feature_rising_kill, {
+    start_y: -4, end_y: 20, start_s: 5, rise_mps: 0.5, clock: [3, 6, -2], half_m: 30,
+    overtime_ticks: 0, kill_y: -4, left_s: 0, fraction: 1, rising: 0, placed: 0,
+  })
+  assert.deepEqual(entities.root.components?.['ege.transform'], { pos: [3, 6, -2], rot: [0, 0, 0, 1] })
+  assert.deepEqual(entities.children.map(child => child.name), ['feature/rise-demo/visual/0', 'feature/rise-demo/visual/1'])
+  const [plane, clock] = entities.children
+  assert.deepEqual(plane?.components?.['ege.transform'], { pos: [3, -4, -2], rot: [0, 0, 0, 1] })
+  assert.deepEqual(plane?.components?.['ege.render'], { shape: 1, color: 0xF5D0E0, visible: 1, params: [15, 0.5, 15, 0] })
+  assert.deepEqual(plane?.components?.feature_rising_kill_visual, { owner: 4, index: 0 })
+  assert.deepEqual(clock?.components?.['ege.transform'], { pos: [3, 6, -2], rot: [0, 0, 0, 1] })
+  assert.deepEqual(clock?.components?.['ege.render'], { shape: 4, color: 0xF2E6D0, visible: 1, params: [1, 0.05, 0, 0] })
+  assert.deepEqual(clock?.components?.feature_rising_kill_visual, { owner: 4, index: 1 })
+  const emitted = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(emitted.text) >= 1)
+  assert.equal(emitted.index('feature/rise-demo/visual/0'), emitted.index('feature/rise-demo') + 1)
+})
+
+test('risingKill keeps an explicit halfM and refuses an end height at or below the start', async () => {
+  const wide: FeatureSpec = {
+    id: 'wide', kind: 'risingKill', params: { startY: 0, endY: 9, startS: 0, riseMps: 1, halfM: 12, clock: { t: [0, 0, 0] } },
+  }
+  const { input } = await inputWith([wide])
+  const path = 'fixtures/ege/ege-strip.course.json'
+  const entities = FEATURE_EMITTERS.risingKill(wide, { course: input.course.sim!, index: 0, path, assets: input.assets })
+  assert.equal(entities.root.components?.feature_rising_kill?.half_m, 12)
+  const flat: FeatureSpec = {
+    id: 'flat', kind: 'risingKill', params: { startY: 5, endY: 5, startS: 0, riseMps: 1, clock: { t: [0, 0, 0] } },
+  }
+  assert.throws(() => FEATURE_EMITTERS.risingKill(flat, { course: input.course.sim!, index: 1, path, assets: input.assets }),
+    (error: unknown) => error instanceof RefusalError && error.message.includes('/endY: expected endY > startY (5)'))
+})

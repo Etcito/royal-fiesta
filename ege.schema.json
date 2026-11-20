@@ -1234,6 +1234,31 @@
       ]
     },
     {
+      "name": "feature_crown",
+      "fields": [
+        { "name": "t", "type": "f64", "count": 3 },
+        { "name": "grab_range_m", "type": "f64" },
+        { "name": "taken", "type": "u32" },
+        { "name": "next_reset_tick", "type": "i32" },
+        { "name": "placed", "type": "u32" }
+      ]
+    },
+    {
+      "name": "feature_crown_seat",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "seat", "type": "u32" },
+        { "name": "prev_dist", "type": "f64" }
+      ]
+    },
+    {
+      "name": "feature_crown_visual",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "index", "type": "u32" }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

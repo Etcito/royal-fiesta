@@ -25,6 +25,7 @@ import { collectibleEmitter } from './features/collectible.ts'
 import { bankEmitter } from './features/bank.ts'
 import { captureZoneEmitter } from './features/captureZone.ts'
 import { tailSetEmitter } from './features/tailSet.ts'
+import { crownEmitter } from './features/crown.ts'
 import { roadEmitter } from './features/road.ts'
 
 export type RawEntity = {
@@ -172,5 +173,6 @@ export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object
   bank: bankEmitter,
   captureZone: captureZoneEmitter,
   tailSet: tailSetEmitter,
+  crown: crownEmitter,
   road: roadEmitter,
 })

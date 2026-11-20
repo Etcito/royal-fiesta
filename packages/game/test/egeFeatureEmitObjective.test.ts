@@ -4,6 +4,7 @@ import test from 'node:test'
 import { loadEngine } from '@etcito/game-engine'
 import { schemaLayout } from '@etcito/game-engine/script'
 import type { FeatureSpec } from '@royal-fiesta/sim/course'
+import { FEATURE_KINDS } from '@royal-fiesta/sim/features/catalog'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { FEATURE_EMITTERS } from '../src/ege/featureEmitters.ts'
 import { emitEngineScene } from '../src/ege/sceneEmitter.ts'
@@ -655,4 +656,74 @@ test('tailSet scene builds a world with the root and its eight seat children', a
   assert.equal(seat?.body, undefined)
   assert.equal(seat?.colliders, undefined)
   assert.equal(seat?.components?.['ege.render']?.visible, 0)
+})
+
+const crownDemo: FeatureSpec = { id: 'crown-demo', kind: 'crown', params: { t: [1, 2, 3], grabRangeM: 2 } }
+
+test('crown records declare the root, seat and visual state', () => {
+  for (const [name, fields] of [
+    ['feature_crown', [['t', 'f64', 3], ['grab_range_m', 'f64', 1], ['taken', 'u32', 1],
+      ['next_reset_tick', 'i32', 1], ['placed', 'u32', 1]]],
+    ['feature_crown_seat', [['owner', 'u32', 1], ['seat', 'u32', 1], ['prev_dist', 'f64', 1]]],
+    ['feature_crown_visual', [['owner', 'u32', 1], ['index', 'u32', 1]]],
+  ] as const) {
+    const layout = layoutOf(name)
+    assert.deepEqual(layout.fields, fields)
+    assert.ok(layout.size <= 256)
+  }
+})
+
+test('crown emits authored state, eight contender records and a gold sphere', async () => {
+  const input = await inputWith([crownDemo])
+  const emitted = FEATURE_EMITTERS.crown(crownDemo, ctxOf(input, 3))
+  assert.equal(emitted.root.name, 'feature/crown-demo')
+  assert.deepEqual(emitted.root.components?.feature, { kind: 20, index: 3, salt: 0x103 })
+  assert.deepEqual(emitted.root.components?.feature_crown, {
+    t: [1, 2, 3], grab_range_m: 2, taken: 0, next_reset_tick: 0, placed: 0,
+  })
+  assert.equal(emitted.children.length, 9)
+  for (let seat = 0; seat < 8; seat++) {
+    const child = emitted.children[seat]!
+    assert.equal(child.name, `feature/crown-demo/seat/${seat}`)
+    assert.deepEqual(child.components?.feature_crown_seat, { owner: 3, seat, prev_dist: 0 })
+    assert.equal(child.body, undefined)
+  }
+  const visual = emitted.children[8]!
+  assert.equal(visual.name, 'feature/crown-demo/visual/0')
+  assert.deepEqual(visual.components?.feature_crown_visual, { owner: 3, index: 0 })
+  assert.deepEqual(visual.components?.['ege.transform'], { pos: [1, 2, 3], rot: [0, 0, 0, 1] })
+  assert.deepEqual(visual.components?.['ege.render'], {
+    shape: 2, color: 0xFFD140, visible: 1, params: [0.25, 0, 0, 0],
+  })
+  const scene = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(scene.text) >= 1)
+  assert.ok(scene.index('feature/crown-demo/seat/7') >= 0)
+  assert.ok(scene.index('feature/crown-demo/visual/0') >= 0)
+})
+
+test('crown defaults and validates grab range and requires checkpoint 1', async () => {
+  const input = await inputWith([crownDemo])
+  const ctx = ctxOf(input, 0)
+  for (const [grabRangeM, expected] of [[undefined, 1], [0.25, 0.25], [3, 3]] as const) {
+    const spec: FeatureSpec = { ...crownDemo, params: { t: [1, 2, 3], grabRangeM } }
+    assert.equal(FEATURE_EMITTERS.crown(spec, ctx).root.components?.feature_crown?.grab_range_m, expected)
+  }
+  for (const grabRangeM of [0.24, 3.01]) {
+    const spec: FeatureSpec = { ...crownDemo, params: { ...crownDemo.params, grabRangeM } }
+    assert.throws(() => FEATURE_EMITTERS.crown(spec, ctx), RefusalError)
+  }
+  ctx.course.checkpoints = []
+  assert.throws(() => FEATURE_EMITTERS.crown(crownDemo, ctx),
+    (error: unknown) => error instanceof RefusalError && error.message.includes('crown needs CP1; add a checkpoint'))
+})
+
+test('all 22 feature kinds are registered and the shipped crown course constructs', async () => {
+  assert.equal(Object.keys(FEATURE_KINDS).length, 22)
+  assert.deepEqual(Object.keys(FEATURE_EMITTERS).sort(), Object.keys(FEATURE_KINDS).sort())
+  const path = 'courses/s1-q-crown-confection.course.json'
+  const course = await loadCourseV1(readJson(path), path, assets)
+  const resolved = new Map<string, ResolvedGameAsset>()
+  for (const id of course.assetIds) resolved.set(id, await assets.resolve(id))
+  const scene = emitEngineScene(engine, { course, assets: resolved, setup: { profile: 'sprint', seed: 7 } })
+  assert.ok(engine.createWorld(scene.text) >= 1)
 })

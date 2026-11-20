@@ -844,6 +844,64 @@
       ]
     },
     {
+      "name": "feature_memory_tiles",
+      "fields": [
+        { "name": "origin", "type": "f64", "count": 3 },
+        { "name": "cols", "type": "u32" },
+        { "name": "rows", "type": "u32" },
+        { "name": "cell_m", "type": "f64" },
+        { "name": "symbols", "type": "u32" },
+        { "name": "cycles", "type": "u32" },
+        { "name": "reveal_s", "type": "f64" },
+        { "name": "hide_s", "type": "f64" },
+        { "name": "choice_s", "type": "f64" },
+        { "name": "penalty_s", "type": "f64" },
+        { "name": "target", "type": "u32" },
+        { "name": "cycle", "type": "i32" },
+        { "name": "phase", "type": "u32" },
+        { "name": "choice_start_tick", "type": "i32" },
+        { "name": "finalized", "type": "u32" },
+        { "name": "placed", "type": "u32" }
+      ]
+    },
+    {
+      "name": "feature_memory_tiles_cell",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "index", "type": "u32" },
+        { "name": "t", "type": "f64", "count": 3 },
+        { "name": "half", "type": "f64", "count": 3 },
+        { "name": "state", "type": "u32" },
+        { "name": "timer", "type": "u32" },
+        { "name": "symbol", "type": "u32" },
+        { "name": "cycle_symbols", "type": "u32", "count": 16 },
+        { "name": "cycle_symbols_tail", "type": "u32", "count": 4 }
+      ]
+    },
+    {
+      "name": "feature_memory_tiles_cycle",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "index", "type": "u32" },
+        { "name": "target", "type": "u32" }
+      ]
+    },
+    {
+      "name": "feature_memory_tiles_seat",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "seat", "type": "u32" },
+        { "name": "first_correct_tick", "type": "i32" }
+      ]
+    },
+    {
+      "name": "feature_memory_tiles_marker",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "index", "type": "u32" }
+      ]
+    },
+    {
       "name": "feature_annulus",
       "fields": [
         { "name": "center", "type": "f64", "count": 3 },
@@ -1263,6 +1321,23 @@
     },
     {
       "name": "crown",
+      "fields": [
+        {
+          "name": "seat",
+          "type": "u32"
+        },
+        {
+          "name": "a",
+          "type": "i32"
+        },
+        {
+          "name": "b",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "match",
       "fields": [
         {
           "name": "seat",

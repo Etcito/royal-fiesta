@@ -322,5 +322,63 @@
       "the grey backdrop, which the yard course leaves undecorated (decor is empty, environment is null)",
       "the disc is cream at rest and green while touched (scripts/ege/features/marker.as.ts)"
     ]
+  },
+  {
+    "id": "m6-honeycomb-hex-field",
+    "milestone": "m6",
+    "filename": "engine-round-honeycomb-hex-tiles-warning-and-dropping.png",
+    "args": {
+      "course": "s1-i-honeycomb-heights",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 900,
+      "local": "run",
+      "captureAt": "end",
+      "focus": "kind:hexField"
+    },
+    "require": [
+      "nonEmpty eq true",
+      "faults eq 0",
+      "features.hexField gt 0",
+      "focus.changed gt 0"
+    ],
+    "description": "stacked layers of hexagonal floor discs on the engine with some discs tinted as warning and some missing where penguins stood, penguins standing on the remaining discs",
+    "held_constant": [
+      "the light",
+      "the focus camera rule",
+      "the course assets",
+      "the fixture floor and backdrop",
+      "Implement hex placement, warning and falling",
+      "Run rising kill and a complete Honeycomb round"
+    ]
+  },
+  {
+    "id": "m6-yard-b-hazards",
+    "milestone": "m6",
+    "filename": "engine-round-yard-sweeper-bars-ring-and-memory-tiles.png",
+    "args": {
+      "course": "ege-yard-b",
+      "profile": "sprint",
+      "seed": 7,
+      "frames": 600,
+      "local": "run",
+      "captureAt": "end",
+      "focus": "kind:sweep"
+    },
+    "require": [
+      "nonEmpty eq true",
+      "faults eq 0",
+      "features.sweep gt 0",
+      "features.annulus gt 0",
+      "features.memoryTiles gt 0"
+    ],
+    "description": "red sweeper bars crossing a candy floor, a rotating ring of floor tile segments and a small grid of memory tile discs with some tinted",
+    "held_constant": [
+      "the light",
+      "the focus camera rule",
+      "the course assets",
+      "the fixture floor and backdrop",
+      "Build Yard B with all three visible hazards"
+    ]
   }
 ]

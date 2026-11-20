@@ -22,6 +22,7 @@ import { risingKillEmitter } from './features/risingKill.ts'
 import { ballEmitter } from './features/ball.ts'
 import { goalEmitter } from './features/goal.ts'
 import { collectibleEmitter } from './features/collectible.ts'
+import { bankEmitter } from './features/bank.ts'
 import { roadEmitter } from './features/road.ts'
 
 export type RawEntity = {
@@ -166,5 +167,6 @@ export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object
   ball: ballEmitter,
   goal: goalEmitter,
   collectible: collectibleEmitter,
+  bank: bankEmitter,
   road: roadEmitter,
 })

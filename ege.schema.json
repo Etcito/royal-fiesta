@@ -1179,6 +1179,22 @@
       ]
     },
     {
+      "name": "feature_bank",
+      "fields": [
+        { "name": "center", "type": "f64", "count": 3 },
+        { "name": "half", "type": "f64", "count": 3 },
+        { "name": "team", "type": "i32" }
+      ]
+    },
+    {
+      "name": "feature_bank_inside",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "item", "type": "entity" },
+        { "name": "team", "type": "i32" }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

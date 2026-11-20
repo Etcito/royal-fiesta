@@ -382,3 +382,79 @@ test('collectible scene builds a world with each spot visual after its root', as
   assert.equal(scene.index('feature/collectible-demo/spot/0'), scene.index('feature/collectible-demo') + 1)
   assert.equal(scene.index('feature/collectible-demo/spot/2'), scene.index('feature/collectible-demo') + 3)
 })
+
+const bankDemo: FeatureSpec = {
+  id: 'bank-demo', kind: 'bank', params: { center: [2, 1.5, 30], half: [3, 1.5, 2], team: null },
+}
+
+test('bank records carry centre, half and i32 team within 256 bytes', () => {
+  const root = layoutOf('feature_bank')
+  assert.deepEqual(root.fields, [['center', 'f64', 3], ['half', 'f64', 3], ['team', 'i32', 1]])
+  assert.ok(root.size <= 256, `feature_bank is ${root.size} bytes`)
+  const inside = layoutOf('feature_bank_inside')
+  assert.deepEqual(inside.fields, [['owner', 'entity', 1], ['item', 'entity', 1], ['team', 'i32', 1]])
+  assert.ok(inside.size <= 256, `feature_bank_inside is ${inside.size} bytes`)
+})
+
+test('bank emits a bodyless root and a neutral wall-block visual with empty inside state', async () => {
+  const input = await inputWith([bankDemo])
+  const emitted = FEATURE_EMITTERS.bank(bankDemo, ctxOf(input, 2))
+  assert.equal(emitted.root.name, 'feature/bank-demo')
+  assert.equal(emitted.root.body, undefined)
+  assert.equal(emitted.root.colliders, undefined)
+  assert.deepEqual(emitted.root.components?.feature, { kind: 17, index: 2, salt: 0x102 })
+  assert.deepEqual(emitted.root.components?.feature_bank, {
+    center: [2, 1.5, 30], half: [3, 1.5, 2], team: -1,
+  })
+  assert.deepEqual(emitted.root.components?.['ege.transform'], { pos: [2, 1.5, 30], rot: [0, 0, 0, 1] })
+  assert.equal(emitted.children.length, 1)
+  const visual = emitted.children[0]!
+  assert.equal(visual.name, 'feature/bank-demo/visual/0')
+  assert.equal(visual.body, undefined)
+  assert.equal(visual.colliders, undefined)
+  assert.deepEqual(visual.components?.['ege.transform'], { pos: [2, 1.5, 30], rot: [0, 0, 0, 1] })
+  assert.deepEqual(visual.components?.['ege.render'], {
+    shape: 1, color: 0xE8C39E, visible: 1, params: [3, 1.5, 2, 0],
+  })
+})
+
+test('bank team banks use the source tint and keep the authored box dimensions', async () => {
+  for (const [team, color] of [[0, 0x54BAFF], [1, 0xFFD140]] as const) {
+    const spec: FeatureSpec = { ...bankDemo, params: { ...bankDemo.params, team } }
+    const input = await inputWith([spec])
+    const emitted = FEATURE_EMITTERS.bank(spec, ctxOf(input, 6))
+    assert.deepEqual(emitted.root.components?.feature_bank, {
+      center: [2, 1.5, 30], half: [3, 1.5, 2], team,
+    })
+    assert.equal(emitted.children[0]?.components?.['ege.render']?.color, color)
+    assert.deepEqual(emitted.children[0]?.components?.['ege.render']?.params, [3, 1.5, 2, 0])
+  }
+})
+
+test('bank refuses an invalid team and a non-positive half', async () => {
+  const input = await inputWith([bankDemo])
+  const ctx = ctxOf(input, 0)
+  const refused = (params: Record<string, unknown>, message: string) => {
+    const bad = { ...bankDemo, params } as FeatureSpec
+    assert.throws(() => FEATURE_EMITTERS.bank(bad, ctx),
+      (error: unknown) => error instanceof RefusalError && error.message.includes(message))
+  }
+  refused({ ...bankDemo.params, team: 2 }, '/team: expected team 0, 1 or null')
+  refused({ ...bankDemo.params, team: '0' }, '/team: expected team 0, 1 or null')
+  refused({ ...bankDemo.params, team: undefined }, '/team: expected team 0, 1 or null')
+  refused({ ...bankDemo.params, half: [3, 0, 2] }, '/half: expected half extents > 0')
+})
+
+test('bank scene builds a world with only the root and visual entities', async () => {
+  const input = await inputWith([bankDemo])
+  const scene = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(scene.text) >= 1)
+  assert.equal(scene.index('feature/bank-demo/visual/0'), scene.index('feature/bank-demo') + 1)
+  const root = scene.scene.entities[scene.index('feature/bank-demo')]
+  assert.equal(root?.body, undefined)
+  const inside = scene.scene.entities.filter((entity) => {
+    const name = entity.name ?? ''
+    return name.startsWith('feature/bank-demo/') && name !== 'feature/bank-demo/visual/0'
+  })
+  assert.deepEqual(inside, [])
+})

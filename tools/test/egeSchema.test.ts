@@ -20,6 +20,7 @@ const SCHEDULE = [
   'rf.feature.rolling_log.pre',
   'rf.feature.door_bank.pre',
   'rf.feature.swim_volume.pre',
+  'rf.feature.hex_field.pre',
   'ege.body.props',
   'ege.box.collider',
   'ege.physics',
@@ -31,6 +32,7 @@ const SCHEDULE = [
   'rf.feature.catch_volume.post',
   'rf.feature.rolling_log.post',
   'rf.feature.tile_field.post',
+  'rf.feature.hex_field.post',
   'rf.seat.rules',
 ]
 

@@ -1248,6 +1248,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.hex_field.pre",
+          "kind": "script",
+          "reads": ["feature", "feature_hex_field", "feature_hex_field_hex"],
+          "writes": ["feature_hex_field", "feature_hex_field_hex", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
           "system": "ege.body.props",
           "kind": "engine"
         },
@@ -1320,6 +1327,13 @@
           "kind": "script",
           "reads": ["seat", "character", "round", "feature"],
           "writes": ["feature_tile_field", "feature_tile_field_tile", "ege.body_props", "ege.render", "ege.transform"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.hex_field.post",
+          "kind": "script",
+          "reads": ["seat", "character", "round", "feature", "feature_hex_field", "feature_hex_field_hex"],
+          "writes": ["feature_hex_field", "feature_hex_field_hex", "ege.body_props", "ege.render", "ege.transform"],
           "emits": []
         },
         {

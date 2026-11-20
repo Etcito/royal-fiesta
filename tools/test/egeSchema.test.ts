@@ -24,6 +24,7 @@ const SCHEDULE = [
   'rf.feature.memory_tiles.pre',
   'rf.feature.annulus.pre',
   'rf.feature.sweep.pre',
+  'rf.feature.rising_kill.pre',
   'ege.body.props',
   'ege.box.collider',
   'ege.physics',
@@ -38,6 +39,7 @@ const SCHEDULE = [
   'rf.feature.hex_field.post',
   'rf.feature.memory_tiles.post',
   'rf.feature.sweep.post',
+  'rf.feature.rising_kill.post',
   'rf.seat.rules',
 ]
 

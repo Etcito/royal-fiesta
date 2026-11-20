@@ -11,18 +11,18 @@ import { emitEngineScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import type { EmittedScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
-import { loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
+import { harnessRound, loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
 
-async function roundWith(id: string, specs: FeatureSpec[] | null, humans = [true, false, false, false, false, false, false, false]): Promise<{
+async function roundWith(id: string, specs: FeatureSpec[] | null, humans = [true, false, false, false, false, false, false, false], sharedEngine?: EngineInstance): Promise<{
   engine: EngineInstance; scene: EmittedScene; course: CourseV1; round: EngineRound
 }> {
   const { course, assets } = await loadEgeCourse(id)
   const copy = structuredClone(course)
   if (specs !== null) copy.sim!.features = specs
-  const engine = await loadEngine()
+  const engine = sharedEngine ?? await loadEngine()
   const schema = await readRepoText(RF_EGE_SCHEMA)
-  engine.setSchema(schema)
+  if (!sharedEngine) engine.setSchema(schema)
   const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
   const round = await createEngineRound(engine, schema, await rfScriptBytes(), scene, copy, {
     profile: 'sprint', seed: 7, humans,
@@ -798,5 +798,125 @@ test('memoryTiles consumes split symbols in phase through cycle 19 and settles a
     assert.equal(round.observe().events.match, 160)
   } finally {
     round.dispose()
+  }
+})
+
+test('rising kill follows round time, warns, clamps and kills below its plane', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'rise', kind: 'risingKill',
+    params: { startY: -6, endY: -5.25, startS: 2, riseMps: 0.5, halfM: 12, clock: { t: [-3.5, 0, 0] } },
+  }])
+  try {
+    const root = scene.index('feature/rise')
+    const clock = scene.index('feature/rise/visual/1')
+    const plane = scene.index('feature/rise/visual/0')
+    const intro = Number(round.worldState().resources.round.intro_ticks)
+    while (round.tick < intro + 119) { round.step(() => code()); assert.equal(round.observe().faults, 0, ) }
+    assert.equal(round.observe().faults, 0)
+    near(rec(round, 'feature_rising_kill', root).kill_y, -6)
+    while (round.tick < intro + 180) round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+    near(rec(round, 'feature_rising_kill', root).kill_y, -5.5)
+    assert.equal(rec(round, 'ege.render', clock).color, 0xFF6B9E)
+    assert.equal(rec(round, 'ege.render', plane).visible, 1)
+    near(rec(round, 'ege.render', plane).params[0], 6)
+    near(rec(round, 'ege.render', plane).params[1], 0.5)
+    near(rec(round, 'ege.render', clock).params[0], rec(round, 'feature_rising_kill', root).fraction)
+    while (round.tick < intro + 240) round.step(() => code())
+    near(rec(round, 'feature_rising_kill', root).kill_y, -5.25)
+    assert.equal(rec(round, 'feature_rising_kill', root).rising, 0)
+  } finally {
+    round.dispose()
+  }
+
+  const lethal = await roundWith('ege-strip', [{
+    id: 'rise', kind: 'risingKill',
+    params: { startY: 100, endY: 101, startS: 0, riseMps: 0.5, halfM: 12, clock: { t: [-3.5, 0, 0] } },
+  }])
+  try {
+    lethal.round.step(() => code())
+    assert.equal(lethal.round.observe().faults, 0)
+    assert.equal(rec(lethal.round, 'seat', lethal.round.observe().seats[0].entity).kill_request, 1)
+  } finally {
+    lethal.round.dispose()
+  }
+})
+
+test('shipped Honeycomb survival round completes with scheduled hex and rising hazards', async () => {
+  const { scene, round } = await harnessRound('s1-i-honeycomb-heights', { profile: 'sprint', seed: 7 })
+  try {
+    const hexRoot = scene.index('feature/honeycomb')
+    const state = round.worldState().resources.round
+    const bound = Number(state.intro_ticks) + Number(state.round_ticks) + Number(state.overtime_ticks) + 2
+    let sawHexPlaced = false
+    let sawRise = false
+    const risingRoot = scene.index('feature/layer-timer')
+    const risingPlane = scene.index('feature/layer-timer/visual/0')
+    const hexStates = new Set<number>()
+    let sawOvertime = false
+    while (round.observe().phase !== 'ended' && round.tick <= bound) {
+      const before = round.worldState()
+      if (before.resources.round.phase === 2) {
+        sawOvertime = true
+        const prior = Number(Object.values(before.components.feature_rising_kill)[0].overtime_ticks)
+        round.step(() => code())
+        assert.equal(Number(Object.values(round.worldState().components.feature_rising_kill)[0].overtime_ticks), prior + 1)
+      } else round.step(() => code())
+      const obs = round.observe()
+      assert.equal(obs.faults, 0)
+      const world = round.worldState()
+      for (const [id, record] of Object.entries(world.components.feature_hex_field ?? {})) {
+        if (record.placed === 1) {
+          sawHexPlaced = true
+          const hexEntity = scene.index('feature/honeycomb/hex/0')
+          hexStates.add(Number(world.components.feature_hex_field_hex[String(hexEntity)].state))
+        }
+      }
+      for (const record of Object.values(world.components.feature_rising_kill ?? {})) {
+        if (record.placed === 1) {
+          sawRise = true
+        }
+      }
+    }
+    assert.ok(sawHexPlaced, 'host scheduled hex pre initialized its pool')
+    assert.ok(sawRise, 'host scheduled rising kill pre updated its records')
+    assert.equal(rec(round, 'feature_hex_field', hexRoot).placed, 1)
+    assert.ok(hexStates.has(0) && (hexStates.has(1) || hexStates.has(2)), `hex states: ${[...hexStates]}`)
+    near(rec(round, 'ege.transform', risingPlane).pos[1], rec(round, 'feature_rising_kill', risingRoot).kill_y)
+    if (sawOvertime) assert.ok(Number(state.overtime_ticks) > 0)
+    assert.equal(round.observe().phase, 'ended')
+    assert.ok(round.observe().eliminated > 0, 'survival elimination occurred')
+    assert.ok(round.tick <= bound, `ended at ${round.tick}, configured bound ${bound}`)
+    assert.equal(round.observe().faults, 0)
+  } finally {
+    round.dispose()
+  }
+})
+
+test('two worlds with all five hazard kinds stay equal under identical input codes', async () => {
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  const features: FeatureSpec[] = [
+    { id: 'hex', kind: 'hexField', params: { origin: [-20, 2, 0], layers: 1, layerSpacingM: 0.5, rings: 1, flatM: 2, pointM: 2, thickM: 0.1, warnS: 0.5, decayS: 0.5, scaleWithEntrants: false } },
+    { id: 'memory', kind: 'memoryTiles', params: memoryParams({ origin: [20, 0.1, 0], cycles: 2 }) },
+    { id: 'annulus', kind: 'annulus', params: { center: [0, 0.1, 25], innerM: 2, outerM: 4, thickM: 0.4, speedDegS: 12, segments: 6 } },
+    { id: 'sweep', kind: 'sweep', params: { center: [0, 0, 40], lengthM: 10, telegraphS: 0.1, pattern: 'laser', heightM: 0.5, gapM: 2, speedDegS: 90, speedMps: 4, phases: [{ atS: 0 }] } },
+    { id: 'rise', kind: 'risingKill', params: { startY: -6, endY: 10, startS: 2, riseMps: 0.5, halfM: 12, clock: { t: [0, 0, 50] } } },
+  ]
+  const first = await roundWith('ege-strip', features, undefined, engine)
+  const second = await roundWith('ege-strip', features, undefined, engine)
+  const { round: a } = first
+  const { round: b } = second
+  try {
+    for (let tick = 0; tick < 120; tick++) {
+      a.step(() => code())
+      b.step(() => code())
+      assert.equal(engine.worldEqual(a.world, b.world), true, `worlds differ at tick ${a.tick}`)
+    }
+    assert.equal(a.observe().faults, 0)
+    assert.equal(b.observe().faults, 0)
+  } finally {
+    a.dispose()
+    b.dispose()
   }
 })

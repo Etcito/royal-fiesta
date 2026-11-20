@@ -1555,6 +1555,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.rising_kill.pre",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_rising_kill", "feature_rising_kill_visual"],
+          "writes": ["feature_rising_kill", "ege.transform", "ege.render"],
+          "emits": []
+        },
+        {
           "system": "ege.body.props",
           "kind": "engine"
         },
@@ -1655,6 +1662,13 @@
           "kind": "script",
           "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part", "seat", "character", "ege.transform"],
           "writes": ["seat", "character", "ege.velocity"],
+          "emits": []
+        },
+        {
+          "system": "rf.feature.rising_kill.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_rising_kill", "feature_rising_kill_visual", "seat", "character", "ege.transform"],
+          "writes": ["feature_rising_kill", "seat", "ege.transform", "ege.render"],
           "emits": []
         },
         {

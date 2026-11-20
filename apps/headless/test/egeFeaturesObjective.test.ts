@@ -10,12 +10,13 @@ import { emitEngineScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import type { EmittedScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
-import { decodeEvents } from '@etcito/game-engine/world-state'
+import { decodeEvents, readWorldState } from '@etcito/game-engine/world-state'
 import { engineCodeOfS1 } from '@royal-fiesta/game/ege/inputCodes'
 import { harnessRound, loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { createRoundRun, parseRunArgs } from '../../web/src/engineRound/run.ts'
 import type { RoundRunArgs } from '../../web/src/engineRound/run.ts'
 import { readRepoText } from '../src/files.ts'
+import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 
 async function roundWith(id: string, specs: FeatureSpec[] | null, sharedEngine?: EngineInstance, humans?: boolean[]): Promise<{
   engine: EngineInstance; scene: EmittedScene; course: CourseV1; round: EngineRound
@@ -434,6 +435,94 @@ test('a collectible tie goes to the lower room seat', async () => {
   } finally {
     second.round.dispose()
     first.round.dispose()
+  }
+})
+
+test('collectible awards the high room seat and keeps its cumulative score after restore', async () => {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  const spec = collectSpec([[0, 0.86, 0]], 7, 100)
+  const goalCenter: [number, number, number] = [100, 100, 100]
+  copy.sim!.features = [
+    spec,
+    ballSpec(goalCenter),
+    goalSpec(1, goalCenter, [2, 2, 2]),
+    { id: 'capture-demo', kind: 'captureZone', params: { center: [0, 0.86, 0], half: [2, 1, 2], captureS: 0.5 } },
+  ]
+  const engine = await loadEngine()
+  const sourceSchema = JSON.parse(await readRepoText(RF_EGE_SCHEMA))
+  const showSchedule = sourceSchema.world_kinds.find((kind: any) => kind.name === 'show_seat').schedule
+  const objectiveSchedule = ['rf.feature.ball.post', 'rf.feature.collectible.post', 'rf.feature.capture_zone.post']
+    .map(system => structuredClone(showSchedule.find((entry: any) => entry.system === system)))
+  sourceSchema.world_kinds.push({ name: 'objective_probe', players: 8, schedule: objectiveSchedule })
+  const schema = JSON.stringify(sourceSchema)
+  engine.setSchema(schema)
+  const compiled = await (await rfCompiler()).compile(collectRfScripts(), schema)
+  assert.deepEqual(compiled.diagnostics.filter(diagnostic => diagnostic.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const seatOf = Array.from({ length: 60 }, (_, seat) => seat)
+  const scene = emitEngineScene(engine, {
+    course: copy, assets, setup: { profile: 'sprint', seed: 7 },
+    show: { worldKind: 'show_seat', seatOf, inputSlots: seatOf.map(() => -1), humans: seatOf.map(() => false) },
+  })
+  const doc = JSON.parse(scene.text)
+  doc.world_kind = 'objective_probe'
+  doc.gravity = [0, 0, 0]
+  doc.resources.round.intro_ticks = 0
+  for (let seat = 0; seat < seatOf.length; seat++) {
+    const row = doc.entities[scene.seatEntities[seat]]
+    row.components.seat.status = seat === 59 ? 1 : 0
+    row.components.seat.team = 0
+    row.components.character.placed = 1
+    row.components.show_control.code = code()
+    row.components['ege.transform'].pos = seat === 59 ? [0, 0.86, 0] : [100 + seat, -50, 0]
+  }
+  const showScene = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: ALL_HUMAN }
+  const round = await createEngineRound(engine, schema, Uint8Array.from(compiled.wasm), showScene, copy, setup)
+  try {
+    const spot = scene.index('feature/pickup/spot/0')
+    const ball = scene.index('feature/ball')
+    while (round.tick < 2) rawStep(round, () => code())
+    const resultA = round.worldState().components.show_result_a[String(scene.seatEntities[59])]
+    assert.equal(resultA.score, 7)
+    assert.equal(resultA.last_score_tick, 0)
+    assert.equal(rec(round, 'feature_collectible_spot', spot).ready_tick, 6000)
+    while (round.tick < 95) rawStep(round, () => code())
+    const zone = scene.index('feature/capture-demo')
+    assert.equal(rec(round, 'feature_capture_zone', zone).owner, 0, 'the high room seat captures for team 0')
+    const contributions = Object.values(round.worldState().components.show_team_contribution) as any[]
+    assert.equal(contributions.length, 2, 'the ball and capture zone publish independently')
+    const byOwner = new Map(contributions.map(row => [row.owner, row]))
+    assert.deepEqual(
+      { feature: byOwner.get(ball).feature, team: byOwner.get(ball).team, value: byOwner.get(ball).value },
+      { feature: 1, team: 0, value: 1 },
+    )
+    assert.deepEqual(
+      { feature: byOwner.get(zone).feature, team: byOwner.get(zone).team, value: byOwner.get(zone).value },
+      { feature: 3, team: 0, value: 1 },
+    )
+
+    const snapshot = engine.snapshot(round.world).slice()
+    const restored = engine.createWorld(showScene.text)
+    try {
+      engine.restore(restored, snapshot)
+      const restoredState = () => readWorldState(engine, restored, round.layout)
+      const state = restoredState()
+      assert.equal(state.components.show_result_a[String(scene.seatEntities[59])].score, 7)
+      assert.equal(state.components.feature_capture_zone[String(zone)].owner, 0)
+      assert.deepEqual(
+        Object.values(state.components.show_team_contribution).map((row: any) => [row.owner, row.feature, row.team, row.value])
+          .sort((a: any[], b: any[]) => a[0] - b[0]),
+        [[ball, 1, 0, 1], [zone, 3, 0, 1]],
+      )
+      assert.equal(round.module.faultCount, 0)
+    } finally {
+      engine.freeWorld(restored)
+    }
+    assert.equal(round.observe().faults, 0)
+  } finally {
+    round.dispose()
   }
 })
 

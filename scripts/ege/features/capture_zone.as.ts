@@ -1,4 +1,4 @@
-import { Column, emit, getComponent, isNull, newRecord, readColumn, readResource, setComponent, tick } from 'ege'
+import { Column, getComponent, isNull, readColumn, readResource, setComponent, tick } from 'ege'
 import {
   Character, EgeRender, EgeTransform, Feature, FeatureCaptureZone, FeatureCaptureZoneVisual, RoundRes, Seat,
   TeamScoreEvent,
@@ -7,6 +7,7 @@ import { MODE_PARKED } from '../character/constants.as'
 import { characterColumn, seatColumn } from '../lib/seats.as'
 import { inBox } from '../lib/boxes.as'
 import { ticksOf } from '../lib/units.as'
+import { recordShowEvent } from '../lib/show_events.as'
 
 // packages/sim/src/features/capture.ts:15: an owning team scores every 60 owned ticks.
 const SCORE_TICKS: u32 = 60
@@ -118,11 +119,7 @@ export function rf_feature_capture_zone_post(): void {
         zone.owned_ticks++
         // packages/sim/src/features/capture.ts:98-100: one team_score every 60 owned ticks.
         if (zone.owned_ticks % SCORE_TICKS == 0) {
-          const event = newRecord<TeamScoreEvent>(TeamScoreEvent.SIZE)
-          event.team = <u32>zone.owner
-          event.a = 1
-          event.b = 0
-          emit<TeamScoreEvent>(TeamScoreEvent.ID, entity, event, TeamScoreEvent.SIZE)
+          recordShowEvent(TeamScoreEvent.ID, entity, <u32>zone.owner, 1, 0)
         }
       }
     }

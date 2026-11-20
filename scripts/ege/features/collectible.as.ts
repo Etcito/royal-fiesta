@@ -1,10 +1,11 @@
-import { Column, emit, getComponent, isNull, newRecord, readColumn, readResource, setComponent, tick } from 'ege'
+import { Column, getComponent, isNull, newRecord, readColumn, readResource, setComponent, tick } from 'ege'
 import {
   EgeRender, EgeTransform, Feature, FeatureCollectible, FeatureCollectibleSpot, RoundRes, ScoreEvent, Seat,
 } from '../components.gen'
 import { MODE_PARKED } from '../character/constants.as'
 import { characterColumn, seatColumn } from '../lib/seats.as'
 import { ticksOf } from '../lib/units.as'
+import { recordShowEvent } from '../lib/show_events.as'
 
 // packages/sim/src/character/capsule.ts:50: the character capsule radius is 0.4 m.
 const CAPSULE_RADIUS: f64 = 0.4
@@ -81,11 +82,7 @@ export function rf_feature_collectible_post(): void {
         }
         if (best >= 0) {
           const seat = seats.at(<u32>best)
-          const event = newRecord<ScoreEvent>(ScoreEvent.SIZE)
-          event.seat = seat.seat
-          event.a = <i32>feature.value
-          event.b = 0
-          emit<ScoreEvent>(ScoreEvent.ID, seats.entity(<u32>best), event, ScoreEvent.SIZE)
+          recordShowEvent(ScoreEvent.ID, seats.entity(<u32>best), seat.seat, <i32>feature.value, 0)
           spot.ready_tick = now + regenTicks
         }
       }

@@ -1,9 +1,10 @@
-import { Column, emit, getComponent, isNull, newRecord, pose, readColumn, readResource, setAngvel, setLinvel, setPose, tick } from 'ege'
+import { Column, getComponent, isNull, pose, readColumn, readResource, setAngvel, setLinvel, setPose, tick } from 'ege'
 import {
   Character, CourseRes, EgeTransform, FeatureBall, FeatureGoal, Home, HomeSpawn, RoundRes, Seat, TeamScoreEvent,
 } from '../components.gen'
 import { characterColumn, placeSeat, seatColumn } from '../lib/seats.as'
 import { ticksOf } from '../lib/units.as'
+import { recordShowEvent } from '../lib/show_events.as'
 
 // packages/sim/src/features/football.ts:26: the ball returns 180 ticks after a goal.
 const SCORE_RESET_TICKS: i32 = 180
@@ -127,11 +128,7 @@ export function rf_feature_ball_post(): void {
         for (let g: u32 = 0; g < goals.count; g++) {
           const goal = goals.at(g)
           if (!insideGoal(goal, x, y, z, ball.radius)) continue
-          const event = newRecord<TeamScoreEvent>(TeamScoreEvent.SIZE)
-          event.team = 1 - goal.team
-          event.a = 1
-          event.b = 0
-          emit<TeamScoreEvent>(TeamScoreEvent.ID, entity, event, TeamScoreEvent.SIZE)
+          recordShowEvent(TeamScoreEvent.ID, entity, <u32>(1 - goal.team), 1, 0)
           ball.pending = now + SCORE_RESET_TICKS
           break
         }

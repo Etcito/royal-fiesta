@@ -864,6 +864,123 @@
       ]
     },
     {
+      "name": "feature_sweep",
+      "fields": [
+        {
+          "name": "center",
+          "type": "f64",
+          "count": 3
+        },
+        {
+          "name": "length_m",
+          "type": "f64"
+        },
+        {
+          "name": "telegraph_s",
+          "type": "f64"
+        },
+        {
+          "name": "phase_count",
+          "type": "u32"
+        },
+        {
+          "name": "part_count",
+          "type": "u32"
+        },
+        {
+          "name": "overtime_ticks",
+          "type": "u32"
+        },
+        {
+          "name": "active",
+          "type": "u32"
+        },
+        {
+          "name": "effective",
+          "type": "f64"
+        },
+        {
+          "name": "live",
+          "type": "u32"
+        },
+        {
+          "name": "just_live",
+          "type": "u32"
+        },
+        {
+          "name": "cos",
+          "type": "f64"
+        },
+        {
+          "name": "sin",
+          "type": "f64"
+        },
+        {
+          "name": "slide",
+          "type": "f64"
+        },
+        {
+          "name": "placed",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "feature_sweep_phase",
+      "fields": [
+        {
+          "name": "owner",
+          "type": "u32"
+        },
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "at_s",
+          "type": "f64"
+        },
+        {
+          "name": "pattern",
+          "type": "u32"
+        },
+        {
+          "name": "height_m",
+          "type": "f64"
+        },
+        {
+          "name": "gap_m",
+          "type": "f64"
+        },
+        {
+          "name": "speed_deg_s",
+          "type": "f64"
+        },
+        {
+          "name": "speed_mps",
+          "type": "f64"
+        }
+      ]
+    },
+    {
+      "name": "feature_sweep_part",
+      "fields": [
+        {
+          "name": "owner",
+          "type": "u32"
+        },
+        {
+          "name": "index",
+          "type": "u32"
+        },
+        {
+          "name": "half",
+          "type": "f64",
+          "count": 3
+        }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

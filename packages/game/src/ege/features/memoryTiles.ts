@@ -6,7 +6,7 @@ import { FEATURE_KIND_RANK, featureSalt, visualOf } from '../featureEmitters.ts'
 
 const MIN_CELLS = 4
 const MAX_CELLS = 256
-const SEATS = 8
+const DEFAULT_SEATS = 8
 
 export const memoryTilesEmitter: FeatureEmitter = (spec: FeatureSpec, ctx) => {
   const path = `${ctx.path}#/features/${ctx.index}`
@@ -58,7 +58,8 @@ export const memoryTilesEmitter: FeatureEmitter = (spec: FeatureSpec, ctx) => {
       components: { feature_memory_tiles_cycle: { owner: ctx.index, index, target: 0 } },
     })
   }
-  for (let index = 0; index < SEATS; index++) {
+  const seatCount = ctx.seatCount ?? DEFAULT_SEATS
+  for (let index = 0; index < seatCount; index++) {
     children.push({
       name: `feature/${spec.id}/seat/${index}`,
       components: {

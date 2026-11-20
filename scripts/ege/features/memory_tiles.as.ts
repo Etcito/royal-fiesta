@@ -1,5 +1,5 @@
 import {
-  Column, emit, getComponent, newRecord, pose, rng, readColumn, readResource, setComponent, setPose, tick,
+  Column, getComponent, pose, rng, readColumn, readResource, setComponent, setPose, tick,
 } from 'ege'
 import {
   Character, EgeBodyProps, EgeBoxCollider, EgeRender, EgeTransform, Feature, FeatureMemoryTiles,
@@ -7,6 +7,7 @@ import {
   MatchEvent, RoundRes, Seat,
 } from '../components.gen'
 import { characterColumn, seatColumn } from '../lib/seats.as'
+import { recordShowEvent } from '../lib/show_events.as'
 import { ticksOf } from '../lib/units.as'
 import { GRAVITY_Y } from '../character/constants.as'
 
@@ -88,14 +89,6 @@ function markerColor(symbol: u32): u32 {
   }
 }
 
-function emitMatch(entity: u32, seat: u32, result: i32, ticks: i32): void {
-  const event = newRecord<MatchEvent>(MatchEvent.SIZE)
-  event.seat = seat
-  event.a = result
-  event.b = ticks
-  emit<MatchEvent>(MatchEvent.ID, entity, event, MatchEvent.SIZE)
-}
-
 // packages/sim/src/features/tiles.ts:17.
 const FALL_TICKS: i32 = 30
 
@@ -103,13 +96,6 @@ function findSeatState(rows: Column<FeatureMemoryTilesSeat>, owner: u32, seatId:
   for (let i: u32 = 0; i < rows.count; i++) {
     const row = rows.at(i)
     if (row.owner == owner && row.seat == seatId) return <i32>i
-  }
-  return -1
-}
-
-function findSeatRow(rows: Column<Seat>, seatId: u32): i32 {
-  for (let i: u32 = 0; i < rows.count; i++) {
-    if (rows.at(i).seat == seatId) return <i32>i
   }
   return -1
 }
@@ -215,14 +201,14 @@ function recordCrossings(
   seatStates: Column<FeatureMemoryTilesSeat>,
   now: i32,
 ): void {
-  for (let seatId: u32 = 0; seatId < 8; seatId++) {
-    const seatRow = findSeatRow(seats, seatId)
+  for (let seatRow: u32 = 0; seatRow < seats.count; seatRow++) {
+    const seatId = seats.at(seatRow).seat
     const stateRow = findSeatState(seatStates, owner, seatId)
-    if (seatRow < 0 || stateRow < 0) continue
-    const seat = seats.at(<u32>seatRow)
+    if (stateRow < 0) continue
+    const seat = seats.at(seatRow)
     const state = seatStates.at(<u32>stateRow)
     if (seat.status != 1 || state.first_correct_tick >= 0) continue
-    const characterRow = characters.find(seats.entity(<u32>seatRow))
+    const characterRow = characters.find(seats.entity(seatRow))
     if (characterRow < 0) continue
     const character = characters.at(<u32>characterRow)
     if (character.grounded == 0) continue
@@ -241,16 +227,16 @@ function finishChoice(
   penaltyTicks: i32,
 ): void {
   if (feature.finalized != 0) return
-  for (let seatId: u32 = 0; seatId < 8; seatId++) {
-    const seatRow = findSeatRow(seats, seatId)
+  for (let seatRow: u32 = 0; seatRow < seats.count; seatRow++) {
+    const seatId = seats.at(seatRow).seat
     const stateRow = findSeatState(seatStates, owner, seatId)
-    if (seatRow < 0 || stateRow < 0 || seats.at(<u32>seatRow).status != 1) continue
+    if (stateRow < 0 || seats.at(seatRow).status != 1) continue
     const state = seatStates.at(<u32>stateRow)
-    const entity = seats.entity(<u32>seatRow)
+    const entity = seats.entity(seatRow)
     if (state.first_correct_tick >= 0) {
-      emitMatch(entity, seatId, 1, state.first_correct_tick - feature.choice_start_tick)
+      recordShowEvent(MatchEvent.ID, entity, seatId, 1, state.first_correct_tick - feature.choice_start_tick)
     } else {
-      emitMatch(entity, seatId, 0, penaltyTicks)
+      recordShowEvent(MatchEvent.ID, entity, seatId, 0, penaltyTicks)
     }
   }
   feature.finalized = 1

@@ -297,6 +297,25 @@ test('memoryTiles emits a 4x4 cell pool with zero cycle symbols, eight seats and
   assert.equal(emitted.index('feature/memory-demo/cell/0'), emitted.index('feature/memory-demo') + 1)
 })
 
+test('memoryTiles emits a crossing row for every show roster seat', async () => {
+  const spec: FeatureSpec = {
+    id: 'memory-sixty', kind: 'memoryTiles', params: {
+      origin: [0, 1, 0], cols: 2, rows: 2, cellM: 1, symbols: 2, cycles: 1,
+      revealS: 1, hideS: 1, choiceS: 1,
+    },
+  }
+  const { input } = await inputWith([spec])
+  const entities = FEATURE_EMITTERS.memoryTiles(spec, {
+    course: input.course.sim!, index: 0, path: 'fixtures/ege/ege-strip.course.json', assets: input.assets,
+    seatCount: 60, worldKind: 'show_seat',
+  })
+  const rows = entities.children.filter(child => child.components?.feature_memory_tiles_seat)
+  assert.equal(rows.length, 60)
+  assert.deepEqual(rows[59]?.components?.feature_memory_tiles_seat, {
+    owner: 0, seat: 59, first_correct_tick: -1,
+  })
+})
+
 test('memoryTiles emits a 256-cell pool with twenty cycle records and zero-filled split symbols', async () => {
   const spec: FeatureSpec = {
     id: 'memory-max', kind: 'memoryTiles', params: {

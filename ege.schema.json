@@ -818,6 +818,32 @@
       ]
     },
     {
+      "name": "feature_hex_field",
+      "fields": [
+        { "name": "origin", "type": "f64", "count": 3 },
+        { "name": "layers", "type": "u32" },
+        { "name": "layer_spacing_m", "type": "f64" },
+        { "name": "rings", "type": "u32" },
+        { "name": "flat_m", "type": "f64" },
+        { "name": "point_m", "type": "f64" },
+        { "name": "thick_m", "type": "f64" },
+        { "name": "warn_s", "type": "f64" },
+        { "name": "decay_s", "type": "f64" },
+        { "name": "scale_with_entrants", "type": "u32" },
+        { "name": "placed", "type": "u32" }
+      ]
+    },
+    {
+      "name": "feature_hex_field_hex",
+      "fields": [
+        { "name": "owner", "type": "u32" },
+        { "name": "index", "type": "u32" },
+        { "name": "t", "type": "f64", "count": 3 },
+        { "name": "state", "type": "u32" },
+        { "name": "timer", "type": "u32" }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

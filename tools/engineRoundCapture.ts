@@ -246,8 +246,8 @@ function fresh(args: ReturnType<typeof options>): number {
   return failures ? 1 : 0
 }
 
-type Verdict = { filename: string; description: string; attempt: number; score: number | null; pass: boolean }
-type JudgeRunner = (image: string, description: string) => Promise<string>
+type Verdict = { filename: string; description: string; heldConstant?: string[]; attempt: number; score: number | null; pass: boolean }
+type JudgeRunner = (image: string, description: string, heldConstant: string[]) => Promise<string>
 
 export async function judgeImages(store: string, delivery: string, attempt: number, rows: InventoryRow[], budget: number, run: JudgeRunner, clock: () => number): Promise<number> {
   const start = clock()
@@ -260,12 +260,12 @@ export async function judgeImages(store: string, delivery: string, attempt: numb
       if (!bytes.length) throw new Error('image is empty')
       try {
         const verdict = JSON.parse(readFileSync(verdictPath, 'utf8')) as Verdict
-        if (verdict.pass && verdict.description === row.description && bytes.equals(readFileSync(join(store, 'attempts', String(verdict.attempt), row.filename)))) continue
+        if (verdict.pass && verdict.description === row.description && JSON.stringify(verdict.heldConstant ?? []) === JSON.stringify(row.held_constant) && bytes.equals(readFileSync(join(store, 'attempts', String(verdict.attempt), row.filename)))) continue
       } catch { /* No reusable verdict. */ }
       if (clock() - start >= budget * 1000) { missing++; console.error(`engine-round: ${row.id}: judge budget ${budget} s spent before this image`); continue }
-      const answer = await run(image, row.description)
+      const answer = await run(image, row.description, row.held_constant)
       const score = parseScore(answer)
-      const verdict: Verdict = { filename: row.filename, description: row.description, attempt, score, pass: score !== null && score >= 6 }
+      const verdict: Verdict = { filename: row.filename, description: row.description, heldConstant: row.held_constant, attempt, score, pass: score !== null && score >= 6 }
       json(verdictPath, verdict)
       console.log(`engine-round: ${row.id}: judge score ${score ?? 'none'} (min 6) ${verdict.pass ? 'PASS' : 'FAIL'}`)
       if (!verdict.pass) {
@@ -282,10 +282,10 @@ export async function judgeImages(store: string, delivery: string, attempt: numb
 
 async function judge(args: ReturnType<typeof options>): Promise<number> {
   const { store, delivery, attempt, selection } = current(args)
-  return judgeImages(store, delivery, attempt, selection.rows, args.budget, (image, description) => new Promise((done, reject) => {
+  return judgeImages(store, delivery, attempt, selection.rows, args.budget, (image, description, heldConstant) => new Promise((done, reject) => {
     const client = process.env.NMC_JUDGE_CLIENT
     if (!client) { reject(new Error('NMC_JUDGE_CLIENT is unset')); return }
-    const child = spawn('python3', [client, image, '--description', description, '--min-score', '6'])
+    const child = spawn('python3', [client, image, '--description', description, '--min-score', '6', ...heldConstant.flatMap(item => ['--held-constant', item])])
     let stdout = ''
     child.stdout.on('data', chunk => { stdout += String(chunk) })
     child.stderr.on('data', chunk => { process.stderr.write(chunk) })

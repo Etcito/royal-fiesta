@@ -122,3 +122,24 @@ test('judgeImages stops at its budget and reuses identical passing images', asyn
     assert.equal(calls, 2)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
+
+test('judgeImages hands the row held_constant list to the judge and re-judges when it changes', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'engine-round-held-'))
+  try {
+    const delivery = join(dir, 'delivery')
+    const attempt = join(dir, 'attempts/1')
+    mkdirSync(delivery, { recursive: true })
+    mkdirSync(attempt, { recursive: true })
+    const first = row({ id: 'a', filename: 'a.png', held_constant: ['the light'] }) as unknown as InventoryRow
+    writeFileSync(join(delivery, 'a.png'), 'a')
+    writeFileSync(join(attempt, 'a.png'), 'a')
+    const seen: string[][] = []
+    const runner = async (_image: string, _description: string, held: string[]) => { seen.push(held); return 'score: 7' }
+    assert.equal(await judgeImages(dir, delivery, 1, [first], 10, runner, () => 0), 0)
+    assert.equal(await judgeImages(dir, delivery, 1, [first], 10, runner, () => 0), 0)
+    assert.deepEqual(seen, [['the light']])
+    const changed = { ...first, held_constant: ['the light', 'the ground'] } as InventoryRow
+    assert.equal(await judgeImages(dir, delivery, 1, [changed], 10, runner, () => 0), 0)
+    assert.deepEqual(seen[1], ['the light', 'the ground'])
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})

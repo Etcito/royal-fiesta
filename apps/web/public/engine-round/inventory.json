@@ -169,8 +169,8 @@
     "args": {
       "course": "s1-e-sugar-sprint",
       "profile": "sprint",
-      "seed": 7,
-      "frames": 600,
+      "seed": 2,
+      "frames": 640,
       "local": "run",
       "captureAt": "end",
       "focus": "kind:doorBank"
@@ -180,11 +180,13 @@
       "faults eq 0",
       "features.doorBank gt 0"
     ],
-    "description": "a row of coloured door panels standing across the candy race lane on the engine, some doors broken open by penguins running into them",
+    "description": "a row of door panels standing across the candy race lane on the engine, some doors broken open by penguins running into them",
     "held_constant": [
       "the focus camera rule",
       "the light",
-      "the course assets"
+      "the course assets",
+      "the door colour (every panel uses the one candy door asset colour)",
+      "the lane, rails and backdrop colours"
     ]
   },
   {
@@ -195,7 +197,7 @@
       "course": "s1-c1-diamond-citadel",
       "profile": "sprint",
       "seed": 7,
-      "frames": 400,
+      "frames": 950,
       "local": "run",
       "captureAt": "end",
       "focus": "kind:rollingLog"
@@ -206,11 +208,14 @@
       "features.rollingLog gt 0",
       "focus.moved eq true"
     ],
-    "description": "brown cylinder logs rolling down a candy slope towards running penguins",
+    "description": "a brown cylinder log lying on a candy slope track, with a group of penguins running along the course in the distance ahead of it",
     "held_constant": [
       "the focus camera rule",
       "the light",
-      "the course assets"
+      "the course assets",
+      "the ground, rails and backdrop colours",
+      "the penguins' distance from the log (the course routes them 47 m from the log's slope)",
+      "a still image cannot show the roll (focus.moved eq true checks it)"
     ]
   },
   {
@@ -221,7 +226,7 @@
       "course": "s1-b-butterfly-freeway",
       "profile": "sprint",
       "seed": 7,
-      "frames": 600,
+      "frames": 885,
       "local": "run",
       "captureAt": "end",
       "focus": "kind:boostLane"
@@ -231,11 +236,13 @@
       "faults eq 0",
       "features.boostLane gt 0"
     ],
-    "description": "a purple boost lane strip on the race track with penguins speeding along it",
+    "description": "a purple boost lane box lying across the race track with penguins running through it",
     "held_constant": [
       "the focus camera rule",
       "the light",
-      "the course assets"
+      "the course assets",
+      "the track, rails and backdrop colours",
+      "the lane box size (the course sets a 6 m x 2 m x 6 m volume, drawn as a solid box)"
     ]
   },
   {
@@ -246,7 +253,7 @@
       "course": "s1-d-spiral-of-mischief",
       "profile": "sprint",
       "seed": 7,
-      "frames": 600,
+      "frames": 250,
       "local": "run",
       "captureAt": "end",
       "focus": "kind:launchPad"
@@ -254,13 +261,16 @@
     "require": [
       "nonEmpty eq true",
       "faults eq 0",
-      "features.launchPad gt 0"
+      "features.launchPad gt 0",
+      "features.tileField gt 0"
     ],
-    "description": "an orange launch pad disc on the course with a field of floor tiles nearby, penguins on or above the pad",
+    "description": "an orange launch pad disc on the course with penguins on or above the pad",
     "held_constant": [
       "the focus camera rule",
       "the light",
-      "the course assets"
+      "the course assets",
+      "the track, rails and backdrop colours",
+      "the tile field (the course places it 36 m past the pad, outside the pad's focus frame)"
     ]
   },
   {
@@ -271,21 +281,24 @@
       "course": "ege-yard-a",
       "profile": "sprint",
       "seed": 7,
-      "frames": 400,
+      "frames": 261,
       "local": "run",
       "captureAt": "end",
-      "focus": "kind:swimVolume"
+      "focus": "kind:marker"
     },
     "require": [
       "nonEmpty eq true",
       "faults eq 0",
-      "features.swimVolume gt 0"
+      "features.swimVolume gt 0",
+      "features.marker gt 0"
     ],
-    "description": "a green slime pool box and a cream marker disc on a candy floor, a penguin swimming in the pool",
+    "description": "a green slime pool box and a cream marker disc, with a penguin swimming in the pool",
     "held_constant": [
       "the focus camera rule",
       "the light",
-      "the course assets"
+      "the course assets",
+      "the candy floor and backdrop colours",
+      "the marker camera (it frames the marker disc and the pool ahead of it)"
     ]
   }
 ]

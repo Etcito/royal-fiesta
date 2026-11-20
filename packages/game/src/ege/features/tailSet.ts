@@ -6,12 +6,11 @@ import { FEATURE_KIND_RANK, featureSalt, tintColor, visualOf } from '../featureE
 
 // Source: packages/sim/src/features/tails.ts (tailSetFeature). The root carries the authored count,
 // spawn pile and immunity seconds, and starts assigned 0 with an empty free pool; the tail_set script
-// runs the half-count arithmetic and the first-round assignment from the feature RNG salt. Each of the
-// eight seats is a bodyless child with an empty feature_tail_set_seat record and an initially hidden
+// runs the half-count arithmetic and the first-round assignment from the feature RNG salt. Each emitted seat is a bodyless child with an empty feature_tail_set_seat record and an initially hidden
 // floor-disc visual (the source draw), so no holder is ever chosen in TypeScript. Child names are
 // feature/<spec.id>/seat/<i> with the zero-based decimal seat index, e.g. feature/tails-demo/seat/0.
 // These are entity names, not filesystem paths.
-const SEATS = 8
+const G6_SEATS = 8
 const DISC_ASSET = 'candy.floor-disc'
 const DISC_FULL_SIZE = { x: 0.5, y: 0.12, z: 0.5 }
 const DISC_TINT = 4
@@ -28,7 +27,8 @@ export const tailSetEmitter: FeatureEmitter = (spec: FeatureSpec, ctx) => {
   const spawnArray: [number, number, number] = [spawn.x, spawn.y, spawn.z]
   const disc = visualOf(DISC_ASSET, DISC_FULL_SIZE)
   const children: RawEntity[] = []
-  for (let seat = 0; seat < SEATS; seat++) {
+  const seatCount = ctx.seatCount ?? G6_SEATS
+  for (let seat = 0; seat < seatCount; seat++) {
     children.push({
       name: `feature/${spec.id}/seat/${seat}`,
       components: {

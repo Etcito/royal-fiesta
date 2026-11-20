@@ -1144,6 +1144,126 @@ test('a dead holder frees its tail and a nearby grabber restores possession', as
   }
 })
 
+// A test-local world kind built from the production show_seat entries for the systems under test,
+// with sixty bot seats (room seat = round seat) so seats above 31 run the real transfer and finish paths.
+async function highSeatRig(
+  spec: FeatureSpec,
+  systems: readonly string[],
+  edit: (doc: any, scene: EmittedScene) => void,
+): Promise<{ scene: EmittedScene; round: EngineRound }> {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = [spec]
+  const engine = await loadEngine()
+  const sourceSchema = JSON.parse(await readRepoText(RF_EGE_SCHEMA))
+  const showSchedule = sourceSchema.world_kinds.find((kind: any) => kind.name === 'show_seat').schedule
+  const schedule = systems.map(system => structuredClone(showSchedule.find((entry: any) => entry.system === system)))
+  sourceSchema.world_kinds.push({ name: 'high_seat_probe', players: 8, schedule })
+  const schema = JSON.stringify(sourceSchema)
+  engine.setSchema(schema)
+  const compiled = await (await rfCompiler()).compile(collectRfScripts(), schema)
+  assert.deepEqual(compiled.diagnostics.filter(diagnostic => diagnostic.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const seatOf = Array.from({ length: 60 }, (_, seat) => seat)
+  const scene = emitEngineScene(engine, {
+    course: copy, assets, setup: { profile: 'sprint', seed: 7 },
+    show: { worldKind: 'show_seat', seatOf, inputSlots: seatOf.map(() => -1), humans: seatOf.map(() => false) },
+  })
+  const doc = JSON.parse(scene.text)
+  doc.world_kind = 'high_seat_probe'
+  doc.gravity = [0, 0, 0]
+  doc.resources.round.intro_ticks = 0
+  for (const seat of seatOf) {
+    const row = doc.entities[scene.seatEntities[seat]]
+    row.components.seat.status = 1
+    row.components.seat.team = 0
+    row.components.character.placed = 1
+    row.components.show_control.code = code()
+    row.components['ege.transform'].pos = [100 + seat, -50, 0]
+  }
+  edit(doc, scene)
+  const modified = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: [false, false, false, false, false, false, false, false] }
+  const round = await createEngineRound(engine, schema, Uint8Array.from(compiled.wasm), modified, copy, setup)
+  return { scene, round }
+}
+
+test('seats above 31 acquire and lose a tail, and the immunity timer survives the transfer', async () => {
+  const rig = await highSeatRig(
+    tailSpec('half', [50, 50, 50], 1),
+    ['rf.character.pre', 'rf.feature.tail_set.pre', 'rf.feature.tail_set.post'],
+    (doc, scene) => {
+      tailFeature(doc, scene, 'tails-demo').assigned = 1
+      tailSeat(doc, scene, 'tails-demo', 40).has_tail = 1
+      doc.entities[scene.seatEntities[40]].components['ege.transform'].pos = [0, 0, 0]
+      doc.entities[scene.seatEntities[59]].components['ege.transform'].pos = [0.5, 0, 0]
+      doc.entities[scene.seatEntities[59]].components.show_control.code = code(0, true)
+    },
+  )
+  try {
+    const events: ReturnType<typeof decodeEvents> = []
+    for (let i = 0; i < 3; i++) events.push(...rawStep(rig.round, () => code()))
+    const possess = events.filter(event => event.kind === 'possess')
+    assert.equal(possess.length, 2, 'one holder loses and one high-seat grabber gains')
+    const lost = possess.find(event => event.fields.seat === 40)
+    const gained = possess.find(event => event.fields.seat === 59)
+    assert.ok(lost && gained, 'both high-seat possess events are present')
+    assert.deepEqual({ a: lost.fields.a, b: lost.fields.b }, { a: 0, b: 0 })
+    assert.deepEqual({ a: gained.fields.a, b: gained.fields.b }, { a: 1, b: 0 })
+    assert.equal(gained.entity, rig.scene.seatEntities[59])
+    assert.equal(lost.entity, rig.scene.seatEntities[40])
+
+    const gainedResult = rec(rig.round, 'show_result_b', rig.scene.seatEntities[59])
+    const lostResult = rec(rig.round, 'show_result_b', rig.scene.seatEntities[40])
+    assert.deepEqual({ possessing: gainedResult.possessing }, { possessing: 1 })
+    assert.deepEqual({ possessing: lostResult.possessing }, { possessing: 0 })
+    assert.ok(gainedResult.last_acquire_tick >= 0, 'the acquisition tick is recorded')
+    const timer = rec(rig.round, 'feature_tail_set_seat', rig.scene.index('feature/tails-demo/seat/59'))
+    assert.equal(timer.has_tail, 1)
+    assert.equal(timer.immune_until, gainedResult.last_acquire_tick + 60, 'one second of immunity from the acquisition')
+
+    for (let i = 0; i < 30; i++) events.push(...rawStep(rig.round, () => code()))
+    assert.equal(events.filter(event => event.kind === 'possess').length, 2, 'the held tail emits no duplicate possess')
+    const held = rec(rig.round, 'feature_tail_set_seat', rig.scene.index('feature/tails-demo/seat/59'))
+    assert.equal(held.immune_until, timer.immune_until, 'the immunity timer is not reset while held')
+    assert.equal(rig.round.observe().faults, 0)
+  } finally {
+    rig.round.dispose()
+  }
+})
+
+test('seat 59 finishes through the crown once, and the cumulative finish is not repeated', async () => {
+  const rig = await highSeatRig(
+    crownSpec([0, 0, 0], 1),
+    ['rf.character.pre', 'rf.feature.crown.post'],
+    (doc, scene) => {
+      doc.entities[scene.seatEntities[59]].components['ege.transform'].pos = [0, 0, 0]
+      doc.entities[scene.seatEntities[59]].components.show_control.code = code(0, true)
+    },
+  )
+  try {
+    const events: ReturnType<typeof decodeEvents> = []
+    for (let i = 0; i < 3; i++) events.push(...rawStep(rig.round, () => code()))
+    const crowns = events.filter(event => event.kind === 'crown')
+    assert.equal(crowns.length, 1, 'the first grab emits the crown once')
+    assert.equal(crowns[0].fields.seat, 59)
+    assert.equal(crowns[0].entity, rig.scene.seatEntities[59])
+    const finished = rec(rig.round, 'show_result_a', rig.scene.seatEntities[59])
+    assert.equal(finished.status, 2, 'the crown finish sets the cumulative status')
+    const finishTick = finished.finish_tick
+    assert.ok(finishTick >= 0)
+    assert.equal(rec(rig.round, 'show_result_a', rig.scene.seatEntities[40]).status, 1, 'other seats stay alive')
+    assert.equal(rec(rig.round, 'feature_crown', rig.scene.index('feature/crown-demo')).taken, 1)
+
+    for (let i = 0; i < 30; i++) events.push(...rawStep(rig.round, () => code()))
+    assert.equal(events.filter(event => event.kind === 'crown').length, 1, 'the taken crown emits no repeat')
+    assert.equal(rec(rig.round, 'show_result_a', rig.scene.seatEntities[59]).finish_tick, finishTick)
+    assert.equal(rig.round.observe().faults, 0)
+  } finally {
+    rig.round.dispose()
+  }
+})
+
 function crownSpec(t: [number, number, number], grabRangeM = 1): FeatureSpec {
   return { id: 'crown-demo', kind: 'crown', params: { t, grabRangeM } }
 }

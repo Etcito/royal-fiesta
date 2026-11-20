@@ -623,6 +623,15 @@ test('tailSet keeps an integer count 1..30 instead of half', async () => {
   }
 })
 
+test('tailSet emits one transferable seat record for every roster member above seat 31', async () => {
+  const input = await inputWith([tailDemo])
+  const emitted = FEATURE_EMITTERS.tailSet(tailDemo, { ...ctxOf(input, 0), seatCount: 60 })
+  assert.equal(emitted.children.length, 60)
+  assert.equal(emitted.children[31]?.name, 'feature/tails-demo/seat/31')
+  assert.equal(emitted.children[59]?.name, 'feature/tails-demo/seat/59')
+  assert.equal(emitted.children[59]?.components?.feature_tail_set_seat?.seat, 59)
+})
+
 test('tailSet refuses count values outside half or the 1..30 integer range', async () => {
   const input = await inputWith([tailDemo])
   const ctx = ctxOf(input, 0)
@@ -714,6 +723,15 @@ test('crown emits authored state, eight contender records and a gold sphere', as
   assert.ok(engine.createWorld(scene.text) >= 1)
   assert.ok(scene.index('feature/crown-demo/seat/7') >= 0)
   assert.ok(scene.index('feature/crown-demo/visual/0') >= 0)
+})
+
+test('crown emits contender state for the complete show roster', async () => {
+  const input = await inputWith([crownDemo])
+  const emitted = FEATURE_EMITTERS.crown(crownDemo, { ...ctxOf(input, 3), seatCount: 60 })
+  assert.equal(emitted.children.length, 61)
+  assert.equal(emitted.children[59]?.name, 'feature/crown-demo/seat/59')
+  assert.deepEqual(emitted.children[59]?.components?.feature_crown_seat, { owner: 3, seat: 59, prev_dist: 0 })
+  assert.equal(emitted.children[60]?.name, 'feature/crown-demo/visual/0')
 })
 
 test('crown defaults and validates grab range and requires checkpoint 1', async () => {

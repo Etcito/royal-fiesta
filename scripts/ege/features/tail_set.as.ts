@@ -1,4 +1,4 @@
-import { Column, emit, getComponent, isNull, newRecord, readColumn, readResource, rng, setComponent, tick } from 'ege'
+import { Column, getComponent, isNull, readColumn, readResource, rng, setComponent, tick } from 'ege'
 import {
   Character, EgeRender, EgeTransform, Feature, FeatureTailSet, FeatureTailSetSeat, PossessEvent, RoundRes, Seat,
 } from '../components.gen'
@@ -6,6 +6,7 @@ import {
   BTN_GRAB_BIT, CARRY_NONE, CARRY_TAIL, CHAR_GRAB_RANGE, MODE_AIR, MODE_GROUND, MODE_PARKED,
 } from '../character/constants.as'
 import { characterColumn, seatColumn } from '../lib/seats.as'
+import { recordShowEvent } from '../lib/show_events.as'
 import { ticksOf } from '../lib/units.as'
 
 // packages/sim/src/match/roundSystem.ts:11: PlayerStatus.alive is 1.
@@ -69,19 +70,11 @@ function hold(states: Column<FeatureTailSetSeat>, characters: Column<Character>,
     state.immune_until = now + immunityTicks
   }
   setCarry(characters, entity, CARRY_TAIL, 0)
-  const event = newRecord<PossessEvent>(PossessEvent.SIZE)
-  event.seat = rank
-  event.a = 1
-  event.b = 0
-  emit<PossessEvent>(PossessEvent.ID, entity, event, PossessEvent.SIZE)
+  recordShowEvent(PossessEvent.ID, entity, rank, 1, 0)
 }
 
 function possess(entity: u32, rank: u32, a: i32): void {
-  const event = newRecord<PossessEvent>(PossessEvent.SIZE)
-  event.seat = rank
-  event.a = a
-  event.b = 0
-  emit<PossessEvent>(PossessEvent.ID, entity, event, PossessEvent.SIZE)
+  recordShowEvent(PossessEvent.ID, entity, rank, a, 0)
 }
 
 // no handoff: Emit tail sets and per-seat state supplies the feature_tail_set and

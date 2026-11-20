@@ -1,10 +1,11 @@
-import { Column, emit, getComponent, isNull, newRecord, readColumn, readResource, setComponent, tick } from 'ege'
+import { Column, getComponent, isNull, readColumn, readResource, setComponent, tick } from 'ege'
 import {
   Character, CourseRes, CrownEvent, EgeRender, EgeTransform, Feature, FeatureCrown, FeatureCrownSeat,
   FeatureCrownVisual, Gate, RoundRes, Seat,
 } from '../components.gen'
 import { BTN_GRAB_BIT, MODE_AIR, MODE_DIVE, MODE_GROUND } from '../character/constants.as'
 import { characterColumn, placeSeat, seatColumn } from '../lib/seats.as'
+import { recordShowEvent } from '../lib/show_events.as'
 import { respawnSlotX, respawnSlotZ } from '../seat/respawn.as'
 
 // packages/sim/src/match/roundSystem.ts:11: PlayerStatus.alive is 1.
@@ -181,11 +182,7 @@ export function rf_feature_crown_post(): void {
       if (now >= 0 && feature.taken == 0 && seat.status == STATUS_ALIVE &&
         (mode == MODE_GROUND || mode == MODE_AIR || mode == MODE_DIVE) &&
         !protectedNow && grabbing && d <= feature.grab_range_m) {
-        const event = newRecord<CrownEvent>(CrownEvent.SIZE)
-        event.seat = seat.seat
-        event.a = crossingSub(state.prev_dist, d, feature.grab_range_m)
-        event.b = 0
-        emit<CrownEvent>(CrownEvent.ID, entity, event, CrownEvent.SIZE)
+        recordShowEvent(CrownEvent.ID, entity, seat.seat, crossingSub(state.prev_dist, d, feature.grab_range_m), 0)
         grabbed = true
       }
       state.prev_dist = d

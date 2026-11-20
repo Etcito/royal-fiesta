@@ -15,7 +15,8 @@ export const crownEmitter: FeatureEmitter = (spec: FeatureSpec, ctx) => {
   const rot = [0, 0, 0, 1]
   const visual = visualOf('candy.tower', { x: 0.25, y: 0.25, z: 0.25 })
   const children: RawEntity[] = []
-  for (let seat = 0; seat < 8; seat++) {
+  const seatCount = ctx.seatCount ?? 8
+  for (let seat = 0; seat < seatCount; seat++) {
     children.push({
       name: `feature/${spec.id}/seat/${seat}`,
       components: { feature_crown_seat: { owner: ctx.index, seat, prev_dist: 0 } },

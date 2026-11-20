@@ -408,3 +408,53 @@ test('risingKill keeps an explicit halfM and refuses an end height at or below t
   assert.throws(() => FEATURE_EMITTERS.risingKill(flat, { course: input.course.sim!, index: 1, path, assets: input.assets }),
     (error: unknown) => error instanceof RefusalError && error.message.includes('/endY: expected endY > startY (5)'))
 })
+
+test('a sixty-seat show field emits every hazard child pool under one feature owner', async () => {
+  const specs: FeatureSpec[] = [
+    { id: 'hex', kind: 'hexField', params: {
+      origin: [-3.5, 0, 0], layers: 1, layerSpacingM: 0.5, rings: 1, flatM: 2, pointM: 2,
+      thickM: 0.1, warnS: 0.5, decayS: 0.5, scaleWithEntrants: true,
+    } },
+    { id: 'ring', kind: 'annulus', params: {
+      center: [0, 0.1, 10], innerM: 2, outerM: 4, thickM: 0.4, speedDegS: 30, segments: 6,
+    } },
+    { id: 'sweep', kind: 'sweep', params: {
+      center: [0, 0, 20], lengthM: 10, telegraphS: 0.1, pattern: 'laser', heightM: 0.5, gapM: 2,
+      speedDegS: 90, speedMps: 4, phases: [{ atS: 0 }, { atS: 1, pattern: 'bars', gapM: 2 }],
+    } },
+    { id: 'rise', kind: 'risingKill', params: {
+      startY: -6, endY: 10, startS: 2, riseMps: 0.5, halfM: 12, clock: { t: [0, 0, 30] },
+    } },
+  ]
+  const seatOf = Array.from({ length: 60 }, (_, seat) => seat)
+  const { input } = await inputWith(specs)
+  const emitted = emitEngineScene(engine, {
+    ...input,
+    show: { worldKind: 'show_field', seatOf, inputSlots: seatOf.map(() => -1), humans: seatOf.map(() => false) },
+  })
+  assert.ok(engine.createWorld(emitted.text) >= 1)
+  const pools = [
+    { id: 'hex', record: 'feature_hex_field_hex', children: 7 },
+    { id: 'ring', record: 'feature_annulus_segment', children: 6 },
+    { id: 'sweep', record: 'feature_sweep_phase', children: 2 },
+    { id: 'sweep', record: 'feature_sweep_part', children: 2 },
+    { id: 'rise', record: 'feature_rising_kill_visual', children: 2 },
+  ]
+  for (let index = 0; index < specs.length; index++) {
+    const spec = specs[index]!
+    const roots = Object.values(emitted.scene.entities)
+      .filter(entity => entity.components?.feature?.index === index)
+    assert.equal(roots.length, 1, `${spec.id} has one feature root`)
+    assert.equal(roots[0]?.name, `feature/${spec.id}`)
+  }
+  for (const pool of pools) {
+    const index = specs.findIndex(spec => spec.id === pool.id)
+    const rows = Object.entries(emitted.scene.entities)
+      .filter(([, entity]) => entity.components?.[pool.record] !== undefined)
+    assert.equal(rows.length, pool.children, `${pool.record} keeps its authored pool size`)
+    for (const [, entity] of rows) {
+      assert.equal(entity.components?.[pool.record]?.owner, index, `${pool.record} names its feature index`)
+      assert.ok((entity.name ?? '').startsWith(`feature/${pool.id}/`), `${entity.name} stays under its feature root`)
+    }
+  }
+})

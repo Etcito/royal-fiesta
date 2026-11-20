@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { EngineInstance } from '@etcito/game-engine/loader'
 import { loadEngine } from '@etcito/game-engine'
-import { decodeEvents } from '@etcito/game-engine/world-state'
+import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
+import { EngineDomainFactory } from '@etcito/game-engine/zones'
+import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
+import { decodeEvents, readWorldState } from '@etcito/game-engine/world-state'
 import type { FeatureSpec } from '@royal-fiesta/sim/course'
 import { encodeInput } from '@royal-fiesta/sim/input'
 import { createEngineRound } from '@royal-fiesta/game/ege/round'
@@ -12,6 +15,7 @@ import type { EmittedScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
 import type { CourseV1 } from '@royal-fiesta/game/courseV1'
 import { harnessRound, loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
+import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 import { readRepoText } from '../src/files.ts'
 import { roundRenderBridge } from '../../web/src/engineRound/hexTiles.ts'
 import { createRoundRun, parseRunArgs } from '../../web/src/engineRound/run.ts'
@@ -44,6 +48,114 @@ function code(): number {
 function near(actual: number, expected: number): void {
   assert.ok(Math.abs(actual - expected) <= 1e-6, `${actual} != ${expected}`)
 }
+
+// Test-local show world: only the character and hazard systems run, so a sixty-seat show roster
+// exercises the hazard scripts without the complete show schedule.
+const SHOW_HAZARD_WORLD = 'show_hazard_probe'
+const SHOW_HAZARD_INPUTS = [0, 0, 0, 0, 0, 0, 0, 0]
+let showHazardSchema: Promise<string> | undefined
+let showHazardScripts: Promise<Uint8Array> | undefined
+
+function showHazardSchemaText(): Promise<string> {
+  showHazardSchema ??= readRepoText(RF_EGE_SCHEMA).then(text => {
+    const schema = JSON.parse(text)
+    const round = schema.world_kinds.find((kind: any) => kind.name === 'round').schedule
+    const entry = (system: string) => structuredClone(round.find((row: any) => row.system === system))
+    schema.world_kinds.push({
+      name: SHOW_HAZARD_WORLD,
+      players: 8,
+      schedule: [
+        { system: 'ege.movers', kind: 'engine' },
+        entry('rf.character.pre'),
+        entry('rf.feature.hex_field.pre'),
+        entry('rf.feature.annulus.pre'),
+        entry('rf.feature.sweep.pre'),
+        entry('rf.feature.rising_kill.pre'),
+        { system: 'ege.body.props', kind: 'engine' },
+        { system: 'ege.box.collider', kind: 'engine' },
+        { system: 'ege.physics', kind: 'engine' },
+        { system: 'ege.contact.track', kind: 'engine' },
+        entry('rf.character.post'),
+        entry('rf.feature.hex_field.post'),
+        entry('rf.feature.sweep.post'),
+        entry('rf.feature.rising_kill.post'),
+        { system: 'ege.zone.track', kind: 'engine' },
+      ],
+    })
+    return JSON.stringify(schema)
+  })
+  return showHazardSchema
+}
+
+function showHazardScriptBytes(schemaText: string): Promise<Uint8Array> {
+  showHazardScripts ??= (async () => {
+    const compiled = await (await rfCompiler()).compile(collectRfScripts(), schemaText)
+    assert.deepEqual(compiled.diagnostics.filter(d => d.severity === 'error').map(formatRfDiagnostic), [])
+    assert.ok(compiled.wasm, 'show hazard compilation produced no wasm')
+    return Uint8Array.from(compiled.wasm)
+  })()
+  return showHazardScripts
+}
+
+async function hazardShow(
+  specs: FeatureSpec[],
+  patch?: (doc: any, scene: EmittedScene) => void,
+  seatOf = Array.from({ length: 60 }, (_, seat) => seat),
+): Promise<{
+  engine: EngineInstance
+  world: number
+  host: ScriptHost
+  module: import('@etcito/game-engine/script').ScriptModule
+  scene: EmittedScene
+  doc: any
+  layout: ReturnType<typeof schemaLayout>
+  faults: string[]
+}> {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = specs
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  const scene = emitEngineScene(engine, {
+    course: copy, assets, setup: { profile: 'sprint', seed: 7 },
+    show: { worldKind: 'show_field', seatOf, inputSlots: seatOf.map(() => -1), humans: seatOf.map(() => false) },
+  })
+  const doc = JSON.parse(scene.text)
+  doc.world_kind = SHOW_HAZARD_WORLD
+  doc.resources.round.phase = 1
+  doc.resources.round.frozen = 0
+  doc.resources.round.intro_ticks = 0
+  doc.resources.round.round_ticks = 100000
+  for (let seat = 0; seat < seatOf.length; seat++) {
+    const row = doc.entities[scene.seatEntities[seat]]
+    row.components.seat.status = 0
+    row.components.character.placed = 1
+    row.components.character.frozen = 0
+    row.components['ege.transform'].pos = [0, -50, 0]
+    // The emitted show_control starts at zero, which decodes as a full diagonal move; seed neutral.
+    row.components.show_control.code = code()
+  }
+  patch?.(doc, scene)
+  const schemaText = await showHazardSchemaText()
+  engine.setSchema(schemaText)
+  const faults: string[] = []
+  const module = await loadScript(engine, await showHazardScriptBytes(schemaText), {
+    name: 'rf-show', onFault: fault => faults.push(`${fault.system}: ${fault.message}`),
+  })
+  const world = engine.createWorld(JSON.stringify(doc))
+  return { engine, world, host: new ScriptHost(module), module, scene, doc, layout: schemaLayout(engine), faults }
+}
+
+function stepHazardShow(
+  rig: { host: ScriptHost; world: number; module: { faultCount: number }; faults: string[] },
+  ticks: number,
+): void {
+  for (let i = 0; i < ticks; i++) {
+    rig.host.stepTick(rig.world, SHOW_HAZARD_INPUTS)
+    assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+  }
+}
+
 
 test('hexField radius is pointM / 2 in the emitted record and after the script runs', async () => {
   // Honeycomb's distinct values: flatM / 2 would give 2.75, the source radius pointM / 2 gives 3.2.
@@ -1064,5 +1176,162 @@ test('ege-yard-b runs sweep, annulus and memory hazards for 600 ticks with live 
     assert.ok(bars.length > 0, 'live sweep bars visible')
   } finally {
     round.dispose()
+  }
+})
+
+test('show field hazards keep one owned pool and a high room seat drops its hex tile', async () => {
+  const specs: FeatureSpec[] = [
+    { id: 'hex', kind: 'hexField', params: {
+      origin: [-3.5, 5, 0], layers: 1, layerSpacingM: 0.5, rings: 1, flatM: 2, pointM: 2,
+      thickM: 0.1, warnS: 0.1, decayS: 0.1, scaleWithEntrants: true,
+    } },
+    { id: 'ring', kind: 'annulus', params: {
+      center: [0, 0.1, 10], innerM: 2, outerM: 4, thickM: 0.4, speedDegS: 30, segments: 6,
+    } },
+    { id: 'sweep', kind: 'sweep', params: {
+      center: [0, 0, 20], lengthM: 10, telegraphS: 0.1, pattern: 'laser', heightM: 0.5, gapM: 2,
+      speedDegS: 90, speedMps: 4, phases: [{ atS: 0 }],
+    } },
+    { id: 'rise', kind: 'risingKill', params: {
+      startY: -6, endY: 10, startS: 2, riseMps: 0.5, halfM: 12, clock: { t: [0, 0, 30] },
+    } },
+  ]
+  const rig = await hazardShow(specs, (doc, scene) => {
+    const row = doc.entities[scene.seatEntities[59]]
+    row.components.seat.status = 1
+    const tile = doc.entities[scene.index('feature/hex/hex/0')]
+    const [x, y, z] = tile.components['ege.transform'].pos as number[]
+    row.components['ege.transform'].pos = [x, y + 0.05 + 0.86, z]
+  })
+  try {
+    stepHazardShow(rig, 120)
+    const state: any = readWorldState(rig.engine, rig.world, rig.layout)
+    const tileEntity = rig.scene.index('feature/hex/hex/0')
+    const tile = state.components.feature_hex_field_hex[String(tileEntity)]
+    assert.equal(tile.state, 3, 'the high room seat burns through its hex tile')
+    assert.equal(state.components['ege.body_props'][String(tileEntity)].colliders_enabled, 0)
+    assert.equal(state.components['ege.render'][String(tileEntity)].visible, 0)
+    const seatY = state.components['ege.transform'][String(rig.scene.seatEntities[59])].pos[1]
+    assert.ok(seatY < 2, `the high seat falls once its tile is gone (y ${seatY})`)
+
+    const pools = [
+      { id: 'hex', record: 'feature_hex_field_hex', children: 7 },
+      { id: 'ring', record: 'feature_annulus_segment', children: 6 },
+      { id: 'sweep', record: 'feature_sweep_phase', children: 1 },
+      { id: 'sweep', record: 'feature_sweep_part', children: 1 },
+      { id: 'rise', record: 'feature_rising_kill_visual', children: 2 },
+    ]
+    for (let index = 0; index < specs.length; index++) {
+      const roots = Object.values(rig.scene.scene.entities).filter(entity => entity.components?.feature?.index === index)
+      assert.equal(roots.length, 1, `feature ${specs[index]!.id} has one authoritative root`)
+    }
+    for (const pool of pools) {
+      const index = specs.findIndex(spec => spec.id === pool.id)
+      const rows = Object.values(state.components[pool.record]) as any[]
+      assert.equal(rows.length, pool.children, `${pool.record} keeps its authored pool size`)
+      for (const row of rows) assert.equal(row.owner, index, `${pool.record} names its feature owner`)
+    }
+  } finally {
+    rig.engine.freeWorld(rig.world)
+    rig.module.dispose()
+  }
+})
+
+test('zone rebuild restores hazard geometry, sweep phases and rising kill requests', async () => {
+  const specs: FeatureSpec[] = [
+    { id: 'hex', kind: 'hexField', params: {
+      origin: [-3.5, 0, 0], layers: 1, layerSpacingM: 0.5, rings: 1, flatM: 2, pointM: 2,
+      thickM: 0.1, warnS: 0.5, decayS: 0.5, scaleWithEntrants: false,
+    } },
+    { id: 'ring', kind: 'annulus', params: {
+      center: [0, 0.1, 10], innerM: 2, outerM: 4, thickM: 0.4, speedDegS: 30, segments: 6,
+    } },
+    { id: 'sweep', kind: 'sweep', params: {
+      center: [0, 0, 20], lengthM: 10, telegraphS: 0.1, pattern: 'laser', heightM: 0.5, gapM: 2,
+      speedDegS: 90, speedMps: 4, phases: [{ atS: 0 }, { atS: 1, pattern: 'bars', gapM: 2, speedDegS: 30 }],
+    } },
+    { id: 'rise', kind: 'risingKill', params: {
+      startY: 100, endY: 101, startS: 0, riseMps: 0.5, halfM: 12, clock: { t: [0, 0, 30] },
+    } },
+  ]
+  const rig = await hazardShow(specs, (doc, scene) => {
+    const row = doc.entities[scene.seatEntities[59]]
+    row.components.seat.status = 1
+    row.components['ege.transform'].pos = [0, 0.9, 0]
+  })
+  const engine = rig.engine
+  const factory = new EngineDomainFactory({
+    engine, scenes: { seat: JSON.stringify(rig.doc) },
+    grid: { cols: 1, rows: 1, cellSize: 4096, originX: -2048, originZ: -2048 },
+    runner: () => rig.host, inputPlayers: spec => spec.seats.map(() => -1),
+  })
+  const spec = { id: 1, kind: 'seat' as const, cells: [] as number[], seats: [59], replicas: [0] }
+  const source = factory.create(spec, 0)
+  const seatEntityOf = (state: any, roundSeat: number): number => Number(
+    Object.entries(state.components.show_seat_identity).find(([, identity]: any) => identity.round_seat === roundSeat)![0])
+  try {
+    for (let i = 0; i < 90; i++) {
+      rig.host.stepTick(source.world, SHOW_HAZARD_INPUTS)
+      assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+    }
+    const exported = new SnapWriter()
+    source.exportEntities(exported)
+    const rebuildTick = source.tick
+    rig.host.stepTick(source.world, SHOW_HAZARD_INPUTS)
+    const reference: any = readWorldState(engine, source.world, rig.layout)
+    const rebuilt = factory.rebuild(spec, rebuildTick, [new SnapReader(exported.bytes())])
+    rig.host.stepTick(rebuilt.world, SHOW_HAZARD_INPUTS)
+    assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+    const after: any = readWorldState(engine, rebuilt.world, rig.layout)
+
+    const ring = rig.scene.index('feature/ring')
+    assert.deepEqual(after.components.feature_annulus[String(ring)], reference.components.feature_annulus[String(ring)])
+    for (const index of [0, 1, 2, 3, 4, 5]) {
+      const entity = rig.scene.index(`feature/ring/segment/${index}`)
+      assert.deepEqual(after.components['ege.transform'][String(entity)], reference.components['ege.transform'][String(entity)])
+      assert.deepEqual(after.components['ege.box_collider'][String(entity)], reference.components['ege.box_collider'][String(entity)])
+    }
+
+    const sweep = rig.scene.index('feature/sweep')
+    const beforeSweep = reference.components.feature_sweep[String(sweep)]
+    const afterSweep = after.components.feature_sweep[String(sweep)]
+    for (const field of ['phase_count', 'part_count', 'active', 'live', 'placed']) {
+      assert.equal(afterSweep[field], beforeSweep[field], `sweep ${field}`)
+    }
+    for (const field of ['effective', 'cos', 'sin', 'slide']) {
+      assert.ok(Math.abs(afterSweep[field] - beforeSweep[field]) <= 1e-6, `sweep ${field}`)
+    }
+    for (const index of [0, 1]) {
+      const entity = rig.scene.index(`feature/sweep/part/${index}`)
+      assert.deepEqual(after.components['ege.transform'][String(entity)], reference.components['ege.transform'][String(entity)])
+      assert.deepEqual(after.components.feature_sweep_part[String(entity)], reference.components.feature_sweep_part[String(entity)])
+      assert.deepEqual(after.components['ege.box_collider'][String(entity)], reference.components['ege.box_collider'][String(entity)])
+    }
+
+    const rise = rig.scene.index('feature/rise')
+    const beforeRise = reference.components.feature_rising_kill[String(rise)]
+    const afterRise = after.components.feature_rising_kill[String(rise)]
+    for (const field of ['kill_y', 'left_s', 'fraction', 'rising']) {
+      assert.ok(Math.abs(afterRise[field] - beforeRise[field]) <= 1e-6, `rising ${field}`)
+    }
+    assert.ok(Math.abs(after.components['ege.transform'][String(rig.scene.index('feature/rise/visual/0'))].pos[1] - afterRise.kill_y) <= 1e-4)
+
+    const hex = rig.scene.index('feature/hex')
+    assert.equal(after.components.feature_hex_field[String(hex)].placed, 1)
+    for (const index of [0, 1, 2, 3, 4, 5, 6]) {
+      const entity = rig.scene.index(`feature/hex/hex/${index}`)
+      assert.deepEqual(after.components['ege.transform'][String(entity)], reference.components['ege.transform'][String(entity)])
+      assert.equal(after.components.feature_hex_field_hex[String(entity)].owner, 0)
+    }
+
+    assert.equal(reference.components.seat[String(seatEntityOf(reference, 59))].kill_request, 1)
+    assert.equal(after.components.seat[String(seatEntityOf(after, 59))].kill_request, 1,
+      'the rebuilt rising kill re-issues its request for the high seat')
+
+    factory.release(source)
+    factory.dispose()
+  } finally {
+    rig.engine.freeWorld(rig.world)
+    rig.module.dispose()
   }
 })

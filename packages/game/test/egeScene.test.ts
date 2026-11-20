@@ -188,3 +188,48 @@ test('a course feature kind without a registered emitter is refused', async () =
       error.message === `[ege-scene] courses/s1-e-sugar-sprint.course.json#/features/0/kind: feature kind 'notAKind' has no engine emitter; registered: ${Object.keys(FEATURE_EMITTERS).sort().join(', ')}`,
   )
 })
+
+test('show scenes emit sparse stable identities and copied ownership metadata', async () => {
+  const schema = readJson('ege.schema.json') as { world_kinds: { name: string; players: number; schedule: unknown[] }[] }
+  const round = schema.world_kinds[0]
+  for (const name of ['show_seat', 'show_field', 'show_hub']) {
+    schema.world_kinds.push({ ...round, name, players: name === 'show_hub' ? 1 : 8, schedule: [...round.schedule, { system: 'ege.zone.track', kind: 'engine' }] })
+  }
+  const showEngine = await loadEngine()
+  showEngine.setSchema(JSON.stringify(schema))
+  const input = await inputOf('race-sprint')
+  const show = { worldKind: 'show_field' as const, seatOf: [2, 40, 59], inputSlots: [7, -1, 1], humans: [true, false, true] }
+  const emitted = emitEngineScene(showEngine, { ...input, show })
+  assert.deepEqual(emitted.show, {
+    worldKind: 'show_field',
+    seats: show.seatOf.map((roomSeat, roundSeat) => ({ roomSeat, roundSeat, inputSlot: show.inputSlots[roundSeat], entity: emitted.seatEntities[roundSeat] })),
+    ownership: emitted.seatEntities.map((entity, i) => ({ entity, zoneId: show.seatOf[i] + 1, owner: i, group: 0 })),
+  })
+  for (const [i, entity] of emitted.seatEntities.entries()) {
+    assert.deepEqual(emitted.scene.entities[entity].components?.show_seat_identity,
+      { room_seat: show.seatOf[i], round_seat: i, input_slot: show.inputSlots[i], bot: show.humans[i] ? 0 : 1 })
+  }
+  show.seatOf[0] = 3
+  assert.equal(emitted.show?.seats[0].roomSeat, 2)
+  const empty = emitEngineScene(showEngine, { ...input, show: { worldKind: 'show_hub', seatOf: [], inputSlots: [], humans: [] } })
+  assert.deepEqual(empty.show, { worldKind: 'show_hub', seats: [], ownership: [] })
+  assert.equal(Object.hasOwn(emitEngineScene(engine, input), 'show'), false)
+  const all = emitEngineScene(showEngine, { ...input, show: { worldKind: 'show_seat', seatOf: Array.from({ length: 60 }, (_, i) => i), inputSlots: Array(60).fill(-1), humans: Array(60).fill(false) } })
+  assert.equal(all.show?.seats[59].roomSeat, 59)
+  assert.equal(all.show?.seats.length, 60)
+})
+
+test('show roster rejects malformed or conflicting mappings', async () => {
+  const input = await inputOf('race-sprint')
+  const cases: NonNullable<EmitInput['show']>[] = [
+    { worldKind: 'show_seat', seatOf: [1], inputSlots: [], humans: [true] },
+    { worldKind: 'show_seat', seatOf: [1, 1], inputSlots: [-1, -1], humans: [false, false] },
+    { worldKind: 'show_seat', seatOf: [2, 1], inputSlots: [-1, -1], humans: [false, false] },
+    { worldKind: 'show_seat', seatOf: [60], inputSlots: [-1], humans: [false] },
+    { worldKind: 'show_field', seatOf: [1, 2], inputSlots: [3, 3], humans: [true, true] },
+    { worldKind: 'show_field', seatOf: [1], inputSlots: [0], humans: [false] },
+    { worldKind: 'show_field', seatOf: [1], inputSlots: [-1], humans: [true] },
+    { worldKind: 'show_hub', seatOf: [1], inputSlots: [1], humans: [true] },
+  ]
+  for (const show of cases) assert.throws(() => buildEngineAssembly({ ...input, show }), RefusalError)
+})

@@ -22,9 +22,19 @@ export interface EmitInput {
   assets: ReadonlyMap<string, ResolvedGameAsset>
   capsule?: CharacterCapsule
   setup: { profile: ProfileName; seed: number }
+  show?: { worldKind: 'show_seat' | 'show_field' | 'show_hub'; seatOf: readonly number[]; inputSlots: readonly number[]; humans: readonly boolean[] }
+}
+
+export type ShowSeatMetadata = { roomSeat: number; roundSeat: number; inputSlot: number; entity: number }
+export type ShowOwnershipMetadata = { entity: number; zoneId: number; owner: number | null; group: number }
+export type ShowSceneMetadata = {
+  worldKind: 'show_seat' | 'show_field' | 'show_hub'
+  seats: readonly ShowSeatMetadata[]
+  ownership: readonly ShowOwnershipMetadata[]
 }
 
 export interface EmittedScene {
+  show?: ShowSceneMetadata
   courseId: string
   assembly: EgeAssembly
   text: string
@@ -149,16 +159,33 @@ function featureEntities(input: EmitInput, sim: ResolvedCourse): RawEntity[] {
       refuse('ege-scene', `courses/${input.course.id}.course.json#/features/${i}/kind`,
         `feature kind '${spec.kind}' has no engine emitter; registered: ${registered.length ? registered.join(', ') : '(none)'}`)
     }
-    const emitted = emitter(spec, { course: sim, index: i, path: `courses/${input.course.id}.course.json`, assets: input.assets })
+    const emitted = emitter(spec, { course: sim, index: i, path: `courses/${input.course.id}.course.json`, assets: input.assets, seatCount: input.show?.seatOf.length ?? 8, worldKind: input.show?.worldKind ?? RF_EGE_WORLD_KIND })
     entities.push(emitted.root, ...emitted.children)
   }
   return entities
 }
 
+function validateShow(input: EmitInput): void {
+  const show = input.show
+  if (!show) return
+  const path = `courses/${input.course.id}.course.json#/show`
+  if (!['show_seat', 'show_field', 'show_hub'].includes(show.worldKind)) refuse('ege-scene', `${path}/worldKind`, 'invalid world kind; select a show world')
+  if (show.seatOf.length !== show.inputSlots.length || show.seatOf.length !== show.humans.length) refuse('ege-scene', path, 'roster lengths differ; provide one input slot and human flag per seat')
+  const slots = new Set<number>()
+  let previous = -1
+  for (let i = 0; i < show.seatOf.length; i++) {
+    const room = show.seatOf[i], slot = show.inputSlots[i], human = show.humans[i]
+    if (!Number.isInteger(room) || room < 0 || room > 59 || room <= previous) refuse('ege-scene', `${path}/seatOf/${i}`, 'invalid or unordered room seat; provide unique ascending seats in 0..59')
+    if (typeof human !== 'boolean' || !Number.isInteger(slot) || (human ? slot < 0 || slot > (show.worldKind === 'show_hub' ? 0 : 7) || slots.has(slot) : slot !== -1)) refuse('ege-scene', `${path}/inputSlots/${i}`, 'invalid or duplicate human slot; use unique supported slots for humans and -1 for bots')
+    if (human) slots.add(slot)
+    previous = room
+  }
+}
+
 function seatAndDataEntities(input: EmitInput, sim: ResolvedCourse, level: LevelSpec): RawEntity[] {
   const entities: RawEntity[] = []
   const capsule = input.capsule ?? CAPSULE
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < (input.show?.seatOf.length ?? 8); i++) {
     const spawn = seatSpawn(sim, i)
     entities.push({
       name: `seat/${i}`,
@@ -173,6 +200,13 @@ function seatAndDataEntities(input: EmitInput, sim: ResolvedCourse, level: Level
         group: 'char',
       }],
       components: {
+        ...(input.show ? {
+          'ege.zone.id': { id: input.show.seatOf[i] + 1, owner: i, group: 0 },
+          show_seat_identity: { room_seat: input.show.seatOf[i], round_seat: i, input_slot: input.show.inputSlots[i], bot: input.show.humans[i] ? 0 : 1 },
+          show_control: { code: 0 },
+          show_result_a: { seat: i, status: 1, finish_tick: -1, finish_sub: -1, lap: 0, stage: -1, route_mm: 0, falls: 0, score: 0, last_score_tick: -1 },
+          show_result_b: { hold_ticks: 0, possessing: 0, last_acquire_tick: -1, matches: 0, cross_ticks: 0, out_tick: -1, out_sub: -1, team: -1, opening_rank: -1 },
+        } : {}),
         'ege.transform': { pos: point(spawn.t), rot: [0, 0, 0, 1] },
         'ege.render': { shape: 0 },
         'ege.body_props': {
@@ -287,7 +321,7 @@ function resources(input: EmitInput, sim: ResolvedCourse, level: LevelSpec): Rec
       phase: 0,
       frozen: 0,
       ended_tick: -1,
-      entrants: 8,
+      entrants: input.show?.seatOf.length ?? 8,
       alive: 0,
       qualified: 0,
       eliminated: 0,
@@ -323,6 +357,7 @@ function resources(input: EmitInput, sim: ResolvedCourse, level: LevelSpec): Rec
  * `EmittedScene.itemBodies` and `EmittedScene.featureEntities` are empty.
  */
 export function buildEngineAssembly(input: EmitInput): EgeAssembly {
+  validateShow(input)
   const sim = input.course.sim
   if (sim === null) {
     refuse(
@@ -335,7 +370,7 @@ export function buildEngineAssembly(input: EmitInput): EgeAssembly {
   const obstacles = obstacleParts(input, sim)
   const rawMechanisms = input.course.json.mechanisms
   return buildAssembly({
-    worldKind: RF_EGE_WORLD_KIND,
+    worldKind: input.show?.worldKind ?? RF_EGE_WORLD_KIND,
     seed: input.setup.seed >>> 0,
     gravity: [0, GRAVITY_Y, 0],
     resources: resources(input, sim, level),
@@ -347,17 +382,38 @@ export function buildEngineAssembly(input: EmitInput): EgeAssembly {
   })
 }
 
+/**
+ * Handoff: G7.1 Identity, inputs and world construction: assign complete scene ownership: emitEngineScene
+ * (engine: EngineInstance, input: EmitInput): EmittedScene, exported here, attaches copied metadata after
+ * assembly conversion; scene entities and their ege.zone.id records provide the state and keys.
+ */
 export function emitEngineScene(engine: EngineInstance, input: EmitInput): EmittedScene {
   const assembly = buildEngineAssembly(input)
   const built = assemblyScene(engine, assembly)
   const sim = input.course.sim!
   const bodies = itemBodyNames(sim)
+  const seatEntities = Array.from({ length: input.show?.seatOf.length ?? 8 }, (_, i) => built.index(`seat/${i}`))
+  const ownership: ShowOwnershipMetadata[] = []
+  const zoneIds = new Set<number>()
+  if (input.show) for (const [entity, row] of built.scene.entities.entries()) {
+    const zone = row.components?.['ege.zone.id']
+    if (!zone) continue
+    const { id, owner, group } = zone
+    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0 || id > 0xffffffff || zoneIds.has(id) ||
+        typeof owner !== 'number' || !Number.isInteger(owner) || owner < 0 || owner > 0xffffffff ||
+        typeof group !== 'number' || !Number.isInteger(group) || group < 0 || group > 0xffffffff) {
+      refuse('ege-scene', `entities/${entity}/components/ege.zone.id`, 'invalid or duplicate zone identity; provide unique nonzero u32 ids and u32 owner and group')
+    }
+    zoneIds.add(id)
+    ownership.push({ entity, zoneId: id, owner: owner === 0xffff ? null : owner, group })
+  }
   return {
+    ...(input.show ? { show: { worldKind: input.show.worldKind, seats: input.show.seatOf.map((roomSeat, roundSeat) => ({ roomSeat, roundSeat, inputSlot: input.show!.inputSlots[roundSeat], entity: seatEntities[roundSeat] })), ownership } } : {}),
     courseId: input.course.id,
     assembly,
     text: built.text,
     scene: built.scene,
-    seatEntities: Array.from({ length: 8 }, (_, i) => built.index(`seat/${i}`)),
+    seatEntities,
     obstacleEntities: sim.obstacles.map(obstacle => built.index(`movers/${obstacle.id}`)),
     itemBodies: new Map(bodies.map(body => [body.name, built.index(body.name)])),
     featureEntities: (sim.features ?? []).map(feature => built.index(`feature/${feature.id}`)),

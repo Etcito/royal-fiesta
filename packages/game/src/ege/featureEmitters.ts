@@ -37,6 +37,8 @@ export type RawEntity = {
 
 export interface FeatureEmitContext {
   course: ResolvedCourse
+  seatCount?: number
+  worldKind?: 'round' | 'show_seat' | 'show_field' | 'show_hub'
   index: number
   path: string
   assets: ReadonlyMap<string, ResolvedGameAsset>

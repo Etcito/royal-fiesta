@@ -434,3 +434,205 @@ test('a collectible tie goes to the lower room seat', async () => {
     first.round.dispose()
   }
 })
+
+test('bank records dynamic debris once and remains deterministic', async () => {
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  const bank: FeatureSpec = { id: 'bank-demo', kind: 'bank', params: {
+    center: [-3.5, 0.35, 0.6], half: [2, 2, 2], team: 1,
+  } }
+  const first = await roundWith('ege-strip', [CARRY, bank], engine, ALL_HUMAN)
+  const second = await roundWith('ege-strip', [CARRY, bank], engine, ALL_HUMAN)
+  try {
+    const owner = first.scene.index('feature/bank-demo')
+    const item = first.scene.index('feature/carry/item/0')
+    assert.equal(Object.keys(first.round.worldState().components.feature_bank_inside).length, 0)
+    for (let i = 0; i < 5; i++) {
+      rawStep(first.round, () => code())
+      rawStep(second.round, () => code())
+      assert.equal(engine.worldEqual(first.round.world, second.round.world), true)
+    }
+    const records = Object.values(first.round.worldState().components.feature_bank_inside) as any[]
+    assert.equal(records.length, 1)
+    assert.deepEqual({ owner: records[0].owner, item: records[0].item, team: records[0].team }, { owner, item, team: 1 })
+    assert.equal(first.round.observe().faults, 0)
+    assert.equal(second.round.observe().faults, 0)
+  } finally {
+    second.round.dispose()
+    first.round.dispose()
+  }
+})
+
+test('bank counts all dynamic debris across overlap capacity and excludes other body types', async () => {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = [{ id: 'bank-demo', kind: 'bank', params: {
+    center: [100, 20, 0], half: [10, 5, 5], team: 0,
+  } }]
+  const engine = await loadEngine()
+  const schema = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schema)
+  const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  const doc = JSON.parse(scene.text)
+  doc.gravity = [0, 0, 0]
+  doc.resources.round.intro_ticks = 0
+  const ids: number[] = []
+  for (let i = 0; i < 23; i++) {
+    ids.push(doc.entities.length)
+    const type = i < 20 ? 'dynamic' : ['fixed', 'kinematic_position', 'kinematic_velocity'][i - 20]
+    doc.entities.push({
+      name: `debris/${i}`,
+      components: { 'ege.transform': { pos: [96 + i * 0.35, 20, 0], rot: [0, 0, 0, 1] } },
+      body: { type, gravity_scale: 0, can_sleep: true },
+      colliders: [{ shape: 'sphere', radius: 0.1, group: 'debris' }],
+    })
+  }
+  const modified = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: ALL_HUMAN }
+  const first = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  const second = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  try {
+    const events = rawStep(first, () => code())
+    rawStep(second, () => code())
+    assert.equal(engine.worldEqual(first.world, second.world), true)
+    const records = Object.values(first.worldState().components.feature_bank_inside) as any[]
+    assert.deepEqual(records.map((record) => record.item).sort((a, b) => a - b), ids.slice(0, 20))
+    assert.equal(events.filter((event) => event.kind === 'team_score' && event.fields.a === 1).length, 20)
+    const repeats = rawStep(first, () => code())
+    rawStep(second, () => code())
+    assert.equal(repeats.filter((event) => event.kind === 'team_score').length, 0)
+    for (let i = 0; i < 200; i++) {
+      rawStep(first, () => code())
+      rawStep(second, () => code())
+    }
+    assert.equal(Object.keys(first.worldState().components.feature_bank_inside).length, 20)
+    assert.equal(engine.worldEqual(first.world, second.world), true)
+    assert.equal(first.observe().faults, 0)
+    assert.equal(second.observe().faults, 0)
+  } finally {
+    second.dispose()
+    first.dispose()
+  }
+})
+
+test('bank deposits on entry and withdraws on departure with retained neutral credit', async () => {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = [{ id: 'bank-demo', kind: 'bank', params: {
+    center: [100, 20, 0], half: [2, 2, 2], team: null,
+  } }]
+  const engine = await loadEngine()
+  const schema = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schema)
+  const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  const doc = JSON.parse(scene.text)
+  doc.gravity = [0, 0, 0]
+  doc.resources.round.intro_ticks = 0
+  const item = doc.entities.length
+  doc.entities.push({
+    components: { 'ege.transform': { pos: [96, 20, 0], rot: [0, 0, 0, 1] } },
+    body: { type: 'dynamic', gravity_scale: 0, linvel: [30, 0, 0] },
+    colliders: [{ shape: 'sphere', radius: 0.1, group: 'debris' }],
+  })
+  const modified = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: ALL_HUMAN }
+  const first = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  const second = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  try {
+    const events: ReturnType<typeof decodeEvents> = []
+    let recordTeam: number | undefined
+    for (let i = 0; i < 20; i++) {
+      events.push(...rawStep(first, () => code()))
+      rawStep(second, () => code())
+      assert.equal(engine.worldEqual(first.world, second.world), true)
+      const records = Object.values(first.worldState().components.feature_bank_inside) as any[]
+      if (records.length) {
+        assert.equal(records[0].item, item)
+        if (recordTeam === undefined) recordTeam = records[0].team
+        assert.equal(records[0].team, recordTeam)
+      }
+    }
+    const scores = events.filter((event) => event.kind === 'team_score')
+    assert.deepEqual(scores.map((event) => event.fields.a), [1, -1])
+    assert.equal(scores[0].fields.team, recordTeam)
+    assert.equal(scores[1].fields.team, recordTeam)
+    assert.equal(Object.keys(first.worldState().components.feature_bank_inside).length, 0)
+    assert.equal(first.observe().faults, 0)
+    assert.equal(second.observe().faults, 0)
+  } finally {
+    second.dispose()
+    first.dispose()
+  }
+})
+
+test('bank excludes a carried item at the hand and removes its inside record', async () => {
+  const bank: FeatureSpec = { id: 'bank-demo', kind: 'bank', params: {
+    center: [-3.5, 1, 0.6], half: [2, 2, 2], team: 0,
+  } }
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  const first = await roundWith('ege-strip', [CARRY, bank], engine, ALL_HUMAN)
+  const second = await roundWith('ege-strip', [CARRY, bank], engine, ALL_HUMAN)
+  try {
+    while (first.round.tick < 61) {
+      rawStep(first.round, () => code())
+      rawStep(second.round, () => code())
+    }
+    assert.equal(Object.keys(first.round.worldState().components.feature_bank_inside).length, 1)
+    const events = rawStep(first.round, () => code(0, true))
+    rawStep(second.round, () => code(0, true))
+    events.push(...rawStep(first.round, () => code(0, true)))
+    rawStep(second.round, () => code(0, true))
+    assert.equal(Object.keys(first.round.worldState().components.feature_bank_inside).length, 0)
+    assert.equal(events.filter((event) => event.kind === 'team_score' && event.fields.a === -1).length, 1)
+    assert.equal(engine.worldEqual(first.round.world, second.round.world), true)
+    assert.equal(first.round.observe().faults, 0)
+    assert.equal(second.round.observe().faults, 0)
+  } finally {
+    second.round.dispose()
+    first.round.dispose()
+  }
+})
+
+test('neutral bank breaks equal-distance credit ties by seat id', async () => {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = [{ id: 'bank-demo', kind: 'bank', params: {
+    center: [100, 20, 0], half: [2, 2, 2], team: null,
+  } }]
+  const engine = await loadEngine()
+  const schema = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schema)
+  const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  const doc = JSON.parse(scene.text)
+  doc.gravity = [0, 0, 0]
+  doc.resources.round.intro_ticks = 0
+  for (let i = 0; i < 8; i++) {
+    const seat = doc.entities[scene.seatEntities[i]].components.seat
+    seat.status = i < 2 ? 1 : 0
+    seat.team = i === 0 ? 1 : 0
+    seat.spawn_t = [i === 0 ? 99 : 101, 19, 0]
+  }
+  doc.entities.push({
+    components: { 'ege.transform': { pos: [100, 20, 0], rot: [0, 0, 0, 1] } },
+    body: { type: 'dynamic', gravity_scale: 0 },
+    colliders: [{ shape: 'sphere', radius: 0.1, group: 'debris' }],
+  })
+  const modified = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: ALL_HUMAN }
+  const first = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  const second = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  try {
+    const events = rawStep(first, () => code())
+    rawStep(second, () => code())
+    const scores = events.filter((event) => event.kind === 'team_score')
+    assert.equal(scores.length, 1)
+    assert.equal(scores[0].fields.team, 1)
+    assert.equal(engine.worldEqual(first.world, second.world), true)
+    assert.equal(first.observe().faults, 0)
+    assert.equal(second.observe().faults, 0)
+  } finally {
+    second.dispose()
+    first.dispose()
+  }
+})

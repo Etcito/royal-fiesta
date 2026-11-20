@@ -1789,6 +1789,13 @@
           "emits": ["score"]
         },
         {
+          "system": "rf.feature.bank.post",
+          "kind": "script",
+          "reads": ["round", "feature_bank", "feature_bank_inside", "seat", "character", "ege.transform"],
+          "writes": ["feature_bank_inside"],
+          "emits": ["team_score"]
+        },
+        {
           "system": "rf.seat.rules",
           "kind": "script",
           "reads": [

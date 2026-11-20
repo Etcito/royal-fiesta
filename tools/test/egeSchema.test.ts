@@ -44,6 +44,7 @@ const SCHEDULE = [
   'rf.feature.rising_kill.post',
   'rf.feature.ball.post',
   'rf.feature.collectible.post',
+  'rf.feature.bank.post',
   'rf.seat.rules',
 ]
 

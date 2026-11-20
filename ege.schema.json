@@ -1335,6 +1335,174 @@
         { "name": "value", "type": "i32" },
         { "name": "tick", "type": "i32" }
       ]
+    },
+    {
+      "name": "show_season_cursor",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "step", "type": "u32" },
+        { "name": "alive", "type": "u32" },
+        { "name": "team_rounds", "type": "u32" },
+        { "name": "round_index", "type": "u32" },
+        { "name": "rng_state", "type": "u32" },
+        { "name": "final_map", "type": "i32" },
+        { "name": "last_kind", "type": "i32" },
+        { "name": "previous", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_plan_entry",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "nominal", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_catalog_entry",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "course", "type": "u32" },
+        { "name": "kind", "type": "u32" },
+        { "name": "final_rule", "type": "u32" },
+        { "name": "stages", "type": "u32" },
+        { "name": "team", "type": "u32" },
+        { "name": "cut", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_candidate",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "round_index", "type": "u32" },
+        { "name": "index", "type": "u32" },
+        { "name": "map", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_vote",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "round_index", "type": "u32" },
+        { "name": "seat", "type": "u32" },
+        { "name": "choice", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_used_map",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "map", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_opening_rank",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "seat", "type": "u32" },
+        { "name": "rank", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_round_result",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "map", "type": "u32" },
+        { "name": "course", "type": "u32" },
+        { "name": "kind", "type": "u32" },
+        { "name": "final", "type": "u32" },
+        { "name": "playoff", "type": "u32" },
+        { "name": "end_tick", "type": "i32" },
+        { "name": "reason", "type": "u32" },
+        { "name": "champion", "type": "i32" },
+        { "name": "ranking_count", "type": "u32" },
+        { "name": "qualified_count", "type": "u32" },
+        { "name": "eliminated_count", "type": "u32" },
+        { "name": "team_count", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_result_seat",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "result", "type": "u32" },
+        { "name": "list", "type": "u32" },
+        { "name": "position", "type": "u32" },
+        { "name": "seat", "type": "u32" },
+        { "name": "points", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_result_team",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "result", "type": "u32" },
+        { "name": "team", "type": "u32" },
+        { "name": "score", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_team_contribution",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "feature", "type": "u32" },
+        { "name": "team", "type": "u32" },
+        { "name": "value", "type": "i32" },
+        { "name": "tick", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_result_pending",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "end_tick", "type": "i32" },
+        { "name": "reason", "type": "u32" },
+        { "name": "confirmed", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_clock",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "start_tick", "type": "i32" },
+        { "name": "end_tick", "type": "i32" },
+        { "name": "overtime_end_tick", "type": "i32" },
+        { "name": "phase", "type": "u32" },
+        { "name": "frozen", "type": "u32" },
+        { "name": "intro_ticks", "type": "u32" },
+        { "name": "round_ticks", "type": "u32" },
+        { "name": "overtime_ticks", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_hub_state",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "occupants", "type": "u32" },
+        { "name": "humans", "type": "u32" },
+        { "name": "bots", "type": "u32" },
+        { "name": "tick", "type": "i32" },
+        { "name": "rng_state", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_hub_occupant",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "room_seat", "type": "u32" },
+        { "name": "round_seat", "type": "u32" },
+        { "name": "kind", "type": "u32" },
+        { "name": "emote", "type": "u32" },
+        { "name": "active", "type": "u32" },
+        { "name": "wander_x", "type": "f64" },
+        { "name": "wander_z", "type": "f64" },
+        { "name": "wander_tick", "type": "i32" },
+        { "name": "rng_state", "type": "u32" }
+      ]
     }
   ],
   "resources": [

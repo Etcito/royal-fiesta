@@ -424,3 +424,315 @@ test('show records initialize absence to -1 in a constructed world and keep chil
   assert.equal(pending.source, 3)
   assert.equal(pending.value, -1)
 })
+
+const SEASON_RECORDS = [
+  'show_season_cursor',
+  'show_plan_entry',
+  'show_catalog_entry',
+  'show_candidate',
+  'show_vote',
+  'show_used_map',
+  'show_opening_rank',
+  'show_round_result',
+  'show_result_seat',
+  'show_result_team',
+  'show_team_contribution',
+  'show_result_pending',
+  'show_clock',
+  'show_hub_state',
+  'show_hub_occupant',
+]
+
+test('season cursor keeps the plan in child rows and carries the schedule rng', async () => {
+  const layout = await layoutOf()
+  const cursor = declared(layout, 'components', 'show_season_cursor')
+  assert.deepEqual(cursor.fields, [
+    ['owner', 'entity', 1],
+    ['step', 'u32', 1],
+    ['alive', 'u32', 1],
+    ['team_rounds', 'u32', 1],
+    ['round_index', 'u32', 1],
+    ['rng_state', 'u32', 1],
+    ['final_map', 'i32', 1],
+    ['last_kind', 'i32', 1],
+    ['previous', 'i32', 1],
+  ])
+  assert.deepEqual(cursor.offsets, [
+    ['owner', 0],
+    ['step', 4],
+    ['alive', 8],
+    ['team_rounds', 12],
+    ['round_index', 16],
+    ['rng_state', 20],
+    ['final_map', 24],
+    ['last_kind', 28],
+    ['previous', 32],
+  ])
+  assert.equal(cursor.size, 36)
+  const plan = declared(layout, 'components', 'show_plan_entry')
+  assert.deepEqual(plan.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['nominal', 'u32', 1],
+  ])
+  assert.equal(plan.size, 12)
+})
+
+test('season catalog, candidate, vote and used-map rows retain committed order', async () => {
+  const layout = await layoutOf()
+  const catalog = declared(layout, 'components', 'show_catalog_entry')
+  assert.deepEqual(catalog.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['course', 'u32', 1],
+    ['kind', 'u32', 1],
+    ['final_rule', 'u32', 1],
+    ['stages', 'u32', 1],
+    ['team', 'u32', 1],
+    ['cut', 'u32', 1],
+  ])
+  assert.equal(catalog.size, 32)
+  const candidate = declared(layout, 'components', 'show_candidate')
+  assert.deepEqual(candidate.fields, [
+    ['owner', 'entity', 1],
+    ['round_index', 'u32', 1],
+    ['index', 'u32', 1],
+    ['map', 'u32', 1],
+  ])
+  assert.equal(candidate.size, 16)
+  const vote = declared(layout, 'components', 'show_vote')
+  assert.deepEqual(vote.fields, [
+    ['owner', 'entity', 1],
+    ['round_index', 'u32', 1],
+    ['seat', 'u32', 1],
+    ['choice', 'i32', 1],
+  ])
+  assert.equal(vote.size, 16)
+  const used = declared(layout, 'components', 'show_used_map')
+  assert.deepEqual(used.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['map', 'u32', 1],
+  ])
+  assert.equal(used.size, 12)
+})
+
+test('opening ranks and round results keep their seat lists in owned child rows', async () => {
+  const layout = await layoutOf()
+  const opening = declared(layout, 'components', 'show_opening_rank')
+  assert.deepEqual(opening.fields, [
+    ['owner', 'entity', 1],
+    ['seat', 'u32', 1],
+    ['rank', 'i32', 1],
+  ])
+  assert.equal(opening.size, 12)
+  const result = declared(layout, 'components', 'show_round_result')
+  assert.deepEqual(result.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['map', 'u32', 1],
+    ['course', 'u32', 1],
+    ['kind', 'u32', 1],
+    ['final', 'u32', 1],
+    ['playoff', 'u32', 1],
+    ['end_tick', 'i32', 1],
+    ['reason', 'u32', 1],
+    ['champion', 'i32', 1],
+    ['ranking_count', 'u32', 1],
+    ['qualified_count', 'u32', 1],
+    ['eliminated_count', 'u32', 1],
+    ['team_count', 'u32', 1],
+  ])
+  assert.equal(result.size, 56)
+  const seat = declared(layout, 'components', 'show_result_seat')
+  assert.deepEqual(seat.fields, [
+    ['owner', 'entity', 1],
+    ['result', 'u32', 1],
+    ['list', 'u32', 1],
+    ['position', 'u32', 1],
+    ['seat', 'u32', 1],
+    ['points', 'i32', 1],
+  ])
+  assert.equal(seat.size, 24)
+  const team = declared(layout, 'components', 'show_result_team')
+  assert.deepEqual(team.fields, [
+    ['owner', 'entity', 1],
+    ['result', 'u32', 1],
+    ['team', 'u32', 1],
+    ['score', 'i32', 1],
+  ])
+  assert.equal(team.size, 16)
+})
+
+test('team contributions, pending results and clock state stay bounded', async () => {
+  const layout = await layoutOf()
+  const contribution = declared(layout, 'components', 'show_team_contribution')
+  assert.deepEqual(contribution.fields, [
+    ['owner', 'entity', 1],
+    ['feature', 'u32', 1],
+    ['team', 'u32', 1],
+    ['value', 'i32', 1],
+    ['tick', 'i32', 1],
+  ])
+  assert.equal(contribution.size, 20)
+  const pending = declared(layout, 'components', 'show_result_pending')
+  assert.deepEqual(pending.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['end_tick', 'i32', 1],
+    ['reason', 'u32', 1],
+    ['confirmed', 'u32', 1],
+  ])
+  assert.equal(pending.size, 20)
+  const clock = declared(layout, 'components', 'show_clock')
+  assert.deepEqual(clock.fields, [
+    ['owner', 'entity', 1],
+    ['start_tick', 'i32', 1],
+    ['end_tick', 'i32', 1],
+    ['overtime_end_tick', 'i32', 1],
+    ['phase', 'u32', 1],
+    ['frozen', 'u32', 1],
+    ['intro_ticks', 'u32', 1],
+    ['round_ticks', 'u32', 1],
+    ['overtime_ticks', 'u32', 1],
+  ])
+  assert.equal(clock.size, 36)
+})
+
+test('hub occupancy and wandering state split the root counts from occupant rows', async () => {
+  const layout = await layoutOf()
+  const hub = declared(layout, 'components', 'show_hub_state')
+  assert.deepEqual(hub.fields, [
+    ['owner', 'entity', 1],
+    ['occupants', 'u32', 1],
+    ['humans', 'u32', 1],
+    ['bots', 'u32', 1],
+    ['tick', 'i32', 1],
+    ['rng_state', 'u32', 1],
+  ])
+  assert.equal(hub.size, 24)
+  const occupant = declared(layout, 'components', 'show_hub_occupant')
+  assert.deepEqual(occupant.fields, [
+    ['owner', 'entity', 1],
+    ['room_seat', 'u32', 1],
+    ['round_seat', 'u32', 1],
+    ['kind', 'u32', 1],
+    ['emote', 'u32', 1],
+    ['active', 'u32', 1],
+    ['wander_x', 'f64', 1],
+    ['wander_z', 'f64', 1],
+    ['wander_tick', 'i32', 1],
+    ['rng_state', 'u32', 1],
+  ])
+  assert.deepEqual(occupant.offsets, [
+    ['owner', 0],
+    ['room_seat', 4],
+    ['round_seat', 8],
+    ['kind', 12],
+    ['emote', 16],
+    ['active', 20],
+    ['wander_x', 24],
+    ['wander_z', 32],
+    ['wander_tick', 40],
+    ['rng_state', 44],
+  ])
+  assert.equal(occupant.size, 48)
+})
+
+test('season records are scalar simulation-lane snapshot state within 256 bytes', async () => {
+  const layout = await layoutOf()
+  for (const name of SEASON_RECORDS) {
+    const entry = layout.components.find((component) => component.name === name)
+    assert.ok(entry, `${name} is declared`)
+    assert.equal(entry.lane, 'simulation', `${name} is snapshot state`)
+    for (const field of entry.fields) assert.equal(field.count, 1, `${name}.${field.name}`)
+    assert.ok(entry.size <= 256, `${name} is ${entry.size} bytes`)
+  }
+})
+
+test('season records construct in a world and leave undeclared fields at zero', async () => {
+  const { engine, layout, world } = await showProbe({
+    format: 'ege.scene',
+    version: 1,
+    world_kind: 'show_probe',
+    seed: 3,
+    entities: [
+      {
+        components: {
+          show_season_cursor: {
+            owner: 0, step: 2, alive: 24, team_rounds: 0, round_index: 2, rng_state: 99,
+            final_map: 4, last_kind: 1, previous: 3,
+          },
+          show_plan_entry: { owner: 0, index: 2, nominal: 24 },
+          show_catalog_entry: { owner: 0, index: 4, course: 2, kind: 0, final_rule: 1, stages: 31, team: 0, cut: 1 },
+          show_candidate: { owner: 0, round_index: 2, index: 0, map: 4 },
+          show_vote: { owner: 0, round_index: 2, seat: 59, choice: 0 },
+          show_used_map: { owner: 0, index: 0, map: 4 },
+          show_opening_rank: { owner: 0, seat: 59, rank: 1 },
+          show_round_result: {
+            owner: 0, index: 2, map: 4, course: 2, kind: 0, final: 0, playoff: 0, end_tick: 1800,
+            reason: 0, champion: -1, ranking_count: 24, qualified_count: 12, eliminated_count: 12,
+            team_count: 0,
+          },
+          show_result_seat: { owner: 0, result: 2, list: 0, position: 0, seat: 59, points: 24 },
+          show_result_team: { owner: 0, result: 2, team: 0, score: 3 },
+          show_team_contribution: { owner: 0, feature: 1, team: 0, value: 7, tick: 900 },
+          show_result_pending: { owner: 0, index: 2, end_tick: 1800, reason: 0, confirmed: 0 },
+          show_clock: {
+            owner: 0, start_tick: 60, end_tick: 1800, overtime_end_tick: 2400, phase: 1, frozen: 0,
+            intro_ticks: 60, round_ticks: 1740, overtime_ticks: 600,
+          },
+          show_hub_state: { owner: 0, occupants: 2, humans: 1, bots: 1, tick: 30, rng_state: 5 },
+          show_hub_occupant: {
+            owner: 0, room_seat: 0, round_seat: 0, kind: 0, emote: 2, active: 1,
+            wander_x: 1.5, wander_z: -2.5, wander_tick: 120, rng_state: 7,
+          },
+        },
+      },
+      {
+        components: {
+          show_season_cursor: { owner: 0 },
+          show_clock: { owner: 0 },
+          show_hub_occupant: { owner: 0 },
+        },
+      },
+    ],
+  })
+  const state = readWorldState(engine, world, layout)
+  const root = state.entities[0]
+  const seat = state.entities[1]
+  const cursor = state.components.show_season_cursor[root]
+  assert.equal(cursor.owner, root)
+  assert.equal(cursor.step, 2)
+  assert.equal(cursor.alive, 24)
+  assert.equal(cursor.rng_state, 99)
+  assert.equal(cursor.final_map, 4)
+  assert.equal(state.components.show_plan_entry[root].nominal, 24)
+  assert.equal(state.components.show_catalog_entry[root].stages, 31)
+  assert.equal(state.components.show_candidate[root].map, 4)
+  assert.equal(state.components.show_vote[root].choice, 0)
+  assert.equal(state.components.show_used_map[root].map, 4)
+  assert.equal(state.components.show_opening_rank[root].rank, 1)
+  const result = state.components.show_round_result[root]
+  assert.equal(result.champion, -1)
+  assert.equal(result.ranking_count, 24)
+  const resultSeat = state.components.show_result_seat[root]
+  assert.equal(resultSeat.owner, root)
+  assert.equal(resultSeat.points, 24)
+  assert.equal(state.components.show_result_team[root].score, 3)
+  assert.equal(state.components.show_team_contribution[root].value, 7)
+  assert.equal(state.components.show_result_pending[root].confirmed, 0)
+  assert.equal(state.components.show_clock[root].overtime_ticks, 600)
+  assert.equal(state.components.show_hub_state[root].occupants, 2)
+  const occupant = state.components.show_hub_occupant[root]
+  assert.equal(occupant.wander_x, 1.5)
+  assert.equal(occupant.wander_z, -2.5)
+  assert.equal(occupant.emote, 2)
+  const sparse = state.components.show_season_cursor[seat]
+  assert.equal(sparse.owner, root)
+  for (const name of ['step', 'alive', 'team_rounds', 'round_index', 'rng_state']) {
+    assert.equal(sparse[name], 0, name)
+  }
+  assert.equal(state.components.show_clock[seat].round_ticks, 0)
+  assert.equal(state.components.show_hub_occupant[seat].wander_x, 0)
+})

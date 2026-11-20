@@ -389,4 +389,209 @@
       "Build Yard B with all three visible hazards"
     ]
   }
+,
+{
+  "id": "m7-yard-c-objects",
+  "milestone": "m7",
+  "filename": "engine-round-yard-ball-goals-collectibles-and-capture-zone.png",
+  "args": {
+    "course": "ege-yard-c",
+    "profile": "sprint",
+    "seed": 7,
+    "frames": 600,
+    "local": "run",
+    "captureAt": "end",
+    "focus": "kind:ball"
+  },
+  "require": [
+    "faults eq 0",
+    "features.ball gt 0",
+    "features.goal gt 1",
+    "features.collectible gt 0",
+    "features.captureZone gt 0"
+  ],
+  "description": "a candy yard on the engine with a ball sphere, two goal boxes, small collectible spheres, a capture zone disc and bank boxes, penguins moving among them",
+  "held_constant": [
+    "the light",
+    "the focus camera rule",
+    "the course assets",
+    "Emit carry items and their persistent records",
+    "Emit dynamic balls with source mass",
+    "Emit defending goals and their visual boxes",
+    "Emit collectible spots",
+    "Emit capture zones",
+    "Emit banks and declare dynamic inside records",
+    "Build the complete objective yard"
+  ]
+},
+{
+  "id": "m7-crown-confection-crown",
+  "milestone": "m7",
+  "filename": "engine-round-crown-confection-crown-on-tower.png",
+  "args": {
+    "course": "s1-q-crown-confection",
+    "profile": "sprint",
+    "seed": 7,
+    "frames": 2280,
+    "local": "run",
+    "captureAt": "end",
+    "focus": "kind:crown",
+    "runPath": [
+      [
+        29.2,
+        72
+      ],
+      [
+        45,
+        72
+      ],
+      [
+        51,
+        72
+      ],
+      [
+        59,
+        63.6
+      ],
+      [
+        71,
+        51
+      ],
+      [
+        91,
+        30
+      ],
+      [
+        125,
+        33.5
+      ],
+      [
+        156,
+        30
+      ],
+      [
+        187,
+        26.5
+      ],
+      [
+        220,
+        30
+      ],
+      [
+        240,
+        51
+      ],
+      [
+        258,
+        70
+      ],
+      [
+        263,
+        72
+      ],
+      [
+        276,
+        72
+      ],
+      [
+        289,
+        72
+      ]
+    ]
+  },
+  "require": [
+    "faults eq 0",
+    "features.crown gt 0"
+  ],
+  "description": "the final course with the gold crown sphere on its tower and penguins climbing towards it",
+  "held_constant": [
+    "the light",
+    "the focus camera rule",
+    "the course assets",
+    "Emit the crown and contender distance state",
+    "Run crown grabs and overtime resets"
+  ]
+},
+{
+  "id": "m7-demo-race-sugar-sprint",
+  "milestone": "m7",
+  "filename": "engine-round-demo-race-sugar-sprint-full-round-on-scripts.png",
+  "args": {
+    "course": "s1-e-sugar-sprint",
+    "profile": "sprint",
+    "seed": 7,
+    "frames": 900,
+    "local": "run",
+    "captureAt": "end",
+    "focus": null
+  },
+  "require": [
+    "faults eq 0",
+    "botsMoved ge 4",
+    "local.travelZ gt 10",
+    "upright eq true"
+  ],
+  "description": "Royal Fiesta race course Sugar Sprint played on the engine: complete smoothly shaded candy course, the followed penguin running forward with other penguins around, door bank panels ahead; HUD band shows race, playing, the tick and the alive count",
+  "held_constant": [
+    "the light",
+    "the follow camera rule",
+    "the course assets",
+    "the authored course assets",
+    "Build the complete objective yard"
+  ]
+},
+{
+  "id": "m7-demo-survival-honeycomb",
+  "milestone": "m7",
+  "filename": "engine-round-demo-survival-honeycomb-penguins-on-hex-floor.png",
+  "args": {
+    "course": "s1-i-honeycomb-heights",
+    "profile": "sprint",
+    "seed": 7,
+    "frames": 900,
+    "local": "run",
+    "captureAt": "end",
+    "focus": null,
+    "runPath": [
+      [
+        -14.289,
+        8.25
+      ],
+      [
+        0,
+        16.5
+      ],
+      [
+        14.289,
+        8.25
+      ],
+      [
+        14.289,
+        -8.25
+      ],
+      [
+        9.526,
+        -19.25
+      ],
+      [
+        4.763,
+        2.75
+      ]
+    ]
+  },
+  "require": [
+    "faults eq 0",
+    "botsMoved ge 4",
+    "upright eq true"
+  ],
+  "description": "Royal Fiesta survival course Honeycomb Heights played on the engine: penguins on layers of hexagonal floor discs, some discs missing, the followed penguin upright in view; HUD band shows survival, playing and the alive count",
+  "held_constant": [
+    "the light",
+    "the follow camera rule",
+    "the course assets",
+    "the authored course assets",
+    "Implement hex placement, warning and falling",
+    "Run rising kill and a complete Honeycomb round"
+  ]
+}
 ]

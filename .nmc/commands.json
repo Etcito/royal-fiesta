@@ -1,15 +1,16 @@
 [
   {
-    "name": "ege-m6-build",
+    "name": "ege-m7-build",
     "command": "npm run build",
-    "timeout_s": 900
+    "timeout_s": 900,
+    "after": []
   },
   {
-    "name": "ege-m6-bricks",
+    "name": "ege-m7-bricks",
     "command": "node --experimental-strip-types tools/egeBricks.ts build",
     "timeout_s": 1800,
     "after": [
-      "ege-m6-build"
+      "ege-m7-build"
     ]
   },
   {
@@ -17,7 +18,7 @@
     "command": "node --experimental-strip-types --test packages/game/test/egeFeatureEmitHazard.test.ts apps/headless/test/egeFeaturesHazard.test.ts tools/test/egeScripts.test.ts",
     "timeout_s": 900,
     "after": [
-      "ege-m6-bricks"
+      "ege-m7-bricks"
     ]
   },
   {
@@ -25,8 +26,8 @@
     "command": "node --experimental-strip-types tools/engineRoundCapture.ts check --milestone m6 --page apps/web/dist --out out/engine-round-m6",
     "timeout_s": 600,
     "after": [
-      "ege-m6-build",
-      "ege-m6-bricks"
+      "ege-m7-build",
+      "ege-m7-bricks"
     ]
   },
   {
@@ -60,6 +61,56 @@
     "after": [
       "ege-m6-render",
       "ege-m6-fresh"
+    ]
+  },
+  {
+    "name": "ege-m7-test",
+    "command": "node --experimental-strip-types --test packages/game/test/egeFeatureEmitObjective.test.ts apps/headless/test/egeFeaturesObjective.test.ts tools/test/egeScripts.test.ts",
+    "timeout_s": 900,
+    "after": [
+      "ege-m7-bricks"
+    ]
+  },
+  {
+    "name": "ege-m7-check",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts check --milestone m7 --page apps/web/dist --out out/engine-round-m7",
+    "timeout_s": 600,
+    "after": [
+      "ege-m7-build",
+      "ege-m7-bricks"
+    ]
+  },
+  {
+    "name": "ege-m7-clean",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts clean --milestone m7 --page apps/web/dist --out out/engine-round-m7",
+    "timeout_s": 60,
+    "after": [
+      "ege-m7-check"
+    ]
+  },
+  {
+    "name": "ege-m7-render",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts render --milestone m7 --page apps/web/dist --out out/engine-round-m7",
+    "timeout_s": 3600,
+    "after": [
+      "ege-m7-clean"
+    ]
+  },
+  {
+    "name": "ege-m7-fresh",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts fresh --milestone m7 --page apps/web/dist --out out/engine-round-m7",
+    "timeout_s": 300,
+    "after": [
+      "ege-m7-render"
+    ]
+  },
+  {
+    "name": "ege-m7-judge",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts judge --milestone m7 --page apps/web/dist --out out/engine-round-m7 --budget-s 3300",
+    "timeout_s": 3600,
+    "after": [
+      "ege-m7-render",
+      "ege-m7-fresh"
     ]
   }
 ]

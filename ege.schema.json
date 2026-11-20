@@ -1503,6 +1503,182 @@
         { "name": "wander_tick", "type": "i32" },
         { "name": "rng_state", "type": "u32" }
       ]
+    },
+    {
+      "name": "bot_behaviour",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "decision_ticks", "type": "u32" },
+        { "name": "reaction_ticks", "type": "u32" },
+        { "name": "wobble_ticks", "type": "u32" },
+        { "name": "stuck_ticks", "type": "u32" },
+        { "name": "preference", "type": "u32" },
+        { "name": "advance_m", "type": "f64" },
+        { "name": "arrive_m", "type": "f64" },
+        { "name": "rule_count", "type": "u32" }
+      ]
+    },
+    {
+      "name": "bot_rule",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "behaviour", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "predicate", "type": "u32" },
+        { "name": "action", "type": "u32" },
+        { "name": "has_phase", "type": "u32" },
+        { "name": "phase_from", "type": "i32" },
+        { "name": "phase_to", "type": "i32" },
+        { "name": "has_distance", "type": "u32" },
+        { "name": "distance_m", "type": "f64" }
+      ]
+    },
+    {
+      "name": "show_nav_region",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "region", "type": "i32" },
+        { "name": "center", "type": "f64", "count": 3 },
+        { "name": "half", "type": "f64", "count": 3 },
+        { "name": "adjacent_count", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_nav_edge",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "region_index", "type": "u32" },
+        { "name": "edge_index", "type": "u32" },
+        { "name": "adjacent", "type": "i32" }
+      ]
+    },
+    {
+      "name": "show_nav_node",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "p", "type": "f64", "count": 3 },
+        { "name": "jump", "type": "u32" },
+        { "name": "dive", "type": "u32" },
+        { "name": "region", "type": "i32" },
+        { "name": "wait_signal", "type": "i32" },
+        { "name": "pull_signal", "type": "i32" }
+      ]
+    },
+    {
+      "name": "bot_seat",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "character", "type": "entity" },
+        { "name": "behaviour", "type": "entity" }
+      ]
+    },
+    {
+      "name": "bot_skill",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "reaction_ticks", "type": "u32" },
+        { "name": "aim_error", "type": "f64" },
+        { "name": "jump_lead", "type": "f64" },
+        { "name": "dive_chance", "type": "f64" }
+      ]
+    },
+    {
+      "name": "bot_memory",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "rng_state", "type": "u32" },
+        { "name": "ticks", "type": "u32" },
+        { "name": "wait_ticks", "type": "u32" },
+        { "name": "path_index", "type": "u32" },
+        { "name": "stuck_ticks", "type": "u32" },
+        { "name": "last_x", "type": "f64" },
+        { "name": "last_z", "type": "f64" },
+        { "name": "wobble", "type": "f64" }
+      ]
+    },
+    {
+      "name": "bot_route",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "preference", "type": "u32" },
+        { "name": "seed", "type": "u32" },
+        { "name": "plan_tick", "type": "i32" },
+        { "name": "next_plan_tick", "type": "i32" },
+        { "name": "cost", "type": "f64" },
+        { "name": "reachable", "type": "u32" },
+        { "name": "region_count", "type": "u32" },
+        { "name": "edge_count", "type": "u32" },
+        { "name": "waypoint_count", "type": "u32" }
+      ]
+    },
+    {
+      "name": "bot_route_region",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "region", "type": "i32" }
+      ]
+    },
+    {
+      "name": "bot_route_edge",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "from_region", "type": "i32" },
+        { "name": "to_region", "type": "i32" }
+      ]
+    },
+    {
+      "name": "bot_route_waypoint",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "node", "type": "u32" }
+      ]
+    },
+    {
+      "name": "bot_reaction",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "chunk_head", "type": "entity" },
+        { "name": "chunk_tail", "type": "entity" },
+        { "name": "code_count", "type": "u32" },
+        { "name": "delay_ticks", "type": "u32" }
+      ]
+    },
+    {
+      "name": "bot_reaction_chunk",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "next_chunk", "type": "entity" },
+        { "name": "chunk_index", "type": "u32" },
+        { "name": "code_count", "type": "u32" },
+        { "name": "codes", "type": "u32", "count": 16 }
+      ]
+    },
+    {
+      "name": "show_feature_membership",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "feature", "type": "entity" },
+        { "name": "character", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "inside", "type": "u32" }
+      ]
+    },
+    {
+      "name": "show_feature_cooldown",
+      "fields": [
+        { "name": "owner", "type": "entity" },
+        { "name": "feature", "type": "entity" },
+        { "name": "character", "type": "entity" },
+        { "name": "index", "type": "u32" },
+        { "name": "ready_at", "type": "i32" },
+        { "name": "boost_until", "type": "i32" }
+      ]
     }
   ],
   "resources": [

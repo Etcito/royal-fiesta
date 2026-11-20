@@ -736,3 +736,390 @@ test('season records construct in a world and leave undeclared fields at zero', 
   assert.equal(state.components.show_clock[seat].round_ticks, 0)
   assert.equal(state.components.show_hub_occupant[seat].wander_x, 0)
 })
+
+const BOT_RECORDS = [
+  'bot_behaviour',
+  'bot_rule',
+  'show_nav_region',
+  'show_nav_edge',
+  'show_nav_node',
+  'bot_seat',
+  'bot_skill',
+  'bot_memory',
+  'bot_route',
+  'bot_route_region',
+  'bot_route_edge',
+  'bot_route_waypoint',
+  'bot_reaction',
+  'bot_reaction_chunk',
+  'show_feature_membership',
+  'show_feature_cooldown',
+]
+
+const REACTION_CODE_SLOTS = 16
+const REACTION_MAX_DELAY_TICKS = 120
+const REACTION_CHUNKS = 8
+
+test('authored bot behaviour and rule rows serialize the validated v0 values', async () => {
+  const layout = await layoutOf()
+  const behaviour = declared(layout, 'components', 'bot_behaviour')
+  assert.deepEqual(behaviour.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['decision_ticks', 'u32', 1],
+    ['reaction_ticks', 'u32', 1],
+    ['wobble_ticks', 'u32', 1],
+    ['stuck_ticks', 'u32', 1],
+    ['preference', 'u32', 1],
+    ['advance_m', 'f64', 1],
+    ['arrive_m', 'f64', 1],
+    ['rule_count', 'u32', 1],
+  ])
+  assert.ok(behaviour.size <= 256, `bot_behaviour is ${behaviour.size} bytes`)
+  const rule = declared(layout, 'components', 'bot_rule')
+  assert.deepEqual(rule.fields, [
+    ['owner', 'entity', 1],
+    ['behaviour', 'entity', 1],
+    ['index', 'u32', 1],
+    ['predicate', 'u32', 1],
+    ['action', 'u32', 1],
+    ['has_phase', 'u32', 1],
+    ['phase_from', 'i32', 1],
+    ['phase_to', 'i32', 1],
+    ['has_distance', 'u32', 1],
+    ['distance_m', 'f64', 1],
+  ])
+  assert.ok(rule.size <= 256, `bot_rule is ${rule.size} bytes`)
+  assert.equal(fieldType(rule.fields, 'behaviour'), 'entity')
+})
+
+test('authored navigation rows keep regions, adjacency and wait/pull nodes', async () => {
+  const layout = await layoutOf()
+  const region = declared(layout, 'components', 'show_nav_region')
+  assert.deepEqual(region.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['region', 'i32', 1],
+    ['center', 'f64', 3],
+    ['half', 'f64', 3],
+    ['adjacent_count', 'u32', 1],
+  ])
+  assert.ok(region.size <= 256, `show_nav_region is ${region.size} bytes`)
+  const edge = declared(layout, 'components', 'show_nav_edge')
+  assert.deepEqual(edge.fields, [
+    ['owner', 'entity', 1],
+    ['region_index', 'u32', 1],
+    ['edge_index', 'u32', 1],
+    ['adjacent', 'i32', 1],
+  ])
+  assert.ok(edge.size <= 256, `show_nav_edge is ${edge.size} bytes`)
+  const node = declared(layout, 'components', 'show_nav_node')
+  assert.deepEqual(node.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['p', 'f64', 3],
+    ['jump', 'u32', 1],
+    ['dive', 'u32', 1],
+    ['region', 'i32', 1],
+    ['wait_signal', 'i32', 1],
+    ['pull_signal', 'i32', 1],
+  ])
+  assert.ok(node.size <= 256, `show_nav_node is ${node.size} bytes`)
+})
+
+test('bot initialization, skill, memory and route plan stay on transferable seat records', async () => {
+  const layout = await layoutOf()
+  const seat = declared(layout, 'components', 'bot_seat')
+  assert.deepEqual(seat.fields, [
+    ['owner', 'entity', 1],
+    ['character', 'entity', 1],
+    ['behaviour', 'entity', 1],
+  ])
+  assert.equal(seat.size, 12)
+  const skill = declared(layout, 'components', 'bot_skill')
+  assert.deepEqual(skill.fields, [
+    ['owner', 'entity', 1],
+    ['reaction_ticks', 'u32', 1],
+    ['aim_error', 'f64', 1],
+    ['jump_lead', 'f64', 1],
+    ['dive_chance', 'f64', 1],
+  ])
+  assert.ok(skill.size <= 256, `bot_skill is ${skill.size} bytes`)
+  const memory = declared(layout, 'components', 'bot_memory')
+  assert.deepEqual(memory.fields, [
+    ['owner', 'entity', 1],
+    ['rng_state', 'u32', 1],
+    ['ticks', 'u32', 1],
+    ['wait_ticks', 'u32', 1],
+    ['path_index', 'u32', 1],
+    ['stuck_ticks', 'u32', 1],
+    ['last_x', 'f64', 1],
+    ['last_z', 'f64', 1],
+    ['wobble', 'f64', 1],
+  ])
+  assert.ok(memory.size <= 256, `bot_memory is ${memory.size} bytes`)
+  assert.equal(fieldType(memory.fields, 'rng_state'), 'u32')
+  const route = declared(layout, 'components', 'bot_route')
+  assert.deepEqual(route.fields, [
+    ['owner', 'entity', 1],
+    ['preference', 'u32', 1],
+    ['seed', 'u32', 1],
+    ['plan_tick', 'i32', 1],
+    ['next_plan_tick', 'i32', 1],
+    ['cost', 'f64', 1],
+    ['reachable', 'u32', 1],
+    ['region_count', 'u32', 1],
+    ['edge_count', 'u32', 1],
+    ['waypoint_count', 'u32', 1],
+  ])
+  assert.ok(route.size <= 256, `bot_route is ${route.size} bytes`)
+  assert.equal(fieldType(route.fields, 'cost'), 'f64')
+})
+
+test('bot route lists keep regions, edges and waypoints in owned entity child rows', async () => {
+  const layout = await layoutOf()
+  const region = declared(layout, 'components', 'bot_route_region')
+  assert.deepEqual(region.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['region', 'i32', 1],
+  ])
+  const edge = declared(layout, 'components', 'bot_route_edge')
+  assert.deepEqual(edge.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['from_region', 'i32', 1],
+    ['to_region', 'i32', 1],
+  ])
+  const waypoint = declared(layout, 'components', 'bot_route_waypoint')
+  assert.deepEqual(waypoint.fields, [
+    ['owner', 'entity', 1],
+    ['index', 'u32', 1],
+    ['node', 'u32', 1],
+  ])
+  for (const record of [region, edge, waypoint]) {
+    assert.ok(record.size <= 256, `${record.size} bytes`)
+    assert.equal(record.fields[0][0], 'owner')
+    assert.equal(record.fields[0][1], 'entity')
+  }
+})
+
+test('reaction chunks hold sixteen codes and eight linked chunks cover the 120 tick delay', async () => {
+  const layout = await layoutOf()
+  const reaction = declared(layout, 'components', 'bot_reaction')
+  assert.deepEqual(reaction.fields, [
+    ['owner', 'entity', 1],
+    ['chunk_head', 'entity', 1],
+    ['chunk_tail', 'entity', 1],
+    ['code_count', 'u32', 1],
+    ['delay_ticks', 'u32', 1],
+  ])
+  assert.equal(reaction.size, 20)
+  const chunk = declared(layout, 'components', 'bot_reaction_chunk')
+  assert.deepEqual(chunk.fields, [
+    ['owner', 'entity', 1],
+    ['next_chunk', 'entity', 1],
+    ['chunk_index', 'u32', 1],
+    ['code_count', 'u32', 1],
+    ['codes', 'u32', REACTION_CODE_SLOTS],
+  ])
+  assert.equal(chunk.size, 80)
+  assert.ok(REACTION_CHUNKS * REACTION_CODE_SLOTS >= REACTION_MAX_DELAY_TICKS + 1)
+  assert.ok((REACTION_CHUNKS - 1) * REACTION_CODE_SLOTS < REACTION_MAX_DELAY_TICKS + 1)
+})
+
+test('scene construction links reaction chunks, resolves ownership and preserves chunk boundaries', async () => {
+  const chunks = Array.from({ length: REACTION_CHUNKS }, (_, index) => ({
+    components: {
+      bot_reaction_chunk: {
+        owner: 1,
+        next_chunk: index + 1 < REACTION_CHUNKS ? 4 + index + 1 : 0,
+        chunk_index: index,
+        code_count: REACTION_CODE_SLOTS,
+        codes: Array.from(
+          { length: REACTION_CODE_SLOTS },
+          (_, slot) => index * REACTION_CODE_SLOTS + slot,
+        ),
+      },
+    },
+  }))
+  const { engine, layout, world } = await showProbe({
+    format: 'ege.scene',
+    version: 1,
+    world_kind: 'show_probe',
+    seed: 7,
+    entities: [
+      {},
+      {
+        components: {
+          show_seat_identity: { room_seat: 59, round_seat: 0, input_slot: -1, bot: 4 },
+          bot_seat: { owner: 1, character: 2, behaviour: 3 },
+          bot_skill: {
+            owner: 1, reaction_ticks: 7, aim_error: 0.125, jump_lead: 0.25, dive_chance: 0.375,
+          },
+          bot_memory: {
+            owner: 1, rng_state: 99, ticks: 12, wait_ticks: 3, path_index: 2, stuck_ticks: 1,
+            last_x: 1.5, last_z: -2.5, wobble: 0.5,
+          },
+          bot_route: {
+            owner: 1, preference: 1, seed: 7, plan_tick: 0, next_plan_tick: 30, cost: 24000048,
+            reachable: 1, region_count: 2, edge_count: 1, waypoint_count: 3,
+          },
+          bot_reaction: {
+            owner: 1,
+            chunk_head: 4,
+            chunk_tail: 4 + REACTION_CHUNKS - 1,
+            code_count: REACTION_CHUNKS * REACTION_CODE_SLOTS,
+            delay_ticks: REACTION_MAX_DELAY_TICKS,
+          },
+        },
+      },
+      {},
+      {
+        components: {
+          bot_behaviour: {
+            owner: 3, index: 0, decision_ticks: 30, reaction_ticks: 120, wobble_ticks: 45,
+            stuck_ticks: 30, preference: 1, advance_m: 1.5, arrive_m: 0.5, rule_count: 1,
+          },
+          bot_rule: {
+            owner: 3, behaviour: 3, index: 0, predicate: 3, action: 0, has_phase: 0,
+            phase_from: 0, phase_to: 0, has_distance: 0, distance_m: 0,
+          },
+        },
+      },
+      ...chunks,
+      {},
+      {
+        components: {
+          show_feature_membership: { owner: 12, feature: 12, character: 2, index: 0, inside: 1 },
+        },
+      },
+      {
+        components: {
+          show_feature_cooldown: {
+            owner: 12, feature: 12, character: 2, index: 0, ready_at: 90, boost_until: 30,
+          },
+        },
+      },
+    ],
+  })
+  const state = readWorldState(engine, world, layout)
+  const seat = state.entities[1]
+  const bot = state.components.bot_seat[seat]
+  assert.equal(bot.owner, seat)
+  assert.equal(bot.character, 2)
+  assert.equal(bot.behaviour, 3)
+  assert.equal(state.components.bot_skill[seat].reaction_ticks, 7)
+  assert.equal(state.components.bot_skill[seat].aim_error, 0.125)
+  const memory = state.components.bot_memory[seat]
+  assert.equal(memory.rng_state, 99)
+  assert.equal(memory.path_index, 2)
+  assert.equal(memory.last_x, 1.5)
+  assert.equal(memory.last_z, -2.5)
+  assert.equal(state.components.bot_route[seat].cost, 24000048)
+  assert.equal(state.components.bot_route[seat].next_plan_tick, 30)
+  const behaviour = state.components.bot_behaviour[3]
+  assert.equal(behaviour.reaction_ticks, 120)
+  assert.equal(behaviour.rule_count, 1)
+  const rule = state.components.bot_rule[3]
+  assert.equal(rule.owner, 3)
+  assert.equal(rule.behaviour, 3)
+  assert.equal(rule.predicate, 3)
+  const member = state.components.show_feature_membership[state.entities[13]]
+  assert.equal(member.owner, state.entities[12])
+  assert.equal(member.feature, state.entities[12])
+  assert.equal(member.character, state.entities[2])
+  assert.equal(member.inside, 1)
+  const cooldown = state.components.show_feature_cooldown[state.entities[14]]
+  assert.equal(cooldown.feature, state.entities[12])
+  assert.equal(cooldown.character, state.entities[2])
+  assert.equal(cooldown.ready_at, 90)
+  assert.equal(cooldown.boost_until, 30)
+  const reaction = state.components.bot_reaction[seat]
+  assert.equal(reaction.chunk_head, 4)
+  assert.equal(reaction.chunk_tail, 4 + REACTION_CHUNKS - 1)
+  assert.equal(reaction.code_count, REACTION_CHUNKS * REACTION_CODE_SLOTS)
+  assert.equal(reaction.delay_ticks, REACTION_MAX_DELAY_TICKS)
+  assert.ok(typeof reaction.chunk_head === 'number')
+  let entity = reaction.chunk_head
+  let seen = 0
+  while (entity !== 0 && seen < REACTION_CHUNKS) {
+    const chunk = state.components.bot_reaction_chunk[entity]
+    assert.equal(chunk.owner, seat)
+    assert.equal(chunk.chunk_index, seen)
+    assert.equal(chunk.code_count, REACTION_CODE_SLOTS)
+    const codes = chunk.codes
+    assert.ok(Array.isArray(codes), 'codes is an array')
+    assert.equal(codes.length, REACTION_CODE_SLOTS)
+    assert.equal(codes[0], seen * REACTION_CODE_SLOTS)
+    assert.equal(
+      codes[REACTION_CODE_SLOTS - 1],
+      seen * REACTION_CODE_SLOTS + REACTION_CODE_SLOTS - 1,
+    )
+    const next = chunk.next_chunk
+    assert.ok(typeof next === 'number')
+    entity = next
+    seen++
+  }
+  assert.equal(seen, REACTION_CHUNKS)
+  assert.equal(entity, 0)
+})
+
+test('show feature membership and cooldown rows replace the eight-seat arrays on the show path', async () => {
+  const layout = await layoutOf()
+  const member = declared(layout, 'components', 'show_feature_membership')
+  assert.deepEqual(member.fields, [
+    ['owner', 'entity', 1],
+    ['feature', 'entity', 1],
+    ['character', 'entity', 1],
+    ['index', 'u32', 1],
+    ['inside', 'u32', 1],
+  ])
+  assert.ok(member.size <= 256, `show_feature_membership is ${member.size} bytes`)
+  const cooldown = declared(layout, 'components', 'show_feature_cooldown')
+  assert.deepEqual(cooldown.fields, [
+    ['owner', 'entity', 1],
+    ['feature', 'entity', 1],
+    ['character', 'entity', 1],
+    ['index', 'u32', 1],
+    ['ready_at', 'i32', 1],
+    ['boost_until', 'i32', 1],
+  ])
+  assert.ok(cooldown.size <= 256, `show_feature_cooldown is ${cooldown.size} bytes`)
+  assert.equal(fieldType(member.fields, 'feature'), 'entity')
+  assert.equal(fieldType(member.fields, 'character'), 'entity')
+  assert.equal(fieldType(cooldown.fields, 'feature'), 'entity')
+  assert.equal(fieldType(cooldown.fields, 'character'), 'entity')
+  const boost = declared(layout, 'components', 'feature_boost_lane')
+  for (const name of ['boost_until', 'ready_at']) {
+    const field = boost.fields.find(([fieldName]) => fieldName === name)
+    assert.ok(field, name)
+    assert.equal(field[2], 8, `G6 ${name} keeps its eight-seat array`)
+  }
+  const catchVolume = declared(layout, 'components', 'feature_catch_volume')
+  const catchInside = catchVolume.fields.find(([name]) => name === 'inside')
+  assert.ok(catchInside)
+  assert.equal(catchInside[2], 8)
+  const swimVolume = declared(layout, 'components', 'feature_swim_volume')
+  const swimInside = swimVolume.fields.find(([name]) => name === 'inside')
+  assert.ok(swimInside)
+  assert.equal(swimInside[2], 8)
+})
+
+test('bot and feature records are simulation-lane snapshot state within 256 bytes', async () => {
+  const layout = await layoutOf()
+  for (const name of BOT_RECORDS) {
+    const entry = layout.components.find((component) => component.name === name)
+    assert.ok(entry, `${name} is declared`)
+    assert.equal(entry.lane, 'simulation', `${name} is snapshot state`)
+    assert.ok(entry.size <= 256, `${name} is ${entry.size} bytes`)
+    for (const field of entry.fields) {
+      assert.ok(field.count >= 1 && field.count <= 16, `${name}.${field.name} count`)
+      if (field.count > 1) {
+        const allowed = (name === 'bot_reaction_chunk' && field.name === 'codes') ||
+          (name.startsWith('show_nav_') && ['center', 'half', 'p'].includes(field.name))
+        assert.ok(allowed, `${name}.${field.name} must stay a small authored array`)
+      }
+    }
+  }
+})

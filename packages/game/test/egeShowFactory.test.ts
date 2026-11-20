@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { loadEngine } from '@etcito/game-engine'
 import { schemaLayout } from '@etcito/game-engine/script'
+import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
@@ -12,8 +13,10 @@ import { assetFilePath, parseGameAsset } from '../src/gameAsset.ts'
 import type { World } from '../src/gameAsset.ts'
 import { showSceneOwnership } from '../src/ege/sceneEmitter.ts'
 import { buildShowHubScene, buildShowPhysicsScenes, buildShowRulesScene } from '../src/ege/showScene.ts'
+import { createEngineShowFactory } from '../src/ege/showFactory.ts'
 import { readShowRoundResult, readShowState } from '../src/ege/showState.ts'
 import type { EngineShowConfig } from '../src/ege/showTypes.ts'
+import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 
 const schemaText = readFileSync(new URL('../../../ege.schema.json', import.meta.url), 'utf8')
 const engine = await loadEngine()
@@ -273,4 +276,144 @@ test('show ownership refuses colliding zone identities and failed construction l
   assert.throws(() => buildShowPhysicsScenes(showConfigWith(humans, { zones: noZone }), race, sixty, slots), RefusalError)
   assert.throws(() => buildShowRulesScene(showConfigWith(humans, { season: [] })), RefusalError)
   assert.equal(nextWorld(), before + 1)
+})
+
+// ---- G7-SHOW-FACTORY: prepared factory (this card) -------------------------------------------------
+
+let showScriptPromise: Promise<Uint8Array<ArrayBuffer>> | undefined
+
+function showScriptBytes(): Promise<Uint8Array<ArrayBuffer>> {
+  showScriptPromise ??= (async () => {
+    const result = await (await rfCompiler()).compile(collectRfScripts(), schemaText)
+    const errors = result.diagnostics.filter(diagnostic => diagnostic.severity === 'error')
+    assert.equal(errors.length, 0, errors.map(formatRfDiagnostic).join('\n'))
+    assert.ok(result.wasm)
+    return result.wasm as Uint8Array<ArrayBuffer>
+  })()
+  return showScriptPromise
+}
+
+function factoryConfig(humans: readonly boolean[], over: Partial<EngineShowConfig> = {}): EngineShowConfig {
+  return showConfigWith(humans, { testMode: true, ...over })
+}
+
+test('factory preparation stays pending until script admission and prepared domains are synchronous', async () => {
+  const humans = sixty.map(room => room === 3 || room === 40)
+  const preparing = createEngineShowFactory(factoryConfig(humans, { scriptBytes: await showScriptBytes() }))
+  const gate = { state: 'loading' as 'loading' | 'ready' | 'failed', ready: false, warm: false, ranGatedAction: false }
+  const gated = preparing.then(factory => {
+    gate.state = 'ready'
+    gate.ready = true
+    gate.warm = true
+    gate.ranGatedAction = true
+    return factory
+  })
+  // The gate keeps its loading state and never reports ready or warm before admission completes.
+  assert.equal(gate.state, 'loading')
+  assert.equal(gate.ready, false)
+  assert.equal(gate.warm, false)
+  assert.equal(gate.ranGatedAction, false)
+  const factory = await gated
+  assert.equal(gate.state, 'ready')
+  assert.equal(gate.warm, true)
+
+  const global = factory.create({ id: 0, kind: 'global', cells: [], seats: [0, 3], replicas: [0] }, 0)
+  const globalRef = factory.worldRef(global)
+  assert.equal(globalRef.domain, 0)
+  assert.equal(globalRef.kind, 'global')
+  assert.equal(globalRef.world, global.world)
+  assert.equal(globalRef.confirmedTick, 0)
+  const initial = factory.rulesState(global)
+  assert.equal(initial.screen, 'vote')
+  assert.deepEqual(initial.seatOf, sixty)
+  assert.deepEqual(initial.alive, sixty)
+  assert.equal(initial.faults, 0)
+
+  const seat = factory.create({ id: 1, kind: 'seat', cells: [], seats: sixty.slice(0, 8), replicas: [0] }, 0)
+  assert.equal(typeof seat.world, 'number')
+  assert.equal(seat instanceof Promise, false)
+  const writer = new SnapWriter()
+  seat.exportEntities(writer)
+  const rebuilt = factory.rebuild({ id: 2, kind: 'field', cells: [], seats: [0, 3], replicas: [0] }, seat.tick, [new SnapReader(writer.bytes())])
+  assert.equal(rebuilt instanceof Promise, false)
+  const reset = factory.reset({ id: 3, kind: 'seat', cells: [], seats: [0], replicas: [0] }, 0)
+  assert.equal(reset instanceof Promise, false)
+  assert.equal(reset.tick, 0)
+  assert.throws(() => factory.rulesState(seat), RefusalError)
+  assert.throws(() => factory.create({ id: 9, kind: 'seat', cells: [], seats: [99], replicas: [0] }, 0), RefusalError)
+  // The reset scratch replaces the rebuild scratch, which is already freed and no longer live.
+  assert.deepEqual(factory.worlds().map(ref => ref.domain).sort((a, b) => a - b), [0, 1, 3])
+  assert.throws(() => engine.tick(rebuilt.world))
+
+  globalRef.binding.stepCodes([])
+  globalRef.binding.stepCodes([])
+  assert.equal(factory.rulesState(global).screen, 'loading')
+  assert.equal(factory.rulesState(global).faults, 0)
+  // Equal prepared inputs produce equal state: a twin rules world stepped identically decodes identically.
+  const twin = factory.create({ id: 5, kind: 'global', cells: [], seats: [], replicas: [0] }, 0)
+  const twinRef = factory.worldRef(twin)
+  twinRef.binding.stepCodes([])
+  twinRef.binding.stepCodes([])
+  assert.deepEqual(factory.rulesState(twin), factory.rulesState(global))
+  factory.release(twin)
+
+  factory.release(seat)
+  factory.release(global)
+  factory.release(rebuilt)
+  factory.release(reset)
+  assert.deepEqual(factory.worlds(), [])
+  factory.dispose()
+  assert.throws(() => factory.create({ id: 4, kind: 'global', cells: [], seats: [], replicas: [0] }, 0))
+})
+
+test('rejected preparation keeps the gate closed, propagates and frees its allocations', async () => {
+  const humans = sixty.map(room => room === 3)
+  const good = factoryConfig(humans, { scriptBytes: await showScriptBytes() })
+  const probe = buildShowRulesScene(good)
+  const nextWorld = (): number => { const world = engine.createWorld(JSON.stringify(probe)); engine.freeWorld(world); return world }
+  const before = nextWorld()
+  const gate = { state: 'loading' as 'loading' | 'ready' | 'failed', ready: false, warm: false, ranGatedAction: false }
+  const broken = factoryConfig(humans, { scriptBytes: new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]) })
+  const preparing = createEngineShowFactory(broken).then(
+    factory => { gate.state = 'ready'; gate.ready = true; gate.warm = true; gate.ranGatedAction = true; return factory },
+    error => { gate.state = 'failed'; throw error },
+  )
+  assert.equal(gate.state, 'loading')
+  await assert.rejects(preparing)
+  assert.equal(gate.state, 'failed')
+  assert.equal(gate.ready, false)
+  assert.equal(gate.warm, false)
+  assert.equal(gate.ranGatedAction, false)
+  await assert.rejects(createEngineShowFactory(factoryConfig(humans, { scriptBytes: new Uint8Array(), season: [] })), RefusalError)
+  assert.equal(nextWorld(), before + 1)
+
+  // The failed preparations leave the borrowed engine healthy and admit a later module.
+  const factory = await createEngineShowFactory(good)
+  const global = factory.create({ id: 0, kind: 'global', cells: [], seats: [0, 3], replicas: [0] }, 0)
+  assert.equal(factory.rulesState(global).faults, 0)
+  factory.release(global)
+  factory.dispose()
+})
+
+test('factory releases each world once across scratch replacement and disposal', async () => {
+  const humans = sixty.map(room => room === 3)
+  const factory = await createEngineShowFactory(factoryConfig(humans, { scriptBytes: await showScriptBytes() }))
+  const seat = factory.create({ id: 1, kind: 'seat', cells: [], seats: [0, 3], replicas: [0] }, 0)
+  const writer = new SnapWriter()
+  seat.exportEntities(writer)
+  const first = factory.rebuild({ id: 2, kind: 'field', cells: [], seats: [0, 3], replicas: [0] }, 0, [new SnapReader(writer.bytes())])
+  const second = factory.reset({ id: 3, kind: 'field', cells: [], seats: [0], replicas: [0] }, 0)
+  // The second scratch frees the first; releasing the replaced world again changes nothing.
+  assert.equal(factory.worlds().some(ref => ref.world === first.world), false)
+  assert.throws(() => engine.tick(first.world))
+  factory.release(first)
+  factory.release(first)
+  factory.release(seat)
+  assert.throws(() => engine.tick(seat.world))
+  factory.release(second)
+  factory.release(second)
+  assert.throws(() => engine.tick(second.world))
+  assert.deepEqual(factory.worlds(), [])
+  factory.dispose()
+  factory.dispose()
 })

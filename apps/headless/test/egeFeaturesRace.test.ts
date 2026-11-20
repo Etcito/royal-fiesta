@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { EngineInstance } from '@etcito/game-engine/loader'
 import { loadEngine } from '@etcito/game-engine'
+import { EngineDomainFactory } from '@etcito/game-engine/zones'
+import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
 import type { ScriptModule } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
@@ -515,6 +517,16 @@ function showFeatureSchema(): Promise<string> {
           reads: ['seat', 'character', 'gate', 'feature', 'ege.transform'],
           writes: ['feature_launch_pad', 'feature_launch_pad_seat', 'ege.velocity'], emits: [],
         },
+        {
+          system: 'rf.feature.catch_volume.pre', kind: 'script',
+          reads: ['seat', 'gate', 'feature', 'show_seat_identity', 'show_feature_membership', 'ege.zone.id'],
+          writes: ['feature_catch_volume', 'character', 'ege.transform', 'ege.velocity', 'ege.mech.grab', 'show_feature_membership', 'ege.zone.id'], emits: [],
+        },
+        {
+          system: 'rf.feature.swim_volume.pre', kind: 'script',
+          reads: ['seat', 'ege.transform', 'feature', 'show_seat_identity', 'show_feature_membership', 'ege.zone.id'],
+          writes: ['feature_swim_volume', 'character', 'ege.velocity', 'show_feature_membership', 'ege.zone.id'], emits: [],
+        },
         { system: 'ege.body.props', kind: 'engine' },
         { system: 'ege.box.collider', kind: 'engine' },
         { system: 'ege.physics', kind: 'engine' },
@@ -531,6 +543,14 @@ function showFeatureSchema(): Promise<string> {
         },
       ],
     })
+    const schedule = schema.world_kinds.at(-1).schedule
+    const round = schema.world_kinds.find((kind: any) => kind.name === 'round').schedule
+    for (const name of ['rf.feature.catch_volume.pre', 'rf.feature.swim_volume.pre']) {
+      const index = schedule.findIndex((entry: any) => entry.system === name)
+      schedule[index] = structuredClone(round.find((entry: any) => entry.system === name))
+    }
+    schedule.push(structuredClone(round.find((entry: any) => entry.system === 'rf.feature.catch_volume.post')))
+    schedule.push({ system: 'ege.zone.track', kind: 'engine' })
     return JSON.stringify(schema)
   })
   return showSchema
@@ -549,6 +569,7 @@ function showScriptBytes(schemaText: string): Promise<Uint8Array> {
 async function showRig(
   specs: FeatureSpec[],
   patch?: (doc: any, scene: EmittedScene) => void,
+  seatOf = Array.from({ length: 60 }, (_, seat) => seat),
 ): Promise<{
   engine: EngineInstance
   world: number
@@ -564,7 +585,6 @@ async function showRig(
   copy.sim!.features = specs
   const engine = await loadEngine()
   engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
-  const seatOf = Array.from({ length: 60 }, (_, seat) => seat)
   const scene = emitEngineScene(engine, {
     course: copy, assets, setup: { profile: 'sprint', seed: 7 },
     show: { worldKind: 'show_field', seatOf, inputSlots: seatOf.map(() => -1), humans: seatOf.map(() => false) },
@@ -574,7 +594,7 @@ async function showRig(
   doc.resources.round.phase = 1
   doc.resources.round.frozen = 0
   doc.resources.round.intro_ticks = 0
-  for (let seat = 0; seat < 60; seat++) {
+  for (let seat = 0; seat < seatOf.length; seat++) {
     const row = doc.entities[scene.seatEntities[seat]]
     row.components.seat.status = 0
     row.components.character.placed = 1
@@ -740,6 +760,160 @@ test('show launch pad completes a high-seat launch and keeps ballistic placement
     assert.ok(Math.hypot(landing[0] + 3.5, landing[2] - 14) <= 2.5, `landing ${JSON.stringify(landing)}`)
     assert.deepEqual(state.components.feature_launch_pad_seat[String(rig.scene.index('feature/pad/seat/7'))].launched, -1)
   } finally {
+    rig.engine.freeWorld(rig.world)
+    rig.module.dispose()
+  }
+})
+
+test('show volume membership remains independent and survives restore and transfer', async () => {
+  const pool = { id: 'pool', kind: 'swimVolume', params: { center: [0, 1, 0], half: [3, 3, 3] } } as FeatureSpec
+  const rig = await showRig([pool], (doc, scene) => {
+    for (const seat of [7, 37, 59]) {
+      const row = doc.entities[scene.seatEntities[seat]]
+      row.components.seat.status = 1
+      row.components['ege.transform'].pos = seat === 37 ? [10, 1, 0] : [seat === 7 ? -1 : 1, 1, 0]
+    }
+  })
+  try {
+    stepShow(rig, 1)
+    const state = readWorldState(rig.engine, rig.world, rig.layout)
+    const rows = Object.entries(state.components.show_feature_membership as Record<string, any>)
+    const rowFor = (seat: number) => rows.find(([, row]) => row.character === rig.scene.seatEntities[seat])!
+    assert.equal(rowFor(7)[1].inside, 1)
+    assert.equal(rowFor(37)[1].inside, 0)
+    assert.equal(rowFor(59)[1].inside, 1)
+    assert.equal(state.components.character[String(rig.scene.seatEntities[59])].swim, 1)
+    const restored = rig.engine.createWorld(JSON.stringify(rig.doc))
+    try {
+      rig.engine.restore(restored, rig.engine.snapshot(rig.world))
+      const copy = readWorldState(rig.engine, restored, rig.layout)
+      assert.equal(copy.components.show_feature_membership[rowFor(59)[0]].inside, 1)
+      rig.host.stepTick(restored, SHOW_INPUTS)
+      assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+    } finally { rig.engine.freeWorld(restored) }
+    const target = await showRig([])
+    try {
+      const ids = target.engine.importEntities(target.world, rig.engine.exportEntities(rig.world, [Number(rowFor(59)[0])], false))
+      assert.equal(readWorldState(target.engine, target.world, target.layout).components.show_feature_membership[String(ids[0])].inside, 1)
+    } finally { target.engine.freeWorld(target.world); target.module.dispose() }
+  } finally { rig.engine.freeWorld(rig.world); rig.module.dispose() }
+})
+
+test('show catch membership prevents repeated catches and distinguishes late seats', async () => {
+  const volume = { id: 'catch', kind: 'catchVolume', params: { center: [0, 0, 0], half: [100, 100, 100], respawnStage: 0 } } as FeatureSpec
+  const rig = await showRig([volume], (doc, scene) => {
+    for (const seat of [7, 37, 59]) {
+      const row = doc.entities[scene.seatEntities[seat]]
+      row.components.seat.status = seat === 37 ? 0 : 1
+      row.components['ege.transform'].pos = [seat === 37 ? 200 : seat / 10, 1, 0]
+    }
+  })
+  try {
+    stepShow(rig, 1)
+    let state = readWorldState(rig.engine, rig.world, rig.layout)
+    const rows = Object.values(state.components.show_feature_membership as Record<string, any>)
+    const rowFor = (seat: number) => rows.find(row => row.character === rig.scene.seatEntities[seat])!
+    assert.equal(rowFor(7).inside, 1)
+    assert.equal(rowFor(37).inside, 0)
+    assert.equal(rowFor(59).inside, 1)
+    const caught = Number(state.components.character[String(rig.scene.seatEntities[59])].teleport_tick)
+    assert.ok(caught >= 0)
+    stepShow(rig, 2)
+    state = readWorldState(rig.engine, rig.world, rig.layout)
+    assert.equal(state.components.character[String(rig.scene.seatEntities[59])].teleport_tick, caught)
+  } finally { rig.engine.freeWorld(rig.world); rig.module.dispose() }
+})
+
+test('zone rebuild transfers swimming membership with its character', async () => {
+  const pool = { id: 'pool', kind: 'swimVolume', params: { center: [0, 1, 0], half: [3, 3, 3] } } as FeatureSpec
+  const rig = await showRig([pool], (doc, scene) => {
+    for (const seat of [0, 1, 2]) {
+      const row = doc.entities[scene.seatEntities[seat]]
+      row.components.seat.status = 1
+      row.components['ege.transform'].pos = [0, 1, 0]
+    }
+  }, [7, 37, 59])
+  const factory = new EngineDomainFactory({
+    engine: rig.engine, scenes: { seat: JSON.stringify(rig.doc) },
+    grid: { cols: 1, rows: 1, cellSize: 1000, originX: -500, originZ: -500 },
+    runner: () => rig.host, inputPlayers: spec => spec.seats.map(() => -1),
+  })
+  const spec = { id: 1, kind: 'seat' as const, cells: [0], seats: [0, 1, 2], replicas: [0] }
+  const source = factory.create(spec, 0)
+  try {
+    rig.host.stepTick(source.world, SHOW_INPUTS)
+    assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+    const writer = new SnapWriter()
+    source.exportEntities(writer)
+    const splitBytes: Uint8Array[] = []
+    for (const seat of spec.seats) {
+      const split = factory.rebuild({ ...spec, id: seat + 2, seats: [seat] }, 1, [new SnapReader(writer.bytes())])
+      const part = new SnapWriter()
+      split.exportEntities(part)
+      splitBytes.push(part.bytes().slice())
+    }
+    const rebuilt = factory.rebuild(spec, 1, splitBytes.map(bytes => new SnapReader(bytes)))
+    const state = readWorldState(rig.engine, rebuilt.world, rig.layout)
+    const rows = Object.values(state.components.show_feature_membership as Record<string, any>)
+    assert.equal(rows.length, 3)
+    assert.ok(rows.every(row => row.inside === 1 && row.owner === row.character))
+    const zones = state.components['ege.zone.id'] as Record<string, any>
+    assert.deepEqual(rows.map(row => zones[Object.keys(state.components.show_feature_membership).find(key => state.components.show_feature_membership[key] === row)!].id).sort((a: number, b: number) => a - b), [0x40000007, 0x40000025, 0x4000003b])
+    assert.ok(rows.every(row => state.components.character[String(row.character)] !== undefined))
+    rig.host.stepTick(rebuilt.world, SHOW_INPUTS)
+    assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+    assert.equal(Object.keys(readWorldState(rig.engine, rebuilt.world, rig.layout).components.show_feature_membership).length, 3)
+    const character = String(rows[0].character)
+    assert.equal(readWorldState(rig.engine, rebuilt.world, rig.layout).components.character[character].swim, 1)
+    for (let tick = 0; tick < 600; tick++) {
+      rig.host.stepTick(rebuilt.world, SHOW_INPUTS)
+      if (readWorldState(rig.engine, rebuilt.world, rig.layout).components.character[character].swim === 0) break
+    }
+    assert.equal(readWorldState(rig.engine, rebuilt.world, rig.layout).components.character[character].swim, 0)
+    assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+  } finally {
+    factory.release(source)
+    factory.dispose()
+    rig.engine.freeWorld(rig.world)
+    rig.module.dispose()
+  }
+})
+
+test('catch membership survives repeated zone reconstruction without catching again', async () => {
+  const volume = { id: 'catch', kind: 'catchVolume', params: { center: [0, 0, 0], half: [100, 100, 100], respawnStage: 0 } } as FeatureSpec
+  const rig = await showRig([volume], (doc, scene) => {
+    const row = doc.entities[scene.seatEntities[0]]
+    row.components.seat.status = 1
+    row.components['ege.transform'].pos = [0, 1, 0]
+  }, [59])
+  const factory = new EngineDomainFactory({
+    engine: rig.engine, scenes: { seat: JSON.stringify(rig.doc) },
+    grid: { cols: 1, rows: 1, cellSize: 1000, originX: -500, originZ: -500 },
+    runner: () => rig.host, inputPlayers: () => [-1],
+  })
+  const spec = { id: 1, kind: 'seat' as const, cells: [0], seats: [0], replicas: [0] }
+  const source = factory.create(spec, 0)
+  try {
+    rig.host.stepTick(source.world, SHOW_INPUTS)
+    const initial = readWorldState(rig.engine, source.world, rig.layout)
+    const initialRow = Object.values(initial.components.show_feature_membership as Record<string, any>)[0]
+    const caught = initial.components.character[String(initialRow.character)].teleport_tick
+    const first = new SnapWriter()
+    source.exportEntities(first)
+    const split = factory.rebuild(spec, 1, [new SnapReader(first.bytes())])
+    const second = new SnapWriter()
+    split.exportEntities(second)
+    const rebuilt = factory.rebuild(spec, 1, [new SnapReader(second.bytes())])
+    rig.host.stepTick(rebuilt.world, SHOW_INPUTS)
+    const state = readWorldState(rig.engine, rebuilt.world, rig.layout)
+    const rows = Object.values(state.components.show_feature_membership as Record<string, any>)
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0].inside, 1)
+    assert.equal(state.components.character[String(rows[0].character)].teleport_tick, caught)
+    assert.equal(rig.module.faultCount, 0, rig.faults.join(' | '))
+  } finally {
+    factory.release(source)
+    factory.dispose()
     rig.engine.freeWorld(rig.world)
     rig.module.dispose()
   }

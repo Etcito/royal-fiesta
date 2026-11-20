@@ -1,5 +1,5 @@
-import { getComponent, readColumn, setComponent, tick } from 'ege'
-import { Character, EgeTransform, FeatureCatchVolume, Gate, Seat } from '../components.gen'
+import { Column, getComponent, newRecord, readColumn, spawn, setComponent, tick } from 'ege'
+import { Character, EgeTransform, Feature, FeatureCatchVolume, ShowFeatureMembership, ShowSeatIdentity, EgeZoneId, Gate, Seat } from '../components.gen'
 import { releaseGrab } from '../character/grab.as'
 import { inBox } from '../lib/boxes.as'
 import { characterColumn, placeSeat, seatColumn } from '../lib/seats.as'
@@ -30,27 +30,66 @@ function setInside(feature: FeatureCatchVolume, seat: u32, value: u32): void {
   }
 }
 
+// Membership follows its character and is keyed by authored feature index across transfer.
+function findMembership(rows: Column<ShowFeatureMembership>, index: u32, character: u32): i32 {
+  for (let i: u32 = 0; i < rows.count; i++) {
+    const row = rows.at(i)
+    if (row.index == index && row.character == character) return <i32>i
+  }
+  return -1
+}
+
 function scan(): void {
+  const identities = readColumn<ShowSeatIdentity>(ShowSeatIdentity.ID, ShowSeatIdentity.SIZE)
+  const show = identities.count > 0
   const features = readColumn<FeatureCatchVolume>(FeatureCatchVolume.ID, FeatureCatchVolume.SIZE)
+  const rows = show ? readColumn<ShowFeatureMembership>(ShowFeatureMembership.ID, ShowFeatureMembership.SIZE) : null
   const seats = seatColumn()
   const characters = characterColumn()
   const gates = readColumn<Gate>(Gate.ID, Gate.SIZE)
   const nowTick = <i32>tick()
   for (let i: u32 = 0; i < features.count; i++) {
     const feature = features.at(i)
+    const root = features.entity(i)
+    const index = show ? getComponent<Feature>(root, Feature.ID, Feature.SIZE).index : 0
     for (let j: u32 = 0; j < seats.count; j++) {
       const seat = seats.at(j)
       const entity = seats.entity(j)
       const characterRow = characters.find(entity)
       if (characterRow < 0) continue
       const ch = characters.at(<u32>characterRow)
+      let membership: ShowFeatureMembership | null = null
+      let fresh: u32 = 0
+      if (show) {
+        const found = findMembership(rows!, index, entity)
+        if (found >= 0) {
+          membership = rows!.at(<u32>found)
+          membership.owner = entity
+          membership.feature = root
+        } else {
+          fresh = spawn()
+          membership = newRecord<ShowFeatureMembership>(ShowFeatureMembership.SIZE)
+          membership.owner = entity
+          membership.feature = root
+          membership.character = entity
+          membership.index = index
+          membership.inside = 0
+          const identity = identities.at(<u32>identities.find(entity))
+          const zone = newRecord<EgeZoneId>(EgeZoneId.SIZE)
+          zone.id = 0x40000000 + index * 64 + identity.room_seat
+          zone.owner = identity.round_seat
+          zone.group = identity.room_seat + 1
+          setComponent<EgeZoneId>(fresh, EgeZoneId.ID, EgeZoneId.SIZE, zone)
+        }
+      }
+      const wasInside = show ? membership!.inside : insideOf(feature, seat.seat)
       const transform = getComponent<EgeTransform>(entity, EgeTransform.ID, EgeTransform.SIZE)
       let now = inBox(
         feature.center_0, feature.center_1, feature.center_2,
         feature.half_0, feature.half_1, feature.half_2,
         <f64>transform.pos_0, <f64>transform.pos_1, <f64>transform.pos_2,
       )
-      if (now && insideOf(feature, seat.seat) == 0 && seat.status == 1) {
+      if (now && wasInside == 0 && seat.status == 1) {
         for (let k: u32 = 0; k < gates.count; k++) {
           const gate = gates.at(k)
           if (gate.index != feature.checkpoint) continue
@@ -73,17 +112,26 @@ function scan(): void {
           ch.jump_buffer = 0
           ch.teleport_tick = nowTick
           if (ch.grab_lever >= 0) releaseGrab(entity, ch)
-          now = false
+          now = show && inBox(
+            feature.center_0, feature.center_1, feature.center_2,
+            feature.half_0, feature.half_1, feature.half_2,
+            <f64>transform.pos_0, <f64>transform.pos_1, <f64>transform.pos_2,
+          )
           break
         }
       }
-      setInside(feature, seat.seat, now ? 1 : 0)
+      if (show) {
+        membership!.inside = now ? 1 : 0
+        if (fresh != 0) setComponent<ShowFeatureMembership>(fresh, ShowFeatureMembership.ID, ShowFeatureMembership.SIZE, membership!)
+      } else setInside(feature, seat.seat, now ? 1 : 0)
     }
   }
+  if (show) rows!.write()
   characters.write()
   features.write()
 }
 
 export function rf_feature_catch_volume_pre(): void { scan() }
-
 export function rf_feature_catch_volume_post(): void { scan() }
+export function rf_feature_catch_volume_show_pre(): void { scan() }
+export function rf_feature_catch_volume_show_post(): void { scan() }

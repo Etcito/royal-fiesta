@@ -446,3 +446,20 @@ test('doorBank doors block a running seat before any script', async () => {
     round.dispose()
   }
 })
+
+test('show volumes preserve their round payloads for runtime membership', async () => {
+  const specs: FeatureSpec[] = [
+    { id: 'catch', kind: 'catchVolume', params: { center: [0, 1, 6], half: [1, 1, 1], respawnStage: 0 } },
+    { id: 'pool', kind: 'swimVolume', params: { center: [0, 1, 8], half: [1, 1, 1] } },
+  ]
+  const input = await inputWith('fixtures/ege/ege-strip.course.json', specs)
+  const round = emitBuilds(input)
+  const seatOf = Array.from({ length: 60 }, (_, seat) => seat)
+  const show = emitBuilds({ ...input, show: {
+    worldKind: 'show_field', seatOf, inputSlots: seatOf.map(() => -1), humans: seatOf.map(() => false),
+  } })
+  for (const [id, component] of [['catch', 'feature_catch_volume'], ['pool', 'feature_swim_volume']] as const) {
+    assert.deepEqual(show.scene.entities[show.index(`feature/${id}`)].components?.[component],
+      round.scene.entities[round.index(`feature/${id}`)].components?.[component])
+  }
+})

@@ -1642,6 +1642,13 @@
           "emits": []
         },
         {
+          "system": "rf.feature.collectible.pre",
+          "kind": "script",
+          "reads": [],
+          "writes": [],
+          "emits": []
+        },
+        {
           "system": "ege.body.props",
           "kind": "engine"
         },
@@ -1757,6 +1764,13 @@
           "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
           "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
           "emits": ["team_score"]
+        },
+        {
+          "system": "rf.feature.collectible.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_collectible_spot", "ege.render"],
+          "emits": ["score"]
         },
         {
           "system": "rf.seat.rules",

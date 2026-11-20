@@ -26,6 +26,7 @@ const SCHEDULE = [
   'rf.feature.annulus.pre',
   'rf.feature.sweep.pre',
   'rf.feature.rising_kill.pre',
+  'rf.feature.collectible.pre',
   'ege.body.props',
   'ege.box.collider',
   'ege.physics',
@@ -42,6 +43,7 @@ const SCHEDULE = [
   'rf.feature.sweep.post',
   'rf.feature.rising_kill.post',
   'rf.feature.ball.post',
+  'rf.feature.collectible.post',
   'rf.seat.rules',
 ]
 

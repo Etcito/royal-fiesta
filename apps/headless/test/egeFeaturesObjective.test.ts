@@ -15,7 +15,7 @@ import { engineCodeOfS1 } from '@royal-fiesta/game/ege/inputCodes'
 import { loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
 
-async function roundWith(id: string, specs: FeatureSpec[] | null, sharedEngine?: EngineInstance): Promise<{
+async function roundWith(id: string, specs: FeatureSpec[] | null, sharedEngine?: EngineInstance, humans?: boolean[]): Promise<{
   engine: EngineInstance; scene: EmittedScene; course: CourseV1; round: EngineRound
 }> {
   const { course, assets } = await loadEgeCourse(id)
@@ -26,7 +26,7 @@ async function roundWith(id: string, specs: FeatureSpec[] | null, sharedEngine?:
   if (!sharedEngine) engine.setSchema(schema)
   const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
   const round = await createEngineRound(engine, schema, await rfScriptBytes(), scene, copy, {
-    profile: 'sprint', seed: 7, humans: [true, false, false, false, false, false, false, false],
+    profile: 'sprint', seed: 7, humans: humans ?? [true, false, false, false, false, false, false, false],
   })
   return { engine, scene, course: copy, round }
 }
@@ -340,5 +340,97 @@ test('a goal shrinks X and Z by the ball radius and rejects a ball the unshrunk 
     assert.equal(round.observe().faults, 0)
   } finally {
     round.dispose()
+  }
+})
+
+function collectSpec(spots: [number, number, number][], value: number, regenS: number): FeatureSpec {
+  return { id: 'pickup', kind: 'collectible', params: { spots, value, regenS } }
+}
+
+const ALL_HUMAN = [true, true, true, true, true, true, true, true]
+
+test('collectible pickup scores its value, hides the spot and regenerates on the exact source tick', async () => {
+  // The idle human seat stands with its body centre at feet + stand + 0.01, i.e. y 0.86.
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  const spec = collectSpec([[-3.5, 0.86, 0]], 7, 0.5)
+  const first = await roundWith('ege-strip', [spec], engine)
+  const second = await roundWith('ege-strip', [spec], engine)
+  try {
+    const spot = first.scene.index('feature/pickup/spot/0')
+    const seat = first.scene.seatEntities[0]
+    const events: ReturnType<typeof decodeEvents> = []
+    while (first.round.tick < 60) {
+      events.push(...rawStep(first.round, () => code()))
+      rawStep(second.round, () => code())
+    }
+    assert.equal(events.filter((event) => event.kind === 'score').length, 0, 'no pickup during the intro')
+    assert.equal(rec(first.round, 'ege.render', spot).visible, 1, 'an untouched spot is visible')
+    events.push(...rawStep(first.round, () => code()))
+    rawStep(second.round, () => code())
+    assert.equal(first.round.tick, 61)
+    assert.equal(engine.worldEqual(first.round.world, second.round.world), true)
+
+    const scored = events.filter((event) => event.kind === 'score')
+    assert.equal(scored.length, 1, 'one pickup emits one score')
+    assert.equal(scored[0].entity, seat)
+    assert.deepEqual(
+      { seat: scored[0].fields.seat, a: scored[0].fields.a, b: scored[0].fields.b },
+      { seat: 0, a: 7, b: 0 },
+    )
+    const ready = rec(first.round, 'feature_collectible_spot', spot).ready_tick as number
+    assert.equal(ready, 90, 'ready tick is the source tick plus round(0.5 s * 60)')
+    assert.equal(rec(first.round, 'ege.render', spot).visible, 0, 'a collected spot is hidden during its cooldown')
+
+    for (let i = 0; i < 20; i++) {
+      events.push(...rawStep(first.round, () => code(1)))
+      rawStep(second.round, () => code(1))
+      assert.equal(engine.worldEqual(first.round.world, second.round.world), true, `worlds differ at tick ${first.round.tick}`)
+    }
+    while (first.round.tick < 90) {
+      events.push(...rawStep(first.round, () => code()))
+      rawStep(second.round, () => code())
+    }
+    assert.equal(rec(first.round, 'ege.render', spot).visible, 0, 'still hidden one tick before the ready tick')
+    events.push(...rawStep(first.round, () => code()))
+    rawStep(second.round, () => code())
+    assert.equal(first.round.tick, 91)
+    assert.equal(events.filter((event) => event.kind === 'score').length, 1, 'the far seat does not score')
+    assert.equal(rec(first.round, 'feature_collectible_spot', spot).ready_tick, 90, 'no pickup keeps the ready tick')
+    assert.equal(rec(first.round, 'ege.render', spot).visible, 1, 'the spot is visible again at its ready tick')
+    assert.equal(first.round.observe().faults, 0)
+    assert.equal(second.round.observe().faults, 0)
+  } finally {
+    second.round.dispose()
+    first.round.dispose()
+  }
+})
+
+test('a collectible tie goes to the lower room seat', async () => {
+  const engine = await loadEngine()
+  engine.setSchema(await readRepoText(RF_EGE_SCHEMA))
+  // Seats 0 and 1 spawn one metre apart at x -3.5 and -2.5; the spot sits at the midpoint.
+  const spec = collectSpec([[-3.0, 0.86, 0]], 3, 1)
+  const first = await roundWith('ege-strip', [spec], engine, ALL_HUMAN)
+  const second = await roundWith('ege-strip', [spec], engine, ALL_HUMAN)
+  try {
+    const events: ReturnType<typeof decodeEvents> = []
+    while (first.round.tick < 61) {
+      events.push(...rawStep(first.round, () => code()))
+      rawStep(second.round, () => code())
+    }
+    const scored = events.filter((event) => event.kind === 'score')
+    assert.equal(scored.length, 1)
+    assert.equal(scored[0].entity, first.scene.seatEntities[0], 'the equal-distance tie keeps seat 0')
+    assert.deepEqual(
+      { seat: scored[0].fields.seat, a: scored[0].fields.a, b: scored[0].fields.b },
+      { seat: 0, a: 3, b: 0 },
+    )
+    assert.equal(engine.worldEqual(first.round.world, second.round.world), true)
+    assert.equal(first.round.observe().faults, 0)
+    assert.equal(second.round.observe().faults, 0)
+  } finally {
+    second.round.dispose()
+    first.round.dispose()
   }
 })

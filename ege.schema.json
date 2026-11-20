@@ -2152,8 +2152,8 @@
         {
           "system": "rf.feature.tail_set.pre",
           "kind": "script",
-          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform"],
-          "writes": ["feature_tail_set", "feature_tail_set_seat", "character"],
+          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_tail_set", "feature_tail_set_seat", "character", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["possess"]
         },
         {
@@ -2304,8 +2304,8 @@
         {
           "system": "rf.feature.crown.post",
           "kind": "script",
-          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render"],
+          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["crown"]
         },
         {
@@ -2452,8 +2452,8 @@
         {
           "system": "rf.feature.tail_set.pre",
           "kind": "script",
-          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform"],
-          "writes": ["feature_tail_set", "feature_tail_set_seat", "character"],
+          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_tail_set", "feature_tail_set_seat", "character", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["possess"]
         },
         { "system": "ege.body.props", "kind": "engine" },
@@ -2569,8 +2569,8 @@
         {
           "system": "rf.feature.crown.post",
           "kind": "script",
-          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render"],
+          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["crown"]
         },
         {
@@ -2699,8 +2699,8 @@
         {
           "system": "rf.feature.tail_set.pre",
           "kind": "script",
-          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform"],
-          "writes": ["feature_tail_set", "feature_tail_set_seat", "character"],
+          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_tail_set", "feature_tail_set_seat", "character", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["possess"]
         },
         { "system": "ege.body.props", "kind": "engine" },
@@ -2816,8 +2816,8 @@
         {
           "system": "rf.feature.crown.post",
           "kind": "script",
-          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render"],
+          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["crown"]
         },
         {
@@ -2953,8 +2953,8 @@
         {
           "system": "rf.feature.tail_set.pre",
           "kind": "script",
-          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform"],
-          "writes": ["feature_tail_set", "feature_tail_set_seat", "character"],
+          "reads": ["round", "feature", "feature_tail_set", "feature_tail_set_seat", "seat", "character", "ege.transform", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_tail_set", "feature_tail_set_seat", "character", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["possess"]
         },
         { "system": "ege.body.props", "kind": "engine" },
@@ -3070,8 +3070,8 @@
         {
           "system": "rf.feature.crown.post",
           "kind": "script",
-          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render"],
+          "reads": ["round", "course", "feature", "feature_crown", "feature_crown_seat", "feature_crown_visual", "gate", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_crown", "feature_crown_seat", "character", "ege.transform", "ege.velocity", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["crown"]
         },
         {

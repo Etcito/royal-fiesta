@@ -1929,6 +1929,54 @@ test('ball, collectible and capture zone post entries grant cumulative publisher
   assert.deepEqual(round?.schedule.map((entry) => entry.system), SCHEDULE)
 })
 
+// Card 9112: tail_set.pre (possess) and crown.post (crown) call recordShowEvent too; their G6 access is kept and
+// the cumulative publisher grants are appended after it.
+const TAIL_CROWN_ACCESS: Record<string, { reads: string[]; writes: string[]; emits: string[] }> = {
+  'rf.feature.tail_set.pre': {
+    reads: ['round', 'feature', 'feature_tail_set', 'feature_tail_set_seat', 'seat', 'character', 'ege.transform', ...PUBLISHER_GRANTS],
+    writes: ['feature_tail_set', 'feature_tail_set_seat', 'character', ...PUBLISHER_GRANTS],
+    emits: ['possess'],
+  },
+  'rf.feature.crown.post': {
+    reads: [
+      'round', 'course', 'feature', 'feature_crown', 'feature_crown_seat', 'feature_crown_visual', 'gate', 'seat',
+      'character', 'ege.transform', 'ege.render', ...PUBLISHER_GRANTS,
+    ],
+    writes: [
+      'feature_crown', 'feature_crown_seat', 'character', 'ege.transform', 'ege.velocity', 'ege.render', ...PUBLISHER_GRANTS,
+    ],
+    emits: ['crown'],
+  },
+}
+
+test('tail set and crown entries grant cumulative publisher access in every world', async () => {
+  const layout = await layoutOf()
+  const componentNames = new Map(layout.components.map((decl): [number, string] => [decl.id, decl.name]))
+  const resourceNames = new Map(layout.resources.map((decl): [number, string] => [decl.id, decl.name]))
+  const resolve = (id: number): string | undefined =>
+    id >= 0x8000 ? resourceNames.get(id - 0x8000) : componentNames.get(id)
+  const eventName = (id: number): string | undefined => layout.events.find((event) => event.id === id)?.name
+  const source = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  for (const world of PUBLISHER_WORLDS) {
+    const authored = source.world_kinds.find((kind) => kind.name === world)
+    const loaded = layout.world_kinds.find((kind) => kind.name === world)
+    assert.ok(authored && loaded, world)
+    for (const [system, access] of Object.entries(TAIL_CROWN_ACCESS)) {
+      const label = `${world} ${system}`
+      const entries: AccessSchema['world_kinds'][number]['schedule'] =
+        authored.schedule.filter((entry) => entry.system === system)
+      assert.equal(entries.length, 1, label)
+      assert.deepEqual({ reads: entries[0].reads, writes: entries[0].writes, emits: entries[0].emits }, access, label)
+      const loadedEntry: Layout['world_kinds'][number]['schedule'][number] | undefined =
+        loaded.schedule.find((entry) => entry.system === system)
+      assert.ok(loadedEntry, label)
+      assert.deepEqual(loadedEntry.reads.map((id: number) => resolve(id)), access.reads, label)
+      assert.deepEqual(loadedEntry.writes.map((id: number) => resolve(id)), access.writes, label)
+      assert.deepEqual(loadedEntry.emits.map((id: number) => eventName(id)), access.emits, label)
+    }
+  }
+})
+
 // The publisher probe calls the real recordShowEvent under each production ball, collectible and capture zone
 // entry, copied verbatim into a probe world kind. Entities 0 and 1 are seats 3 and 59; entities 2 and 3 are
 // objective features with authored indices 4 and 11. The team probe creates three contributions at tick 0

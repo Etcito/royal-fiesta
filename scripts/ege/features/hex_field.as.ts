@@ -11,8 +11,6 @@ const FALL_TICKS: i32 = 30
 const HEX_BASE_COLOR: u32 = 0xF2E6D0
 // Warning tint 1 is packages/sim/src/features/tiles.ts:212; E4 maps it to 0xFF6B9E.
 const HEX_WARNING_COLOR: u32 = 0xFF6B9E
-// The disc draw asset has a 12 m diameter (hexField.ts:76-78).
-const DRAW_DIAMETER_M: f64 = 12.0
 
 // The axial ring walk of packages/sim/src/features/hexField.ts:10-25.
 // `cell` is the index inside one layer; out.x is q and out.y is r.
@@ -81,7 +79,8 @@ export function rf_feature_hex_field_pre(): void {
       const render = getComponent<EgeRender>(entity, EgeRender.ID, EgeRender.SIZE)
       render.color = HEX_BASE_COLOR
       render.visible = 1
-      render.params_0 = <f32>(feature.point_m / DRAW_DIAMETER_M)
+      // Same radius as the emitter: flat_m / 2, the centre spacing, so discs touch (hexField.ts emitter).
+      render.params_0 = <f32>(feature.flat_m / 2.0)
       render.params_1 = <f32>(feature.thick_m / 2.0)
       render.params_2 = 0
       render.params_3 = 0

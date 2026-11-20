@@ -22,7 +22,11 @@ export const hexFieldEmitter: FeatureEmitter = (spec: FeatureSpec, ctx: FeatureE
   const decayS = numParam(spec, path, 'decayS', 0, 600)
   const scaleWithEntrants = boolParam(spec, path, 'scaleWithEntrants', false)
   const outerHalf = [pointM / 2, thickM / 2, flatM / 2]
-  const visual = visualOf('candy.floor-disc', { x: pointM / 12, y: thickM, z: flatM / 12 })
+  // The source draws a 12 m wide, 1 m thick disc scaled by (pointM / 12, thickM, flatM / 12)
+  // (packages/sim/src/features/hexField.ts:76-78), so its drawn radius is pointM / 2. The engine
+  // cylinder is round: use flatM / 2, the spacing of neighbouring centres, so discs tile without
+  // overlapping. The visual table reads s.x as the radius, so pass it as a radius, not a scale.
+  const visual = visualOf('candy.floor-disc', { x: flatM / 2, y: thickM, z: flatM / 2 })
   return {
     root: {
       name: `feature/${spec.id}`,

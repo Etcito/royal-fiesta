@@ -62,7 +62,7 @@ test('hexField emits an origin pool, source dimensions and floor-disc records', 
       owner: 3, index, t: [2, 3, 4], state: 0, timer: 0,
     })
     assert.deepEqual(child.components?.['ege.render'], {
-      shape: 4, color: 0xF2E6D0, visible: 1, params: [0.5, 0.2, 0, 0],
+      shape: 4, color: 0xF2E6D0, visible: 1, params: [2.5, 0.2, 0, 0],
     })
   }
   const emitted = emitEngineScene(engine, input)

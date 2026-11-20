@@ -75,6 +75,10 @@ test('hexField places ring one and layers, then warns and falls under a standing
       near(transform.pos[0], rootX + layout[index][0])
       near(transform.pos[1], rootY)
       near(transform.pos[2], rootZ + layout[index][1])
+      // The disc is drawn at the centre spacing (flatM / 2 = 1 m radius), not at pointM / 12.
+      const render = rec(round, 'ege.render', scene.index(`feature/hex/hex/${index}`))
+      near(render.params[0], 1)
+      near(render.params[1], 0.05)
     }
     for (let index = 7; index < 14; index++) {
       const transform = rec(round, 'ege.transform', scene.index(`feature/hex/hex/${index}`))

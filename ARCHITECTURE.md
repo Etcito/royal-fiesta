@@ -2470,6 +2470,83 @@ Engine-owned `ege.body.props` applies validated rotation locks, additional mass,
 
 SDK `bodyType(entity)` reads authoritative physics classification: fixed 0, dynamic 1, position-kinematic 2, velocity-kinematic 3, absent -1. The host enforces transform-read access, phase/world validity and pointer bounds. Engine and SDK 0.1.2/ABI 1 are deployed together for callers of this query. These systems and ABI additions are owned and tested in the engine repository.
 
+## 4. Engine show schema (G7)
+
+The 60-seat show on the `?engine=1` path uses simulation components from `ege.schema.json`. The tables below follow the schema's field order and types. An `entity` field refers to a world entity. Seat numbers and input slots are separate identifiers.
+
+### G7.1 Identity, inputs and cumulative seat results
+
+`room_seat` identifies the seat across rounds. `round_seat` gives its position in the current round, and the signed `input_slot` can hold −1 for an unassigned slot. `show_control` holds the packed input code. The two result components hold the seat's cumulative progress, score, possession and elimination state. Their publication and pending rows are listed under G7.3.
+
+| Component | Fields in declaration order |
+| --- | --- |
+| `show_seat_identity` | `room_seat u32`, `round_seat u32`, `input_slot i32`, `bot u32` |
+| `show_control` | `code u32` |
+| `show_result_a` | `seat i32`, `status i32`, `finish_tick i32`, `finish_sub i32`, `lap i32`, `stage i32`, `route_mm i32`, `falls i32`, `score i32`, `last_score_tick i32` |
+| `show_result_b` | `hold_ticks i32`, `possessing u32`, `last_acquire_tick i32`, `matches i32`, `cross_ticks i32`, `out_tick i32`, `out_sub i32`, `team i32`, `opening_rank i32` |
+
+### G7.2 Rules, season and results
+
+The season cursor carries the round index and RNG state. Indexed child rows carry the plan, catalog, candidates and used maps. Votes identify the round and seat. A round result records list counts, with individual places and team scores in result rows. The hub root records occupancy totals, while each occupant carries its seat identity and wandering state.
+
+| Component | Fields in declaration order |
+| --- | --- |
+| `show_season_cursor` | `owner entity`, `step u32`, `alive u32`, `team_rounds u32`, `round_index u32`, `rng_state u32`, `final_map i32`, `last_kind i32`, `previous i32` |
+| `show_plan_entry` | `owner entity`, `index u32`, `nominal u32` |
+| `show_catalog_entry` | `owner entity`, `index u32`, `course u32`, `kind u32`, `final_rule u32`, `stages u32`, `team u32`, `cut u32` |
+| `show_candidate` | `owner entity`, `round_index u32`, `index u32`, `map u32` |
+| `show_vote` | `owner entity`, `round_index u32`, `seat u32`, `choice i32` |
+| `show_used_map` | `owner entity`, `index u32`, `map u32` |
+| `show_opening_rank` | `owner entity`, `seat u32`, `rank i32` |
+| `show_round_result` | `owner entity`, `index u32`, `map u32`, `course u32`, `kind u32`, `final u32`, `playoff u32`, `end_tick i32`, `reason u32`, `champion i32`, `ranking_count u32`, `qualified_count u32`, `eliminated_count u32`, `team_count u32` |
+| `show_result_seat` | `owner entity`, `result u32`, `list u32`, `position u32`, `seat u32`, `points i32` |
+| `show_result_team` | `owner entity`, `result u32`, `team u32`, `score i32` |
+| `show_team_contribution` | `owner entity`, `feature u32`, `team u32`, `value i32`, `tick i32` |
+| `show_result_pending` | `owner entity`, `index u32`, `end_tick i32`, `reason u32`, `confirmed u32` |
+| `show_clock` | `owner entity`, `start_tick i32`, `end_tick i32`, `overtime_end_tick i32`, `phase u32`, `frozen u32`, `intro_ticks u32`, `round_ticks u32`, `overtime_ticks u32` |
+| `show_hub_state` | `owner entity`, `occupants u32`, `humans u32`, `bots u32`, `tick i32`, `rng_state u32` |
+| `show_hub_occupant` | `owner entity`, `room_seat u32`, `round_seat u32`, `kind u32`, `emote u32`, `active u32`, `wander_x f64`, `wander_z f64`, `wander_tick i32`, `rng_state u32` |
+
+### G7.3 Bots and cumulative domain messages
+
+**Cumulative publication.** Each `show_publish` or `show_pending` row refers to its owning seat entity through `owner`. A publication carries the cumulative value of a seat field at a tick. A pending row carries its source, key and kind alongside the value and tick. Both are simulation state included in snapshots.
+
+| Component | Fields in declaration order |
+| --- | --- |
+| `show_publish` | `owner entity`, `seat u32`, `field u32`, `value i32`, `tick i32` |
+| `show_pending` | `owner entity`, `source u32`, `key u32`, `kind u32`, `value i32`, `tick i32` |
+
+**Authored behaviour and navigation.** A rule refers to its behaviour and carries an index, predicate, action and optional phase and distance conditions. Navigation regions carry bounds and adjacency counts. Edge rows identify adjacent regions, and node rows carry position, movement flags and wait/pull signals.
+
+| Component | Fields in declaration order |
+| --- | --- |
+| `bot_behaviour` | `owner entity`, `index u32`, `decision_ticks u32`, `reaction_ticks u32`, `wobble_ticks u32`, `stuck_ticks u32`, `preference u32`, `advance_m f64`, `arrive_m f64`, `rule_count u32` |
+| `bot_rule` | `owner entity`, `behaviour entity`, `index u32`, `predicate u32`, `action u32`, `has_phase u32`, `phase_from i32`, `phase_to i32`, `has_distance u32`, `distance_m f64` |
+| `show_nav_region` | `owner entity`, `index u32`, `region i32`, `center f64[3]`, `half f64[3]`, `adjacent_count u32` |
+| `show_nav_edge` | `owner entity`, `region_index u32`, `edge_index u32`, `adjacent i32` |
+| `show_nav_node` | `owner entity`, `index u32`, `p f64[3]`, `jump u32`, `dive u32`, `region i32`, `wait_signal i32`, `pull_signal i32` |
+
+**Transferable bot state.** The bot seat links the character and authored behaviour. Skill, decision memory and the route plan belong to the seat. Indexed child rows store the planned regions, edges and waypoints. The reaction queue links chunks through `next_chunk`, with sixteen input codes per chunk.
+
+| Component | Fields in declaration order |
+| --- | --- |
+| `bot_seat` | `owner entity`, `character entity`, `behaviour entity` |
+| `bot_skill` | `owner entity`, `reaction_ticks u32`, `aim_error f64`, `jump_lead f64`, `dive_chance f64` |
+| `bot_memory` | `owner entity`, `rng_state u32`, `ticks u32`, `wait_ticks u32`, `path_index u32`, `stuck_ticks u32`, `last_x f64`, `last_z f64`, `wobble f64` |
+| `bot_route` | `owner entity`, `preference u32`, `seed u32`, `plan_tick i32`, `next_plan_tick i32`, `cost f64`, `reachable u32`, `region_count u32`, `edge_count u32`, `waypoint_count u32` |
+| `bot_route_region` | `owner entity`, `index u32`, `region i32` |
+| `bot_route_edge` | `owner entity`, `index u32`, `from_region i32`, `to_region i32` |
+| `bot_route_waypoint` | `owner entity`, `index u32`, `node u32` |
+| `bot_reaction` | `owner entity`, `chunk_head entity`, `chunk_tail entity`, `code_count u32`, `delay_ticks u32` |
+| `bot_reaction_chunk` | `owner entity`, `next_chunk entity`, `chunk_index u32`, `code_count u32`, `codes u32[16]` |
+
+**Feature membership and cooldowns.** The show records membership and timing per feature and character through entity references. The G6 fixed-eight fields retain their original layouts. `feature_boost_lane` keeps `boost_until` and `ready_at` as `i32[8]`, and `feature_catch_volume` and `feature_swim_volume` each keep `inside` as `u32[8]`.
+
+| Component | Fields in declaration order |
+| --- | --- |
+| `show_feature_membership` | `owner entity`, `feature entity`, `character entity`, `index u32`, `inside u32` |
+| `show_feature_cooldown` | `owner entity`, `feature entity`, `character entity`, `index u32`, `ready_at i32`, `boost_until i32` |
+
 ## Module ownership
 
 | Module | Files | Consumes |

@@ -4,7 +4,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { loadEngine } from '@etcito/game-engine'
 import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
-import { readWorldState } from '@etcito/game-engine/world-state'
+import { decodeEvents, readWorldState } from '@etcito/game-engine/world-state'
 import { generateComponents } from '@etcito/game-engine-compile'
 import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../egeScripts.ts'
 
@@ -1319,7 +1319,7 @@ const MEMBERSHIP_ACCESS: Record<string, { reads: string[]; writes: string[] }> =
 }
 const MEMBERSHIP_WORLDS = ['round', 'show_seat', 'show_field', 'show_hub']
 
-type AccessSchema = { world_kinds: { name: string; players: number; schedule: { system: string; kind: string; reads?: string[]; writes?: string[] }[] }[] }
+type AccessSchema = { world_kinds: { name: string; players: number; schedule: { system: string; kind: string; reads?: string[]; writes?: string[]; emits?: string[] }[] }[] }
 
 test('shared catch and swim entries grant membership creation and zone identity access in every world', async () => {
   const layout = await layoutOf()
@@ -1442,5 +1442,163 @@ test('a membership probe creates rows and zone identities under each copied prod
     } finally {
       engine.freeWorld(world)
     }
+  }
+})
+
+/**
+ * Handoff: G7.3 Bots and cumulative domain messages: transfer memory-tile crossing state: MEMORY_TILES_READS
+ * pins the access lists ege.schema.json grants to rf.feature.memory_tiles.post in round, show_seat, show_field
+ * and show_hub: the existing grants first, then show_result_a and show_result_b, which recordShowEvent reads
+ * unconditionally and updates for match events (matches and cross_ticks). The schedule order and the emitted
+ * match event are unchanged.
+ */
+const MEMORY_TILES_READS = [
+  'round', 'feature', 'feature_memory_tiles', 'feature_memory_tiles_cell', 'feature_memory_tiles_cycle',
+  'feature_memory_tiles_seat', 'feature_memory_tiles_marker', 'seat', 'character', 'ege.transform',
+  'show_result_a', 'show_result_b',
+]
+const MEMORY_TILES_WRITES = [
+  'feature_memory_tiles', 'feature_memory_tiles_cell', 'feature_memory_tiles_seat', 'ege.body_props',
+  'ege.render', 'ege.transform', 'show_result_a', 'show_result_b',
+]
+const MEMORY_TILES_WORLDS = ['round', 'show_seat', 'show_field', 'show_hub']
+
+test('memory tiles post entries grant cumulative show result access in every world', async () => {
+  const layout = await layoutOf()
+  // Resource grants are encoded as resource id + 0x8000, component grants as component ids.
+  const componentNames = new Map(layout.components.map((decl): [number, string] => [decl.id, decl.name]))
+  const resourceNames = new Map(layout.resources.map((decl): [number, string] => [decl.id, decl.name]))
+  const resolve = (id: number): string | undefined =>
+    id >= 0x8000 ? resourceNames.get(id - 0x8000) : componentNames.get(id)
+  const source = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  for (const world of MEMORY_TILES_WORLDS) {
+    const authored = source.world_kinds.find((kind) => kind.name === world)
+    const loaded = layout.world_kinds.find((kind) => kind.name === world)
+    assert.ok(authored && loaded, world)
+    const entries = authored.schedule.filter((entry) => entry.system === 'rf.feature.memory_tiles.post')
+    assert.equal(entries.length, 1, world)
+    assert.deepEqual(entries[0].reads, MEMORY_TILES_READS, world)
+    assert.deepEqual(entries[0].writes, MEMORY_TILES_WRITES, world)
+    assert.deepEqual(entries[0].emits, ['match'], world)
+    const loadedEntry = loaded.schedule.find((entry) => entry.system === 'rf.feature.memory_tiles.post')
+    assert.ok(loadedEntry, world)
+    assert.deepEqual(loadedEntry.reads.map((id: number) => resolve(id)), MEMORY_TILES_READS, world)
+    assert.deepEqual(loadedEntry.writes.map((id: number) => resolve(id)), MEMORY_TILES_WRITES, world)
+    assert.deepEqual(loadedEntry.emits.map((id: number) => layout.events.find((event) => event.id === id)?.name), ['match'], world)
+  }
+  const round = source.world_kinds.find((kind) => kind.name === 'round')
+  assert.deepEqual(round?.schedule.map((entry) => entry.system), SCHEDULE)
+})
+
+// The access probe calls the real recordShowEvent helper under each production memory tiles entry, copied
+// verbatim into a probe world kind. It reports one correct match and one penalty match at tick zero.
+const MEMORY_ACCESS_PROBE = `import { tick } from 'ege'
+import { MatchEvent } from '../components.gen'
+import { recordShowEvent } from '../lib/show_events.as'
+
+function probe(): void {
+  if (tick() != 0) return
+  recordShowEvent(MatchEvent.ID, 0, 0, 1, 7)
+  recordShowEvent(MatchEvent.ID, 0, 0, 0, 40)
+}
+
+export function rf_probe_memory_tiles_post(): void { probe() }
+`
+
+const MEMORY_SEAT_RESULT = {
+  show_result_a: {
+    seat: 0, status: 1, finish_tick: -1, finish_sub: -1, lap: 0, stage: -1,
+    route_mm: 0, falls: 0, score: 0, last_score_tick: -1,
+  },
+  show_result_b: {
+    hold_ticks: 0, possessing: 0, last_acquire_tick: -1, matches: 2, cross_ticks: 10,
+    out_tick: -1, out_sub: -1, team: -1, opening_rank: 0,
+  },
+}
+
+test('recordShowEvent runs under every production memory tiles access list and accumulates matches', async () => {
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  const worlds: [string, string][] = []
+  for (const world of MEMORY_TILES_WORLDS) {
+    const kind = schema.world_kinds.find((candidate) => candidate.name === world)
+    assert.ok(kind, world)
+    const entry = kind.schedule.find((candidate) => candidate.system === 'rf.feature.memory_tiles.post')
+    assert.ok(entry, world)
+    const probeWorld = `memory_tiles_probe_${world}`
+    worlds.push([world, probeWorld])
+    schema.world_kinds.push({
+      name: probeWorld,
+      players: 8,
+      schedule: [{ ...JSON.parse(JSON.stringify(entry)), system: 'rf.probe.memory_tiles_post' }],
+    })
+  }
+  const files = [...collectRfScripts(), { name: 'probe/memory_tiles_access.as.ts', text: MEMORY_ACCESS_PROBE }]
+    .sort((a, b) => Buffer.compare(Buffer.from(a.name), Buffer.from(b.name)))
+  const compiled = await (await rfCompiler()).compile(files, JSON.stringify(schema))
+  assert.deepEqual(compiled.diagnostics.filter((d) => d.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const engine = await loadEngine()
+  engine.setSchema(JSON.stringify(schema))
+  const module = await loadScript(engine, compiled.wasm, { name: 'rf-scripts' })
+  const layout = schemaLayout(engine)
+  for (const [world, probeWorld] of worlds) {
+    const populated = engine.createWorld(JSON.stringify({
+      format: 'ege.scene',
+      version: 1,
+      world_kind: probeWorld,
+      seed: 1,
+      entities: [{ components: MEMORY_SEAT_RESULT }],
+    }))
+    try {
+      const host = new ScriptHost(module)
+      host.stepTick(populated, Array(8).fill(0))
+      assert.equal(module.faultCount, 0, module.faults.map((fault) => fault.message).join('; '))
+      const events = decodeEvents(engine.events(populated, 0, engine.tick(populated)).records, layout)
+        .filter((event) => event.kind === 'match')
+      assert.deepEqual(events.map((event) => event.fields), [
+        { seat: 0, a: 1, b: 7 },
+        { seat: 0, a: 0, b: 40 },
+      ], world)
+      assert.deepEqual(events.map((event) => event.entity), [0, 0], world)
+      const state = readWorldState(engine, populated, layout)
+      const result = state.components.show_result_a[0]
+      assert.equal(result.seat, 0)
+      assert.equal(result.status, 1)
+      assert.equal(result.finish_tick, -1)
+      assert.equal(result.score, 0)
+      const cumulative = state.components.show_result_b[0]
+      assert.equal(cumulative.matches, 3, world)
+      assert.equal(cumulative.cross_ticks, 57, world)
+      assert.equal(cumulative.out_tick, -1, world)
+    } finally {
+      engine.freeWorld(populated)
+    }
+  }
+  // The empty ShowResultA column is the existing G6 fallback: the match payloads are unchanged and
+  // nothing is accumulated. Exercise it under the round entry, the G6 world's own access list.
+  const [, roundProbe] = worlds.find(([world]) => world === 'round') ?? []
+  assert.ok(roundProbe)
+  const bare = engine.createWorld(JSON.stringify({
+    format: 'ege.scene',
+    version: 1,
+    world_kind: roundProbe,
+    seed: 1,
+    entities: [{ components: {} }],
+  }))
+  try {
+    const host = new ScriptHost(module)
+    host.stepTick(bare, Array(8).fill(0))
+    assert.equal(module.faultCount, 0, module.faults.map((fault) => fault.message).join('; '))
+    const events = decodeEvents(engine.events(bare, 0, engine.tick(bare)).records, layout)
+      .filter((event) => event.kind === 'match')
+    assert.deepEqual(events.map((event) => event.fields), [
+      { seat: 0, a: 1, b: 7 },
+      { seat: 0, a: 0, b: 40 },
+    ])
+    const state = readWorldState(engine, bare, layout)
+    assert.deepEqual(Object.keys(state.components.show_result_a), [])
+    assert.deepEqual(Object.keys(state.components.show_result_b), [])
+  } finally {
+    engine.freeWorld(bare)
   }
 })

@@ -2244,11 +2244,11 @@
           "reads": [
             "round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell",
             "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker",
-            "seat", "character", "ege.transform"
+            "seat", "character", "ege.transform", "show_result_a", "show_result_b"
           ],
           "writes": [
             "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat",
-            "ege.body_props", "ege.render", "ege.transform"
+            "ege.body_props", "ege.render", "ege.transform", "show_result_a", "show_result_b"
           ],
           "emits": ["match"]
         },
@@ -2513,8 +2513,8 @@
         {
           "system": "rf.feature.memory_tiles.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform"],
-          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform"],
+          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform", "show_result_a", "show_result_b"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform", "show_result_a", "show_result_b"],
           "emits": ["match"]
         },
         {
@@ -2760,8 +2760,8 @@
         {
           "system": "rf.feature.memory_tiles.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform"],
-          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform"],
+          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform", "show_result_a", "show_result_b"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform", "show_result_a", "show_result_b"],
           "emits": ["match"]
         },
         {
@@ -3014,8 +3014,8 @@
         {
           "system": "rf.feature.memory_tiles.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform"],
-          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform"],
+          "reads": ["round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker", "seat", "character", "ege.transform", "show_result_a", "show_result_b"],
+          "writes": ["feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat", "ege.body_props", "ege.render", "ege.transform", "show_result_a", "show_result_b"],
           "emits": ["match"]
         },
         {

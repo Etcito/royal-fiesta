@@ -1815,6 +1815,13 @@
           "emits": ["team_score"]
         },
         {
+          "system": "rf.feature.capture_zone.post",
+          "kind": "script",
+          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
+          "writes": ["feature_capture_zone", "ege.render"],
+          "emits": ["team_score"]
+        },
+        {
           "system": "rf.seat.rules",
           "kind": "script",
           "reads": [

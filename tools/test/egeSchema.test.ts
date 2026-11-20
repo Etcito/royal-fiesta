@@ -45,6 +45,7 @@ const SCHEDULE = [
   'rf.feature.ball.post',
   'rf.feature.collectible.post',
   'rf.feature.bank.post',
+  'rf.feature.capture_zone.post',
   'rf.seat.rules',
 ]
 

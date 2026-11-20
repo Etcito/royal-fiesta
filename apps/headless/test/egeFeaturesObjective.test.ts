@@ -636,3 +636,166 @@ test('neutral bank breaks equal-distance credit ties by seat id', async () => {
     first.dispose()
   }
 })
+
+function captureSpec(captureS = 0.5): FeatureSpec {
+  return { id: 'capture-demo', kind: 'captureZone', params: {
+    center: [0, 0.86, 0], half: [5, 2, 2], captureS,
+  } }
+}
+
+function captureAlive(doc: any, scene: EmittedScene, alive: number[]): void {
+  for (let i = 0; i < 8; i++) {
+    doc.entities[scene.seatEntities[i]].components.seat.status = alive.includes(i) ? 1 : 0
+  }
+}
+
+interface CaptureRig { engine: EngineInstance; scene: EmittedScene; first: EngineRound; second: EngineRound }
+
+async function captureRig(
+  spec: FeatureSpec,
+  edit?: (doc: any, scene: EmittedScene) => void,
+): Promise<CaptureRig> {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = [spec]
+  const engine = await loadEngine()
+  const schema = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schema)
+  const scene = emitEngineScene(engine, { course: copy, assets, setup: { profile: 'sprint', seed: 7 } })
+  const doc = JSON.parse(scene.text)
+  doc.gravity = [0, 0, 0]
+  edit?.(doc, scene)
+  const modified = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: ALL_HUMAN }
+  const first = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  const second = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  return { engine, scene, first, second }
+}
+
+function stepBoth(rig: CaptureRig, events: ReturnType<typeof decodeEvents>): void {
+  events.push(...rawStep(rig.first, () => code()))
+  rawStep(rig.second, () => code())
+}
+
+test('capture needs 30 progress ticks, changes owner at the boundary and scores every 60 owned ticks', async () => {
+  const rig = await captureRig(captureSpec(0.5), (doc, scene) => {
+    captureAlive(doc, scene, [0, 1])
+    // Seat 1 is an alive team 1 seat parked inside the box; the tally must exclude it, so team 0
+    // captures alone instead of tying.
+    const parked = doc.entities[scene.seatEntities[1]].components
+    parked.seat.team = 1
+    parked.character.placed = 1
+    parked.character.mode = 7
+    parked.character.parked = 1
+    parked['ege.transform'].pos = [-3, 0.86, 0]
+  })
+  const root = rig.scene.index('feature/capture-demo')
+  const visual = rig.scene.index('feature/capture-demo/visual/0')
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    while (rig.first.tick < 60) stepBoth(rig, events)
+    assert.equal(rec(rig.first, 'feature_capture_zone', root).progress, 0, 'no progress during the intro')
+    assert.equal(rec(rig.first, 'ege.render', visual).color, 0xF2E6D0, 'the unowned zone keeps its base colour')
+
+    stepBoth(rig, events)
+    assert.equal(rig.first.tick, 61)
+    let zone = rec(rig.first, 'feature_capture_zone', root)
+    assert.deepEqual(
+      { owner: zone.owner, progress_team: zone.progress_team, progress: zone.progress },
+      { owner: -1, progress_team: 0, progress: 1 },
+      'the first playing step starts team 0 progress',
+    )
+
+    while (rig.first.tick < 89) stepBoth(rig, events)
+    zone = rec(rig.first, 'feature_capture_zone', root)
+    assert.equal(zone.progress, 29, '29 progress ticks do not capture a 0.5 s zone')
+    assert.equal(zone.owner, -1)
+    assert.equal(rec(rig.first, 'ege.render', visual).color, 0xF2E6D0, 'progress alone does not tint the zone')
+
+    stepBoth(rig, events)
+    assert.equal(rig.first.tick, 90)
+    zone = rec(rig.first, 'feature_capture_zone', root)
+    assert.deepEqual(
+      { owner: zone.owner, progress: zone.progress, owned_ticks: zone.owned_ticks },
+      { owner: 0, progress: 0, owned_ticks: 1 },
+      'the thirtieth progress tick captures at the boundary',
+    )
+    assert.equal(rec(rig.first, 'ege.render', visual).color, 0x54BAFF, 'team 0 owns the zone')
+
+    while (rig.first.tick < 149) stepBoth(rig, events)
+    const scored = events.filter((event) => event.kind === 'team_score')
+    assert.equal(scored.length, 1, 'one score after 60 owned ticks')
+    assert.equal(scored[0].entity, root)
+    assert.deepEqual(
+      { team: scored[0].fields.team, a: scored[0].fields.a, b: scored[0].fields.b },
+      { team: 0, a: 1, b: 0 },
+    )
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})
+
+test('a capture tie holds the retained progress and shows the contested tint', async () => {
+  const rig = await captureRig(captureSpec(0.5), (doc, scene) => {
+    captureAlive(doc, scene, [0, 1])
+    doc.entities[scene.seatEntities[1]].components.seat.team = 1
+    const zone = doc.entities[scene.index('feature/capture-demo')].components.feature_capture_zone
+    zone.progress_team = 0
+    zone.progress = 7
+  })
+  const root = rig.scene.index('feature/capture-demo')
+  const visual = rig.scene.index('feature/capture-demo/visual/0')
+  const events: ReturnType<typeof decodeEvents> = []
+  try {
+    while (rig.first.tick < 100) stepBoth(rig, events)
+    const zone = rec(rig.first, 'feature_capture_zone', root)
+    assert.deepEqual(
+      { owner: zone.owner, progress_team: zone.progress_team, progress: zone.progress },
+      { owner: -1, progress_team: 0, progress: 7 },
+      'an equal team tie neither advances nor resets the retained progress',
+    )
+    assert.equal(events.filter((event) => event.kind === 'team_score').length, 0)
+    assert.equal(rec(rig.first, 'ege.render', visual).color, 0xFF6B9E, 'a contested zone uses tint 1')
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})
+
+test('a new capture leader resets progress carried from another team', async () => {
+  const rig = await captureRig(captureSpec(0.5), (doc, scene) => {
+    captureAlive(doc, scene, [0])
+    const zone = doc.entities[scene.index('feature/capture-demo')].components.feature_capture_zone
+    zone.progress_team = 1
+    zone.progress = 9
+  })
+  const root = rig.scene.index('feature/capture-demo')
+  try {
+    while (rig.first.tick < 60) {
+      rawStep(rig.first, () => code())
+      rawStep(rig.second, () => code())
+    }
+    assert.equal(rec(rig.first, 'feature_capture_zone', root).progress, 9, 'progress waits during the intro')
+    rawStep(rig.first, () => code())
+    rawStep(rig.second, () => code())
+    const zone = rec(rig.first, 'feature_capture_zone', root)
+    assert.deepEqual(
+      { progress_team: zone.progress_team, progress: zone.progress },
+      { progress_team: 0, progress: 1 },
+      'a different leader restarts progress from zero',
+    )
+    assert.equal(rig.engine.worldEqual(rig.first.world, rig.second.world), true)
+    assert.equal(rig.first.observe().faults, 0)
+    assert.equal(rig.second.observe().faults, 0)
+  } finally {
+    rig.second.dispose()
+    rig.first.dispose()
+  }
+})

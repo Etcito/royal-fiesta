@@ -1856,3 +1856,209 @@ test('an objective probe creates zone-identified membership rows, syncs carry an
     }
   }
 })
+
+// recordShowEvent reads ShowResultA unconditionally and updates the seat and team contribution rows.
+const PUBLISHER_GRANTS = ['show_result_a', 'show_result_b', 'show_team_contribution']
+/**
+ * Handoff: G7.3 Bots and cumulative domain messages: publish objective scores cumulatively (card 9075):
+ * OBJECTIVE_PUBLISHER_ACCESS pins the access lists ege.schema.json grants today to rf.feature.ball.post,
+ * rf.feature.collectible.post and rf.feature.capture_zone.post in round, show_seat, show_field and show_hub:
+ * the existing grants first, then (ball only) reads of feature, which recordShowEvent reads to name the authored
+ * publisher of a team's first contribution, then reads and writes of show_result_a, show_result_b and
+ * show_team_contribution, which recordShowEvent reads unconditionally and updates. Schedule order and emitted
+ * events are unchanged; the feature scripts' recordShowEvent calls remain that card's work.
+ * Handoff: G7.1 Identity, inputs and world construction: install complete show schedules (card 9087):
+ * OBJECTIVE_PUBLISHER_ACCESS is the set of grants its complete show schedules keep.
+ */
+const OBJECTIVE_PUBLISHER_ACCESS: Record<string, { reads: string[]; writes: string[]; emits: string[] }> = {
+  'rf.feature.ball.post': {
+    reads: [
+      'course', 'round', 'feature_ball', 'feature_goal', 'home', 'home_spawn', 'seat', 'character',
+      'ege.transform', 'feature', ...PUBLISHER_GRANTS,
+    ],
+    writes: ['feature_ball', 'seat', 'character', 'ege.transform', 'ege.velocity', ...PUBLISHER_GRANTS],
+    emits: ['team_score'],
+  },
+  'rf.feature.collectible.post': {
+    reads: [
+      'round', 'feature', 'feature_collectible', 'feature_collectible_spot', 'seat', 'character',
+      'ege.transform', 'ege.render', ...PUBLISHER_GRANTS,
+    ],
+    writes: ['feature_collectible_spot', 'ege.render', ...PUBLISHER_GRANTS],
+    emits: ['score'],
+  },
+  'rf.feature.capture_zone.post': {
+    reads: [
+      'round', 'feature', 'feature_capture_zone', 'feature_capture_zone_visual', 'seat', 'character',
+      'ege.transform', 'ege.render', ...PUBLISHER_GRANTS,
+    ],
+    writes: ['feature_capture_zone', 'ege.render', ...PUBLISHER_GRANTS],
+    emits: ['team_score'],
+  },
+}
+const PUBLISHER_WORLDS = ['round', 'show_seat', 'show_field', 'show_hub']
+
+test('ball, collectible and capture zone post entries grant cumulative publisher access in every world', async () => {
+  const layout = await layoutOf()
+  // Resource grants are encoded as resource id + 0x8000, component grants as component ids.
+  const componentNames = new Map(layout.components.map((decl): [number, string] => [decl.id, decl.name]))
+  const resourceNames = new Map(layout.resources.map((decl): [number, string] => [decl.id, decl.name]))
+  const resolve = (id: number): string | undefined =>
+    id >= 0x8000 ? resourceNames.get(id - 0x8000) : componentNames.get(id)
+  const eventName = (id: number): string | undefined => layout.events.find((event) => event.id === id)?.name
+  const source = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  for (const world of PUBLISHER_WORLDS) {
+    const authored = source.world_kinds.find((kind) => kind.name === world)
+    const loaded = layout.world_kinds.find((kind) => kind.name === world)
+    assert.ok(authored && loaded, world)
+    for (const [system, access] of Object.entries(OBJECTIVE_PUBLISHER_ACCESS)) {
+      const label = `${world} ${system}`
+      const entries: AccessSchema['world_kinds'][number]['schedule'] =
+        authored.schedule.filter((entry) => entry.system === system)
+      assert.equal(entries.length, 1, label)
+      assert.deepEqual({ reads: entries[0].reads, writes: entries[0].writes, emits: entries[0].emits }, access, label)
+      const loadedEntry: Layout['world_kinds'][number]['schedule'][number] | undefined =
+        loaded.schedule.find((entry) => entry.system === system)
+      assert.ok(loadedEntry, label)
+      assert.deepEqual(loadedEntry.reads.map((id: number) => resolve(id)), access.reads, label)
+      assert.deepEqual(loadedEntry.writes.map((id: number) => resolve(id)), access.writes, label)
+      assert.deepEqual(loadedEntry.emits.map((id: number) => eventName(id)), access.emits, label)
+    }
+  }
+  const round = source.world_kinds.find((kind) => kind.name === 'round')
+  assert.deepEqual(round?.schedule.map((entry) => entry.system), SCHEDULE)
+})
+
+// The publisher probe calls the real recordShowEvent under each production ball, collectible and capture zone
+// entry, copied verbatim into a probe world kind. Entities 0 and 1 are seats 3 and 59; entities 2 and 3 are
+// objective features with authored indices 4 and 11. The team probe creates three contributions at tick 0
+// (feature 4 for teams 0 and 1, feature 11 for team 1) and accumulates two of them at tick 1. The score probe
+// scores seat 59 twice and seat 3 once.
+const PUBLISHER_PROBE = `import { tick } from 'ege'
+import { ScoreEvent, TeamScoreEvent } from '../components.gen'
+import { recordShowEvent } from '../lib/show_events.as'
+
+function teamProbe(): void {
+  if (tick() == 0) {
+    recordShowEvent(TeamScoreEvent.ID, 2, 0, 1, 0)
+    recordShowEvent(TeamScoreEvent.ID, 3, 1, 1, 0)
+    recordShowEvent(TeamScoreEvent.ID, 2, 1, 1, 0)
+  } else if (tick() == 1) {
+    recordShowEvent(TeamScoreEvent.ID, 2, 0, 1, 0)
+    recordShowEvent(TeamScoreEvent.ID, 3, 1, 2, 0)
+  }
+}
+
+function scoreProbe(): void {
+  if (tick() == 0) {
+    recordShowEvent(ScoreEvent.ID, 1, 59, 2, 0)
+    recordShowEvent(ScoreEvent.ID, 0, 3, 1, 0)
+  } else if (tick() == 1) {
+    recordShowEvent(ScoreEvent.ID, 1, 59, 3, 0)
+  }
+}
+
+export function rf_probe_publisher_ball_post(): void { teamProbe() }
+export function rf_probe_publisher_collectible_post(): void { scoreProbe() }
+export function rf_probe_publisher_capture_zone_post(): void { teamProbe() }
+`
+
+function publisherSeat(seat: number) {
+  return {
+    show_seat_identity: { room_seat: seat, round_seat: seat === 59 ? 1 : 0, input_slot: -1, bot: 1 },
+    show_result_a: {
+      seat, status: 1, finish_tick: -1, finish_sub: -1, lap: 0, stage: -1,
+      route_mm: 0, falls: 0, score: 0, last_score_tick: -1,
+    },
+    show_result_b: {
+      hold_ticks: 0, possessing: 0, last_acquire_tick: -1, matches: 0, cross_ticks: 0,
+      out_tick: -1, out_sub: -1, team: seat === 59 ? 1 : 0, opening_rank: 0,
+    },
+  }
+}
+const PUBLISHER_FEATURES = [
+  { components: { feature: { kind: 14, index: 4, salt: 0x104 } } },
+  { components: { feature: { kind: 14, index: 11, salt: 0x10b } } },
+]
+const TEAM_EVENTS = [
+  [2, { team: 0, a: 1, b: 0 }], [3, { team: 1, a: 1, b: 0 }], [2, { team: 1, a: 1, b: 0 }],
+  [2, { team: 0, a: 1, b: 0 }], [3, { team: 1, a: 2, b: 0 }],
+]
+const SCORE_EVENTS = [[1, { seat: 59, a: 2, b: 0 }], [0, { seat: 3, a: 1, b: 0 }], [1, { seat: 59, a: 3, b: 0 }]]
+
+test('recordShowEvent publishes scores and per-publisher team contributions under every production objective access list', async () => {
+  const schema = JSON.parse(readFileSync(SCHEMA, 'utf8')) as AccessSchema
+  const probes: { world: string; system: string; kind: string }[] = []
+  for (const world of PUBLISHER_WORLDS) {
+    const kind = schema.world_kinds.find((candidate) => candidate.name === world)
+    assert.ok(kind, world)
+    for (const system of Object.keys(OBJECTIVE_PUBLISHER_ACCESS)) {
+      const entry = kind.schedule.find((candidate) => candidate.system === system)
+      assert.ok(entry, `${world} ${system}`)
+      const probe = system.replace('rf.feature.', 'rf.probe.publisher_')
+      const probeKind = `${probe.replace(/[.]/g, '_')}_${world}`
+      probes.push({ world, system, kind: probeKind })
+      schema.world_kinds.push({ name: probeKind, players: 8, schedule: [{ ...JSON.parse(JSON.stringify(entry)), system: probe }] })
+    }
+  }
+  const files = [...collectRfScripts(), { name: 'probe/publisher_access.as.ts', text: PUBLISHER_PROBE }]
+    .sort((a, b) => Buffer.compare(Buffer.from(a.name), Buffer.from(b.name)))
+  const compiled = await (await rfCompiler()).compile(files, JSON.stringify(schema))
+  assert.deepEqual(compiled.diagnostics.filter((d) => d.severity === 'error').map(formatRfDiagnostic), [])
+  assert.ok(compiled.wasm)
+  const engine = await loadEngine()
+  engine.setSchema(JSON.stringify(schema))
+  const module = await loadScript(engine, compiled.wasm, { name: 'rf-scripts' })
+  const layout = schemaLayout(engine)
+  for (const { world, system, kind } of probes) {
+    const team = system !== 'rf.feature.collectible.post'
+    const eventKind = team ? 'team_score' : 'score'
+    const expectedEvents = team ? TEAM_EVENTS : SCORE_EVENTS
+    for (const populated of [false, true]) {
+      const label = `${world} ${system} ${populated ? 'populated' : 'empty'}`
+      // The empty case keeps the seats without show records: the G6 fallback emits unchanged payloads only.
+      const seats = populated ? [{ components: publisherSeat(3) }, { components: publisherSeat(59) }] : [{ components: {} }, { components: {} }]
+      const created = engine.createWorld(JSON.stringify({
+        format: 'ege.scene', version: 1, world_kind: kind, seed: 1, entities: [...seats, ...PUBLISHER_FEATURES],
+      }))
+      try {
+        const host = new ScriptHost(module)
+        host.stepTick(created, Array(8).fill(0))
+        host.stepTick(created, Array(8).fill(0))
+        assert.equal(module.faultCount, 0, module.faults.map((fault) => fault.message).join('; '))
+        const events = decodeEvents(engine.events(created, 0, engine.tick(created)).records, layout)
+          .filter((event) => event.kind === eventKind)
+        assert.deepEqual(events.map((event) => [event.entity, event.fields]), expectedEvents, label)
+        const state = readWorldState(engine, created, layout)
+        const contributions = (Object.values(state.components.show_team_contribution) as { owner: number; team: number }[])
+          .sort((a, b) => a.owner - b.owner || a.team - b.team)
+        const results = Object.values(state.components.show_result_a)
+        if (!populated) {
+          assert.deepEqual(results, [], label)
+          assert.deepEqual(Object.values(state.components.show_result_b), [], label)
+          assert.deepEqual(contributions, [], label)
+          continue
+        }
+        const bySeat = new Map(results.map((row) => [row.seat, row]))
+        if (team) {
+          // Each publisher/team pair owns one independent cumulative row; the seat counters stay untouched.
+          assert.deepEqual(contributions, [
+            { owner: 2, feature: 4, team: 0, value: 2, tick: 1 },
+            { owner: 2, feature: 4, team: 1, value: 1, tick: 0 },
+            { owner: 3, feature: 11, team: 1, value: 3, tick: 1 },
+          ], label)
+          assert.deepEqual(bySeat.get(3), publisherSeat(3).show_result_a, label)
+          assert.deepEqual(bySeat.get(59), publisherSeat(59).show_result_a, label)
+        } else {
+          assert.deepEqual(contributions, [], label)
+          assert.deepEqual(bySeat.get(59), { ...publisherSeat(59).show_result_a, score: 5, last_score_tick: 1 }, label)
+          assert.deepEqual(bySeat.get(3), { ...publisherSeat(3).show_result_a, score: 1, last_score_tick: 0 }, label)
+        }
+        assert.deepEqual(state.components.show_result_b[0], publisherSeat(3).show_result_b, label)
+        assert.deepEqual(state.components.show_result_b[1], publisherSeat(59).show_result_b, label)
+      } finally {
+        engine.freeWorld(created)
+      }
+    }
+  }
+})

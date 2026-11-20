@@ -2269,15 +2269,15 @@
         {
           "system": "rf.feature.ball.post",
           "kind": "script",
-          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
-          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
+          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform", "feature", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
           "system": "rf.feature.collectible.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_collectible_spot", "ege.render"],
+          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_collectible_spot", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["score"]
         },
         {
@@ -2290,8 +2290,8 @@
         {
           "system": "rf.feature.capture_zone.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_capture_zone", "ege.render"],
+          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_capture_zone", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
@@ -2534,15 +2534,15 @@
         {
           "system": "rf.feature.ball.post",
           "kind": "script",
-          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
-          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
+          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform", "feature", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
           "system": "rf.feature.collectible.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_collectible_spot", "ege.render"],
+          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_collectible_spot", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["score"]
         },
         {
@@ -2555,8 +2555,8 @@
         {
           "system": "rf.feature.capture_zone.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_capture_zone", "ege.render"],
+          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_capture_zone", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
@@ -2781,15 +2781,15 @@
         {
           "system": "rf.feature.ball.post",
           "kind": "script",
-          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
-          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
+          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform", "feature", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
           "system": "rf.feature.collectible.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_collectible_spot", "ege.render"],
+          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_collectible_spot", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["score"]
         },
         {
@@ -2802,8 +2802,8 @@
         {
           "system": "rf.feature.capture_zone.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_capture_zone", "ege.render"],
+          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_capture_zone", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
@@ -3035,15 +3035,15 @@
         {
           "system": "rf.feature.ball.post",
           "kind": "script",
-          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform"],
-          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity"],
+          "reads": ["course", "round", "feature_ball", "feature_goal", "home", "home_spawn", "seat", "character", "ege.transform", "feature", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_ball", "seat", "character", "ege.transform", "ege.velocity", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {
           "system": "rf.feature.collectible.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_collectible_spot", "ege.render"],
+          "reads": ["round", "feature", "feature_collectible", "feature_collectible_spot", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_collectible_spot", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["score"]
         },
         {
@@ -3056,8 +3056,8 @@
         {
           "system": "rf.feature.capture_zone.post",
           "kind": "script",
-          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render"],
-          "writes": ["feature_capture_zone", "ege.render"],
+          "reads": ["round", "feature", "feature_capture_zone", "feature_capture_zone_visual", "seat", "character", "ege.transform", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
+          "writes": ["feature_capture_zone", "ege.render", "show_result_a", "show_result_b", "show_team_contribution"],
           "emits": ["team_score"]
         },
         {

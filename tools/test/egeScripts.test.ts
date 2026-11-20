@@ -250,3 +250,32 @@ test('recordShowEvent is absence-safe in a G6 world and replay restores the cumu
   assert.equal(stateA.tick, 3)
   assert.deepEqual(stateB, stateA)
 })
+
+test('real compiler results carry the loaded schema key and publication identity follows the exact result', async () => {
+  const { createRfPublicationManager } = await import('../egeScripts.ts')
+  const schemaText = readFileSync(new URL('../../ege.schema.json', import.meta.url), 'utf8')
+  const engine = await loadEngine()
+  engine.setSchema(schemaText)
+  const loadedKey = schemaLayout(engine).key
+
+  const manager = createRfPublicationManager()
+  const good = (value: number) => [{ name: 'probe/publication.as.ts', text: `export function probePublication(): i32 { return ${value} }` }]
+  const first = (await manager.request(good(1)))!
+  assert.equal(first.status, 'success')
+  assert.equal(first.publication?.schemaKey, loadedKey)
+  const same = (await manager.request(good(1)))!
+  assert.equal(same.publication?.moduleKey, first.publication?.moduleKey)
+  assert.equal(same.publication?.revision, 2)
+  const edited = (await manager.request(good(2)))!
+  assert.equal(edited.status, 'success')
+  assert.notEqual(edited.publication?.moduleKey, first.publication?.moduleKey)
+
+  const failed = (await manager.request([{ name: 'probe/publication.as.ts', text: 'let x: f32 = 0;' }]))!
+  assert.equal(failed.status, 'failure')
+  assert.ok(failed.diagnostics.some(d => d.code === 'EGE1001'))
+  assert.equal(failed.publication?.moduleKey, edited.publication?.moduleKey)
+  assert.equal(manager.wasmFor(edited.revision)?.length, manager.wasmFor(3)?.length)
+  const read = await manager.read()
+  assert.equal(read.revision, edited.revision)
+  assert.deepEqual(read.diagnostics, failed.diagnostics)
+})

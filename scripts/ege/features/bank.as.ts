@@ -1,6 +1,7 @@
-import { bodyType, boxShape, despawn, emit, getComponent, isNull, newRecord, overlap, pose, readColumn, readResource, setComponent, spawn, tick } from 'ege'
+import { bodyType, boxShape, despawn, getComponent, isNull, newRecord, overlap, pose, readColumn, readResource, setComponent, spawn, tick } from 'ege'
 import { Character, EgeTransform, FeatureBank, FeatureBankInside, RoundRes, Seat, TeamScoreEvent } from '../components.gen'
 import { inBox } from '../lib/boxes.as'
+import { recordShowEvent } from '../lib/show_events.as'
 
 // packages/sim/src/features/bank.ts:60-65: carried objects are excluded near the hand.
 const HAND_FORWARD: f64 = 0.55
@@ -15,12 +16,10 @@ function distance2(x: f64, y: f64, z: f64, a: f64, b: f64, c: f64): f64 {
   return dx * dx + dy * dy + dz * dz
 }
 
+// The G6 team_score payload is unchanged; recordShowEvent also folds the delta into this bank's
+// cumulative ShowTeamContribution row for the team (one row per owner and team, never a second one).
 function score(owner: u32, team: i32, delta: i32): void {
-  const event = newRecord<TeamScoreEvent>(TeamScoreEvent.SIZE)
-  event.team = <u32>team
-  event.a = delta
-  event.b = 0
-  emit<TeamScoreEvent>(TeamScoreEvent.ID, owner, event, TeamScoreEvent.SIZE)
+  recordShowEvent(TeamScoreEvent.ID, owner, <u32>team, delta, 0)
 }
 
 export function rf_feature_bank_post(): void {

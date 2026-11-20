@@ -12,7 +12,9 @@ import { FEATURE_KIND_RANK, featureSalt } from '../featureEmitters.ts'
 // feature/carry-demo/item/0. These are entity names, not filesystem paths.
 const ITEM_RADIUS = 0.35
 const ITEM_DENSITY = 0
-const SEATS = 8
+// G6 rounds have eight seats; a show emits one seat record per roster seat (at most 60).
+const DEFAULT_SEATS = 8
+const MAX_SEATS = 60
 const ORIGIN: [number, number, number] = [0, 0, 0]
 
 const SPHERE = 'sphere'
@@ -28,6 +30,10 @@ export const carryItemEmitter: FeatureEmitter = (spec: FeatureSpec, ctx) => {
   const path = `${ctx.path}#/features/${ctx.index}`
   stringParam(spec, path, 'asset', /^[a-z0-9.-]{1,64}$/)
   const resetS = numParam(spec, path, 'resetS', 0, Number.MAX_SAFE_INTEGER / 60)
+  const seatCount = ctx.seatCount ?? DEFAULT_SEATS
+  if (!Number.isInteger(seatCount) || seatCount < 1 || seatCount > MAX_SEATS) {
+    refuse('feature', path, `seat count ${seatCount} is outside 1..${MAX_SEATS}; provide one roster seat per record`)
+  }
   const spawns = listParam(spec, path, 'spawns', 1, 16).map(
     (value, index): Triple => triple(vec3Of(value, `${path}/spawns/${index}`)),
   )
@@ -71,7 +77,7 @@ export const carryItemEmitter: FeatureEmitter = (spec: FeatureSpec, ctx) => {
       },
     })
   }
-  for (let index = 0; index < SEATS; index++) {
+  for (let index = 0; index < seatCount; index++) {
     children.push({
       name: `feature/${spec.id}/seat/${index}`,
       components: {

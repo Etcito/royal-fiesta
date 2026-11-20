@@ -158,6 +158,20 @@ test('carryItem accepts no homes and emits only items and seats', async () => {
   assert.ok(engine.createWorld(emitEngineScene(engine, input).text) >= 1)
 })
 
+test('carryItem emits one seat record per show roster seat, including seats above eight', async () => {
+  const input = await inputWith([demo])
+  const emitted = FEATURE_EMITTERS.carryItem(demo, { ...ctxOf(input, 3), seatCount: 60 })
+  const seats = emitted.children.filter((child) => child.name.includes('/seat/'))
+  assert.equal(seats.length, 60)
+  assert.equal(emitted.children.length, 64)
+  assert.equal(seats[59]?.name, 'feature/carry-demo/seat/59')
+  assert.deepEqual(seats[59]?.components?.feature_carry_item_seat, { owner: 3, seat: 59, prev_grab: 0 })
+  assert.deepEqual(seats[37]?.components?.feature_carry_item_seat, { owner: 3, seat: 37, prev_grab: 0 })
+  assert.equal(emitted.children.filter((child) => child.name.includes('/item/')).length, 2)
+  assert.throws(() => FEATURE_EMITTERS.carryItem(demo, { ...ctxOf(input, 3), seatCount: 61 }), /seat count 61 is outside 1\.\.60/)
+  assert.throws(() => FEATURE_EMITTERS.carryItem(demo, { ...ctxOf(input, 3), seatCount: 0 }), /seat count 0 is outside 1\.\.60/)
+})
+
 const goalDemo: FeatureSpec = {
   id: 'goal-demo', kind: 'goal', params: { team: 0, center: [0, 1.5, 40], half: [4, 1.5, 0.5] },
 }

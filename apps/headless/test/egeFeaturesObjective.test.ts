@@ -567,6 +567,56 @@ test('bank deposits on entry and withdraws on departure with retained neutral cr
   }
 })
 
+test('show bank publishes one cumulative team row, even for two entries in the same tick', async () => {
+  const { course, assets } = await loadEgeCourse('ege-strip')
+  const copy = structuredClone(course)
+  copy.sim!.features = [{ id: 'bank-show', kind: 'bank', params: { center: [100, 20, 0], half: [2, 2, 2], team: 0 } }]
+  const engine = await loadEngine()
+  const schema = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schema)
+  const seatOf = [0, 1, 2, 3, 4, 5, 6, 7]
+  const scene = emitEngineScene(engine, {
+    course: copy, assets, setup: { profile: 'sprint', seed: 7 },
+    show: { worldKind: 'show_seat', seatOf, inputSlots: seatOf, humans: ALL_HUMAN },
+  })
+  const doc = JSON.parse(scene.text)
+  doc.gravity = [0, 0, 0]
+  doc.resources.round.intro_ticks = 0
+  for (const z of [0, 0.5]) {
+    doc.entities.push({
+      components: { 'ege.transform': { pos: [96, 20, z], rot: [0, 0, 0, 1] } },
+      body: { type: 'dynamic', gravity_scale: 0, linvel: [30, 0, 0] },
+      colliders: [{ shape: 'sphere', radius: 0.1, group: 'debris' }],
+    })
+  }
+  const modified = { ...scene, text: JSON.stringify(doc) }
+  const setup = { profile: 'sprint' as const, seed: 7, humans: ALL_HUMAN }
+  const round = await createEngineRound(engine, schema, await rfScriptBytes(), modified, copy, setup)
+  try {
+    const events: ReturnType<typeof decodeEvents> = []
+    let peak = 0
+    for (let i = 0; i < 20; i++) {
+      events.push(...rawStep(round, () => code()))
+      const rows = Object.values(round.worldState().components.show_team_contribution) as any[]
+      assert.ok(rows.length <= 1, `one cumulative row per owner and team, saw ${rows.length}`)
+      if (rows.length) {
+        assert.equal(rows[0].team, 0)
+        peak = Math.max(peak, rows[0].value)
+      }
+    }
+    const scores = events.filter((event) => event.kind === 'team_score')
+    assert.deepEqual(scores.map((event) => event.fields.a).sort(), [-1, -1, 1, 1])
+    assert.equal(peak, 2)
+    const rows = Object.values(round.worldState().components.show_team_contribution) as any[]
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0].value, 0)
+    assert.equal(Object.keys(round.worldState().components.feature_bank_inside).length, 0)
+    assert.equal(round.observe().faults, 0)
+  } finally {
+    round.dispose()
+  }
+})
+
 test('bank excludes a carried item at the hand and removes its inside record', async () => {
   const bank: FeatureSpec = { id: 'bank-demo', kind: 'bank', params: {
     center: [-3.5, 1, 0.6], half: [2, 2, 2], team: 0,

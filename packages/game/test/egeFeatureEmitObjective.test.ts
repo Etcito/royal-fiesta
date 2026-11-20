@@ -155,3 +155,65 @@ test('carryItem accepts no homes and emits only items and seats', async () => {
   assert.equal(emitted.children[2]?.name, 'feature/carry-demo/seat/0')
   assert.ok(engine.createWorld(emitEngineScene(engine, input).text) >= 1)
 })
+
+const goalDemo: FeatureSpec = {
+  id: 'goal-demo', kind: 'goal', params: { team: 0, center: [0, 1.5, 40], half: [4, 1.5, 0.5] },
+}
+
+test('goal records carry team, centre and half extents within 256 bytes', () => {
+  const component = schemaLayout(engine).components.find((entry) => entry.name === 'feature_goal')
+  assert.ok(component, 'feature_goal is declared')
+  assert.deepEqual(
+    component.fields.map((field) => [field.name, field.type, field.count]),
+    [['team', 'u32', 1], ['center', 'f64', 3], ['half', 'f64', 3]],
+  )
+  assert.ok(component.size <= 256, `feature_goal is ${component.size} bytes`)
+})
+
+test('goal emits a bodyless root with the source box and a tinted wall-block visual', async () => {
+  const input = await inputWith([goalDemo])
+  const emitted = FEATURE_EMITTERS.goal(goalDemo, ctxOf(input, 4))
+  assert.equal(emitted.root.name, 'feature/goal-demo')
+  assert.equal(emitted.root.body, undefined)
+  assert.deepEqual(emitted.root.components?.feature, { kind: 15, index: 4, salt: 0x104 })
+  assert.deepEqual(emitted.root.components?.feature_goal, { team: 0, center: [0, 1.5, 40], half: [4, 1.5, 0.5] })
+  assert.deepEqual(emitted.root.components?.['ege.transform'], { pos: [0, 1.5, 40], rot: [0, 0, 0, 1] })
+  assert.equal(emitted.children.length, 1)
+  const visual = emitted.children[0]!
+  assert.equal(visual.name, 'feature/goal-demo/visual/0')
+  assert.equal(visual.body, undefined)
+  assert.equal(visual.colliders, undefined)
+  assert.deepEqual(visual.components?.['ege.transform'], { pos: [0, 1.5, 40], rot: [0, 0, 0, 1] })
+  assert.deepEqual(visual.components?.['ege.render'], {
+    shape: 1, color: 0x54BAFF, visible: 1, params: [4, 1.5, 0.5, 0],
+  })
+})
+
+test('goal tint follows the defending team: team 1 is the yellow tint', async () => {
+  const spec: FeatureSpec = { ...goalDemo, params: { ...goalDemo.params, team: 1 } }
+  const input = await inputWith([spec])
+  const emitted = FEATURE_EMITTERS.goal(spec, ctxOf(input, 0))
+  assert.deepEqual(emitted.root.components?.feature_goal, { team: 1, center: [0, 1.5, 40], half: [4, 1.5, 0.5] })
+  assert.equal(emitted.children[0]?.components?.['ege.render']?.color, 0xFFD140)
+})
+
+test('goal refuses a defending team other than 0 or 1 and a non-positive half', async () => {
+  const input = await inputWith([goalDemo])
+  const ctx = ctxOf(input, 0)
+  const refused = (params: Record<string, unknown>, message: string) => {
+    const bad = { ...goalDemo, params } as FeatureSpec
+    assert.throws(() => FEATURE_EMITTERS.goal(bad, ctx),
+      (error: unknown) => error instanceof RefusalError && error.message.includes(message))
+  }
+  refused({ ...goalDemo.params, team: 2 }, '/team: expected team 0 or 1')
+  refused({ ...goalDemo.params, team: '0' }, '/team: expected team 0 or 1')
+  refused({ center: [0, 1.5, 40], half: [4, 1.5, 0.5] }, '/team: expected team 0 or 1')
+  refused({ ...goalDemo.params, half: [4, 0, 0.5] }, '/half: expected half extents > 0')
+})
+
+test('goal scene builds a world with the goal root and visual as entities', async () => {
+  const input = await inputWith([goalDemo])
+  const scene = emitEngineScene(engine, input)
+  assert.ok(engine.createWorld(scene.text) >= 1)
+  assert.equal(scene.index('feature/goal-demo/visual/0'), scene.index('feature/goal-demo') + 1)
+})

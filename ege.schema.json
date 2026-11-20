@@ -1142,6 +1142,14 @@
       ]
     },
     {
+      "name": "feature_goal",
+      "fields": [
+        { "name": "team", "type": "u32" },
+        { "name": "center", "type": "f64", "count": 3 },
+        { "name": "half", "type": "f64", "count": 3 }
+      ]
+    },
+    {
       "name": "feature_road",
       "fields": [
         {

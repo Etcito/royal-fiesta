@@ -19,6 +19,7 @@ import { memoryTilesEmitter } from './features/memoryTiles.ts'
 import { annulusEmitter } from './features/annulus.ts'
 import { sweepEmitter } from './features/sweep.ts'
 import { risingKillEmitter } from './features/risingKill.ts'
+import { goalEmitter } from './features/goal.ts'
 import { roadEmitter } from './features/road.ts'
 
 export type RawEntity = {
@@ -160,5 +161,6 @@ export const FEATURE_EMITTERS: Readonly<Record<string, FeatureEmitter>> = Object
   annulus: annulusEmitter,
   sweep: sweepEmitter,
   risingKill: risingKillEmitter,
+  goal: goalEmitter,
   road: roadEmitter,
 })

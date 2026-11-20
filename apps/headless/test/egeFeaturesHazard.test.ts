@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { EngineInstance } from '@etcito/game-engine/loader'
 import { loadEngine } from '@etcito/game-engine'
+import { decodeEvents } from '@etcito/game-engine/world-state'
 import type { FeatureSpec } from '@royal-fiesta/sim/course'
 import { encodeInput } from '@royal-fiesta/sim/input'
 import { createEngineRound } from '@royal-fiesta/game/ege/round'
@@ -629,5 +630,173 @@ test('memoryTiles keeps its generated symbols across repeated pre runs and two w
   } finally {
     b?.dispose()
     a.dispose()
+  }
+})
+
+test('memoryTiles phases tint clues, drop wrong cells and emit one exact match result per eligible seat', async () => {
+  const { engine, scene, round } = await roundWith('ege-strip', [{
+    id: 'memory-flow', kind: 'memoryTiles',
+    params: memoryParams({
+      origin: [-3.5, 0.1, 0], cols: 4, rows: 4, cellM: 1, symbols: 2, cycles: 1,
+      revealS: 0.1, hideS: 0.1, choiceS: 0.2, penaltyS: 14,
+    }),
+  }], Array(8).fill(true))
+  const rootEntity = scene.index('feature/memory-flow')
+  const markerColor = [0xFF6B9E, 0x54BAFF, 0xFFD140, 0x73D966]
+  const eventRecords: any[] = []
+  const advance = (): void => {
+    round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+  }
+  const advanceRaw = (): void => {
+    const before = round.tick
+    round.host.stepTick(round.world, Array(8).fill(0))
+    eventRecords.push(...engine.events(round.world, before, round.tick).records)
+    assert.equal(round.module.faultCount, 0)
+  }
+  try {
+    const idle = rec(round, 'feature_memory_tiles', rootEntity)
+    assert.equal(idle.cycle, -1)
+    assert.equal(idle.phase, 0)
+    for (let index = 0; index <= 16; index++) {
+      assert.equal(rec(round, 'ege.render', scene.index(`feature/memory-flow/marker/${index}`)).visible, 0)
+    }
+    let guard = 0
+    while (rec(round, 'feature_memory_tiles', rootEntity).cycle < 0 && guard++ < 100) advance()
+    assert.equal(rec(round, 'feature_memory_tiles', rootEntity).phase, 1)
+    const expected = expectedCycles(7, 256, 16, 1, 2)[0]
+    const root = rec(round, 'feature_memory_tiles', rootEntity)
+    assert.equal(root.cycle, 0)
+    assert.equal(root.target, expected.target)
+    for (let index = 0; index < 16; index++) {
+      const cell = rec(round, 'feature_memory_tiles_cell', scene.index(`feature/memory-flow/cell/${index}`))
+      assert.equal(cell.symbol, expected.cells[index])
+      const render = rec(round, 'ege.render', scene.index(`feature/memory-flow/marker/${index}`))
+      assert.equal(render.visible, 1)
+      assert.equal(render.color, markerColor[cell.symbol % 4])
+    }
+    assert.equal(rec(round, 'ege.render', scene.index('feature/memory-flow/marker/16')).visible, 0)
+    for (let i = 0; i < 5; i++) advance()
+    assert.equal(rec(round, 'feature_memory_tiles', rootEntity).phase, 1)
+    advance()
+    assert.equal(rec(round, 'feature_memory_tiles', rootEntity).phase, 2)
+    for (let index = 0; index < 16; index++) {
+      assert.equal(rec(round, 'ege.render', scene.index(`feature/memory-flow/marker/${index}`)).visible, 0)
+    }
+    for (let i = 0; i < 5; i++) advance()
+    assert.equal(rec(round, 'feature_memory_tiles', rootEntity).phase, 2)
+    advance()
+    const choice = rec(round, 'feature_memory_tiles', rootEntity)
+    assert.equal(choice.phase, 3)
+    assert.equal(choice.choice_start_tick, round.tick - 1)
+    assert.equal(rec(round, 'ege.render', scene.index('feature/memory-flow/marker/16')).visible, 1)
+    assert.equal(
+      rec(round, 'ege.render', scene.index('feature/memory-flow/marker/16')).color,
+      markerColor[expected.target % 4],
+    )
+    assert.notEqual(expected.cells[0], expected.target)
+    assert.equal(expected.cells[1], expected.target)
+    const wrongEntity = scene.index('feature/memory-flow/cell/0')
+    const wrong = rec(round, 'feature_memory_tiles_cell', wrongEntity)
+    assert.equal(wrong.state, 2)
+    assert.equal(wrong.timer, 1)
+    assert.equal(rec(round, 'ege.body_props', wrongEntity).colliders_enabled, 0)
+    const falling = rec(round, 'ege.transform', wrongEntity).pos as number[]
+    closeTo(falling[1], wrong.t[1] - 10 / (60 * 60), 1e-6, 'first falling displacement')
+    const rightEntity = scene.index('feature/memory-flow/cell/1')
+    assert.equal(rec(round, 'feature_memory_tiles_cell', rightEntity).state, 0)
+    assert.equal(rec(round, 'ege.body_props', rightEntity).colliders_enabled, 1)
+    const success = rec(round, 'feature_memory_tiles_seat', scene.index('feature/memory-flow/seat/1'))
+    assert.equal(success.first_correct_tick, choice.choice_start_tick)
+    const crossingDelay = success.first_correct_tick - choice.choice_start_tick
+    assert.equal(crossingDelay, 0)
+    for (let i = 0; i < 10; i++) advance()
+    advanceRaw()
+    assert.equal(rec(round, 'feature_memory_tiles', rootEntity).finalized, 1)
+    const emitted = decodeEvents(eventRecords, round.layout).filter(event => event.kind === 'match')
+    assert.equal(emitted.length, 8)
+    const failedSeat = emitted.find(event => event.fields.seat === 0)
+    const passedSeat = emitted.find(event => event.fields.seat === 1)
+    assert.ok(failedSeat)
+    assert.equal(failedSeat.entity, scene.index('seat/0'))
+    assert.deepEqual([failedSeat.fields.a, failedSeat.fields.b], [0, 840])
+    assert.ok(passedSeat)
+    assert.equal(passedSeat.entity, scene.index('seat/1'))
+    assert.deepEqual([passedSeat.fields.a, passedSeat.fields.b], [1, 0])
+    advanceRaw()
+    assert.equal(rec(round, 'feature_memory_tiles', rootEntity).phase, 4)
+    assert.equal(rec(round, 'feature_memory_tiles', rootEntity).cycle, 1)
+    assert.equal(rec(round, 'feature_memory_tiles_cell', wrongEntity).state, 0)
+    for (let i = 0; i < 5; i++) advanceRaw()
+    assert.equal(decodeEvents(eventRecords, round.layout).filter(event => event.kind === 'match').length, 8)
+  } finally {
+    round.dispose()
+  }
+})
+
+test('memoryTiles consumes split symbols in phase through cycle 19 and settles after completion', async () => {
+  const { scene, round } = await roundWith('ege-strip', [{
+    id: 'memory-tail-flow', kind: 'memoryTiles',
+    params: memoryParams({
+      origin: [-3.5, 0.1, 0], cols: 4, rows: 4, cellM: 1, symbols: 2,
+      revealS: 0, hideS: 0, choiceS: 0,
+    }),
+  }], Array(8).fill(true))
+  const rootEntity = scene.index('feature/memory-tail-flow')
+  const advance = (): void => {
+    round.step(() => code())
+    assert.equal(round.observe().faults, 0)
+  }
+  const expected = expectedCycles(7, 256, 16, 20, 2)
+  try {
+    let guard = 0
+    while (rec(round, 'feature_memory_tiles', rootEntity).cycle < 0 && guard++ < 100) advance()
+    for (let cycle = 0; cycle < 20; cycle++) {
+      while (
+        rec(round, 'feature_memory_tiles', rootEntity).cycle < cycle ||
+        rec(round, 'feature_memory_tiles', rootEntity).phase !== 1
+      ) {
+        advance()
+      }
+      const root = rec(round, 'feature_memory_tiles', rootEntity)
+      assert.equal(root.cycle, cycle)
+      assert.equal(
+        root.target,
+        rec(round, 'feature_memory_tiles_cycle', scene.index(`feature/memory-tail-flow/cycle/${cycle}`)).target,
+      )
+      assert.equal(root.target, expected[cycle].target)
+      for (let index = 0; index < 16; index++) {
+        const cell = rec(round, 'feature_memory_tiles_cell', scene.index(`feature/memory-tail-flow/cell/${index}`))
+        assert.equal(cell.symbol, cycleSymbol(cell, cycle), `runtime cycle ${cycle} cell ${index}`)
+        assert.equal(cell.symbol, expected[cycle].cells[index], `stored cycle ${cycle} cell ${index}`)
+      }
+      advance()
+      assert.equal(rec(round, 'feature_memory_tiles', rootEntity).phase, 2)
+      advance()
+      assert.equal(rec(round, 'feature_memory_tiles', rootEntity).phase, 3)
+      const wrongIndex = expected[cycle].cells.findIndex(symbol => symbol !== expected[cycle].target)
+      assert.ok(wrongIndex >= 0)
+      assert.equal(
+        rec(round, 'feature_memory_tiles_cell', scene.index(`feature/memory-tail-flow/cell/${wrongIndex}`)).state,
+        cycle == 19 ? 0 : 2,
+        `unexpected wrong cell state in cycle ${cycle}`,
+      )
+      assert.equal(rec(round, 'ege.render', scene.index('feature/memory-tail-flow/marker/16')).visible, 1)
+      advance()
+    }
+    const done = rec(round, 'feature_memory_tiles', rootEntity)
+    assert.equal(done.cycle, 20)
+    assert.equal(done.phase, 4)
+    assert.equal(round.observe().events.match, 160)
+    for (let index = 0; index < 16; index++) {
+      const entity = scene.index(`feature/memory-tail-flow/cell/${index}`)
+      assert.equal(rec(round, 'feature_memory_tiles_cell', entity).state, 0)
+      assert.equal(rec(round, 'ege.body_props', entity).colliders_enabled, 1)
+    }
+    assert.equal(rec(round, 'ege.render', scene.index('feature/memory-tail-flow/marker/16')).visible, 0)
+    for (let i = 0; i < 3; i++) advance()
+    assert.equal(round.observe().events.match, 160)
+  } finally {
+    round.dispose()
   }
 })

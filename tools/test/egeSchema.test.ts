@@ -36,6 +36,7 @@ const SCHEDULE = [
   'rf.feature.rolling_log.post',
   'rf.feature.tile_field.post',
   'rf.feature.hex_field.post',
+  'rf.feature.memory_tiles.post',
   'rf.feature.sweep.post',
   'rf.seat.rules',
 ]

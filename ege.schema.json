@@ -1570,6 +1570,20 @@
           "emits": []
         },
         {
+          "system": "rf.feature.memory_tiles.post",
+          "kind": "script",
+          "reads": [
+            "round", "feature", "feature_memory_tiles", "feature_memory_tiles_cell",
+            "feature_memory_tiles_cycle", "feature_memory_tiles_seat", "feature_memory_tiles_marker",
+            "seat", "character", "ege.transform"
+          ],
+          "writes": [
+            "feature_memory_tiles", "feature_memory_tiles_cell", "feature_memory_tiles_seat",
+            "ege.body_props", "ege.render", "ege.transform"
+          ],
+          "emits": ["match"]
+        },
+        {
           "system": "rf.feature.sweep.post",
           "kind": "script",
           "reads": ["round", "feature", "feature_sweep", "feature_sweep_phase", "feature_sweep_part", "seat", "character", "ege.transform"],

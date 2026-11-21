@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import type { Diagnostic } from '@etcito/game-engine-compile'
+import { rfEgeScripts } from '../../apps/web/src/engineRound/scriptsPlugin.ts'
 import {
   RF_PUBLICATION_EVENT,
   createRfPublicationManager,
@@ -238,6 +239,169 @@ test('a persisted failed-first record resumes without a runnable publication', a
     const resumed = createRfPublicationManager({ compile: scripted().compile, dir })
     assert.equal(resumed.revision, 1)
     await assert.rejects(resumed.read(), /no runnable script publication/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+interface FakeResponse {
+  statusCode: number
+  body: Buffer | null
+  headers: Record<string, string>
+}
+
+type Middleware = (
+  request: { url?: string },
+  response: { statusCode: number; setHeader(name: string, value: string): void; end(data?: string | Buffer): void },
+  next: () => void,
+) => unknown
+
+interface FakeServer {
+  middlewares: { use(handler: Middleware): void }
+  watcher: { add(paths: string[]): void; on(event: string, listener: (event: string, file: string) => void): void }
+  ws: { send(payload: unknown): void }
+}
+
+function harness() {
+  let middleware: Middleware | null = null
+  let listener: ((event: string, file: string) => void) | null = null
+  const sent: Array<{ type: string; event: string; data: PublicationEvent }> = []
+  const watched: string[][] = []
+  const server: FakeServer = {
+    middlewares: { use: handler => { middleware = handler } },
+    watcher: {
+      add: paths => { watched.push(paths) },
+      on: (_event, next) => { listener = next },
+    },
+    ws: { send: payload => { sent.push(payload as typeof sent[number]) } },
+  }
+  return {
+    server,
+    sent,
+    watched,
+    emit: (file: string): void => {
+      assert.ok(listener)
+      listener('change', file)
+    },
+    request: async (url: string): Promise<FakeResponse> => {
+      assert.ok(middleware)
+      const result: FakeResponse = { statusCode: 200, body: null, headers: {} }
+      const response = {
+        statusCode: 200,
+        setHeader(name: string, value: string): void { result.headers[name.toLowerCase()] = value },
+        end(data?: string | Buffer): void {
+          result.statusCode = this.statusCode
+          if (data !== undefined) result.body = Buffer.isBuffer(data) ? data : Buffer.from(String(data))
+        },
+      }
+      await middleware({ url }, response, () => { result.statusCode = 404 })
+      return result
+    },
+  }
+}
+
+function configure(plugin: ReturnType<typeof rfEgeScripts>, server: FakeServer): void {
+  (plugin.configureServer as unknown as (server: FakeServer) => void)(server)
+}
+
+async function until(check: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 200 && !check(); attempt++) await settle()
+  assert.ok(check())
+}
+
+test('the dev plugin emits the exact custom event and serves the accepted publication beside the wasm', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rf-plugin-'))
+  try {
+    const { compile, calls } = scripted()
+    const fake = harness()
+    configure(rfEgeScripts({ root: dir, dir, compile }), fake.server)
+    await until(() => calls.length === 1)
+    calls[0](ok([1, 2, 3], 'A'))
+    await until(() => fake.sent.length === 1)
+    const event = fake.sent[0].data
+    assert.equal(event.revision, 1)
+    assert.equal(event.status, 'success')
+    assert.deepEqual(fake.sent[0], { type: 'custom', event: 'rf:script-publication', data: event })
+    assert.deepEqual(fake.watched, [[join(dir, 'ege.schema.json'), join(dir, 'scripts', 'ege')]])
+    const current = await fake.request('/ege/rf-scripts.wasm')
+    assert.equal(current.statusCode, 200)
+    assert.equal(current.headers['content-type'], 'application/wasm')
+    assert.deepEqual([...(current.body ?? [])], [1, 2, 3])
+    assert.deepEqual([...((await fake.request('/ege/rf-scripts.wasm?revision=1')).body ?? [])], [1, 2, 3])
+    assert.equal((await fake.request('/ege/rf-scripts.wasm?revision=9')).statusCode, 404)
+    const metadata = await fake.request('/ege/rf-publication.json')
+    assert.equal(metadata.statusCode, 200)
+    assert.deepEqual(JSON.parse(metadata.body?.toString() ?? ''), event.publication)
+    assert.deepEqual([...readFileSync(join(dir, 'rf-scripts.wasm'))], [1, 2, 3])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('a failed saved edit publishes diagnostics and keeps the runnable bytes and revision URL', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rf-plugin-'))
+  try {
+    const { compile, calls } = scripted()
+    const fake = harness()
+    configure(rfEgeScripts({ root: dir, dir, compile }), fake.server)
+    await until(() => calls.length === 1)
+    calls[0](ok([5, 6], 'A'))
+    await until(() => fake.sent.length === 1)
+    fake.emit(join(dir, 'scripts', 'ege', 'a.as.ts'))
+    await until(() => calls.length === 2)
+    calls[1](bad())
+    await until(() => fake.sent.length === 2)
+    const failure = fake.sent[1].data
+    assert.equal(failure.status, 'failure')
+    assert.equal(failure.revision, 2)
+    assert.equal(failure.publication?.revision, 1)
+    assert.deepEqual(failure.diagnostics, [error])
+    assert.deepEqual([...((await fake.request('/ege/rf-scripts.wasm')).body ?? [])], [5, 6])
+    assert.deepEqual([...((await fake.request('/ege/rf-scripts.wasm?revision=1')).body ?? [])], [5, 6])
+    const metadata = JSON.parse((await fake.request('/ege/rf-publication.json')).body?.toString() ?? '')
+    assert.equal(metadata.revision, 1)
+    assert.deepEqual(metadata.diagnostics, [error])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('saved script and schema changes coalesce into one in-flight compile and one follow-up', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rf-plugin-'))
+  try {
+    const { compile, calls } = scripted()
+    const fake = harness()
+    configure(rfEgeScripts({ root: dir, dir, compile, initial: false }), fake.server)
+    const script = join(dir, 'scripts', 'ege', 'a.as.ts')
+    fake.emit(script)
+    fake.emit(script)
+    fake.emit(join(dir, 'ege.schema.json'))
+    await until(() => calls.length === 1)
+    await settle()
+    assert.equal(calls.length, 1)
+    calls[0](ok([1], 'A'))
+    await until(() => calls.length === 2)
+    await settle()
+    assert.equal(calls.length, 2)
+    calls[1](ok([2], 'B'))
+    await until(() => fake.sent.length === 2)
+    assert.deepEqual(fake.sent.map(entry => entry.data.revision), [1, 2])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('watcher changes outside the schema and saved scripts never compile', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rf-plugin-'))
+  try {
+    const { compile, calls } = scripted()
+    const fake = harness()
+    configure(rfEgeScripts({ root: dir, dir, compile, initial: false }), fake.server)
+    fake.emit(join(dir, 'README.md'))
+    fake.emit(join(dir, 'scripts', 'ege', 'notes.txt'))
+    await settle()
+    await settle()
+    assert.equal(calls.length, 0)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

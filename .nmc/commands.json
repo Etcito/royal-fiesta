@@ -1,0 +1,155 @@
+[
+  {
+    "name": "ege-m6-build",
+    "command": "npm run build",
+    "timeout_s": 900
+  },
+  {
+    "name": "ege-m6-bricks",
+    "command": "node --experimental-strip-types tools/egeBricks.ts build",
+    "timeout_s": 1800,
+    "after": ["ege-m6-build"]
+  },
+  {
+    "name": "ege-m6-test",
+    "command": "node --experimental-strip-types --test packages/game/test/egeFeatureEmitHazard.test.ts apps/headless/test/egeFeaturesHazard.test.ts tools/test/egeScripts.test.ts",
+    "timeout_s": 900,
+    "after": ["ege-m6-bricks"]
+  },
+  {
+    "name": "ege-m6-check",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts check --milestone m6 --page apps/web/dist --out out/engine-round-m6",
+    "timeout_s": 600,
+    "after": ["ege-m6-build", "ege-m6-bricks"]
+  },
+  {
+    "name": "ege-m6-clean",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts clean --milestone m6 --page apps/web/dist --out out/engine-round-m6",
+    "timeout_s": 60,
+    "after": ["ege-m6-check"]
+  },
+  {
+    "name": "ege-m6-render",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts render --milestone m6 --page apps/web/dist --out out/engine-round-m6",
+    "timeout_s": 3600,
+    "after": ["ege-m6-clean"]
+  },
+  {
+    "name": "ege-m6-fresh",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts fresh --milestone m6 --page apps/web/dist --out out/engine-round-m6",
+    "timeout_s": 300,
+    "after": ["ege-m6-render"]
+  },
+  {
+    "name": "ege-m6-judge",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts judge --milestone m6 --page apps/web/dist --out out/engine-round-m6 --budget-s 3300",
+    "timeout_s": 3600,
+    "after": ["ege-m6-render", "ege-m6-fresh"]
+  },
+  {
+    "name": "ege-m7-build",
+    "command": "npm run build",
+    "timeout_s": 900,
+    "after": []
+  },
+  {
+    "name": "ege-m7-bricks",
+    "command": "node --experimental-strip-types tools/egeBricks.ts build",
+    "timeout_s": 1800,
+    "after": ["ege-m7-build"]
+  },
+  {
+    "name": "ege-m7-test",
+    "command": "node --experimental-strip-types --test packages/game/test/egeFeatureEmitObjective.test.ts apps/headless/test/egeFeaturesObjective.test.ts tools/test/egeScripts.test.ts",
+    "timeout_s": 900,
+    "after": ["ege-m7-bricks"]
+  },
+  {
+    "name": "ege-m7-check",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts check --milestone m7 --page apps/web/dist --out out/engine-round-m7",
+    "timeout_s": 600,
+    "after": ["ege-m7-build", "ege-m7-bricks"]
+  },
+  {
+    "name": "ege-m7-clean",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts clean --milestone m7 --page apps/web/dist --out out/engine-round-m7",
+    "timeout_s": 60,
+    "after": ["ege-m7-check"]
+  },
+  {
+    "name": "ege-m7-render",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts render --milestone m7 --page apps/web/dist --out out/engine-round-m7",
+    "timeout_s": 3600,
+    "after": ["ege-m7-clean"]
+  },
+  {
+    "name": "ege-m7-fresh",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts fresh --milestone m7 --page apps/web/dist --out out/engine-round-m7",
+    "timeout_s": 300,
+    "after": ["ege-m7-render"]
+  },
+  {
+    "name": "ege-m7-judge",
+    "command": "node --experimental-strip-types tools/engineRoundCapture.ts judge --milestone m7 --page apps/web/dist --out out/engine-round-m7 --budget-s 3300",
+    "timeout_s": 3600,
+    "after": ["ege-m7-render", "ege-m7-fresh"]
+  },
+  {
+    "name": "g7-bricks-build",
+    "command": "node --experimental-strip-types tools/egeBricks.ts build",
+    "timeout_s": 1800
+  },
+  {
+    "name": "g7-scripts-build",
+    "command": "node --experimental-strip-types tools/egeScripts.ts build --out out/ege",
+    "timeout_s": 1800,
+    "after": ["g7-bricks-build"]
+  },
+  {
+    "name": "g7-build",
+    "command": "npm run build",
+    "timeout_s": 1800,
+    "after": ["g7-scripts-build"]
+  },
+  {
+    "name": "g7-schema-build-test",
+    "command": "node --experimental-strip-types --test tools/test/egeSchema.test.ts tools/test/egeScripts.test.ts tools/test/egeBricks.test.ts tools/test/egePublication.test.ts packages/game/test/egeScene.test.ts packages/game/test/egeInputCodes.test.ts",
+    "timeout_s": 1800,
+    "after": ["g7-scripts-build"]
+  },
+  {
+    "name": "g7-feature-test",
+    "command": "node --experimental-strip-types --test apps/headless/test/egeCharacter.test.ts apps/headless/test/egeSeatRules.test.ts packages/game/test/egeFeatureEmitRace.test.ts apps/headless/test/egeFeaturesRace.test.ts packages/game/test/egeFeatureEmitHazard.test.ts apps/headless/test/egeFeaturesHazard.test.ts packages/game/test/egeFeatureEmitObjective.test.ts apps/headless/test/egeFeaturesObjective.test.ts",
+    "timeout_s": 3600,
+    "after": ["g7-scripts-build"]
+  },
+  {
+    "name": "g7-rules-bots-test",
+    "command": "node --experimental-strip-types --test apps/headless/test/egeLedger.test.ts apps/headless/test/egeSeason.test.ts packages/game/test/egeBotData.test.ts apps/headless/test/egeBots.test.ts",
+    "timeout_s": 3600,
+    "after": ["g7-scripts-build"]
+  },
+  {
+    "name": "g7-runtime-test",
+    "command": "node --experimental-strip-types --test packages/game/test/egeShowFactory.test.ts apps/headless/test/egeShowTransfer.test.ts apps/headless/test/egeShow.test.ts",
+    "timeout_s": 3600,
+    "after": ["g7-scripts-build"]
+  },
+  {
+    "name": "g7-runner",
+    "command": "node --experimental-strip-types apps/headless/src/engineShow.ts --seed 7 --humans 0 --test",
+    "timeout_s": 3600,
+    "after": ["g7-scripts-build"]
+  },
+  {
+    "name": "core-bricks-build",
+    "command": "node --experimental-strip-types tools/egeBricks.ts build core",
+    "timeout_s": 1800
+  },
+  {
+    "name": "compile-brick-build",
+    "command": "node --experimental-strip-types tools/egeBricks.ts build compile",
+    "timeout_s": 1800,
+    "after": ["core-bricks-build"]
+  }
+]

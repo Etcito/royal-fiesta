@@ -245,5 +245,41 @@
   {"name": "g7-hub-clean", "command": "node --experimental-strip-types tools/engineShowCapture.ts clean --stage hub --page apps/web/dist --out out/engine-show/hub", "timeout_s": 60, "after": ["g7-hub-check"]},
   {"name": "g7-hub-render", "command": "node --experimental-strip-types tools/engineShowCapture.ts render --stage hub --page apps/web/dist --out out/engine-show/hub", "timeout_s": 3600, "after": ["g7-hub-clean"]},
   {"name": "g7-hub-fresh", "command": "node --experimental-strip-types tools/engineShowCapture.ts fresh --stage hub --page apps/web/dist --out out/engine-show/hub", "timeout_s": 300, "after": ["g7-hub-render"]},
-  {"name": "g7-hub-judge", "command": "node --experimental-strip-types tools/engineShowCapture.ts judge --stage hub --page apps/web/dist --out out/engine-show/hub --budget-s 3300", "timeout_s": 3600, "after": ["g7-hub-render", "g7-hub-fresh"]}
+  {"name": "g7-hub-judge", "command": "node --experimental-strip-types tools/engineShowCapture.ts judge --stage hub --page apps/web/dist --out out/engine-show/hub --budget-s 3300", "timeout_s": 3600, "after": ["g7-hub-render", "g7-hub-fresh"]},
+  {
+    "name": "g7-online-unit-check",
+    "command": "node --experimental-strip-types --test packages/game/test/egeAdmission.test.ts packages/game/test/zoneRelayProtocol.test.ts packages/game/test/egeOnline.test.ts packages/game/test/egeOnlineState.test.ts packages/game/test/egeOnlineRound.test.ts packages/game/test/flow.test.ts apps/web/test/engineShowPage.test.ts apps/web/test/showDirector.test.ts apps/web/test/showMode.test.ts apps/web/test/gameSound.test.ts apps/web/test/zoneSceneReady.test.ts apps/web/test/zonePenguin.test.ts apps/web/test/engineGameSwitch.test.ts apps/web/test/engineProbe.test.ts apps/web/test/engineOnlineInventory.test.ts tools/test/onlineChromes.test.ts",
+    "timeout_s": 3600,
+    "after": ["g7-offline-web-build"]
+  },
+  {
+    "name": "g7-online-check",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts check --stage online --page apps/web/dist --out out/engine-show/online",
+    "timeout_s": 900,
+    "after": ["g7-offline-typecheck", "g7-offline-guard", "g7-online-unit-check"]
+  },
+  {
+    "name": "g7-online-clean",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts clean --stage online --page apps/web/dist --out out/engine-show/online",
+    "timeout_s": 60,
+    "after": ["g7-online-check"]
+  },
+  {
+    "name": "g7-online-render",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts render --stage online --page apps/web/dist --out out/engine-show/online",
+    "timeout_s": 3600,
+    "after": ["g7-online-clean"]
+  },
+  {
+    "name": "g7-online-fresh",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts fresh --stage online --page apps/web/dist --out out/engine-show/online",
+    "timeout_s": 300,
+    "after": ["g7-online-render"]
+  },
+  {
+    "name": "g7-online-judge",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts judge --stage online --page apps/web/dist --out out/engine-show/online --budget-s 3300",
+    "timeout_s": 3600,
+    "after": ["g7-online-render", "g7-online-fresh"]
+  }
 ]

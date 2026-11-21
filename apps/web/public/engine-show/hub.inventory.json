@@ -1,0 +1,70 @@
+[
+  {
+    "id": "engine-hub-walking-and-emotes",
+    "stage": "hub",
+    "filename": "engine-hub-walking-and-emotes.png",
+    "args": {
+      "scenario": "engine-hub-walking-and-emotes",
+      "testMode": true,
+      "seed": 7,
+      "humans": 1
+    },
+    "require": [
+      "backend eq \"engine\"",
+      "gpuErrors empty",
+      "hub.ready eq true",
+      "hub.faults eq 0",
+      "hub.localMoved eq true",
+      "hub.localEmote gt 0",
+      "hub.remoteEmote gt 0",
+      "hub.lobbyBots eq 4",
+      "hub.botsMoved gt 0"
+    ],
+    "description": "Engine hub plaza: the local penguin has walked across the plaza floor away from its start, lobby penguins stand or walk nearby, and one visiting penguin visibly performs a dance emote pose",
+    "held_constant": [
+      "hub-plaza course geometry, decor and lighting",
+      "penguin character model and default costume",
+      "1920x1080 hub follow camera"
+    ]
+  },
+  {
+    "id": "engine-show-returned-to-hub",
+    "stage": "hub",
+    "filename": "engine-show-returned-to-hub.png",
+    "args": {
+      "scenario": "engine-show-returned-to-hub",
+      "testMode": true,
+      "seed": 7,
+      "humans": 1,
+      "plan": [
+        60,
+        12,
+        1
+      ]
+    },
+    "require": [
+      "backend eq \"engine\"",
+      "gpuErrors empty",
+      "faults eq 0",
+      "hub.ready eq true",
+      "hub.faults eq 0",
+      "progress.completedRounds ge 2",
+      "progress.confirmedWinner ge 0",
+      "progress.podiumConfirmed eq true",
+      "effects.droppedRecords eq 0",
+      "effects.repeatedSoundDeliveries eq 0",
+      "effects.repeatedGrantDeliveries eq 0",
+      "hub.returned eq 1",
+      "hub.spawnRestored eq true",
+      "hub.movedAfterReturn eq true",
+      "hub.emoteAfterReturn gt 0",
+      "hub.lobbyBots eq 4"
+    ],
+    "description": "Engine hub plaza after a completed show: the local penguin stands upright back on the plaza with lobby penguins around it, and no race course, round HUD or podium is shown",
+    "held_constant": [
+      "hub-plaza course geometry, decor and lighting",
+      "penguin character model and default costume",
+      "1920x1080 hub follow camera"
+    ]
+  }
+]

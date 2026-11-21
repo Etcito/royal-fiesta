@@ -7,6 +7,7 @@ import {
 } from '../src/engineShow/ops.ts'
 import type { EngineShowFacts } from '../src/engineShow/ops.ts'
 import { requirementProblems } from '../../../tools/engineCaptureJob.ts'
+import { isRefusal } from '../../../packages/sim/src/refusal.ts'
 import { showRows } from '../../../tools/engineShowCapture.ts'
 import type { EngineShowPage } from '../src/engineShow/page.ts'
 import { EngineSeatPresenter, farPenguinBridge } from '../src/engineShow/presentation.ts'
@@ -247,6 +248,28 @@ test('the offline inventory parses through the shared validator with the exact o
   for (const require of [SIMPLE_REQUIRE, ROUND_REQUIRE, PODIUM_REQUIRE]) {
     assert.deepEqual(require.slice(0, SHOW_COMMON_REQUIRE.length), SHOW_COMMON_REQUIRE)
   }
+})
+
+test('the hub inventory parses through the shared validator', () => {
+  const rows = showRows('hub')
+  assert.deepEqual(rows.map(row => row.id), ['engine-hub-walking-and-emotes', 'engine-show-returned-to-hub'])
+  for (const row of rows) {
+    assert.equal(row.stage, 'hub')
+    assert.equal(row.filename, `${row.id}.png`)
+  }
+  assert.deepEqual(rows[0].args, { scenario: 'engine-hub-walking-and-emotes', testMode: true, seed: 7, humans: 1 })
+  assert.deepEqual(rows[1].args, { scenario: 'engine-show-returned-to-hub', testMode: true, seed: 7, humans: 1, plan: [60, 12, 1] })
+  assert.deepEqual(rows.map(row => row.require), [
+    ['backend eq "engine"', 'gpuErrors empty', 'hub.ready eq true', 'hub.faults eq 0', 'hub.localMoved eq true',
+      'hub.localEmote gt 0', 'hub.remoteEmote gt 0', 'hub.lobbyBots eq 4', 'hub.botsMoved gt 0'],
+    ['backend eq "engine"', 'gpuErrors empty', 'faults eq 0', 'hub.ready eq true', 'hub.faults eq 0',
+      'progress.completedRounds ge 2', 'progress.confirmedWinner ge 0', 'progress.podiumConfirmed eq true',
+      'effects.droppedRecords eq 0', 'effects.repeatedSoundDeliveries eq 0', 'effects.repeatedGrantDeliveries eq 0',
+      'hub.returned eq 1', 'hub.spawnRestored eq true', 'hub.movedAfterReturn eq true', 'hub.emoteAfterReturn gt 0',
+      'hub.lobbyBots eq 4'],
+  ])
+  assert.throws(() => showRows('missing'), (error: unknown) => isRefusal(error))
+  assert.equal(showRows().length, 3)
 })
 
 test('valid simple, round and podium facts pass their own requirements', () => {

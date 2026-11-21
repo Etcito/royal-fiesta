@@ -46,6 +46,8 @@ function boot(): void {
     return
   }
   const mounted = mountEngineShow(root, options)
+  // Scenario modules register themselves when they load, so they load before the operation is installed.
+  import.meta.glob('./scenarios/*.ts', { eager: true })
   registerEngineShowOps(mounted)
   mounted.then(
     page => { page.ready.catch(() => undefined) },

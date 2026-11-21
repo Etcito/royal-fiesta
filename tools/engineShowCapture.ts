@@ -14,22 +14,42 @@ import { renderOp } from '../apps/headless/src/gpuClient.ts'
 import { unwrapOp } from '../apps/headless/src/gpuRecord.ts'
 import { repoRoot } from './bricks.ts'
 
-const INVENTORY = 'apps/web/public/engine-show/offline.inventory.json'
 const TOPIC = 'engine-show'
 const PAGE_FILES = ['engine-show.html', 'ege/rf-scripts.wasm', 'ege/rf-publication.json']
-const PODIUM = 'engine-show-winner-podium'
+const PODIUM_SCENARIOS: ReadonlySet<string> = new Set(['engine-show-winner-podium', 'engine-show-returned-to-hub'])
+const HUB_PLAZA = 'hub-plaza'
 
-/** The show's inventory rules for the shared validator; an unknown scenario or field refuses. */
-export function showRows(path = join(repoRoot(), INVENTORY)): CaptureRow<ShowArgs>[] {
+/** The stage's inventory file: apps/web/public/engine-show/<stage>.inventory.json. */
+function inventoryOf(stage: string): string {
+  return join(repoRoot(), 'apps/web/public/engine-show', `${stage}.inventory.json`)
+}
+
+/** The scenario ids named by the rows of one inventory file; unreadable rows are left to the shared validator. */
+function scenarioIdsOf(path: string): Set<string> {
+  let raw: unknown
+  try { raw = JSON.parse(readFileSync(path, 'utf8')) } catch { return new Set() }
+  if (!Array.isArray(raw)) return new Set()
+  const ids = new Set<string>()
+  for (const row of raw as { args?: { scenario?: unknown } }[]) {
+    if (typeof row?.args?.scenario === 'string') ids.add(row.args.scenario)
+  }
+  return ids
+}
+
+/** The stage's inventory rules for the shared validator; an unknown scenario or field refuses. */
+export function showRows(stage = 'offline'): CaptureRow<ShowArgs>[] {
+  const path = inventoryOf(stage)
+  if (!existsSync(path)) refuse('engine-show', path, 'missing; add the stage inventory')
+  const known = scenarioIdsOf(path)
   return loadCaptureRows(path, {
     area: 'engine-show',
     stageField: 'stage',
     checkStage: (value, pointer) => {
-      if (value !== 'offline') refuse('engine-show', pointer, "must be 'offline'; show captures are offline only")
+      if (value !== stage) refuse('engine-show', pointer, `must be '${stage}'; this inventory holds '${stage}' rows only`)
       return value
     },
     parseArgs: (value, pointer) => {
-      try { return parseShowArgs(value) } catch (error) {
+      try { return parseShowArgs(value, known) } catch (error) {
         refuse('engine-show', pointer, error instanceof Error ? error.message : String(error))
       }
     },
@@ -60,11 +80,23 @@ function builtCourses(): { maps: ReturnType<typeof playableMaps>; ids: string[] 
   return { maps, ids }
 }
 
+/** The hub stage needs the packed plaza: a built course of kind 'hub' that the content index selects. */
+function validateHubPlaza(inventory: string): void {
+  const index = new Set(buildContentIndex().courses.map(course => course.id))
+  if (!index.has(HUB_PLAZA)) refuse('engine-show', inventory, `needs '${HUB_PLAZA}' in the built content selection; pack the hub plaza in the web build`)
+  const path = join(repoRoot(), 'courses', `${HUB_PLAZA}.course.json`)
+  if (!existsSync(path)) refuse('engine-show', path, 'is missing; add the hub plaza course for the hub stage')
+  const course = JSON.parse(readFileSync(path, 'utf8')) as { kind?: unknown }
+  if (course.kind !== 'hub') refuse('engine-show', path, `has kind '${String(course.kind)}' but the hub stage needs 'hub'`)
+}
+
 /** Resolves every selected built course and requires at least one authored moving feature. */
-function validateContent(rows: readonly CaptureRow<ShowArgs>[]): void {
+function validateContent(rows: readonly CaptureRow<ShowArgs>[], stage: string): void {
   const root = repoRoot()
+  const inventory = inventoryOf(stage)
   const { ids } = builtCourses()
   const index = new Set(buildContentIndex().courses.map(course => course.id))
+  if (stage === 'hub') validateHubPlaza(inventory)
   let moving = 0
   const courses: CourseFile[] = []
   for (const id of ids) {
@@ -84,18 +116,18 @@ function validateContent(rows: readonly CaptureRow<ShowArgs>[]): void {
     moving++
   }
   if (moving === 0) refuse('engine-show', 'courses/*.course.json', 'has no authored moving feature; add a moving obstacle to the built show content')
-  if (rows.some(row => row.args.scenario === PODIUM) && ids.length < 2) {
-    refuse('engine-show', INVENTORY, `the podium capture needs two distinct physical courses but the build selects ${ids.length}`)
+  if (rows.some(row => PODIUM_SCENARIOS.has(row.args.scenario)) && ids.length < 2) {
+    refuse('engine-show', inventory, `the podium capture needs two distinct physical courses but the build selects ${ids.length}`)
   }
 }
 
 /** Checks the staged page files and every selected course before any GPU work. */
-async function validateSelection(page: string, source: string | undefined, rows: readonly CaptureRow<ShowArgs>[]): Promise<void> {
+async function validateSelection(page: string, source: string | undefined, stage: string, rows: readonly CaptureRow<ShowArgs>[]): Promise<void> {
   if (source !== undefined) stageShowPage(source, page)
   for (const path of PAGE_FILES) {
     if (!existsSync(join(page, path))) refuse('engine-show', join(page, path), 'missing staged page file; build the web page first')
   }
-  validateContent(rows)
+  validateContent(rows, stage)
 }
 
 async function renderShow(row: CaptureRow<ShowArgs>, pageRef: string): Promise<CaptureResult> {
@@ -107,19 +139,27 @@ async function renderShow(row: CaptureRow<ShowArgs>, pageRef: string): Promise<C
 }
 
 /** The shared-job configuration; the adapter owns only staging, selection validation and the op call. */
-function showConfig(page: string, source?: string): CaptureJobConfig<ShowArgs> {
+function showConfig(stage: string, page: string, source?: string): CaptureJobConfig<ShowArgs> {
+  const inventory = inventoryOf(stage)
+  const known = scenarioIdsOf(inventory)
   return {
     topic: TOPIC,
-    inventory: join(repoRoot(), INVENTORY),
+    inventory,
     page,
     parseArgs: value => {
-      try { return parseShowArgs(value) } catch (error) {
+      try { return parseShowArgs(value, known) } catch (error) {
         refuse('engine-show', 'args', error instanceof Error ? error.message : String(error))
       }
     },
-    validateSelection: rows => validateSelection(page, source, rows),
+    validateSelection: rows => validateSelection(page, source, stage, rows),
     run: (row, pageRef) => renderShow(row, pageRef),
   }
+}
+
+/** The stage named by `--stage` when the shared options do not parse; offline otherwise. */
+function stageOf(argv: readonly string[]): string {
+  const at = argv.indexOf('--stage')
+  return at >= 0 && argv[at + 1] !== undefined ? argv[at + 1] : 'offline'
 }
 
 function sharedArgs(args: ReturnType<typeof captureOptions>, page: string): string[] {
@@ -136,16 +176,18 @@ function sharedArgs(args: ReturnType<typeof captureOptions>, page: string): stri
  * show inventory, selection validation and managed op call to runEngineCaptureJob. State/keys: inventory
  * apps/web/public/engine-show/offline.inventory.json, topic engine-show, stage offline, store
  * NMC_CACHE_DIR/engine-show/offline with out/engine-show/offline as its fallback.
+ * `--stage <s>` selects apps/web/public/engine-show/<s>.inventory.json (stage hub: hub.inventory.json), and the store
+ * becomes NMC_CACHE_DIR/engine-show/<s>; the offline stage and its commands are unchanged.
  */
 export async function main(argv: string[]): Promise<number> {
   let args: ReturnType<typeof captureOptions>
   try { args = captureOptions(argv) } catch {
-    return await runEngineCaptureJob(showConfig(''), argv)
+    return await runEngineCaptureJob(showConfig(stageOf(argv), ''), argv)
   }
-  if (args.operation !== 'render') return await runEngineCaptureJob(showConfig(resolve(args.page)), argv)
+  if (args.operation !== 'render') return await runEngineCaptureJob(showConfig(args.stage, resolve(args.page)), argv)
   const scratch = mkdtempSync(join(tmpdir(), 'engine-show-page-'))
   try {
-    return await runEngineCaptureJob(showConfig(scratch, resolve(args.page)), sharedArgs(args, scratch))
+    return await runEngineCaptureJob(showConfig(args.stage, scratch, resolve(args.page)), sharedArgs(args, scratch))
   } catch (error) {
     console.error(isRefusal(error) ? error.message : error instanceof Error ? error.message : String(error))
     return 1

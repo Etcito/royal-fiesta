@@ -91,6 +91,21 @@ test('a reused domain handle with a new incarnation clears departed seats; relea
   assert.equal(near.size, 8)
 })
 
+test('the released-incarnation memory stays bounded across many rounds', () => {
+  const presenter = new EngineSeatPresenter(readers())
+  const ROUNDS = 40
+  const sizes: number[] = []
+  for (let round = 1; round <= ROUNDS; round++) {
+    presenter.observe(observation('post-tick', [world(1, round, ALL)]), near8)
+    presenter.observe(observation('before-release', [world(1, round, ALL)]), new Set())
+    // The runtime released it: the next observation no longer lists the departed incarnation.
+    presenter.refill(observation('post-tick', []).presentation, snap(), near8)
+    sizes.push(presenter.releasedCount)
+  }
+  assert.equal(sizes[ROUNDS - 1], sizes[2], 'the set after many rounds holds what it held after a few')
+  assert.equal(presenter.releasedCount, 0)
+})
+
 test('all-human near selection is honoured and conflicting live mappings refuse', () => {
   const presenter = new EngineSeatPresenter(readers())
   const humans = new Set([0, 1, 2, 3, 4, 5, 6, 7])

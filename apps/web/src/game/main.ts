@@ -1146,7 +1146,8 @@ class EngineHubMode implements Mode {
   sim(): null { return null }
   hud(): HudState | null { return null }
   roundStage(): RoundStage | null { return null }
-  lines(): string[] { return [] }
+  // Offline, nothing starts by itself: the show starts when the bean stands on the queue pad or Enter is pressed.
+  lines(): string[] { return ['Walk onto the glowing pad at the far end of the plaza, or press Enter, to start the show.'] }
   enqueue(): void { this.showRequested = true }
   dequeue(): void {}
   leaveMatch(): void {}
@@ -1154,6 +1155,7 @@ class EngineHubMode implements Mode {
 
   frame(f: FrameIn): GameScreen {
     const now = performance.now()
+    for (let i = 0; i < f.deviceCount; i++) if (f.devices[i].joinPressed) this.showRequested = true
     if (f.emote !== 0) this.hub.setEmote(f.emote, now)
     if (!f.paused) {
       this.hubAcc = Math.min(this.hubAcc + f.dt, 8 * STEP_S)
@@ -3117,6 +3119,7 @@ class App {
     const model = menuModel(this.roundLoading === null ? nav.screen : 'loading', this.roundLoading === null ? nav.actions() : [], {
       settings: this.settings, rebinding: this.rebinding, error, info,
       page, items, reducedMotion, note: page === 'graphics' ? this.graphics.notes() : undefined,
+      ...(mode instanceof EngineHubMode ? { hubHint: 'WASD/ZQSD move - mouse or right stick: camera - 1-4 emote - Enter or the pad starts the show - Esc menu' } : {}),
     })
     // Overlays leave the pointer to the views (pointer lock on the game canvas); menus take clicks.
     this.screens.style.pointerEvents = model.overlay ? 'none' : 'auto'

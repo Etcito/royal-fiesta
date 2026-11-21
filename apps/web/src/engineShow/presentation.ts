@@ -235,6 +235,9 @@ export class EngineSeatPresenter {
     return { near, far, view }
   }
 
+  /** Released incarnations still remembered; bounded by the worlds the runtime lists, never by the rounds played. */
+  get releasedCount(): number { return this.released.size }
+
   clear(): void {
     this.far.clear()
     this.incarnations = ''
@@ -243,6 +246,9 @@ export class EngineSeatPresenter {
   }
 
   private accept(presentation: EngineShowPresentation, snapshot: EngineShowSnapshot, near: ReadonlySet<number>): void {
+    // An incarnation the runtime no longer lists can never come back: forget it, so the set holds only listed worlds.
+    const listed = new Set(presentation.worlds.map(world => world.incarnation))
+    for (const incarnation of this.released) if (!listed.has(incarnation)) this.released.delete(incarnation)
     const worlds = presentation.worlds.filter(world => PHYSICS_KINDS.has(world.ref.kind) && !this.released.has(world.incarnation))
     const key = worlds.map(world => `${world.ref.domain}:${world.incarnation}`).join(',')
     if (key !== this.incarnations) this.far.clear()

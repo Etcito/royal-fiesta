@@ -76,6 +76,42 @@ interface WorldMemo {
   readonly zones: Uint8Array
 }
 
+/**
+ * The one-entry presentation mapping memo of a runtime: resolving a world decodes all of it, and a page reads the
+ * presentation several times per frame (view refresh, effects pump, observers, the show's own `view()`). The kept
+ * mapping serves while the snapshot bytes it derives from are unchanged for the same incarnation; one entry only,
+ * so it never grows with the ticks played. The online runtime used to resolve on every call (the offline one kept it).
+ */
+export class PresentationMemo {
+  private memo: WorldMemo | undefined
+
+  resolve(
+    engine: EngineInstance,
+    layout: SchemaLayout,
+    sim: EngineDomainSim,
+    ref: () => EngineWorldRef,
+    build: () => EnginePresentationWorld | null,
+  ): EnginePresentationWorld | null {
+    const key = mappingBytes(engine.snapshot(sim.world), layout)
+    const memo = this.memo
+    if (key !== undefined && memo !== undefined && memo.sim === sim
+      && sameBytes(memo.entities, key.entities) && sameBytes(memo.zones, key.zones)) {
+      return { ...memo.world, ref: ref() }
+    }
+    this.memo = undefined
+    // Copy before the factory reads the engine again: the snapshot view is only valid until the next engine call.
+    const kept = key === undefined ? undefined : { entities: key.entities.slice(), zones: key.zones.slice() }
+    const world = build()
+    if (world !== null && kept !== undefined) this.memo = { sim, world, ...kept }
+    return world
+  }
+
+  /** True while a mapping is kept (a release or a new round clears it). */
+  get kept(): boolean { return this.memo !== undefined }
+
+  clear(): void { this.memo = undefined }
+}
+
 /** A copied `show_lifecycle_input` patch: the host facts are applied before the next rules step. */
 export function patchLifecycle(
   engine: EngineInstance,

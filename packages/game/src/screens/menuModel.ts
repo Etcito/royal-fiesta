@@ -44,6 +44,8 @@ export interface MenuCtx {
   reducedMotion?: boolean
   // A status line, e.g. GraphicsSettings.notes().
   note?: string
+  // The hub overlay hint when the hub does not start the round by itself (the offline engine hub waits for the queue pad).
+  hubHint?: string
 }
 
 export interface Rect {
@@ -155,7 +157,7 @@ export function progressLine(p: LoadProgress | null): string {
 export function menuModel(screen: Screen, actions: readonly Action[], ctx: MenuCtx): MenuModel {
   let title = TITLES[screen]
   if (OVERLAY.includes(screen)) {
-    const hint = screen === 'hub' ? HINTS.hub : HINTS.hud
+    const hint = screen === 'hub' ? (ctx.hubHint ?? HINTS.hub) : HINTS.hud
     return { screen, title, lines: [...ctx.info], buttons: [], hint, overlay: true }
   }
   const lines: string[] = []

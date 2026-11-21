@@ -434,6 +434,9 @@ class SdfRenderPort implements ResizablePort {
     if (!(target.canvas instanceof HTMLCanvasElement)) refuse(AREA, WHERE, `${p}: pass an HTMLCanvasElement as the target canvas`)
     installShaderCache()
     this.engine = await createRaaEngine(target.canvas, { maxInstances: MAX_INSTANCES, maxMaterials: MAX_MATERIALS }) as SdfEngine
+    // This engine's own GPUDevice, read now: engine creations are serialized, so the canvas still maps to it. A later
+    // port on the same canvas (a show's next round) replaces the mapping, and dispose must destroy this one.
+    this.gpuDevice = deviceOfCanvas(target.canvas)
     this.engine.resize(target.width, target.height)
     if (!fullView(rects)) this.engine.setViewports(rects)
     this.engine.setLight(DEFAULT_LIGHT)
@@ -1494,6 +1497,12 @@ class SdfRenderPort implements ResizablePort {
     this.scheduler = null
     this.engine?.dispose()
     this.engine = null
+    // Engine.dispose drops raa's handles but the device keeps every texture and buffer until it is collected: each
+    // round's port (a full upload of the course and characters, over a GB on the page) stayed resident behind the
+    // next one. Destroying the device this port created frees them now; nothing else uses it.
+    const device = this.gpuDevice as { destroy?: () => void } | undefined
+    this.gpuDevice = undefined
+    device?.destroy?.()
     this.canvas = null
     this.target = null
     this.posed.clear()

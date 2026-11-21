@@ -18,6 +18,8 @@ const NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta']
 const POLL_MS = 500
 const STALL_MS = 30000
 const EXIT_WAIT_MS = 5000
+// Longest wait for one CDP answer (evaluate, input, target, enable) or one browser endpoint read; never past the deadline.
+const CALL_TIMEOUT_MS = 15000
 const STATE = 'window.rfEngine && window.rfEngine.state ? window.rfEngine.state() : null'
 const SIGNALS = 'window.rfEngine && window.rfEngine.signals ? window.rfEngine.signals() : []'
 const PLAY = 'window.rfEngine && window.rfEngine.play ? window.rfEngine.play() : false'
@@ -97,11 +99,27 @@ let active = null
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const messageOf = e => (e instanceof Error ? e.message : String(e))
 const shown = state => (state === null || state === undefined ? 'none' : JSON.stringify(state))
+const lastKnown = state => (state === null || state === undefined
+  ? 'last state none'
+  : `last state flow ${state.flow} screen ${state.screen} tick ${state.tick}`)
+
+/**
+ * Settles with `work` or rejects with `describe(ms)` after ms = min(CALL_TIMEOUT_MS, time left before deadlineAt), so a
+ * page that stops answering fails the run instead of hanging it past its deadline.
+ */
+function bounded(d, deadlineAt, work, describe) {
+  const ms = Math.max(0, Math.min(CALL_TIMEOUT_MS, deadlineAt - d.now()))
+  return new Promise((resolve, reject) => {
+    const timer = d.setTimeout(() => reject(new Error(describe(ms))), ms)
+    work.then(value => { d.clearTimeout(timer); resolve(value) }, error => { d.clearTimeout(timer); reject(error) })
+  })
+}
 
 function withDefaults(deps) {
   return {
     spawn: deps.spawn ?? nodeSpawn, fetch: deps.fetch ?? globalThis.fetch, WebSocket: deps.WebSocket ?? globalThis.WebSocket,
     sleep: deps.sleep ?? sleep, now: deps.now ?? (() => Date.now()), tmpdir: deps.tmpdir ?? nodeTmpdir,
+    setTimeout: deps.setTimeout ?? ((fn, ms) => setTimeout(fn, ms)), clearTimeout: deps.clearTimeout ?? (timer => clearTimeout(timer)),
     log: deps.log ?? ((...args) => console.log(...args)), error: deps.error ?? ((...args) => console.error(...args)),
   }
 }
@@ -130,7 +148,7 @@ async function cleanup(d, owned) {
   return closed
 }
 
-async function openPage(options, d, index, owned) {
+async function openPage(options, d, index, owned, deadlineAt) {
   const name = NAMES[index]
   const port = options.port + index
   const url = clientUrl(options.url, { server: options.server, name, bots: String(options.bots), engine: options.engine })
@@ -144,21 +162,31 @@ async function openPage(options, d, index, owned) {
   while (target === null) {
     if (d.now() > until) throw new Error(`${name}: Chrome on port ${port} did not open the game page`)
     try {
-      const list = await (await d.fetch(`http://127.0.0.1:${port}/json/list`)).json()
+      const read = (async () => (await d.fetch(`http://127.0.0.1:${port}/json/list`)).json())()
+      const list = await bounded(d, Math.min(deadlineAt, until), read, ms => `${name}: /json/list on port ${port} got no answer within ${ms} ms`)
       target = list.find(t => typeof t.url === 'string' && t.url.includes(`name=${name}`)) ?? null
     } catch { /* browser not up yet */ }
     if (target === null) await d.sleep(POLL_MS)
   }
   const ws = new d.WebSocket(target.webSocketDebuggerUrl)
-  await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject })
+  await bounded(d, deadlineAt, new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject }),
+    ms => `${name}: CDP socket did not open within ${ms} ms`)
   const page = { name, port, targetId: target.id ?? null, child, exceptions: 0, state: null, signals: [] }
   const waiting = new Map()
   let id = 0
-  page.call = (method, params = {}) => new Promise(resolve => {
+  // Every CDP call (evaluate, input, target, enable) is bounded: a stuck page fails with its name, the call and its last state.
+  page.call = (method, params = {}) => {
     const i = ++id
-    waiting.set(i, resolve)
-    ws.send(JSON.stringify({ id: i, method, params }))
-  })
+    const answer = new Promise(resolve => {
+      waiting.set(i, resolve)
+      ws.send(JSON.stringify({ id: i, method, params }))
+    })
+    const what = method === 'Runtime.evaluate' ? `${method} ${JSON.stringify(String(params.expression ?? '').slice(0, 60))}` : method
+    return bounded(d, deadlineAt, answer, ms => {
+      waiting.delete(i)
+      return `${name}: CDP ${what} got no answer within ${ms} ms; ${lastKnown(page.state)}`
+    })
+  }
   ws.onmessage = e => {
     const m = JSON.parse(e.data)
     if (m.id && waiting.has(m.id)) { waiting.get(m.id)(m.result); waiting.delete(m.id); return }
@@ -202,15 +230,14 @@ export function engineLaunchPlan(lateClient) {
     : ['open 1', 'open 2', 'start-ready 1', 'press 1', 'lobby-ready 1', 'start-ready 2', 'press 2', 'same-lobby 2']
 }
 
-async function runEngine(options, d, owned) {
+async function runEngine(options, d, owned, deadlineAt) {
   const until = options.until ?? 'round-ended'
-  const deadlineAt = d.now() + options.deadline * 1000
   const pages = []
   const ready = s => s?.ready === true && s.screen === 'start'
   let first = null, second = null, lobbyId = null
   for (const step of engineLaunchPlan(options.lateClient)) {
-    if (step === 'open 1') { first = await openPage(options, d, 0, owned); pages.push(first) }
-    else if (step === 'open 2') { second = await openPage(options, d, 1, owned); pages.push(second) }
+    if (step === 'open 1') { first = await openPage(options, d, 0, owned, deadlineAt); pages.push(first) }
+    else if (step === 'open 2') { second = await openPage(options, d, 1, owned, deadlineAt); pages.push(second) }
     else if (step === 'start-ready 1') await pollPage(d, first, deadlineAt, 'client 1 start ready', ready)
     else if (step === 'start-ready 2') await pollPage(d, second, deadlineAt, 'client 2 start ready', ready)
     else if (step === 'press 1') await playPage(first)
@@ -265,7 +292,8 @@ async function runEngine(options, d, owned) {
 
 async function runLegacy(options, d, owned) {
   const pages = []
-  for (let i = 0; i < options.clients; i++) pages.push(await openPage(options, d, i, owned))
+  // The legacy run has no deadline: each CDP call is still bounded by CALL_TIMEOUT_MS.
+  for (let i = 0; i < options.clients; i++) pages.push(await openPage(options, d, i, owned, Infinity))
   await d.sleep(options.boot * 1000)
   // Play sits at the same place of the start screen in every page; all presses land inside one lobby window.
   for (const page of pages) {
@@ -300,7 +328,9 @@ export async function run(options, deps = {}) {
   active = { close }
   let code = 1
   try {
-    code = options.engine ? await runEngine(options, d, owned) : await runLegacy(options, d, owned)
+    code = options.engine
+      ? await runEngine(options, d, owned, d.now() + options.deadline * 1000)
+      : await runLegacy(options, d, owned)
   } catch (e) {
     d.error(`[harness] ${messageOf(e)}`)
     code = 1

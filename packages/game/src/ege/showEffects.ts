@@ -38,6 +38,8 @@ export class EngineShowEffects {
   private readonly runtime: EngineShowRuntime
   private readonly sinks: EngineShowEffectSinks
   private readonly lanes = new Map<string, EventBridge>()
+  /** The latest presentation of each lane's world; a lane's handlers resolve publishers against it, never a stale one. */
+  private readonly views = new Map<string, EnginePresentationWorld>()
   private readonly receipts = new Set<string>()
   private readonly delivered = new Set<string>()
   private readonly unsubscribe: () => void
@@ -70,6 +72,7 @@ export class EngineShowEffects {
     this.unsubscribe()
     for (const lane of this.lanes.values()) lane.dispose()
     this.lanes.clear()
+    this.views.clear()
   }
 
   private observe(observation: EngineShowObservation): void {
@@ -79,12 +82,14 @@ export class EngineShowEffects {
       const key = laneKey(world)
       this.lanes.get(key)?.dispose()
       this.lanes.delete(key)
+      this.views.delete(key)
     }
   }
 
   private drain(presentation: EngineShowPresentation): void {
     this.checkShow(presentation)
     for (const world of presentation.worlds) {
+      this.views.set(laneKey(world), world)
       this.laneOf(world).pump(world.ref.confirmedTick)
     }
     this.deliverGrants()
@@ -106,6 +111,7 @@ export class EngineShowEffects {
       if (live.has(key)) continue
       lane.dispose()
       this.lanes.delete(key)
+      this.views.delete(key)
     }
   }
 
@@ -142,7 +148,7 @@ export class EngineShowEffects {
         (event: BridgeEvent) => {
           const sequence = pending[cursor]
           cursor += 1
-          this.deliverSound(world, event, sequence, decls.get(event.kind))
+          this.deliverSound(this.views.get(key) ?? world, event, sequence, decls.get(event.kind))
         },
         'confirmed',
       )
@@ -157,9 +163,13 @@ export class EngineShowEffects {
     sequence: string,
     decl: LayoutDecl | undefined,
   ): void {
-    // Engine-emitted events (ege.contact) come from any physical scene entity, not only zone publishers;
+    // A seat event (finish/fall/gate/progress/...) names its room seat in its payload: the seat is its stable publisher,
+    // because the seat entity's id changes when the session restores a rebuilt snapshot or moves the seat between
+    // domains. Engine-emitted events (ege.contact) come from any physical scene entity, not only zone publishers;
     // a live scene entity publishes under a stable identity, any other entity is still reported.
-    const publisher = world.publishers.get(event.entity) ?? (liveEntities(world).has(event.entity) ? `entity/${event.entity}` : undefined)
+    const payload = decodePayload(decl, event.payload)
+    const publisher = world.publishers.get(event.entity) ?? seatPublisher(world, decl, payload)
+      ?? (liveEntities(world).has(event.entity) ? `entity/${event.entity}` : undefined)
     if (publisher === undefined) {
       throw new Error(`show effects: entity ${event.entity} has no publisher for event '${event.name}'`)
     }
@@ -171,7 +181,7 @@ export class EngineShowEffects {
       return
     }
     this.delivered.add(receipt)
-    this.sinks.sound(event.name, decodePayload(decl, event.payload))
+    this.sinks.sound(event.name, payload)
   }
 
   private deliverGrants(): void {
@@ -195,6 +205,17 @@ export class EngineShowEffects {
   private receiptOf(publisher: string, sequence: string, kind: string): string {
     return [this.showId, this.round, publisher, sequence, kind].join('|')
   }
+}
+
+/** `seat/<roomSeat>` for an event whose payload `seat` is a room seat of this world's round, else undefined. */
+function seatPublisher(
+  world: EnginePresentationWorld,
+  decl: LayoutDecl | undefined,
+  payload: Readonly<Record<string, number>>,
+): string | undefined {
+  if (decl === undefined || !decl.fields.some((field) => field.name === 'seat' && field.count === 1)) return undefined
+  const roomSeat = payload.seat
+  return world.seats.some((seat) => seat.roomSeat === roomSeat) ? `seat/${roomSeat}` : undefined
 }
 
 function laneKey(world: EnginePresentationWorld): string {

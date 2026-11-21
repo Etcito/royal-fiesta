@@ -26,6 +26,8 @@ interface RunDeps {
   tmpdir: () => string
   log: (...args: unknown[]) => void
   error: (...args: unknown[]) => void
+  setTimeout?: (fn: () => void, ms: number) => unknown
+  clearTimeout?: (timer: unknown) => void
 }
 
 interface HarnessModule {
@@ -76,7 +78,11 @@ function baseState(name: string): EngineShellState {
   }
 }
 
-function makeWorld(options: { advance?: (page: FakePage) => void; hideOnBackground?: boolean; failConnect?: string } = {}) {
+function makeWorld(options: {
+  advance?: (page: FakePage) => void; hideOnBackground?: boolean; failConnect?: string
+  /** This page's CDP socket stops answering every call once the page is in the match, like a stuck page. */
+  hangInMatch?: string
+} = {}) {
   let clock = 0
   const pages = new Map<string, FakePage>()
   const children: FakeChild[] = []
@@ -129,6 +135,7 @@ function makeWorld(options: { advance?: (page: FakePage) => void; hideOnBackgrou
     send(data: string): void {
       const msg = JSON.parse(data) as { id: number; method: string; params?: Record<string, unknown> }
       const p = page(this.name)
+      if (options.hangInMatch === this.name && p.state.flow === 'match') return
       let result: unknown = {}
       if (msg.method === 'Runtime.evaluate') result = { result: { value: evaluate(p, String(msg.params?.expression ?? '')) } }
       if (msg.method === 'Target.createTarget') result = { targetId: `blank-${this.name}` }
@@ -157,8 +164,11 @@ function makeWorld(options: { advance?: (page: FakePage) => void; hideOnBackgrou
     tmpdir: () => '/tmp',
     log: () => {},
     error: (...args) => { errors.push(args) },
+    // A timer advances the fake clock by its delay when it fires, so a call timeout is visible against the deadline.
+    setTimeout: (fn, ms) => setTimeout(() => { clock += ms; fn() }, 0),
+    clearTimeout: timer => clearTimeout(timer as ReturnType<typeof setTimeout>),
   }
-  return { deps, pages, page, children, spawns, foreign, errors, events, pressedBetaAfterLobbyReady: () => pressedBetaAfterLobbyReady }
+  return { now: () => clock, deps, pages, page, children, spawns, foreign, errors, events, pressedBetaAfterLobbyReady: () => pressedBetaAfterLobbyReady }
 }
 
 function options(argv: string[]): HarnessOptions {
@@ -292,4 +302,16 @@ test('cleanup closes exactly the owned Chromes on success, thrown failure and de
   assert.equal(stalled.children.length, 2)
   for (const child of stalled.children) assert.deepEqual(child.kills, ['SIGTERM'])
   assert.equal(stalled.foreign.kills.length, 0)
+})
+
+test('a client whose CDP calls never answer fails the run with its name and last state before the deadline, with cleanup', async () => {
+  const world = makeWorld({ advance: successAdvance, hangInMatch: 'Beta' })
+  const code = await harness.run(options(['--late-client', '--deadline', '900']), world.deps)
+  assert.notEqual(code, 0)
+  const message = String(world.errors[0]?.[0])
+  assert.match(message, /Beta: CDP Runtime\.evaluate .* got no answer within \d+ ms; last state flow match screen start tick \d+/)
+  assert.ok(world.now() < 900_000, `failed at ${world.now()} ms, before the 900 s deadline`)
+  assert.equal(world.children.length, 2)
+  for (const child of world.children) assert.deepEqual(child.kills, ['SIGTERM'])
+  assert.equal(world.foreign.kills.length, 0)
 })

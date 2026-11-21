@@ -121,10 +121,15 @@ function silentDomain(tick: number): DomainSim<number> {
 
 /** Wraps the prepared factory: records each executed tick's outbox payload and the live world it belongs to. */
 function captureFactory(inner: EngineShowFactory, base: number, capture: CaptureState): DomainFactory<number> {
-  const open = (sim: EngineDomainSim): DomainSim<number> => {
+  // Only a created sim is the session's running world. A rebuild or reset sim is the session's scratch: the session
+  // snapshots it and restores those bytes into the running sim (ZoneSession.epochStep/resetStep), never steps it, so
+  // it must not replace the presented world.
+  const open = (sim: EngineDomainSim, running: boolean): DomainSim<number> => {
     capture.sims.add(sim)
-    capture.domain = sim.spec.id
-    capture.sim = sim
+    if (running) {
+      capture.domain = sim.spec.id
+      capture.sim = sim
+    }
     const bound = new Map<PropertyKey, unknown>()
     return new Proxy(sim, {
       get(target, prop) {
@@ -154,12 +159,12 @@ function captureFactory(inner: EngineShowFactory, base: number, capture: Capture
       set(target, prop, value) { return Reflect.set(target, prop, value) },
     }) as unknown as DomainSim<number>
   }
-  const openUnlessGlobal = (spec: DomainSpec, rename: () => EngineDomainSim): DomainSim<number> =>
-    spec.kind === 'global' ? silentDomain(0) : open(rename())
+  const openUnlessGlobal = (spec: DomainSpec, running: boolean, rename: () => EngineDomainSim): DomainSim<number> =>
+    spec.kind === 'global' ? silentDomain(0) : open(rename(), running)
   return {
-    create: (spec, tick) => openUnlessGlobal(spec, () => inner.create(spec, tick)),
-    rebuild: (spec, tick, sources) => openUnlessGlobal(spec, () => inner.rebuild(spec, tick, sources)),
-    reset: (spec, tick) => openUnlessGlobal(spec, () => inner.reset(spec, tick)),
+    create: (spec, tick) => openUnlessGlobal(spec, true, () => inner.create(spec, tick)),
+    rebuild: (spec, tick, sources) => openUnlessGlobal(spec, false, () => inner.rebuild(spec, tick, sources)),
+    reset: (spec, tick) => openUnlessGlobal(spec, false, () => inner.reset(spec, tick)),
   }
 }
 

@@ -124,6 +124,15 @@ import { GraphicsSettings, loadGraphicsContract } from './graphicsSettings.ts'
 import { FpsCounter, FramePacer, frameInterval } from './framePacing.ts'
 import { setRenderOptions } from '../render/renderOptions.ts'
 import { gameRenderOptions } from '../sdf/sdfPort.ts'
+import wasmUrl from '@etcito/game-engine/wasm/ege.wasm?url'
+import { loadEngineAuthoredShow, loadEnginePublication, setEngineShowWasmUrl } from '../engineShow/page.ts'
+import { loadEngineBackend, selectGameBackend } from './engineBackend.ts'
+import type { EngineBackend, GameBackend } from './engineBackend.ts'
+import { EngineShellProbe, installEngineProbe } from './engineProbe.ts'
+import type { EngineProbeFrame, EngineShellHandle } from './engineProbe.ts'
+import type { HubRuntime } from '@royal-fiesta/game/ege/hub'
+import type { EngineShowRuntime } from '@royal-fiesta/game/ege/showTypes'
+import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
 import type { ShadingMode, ShadingReport, PartWorldBounds, ResizablePort } from '../sdf/sdfPort.ts'
 import { validateGameplay } from './checks/fieldShading.ts'
 
@@ -362,7 +371,7 @@ interface Mode {
   // Lines for the hub overlay and the queue, result and podium panels.
   lines(): string[]
   // The match being drawn (for the sound), if any.
-  sim(): MatchSim | null
+  sim(): SceneReadView | null
   // What the match HUD shows, null outside a match.
   hud(): HudState | null
   // The mode has ended: the app returns a show to start, or a V1 match to the hub.
@@ -419,7 +428,7 @@ class ShowAdapter implements Mode {
     return this.show.finished
   }
   get failure(): string | null { return this.show.failure }
-  sim(): null { return null }
+  sim(): SceneReadView | null { return this.show.view() }
   hud(): HudState | null { return this.show.hud() }
   listener(): ListenerPose | null { return this.show.listener() }
   enqueue(): void {}
@@ -1093,6 +1102,56 @@ class LocalMode implements Mode {
 
 // The name the other players see: ?name= when given, else the Wavedash display name, else the default (the lobby then
 // shows 'Bean <n>' by arrival order). Only a display name, never an account id.
+// The engine hub (?engine=1): App keeps the one HubRuntime and passes it here; HubView draws it as OnlineMode does.
+// A Play armed on the queue pad (or enqueue) asks App for the engine show. It never frees the hub.
+class EngineHubMode implements Mode {
+  failure: string | null = null
+  showRequested = false
+  // Set by the first drawn hub frame (the probe's hubPresented).
+  presented = false
+  private readonly c: ModeCtx
+  private readonly hub: HubRuntime
+  private readonly hubView: HubView
+  private readonly pad = new QueuePad(1)
+  private readonly local = emptyChar()
+  private hubAcc = 0
+
+  constructor(c: ModeCtx, hub: HubRuntime) {
+    this.c = c
+    this.hub = hub
+    const { content, ports } = c.loaded
+    this.hubView = new HubView(ports[0], 0, name => content.assets(name), content.character(), content.hub(), {
+      look: c.look, orbit: c.orbit, character: content.character(), dressing: content.dressing(), skinned: skinnedCharacterOf(content),
+    })
+  }
+
+  get finished(): boolean { return false }
+  sim(): null { return null }
+  hud(): HudState | null { return null }
+  roundStage(): RoundStage | null { return null }
+  lines(): string[] { return [] }
+  enqueue(): void { this.showRequested = true }
+  dequeue(): void {}
+  leaveMatch(): void {}
+  dispose(): void {}
+
+  frame(f: FrameIn): GameScreen {
+    const now = performance.now()
+    if (f.emote !== 0) this.hub.setEmote(f.emote, now)
+    if (!f.paused) {
+      this.hubAcc = Math.min(this.hubAcc + f.dt, 8 * STEP_S)
+      while (this.hubAcc >= STEP_S) {
+        this.hubAcc -= STEP_S
+        this.hub.step(f.world)
+        if (this.pad.update(this.hub.onQueuePad()) === 'armed') this.showRequested = true
+      }
+    }
+    this.hubView.update(this.hub.state(this.local), this.c.q.colour, this.hub.botViews(), this.hub.tick, f.dt, this.hub.emote(now))
+    this.presented = true
+    return 'hub'
+  }
+}
+
 function onlineName(queryName: string): string {
   const own = queryName !== DEFAULT_NAME ? queryName : (wavedashUsername() ?? DEFAULT_NAME)
   const name = cleanName(own)
@@ -1714,6 +1773,17 @@ class App {
   private remapHeld = false
   private readonly onOpenRemap = (): void => this.openRemap()
   private readonly onRemapClose = (): void => this.remapClosed()
+  // The engine branch (?engine=1): the backend selected at construction, its prepared engine and the one kept hub.
+  private readonly backend: GameBackend
+  private backendRefusal: string | null = null
+  private engine: EngineBackend | null = null
+  private engineHub: HubRuntime | null = null
+  private engineRuntime: EngineShowRuntime | null = null
+  private engineShown = false
+  private failedWith: string | null = null
+  private probe: EngineShellProbe | null = null
+  private uninstallProbe: (() => void) | null = null
+  private probeFrame: EngineProbeFrame | null = null
 
   constructor(views: HTMLElement, screens: HTMLElement, host: UaaHost, search: string, env: AppEnv) {
     this.views = views
@@ -1790,6 +1860,21 @@ class App {
     this.viewsObserver = new ResizeObserver(() => this.resizeViews())
     this.viewsObserver.observe(this.views)
     this.observeErrors()
+    // The `?engine` switch: an explicit bad value is refused on load, through the error screen.
+    let selected: GameBackend = 'legacy'
+    try {
+      selected = selectGameBackend(new URLSearchParams(search))
+    } catch (e) {
+      this.backendRefusal = messageOf(e)
+    }
+    this.backend = selected
+    if (selected === 'engine') {
+      const probe = new EngineShellProbe()
+      this.probe = probe
+      this.uninstallProbe = installEngineProbe(window as Window & { rfEngine?: EngineShellHandle }, {
+        state: () => probe.state(), signals: () => probe.signals(), play: () => this.enginePlay(),
+      })
+    }
   }
 
   // These handlers retain the App, host and GPU device. They belong to this App,
@@ -1871,6 +1956,7 @@ class App {
 
   fail(message: string): void {
     if (this.disposed) return
+    this.failedWith = message
     // Whatever the error screen shows is also logged: a run that ends on it names its cause in the log.
     console.error(`[error-screen] ${message}`)
     this.lobbySoundOff = false
@@ -1963,6 +2049,10 @@ class App {
     this.startArt = null
     this.preparedLocal?.dispose()
     this.preparedLocal = null
+    this.uninstallProbe?.()
+    this.uninstallProbe = null
+    this.engineHub?.free()
+    this.engineHub = null
     void this.showAhead?.then(show => show?.dispose())
     this.showAhead = null
     this.viewsObserver.disconnect()
@@ -2027,6 +2117,7 @@ class App {
     const loading = mountLoading(null, { progress: (fraction, label) => this.host.setLoading(fraction, label) })
     this.host.setLoading(0, 'Starting...')
     try {
+      if (this.backendRefusal !== null) throw new Error(this.backendRefusal)
       await this.env.beforeLoad?.()
       let q = parseQuery(this.search)
       if (q.community !== null) {
@@ -2070,7 +2161,7 @@ class App {
       this.stopRoundLoad?.()
       this.stopRoundLoad = observeRoundLoad(label => this.onRoundLoad(label), content.report())
       // The online show plays the in-page show's season maps and zone sidecars.
-      const show = q.server !== null || this.nav.onlineOnly ? await checkAwait('online show content', () => loadShowContent('sprint')) : null
+      const show = q.server !== null || this.nav.onlineOnly || this.backend === 'engine' ? await checkAwait('online show content', () => loadShowContent('sprint')) : null
       this.loaded = { R, content, ports, canvases, course, show }
       if (ports[0] !== undefined) ports[0] = trackLobbyAssets(ports[0], this.lobbyAssets)
       if (ports[0] !== undefined) {
@@ -2087,6 +2178,13 @@ class App {
         await checkAwait('start menu content', () => this.prepareStart(this.loaded!))
       } catch (e) {
         console.warn('[start] view unavailable:', messageOf(e))
+      }
+      // The engine's preparation keeps the loading screen up; a rejection goes to the error screen (no legacy fallback).
+      if (this.backend === 'engine') {
+        this.loadingOverlay.show('Preparing engine')
+        this.host.setLoading(0, 'Preparing engine')
+        await checkAwait('engine backend', () => this.prepareEngine(q))
+        this.loadingOverlay.hide()
       }
       // Lands on the start screen (nav's root), or in the hub for ?course= / ?community=.
       this.run(this.nav.dispatch({ kind: 'loaded' }))
@@ -2328,7 +2426,8 @@ class App {
     try {
       const pending = this.pendingRelay
       this.pendingRelay = null
-      if (q.server !== null) this.mode = new OnlineMode(c, q.server)
+      if (this.backend === 'engine') this.mode = this.enterEngineHub(c)
+      else if (q.server !== null) this.mode = new OnlineMode(c, q.server)
       else if (pending !== null) this.mode = new OnlineMode(c, pending)
       else if (q.clients > 1) this.mode = new InPageMode(c)
       else {
@@ -2408,6 +2507,7 @@ class App {
     const loaded = this.loaded
     const q = this.query
     if (loaded === null || q === null || this.roundLoading === 'Preparing show') return
+    if (this.backend === 'engine') return this.startEngineShow(loaded, q)
     const look = this.wornLook()
     const ahead = this.showAhead
     this.showAhead = null
@@ -2449,6 +2549,102 @@ class App {
     } catch (e) {
       if (!this.disposed && load === this.showLoad) this.fail(messageOf(e))
     }
+  }
+
+  // The engine's preparation: the published engine and authored show, then the one hub the App keeps for its lifetime.
+  // A rejection propagates to load's fail; there is no legacy fallback.
+  private async prepareEngine(q: Query): Promise<void> {
+    setEngineShowWasmUrl(wasmUrl)
+    const backend = await loadEngineBackend({ publication: loadEnginePublication, authored: loadEngineAuthoredShow })
+    const hub = await backend.createHub(0, q.lobbybots)
+    if (this.disposed) {
+      hub.free()
+      return
+    }
+    this.engine = backend
+    this.engineHub = hub
+  }
+
+  // The engine show's seats: the legacy show's expression (at least the human count, 2..60).
+  private engineSeats(q: Query): number {
+    return Math.max(q.players ?? 1, q.bots ?? intParam(new URLSearchParams(this.search), 'seats', this.env.showSeats ?? DEFAULT_SHOW_SEATS, 2, 60))
+  }
+
+  // The engine hub for startMode: the kept hub, respawned at its spawn when a finished show returned to it.
+  private enterEngineHub(c: ModeCtx): EngineHubMode {
+    const hub = this.engineHub
+    if (hub === null) throw new Error(refusal('engine', 'hub', 'the engine hub is not prepared; retry the load'))
+    if (this.engineShown) hub.respawn(hub.spawn)
+    return new EngineHubMode(c, hub)
+  }
+
+  // Play starts the engine show: an offline runtime over the prepared engine, presented by ShowMode.engine.
+  // No preload; the show and its runtime are disposed by stopMode (the runtime is disposed by the show).
+  private async startEngineShow(loaded: Loaded, q: Query): Promise<void> {
+    const backend = this.engine
+    if (backend === null || loaded.show === null) return
+    const load = ++this.showLoad
+    this.roundLoading = 'Preparing show'
+    this.loadingOverlay.show(this.roundLoading)
+    this.host.setLoading(0, this.roundLoading)
+    this.setLayout(1)
+    try {
+      const seed = Date.now() >>> 0
+      const options = { ...this.showOptions(loaded, q, this.wornLook()), seed }
+      const runtime = await backend.createShow({ seed, humans: q.players ?? 1, seats: options.seats, testMode: q.test })
+      if (this.disposed || load !== this.showLoad) {
+        runtime.dispose()
+        return
+      }
+      const show = ShowMode.engine(options, runtime, loaded.show, { driven: false })
+      this.stopMode()
+      this.releaseLobby()
+      this.engineRuntime = runtime
+      this.engineShown = true
+      this.roundLoading = null
+      this.loadingOverlay.hide()
+      this.mode = new ShowAdapter(show, q.name, this.economy, q.test)
+      this.run(this.nav.dispatch({ kind: 'game', screen: 'vote' }))
+      this.hudRound = -2
+    } catch (e) {
+      if (!this.disposed && load === this.showLoad) this.fail(messageOf(e))
+    }
+  }
+
+  // window.rfEngine.play: the start screen's Play exactly as startButton('play'), only when this frame's start is ready.
+  private enginePlay(): boolean {
+    const frame = this.probeFrame
+    if (frame === null || frame.screen !== 'start' || !frame.ready) return false
+    this.startButton('play')
+    return true
+  }
+
+  // One probe observation per frame: the flow, readiness and show values the online harness reads.
+  private observeEngine(): void {
+    const probe = this.probe
+    if (probe === null) return
+    const mode = this.mode
+    const q = this.query
+    const flow = this.failedWith !== null ? 'failed'
+      : mode instanceof ShowAdapter ? 'show'
+        : mode instanceof EngineHubMode ? 'hub'
+          : mode === null && this.nav.screen === 'start' ? 'start' : 'loading'
+    const frame: EngineProbeFrame = {
+      screen: this.nav.screen, flow,
+      ready: this.engine !== null && this.startSceneReady && this.failedWith === null,
+      error: this.failedWith,
+      moduleKey: this.engine?.identity.moduleKey ?? '',
+      seats: q === null ? 0 : this.engineSeats(q),
+      humans: q?.players ?? 1,
+      hubPresented: mode instanceof EngineHubMode && mode.presented,
+      hubFaults: this.engineHub?.faults ?? 0,
+      show: mode instanceof ShowAdapter ? this.engineRuntime : null,
+      lobbyId: null, lobbyMembers: 0,
+      visibility: document.visibilityState === 'hidden' ? 'hidden' : 'visible',
+      online: false,
+    }
+    this.probeFrame = frame
+    probe.observe(frame)
   }
 
   private unmountShowView(): void {
@@ -2566,7 +2762,7 @@ class App {
       if (mode.failure !== null) return this.fail(mode.failure)
       this.roundGate.frame(screen, mode.roundStage())
       this.run(nav.dispatch({ kind: 'game', screen }))
-      if (mode instanceof LocalMode && mode.showRequested) void this.startShow()
+      if ((mode instanceof LocalMode || mode instanceof EngineHubMode) && mode.showRequested) void this.startShow()
       if (mode instanceof ShowAdapter || mode instanceof OnlineMode) {
         for (const cue of mode.show.cues()) this.sound.cue(cue)
         if (mode.finished && nav.screen === 'endScreen') this.run(nav.dispatch({ kind: 'action', action: 'confirm' }))
@@ -2579,6 +2775,7 @@ class App {
     this.emote = 0
     // The show has no MatchSim; skip SoundDriver.frame so it cannot restart the lobby music it stopped.
     if (!this.lobbySoundOff) this.sound.frame(this.mode?.sim() ?? null, this.mode?.listener?.() ?? undefined)
+    this.observeEngine()
     this.draw()
   }
 

@@ -16,7 +16,7 @@ npm run build
 2. The scripts build (`tools/egeScripts.ts build --out out/ege`, the same as `npm run ege:build`) compiles the game scripts into `out/ege`.
 3. The web build (`npm run build`, which runs `npm run web:build`) runs the audio bake, the UI font bundle and the `@royal-fiesta/web` build into `apps/web/dist`, then `tools/cosmeticThumbs.ts`.
 
-Every command that reads `apps/web/dist` has `g7-offline-web-build` upstream in its `after` chain, so a served or captured build is always complete.
+The six `g7-online-*` entries (`g7-online-unit-check`, `g7-online-check`, `g7-online-clean`, `g7-online-render`, `g7-online-fresh` and `g7-online-judge`) each have `g7-offline-web-build` upstream in their `after` chains, so `apps/web/dist` is built before any of them reads it. Of the `g7-offline-*` entries, `g7-offline-bricks-build` and `g7-offline-scripts-build` run before `g7-offline-web-build`, and each entry from `g7-offline-typecheck` on has it upstream.
 
 ## 2. Serving the build for the online harness
 
@@ -25,17 +25,19 @@ The server is `tools/play.ts` (`npm run play`), a Node `http` static server over
 - Port: 5191. `play.ts` defaults to 5173, which is not the relay origin, so pass `--port 5191` or set `RF_PLAY_PORT=5191`.
 - Origin: `http://localhost:5191`. `docs/network.md` names it as the origin the production relay admits. It is also the default `--url` of `tools/onlineChromes.mjs`, `http://localhost:5191/game.html`.
 - Bind: every interface by default, so a phone on the same network can open it. `RF_PLAY_HOST=127.0.0.1` keeps the server local.
+- Build: unless `RF_PLAY_SKIP_BUILD=1` is set, `npm run play` runs the audio bake, the UI font bundle and the `@royal-fiesta/web` build before it serves. That is section 1 without the `tools/cosmeticThumbs.ts` step. To serve exactly the section 1 build, run section 1 first and start the server with `RF_PLAY_SKIP_BUILD=1` (a test seam that `tools/play.ts` reads).
 
 ```
 npm run play -- --check --port 5191   # starts, probes game.html, play.html and the JS asset, then stops
 npm run play -- --port 5191           # serves until stopped
+RF_PLAY_SKIP_BUILD=1 npm run play -- --port 5191   # serves the apps/web/dist that section 1 built, without rebuilding it
 ```
 
-`docs/network.md` also records that a localhost page gets a dev lobby that starts 10 s after the first player. Client 2 must report client 1's lobby id before the round starts. If it misses that window, the harness reports the failed `client 2 same lobby` wait with its last state.
+`docs/network.md` also records that a localhost page gets a dev lobby that starts 10 s after the first player. Client 2 must report client 1's lobby id before the round starts. If it misses that window, client 2 never reports that lobby id, and the harness reports the failed `client 2 same lobby` wait with client 2's last state when the deadline passes.
 
 ## 3. Pages
 
-- `http://localhost:5191/game.html?engine=1` runs the game on the engine backend. `selectGameBackend` in `apps/web/src/game/engineBackend.ts` accepts only `1` for the engine. No value or `0` keeps the legacy game, and any other value is refused.
+- `http://localhost:5191/game.html?engine=1` runs the game on the engine backend. `selectGameBackend` in `apps/web/src/game/engineBackend.ts` accepts only `1` for the engine. An absent `engine` parameter or `engine=0` keeps the legacy game, and any other value, including an empty `engine=`, is refused.
 - `http://localhost:5191/engine-show.html` is the dedicated page for the sixty-seat show. It runs in local mode with one human by default. `?mode=online` selects the online mode used by the online capture stage, and `humans` sets the human count (`apps/web/src/engineShow/main.ts:16-17`).
 
 ## 4. Host acceptance
@@ -64,9 +66,9 @@ Flags, from contract `onlineChromes engine CLI`:
 | `--until round-ended` | State-driven completion. `show-ended` waits for `podium-ready` and `hub-returned` instead. |
 | `--deadline 900` | Overall budget in seconds (default 900). |
 | `--url`, `--server` | The served page and the relay. |
-| `--chrome`, `--port`, `--boot` | The Chrome binary (default `C:/Program Files/Google/Chrome/Application/chrome.exe`, or `CHROME`), client 1's debugging port (client 2 uses the next one; default 9341), and seconds allowed for a Chrome to open its page (default 30). |
+| `--chrome`, `--port`, `--boot` | The Chrome binary (default `C:/Program Files/Google/Chrome/Application/chrome.exe`, or `CHROME`), client 1's debugging port (client 2 uses the next one; default 9341), and the extra seconds, on top of a fixed 30 s window, that a Chrome gets to open its page (default 30). |
 
-The harness fails, printing the client name and its last state, when a transition is missing, stalled (no tick change for 30 s) or errored, or when the deadline passes.
+The harness fails, printing the client name and its last state, when a transition reports an error, when a client's tick stops changing for 30 s once both clients are in a match, or when the deadline passes with a transition still missing.
 
 ### What counts as success
 
@@ -85,7 +87,7 @@ A successful run ends with these lines. The second one must report both Chromes 
 [harness] closed 2 owned Chromes
 ```
 
-Exit codes: 0 success; 1 a failed, stalled or errored transition, a deadline or a signal; 2 invalid arguments. On every exit the harness kills only the Chromes it spawned. It sends SIGTERM, waits 5 s, then sends SIGKILL, and prints how many it closed. A live process or printed diagnostics alone is never success.
+Exit codes: 0 success; 1 a failed, stalled or errored transition, a deadline or a signal; 2 invalid arguments. On every exit the harness kills only the Chromes it spawned. It sends SIGTERM, waits up to 5 s for each exit, sends SIGKILL only to a Chrome still running, and prints how many it closed. A live process or printed diagnostics alone is never success.
 
 The run never happens in a model sandbox and never with software Chrome. It uses the physical GPU Chrome on the host browser machine.
 

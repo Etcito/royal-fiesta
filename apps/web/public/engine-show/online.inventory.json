@@ -37,9 +37,9 @@
     "args": {
       "scenario": "engine-online-background-client-podium",
       "testMode": true,
-      "seed": 7,
+      "seed": 10,
       "humans": 2,
-      "plan": [60, 12, 1]
+      "plan": [60, 1]
     },
     "require": [
       "backend eq \"engine\"",

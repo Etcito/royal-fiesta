@@ -13,7 +13,6 @@ import type { CourseV1 } from '@royal-fiesta/game/courseV1'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import type { RenderTarget } from '@royal-fiesta/game/render/port'
 import { encodeInput } from '@royal-fiesta/sim/input'
-import type { MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import schemaText from '../../../../ege.schema.json?raw'
 import { browserGameAssets, loadV1Courses } from '../content/v1Data.ts'
@@ -43,6 +42,8 @@ export interface EngineRoundPage {
   view: SceneView
   port: ResizablePort
   bridge: ReturnType<typeof roundRenderBridge>
+  /** Refreshes the adapter for a round tick that actually executed and observes it once; a repeated tick is a no-op. */
+  observe(): void
   /** The scene follows the round (sim refresh, view update, bridge sync) without drawing. */
   advance(dtS: number): void
   /** Draws the current scene. */
@@ -57,6 +58,18 @@ async function fetchScripts(): Promise<ArrayBuffer> {
   const response = await fetch(RF_EGE_SCRIPTS_URL)
   if (!response.ok) refuse(AREA, RF_EGE_SCRIPTS_URL, `answered ${response.status}; build the page with the scripts plugin`)
   return response.arrayBuffer()
+}
+
+/**
+ * G7.4: refreshes the read adapter for a round tick that actually executed and observes it once. The animation
+ * driver steps for that tick before any draw or later tick; a presentation-only advance (settle) repeats the
+ * same tick and changes nothing. Returns the tick now observed.
+ */
+export function observeRoundTick(sim: EngineSceneSim, view: SceneView, round: EngineRound, observed: number): number {
+  if (round.tick === observed) return observed
+  sim.refresh(round)
+  view.observeTick(sim)
+  return round.tick
 }
 
 /**
@@ -112,14 +125,17 @@ export async function loadEngineRoundPage(args: RoundRunArgs, canvas: HTMLCanvas
   })
   const bridge = roundRenderBridge(port.raaEngine(), scene.scene)
   let disposed = false
+  let observedTick = -1
+  const observe = (): void => { observedTick = observeRoundTick(sim, view, round, observedTick) }
   const advance = (dtS: number): void => {
-    sim.refresh(round)
-    view.update(sim as unknown as MatchSim, null, 1, dtS)
+    observe()
+    view.update(sim, null, 1, dtS)
     bridge.sync(engine.view(round.world, 1))
   }
   const render = (): void => { port.render() }
   return {
     engine, round, scene, course, sim, view, port, bridge,
+    observe,
     advance,
     render,
     drawFrame(dtS) {
@@ -192,6 +208,7 @@ function startLive(page: EngineRoundPage, args: RoundRunArgs, stage: HTMLElement
     accumulator += dtS
     while (accumulator >= stepS) {
       page.round.step(() => keyboardCode(held))
+      page.observe()
       accumulator -= stepS
     }
     page.drawFrame(dtS)
@@ -223,7 +240,7 @@ function boot(): void {
     page = await loadEngineRoundPage(args, document.querySelector<HTMLCanvasElement>('#view')!, document.querySelector<HTMLCanvasElement>('#shot')!)
     if (live) return startLive(page, args, stage)
     const run = createRoundRun(page.round, args, page.course)
-    while (run.step());
+    while (run.step()) page.observe()
     page.drawFrame(1 / 60)
   }, (state, message) => {
     status.textContent = message === undefined ? state : `${state}: ${message}`

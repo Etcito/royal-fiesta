@@ -1,6 +1,7 @@
-import type { WorldState } from '@etcito/game-engine/world-state'
-import { CharMode } from '@royal-fiesta/sim/character/constants'
+import type { RecordValues, WorldState } from '@etcito/game-engine/world-state'
+import { CharMode, SLIDE_STROKE, strokeAnimPhase } from '@royal-fiesta/sim/character/constants'
 import type { ObstacleSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
+import { SURFACES } from '@royal-fiesta/sim/course'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import type { CharacterView, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { clearCharacterDetail, Phase } from '@royal-fiesta/sim/match/matchSim'
@@ -9,18 +10,23 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import type { Pose } from '@royal-fiesta/sim/vec'
 import type { CourseV1 } from '../courseV1.ts'
 import type { CameraPose } from '../render/port.ts'
+import type { SceneReadView } from '../render/sceneReadView.ts'
 import type { RoundObservation } from './observe.ts'
 import type { EngineRound } from './round.ts'
 import type { EmittedScene } from './sceneEmitter.ts'
 
 const POSE_STRIDE = 23
 const SIGNAL_PREFIXES = ['switches', 'levers', 'logic'] as const
+// G6 E3: the character timer value of a belly slide's airtime (packages/sim/src/character/system.ts:96).
+const SLIDE_AIR_TIMER = -1
 
 /**
  * Handoff: Engine round page: load, scene view, render bridge, composite and live mode draws this through SceneView
  * and uses focusCamera for its `focus` view. One observation and one pose call serve each drawn frame.
+ * G7.4: the page presents this read-only adapter through SceneReadView and calls observeTick once per executed
+ * round tick; step() stays a compatibility no-op for older callers and is outside the read interface.
  */
-export class EngineSceneSim {
+export class EngineSceneSim implements SceneReadView {
   tick = 0
   readonly setup: { playerCount: 8 } = { playerCount: 8 }
   private readonly courseData: ResolvedCourse
@@ -72,7 +78,14 @@ export class EngineSceneSim {
   }
 
   character(p: number, out: CharacterView): CharacterView {
-    const c = this.observation!.seats[p]
+    if (this.observation === null) {
+      refuse('ege-view', 'refresh', 'was never called; refresh the adapter with an engine round before reading a seat')
+    }
+    if (!Number.isInteger(p) || p < 0 || p >= this.setup.playerCount) {
+      refuse('ege-view', `character(${p})`, `is outside 0..${this.setup.playerCount - 1}; pass a seat of this round`)
+    }
+    const c = this.observation.seats[p]
+    // `out` is the scene's one view for every seat: a parked or missing seat keeps no earlier seat's detail.
     clearCharacterDetail(out)
     const base = (this.seatBase + p) * POSE_STRIDE
     out.pos.x = this.poses[base]
@@ -87,6 +100,7 @@ export class EngineSceneSim {
     out.status = c.status
     out.teleportTick = c.teleportTick
     out.parked = c.mode === CharMode.parked
+    if (!out.parked) this.seatDetail(c.entity, out)
     return out
   }
 
@@ -142,7 +156,50 @@ export class EngineSceneSim {
     return false
   }
 
+  // Compatibility only: the page steps its EngineRound (and observes each tick) instead of this read adapter.
   step(_inputs: readonly PlayerInput[]): void {}
+
+  /**
+   * G7.4: RoundObservation omits the animation detail (stroke, slide, carry, surface), so it is read from the
+   * engine's own character/surface records once per tick and copied the way MatchSim.character copies it.
+   * A seat without a character record keeps no detail; a parked seat never reaches here.
+   */
+  private seatDetail(entity: number, out: CharacterView): void {
+    const round = this.round
+    if (round === null) return
+    const state = this.state ?? (this.state = round.worldState())
+    const record = state.components.character?.[String(entity)]
+    if (record === undefined) return
+    const mode = record.mode as number
+    const timer = record.timer as number
+    const strokeTimer = record.stroke_timer as number
+    out.strokeTimer = strokeTimer
+    out.strokePhase = mode === CharMode.swim ? undefined : strokeAnimPhase(SLIDE_STROKE, strokeTimer)
+    out.strokeStart = SLIDE_STROKE.startFrac
+    out.slideSpeed = record.slide_speed as number
+    out.carry = record.carry as number
+    out.slideAir = mode === CharMode.air && timer === SLIDE_AIR_TIMER
+    out.surface = this.groundSurface(state, record)
+  }
+
+  // The character's ground is a mechanism body or course obstacle; its `surface` record names the surface kind.
+  private groundSurface(state: WorldState, record: RecordValues): string {
+    const item = record.ground_item as number
+    const body = record.ground_body as number
+    const obstacle = record.ground_obstacle as number
+    let entity = -1
+    if (item >= 0 && body >= 0) {
+      const spec = this.courseData.mechanisms?.items[item]
+      const part = spec?.bodies[body]
+      if (spec !== undefined && part !== undefined) entity = this.scene.itemBodies.get(`${spec.id}/${part.id}`) ?? -1
+    } else if (obstacle >= 0) {
+      entity = this.scene.obstacleEntities[obstacle] ?? -1
+    }
+    if (entity < 0) return 'normal'
+    const surface = state.components.surface?.[String(entity)]
+    if (surface === undefined) return 'normal'
+    return SURFACES[surface.kind as number] ?? 'normal'
+  }
 
   private writePose(offset: number, out: Pose): Pose {
     const base = offset * POSE_STRIDE

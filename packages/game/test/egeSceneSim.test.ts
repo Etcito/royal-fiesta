@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { WorldState } from '@etcito/game-engine/world-state'
-import { CharMode } from '@royal-fiesta/sim/character/constants'
+import { CharMode, SLIDE_STROKE, strokeAnimPhase } from '@royal-fiesta/sim/character/constants'
 import type { CharacterView, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import type { Pose } from '@royal-fiesta/sim/vec'
@@ -120,15 +120,97 @@ test('EngineSceneSim copies a character from its observation and seat pose', () 
   assert.equal(view.carry, undefined)
   assert.equal(view.strokeTimer, undefined)
 
+  view.strokeTimer = 5
+  view.strokePhase = 0.5
+  view.strokeStart = 0.5
+  view.slideSpeed = 2
+  view.carry = 1
+  view.surface = 'ice'
+  view.slideAir = true
   sim.character(6, view)
   assert.equal(view.mode, CharMode.parked)
   assert.equal(view.parked, true)
   assert.deepEqual(view.pos, { x: 12, y: 18, z: 30 })
+  // A parked seat keeps no earlier seat's animation detail.
+  for (const key of ['strokeTimer', 'strokePhase', 'strokeStart', 'slideSpeed', 'carry', 'surface', 'slideAir'] as const) {
+    assert.equal(view[key], undefined, `${key} is cleared on a parked seat`)
+  }
+  assert.throws(() => sim.character(8, view), /\[ege-view\] character\(8\)/)
 
   const state2 = sim.phase({} as MatchViewState)
   assert.equal(state2.tick, 9)
   assert.equal(state2.phase, Phase.playing)
   assert.equal(state2.courseIndex, 0)
+})
+
+test('EngineSceneSim reads stroke, slide, carry and surface detail from engine state', () => {
+  const course = {
+    id: 'ege-view-detail',
+    sim: {
+      id: 'ege-view-detail',
+      obstacles: [{ id: 'ice-pad' }],
+      mechanisms: { items: [{ id: 'door', bodies: [{ id: 'leaf' }] }] },
+    },
+  } as unknown as CourseV1
+  const scene = {
+    obstacleEntities: [700],
+    itemBodies: new Map([['door/leaf', 701]]),
+    seatEntities: [0, 1, 2, 3, 4, 5, 6, 7],
+    index() { return -1 },
+  } as unknown as EmittedScene
+  const seats = Array.from({ length: 8 }, (_, i) => seat(i, 0, 1))
+  const observation = {
+    tick: 5, phase: 'playing', alive: 8, qualified: 0, eliminated: 0,
+    seats, faults: 0, events: {},
+  } as RoundObservation
+  const poses = new Float32Array(8 * 23)
+  const state: WorldState = {
+    tick: 5, entities: [700, 701], resources: {},
+    components: {
+      character: {
+        '0': { mode: CharMode.air, timer: -1, slide_speed: 4.5, carry: 2, stroke_timer: 12, ground_item: -1, ground_body: -1, ground_obstacle: -1 },
+        '1': { mode: CharMode.ground, timer: 0, slide_speed: 0, carry: 0, stroke_timer: 0, ground_item: 0, ground_body: 0, ground_obstacle: -1 },
+        '2': { mode: CharMode.swim, timer: 0, slide_speed: 0, carry: 0, stroke_timer: 7, ground_item: -1, ground_body: -1, ground_obstacle: 0 },
+      },
+      surface: {
+        '700': { kind: 1, friction: 0.1, obstacle: 0 },
+        '701': { kind: 3, friction: 0.9, obstacle: -1 },
+      },
+    },
+  }
+  const sim = new EngineSceneSim(course, scene)
+  sim.refresh(fakeRound(observation, poses, state, []))
+  const view = {
+    pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 },
+    mode: 0, status: 0, parked: false, teleportTick: -1,
+  } as CharacterView
+
+  // A slide in air: the timer, derived phase, authored start and airtime all reach the view.
+  sim.character(0, view)
+  assert.equal(view.strokeTimer, 12)
+  assert.equal(view.strokePhase, strokeAnimPhase(SLIDE_STROKE, 12))
+  assert.equal(view.strokeStart, SLIDE_STROKE.startFrac)
+  assert.equal(view.slideSpeed, 4.5)
+  assert.equal(view.carry, 2)
+  assert.equal(view.slideAir, true)
+  assert.equal(view.surface, 'normal')
+
+  // A ground that is a mechanism body reports that body's surface.
+  sim.character(1, view)
+  assert.equal(view.surface, 'rubber')
+
+  // A ground that is a course obstacle reports the obstacle's surface; swimming has no stroke phase.
+  sim.character(2, view)
+  assert.equal(view.surface, 'ice')
+  assert.equal(view.strokeTimer, 7)
+  assert.equal(view.strokePhase, undefined)
+  assert.equal(view.slideAir, false)
+
+  // A seat without a character record keeps no optional detail.
+  sim.character(3, view)
+  for (const key of ['strokeTimer', 'strokePhase', 'strokeStart', 'slideSpeed', 'carry', 'surface', 'slideAir'] as const) {
+    assert.equal(view[key], undefined, `${key} stays clear without a character record`)
+  }
 })
 
 test('focusCamera frames a feature from behind and above', () => {

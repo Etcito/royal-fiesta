@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { stripTypeScriptTypes } from 'node:module'
 import test from 'node:test'
 import { drawRoundHud, hudLines } from '../src/engineRound/hud.ts'
 import { createReadyGate } from '../src/engineRound/ready.ts'
@@ -6,6 +8,18 @@ import { DRAW_TICKS, SETTLE_FRAMES, runOffline, settle } from '../src/engineRoun
 import type { RoundFacts } from '../src/engineRound/run.ts'
 
 const turn = () => new Promise<void>(resolve => { setTimeout(resolve, 0) })
+
+function pageSource(): string {
+  return readFileSync(new URL('../src/engineRound/main.ts', import.meta.url), 'utf8')
+}
+
+// Execute the page's tick observer without importing its Vite-only documents.
+function observeRoundTickOf(source: string) {
+  const text = source.match(/export (function observeRoundTick\([\s\S]*?\n\})/)![1]
+  return new Function(`${stripTypeScriptTypes(text)}; return observeRoundTick`)() as
+    (sim: { tick: number; refresh(round: { tick: number }): void }, view: { observeTick(seen: { tick: number }): void },
+      round: { tick: number }, observed: number) => number
+}
 
 test('a pending load keeps the gate loading', async () => {
   const shown: Array<[string, string | undefined]> = []
@@ -71,6 +85,46 @@ test('drawRoundHud records one band and five text lines', () => {
   drawRoundHud(ctx, lines, 1920, 1080)
   assert.deepEqual(rects, [[24, 24, 388, 212]])
   assert.deepEqual(texts, lines.map((line, k) => [line, 48, 40 + 36 * k]))
+})
+
+test('the engine page observes each executed round tick and never casts the adapter to MatchSim', () => {
+  const source = pageSource()
+  assert.equal(/as unknown as MatchSim/.test(source), false, 'the page presents the read view, not a MatchSim')
+  assert.equal(source.includes("sim/match/matchSim"), false, 'the page imports no MatchSim')
+  assert.match(source, /view\.observeTick\(sim\)/, 'the page observes the adapter explicitly')
+  const live = source.match(/const frame = \(now: number\) => \{[\s\S]*?\n  \}/)![0]
+  const step = live.indexOf('page.round.step(')
+  const observe = live.indexOf('page.observe()')
+  const draw = live.indexOf('page.drawFrame(')
+  assert.ok(step >= 0 && observe > step, 'a live tick is observed before the next tick')
+  assert.ok(draw > observe, 'the live frame draws only after its executed ticks were observed')
+  assert.match(source, /while \(run\.step\(\)\) page\.observe\(\)/, 'the boot fast-forward observes each executed tick too')
+})
+
+test('a presentation-only settle repeats the final tick without observing it again', async () => {
+  const observe = observeRoundTickOf(pageSource())
+  const observed: number[] = []
+  let refreshes = 0
+  const sim = { tick: 0, refresh(round: { tick: number }) { refreshes++; sim.tick = round.tick } }
+  const view = { observeTick(seen: { tick: number }) { observed.push(seen.tick) } }
+  let observedTick = -1
+  let steps = 0
+  let done = false
+  const run = {
+    get done() { return done },
+    step() { if (done) return false; steps++; if (steps >= 5) done = true; return true },
+  }
+  const page = {
+    advance() { observedTick = observe(sim, view, { tick: steps }, observedTick) },
+    render() {},
+  }
+  const hooks = { tick: () => {}, firstFrame: async () => {}, device: () => undefined, phase: () => {} }
+  assert.equal(await runOffline(run, page, hooks, 5), 5)
+  assert.deepEqual(observed, [1, 2, 3, 4, 5], 'each executed tick is observed once and in order')
+  assert.equal(refreshes, 5)
+  await settle(page, undefined)
+  assert.deepEqual(observed, [1, 2, 3, 4, 5], 'settle frames draw the final tick without observing it again')
+  assert.equal(refreshes, 5, 'a repeated presentation tick does not refresh the adapter')
 })
 
 test('runOffline advances every tick but draws only the first, every DRAW_TICKS-th and the capture tick', async () => {

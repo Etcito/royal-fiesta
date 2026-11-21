@@ -77,7 +77,7 @@ interface WorldMemo {
 }
 
 /** A copied `show_lifecycle_input` patch: the host facts are applied before the next rules step. */
-function patchLifecycle(
+export function patchLifecycle(
   engine: EngineInstance,
   world: number,
   layout: SchemaLayout,
@@ -91,14 +91,14 @@ function patchLifecycle(
 }
 
 /** Patches the choice of an already imported show_vote row. */
-function patchVote(engine: EngineInstance, world: number, layout: SchemaLayout, entity: number, choice: number): void {
+export function patchVote(engine: EngineInstance, world: number, layout: SchemaLayout, entity: number, choice: number): void {
   patchRecord(engine, world, layout, 'show_vote', entity, decl => (view, at) => {
     writeField(view, at, decl, 'choice', choice)
   })
 }
 
 /** Writes the selected course's authored gameplay durations before the round is acknowledged ready. */
-function patchClock(engine: EngineInstance, world: number, layout: SchemaLayout, roundTicks: number, overtimeTicks: number): void {
+export function patchClock(engine: EngineInstance, world: number, layout: SchemaLayout, roundTicks: number, overtimeTicks: number): void {
   patchRecord(engine, world, layout, 'show_clock', undefined, decl => (view, at) => {
     writeField(view, at, decl, 'round_ticks', roundTicks)
     writeField(view, at, decl, 'overtime_ticks', overtimeTicks)
@@ -153,7 +153,7 @@ function writeField(view: DataView, at: number, decl: LayoutDecl, name: string, 
 }
 
 /** The EGT1 bytes ('EGT1', version 1) of one imported component row: source id, one record, no body. */
-function entityBytes(decl: LayoutDecl, values: Readonly<Record<string, number>>): Uint8Array {
+export function entityBytes(decl: LayoutDecl, values: Readonly<Record<string, number>>): Uint8Array {
   const record = new Uint8Array(decl.size)
   const view = new DataView(record.buffer)
   for (const [name, value] of Object.entries(values)) writeField(view, 0, decl, name, value)

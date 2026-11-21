@@ -1,6 +1,6 @@
 // The end screen model: the podium of the final ranking, its crowns and the golden ticket recipient.
 // The ticket is only named here; M8/M9 grant it (offline through the economy stub, online by the host).
-import type { ShowState, ZoneRoundResult } from '../net/zoneRounds.ts'
+import type { ZoneRoundResult } from '../net/zoneRounds.ts'
 
 export interface EndScreenModel {
   winner: number
@@ -13,14 +13,14 @@ const CROWNS = ['gold', 'silver', 'bronze'] as const
 const SHOW_WINNER_MS = 4000
 
 // The last result flagged final; without one, the last result of the show.
-function finalOf(show: ShowState): ZoneRoundResult | null {
+function finalOf(show: { readonly rounds: readonly ZoneRoundResult[] }): ZoneRoundResult | null {
   for (let i = show.rounds.length - 1; i >= 0; i--) {
     if (show.rounds[i].final) return show.rounds[i]
   }
   return show.rounds[show.rounds.length - 1] ?? null
 }
 
-export function endScreen(show: ShowState): EndScreenModel {
+export function endScreen(show: { readonly rounds: readonly ZoneRoundResult[] }): EndScreenModel {
   const final = finalOf(show)
   const seats: number[] = []
   const seen = new Set<number>()

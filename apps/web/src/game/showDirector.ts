@@ -6,12 +6,80 @@ import { elimShow, elimShowAt, elimSkip } from '../../../../packages/game/src/fl
 import type { ElimShowModel } from '../../../../packages/game/src/flow/elimShow.ts'
 import { endScreen } from '../../../../packages/game/src/flow/endScreen.ts'
 import type { EndScreenModel } from '../../../../packages/game/src/flow/endScreen.ts'
-import type { ZoneFullMatch } from '../../../../packages/game/src/net/zoneFullMatch.ts'
+import type { ZoneRoundResult } from '../../../../packages/game/src/net/zoneRounds.ts'
+import type { EngineRoundResult, EngineShowRuntime } from '../../../../packages/game/src/ege/showTypes.ts'
 import type { Action, GameScreen } from '../../../../packages/game/src/screens/nav.ts'
 
-/** Only the full-match fields the presentation reads; no simulation or world dependency. */
-export interface ShowPort extends Pick<ZoneFullMatch, 'candidates' | 'show' | 'done' | 'champion' | 'alive' | 'vote'> {
-  readonly round: { readonly plan: { readonly index: number } } | null
+export interface ShowPortRound {
+  readonly plan: { readonly index: number }
+}
+
+/** The read-only show fields the presentation reads; no simulation or world dependency. */
+export interface ShowPort {
+  readonly candidates: readonly string[] | null
+  readonly show: { readonly rounds: readonly ZoneRoundResult[] }
+  readonly done: boolean
+  readonly champion: number | null
+  readonly alive: readonly number[]
+  vote(choice: number): void
+  readonly round: ShowPortRound | null
+}
+
+function sameList(a: readonly unknown[] | null, b: readonly unknown[]): boolean {
+  return a !== null && a.length === b.length && a.every((value, i) => value === b[i])
+}
+
+function copyResult(result: EngineRoundResult): ZoneRoundResult {
+  return {
+    index: result.index, map: result.map, course: result.course, kind: result.kind, final: result.final,
+    playoff: result.playoff, endTick: result.endTick, reason: result.reason,
+    ranking: [...result.ranking], qualified: [...result.qualified], eliminated: [...result.eliminated],
+    points: [...result.points], teamScores: [...result.teamScores], champion: result.champion,
+  }
+}
+
+/** Handoff: Game switch share 4/8: ShowMode presents an engine show - engineShowPort(runtime, localSeat) builds the ShowPort that ShowMode passes to new ShowDirector(port, info, names, localSeat, voteMs, introMs); today it is called only by the tests. It reads runtime.snapshot() on every getter and copies the candidates, rounds and alive lists, keeping each cached reference while its content is unchanged. */
+export function engineShowPort(runtime: EngineShowRuntime, localSeat: number): ShowPort {
+  let candidates: readonly string[] | null = null
+  let alive: readonly number[] = []
+  let show: { readonly rounds: readonly ZoneRoundResult[] } = { rounds: [] }
+  let round: ShowPortRound | null = null
+  return {
+    get candidates() {
+      const snapshot = runtime.snapshot()
+      if (snapshot.screen !== 'vote') return null
+      if (!sameList(candidates, snapshot.candidates)) candidates = [...snapshot.candidates]
+      return candidates
+    },
+    get show() {
+      const { results } = runtime.snapshot()
+      if (results.length !== show.rounds.length) show = { rounds: results.map(copyResult) }
+      return show
+    },
+    get done() {
+      return runtime.snapshot().screen === 'done'
+    },
+    get champion() {
+      return runtime.snapshot().champion
+    },
+    get alive() {
+      const snapshot = runtime.snapshot()
+      if (!sameList(alive, snapshot.alive)) alive = [...snapshot.alive]
+      return alive
+    },
+    vote(choice: number): void {
+      const snapshot = runtime.snapshot()
+      if (!Number.isInteger(choice) || choice < 0 || choice >= snapshot.candidates.length) return
+      if (snapshot.screen !== 'vote' || !snapshot.seatOf.includes(localSeat)) return
+      runtime.vote(localSeat, choice)
+    },
+    get round() {
+      const snapshot = runtime.snapshot()
+      if (snapshot.screen === 'vote') return null
+      if (round === null || round.plan.index !== snapshot.round) round = { plan: { index: snapshot.round } }
+      return round
+    },
+  }
 }
 
 type Phase = 'vote' | 'load' | 'countdown' | 'round' | 'elimShow' | 'podium' | 'end'

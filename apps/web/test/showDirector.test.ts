@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ShowDirector } from '../src/game/showDirector.ts'
+import { ShowDirector, engineShowPort } from '../src/game/showDirector.ts'
 import type { ShowPort } from '../src/game/showDirector.ts'
+import type { EngineRoundResult, EngineShowRuntime, EngineShowSnapshot } from '../../../packages/game/src/ege/showTypes.ts'
 import type { ShowState, ZoneRoundResult } from '../../../packages/game/src/net/zoneRounds.ts'
 
 function fixture() {
@@ -356,4 +357,110 @@ test('round preparation notifications cannot cover eliminations or votes; only a
   const ready = sample(director.step(null, 0))
   assert.equal(ready.loading, false)
   assert.equal(ready.countdown?.label, '3')
+})
+
+// A scripted runtime: each snapshot() call returns fresh arrays, so the port's caching is what keeps references.
+function scriptedRuntime(steps: EngineShowSnapshot[]) {
+  const votes: number[][] = []
+  const state = { at: 0 }
+  const runtime = {
+    snapshot: () => JSON.parse(JSON.stringify(steps[state.at])) as EngineShowSnapshot,
+    vote: (seat: number, candidate: number) => { votes.push([seat, candidate]) },
+  } as unknown as EngineShowRuntime
+  return { runtime, votes, state }
+}
+
+function snap(screen: EngineShowSnapshot['screen'], extra: Partial<EngineShowSnapshot> = {}): EngineShowSnapshot {
+  return { tick: 0, round: 0, screen, seatOf: [0, 1, 2], alive: [0, 1, 2], candidates: ['B', 'C', 'D'],
+    results: [], champion: null, faults: 0, ...extra }
+}
+
+function engineResult(over: Partial<EngineRoundResult> = {}): EngineRoundResult {
+  return { index: 0, map: 'B', course: 'fixture', kind: 'race', final: false, playoff: false, endTick: 300,
+    reason: 'target', ranking: [2, 0, 1], qualified: [2], eliminated: [0, 1], points: [3, 0, 0],
+    teamScores: [], champion: -1, ...over }
+}
+
+test('engine port drives vote, loading, playing, results, podium and done to a champion', () => {
+  const final = engineResult({ final: true, kind: 'final', reason: 'crown', ranking: [5, 1], qualified: [5],
+    eliminated: [1], points: [2, 0], champion: 5 })
+  const steps = [
+    snap('vote'),
+    snap('loading', { round: 0, candidates: [] }),
+    snap('playing', { round: 0, candidates: [] }),
+    snap('results', { round: 0, candidates: [], results: [final], seatOf: [5, 1] }),
+    snap('podium', { round: 1, candidates: [], results: [final], champion: 5, seatOf: [5, 1] }),
+    snap('done', { round: 1, candidates: [], results: [final], champion: 5, seatOf: [5, 1] }),
+  ]
+  const { runtime, state } = scriptedRuntime(steps)
+  const port = engineShowPort(runtime, 0)
+  const director = new ShowDirector(port, map => ({ name: `Map ${map}`, kind: 'race' }), seat => `Bean ${seat}`, 0, 1000, 0)
+  const screens: string[] = []
+  const observe = (screen: string) => { if (screens.at(-1) !== screen) screens.push(screen) }
+  observe(director.step(null, 0).screen)
+  state.at = 1
+  assert.equal(director.step(null, 0).loading, true)
+  director.worldReady(0)
+  director.step(null, 0)
+  observe(director.step(null, 4000).screen)
+  state.at = 2
+  observe(director.step(null, 0).screen)
+  state.at = 3
+  observe(director.step(null, 0).screen)
+  assert.equal(director.step(null, 0).screen, 'elimShow')
+  state.at = 4
+  observe(director.step(null, 0).screen)
+  state.at = 5
+  observe(director.step(null, 9000).screen)
+  const end = director.step(null, 2500)
+  observe(end.screen)
+  assert.equal(end.endScreen?.winner, 5)
+  assert.deepEqual(screens, ['vote', 'round', 'elimShow', 'podium', 'endScreen'])
+})
+
+test('a vote pick reaches runtime.vote once; an off-roster seat or invalid choice calls nothing', () => {
+  const { runtime, votes } = scriptedRuntime([snap('vote')])
+  const port = engineShowPort(runtime, 0)
+  port.vote(1)
+  assert.deepEqual(votes, [[0, 1]])
+  port.vote(3)
+  port.vote(-1)
+  port.vote(0.5)
+  assert.deepEqual(votes, [[0, 1]])
+  engineShowPort(runtime, 9).vote(1)
+  assert.deepEqual(votes, [[0, 1]])
+  const director = new ShowDirector(port, () => ({ name: 'Map', kind: 'race' }), String, 0, 1000)
+  director.step(null, 0)
+  assert.deepEqual(director.pick(2), ['flow.vote-confirm'])
+  assert.deepEqual(votes, [[0, 1], [0, 2]])
+})
+
+test('candidates, alive and round keep their references while the snapshot content is unchanged', () => {
+  const { runtime, state } = scriptedRuntime([snap('vote'), snap('vote'), snap('loading', { round: 2 }), snap('loading', { round: 2 })])
+  const port = engineShowPort(runtime, 0)
+  assert.equal(port.candidates, port.candidates)
+  assert.equal(port.candidates?.join(), 'B,C,D')
+  const voting = port.round
+  assert.equal(voting, null)
+  assert.equal(port.alive, port.alive)
+  state.at = 2
+  assert.equal(port.candidates, null)
+  assert.equal(port.round, port.round)
+  assert.equal(port.round?.plan.index, 2)
+  const round = port.round
+  state.at = 3
+  assert.equal(port.round, round)
+  assert.equal(port.show, port.show)
+  assert.equal(port.show.rounds.length, 0)
+})
+
+test('rounds map every EngineRoundResult field one-to-one into copies', () => {
+  const source = engineResult({ teamScores: [4, 2], champion: -1 })
+  const { runtime } = scriptedRuntime([snap('results', { results: [source] })])
+  const rounds = engineShowPort(runtime, 0).show.rounds
+  assert.deepEqual(rounds, [{ index: 0, map: 'B', course: 'fixture', kind: 'race', final: false, playoff: false,
+    endTick: 300, reason: 'target', ranking: [2, 0, 1], qualified: [2], eliminated: [0, 1], points: [3, 0, 0],
+    teamScores: [4, 2], champion: -1 }])
+  assert.notEqual(rounds[0].ranking, source.ranking)
+  assert.notEqual(rounds[0].teamScores, source.teamScores)
 })

@@ -2,7 +2,7 @@ import type { EgeScene } from '@etcito/game-engine'
 import { assemblyScene, buildAssembly } from '@etcito/game-engine/formats'
 import { schemaLayout } from '@etcito/game-engine/script'
 import type { ZoneGrid } from '@etcito/game-engine/zones'
-import type { LevelSpec, ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
+import type { ProfileName, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { legacyLevel } from '@royal-fiesta/sim/course'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import { refuse } from '@royal-fiesta/sim/refusal'
@@ -181,10 +181,13 @@ function planOf(config: EngineShowConfig): readonly number[] {
   return plan
 }
 
-function levelOf(config: EngineShowConfig, map: SchedMap): LevelSpec {
-  const course = config.courses[map.course]
-  const sim = resolveCourse(config, course)
-  return sim.level ?? legacyLevel(sim)
+/**
+ * The selected course with the committed season round kind and final rule applied. Authored geometry and
+ * every other gameplay setting stay those of the course; only the round variant comes from the catalog.
+ */
+function roundCourse(course: CourseV1, sim: ResolvedCourse, map: Pick<SchedMap, 'kind' | 'finalRule'>): CourseV1 {
+  const level = sim.level ?? legacyLevel(sim)
+  return { ...course, sim: { ...sim, level: { ...level, kind: map.kind, finalRule: map.finalRule } } }
 }
 
 /**
@@ -202,22 +205,24 @@ export function buildShowPhysicsScenes(
   course: CourseV1,
   seatOf: readonly number[],
   inputSlots: readonly number[],
+  round?: Pick<SchedMap, 'kind' | 'finalRule'>,
 ): ShowPhysicsScenes {
   requireEngine(config, ['show_seat', 'show_field'])
-  resolveCourse(config, course)
+  const sim = resolveCourse(config, course)
   validateRoster(config, seatOf, inputSlots)
   requireAssets(config, course)
   const grid = gridOf(config, course)
+  const selected = round === undefined ? course : roundCourse(course, sim, round)
   const seats = seatOf.slice()
   const slots = inputSlots.slice()
   const humans = seats.map(roomSeat => config.humans[roomSeat] === true)
   const setup = { profile: SHOW_PROFILE, seed: config.seed >>> 0 }
   const seat = emitEngineScene(config.engine, {
-    course, assets: config.assets, setup,
+    course: selected, assets: config.assets, setup,
     show: { worldKind: 'show_seat', seatOf: seats, inputSlots: slots, humans },
   })
   const field = emitEngineScene(config.engine, {
-    course, assets: config.assets, setup,
+    course: selected, assets: config.assets, setup,
     show: { worldKind: 'show_field', seatOf: seats, inputSlots: slots, humans },
   })
   return { seat, field, grid }
@@ -238,7 +243,6 @@ export function buildShowRulesScene(config: EngineShowConfig): EgeScene {
   const humans = humansOf(config)
   const season = validateSeason(config)
   const plan = planOf(config)
-  const level = levelOf(config, season[0])
   const cursor = 0
   const entities: unknown[] = [
     {
@@ -287,8 +291,10 @@ export function buildShowRulesScene(config: EngineShowConfig): EgeScene {
     name: 'show/clock',
     components: {
       show_clock: {
+        // The runtime writes the selected course's authored round and overtime caps before acknowledging
+        // readiness; the scene only seeds the shared intro duration and never a first-map fallback.
         owner: cursor, start_tick: -1, end_tick: -1, overtime_end_tick: -1, phase: 0, frozen: 0,
-        intro_ticks: PROFILES[SHOW_PROFILE].introTicks, round_ticks: level.timeCapTicks, overtime_ticks: level.overtimeTicks,
+        intro_ticks: PROFILES[SHOW_PROFILE].introTicks, round_ticks: 0, overtime_ticks: 0,
       },
     },
   })

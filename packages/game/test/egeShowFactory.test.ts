@@ -3,8 +3,13 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { loadEngine } from '@etcito/game-engine'
 import { schemaLayout } from '@etcito/game-engine/script'
+import { readWorldState } from '@etcito/game-engine/world-state'
 import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
+import { legacyLevel } from '@royal-fiesta/sim/course'
+import type { LevelSpec } from '@royal-fiesta/sim/course'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
+import { ROUND_KINDS } from '@royal-fiesta/sim/season/kinds'
+import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { loadCourseV1 } from '../src/courseV1.ts'
@@ -14,13 +19,14 @@ import type { World } from '../src/gameAsset.ts'
 import { showSceneOwnership } from '../src/ege/sceneEmitter.ts'
 import { buildShowHubScene, buildShowPhysicsScenes, buildShowRulesScene } from '../src/ege/showScene.ts'
 import { createEngineShowFactory } from '../src/ege/showFactory.ts'
-import { readShowRoundResult, readShowState } from '../src/ege/showState.ts'
+import { readShowRoundResult, readShowSelection, readShowState } from '../src/ege/showState.ts'
 import type { EngineShowConfig } from '../src/ege/showTypes.ts'
 import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
 
 const schemaText = readFileSync(new URL('../../../ege.schema.json', import.meta.url), 'utf8')
 const engine = await loadEngine()
 engine.setSchema(schemaText)
+const layout = schemaLayout(engine)
 const config = {
   engine, schemaText, identity: { backend: 'engine', schemaKey: schemaLayout(engine).key, moduleKey: 'publication' },
   season: [{ id: 'map', course: 0 }], courses: [{ id: 'course' }],
@@ -68,6 +74,8 @@ test('copies authoritative show state and strictly confirms the current result',
     assert.deepEqual(readShowState(config, world, 100, 0).results, [])
     assert.throws(() => readShowState(config, world, -1, 0), RefusalError)
     assert.throws(() => readShowState({ ...config, season: [] }, world, 0, 0), RefusalError)
+    // No committed show_used_map row: selection refuses instead of falling back to the first map.
+    assert.throws(() => readShowSelection(config, world, 0, 0), RefusalError)
   } finally { engine.freeWorld(world) }
 })
 
@@ -104,11 +112,13 @@ async function loadShowCourse(id: string): Promise<{ course: CourseV1; assets: M
 
 const raceLoaded = await loadShowCourse('s1-f-taffy-circuit')
 const hubLoaded = await loadShowCourse('hub-plaza')
+const survivalLoaded = await loadShowCourse('s1-i-honeycomb-heights')
 const race = raceLoaded.course
 const hub = hubLoaded.course
-const allAssets = new Map([...raceLoaded.assets, ...hubLoaded.assets])
+const survival = survivalLoaded.course
+const allAssets = new Map([...raceLoaded.assets, ...hubLoaded.assets, ...survivalLoaded.assets])
 const zones = new Map<string, ZonesFile>()
-for (const course of [race, hub]) {
+for (const course of [race, hub, survival]) {
   zones.set(course.id, await loadZonesFile(course.id, course.sim!, readRepoText))
 }
 const season = [
@@ -132,6 +142,19 @@ function slotsOf(humans: readonly boolean[], humanSeats: readonly number[]): num
     const slot = humanSeats.indexOf(room)
     return humans[room] ? (slot < 0 ? 0 : slot) : -1
   })
+}
+
+let showScriptPromise: Promise<Uint8Array<ArrayBuffer>> | undefined
+
+function showScriptBytes(): Promise<Uint8Array<ArrayBuffer>> {
+  showScriptPromise ??= (async () => {
+    const result = await (await rfCompiler()).compile(collectRfScripts(), schemaText)
+    const errors = result.diagnostics.filter(diagnostic => diagnostic.severity === 'error')
+    assert.equal(errors.length, 0, errors.map(formatRfDiagnostic).join('\n'))
+    assert.ok(result.wasm)
+    return result.wasm as Uint8Array<ArrayBuffer>
+  })()
+  return showScriptPromise
 }
 
 function checkShowScene(scene: ReturnType<typeof buildShowPhysicsScenes>['seat'], worldKind: 'show_seat' | 'show_field', slots: readonly number[]): void {
@@ -192,7 +215,9 @@ test('buildShowRulesScene seeds the rules state G7-SHOW-STATE-API decodes', () =
   const lifecycle = rules.entities.find(row => row.components?.show_lifecycle_input)!.components!.show_lifecycle_input
   assert.deepEqual(lifecycle, { owner: 0, ready_round: -1, confirmed_tick: 0 })
   const clock = rules.entities.find(row => row.components?.show_clock)!.components!.show_clock
-  assert.equal(clock.round_ticks, race.sim!.level!.timeCapTicks)
+  // The rules scene seeds no course cap: the runtime writes the selected authored cap before readiness.
+  assert.equal(clock.round_ticks, 0)
+  assert.equal(clock.overtime_ticks, 0)
   assert.equal(clock.intro_ticks, 60)
   assert.equal(clock.start_tick, -1)
   const world = engine.createWorld(JSON.stringify(rules))
@@ -278,20 +303,127 @@ test('show ownership refuses colliding zone identities and failed construction l
   assert.equal(nextWorld(), before + 1)
 })
 
-// ---- G7-SHOW-FACTORY: prepared factory (this card) -------------------------------------------------
+// ---- G7.2 round construction: every landed kind and final rule (this card) -------------------------
 
-let showScriptPromise: Promise<Uint8Array<ArrayBuffer>> | undefined
-
-function showScriptBytes(): Promise<Uint8Array<ArrayBuffer>> {
-  showScriptPromise ??= (async () => {
-    const result = await (await rfCompiler()).compile(collectRfScripts(), schemaText)
-    const errors = result.diagnostics.filter(diagnostic => diagnostic.severity === 'error')
-    assert.equal(errors.length, 0, errors.map(formatRfDiagnostic).join('\n'))
-    assert.ok(result.wasm)
-    return result.wasm as Uint8Array<ArrayBuffer>
-  })()
-  return showScriptPromise
+interface RoundVariant {
+  readonly name: string
+  readonly base: CourseV1
+  readonly kind: SchedMap['kind']
+  readonly finalRule: SchedMap['finalRule']
+  readonly level: Partial<LevelSpec>
 }
+
+function variantCourse(base: CourseV1, level: Partial<LevelSpec>): CourseV1 {
+  const authored = base.sim!.level ?? legacyLevel(base.sim!)
+  return { ...base, sim: { ...base.sim!, level: { ...authored, ...level } } }
+}
+
+function finalRank(rule: SchedMap['finalRule']): number {
+  return rule === null ? 0 : rule === 'crown' ? 1 : 2
+}
+
+test('builds every round kind and final rule from its committed season catalog entry', () => {
+  const variants: RoundVariant[] = [
+    { name: 'race', base: race, kind: 'race', finalRule: null, level: { kind: 'race', finalRule: null, timeCapTicks: 120, overtimeTicks: 0 } },
+    { name: 'survival', base: survival, kind: 'survival', finalRule: null, level: { kind: 'survival', finalRule: null, timeCapTicks: 90, overtimeTicks: 30 } },
+    { name: 'team', base: race, kind: 'team', finalRule: null, level: { kind: 'team', finalRule: null, teams: { count: 2, maxPerTeam: 30 }, timeCapTicks: 100, overtimeTicks: 20 } },
+    { name: 'collection', base: race, kind: 'collection', finalRule: null, level: { kind: 'collection', finalRule: null, timeCapTicks: 130, overtimeTicks: 0 } },
+    { name: 'hunt', base: race, kind: 'hunt', finalRule: null, level: { kind: 'hunt', finalRule: null, timeCapTicks: 140, overtimeTicks: 0 } },
+    { name: 'logic', base: survival, kind: 'logic', finalRule: null, level: { kind: 'logic', finalRule: null, timeCapTicks: 150, overtimeTicks: 0 } },
+    { name: 'crown', base: race, kind: 'final', finalRule: 'crown', level: { kind: 'final', finalRule: 'crown', timeCapTicks: 160, overtimeTicks: 0 } },
+    { name: 'lastStanding', base: survival, kind: 'final', finalRule: 'lastStanding', level: { kind: 'final', finalRule: 'lastStanding', timeCapTicks: 170, overtimeTicks: 40 } },
+  ]
+  const courses = variants.map(variant => variantCourse(variant.base, variant.level))
+  const seasonMaps = variants.map((variant, index) => ({
+    id: variant.name, course: index, kind: variant.kind, finalRule: variant.finalRule,
+    stages: variant.kind === 'final' ? ['final'] : ['R1'], team: variant.kind === 'team', cut: false,
+  }) as SchedMap)
+  const humans = Array.from({ length: 8 }, () => false)
+  const config: EngineShowConfig = {
+    engine, schemaText, scriptBytes: new Uint8Array(), seed: 7,
+    identity: { backend: 'engine', schemaKey: schemaLayout(engine).key, moduleKey: 'publication' },
+    courses, assets: allAssets, zones, season: seasonMaps, humans, plan: [8, 1],
+  }
+  const rules = buildShowRulesScene(config)
+  const entries = new Map(rules.entities
+    .filter(row => row.components?.show_catalog_entry)
+    .map(row => [Number(row.components!.show_catalog_entry.index), row.components!.show_catalog_entry]))
+  const seats = Array.from({ length: 8 }, (_, room) => room)
+  const slots = seats.map(() => -1)
+  const geometry = new Map<string, number>()
+  for (let index = 0; index < variants.length; index++) {
+    const variant = variants[index]!
+    const map = seasonMaps[index]!
+    const scenes = buildShowPhysicsScenes(config, courses[index]!, seats, slots, map)
+    const round = scenes.seat.scene.resources!.round as Record<string, number | number[]>
+    const authored = courses[index]!.sim!.level!
+    assert.equal(round.kind, ROUND_KINDS.indexOf(variant.kind), `${variant.name} round kind`)
+    assert.equal(round.final_rule, finalRank(variant.finalRule), `${variant.name} final rule`)
+    assert.equal(round.round_ticks, authored.timeCapTicks, `${variant.name} authored cap`)
+    assert.equal(round.overtime_ticks, authored.overtimeTicks, `${variant.name} authored overtime`)
+    assert.deepEqual(scenes.seat.show!.seats.map(seat => seat.inputSlot), slots)
+    const entry = entries.get(index)!
+    assert.equal(Number(entry.kind), ROUND_KINDS.indexOf(variant.kind))
+    assert.equal(Number(entry.final_rule), finalRank(variant.finalRule))
+    assert.equal(Number(entry.team), variant.kind === 'team' ? 1 : 0)
+    geometry.set(variant.name, scenes.seat.obstacleEntities.length)
+  }
+  assert.ok(geometry.get('race')! > 0, 'the race course carries its authored obstacle geometry')
+  assert.equal(geometry.get('survival'), 0, 'the survival course carries distinct obstacle geometry')
+  assert.notEqual(geometry.get('race'), geometry.get('survival'))
+})
+
+test('factory presentation resolves the selected round templates to live entities across replacement', async () => {
+  const humans = sixty.map(room => room === 0 || room === 3)
+  const factory = await createEngineShowFactory(factoryConfig(humans, { scriptBytes: await showScriptBytes() }))
+  const global = factory.create({ id: 0, kind: 'global', cells: [], seats: [], replicas: [0] }, 0)
+  try {
+    factory.prepareRound(0, 0, sixty)
+    const first = factory.create({ id: 1, kind: 'seat', cells: [], seats: sixty.map((_, roundSeat) => roundSeat), replicas: [0] }, 0)
+    const firstWorld = factory.presentationWorld(first)!
+    assert.ok(firstWorld)
+    assert.equal(firstWorld.ref.kind, 'seat')
+    assert.equal(firstWorld.scene.courseId, race.id)
+    assert.equal(firstWorld.seats.length, 60)
+    assert.equal(firstWorld.seats[3]!.roomSeat, 3)
+    assert.equal(firstWorld.seats[0]!.inputSlot, 0)
+    assert.equal(firstWorld.seats[3]!.inputSlot, 1)
+    assert.equal(firstWorld.seats[4]!.inputSlot, -1)
+    const firstState = readWorldState(engine, first.world, layout)
+    for (const seat of firstWorld.seats) {
+      assert.equal(Number(firstState.components.show_seat_identity[String(seat.entity)]!.room_seat), seat.roomSeat)
+      assert.equal(firstWorld.entities.get(firstWorld.scene.show!.seats[seat.roundSeat]!.entity), seat.entity)
+    }
+    assert.equal(firstWorld.obstacles.length, race.sim!.obstacles.length)
+    assert.deepEqual(firstWorld.mechanisms, race.sim!.mechanisms?.items ?? [])
+    assert.equal(firstWorld.publishers.size, 60 * 19)
+    for (const identity of firstWorld.publishers.values()) assert.match(identity, /^show\/publish\/\d+\/\d+$/)
+    assert.throws(() => factory.prepareRound(7, 99, sixty), RefusalError)
+
+    factory.prepareRound(1, 1, [3, 59])
+    const next = factory.create({ id: 2, kind: 'seat', cells: [], seats: [0, 1], replicas: [0] }, 2)
+    const nextWorld = factory.presentationWorld(next)!
+    assert.equal(nextWorld.scene.courseId, race.id)
+    assert.deepEqual(nextWorld.seats.map(seat => seat.roomSeat), [3, 59])
+    // The survivor keeps its original configured slot even when the slot-0 human was eliminated.
+    assert.deepEqual(nextWorld.seats.map(seat => seat.inputSlot), [1, -1])
+    assert.ok(nextWorld.incarnation > firstWorld.incarnation, 'a replaced world gets a distinct incarnation')
+    const nextState = readWorldState(engine, next.world, layout)
+    for (const seat of nextWorld.seats) {
+      assert.equal(Number(nextState.components.show_seat_identity[String(seat.entity)]!.room_seat), seat.roomSeat)
+      assert.equal(nextWorld.entities.get(nextWorld.scene.show!.seats[seat.roundSeat]!.entity), seat.entity)
+    }
+    factory.release(first)
+    assert.throws(() => factory.presentationWorld(first))
+    assert.equal(factory.presentationWorld(next)!.seats.length, 2)
+    factory.release(next)
+    factory.release(global)
+  } finally {
+    factory.dispose()
+  }
+})
+
+// ---- G7-SHOW-FACTORY: prepared factory (this card) -------------------------------------------------
 
 function factoryConfig(humans: readonly boolean[], over: Partial<EngineShowConfig> = {}): EngineShowConfig {
   return showConfigWith(humans, { testMode: true, ...over })
@@ -396,7 +528,7 @@ test('rejected preparation keeps the gate closed, propagates and frees its alloc
 })
 
 test('factory releases each world once across scratch replacement and disposal', async () => {
-  const humans = sixty.map(room => room === 3)
+  const humans = sixty.map(room => room === 0 || room === 3)
   const factory = await createEngineShowFactory(factoryConfig(humans, { scriptBytes: await showScriptBytes() }))
   const seat = factory.create({ id: 1, kind: 'seat', cells: [], seats: [0, 3], replicas: [0] }, 0)
   const writer = new SnapWriter()

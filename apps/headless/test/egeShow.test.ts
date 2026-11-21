@@ -3,16 +3,24 @@ import test from 'node:test'
 import { loadEngine } from '@etcito/game-engine'
 import { schemaLayout } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
+import type { WorldState } from '@etcito/game-engine/world-state'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
-import { engineCodeOfS1 } from '@royal-fiesta/game/ege/inputCodes'
-import { buildShowRulesScene } from '@royal-fiesta/game/ege/showScene'
+import { buildShowPhysicsScenes, buildShowRulesScene } from '@royal-fiesta/game/ege/showScene'
 import { createEngineShow } from '@royal-fiesta/game/ege/showRuntime'
 import { readShowRoundResult, readShowState } from '@royal-fiesta/game/ege/showState'
-import type { EngineShowConfig, EngineShowRuntime, EngineShowSnapshot } from '@royal-fiesta/game/ege/showTypes'
+import type {
+  EngineShowConfig,
+  EngineShowObservation,
+  EngineShowPresentation,
+  EngineShowRuntime,
+  EngineShowSnapshot,
+} from '@royal-fiesta/game/ege/showTypes'
 import { legacyLevel } from '@royal-fiesta/sim/course'
+import type { CourseV1 } from '@royal-fiesta/game/courseV1'
 import { encodeInput } from '@royal-fiesta/sim/input'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { parseZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
+import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { parseEngineShowArgs, runEngineShow } from '../src/engineShow.ts'
 import { loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
@@ -28,14 +36,23 @@ const script = await rfScriptBytes()
 const loaded = await loadEgeCourse('ege-strip')
 const level = { ...(loaded.course.sim!.level ?? legacyLevel(loaded.course.sim!)), timeCapTicks: 600, overtimeTicks: 0 }
 const course = { ...loaded.course, sim: { ...loaded.course.sim!, level } } as typeof loaded.course
-const zones = new Map([[course.id, parseZonesFile({
-  format: 'royal-fiesta.zones', version: 0, course: course.id,
-  grid: { origin: [-32, -64], cell: [2, 2], cols: 32, rows: 64 }, parts: {}, tuning: {},
-}, `courses/${course.id}.zones.json`, course.sim!)]])
+const yardLoaded = await loadEgeCourse('ege-yard-a')
+const yardLevel = { ...(yardLoaded.course.sim!.level ?? legacyLevel(yardLoaded.course.sim!)), timeCapTicks: 600, overtimeTicks: 0 }
+const yard = { ...yardLoaded.course, sim: { ...yardLoaded.course.sim!, level: yardLevel } } as typeof yardLoaded.course
+
+function zonesFor(selected: CourseV1): ZonesFile {
+  return parseZonesFile({
+    format: 'royal-fiesta.zones', version: 0, course: selected.id,
+    grid: { origin: [-64, -64], cell: [2, 2], cols: 64, rows: 64 }, parts: {}, tuning: {},
+  }, `courses/${selected.id}.zones.json`, selected.sim!)
+}
+
+const zones = new Map([[course.id, zonesFor(course)], [yard.id, zonesFor(yard)]])
+const assets = new Map([...loaded.assets, ...yardLoaded.assets])
 
 const season = [
   { id: 'A', course: 0, kind: 'race', finalRule: null, stages: ['R1'], team: false, cut: false },
-  { id: 'B', course: 0, kind: 'race', finalRule: null, stages: ['R1'], team: false, cut: false },
+  { id: 'B', course: 1, kind: 'race', finalRule: null, stages: ['R1'], team: false, cut: false },
   { id: 'Q', course: 0, kind: 'final', finalRule: 'crown', stages: ['final'], team: false, cut: false },
 ] as const
 
@@ -47,18 +64,20 @@ function showConfig(humans: readonly boolean[], over: Partial<EngineShowConfig> 
   return {
     engine, schemaText, scriptBytes: script.slice(), seed: 7,
     identity: { backend: 'engine', schemaKey: layout.key, moduleKey: 'publication' },
-    courses: [course], assets: loaded.assets, zones, season, humans, plan: [60, 2], testMode: true,
+    courses: [course, yard], assets, zones, season, humans, plan: [60, 2], testMode: true,
     ...over,
   }
 }
 
 const NEUTRAL = encodeInput({ moveX: 0, moveZ: 0, jump: false, dive: false, grab: false })
 const MOVE = encodeInput({ moveX: 1, moveZ: 1, jump: true, dive: false, grab: false })
-// The landed show controller decodes `show_control.code` as the S1 wire code while the controls
-// script copies the engine input code; these S1 samples convert once (engineCodeOfS1) to engine
-// bytes the landed decode reads as forward (254) and half forward (190).
-const SHOW_FORWARD = 254 | (125 << 8)
-const SHOW_HALF = 254 | (61 << 8)
+const FORWARD = encodeInput({ moveX: 0, moveZ: 1, jump: false, dive: false, grab: false })
+const RIGHT = encodeInput({ moveX: 1, moveZ: 0, jump: false, dive: false, grab: false })
+const LEFT = encodeInput({ moveX: -1, moveZ: 0, jump: false, dive: false, grab: false })
+const JUMP = encodeInput({ moveX: 0, moveZ: 0, jump: true, dive: false, grab: false })
+const DIVE = encodeInput({ moveX: 0, moveZ: 0, jump: false, dive: true, grab: false })
+const GRAB = encodeInput({ moveX: 0, moveZ: 0, jump: false, dive: false, grab: true })
+const BUTTON_MASK = 0x70000
 
 test('frame accumulates finite seconds, caps at eight ticks and samples active humans once per tick', async () => {
   const runtime = await createEngineShow(showConfig(humansAt([2, 45])))
@@ -115,10 +134,66 @@ test('frame converts sampled S1 codes once and routes them through the mapped hu
     const state = readWorldState(engine, seat.world, layout)
     const entityOf = (room: number) => Object.entries(state.components.show_seat_identity)
       .find(([, row]) => Number(row.room_seat) === room)![0]
-    assert.equal(Number(state.components.show_control[entityOf(0)]!.code), engineCodeOfS1(MOVE))
-    assert.equal(Number(state.components.show_control[entityOf(31)]!.code), engineCodeOfS1(NEUTRAL))
-    // A configured bot has no input slot and is never sampled; its scripted control stays neutral.
+    // The runtime converts the S1 sample to engine input once; the controls script converts the assigned
+    // SDK slot back to the S1 storage the landed character decoder reads, so the stored code is the sample.
+    assert.equal(Number(state.components.show_control[entityOf(0)]!.code), MOVE)
+    assert.equal(Number(state.components.show_control[entityOf(31)]!.code), NEUTRAL)
+    // A configured bot has no input slot and is never sampled; its scripted control stays S1 neutral.
     assert.equal(Number(state.components.show_control[entityOf(5)]!.code), 32639)
+  } finally { runtime.dispose() }
+})
+
+test('ordinary samples deliver neutral, both directions and buttons with their physical responses', async () => {
+  const runtime = await createEngineShow(showConfig(humansAt([0])))
+  try {
+    let sample = NEUTRAL
+    const drive = (ticks: number, code: number): void => {
+      sample = code
+      for (let i = 0; i < ticks; i++) runtime.frame(1 / 60, () => sample)
+    }
+    for (let frame = 0; frame < 300 && runtime.snapshot().screen !== 'playing'; frame++) drive(1, NEUTRAL)
+    assert.equal(runtime.snapshot().screen, 'playing')
+    drive(12, NEUTRAL)
+    const world = () => runtime.worlds().find(ref => ref.kind === 'seat')!.world
+    const seatEntity = (): number => {
+      const state = readWorldState(engine, world(), layout)
+      return Number(Object.entries(state.components.show_seat_identity)
+        .find(([, row]) => Number(row.room_seat) === 0)![0])
+    }
+    const read = (): WorldState => readWorldState(engine, world(), layout)
+    const control = (): number => Number(read().components.show_control[String(seatEntity())]!.code)
+    const velocity = (): number[] => read().components['ege.velocity']![String(seatEntity())]!.lin as number[]
+    const position = (): number[] => read().components['ege.transform']![String(seatEntity())]!.pos as number[]
+    const mode = (): number => Number(read().components.character![String(seatEntity())]!.mode)
+
+    drive(10, NEUTRAL)
+    assert.equal(control(), NEUTRAL)
+    const still = velocity()
+    assert.ok(Math.hypot(still[0]!, still[2]!) < 0.2, `neutral keeps the seat stationary, got ${still}`)
+
+    const startX = position()[0]!
+    drive(12, RIGHT)
+    assert.equal(control(), RIGHT)
+    assert.ok(velocity()[0]! > 0.5, `moveX +1 drives east, got ${velocity()[0]}`)
+    assert.ok(position()[0]! > startX + 0.1, 'the positive direction moves the character east')
+    drive(12, LEFT)
+    assert.equal(control(), LEFT)
+    assert.ok(velocity()[0]! < -0.5, `moveX -1 drives west, got ${velocity()[0]}`)
+
+    drive(20, NEUTRAL)
+    assert.equal(mode(), 0, 'the character settles on the stationary surface')
+    drive(1, JUMP)
+    assert.equal(control() & BUTTON_MASK, JUMP & BUTTON_MASK)
+    assert.ok(velocity()[1]! > 0 || mode() === 1, `jump imparts vertical speed or air mode, got ${velocity()[1]}`)
+    drive(30, NEUTRAL)
+
+    drive(1, DIVE)
+    assert.equal(control() & BUTTON_MASK, DIVE & BUTTON_MASK)
+    assert.ok(velocity()[1]! > 0 || mode() === 2, `dive imparts the authored dive response, got ${velocity()[1]}/${mode()}`)
+    drive(40, NEUTRAL)
+
+    drive(1, GRAB)
+    assert.equal(control() & 0x40000, GRAB & 0x40000, 'the grab bit reaches the stored S1 control')
   } finally { runtime.dispose() }
 })
 
@@ -167,7 +242,7 @@ interface ShowRun {
 
 async function driveShow(runtime: EngineShowRuntime, framesPerCall: number): Promise<ShowRun> {
   const screens = new Set<string>()
-  const sample = (room: number): number => room === 0 ? SHOW_FORWARD : SHOW_HALF
+  const sample = (room: number): number => room === 0 ? FORWARD : NEUTRAL
   let votedRound = -1
   for (let frame = 0; frame < 4000; frame++) {
     const state = runtime.snapshot()
@@ -185,6 +260,7 @@ async function driveShow(runtime: EngineShowRuntime, framesPerCall: number): Pro
 test('completes a sixty-seat scripted show through a confirmed final and equal replay/restore', async () => {
   const config = showConfig(humansAt([0, 1]))
   const runtime = await createEngineShow(config)
+  const showId = runtime.presentation().showId
   let final: EngineShowSnapshot
   try {
     const outcome = await driveShow(runtime, 1 / 60)
@@ -234,9 +310,163 @@ test('completes a sixty-seat scripted show through a confirmed final and equal r
 
   const replay = await createEngineShow(showConfig(humansAt([0, 1])))
   try {
+    assert.notEqual(replay.presentation().showId, showId)
     const outcome = await driveShow(replay, 8 / 60)
     assert.deepEqual(outcome.snapshot, final)
   } finally { replay.dispose() }
+})
+
+test('presentation selects each committed round map, exposes live mappings and drains before release', async () => {
+  const runtime = await createEngineShow(showConfig(humansAt([0, 1])))
+  const observations: EngineShowObservation[] = []
+  const frames: EngineShowObservation[][] = []
+  const released: { tick: number; world: number }[] = []
+  const mappedRounds = new Set<number>()
+  const globalWorld = runtime.worlds().find(ref => ref.kind === 'global')!.world
+  let capApplied = false
+  try {
+    const unsubscribe = runtime.onPresentation(observation => {
+      observations.push(observation)
+      const current = frames.at(-1)
+      if (current !== undefined) current.push(observation)
+      const presentation = observation.presentation
+      if (!capApplied && observation.snapshot.screen === 'intro' && presentation.course !== null) {
+        capApplied = true
+        const rules = readWorldState(engine, globalWorld, layout)
+        const clock = Object.values(rules.components.show_clock ?? {})[0]!
+        const authored = presentation.course.level!
+        assert.equal(Number(clock.round_ticks), authored.timeCapTicks, 'the selected cap is applied before readiness')
+        assert.equal(Number(clock.overtime_ticks), authored.overtimeTicks)
+        assert.equal(
+          Number(clock.end_tick) - Number(clock.start_tick),
+          Number(clock.intro_ticks) + Number(clock.round_ticks) + Number(clock.overtime_ticks),
+        )
+      }
+      if (observation.kind === 'post-tick' && presentation.worlds.length > 0 && !mappedRounds.has(presentation.round)) {
+        mappedRounds.add(presentation.round)
+        const world = presentation.worlds[0]!
+        assert.equal(world.ref.kind, 'seat')
+        assert.equal(world.seats.length, observation.snapshot.seatOf.length)
+        // Live template-to-entity mappings are valid now, before the next tick and any release.
+        const state = readWorldState(engine, world.ref.world, layout)
+        for (const seat of world.seats) {
+          assert.equal(Number(state.components.show_seat_identity[String(seat.entity)]!.room_seat), seat.roomSeat)
+          const template = world.scene.show!.seats[seat.roundSeat]!
+          assert.equal(world.entities.get(template.entity), seat.entity)
+        }
+        assert.equal(world.obstacles.length, presentation.course!.obstacles.length)
+        assert.deepEqual(world.mechanisms, presentation.course!.mechanisms?.items ?? [])
+        assert.equal(world.publishers.size, world.seats.length * 19)
+        for (const publisher of world.publishers.values()) assert.ok(publisher.startsWith('show/publish/'))
+      }
+      if (observation.kind !== 'before-release') return
+      const world = observation.presentation.worlds[0]
+      assert.ok(world, 'the departing physics world is still present in its release observation')
+      assert.equal(observation.presentation.course?.id, world.scene.courseId)
+      // The event source and metadata are readable now, before the factory frees the world.
+      assert.equal(typeof engine.tick(world.ref.world), 'number')
+      const events = engine.events(world.ref.world, Math.max(0, observation.tick - 3), observation.tick)
+      assert.ok(Array.isArray(events.records))
+      released.push({ tick: observation.tick, world: world.ref.world })
+    })
+    const sample = (room: number): number => room === 0 ? FORWARD : NEUTRAL
+    let voted = -1
+    for (let frame = 0; frame < 4000; frame++) {
+      const state = runtime.snapshot()
+      if (state.screen === 'done') break
+      if (state.screen === 'vote' && state.candidates.length > 1 && voted !== state.round) {
+        for (const room of [0, 1]) if (state.seatOf.includes(room)) runtime.vote(room, 1)
+        voted = state.round
+      }
+      frames.push([])
+      const tick = nextTick(runtime)
+      runtime.frame(frame === 0 ? 1 / 60 : 8 / 60, sample)
+      assert.equal(runtime.snapshot().round >= 0, true)
+      assert.equal(nextTick(runtime) >= tick, true)
+    }
+    unsubscribe()
+    unsubscribe()
+    assert.equal(runtime.snapshot().screen, 'done')
+    assert.deepEqual(released.map(entry => entry.tick), [...new Set(released.map(entry => entry.tick))])
+    for (const entry of released) assert.throws(() => engine.tick(entry.world))
+    const post = observations.filter(observation => observation.kind === 'post-tick')
+    assert.equal(post.length, nextTick(runtime))
+    for (let i = 1; i < post.length; i++) assert.equal(post[i]!.tick, post[i - 1]!.tick + 1)
+
+    const releaseFrame = frames.find(frame => frame.some(observation => observation.kind === 'before-release'))!
+    const releasePosts = releaseFrame.filter(observation => observation.kind === 'post-tick')
+    assert.equal(releasePosts.length, 8, 'the terminal tick executed inside an eight-tick frame')
+    const releaseTicks = releaseFrame.map(observation => observation.tick)
+    assert.ok(releaseTicks.includes(released[0]!.tick))
+    const terminal = releaseFrame.find(observation => observation.kind === 'before-release')!
+    assert.ok(terminal.snapshot.screen === 'results' || terminal.snapshot.screen === 'podium' || terminal.snapshot.screen === 'done')
+    assert.equal(terminal.snapshot.round, terminal.presentation.round)
+
+    const maps = new Map<number, Set<string>>()
+    const courses = new Map<number, Set<string>>()
+    let mapped: EngineShowPresentation | undefined
+    for (const observation of post) {
+      const { presentation } = observation
+      if (presentation.map === null || presentation.course === null) {
+        assert.deepEqual(presentation.worlds, [])
+        continue
+      }
+      mapped ??= presentation
+      if (!maps.has(presentation.round)) maps.set(presentation.round, new Set())
+      if (!courses.has(presentation.round)) courses.set(presentation.round, new Set())
+      maps.get(presentation.round)!.add(presentation.map)
+      courses.get(presentation.round)!.add(presentation.course.id)
+    }
+    assert.ok(mapped)
+    assert.ok(post.some(observation => observation.presentation.worlds.length === 0), 'rules-only ticks are observed')
+    assert.equal(capApplied, true)
+    assert.equal(maps.get(0)!.has('B'), true, 'the voted second map is the script-committed round map')
+    assert.equal(courses.get(0)!.has(yard.id), true)
+    const finalRound = [...maps.keys()].find(round => maps.get(round)!.has('Q'))!
+    assert.notEqual(finalRound, undefined)
+    assert.equal(courses.get(finalRound)!.has(course.id), true)
+    assert.ok(courses.size >= 2, 'the show crossed at least two physical courses')
+    assert.equal(runtime.presentation().worlds.length, 0)
+  } finally {
+    runtime.dispose()
+  }
+})
+
+test('listener failures surface without replaying a tick and disposal still releases the world', async () => {
+  const runtime = await createEngineShow(showConfig(humansAt([0])))
+  try {
+    for (let frame = 0; frame < 300 && runtime.snapshot().screen !== 'playing'; frame++) {
+      runtime.frame(1 / 60, () => NEUTRAL)
+    }
+    assert.equal(runtime.snapshot().screen, 'playing')
+    const before = nextTick(runtime)
+    const boom = new Error('listener failed')
+    const unsubscribe = runtime.onPresentation(() => { throw boom })
+    assert.throws(() => runtime.frame(1 / 60, () => NEUTRAL), error => error === boom)
+    assert.equal(nextTick(runtime), before + 1, 'the executed tick is not replayed after a listener failure')
+    unsubscribe()
+    unsubscribe()
+    runtime.frame(1 / 60, () => NEUTRAL)
+    assert.equal(nextTick(runtime), before + 2)
+
+    const released: EngineShowObservation[] = []
+    let releasedWorld = -1
+    runtime.onPresentation(observation => {
+      if (observation.kind !== 'before-release') return
+      released.push(observation)
+      releasedWorld = observation.presentation.worlds[0]!.ref.world
+      // Readable while the release notification runs; the world is freed only afterwards.
+      assert.equal(typeof engine.tick(releasedWorld), 'number')
+    })
+    const releaseFailure = new Error('release listener failed')
+    runtime.onPresentation(() => { throw releaseFailure })
+    assert.throws(() => runtime.dispose(), error => error === releaseFailure)
+    assert.equal(released.length, 1)
+    assert.throws(() => engine.tick(releasedWorld))
+    assert.throws(() => runtime.worlds(), RefusalError)
+  } finally {
+    runtime.dispose()
+  }
 })
 
 test('runner arguments and prepared options refuse invalid seeds, seats, humans and plans', async () => {
@@ -263,7 +493,7 @@ test('runner completes a prepared show and prints the confirmed final result', {
   const lines: string[] = []
   const result = await runEngineShow({
     config: showConfig(humansAt([0, 1])),
-    sample: room => room === 0 ? SHOW_FORWARD : SHOW_HALF,
+    sample: room => room === 0 ? FORWARD : NEUTRAL,
     log: line => lines.push(line),
   })
   assert.equal(result.snapshot.screen, 'done')
@@ -284,4 +514,20 @@ test('runner refuses failed preparation and a stalled show actionably', async ()
     () => runEngineShow({ config: showConfig(humansAt([0, 1])), maxFrames: 1 }),
     /stalled .*round 0 screen 'vote'/,
   )
+})
+
+test('mixed-course season builds each selected physical template and the rules clock refuses missing maps', async () => {
+  const humans = humansAt([0, 1])
+  const config = showConfig(humans)
+  const rules = buildShowRulesScene(config)
+  const entries = rules.entities.filter(row => row.components?.show_catalog_entry).map(row => row.components!.show_catalog_entry)
+  assert.deepEqual(entries.map(entry => entry.course), [0, 1, 0])
+  assert.deepEqual(entries.map(entry => entry.final_rule), [0, 0, 1])
+  const selected = buildShowPhysicsScenes(config, yard, [0, 1], [0, 1], season[1])
+  assert.equal(selected.seat.scene.resources!.round.kind, 0)
+  const field = buildShowPhysicsScenes(config, course, [0, 1], [0, 1], season[2])
+  assert.equal(field.seat.scene.resources!.round.final_rule, 1)
+  assert.notEqual(selected.seat.text, field.seat.text)
+  const bad = showConfig(humans, { courses: [course] })
+  await assert.rejects(() => createEngineShow(bad), RefusalError)
 })

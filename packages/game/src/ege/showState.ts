@@ -1,7 +1,12 @@
 import { schemaLayout } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
 import type { RecordValues, WorldState } from '@etcito/game-engine/world-state'
-import { ROUND_KINDS } from '@royal-fiesta/sim/season/kinds'
+import { levelOf } from '@royal-fiesta/sim/course'
+import type { LevelSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
+import type { CourseV1 } from '../courseV1.ts'
+import { ROUND_KINDS, STAGE_IDS } from '@royal-fiesta/sim/season/kinds'
+import type { FinalRule, RoundKind } from '@royal-fiesta/sim/season/kinds'
+import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { EngineRoundResult, EngineShowConfig, EngineShowSnapshot } from './showTypes.ts'
 
@@ -66,7 +71,19 @@ function read(config: EngineShowConfig, world: number, confirmedTick: number) {
   const decoded = resultRows.map(([, r]) => decodeResult(config, state, owner, r)).sort((a, b) => a.index - b.index)
   if (new Set(decoded.map(r => r.index)).size !== decoded.length) fail('show_round_result.index', 'duplicate result index')
   if (resultIndex !== -1 && !decoded.some(r => r.index === resultIndex)) fail('show_presentation.result_index', 'current result is missing')
-  return { tick: number(presentation, 'tick'), round, screen, seatOf, alive, candidates, decoded, resultIndex }
+  const used = new Map<number, number>()
+  for (const [, row] of rows(state, 'show_used_map').filter(([, r]) => number(r, 'owner') === owner)) {
+    const index = number(row, 'index')
+    if (used.has(index)) fail('show_used_map.index', 'duplicate committed map index')
+    used.set(index, number(row, 'map'))
+  }
+  const committed = new Map<number, RecordValues>()
+  for (const [, row] of rows(state, 'show_catalog_entry').filter(([, r]) => number(r, 'owner') === owner)) {
+    const index = number(row, 'index')
+    if (committed.has(index)) fail('show_catalog_entry.index', 'duplicate committed catalog index')
+    committed.set(index, row)
+  }
+  return { tick: number(presentation, 'tick'), round, screen, seatOf, alive, candidates, decoded, resultIndex, used, committed }
 }
 function catalog(config: EngineShowConfig, index: number) {
   const entry = config.season[index]
@@ -112,4 +129,65 @@ export function readShowState(config: EngineShowConfig, world: number, confirmed
 export function readShowRoundResult(config: EngineShowConfig, world: number, confirmedTick: number): EngineRoundResult | null {
   const data = read(config, world, confirmedTick)
   return data.decoded.find(result => result.index === data.resultIndex && confirmedTick > result.endTick) ?? null
+}
+
+/** The script-committed map/course selection of one round, decoded from the rules world only. */
+export interface EngineShowSelection {
+  readonly round: number
+  readonly mapIndex: number
+  readonly mapId: string
+  readonly map: SchedMap
+  readonly courseIndex: number
+  readonly course: CourseV1
+  readonly courseData: ResolvedCourse
+  readonly level: LevelSpec
+  readonly kind: RoundKind
+  readonly finalRule: FinalRule | null
+}
+
+const FINAL_RULE_RANK = { none: 0, crown: 1, lastStanding: 2 } as const
+
+function finalRank(rule: SchedMap['finalRule']): number {
+  return rule === null ? FINAL_RULE_RANK.none : FINAL_RULE_RANK[rule]
+}
+
+function stageMask(stages: readonly string[]): number {
+  let mask = 0
+  for (const stage of stages) mask |= 1 << STAGE_IDS.indexOf(stage as (typeof STAGE_IDS)[number])
+  return mask >>> 0
+}
+
+function committedMap(config: EngineShowConfig, data: ReturnType<typeof read>, round: number): EngineShowSelection {
+  const mapIndex = data.used.get(round)
+  if (mapIndex === undefined) {
+    fail(`show_used_map/${round}`, 'the round has no committed map selection; let the season script commit it before loading')
+  }
+  const map = catalog(config, mapIndex)
+  const entry = data.committed.get(mapIndex)
+  if (!entry) fail(`show_catalog_entry/${mapIndex}`, 'the committed map is missing from the catalog; repair the rules scene')
+  const courseIndex = number(entry, 'course')
+  if (courseIndex !== map.course) fail(`show_catalog_entry/${mapIndex}/course`, 'committed course differs from the season catalog')
+  if (number(entry, 'kind') !== ROUND_KINDS.indexOf(map.kind)) fail(`show_catalog_entry/${mapIndex}/kind`, 'committed kind differs from the season catalog')
+  if (number(entry, 'final_rule') !== finalRank(map.finalRule)) fail(`show_catalog_entry/${mapIndex}/final_rule`, 'committed final rule differs from the season catalog')
+  if (number(entry, 'stages') !== stageMask(map.stages)) fail(`show_catalog_entry/${mapIndex}/stages`, 'committed stages differ from the season catalog')
+  if (number(entry, 'team', 0, 1) !== (map.team ? 1 : 0)) fail(`show_catalog_entry/${mapIndex}/team`, 'committed team flag differs from the season catalog')
+  if (number(entry, 'cut', 0, 1) !== (map.cut ? 1 : 0)) fail(`show_catalog_entry/${mapIndex}/cut`, 'committed cut flag differs from the season catalog')
+  const course = config.courses[courseIndex]
+  if (!course) fail(`courses/${courseIndex}`, 'the selected course is not part of the show configuration; add it to config.courses')
+  if (course.sim === null) fail(`courses/${course.id}.course.json`, 'the selected course has no simulation data; select a playable course')
+  return {
+    round, mapIndex, mapId: map.id, map, courseIndex, course,
+    courseData: course.sim, level: levelOf(course.sim), kind: map.kind, finalRule: map.finalRule,
+  }
+}
+
+/**
+ * G7-RUNTIME-PRESENTATION selection reader: decodes the round's script-committed `show_used_map` row and
+ * its `show_catalog_entry` record, cross-checks both against the configured season catalog and refuses a
+ * missing or inconsistent selection. It never derives a choice from candidates and never falls back to the
+ * first configured map.
+ */
+export function readShowSelection(config: EngineShowConfig, world: number, confirmedTick: number, round: number): EngineShowSelection {
+  const data = read(config, world, confirmedTick)
+  return committedMap(config, data, round)
 }

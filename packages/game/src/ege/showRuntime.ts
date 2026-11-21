@@ -9,8 +9,12 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import { engineCodeOfS1 } from './inputCodes.ts'
 import { createEngineShowFactory } from './showFactory.ts'
 import type { EngineShowFactory } from './showFactory.ts'
+import { readShowSelection } from './showState.ts'
+import type { EngineShowSelection } from './showState.ts'
 import type {
   EngineShowConfig,
+  EngineShowObservation,
+  EngineShowPresentation,
   EngineShowRuntime,
   EngineShowSnapshot,
   EngineWorldRef,
@@ -36,7 +40,10 @@ interface PhysicsRound {
   readonly sim: EngineDomainSim
   readonly round: number
   readonly seats: readonly number[]
+  readonly selection: EngineShowSelection
 }
+
+type ObservationKind = EngineShowObservation['kind']
 
 /** A copied `show_lifecycle_input` patch: the host facts are applied before the next rules step. */
 function patchLifecycle(
@@ -56,6 +63,14 @@ function patchLifecycle(
 function patchVote(engine: EngineInstance, world: number, layout: SchemaLayout, entity: number, choice: number): void {
   patchRecord(engine, world, layout, 'show_vote', entity, decl => (view, at) => {
     writeField(view, at, decl, 'choice', choice)
+  })
+}
+
+/** Writes the selected course's authored gameplay durations before the round is acknowledged ready. */
+function patchClock(engine: EngineInstance, world: number, layout: SchemaLayout, roundTicks: number, overtimeTicks: number): void {
+  patchRecord(engine, world, layout, 'show_clock', undefined, decl => (view, at) => {
+    writeField(view, at, decl, 'round_ticks', roundTicks)
+    writeField(view, at, decl, 'overtime_ticks', overtimeTicks)
   })
 }
 
@@ -142,6 +157,7 @@ class ShowRuntime implements EngineShowRuntime {
   private confirmedResult = -2
   private cursorEntity: number | undefined
   private readonly votes = new Map<string, number>()
+  private readonly listeners: ((observation: EngineShowObservation) => void)[] = []
   private disposed = false
 
   constructor(config: EngineShowConfig, factory: EngineShowFactory, layout: SchemaLayout, global: EngineDomainSim) {
@@ -169,6 +185,33 @@ class ShowRuntime implements EngineShowRuntime {
     return refs
   }
 
+  presentation(): EngineShowPresentation {
+    this.assertLive()
+    const physics = this.physics
+    const world = physics === undefined ? null : this.factory.presentationWorld(physics.sim)
+    return {
+      showId: this.factory.showId,
+      tick: this.engine.tick(this.global.world),
+      round: physics?.round ?? this.snapshot().round,
+      map: physics?.selection.mapId ?? null,
+      course: physics?.selection.courseData ?? null,
+      worlds: world === null ? [] : [world],
+    }
+  }
+
+  onPresentation(listener: (observation: EngineShowObservation) => void): () => void {
+    this.assertLive()
+    if (typeof listener !== 'function') fail('onPresentation', 'missing listener; pass (observation) => void')
+    this.listeners.push(listener)
+    let subscribed = true
+    return () => {
+      if (!subscribed) return
+      subscribed = false
+      const at = this.listeners.indexOf(listener)
+      if (at >= 0) this.listeners.splice(at, 1)
+    }
+  }
+
   frame(dtS: number, sample: (roomSeat: number) => number): void {
     this.assertLive()
     if (typeof sample !== 'function') fail('frame.sample', 'missing input sampler; pass (roomSeat) => S1 code')
@@ -183,8 +226,10 @@ class ShowRuntime implements EngineShowRuntime {
     if (whole < 1) return
     const count = Math.min(MAX_TICKS_PER_FRAME, whole)
     for (let i = 0; i < count; i++) {
-      this.step(sample)
+      // Consume the tick before executing it: a listener or effect failure after the tick ran must
+      // never leave the accumulator asking for that same executed tick again.
       this.accumulator -= 1
+      this.step(sample)
     }
   }
 
@@ -217,12 +262,13 @@ class ShowRuntime implements EngineShowRuntime {
 
   dispose(): void {
     if (this.disposed) return
-    this.disposed = true
-    const physics = this.physics
-    this.physics = undefined
-    if (physics) this.factory.release(physics.sim)
-    this.factory.release(this.global)
-    this.factory.dispose()
+    try {
+      this.releasePhysics()
+    } finally {
+      this.disposed = true
+      this.factory.release(this.global)
+      this.factory.dispose()
+    }
   }
 
   /** One executed tick: sample first, then step the rules world and the live physics world. */
@@ -243,7 +289,10 @@ class ShowRuntime implements EngineShowRuntime {
     const now = this.engine.tick(this.global.world)
     const created = before.screen === 'loading' && this.physics?.round !== before.round
     if (created) {
-      this.openPhysics(before.round, before.seatOf, now)
+      const selection = readShowSelection(this.config, this.global.world, now, before.round)
+      this.factory.prepareRound(before.round, selection.mapIndex, before.seatOf)
+      patchClock(this.engine, this.global.world, this.layout, selection.level.timeCapTicks, selection.level.overtimeTicks)
+      this.openPhysics(before.round, before.seatOf, selection, now)
       this.applyLifecycle(before.round, now)
     }
     if (before.screen === 'results' && this.confirmedResult !== before.round) {
@@ -253,6 +302,7 @@ class ShowRuntime implements EngineShowRuntime {
     const physics = this.physics
     if (!physics) {
       this.global.step([], NO_SHADOW)
+      this.notify('post-tick')
       return
     }
     this.global.step([], this.shadowOf(physics))
@@ -260,7 +310,29 @@ class ShowRuntime implements EngineShowRuntime {
       this.factory.worldRef(physics.sim).binding.stepCodes(this.codesOf(physics, batch))
     }
     const after = this.snapshot()
-    if (after.screen === 'results' || after.screen === 'podium' || after.screen === 'done') this.releasePhysics()
+    const released = after.screen === 'results' || after.screen === 'podium' || after.screen === 'done'
+    try {
+      this.notify('post-tick')
+    } finally {
+      if (released) this.releasePhysics()
+    }
+  }
+
+  /** Delivers one observation synchronously; listener failures surface after every listener ran. */
+  private notify(kind: ObservationKind): void {
+    if (this.listeners.length === 0) return
+    const observation: EngineShowObservation = {
+      kind, tick: this.engine.tick(this.global.world), snapshot: this.snapshot(), presentation: this.presentation(),
+    }
+    let failure: unknown
+    for (const listener of [...this.listeners]) {
+      try {
+        listener(observation)
+      } catch (error) {
+        if (failure === undefined) failure = error
+      }
+    }
+    if (failure !== undefined) throw failure
   }
 
   /** The outbox payload captured from the physics state before its labelled step (session shadow rule). */
@@ -289,13 +361,13 @@ class ShowRuntime implements EngineShowRuntime {
     return codes
   }
 
-  private openPhysics(round: number, seats: readonly number[], tick: number): void {
+  private openPhysics(round: number, seats: readonly number[], selection: EngineShowSelection, tick: number): void {
     this.releasePhysics()
     const sim = this.factory.create(
-      { id: round + 1, kind: 'seat', cells: [], seats: [...seats], replicas: [0] },
+      { id: round + 1, kind: 'seat', cells: [], seats: seats.map((_, roundSeat) => roundSeat), replicas: [0] },
       tick,
     )
-    this.physics = { sim, round, seats: [...seats] }
+    this.physics = { sim, round, seats: [...seats], selection }
     this.seedClock(sim)
   }
 
@@ -316,11 +388,16 @@ class ShowRuntime implements EngineShowRuntime {
     this.engine.importEntities(sim.world, bytes)
   }
 
+  /** Notifies before-release while the departing world is still readable, then always releases it. */
   private releasePhysics(): void {
     const physics = this.physics
     if (!physics) return
-    this.physics = undefined
-    this.factory.release(physics.sim)
+    try {
+      this.notify('before-release')
+    } finally {
+      this.physics = undefined
+      this.factory.release(physics.sim)
+    }
   }
 
   private applyLifecycle(readyRound: number, confirmedTick: number): void {

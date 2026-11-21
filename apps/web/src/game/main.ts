@@ -128,6 +128,7 @@ import wasmUrl from '@etcito/game-engine/wasm/ege.wasm?url'
 import { loadEngineAuthoredShow, loadEnginePublication, setEngineShowWasmUrl } from '../engineShow/page.ts'
 import { loadEngineBackend, selectGameBackend } from './engineBackend.ts'
 import type { EngineBackend, GameBackend } from './engineBackend.ts'
+import { engineOnlineStats } from '@royal-fiesta/game/ege/onlineState'
 import { EngineShellProbe, installEngineProbe } from './engineProbe.ts'
 import type { EngineProbeFrame, EngineShellHandle } from './engineProbe.ts'
 import type { HubRuntime } from '@royal-fiesta/game/ege/hub'
@@ -249,6 +250,19 @@ function requiredElement<T extends Element>(selector: string): T {
 // re-expressed as a stick in that frame: stickX = w · right, stickY = w · forward of basisFromFacing(charFacing).
 function inCharacterFrame(w: PlayerInput, charFacing: Planar, out: RawControls): RawControls {
   const b = basisFromFacing(charFacing)
+  out.left = out.right = out.forward = out.back = false
+  out.stickX = w.moveX * b.right.x + w.moveZ * b.right.z
+  out.stickY = w.moveX * b.forward.x + w.moveZ * b.forward.z
+  out.jump = w.jump
+  out.dive = w.dive
+  out.grab = w.grab
+  return out
+}
+
+// FlowBackend match controls are world space (S1): re-express the camera-rotated move in the fixed +Z basis
+// so PlayFlow's controlsToInput reproduces it unchanged, instead of rotating it into the character's frame.
+function worldControls(w: PlayerInput, out: RawControls): RawControls {
+  const b = basisFromFacing({ x: 0, z: 1 })
   out.left = out.right = out.forward = out.back = false
   out.stickX = w.moveX * b.right.x + w.moveZ * b.right.z
   out.stickY = w.moveX * b.forward.x + w.moveZ * b.forward.z
@@ -480,6 +494,9 @@ interface ModeCtx {
   setLayout: (seats: number) => void
   // The visible loading state while a selected round's complete scene is prepared.
   setLoading?: (label: string | null, done?: number, total?: number) => void
+  // The engine branch's shell probe (engine online observes it from frame and background) and the App's nav screen.
+  probe?: EngineShellProbe | null
+  screen?: () => string
 }
 
 // Draws one match on port 0: the SceneView framed by the orbit camera while rounds run, then the
@@ -1246,12 +1263,20 @@ class OnlineMode implements Mode {
   failure: string | null = null
   readonly finished = false
   private readonly c: ModeCtx
+  private readonly engine: EngineBackend | null
+  private readonly probe: EngineShellProbe | null
+  private readonly screenOf: () => string
   private readonly flow: PlayFlow
   private readonly presenter: MatchPresenter
   private readonly hubView: HubView
   private seat = 0
   private names: string[]
   private viewed: MatchSim | null = null
+  private viewedShow: EngineShowRuntime | null = null
+  private hubPresented = false
+  // Matched humans: the lobby roster's players, captured when the flow enters 'match' and kept until the next lobby.
+  private humans = 1
+  private matchedLobby: string | null = null
   private note = ''
   private readonly local = emptyChar()
   private readonly cv = emptyCharView()
@@ -1266,8 +1291,10 @@ class OnlineMode implements Mode {
   private readonly netDiag = new NetDiag()
 
   // The network show's rounds, screens and loading: ShowMode, the in-page show's presenter, on the flow's match.
+  // Engine mode presents PlayFlow's EngineShowRuntime instead and never reads flow.match.
   private showMode: ShowMode | null = null
   private showMatch: OnlineMatch | null = null
+  private showRuntime: EngineShowRuntime | null = null
   readonly show = { models: null as ShowFrame | null, cues: (): string[] => this.showMode?.cues() ?? [] }
   elapsedMs = 0
   round = 0
@@ -1277,8 +1304,11 @@ class OnlineMode implements Mode {
   pickVote(index: number): void { this.showMode?.pick(index) }
   hoverVote(index: number): void { this.showMode?.hover(index) }
 
-  constructor(c: ModeCtx, server: string) {
+  constructor(c: ModeCtx, server: string, engine: EngineBackend | null) {
     this.c = c
+    this.engine = engine
+    this.probe = c.probe ?? null
+    this.screenOf = c.screen ?? (() => '')
     this.pump = new NetPump(dt => this.background(dt))
     const { R, content, ports, show } = c.loaded
     const q = c.q
@@ -1293,6 +1323,8 @@ class OnlineMode implements Mode {
       matchmaking: 'lobby', voteMs: 5000, intermissionMs: 12000,
       // ?bots= (total penguins) shrinks the online show too; both pages of a lobby pass the same value.
       seats: this.seats,
+      // Engine online: PlayFlow builds its hub and its show through the backend and steps the runtime itself.
+      ...(engine === null ? {} : { backend: engine.flowBackend({ seats: this.seats, testMode: q.test }) }),
       presentationDone: () => this.show.models?.finished === true,
       log: ev => {
         if (ev.state === 'match' && typeof ev.detail.seat === 'number') this.seat = ev.detail.seat
@@ -1311,7 +1343,7 @@ class OnlineMode implements Mode {
     this.tags = typeof document === 'undefined' || canvas === undefined ? null : new NameTags(canvas)
     // Two pages on one machine: the hidden one runs on the NetPump worker clock (bg/s); log each switch with the tick.
     if (typeof document !== 'undefined') {
-      this.onVisibility = () => console.info(`[online] page ${document.visibilityState} at tick ${this.flow.match?.sim.tick ?? '-'} (${this.flow.state})`)
+      this.onVisibility = () => console.info(`[online] page ${document.visibilityState} at tick ${this.engine !== null ? (this.flow.show?.snapshot().tick ?? '-') : (this.flow.match?.sim.tick ?? '-')} (${this.flow.state})`)
       this.onPageHide = () => this.flow.close('its page was closed')
       document.addEventListener('visibilitychange', this.onVisibility)
       addEventListener('pagehide', this.onPageHide)
@@ -1335,7 +1367,8 @@ class OnlineMode implements Mode {
     return Array.from({ length: this.seats }, (_, p) => (p < players.length ? players[p].name : `Bot ${p + 1}`))
   }
 
-  sim(): MatchSim | null {
+  sim(): SceneReadView | null {
+    if (this.engine !== null) return this.showMode?.view() ?? null
     return this.flow.match?.sim ?? null
   }
 
@@ -1352,6 +1385,7 @@ class OnlineMode implements Mode {
   }
 
   hud(): HudState | null {
+    if (this.engine !== null) return this.showMode?.hud() ?? null
     if (this.flow.match === null) return null
     return this.showMode?.hud() ?? { view: this.presenter.view, names: this.names, seat: this.seat }
   }
@@ -1362,6 +1396,7 @@ class OnlineMode implements Mode {
 
   roundStage(): RoundStage | null {
     const port = this.c.loaded.ports[0]
+    if (this.engine !== null) return this.showMode?.roundStage() ?? { port, course: 'hub' }
     if (this.flow.match === null) return { port, course: 'hub' }
     return this.showMode?.roundStage() ?? null
   }
@@ -1373,7 +1408,7 @@ class OnlineMode implements Mode {
   // Leave closes the flow: the other pages get 'left the match' and a bot takes the seat. The app then opens a
   // fresh online hub (Effect.leaveMatch).
   leaveMatch(): void {
-    console.info(`[online] leaving at tick ${this.flow.match?.sim.tick ?? '-'} (${this.flow.state})`)
+    console.info(`[online] leaving at tick ${this.engine !== null ? (this.flow.show?.snapshot().tick ?? '-') : (this.flow.match?.sim.tick ?? '-')} (${this.flow.state})`)
     this.flow.close('the player left the match')
   }
 
@@ -1382,21 +1417,40 @@ class OnlineMode implements Mode {
     this.flow.frame(dtS, null, 0)
     this.stepShow(dtS)
     this.sampleNet(performance.now(), false)
+    this.observeProbe()
   }
 
   private stepShow(dtS: number): void {
-    const match = this.flow.match
-    if (match !== this.showMatch) {
-      this.showMode?.dispose()
-      this.showMode = null
-      this.showMatch = match
-      this.show.models = null
-      const { R, show } = this.c.loaded
-      if (match !== null && show !== null && this.c.views !== undefined) {
-        this.names = this.roundNames()
-        this.showMode = ShowMode.online({ R, views: this.c.views, orbit: this.c.orbit, look: this.c.look?.() ?? null,
-          seats: this.seats, seed: 0, localName: this.localName, localSeat: this.seat, name: this.name,
-          voteMs: 5000, intermissionMs: 12000 }, match.full, show)
+    if (this.engine !== null) {
+      // PlayFlow steps and owns the engine runtime; ShowMode only presents flow.show.
+      const runtime = this.flow.show
+      if (runtime !== this.showRuntime) {
+        this.showMode?.dispose()
+        this.showMode = null
+        this.showRuntime = runtime
+        this.show.models = null
+        const { R, show } = this.c.loaded
+        if (runtime !== null && show !== null && this.c.views !== undefined) {
+          this.names = this.roundNames()
+          this.showMode = ShowMode.engine({ R, views: this.c.views, orbit: this.c.orbit, look: this.c.look?.() ?? null,
+            seats: this.seats, seed: 0, localName: this.localName, localSeat: this.seat, name: this.name,
+            voteMs: 5000, intermissionMs: 12000 }, runtime, show, { driven: true })
+        }
+      }
+    } else {
+      const match = this.flow.match
+      if (match !== this.showMatch) {
+        this.showMode?.dispose()
+        this.showMode = null
+        this.showMatch = match
+        this.show.models = null
+        const { R, show } = this.c.loaded
+        if (match !== null && show !== null && this.c.views !== undefined) {
+          this.names = this.roundNames()
+          this.showMode = ShowMode.online({ R, views: this.c.views, orbit: this.c.orbit, look: this.c.look?.() ?? null,
+            seats: this.seats, seed: 0, localName: this.localName, localSeat: this.seat, name: this.name,
+            voteMs: 5000, intermissionMs: 12000 }, match.full, show)
+        }
       }
     }
     const mode = this.showMode
@@ -1411,10 +1465,49 @@ class OnlineMode implements Mode {
   }
 
   private sampleNet(nowMs: number, drawn: boolean): void {
+    if (this.engine !== null) {
+      const show = this.flow.show
+      const stats = show === null ? null : engineOnlineStats(show)
+      if (show === null || stats === null) this.netDiag.clear()
+      else this.netDiag.sample({
+        tick: show.snapshot().tick, confirmedTick: stats.confirmedTick, delay: 0, rtt: {}, rollbacks: 0,
+        maxRollback: 0, stallFrames: 0, desyncs: stats.desyncs, peers: this.flow.mesh?.peers,
+      }, this.pump.pumped, nowMs, drawn)
+      return
+    }
     const match = this.flow.match
     if (match === null) this.netDiag.clear()
     else this.netDiag.sample({ ...match.session.stats, confirmedDomains: match.zones?.stats.confirmedTick,
       peers: this.flow.mesh?.peers }, this.pump.pumped, nowMs, drawn)
+  }
+
+  // One probe observation per drawn frame and per NetPump background step (the hidden page keeps stepping).
+  private observeProbe(): void {
+    const probe = this.probe
+    if (probe === null) return
+    const flow = this.flow
+    const state = flow.state
+    const view = flow.lobby.view
+    if ((state === 'match' || state === 'podium') && view.id !== this.matchedLobby) {
+      this.humans = view.members.filter(m => m.role === 'player').length
+      this.matchedLobby = view.id
+    } else if (state === 'queued' && view.id !== this.matchedLobby) this.humans = 1
+    probe.observe({
+      screen: this.screenOf(),
+      flow: state,
+      ready: this.engine !== null && state !== 'failed',
+      error: this.failure,
+      moduleKey: this.engine?.identity.moduleKey ?? '',
+      seats: this.seats,
+      humans: this.humans,
+      hubPresented: this.hubPresented,
+      hubFaults: flow.hubRuntime?.faults ?? 0,
+      show: flow.show,
+      lobbyId: view.id ?? null,
+      lobbyMembers: view.members.length,
+      visibility: document.visibilityState === 'hidden' ? 'hidden' : 'visible',
+      online: true,
+    })
   }
 
   frame(f: FrameIn): GameScreen {
@@ -1425,22 +1518,43 @@ class OnlineMode implements Mode {
     if (flow.match !== null) facing = flow.match.sim.character(this.seat, this.cv).facing
     else if (inHub(before)) facing = flow.hub.state(this.local).facing
     this.diag()
-    flow.frame(this.pump.frame(f.dt), f.paused ? null : inCharacterFrame(f.world, facing, this.moved), f.paused ? 0 : f.emote)
+    // FlowBackend match controls are world space (S1); the hub still walks in the character's frame.
+    const controls = f.paused ? null
+      : this.engine !== null && (before === 'match' || before === 'podium') ? worldControls(f.world, this.moved)
+        : inCharacterFrame(f.world, facing, this.moved)
+    flow.frame(this.pump.frame(f.dt), controls, f.paused ? 0 : f.emote)
     this.sampleNet(now, true)
     const match = flow.match
     this.stepShow(f.dt)
-    const sim = match?.sim ?? null
-    if (sim !== this.viewed) {
-      this.viewed = sim
-      this.note = ''
-      if (sim === null) {
-        this.presenter.end()
-        this.c.orbit.reset(0)
-        this.hubView.setVisible(true)
-      } else {
-        this.hubView.setVisible(false)
-        this.presenter.end()
-        this.names = this.roundNames()
+    if (this.engine !== null) {
+      const runtime = flow.show
+      if (runtime !== this.viewedShow) {
+        this.viewedShow = runtime
+        this.note = ''
+        if (runtime === null) {
+          this.presenter.end()
+          this.c.orbit.reset(0)
+          this.hubView.setVisible(true)
+        } else {
+          this.hubView.setVisible(false)
+          this.presenter.end()
+          this.names = this.roundNames()
+        }
+      }
+    } else {
+      const sim = match?.sim ?? null
+      if (sim !== this.viewed) {
+        this.viewed = sim
+        this.note = ''
+        if (sim === null) {
+          this.presenter.end()
+          this.c.orbit.reset(0)
+          this.hubView.setVisible(true)
+        } else {
+          this.hubView.setVisible(false)
+          this.presenter.end()
+          this.names = this.roundNames()
+        }
       }
     }
     // Entering, waiting in or watching a lobby keeps the walkable hub: the player is never asked join or spectate.
@@ -1450,10 +1564,13 @@ class OnlineMode implements Mode {
       screen = this.show.models?.screen ?? matchScreen(v, match.sim.character(this.seat, this.cv).status, false)
     } else if (inHub(flow.state)) {
       this.hubView.update(flow.hub.state(this.local), this.c.q.colour, flow.remotes(now), flow.hub.tick, f.dt, flow.hub.emote(now))
+      this.hubPresented = true
     }
+    if (this.engine !== null && this.show.models !== null) screen = this.show.models.screen
     if (match === null && inHub(flow.state)) this.tags?.update(this.hubView.camera, this.hubView.tags(this.shownName()))
     else this.tags?.update(null, [])
     renderFrame(this.c.loaded.ports[0], () => this.c.loaded.ports[0].render())
+    this.observeProbe()
     return screen
   }
 
@@ -2422,13 +2539,16 @@ class App {
     if (loaded === null || q === null) return this.fail(refusal('game', 'start', 'the content is not loaded; retry the load'))
     this.stopMode()
     const c: ModeCtx = { look: () => this.wornLook(), loaded, q, orbit: this.orbit, touch: this.touchOn, setLayout: seats => this.setLayout(seats), views: this.views,
-      setLoading: (label, done, total) => this.setRoundLoading(label, done, total) }
+      setLoading: (label, done, total) => this.setRoundLoading(label, done, total), screen: () => this.nav.screen,
+      probe: this.backend === 'engine' ? this.probe : null }
     try {
       const pending = this.pendingRelay
       this.pendingRelay = null
-      if (this.backend === 'engine') this.mode = this.enterEngineHub(c)
-      else if (q.server !== null) this.mode = new OnlineMode(c, q.server)
-      else if (pending !== null) this.mode = new OnlineMode(c, pending)
+      const engine = this.backend === 'engine' ? this.engine : null
+      if (this.backend === 'engine' && engine === null) throw new Error(refusal('engine', 'online', 'the engine backend is not prepared; retry the load'))
+      if (q.server !== null) this.mode = new OnlineMode(c, q.server, engine)
+      else if (pending !== null) this.mode = new OnlineMode(c, pending, engine)
+      else if (this.backend === 'engine') this.mode = this.enterEngineHub(c)
       else if (q.clients > 1) this.mode = new InPageMode(c)
       else {
         const local = this.preparedLocal ?? new LocalMode(c)
@@ -2623,6 +2743,8 @@ class App {
   private observeEngine(): void {
     const probe = this.probe
     if (probe === null) return
+    // Engine online observes the probe itself, in frame() and in the NetPump background step.
+    if (this.mode instanceof OnlineMode && this.engine !== null) return
     const mode = this.mode
     const q = this.query
     const flow = this.failedWith !== null ? 'failed'

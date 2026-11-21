@@ -8,6 +8,7 @@ import type { RawControls } from '@royal-fiesta/game/client/inputMap'
 import type { CourseV1, ResolvedGameAsset } from '@royal-fiesta/game/courseV1'
 import { RF_EGE_SCRIPTS_URL } from '@royal-fiesta/game/ege/files'
 import { EngineShowEffects } from '@royal-fiesta/game/ege/showEffects'
+import { engineOnlineStats } from '@royal-fiesta/game/ege/onlineState'
 import { createEngineShow } from '@royal-fiesta/game/ege/showRuntime'
 import type { EngineShowConfig, EngineShowRuntime, EngineShowSnapshot } from '@royal-fiesta/game/ege/showTypes'
 import type { EngineModuleIdentity } from '../../../../tools/egeScripts.ts'
@@ -119,7 +120,8 @@ export function setEngineShowWasmUrl(url: string): void {
 
 type ZoneContent = Awaited<ReturnType<typeof import('../zone/zoneContent.ts').zoneContent>>
 
-interface AuthoredShow {
+/** The authored courses, assets, zones and season a show is prepared from; the page and the game shell share it. */
+export interface AuthoredShow {
   courses: CourseV1[]
   plaza: CourseV1
   assets: Map<string, ResolvedGameAsset>
@@ -129,10 +131,17 @@ interface AuthoredShow {
   podium: PodiumLayout
 }
 
-interface PublishedEngine {
+/** The loaded engine, its published identity and scripts; the schema is already loaded and key-checked. */
+export interface PublishedEngine {
   engine: EngineInstance
   identity: EngineModuleIdentity
   scriptBytes: ArrayBuffer
+}
+
+/** Optional human count and plan for one show; every other field comes from the page's current configuration. */
+export interface EngineShowConfigOverrides {
+  plan?: readonly number[]
+  humans?: number
 }
 
 /** The views and effects bound to one show the flow has attached; the runtime itself belongs to EngineHubFlow. */
@@ -178,6 +187,18 @@ export interface EngineShowHostApi {
   fastForward(on: boolean): void
   /** Sets the plan of the next show, starts it through EngineHubFlow and resolves with this same host in 'show'. */
   remount(plan: readonly number[]): Promise<EngineShowHostApi>
+  /**
+   * Handoff: 'Engine online share 5/5: online capture scenarios and inventory' calls
+   * EngineShowHostApi.remountWith(start, overrides) and EngineShowHostApi.showConfig(overrides) through
+   * engineShowHost(page). Today remountWith prepares the next show with `start(showConfig(overrides))` once and
+   * attaches it through the same path as remount; showConfig applies the overrides to the page's current config.
+   */
+  remountWith(
+    start: (config: EngineShowConfig) => Promise<EngineShowRuntime>,
+    overrides?: EngineShowConfigOverrides,
+  ): Promise<EngineShowHostApi>
+  /** The page's current show configuration with the optional humans and plan overrides applied. */
+  showConfig(overrides?: EngineShowConfigOverrides): EngineShowConfig
   /**
    * Waits for the animation load and the GPU pipelines the drawn show requested, then redraws still frames and
    * waits for the GPU, so near/far penguins, the course and the podium are really on the canvas before capture.
@@ -237,9 +258,10 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       })
       .catch(() => { opening = false })
   }
-  // Enter starts the next show from the hub; the hub itself never starts a show.
+  // Enter starts the next show from the hub; the hub itself never starts a show, and an online show starts only
+  // through EngineShowHostApi.remountWith because its transport is not the page's.
   const startOnEnter = (event: KeyboardEvent): void => {
-    if (event.key === 'Enter' && flow?.state() === 'hub') void flow.start()
+    if (event.key === 'Enter' && options.mode === 'local' && flow?.state() === 'hub') void flow.start()
   }
   if (typeof window !== 'undefined') {
     window.addEventListener('pointerdown', openAudio)
@@ -268,6 +290,11 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
   let flow: EngineHubFlow | null = null
   let pendingRuntime: EngineShowRuntime | null = null
   let nextPlan: readonly number[] | undefined
+  let nextStart: ((config: EngineShowConfig) => Promise<EngineShowRuntime>) | undefined
+  let nextOverrides: EngineShowConfigOverrides | undefined
+  let showConfigOf: ((overrides?: EngineShowConfigOverrides) => EngineShowConfig) | null = null
+  let showHumans = options.humans
+  let lastDesyncs = 0
   let phaseSeen: EngineHubFlowState = 'loading'
   let hubPresented = false
   let roundSignalled = false
@@ -507,34 +534,28 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     return phase
   }
   const prepare = async (): Promise<void> => {
-    if (options.mode === 'online') {
-      refuse(AREA, 'options.mode', 'online attachment is not available on this page yet; choose local mode')
-    }
-    const [published, authored] = await Promise.all([loadPublication(), loadAuthoredShow()])
+    const [published, authored] = await Promise.all([loadEnginePublication(), loadEngineAuthoredShow()])
     if (disposed) return
     const { engine, identity, scriptBytes } = published
-    engine.setSchema(JSON.stringify(schemaJson))
-    const loadedKey = schemaLayout(engine).key
-    if (loadedKey !== identity.schemaKey) {
-      refuse(AREA, 'publication.schemaKey', `published ${identity.schemaKey} but the loaded schema is ${loadedKey}; rebuild the show scripts`)
-    }
     internal.moduleKey = identity.moduleKey
     authoredSeason = authored.season
     authoredRef = authored
-    const config = (plan: readonly number[] | undefined): EngineShowConfig => ({
-      engine,
-      schemaText: JSON.stringify(schemaJson),
-      scriptBytes,
-      identity,
-      seed: options.seed,
-      courses: authored.courses,
-      assets: authored.assets,
-      zones: authored.zones,
-      season: authored.season,
-      humans: humanFlags(options.humans),
-      ...(plan === undefined ? {} : { plan }),
-      testMode: engineShowTestMode(options.testMode).enabled,
-    })
+    const config = (plan: readonly number[] | undefined, overrides?: EngineShowConfigOverrides): EngineShowConfig =>
+      applyConfigOverrides({
+        engine,
+        schemaText: JSON.stringify(schemaJson),
+        scriptBytes,
+        identity,
+        seed: options.seed,
+        courses: authored.courses,
+        assets: authored.assets,
+        zones: authored.zones,
+        season: authored.season,
+        humans: humanFlags(options.humans),
+        ...(plan === undefined ? {} : { plan }),
+        testMode: engineShowTestMode(options.testMode).enabled,
+      }, overrides)
+    showConfigOf = overrides => config(options.plan, overrides)
     const sim = authored.plaza.sim
     if (sim === null) refuse(AREA, `courses/${HUB_PLAZA}.course.json`, 'has no simulation part; pass a playable hub plaza')
     const shared = await createPort(canvas, authored.zoneContent)
@@ -562,16 +583,38 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       dressing: authored.zoneContent.dressing,
     })
     // The flow owns each show it starts; the page keeps the latest one only until it attaches the views.
-    flow = new EngineHubFlow(hubRuntime, () => {
-      const plan = nextPlan ?? options.plan
-      nextPlan = undefined
-      return createEngineShow(config(plan)).then(runtime => {
+    const startShow = (used: EngineShowConfig, start: () => Promise<EngineShowRuntime>): Promise<EngineShowRuntime> => {
+      showHumans = used.humans.filter(human => human).length
+      return start().then(runtime => {
         pendingRuntime = runtime
         return runtime
       })
+    }
+    flow = new EngineHubFlow(hubRuntime, () => {
+      const starter = nextStart
+      const overrides = nextOverrides
+      nextStart = undefined
+      nextOverrides = undefined
+      if (starter !== undefined) {
+        const used = config(options.plan, overrides)
+        return startShow(used, () => starter(used))
+      }
+      const plan = nextPlan ?? options.plan
+      nextPlan = undefined
+      const used = config(plan)
+      return startShow(used, () => createEngineShow(used))
     })
     drawHub(0)
     activeCapture = host
+  }
+  /** Starts one prepared show through EngineHubFlow and attaches it; a failed start reports the flow's own error. */
+  const startFlow = async (): Promise<void> => {
+    const current = flow
+    if (current === null) throw new Error('[engine-show] the engine hub is not prepared; await page.ready before starting a show')
+    await current.start()
+    if (current.state() === 'failed') throw new Error(current.error() ?? '[engine-show] the show failed to start')
+    syncShow()
+    if (live === null) throw new Error('[engine-show] the started show is not attached')
   }
   const host: EngineShowHostApi = {
     collector,
@@ -643,14 +686,22 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       current.scene.observeTick(current.read)
     },
     async remount(plan) {
-      const current = flow
-      if (current === null) throw new Error('[engine-show] the engine hub is not prepared; await page.ready before starting a show')
+      if (options.mode === 'online') refuse(AREA, 'remount', 'online shows start only through remountWith; pass the online starter')
       nextPlan = plan
-      await current.start()
-      if (current.state() === 'failed') throw new Error(current.error() ?? '[engine-show] the show failed to start')
-      syncShow()
-      if (live === null) throw new Error('[engine-show] the started show is not attached')
+      await startFlow()
       return host
+    },
+    async remountWith(start, overrides) {
+      if (typeof start !== 'function') refuse(AREA, 'remountWith.start', 'must be a function preparing the show from its config')
+      if (flow === null) throw new Error('[engine-show] the engine hub is not prepared; await page.ready before starting a show')
+      nextStart = start
+      nextOverrides = overrides
+      await startFlow()
+      return host
+    },
+    showConfig(overrides) {
+      if (showConfigOf === null) throw new Error('[engine-show] the engine hub is not prepared; await page.ready before reading the show config')
+      return showConfigOf(overrides)
     },
     async settle() {
       const current = live
@@ -741,20 +792,24 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       const snapshot = internal.snapshot
       const phase = flow?.state() ?? 'loading'
       const failed = phase === 'failed'
+      const attached = live
+      const stats = attached === null ? null : engineOnlineStats(attached.runtime)
+      if (attached !== null) lastDesyncs = stats?.desyncs ?? 0
+      const humans = attached === null ? options.humans : showHumans
       return {
         screen: screenNow(),
         ready: internal.ready && (phase === 'hub' || phase === 'show' || phase === 'returning'),
         error: failed ? (flow?.error() ?? null) : internal.error,
         backend: 'engine',
         seats: SEATS,
-        humans: options.humans,
-        bots: SEATS - options.humans,
+        humans,
+        bots: SEATS - humans,
         round: snapshot?.round ?? 0,
         tick: snapshot?.tick ?? 0,
         moduleKey: live?.runtime.identity.moduleKey ?? internal.moduleKey,
         faults: snapshot?.faults ?? 0,
         completedRounds: snapshot?.results.length ?? 0,
-        desyncs: 0,
+        desyncs: lastDesyncs,
       }
     },
     dispose,
@@ -817,6 +872,28 @@ function validateOptions(options: EngineShowPageOptions): void {
   if (options.onRuntime !== undefined && typeof options.onRuntime !== 'function') {
     refuse(AREA, 'options.onRuntime', 'must be a function receiving the prepared runtime')
   }
+}
+
+/**
+ * The base show configuration with the optional human count and plan replaced; an invalid count or plan refuses
+ * with a visible path so a capture or the game shell cannot silently start a different show.
+ */
+export function applyConfigOverrides(base: EngineShowConfig, overrides?: EngineShowConfigOverrides): EngineShowConfig {
+  if (overrides === undefined) return { ...base }
+  const next = { ...base }
+  if (overrides.humans !== undefined) {
+    if (!Number.isInteger(overrides.humans) || overrides.humans < 1 || overrides.humans > MAX_HUMANS) {
+      refuse(AREA, 'overrides.humans', `must be an integer in 1..${MAX_HUMANS}; configured ${String(overrides.humans)} humans`)
+    }
+    next.humans = humanFlags(overrides.humans)
+  }
+  if (overrides.plan !== undefined) {
+    if (!Array.isArray(overrides.plan) || overrides.plan.length === 0 || overrides.plan.some(count => !Number.isInteger(count) || count < 1)) {
+      refuse(AREA, 'overrides.plan', 'must be a non-empty list of positive head counts; omit it for the current plan')
+    }
+    next.plan = overrides.plan
+  }
+  return next
 }
 
 function humanFlags(count: number): boolean[] {
@@ -906,7 +983,11 @@ function trackInput(): { controls: RawControls; poll: () => void; detach: () => 
   }
 }
 
-async function loadPublication(): Promise<PublishedEngine> {
+/**
+ * Loads the engine, its published identity and scripts, then loads the schema and checks the published key so the
+ * page and the game shell share one loader; a mismatch refuses and names the rebuild.
+ */
+export async function loadEnginePublication(): Promise<PublishedEngine> {
   const base = typeof document === 'undefined' ? 'http://localhost/' : document.baseURI
   const [engine, publication, script] = await Promise.all([
     loadEngine(engineWasmUrl === undefined ? undefined : { wasmUrl: engineWasmUrl }),
@@ -928,10 +1009,17 @@ async function loadPublication(): Promise<PublishedEngine> {
     schemaKey: published.schemaKey as number,
     moduleKey: published.moduleKey,
   }
-  return { engine, identity, scriptBytes: await script.arrayBuffer() }
+  const scriptBytes = await script.arrayBuffer()
+  engine.setSchema(JSON.stringify(schemaJson))
+  const loadedKey = schemaLayout(engine).key
+  if (loadedKey !== identity.schemaKey) {
+    refuse(AREA, 'publication.schemaKey', `published ${identity.schemaKey} but the loaded schema is ${loadedKey}; rebuild the show scripts`)
+  }
+  return { engine, identity, scriptBytes }
 }
 
-async function loadAuthoredShow(): Promise<AuthoredShow> {
+/** Loads the authored show content the page and the game shell start shows from. */
+export async function loadEngineAuthoredShow(): Promise<AuthoredShow> {
   const [{ loadShowContent }, { zoneContent }] = await Promise.all([
     import('../game/showContent.ts'),
     import('../zone/zoneContent.ts'),

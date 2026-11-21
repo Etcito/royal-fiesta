@@ -15,7 +15,8 @@ import { loadEngine } from '@etcito/game-engine'
 import { schemaLayout } from '@etcito/game-engine/script'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
 import { createEngineShow } from '@royal-fiesta/game/ege/showRuntime'
-import type { EngineShowObservation } from '@royal-fiesta/game/ege/showTypes'
+import type { EngineShowConfig, EngineShowObservation } from '@royal-fiesta/game/ege/showTypes'
+import { applyConfigOverrides } from '../src/engineShow/page.ts'
 import { loadEngineShowContent } from '../../headless/src/engineShow.ts'
 import { rfScriptBytes } from '../../headless/src/egeHarness.ts'
 import { readRepoText } from '../../headless/src/files.ts'
@@ -436,5 +437,45 @@ test('the sixty-seat test-mode round moves its scripted bots and botsMoved reads
   } finally {
     unsubscribe()
     runtime.dispose()
+  }
+})
+
+function configBase(): EngineShowConfig {
+  return {
+    engine: null as unknown as EngineShowConfig['engine'],
+    schemaText: '{}',
+    scriptBytes: new Uint8Array(),
+    identity: { backend: 'engine', schemaKey: 1, moduleKey: 'test' },
+    seed: 7,
+    courses: [],
+    assets: new Map(),
+    zones: new Map(),
+    season: [],
+    humans: Array.from({ length: 60 }, () => false),
+  }
+}
+
+test('configuration overrides keep the base config and replace humans and plan or refuse visibly', () => {
+  const base = configBase()
+  const kept = applyConfigOverrides(base)
+  assert.deepEqual(kept.humans, base.humans)
+  assert.equal(kept.plan, undefined)
+  assert.equal(kept.seed, base.seed)
+  assert.deepEqual(kept.identity, base.identity)
+  const three = applyConfigOverrides(base, { humans: 3 })
+  assert.equal(three.humans.length, 60)
+  assert.deepEqual(three.humans, Array.from({ length: 60 }, (_, seat) => seat < 3))
+  assert.equal(three.plan, undefined)
+  assert.deepEqual(applyConfigOverrides({ ...base, plan: [60, 1] }, { plan: [60, 12, 1] }).plan, [60, 12, 1])
+  const planned = applyConfigOverrides(base, { humans: 1, plan: [60, 12, 1] })
+  assert.deepEqual(planned.humans, Array.from({ length: 60 }, (_, seat) => seat === 0))
+  assert.deepEqual(planned.plan, [60, 12, 1])
+  for (const humans of [0, 9, 1.5]) {
+    assert.throws(() => applyConfigOverrides(base, { humans }), (error: unknown) =>
+      isRefusal(error) && error.area === 'engine-show' && error.path === 'overrides.humans')
+  }
+  for (const plan of [[], [0], [60, 1.5, 1]]) {
+    assert.throws(() => applyConfigOverrides(base, { plan }), (error: unknown) =>
+      isRefusal(error) && error.area === 'engine-show' && error.path === 'overrides.plan')
   }
 })

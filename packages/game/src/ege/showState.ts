@@ -9,6 +9,7 @@ import type { CourseV1 } from '../courseV1.ts'
 import { ROUND_KINDS, STAGE_IDS } from '@royal-fiesta/sim/season/kinds'
 import type { FinalRule, RoundKind } from '@royal-fiesta/sim/season/kinds'
 import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
+import { catalogCutField } from './showScene.ts'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { EngineRoundResult, EngineShowConfig, EngineShowSnapshot } from './showTypes.ts'
 
@@ -268,7 +269,7 @@ function committedMap(config: EngineShowConfig, data: ReturnType<typeof read>, r
   if (number(entry, 'final_rule') !== finalRank(map.finalRule)) fail(`show_catalog_entry/${mapIndex}/final_rule`, 'committed final rule differs from the season catalog')
   if (number(entry, 'stages') !== stageMask(map.stages)) fail(`show_catalog_entry/${mapIndex}/stages`, 'committed stages differ from the season catalog')
   if (number(entry, 'team', 0, 1) !== (map.team ? 1 : 0)) fail(`show_catalog_entry/${mapIndex}/team`, 'committed team flag differs from the season catalog')
-  if (number(entry, 'cut', 0, 1) !== (map.cut ? 1 : 0)) fail(`show_catalog_entry/${mapIndex}/cut`, 'committed cut flag differs from the season catalog')
+  if (number(entry, 'cut') !== catalogCutField(config.season, mapIndex)) fail(`show_catalog_entry/${mapIndex}/cut`, 'committed cut field differs from the season catalog')
   const course = config.courses[courseIndex]
   if (!course) fail(`courses/${courseIndex}`, 'the selected course is not part of the show configuration; add it to config.courses')
   if (course.sim === null) fail(`courses/${course.id}.course.json`, 'the selected course has no simulation data; select a playable course')

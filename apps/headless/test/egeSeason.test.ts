@@ -162,7 +162,7 @@ export function rf_vote_probe(): void {
 const STAGE = { R1: 1, R2: 2, R3: 4, R4: 8, final: 16 } as const
 const KIND = { race: 0, survival: 1, team: 2, collection: 3, hunt: 4, logic: 5, final: 6 } as const
 
-interface MapSpec { index: number; kind: number; stages: number; team: boolean; cut: boolean; finalRule: number }
+interface MapSpec { index: number; kind: number; stages: number; team: boolean; cut: boolean; finalRule: number; after?: number }
 
 // The committed S12 season order A..Q; index is the map id, course mirrors it for the probe.
 const CATALOG: MapSpec[] = [
@@ -173,9 +173,9 @@ const CATALOG: MapSpec[] = [
   { index: 4, kind: KIND.race, stages: STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
   { index: 5, kind: KIND.race, stages: STAGE.R1 | STAGE.R2, team: false, cut: true, finalRule: 0 },
   { index: 6, kind: KIND.race, stages: STAGE.R1 | STAGE.R2 | STAGE.R3, team: false, cut: false, finalRule: 0 },
-  { index: 7, kind: KIND.race, stages: STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
+  { index: 7, kind: KIND.race, stages: STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0, after: 4 },
   { index: 8, kind: KIND.survival, stages: STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
-  { index: 9, kind: KIND.survival, stages: STAGE.R3 | STAGE.R4 | STAGE.final, team: false, cut: false, finalRule: 2 },
+  { index: 9, kind: KIND.survival, stages: STAGE.R3 | STAGE.R4 | STAGE.final, team: false, cut: false, finalRule: 2, after: 8 },
   { index: 10, kind: KIND.survival, stages: STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
   { index: 11, kind: KIND.survival, stages: STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
   { index: 12, kind: KIND.team, stages: STAGE.R3, team: true, cut: false, finalRule: 0 },
@@ -466,7 +466,7 @@ function catalogEntities(catalog: MapSpec[] = CATALOG): any[] {
     components: {
       show_catalog_entry: {
         owner: 0, index: map.index, course: map.index, kind: map.kind,
-        final_rule: map.finalRule, stages: map.stages, team: map.team ? 1 : 0, cut: map.cut ? 1 : 0,
+        final_rule: map.finalRule, stages: map.stages, team: map.team ? 1 : 0, cut: (map.cut ? 1 : 0) | (((map.after ?? -1) + 1) << 8),
       },
     },
   }))
@@ -518,7 +518,8 @@ interface PoolOptions {
 }
 
 function forbidden(previous: number, map: number): boolean {
-  return (previous === 8 && map === 9) || (previous === 4 && map === 7)
+  const after = CATALOG[map].after ?? -1
+  return after >= 0 && previous === after
 }
 
 function explicitPool(options: PoolOptions): number[] {
@@ -657,6 +658,26 @@ test('candidate eligibility filters stage, reserved final, team, cut and adjacen
   assert.ok(afterH.includes(8))
   const afterD = await candidatesFor(pool({ stage: 3, previous: 4 }), 99)
   assert.ok(!afterD.includes(7), 'D -> G is forbidden')
+
+  const playable: MapSpec[] = [
+    { index: 0, kind: KIND.race, stages: STAGE.R1 | STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
+    { index: 1, kind: KIND.race, stages: STAGE.R1 | STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
+    { index: 2, kind: KIND.race, stages: STAGE.R1 | STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
+    { index: 3, kind: KIND.race, stages: STAGE.R1 | STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
+    { index: 4, kind: KIND.race, stages: STAGE.R1 | STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: true, finalRule: 0 },
+    { index: 5, kind: KIND.race, stages: STAGE.R1 | STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0 },
+    { index: 6, kind: KIND.race, stages: STAGE.R1 | STAGE.R2 | STAGE.R3 | STAGE.R4, team: false, cut: false, finalRule: 0, after: 3 },
+    { index: 7, kind: KIND.survival, stages: STAGE.final, team: false, cut: false, finalRule: 2 },
+    { index: 8, kind: KIND.final, stages: STAGE.final, team: false, cut: false, finalRule: 1 },
+  ]
+  const finalAfterE = await runProbe({ mode: 4, k: 99, stage: 4, final: 1, cut: 0, playoff: 0, team_allowed: 0, target: 12 },
+    [cursorEntity({ final_map: 7, last_kind: -1, previous: 4, rng_state: 7 }), ...catalogEntities(playable), ...usedEntities([])])
+  assert.equal(finalAfterE.faultCount, 0, faultText(finalAfterE))
+  assert.deepEqual(values(finalAfterE, 1), [7], 'E -> I stays allowed in the playable catalog')
+  const afterDPlayable = await runProbe({ mode: 4, k: 99, stage: 3, final: 0, cut: 0, playoff: 0, team_allowed: 0, target: 12 },
+    [cursorEntity({ final_map: 8, last_kind: -1, previous: 3, rng_state: 7 }), ...catalogEntities(playable), ...usedEntities([])])
+  assert.equal(afterDPlayable.faultCount, 0, faultText(afterDPlayable))
+  assert.ok(!values(afterDPlayable, 1).includes(6), 'D -> G is forbidden')
 
   const used = CATALOG.map(map => map.index).filter(index => index !== 1 && index !== 8)
   const kindPreferred = await candidatesFor(pool({ lastKind: KIND.race, used }), 99)

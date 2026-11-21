@@ -197,3 +197,53 @@ test('seat 1 (joining late) eliminated before the podium vote casts no vote and 
     for (const runtime of runtimes) runtime?.dispose()
   }
 })
+
+test('plan [60,1] seed 10 on the built season catalog: cut, single-candidate final vote, final, podium', async () => {
+  const { parseSeason, playableMaps } = await import('../src/season.ts')
+  const { showMaps } = await import('../src/net/zoneRounds.ts')
+  const { catalogCutField } = await import('../src/ege/showScene.ts')
+  const seasonData = parseSeason(readRepoJson('courses/season.json'), 'courses/season.json')
+  const ids = [...new Set(playableMaps(seasonData).map(map => map.course))]
+  const clones = ids.map(id => ({ ...course, id, sim: { ...course.sim!, id } }) as CourseV1)
+  const cloneZones = new Map<string, ZonesFile>(clones.map(clone => [clone.id, parseZonesFile({
+    format: 'royal-fiesta.zones', version: 0, course: clone.id,
+    grid: { origin: [-64, -64], cell: [2, 2], cols: 64, rows: 64 }, parts: {}, tuning: {},
+  }, `courses/${clone.id}.zones.json`, { ...course.sim!, id: clone.id })]))
+  const catalog = showMaps(clones as never, seasonData)
+  const at = (id: string): number => catalog.findIndex(map => map.id === id)
+  assert.equal(catalogCutField(catalog, at('I')), 0)
+  assert.equal(catalogCutField(catalog, at('G')) >>> 8, at('D') + 1)
+  assert.equal(catalogCutField(catalog, at('E')), 1 | 0)
+  const cfg = (): EngineShowConfig => ({
+    ...config([60, 1]), seed: 10, courses: clones, zones: cloneZones, season: catalog,
+  })
+  const net = new ZoneLoopback(2, { seed: 5, rttMs: 20, jitterMs: 0, loss: 0 })
+  const open2 = (peer: number): Promise<Runtime> => createEngineOnlineShow(cfg(), {
+    localPeer: peer, roster, transport: net.transport(peer), measurements: onlineMeasurements(roster),
+  })
+  const runtimes = [await open2(0), await open2(1)]
+  const voteCandidates: number[] = []
+  try {
+    for (let frame = 0; frame < 60000; frame++) {
+      net.advance(1000 / 60)
+      for (let peer = 0; peer < 2; peer++) {
+        const state = runtimes[peer]!.snapshot()
+        if (peer === 0 && state.screen === 'vote') voteCandidates.push(state.candidates.length)
+        voteOwn(runtimes[peer]!, peer)
+        runtimes[peer]!.frame(1 / 60, () => NEUTRAL)
+      }
+      if (runtimes.every(runtime => runtime.snapshot().screen === 'done')) break
+    }
+    for (const runtime of runtimes) {
+      const state = runtime.snapshot()
+      assert.equal(state.screen, 'done')
+      assert.equal(state.faults, 0)
+      assert.ok(state.results.length >= 2, 'a cut round and a final')
+      assert.equal(state.results[0]!.map, 'E')
+      assert.equal(state.results.at(-1)!.final, true)
+    }
+    assert.ok(voteCandidates.length > 0 && voteCandidates.every(count => count === 1), 'single-candidate votes')
+  } finally {
+    for (const runtime of runtimes) runtime.dispose()
+  }
+})

@@ -31,12 +31,6 @@ export const DEFAULT_PLAN_LENGTH: i32 = 6
 export const LONG_PLAN_LENGTH: i32 = 7
 export const FINAL_STAGE_BIT: u32 = 16
 
-// S12 committed season order: A B C1 C2 D E F G H I J K L M N O P Q.
-const SEASON_D: i32 = 4
-const SEASON_G: i32 = 7
-const SEASON_H: i32 = 8
-const SEASON_I: i32 = 9
-
 function fail(message: string): void {
   abort(message, 'scripts/ege/show/scheduler.as.ts', 0, 0)
 }
@@ -118,6 +112,7 @@ export class SchedMap {
   stages: u32 = 0
   team: bool = false
   cut: bool = false
+  after: i32 = -1
 }
 
 export class CursorAdvance {
@@ -159,10 +154,8 @@ export class Mulberry {
 }
 
 // packages/sim/src/season/scheduler.ts:7 no H -> I or D -> G back-to-back in the committed season order.
-export function forbiddenAdjacency(previous: i32, map: i32): bool {
-  if (previous == SEASON_H && map == SEASON_I) return true
-  if (previous == SEASON_D && map == SEASON_G) return true
-  return false
+export function forbiddenAdjacency(previous: i32, map: SchedMap): bool {
+  return map.after >= 0 && previous == map.after
 }
 
 export function hasFinal(catalog: StaticArray<SchedMap>): bool {
@@ -250,7 +243,7 @@ export function chooseCandidates(
     } else if ((map.stages & stageBit(slot.stage)) == 0) continue
     if (slot.final ? map.index != state.finalMap : map.index == state.finalMap) continue
     if (map.team && !slot.teamAllowed) continue
-    if (forbiddenAdjacency(state.previous, map.index)) continue
+    if (forbiddenAdjacency(state.previous, map)) continue
     pool[pooled++] = i
   }
   if (pooled == 0) fail('no eligible map for this show slot; build or load a map of that stage')
@@ -373,7 +366,8 @@ export function readCatalog(owner: u32): StaticArray<SchedMap> {
     map.finalRule = <i32>row.final_rule
     map.stages = row.stages
     map.team = row.team != 0
-    map.cut = row.cut != 0
+    map.cut = (row.cut & 1) != 0
+    map.after = <i32>(row.cut >>> 8) - 1
     catalog[i] = map
   }
   return catalog

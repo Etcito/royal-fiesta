@@ -7,6 +7,7 @@ import { legacyLevel } from '@royal-fiesta/sim/course'
 import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { ROUND_KINDS, STAGE_IDS } from '@royal-fiesta/sim/season/kinds'
+import { NO_BACK_TO_BACK } from '@royal-fiesta/sim/season/scheduler'
 import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
 import type { CourseV1 } from '../courseV1.ts'
 import { emitEngineScene, SHOW_ROOM_SEAT_LAST } from './sceneEmitter.ts'
@@ -29,6 +30,20 @@ const FINAL_RULE_RANK = { none: 0, crown: 1, lastStanding: 2 } as const
 const FINAL_RULES = ['crown', 'lastStanding'] as const
 const SHOW_WORLD_KINDS = ['show_seat', 'show_field', 'show_hub', 'show_rules'] as const
 type ShowWorldKind = (typeof SHOW_WORLD_KINDS)[number]
+
+/** Packed show_catalog_entry.cut: bit 0 = cut flag, bits 8.. = (index of the banned predecessor) + 1. */
+export function catalogCutField(season: readonly SchedMap[], index: number): number {
+  const map = season[index]
+  let predecessor = -1
+  for (const [before, after] of NO_BACK_TO_BACK) {
+    if (after !== map.id) continue
+    const at = season.findIndex(entry => entry.id === before)
+    if (at < 0) continue
+    if (predecessor >= 0) fail(`season/${index}`, 'has two banned predecessors; keep at most one NO_BACK_TO_BACK pair per map')
+    predecessor = at
+  }
+  return ((map.cut ? 1 : 0) | ((predecessor + 1) << 8)) >>> 0
+}
 
 function fail(path: string, problem: string): never {
   return refuse('ege-show-scene', path, problem)
@@ -266,7 +281,7 @@ export function buildShowRulesScene(config: EngineShowConfig): EgeScene {
         show_catalog_entry: {
           owner: cursor, index, course: map.course, kind: ROUND_KINDS.indexOf(map.kind),
           final_rule: finalRank(map.finalRule), stages: stageMask(map.stages),
-          team: map.team ? 1 : 0, cut: map.cut ? 1 : 0,
+          team: map.team ? 1 : 0, cut: catalogCutField(config.season, index),
         },
       },
     })

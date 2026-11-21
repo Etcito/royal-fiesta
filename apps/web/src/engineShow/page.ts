@@ -21,7 +21,16 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import schemaJson from '../../../../ege.schema.json' with { type: 'json' }
 import { browserGameAssets, loadV1Courses } from '../content/v1Data.ts'
 import type { ResizablePort } from '../sdf/sdfPort.ts'
+import { openBrowserAudio } from '@royal-fiesta/game/audio/context'
+import type { BrowserSound } from '@royal-fiesta/game/audio/context'
+import { podiumLayoutOf } from '@royal-fiesta/game/courseV1'
+import type { EngineRoundResult } from '@royal-fiesta/game/ege/showTypes'
+import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
+import type { PodiumLayout } from '@royal-fiesta/game/content'
+import { audioManifestUrl } from '../play/sound.ts'
 import { createEngineShowReady } from './ready.ts'
+import { EngineScreenTracker, EngineSeatPresenter, engineEffectSinks, farPenguinBridge, podiumPlayers } from './presentation.ts'
+import type { EngineScreenModel, EngineSeatSubmission } from './presentation.ts'
 import { engineShowTestMode } from './testMode.ts'
 
 const AREA = 'engine-show'
@@ -33,6 +42,7 @@ const LOCAL_SEAT = 0
 const PUBLICATION_URL = 'ege/rf-publication.json'
 const STEP_CAP_S = 0.25
 const STICK_DEADZONE = 0.15
+const PODIUM_COURSE = 'podium'
 
 /** The dedicated page's startup options; the bootstrap defaults to local mode, sixty seats and one human. */
 export interface EngineShowPageOptions {
@@ -65,6 +75,16 @@ export interface EngineShowPage {
   ready: Promise<void>
   state(): EnginePageState
   dispose(): void
+  /** The last drawn frame's screen model and submitted near/far room seats; null before the first frame. */
+  presentation(): EnginePagePresentation | null
+}
+
+/** Copied presentation of the last drawn frame: the screen/HUD model and the seats each renderer received. */
+export interface EnginePagePresentation {
+  model: EngineScreenModel
+  near: readonly number[]
+  far: readonly number[]
+  grants: number
 }
 
 // The Vite build resolves the engine wasm to an emitted asset; the bootstrap installs its URL here so this
@@ -83,6 +103,7 @@ interface AuthoredShow {
   zones: ReadonlyMap<string, ZonesFile>
   season: readonly SchedMap[]
   zoneContent: ZoneContent
+  podium: PodiumLayout
 }
 
 interface PublishedEngine {
@@ -97,6 +118,11 @@ interface LiveShow {
   readonly scene: SceneView
   readonly effects: EngineShowEffects
   readonly port: ResizablePort
+  readonly presenter: EngineSeatPresenter
+  readonly bridge: ReturnType<typeof farPenguinBridge>
+  readonly stage: PodiumStage
+  readonly tracker: EngineScreenTracker
+  podiumKey: string
   unsubscribe: (() => void) | null
   frame: number
 }
@@ -114,7 +140,26 @@ interface LiveShow {
  */
 export async function mountEngineShow(root: HTMLElement, options: EngineShowPageOptions): Promise<EngineShowPage> {
   validateOptions(options)
-  const { canvas, status } = mountInterface(root)
+  const { canvas, status, hud } = mountInterface(root)
+  const grants = new Map<string, EngineRoundResult>()
+  let sound: BrowserSound | null = null
+  let opening = false
+  let drawn: { model: EngineScreenModel; submission: EngineSeatSubmission } | null = null
+  // Browsers open audio only after a gesture; the audio pack then plays confirmed cues through the effects sinks.
+  const openAudio = (): void => {
+    if (opening || typeof AudioContext === 'undefined') return
+    opening = true
+    void openBrowserAudio({ manifestUrl: audioManifestUrl(document.baseURI), maxListeners: 1 })
+      .then(opened => {
+        if (disposed) void opened.close()
+        else sound = opened
+      })
+      .catch(() => { opening = false })
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pointerdown', openAudio)
+    window.addEventListener('keydown', openAudio)
+  }
   const internal = {
     ready: false,
     error: null as string | null,
@@ -138,9 +183,28 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
   let lastFrame = 0
   function drawFrame(dtS: number): void {
     if (live === null) return
+    const snapshot = live.runtime.snapshot()
+    const presentation = live.runtime.presentation()
     live.scene.update(live.read, null, 1, dtS)
+    live.presenter.refill(presentation, snapshot, live.read.nearSeats())
+    const submission = live.presenter.submission()
+    const model = live.tracker.update(snapshot, presentation, authoredSeason, LOCAL_SEAT)
+    if (model.podium !== null) {
+      live.bridge.sync(submission.view.count === 0 ? submission.view : { count: 0, stride: submission.view.stride, bytes: new Uint8Array(8) })
+      const key = model.podium.join(',')
+      if (key !== live.podiumKey) live.stage.show(podiumPlayers(model.podium))
+      live.podiumKey = key
+      live.stage.update(dtS)
+    } else {
+      if (live.podiumKey !== '') live.stage.hide()
+      live.podiumKey = ''
+      live.bridge.sync(submission.view)
+    }
+    live.effects.pump()
     live.port.render()
-    internal.snapshot = live.runtime.snapshot()
+    hud.textContent = model.hud.join('\n')
+    drawn = { model, submission: model.podium === null ? submission : { ...submission, far: new Set() } }
+    internal.snapshot = snapshot
   }
   function loop(now: number): void {
     if (disposed || live === null) return
@@ -173,6 +237,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     paint()
     if (state === 'ready') startLoop()
   }
+  let authoredSeason: AuthoredShow['season'] = []
   const prepare = async (): Promise<void> => {
     if (options.mode === 'online') {
       refuse(AREA, 'options.mode', 'online attachment is not available on this page yet; choose local mode')
@@ -186,6 +251,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       refuse(AREA, 'publication.schemaKey', `published ${identity.schemaKey} but the loaded schema is ${loadedKey}; rebuild the show scripts`)
     }
     internal.moduleKey = identity.moduleKey
+    authoredSeason = authored.season
     const runtime = await createEngineShow({
       engine,
       schemaText: JSON.stringify(schemaJson),
@@ -207,12 +273,14 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     let scene: SceneView | null = null
     let effects: EngineShowEffects | null = null
     let port: ResizablePort | null = null
+    let bridge: ReturnType<typeof farPenguinBridge> | null = null
+    let stage: PodiumStage | null = null
     try {
       options.onRuntime?.(runtime)
       read = new EngineShowView(runtime)
       read.refresh(1)
       const currentRead = read
-      effects = new EngineShowEffects(runtime, { sound: () => {}, grant: () => {} })
+      effects = new EngineShowEffects(runtime, engineEffectSinks(() => sound?.port ?? null, grants))
       port = await createPort(canvas, authored.zoneContent)
       if (disposed) throw new Error('the engine show was disposed while it was preparing')
       scene = new SceneView({
@@ -227,11 +295,27 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
         crowdAspect: () => WIDTH / HEIGHT,
       })
       const currentScene = scene
-      const current: LiveShow = { runtime, read: currentRead, scene: currentScene, effects, port, unsubscribe: null, frame: 0 }
+      bridge = farPenguinBridge(port, authored.zoneContent.bean)
+      stage = new PodiumStage({
+        port,
+        viewport: 0,
+        bean: authored.zoneContent.character,
+        block: authored.zoneContent.assets('wall-block'),
+        layout: authored.podium,
+      })
+      const presenter = new EngineSeatPresenter()
+      const current: LiveShow = {
+        runtime, read: currentRead, scene: currentScene, effects, port, presenter, bridge, stage,
+        tracker: new EngineScreenTracker(), podiumKey: '', unsubscribe: null, frame: 0,
+      }
       current.unsubscribe = runtime.onPresentation(observation => {
-        if (observation.kind !== 'post-tick') return
+        if (observation.kind !== 'post-tick') {
+          presenter.observe(observation, new Set())
+          return
+        }
         currentRead.refresh(1)
         currentScene.observeTick(currentRead)
+        presenter.observe(observation, currentRead.nearSeats())
         internal.snapshot = observation.snapshot
         internal.screen = observation.snapshot.screen
       })
@@ -239,6 +323,8 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       internal.screen = internal.snapshot.screen
       live = current
     } catch (error) {
+      stage?.dispose()
+      bridge?.dispose()
       port?.dispose()
       scene?.dispose()
       read?.dispose()
@@ -256,12 +342,22 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       if (current.frame !== 0 && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(current.frame)
       current.unsubscribe?.()
       current.effects.dispose()
+      current.presenter.clear()
+      current.bridge.dispose()
+      current.stage.dispose()
       current.scene.dispose()
       current.read.dispose()
       current.port.dispose()
       current.runtime.dispose()
     }
     input.detach()
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('pointerdown', openAudio)
+      window.removeEventListener('keydown', openAudio)
+    }
+    void sound?.close()
+    sound = null
+    hud.remove()
     canvas.remove()
     status.remove()
   }
@@ -288,6 +384,15 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       }
     },
     dispose,
+    presentation(): EnginePagePresentation | null {
+      if (drawn === null) return null
+      return {
+        model: { ...drawn.model, hud: [...drawn.model.hud] },
+        near: [...drawn.submission.near].sort((a, b) => a - b),
+        far: [...drawn.submission.far].sort((a, b) => a - b),
+        grants: grants.size,
+      }
+    },
   }
 }
 
@@ -312,7 +417,7 @@ function humanFlags(count: number): boolean[] {
   return Array.from({ length: SEATS }, (_, roomSeat) => roomSeat < count)
 }
 
-function mountInterface(root: HTMLElement): { canvas: HTMLCanvasElement; status: HTMLElement } {
+function mountInterface(root: HTMLElement): { canvas: HTMLCanvasElement; status: HTMLElement; hud: HTMLElement } {
   const owner = root.ownerDocument ?? (typeof document === 'undefined' ? null : document)
   if (owner === null) refuse(AREA, 'root', 'has no document; mount the page inside a browser document')
   const canvas = owner.createElement('canvas')
@@ -322,8 +427,10 @@ function mountInterface(root: HTMLElement): { canvas: HTMLCanvasElement; status:
   const status = owner.createElement('div')
   status.id = 'status'
   status.textContent = 'loading'
-  root.append(canvas, status)
-  return { canvas, status }
+  const hud = owner.createElement('pre')
+  hud.id = 'hud'
+  root.append(canvas, status, hud)
+  return { canvas, status, hud }
 }
 
 // S1 is world space: controlsToInput rotates the stick through the camera basis before encodeInput (ARCHITECTURE S1).
@@ -424,7 +531,7 @@ async function loadAuthoredShow(): Promise<AuthoredShow> {
     import('../zone/zoneContent.ts'),
   ])
   const [show, zone] = await Promise.all([loadShowContent('sprint'), zoneContent('sprint')])
-  const loaded = await loadV1Courses(() => {}, undefined, show.courses.map(course => course.id))
+  const loaded = await loadV1Courses(() => {}, undefined, [...show.courses.map(course => course.id), PODIUM_COURSE])
   const byId = new Map(loaded.courses.map(course => [course.id, course]))
   const courses: CourseV1[] = []
   for (const course of show.courses) {
@@ -432,6 +539,8 @@ async function loadAuthoredShow(): Promise<AuthoredShow> {
     if (found === undefined) refuse(AREA, `courses/${course.id}.course.json`, 'is missing from the product course loader')
     courses.push(found)
   }
+  const podium = byId.get(PODIUM_COURSE)
+  if (podium === undefined) refuse(AREA, `courses/${PODIUM_COURSE}.course.json`, 'is missing; add the authored podium course')
   const resolver = browserGameAssets()
   const ids = [...new Set(courses.flatMap(course => course.assetIds))]
   const resolved = await Promise.all(ids.map(async id => [id, await resolver.resolve(id)] as const))
@@ -441,6 +550,7 @@ async function loadAuthoredShow(): Promise<AuthoredShow> {
     zones: show.zones,
     season: show.season,
     zoneContent: zone,
+    podium: podiumLayoutOf(podium, id => zone.assets(id)),
   }
 }
 

@@ -279,6 +279,8 @@ class OnlineShowRuntime implements EngineShowRuntime {
     this.recipients = this.roster.peers.filter(entry => entry.peer !== this.localPeer).map(entry => entry.peer)
     this.rosterPeers = new Set(this.roster.peers.map(entry => entry.peer))
     this.rt.onVote((peer, round, choice) => this.receiveVote(peer, round, choice))
+    // The fresh rules world opens its first vote before any tick ran: settle that vote so a caller never sees it empty.
+    this.advance()
   }
 
   snapshot(): EngineShowSnapshot {
@@ -522,8 +524,27 @@ class OnlineShowRuntime implements EngineShowRuntime {
     }
   }
 
-  /** Steps the rules world only on a confirmed payload and releases the round's worlds when play closes. */
+  /**
+   * Steps the rules world only on a confirmed payload and releases the round's worlds when play closes. A vote
+   * screen opens one rules tick before the season script writes its candidate rows, so the tick that opens it is
+   * followed here by the one that fills them: no caller can read or vote on an empty candidate list.
+   */
   private advance(): void {
+    this.advanceTick()
+    if (this.physics !== undefined || !this.awaitsCandidates()) return
+    this.advanceTick()
+    if (this.awaitsCandidates()) {
+      fail('vote.candidates', 'the vote screen has no candidate rows after the season script ran; '
+        + 'repair the season script or the map catalog')
+    }
+  }
+
+  private awaitsCandidates(): boolean {
+    const state = this.snapshot()
+    return state.screen === 'vote' && state.candidates.length === 0
+  }
+
+  private advanceTick(): void {
     const physics = this.physics
     if (physics !== undefined) {
       const at = this.engine.tick(this.global.world)

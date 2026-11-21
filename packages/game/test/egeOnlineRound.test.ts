@@ -232,3 +232,71 @@ test('a missing course sidecar refuses the round without fabricating physics', a
     runtime.dispose()
   }
 })
+
+test('a late client and a client that votes late see every vote open with candidates', async () => {
+  // Three peers share a season of three race maps: round 0 and the round after it both open a multi-candidate vote.
+  const peers = 3
+  const threeRoster = onlineRoster(peers, 60)
+  const multiSeason = [
+    { id: 'A', course: 0, kind: 'race', finalRule: null, stages: ['R1', 'R2', 'R3', 'R4'], team: false, cut: false },
+    { id: 'B', course: 0, kind: 'race', finalRule: null, stages: ['R1', 'R2', 'R3', 'R4'], team: false, cut: false },
+    { id: 'C', course: 0, kind: 'race', finalRule: null, stages: ['R1', 'R2', 'R3', 'R4'], team: false, cut: false },
+  ] as const
+  const threeConfig = config({
+    season: multiSeason, plan: [60, 24, 12], humans: Array.from({ length: 60 }, (_, seat) => seat < peers),
+  })
+  const net = new ZoneLoopback(peers, { seed: 8, rttMs: 20, jitterMs: 0, loss: 0 })
+  const open = (peer: number): Promise<Runtime> => createEngineOnlineShow(threeConfig, {
+    localPeer: peer, roster: threeRoster, transport: net.transport(peer), measurements: onlineMeasurements(threeRoster),
+  })
+  const LATE_JOIN_FRAMES = 30
+  const LATE_VOTE_FRAMES = 60
+  const runtimes: (Runtime | undefined)[] = [await open(0), undefined, await open(2)]
+  const framesOnVote = new Array<number>(peers).fill(0)
+  const openedVotes: { peer: number; round: number; candidates: number }[] = []
+  const refusals: string[] = []
+  try {
+    for (let frame = 0; frame < 12000; frame++) {
+      net.advance(1000 / 60)
+      if (frame === LATE_JOIN_FRAMES) runtimes[1] = await open(1)
+      for (let peer = 0; peer < peers; peer++) {
+        const runtime = runtimes[peer]
+        if (runtime === undefined) continue
+        try {
+          const state = runtime.snapshot()
+          if (state.screen === 'vote') {
+            framesOnVote[peer]!++
+            assert.ok(state.candidates.length > 0, `peer ${peer} opened round ${state.round} with no candidates`)
+            if (framesOnVote[peer] === 1) openedVotes.push({ peer, round: state.round, candidates: state.candidates.length })
+            const lateVoter = peer === 2 && framesOnVote[peer]! < LATE_VOTE_FRAMES
+            if (!lateVoter && state.seatOf.includes(peer)) runtime.vote(peer, 0)
+          } else {
+            framesOnVote[peer] = 0
+          }
+          runtime.frame(1 / 60, () => NEUTRAL)
+        } catch (error) {
+          if (!(error instanceof RefusalError)) throw error
+          refusals.push(`peer ${peer}: ${error.message}`)
+        }
+      }
+      if (refusals.length > 0 || runtimes.every(runtime => runtime !== undefined && runtime.snapshot().results.length >= 2)) break
+    }
+    assert.deepEqual(refusals, [])
+    const states = runtimes.map(runtime => runtime!.snapshot())
+    for (const state of states) {
+      assert.equal(state.faults, 0)
+      assert.equal(state.results.length, 2)
+    }
+    assert.deepEqual(states[1]!.results, states[0]!.results)
+    assert.deepEqual(states[2]!.results, states[0]!.results)
+    assert.deepEqual(states[0]!.results.map(result => result.index), [0, 1])
+    for (const runtime of runtimes) assert.equal(engineOnlineStats(runtime!)!.desyncs, 0)
+    for (const round of [0, 1]) {
+      const opened = openedVotes.filter(vote => vote.round === round)
+      assert.equal(opened.length, peers, `every peer opens the round ${round} vote`)
+      for (const vote of opened) assert.ok(vote.candidates > 0)
+    }
+  } finally {
+    disposeAll(runtimes)
+  }
+})

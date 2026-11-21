@@ -239,5 +239,11 @@
     "command": "node --experimental-strip-types tools/engineShowCapture.ts judge --stage offline --page apps/web/dist --out out/engine-show/offline --budget-s 3300",
     "name": "g7-offline-judge",
     "timeout_s": 3600
-  }
+  },
+  {"name": "g7-hub-unit-check", "command": "node --experimental-strip-types --test apps/headless/test/egeSeason.test.ts packages/game/test/egeHub.test.ts apps/web/test/engineHubFlow.test.ts apps/web/test/engineShowPage.test.ts", "timeout_s": 3600, "after": ["g7-offline-web-build"]},
+  {"name": "g7-hub-check", "command": "node --experimental-strip-types tools/engineShowCapture.ts check --stage hub --page apps/web/dist --out out/engine-show/hub", "timeout_s": 900, "after": ["g7-offline-typecheck", "g7-offline-guard", "g7-hub-unit-check"]},
+  {"name": "g7-hub-clean", "command": "node --experimental-strip-types tools/engineShowCapture.ts clean --stage hub --page apps/web/dist --out out/engine-show/hub", "timeout_s": 60, "after": ["g7-hub-check"]},
+  {"name": "g7-hub-render", "command": "node --experimental-strip-types tools/engineShowCapture.ts render --stage hub --page apps/web/dist --out out/engine-show/hub", "timeout_s": 3600, "after": ["g7-hub-clean"]},
+  {"name": "g7-hub-fresh", "command": "node --experimental-strip-types tools/engineShowCapture.ts fresh --stage hub --page apps/web/dist --out out/engine-show/hub", "timeout_s": 300, "after": ["g7-hub-render"]},
+  {"name": "g7-hub-judge", "command": "node --experimental-strip-types tools/engineShowCapture.ts judge --stage hub --page apps/web/dist --out out/engine-show/hub --budget-s 3300", "timeout_s": 3600, "after": ["g7-hub-render", "g7-hub-fresh"]}
 ]

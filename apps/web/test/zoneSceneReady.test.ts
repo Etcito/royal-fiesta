@@ -5,13 +5,17 @@ import { GameInput } from '../src/input/input.ts'
 import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { NullRenderPort } from '@royal-fiesta/game/render/nullPort'
 import { observeRoundLoad } from '@royal-fiesta/game/render/roundLoad'
+import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
 import type { ZoneMatch } from '@royal-fiesta/game/net/zoneMatch'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 
 // Keep the production loading gate and trace. Replace only the GPU SceneView and FAR drawing.
 const loading = import.meta.resolve('@royal-fiesta/game/render/roundLoad')
-const state = { mounted: 0, animated: 0, rendered: 0, camera: null as unknown }
+const state = {
+  mounted: 0, animated: 0, rendered: 0, camera: null as unknown,
+  views: [] as SceneReadView[], observed: [] as SceneReadView[],
+}
 Object.assign(globalThis, { __zoneReadyTest: state })
 const hook = registerHooks({ resolve(specifier, context, next) {
   if (context.parentURL?.endsWith('/zone/zoneNetScene.ts')) {
@@ -20,10 +24,12 @@ const hook = registerHooks({ resolve(specifier, context, next) {
       export class SceneView {
         constructor(opts) { this.port = opts.port; this.camera = opts.camera; this.loaded = false; this.loadedCourse = null }
         update(sim) {
-          globalThis.__zoneReadyTest.camera = this.camera({x: 0, y: 0, z: 0}, 1/60);
+          globalThis.__zoneReadyTest.views.push(sim);
+          if (this.camera) globalThis.__zoneReadyTest.camera = this.camera({x: 0, y: 0, z: 0}, 1/60);
           if (this.loaded || !roundReady(this.port, sim.course().id)) return;
           courseFrame(sim, this.port, sim.course().id, () => { this.loaded = true; this.loadedCourse = sim.course(); globalThis.__zoneReadyTest.mounted++ });
         }
+        observeTick(sim) { globalThis.__zoneReadyTest.observed.push(sim) }
         async animationReady() { if (this.loaded) globalThis.__zoneReadyTest.animated++ }
         dispose() {}
       }` : specifier === '@royal-fiesta/game/render/farRender' ? `
@@ -126,4 +132,80 @@ test('round camera renders mouse and right-stick look from the input owner', asy
     else Reflect.deleteProperty(navigator, 'getGamepads')
     input.dispose(); scene.dispose()
   }
+})
+
+const resetState = () => Object.assign(state, { mounted: 0, animated: 0, rendered: 0, views: [], observed: [] })
+const readView = (course: ResolvedCourse, tick = 0) =>
+  ({ tick, setup: { playerCount: 2 }, course: () => course }) as unknown as SceneReadView
+
+// Engine hosts present a read view directly: no ZoneMatch is involved and every pane sees the same view.
+test('present() feeds every pane from a read view without a ZoneMatch', async () => {
+  resetState()
+  const course = { id: 'present-round' } as ResolvedCourse
+  const prepared = await prepareZoneNetScene({
+    canvas: { width: 640, height: 360 } as HTMLCanvasElement, course, followSeats: [0, 1],
+    assets: () => ({ id: 'bean' } as PrimsAsset), createPort: async () => new NullRenderPort(),
+  })
+  const scene = prepared.attach(2, 0)
+  const view = readView(course, 5)
+  scene.present(view, 1, 0)
+  assert.deepEqual(state.views, [view, view], 'each pane receives the presented view')
+  assert.equal(state.mounted, 2, 'both panes mount the presented course')
+  scene.dispose()
+})
+
+// ready() after present() holds the same loading gate and animation wait as update().
+test('ready() after present() waits for loading paint and animation like update()', async () => {
+  resetState()
+  const paints: FrameRequestCallback[] = []
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame')
+  Object.defineProperty(globalThis, 'requestAnimationFrame', { configurable: true, value: (f: FrameRequestCallback) => { paints.push(f); return 1 } })
+  const stop = observeRoundLoad(() => {}, {})
+  const course = { id: 'present-paint-round' } as ResolvedCourse
+  let scene: { present: (v: SceneReadView, a: number, d: number) => void; ready(): Promise<void>; dispose(): void } | null = null
+  try {
+    const port = new NullRenderPort()
+    const render = port.render.bind(port)
+    port.render = () => { state.rendered++; return render() }
+    const prepared = await prepareZoneNetScene({
+      canvas: { width: 640, height: 360 } as HTMLCanvasElement, course,
+      assets: () => ({ id: 'bean' } as PrimsAsset), createPort: async () => port,
+    })
+    scene = prepared.attach(2, 0)
+    scene.present(readView(course), 1, 0)
+    let ready = false
+    const pending = scene.ready().then(() => { ready = true })
+    await Promise.resolve()
+    assert.equal(ready, false, 'animationReady alone must not release a presented scene')
+    assert.equal(state.mounted, 0, 'the loading-paint gate holds the presented scene')
+    paints.shift()!(0)
+    await pending
+    assert.equal(state.mounted, 1)
+    assert.equal(state.animated, 1)
+    assert.equal(state.rendered, 1)
+  } finally {
+    scene?.dispose()
+    stop()
+    if (original) Object.defineProperty(globalThis, 'requestAnimationFrame', original)
+    else Reflect.deleteProperty(globalThis, 'requestAnimationFrame')
+  }
+})
+
+// The engine host calls observe() once per presented executed tick; dispose silences it.
+test('observe() calls SceneView.observeTick once per pane per call and nothing after dispose', async () => {
+  resetState()
+  const course = { id: 'observe-round' } as ResolvedCourse
+  const prepared = await prepareZoneNetScene({
+    canvas: { width: 640, height: 360 } as HTMLCanvasElement, course, followSeats: [0, 1],
+    assets: () => ({ id: 'bean' } as PrimsAsset), createPort: async () => new NullRenderPort(),
+  })
+  const scene = prepared.attach(2, 0)
+  const view = readView(course, 7)
+  scene.observe(view)
+  assert.deepEqual(state.observed, [view, view], 'one observeTick per pane per call')
+  scene.observe(view)
+  assert.deepEqual(state.observed, [view, view, view, view])
+  scene.dispose()
+  scene.observe(view)
+  assert.deepEqual(state.observed, [view, view, view, view], 'dispose makes observe a no-op')
 })

@@ -11,10 +11,10 @@ import { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { renderFrame } from '@royal-fiesta/game/render/roundLoad'
 import { SceneView } from '@royal-fiesta/game/render/sceneView'
 import type { CostumeSet, SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
+import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { RenderPort, RenderTarget } from '@royal-fiesta/game/render/port'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
-import type { MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { DomainSceneSim } from './domainSceneSim.ts'
 import { browserAssetResolver, preloadAssets } from '../client/sources.ts'
 
@@ -70,6 +70,10 @@ export interface ZoneNetScene {
   readonly port: RenderPort
   /** Refreshes the near adapter from the match, then the character scene. */
   update(match: ZoneMatch, alpha: number, dtS: number): void
+  /** Feeds every pane's SceneView from an engine read view and remembers it for ready(). */
+  present(view: SceneReadView, alpha: number, dtS: number): void
+  /** Steps every pane's animation graph once with the presented executed tick. */
+  observe(view: SceneReadView): void
   render(): void
   /** Settles once the near characters' animation finished loading (they draw at rest until then). */
   ready(): Promise<void>
@@ -137,6 +141,7 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
   const scene = scenes[0]
   let disposed = false
   let latest: ZoneMatch | null = null
+  let presented: SceneReadView | null = null
 
   const render = (): void => { if (!disposed) renderFrame(port, () => port.render()) }
   return {
@@ -147,17 +152,37 @@ function attachScene(options: ZoneNetSceneOptions, port: RenderPort, assets: (na
     update(match, alpha, dtS) {
       if (disposed) return
       latest = match
+      presented = null
       adapter.refresh(match.domains, match.stats.tick, feed)
-      for (const pane of scenes) pane.update(adapter as unknown as MatchSim, null, alpha, dtS)
+      for (const pane of scenes) pane.update(adapter, null, alpha, dtS)
+    },
+    /**
+     * Handoff: Game switch share 4/8: ShowMode presents an engine show calls present(view, alpha, dtS) and
+     * observe(view) on the scene returned by prepareZoneNetScene(...).attach(...). present feeds every pane's
+     * SceneView.update with the view (no ZoneMatch or FarFeed read) and ready() keeps polling that last view.
+     */
+    present(view, alpha, dtS) {
+      if (disposed) return
+      latest = null
+      presented = view
+      for (const pane of scenes) pane.update(view, null, alpha, dtS)
+    },
+    observe(view) {
+      if (disposed) return
+      for (const pane of scenes) pane.observeTick(view)
     },
     render,
     async ready() {
-      // update() may have returned at the loading-paint gate before creating any instances.
+      // update() or present() may have returned at the loading-paint gate before creating any instances.
       // Do not release the show's simulation until that gate, animation and first render finish.
       while (!disposed && scenes.some(pane => pane.loadedCourse !== options.course)) {
-        if (latest === null) return
-        adapter.refresh(latest.domains, latest.stats.tick, feed)
-        for (const pane of scenes) pane.update(adapter as unknown as MatchSim, null, 1, 0)
+        if (latest === null && presented === null) return
+        let view: SceneReadView = presented ?? adapter
+        if (presented === null && latest !== null) {
+          adapter.refresh(latest.domains, latest.stats.tick, feed)
+          view = adapter
+        }
+        for (const pane of scenes) pane.update(view, null, 1, 0)
         if (scenes.some(pane => pane.loadedCourse !== options.course)) await new Promise<void>(resolve => setTimeout(resolve, 1))
       }
       if (disposed) return

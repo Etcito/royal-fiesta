@@ -13,6 +13,7 @@ import { legacyLevel } from '@royal-fiesta/sim/course'
 import { encodeInput } from '@royal-fiesta/sim/input'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { parseZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
+import { parseEngineShowArgs, runEngineShow } from '../src/engineShow.ts'
 import { loadEgeCourse, rfScriptBytes } from '../src/egeHarness.ts'
 import { readRepoText } from '../src/files.ts'
 
@@ -236,4 +237,51 @@ test('completes a sixty-seat scripted show through a confirmed final and equal r
     const outcome = await driveShow(replay, 8 / 60)
     assert.deepEqual(outcome.snapshot, final)
   } finally { replay.dispose() }
+})
+
+test('runner arguments and prepared options refuse invalid seeds, seats, humans and plans', async () => {
+  for (const argv of [
+    ['--seed', 'nope'], ['--seed', '4294967296'], ['--seats', '1'], ['--humans', '60'],
+    ['--humans', '0,0'], ['--plan', '0'], ['--max-frames', 'soon'],
+  ]) {
+    assert.throws(() => parseEngineShowArgs(argv), RefusalError, argv.join(' '))
+  }
+  const parsed = parseEngineShowArgs(['--seed', '9', '--seats', '8', '--humans', '0,7', '--plan', '8,1', '--test'])
+  assert.equal(parsed.seed, 9)
+  assert.equal(parsed.seats, 8)
+  assert.equal(parsed.testMode, true)
+  assert.deepEqual(parsed.humans, [true, false, false, false, false, false, false, true])
+  assert.deepEqual(parsed.plan, [8, 1])
+
+  for (const over of [{ seed: 1.5 }, { humans: [] as boolean[] }, { plan: [0] }, { season: [] }]) {
+    await assert.rejects(() => runEngineShow({ config: showConfig(humansAt([0, 1]), over) }), RefusalError)
+  }
+  await assert.rejects(() => runEngineShow({ dir: 'no-such-show-content' }), RefusalError)
+})
+
+test('runner completes a prepared show and prints the confirmed final result', { timeout: 120_000 }, async () => {
+  const lines: string[] = []
+  const result = await runEngineShow({
+    config: showConfig(humansAt([0, 1])),
+    sample: room => room === 0 ? SHOW_FORWARD : SHOW_HALF,
+    log: line => lines.push(line),
+  })
+  assert.equal(result.snapshot.screen, 'done')
+  assert.equal(result.snapshot.faults, 0)
+  assert.ok(result.snapshot.champion !== null)
+  assert.equal(result.seats, 60)
+  assert.ok(lines.some(line => line.startsWith('[engine-show] final ')), lines.join('\n'))
+  assert.ok(lines.some(line => line.includes(`champion=${result.snapshot.champion}`)), lines.join('\n'))
+  const final = result.snapshot.results.at(-1)!
+  assert.equal(final.final, true)
+  assert.equal(final.champion, result.snapshot.champion)
+})
+
+test('runner refuses failed preparation and a stalled show actionably', async () => {
+  const broken = showConfig(humansAt([0, 1]), { scriptBytes: new Uint8Array() })
+  await assert.rejects(() => runEngineShow({ config: broken }), /preparation|script|wasm|compile/i)
+  await assert.rejects(
+    () => runEngineShow({ config: showConfig(humansAt([0, 1])), maxFrames: 1 }),
+    /stalled .*round 0 screen 'vote'/,
+  )
 })

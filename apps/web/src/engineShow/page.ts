@@ -24,6 +24,7 @@ import { browserGameAssets, loadV1Courses } from '../content/v1Data.ts'
 import type { ResizablePort } from '../sdf/sdfPort.ts'
 import { openBrowserAudio } from '@royal-fiesta/game/audio/context'
 import type { BrowserSound } from '@royal-fiesta/game/audio/context'
+import { deviceOfCanvas, pendingPipelines } from '../render/asyncPipelines.ts'
 import { podiumLayoutOf } from '@royal-fiesta/game/courseV1'
 import type { EngineRoundResult } from '@royal-fiesta/game/ege/showTypes'
 import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
@@ -158,6 +159,11 @@ interface ShowCaptureHost {
   fastForward(on: boolean): void
   /** Replaces the prepared show by a fresh one with this plan on the same loaded content and port. */
   remount(plan: readonly number[]): Promise<ShowCaptureHost>
+  /**
+   * Waits for the animation load and the GPU pipelines the drawn show requested, then redraws still frames and
+   * waits for the GPU, so near/far penguins, the course and the podium are really on the canvas before capture.
+   */
+  settle(): Promise<void>
   stopWatching(): void
   capture(): Promise<Uint8Array>
 }
@@ -521,6 +527,17 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
           if (activeCapture === null) throw new Error('[engine-show] the remounted show has no capture host')
           return activeCapture
         },
+        async settle() {
+          await current.scene.animationReady()
+          const deadline = performance.now() + 20000
+          while (pendingPipelines() > 0) {
+            if (performance.now() >= deadline) throw new Error(`[engine-show] pipeline readiness timed out; ${pendingPipelines()} pipelines still pending`)
+            await new Promise<void>(resolve => { setTimeout(resolve, 10) })
+          }
+          for (let i = 0; i < 8; i++) drawFrame(0)
+          const device = deviceOfCanvas(canvas) as { queue: { onSubmittedWorkDone(): Promise<unknown> } } | undefined
+          if (device !== undefined) await device.queue.onSubmittedWorkDone()
+        },
         stopWatching() { watchLocal = false },
         async capture() {
           const png = await current.port.capture()
@@ -855,6 +872,7 @@ function base64Of(bytes: Uint8Array): string {
 async function captureScenario(scenario: string, host: ShowCaptureHost): Promise<CaptureResult> {
   host.draw()
   host.collector.effects(host.pump())
+  await host.settle()
   const png = await host.capture()
   return { facts: host.collector.facts(), capture: { name: `${scenario}.png`, width: WIDTH, height: HEIGHT, mime: 'image/png', base64: base64Of(png) } }
 }

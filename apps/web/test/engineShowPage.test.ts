@@ -3,13 +3,22 @@ import assert from 'node:assert/strict'
 import { NEUTRAL_CODE, inputCode } from '@royal-fiesta/sim/input'
 import {
   createShowPacer, parseShowArgs, registerEngineShowOps, registerScenario, runShowOperation, scenarioIds, watchShowErrors,
-  ShowFactsCollector, PODIUM_PLAN, PODIUM_REQUIRE, ROUND_REQUIRE, SHOW_COMMON_REQUIRE, SHOW_SCENARIO_IDS, SHOW_SCENARIO_REQUIRE, SIMPLE_REQUIRE,
+  ShowFactsCollector, BOT_CHECK_TICKS, isBotCheckTick, showSeatPoses, PODIUM_PLAN, PODIUM_REQUIRE, ROUND_REQUIRE, SHOW_COMMON_REQUIRE, SHOW_SCENARIO_IDS, SHOW_SCENARIO_REQUIRE, SIMPLE_REQUIRE,
 } from '../src/engineShow/ops.ts'
 import type { EngineShowFacts } from '../src/engineShow/ops.ts'
 import { requirementProblems } from '../../../tools/engineCaptureJob.ts'
 import { showRows } from '../../../tools/engineShowCapture.ts'
 import type { EngineShowPage } from '../src/engineShow/page.ts'
 import { EngineSeatPresenter, farPenguinBridge } from '../src/engineShow/presentation.ts'
+import { loadEngine } from '@etcito/game-engine'
+import { schemaLayout } from '@etcito/game-engine/script'
+import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
+import { createEngineShow } from '@royal-fiesta/game/ege/showRuntime'
+import type { EngineShowObservation } from '@royal-fiesta/game/ege/showTypes'
+import { loadEngineShowContent } from '../../headless/src/engineShow.ts'
+import { rfScriptBytes } from '../../headless/src/egeHarness.ts'
+import { readRepoText } from '../../headless/src/files.ts'
+import { engineShowTestMode } from '../src/engineShow/testMode.ts'
 
 type Vec3 = readonly [number, number, number]
 
@@ -349,4 +358,60 @@ test('far seats decoded by EngineFarView reach the far-figure draw input as peng
   // The near scene draws its figures at unit scale; a far figure is the same penguin at the same scale.
   for (const item of placed.values()) assert.deepEqual([...item.scale], [1, 1, 1])
   bridge.dispose()
+})
+
+test('bot movement is measured between bot checks, not between per-tick local samples', () => {
+  const collector = new ShowFactsCollector({ seats: 60, humans: 1, bots: 59 })
+  const at = (x: number) => new Map<number, readonly [number, number, number]>([[0, [0, 0, 0]], [5, [x, 0, 0]]])
+  collector.observeBots(at(0))
+  collector.observeBots(at(0.05))
+  assert.equal(collector.botCount(), 0)
+  collector.observeBots(at(3))
+  assert.equal(collector.botCount(), 1)
+})
+
+test('the sixty-seat test-mode round moves its scripted bots and botsMoved reads positive through the page bot checks', async () => {
+  // Same construction as the page's sixty-seat-engine-round: authored courses and season, one human
+  // at room seat 0, default plan, test mode; the 59 bots are never sampled, their brains drive them.
+  const content = await loadEngineShowContent()
+  const engine = await loadEngine()
+  const schemaText = await readRepoText(RF_EGE_SCHEMA)
+  engine.setSchema(schemaText)
+  const runtime = await createEngineShow({
+    engine, schemaText, scriptBytes: await rfScriptBytes(), seed: 7,
+    identity: { backend: 'engine', schemaKey: schemaLayout(engine).key, moduleKey: 'test' },
+    courses: content.courses, assets: content.assets, zones: content.zones, season: content.season,
+    humans: Array.from({ length: 60 }, (_, seat) => seat === 0), testMode: engineShowTestMode(true).enabled,
+  })
+  const collector = new ShowFactsCollector({ seats: 60, humans: 1, bots: 59 })
+  const first = new Map<number, readonly [number, number, number]>()
+  let moved = false
+  let checks = 0
+  const unsubscribe = runtime.onPresentation((observation: EngineShowObservation) => {
+    if (observation.kind !== 'post-tick' || !isBotCheckTick(observation.tick)) return
+    const poses = showSeatPoses(observation.presentation, 60)
+    if (poses.size === 0) return
+    checks++
+    for (const [seat, pos] of poses) {
+      if (seat === 0) continue
+      const was = first.get(seat)
+      if (was === undefined) first.set(seat, pos)
+      else if (Math.hypot(pos[0] - was[0], pos[2] - was[2]) > 0.1) moved = true
+    }
+    collector.observeBots(poses)
+  })
+  try {
+    const neutral = inputCode({ moveX: 0, moveZ: 0, jump: false, dive: false, grab: false })
+    for (let frame = 0; frame < 4000 && (checks < 2 || collector.botCount() === 0 || !moved); frame++) {
+      runtime.frame(8 / 60, () => neutral)
+      assert.equal(runtime.snapshot().faults, 0)
+    }
+    assert.ok(checks >= 2, `only ${checks} bot check(s) every ${BOT_CHECK_TICKS} ticks saw a physics world`)
+    assert.ok(moved, 'no scripted bot changed its engine position')
+    collector.effects({ droppedRecords: 0, repeatedSoundDeliveries: 0, repeatedGrantDeliveries: 0 })
+    assert.ok(collector.facts().botsMoved > 0, 'botsMoved is 0')
+  } finally {
+    unsubscribe()
+    runtime.dispose()
+  }
 })

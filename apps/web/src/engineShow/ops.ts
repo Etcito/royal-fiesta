@@ -2,6 +2,33 @@ import type { CaptureResult } from '../../../../tools/engineCaptureJob.ts'
 import type { EngineShowPage, EnginePageState } from './page.ts'
 import { BTN, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import { checkPhase } from '../game/checkProgress.ts'
+import type { EngineShowPresentation } from '@royal-fiesta/game/ege/showTypes'
+
+/** Ticks between two page bot checks: bot movement is compared between consecutive checks. */
+export const BOT_CHECK_TICKS = 30
+
+/** True on the post-tick observations where the page runs a bot check. */
+export function isBotCheckTick(tick: number): boolean {
+  return tick % BOT_CHECK_TICKS === 0
+}
+
+/** Reads every live seat's engine position (room seat -> x,y,z) from the worlds' far streams. */
+export function showSeatPoses(presentation: EngineShowPresentation, seats: number): Map<number, readonly [number, number, number]> {
+  const poses = new Map<number, readonly [number, number, number]>()
+  for (const world of presentation.worlds) {
+    let bytes: Uint8Array
+    try { bytes = world.farSnapshot() } catch { continue }
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    const count = view.getUint16(0, true)
+    for (let i = 0; i < count; i++) {
+      const at = 2 + i * 60
+      const zone = view.getUint32(at, true)
+      if (zone < 1 || zone > seats) continue
+      poses.set(zone - 1, [view.getFloat64(at + 4, true), view.getFloat64(at + 12, true), view.getFloat64(at + 20, true)])
+    }
+  }
+  return poses
+}
 
 /** One managed scenario: it receives the ready page and its typed inventory arguments. */
 export type EngineShowScenario = (page: EngineShowPage, args: Readonly<Record<string, unknown>>) => Promise<CaptureResult>
@@ -185,6 +212,17 @@ export class ShowFactsCollector {
   /** Adds one distinct bot room seat whose authoritative position changed while its controller acted. */
   botMoved(roomSeat: number): void {
     if (roomSeat >= this.config.humans) this.bots.add(roomSeat)
+  }
+
+  private botPoses: ReadonlyMap<number, readonly [number, number, number]> = new Map()
+
+  /** Compares bot positions with the previous call of this method only, never with per-tick local samples. */
+  observeBots(poses: ReadonlyMap<number, readonly [number, number, number]>): void {
+    for (const [seat, pos] of poses) {
+      const prior = this.botPoses.get(seat)
+      if (prior !== undefined && Math.hypot(pos[0] - prior[0], pos[2] - prior[2]) > 0.1) this.botMoved(seat)
+    }
+    this.botPoses = poses
   }
 
   /** Counts one completed near/far submission audit and accumulates any seat drawn by both paths. */

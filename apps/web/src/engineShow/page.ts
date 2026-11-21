@@ -35,7 +35,7 @@ import { EngineScreenTracker, EngineSeatPresenter, engineEffectSinks, farPenguin
 import type { EngineScreenModel, EngineSeatSubmission } from './presentation.ts'
 import { engineShowTestMode } from './testMode.ts'
 import { checkAwait } from '../game/checkProgress.ts'
-import { createShowPacer, PODIUM_PLAN, registerScenario, ShowFactsCollector } from './ops.ts'
+import { createShowPacer, isBotCheckTick, PODIUM_PLAN, registerScenario, showSeatPoses, ShowFactsCollector } from './ops.ts'
 import type { ShowPacer } from './ops.ts'
 import type { CaptureResult } from '../../../../tools/engineCaptureJob.ts'
 import type { EngineShowObservation, EngineShowPresentation } from '@royal-fiesta/game/ege/showTypes'
@@ -370,22 +370,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       let fast = false
       let pending: { code: number; sampled: boolean; before: readonly [number, number, number] | null } | null = null
       let lastPoses = new Map<number, readonly [number, number, number]>()
-      const posesOf = (presentation: EngineShowPresentation): Map<number, readonly [number, number, number]> => {
-        const poses = new Map<number, readonly [number, number, number]>()
-        for (const world of presentation.worlds) {
-          let bytes: Uint8Array
-          try { bytes = world.farSnapshot() } catch { continue }
-          const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-          const count = view.getUint16(0, true)
-          for (let i = 0; i < count; i++) {
-            const at = 2 + i * 60
-            const zone = view.getUint32(at, true)
-            if (zone < 1 || zone > SEATS) continue
-            poses.set(zone - 1, [view.getFloat64(at + 4, true), view.getFloat64(at + 12, true), view.getFloat64(at + 20, true)])
-          }
-        }
-        return poses
-      }
+      const posesOf = (presentation: EngineShowPresentation): Map<number, readonly [number, number, number]> => showSeatPoses(presentation, SEATS)
       const storedControl = (presentation: EngineShowPresentation): number | null => {
         for (const world of presentation.worlds) {
           const seat = world.seats.find(item => item.roomSeat === LOCAL_SEAT)
@@ -400,7 +385,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       const noteCapture = (observation: EngineShowObservation): void => {
         if (observation.kind !== 'post-tick') return
         const local = pending !== null && pending.sampled && watchLocal
-        const bots = botWatch && observation.tick % 30 === 0
+        const bots = botWatch && isBotCheckTick(observation.tick)
         const poses = local || bots ? posesOf(observation.presentation) : lastPoses
         if (local && pending !== null) {
           collector.sample({
@@ -410,11 +395,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
           pending = null
         }
         if (bots) {
-          for (const [seat, pos] of poses) {
-            if (seat < options.humans) continue
-            const prior = lastPoses.get(seat)
-            if (prior !== undefined && Math.hypot(pos[0] - prior[0], pos[2] - prior[2]) > 0.1) collector.botMoved(seat)
-          }
+          collector.observeBots(poses)
           if (collector.botCount() > 0) botWatch = false
         }
         if (local || bots) lastPoses = poses

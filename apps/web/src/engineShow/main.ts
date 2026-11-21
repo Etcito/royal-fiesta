@@ -2,6 +2,7 @@
 import wasmUrl from '@etcito/game-engine/wasm/ege.wasm?url'
 import type { EngineShowPageOptions } from './page.ts'
 import { mountEngineShow, setEngineShowWasmUrl } from './page.ts'
+import { registerEngineShowOps } from './ops.ts'
 
 const AREA = 'engine-show'
 const DEFAULT_SEED = 7
@@ -15,7 +16,9 @@ export function pageOptions(params: URLSearchParams): EngineShowPageOptions {
   const mode = params.get('mode') === 'online' ? 'online' : 'local'
   const humans = integer(params.get('humans'), DEFAULT_HUMANS, 'humans')
   const seed = integer(params.get('seed'), DEFAULT_SEED, 'seed')
-  const testMode = params.get('test') === '1' || params.get('testMode') === '1'
+  // Captures mount this page without a query; test mode is the default so preparation uses the runtime's
+  // minimum presentation waits. `test=0` still offers the same live animation with full presentation waits.
+  const testMode = params.get('test') !== '0' && params.get('testMode') !== '0'
   return { mode, testMode, seed, humans }
 }
 
@@ -42,7 +45,9 @@ function boot(): void {
     failure(root, error)
     return
   }
-  mountEngineShow(root, options).then(
+  const mounted = mountEngineShow(root, options)
+  registerEngineShowOps(mounted)
+  mounted.then(
     page => { page.ready.catch(() => undefined) },
     error => { failure(root, error) },
   )

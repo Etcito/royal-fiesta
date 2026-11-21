@@ -32,6 +32,10 @@ import { createEngineShowReady } from './ready.ts'
 import { EngineScreenTracker, EngineSeatPresenter, engineEffectSinks, farPenguinBridge, podiumPlayers } from './presentation.ts'
 import type { EngineScreenModel, EngineSeatSubmission } from './presentation.ts'
 import { engineShowTestMode } from './testMode.ts'
+import { registerScenario, ShowFactsCollector } from './ops.ts'
+import type { CaptureResult } from '../../../../tools/engineCaptureJob.ts'
+import type { EngineShowObservation, EngineShowPresentation } from '@royal-fiesta/game/ege/showTypes'
+import { readWorldState } from '@etcito/game-engine/world-state'
 
 const AREA = 'engine-show'
 const WIDTH = 1920
@@ -124,8 +128,26 @@ interface LiveShow {
   readonly tracker: EngineScreenTracker
   podiumKey: string
   unsubscribe: (() => void) | null
+  captureUnsubscribe: (() => void) | null
   frame: number
 }
+
+/** The page-private stepping, sampling and capture handles default scenarios close over. */
+interface ShowCaptureHost {
+  readonly collector: ShowFactsCollector
+  pauseLoop(): void
+  step(ticks: number, decide: (index: number) => number): void
+  vote(candidate: number): void
+  draw(): void
+  pump(): { droppedRecords: number; repeatedSoundDeliveries: number; repeatedGrantDeliveries: number }
+  snapshot(): EngineShowSnapshot
+  screen(): string
+  localMode(): number
+  stopWatching(): void
+  capture(): Promise<Uint8Array>
+}
+
+let activeCapture: ShowCaptureHost | null = null
 
 /**
  * Handoff: G7-PAGE presentation: complete the round and confirmed podium and G7-PAGE capture registration:
@@ -169,6 +191,9 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
   }
   let live: LiveShow | null = null
   let disposed = false
+  let paused = false
+  const collector = new ShowFactsCollector({ seats: SEATS, humans: options.humans, bots: SEATS - options.humans })
+  let capture: ShowCaptureHost | null = null
   const input = trackInput()
   const player = neutralInput()
   const sample = (roomSeat: number): number => {
@@ -207,7 +232,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     internal.snapshot = snapshot
   }
   function loop(now: number): void {
-    if (disposed || live === null) return
+    if (disposed || paused || live === null) return
     const dtS = Math.min((now - lastFrame) / 1000, STEP_CAP_S)
     lastFrame = now
     try {
@@ -220,7 +245,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     live.frame = requestAnimationFrame(loop)
   }
   function startLoop(): void {
-    if (live === null || typeof requestAnimationFrame !== 'function') return
+    if (paused || live === null || typeof requestAnimationFrame !== 'function') return
     lastFrame = performance.now()
     live.frame = requestAnimationFrame(loop)
   }
@@ -304,9 +329,64 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
         layout: authored.podium,
       })
       const presenter = new EngineSeatPresenter()
+      let watchLocal = true
+      let botWatch = true
+      let pending: { code: number; sampled: boolean; before: readonly [number, number, number] | null } | null = null
+      let lastPoses = new Map<number, readonly [number, number, number]>()
+      const posesOf = (presentation: EngineShowPresentation): Map<number, readonly [number, number, number]> => {
+        const poses = new Map<number, readonly [number, number, number]>()
+        for (const world of presentation.worlds) {
+          let bytes: Uint8Array
+          try { bytes = world.farSnapshot() } catch { continue }
+          const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+          const count = view.getUint16(0, true)
+          for (let i = 0; i < count; i++) {
+            const at = 2 + i * 60
+            const zone = view.getUint32(at, true)
+            if (zone < 1 || zone > SEATS) continue
+            poses.set(zone - 1, [view.getFloat64(at + 4, true), view.getFloat64(at + 12, true), view.getFloat64(at + 20, true)])
+          }
+        }
+        return poses
+      }
+      const storedControl = (presentation: EngineShowPresentation): number | null => {
+        for (const world of presentation.worlds) {
+          const seat = world.seats.find(item => item.roomSeat === LOCAL_SEAT)
+          if (seat === undefined) continue
+          const engine = world.ref.timeline.module.engine
+          const state = readWorldState(engine, world.ref.world, schemaLayout(engine))
+          const row = state.components.show_control?.[String(seat.entity)]
+          if (row !== undefined && typeof row.code === 'number') return row.code
+        }
+        return null
+      }
+      const noteCapture = (observation: EngineShowObservation): void => {
+        if (observation.kind !== 'post-tick') return
+        const local = pending !== null && pending.sampled && watchLocal
+        const bots = botWatch && observation.tick % 30 === 0
+        const poses = local || bots ? posesOf(observation.presentation) : lastPoses
+        if (local && pending !== null) {
+          collector.sample({
+            code: pending.code, stored: storedControl(observation.presentation), before: pending.before,
+            after: poses.get(LOCAL_SEAT) ?? null, mode: -1,
+          })
+          pending = null
+        }
+        if (bots) {
+          for (const [seat, pos] of poses) {
+            if (seat < options.humans) continue
+            const prior = lastPoses.get(seat)
+            if (prior !== undefined && Math.hypot(pos[0] - prior[0], pos[2] - prior[2]) > 0.1) collector.botMoved(seat)
+          }
+          if (collector.botCount() > 0) botWatch = false
+        }
+        if (local || bots) lastPoses = poses
+        collector.progress({ snapshot: observation.snapshot, course: observation.presentation.course?.id ?? null, tick: observation.presentation.tick })
+        collector.scriptFaults(observation.snapshot.faults)
+      }
       const current: LiveShow = {
         runtime, read: currentRead, scene: currentScene, effects, port, presenter, bridge, stage,
-        tracker: new EngineScreenTracker(), podiumKey: '', unsubscribe: null, frame: 0,
+        tracker: new EngineScreenTracker(), podiumKey: '', unsubscribe: null, captureUnsubscribe: null, frame: 0,
       }
       current.unsubscribe = runtime.onPresentation(observation => {
         if (observation.kind !== 'post-tick') {
@@ -319,9 +399,84 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
         internal.snapshot = observation.snapshot
         internal.screen = observation.snapshot.screen
       })
+      current.captureUnsubscribe = runtime.onPresentation(noteCapture)
       internal.snapshot = runtime.snapshot()
       internal.screen = internal.snapshot.screen
       live = current
+      capture = {
+        collector,
+        pauseLoop() {
+          paused = true
+          if (current.frame !== 0 && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(current.frame)
+          current.frame = 0
+        },
+        step(ticks, decide) {
+          for (let i = 0; i < ticks; i++) {
+            if ((internal.snapshot?.screen ?? internal.screen) === 'done') return
+            const before = watchLocal ? lastPoses.get(LOCAL_SEAT) ?? null : null
+            pending = watchLocal ? { code: NEUTRAL_CODE, sampled: false, before } : null
+            current.runtime.frame(1 / 60, seat => {
+              if (seat !== LOCAL_SEAT) return NEUTRAL_CODE
+              const code = decide(i)
+              if (watchLocal) pending = { code, sampled: true, before }
+              return code
+            })
+          }
+        },
+        vote(candidate) {
+          const snapshot = current.runtime.snapshot()
+          if (snapshot.screen !== 'vote' || snapshot.candidates.length === 0) return
+          current.runtime.vote(LOCAL_SEAT, Math.min(candidate, snapshot.candidates.length - 1))
+        },
+        draw() {
+          drawFrame(1 / 60)
+          const submission = current.presenter.submission()
+          collector.audit(submission.near, submission.far)
+        },
+        pump() {
+          current.effects.pump()
+          current.effects.pump()
+          return current.effects.deliveryStats()
+        },
+        snapshot() { return current.runtime.snapshot() },
+        screen() { return internal.snapshot?.screen ?? internal.screen },
+        localMode() {
+          const presentation = current.runtime.presentation()
+          for (const world of presentation.worlds) {
+            const seat = world.seats.find(item => item.roomSeat === LOCAL_SEAT)
+            if (seat === undefined) continue
+            const engine = world.ref.timeline.module.engine
+            const state = readWorldState(engine, world.ref.world, schemaLayout(engine))
+            const row = state.components.character?.[String(seat.entity)]
+            if (row !== undefined && typeof row.mode === 'number') return row.mode
+          }
+          return -1
+        },
+        stopWatching() { watchLocal = false },
+        async capture() {
+          const png = await current.port.capture()
+          if (png === null) throw new Error('[engine-show] port.capture returned no image; draw a frame before capturing')
+          const owner = root.ownerDocument
+          const shot = owner.createElement('canvas')
+          shot.width = WIDTH
+          shot.height = HEIGHT
+          const bitmap = await createImageBitmap(new Blob([png as BlobPart]))
+          const context = shot.getContext('2d')
+          if (context === null) throw new Error('[engine-show] a 2d canvas is needed to compose the capture HUD')
+          context.drawImage(bitmap, 0, 0, WIDTH, HEIGHT)
+          bitmap.close()
+          const lines = drawn?.model.hud ?? []
+          context.font = '28px monospace'
+          context.fillStyle = 'rgba(0,0,0,0.6)'
+          context.fillRect(24, 24, 760, 44 + lines.length * 34)
+          context.fillStyle = '#ffffff'
+          lines.forEach((line, i) => context.fillText(line, 44, 58 + i * 34))
+          const blob = await new Promise<Blob | null>(resolve => shot.toBlob(resolve, 'image/png'))
+          if (blob === null) throw new Error('[engine-show] toBlob returned no PNG for the capture')
+          return new Uint8Array(await blob.arrayBuffer())
+        },
+      }
+      activeCapture = capture
     } catch (error) {
       stage?.dispose()
       bridge?.dispose()
@@ -341,6 +496,8 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     if (current !== null) {
       if (current.frame !== 0 && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(current.frame)
       current.unsubscribe?.()
+      current.captureUnsubscribe?.()
+      if (activeCapture === capture) activeCapture = null
       current.effects.dispose()
       current.presenter.clear()
       current.bridge.dispose()
@@ -563,3 +720,105 @@ function createPort(canvas: HTMLCanvasElement, zone: ZoneContent): Promise<Resiz
   }
   return zone.createPort(target)
 }
+
+const SETTLE_TICKS = 20000
+const PODIUM_TICK_LIMIT = 250000
+
+function requireCaptureHost(): ShowCaptureHost {
+  if (activeCapture === null) throw new Error('[engine-show] the capture host is not prepared; await page.ready before a scenario')
+  return activeCapture
+}
+
+function showCode(partial: Partial<PlayerInput>): number {
+  return encodeInput({ ...neutralInput(), ...partial })
+}
+
+function voteOrNeutral(host: ShowCaptureHost): number {
+  if (host.screen() === 'vote') host.vote(0)
+  return NEUTRAL_CODE
+}
+
+/** Steps until a real playable round is presented; a missing transition is a failure, never a sleep. */
+function advanceToPlaying(host: ShowCaptureHost): void {
+  for (let i = 0; i < SETTLE_TICKS; i++) {
+    const screen = host.screen()
+    if (screen === 'playing' || screen === 'overtime') return
+    host.step(1, () => voteOrNeutral(host))
+  }
+  throw new Error('[engine-show] the show never reached a playable round; check preparation and transition signals')
+}
+
+/** Exercises every control under its normal preconditions before the captured upright state. */
+function exerciseLocal(host: ShowCaptureHost): void {
+  const collector = host.collector
+  for (let i = 0; i < 120 && !collector.observed('neutral'); i++) host.step(1, () => NEUTRAL_CODE)
+  for (let i = 0; i < 180 && !collector.observed('positive'); i++) host.step(1, () => showCode({ moveX: 1, moveZ: 1 }))
+  for (let i = 0; i < 180 && !collector.observed('negative'); i++) host.step(1, () => showCode({ moveX: -1, moveZ: -1 }))
+  host.step(1, () => showCode({ jump: true }))
+  host.step(1, () => showCode({ dive: true }))
+  host.step(1, () => showCode({ grab: true }))
+  for (let i = 0; i < 20; i++) host.step(1, () => NEUTRAL_CODE)
+  host.stopWatching()
+}
+
+function base64Of(bytes: Uint8Array): string {
+  let value = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) value += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(value)
+}
+
+/** Draws the captured frame, deliberately repeats the public pump, then composes the PNG. */
+async function captureScenario(scenario: string, host: ShowCaptureHost): Promise<CaptureResult> {
+  host.draw()
+  host.collector.effects(host.pump())
+  const png = await host.capture()
+  return { facts: host.collector.facts(), capture: { name: `${scenario}.png`, width: WIDTH, height: HEIGHT, mime: 'image/png', base64: base64Of(png) } }
+}
+
+async function runSimpleScenario(_page: EngineShowPage, args: Readonly<Record<string, unknown>>): Promise<CaptureResult> {
+  const host = requireCaptureHost()
+  host.pauseLoop()
+  advanceToPlaying(host)
+  exerciseLocal(host)
+  // CharMode.ground is 0: settle the exercised character back to its upright captured state.
+  for (let i = 0; i < 240 && host.localMode() !== 0; i++) host.step(1, () => NEUTRAL_CODE)
+  return captureScenario(String(args.scenario), host)
+}
+
+async function runRoundScenario(_page: EngineShowPage, args: Readonly<Record<string, unknown>>): Promise<CaptureResult> {
+  const host = requireCaptureHost()
+  host.pauseLoop()
+  advanceToPlaying(host)
+  exerciseLocal(host)
+  for (let i = 0; i < 240; i++) {
+    const screen = host.screen()
+    if (screen === 'results' || screen === 'podium' || screen === 'done') break
+    host.step(1, () => showCode({ moveX: 1, moveZ: 1 }))
+  }
+  return captureScenario(String(args.scenario), host)
+}
+
+async function runPodiumScenario(_page: EngineShowPage, args: Readonly<Record<string, unknown>>): Promise<CaptureResult> {
+  const host = requireCaptureHost()
+  host.pauseLoop()
+  let exercised = false
+  for (let i = 0; i < PODIUM_TICK_LIMIT; i++) {
+    const screen = host.screen()
+    if (screen === 'done') break
+    if (!exercised && screen === 'playing') {
+      exerciseLocal(host)
+      exercised = true
+      continue
+    }
+    host.step(1, () => voteOrNeutral(host))
+  }
+  const snapshot = host.snapshot()
+  if (snapshot.screen !== 'done' || snapshot.champion === null) {
+    throw new Error(`[engine-show] the show stopped at screen '${snapshot.screen}' after ${PODIUM_TICK_LIMIT} ticks without a confirmed champion`)
+  }
+  return captureScenario(String(args.scenario), host)
+}
+
+registerScenario('simple-engine-character', runSimpleScenario)
+registerScenario('sixty-seat-engine-round', runRoundScenario)
+registerScenario('engine-show-winner-podium', runPodiumScenario)

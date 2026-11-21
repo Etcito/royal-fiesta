@@ -1,0 +1,112 @@
+[
+  {
+    "id": "simple-engine-character",
+    "stage": "offline",
+    "filename": "simple-engine-character.png",
+    "args": {
+      "scenario": "simple-engine-character",
+      "testMode": true,
+      "seed": 7,
+      "humans": 1
+    },
+    "require": [
+      "backend eq \"engine\"",
+      "seats eq 60",
+      "humans eq 1",
+      "bots eq 59",
+      "faults eq 0",
+      "gpuErrors empty",
+      "local.sampledTicks gt 0",
+      "effects.droppedRecords eq 0",
+      "effects.repeatedSoundDeliveries eq 0",
+      "effects.repeatedGrantDeliveries eq 0",
+      "local.neutralObserved eq true",
+      "local.positiveDirectionObserved eq true",
+      "local.negativeDirectionObserved eq true",
+      "local.jumpObserved eq true",
+      "local.diveObserved eq true",
+      "local.grabObserved eq true",
+      "local.positionChanged eq true",
+      "membership.checks gt 0",
+      "membership.duplicateSeatIds empty"
+    ],
+    "description": "one upright engine-controlled character",
+    "held_constant": [
+      "fixed plain floor",
+      "fixed plain backdrop"
+    ]
+  },
+  {
+    "id": "sixty-seat-engine-round",
+    "stage": "offline",
+    "filename": "sixty-seat-engine-round.png",
+    "args": {
+      "scenario": "sixty-seat-engine-round",
+      "testMode": true,
+      "seed": 7,
+      "humans": 1
+    },
+    "require": [
+      "backend eq \"engine\"",
+      "seats eq 60",
+      "humans eq 1",
+      "bots eq 59",
+      "faults eq 0",
+      "gpuErrors empty",
+      "local.sampledTicks gt 0",
+      "effects.droppedRecords eq 0",
+      "effects.repeatedSoundDeliveries eq 0",
+      "effects.repeatedGrantDeliveries eq 0",
+      "local.positionChanged eq true",
+      "botsMoved gt 0",
+      "membership.checks gt 0",
+      "membership.nearSeats gt 0",
+      "membership.farSeats gt 0",
+      "membership.duplicateSeatIds empty",
+      "progress.distinctCourses ge 1"
+    ],
+    "description": "a readable active show with near and far penguins and HUD",
+    "held_constant": [
+      "selected authored floor and backdrop",
+      "camera framing",
+      "existing assets"
+    ]
+  },
+  {
+    "id": "engine-show-winner-podium",
+    "stage": "offline",
+    "filename": "engine-show-winner-podium.png",
+    "args": {
+      "scenario": "engine-show-winner-podium",
+      "testMode": true,
+      "seed": 7,
+      "humans": 1
+    },
+    "require": [
+      "backend eq \"engine\"",
+      "seats eq 60",
+      "humans eq 1",
+      "bots eq 59",
+      "faults eq 0",
+      "gpuErrors empty",
+      "local.sampledTicks gt 0",
+      "effects.droppedRecords eq 0",
+      "effects.repeatedSoundDeliveries eq 0",
+      "effects.repeatedGrantDeliveries eq 0",
+      "local.positionChanged eq true",
+      "botsMoved gt 0",
+      "membership.checks gt 0",
+      "membership.duplicateSeatIds empty",
+      "progress.completedRounds ge 2",
+      "progress.distinctCourses ge 2",
+      "progress.confirmedWinner ge 0",
+      "progress.podiumConfirmed eq true"
+    ],
+    "description": "the confirmed winner on the highest podium place",
+    "held_constant": [
+      "selected authored floor and backdrop",
+      "camera framing",
+      "existing assets"
+    ]
+  }
+]

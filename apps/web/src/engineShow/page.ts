@@ -254,6 +254,8 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     moduleKey: '',
   }
   let live: LiveShow | null = null
+  const showIds = new WeakMap<EngineShowRuntime, number>()
+  let showSerial = 0
   let disposed = false
   let paused = false
   let frameId = 0
@@ -453,6 +455,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       current.captureUnsubscribe = runtime.onPresentation(noteCapture)
       internal.snapshot = runtime.snapshot()
       internal.screen = internal.snapshot.screen
+      showIds.set(runtime, ++showSerial)
       live = current
       hubView?.setVisible(false)
     } catch (error) {
@@ -590,7 +593,15 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
       if (current === null) return
       const snapshot = current.runtime.snapshot()
       if (snapshot.screen !== 'vote' || snapshot.candidates.length === 0) return
-      current.runtime.vote(LOCAL_SEAT, Math.min(candidate, snapshot.candidates.length - 1))
+      // An eliminated local seat is off the roster and has no vote; bots vote through the script.
+      if (!snapshot.seatOf.includes(LOCAL_SEAT)) return
+      try {
+        current.runtime.vote(LOCAL_SEAT, Math.min(candidate, snapshot.candidates.length - 1))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        throw new Error(`${message} [vote context: show instance #${showIds.get(current.runtime) ?? '?'}, hubFlow state '${flow?.state() ?? 'none'}', `
+          + `roster seatOf [${snapshot.seatOf.join(',')}], screen '${snapshot.screen}', round ${snapshot.round}, tick ${snapshot.tick}]`, { cause: error })
+      }
     },
     draw() {
       renderCurrent(1 / 60)

@@ -164,3 +164,45 @@ test('dispose is idempotent and frees the hub once', () => {
   flow.dispose()
   assert.equal(hub.frees, 1)
 })
+
+// A show runtime that refuses a vote from a seat off its roster, as the real runtime does.
+function rosterShow(script: string[], seatOf: number[]) {
+  const show = fakeShow(script) as ReturnType<typeof fakeShow> & { votes: number[]; vote(seat: number, c: number): void }
+  show.votes = []
+  show.vote = (seat: number) => {
+    if (!seatOf.includes(seat)) throw new RefusalError('ege-show-runtime', 'vote.roomSeat', `room seat ${seat} is not on the active roster`)
+    show.votes.push(seat)
+  }
+  const base = show.snapshot
+  show.snapshot = () => ({ ...base(), seatOf }) as ReturnType<typeof base>
+  return show
+}
+
+// The caller-side vote the page's host performs: only a seat on the roster casts a vote.
+function castLocalVote(show: ReturnType<typeof rosterShow>): void {
+  const roster = (show.snapshot() as unknown as { seatOf: number[] }).seatOf
+  if (roster.includes(0)) show.vote(0, 0)
+}
+
+test('hub -> show -> vote for room seat 0 -> returned to hub -> show again -> vote', async () => {
+  const hub = fakeHub()
+  const shows = [rosterShow(['vote', 'done', 'done'], [0, 1, 2]), rosterShow(['vote', 'done', 'done'], [0, 1, 2])]
+  let next = 0
+  const flow = new EngineHubFlow(hub as unknown as HubRuntime, async () => shows[next++] as unknown as EngineShowRuntime)
+  for (const show of shows) {
+    await flow.start()
+    assert.equal(flow.state(), 'show')
+    castLocalVote(show)
+    assert.deepEqual(show.votes, [0])
+    flow.frame(1 / 60, IDLE)
+    flow.frame(1 / 60, IDLE)
+    assert.equal(flow.state(), 'returning')
+    flow.frame(1 / 60, IDLE)
+    assert.equal(flow.state(), 'hub')
+  }
+  // A seat that is off the roster casts no vote instead of reaching the runtime refusal.
+  const eliminated = rosterShow(['vote'], [1, 2])
+  castLocalVote(eliminated)
+  assert.deepEqual(eliminated.votes, [])
+  assert.throws(() => eliminated.vote(0, 0), /is not on the active roster/)
+})

@@ -1,9 +1,9 @@
-import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { execFileSync, spawn } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { isDeepStrictEqual } from 'node:util'
-import { loadCaptureRows, requirementProblems } from './engineCaptureJob.ts'
+import { allocateAttempt, captureStore, currentAttempt, keptRowsWith, loadCaptureRows, priorOutcomes, requirementProblems, renderOrder as sharedRenderOrder, restoreRetained, writeJson as json, copyRecord as copy } from './engineCaptureJob.ts'
+import type { CaptureBuild, CaptureKept, CaptureRun } from './engineCaptureJob.ts'
 import { refuse, isRefusal } from '../packages/sim/src/refusal.ts'
 import { focusedFeature, parseRunArgs } from '../apps/web/src/engineRound/run.ts'
 import type { RoundRunArgs } from '../apps/web/src/engineRound/run.ts'
@@ -17,46 +17,15 @@ import { harnessRound } from '../apps/headless/src/egeHarness.ts'
 
 const INVENTORY = 'apps/web/public/engine-round/inventory.json'
 const USAGE = 'usage: <check|clean|render|fresh|judge> --milestone <mN> --page <dist dir> --out <dir> [--budget-s <s>]'
-type Build = { commit: string }
-type Kept = { id: string; filename: string; attempt: number }
-
-function json(path: string, value: unknown): void {
-  mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
-}
-
-function inventorySnapshot(row: InventoryRow): unknown {
-  return { id: row.id, filename: row.filename, args: row.args, require: row.require, description: row.description, held_constant: row.held_constant }
-}
+type Build = CaptureBuild
+type Kept = CaptureKept
 
 /**
  * Handoff: Capture job part 3: render, fresh, judge and the milestone commands calls keptRows to
  * reuse unchanged images. It reads the engine-round-store attempts and returns kept rows today.
  */
 export function keptRows(storeDir: string, rows: InventoryRow[], build: Build): { kept: Kept[]; render: InventoryRow[] } {
-  if (process.env.ENGINE_ROUND_RERENDER_ALL === '1') return { kept: [], render: rows }
-  const attemptsDir = join(storeDir, 'attempts')
-  const attempts = existsSync(attemptsDir) ? readdirSync(attemptsDir).filter(name => /^\d+$/.test(name)).map(Number).sort((a, b) => b - a) : []
-  const kept: Kept[] = []
-  const render: InventoryRow[] = []
-  for (const row of rows) {
-    let found: Kept | undefined
-    for (const attempt of attempts) {
-      const dir = join(attemptsDir, String(attempt))
-      try {
-        const selection = JSON.parse(readFileSync(join(dir, 'selection.json'), 'utf8')) as { build: Build; rows: InventoryRow[] }
-        const prior = selection.rows.find(item => item.id === row.id)
-        const image = join(dir, row.filename)
-        if (selection.build.commit === build.commit && prior && isDeepStrictEqual(inventorySnapshot(prior), inventorySnapshot(row)) && statSync(image).size > 0) {
-          found = { id: row.id, filename: row.filename, attempt }
-          break
-        }
-      } catch { /* An incomplete attempt cannot supply a reusable image. */ }
-    }
-    if (found) kept.push(found)
-    else render.push(row)
-  }
-  return { kept, render }
+  return keptRowsWith<InventoryRow>('ENGINE_ROUND_RERENDER_ALL', storeDir, rows, build, false)
 }
 
 function options(argv: string[]): { op: string; milestone: string; page: string; out: string; budget: number } {
@@ -76,7 +45,7 @@ function buildIdentity(): Build {
 }
 
 function storeFor(milestone: string, out: string): string {
-  return resolve(process.env.NMC_CACHE_DIR ? join(process.env.NMC_CACHE_DIR, `engine-round-${milestone}`) : out)
+  return captureStore(`engine-round-${milestone}`, out)
 }
 
 async function check(args: ReturnType<typeof options>): Promise<void> {
@@ -108,66 +77,34 @@ function clean(args: ReturnType<typeof options>): void {
   const delivery = resolve(args.out)
   const selectionPath = join(delivery, 'selection.json')
   if (!existsSync(selectionPath)) refuse('engine-round', selectionPath, 'run check first')
-  const store = storeFor(args.milestone, delivery)
-  const attempts = join(store, 'attempts')
-  mkdirSync(attempts, { recursive: true })
-  const numbers = readdirSync(attempts).filter(name => /^\d+$/.test(name)).map(Number)
-  const attempt = Math.max(0, ...numbers) + 1
-  const attemptDir = join(attempts, String(attempt))
-  mkdirSync(attemptDir, { recursive: true })
-  copyFileSync(selectionPath, join(attemptDir, 'selection.json'))
-  json(join(store, 'current.json'), { attempt })
+  allocateAttempt(storeFor(args.milestone, delivery), selectionPath)
 }
 
-type Selection = { milestone: string; build: Build; rows: InventoryRow[] }
-type Run = { attempt: number; build: Build; kept: Kept[]; rendered: string[]; failed: { id: string; message: string }[] }
+type Run = CaptureRun
 
 function current(args: ReturnType<typeof options>) {
   const delivery = resolve(args.out)
   const store = storeFor(args.milestone, delivery)
-  const { attempt } = JSON.parse(readFileSync(join(store, 'current.json'), 'utf8')) as { attempt: number }
-  const dir = join(store, 'attempts', String(attempt))
-  const selection = JSON.parse(readFileSync(join(dir, 'selection.json'), 'utf8')) as Selection
+  const { attempt, dir, selection } = currentAttempt<InventoryRow>(store)
   if (selection.milestone !== args.milestone) throw new Error('selection milestone does not match; run check and clean')
   return { delivery, store, attempt, dir, selection }
 }
 
-function copy(source: string, target: string): void {
-  if (resolve(source) === resolve(target)) return
-  mkdirSync(dirname(target), { recursive: true })
-  cpSync(source, target, { recursive: true, force: true })
-}
-
 export function renderOrder(rows: InventoryRow[], failed: readonly string[], rendered: readonly string[]): InventoryRow[] {
-  const priority = (id: string) => failed.includes(id) ? 0 : rendered.includes(id) ? 2 : 1
-  return [...rows].sort((a, b) => priority(a.id) - priority(b.id))
+  return sharedRenderOrder(rows, failed, rendered)
 }
 
 async function render(args: ReturnType<typeof options>): Promise<number> {
   const ctx = current(args)
   const { selection, store, dir, delivery, attempt } = ctx
-  const reusable = keptRows(store, selection.rows, selection.build)
-  const failed: string[] = []
-  const rendered: string[] = []
-  for (const name of readdirSync(join(store, 'attempts')).filter(name => /^\d+$/.test(name)).map(Number).sort((a, b) => b - a)) {
-    try {
-      const previous = JSON.parse(readFileSync(join(store, 'attempts', String(name), 'run.json'), 'utf8')) as Run
-      for (const item of previous.failed) if (!failed.includes(item.id) && !rendered.includes(item.id)) failed.push(item.id)
-      for (const id of previous.rendered) if (!failed.includes(id) && !rendered.includes(id)) rendered.push(id)
-    } catch { /* An unfinished attempt may not have a run record. */ }
-  }
+  const reusable = keptRowsWith<InventoryRow>('ENGINE_ROUND_RERENDER_ALL', store, selection.rows, selection.build, true)
+  const { failed, rendered } = priorOutcomes(store)
   const run: Run = { attempt, build: selection.build, kept: reusable.kept, rendered: [], failed: [] }
   const saveRun = () => { json(join(dir, 'run.json'), run); copy(join(dir, 'run.json'), join(delivery, 'run.json')) }
-  for (const item of reusable.kept) {
-    const origin = join(store, 'attempts', String(item.attempt))
-    copy(join(origin, item.filename), join(dir, item.filename))
-    copy(join(origin, 'jobs', item.id), join(dir, 'jobs', item.id))
-    copy(join(dir, item.filename), join(delivery, item.filename))
-    copy(join(dir, 'jobs', item.id), join(delivery, 'jobs', item.id))
-  }
+  restoreRetained(store, dir, delivery, reusable.kept)
   copy(join(dir, 'selection.json'), join(delivery, 'selection.json'))
   saveRun()
-  const ordered = renderOrder(reusable.render, failed, rendered)
+  const ordered = sharedRenderOrder(reusable.render, failed, rendered)
   console.log(`engine-round: kept ${reusable.kept.length}, rendering ${ordered.length}`)
   if (!ordered.length) return 0
   await waitForGpuClient(gpuWaitSeconds(process.env.NMC_GPU_WAIT_S))

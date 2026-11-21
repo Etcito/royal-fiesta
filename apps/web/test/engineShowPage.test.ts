@@ -9,6 +9,9 @@ import type { EngineShowFacts } from '../src/engineShow/ops.ts'
 import { requirementProblems } from '../../../tools/engineCaptureJob.ts'
 import { showRows } from '../../../tools/engineShowCapture.ts'
 import type { EngineShowPage } from '../src/engineShow/page.ts'
+import { EngineSeatPresenter, farPenguinBridge } from '../src/engineShow/presentation.ts'
+
+type Vec3 = readonly [number, number, number]
 
 const ARGS = { scenario: 'simple-engine-character', testMode: true, seed: 7, humans: 1 }
 
@@ -292,4 +295,58 @@ test('insufficient physical-course progression and nonzero effect errors fail', 
   assert.ok(problems.some(problem => problem.includes('droppedRecords')))
   assert.ok(problems.some(problem => problem.includes('repeatedSoundDeliveries')))
   assert.ok(problems.some(problem => problem.includes('repeatedGrantDeliveries')))
+})
+
+test('far seats decoded by EngineFarView reach the far-figure draw input as penguins at their course positions', () => {
+  const ALL = Array.from({ length: 60 }, (_, seat) => seat)
+  const NEAR = new Set(ALL.slice(0, 8))
+  // Seat n stands at x = n * 1.8 - 18 on the authored start grid row, z = -4, one metre up (world metres).
+  const poseOf = (seat: number): readonly [number, number, number] => [seat * 1.8 - 18, 1, -4]
+  const bytes = new Uint8Array(2 + ALL.length * 60)
+  const raw = new DataView(bytes.buffer)
+  raw.setUint16(0, ALL.length, true)
+  ALL.forEach((seat, i) => {
+    const at = 2 + i * 60
+    raw.setUint32(at, seat + 1, true)
+    poseOf(seat).forEach((value, n) => raw.setFloat64(at + 4 + n * 8, value, true))
+    raw.setFloat64(at + 52, 1, true)
+  })
+  const presentationWorld = {
+    ref: { domain: 1, kind: 'seat', world: 1 },
+    incarnation: 1,
+    seats: ALL.map((roomSeat, roundSeat) => ({ roomSeat, roundSeat, inputSlot: roomSeat === 0 ? 0 : -1, entity: 100 + roomSeat })),
+    farSnapshot: () => bytes.slice(),
+  }
+  const snapshot = { tick: 1, round: 0, screen: 'playing', seatOf: ALL, alive: ALL, candidates: [], results: [], champion: null, faults: 0 }
+  const presenter = new EngineSeatPresenter({ tick: () => 1, parked: () => new Set() })
+  presenter.observe({
+    kind: 'post-tick', tick: 1, snapshot,
+    presentation: { showId: 's', tick: 1, round: 0, map: 'm0', course: null, worlds: [presentationWorld] },
+  } as never, NEAR)
+  const submission = presenter.submission()
+  assert.equal(submission.near.size, 8)
+  assert.equal(submission.far.size, 52)
+
+  const registered: string[] = []
+  const created = new Map<number, Vec3>()
+  const placed = new Map<number, { pos: readonly number[]; scale: readonly number[] }>()
+  const port = {
+    registerAsset: (id: string) => { registered.push(id); return 7 },
+    createInstance: (asset: number) => { assert.equal(asset, 7); const id = created.size + 1; created.set(id, [0, 0, 0]); return id },
+    setTransform: (id: number, pos: readonly number[], _rot: readonly number[], scale: readonly number[]) => { placed.set(id, { pos, scale }) },
+    setVisible: () => {},
+    destroyInstance: () => {},
+  }
+  const bridge = farPenguinBridge(port as never, { id: 'zone.far-bean' } as never)
+  bridge.sync(submission.view)
+  assert.deepEqual(registered, ['zone-far-bean'])
+  assert.equal(bridge.instances, submission.far.size)
+  assert.equal(placed.size, 52)
+  const positions = [...placed.values()].map(item => item.pos.map(Math.fround).join(','))
+  for (const seat of ALL.slice(8)) {
+    assert.ok(positions.includes(poseOf(seat).map(Math.fround).join(',')), `seat ${seat} is drawn at its course position`)
+  }
+  // The near scene draws its figures at unit scale; a far figure is the same penguin at the same scale.
+  for (const item of placed.values()) assert.deepEqual([...item.scale], [1, 1, 1])
+  bridge.dispose()
 })

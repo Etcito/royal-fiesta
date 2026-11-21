@@ -535,6 +535,11 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
             await new Promise<void>(resolve => { setTimeout(resolve, 10) })
           }
           for (let i = 0; i < 8; i++) drawFrame(0)
+          // The far figures are part of the frame: every submitted far seat must hold a live bridge instance.
+          const submitted = drawn?.submission.far.size ?? 0
+          if (current.bridge.instances !== submitted) {
+            throw new Error(`[engine-show] far penguins not drawn: ${current.bridge.instances} bridge instances for ${submitted} submitted far seats`)
+          }
           const device = deviceOfCanvas(canvas) as { queue: { onSubmittedWorkDone(): Promise<unknown> } } | undefined
           if (device !== undefined) await device.queue.onSubmittedWorkDone()
         },
@@ -868,12 +873,18 @@ function base64Of(bytes: Uint8Array): string {
   return btoa(value)
 }
 
-/** Draws the captured frame, deliberately repeats the public pump, then composes the PNG. */
-async function captureScenario(scenario: string, host: ShowCaptureHost): Promise<CaptureResult> {
+/** Draws a frame, deliberately repeats the public pump, waits for the GPU and composes the PNG with its HUD. */
+async function shootFrame(host: ShowCaptureHost): Promise<Uint8Array> {
   host.draw()
   host.collector.effects(host.pump())
   await host.settle()
-  const png = await host.capture()
+  return host.capture()
+}
+
+/** The PNG shot now, or the one a scenario already shot at its own moment, with the facts collected so far. */
+async function captureScenario(scenario: string, host: ShowCaptureHost, shot?: Uint8Array): Promise<CaptureResult> {
+  const png = shot ?? await shootFrame(host)
+  if (shot !== undefined) host.collector.effects(host.pump())
   return { facts: host.collector.facts(), capture: { name: `${scenario}.png`, width: WIDTH, height: HEIGHT, mime: 'image/png', base64: base64Of(png) } }
 }
 
@@ -888,18 +899,23 @@ async function runSimpleScenario(_page: EngineShowPage, args: Readonly<Record<st
   return captureScenario(String(args.scenario), host)
 }
 
+/** Real ticks of the playing round before the frame is shot: the seats are still together around the start grid. */
+const ROUND_SHOT_TICKS = 30
+
+/**
+ * The frame is shot at the start of the real playing round, with the local seat driven by real input: the other
+ * fifty-nine seats are still around the start grid inside the unchanged follow camera (eight near seats, the rest
+ * far). Shot later, the bots have already raced out of view. The local controls are then exercised for the facts.
+ */
 async function runRoundScenario(_page: EngineShowPage, args: Readonly<Record<string, unknown>>): Promise<CaptureResult> {
   const host = requireCaptureHost()
   const pacer = createShowPacer(String(args.scenario))
   host.pauseLoop()
   await advanceToPlaying(host, pacer)
+  for (let i = 0; i < ROUND_SHOT_TICKS; i++) await stepOnce(host, pacer, () => showCode({ moveX: 1, moveZ: 1 }))
+  const shot = await shootFrame(host)
   await exerciseLocal(host, pacer)
-  for (let i = 0; i < 240; i++) {
-    const screen = host.screen()
-    if (screen === 'results' || screen === 'podium' || screen === 'done') break
-    await stepOnce(host, pacer, () => showCode({ moveX: 1, moveZ: 1 }))
-  }
-  return captureScenario(String(args.scenario), host)
+  return captureScenario(String(args.scenario), host, shot)
 }
 
 /**

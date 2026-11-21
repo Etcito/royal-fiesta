@@ -119,3 +119,24 @@ test('feeds the decoded buffer through RenderBridge and removes departed seats',
   assert.equal(calls.filter(call => call.name === 'removeNode').length, 1)
   bridge.dispose()
 })
+
+test('sixty seats: the far records of the non-near seats keep their world-unit course positions and figure size', () => {
+  const records = Array.from({ length: 60 }, (_, seat) => ({
+    zone: seat + 1,
+    pose: [seat * 1.8 - 18, 1, -4, 0, 0, 0, 1],
+  }))
+  const far = new EngineFarView()
+  far.accept(1, 1, snapshot(records))
+  const near = new Set([0, 1, 2, 3, 4, 5, 6, 7])
+  const result = far.read(near)
+  assert.equal(result.count, 52)
+  for (let i = 0; i < result.count; i++) {
+    const decoded = record(result.bytes, i)
+    const seat = decoded.entity
+    assert.ok(!near.has(seat))
+    assert.deepEqual(decoded.pos, [Math.fround(seat * 1.8 - 18), 1, -4])
+    // The same capsule the near character is built on, never a reduced placeholder.
+    assert.deepEqual(decoded.params, [Math.fround(CAPSULE.radius), Math.fround(CAPSULE.halfHeight)])
+    assert.equal(decoded.visible, 1)
+  }
+})

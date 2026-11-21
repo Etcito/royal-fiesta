@@ -7,6 +7,7 @@ import { readWorldState } from '@etcito/game-engine/world-state'
 import type { WorldState } from '@etcito/game-engine/world-state'
 import { EngineDomainFactory } from '@etcito/game-engine/zones'
 import type { EngineDomainSim, ZoneInputCodec, ZoneGrid } from '@etcito/game-engine/zones'
+import { SnapWriter } from '@gamesaloon/rollback'
 import type { DomainFactory, DomainSpec, SnapReader } from '@gamesaloon/rollback/zones'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { MechItem } from '@royal-fiesta/sim/mechanismSpec'
@@ -295,9 +296,18 @@ class ShowFactory implements EngineShowFactory {
       const entity = entities.get(index)
       if (identity !== undefined && entity !== undefined) publishers.set(entity, identity)
     }
+    const farSnapshot = (): Uint8Array => {
+      const live = this.recordOf(sim)
+      if (live !== record || live.incarnation !== record.incarnation) {
+        order(`world ${sim.world} is not the live incarnation this presentation captured; read presentation() again`)
+      }
+      const writer = new SnapWriter()
+      live.sim.far(writer, 1)
+      return writer.bytes().slice()
+    }
     return {
       ref: this.worldRef(sim), incarnation: record.incarnation, scene: template, seats,
-      entities, obstacles, mechanisms, bodies, features, publishers,
+      entities, obstacles, mechanisms, bodies, features, publishers, farSnapshot,
     }
   }
 

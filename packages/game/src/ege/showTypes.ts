@@ -100,6 +100,12 @@ export interface EnginePresentationWorld {
   readonly bodies: ReadonlyMap<string, number>
   readonly features: readonly EnginePresentationFeature[]
   readonly publishers: ReadonlyMap<number, string>
+  /**
+   * The raw far poses (`ege_zone_poses(world, 1)`) of this live incarnation as independent storage.
+   * Call it only during the tick/incarnation that produced this metadata; it refuses after release,
+   * scratch replacement or factory disposal even when a domain identifier is reused.
+   */
+  readonly farSnapshot: () => Uint8Array
 }
 
 /**

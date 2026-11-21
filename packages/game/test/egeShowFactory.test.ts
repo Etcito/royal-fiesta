@@ -398,6 +398,15 @@ test('factory presentation resolves the selected round templates to live entitie
     assert.deepEqual(firstWorld.mechanisms, race.sim!.mechanisms?.items ?? [])
     assert.equal(firstWorld.publishers.size, 60 * 19)
     for (const identity of firstWorld.publishers.values()) assert.match(identity, /^show\/publish\/\d+\/\d+$/)
+    const direct = new SnapWriter()
+    first.far(direct, 1)
+    const expectedFar = direct.bytes()
+    assert.ok(expectedFar.length > 0, 'a live physics world reports far poses')
+    const far = firstWorld.farSnapshot()
+    assert.deepEqual(far, expectedFar, 'the far snapshot matches the engine stream')
+    far[0] = (far[0]! + 1) & 0xff
+    assert.deepEqual(firstWorld.farSnapshot(), expectedFar, 'each far snapshot owns independent storage')
+    assert.notEqual(firstWorld.farSnapshot(), firstWorld.farSnapshot())
     assert.throws(() => factory.prepareRound(7, 99, sixty), RefusalError)
 
     factory.prepareRound(1, 1, [3, 59])
@@ -415,6 +424,7 @@ test('factory presentation resolves the selected round templates to live entitie
     }
     factory.release(first)
     assert.throws(() => factory.presentationWorld(first))
+    assert.throws(() => firstWorld.farSnapshot(), 'a retained far snapshot refuses after release')
     assert.equal(factory.presentationWorld(next)!.seats.length, 2)
     factory.release(next)
     factory.release(global)

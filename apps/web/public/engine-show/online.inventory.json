@@ -29,39 +29,5 @@
       "penguin character model and default costumes",
       "1920x1080 round follow camera"
     ]
-  },
-  {
-    "id": "engine-online-background-client-podium",
-    "stage": "online",
-    "filename": "engine-online-background-client-podium.png",
-    "args": {
-      "scenario": "engine-online-background-client-podium",
-      "testMode": true,
-      "seed": 10,
-      "humans": 2,
-      "plan": [60, 1]
-    },
-    "require": [
-      "backend eq \"engine\"",
-      "gpuErrors empty",
-      "faults eq 0",
-      "online.clients eq 2",
-      "online.humans eq 2",
-      "online.bots eq 58",
-      "online.backgroundFrames gt 0",
-      "online.desyncs eq 0",
-      "online.peerFaults eq 0",
-      "progress.podiumConfirmed eq true",
-      "progress.confirmedWinner ge 0",
-      "effects.droppedRecords eq 0",
-      "effects.repeatedSoundDeliveries eq 0",
-      "effects.repeatedGrantDeliveries eq 0"
-    ],
-    "description": "The confirmed winner podium of a completed online engine show: one penguin stands on the highest middle podium block, visibly above the penguins on the two lower podium places",
-    "held_constant": [
-      "podium stage geometry and lighting",
-      "penguin character model and default costumes",
-      "1920x1080 podium camera"
-    ]
   }
 ]

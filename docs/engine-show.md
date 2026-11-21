@@ -101,7 +101,7 @@ node --experimental-strip-types tools/engineShowCapture.ts fresh --stage online 
 node --experimental-strip-types tools/engineShowCapture.ts judge --stage online --page apps/web/dist --out out/engine-show/online --budget-s 3300
 ```
 
-- Inventory: `apps/web/public/engine-show/online.inventory.json`, with `engine-online-late-client-round.png` and `engine-online-background-client-podium.png`. The stage check accepts `online` because that inventory exists, and refuses a stage whose inventory is missing.
+- Inventory: `apps/web/public/engine-show/online.inventory.json`, with `engine-online-late-client-round.png`. The background-client-podium capture was withdrawn from M4 by the owner's directive of 2026-11-21 until the levels can be finished. The stage check accepts `online` because that inventory exists, and refuses a stage whose inventory is missing.
 - Store: `NMC_CACHE_DIR/engine-show/online`. Without `NMC_CACHE_DIR` the store is `out/engine-show/online` (`captureStageStore` in `tools/engineCaptureJob.ts`). Captures are delivered under `out/engine-show/online`, which is ignored and never committed.
 - `clean` allocates a new attempt and deletes no record or image.
 - `render` copies the kept images into the new delivery directory, then renders only rows without a valid image for the current build and inventory row, failed rows first.

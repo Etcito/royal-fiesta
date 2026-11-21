@@ -1,9 +1,11 @@
 // Game's typed zone-room subset of gamesaloon-relay src/relay/{protocol,binary}.ts and docs/RELAY.md.
 import type { LobbyServerMsg } from '../hub/lobby.ts'
+import type { EngineModuleIdentity } from '../../../../tools/egeScripts.ts'
 import type { RelayLobbyEnter, RelayLobbyLeave, RelayLobbyPick, RelayLobbyPresence } from './relayProtocol.ts'
 import { parseRelayServerMsg } from './relayProtocol.ts'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import type { SignalData } from './roomsProtocol.ts'
+import { parseEngineIdentity } from '../ege/admission.ts'
 
 export const ZONE_BIN_KIND = 0x5a
 // Application payload kind inside the relay's opaque 0x5a routing envelope. Zone game packets never use it.
@@ -48,6 +50,8 @@ export interface ZoneQueuePayload {
   /** fnv1a32 of the merged zone tuning, as an unsigned u32. */
   tuning: number
   m: { cpuMs: number; bandwidthKbps: number; latencyMs: number; spareSlots: number }
+  /** Present on an engine=1 offer: the exact compiled module identity this client runs. */
+  engine?: EngineModuleIdentity
 }
 
 export type ZoneCreate = { t: 'create'; players?: number; cadence?: boolean; payload?: ZoneQueuePayload; game: typeof ZONE_GAME_ID; zones: true }
@@ -73,6 +77,7 @@ export function isZoneQueuePayload(p: unknown): p is ZoneQueuePayload {
     && typeof p.name === 'string' && int(p.seats, 1, 4) && typeof p.course === 'string' && p.course.length > 0
     && int(p.tuning, 0, 0xffffffff) && isObj(p.m) && nonnegative(p.m.cpuMs)
     && nonnegative(p.m.bandwidthKbps) && nonnegative(p.m.latencyMs) && int(p.m.spareSlots, 0, 15)
+    && (!Object.hasOwn(p, 'engine') || parseEngineIdentity(p.engine) !== null)
 }
 
 /** Parses only the zone-room messages we consume. Malformed frames never escape the socket callback. */

@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
@@ -7,6 +7,7 @@ import { decodePng } from '../apps/headless/src/gpuRecord.ts'
 import { publishDist } from '../apps/headless/src/gpuClient.ts'
 import { gpuWaitSeconds, waitForGpuClient } from './chromeCheck.ts'
 import { repoRoot } from './bricks.ts'
+import { parseScore } from './judgeLoop.ts'
 
 /** Output filename rule shared by every capture inventory (E8). */
 export const CAPTURE_FILENAME = /^[a-z0-9-]+[.]png$/
@@ -398,7 +399,7 @@ function retainedOrigins(dir: string): Map<string, number> {
  * current build, the copied selection, job records, required facts and each row's retained origin
  * without running an operation.
  */
-export async function renderEngineCapture<A>(config: CaptureJobConfig<A>, argv: readonly string[]): Promise<number> {
+export async function renderEngineCapture<A>(config: CaptureJobConfig<A>, argv: readonly string[], execution: CaptureExecution = defaultExecution): Promise<number> {
   let args: CaptureOptions
   try { args = captureOptions(argv) } catch { console.error(CAPTURE_USAGE); return 2 }
   if (args.operation !== 'render') { console.error(CAPTURE_USAGE); return 2 }
@@ -426,8 +427,8 @@ export async function renderEngineCapture<A>(config: CaptureJobConfig<A>, argv: 
     console.log(`${area}: kept ${reusable.kept.length}, rendering ${ordered.length}`)
     if (ordered.length === 0) return 0
     await config.validateSelection(rows)
-    await waitForGpuClient(gpuWaitSeconds(process.env.NMC_GPU_WAIT_S))
-    const pageRef = await publishDist(config.page)
+    await execution.waitForGpu()
+    const pageRef = await execution.publish(config.page)
     for (const row of ordered) {
       const job = join(dir, 'jobs', row.id)
       try {
@@ -452,6 +453,164 @@ export async function renderEngineCapture<A>(config: CaptureJobConfig<A>, argv: 
       saveRun()
     }
     return run.failed.length ? 1 : 0
+  } catch (error) {
+    console.error(`${area}: ${messageOf(error)}`)
+    return 1
+  }
+}
+
+/** Host operations the lifecycle calls; tests inject fakes, the default runs the GPU client and python3 judge. */
+export type CaptureExecution = {
+  waitForGpu: () => Promise<void>
+  publish: (page: string) => Promise<string>
+  judge: JudgeRunner
+  clock: () => number
+}
+
+/** Runner that scores one image with python3 and NMC_JUDGE_CLIENT, returning the judge's stdout. */
+export type JudgeRunner = (image: string, description: string, heldConstant: string[]) => Promise<string>
+
+/** Minimum judge score a capture must reach to pass. */
+export const JUDGE_MIN_SCORE = 6
+
+/** Verdict stored at <store>/verdicts/<filename>.json; written before any later failure. */
+export type CaptureVerdict = {
+  filename: string
+  description: string
+  heldConstant?: string[]
+  attempt: number
+  score: number | null
+  pass: boolean
+}
+
+/** Judges with python3 and NMC_JUDGE_CLIENT; the arguments carry the description and every held constant. */
+export function judgeWithClient(image: string, description: string, heldConstant: string[]): Promise<string> {
+  return new Promise((done, reject) => {
+    const client = process.env.NMC_JUDGE_CLIENT
+    if (!client) {
+      reject(new Error('NMC_JUDGE_CLIENT is unset'))
+      return
+    }
+    const args = [client, image, '--description', description, '--min-score', String(JUDGE_MIN_SCORE), ...heldConstant.flatMap(item => ['--held-constant', item])]
+    const child = spawn('python3', args)
+    let stdout = ''
+    child.stdout.on('data', chunk => { stdout += String(chunk) })
+    child.stderr.on('data', chunk => { process.stderr.write(chunk) })
+    child.once('error', reject)
+    child.once('close', () => done(stdout))
+  })
+}
+
+/** Production host operations: wait for the GPU client, publish the staged page, judge with python3. */
+export const defaultExecution: CaptureExecution = {
+  waitForGpu: () => waitForGpuClient(gpuWaitSeconds(process.env.NMC_GPU_WAIT_S)),
+  publish: page => publishDist(page),
+  judge: judgeWithClient,
+  clock: () => Date.now(),
+}
+
+/**
+ * Judges every row's delivered image within `budget` seconds. A passing verdict is reused only when the
+ * image bytes equal the attempt copy and description and held constants are identical; each new verdict
+ * is saved before the next row, so a later failure or an exhausted budget keeps earlier results.
+ */
+export async function judgeCaptureRows(area: string, store: string, delivery: string, attempt: number, rows: readonly CaptureIdentity[], budget: number, run: JudgeRunner, clock: () => number): Promise<number> {
+  const start = clock()
+  let missing = 0
+  for (const row of rows) {
+    const image = join(delivery, row.filename)
+    const verdictPath = join(store, 'verdicts', `${row.filename}.json`)
+    try {
+      const bytes = readFileSync(image)
+      if (!bytes.length) throw new Error('image is empty')
+      try {
+        const verdict = JSON.parse(readFileSync(verdictPath, 'utf8')) as CaptureVerdict
+        const sameFacts = verdict.pass && verdict.description === row.description && JSON.stringify(verdict.heldConstant ?? []) === JSON.stringify(row.held_constant)
+        if (sameFacts && bytes.equals(readFileSync(join(store, 'attempts', String(verdict.attempt), row.filename)))) continue
+      } catch { /* No reusable verdict. */ }
+      if (clock() - start >= budget * 1000) {
+        missing++
+        console.error(`${area}: ${row.id}: judge budget ${budget} s spent before this image`)
+        continue
+      }
+      const answer = await run(image, row.description, [...row.held_constant])
+      const score = parseScore(answer)
+      const verdict: CaptureVerdict = { filename: row.filename, description: row.description, heldConstant: [...row.held_constant], attempt, score, pass: score !== null && score >= JUDGE_MIN_SCORE }
+      writeJson(verdictPath, verdict)
+      console.log(`${area}: ${row.id}: judge score ${score ?? 'none'} (min ${JUDGE_MIN_SCORE}) ${verdict.pass ? 'PASS' : 'FAIL'}`)
+      if (!verdict.pass) {
+        missing++
+        console.error(`${area}: ${row.id}: JUDGE FAIL ${row.filename}\n${answer.trim()}`)
+      }
+    } catch (error) {
+      missing++
+      console.error(`${area}: ${row.id}: ${messageOf(error)}`)
+    }
+  }
+  return missing ? 1 : 0
+}
+
+/** Loads the inventory at config.inventory; its stage key is `milestone` for legacy inventories, else `stage`. */
+function inventoryRows<A>(config: CaptureJobConfig<A>): CaptureRow<A>[] {
+  const area = topicName(config.topic)
+  let raw: unknown
+  try { raw = JSON.parse(readFileSync(config.inventory, 'utf8')) } catch (error) {
+    refuse(area, config.inventory, `cannot read inventory: ${messageOf(error)}`)
+  }
+  const first = Array.isArray(raw) ? raw[0] : undefined
+  const legacy = first !== null && typeof first === 'object' && Object.hasOwn(first, 'milestone') && !Object.hasOwn(first, 'stage')
+  return loadCaptureRows(config.inventory, {
+    area,
+    stageField: legacy ? 'milestone' : 'stage',
+    checkStage: (value, pointer) => {
+      if (typeof value !== 'string' || !/^[a-z0-9-]+$/.test(value)) refuse(area, pointer, 'must be a lowercase stage name')
+      return value
+    },
+    parseArgs: value => config.parseArgs(value),
+  })
+}
+
+async function checkCapture<A>(config: CaptureJobConfig<A>, args: CaptureOptions): Promise<void> {
+  const area = topicName(config.topic)
+  const rows = inventoryRows(config).filter(row => row.stage === args.stage)
+  if (!rows.length) refuse(area, config.inventory, `no rows for ${args.stage}`)
+  await config.validateSelection(rows)
+  const out = resolve(args.out)
+  writeJson(join(out, 'selection.json'), { stage: args.stage, build: captureBuild(), rows })
+  console.log(`${area}: check ${rows.length} rows`)
+}
+
+function cleanCapture<A>(config: CaptureJobConfig<A>, args: CaptureOptions): void {
+  const out = resolve(args.out)
+  const selectionPath = join(out, 'selection.json')
+  if (!existsSync(selectionPath)) refuse(topicName(config.topic), selectionPath, 'run check first')
+  allocateAttempt(captureStageStore(config.topic, args.stage, out), selectionPath)
+}
+
+async function judgeCapture<A>(config: CaptureJobConfig<A>, args: CaptureOptions, execution: CaptureExecution): Promise<number> {
+  const out = resolve(args.out)
+  const store = captureStageStore(config.topic, args.stage, out)
+  const { attempt, selection } = currentAttempt<CaptureRow<A>>(store)
+  if (selection.stage !== args.stage) refuse(topicName(config.topic), join(store, 'current.json'), 'selection stage does not match; run check and clean')
+  const rows = storedRows(config, selection, args.stage)
+  return judgeCaptureRows(topicName(config.topic), store, out, attempt, rows, args.budget, execution.judge, execution.clock)
+}
+
+/**
+ * Runs one shared capture operation (check, clean, render, fresh or judge) for an inventory family.
+ * Invalid CLI usage returns 2; a functional failure returns 1; success returns 0.
+ */
+export async function runEngineCaptureJob<A>(config: CaptureJobConfig<A>, argv: readonly string[], execution: CaptureExecution = defaultExecution): Promise<number> {
+  let args: CaptureOptions
+  try { args = captureOptions(argv) } catch { console.error(CAPTURE_USAGE); return 2 }
+  if (args.operation === 'render') return renderEngineCapture(config, argv, execution)
+  if (args.operation === 'fresh') return freshEngineCapture(config, argv)
+  const area = topicName(config.topic)
+  try {
+    if (args.operation === 'check') await checkCapture(config, args)
+    else if (args.operation === 'clean') cleanCapture(config, args)
+    else return await judgeCapture(config, args, execution)
+    return 0
   } catch (error) {
     console.error(`${area}: ${messageOf(error)}`)
     return 1

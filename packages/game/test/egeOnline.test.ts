@@ -9,7 +9,7 @@ import { RefusalError } from '@royal-fiesta/sim/refusal'
 import type { CourseV1 } from '../src/courseV1.ts'
 import { createEngineOnlineShow } from '../src/ege/online.ts'
 import { engineOnlineStats, onlineMeasurements } from '../src/ege/onlineState.ts'
-import type { EngineShowConfig } from '../src/ege/showTypes.ts'
+import type { EngineShowConfig, EngineShowRuntime } from '../src/ege/showTypes.ts'
 import { onlineRoster } from '../src/net/onlineMatch.ts'
 import { ZoneLoopback } from '../src/net/zoneLoopback.ts'
 import { collectRfScripts, formatRfDiagnostic, rfCompiler } from '../../../tools/egeScripts.ts'
@@ -113,6 +113,80 @@ test('preparation stays pending across a macrotask and exposes no runtime before
     release()
     Reflect.set(WebAssembly, 'compile', realCompile)
     runtime?.dispose()
+  }
+})
+
+type GateState = 'pending' | 'ready' | 'failed'
+
+function prepareGate(preparing: Promise<EngineShowRuntime>) {
+  const gate: { state: GateState } = { state: 'pending' }
+  let runtime: EngineShowRuntime | undefined
+  const settled = preparing.then(
+    value => { runtime = value; gate.state = 'ready'; return value },
+    error => { gate.state = 'failed'; throw error },
+  )
+  const vote = (): boolean => {
+    if (gate.state !== 'ready' || !runtime) return false
+    runtime.vote(0, 1)
+    return true
+  }
+  return { gate, runtime: () => runtime, vote, settled }
+}
+
+function spyTransport(base: GroupTransport, onSend: () => void): GroupTransport {
+  const many = base.sendMany
+  return {
+    send: (peer, ch, data) => { onSend(); base.send(peer, ch, data) },
+    sendMany: many ? (peers, ch, data) => { onSend(); many.call(base, peers, ch, data) } : undefined,
+    drain: out => base.drain(out),
+    closed: peer => base.closed(peer),
+    now: () => base.now(),
+  }
+}
+
+test('readiness gate refuses a local vote while pending or failed and sends once when ready', async () => {
+  const realCompile = WebAssembly.compile
+  let release!: () => void
+  const blocked = new Promise<void>(resolve => { release = resolve })
+  Reflect.set(WebAssembly, 'compile', async (source: BufferSource) => { await blocked; return realCompile(source) })
+  const net = new ZoneLoopback(2, { seed: 1, rttMs: 0, jitterMs: 0, loss: 0 })
+  let sends = 0
+  try {
+    const failing = prepareGate(createEngineOnlineShow(
+      config({ scriptBytes: broken() }),
+      network(0, spyTransport(net.transport(0), () => { sends++ })),
+    ))
+    assert.equal(failing.gate.state, 'pending')
+    assert.equal(failing.vote(), false)
+    assert.equal(sends, 0)
+    await new Promise<void>(resolve => setImmediate(resolve))
+    assert.equal(failing.gate.state, 'pending')
+    assert.equal(failing.vote(), false)
+    assert.equal(sends, 0)
+    release()
+    await assert.rejects(failing.settled, error => error instanceof EgeError)
+    assert.equal(failing.gate.state, 'failed')
+    assert.equal(failing.vote(), false)
+    assert.equal(sends, 0)
+
+    const ready = prepareGate(createEngineOnlineShow(
+      config(),
+      network(0, spyTransport(net.transport(0), () => { sends++ })),
+    ))
+    await ready.settled
+    assert.equal(ready.gate.state, 'ready')
+    const runtime = ready.runtime()!
+    for (let frame = 0; frame < 40 && runtime.snapshot().candidates.length <= 1; frame++) {
+      runtime.frame(1 / 60, () => NEUTRAL)
+    }
+    assert.ok(runtime.snapshot().candidates.length > 1)
+    assert.equal(sends, 0)
+    assert.equal(ready.vote(), true)
+    assert.equal(sends, 1)
+    runtime.dispose()
+  } finally {
+    release()
+    Reflect.set(WebAssembly, 'compile', realCompile)
   }
 })
 
